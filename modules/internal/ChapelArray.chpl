@@ -3642,10 +3642,11 @@ module ChapelArray {
   }
 
   // This must be a param function
-  proc chpl__compatibleForBulkTransfer(a:[], b:[], param move) param {
+  proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
     if !useBulkTransfer then return false;
-    if move then return true;
     if a.eltType != b.eltType then return false;
+    if kind==_tElt.move then return true;
+    if kind==_tElt.initCopy then return true;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     return true;
   }
@@ -3729,29 +3730,41 @@ module ChapelArray {
     chpl__uncheckedArrayTransfer(a, b);
   }
 
+  // what kind of transfer to do for each element?
   pragma "no doc"
-  enum transferType {
+  enum _tElt {
     move,
     initCopy,
     assign
   }
 
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[],
-                                           param move=false) {
+                                           param kind=_tElt.assign) {
     var done = false;
     if !chpl__serializeAssignment(a, b) {
-      if chpl__compatibleForBulkTransfer(a, b, move) {
+      if chpl__compatibleForBulkTransfer(a, b, kind) {
         done = chpl__bulkTransferArray(a, b);
       }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b, move) {
+      else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
         done = chpl__bulkTransferPtrArray(a, b);
+      }
+      // If we did a bulk transfer, it just bit copied, so need to
+      // run copy initializer still
+      if kind==_tElt.initCopy && !isPODType(a.eltType) {
+        forall aa in a {
+          pragma "no auto destroy"
+          var copy = aa; // run copy initializer
+          // move it into the array
+          __primitive("=", aa, copy);
+        }
       }
     }
     if !done then
-      chpl__transferArray(a, b, move);
+      chpl__transferArray(a, b, kind);
   }
 
-  proc chpl__compatibleForWidePtrBulkTransfer(a, b, param move) param {
+  proc chpl__compatibleForWidePtrBulkTransfer(a, b,
+                                              param kind=_tElt.assign) param {
     if !useBulkPtrTransfer then return false;
 
     // TODO: for now we are limiting ourselves to default rectangulars
@@ -3838,37 +3851,53 @@ module ChapelArray {
 
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b,
-                                  param move=false) lifetime a <= b {
+                                  param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
-      if move {
+
+      if kind==_tElt.move || kind==_tElt.initCopy {
+        // need to copy if "move"ing from 1 element
         forall aa in a with (in b) {
           pragma "no auto destroy"
           var copy = b; // make a copy for this iteration
           // move it into the array
           __primitive("=", aa, copy);
         }
-      } else {
+      } else if kind==_tElt.assign {
         forall aa in a with (in b) {
           aa = b;
         }
       }
     } else if chpl__serializeAssignment(a, b) {
-      if move {
+      if kind==_tElt.move {
         for (aa,bb) in zip(a,b) {
           __primitive("=", aa, bb);
         }
-      } else {
+      } else if kind==_tElt.initCopy {
+        for (aa,bb) in zip(a,b) {
+          pragma "no auto destroy"
+          var copy = b; // init copy
+          // move it into the array
+          __primitive("=", aa, copy);
+        }
+      } else if kind==_tElt.assign {
         for (aa,bb) in zip(a,b) {
           aa = bb;
         }
       }
     } else {
-      if move {
+      if kind==_tElt.move {
         [ (aa,bb) in zip(a,b) ] {
           __primitive("=", aa, bb);
         }
-      } else {
+      } else if kind==_tElt.initCopy {
+        [ (aa,bb) in zip(a,b) ] {
+          pragma "no auto destroy"
+          var copy = bb; // init copy
+          // move it into the array
+          __primitive("=", aa, copy);
+        }
+      } else if kind==_tElt.assign {
         [ (aa,bb) in zip(a,b) ] {
           aa = bb;
         }
@@ -3910,7 +3939,7 @@ module ChapelArray {
 
   private proc helpInitArrFromTuple(ref j, param rank: int,
                                     ref a: [], b: _tuple,
-                                    param move:bool)
+                                    param kind:_tElt)
   lifetime a < b {
 
       type idxType = a.domain.idxType,
@@ -3924,9 +3953,13 @@ module ChapelArray {
           j(a.rank-rank) = chpl__intToIdx(idxType, start:strType + (i*stride));
           ref dst = a(j);
           const ref src = b(i);
-          if move {
+          if kind == _tElt.move {
             __primitive("=", dst, src);
-          } else {
+          } else if kind == _tElt.initCopy {
+            pragma "no auto destroy"
+            var copy = src; // init copy
+            __primitive("=", dst, copy);
+          } else if kind == _tElt.assign {
             dst = src;
           }
         }
@@ -3937,13 +3970,13 @@ module ChapelArray {
         }
       }
   }
-  private proc initArrFromTuple(ref a: [], b: _tuple, param move:bool) {
+  private proc initArrFromTuple(ref a: [], b: _tuple, param kind:_tElt) {
     var j: a.rank*a.domain.idxType;
-    helpInitArrFromTuple(j, a.rank, a, b, move);
+    helpInitArrFromTuple(j, a.rank, a, b, kind);
   }
 
   proc =(ref a: [], b: _tuple) where isRectangularArr(a) {
-    initArrFromTuple(a, b, false);
+    initArrFromTuple(a, b, _tElt.assign);
   }
 
   proc _desync(type t:_syncvar) type {
@@ -4210,14 +4243,12 @@ module ChapelArray {
     // type mismatch important because RHS could be a slice, e.g.
     param typeMismatch = rhs._instance.type !=
                          chpl__instanceTypeFromArrayRuntimeType(dstType);
-    // TODO: should copy-init if element types do not match but
-    // everything else is the same
 
     param moveElts = ownsRhs && !typeMismatch;
 
-    chpl_debug_writeln("in  chpl__coerce owsRhs=", ownsRhs,
-                       " typeMismatch=", typeMismatch,
-                       " moveElts=", moveElts);
+    //chpl_debug_writeln("in  chpl__coerce owsRhs=", ownsRhs,
+    //                   " typeMismatch=", typeMismatch,
+    //                   " moveElts=", moveElts);
 
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=!moveElts);
@@ -4236,7 +4267,8 @@ module ChapelArray {
       if boundsChecking then
         checkArrayShapesUponAssignment(lhs, rhs);
 
-      chpl__uncheckedArrayTransfer(lhs, rhs, move=moveElts);
+      param kind = if moveElts then _tElt.move else _tElt.initCopy;
+      chpl__uncheckedArrayTransfer(lhs, rhs, kind=kind);
     }
 
     if ownsRhs {
@@ -4246,15 +4278,12 @@ module ChapelArray {
       _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=!moveElts);
     }
 
-    chpl_debug_writeln("end chpl__coerce");
+    //chpl_debug_writeln("end chpl__coerce");
 
     return lhs;
   }
   pragma "coerce fn"
   proc chpl__coerce(type dstType:_array, rhs:_domain, param ownsRhs:bool) {
-    // Always "moves" elements because they can't possibly be non-POD
-    // because RHS cannot be an associative domain.
-    // Should assign elements if non-POD becomes a possibility.
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
     var lhs = dom.buildArray(eltType, initElts=false);
@@ -4266,7 +4295,8 @@ module ChapelArray {
     if !isPODType(eltType) then
       compilerError("cannot assign to array from domain of non-POD indices");
 
-    chpl__transferArray(lhs, rhs, move=true);
+    chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
+
     if ownsRhs then
       chpl__autoDestroy(rhs);
 
@@ -4274,8 +4304,6 @@ module ChapelArray {
   }
   pragma "coerce fn"
   proc chpl__coerce(type dstType:_array, rhs:range(?), param ownsRhs:bool) {
-    // Always "moves" elements because they can't possibly be non-POD
-    // Should assign elements if non-POD becomes a possibility.
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
     var lhs = dom.buildArray(eltType, initElts=false);
@@ -4283,29 +4311,35 @@ module ChapelArray {
     if lhs.rank != 1 then
       compilerError("cannot assign from ranges to multidimensional arrays");
 
-    chpl__transferArray(lhs, rhs, move=true);
+    chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     return lhs;
   }
   pragma "coerce fn"
   proc chpl__coerce(type dstType:_array, rhs:_tuple, param ownsRhs:bool) {
 
-    // For now, this uses =, because tuple is not necessarily capturing
-    // by value. Perhaps possible to fix that by using `in` intent on the tuple.
+    // TODO: use in intent on the tuple argument
+
+    //chpl_debug_writeln("in  chpl__coerce owsRhs=", ownsRhs);
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
     pragma "unsafe" // when eltType is non-nilable
-    var lhs = dom.buildArray(eltType, initElts=true);
+    var lhs = dom.buildArray(eltType, initElts=false);
 
     if !isRectangularArr(lhs) then
       compilerError("Cannot assign from tuple to non-rectangular array");
 
-    initArrFromTuple(lhs, rhs, false);
+    //param kind = if ownsRhs then _tElt.move else _tElt.initCopy;
+    param kind = _tElt.initCopy;
+    initArrFromTuple(lhs, rhs, kind);
 
-    if ownsRhs then
+    // Don't destroy the tuple if the elements were moved
+    if ownsRhs && kind != _tElt.move then
       chpl__autoDestroy(rhs);
+
+    //chpl_debug_writeln("end chpl__coerce owsRhs=", ownsRhs);
 
     return lhs;
   }
@@ -4330,15 +4364,14 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerce(type dstType:_array, rhs, param ownsRhs:bool) {
     // assumes rhs is iterable
-    // TODO: should be able to move from an iterator returning by value?
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
     pragma "unsafe" // when eltType is non-nilable
-    var lhs = dom.buildArray(eltType, initElts=true);
+    var lhs = dom.buildArray(eltType, initElts=false);
 
-    chpl__transferArray(lhs, rhs, move=false);
+    chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
     if ownsRhs then
       chpl__autoDestroy(rhs);
