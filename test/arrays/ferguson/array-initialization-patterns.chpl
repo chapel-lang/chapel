@@ -155,9 +155,19 @@ proc testr2() {
 testr2();
 writeln("-");
 
+proc makeTuple() {
+  writeln("in makeTuple");
+  var fullTuple;
+  {
+    fullTuple = (new R(1),);
+  }
+  writeln("done makeTuple");
+  return fullTuple;
+}
+
 proc testr3() {
   writeln("testr3");
-  var B:[1..1] R = (new R(1),);
+  var B:[1..1] R = makeTuple();
   writeln(B);
 }
 testr3();
@@ -307,3 +317,7 @@ printInitDeinit = false;
 // test 'in' default argument with default used
 // test default 'in' argument with default used and type previous domain arg
 // test 'in' argument with actual used and type is previous domain arg
+
+// get copy elision working
+// fix tuple conversion to use 'in' argument
+// fix testC1 / testR1

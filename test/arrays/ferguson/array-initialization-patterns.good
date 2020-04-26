@@ -22,9 +22,9 @@ init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 -
-testr1
+testr1 (copy required)
 init (default)
-lhs(0 0) = rhs(1 1)
+init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 -
@@ -34,11 +34,13 @@ init 1 1
 deinit 1 1
 -
 testr3
+in makeTuple
 init 1 1
-init (default)
-lhs(0 0) = rhs(1 1)
-(x = 1, ptr = {xx = 1})
+init= 1 1
 deinit 1 1
+done makeTuple
+init= 1 1
+(x = 1, ptr = {xx = 1})
 deinit 1 1
 -
 testr4
@@ -54,8 +56,6 @@ init= 1 1
 init= 1 1
 init= 1 1
 init= 1 1
-init= 1 1
-deinit 1 1
 deinit 1 1
 deinit 1 1
 (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
@@ -71,10 +71,71 @@ deinit 1 1
 deinit 1 1
 -
 testr5
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr6 (copy required)
+init (default)
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testC1
 init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
-(x = 1, ptr = {xx = 1})
+init (default)
+init= 1 1
+init (default)
+init= 1 1
+deinit 1 1
+deinit 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC2
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC3
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC4
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testR1
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+init (default)
+init= 1 1
+init (default)
+init= 1 1
+deinit 1 1
+deinit 1 1
+(A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR2
+init 1 1
+(A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR3
+init 1 1
+(A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR4
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
