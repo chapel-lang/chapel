@@ -599,7 +599,8 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
           case INTENT_IN:
           case INTENT_CONST:
           case INTENT_CONST_IN:
-            if (isRecord(fnFormal->typeInfo())) {
+            if (isRecord(fnFormal->typeInfo()) &&
+                !fnFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
               // always use 'const ref' intent in these cases for records
               // (even if the record has e.g. in default intent)
               intent = INTENT_CONST_REF;
@@ -1498,13 +1499,13 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 }
 
-/*
 // A wrapper that mimics the state during default_arg creation, so that we can
 // share code with that implementation.
-static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
-                                            ArgSymbol* formal,
-                                            CallExpr* call,
-                                            SymExpr* curActual) {
+static void copyFormalTypeExprWrapper(FnSymbol* fn,
+                                      ArgSymbol* formal,
+                                      VarSymbol* runtimeTypeTemp,
+                                      CallExpr* call,
+                                      Expr* insertBefore) {
   SymbolMap copyMap;
   int i = 1;
   for_formals(form, fn) {
@@ -1522,20 +1523,19 @@ static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
   }
 
   BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
-  call->getStmtExpr()->insertBefore(body);
+  insertBefore->insertBefore(body);
 
-  Symbol* newSym = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, curActual->symbol());
-  copyMap.put(formal, newSym);
+  copyFormalTypeExpr(formal, body, runtimeTypeTemp);
+
+  // without this, end up trying to set typeTmp = non-type arg
+  //copyMap.put(formal, runtimeTypeTemp);
 
   update_symbols(body, &copyMap);
   normalize(body);
   resolveBlockStmt(body);
   reset_ast_loc(body, call);
   body->flattenAndRemove();
-
-  curActual->replace(new SymExpr(newSym));
 }
-*/
 
 static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
                                         ArgSymbol* formal,
@@ -1678,14 +1678,20 @@ static void handleInIntents(FnSymbol* fn, CallInfo& info) {
 
       VarSymbol* runtimeTypeTemp = NULL;
       if (runtimeTypes) {
-        BlockStmt* block = new BlockStmt();
+        /*BlockStmt* block = new BlockStmt();
         anchor->insertBefore(block);
         runtimeTypeTemp = newTemp("_formal_type_tmp");
         runtimeTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
         block->insertAtTail(new DefExpr(runtimeTypeTemp));
-        copyFormalTypeExpr(formal, block, runtimeTypeTemp);
+        copyFormalTypeExpr(fn, formal, anchor, runtimeTypeTemp);
         resolveBlockStmt(block);
-        block->flattenAndRemove();
+        block->flattenAndRemove();*/
+        runtimeTypeTemp = newTemp("_formal_type_tmp");
+        runtimeTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+        anchor->insertBefore(new DefExpr(runtimeTypeTemp));
+
+        copyFormalTypeExprWrapper(fn, formal, runtimeTypeTemp,
+                                  info.call, anchor);
       }
 
       // A copy might be necessary here but might not.
