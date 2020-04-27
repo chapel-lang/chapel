@@ -407,6 +407,10 @@ static providerSet_t providerInUseSet;
 
 static
 void init_providerInUse(void) {
+  if (chpl_numNodes <= 1) {
+    return;
+  }
+
   //
   // We can be using only one primary provider.
   //
