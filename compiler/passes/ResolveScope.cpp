@@ -609,15 +609,15 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   if (name == NULL) {
     if (astrThis == getNameFrom(expr))
       USR_FATAL(expr, "'this.' can only be used as prefix of %s", stmtType);
-    else if (astrSuper == getNameFrom(expr))
-      USR_FATAL(expr, "'super.' can only be used as prefix of %s", stmtType);
-    else
+    else if (astrSuper == getNameFrom(expr)) {
+      if (isUse) {
+        USR_FATAL(expr, "'super.' can only be used as prefix of use");
+      }
+    } else
       INT_FATAL("case not handled");
   }
 
-  INT_ASSERT(name != NULL);
-
-  {
+  if (name != NULL) {
     const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
     ModuleSymbol* badCloserModule = NULL;
@@ -676,6 +676,19 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       USR_PRINT(expr, "or use a relative %s e.g. '%s this.M' or '%s super.M'",
                       stmtType, stmtType, stmtType);
       USR_STOP();
+    }
+  } else {
+    if (astrSuper == getNameFrom(expr) && !isUse) {
+      // This was `import super;`.  We've already handled the case where this
+      // occurs in a top-level module for which there is no super, so we can be
+      // certain this is okay to return
+      retval = toSymbol(relativeScope->mAstRef);
+      INT_ASSERT(retval != NULL);
+      return retval;
+    } else {
+      // Something other than just `import super;` was let through the check of
+      // the first imported module name
+      INT_FATAL("case not handled");
     }
   }
 
