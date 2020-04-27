@@ -650,7 +650,7 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
         if (isUse)
           USR_FATAL(expr, "use must name a module or enum ('%s' is neither)",
                           sym->name);
-        else if (relativeScope == NULL)
+        else if (relativeScope == NULL || relativeScope == this)
           USR_FATAL(expr, "import must name a module ('%s' is not a module)",
                     sym->name);
         else {
