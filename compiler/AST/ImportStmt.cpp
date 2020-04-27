@@ -180,7 +180,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             USR_FATAL(this, "Can't 'import' without naming a module");
           }
 
-          if (unqualified.size() != 0) {
+          if (providesUnqualifiedAccess()) {
             // We already have listed unqualified access for this import, which
             // means this is the last symbol prior to the curly braces (e.g.
             // this is `B` of `import A.B.{C, D};`).  This symbol is required
@@ -405,7 +405,7 @@ void ImportStmt::validateUnqualified() {
 bool ImportStmt::skipSymbolSearch(const char* name) {
   // We don't define any symbols for unqualified access, so we should skip this
   // import
-  if (unqualified.size() == 0 && renamed.size() == 0) {
+  if (!providesUnqualifiedAccess()) {
     return true;
   } else {
     // Otherwise, look through the list of unqualified symbol names to see if
