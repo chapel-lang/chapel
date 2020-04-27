@@ -178,7 +178,6 @@ static void emit_delayedFixedHeapMsgs(void);
 
 static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
-static inline chpl_bool tciTryRealloc(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
@@ -344,17 +343,6 @@ typedef enum {
 typedef chpl_bool providerSet_t[provTypeCount];
 
 static inline
-void providerSetZero(providerSet_t* s) {
-  memset(s, 0, sizeof(*s));
-}
-
-static inline
-void providerSetClear(providerSet_t* s, provider_t p) {
-  CHK_TRUE(p >= 0 && p < provTypeCount);
-  (*s)[p] = 0;
-}
-
-static inline
 void providerSetSet(providerSet_t* s, provider_t p) {
   CHK_TRUE(p >= 0 && p < provTypeCount);
   (*s)[p] = 1;
@@ -419,6 +407,10 @@ static providerSet_t providerInUseSet;
 
 static
 void init_providerInUse(void) {
+  if (chpl_numNodes <= 1) {
+    return;
+  }
+
   //
   // We can be using only one primary provider.
   //
@@ -553,11 +545,6 @@ size_t bitmapSizeofMap(size_t len) {
 }
 
 static inline
-size_t bitmapSizeof(size_t len) {
-  return offsetof(struct bitmap_t, map) + bitmapSizeofMap(len);
-}
-
-static inline
 void bitmapZero(struct bitmap_t* b) {
   memset(&b->map, 0, bitmapSizeofMap(b->len));
 }
@@ -575,11 +562,6 @@ void bitmapClear(struct bitmap_t* b, size_t i) {
 static inline
 void bitmapSet(struct bitmap_t* b, size_t i) {
   b->map[bitmapElemIdx(i)] |= bitmapElemBit(i);
-}
-
-static inline
-int bitmapTest(struct bitmap_t* b, size_t i) {
-  return (b->map[bitmapElemIdx(i)] & bitmapElemBit(i)) != 0;
 }
 
 #define BITMAP_FOREACH_SET(b, i)                                        \
@@ -3272,23 +3254,6 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
 
 
 static inline
-chpl_bool tciTryRealloc(struct perTxCtxInfo_t* tcip) {
-  if (tcip == _ttcip && tcip->bound) {
-    DBG_PRINTF(DBG_TCIPS, "tryRealloced bound tciTab[%td]", tcip - tciTab);
-    return true;
-  }
-
-  if (!atomic_exchange_bool(&tcip->allocated, true)) {
-    DBG_PRINTF(DBG_TCIPS, "tryRealloced tciTab[%td]", tcip - tciTab);
-    CHK_TRUE(!tcip->bound);
-    return true;
-  }
-
-  return false;
-}
-
-
-static inline
 void tciFree(struct perTxCtxInfo_t* tcip) {
   //
   // Bound contexts stay bound.  We only release non-bound ones.
@@ -3346,7 +3311,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-    atomic_bool txnDone = { 0 };
+    atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
     void* ctx = (tcip->txCQ == NULL)
                 ? NULL
@@ -3625,7 +3590,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-    atomic_bool txnDone = { 0 };
+    atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
     void* ctx = (tcip->txCQ == NULL)
                 ? NULL

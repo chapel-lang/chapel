@@ -1,0 +1,3 @@
+./SparseTest.chpl:1: In function 'testSparse':
+./SparseTest.chpl:9: error: sparse arrays of non-nilable classes are not currently supported
+testBorrowed.chpl:9: Function 'testSparse' instantiated as: testSparse(type t = borrowed T)

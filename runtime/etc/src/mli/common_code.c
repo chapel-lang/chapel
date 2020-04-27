@@ -61,12 +61,12 @@
 
 //
 // If this code is being run on the server, mli_malloc() is a wrapper for
-// chpl_malloc(). If this code is being run on the client, then it is a
+// chpl_mem_alloc(). If this code is being run on the client, then it is a
 // wrapper for the system allocator.
 //
 #ifdef CHPL_MLI_IS_SERVER
-#   define mli_malloc(bytes) chpl_malloc(bytes)
-#   define mli_free(ptr) chpl_free(ptr)
+#   define mli_malloc(bytes) chpl_mem_alloc(bytes, CHPL_RT_MD_MLI_DATA, 0, 0)
+#   define mli_free(ptr) chpl_mem_free(ptr, 0, 0)
 #elif defined(CHPL_MLI_IS_CLIENT)
 #   define mli_malloc(bytes) sys_malloc(bytes)
 #   define mli_free(ptr) sys_free(ptr)

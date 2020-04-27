@@ -79,7 +79,7 @@ class InsertFront: Test {
   override proc name() return "InsertFront";
   override proc setup() { _lst = createList(1); }
   override proc test() {
-    while _lst.size < n1 do _lst.insert(1, (_lst.size & 127):byte);
+    while _lst.size < n1 do _lst.insert(0, (_lst.size & 127):byte);
   }
 }
 

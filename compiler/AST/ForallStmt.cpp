@@ -290,6 +290,14 @@ ForallStmt* isForallLoopBody(Expr* expr) {
   return NULL;
 }
 
+// Return a const ForallStmt* if 'expr' is its loopBody.
+const ForallStmt* isConstForallLoopBody(const Expr* expr) {
+  if (const ForallStmt* pfs = toConstForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return pfs;
+  return NULL;
+}
+
 // Return a ForallStmt* if 'expr' is one of its fRecIter* helpers.
 ForallStmt* isForallRecIterHelper(Expr* expr) {
   if (expr->list == NULL)

@@ -1,0 +1,7 @@
+--checks # checks.good
+--no-checks # checks-off.good
+--fast # checks-off.good
+--checks --no-checks # checks-off.good
+--no-checks --checks # checks.good
+--checks --fast # checks-off.good
+--no-checks --fast # checks-off.good

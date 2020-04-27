@@ -178,7 +178,9 @@ proc main {
     writeln("successfully");
   else
     writeln("unsuccessfully: a is ", aa);
+}
 
+proc deinit() {
   for l in Locales do on l {
     delete wakeup;
     delete endCount;

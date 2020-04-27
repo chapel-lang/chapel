@@ -230,5 +230,25 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726
-const PrivateSpace: domain(1) dmapped Private();
+// ENGIN: below is my workaround to close the leak:
+// 1. Declare a module-scope record variable with an unmanaged nilable Private
+//    field
+//    1.a. Make sure that this variable is defined *before* PrivateSpace, so
+//         that compiler injects its cleanup *after* PrivateSpace
+// 2. In module deinitializer, set the field of this record variable to
+//    chpl_privateDist
+// This way we cleanup the unmanaged, module-scope variable after module
+// deinitializer, which is called before deinitializing module-scope variables
+// which would cause use-after-free during the cleanup of PrivateSpace
+var chpl_privateCW = new chpl_privateDistCleanupWrapper();
+var chpl_privateDist = new unmanaged Private();
+const PrivateSpace: domain(1) dmapped new dmap(chpl_privateDist);
 
+record chpl_privateDistCleanupWrapper {
+  var val = nil : unmanaged Private?;
+  proc deinit() { delete val!; }
+}
+
+proc deinit() {
+  chpl_privateCW.val = chpl_privateDist;
+}

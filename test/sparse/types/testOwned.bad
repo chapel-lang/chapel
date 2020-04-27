@@ -1,9 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelDistribution.chpl:887: error: Cannot default-initialize irv: owned T
-note: non-nil class types do not support default initialization
-note: Consider using the type owned T? instead
-$CHPL_HOME/modules/internal/DefaultSparse.chpl:50: In function 'dsiBuildArray':
-$CHPL_HOME/modules/internal/DefaultSparse.chpl:51: error: cannot default-initialize the array field data because it has a non-nilable element type 'owned T'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:1404: Function 'dsiBuildArray' instantiated as: dsiBuildArray(this: borrowed DefaultSparseDom(1,int(64),domain(1,int(64),false)), type eltType = owned T)
-./SparseTest.chpl:1: In function 'testSparse':
-./SparseTest.chpl:9: error: cannot default-initialize the array A because it has a non-nilable element type 'owned T'
-testOwned.chpl:8: Function 'testSparse' instantiated as: testSparse(type t = owned T)

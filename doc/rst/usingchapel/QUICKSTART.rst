@@ -138,8 +138,8 @@ Performance
 -----------
 
 If you plan to do performance studies of Chapel programs, be sure to use the
-full-featured version from using-a-more-full-featured-chapel_ above and read
-``$CHPL_HOME/PERFORMANCE.md`` to avoid common pitfalls.
+full-featured version from using-a-more-full-featured-chapel_ above and see
+https://chapel-lang.org/performance.html for performance tips.
 
 
 .. _quickstart-with-other-shells:
@@ -172,7 +172,7 @@ Compiling Chapel programs:   :ref:`compiling.rst <readme-compiling>`
 Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
 Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
 Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
-Performance status:          ``$CHPL_HOME/PERFORMANCE.md``
+Performance:                 https://chapel-lang.org/performance.html
 Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
 Chapel's file/dir structure: ``$CHPL_HOME/README.files``
 Changes since last release:  ``$CHPL_HOME/CHANGES.md``
