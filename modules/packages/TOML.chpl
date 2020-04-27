@@ -169,8 +169,7 @@ module TomlParser {
         if !source.isEmpty() {
           while(readLine(source)) {
             var token = top(source);
-
-            if token == '#' {
+            if comment.match(token) {
               parseComment();
             }
             else if inBrackets.match(token) {
@@ -321,7 +320,7 @@ module TomlParser {
               skipNext(source);
             }
             else if comment.match(top(source)) {
-              skipLine(source);
+              skipNext(source);
             }
             else {
               var toParse = parseValue();
@@ -617,7 +616,7 @@ used to recursively hold tables and respective values
     // Time
     proc init(ti: time) {
        this.ti = ti;
-       this.tag = fieldTime; 
+       this.tag = fieldTime;
     }
 
     // Datetime
@@ -1201,6 +1200,7 @@ module TomlReader {
     }
 
     proc splitLine(line) {
+      var idx = 0;
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
@@ -1211,26 +1211,42 @@ module TomlReader {
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =
-            curly = "(\\{)|(\\})";              // {}
+            curly = "(\\{)|(\\})",              // {}
+            dt = "^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}",
+            ld = "^\\d{4}-\\d{2}-\\d{2}",
+            ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
 
       const pattern = compile('|'.join(doubleQuotes,
                                        singleQuotes,
                                        bracketContents,
                                        brackets,
-                                       comments,
                                        commas,
                                        curly,
-                                       equals));
+                                       equals,
+                                       dt,
+                                       ti,
+                                       ld));
 
       for token in pattern.split(line) {
+        idx += 1;
         var strippedToken = token.strip(" \t");
         if strippedToken.size != 0 {
           if debugTomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
-
           nonEmptyChar = true;
-          linetokens.append(strippedToken);
+          // check for date/time in a line and avoid comment
+          const toke = strippedToken;
+          const isWhiteSpace = compile("\\s");
+          var dateTimeToken = isWhiteSpace.split(toke);
+          if strippedToken.match(compile('|'.join(dt,ti,ld))).matched then
+            strippedToken = dateTimeToken[0];
+          var isComment = strippedToken.match(compile(comments));
+          if isComment.matched && idx <= 1 {
+            linetokens.append(strippedToken);
+          } else if !isComment.matched {
+            linetokens.append(strippedToken);
+          }
         }
       }
 

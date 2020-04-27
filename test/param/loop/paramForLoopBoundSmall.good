@@ -1,0 +1,1 @@
+paramForLoopBoundSmall.chpl:1: error: Count of 5 is too small for range of size 4

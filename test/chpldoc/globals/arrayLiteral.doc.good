@@ -17,7 +17,7 @@ or
 
    import arrayLiteral.doc;
 
-.. data:: var x = [i in 1..10] i;
+.. data:: var x = [i in 1..10] i
 
    This is an array created using the forall loop initialization 
 

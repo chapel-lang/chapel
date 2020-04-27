@@ -86,6 +86,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
+    if (toStrip.size - ext.size) == 1 then return toStrip[0];
     var stripped = toStrip[..<(toStrip.size - ext.size)];
     return stripped;
   }

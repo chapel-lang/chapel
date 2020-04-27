@@ -25,7 +25,6 @@ public use MasonHelp;
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
   const default = getEnv('HOME') + "/.mason";
-
   const masonHome = if envHome != "" then envHome else default;
 
   return masonHome;
@@ -161,6 +160,7 @@ proc masonEnv(args) {
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
   printVar('MASON_OFFLINE', offlineString);
+  printVar("SPACK_ROOT", SPACK_ROOT);
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);

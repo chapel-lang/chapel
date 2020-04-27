@@ -162,7 +162,7 @@ class SymExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  Symbol* symbol() {
+  Symbol* symbol() const {
     return var;
   }
 

@@ -900,7 +900,7 @@ const char* retTagDescrString(RetTag retTag) {
 
 
 // describes this argument's intent (for use in an English sentence)
-const char* ArgSymbol::intentDescrString() {
+const char* ArgSymbol::intentDescrString() const {
   switch (intent) {
     case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";

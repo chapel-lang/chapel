@@ -6,4 +6,10 @@ proc test(type t) where isTuple(t) {
 proc test(type t) {
   var a = (new t(1), new t(2));
   assert(a.size == 2);
+
+  if isUnmanagedClass(t) {
+    for i in a.indices {
+      delete a[i];
+    }
+  }
 }

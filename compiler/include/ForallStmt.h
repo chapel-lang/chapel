@@ -33,7 +33,9 @@ class ForallStmt : public Stmt
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
   AList&     inductionVariables();   // DefExprs, one per iterated expr
+  const AList& constInductionVariables() const; // const counterpart
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
+  const AList& constIteratedExpressions() const;  // const counterpart
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
   std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
@@ -135,7 +137,13 @@ Same idea as fFromForLoop.
 
 inline bool   ForallStmt::zippered()         const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
+inline const AList& ForallStmt::constInductionVariables() const {
+  return fIterVars;
+}
 inline AList& ForallStmt::iteratedExpressions()    { return fIterExprs;  }
+inline const AList& ForallStmt::constIteratedExpressions() const {
+  return fIterExprs;
+}
 inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
 inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
 
@@ -173,6 +181,7 @@ ForallStmt* isForallIterVarDef(Expr* expr);
 ForallStmt* isForallIterExpr(Expr* expr);
 ForallStmt* isForallRecIterHelper(Expr* expr);
 ForallStmt* isForallLoopBody(Expr* expr);
+const ForallStmt* isConstForallLoopBody(const Expr* expr);
 VarSymbol*  parIdxVar(ForallStmt* fs);
 
 QualifiedType fsIterYieldType(Expr* ref, FnSymbol* iterFn);
