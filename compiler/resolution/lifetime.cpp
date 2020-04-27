@@ -382,21 +382,6 @@ static void checkFunction(FnSymbol* fn);
 static bool isCallToFunctionReturningNotOwned(CallExpr* call);
 static bool isUser(BaseAST* ast);
 
-// Not sure what the etiquette for sanitizing macros is.
-#ifdef debugf
-  #warning "Undefining source file only macro 'debugf'."
-  #undef debugf
-#endif
-
-// Helps "pretty print" some debug messages.
-#ifndef debugf
-  #define debugf(format__, ...) \
-    do { \
-      printf("DEBUG [%s:%d] ", __FUNCTION__, __LINE__); \
-      printf(format__, __VA_ARGS__); \
-    } while (0)
-#endif
-
 void checkLifetimesAndNilDereferences() {
   // Clear last error location so we get errors from nil checking
   // even if previous compiler code raised error on the same line.
@@ -2587,7 +2572,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
     if (fn->lifetimeConstraints) {
       if (debugging) {
-        debugf("Checking lifetime constraints for call to %s [%d]\n",
+        printf("Checking lifetime constraints for call to %s [%d]\n",
                fn->name, fn->id);
       }
 
@@ -2613,9 +2598,9 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           Symbol* actual2sym = actual2se->symbol();
 
           if (debugging) {
-            debugf("Debugging actual (%d) %s [%d]\n",
+            printf("Debugging actual (%d) %s [%d]\n",
                    i, actual1sym->name, actual1sym->id);
-            debugf("Against actual (%d) %s [%d]\n", j,
+            printf("Against actual (%d) %s [%d]\n", j,
                    actual2sym->name, actual2sym->id);
           }
 
@@ -2638,10 +2623,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (a1lp.borrowed.unknown) {
               a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
               if (debugging) {
-                debugf("Actual %s [%d] lifetime unknown, using scoped "
+                printf("Actual %s [%d] lifetime unknown, using scoped "
                        "lifetime\n",
                        actual1sym->name, actual1sym->id);
-                debugf("%s", "Scoped lifetime is ");
+                printf("%s", "Scoped lifetime is ");
                 printLifetime(a1lp.borrowed);
                 printf("\n");
               }
@@ -2650,10 +2635,10 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (a2lp.borrowed.unknown) {
               a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
               if (debugging) {
-                debugf("Actual %s [%d] lifetime unknown, using scoped "
+                printf("Actual %s [%d] lifetime unknown, using scoped "
                        "lifetime\n",
                        actual2sym->name, actual2sym->id);
-                debugf("%s", "Scoped lifetime is ");
+                printf("%s", "Scoped lifetime is ");
                 printLifetime(a2lp.borrowed);
                 printf("\n");
               }
@@ -2665,7 +2650,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (isOrRefersBorrowedClass(formal1->getValType())) {
               bothFormalsContainBorrowedOrAreBorrowed = true;
               if (debugging) {
-                debugf("Formal (%d) %s [%d] of type %s [%d] is or refers "
+                printf("Formal (%d) %s [%d] of type %s [%d] is or refers "
                        "to borrowed\n",
                        i, actual1sym->name, actual1sym->id,
                        formal1->getValType()->symbol->name,
@@ -2676,7 +2661,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             if (isOrRefersBorrowedClass(formal2->getValType())) {
               bothFormalsContainBorrowedOrAreBorrowed &= true;
               if (debugging) {
-                debugf("Formal (%d) %s [%d] of type %s [%d] is or refers "
+                printf("Formal (%d) %s [%d] of type %s [%d] is or refers "
                        "to borrowed\n",
                        j, actual2sym->name, actual2sym->id,
                        formal2->getValType()->symbol->name,
@@ -2692,7 +2677,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                 if (debugging) {
                   const char* ordering = order == CONSTRAINT_LESS ?
                       "constraint less" : "constraint less equal";
-                  debugf("Constraint ordering to validate is %s\n",
+                  printf("Constraint ordering to validate is %s\n",
                          ordering);
                 } 
                 error = true;
@@ -2706,7 +2691,7 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                 if (debugging) {
                   const char* ordering = order == CONSTRAINT_GREATER ?
                       "constraint greater" : "constraint greater equal";
-                  debugf("Constraint ordering to validate is %s\n",
+                  printf("Constraint ordering to validate is %s\n",
                          ordering);
                 } 
                 error = true;
