@@ -273,6 +273,13 @@ module BytesStringCommon {
     }
   }
 
+  //check if size of buffer to be allocated is within safe limits
+ //if val > uint(64) resulting in casting error.
+  proc isSafeLength(val){
+    if val < 0 then
+      halt("Buffer overflow allocating string copy data");
+  }
+
   // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
@@ -528,7 +535,8 @@ module BytesStringCommon {
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
       const rhsLen = rhs.buffLen;
-      const newLength = lhs.buffLen+rhsLen; //TODO: check for overflow
+      const newLength = lhs.buffLen+rhsLen;
+      isSafeLength(newLength);
       //resize the buffer if needed
       if lhs.buffSize <= newLength {
         const requestedSize = max(newLength+1,
@@ -610,7 +618,8 @@ module BytesStringCommon {
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
-    ret.buffLen = sLen * n; // TODO: check for overflow
+    ret.buffLen = sLen * n;
+    isSafeLength(ret.buffLen);
     var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
     ret.buffSize = allocSize;
