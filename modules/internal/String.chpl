@@ -394,6 +394,11 @@ module String {
     return (x + y: int): t;
 
   pragma "no doc"
+  inline proc +(x: ?t, y: t)
+    where t == byteIndex || t == codepointIndex
+    return (x:int + y:int): t;
+
+  pragma "no doc"
   inline proc +(x: bufferType, y: byteIndex) {
     return x+(y:int);
   }
@@ -975,6 +980,9 @@ module String {
     */
     proc indices return 0..<size;
 
+    pragma "no doc"
+    proc byteIndices return 0..<this.numBytes;
+
     /*
       :returns: The number of bytes in the string.
       */
@@ -1382,32 +1390,17 @@ module String {
     // TODO: move into the public interface in some form? better name if so?
     pragma "no doc"
     proc _getView(r:range(?)) where r.idxType == byteIndex {
+
+      // cast the argument r to `int` to make sure that we are not dealing with
+      // byteIndex
+      const intR = r:range(int, r.boundedType, r.stridable);
       if boundsChecking {
-        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.alignedLow:int < 0 then
-            halt("range ", r, " out of bounds for string");
-        }
-        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          // This seems suspicious... why would a range with a high bound
-          // of -1 be in-bounds yet one whose high bound was -2 be out?
-          // It seems as though any bound < 0 or >= len should be OOB.
-          // (This logic pre-dated this PR, though the numbers differed
-          // in the 1-based string/bytes indexing world).
-          // I think that this exists in order to permit the doReplace()
-          // call to work when `find()` returns 0, but this doesn't
-          // seem principled.  See also the similar case in Bytes.chpl.
-          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.buffLen) then
-            halt("range ", r, " out of bounds for string with ", this.numBytes, " bytes");
+        if !this.byteIndices.boundsCheck(intR) {
+          halt("range ", r, " out of bounds for string with ",
+               this.numBytes, " bytes");
         }
       }
-      const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
-      if r1.stridable {
-        const ret = r1.alignedLow:int..r1.alignedHigh:int by r1.stride;
-        return ret;
-      } else {
-        const ret = r1.alignedLow:int..r1.alignedHigh:int;
-        return ret;
-      }
+      return intR[this.byteIndices];
     }
 
     // Checks to see if r is inside the bounds of this and returns a finite
@@ -1427,42 +1420,37 @@ module String {
       if r.stridable {
         compilerError("string slicing doesn't support stridable codepoint ranges");
       }
+
+      // cast the argument r to `int` to make sure that we are not dealing with
+      // codepointIdx
+      const intR = r:range(int, r.boundedType, r.stridable);
       if boundsChecking {
-        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.alignedLow:int < 0 then
-            halt("range ", r, " out of bounds for string");
+        if !this.indices.boundsCheck(intR) {
+          halt("range ", r, " out of bounds for string with length ", this.size);
         }
       }
-      // Loop to find whether the low and high codepoint indices
-      // appear within the string.  Note the byte indices of those
-      // locations, if they exist.
-      const cp_low = if r.hasLowBound() && r.alignedLow:int >= 0
-                       then r.alignedLow:int else 0;
-      const cp_high = if r.hasHighBound() then r.alignedHigh:int else this.buffLen;
-      var cp_count = 0;
-      var byte_low = this.buffLen;  // empty range if bounds outside string
-      var byte_high = this.buffLen - 1;
-      if cp_high > 0 {
-        for (i, nbytes) in this._indexLen() {
-          if cp_count == cp_low {
-            byte_low = i:int;
+
+      // find the byte range of the given codepoint range
+      const cpRange = intR[this.indices];
+      var cpCount = 0;
+      var byteLow = this.buffLen;  // empty range if bounds outside string
+      var byteHigh = this.buffLen - 1;
+      if cpRange.high >= 0 {
+        for (i, nBytes) in this._indexLen() {
+          if cpCount == cpRange.low {
+            byteLow = i:int;
             if !r.hasHighBound() then
               break;
           }
-          if cp_count == cp_high {
-            byte_high = i:int + nbytes-1;
+          if cpCount == cpRange.high {
+            byteHigh = i:int + nBytes-1;
             break;
           }
-          cp_count += 1;
+          cpCount += 1;
         }
       }
-      if boundsChecking {
-        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.alignedHigh:int < 0) || (r.alignedHigh:int > cp_count) then
-            halt("range ", r, " out of bounds for string with length ", this.size);
-        }
-      }
-      const r1 = byte_low..byte_high;
+      const r1 = byteLow..byteHigh;
+      // do we need to do this slice?
       const ret = r1[0..#(this.buffLen)];
       return ret;
     }
@@ -1632,7 +1620,8 @@ module String {
       :returns: the index of the first occurrence of `needle` within a
                 string, or -1 if the `needle` is not in the string.
      */
-    inline proc find(needle: string, region: range(?) = 0:byteIndex..) : byteIndex {
+    inline proc find(needle: string,
+                     region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
       // TODO: better name than region?
       return _search_helper(needle, region, count=false): byteIndex;
     }
@@ -1646,7 +1635,8 @@ module String {
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or -1 if the `needle` is not in the string.
      */
-    inline proc rfind(needle: string, region: range(?) = 0:byteIndex..) : byteIndex {
+    inline proc rfind(needle: string,
+                      region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
       return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
     }
 
@@ -1658,7 +1648,7 @@ module String {
 
       :returns: the number of times `needle` occurs in the string
      */
-    inline proc count(needle: string, region: range(?) = 0..) : int {
+    inline proc count(needle: string, region: range(?) = this.indices) : int {
       return _search_helper(needle, region, count=true);
     }
 
