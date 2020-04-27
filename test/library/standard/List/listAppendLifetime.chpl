@@ -2,7 +2,9 @@ import List.list;
 
 class C { var x: int = 0; }
 
-proc test() {
+var lstGlobal: list(borrowed C);
+
+proc test1() {
   var lst: list(borrowed C);
   {
     var x = new borrowed C(128);
@@ -11,5 +13,12 @@ proc test() {
   }
   return;
 }
-test();
+test1();
+
+proc test2() {
+  var x = new borrowed C(256);
+  lstGlobal.append(x);
+  return;
+}
+test2();
 
