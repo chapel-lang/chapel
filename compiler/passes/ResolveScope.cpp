@@ -650,6 +650,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
         if (isUse)
           USR_FATAL(expr, "use must name a module or enum ('%s' is neither)",
                           sym->name);
+        else if (relativeScope == NULL)
+          USR_FATAL(expr, "import must name a module ('%s' is not a module)",
+                    sym->name);
         else {
           // It's okay for the symbol following a super to not be a module, so
           // long as it is the last symbol in the import statement...
