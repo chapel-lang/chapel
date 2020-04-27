@@ -17,6 +17,7 @@ test1();
 
 proc test2() {
   var x = new borrowed C(256);
+  // Should emit a lifetime checker error.
   lstGlobal.append(x);
   return;
 }
