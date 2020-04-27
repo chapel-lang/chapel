@@ -23,7 +23,6 @@ init 1 1
 deinit 1 1
 -
 testr1 (copy required)
-init (default)
 init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -39,7 +38,6 @@ init 1 1
 init= 1 1
 deinit 1 1
 done makeTuple
-init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 -
@@ -57,8 +55,8 @@ init= 1 1
 init= 1 1
 init= 1 1
 deinit 1 1
-deinit 1 1
 (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
+deinit 1 1
 deinit 1 1
 deinit 1 1
 deinit 1 1
@@ -76,7 +74,6 @@ init 1 1
 deinit 1 1
 -
 testr6 (copy required)
-init (default)
 init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -86,9 +83,7 @@ init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
-init (default)
 init= 1 1
-init (default)
 init= 1 1
 deinit 1 1
 deinit 1 1
@@ -115,9 +110,7 @@ init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
-init (default)
 init= 1 1
-init (default)
 init= 1 1
 deinit 1 1
 deinit 1 1
@@ -139,3 +132,9 @@ init 1 1
 {A = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+

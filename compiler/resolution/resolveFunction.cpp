@@ -2308,16 +2308,20 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 INT_ASSERT(!to->isRef());
                 bool stealRHS = from->hasFlag(FLAG_TEMP) &&
+                                !from->isRef() &&
                                 !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-                                !from->isRef();
+                                !from->hasFlag(
+                                    FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
 
                 CallExpr* callCoerceFn = NULL;
-                if (stealRHS)
+                if (stealRHS) {
                   callCoerceFn = new CallExpr("chpl__coerceMove",
                                               fromType, from);
-                else
+                } else {
                   callCoerceFn = new CallExpr("chpl__coerceCopy",
                                               fromType, from);
+                  // Should this add FLAG_INSERT_AUTO_DESTROY?
+                }
 
                 CallExpr* move = new CallExpr(PRIM_MOVE, to, callCoerceFn);
 
