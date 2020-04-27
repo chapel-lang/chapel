@@ -326,15 +326,12 @@ module List {
     pragma "no doc"
     proc _commonInitFromIterable(iterable) {
       this._firstTimeInitializeArrays();
-      _enter();
 
       for x in iterable do {
         pragma "no auto destroy"
         var cpy = x;
         _appendByRef(cpy);
       }
-
-      _leave();
     }
 
     pragma "no doc"
