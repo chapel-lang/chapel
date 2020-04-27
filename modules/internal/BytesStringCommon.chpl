@@ -275,8 +275,14 @@ module BytesStringCommon {
 
   //check if size of buffer to be allocated is within safe limits
  //if val > uint(64) resulting in casting error.
-  proc isSafeLength(val){
-    if val < 0 then
+  proc safeAdd(val1: int(64) , val2: int(64)){
+    if val1 + val2 < 0 then
+      halt("Buffer overflow allocating string copy data");
+  }
+
+  proc safeMul(val1: int(64), val2: int(64)){
+    var checkPosVal = max(int(64))/val2;
+    if val2 >0 && val1 > checkPosVal then
       halt("Buffer overflow allocating string copy data");
   }
 
@@ -534,9 +540,8 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.buffLen;
-      const newLength = lhs.buffLen+rhsLen;
-      isSafeLength(newLength);
+      safeAdd(lhs.buffLen, rhs.buffLen);
+      const newLength = lhs.buffLen+rhs.buffLen;
       //resize the buffer if needed
       if lhs.buffSize <= newLength {
         const requestedSize = max(newLength+1,
@@ -554,7 +559,7 @@ module BytesStringCommon {
         }
       }
       // copy the data from rhs
-      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
+      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhs.buffLen,
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
@@ -618,8 +623,8 @@ module BytesStringCommon {
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
+    safeMul(sLen, n);
     ret.buffLen = sLen * n;
-    isSafeLength(ret.buffLen);
     var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
     ret.buffSize = allocSize;
