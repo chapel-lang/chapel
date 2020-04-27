@@ -2645,10 +2645,9 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             }
 
             // Delay computing to emit debugging information.
-            bool bothFormalsContainBorrowedOrAreBorrowed = false;       
+            bool bothFormalsContainBorrowedOrAreBorrowed = true;
          
             if (isOrRefersBorrowedClass(formal1->getValType())) {
-              bothFormalsContainBorrowedOrAreBorrowed = true;
               if (debugging) {
                 printf("Formal (%d) %s [%d] of type %s [%d] is or refers "
                        "to borrowed\n",
@@ -2656,10 +2655,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                        formal1->getValType()->symbol->name,
                        formal2->getValType()->symbol->id);
               }
+            } else {
+              bothFormalsContainBorrowedOrAreBorrowed = false;
             }
 
             if (isOrRefersBorrowedClass(formal2->getValType())) {
-              bothFormalsContainBorrowedOrAreBorrowed &= true;
               if (debugging) {
                 printf("Formal (%d) %s [%d] of type %s [%d] is or refers "
                        "to borrowed\n",
@@ -2667,6 +2667,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
                        formal2->getValType()->symbol->name,
                        formal2->getValType()->symbol->id);
               }
+            } else {
+              bothFormalsContainBorrowedOrAreBorrowed = false;
             }
 
             // see also
