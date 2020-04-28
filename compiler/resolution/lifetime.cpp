@@ -2605,11 +2605,11 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
             bool ref = false;
 
             // For the purposes of this check, use scope lifetime 
-            // if above lifetime is unknown.  
-            if (a1lp.borrowed.unknown)  
-              a1lp.borrowed = scopeLifetimeForSymbol(actual1sym); 
-            if (a2lp.borrowed.unknown)  
-              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym); 
+            // if above lifetime is unknown.
+            if (a1lp.borrowed.unknown)
+              a1lp.borrowed = scopeLifetimeForSymbol(actual1sym);
+            if (a2lp.borrowed.unknown)
+              a2lp.borrowed = scopeLifetimeForSymbol(actual2sym);
 
 
             // see also
