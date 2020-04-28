@@ -47,7 +47,7 @@ if ! make ; then
 fi
 
 # Install Arkouda and python dependencies
-if ! python3 -m pip install -e .[test] --user ; then
+if ! python3 -m pip install --force-reinstall -e .[test] --user ; then
   log_fatal_error "installing arkouda"
 fi
 
