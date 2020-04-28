@@ -837,14 +837,12 @@ AggregateType* FnSymbol::getReceiverType() const {
   if (isMethod()) {
     if (isResolved() && _this != NULL) {
       return toAggregateType(_this->getValType());
-    } else {
-      if (numFormals() >= 2) {
-        ArgSymbol* _mt   = getFormal(1);
-        ArgSymbol* _this = getFormal(2);
+    } else if (numFormals() >= 2) {
+      ArgSymbol* _mt   = getFormal(1);
+      ArgSymbol* _this = getFormal(2);
 
-        if (_mt->type == dtMethodToken) {
-          return toAggregateType(_this->getValType());
-        }
+      if (_mt->type == dtMethodToken) {
+        return toAggregateType(_this->getValType());
       }
     }
   }
