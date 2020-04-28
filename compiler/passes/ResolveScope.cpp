@@ -698,6 +698,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
 
     ResolveScope* scope = getScopeFor(outerMod->block);
     if (Symbol* symbol = scope->getField(rhsName)) {
+      if (retval == symbol) {
+        USR_FATAL(expr, "duplicate mention of the same module '%s'",
+                  symbol->name);
+      }
       retval = symbol;
 
     } else if (Symbol *symbol =
