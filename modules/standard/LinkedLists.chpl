@@ -204,11 +204,12 @@ record LinkedList {
    }
 
   /*
-    find `e` in the list.
+    Returns true if this list contains an element equal to the value of
+    x. Returns false otherwise.
 
     :arg e: The element to be checked for
     :return: True if the item was found, otherwise returns false
-    :rtyle: `bool`
+    :rtype: `bool`
    */
   proc contains(const e: eltType): bool {
     for item in this {
@@ -223,7 +224,9 @@ record LinkedList {
     Returns a reference to the first item in the list
     
     .. warning::
-      Calling this method on an empty list will cause the program to halt
+      Calling this method on an empty list will cause the currently running 
+      program to halt. if the --fast flag is used, no safety checks will be
+      performed
 
 
     :return: a reference to the first item in the list
@@ -232,7 +235,7 @@ record LinkedList {
   proc ref first() ref: eltType {
     import HaltWrappers;
      if boundsChecking && size < 1 {
-       HaltWrappers.boundsCheckHalt("called LinkedLists.front on empty list");
+       HaltWrappers.boundsCheckHalt("called LinkedList.front on empty list");
      }
      return _first!.data;
   }
@@ -241,7 +244,9 @@ record LinkedList {
     Returns a reference to the last item in the list
 
     .. warning::
-      Calling this method on an empty list will cause the program to halt
+      Calling this method on an empty list will cause the currently running 
+      program to halt. if the --fast flag is used, no safety checks will be
+      performed
 
 
     :return: a reference to the last item in the lsit
@@ -250,7 +255,7 @@ record LinkedList {
   proc ref last() ref: eltType {
     import HaltWrappers;
      if boundsChecking && size < 1 {
-       HaltWrappers.boundsCheckHalt("called LinkedLists.last on empty list");
+       HaltWrappers.boundsCheckHalt("called LinkedList.last on empty list");
      }
     return _last!.data;
   }
