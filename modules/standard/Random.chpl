@@ -1207,7 +1207,7 @@ module Random {
 
         _lock();
 
-        var array = arr.reindex(0..arr.size-1);
+        ref array = arr.reindex(0..arr.size-1);
         var arraySize = array.size;
         var c : uint = 0;
         while((arraySize >> c) > cutoff) {
@@ -1236,13 +1236,6 @@ module Random {
             var l = arraySize * (blockIdx + 2*mergeLevel) >> c;
             _mergeShuffleMerge(array, j, k-j, l-j, seed);
           }
-        }
-
-        // work around for strided case
-        var j = 0;
-        for i in D {
-          arr[i] = array[j];
-          j += 1;
         }
 
         PCGRandomStreamPrivate_count += D.size;
