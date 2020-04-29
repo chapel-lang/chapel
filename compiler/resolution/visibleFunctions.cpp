@@ -35,6 +35,7 @@
 #include <map>
 #include <set>
 #include <utility>
+#include <vector>
 
 
 /*
@@ -59,6 +60,7 @@ public:
                                         VisibleFunctionBlock();
 
   Map<const char*, Vec<FnSymbol*>*>     visibleFunctions;
+  std::map<const char*, std::pair<bool, std::vector<FnSymbol*>*>> reexports;
 };
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
@@ -75,6 +77,9 @@ bool builtTypeHelperNames = false;
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+
+static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
+                             std::vector<FnSymbol*>* vec);
 
 static void getVisibleMethods(const char* name, CallExpr* call,
                               Vec<FnSymbol*>& visibleFns);
@@ -119,6 +124,17 @@ void findVisibleFunctions(CallInfo&       info,
     if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
       if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
         visibleFns.append(*fns);
+      }
+      std::pair<bool, std::vector<FnSymbol*>*> reexportEntry =
+        vfb->reexports[info.name];
+      if (reexportEntry.first == false) {
+        std::vector<FnSymbol*>* newVec = new std::vector<FnSymbol*>();
+        reexportEntry = std::make_pair(true, newVec);
+        buildReexportVec(block, info.name, call, reexportEntry.second);
+        vfb->reexports[info.name] = reexportEntry;
+        visibleFns.append(*reexportEntry.second);
+      } else {
+        visibleFns.append(*vfb->reexports[info.name].second);
       }
     }
   } else {
@@ -185,6 +201,115 @@ static void buildVisibleFunctionMap() {
     }
   }
   nVisibleFunctions = gFnSymbols.n;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
+                             std::vector<FnSymbol*>* vec) {
+  if (scope->useList != NULL) {
+    for_actuals(expr, scope->useList) {
+      if (ImportStmt* import = toImportStmt(expr)) {
+        if (!import->isPrivate) {
+          // Only public import statements re-export, no need to search
+          // otherwise
+          if (!import->skipSymbolSearch(name)) {
+            SymExpr* se = toSymExpr(import->src);
+
+            INT_ASSERT(se);
+
+            ModuleSymbol* mod = toModuleSymbol(se->symbol());
+            INT_ASSERT(mod);
+
+            if (mod->isVisible(call) == true) {
+              const char *nameToUse = name;
+              const bool isSymRenamed = import->isARenamedSym(name);
+              if (isSymRenamed) {
+                nameToUse = import->getRenamedSym(name);
+              }
+
+              if (VisibleFunctionBlock* vfb =
+                  visibleFunctionMap.get(mod->block)) {
+                // Does the imported module define functions with this name?
+                if (Vec<FnSymbol*>* fns =
+                    vfb->visibleFunctions.get(nameToUse)) {
+                  // Optimization: only check visibility of one private function
+                  // per scope searched.  The same answer should hold for all
+                  // private symbols in the same scope.
+                  bool privacyChecked = false;
+                  bool privateOkay = false;
+
+                  forv_Vec(FnSymbol, fn, *fns) {
+                    if (fn->hasFlag(FLAG_PRIVATE)) {
+                      // Ensure that private functions are not used outside of
+                      // their proper scope
+                      if (!privacyChecked) {
+                        // We haven't checked the privacy of a function in this
+                        // scope yet.  Do so now, and remember the result
+                        privacyChecked = true;
+                        if (fn->isVisible(call) == true) {
+                          // We've determined that this function, even though it
+                          // is private, can be used
+                          vec->push_back(fn);
+                          privateOkay = true;
+                        }
+                      } else if (privateOkay) {
+                        // We've already checked that private symbols are
+                        // accessible in this pass and they are, so it's okay to
+                        // add this function to the visible functions list
+                        vec->push_back(fn);
+                      }
+                    } else {
+                      // This was a public function, so always include it.
+                      vec->push_back(fn);
+                    }
+                  }
+                }
+
+                // Check to see if this scope also had already checked for
+                // re-exports with that particular name.
+                std::pair<bool, std::vector<FnSymbol*>*> reexportEntry =
+                  vfb->reexports[nameToUse];
+                if (reexportEntry.first == false) {
+                  // We haven't checked before, so recurse, save, and include
+                  // what we found
+                  std::vector<FnSymbol*>* newVec = new std::vector<FnSymbol*>();
+                  reexportEntry = std::make_pair(true, newVec);
+                  buildReexportVec(mod->block, nameToUse, call,
+                                   reexportEntry.second);
+                  vfb->reexports[nameToUse] = reexportEntry;
+                  for_vector(FnSymbol, fn, *reexportEntry.second) {
+                    vec->push_back(fn);
+                  }
+                } else {
+                  // No need to go looking again, just take what we already
+                  // found
+                  for_vector(FnSymbol, fn, *reexportEntry.second) {
+                    vec->push_back(fn);
+                  }
+                }
+              } else {
+                // No visible function map, so don't worry about it and just
+                // follow the public import statements
+                buildReexportVec(mod->block, nameToUse, call, vec);
+              }
+            }
+          }
+        }
+      } else if (isUseStmt(expr)) {
+        // UseStmts can't re-export just yet
+        continue;
+
+      } else {
+        INT_FATAL("unhandled case");
+      }
+    }
+  }
 }
 
 /************************************* | **************************************
