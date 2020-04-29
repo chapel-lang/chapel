@@ -3751,6 +3751,7 @@ module ChapelArray {
 
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[],
                                            param kind=_tElt.assign) {
+
     var done = false;
     if !chpl__serializeAssignment(a, b) {
       if chpl__compatibleForBulkTransfer(a, b, kind) {
@@ -3761,7 +3762,7 @@ module ChapelArray {
       }
       // If we did a bulk transfer, it just bit copied, so need to
       // run copy initializer still
-      if kind==_tElt.initCopy && !isPODType(a.eltType) {
+      if done && kind==_tElt.initCopy && !isPODType(a.eltType) {
         forall aa in a {
           pragma "no auto destroy"
           var copy = aa; // run copy initializer
@@ -3770,8 +3771,9 @@ module ChapelArray {
         }
       }
     }
-    if !done then
+    if !done {
       chpl__transferArray(a, b, kind);
+    }
   }
 
   proc chpl__compatibleForWidePtrBulkTransfer(a, b,
@@ -4265,7 +4267,7 @@ module ChapelArray {
   }
 
   pragma "coerce fn"
-  proc chpl__coerceCopy(type dstType:_domain, rhs) {
+  proc chpl__coerceCopy(type dstType:_domain, rhs: _iteratorRecord) {
     // assumes rhs is iterable
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4277,7 +4279,7 @@ module ChapelArray {
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerceMove(type dstType:_domain, in rhs) {
+  proc chpl__coerceMove(type dstType:_domain, rhs: _iteratorRecord) {
     // assumes rhs is iterable
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4296,7 +4298,7 @@ module ChapelArray {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
-    //chpl_debug_writeln("in  chpl__coerceCopy");
+    //chpl_debug_writeln("in  chpl__coerceCopy rhs.size=", rhs.size);
 
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);

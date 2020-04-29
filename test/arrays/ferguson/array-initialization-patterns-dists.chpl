@@ -72,6 +72,8 @@ proc makeInitialArray() {
 }
 
 var A = makeInitialArray();
+writeln("initial array is ", A);
+writeln("-");
 
 proc test0() {
   writeln("test0");
@@ -145,6 +147,14 @@ proc test8() {
 A = 0;
 test8();
 
+proc testrDefault() {
+  writeln("testrDefault");
+  var B:[A.domain] R;
+  writeln(B);
+}
+testrDefault();
+writeln("-");
+
 proc makeA() {
   var savePrint = printInitDeinit;
   printInitDeinit = false;
@@ -159,6 +169,7 @@ proc makeA() {
 printInitDeinit = false;
 var globalA = makeA();
 printInitDeinit = true;
+writeln("globalA is ", globalA);
 writeln("-");
 
 proc testr0() {
