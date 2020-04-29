@@ -1021,7 +1021,7 @@ proc BlockArr.setupRADOpt() {
 
 override proc BlockArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
-    ref arr = locArr(localeIdx);
+    var arr = locArr(localeIdx);
     on arr {
       if deinitElts then
         _deinitElements(arr.myElems);

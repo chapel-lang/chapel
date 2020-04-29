@@ -25,8 +25,8 @@
 //  Replicated     -- Global distribution descriptor
 //  ReplicatedDom      -- Global domain descriptor
 //  LocReplicatedDom   -- Local domain descriptor
-//  ReplicatedArray    -- Global array descriptor
-//  LocReplicatedArray -- Local array descriptor
+//  ReplicatedArr      -- Global array descriptor
+//  LocReplicatedArr   -- Local array descriptor
 //
 // Potential extensions:
 // - support other kinds of domains
@@ -470,8 +470,31 @@ class LocReplicatedArr {
   param stridable: bool;
 
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var arrLocalRep: [myDom.domLocalRep] eltType;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            myDom: unmanaged LocReplicatedDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.myDom = myDom;
+    this.arrLocalRep = this.myDom.domLocalRep.buildArray(eltType,
+                                                         initElts=initElts);
+  }
+
+  proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(arrLocalRep, deinitElts=false);
+  }
 }
 
 
@@ -536,7 +559,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType, param initElts:bool)
    in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do
       locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType, stridable,
-                                    locDom!);
+                                              locDom!, initElts=initElts);
   return result;
 }
 
@@ -570,8 +593,11 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
 
 override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
-    on loc do
+    on loc {
+      if deinitElts then
+        _deinitElements(locArr!.arrLocalRep);
       delete locArr;
+    }
   }
 }
 

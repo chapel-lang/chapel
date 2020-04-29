@@ -799,7 +799,7 @@ proc CyclicArr.setupRADOpt() {
 override proc CyclicArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
-      ref arr = locArr(localeIdx);
+      var arr = locArr(localeIdx);
       if deinitElts then
         _deinitElements(arr.myElems);
       delete arr;
