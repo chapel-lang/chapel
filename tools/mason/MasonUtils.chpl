@@ -86,6 +86,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
+    if (toStrip.size - ext.size) == 1 then return toStrip[0];
     var stripped = toStrip[..<(toStrip.size - ext.size)];
     return stripped;
   }
@@ -123,11 +124,12 @@ proc runWithStatus(command, show=true): int {
 
   try {
     var cmd = command.split();
-    var sub = spawn(cmd, stdout=PIPE);
+    var sub = spawn(cmd, stdout=PIPE, stderr=PIPE);
 
     var line:string;
     if show {
       while sub.stdout.readline(line) do write(line);
+      while sub.stderr.readline(line) do write(line);
     }
     sub.wait();
     return sub.exit_status;

@@ -576,6 +576,12 @@ def translateOutput(output):
 
     return known_error, was_timeout
 
+# Remove innocuous warnings about clock skew from when we `make` the generated code
+def remove_clock_skew_warning(output):
+    output = re.sub(r'g?make.*: Warning: File .* has modification time .* s in the future *\n', '', output)
+    output = re.sub(r'g?make.*: warning:  Clock skew detected\.  Your build may be incomplete\. *\n', '', output)
+    return output
+
 def filter_compiler_errors(compiler_output):
     """Identify common errors that occur in compilation.
     Return message to emit when error found."""
@@ -1591,6 +1597,8 @@ for testname in testsrc:
 
         print('[Elapsed compilation time for "{0}" - {1:.3f} '
             'seconds]'.format(test_name, elapsedCompTime))
+
+        output = remove_clock_skew_warning(output)
 
         # remove some_file: output from C compilers
         if is_c_test:

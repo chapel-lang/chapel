@@ -12,4 +12,8 @@ proc testSet(type t) {
 
   s.remove(x);
   assert(s.size == 0);
+
+  if isUnmanagedClass(t) {
+    delete x;
+  }
 }

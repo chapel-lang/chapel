@@ -2507,16 +2507,12 @@ static void emitError(Expr* inExpr,
                       Lifetime relevantLifetime,
                       LifetimeState* lifetimes) {
 
-  char buf[256];
-
   BaseAST* place = findUserPlace(inExpr);
 
   if (relevantSymbol && !relevantSymbol->hasFlag(FLAG_TEMP)) {
-    snprintf(buf, sizeof(buf), "%s %s %s", msg1, relevantSymbol->name, msg2);
-    USR_FATAL_CONT(place, buf);
+    USR_FATAL_CONT(place, "%s %s %s", msg1, relevantSymbol->name, msg2);
   } else {
-    snprintf(buf, sizeof(buf), "%s %s", msg1, msg2);
-    USR_FATAL_CONT(place, buf);
+    USR_FATAL_CONT(place, "%s %s", msg1, msg2);
   }
 
   Symbol* fromSym = relevantLifetime.fromSymbolScope;
@@ -2594,6 +2590,8 @@ bool EmitLifetimeErrorsVisitor::enterCallExpr(CallExpr* call) {
           INT_ASSERT(actual2se);
           Symbol* actual2sym = actual2se->symbol();
 
+          // Determine if there is a lifetime constraint for these two
+          // formals.
           constraint_t order = orderConstraintFromClause(fn, formal1, formal2);
           if (order != CONSTRAINT_UNKNOWN && order != CONSTRAINT_EQUAL) {
             LifetimePair a1lp =

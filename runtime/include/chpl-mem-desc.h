@@ -86,6 +86,7 @@
   m(OS_LAYER_TMP_DATA,    "OS layer temporary data",                  true ), \
   m(GMP,                  "gmp data",                                 true ), \
   m(GETS_PUTS_STRIDES,    "put_strd/get_strd array of strides",       true ), \
+  m(MLI_DATA,             "multilocale interop data",                 true ), \
   m(NUM,                  "*** this must be the last entry ***",      true )
 
 

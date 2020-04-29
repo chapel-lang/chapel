@@ -1,1 +1,1 @@
-invalid_param_loop.chpl:3: error: param for loop must be defined over a bounded param range
+invalid_param_loop.chpl:3: error: param for-loops must be defined over a bounded param range

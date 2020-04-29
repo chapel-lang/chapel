@@ -477,7 +477,7 @@ static bool canForallStmtThrow(ForallStmt* fs) {
       if (canBlockStmtThrow(DB))
         // Error handling for the deinit blocks may be unimplemented.
         USR_FATAL_CONT(DB, "the deinitializer of the task-private variable '%s'"
-                       " throws - this is currently not supported");
+                       " throws - this is currently not supported", svar->name);
     }
   }
 

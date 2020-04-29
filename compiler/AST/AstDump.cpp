@@ -425,6 +425,17 @@ void AstDump::visitImportStmt(ImportStmt* node) {
 
   node->src->accept(this);
 
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+    bool first = outputVector(mFP, node->unqualified);
+    outputRenames(mFP, node->renamed, first);
+    fprintf(mFP, "}");
+  }
+
   write(false, ")", true);
 }
 

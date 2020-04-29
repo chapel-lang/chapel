@@ -48,6 +48,7 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
   Expr*        low        = NULL;
   Expr*        high       = NULL;
   Expr*        stride     = NULL;
+  Expr*        count      = NULL;
 
   BlockStmt*   outer      = new BlockStmt();
 
@@ -61,14 +62,53 @@ BlockStmt* ParamForLoop::buildParamForLoop(VarSymbol* indexVar,
     stride = new SymExpr(new_IntSymbol(1));
   }
 
-  if (call && call->isNamed("chpl_build_bounded_range"))
+  if (call && call->isNamed("#"))
   {
-    low    = call->get(1)->remove();
-    high   = call->get(1)->remove();
+    count       = new CallExpr("chpl_compute_count_param_loop", call->get(2)->remove());
+    call        = toCallExpr(call->get(1));
   }
-  else
+
+  if(call) {
+    if(count == NULL)
+    {
+      // high..low
+      if (call->isNamed("chpl_build_bounded_range"))
+      {
+        low    = call->get(1)->remove();
+        high   = call->get(1)->remove();
+      }
+    }
+    else
+    {
+      // high..low#count
+      if(call->isNamed("chpl_build_bounded_range"))
+      {
+        Expr* temp_low  = call->get(1)->remove();
+        Expr* temp_high = call->get(1)->remove();
+
+        // It is necessary that low is calculated first, because it also applies check for bound size.
+        low  = new CallExpr("chpl_bounded_count_for_param_loop_low", temp_low->copy(), temp_high->copy(), count->copy());
+        high = new CallExpr("chpl_bounded_count_for_param_loop_high", temp_low->copy(), temp_high->copy(), count);
+      }
+      // low..#count
+      else if (call->isNamed("chpl_build_low_bounded_range"))
+      {
+        low  = call->get(1)->remove();
+        high = new CallExpr("chpl_high_bound_count_for_param_loop", low->copy(), count);
+      }
+      // ..high#count
+      else if (call->isNamed("chpl_build_high_bounded_range"))
+      {
+        high = call->get(1)->remove();
+        low  = new CallExpr("chpl_low_bound_count_for_param_loop", high->copy(), count);
+      }
+    }
+  }
+
+  // When no case is satisfied, then show error
+  if(high == NULL || low == NULL)
   {
-    USR_FATAL(range, "iterators for param-for-loops must be bounded literal ranges");
+    USR_FATAL(range, "param for-loops currently only support range expressions with well-defined param integral bounds");
   }
 
   outer->insertAtTail(new DefExpr(indexVar, new_IntSymbol((int64_t) 0)));
@@ -496,11 +536,11 @@ void ParamForLoop::validateLoop(VarSymbol* lvar,
                                 VarSymbol* svar) {
   if (!lvar            || !hvar            || !svar)
     USR_FATAL(this,
-              "param for loop must be defined over a bounded param range");
+              "param for-loops must be defined over a bounded param range");
 
   if (!lvar->immediate || !hvar->immediate || !svar->immediate)
     USR_FATAL(this,
-              "param for loop must be defined over a bounded param range");
+              "param for-loops must be defined over a bounded param range");
 
   if (!is_int_type(svar->type) && !is_uint_type(svar->type)) {
     USR_FATAL(this, "Range stride must be an int");

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed '/from noOverwriteInit.c:[0-9]*[:]*$/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+rm $2.tmp

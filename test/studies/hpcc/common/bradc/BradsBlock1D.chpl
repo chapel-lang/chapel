@@ -51,7 +51,10 @@ class Block1DDist {
   //
   var locDist: [targetLocDom] unmanaged LocBlock1DDist(glbIdxType, index(targetLocs.domain))?;
 
-  proc postinit() {
+  proc init(bbox, targetLocs) {
+    this.bbox = bbox;
+    this.targetLocs = targetLocs;
+    this.complete();
     for (loc, locid) in zip(targetLocs, 0..) do
       on loc do
         locDist(loc) = new unmanaged LocBlock1DDist(glbIdxType, locid, _to_unmanaged(this));

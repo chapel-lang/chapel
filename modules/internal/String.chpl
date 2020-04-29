@@ -223,7 +223,7 @@ module String {
 
   pragma "no doc"
   record __serializeHelper {
-    var len       : int;
+    var buffLen       : int;
     var buff      : bufferType;
     var size      : int;
     var locale_id : chpl_nodeID.type;
@@ -834,13 +834,13 @@ module String {
   pragma "no default functions" // avoid the default (read|write)This routines
   record _string {
     pragma "no doc"
-    var len: int = 0; // length of string in bytes
+    var buffLen: int = 0; // length of string in bytes
     pragma "no doc"
-    var _size: int = 0; // size of the buffer we own
+    var buffSize: int = 0; // size of the buffer we own
     pragma "no doc"
     var buff: bufferType = nil;
     pragma "no doc"
-    var isowned: bool = true;
+    var isOwned: bool = true;
     pragma "no doc"
     var hasEscapes: bool = false;
     pragma "no doc"
@@ -868,7 +868,7 @@ module String {
       // Checking for size here isn't sufficient. A string may have been
       // initialized from a c_string allocated from memory but beginning with
       // a null-terminator.
-      if isowned && this.buff != nil {
+      if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_here_free(this.buff);
@@ -879,68 +879,68 @@ module String {
     pragma "no doc"
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
-      if len <= CHPL_SHORT_STRING_SIZE {
-        chpl_string_comm_get(chpl__getInPlaceBufferDataForWrite(data), locale_id, buff, len);
+      if buffLen <= CHPL_SHORT_STRING_SIZE {
+        chpl_string_comm_get(chpl__getInPlaceBufferDataForWrite(data), locale_id, buff, buffLen);
       }
-      return new __serializeHelper(len, buff, _size, locale_id, data);
+      return new __serializeHelper(buffLen, buff, buffSize, locale_id, data);
     }
 
     pragma "no doc"
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
-        if data.len <= CHPL_SHORT_STRING_SIZE {
+        if data.buffLen <= CHPL_SHORT_STRING_SIZE {
           return chpl_createStringWithNewBufferNV(
                       chpl__getInPlaceBufferData(data.shortData),
-                      data.len,
+                      data.buffLen,
                       data.size);
         } else {
-          var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.len);
+          var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.buffLen);
           return chpl_createStringWithOwnedBufferNV(localBuff,
-                                                    data.len,
+                                                    data.buffLen,
                                                     data.size);
         }
       } else {
         return chpl_createStringWithBorrowedBufferNV(data.buff,
-                                                     data.len,
+                                                     data.buffLen,
                                                      data.size);
       }
     }
 
     // This is assumed to be called from this.locale
     pragma "no doc"
-    proc ref reinitString(buf: bufferType, s_len: int, size: int,
+    proc ref reinitString(buff: bufferType, s_len: int, size: int,
                           needToCopy:bool = true, ownBuffer = false) {
-      if this.isEmpty() && buf == nil then return;
+      if this.isEmpty() && buff == nil then return;
 
-      // If the this.buff is longer than buf, then reuse the buffer if we are
-      // allowed to (this.isowned == true)
+      // If the this.buff is longer than buff, then reuse the buffer if we are
+      // allowed to (this.isOwned == true)
       if s_len != 0 {
         if needToCopy {
-          if !this.isowned || s_len+1 > this._size {
+          if !this.isOwned || s_len+1 > this.buffSize {
             // If the new string is too big for our current buffer or we dont
             // own our current buffer then we need a new one.
-            if this.isowned && !this.isEmpty() then
+            if this.isOwned && !this.isEmpty() then
               bufferFree(this.buff);
             // TODO: should I just allocate 'size' bytes?
-            const (buf, allocSize) = bufferAlloc(s_len+1);
-            this.buff = buf;
-            this._size = allocSize;
+            const (buff, allocSize) = bufferAlloc(s_len+1);
+            this.buff = buff;
+            this.buffSize = allocSize;
             // We just allocated a buffer, make sure to free it later
-            this.isowned = true;
+            this.isOwned = true;
           }
-          bufferMemmoveLocal(this.buff, buf, s_len);
+          bufferMemmoveLocal(this.buff, buff, s_len);
           this.buff[s_len] = 0;
         } else {
-          if this.isowned && !this.isEmpty() then
+          if this.isOwned && !this.isEmpty() then
             bufferFree(this.buff);
-          this.buff = buf;
-          this._size = size;
+          this.buff = buff;
+          this.buffSize = size;
         }
       } else {
         // If s_len is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then bufferFree(this.buff);
-        this._size = 0;
+        // need to free the old buffer if 'this' is isOwned.
+        if this.isOwned && !this.isEmpty() then bufferFree(this.buff);
+        this.buffSize = 0;
 
         // If we need to copy, we can just set 'buff' to nil. Otherwise the
         // implication is that the string takes ownership of the given buffer,
@@ -948,13 +948,13 @@ module String {
         if needToCopy {
           this.buff = nil;
         } else {
-          this.buff = buf;
+          this.buff = buff;
         }
       }
 
-      if ownBuffer then this.isowned = true;
+      if ownBuffer then this.isOwned = true;
 
-      this.len = s_len;
+      this.buffLen = s_len;
     }
 
     /* Deprecated - please use :proc:`string.size`. */
@@ -978,7 +978,7 @@ module String {
     /*
       :returns: The number of bytes in the string.
       */
-    inline proc numBytes return len;
+    inline proc numBytes return buffLen;
 
     /*
       :returns: The number of codepoints in the string, assuming the
@@ -988,9 +988,9 @@ module String {
       var localThis: string = this.localize();
       var n = 0;
       var i = 0;
-      while i < localThis.len {
+      while i < localThis.buffLen {
         i += 1;
-        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
+        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
           i += 1;
         n += 1;
       }
@@ -1064,19 +1064,19 @@ module String {
         return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
       }
       else {  // see if there is escaped data in the string
-        var (buf, size) = bufferAlloc(this.len+1);
+        var (buff, size) = bufferAlloc(this.buffLen+1);
 
         var readIdx = 0;
         var writeIdx = 0;
-        while readIdx < localThis.len {
+        while readIdx < localThis.buffLen {
           var cp: int(32);
           var nbytes: c_int;
           var multibytes = (localThis.buff + readIdx): c_string;
-          var maxbytes = (localThis.len - readIdx): ssize_t;
+          var maxbytes = (localThis.buffLen - readIdx): ssize_t;
           const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
                                                     maxbytes);
           if (0xdc80<=cp && cp<=0xdcff) {
-            buf[writeIdx] = (cp-0xdc00):byteType;
+            buff[writeIdx] = (cp-0xdc00):byteType;
             writeIdx += 1;
           }
           else if (decodeRet != 0) {
@@ -1084,17 +1084,17 @@ module String {
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
             // simply copy the data out
-            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
             writeIdx += nbytes;
           }
           else {
-            bufferMemcpyLocal(dst=(buf+writeIdx), src=multibytes, len=nbytes);
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
             writeIdx += nbytes;
           }
           readIdx += nbytes;
         }
-        buf[writeIdx] = 0;
-        return createBytesWithOwnedBuffer(buf, length=writeIdx, size=size);
+        buff[writeIdx] = 0;
+        return createBytesWithOwnedBuffer(buff, length=writeIdx, size=size);
       }
     }
 
@@ -1121,11 +1121,11 @@ module String {
       var localThis: string = this.localize();
 
       var i = 0;
-      while i < localThis.len {
+      while i < localThis.buffLen {
         const curPos = localThis.buff+i;
         var cp: int(32);
         var nBytes: c_int;
-        var maxBytes = (localThis.len - i): ssize_t;
+        var maxBytes = (localThis.buffLen - i): ssize_t;
         qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
 
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
@@ -1169,7 +1169,7 @@ module String {
     iter chpl_bytes(): byteType {
       var localThis: string = this.localize();
 
-      for i in 0..#localThis.len {
+      for i in 0..#localThis.buffLen {
         yield localThis.buff[i];
       }
     }
@@ -1181,11 +1181,11 @@ module String {
       var localThis: string = this.localize();
 
       var i = 0;
-      while i < localThis.len {
+      while i < localThis.buffLen {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.len - i): ssize_t;
+        var maxbytes = (localThis.buffLen - i): ssize_t;
         qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield cp;
         i += nbytes;
@@ -1205,13 +1205,13 @@ module String {
 
       var i = start:int;
       if i > 0 then
-        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
+        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
           i += 1; // in case `start` is in the middle of a multibyte character
-      while i < localThis.len {
+      while i < localThis.buffLen {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.len - i): ssize_t;
+        var maxbytes = (localThis.buffLen - i): ssize_t;
         qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
         yield (cp:int(32), i:byteIndex, nbytes:int);
         i += nbytes;
@@ -1231,11 +1231,11 @@ module String {
 
       var i = start:int;
       if i > 0 then
-        while i < localThis.len && !isInitialByte(localThis.buff[i]) do
+        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
           i += 1; // in case `start` is in the middle of a multibyte character
-      while i < localThis.len {
+      while i < localThis.buffLen {
         var j = i + 1;
-        while j < localThis.len && !isInitialByte(localThis.buff[j]) do
+        while j < localThis.buffLen && !isInitialByte(localThis.buff[j]) do
           j += 1;
         yield (i:byteIndex, j - i);
         i = j;
@@ -1246,7 +1246,7 @@ module String {
       :returns: The value of a single-byte string as an integer.
     */
     proc toByte(): uint(8) {
-      if this.len != 1 then
+      if this.buffLen != 1 then
         halt("string.toByte() only accepts single-byte strings");
       return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
     }
@@ -1255,7 +1255,7 @@ module String {
       :returns: The value of the `i` th byte as an integer.
     */
     proc byte(i: int): uint(8) {
-      if boundsChecking && (i < 0 || i >= this.len)
+      if boundsChecking && (i < 0 || i >= this.buffLen)
         then halt("index ", i, " out of bounds for string with ", this.numBytes, " bytes");
       return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
     }
@@ -1274,10 +1274,10 @@ module String {
       var cp: int(32);
       var nbytes: c_int;
       var multibytes = localThis.buff: c_string;
-      var maxbytes = localThis.len: ssize_t;
+      var maxbytes = localThis.buffLen: ssize_t;
       qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
 
-      if localThis.len != nbytes:int then
+      if localThis.buffLen != nbytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
 
       return cp;
@@ -1312,25 +1312,25 @@ module String {
      */
     proc this(i: byteIndex) : string {
       var idx = i: int;
-      if boundsChecking && (idx < 0 || idx >= this.len)
-        then halt("index ", i, " out of bounds for string with ", this.len, " bytes");
+      if boundsChecking && (idx < 0 || idx >= this.buffLen)
+        then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
 
       var ret: string;
-      var maxbytes = (this.len - idx): ssize_t;
+      var maxbytes = (this.buffLen - idx): ssize_t;
       if maxbytes < 0 || maxbytes > 4 then
         maxbytes = 4;
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
                                             len=maxbytes, loc=this.locale_id);
-      ret._size = allocSize;
+      ret.buffSize = allocSize;
       ret.buff = newBuff;
-      ret.isowned = true;
+      ret.isOwned = true;
 
       var multibytes = ret.buff;
       var cp: int(32);
       var nbytes: c_int;
       qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
       ret.buff[nbytes] = 0;
-      ret.len = nbytes;
+      ret.buffLen = nbytes;
 
       return ret;
     }
@@ -1384,7 +1384,7 @@ module String {
     proc _getView(r:range(?)) where r.idxType == byteIndex {
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int < 0 then
+          if r.alignedLow:int < 0 then
             halt("range ", r, " out of bounds for string");
         }
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
@@ -1396,16 +1396,16 @@ module String {
           // I think that this exists in order to permit the doReplace()
           // call to work when `find()` returns 0, but this doesn't
           // seem principled.  See also the similar case in Bytes.chpl.
-          if (r.high:int < -1) || (r.high:int >= this.len) then
+          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.buffLen) then
             halt("range ", r, " out of bounds for string with ", this.numBytes, " bytes");
         }
       }
-      const r1 = r[0:r.idxType..(this.len-1):r.idxType];
+      const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
       if r1.stridable {
-        const ret = r1.low:int..r1.high:int by r1.stride;
+        const ret = r1.alignedLow:int..r1.alignedHigh:int by r1.stride;
         return ret;
       } else {
-        const ret = r1.low:int..r1.high:int;
+        const ret = r1.alignedLow:int..r1.alignedHigh:int;
         return ret;
       }
     }
@@ -1429,18 +1429,19 @@ module String {
       }
       if boundsChecking {
         if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int < 0 then
+          if r.alignedLow:int < 0 then
             halt("range ", r, " out of bounds for string");
         }
       }
       // Loop to find whether the low and high codepoint indices
       // appear within the string.  Note the byte indices of those
       // locations, if they exist.
-      const cp_low = if r.hasLowBound() && r.low:int >= 0 then r.low:int else 0;
-      const cp_high = if r.hasHighBound() then r.high:int else this.len;
+      const cp_low = if r.hasLowBound() && r.alignedLow:int >= 0
+                       then r.alignedLow:int else 0;
+      const cp_high = if r.hasHighBound() then r.alignedHigh:int else this.buffLen;
       var cp_count = 0;
-      var byte_low = this.len;  // empty range if bounds outside string
-      var byte_high = this.len - 1;
+      var byte_low = this.buffLen;  // empty range if bounds outside string
+      var byte_high = this.buffLen - 1;
       if cp_high > 0 {
         for (i, nbytes) in this._indexLen() {
           if cp_count == cp_low {
@@ -1457,12 +1458,12 @@ module String {
       }
       if boundsChecking {
         if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < 0) || (r.high:int > cp_count) then
+          if (r.alignedHigh:int < 0) || (r.alignedHigh:int > cp_count) then
             halt("range ", r, " out of bounds for string with length ", this.size);
         }
       }
       const r1 = byte_low..byte_high;
-      const ret = r1[0..#(this.len)];
+      const ret = r1[0..#(this.buffLen)];
       return ret;
     }
 
@@ -1495,7 +1496,7 @@ module String {
                 * `false` -- otherwise
      */
     inline proc isEmpty() : bool {
-      return this.len == 0; // this should be enough of a check
+      return this.buffLen == 0; // this should be enough of a check
     }
 
     // These should never be called (but are default functions for records)
@@ -1536,14 +1537,14 @@ module String {
     pragma "no doc"
     inline proc _search_helper(needle: string, region: range(?),
                                param count: bool, param fromLeft: bool = true) {
-      // needle.len is <= than this.len, so go to the home locale
+      // needle.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
                      chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
         // any value >= 0 means we have a solution
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
-        const nLen = needle.len;
+        const nLen = needle.buffLen;
         const view = this._getView(region);
         const thisLen = view.size;
 
@@ -1564,7 +1565,7 @@ module String {
                   var cp: int(32);
                   var nbytes: c_int;
                   var multibytes = (this.buff + i): c_string;
-                  var maxbytes = (this.len - i): ssize_t;
+                  var maxbytes = (this.buffLen - i): ssize_t;
                   qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
                   nextIdx = i + nbytes;
                 }
@@ -1710,7 +1711,7 @@ module String {
         const noSplits : bool = maxsplit == 0;
         const limitSplits : bool = maxsplit > 0;
         var splitCount: int = 0;
-        const iEnd: byteIndex = localThis.len - 2;
+        const iEnd: byteIndex = localThis.buffLen - 2;
 
         var inChunk : bool = false;
         var chunkStart : byteIndex;
@@ -1851,7 +1852,7 @@ module String {
       const localChars: string = chars.localize();
 
       var start: byteIndex = 0;
-      var end: byteIndex = localThis.len-1;
+      var end: byteIndex = localThis.buffLen-1;
 
       if leading {
         label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
@@ -2115,11 +2116,11 @@ module String {
       if result.isEmpty() then return result;
 
       var i = 0;
-      while i < result.len {
+      while i < result.buffLen {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.len - i): ssize_t;
+        var maxbytes = (result.buffLen - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         var lowCodepoint = codepoint_toLower(cp);
         if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
@@ -2146,11 +2147,11 @@ module String {
       if result.isEmpty() then return result;
 
       var i = 0;
-      while i < result.len {
+      while i < result.buffLen {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.len - i): ssize_t;
+        var maxbytes = (result.buffLen - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         var upCodepoint = codepoint_toUpper(cp);
         if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
@@ -2180,11 +2181,11 @@ module String {
       param UN = 0, LETTER = 1;
       var last = UN;
       var i = 0;
-      while i < result.len {
+      while i < result.buffLen {
         var cp: int(32);
         var nbytes: c_int;
         var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.len - i): ssize_t;
+        var maxbytes = (result.buffLen - i): ssize_t;
         qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
         if codepoint_isAlpha(cp) {
           if last == UN {
@@ -2225,7 +2226,7 @@ module String {
       var cp: int(32);
       var nbytes: c_int;
       var multibytes = result.buff: c_string;
-      var maxbytes = result.len: ssize_t;
+      var maxbytes = result.buffLen: ssize_t;
       qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
       var upCodepoint = codepoint_toUpper(cp);
       if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
@@ -2541,12 +2542,12 @@ module String {
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {
     var ret: string;
-    ret.len = cs.size;
-    ret._size = ret.len+1;
-    ret.buff = if ret.len > 0
+    ret.buffLen = cs.size;
+    ret.buffSize = ret.buffLen+1;
+    ret.buff = if ret.buffLen > 0
       then __primitive("string_copy", cs): bufferType
       else nil;
-    ret.isowned = true;
+    ret.isOwned = true;
 
     return ret;
   }

@@ -823,7 +823,7 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
     USR_PRINT(call, "type specifier did not match: %s", typeSignature);
     USR_PRINT(call, "type was specified with %d arguments", numArgs);
     const char* plural = genericFields.size() > 1 ? "fields" : "field";
-    USR_PRINT(at, "but type '%s' only has %d generic %s", symbol->name, genericFields.size(), plural);
+    USR_PRINT(at, "but type '%s' only has %zu generic %s", symbol->name, genericFields.size(), plural);
     USR_STOP();
   }
 }

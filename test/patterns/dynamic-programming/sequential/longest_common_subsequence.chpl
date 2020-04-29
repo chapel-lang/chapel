@@ -13,4 +13,4 @@ proc lcs(string1:string, string2:string, len1:int, len2:int): int{
 var string1: string = "AGGTAB";
 var string2: string = "GXTXAYB";
 
-writeln("Length of Longest Common Subsequence is: ", lcs(string1, string2, string1.len, string2.len));
+writeln("Length of Longest Common Subsequence is: ", lcs(string1, string2, string1.buffLen, string2.buffLen));

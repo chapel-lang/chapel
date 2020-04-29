@@ -168,6 +168,11 @@ class LocAccumStencilArr {
   inline proc unlockLocRAD() {
     locRADLock.clear();
   }
+
+  proc deinit() {
+    if locRAD != nil then
+      delete locRAD;
+  }
 }
 
 private proc makeZero(param rank : int, type idxType) {

@@ -1062,7 +1062,20 @@ module ChapelArray {
       if _to_unmanaged(value.type) != value.type then
         compilerError("Domain on borrow created");
 
-      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      if _isPrivatized(value) {
+        // the below check is necessary for iterator records that have domain
+        // shapes would create another set of privatized instances otherwise
+        if value.pid == nullPid {
+          this._pid = _newPrivatizedClass(value);
+        }
+        else {
+          this._pid = value.pid;
+        }
+      }
+      else {
+        this._pid = nullPid;
+      }
+
       this._instance = value;
     }
 
@@ -1158,6 +1171,12 @@ module ChapelArray {
           if distToFree != nil then
             _delete_dist(distToFree!, _isPrivatized(inst.dist));
         }
+      }
+      else {
+        // Engin 4/14/20: We don't have any arrayview domain instances that we
+        // RVF today. If/when we do have them, we need to clean them up here.
+        // See _do_destroy_arr for a similar cleanup we do today for arrayview
+        // arrays.
       }
     }
     pragma "no doc"
@@ -1404,6 +1423,11 @@ module ChapelArray {
         }
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
+      } else if isSparseDom(this) && isNonNilableClass(eltType) {
+        // TODO: The second half of this test should really be
+        // isDefaultInitializable, but we can't rely on that yet
+        // due to #14854.
+        compilerError("sparse arrays of non-nilable classes are not currently supported");
       }
 
       if chpl_warnUnstable then
@@ -3170,6 +3194,14 @@ module ChapelArray {
           _delete_dist(distToFree!, distIsPrivatized);
       }
     }
+    else {
+      // we have _unowned set, so we don't have data to free up, but our
+      // instance might be an rvf'ed array view that itself needs to be cleaned
+      // up
+      if chpl__isArrayView(_instance) {
+        delete _instance;
+      }
+    }
   }
 
   //
@@ -4096,6 +4128,10 @@ module ChapelArray {
   proc chpl__initCopy(ir: _iteratorRecord)
     where chpl_iteratorHasDomainShape(ir)
   {
+
+    // ENGIN: here ir._shape_ could be a privatized domain. Make sure that the
+    // initializer we call here do not create another set of privatized
+    // instances
     var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain
@@ -4149,7 +4185,6 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(ir: _iteratorRecord) {
-
     // We'd like to know the yielded type of the record, but we can't
     // access the (runtime) component of that until we actually yield
     // something.

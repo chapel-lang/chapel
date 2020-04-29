@@ -130,7 +130,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
         substrates=aries,mpi,none
-        locale_models=flat,knl
+        locale_models=flat
         auxfs=none,lustre
         libpics=none,pic
 

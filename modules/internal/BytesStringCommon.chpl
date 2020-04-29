@@ -88,7 +88,7 @@ module BytesStringCommon {
    behavior is determined by the `policy` argument. See the `decodePolicy`
    documentation above for the meaning of different policies.
   */
-  proc decodeByteBuffer(buf: bufferType, length: int, policy: decodePolicy)
+  proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
 
     pragma "fn synchronization free"
@@ -106,18 +106,18 @@ module BytesStringCommon {
     var ret: string;
     var (newBuff, allocSize) = bufferAlloc(length+1);
     ret.buff = newBuff;
-    ret._size = allocSize;
-    ret.isowned = true;
+    ret.buffSize = allocSize;
+    ret.isOwned = true;
     ret.hasEscapes = false;
 
-    var expectedSize = ret._size;
+    var expectedSize = ret.buffSize;
 
     var thisIdx = 0;
     var decodedIdx = 0;
     while thisIdx < length {
       var cp: int(32);
       var nbytes: c_int;
-      var bufToDecode = (buf + thisIdx): c_string;
+      var bufToDecode = (buff + thisIdx): c_string;
       var maxbytes = (length - thisIdx): ssize_t;
       const decodeRet = qio_decode_char_buf(cp, nbytes,
                                             bufToDecode, maxbytes);
@@ -145,7 +145,7 @@ module BytesStringCommon {
             // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
             // in place of a single byte, we may overflow
             expectedSize += 3-nInvalidBytes;
-            (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
+            (ret.buff, ret.buffSize) = bufferEnsureSize(ret.buff, ret.buffSize,
                                                      expectedSize);
 
             qio_encode_char_buf(ret.buff+decodedIdx, replChar);
@@ -157,11 +157,11 @@ module BytesStringCommon {
             ret.hasEscapes = true;
             // encoded escape sequence is 3 bytes. And this is per invalid byte
             expectedSize += 2*nInvalidBytes;
-            (ret.buff, ret._size) = bufferEnsureSize(ret.buff, ret._size,
+            (ret.buff, ret.buffSize) = bufferEnsureSize(ret.buff, ret.buffSize,
                                                      expectedSize);
             for i in 0..#nInvalidBytes {
               qio_encode_char_buf(ret.buff+decodedIdx,
-                                  0xdc00+buf[thisIdx-nInvalidBytes+i]);
+                                  0xdc00+buff[thisIdx-nInvalidBytes+i]);
               decodedIdx += 3;
             }
           }
@@ -178,32 +178,32 @@ module BytesStringCommon {
       }
     }
 
-    ret.len = decodedIdx;
-    ret.buff[ret.len] = 0;
+    ret.buffLen = decodedIdx;
+    ret.buff[ret.buffLen] = 0;
     return ret;
   }
 
   proc initWithBorrowedBuffer(ref x: ?t, other: t) {
     assertArgType(t, "initWithBorrowedBuffer");
 
-    x.isowned = false;
+    x.isOwned = false;
     if t == string then x.hasEscapes = other.hasEscapes;
 
     const otherRemote = other.locale_id != chpl_nodeID;
     const otherLen = other.numBytes;
 
     if otherLen > 0 {
-      x.len = otherLen;
+      x.buffLen = otherLen;
       if otherRemote {
         // if other is remote, copy and own the buffer no matter what
-        x.isowned = true;
+        x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
-        x._size = otherLen+1;
+        x.buffLen = otherLen+1;
       }
       else {
         // if other is local just adjust my buff and _size
         x.buff = other.buff;
-        x._size = other._size;
+        x.buffSize = other.buffSize;
       }
     }
   }
@@ -211,25 +211,25 @@ module BytesStringCommon {
   proc initWithBorrowedBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
     assertArgType(t, "initWithBorrowedBuffer");
 
-    x.isowned = false;
+    x.isOwned = false;
 
     // here, we don't need to do anything special if length==0, the buffer may
     // be allocated but empty
     x.buff = other;
-    x._size = size;
-    x.len = length;
+    x.buffSize = size;
+    x.buffLen = length;
   }
 
   proc initWithOwnedBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
     assertArgType(t, "initWithOwnedBuffer");
 
-    x.isowned = true;
+    x.isOwned = true;
 
     // here, we don't need to do anything special if length==0, the buffer may
     // be allocated but empty
     x.buff = other;
-    x._size = size;
-    x.len = length;
+    x.buffSize = size;
+    x.buffLen = length;
   }
 
   proc initWithNewBuffer(ref x: ?t, other: t) {
@@ -237,22 +237,22 @@ module BytesStringCommon {
 
     const otherRemote = other.locale_id != chpl_nodeID;
     const otherLen = other.numBytes;
-    x.isowned = true;
+    x.isOwned = true;
     if t == string then x.hasEscapes = other.hasEscapes;
 
     if otherLen > 0 {
-      x.len = otherLen;
+      x.buffLen = otherLen;
       if otherRemote {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
-        x._size = otherLen+1;
+        x.buffSize = otherLen+1;
       }
       else {
         // if s is local create a copy of its buffer and own it
-        const (buf, allocSize) = bufferCopyLocal(other.buff, otherLen);
-        x.buff = buf;
-        x.buff[x.len] = 0;
-        x._size = allocSize;
+        const (buff, allocSize) = bufferCopyLocal(other.buff, otherLen);
+        x.buff = buff;
+        x.buff[x.buffLen] = 0;
+        x.buffSize = allocSize;
       }
     }
   }
@@ -261,15 +261,15 @@ module BytesStringCommon {
     assertArgType(t, "initWithNewBuffer");
 
     const otherLen = length;
-    x.isowned = true;
+    x.isOwned = true;
 
     if otherLen > 0 {
       // create a copy of s's buffer and own it
-      const (buf, allocSize) = bufferCopyLocal(other:bufferType, otherLen);
-      x.buff = buf;
-      x.len = otherLen;
-      x.buff[x.len] = 0;
-      x._size = allocSize;
+      const (buff, allocSize) = bufferCopyLocal(other:bufferType, otherLen);
+      x.buff = buff;
+      x.buffLen = otherLen;
+      x.buff[x.buffLen] = 0;
+      x.buffSize = allocSize;
     }
   }
 
@@ -296,20 +296,20 @@ module BytesStringCommon {
         // TODO Engin: I'd like to call init or something that constructs a
         // new bytes/string object instead of doing the these all the time
         ret.buff = copyBuf;
-        ret._size = copySize;
+        ret.buffSize = copySize;
       }
       else {
         // the range is strided
-        var (newBuf, allocSize) = bufferAlloc(r2.size+1);
+        var (newBuff, allocSize) = bufferAlloc(r2.size+1);
         for (r2_i, i) in zip(r2, 0..) {
-          newBuf[i] = copyBuf[r2_i-r2.low];
+          newBuff[i] = copyBuf[r2_i-r2.low];
         }
-        ret.buff = newBuf;
-        ret._size = allocSize;
+        ret.buff = newBuff;
+        ret.buffSize = allocSize;
         bufferFree(copyBuf);
       }
-      ret.len = r2.size;
-      ret.buff[ret.len] = 0;
+      ret.buffLen = r2.size;
+      ret.buff[ret.buffLen] = 0;
     }
     return ret;
   }
@@ -409,12 +409,12 @@ module BytesStringCommon {
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
       for needle in needles {
-        const needleLen = needle.len;
+        const needleLen = needle.buffLen;
         if needleLen == 0 {
           ret = true;
           break;
         }
-        if needleLen > x.len then continue;
+        if needleLen > x.buffLen then continue;
 
         const localNeedle = needle.localize();
 
@@ -423,7 +423,7 @@ module BytesStringCommon {
                                   buf2=localNeedle.buff, off2=0,
                                   len=needleLen);
         } else {
-          var offset = x.len-needleLen;
+          var offset = x.buffLen-needleLen;
           ret = bufferEqualsLocal(buf1=x.buff, off1=offset,
                                   buf2=localNeedle.buff, off2=0,
                                   len=needleLen);
@@ -466,31 +466,31 @@ module BytesStringCommon {
       }
       return ret;
     } else {
-      var joinedSize: int = x.len * (S.size - 1);
+      var joinedSize: int = x.buffLen * (S.size - 1);
       for s in S do joinedSize += s.numBytes;
 
       if joinedSize == 0 then
         return '';
 
       var joined: t;
-      joined.len = joinedSize;
+      joined.buffLen = joinedSize;
 
-      var (newBuf, allocSize) = bufferAlloc(joined.len+1);
-      joined._size = allocSize;
-      joined.buff = newBuf;
+      var (newBuff, allocSize) = bufferAlloc(joined.buffLen+1);
+      joined.buffSize = allocSize;
+      joined.buff = newBuff;
 
       var first = true;
       var offset = 0;
       for s in S {
-        const sLen = s.len;
+        const sLen = s.buffLen;
 
         // copy x's contents
         if first {
           first = false;
-        } else if x.len != 0 {
-          bufferMemcpyLocal(dst=joined.buff, src=x.buff, len=x.len,
+        } else if x.buffLen != 0 {
+          bufferMemcpyLocal(dst=joined.buff, src=x.buff, len=x.buffLen,
                             dst_off=offset);
-          offset += x.len;
+          offset += x.buffLen;
         }
 
         // copy s's contents
@@ -500,7 +500,7 @@ module BytesStringCommon {
           offset += sLen;
         }
       }
-      joined.buff[joined.len] = 0;
+      joined.buff[joined.buffLen] = 0;
       return joined;
     }
   }
@@ -523,32 +523,32 @@ module BytesStringCommon {
     assertArgType(t, "doAppend");
 
     // if rhs is empty, nothing to do
-    if rhs.len == 0 then return;
+    if rhs.buffLen == 0 then return;
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.len;
-      const newLength = lhs.len+rhsLen; //TODO: check for overflow
+      const rhsLen = rhs.buffLen;
+      const newLength = lhs.buffLen+rhsLen; //TODO: check for overflow
       //resize the buffer if needed
-      if lhs._size <= newLength {
+      if lhs.buffSize <= newLength {
         const requestedSize = max(newLength+1,
-                                  (lhs.len*chpl_stringGrowthFactor):int);
-        if lhs.isowned {
+                                  (lhs.buffLen*chpl_stringGrowthFactor):int);
+        if lhs.isOwned {
           var (newBuff, allocSize) = bufferRealloc(lhs.buff, requestedSize);
           lhs.buff = newBuff;
-          lhs._size = allocSize;
+          lhs.buffSize = allocSize;
         } else {
           var (newBuff, allocSize) = bufferAlloc(requestedSize);
-          bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.len);
+          bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.buffLen);
           lhs.buff = newBuff;
-          lhs._size = allocSize;
-          lhs.isowned = true;
+          lhs.buffSize = allocSize;
+          lhs.isOwned = true;
         }
       }
       // copy the data from rhs
       bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
-                   dst_off=lhs.len);
-      lhs.len = newLength;
+                   dst_off=lhs.buffLen);
+      lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
     }
   }
@@ -558,9 +558,9 @@ module BytesStringCommon {
 
     inline proc helpMe(ref lhs: t, rhs: t) {
       if _local || rhs.locale_id == chpl_nodeID {
-        lhs.reinitString(rhs.buff, rhs.len, rhs._size, needToCopy=true);
+        lhs.reinitString(rhs.buff, rhs.buffLen, rhs.buffSize, needToCopy=true);
       } else {
-        const len = rhs.len; // cache the remote copy of len
+        const len = rhs.buffLen; // cache the remote copy of len
         var remote_buf:bufferType = nil;
         if len != 0 then
           remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
@@ -610,43 +610,43 @@ module BytesStringCommon {
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
-    ret.len = sLen * n; // TODO: check for overflow
-    var (buff, allocSize) = bufferAlloc(ret.len+1);
+    ret.buffLen = sLen * n; // TODO: check for overflow
+    var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
-    ret._size = allocSize;
-    ret.isowned = true;
+    ret.buffSize = allocSize;
+    ret.isOwned = true;
 
-    bufferMemcpy(dst=ret.buff, src_loc=x.locale_id, src=x.buff, len=x.len);
+    bufferMemcpy(dst=ret.buff, src_loc=x.locale_id, src=x.buff, len=x.buffLen);
 
     var offset = sLen;
     for i in 1..(n-1) {
-      bufferMemcpyLocal(dst=ret.buff, src=ret.buff, len=x.len,
+      bufferMemcpyLocal(dst=ret.buff, src=ret.buff, len=x.buffLen,
                         dst_off=offset);
       offset += sLen;
     }
-    ret.buff[ret.len] = 0;
+    ret.buff[ret.buffLen] = 0;
     return ret;
   }
 
   proc doConcat(s0: ?t, s1: t): t {
     // cache lengths locally
-    const s0len = s0.len;
+    const s0len = s0.buffLen;
     if s0len == 0 then return s1:t;
-    const s1len = s1.len;
+    const s1len = s1.buffLen;
     if s1len == 0 then return s0;
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
-    ret.len = s0len + s1len;
-    var (buff, allocSize) = bufferAlloc(ret.len+1);
+    ret.buffLen = s0len + s1len;
+    var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
-    ret._size = allocSize;
-    ret.isowned = true;
+    ret.buffSize = allocSize;
+    ret.isOwned = true;
 
     bufferMemcpy(dst=ret.buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
     bufferMemcpy(dst=ret.buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
                  dst_off=s0len);
-    ret.buff[ret.len] = 0;
+    ret.buff[ret.buffLen] = 0;
     return ret;
   }
 
@@ -668,35 +668,35 @@ module BytesStringCommon {
       }
       return ret;
     } else { */
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) == 0;
+    return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) == 0;
   }
 
   inline proc doLessThan(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
 
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) < 0;
+    return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) < 0;
   }
 
   inline proc doGreaterThan(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
 
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) > 0;
+    return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) > 0;
   }
 
   inline proc doLessThanOrEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
 
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) <= 0;
+    return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) <= 0;
   }
 
   inline proc doGreaterThanOrEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
 
-    return _strcmp(a.buff, a.len, a.locale_id, b.buff, b.len, b.locale_id) >= 0;
+    return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) >= 0;
   }
 
   inline proc getHash(x: ?t) {

@@ -85,20 +85,20 @@ public:
   Symbol*               lookupPublicImports(const char* name)            const;
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                                                     BaseAST *context)   const;
+                                                     BaseAST *context);
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
                           BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+                          std::map<Symbol *, astlocT *>& renameLocs);
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
                           ModuleSymbol*& modArg,
-                          BaseAST *context)                              const;
+                          BaseAST *context);
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
                           ModuleSymbol*& modArg,
                           BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs)      const;
+                          std::map<Symbol *, astlocT *>& renameLocs);
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -107,6 +107,8 @@ public:
                                   std::vector<Symbol*>& symbols)         const;
 
   void                  describe()                                       const;
+
+  bool                  canReexport;
 
 private:
   typedef std::vector<VisibilityStmt*>   UseImportList;

@@ -408,8 +408,8 @@ in their ``Mason.toml`` as follows:
    examples = ["myPackageExample.chpl"]
 
    [examples.myPackageExample]
-   execopts = ["--count=20"]
-   compopts = ["--savec tmp"]
+   execopts = "--count=20"
+   compopts = "--savec tmp"
 
 
 Documenting a Package

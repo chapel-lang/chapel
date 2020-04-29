@@ -115,10 +115,11 @@ you will need to rebuild Chapel from source in a different configuration.
       # run the sample program
       ./hello
 
-   At this point, you can choose to continue using ``setchplenv.bash``
-   or use another method to configure Chapel. In particular, you might
-   use a :ref:`chplconfig <readme-chplenv.chplconfig>` file or
-   set environment variables your in dot files or your own script.
+   Note that the environment settings from ``util/setchplenv.bash`` will not persist beyond this terminal session.
+   You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
+   If you want these environment settings to persist for future terminal sessions,
+   copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
+   You can also store Chapel configuration settings in a :ref:`chplconfig <readme-chplenv.chplconfig>` file instead of your ``~/.bashrc``.
 
    See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
    Chapel's configuration variables, what they mean, and how they
@@ -137,8 +138,8 @@ Performance
 -----------
 
 If you plan to do performance studies of Chapel programs, be sure to use the
-full-featured version from using-a-more-full-featured-chapel_ above and read
-``$CHPL_HOME/PERFORMANCE.md`` to avoid common pitfalls.
+full-featured version from using-a-more-full-featured-chapel_ above and see
+https://chapel-lang.org/performance.html for performance tips.
 
 
 .. _quickstart-with-other-shells:
@@ -171,7 +172,7 @@ Compiling Chapel programs:   :ref:`compiling.rst <readme-compiling>`
 Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
 Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
 Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
-Performance status:          ``$CHPL_HOME/PERFORMANCE.md``
+Performance:                 https://chapel-lang.org/performance.html
 Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
 Chapel's file/dir structure: ``$CHPL_HOME/README.files``
 Changes since last release:  ``$CHPL_HOME/CHANGES.md``

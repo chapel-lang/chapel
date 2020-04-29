@@ -250,7 +250,7 @@ void computeNonvirtualCallSites(FnSymbol* fn) {
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
         if (vFn == fn) {
-          INT_FATAL(call, "unexpected case calling %d", fn->name);
+          INT_FATAL(call, "unexpected case calling %s", fn->name);
         }
       }
     }
