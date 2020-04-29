@@ -1,4 +1,0 @@
-#13613
-
-This should produce a lifetime error like the original test for arrays did.
-However it compiles without incident.
