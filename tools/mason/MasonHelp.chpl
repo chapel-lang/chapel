@@ -36,9 +36,9 @@ proc masonHelp() {
   writeln('    -h, --help          Display this message');
   writeln('    -V, --version       Print version info and exit');
   writeln();
-  writeln('Some common mason commands are:');
+  writeln('Mason commands:');
   writeln('    new         Create a new mason project');
-  writeln('    init        Initializes a library project inside a given directory or path.');
+  writeln('    init        Initialize a mason project inside an existing directory');
   writeln('    add         Add a dependency to Mason.toml');
   writeln('    rm          Remove a dependency from Mason.toml');
   writeln('    update      Update/Generate Mason.lock');
