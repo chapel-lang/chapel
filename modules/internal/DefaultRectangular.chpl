@@ -1060,6 +1060,7 @@ module DefaultRectangular {
     // can the compiler create this automatically?
     override proc dsiGetBaseDom() return dom;
 
+    // see also _deinitElements in ChapelArray
     proc dsiDestroyDataHelper(dd, ddiNumIndices) {
       compilerAssert(chpl_isDdata(dd.type));
       // TODO: Would anything be hurt if this was a forall?

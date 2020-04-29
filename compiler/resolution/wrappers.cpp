@@ -727,6 +727,21 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, block, temp);
   }
 
+  /* TODO: update error checking
+     checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
+
+    if isNonNilableClassType(t) && isNilableClassType(init.type) then
+      compilerError("default-initializing a field with a non-nilable type ",
+          t:string, " from an instance of nilable ", init.type:string);
+  inline proc _createFieldDefault(type t, init: _nilType) {
+    if isNonNilableClassType(t) then
+      compilerError("default-initializing a field with a non-nilable type ",
+                    t:string, " from nil");
+
+    return describeFieldInit(get_string(call->get(1)),
+                             get_string(call->get(2)), nonnilable);
+   */
+
   // Update references to previous arguments to use the
   // default-expr-function formals
   update_symbols(block, &copyMap);

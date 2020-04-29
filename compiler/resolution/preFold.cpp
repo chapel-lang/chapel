@@ -1538,17 +1538,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_DEFAULT_INIT_FIELD: {
-    SymExpr* initVal = toSymExpr(call->get(4)->remove());
-    SymExpr* toType = toSymExpr(call->get(3)->remove());
-    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
-
-    retval = new CallExpr("_createFieldDefault", toType, initVal);
-    call->replace(retval);
-
-    break;
-  }
-
   case PRIM_REDUCE_ASSIGN: {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 2);
@@ -1647,6 +1636,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_REDUCE: {
     // Need to do this ahead of resolveCall().
     retval = lowerPrimReduce(call);
+    break;
+  }
+
+  case PRIM_STEAL: {
+    SymExpr* se = toSymExpr(call->get(1));
+    if (Symbol* sym = se->symbol())
+      if (!sym->isRef())
+        sym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    retval = se;
+    call->replace(se->remove());
     break;
   }
 

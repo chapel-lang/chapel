@@ -1181,6 +1181,7 @@ module ChapelArray {
       return new _domain(_to_borrowed(valueType).chpl__deserialize(data));
     }
 
+    pragma "no doc"
     proc _do_destroy () {
       if ! _unowned {
         on _instance {
@@ -2388,7 +2389,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc deinit() {
-      _do_destroy_arr(_unowned, _instance);
+      _do_destroy_array(this);
     }
 
     /* The type of elements contained in the array */
@@ -3237,6 +3238,16 @@ module ChapelArray {
       }
     }
   }
+  inline proc _do_destroy_array(array: _array, param deinitElts=true) {
+    _do_destroy_arr(array._unowned, array._instance, deinitElts);
+  }
+  proc _deinitElements(array: _array) {
+    // TODO: Would anything be hurt if this was a forall?
+    // one guess: arrays of arrays where all inner arrays share a domain?
+    for elt in array {
+      chpl__autoDestroy(elt);
+    }
+  }
 
   //
   // A helper function to check array equality (== on arrays promotes
@@ -3871,7 +3882,7 @@ module ChapelArray {
     } else if chpl__serializeAssignment(a, b) {
       if kind==_tElt.move {
         for (aa,bb) in zip(a,b) {
-          __primitive("=", aa, bb);
+          __primitive("=", aa, __primitive("steal", bb));
         }
       } else if kind==_tElt.initCopy {
         for (aa,bb) in zip(a,b) {
@@ -3888,7 +3899,7 @@ module ChapelArray {
     } else {
       if kind==_tElt.move {
         [ (aa,bb) in zip(a,b) ] {
-          __primitive("=", aa, bb);
+          __primitive("=", aa, __primitive("steal", bb));
         }
       } else if kind==_tElt.initCopy {
         [ (aa,bb) in zip(a,b) ] {
@@ -4499,7 +4510,7 @@ module ChapelArray {
   }
 
   pragma "coerce fn"
-  proc chpl__coerceCopy(type dstType:_array, rhs) {
+  proc chpl__coerceCopy(type dstType:_array, rhs: _iteratorRecord) {
     // assumes rhs is iterable
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4513,7 +4524,7 @@ module ChapelArray {
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerceMove(type dstType:_array, in rhs) {
+  proc chpl__coerceMove(type dstType:_array, rhs: _iteratorRecord) {
     // assumes rhs is iterable
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4522,7 +4533,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
-    chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
+    chpl__transferArray(lhs, rhs, kind=_tElt.move);
 
     return lhs;
   }
@@ -4621,23 +4632,25 @@ module ChapelArray {
   pragma "ignore transfer errors"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
-    // Right now there are two distinct events for each array element:
-    //  * initialization upon the array declaration,
-    //  * assignment within the forall loop.
-    // TODO: we want to have just a single move, as is done with 'eltCopy'
-    // in the other case. Ex. users/vass/km/array-of-records-crash-1.*
-
     pragma "unsafe"
-    var result: [shape] iteratorToArrayElementType(ir.type);
+    var result = shape.buildArray(iteratorToArrayElementType(ir.type),
+                                  initElts=false);
+
     if isArray(result.eltType) then
       compilerError("creating an array of arrays using a for- or forall-expression is not supported, except when using a for-expression over a range");
 
     if chpl_iteratorFromForExpr(ir) {
-      for (r, src) in zip(result, ir) do
-        r = src;
+      for (r, src) in zip(result, ir) {
+        pragma "no auto destroy"
+        var copy = src; // init copy, might be elided
+        __primitive("=", r, copy);
+      }
     } else {
-      forall (r, src) in zip(result, ir) do
-        r = src;
+      forall (r, src) in zip(result, ir) {
+        pragma "no auto destroy"
+        var copy = src; // init copy, might be elided
+        __primitive("=", r, copy);
+      }
     }
     return result;
   }
@@ -4795,8 +4808,4 @@ module ChapelArray {
       return A;
     }
   }
-
-  proc chpl_checkCopyInit(lhs:domain, rhs:domain) param {
-  }
-
 }

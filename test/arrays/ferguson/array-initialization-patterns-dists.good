@@ -45,26 +45,8 @@ testr4
 init 1 1
 init= 1 1
 init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-init= 1 1
 deinit 1 1
-(x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
-deinit 1 1
-deinit 1 1
-deinit 1 1
-deinit 1 1
-deinit 1 1
-deinit 1 1
-deinit 1 1
-deinit 1 1
-deinit 1 1
+(x = 1, ptr = {xx = 1})
 deinit 1 1
 deinit 1 1
 -
@@ -80,42 +62,42 @@ deinit 1 1
 -
 testC1
 init 1 1
-{A = (x = 1, ptr = {xx = 1})}
+{AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
 testC2
 init 1 1
-{A = (x = 1, ptr = {xx = 1})}
+{AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
 testC3
 init 1 1
-{A = (x = 1, ptr = {xx = 1})}
+{AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
 testC4
 init 1 1
-{A = (x = 1, ptr = {xx = 1})}
+{AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
 testR1
 init 1 1
-(A = (x = 1, ptr = {xx = 1}))
+(AA = (x = 1, ptr = {xx = 1}))
 deinit 1 1
 -
 testR2
 init 1 1
-(A = (x = 1, ptr = {xx = 1}))
+(AA = (x = 1, ptr = {xx = 1}))
 deinit 1 1
 -
 testR3
 init 1 1
-(A = (x = 1, ptr = {xx = 1}))
+(AA = (x = 1, ptr = {xx = 1}))
 deinit 1 1
 -
 testR4
 init 1 1
-{A = (x = 1, ptr = {xx = 1})}
+{AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
 

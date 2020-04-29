@@ -2310,13 +2310,13 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (field->hasFlag(FLAG_UNSAFE))
           arg->addFlag(FLAG_UNSAFE);
 
-        if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
+        /*if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
             CallExpr* copy = new CallExpr("chpl__initCopy");
             defPoint->init->replace(copy);
             copy->insertAtTail(fe);
           }
-        }
+        }*/
 
         //
         // A generic field.  Could be type/param/variable
@@ -2370,15 +2370,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           } else {
             fieldToArgType(defPoint, arg);
 
-            CallExpr* def    = new CallExpr(PRIM_DEFAULT_INIT_FIELD,
-                    // It would be easiest to just put 'field' here, however
-                    // it is replaced with 'arg' in buildDefaultInitializer().
-                    new_StringSymbol(field->defPoint->parentSymbol->name),
-                                            new_StringSymbol(field->name),
-                                            defPoint->exprType->copy(),
-                                            defPoint->init->copy());
-
-            arg->defaultExpr = new BlockStmt(def);
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
           }
         }
 

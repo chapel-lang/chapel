@@ -844,7 +844,7 @@ fixupDestructors() {
 
           INT_ASSERT(fct);
 
-          if (!isClass(fct)) {
+          if (!isClass(fct) && !field->hasFlag(FLAG_NO_AUTO_DESTROY)) {
             bool       useRefType = !isRecordWrappedType(fct);
             VarSymbol* tmp        = newTemp("_field_destructor_tmp_",
                                             useRefType ? fct->refType : fct);

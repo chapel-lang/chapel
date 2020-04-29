@@ -2307,11 +2307,27 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               } else if (useCoerceCall) {
 
                 INT_ASSERT(!to->isRef());
-                bool stealRHS = from->hasFlag(FLAG_TEMP) &&
-                                !from->isRef() &&
-                                !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-                                !from->hasFlag(
-                                    FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+                bool stealRHS = false;
+
+                AggregateType* ir = toAggregateType(from->getValType());
+                if (ir && ir->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+                  // For iterators, set stealRHS based upon whether
+                  // the iterator returns by value.
+                  IteratorInfo* ii = ir->iteratorInfo;
+                  INT_ASSERT(ii);
+                  bool yieldsRefs = ii->getValue->getReturnQualType().isRef();
+                  if (yieldsRefs)
+                    stealRHS = false;
+                  else
+                    stealRHS = true;
+                } else {
+                  // not an iterator, steal if it's a temp
+                  stealRHS = from->hasFlag(FLAG_TEMP) &&
+                             !from->isRef() &&
+                             !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+                             !from->hasFlag(
+                                 FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+                }
 
                 CallExpr* callCoerceFn = NULL;
                 if (stealRHS) {

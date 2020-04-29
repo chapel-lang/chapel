@@ -6115,11 +6115,6 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
     }
   }
 
-  if (call->isPrimitive(PRIM_DEFAULT_INIT_FIELD)) {
-    return describeFieldInit(get_string(call->get(1)),
-                             get_string(call->get(2)), nonnilable);
-  }
-
   // Nothing clicked. Assume assignment.
   return astr("assign to a", nonnilable);
 }

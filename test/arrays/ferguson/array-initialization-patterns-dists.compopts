@@ -1,0 +1,6 @@
+-sdistType=DistType.default
+-sdistType=DistType.block
+-sdistType=DistType.cyclic
+-sdistType=DistType.blockcyclic
+-sdistType=DistType.replicated
+-sdistType=DistType.stencil
