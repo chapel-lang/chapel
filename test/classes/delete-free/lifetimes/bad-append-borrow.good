@@ -1,4 +1,4 @@
 bad-append-borrow.chpl:22: In function 'addone':
 bad-append-borrow.chpl:27: error: Actual argument does not meet called function lifetime constraint
-note: called function list(borrowed I, false).append(x: borrowed I)
-note: includes lifetime constraint this < x
+$CHPL_HOME/modules/standard/List.chpl:626: note: called function list(I,false).append(x: borrowed I)
+$CHPL_HOME/modules/standard/List.chpl:626: note: includes lifetime constraint this < x
