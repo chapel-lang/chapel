@@ -1449,10 +1449,7 @@ module String {
           cpCount += 1;
         }
       }
-      const r1 = byteLow..byteHigh;
-      // do we need to do this slice?
-      const ret = r1[0..#(this.buffLen)];
-      return ret;
+      return byteLow..byteHigh;
     }
 
     /*
