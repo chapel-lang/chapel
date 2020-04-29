@@ -16,6 +16,12 @@ test7
 1
 test8
 1
+test9
+{1..2} 1 0
+test10
+{1..2} 1 0
+test11
+{1..2} 1 0
 -
 testr0
 init 1 1

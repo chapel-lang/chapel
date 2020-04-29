@@ -115,6 +115,51 @@ proc test8() {
 A = 0;
 test8();
 
+proc test9() {
+  writeln("test9");
+  // check that the domain is set correctly in variable initialization
+  A = 1;
+  var D = {1..1};
+  var B:[D] int = A;
+  D = {1..2};
+  writeln(B.domain, " ", B);
+}
+A = 0;
+test9();
+
+proc inIntentTest(D, in A:[D] int) {
+  return A;
+}
+proc test10() {
+  writeln("test10");
+  // check that the domain is set correctly in in-intent argument
+  A = 1;
+  var D = {1..1};
+  var B = inIntentTest(D, A);
+  D = {1..2};
+  writeln(B.domain, " ", B);
+}
+A = 0;
+test10();
+
+record RdomainTest {
+  var D: domain;
+  var A: [D] int;
+}
+
+proc test11() {
+  writeln("test11");
+  // check that the domain is set correctly in record initialization
+  A = 1;
+  var D = {1..1};
+  var r = new RdomainTest(D, A);
+  r.D = {1..2};
+  writeln(r.A.domain, " ", r.A);
+}
+A = 0;
+test11();
+
+
 proc makeA() {
   var savePrint = printInitDeinit;
   printInitDeinit = false;

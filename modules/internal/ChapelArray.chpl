@@ -3752,6 +3752,8 @@ module ChapelArray {
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[],
                                            param kind=_tElt.assign) {
 
+    //chpl_debug_writeln("chpl__uncheckedArrayTransfer");
+
     var done = false;
     if !chpl__serializeAssignment(a, b) {
       if chpl__compatibleForBulkTransfer(a, b, kind) {
@@ -4215,6 +4217,10 @@ module ChapelArray {
   proc chpl__coerceMove(type dstType:_domain, in rhs:_domain) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
 
+    // TODO: just return rhs
+    // if the domain types are the same and their runtime types
+    // are the same.
+
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
@@ -4336,6 +4342,13 @@ module ChapelArray {
                          chpl__instanceTypeFromArrayRuntimeType(dstType);
 
     param moveElts = !typeMismatch;
+
+    // If the domains point to the same thing (and aren't just identical),
+    // then we can simply return the RHS array.
+    // TODO: if the domain types match, could steal data pointers
+    if moveElts && dom._instance == rhs.domain._instance {
+      return rhs;
+    }
 
     //chpl_debug_writeln("in  chpl__coerceMove",
     //                   " typeMismatch=", typeMismatch,

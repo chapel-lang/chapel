@@ -6233,9 +6233,10 @@ void resolveInitVar(CallExpr* call) {
     if (moveIsAcceptable(call) == false)
       moveHaltMoveIsUnacceptable(call);
 
+    bool genericTgt = targetType->symbol->hasFlag(FLAG_GENERIC);
     // If the target type is generic, compute the appropriate instantiation
     // type.
-    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+    if (genericTgt) {
       Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call);
 
       // Does not allow initializations of the form:
@@ -6254,7 +6255,7 @@ void resolveInitVar(CallExpr* call) {
     bool mismatch = targetType->getValType() != srcType->getValType();
     // Insert a coercion if the types are different. Some internal types use a
     // coercion because their initCopy returns a different type.
-    if (targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+    if ((targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) && !genericTgt) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
 

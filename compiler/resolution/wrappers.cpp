@@ -103,12 +103,12 @@ static FnSymbol*  buildEmptyWrapper(FnSymbol* fn);
 
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
 
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
+/*static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
                                         ArgSymbol* formal,
                                         CallExpr* call,
                                         BlockStmt* body,
                                         SymbolMap& copyMap,
-                                        Symbol* curActual);
+                                        Symbol* curActual);*/
 
 static bool mustUseRuntimeTypeDefault(ArgSymbol* formal);
 
@@ -396,7 +396,7 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
     } else if (newActuals[i] == NULL) {
       // Fill it in with a default argument.
       newActuals[i] = createDefaultedActual(fn, formal, call, body, copyMap);
-    } else if (formal->intent & INTENT_FLAG_IN &&
+    } /*else if (formal->intent & INTENT_FLAG_IN &&
                formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
                mustUseRuntimeTypeDefault(formal) &&
                isNestedNewOrDefault(fn, call) == false) {
@@ -404,7 +404,7 @@ void doReplaceDefaultTokensWithDefaults(FnSymbol *fn,
       // order to preserve the correct runtime type.
       Symbol* newDef = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, newActuals[i]);
       newActuals[i] = newDef;
-    }
+    }*/
     // TODO -- should this be adding a reference to the original actual?
     copyMap.put(formal, newActuals[i]);
     i++;
@@ -1552,7 +1552,7 @@ static void copyFormalTypeExprWrapper(FnSymbol* fn,
   body->flattenAndRemove();
 }
 
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
+/*static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
                                         ArgSymbol* formal,
                                         CallExpr* call,
                                         BlockStmt* body,
@@ -1577,7 +1577,7 @@ static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
   }
 
   return ret;
-}
+}*/
 
 static bool typeExprReturnsType(ArgSymbol* formal) {
   if (formal->typeExpr != NULL) {
