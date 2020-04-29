@@ -10226,7 +10226,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
 
-
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&
         !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
@@ -10256,6 +10255,18 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
       lowerPrimInitGenericRecordVar(call, val, at);
     else
       call->convertToNoop(); // let the memory be uninitialized
+
+  // Experiment with no-init on tuples...
+  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+      if (val->hasFlag(FLAG_NO_INIT)) {
+        printf("Symbol %s of type %s has flag FLAG_NO_INIT\n",
+               val->name,
+               at->symbol->name);
+        printf("Converting default init to NOOP\n"); 
+        call->convertToNoop();
+      }
+    }
 
   // other types (sync, single, ..)
   } else {
