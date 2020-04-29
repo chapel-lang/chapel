@@ -1,10 +1,10 @@
 listAppendLifetime.chpl:5: In function 'bad1':
 listAppendLifetime.chpl:11: error: Actual argument bb does not meet called function lifetime constraint
 listAppendLifetime.chpl:9: note: consider scope of own
-note: called function list(borrowed C, false).append(x: borrowed C)
-note: includes lifetime constraint this < x
+$CHPL_HOME/modules/standard/List.chpl:626: note: called function list(C,false).append(x: borrowed C)
+$CHPL_HOME/modules/standard/List.chpl:626: note: includes lifetime constraint this < x
 listAppendLifetime.chpl:18: In function 'bad2':
 listAppendLifetime.chpl:23: error: Actual argument does not meet called function lifetime constraint
 listAppendLifetime.chpl:22: note: consider scope of own
-note: called function list(borrowed C, false).append(x: borrowed C)
-note: includes lifetime constraint this < x
+$CHPL_HOME/modules/standard/List.chpl:626: note: called function list(C,false).append(x: borrowed C)
+$CHPL_HOME/modules/standard/List.chpl:626: note: includes lifetime constraint this < x
