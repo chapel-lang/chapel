@@ -1385,73 +1385,6 @@ module String {
       return this[i: codepointIndex];
     }
 
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string
-    // TODO: move into the public interface in some form? better name if so?
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == byteIndex {
-
-      // cast the argument r to `int` to make sure that we are not dealing with
-      // byteIndex
-      const intR = r:range(int, r.boundedType, r.stridable);
-      if boundsChecking {
-        if !this.byteIndices.boundsCheck(intR) {
-          halt("range ", r, " out of bounds for string with ",
-               this.numBytes, " bytes");
-        }
-      }
-      return intR[this.byteIndices];
-    }
-
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string.
-    // Converts from codepointIndex range to byte index range in the process.
-    //
-    // This function handles ranges of codepointIndex or of numeric types,
-    // both of which signify positions in the string measured in codepoints.
-    //
-    // Slicing by stridable codepoint ranges is unsupported because it
-    // creates an irregular sequence of bytes.  We could add support in the
-    // future by refactoring the callers of _getView() to add a slow path,
-    // or by storing an array of indices marking the beginning of each
-    // codepoint alongside the string.
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType != byteIndex {
-      if r.stridable {
-        compilerError("string slicing doesn't support stridable codepoint ranges");
-      }
-
-      // cast the argument r to `int` to make sure that we are not dealing with
-      // codepointIdx
-      const intR = r:range(int, r.boundedType, r.stridable);
-      if boundsChecking {
-        if !this.indices.boundsCheck(intR) {
-          halt("range ", r, " out of bounds for string with length ", this.size);
-        }
-      }
-
-      // find the byte range of the given codepoint range
-      const cpRange = intR[this.indices];
-      var cpCount = 0;
-      var byteLow = this.buffLen;  // empty range if bounds outside string
-      var byteHigh = this.buffLen - 1;
-      if cpRange.high >= 0 {
-        for (i, nBytes) in this._indexLen() {
-          if cpCount == cpRange.low {
-            byteLow = i:int;
-            if !r.hasHighBound() then
-              break;
-          }
-          if cpCount == cpRange.high {
-            byteHigh = i:int + nBytes-1;
-            break;
-          }
-          cpCount += 1;
-        }
-      }
-      return byteLow..byteHigh;
-    }
-
     /*
       Slice a string. Halts if r is non-empty and not completely inside the
       range ``0..<string.size`` when compiled with `--checks`. `--fast`
@@ -1530,7 +1463,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const view = this._getView(region);
+        const view = getView(this, region);
         const thisLen = view.size;
 
         // Edge cases

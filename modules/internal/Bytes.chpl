@@ -631,24 +631,6 @@ module Bytes {
       return getSlice(this, r);
     }
 
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string
-    // TODO: move into the public interface in some form? better name if so?
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
-
-      // cast the argument r to `int` to make sure that we are not dealing with
-      // byteIndex
-      const intR = r:range(int, r.boundedType, r.stridable);
-      if boundsChecking {
-        if !this.byteIndices.boundsCheck(intR) {
-          halt("range ", r, " out of bounds for string with ",
-               this.numBytes, " bytes");
-        }
-      }
-      return intR[byteIndices];
-    }
-
     /*
       Checks if the :record:`bytes` is empty.
 
@@ -748,7 +730,7 @@ module Bytes {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const view = this._getView(region);
+        const view = getView(this, region);
         const thisLen = view.size;
 
         // Edge cases
