@@ -80,6 +80,8 @@ bool builtTypeHelperNames = false;
 
 static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
                              std::vector<FnSymbol*>* vec);
+static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
+                                BlockStmt* block, CallExpr* call);
 
 static void getVisibleMethods(const char* name, CallExpr* call,
                               Vec<FnSymbol*>& visibleFns);
@@ -125,17 +127,8 @@ void findVisibleFunctions(CallInfo&       info,
       if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(info.name)) {
         visibleFns.append(*fns);
       }
-      std::pair<bool, std::vector<FnSymbol*>*> reexportEntry =
-        vfb->reexports[info.name];
-      if (reexportEntry.first == false) {
-        reexportEntry.second = new std::vector<FnSymbol*>();
-        reexportEntry.first = true;
-        buildReexportVec(block, info.name, call, reexportEntry.second);
-        vfb->reexports[info.name] = reexportEntry;
-        visibleFns.append(*reexportEntry.second);
-      } else {
-        visibleFns.append(*vfb->reexports[info.name].second);
-      }
+      updateReexportEntry(vfb, info.name, block, call);
+      visibleFns.append(*vfb->reexports[info.name].second);
     }
   } else {
     // Methods, fields, and type helper functions should ignore the privacy and
@@ -271,27 +264,9 @@ static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
                   }
                 }
 
-                // Check to see if this scope also had already checked for
-                // re-exports with that particular name.
-                std::pair<bool, std::vector<FnSymbol*>*> reexportEntry =
-                  vfb->reexports[nameToUse];
-                if (reexportEntry.first == false) {
-                  // We haven't checked before, so recurse, save, and include
-                  // what we found
-                  reexportEntry.second = new std::vector<FnSymbol*>();
-                  reexportEntry.first = true;
-                  buildReexportVec(mod->block, nameToUse, call,
-                                   reexportEntry.second);
-                  vfb->reexports[nameToUse] = reexportEntry;
-                  for_vector(FnSymbol, fn, *reexportEntry.second) {
-                    vec->push_back(fn);
-                  }
-                } else {
-                  // No need to go looking again, just take what we already
-                  // found
-                  for_vector(FnSymbol, fn, *reexportEntry.second) {
-                    vec->push_back(fn);
-                  }
+                updateReexportEntry(vfb, nameToUse, mod->block, call);
+                for_vector(FnSymbol, fn, *vfb->reexports[nameToUse].second) {
+                  vec->push_back(fn);
                 }
               } else {
                 // No visible function map, so don't worry about it and just
@@ -309,6 +284,20 @@ static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
         INT_FATAL("unhandled case");
       }
     }
+  }
+}
+
+static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
+                                BlockStmt* block, CallExpr* call) {
+  // Check to see if this scope also had already checked for
+  // re-exports with that particular name.
+  std::pair<bool, std::vector<FnSymbol*>*> reexportEntry = vfb->reexports[name];
+  if (reexportEntry.first == false) {
+    // We haven't checked before, so recurse, save, and include what we found
+    reexportEntry.second = new std::vector<FnSymbol*>();
+    reexportEntry.first = true;
+    buildReexportVec(block, name, call, reexportEntry.second);
+    vfb->reexports[name] = reexportEntry;
   }
 }
 
