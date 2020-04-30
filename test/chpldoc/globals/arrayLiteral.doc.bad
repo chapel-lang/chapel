@@ -19,7 +19,7 @@ or
 
 .. data:: var i
 
-.. data:: var x = AppendExpr.01
+.. data:: var x = [i in 1..10] i
 
    This is an array created using the forall loop initialization 
 

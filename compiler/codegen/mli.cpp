@@ -428,6 +428,10 @@ std::string MLIContext::genMarshalBodyChplBytesWrapper(Type* t, bool out) {
     gen += "mem_err = (";
     gen += fieldData;
     gen += " == NULL);\n";
+
+    // if I have allocated something here, own it, too
+    gen += fieldIsOwned;
+    gen += " = true;";
   }
 
   // Push/pull possible allocation error on ACK.
@@ -889,17 +893,9 @@ std::string MLIContext::genServersideRPC(FnSymbol* fn) {
     }
   }
 
-  //
-  // TODO: As it stands today, the server leaks memory allocated for return
-  // values. This is _obviously_ not ideal, however uncommenting the
-  // below code causes tests related to `c_string` to fail with a segfault.
-  // So for now, knowingly leak the memory.
-  //
-  /*
   if (!hasVoidReturnType && this->isTypeRequiringAlloc(fn->retType)) {
     gen += this->genMemCleanup(fn->retType, "result");
   }
-  */
 
   return gen;
 }
@@ -913,7 +909,7 @@ std::string MLIContext::genMemCleanup(Type* t, const char* var) {
     gen += var;
     gen += "));\n";
   } else if (t == exportTypeChplByteBuffer) {
-    gen += "chpl_byte_buffer_free(";
+    gen += "chpl_byte_buffer_free_server(";
     gen += var;
     gen += ");\n";
   } else {
@@ -1049,8 +1045,8 @@ bool MLIContext::isTypeRequiringAlloc(Type* t) {
   return
       // TODO: Do we just assume that all CPTRs require allocation?
       t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-      t == dtStringC ||
       t->getValType() == exportTypeChplByteBuffer;
+  // we had dtStringC in this list, but we don't really allocate for them
 }
 
 std::string MLIContext::genNewDecl(const char* t, const char* v) {
