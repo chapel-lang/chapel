@@ -13,7 +13,7 @@ class I {
 }
 
 class D {
-  var iArr: list(borrowed I);
+  var iLst: list(borrowed I);
 }
 
 var i = new shared I(['a', 'b']);
@@ -23,13 +23,13 @@ proc addone()
 {
   // This should result in lifetime checking errror.
   //  * shared I destroyed at the end of this function
-  //  * a borrow of it is saved in d.iArr.
-  d.iArr.append(new shared I(i.r));
+  //  * a borrow of it is saved in d.iLst.
+  d.iLst.append(new shared I(i.r));
 }
 
 addone();
 
-for element in d.iArr {
+for element in d.iLst {
   writeln(element);
 }
 
