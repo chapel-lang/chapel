@@ -2,10 +2,10 @@ module M {
   private var x = 42;
 
   module N {
-    import M.x;
+    import M.{x as y};
 
     proc main() {
-      writeln(x);
+      writeln(y);
     }
   }
 }
