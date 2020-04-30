@@ -128,8 +128,8 @@ void findVisibleFunctions(CallInfo&       info,
       std::pair<bool, std::vector<FnSymbol*>*> reexportEntry =
         vfb->reexports[info.name];
       if (reexportEntry.first == false) {
-        std::vector<FnSymbol*>* newVec = new std::vector<FnSymbol*>();
-        reexportEntry = std::make_pair(true, newVec);
+        reexportEntry.second = new std::vector<FnSymbol*>();
+        reexportEntry.first = true;
         buildReexportVec(block, info.name, call, reexportEntry.second);
         vfb->reexports[info.name] = reexportEntry;
         visibleFns.append(*reexportEntry.second);
@@ -278,8 +278,8 @@ static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
                 if (reexportEntry.first == false) {
                   // We haven't checked before, so recurse, save, and include
                   // what we found
-                  std::vector<FnSymbol*>* newVec = new std::vector<FnSymbol*>();
-                  reexportEntry = std::make_pair(true, newVec);
+                  reexportEntry.second = new std::vector<FnSymbol*>();
+                  reexportEntry.first = true;
                   buildReexportVec(mod->block, nameToUse, call,
                                    reexportEntry.second);
                   vfb->reexports[nameToUse] = reexportEntry;
