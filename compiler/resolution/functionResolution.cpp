@@ -10226,6 +10226,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
 
+
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&
         !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL))
@@ -10260,7 +10261,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else {
     errorInvalidParamInit(call, val, at);
 
-    // Handle tuple variables marked "no init".
+    // Handle tuple variables marked "no init". Convert to NOP and leave.
     if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
       if (val->hasFlag(FLAG_NO_INIT) ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
