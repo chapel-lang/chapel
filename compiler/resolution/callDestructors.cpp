@@ -222,6 +222,10 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
 {
   ArgSymbol* formal = NULL;
 
+  // Do nothing if we already transformed this function
+  if (fn->hasFlag(FLAG_FN_RETARG))
+    return;
+
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN) == false) {
     formal = addFormal(fn);
   }
@@ -238,6 +242,12 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
     updateReturnStatement(fn);
     updateReturnType(fn);
   }
+
+  // Also transform coerceMove if we transform coerceCopy
+  // (since later in callDestructors we might replace coerceCopy with Move)
+  if (fn->name == astr("chpl__coerceCopy"))
+    if (FnSymbol* coerceMove = getCoerceMoveFromCoerceCopy(fn))
+      transformFunction(coerceMove);
 }
 
 ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)

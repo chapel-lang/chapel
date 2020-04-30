@@ -115,6 +115,7 @@ std::map<Type*,     Serializers>   serializeMap;
 
 Map<Type*,          FnSymbol*>     autoDestroyMap;
 Map<Type*,          FnSymbol*>     unaliasMap;
+Map<FnSymbol*,      FnSymbol*>     coerceMoveFromCopyMap;
 Map<Type*,          FnSymbol*>     valueToRuntimeTypeMap;
 Map<FnSymbol*,      FnSymbol*>     iteratorLeaderMap;
 Map<FnSymbol*,      FnSymbol*>     iteratorFollowerMap;
@@ -394,6 +395,10 @@ FnSymbol* getAutoDestroy(Type* t) {
 
 FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
+}
+
+FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn) {
+  return coerceMoveFromCopyMap.get(coerceCopyFn);
 }
 
 const char* getErroneousCopyError(FnSymbol* fn) {
@@ -2468,6 +2473,7 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
+static void resolveCoerceMoveForCoerceCopy(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
@@ -2527,6 +2533,9 @@ void resolveCall(CallExpr* call) {
       return;
 
     resolveNormalCall(call);
+
+    if (call->isNamed("chpl__coerceCopy"))
+      resolveCoerceMoveForCoerceCopy(call);
   }
 }
 
@@ -2888,6 +2897,23 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
   return false;
 }
 
+// Save chpl__coerceMove with the same arguments as chpl__coerceCopy
+// in case copy elision decides to replace a chpl__coerceCopy with a coercMove.
+static void resolveCoerceMoveForCoerceCopy(CallExpr* call) {
+  // Note the chpl__coerceCopy fn
+  FnSymbol* copyFn = call->resolvedFunction();
+  // Add another call next to it to chpl__coerceMove
+  CallExpr* coerceMove = call->copy();
+  call->getStmtExpr()->insertBefore(coerceMove);
+  coerceMove->baseExpr->replace(new UnresolvedSymExpr("chpl__coerceMove"));
+  // Resolve the chpl__coerceMove call (and its body)
+  resolveCallAndCallee(coerceMove, false);
+  // Add it to the map
+  FnSymbol* moveFn = coerceMove->resolvedFunction();
+  coerceMoveFromCopyMap.put(copyFn, moveFn);
+  // Remove the chpl__coerceMove call
+  coerceMove->remove();
+}
 
 /************************************* | **************************************
 *                                                                             *

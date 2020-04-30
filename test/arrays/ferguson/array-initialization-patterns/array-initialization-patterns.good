@@ -84,6 +84,11 @@ init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 -
+testr7
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
 testC1
 init 1 1
 {A = (x = 1, ptr = {xx = 1})}
@@ -104,6 +109,16 @@ init 1 1
 {A = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
+testC5
+init 1 1
+{D = {1..1}, A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC6
+init 1 1
+{D = {1..1}, A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
 testR1
 init 1 1
 (A = (x = 1, ptr = {xx = 1}))
@@ -122,6 +137,16 @@ deinit 1 1
 testR4
 init 1 1
 {A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testR5
+init 1 1
+(D = {1..1}, A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR6
+init 1 1
+(D = {1..1}, A = (x = 1, ptr = {xx = 1}))
 deinit 1 1
 -
 

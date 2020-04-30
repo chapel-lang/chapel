@@ -1,5 +1,5 @@
 config var printInitDeinit = true;
-  
+
 class C {
   var xx: int = 0;
 }
@@ -82,7 +82,7 @@ proc test4() {
 }
 A = 0;
 test4();
-  
+
 proc test5() {
   writeln("test5");
   var B:[1..1] int = [i in 1..1] i;
@@ -244,6 +244,23 @@ proc testr6() {
 testr6();
 writeln("-");
 
+proc returnInArg(D, in arg:[D] R) {
+  return arg;
+}
+
+proc buildArray(D) {
+  var A: [D] R = [i in D] new R(i);
+  return returnInArg(D, A);
+}
+
+proc testr7() {
+  writeln("testr7");
+  var D = {1..1};
+  var B:[D] R = buildArray(D);
+  writeln(B);
+}
+testr7();
+writeln("-");
 
 class C1 {
   var A: [1..1] R = [i in 1..1] new R(1);
@@ -299,6 +316,39 @@ proc testC4() {
 testC4();
 writeln("-");
 
+class C5 {
+  var D;
+  var A: [D] R;
+}
+
+proc testC5() {
+  writeln("testC5");
+  var D = {1..1};
+  var A: [D] R = [i in D] new R(i);
+  var c = new C5(D, A);
+  writeln(c);
+}
+testC5();
+writeln("-");
+
+class C6 {
+  var D;
+  var A: [D] R;
+  proc init(in D, in A: [D] R) {
+    this.D = D;
+    this.A = A;
+  }
+}
+
+proc testC6() {
+  writeln("testC6");
+  var D = {1..1};
+  var A: [D] R = [i in D] new R(i);
+  var c = new C6(D, A);
+  writeln(c);
+}
+testC6();
+writeln("-");
 
 
 record R1 {
@@ -355,6 +405,40 @@ proc testR4() {
 testR4();
 writeln("-");
 
+record R5 {
+  var D;
+  var A: [D] R;
+}
+
+proc testR5() {
+  writeln("testR5");
+  var D = {1..1};
+  var A: [D] R = [i in D] new R(i);
+  var c = new R5(D, A);
+  writeln(c);
+}
+testR5();
+writeln("-");
+
+record R6 {
+  var D;
+  var A: [D] R;
+  proc init(in D, in A: [D] R) {
+    this.D = D;
+    this.A = A;
+  }
+}
+
+proc testR6() {
+  writeln("testR6");
+  var D = {1..1};
+  var A: [D] R = [i in D] new R(i);
+  var c = new R6(D, A);
+  writeln(c);
+}
+testR6();
+writeln("-");
+
 
 printInitDeinit = false;
 
@@ -362,7 +446,3 @@ printInitDeinit = false;
 // test 'in' default argument with default used
 // test default 'in' argument with default used and type previous domain arg
 // test 'in' argument with actual used and type is previous domain arg
-
-// get copy elision working
-// fix tuple conversion to use 'in' argument
-// fix testC1 / testR1

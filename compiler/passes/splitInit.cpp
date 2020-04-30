@@ -35,6 +35,7 @@
 #include "ForallStmt.h"
 #include "expr.h"
 #include "errorHandling.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
@@ -466,9 +467,11 @@ static bool findCopyElisionCandidate(CallExpr* call,
     if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
       if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
         if (rhsCall->isNamed("chpl__initCopy") ||
-            rhsCall->isNamed("chpl__autoCopy")) {
-          if (rhsCall->numActuals() >= 1) {
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1))) {
+            rhsCall->isNamed("chpl__autoCopy") ||
+            rhsCall->isNamed("chpl__coerceCopy")) {
+          int nActuals = rhsCall->numActuals();
+          if (nActuals >= 1) {
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
                 rhs = rhsSe->symbol();
@@ -482,11 +485,14 @@ static bool findCopyElisionCandidate(CallExpr* call,
   }
 
   // a chpl__initCopy / chpl__autoCopy returning through RVV
-  if (call->isNamed("chpl__initCopy") || call->isNamed("chpl__autoCopy")) {
+  if (call->isNamed("chpl__initCopy") ||
+      call->isNamed("chpl__autoCopy") ||
+      call->isNamed("chpl__coerceCopy")) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
-      if (calledFn->hasFlag(FLAG_FN_RETARG) && call->numActuals() >= 2) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(1))) {
-          if (SymExpr* lhsSe = toSymExpr(call->get(2))) {
+      int nActuals = call->numActuals();
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 2) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-1))) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
               rhs = rhsSe->symbol();
@@ -518,15 +524,35 @@ static void doElideCopies(VarToCopyElisionState &map) {
         INT_ASSERT(ok && rhs == var);
 
         SET_LINENO(call);
-        // Change the copy into a move and don't destroy the variable.
-        call->convertToNoop();
-        call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        if (call->isNamed("chpl__coerceCopy")) {
+          // change chpl__coerceCopy into chpl__coerceMove with same args
+          FnSymbol* copyFn = call->resolvedFunction();
+          FnSymbol* moveFn = getCoerceMoveFromCoerceCopy(copyFn);
+          call->baseExpr->replace(new SymExpr(moveFn));
+
+          // Add a PRIM_ASSIGN_ELIDED_COPY to mark that the
+          // variable is dead after this point. Putting it before
+          // the chpl__coerceMove call works with code in addAutoDestroyCalls.
+          VarSymbol* tmp = newTemp("copy_tmp", rhs->getValType());
+          Expr* insertBefore = call->getStmtExpr();
+          insertBefore->insertBefore(new DefExpr(tmp));
+          insertBefore->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY,
+                                                  tmp,
+                                                  rhs));
+
+          // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
+          call->get(2)->replace(new SymExpr(tmp));
+        } else {
+          // Change the copy into a move and don't destroy the variable.
+          call->convertToNoop();
+          call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        }
+
         var->addFlag(FLAG_MAYBE_COPY_ELIDED);
 
         if (isCheckErrorStmt(call->next)) {
           INT_FATAL("code needs adjustment for throwing initializers");
         }
-
       }
     }
   }
