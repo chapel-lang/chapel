@@ -3767,7 +3767,7 @@ module ChapelArray {
       if done && kind==_tElt.initCopy && !isPODType(a.eltType) {
         forall aa in a {
           pragma "no auto destroy"
-          var copy = aa; // run copy initializer
+          var copy: a.eltType = aa; // run copy initializer
           // move it into the array
           __primitive("=", aa, copy);
         }
@@ -3874,7 +3874,7 @@ module ChapelArray {
         // need to copy if "move"ing from 1 element
         forall aa in a with (in b) {
           pragma "no auto destroy"
-          var copy = b; // make a copy for this iteration
+          var copy: a.eltType = b; // make a copy for this iteration
           // move it into the array
           __primitive("=", aa, copy);
         }
@@ -3891,7 +3891,7 @@ module ChapelArray {
       } else if kind==_tElt.initCopy {
         for (aa,bb) in zip(a,b) {
           pragma "no auto destroy"
-          var copy = b; // init copy
+          var copy: a.eltType = b; // init copy
           // move it into the array
           __primitive("=", aa, copy);
         }
@@ -3908,7 +3908,7 @@ module ChapelArray {
       } else if kind==_tElt.initCopy {
         [ (aa,bb) in zip(a,b) ] {
           pragma "no auto destroy"
-          var copy = bb; // init copy
+          var copy: a.eltType = bb; // init copy
           // move it into the array
           __primitive("=", aa, copy);
         }
@@ -4498,7 +4498,7 @@ module ChapelArray {
 
     forall e in lhs with (in rhs) {
       pragma "no auto destroy"
-      var copy = rhs; // make a copy for this iteration
+      var copy: lhs.eltType = rhs; // make a copy for this iteration
       // move it into the array
       __primitive("=", e, copy);
     }
