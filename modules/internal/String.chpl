@@ -394,11 +394,6 @@ module String {
     return (x + y: int): t;
 
   pragma "no doc"
-  inline proc +(x: ?t, y: t)
-    where t == byteIndex || t == codepointIndex
-    return (x:int + y:int): t;
-
-  pragma "no doc"
   inline proc +(x: bufferType, y: byteIndex) {
     return x+(y:int);
   }

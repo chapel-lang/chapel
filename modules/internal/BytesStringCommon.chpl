@@ -276,12 +276,17 @@ module BytesStringCommon {
   // Checks to see if r is inside the bounds of this and returns a finite
   // range that can be used to iterate over a section of the string
   //
-  // This function handles ranges of codepointIndex or of numeric types,
-  // both of which signify positions in the string measured in codepoints.
+  // This function handles ranges of codepointIndex, byteIndex or numeric types.
+  // codepointIndex only makes sense for string, whereas the others can be used
+  // with both bytes and string
   //
-  // Converts from codepointIndex range to byte index range in the process.
+  // If codepointIndex range was given, converts that to byte index range in the
+  // process.
   proc getView(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getView");
+    if t == bytes && r.idxType == codepointIndex {
+      compilerError("codepointIndex ranges cannot be used with bytes in getView");
+    }
 
     if t == bytes || r.idxType == byteIndex {
       // cast the argument r to `int` to make sure that we are not dealing with
@@ -335,7 +340,6 @@ module BytesStringCommon {
       }
       return byteLow..byteHigh;
     }
-
   }
 
   // TODO: I wasn't very good about caching variables locally in this one.
