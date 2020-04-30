@@ -359,7 +359,7 @@ Vec<C,S>::append(const Vec<C,S> &vv)  {
 // Added to ease the transition from using Vec to std::vector
 template <class C, int S> inline void
 Vec<C,S>::append(const std::vector<C> &v) {
-  for (int i = 0; i < v.size(); i++) {
+  for (uint64_t i = 0; i < v.size(); i++) {
     add(v[i]);
   }
 }
