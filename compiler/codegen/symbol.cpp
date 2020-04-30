@@ -2335,12 +2335,12 @@ static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
   // String and bytes are not considered primitive types so we cannot fetch
   // them from the Python type map.
   //
-  if (eltType->type == dtString || eltType->type == dtBytes) {
+  if (eltType == dtString || eltType == dtBytes) {
     typeStr = "object";
     typeStrCDefs = "";
   } else {
-    typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-    typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
+    typeStr = getPythonTypeName(eltType, PYTHON_PYX);
+    typeStrCDefs = getPythonTypeName(eltType, C_PYX);
   }
 
   //
