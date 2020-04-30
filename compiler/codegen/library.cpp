@@ -305,8 +305,9 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
     beautify(fi);
 }
 
-// Populate the pythonNames map with the translation for bools, differently sized
-// integers, etc.
+// Populate the pythonNames map with the translation for bools, differently
+// sized integers, etc. Only types marked (FLAG_PRIMITIVE_TYPE) go in this
+// table.
 static void setupPythonTypeMap() {
   pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
   pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
@@ -320,8 +321,6 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
-  pythonNames[dtString->symbol] = std::make_pair("", "object");
-  pythonNames[dtBytes->symbol] = std::make_pair("", "object");
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
@@ -343,10 +342,6 @@ std::string getPythonTypeName(Type* type, PythonFileType pxd) {
     std::string res = tNames.second;
     if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
       res += "_t";
-    } else if (strcmp(res.c_str(), "object") == 0) {
-      // Types like byte and string map to Python objects that have no 1-to-1
-      // representation in C.
-      return res;
     } else {
       res = getPythonTypeName(type, C_PXD);
     }

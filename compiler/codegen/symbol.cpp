@@ -1176,12 +1176,26 @@ static std::string pythonArgToExternalArray(ArgSymbol* as) {
   std::string strname = as->cname;
 
   if (Symbol* eltType = exportedArrayElementType[as]) {
-    // The element type will be recorded in the exportedArrayElementType map
-    // if this arg's type was originally a Chapel array instead of explicitly
-    // an external array.  If we have the element type, that means we need to
-    // do a translation in the python wrapper.
-    std::string typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
-    std::string typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
+
+    std::string typeStr;
+    std::string typeStrCDefs;
+
+    //
+    // String and bytes are not considered primitive types so we cannot fetch
+    // them from the Python type map.
+    //
+    if (eltType->type == dtString || eltType->type == dtBytes) {
+      typeStr = "object";
+      typeStrCDefs = "";
+    } else {
+      // The element type will be recorded in the exportedArrayElementType
+      // map if this arg's type was originally a Chapel array instead of
+      // explicitly an external array.  If we have the element type, that
+      // means we need to do a translation in the python wrapper.
+      typeStr = getPythonTypeName(eltType->type, PYTHON_PYX);
+      typeStrCDefs = getPythonTypeName(eltType->type, C_PYX);
+    }
+
 
     // Create the memory needed to store the contents of what was passed to us
     // E.g. cdef chpl_external_array chpl_foo =
