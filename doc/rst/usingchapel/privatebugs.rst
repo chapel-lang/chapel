@@ -7,7 +7,7 @@ Private Issues Guidelines
 If for any reason you are uncomfortable reporting your bug in a public setting,
 you may submit a private bug report.
 
-Private issues can be sent to the Cray Chapel team at:
+Private issues can be sent to the core Chapel team at HPE using:
 :disguise:`chapel_bugs@cray.com`
 
 When submitting a private bug report, please include the following information:

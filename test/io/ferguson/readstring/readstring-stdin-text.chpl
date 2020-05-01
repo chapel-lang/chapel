@@ -1,3 +1,5 @@
+use IO;
+
 var str:string;
 
 // read 10 characters

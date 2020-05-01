@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc sizeof(e): size_t;
 
 writeln("sizes of bool literals");

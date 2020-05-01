@@ -2,7 +2,7 @@
 
 class MyClass {  var x: int;  }
 
-var lhs: borrowed MyClass?;
+var lhs: borrowed MyClass? = nil;
 var rhs = new unmanaged MyClass();
 
 lhs = rhs;

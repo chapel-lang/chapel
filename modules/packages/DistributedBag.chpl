@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -94,7 +95,7 @@
   instance. This means that it is easy to add data in bulk, expecting it to be distributed, when in
   reality it is not; if another node needs data, it will steal work on-demand. This may not always be
   desired, and likely will more memory consumption on a single node. We offer a way for the user to
-  invoke a more static load balancing approach, called :proc:`balance`, which will redistributed work.
+  invoke a more static load balancing approach, called :proc:`DistributedBagImpl.balance`, which will redistributed work.
 
   .. code-block:: chapel
 
@@ -111,7 +112,7 @@
       To make matters worse, the waiting tasks don't even get any elements, nor does the work
       stealing task, which opens up the possibility of live-lock where nodes steal work back
       and forth before either can process it.
-  2.  Static work-stealing (A.K.A :proc:`balance`) requires a rework that performs a more distributed
+  2.  Static work-stealing (A.K.A :proc:`DistributedBagImpl.balance`) requires a rework that performs a more distributed
       and fast way of distributing memory, as currently 'excess' elements are shifted to a single
       node to be redistributed in the next pass. On the note, we need to collapse the pass for moving
       excess elements into a single pass, hopefully with a zero-copy overhead.
@@ -122,8 +123,10 @@
 
 module DistributedBag {
 
-  use Collection;
+  public use Collection;
   use BlockDist;
+  private use SysCTypes;
+  use IO only channel;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -179,7 +182,7 @@ module DistributedBag {
     The maximum amount of work to steal from a horizontal node's segment. This
     should be set to a value, in megabytes, that determines the maximum amount of
     data that should be sent in bulk at once. The maximum number of elements is
-    determined by: (:const:`distributedBagWorkStealingMemCap` * 1024 * 1024) / sizeof(:type:`eltType`).
+    determined by: (:const:`distributedBagWorkStealingMemCap` * 1024 * 1024) / sizeof(``eltType``).
     For example, if we are storing 8-byte integers and have a 1MB limit, we would
     have a maximum of 125,000 elements stolen at once.
   */
@@ -219,14 +222,15 @@ module DistributedBag {
     its own work-stealing algorithm, and provides a means to obtain a privatized instance of
     the data structure for maximized performance.
   */
+  pragma "always RVF"
   record DistBag {
     type eltType;
 
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Bag is forwarded. See :class:`DistributedBagImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
@@ -251,7 +255,19 @@ module DistributedBag {
       }
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
-
+  
+    pragma "no doc"
+    /* Read/write the contents of DistBag from/to a channel */ 
+    proc readWriteThis(ch: channel) throws {
+      ch <~> "[";
+      var size = this.getSize();
+      for (i,iteration) in zip(this, 0..<size) {
+        ch <~> i;
+        if iteration < size-1 then ch <~> ", ";
+      }
+      ch <~> "]";
+    }
+    
     forwarding _value;
   }
 
@@ -431,7 +447,7 @@ module DistributedBag {
       // Phase 2: Concurrently redistribute elements from segments which contain
       // more than the computed average.
       coforall segmentIdx in 0 .. #here.maxTaskPar {
-        var nSegmentElems : [localThis.targetLocales.size] int;
+        var nSegmentElems : [0..#localThis.targetLocales.size] int;
         var locIdx = 0;
         for loc in localThis.targetLocales do on loc {
           var nElems = getPrivatizedThis.bag!.segments[segmentIdx].nElems.read() : int;
@@ -700,7 +716,7 @@ module DistributedBag {
     }
 
     inline proc acquireWithStatus(newStatus) {
-      return status.compareExchangeStrong(STATUS_UNLOCKED, newStatus);
+      return status.compareAndSwap(STATUS_UNLOCKED, newStatus);
     }
 
     // Set status with a test-and-test-and-set loop...
@@ -1167,7 +1183,7 @@ module DistributedBag {
 
                                 // Allocate storage...
                                 on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
-                                var destPtr = stolenWork[here.id][2];
+                                var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
 

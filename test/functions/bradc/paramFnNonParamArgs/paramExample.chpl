@@ -1,3 +1,5 @@
+use IO;
+
 config type xtype = real;
 config type ytype = int;
 

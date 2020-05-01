@@ -7,9 +7,9 @@ newsize = stringAllocated.g(x.size, x)
 if (newsize is not -1):
     x = numpy.delete(x, range(newsize, x.size))
 else:
-    stringAllocated.writeStr("Buffer wasn't wide enough")
-resString = "" # note: str type, not bytes
+    stringAllocated.writeStr(b"Buffer wasn't wide enough")
+resString = ""
 for character in x:
     resString += str(chr(character))
-stringAllocated.writeStr(resString.encode()); # note: required to send bytes
+stringAllocated.writeStr(resString.encode()) # note: required to send bytes
 stringAllocated.chpl_cleanup()

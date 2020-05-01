@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +52,7 @@ allows a URL to be opened as a :record:`IO.channel`.
 
   use URL;
   var urlreader = openUrlReader("http://example.com");
-  var str:string;
+  var str:bytes;
   // Output each line read from the URL to stdout
   while(urlreader.readline(str)) {
     write(str);
@@ -95,13 +96,13 @@ Here is a full program enabling verbose output from Curl while downloading:
   use URL;
   use Curl;
   var reader = openUrlReader("https://example.com");
-  var str:string;
+  var str:bytes;
   // Set verbose output from curl
   extern const CURLOPT_VERBOSE:CURLoption;
   Curl.setopt(reader, CURLOPT_VERBOSE, true);
 
-  // now read into the string
-  reader.readstring(str);
+  // now read into the bytes
+  reader.readbytes(str);
   writeln(str);
   reader.close();
 
@@ -111,6 +112,7 @@ Curl Support Types and Functions
 
  */
 module Curl {
+  public use IO, SysCTypes;
 
   require "curl/curl.h";
   require "-lcurl";
@@ -206,8 +208,8 @@ module Curl {
                 This function will call ``setopt`` on each pair in turn.
    */
   proc setopt(ch:channel, args ...?k) throws {
-    for param i in 1..k {
-      setopt(ch, args(i)(1), args(i)(2));
+    for param i in 0..k-1 {
+      setopt(ch, args(i)(0), args(i)(1));
     }
   }
 
@@ -391,8 +393,10 @@ module Curl {
   pragma "no doc"
   module CurlQioIntegration {
 
-    use Sys only ;
-    use Time only ;
+    import Sys;
+    import Time;
+    private use IO;
+    use Curl;
 
     class CurlFile : QioPluginFile {
 
@@ -422,7 +426,7 @@ module Curl {
       }
       override proc getpath(out path:c_string, out len:int(64)):syserr {
         path = qio_strdup(this.url_c);
-        len = url_c.length;
+        len = url_c.size;
         return ENOERR;
       }
 
@@ -585,7 +589,7 @@ module Curl {
     private proc startsWith(haystack:c_string, needle:c_string) {
       extern proc strncmp(s1:c_string, s2:c_string, n:size_t):c_int;
 
-      return strncmp(haystack, needle, needle.length:size_t) == 0;
+      return strncmp(haystack, needle, needle.size:size_t) == 0;
     }
 
     private proc curl_write_string(contents: c_void_ptr, size:size_t, nmemb:size_t, userp: c_void_ptr) {
@@ -742,7 +746,7 @@ module Curl {
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
 
-      var amt = realsize.safeCast(int(64));
+      var amt = realsize.safeCast(ssize_t);
 
       //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc.qio_ch), " len=", amt);
 
@@ -1024,8 +1028,8 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = c_calloc(uint(8), url.length+1);
-      c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.length);
+      var url_c = c_calloc(uint(8), url.size+1);
+      c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
 
       fl.url_c = url_c:c_string;
 

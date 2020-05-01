@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,6 +48,7 @@
 module Buffers {
   use SysBasic;
   use SysError;
+  private use SysCTypes;
 
   pragma "no doc"
   extern type qbytes_ptr_t;
@@ -154,7 +156,7 @@ module Buffers {
 
 
   pragma "no doc"
-  proc byteBuffer.init=(x: bytes) {
+  proc byteBuffer.init=(x: byteBuffer) {
     this.home = here;
     if x.home == here {
       qbytes_retain(x._bytes_internal);
@@ -697,7 +699,7 @@ module Buffers {
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);
-        value = createStringWithOwnedBuffer(buf, length=len, size=len+1);
+        value = try! createStringWithOwnedBuffer(buf, length=len, size=len+1);
         ret = end;
       }
     }

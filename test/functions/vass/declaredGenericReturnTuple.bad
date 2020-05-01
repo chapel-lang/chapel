@@ -1,2 +1,2 @@
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: error: Cannot default-initialize a variable with generic type
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:43: note: 'elt_x1' has generic type 'VectorListElement'
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:196: error: the type of the actual argument 'call_tmp' is generic
+note: generic actual arguments are not currently supported

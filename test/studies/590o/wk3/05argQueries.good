@@ -17,7 +17,6 @@ the value 4097...
   ...shifted 13 times: 0
   ...shifted 14 times: 0
   ...shifted 15 times: 0
-  ...shifted 16 times: 0
 
 the value -128...
   ...shifted 1 times: -64
@@ -27,7 +26,6 @@ the value -128...
   ...shifted 5 times: -4
   ...shifted 6 times: -2
   ...shifted 7 times: -1
-  ...shifted 8 times: -1
 
 i is: 1, A(i) is: 1.0
 i is: 2, A(i) is: 2.0

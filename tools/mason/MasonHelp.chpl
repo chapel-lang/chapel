@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,10 +35,10 @@ proc masonHelp() {
   writeln('Options:');
   writeln('    -h, --help          Display this message');
   writeln('    -V, --version       Print version info and exit');
-  writeln('    --list              List installed commands');
   writeln();
-  writeln('Some common mason commands are (see all commands with --list):');
+  writeln('Mason commands:');
   writeln('    new         Create a new mason project');
+  writeln('    init        Initialize a mason project inside an existing directory');
   writeln('    add         Add a dependency to Mason.toml');
   writeln('    rm          Remove a dependency from Mason.toml');
   writeln('    update      Update/Generate Mason.lock');
@@ -52,27 +53,6 @@ proc masonHelp() {
   writeln('    external    Integrate external dependencies into mason packages');
   writeln('    publish     Publish package to mason-registry');
 }
-
-proc masonList() {
-  writeln('Installed Mason Commands:');
-  writeln('      add                ');
-  writeln('      rm                 ');
-  writeln('      new                ');
-  writeln('      update             ');
-  writeln('      build              ');
-  writeln('      run                ');
-  writeln('      test               ');
-  writeln('      external           ');
-  writeln('      search             ');
-  writeln('      env                ');
-  writeln('      clean              ');
-  writeln('      doc                ');
-  writeln('      help               ');
-  writeln('      version            ');
-  writeln('      system             ');
-  writeln('      publish            ');
-}
-
 
 proc masonRunHelp() {
   writeln('Run the compiled project and output to standard output');
@@ -130,6 +110,19 @@ proc masonNewHelp() {
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
+  writeln('    --name <legalName>           Specify package name different from directory name');
+}
+
+proc masonInitHelp(){
+  writeln("Initializes a library project inside a given directory or path.");
+  writeln('Usage:');
+  writeln('    mason init [options] <directory name>');
+  writeln('    mason init [options]');
+  writeln();
+  writeln('Options:');
+  writeln('    -h, --help                   Display this message');
+  writeln('        --show                   Increase verbosity');
+  writeln('    --name <legalName>           Specify package name different from directory name');
 }
 
 proc masonSearchHelp() {
@@ -344,17 +337,22 @@ proc masonCompilerHelp() {
  }
 
 proc masonTestHelp() {
-  writeln("Run test files located within target/debug/test");
+  writeln("mason test works inside and outside of mason packages.");
+  writeln("Inside a mason package: run test files found in test/");
+  writeln("Outside of a mason package: run test files found in the provided path (defaults to '.').");
   writeln();
   writeln("Usage:");
-  writeln("    mason test [options]");
+  writeln("    mason test [options] <path>");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
   writeln("        --show                  Direct output of tests to stdout");
   writeln("        --no-run                Compile tests without running them");
+  writeln("        --keep-binary           Doesn't delete the binaries after running");
+  writeln("        --recursive             Descend recursively into subdirectories of given directories");
   writeln("        --parallel              Run tests in parallel(sequential by default)");
   writeln("        --[no]-update           [Do not] update the mason-registry when testing");
+  writeln("        --setComm               Set the CHPL_COMM value for running the tests,  e.g. none, gasnet, ugni");
   writeln();
   writeln("Test configuration is up to the user");
   writeln("Tests pass if they exit with status code 0");
@@ -424,6 +422,7 @@ proc masonPublishHelp(){
   writeln("    -h, --help                   Display this message");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
+  writeln('    --ci-check                   Same as --check, except omits git origin checks');
   writeln('    --[no-]update                [Do not] Prevent registries from being updated when a package is published.');
   writeln();
   writeln('Publishing requires the mason-registry to be forked and the package to have a remote origin.');

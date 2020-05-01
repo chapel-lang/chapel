@@ -33,7 +33,8 @@ The goals of the launcher binary are:
    I/O.
 
 Executing a Chapel program using the verbose (``-v``) flag will typically
-print out the command(s) used to launch the program.
+print out the command(s) used to launch the program, along with any
+environment variables the launcher set on its behalf.
 
 Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
@@ -115,11 +116,11 @@ CHPL_RT_MASTERIP
 This environment variable is used to specify the IP address which should be used
 to connect.  By default, the node creating the connection will pass the result
 of ``gethostname()`` on to the nodes that need to connect to it, which will
-resolve that to an IP address using ``gethostbynname()``.
+resolve that to an IP address using ``gethostbyname()``.
 
 When ``CHPL_COMM == gasnet``, this will also be used to set the value of
 ``GASNET_MASTERIP``, which corresponds to the hostname of the master node (see
-http://gasnet.lbl.gov/dist/udp-conduit/README ).
+https://gasnet.lbl.gov/dist/udp-conduit/README ).
 
 .. _chpl-rt-workerip:
 
@@ -132,7 +133,7 @@ among themselves using the same interface used to connect to the master node
 (see :ref:`chpl-rt-masterip`, above).
 
 When ``CHPL_COMM == gasnet``, this will also be used to set the value of
-``GASNET_WORKERIP`` (see http://gasnet.lbl.gov/dist/udp-conduit/README ).
+``GASNET_WORKERIP`` (see https://gasnet.lbl.gov/dist/udp-conduit/README ).
 
 .. _using-slurm:
 

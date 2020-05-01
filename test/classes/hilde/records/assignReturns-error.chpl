@@ -6,6 +6,10 @@ record R {
   var x: int;
 }
 
+proc R.init=(const ref other:R) {
+  this.x = other.x;
+}
+
 proc =(ref lhs:R, rhs: R) {
   lhs.x = rhs.x + 1;
   return new R();

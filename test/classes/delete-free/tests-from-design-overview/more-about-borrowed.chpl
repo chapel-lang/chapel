@@ -33,7 +33,7 @@ proc test2a() {
   writeln("test2a");
   var x = new owned MyClass();
   computeA(x); // Coerces to borrow to pass argument
-  writeln("back in test2a");
+  writeln("back in test2a ", x);
 }
 test2a();
 
@@ -41,6 +41,6 @@ proc test2b() {
   writeln("test2b");
   var x = new owned MyClass();
   computeB(x); // Coerces to borrow to pass argument
-  writeln("back in test2b");
+  writeln("back in test2b ", x);
 }
 test2b();

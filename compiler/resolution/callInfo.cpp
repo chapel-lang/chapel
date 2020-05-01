@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -78,6 +79,12 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
       actualNames.add(NULL);
     }
 
+    if (isDefExpr(actual)) {
+      // This implies a '?t' style query expression, which we don't currently
+      // support if we got here
+      return false;
+    }
+
     SymExpr* se = toSymExpr(actual);
 
     INT_ASSERT(se);
@@ -90,8 +97,7 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
       // The _this actual to an initializer may be generic
-      bool isInit = strcmp(name, "init") == 0 ||
-                    strcmp(name, astrInitEquals) == 0;
+      bool isInit = name == astrInit || name == astrInitEquals;
       if (isInit && i == 2) {
         actuals.add(sym);
 
@@ -117,6 +123,10 @@ void CallInfo::haltNotWellFormed() const {
 
     if (NamedExpr* named = toNamedExpr(actual)) {
       actual = named->actual;
+    }
+
+    if (isDefExpr(actual)) {
+      USR_FATAL(actual, "Query expressions are not currently supported in this context");
     }
 
     SymExpr* se = toSymExpr(actual);

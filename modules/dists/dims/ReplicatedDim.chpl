@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,7 +26,7 @@
 //
 
 private use DimensionalDist2D;
-private use RangeChunk only ;
+import RangeChunk;
 
 /*
 This Replicated dimension specifier is for use with the
@@ -34,13 +35,13 @@ This Replicated dimension specifier is for use with the
 The dimension of a domain or array for which this specifier is used
 has a *replicand* for each element of ``targetLocales``
 in the same dimension. This is similar to the Replicated distribution
-(:class:`Replicated`). The dimension specifies differs
+(``Replicated``). The dimension specifies differs
 in that it always accesses the local replicand, whereas the Replicated
 distribution accesses all replicands in certain cases, as specified there.
 
 **Initializer Arguments**
 
-The ``ReplicatedDim`` class initializer is available as follows:
+The ``ReplicatedDim`` record initializer is available as follows:
 
   .. code-block:: chapel
 
@@ -48,7 +49,7 @@ The ``ReplicatedDim`` class initializer is available as follows:
 
 It creates a dimension specifier for replication over ``numLocales`` locales.
 */
-class ReplicatedDim {
+record ReplicatedDim {
   // REQ over how many locales
   // todo: can the Dimensional do without this one?
   const numLocales: int;
@@ -60,7 +61,7 @@ class ReplicatedDim {
   var localLocIDlegit = false;
 }
 
-class Replicated1dom {
+record Replicated1dom {
   // REQ the parameters of our dimension of the domain being created
   type idxType;
   param stridable: bool;
@@ -80,7 +81,7 @@ class Replicated1dom {
   proc dsiSetIndicesUnimplementedCase param return false;
 }
 
-class Replicated1locdom {
+record Replicated1locdom {
   type stoIndexT;
   param stridable;
   // our copy of wholeR
@@ -90,22 +91,18 @@ class Replicated1locdom {
 
 /////////// privatization - start
 
-// REQ does this class support privatization?
-proc ReplicatedDim.dsiSupportsPrivatization1d() param return true;
-
-// REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
+// REQ - same purpose as dsiGetPrivatizeData(); can return 'this'
 proc ReplicatedDim.dsiGetPrivatizeData1d() {
   return (numLocales,);
 }
 
-// REQ if privatization is supported - same purpose as dsiPrivatize()
-proc ReplicatedDim.dsiPrivatize1d(privatizeData) {
-  return new unmanaged ReplicatedDim(numLocales = privatizeData(1));
+// REQ - same purpose as dsiPrivatize()
+proc type ReplicatedDim.dsiPrivatize1d(privatizeData) {
+  return new ReplicatedDim(numLocales = privatizeData(0));
 }
 
 // REQ does this class need -- and provide -- the localLocID?
 // dsiStoreLocalLocID1d() will be invoked on privatized copies
-// only when dsiSupportsPrivatization1d is true (obviously).
 proc ReplicatedDim.dsiUsesLocalLocID1d() param return true;
 
 // REQ if dsiUsesLocalLocID1d: store the localLocID
@@ -135,36 +132,28 @@ proc ReplicatedDim.dsiGetLocalLocID1d(): (locIdT, bool) {
   return (this.localLocID, this.localLocIDlegit);
 }
 
-// REQ does this class support privatization?
-proc Replicated1dom.dsiSupportsPrivatization1d() param return true;
-
-// REQ if privatization is supported - same purpose as dsiGetPrivatizeData()
+// REQ - same purpose as dsiGetPrivatizeData(); can return 'this'
 proc Replicated1dom.dsiGetPrivatizeData1d() {
   return (wholeR,);
 }
 
-// REQ if privatization is supported - same purpose as dsiPrivatize()
-// 'privDist' is the corresponding 1-d distribution descriptor,
-// privatized (if it supports privatization).
-proc Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
+// REQ - same purpose as dsiPrivatize()
+// 'privDist' is the corresponding 1-d distribution descriptor, privatized
+proc type Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
-  return new unmanaged Replicated1dom(idxType   = this.idxType,
-                  stridable = this.stridable,
-                  wholeR    = privatizeData(1));
+  return new Replicated1dom(idxType   = this.idxType,
+                            stridable = this.stridable,
+                            wholeR    = privatizeData(0));
 }
 
-// REQ if privatization is supported - same purpose as dsiGetReprivatizeData()
+// REQ - same purpose as dsiGetReprivatizeData()
 proc Replicated1dom.dsiGetReprivatizeData1d() {
   return (wholeR,);
 }
 
-// REQ if privatization is supported - same purpose as dsiReprivatize()
-proc Replicated1dom.dsiReprivatize1d(other, reprivatizeData) {
-  if other.idxType   != this.idxType ||
-     other.stridable != this.stridable then
-    compilerError("inconsistent types in privatization");
-
-  this.wholeR = reprivatizeData(1);
+// REQ - same purpose as dsiReprivatize()
+proc Replicated1dom.dsiReprivatize1d(reprivatizeData) {
+  this.wholeR = reprivatizeData(0);
 }
 
 // REQ does this class need the localLocID?
@@ -189,7 +178,6 @@ proc Replicated1dom.dsiGetLocalLocID1d(): (locIdT, bool) {
 
 // REQ does a local domain descriptor use a pointer
 // to the privatized global domain descriptor?
-// Consulted only when dsiSupportsPrivatization1d is true.
 proc Replicated1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
 
 // REQ if dsiLocalDescUsesPrivatizedGlobalDesc1d: store the pointer to
@@ -212,10 +200,10 @@ proc Replicated1locdom.dsiStoreLocalDescToPrivatizedGlobalDesc1d(privGlobDesc) {
 // where our dimension is a range(idxType, bounded, stridable)
 // stoIndexT is the same as in Replicated1dom.dsiNewLocalDom1d.
 proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
-                                  type stoIndexT)
+                                          type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
-  return new unmanaged Replicated1dom(idxType, stridable);
+  return new Replicated1dom(idxType, stridable);
 }
 
 // A nicety: produce a string showing the parameters.
@@ -233,7 +221,7 @@ proc Replicated1dom.dsiIsReplicated1d() param return true;
 // stoIndexT must be the index type of the range returned by
 // dsiSetLocalIndices1d().
 proc Replicated1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  return new unmanaged Replicated1locdom(stoIndexT, wholeR.stridable);
+  return new Replicated1locdom(stoIndexT, wholeR.stridable);
 }
 
 // REQ given our dimension of the array index, on which locale is it located?
@@ -291,7 +279,7 @@ proc Replicated1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 iter Replicated1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
   : dsiMyDensifiedRangeType1d(globDD)
 {
-  yield 0:globDD.idxType..#locWholeR.length;
+  yield 0:globDD.idxType..#locWholeR.size;
 }
 
 // REQ whether this distribution can handle only a single task per locale.
@@ -305,7 +293,7 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
   : dsiMyDensifiedRangeType1d(globDD)
 {
   type IT = globDD.idxType;
-  const (start, end) = chunkOrder(locWholeR, numTasks:IT, taskid:IT);
+  const (start, end) = RangeChunk.chunkOrder(locWholeR, numTasks:IT, taskid:IT);
   return (start:IT)..(end:IT);
 }
 

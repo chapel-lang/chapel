@@ -1,8 +1,9 @@
+use Map;
+
 enum classVals {S, W, A, B, C, D};
 
 proc doit() {
-  const Class: domain(classVals);
-  var probSizes:   [Class] int;
+  var probSizes = new map(classVals, int);
 
   probSizes(classVals.S) = 1400;
   probSizes(classVals.W) = 7000;

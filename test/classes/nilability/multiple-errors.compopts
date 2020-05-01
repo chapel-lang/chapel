@@ -1,0 +1,2 @@
+--no-ignore-nilability-errors  # multiple-errors.1.good
+--ignore-nilability-errors     # multiple-errors.2.good

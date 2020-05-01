@@ -22,7 +22,7 @@ CWD=$(cd $(dirname $0) ; pwd)
 CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
 this_year=$(date '+%Y')
-copyright_pattern="Copyright .*${this_year}[^0-9]* Cray Inc"
+copyright_pattern="Copyright .*${this_year}[^0-9]* Hewlett Packard Enterprise Development LP"
 source_dirs="compiler runtime make modules*"
 
 echo "[INFO] Moving to CHPL_HOME: ${CHPL_HOME}"

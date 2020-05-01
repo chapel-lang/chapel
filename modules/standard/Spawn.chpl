@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -128,6 +129,9 @@ other task is consuming it.
 
  */
 module Spawn {
+  public use IO;
+  public use SysError;
+  private use SysCTypes;
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -261,8 +265,7 @@ module Spawn {
        can write to the subprocess through this pipe if the subprocess
        was created with stdin=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stdin pipe open.
+       :throws SystemError: If the subprocess does not have a stdin pipe open.
      */
     proc stdin throws {
       try _throw_on_launch_error();
@@ -278,8 +281,7 @@ module Spawn {
        can read from the subprocess through this pipe if the subprocess
        was created with stdout=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stdout pipe open.
+       :throws SystemError: If the subprocess does not have a stdout pipe open.
      */
     proc stdout throws {
       try _throw_on_launch_error();
@@ -295,8 +297,7 @@ module Spawn {
        can read from the subprocess through this pipe if the subprocess
        was created with stderr=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stderr pipe open.
+       :throws SystemError: If the subprocess does not have a stderr pipe open.
      */
     proc stderr throws {
       try _throw_on_launch_error();

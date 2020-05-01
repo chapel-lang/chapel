@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,8 +24,8 @@
 #include "mli/common_code.c"
 
 #include "chpllaunch.h"
+#include "chpl-export-wrappers.h"
 #include "chpl-external-array.h"
-
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -37,6 +38,32 @@ void chpl_mli_terminate(enum chpl_mli_errors e);
 int chpl_mli_client_launch(int argc, char** argv);
 void chpl_library_init(int argc, char** argv);
 void chpl_library_finalize(void);
+
+//
+// The `mli_free` routine should resolve to a call to `free` on the client
+// side.
+//
+void chpl_byte_buffer_free(chpl_byte_buffer cb) {
+  if (!cb.isOwned) { return; }
+
+  if (cb.data != NULL) {
+    mli_free(cb.data);
+  }
+
+  return;
+}
+
+chpl_byte_buffer chpl_byte_buffer_make(const char* data) {
+  // We can get away with this cast because we mark "isOwned" as false.
+  chpl_byte_buffer result = { 0, (char*) data, strlen(data) };
+  return result;
+}
+
+chpl_byte_buffer chpl_byte_buffer_make_len(const char* data, uint64_t size) {
+  // We can get away with this cast because we mark "isOwned" as false.
+  chpl_byte_buffer result = { 0, (char*) data, size };
+  return result;
+}
 
 void chpl_mli_client_init(struct chpl_mli_context* client) {
   if (client->context) { return; }
@@ -65,7 +92,7 @@ char* chpl_mli_pull_connection(void) {
   chpl_mli_debugf("Getting %s\n", "expected size");
   chpl_mli_pull(chpl_client.setup_sock, &len, sizeof(len), 0);
   chpl_mli_debugf("Expected size is %d\n", len);
-  char* conn = mli_malloc(len);
+  char* conn = mli_malloc(len+1);
   chpl_mli_debugf("Getting %s\n", "string itself");
   chpl_mli_pull(chpl_client.setup_sock, (void*)conn, len, 0);
   conn[len] = '\0';

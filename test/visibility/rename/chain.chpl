@@ -1,5 +1,5 @@
 module A {
-  use B only foo as bar;
+  public use B only foo as bar;
 }
 
 module B {

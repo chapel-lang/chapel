@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -45,8 +46,7 @@ RESOLUTION_SRCS =                                              \
                   visibleFunctions.cpp                         \
                   wrappers.cpp
 
-SVN_SRCS        = $(RESOLUTION_SRCS)
-SRCS            = $(SVN_SRCS)
+SRCS            = $(RESOLUTION_SRCS)
 
 RESOLUTION_OBJS =                                              \
           $(RESOLUTION_SRCS:%.cpp=$(RESOLUTION_OBJDIR)/%.$(OBJ_SUFFIX))

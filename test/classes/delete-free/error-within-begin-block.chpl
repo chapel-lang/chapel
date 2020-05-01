@@ -6,6 +6,6 @@ proc test() {
     var a = new owned C(1);
     bb = a.borrow();
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 test();

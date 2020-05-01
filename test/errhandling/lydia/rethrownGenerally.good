@@ -1,4 +1,4 @@
 Caught NilThrownError
 uncaught NilThrownError: thrown error was nil
-  rethrownGenerally.chpl:9: thrown here
+  rethrownGenerally.chpl:5: thrown here
   rethrownGenerally.chpl:3: uncaught here

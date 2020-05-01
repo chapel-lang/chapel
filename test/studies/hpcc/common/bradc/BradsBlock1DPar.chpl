@@ -11,6 +11,7 @@
 // TODO: Make these into an official distribution?
 
 // TODO: implement the slicing interface?
+private use IO;
 
 config param debugBradsBlock1D = false;
 
@@ -51,7 +52,7 @@ class Block1DDist {
   // DOWN: an array of local distribution class descriptors -- set up
   // in the class initializer
   //
-  var locDist: [targetLocDom] unmanaged LocBlock1DDist(idxType);
+  var locDist: [targetLocDom] unmanaged LocBlock1DDist(idxType)?;
 
 
   // INITIALIZERS:
@@ -67,7 +68,7 @@ class Block1DDist {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = {0..#targetLocales.numElements};
+    targetLocDom = {0..#targetLocales.size};
     targetLocs = targetLocales;
 
     this.complete();
@@ -101,7 +102,7 @@ class Block1DDist {
   //
   // print out the distribution
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.writeln("BradsBlock1DPar");
     x.writeln("---------------");
     x.writeln("distributes: ", boundingBox);
@@ -134,14 +135,14 @@ class Block1DDist {
     //
     // TODO: Does using David's detupling trick work here?
     //
-    return locDist(locid).myChunk(inds.dim(1));
+    return locDist(locid)!.myChunk(inds.dim(0));
   }
   
   //
   // Determine which locale owns a particular index
   //
   // TODO: I jotted down a note during the code review asking whether
-  // targetLocs.numElements and boundingbox.numIndices should be
+  // targetLocs.size and boundingbox.size should be
   // captured locally, or captured in the default dom/array implementation
   // or inlined.  Not sure what that point was anymore, though.  Maybe
   // someone else can help me remember it (since it was probably someone
@@ -149,7 +150,7 @@ class Block1DDist {
   //
   proc idxToLocaleInd(ind: idxType) {
     const ind0 = ind - boundingBox.low;
-    const locInd = (ind0 * targetLocs.numElements) / boundingBox.numIndices;
+    const locInd = (ind0 * targetLocs.size) / boundingBox.size;
     return locInd: index(targetLocDom);
   }
 }
@@ -206,7 +207,7 @@ class LocBlock1DDist {
     const lo = dist.boundingBox.low;
     const hi = dist.boundingBox.high;
     const numelems = hi - lo + 1;
-    const numlocs = dist.targetLocDom.numIndices;
+    const numlocs = dist.targetLocDom.size;
     const blo = if (_localeIdx == 0) then min(idxType)
                 else procToData((numelems: real * _localeIdx) / numlocs, lo);
     const bhi = if (_localeIdx == numlocs - 1) then max(idxType)
@@ -233,7 +234,7 @@ class LocBlock1DDist {
   //
   // print out the local distribution class
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
@@ -269,7 +270,7 @@ class Block1DDom {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locDoms: [dist.targetLocDom] unmanaged LocBlock1DDom(idxType);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlock1DDom(idxType)?;
 
 
   // STATE:
@@ -313,7 +314,7 @@ class Block1DDom {
       // TODO: Would want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
-        for ind in blk do
+        for ind in blk! do
           yield ind;
   }
 
@@ -363,7 +364,7 @@ class Block1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock.translate(-whole.low);
+      yield locDom!.myBlock.translate(-whole.low);
   }
 
 
@@ -388,7 +389,7 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(whole);
   }
 
@@ -402,8 +403,8 @@ class Block1DDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  proc numIndices {
-    return whole.numIndices;
+  proc size {
+    return whole.size;
   }
 
   proc low {
@@ -480,7 +481,7 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myBlock);
   }
 
@@ -493,8 +494,8 @@ class LocBlock1DDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  proc numIndices {
-    return myBlock.numIndices;
+  proc size {
+    return myBlock.size;
   }
 
   proc low {
@@ -541,7 +542,7 @@ class Block1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(idxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlock1DArr(idxType, elemType)?;
 
 
   // INITIALIZERS:
@@ -549,7 +550,7 @@ class Block1DArr {
   proc postinit() {
     for localeIdx in dom.dist.targetLocDom do
       on dom.dist.targetLocs(localeIdx) do
-        locArr(localeIdx) = new unmanaged LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx));
+        locArr(localeIdx) = new unmanaged LocBlock1DArr(idxType, elemType, dom.locDoms(localeIdx)!);
   }
 
   proc deinit() {
@@ -567,7 +568,7 @@ class Block1DArr {
   // TODO: Do we need a global bounds check here or in idxToLocaleind?
   //
   proc this(i: idxType) ref {
-    return locArr(dom.dist.idxToLocaleInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))!(i);
   }
 
   //
@@ -578,7 +579,7 @@ class Block1DArr {
       // TODO: May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArr(loc)! {
         yield elem;
       }
     }
@@ -604,13 +605,13 @@ class Block1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc)!.size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -626,8 +627,8 @@ class Block1DArr {
   //
   // a query for the number of elements in the array
   //
-  proc numElements {
-    return dom.numIndices;
+  proc size {
+    return dom.size;
   }
 }
 
@@ -700,7 +701,7 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -710,7 +711,7 @@ class LocBlock1DArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
-    return myElems.numElements;
+  proc size {
+    return myElems.size;
   }
 }

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -569,6 +570,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
+  dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
@@ -576,16 +578,25 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+
+  dtObject                             = new AggregateType(AGGREGATE_CLASS);
+  dtObject->symbol                     = new TypeSymbol("object", dtObject);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
+
+  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
+  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
+
+  dtShared                             = new AggregateType(AGGREGATE_RECORD);
+  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -612,13 +623,17 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
   dtNil = createInternalType ("_nilType", "_nilType");
+  dtNil->symbol->addFlag(FLAG_NO_RENAME);
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  gNil->addFlag(FLAG_NO_RENAME);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+
+  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -719,8 +734,7 @@ void initPrimitiveTypes() {
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
   // parses from enum
-  // TODO: remove enumerated and replace it with enum
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyImag = createInternalType("chpl_anyimag", "imag");
@@ -728,6 +742,9 @@ void initPrimitiveTypes() {
 
   dtAnyReal = createInternalType("chpl_anyreal", "real");
   dtAnyReal->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
+  dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
 
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
@@ -792,7 +809,9 @@ void initPrimitiveTypes() {
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
-  return createType(name, cname, false);
+  PrimitiveType* newType = createType(name, cname, false);
+  newType->symbol->addFlag(FLAG_NO_RENAME);
+  return newType;
 }
 
 static PrimitiveType* createInternalType(const char* name, const char* cname) {
@@ -830,7 +849,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-void initChplProgram(DefExpr* objectDef) {
+void initChplProgram() {
   theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
                                           new BlockStmt());
@@ -838,8 +857,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
-
-  theProgram->block->insertAtHead(objectDef);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
@@ -862,7 +879,7 @@ static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
 void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_CONST);
+  gBoundsChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
 
   gCastChecking = new VarSymbol("castChecking", dtBool);
@@ -872,10 +889,6 @@ void initCompilerGlobals() {
   gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
-
-  gLegacyClasses = new VarSymbol("chpl_legacyClasses", dtBool);
-  gLegacyClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyClasses, fLegacyClasses);
 
   gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
   gOverloadSetsChecks->addFlag(FLAG_PARAM);
@@ -1061,6 +1074,39 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
+bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+bool isBorrowedClass(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    return dt->isBorrowed();
+
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
 bool isBuiltinGenericClassType(Type* t) {
   return t == dtBorrowed ||
          t == dtBorrowedNonNilable ||
@@ -1089,6 +1135,7 @@ bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                             t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                             t == dtCVoidPtr ||
+                            t == dtStringC ||
                             t == dtCFnPtr);
 }
 
@@ -1342,47 +1389,16 @@ bool isBytes(Type* type) {
   return type == dtBytes;
 }
 
-//
-// Noakes 2016/02/29
-//
-// To support the merge of the string-as-rec branch we defined a
-// function, isString(), which is only true of the record that was
-// defined in the new implementation of String.  This predicate was
-// applied in cullOverReferences and callDestructors to improve
-// memory management for that particular record type.
-//
-// We seek to apply those routines to a wider set of record types but
-// are not ready to apply them to range, tuple, and the reference-counted
-// records.
-//
-// This shorter-term predicate, which has a slightly inelegant name, allows
-// most record-like types to use the new business logic.
-//
-// In the longer term we plan to further broaden the cases that the new
-// logic can handle and reduce the exceptions that are filtered out here.
-//
-//
-//
-// MPF    2016/09/15
-// This function now includes tuples, distributions, domains, and arrays.
-//
-// Noakes 2017/03/02
-// This function now includes range and atomics
-//
-// MPF    2017/08/03
-// This function now includes iterator records
-//
-// TODO: rename this to isMemoryManagedRecord or something along
-//       those lines, since it now applies to some compiler-internal records.
-//
-bool isUserDefinedRecord(Type* type) {
+// Indicates record-like memory management
+bool typeNeedsCopyInitDeinit(Type* type) {
   bool retval = false;
 
   if (AggregateType* aggr = toAggregateType(type)) {
     Symbol*     sym  = aggr->symbol;
 
     // Must be a record type
-    if (aggr->aggregateTag != AGGREGATE_RECORD) {
+    if (aggr->aggregateTag != AGGREGATE_RECORD &&
+        aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;
 
     // Not a RUNTIME_type
@@ -1514,7 +1530,10 @@ bool isPrimitiveScalar(Type* type) {
       type == dtReal[FLOAT_SIZE_64]        ||
 
       type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]) {
+      type == dtImag[FLOAT_SIZE_64]        ||
+
+      type == dtComplex[COMPLEX_SIZE_64]   ||
+      type == dtComplex[COMPLEX_SIZE_128]) {
 
     retval = true;
 
@@ -1660,11 +1679,11 @@ bool isGenericRecordWithInitializers(Type* type) {
   return retval;
 }
 
-bool isRecordWithInitializers(Type* type) {
+bool isRecordOrUnionWithInitializers(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isRecord()                   == true  &&
+    if ((at->isRecord() || at->isUnion()) &&
         (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
@@ -1685,7 +1704,7 @@ bool needsGenericRecordInitializer(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (isRecordWithInitializers(type)) {
+    if (isRecordOrUnionWithInitializers(type)) {
       if (at->isGeneric() == true ||
           at->symbol->hasFlag(FLAG_GENERIC) == true ||
           at->instantiatedFrom != NULL) {

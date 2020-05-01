@@ -1,0 +1,3 @@
+Param folding of if expression passes a non-lvalue actual to copy
+initializer. This causes a problem when the copy initializer expects the
+source argument to be passed by `ref`.

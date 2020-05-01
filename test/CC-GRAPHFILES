@@ -23,3 +23,10 @@ performance/ferguson/remote-two-array-read.graph
 performance/ferguson/array-assign-get.graph
 # suite: BulkTransfer
 optimizations/bulkcomm/block/exchange.graph
+# suite: Domain/Array creation
+performance/array/distCreate-arrays-deinit.cc-perf.graph
+performance/array/distCreate-arrays-init.cc-perf.graph
+performance/array/distCreate-domains-deinit.cc-perf.graph
+performance/array/distCreate-domains-init.cc-perf.graph
+# suite: Sort
+library/packages/Sort/performance/dist-performance.cc.graph

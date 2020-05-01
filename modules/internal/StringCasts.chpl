@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +19,8 @@
  */
 
 module StringCasts {
-  use ChapelStandard;
+  private use ChapelStandard;
+  private use SysCTypes;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
@@ -74,8 +76,8 @@ module StringCasts {
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = strlen(csc).safeCast(int);
-    ret._size = ret.len+1;
+    ret.buffLen = strlen(csc).safeCast(int);
+    ret.buffSize = ret.buffLen+1;
 
     return ret;
   }
@@ -111,7 +113,7 @@ module StringCasts {
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find("_") != 0;
+    const hasUnderscores = localX.find("_") != -1;
 
     if hasUnderscores {
       localX = localX.strip();
@@ -125,8 +127,8 @@ module StringCasts {
         throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
 
       // remove underscores everywhere but the first position
-      if localX.length >= 2 then
-        localX = localX[1] + localX[2..].replace("_", "");
+      if localX.size >= 2 then
+        localX = localX[0] + localX[1..].replace("_", "");
     }
 
     if localX.isEmpty() then
@@ -169,8 +171,8 @@ module StringCasts {
 
     var ret: string;
     ret.buff = csc:c_ptr(uint(8));
-    ret.len = strlen(csc).safeCast(int);
-    ret._size = ret.len+1;
+    ret.buffLen = strlen(csc).safeCast(int);
+    ret.buffSize = ret.buffLen+1;
 
     return ret;
   }
@@ -189,16 +191,16 @@ module StringCasts {
   }
 
   inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
-    var len = s.length;
+    var len = s.size;
 
     if s.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
 
-    if len >= 2 && s[2..].find("_") != 0 {
+    if len >= 2 && s[1..].find("_") != -1 {
       // Don't remove a leading underscore in the string number,
       // but remove the rest.
-      if len > 2 && s[1] == "_" {
-        s = s[1] + s[2..].replace("_", "");
+      if len > 2 && s[0] == "_" {
+        s = s[0] + s[1..].replace("_", "");
       } else {
         s = s.replace("_", "");
       }

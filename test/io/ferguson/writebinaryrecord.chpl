@@ -1,3 +1,5 @@
+use IO;
+
 record R {
   var a:int;
   var b:int;

@@ -8,7 +8,7 @@ config const printTiming = false;
 
 const shift = (123, 456, 789);
 
-use Random, Time;
+use Random, Time, IO;
 
 var Dom: domain(3) = {1..m, 1..n, 1..o};
 

@@ -1,8 +1,10 @@
+use IO;
+
 class mything {
   var x:int;
   var y:int;
 
-  proc readWriteThis(rw) {
+  proc readWriteThis(rw) throws {
     rw <~> x;
     rw <~> new ioLiteral(" ");
     rw <~> y;

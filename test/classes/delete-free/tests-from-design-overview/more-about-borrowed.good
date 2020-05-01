@@ -6,9 +6,9 @@ borrowed MyClass
 in MyClass.deinit
 test2a
 in computeA owned MyClass {x = 0}
-back in test2a
+back in test2a {x = 0}
 in MyClass.deinit
 test2b
 in computeB borrowed MyClass {x = 0}
-back in test2b
+back in test2b {x = 0}
 in MyClass.deinit

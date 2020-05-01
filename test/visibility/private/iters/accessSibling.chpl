@@ -4,10 +4,10 @@ module M1 {
       yield 10;
     }
   }
-
 }
 
 module M2 {
+  use M1 only;
   proc main() {
     writeln(M1.foo(3));
     // Ensures that the private module level iterator foo is not visible

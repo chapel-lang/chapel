@@ -1,3 +1,5 @@
+use SysCTypes;
+
 proc copyBtoC(A:[], B:[])
 {
   A._value.copyBtoC(B);
@@ -18,8 +20,8 @@ proc BlockArr.copyBtoC(B)
     var count: [1..#(stridelevels+1)] size_t;
     var lid=loc.id;
 
-    var numLocales: int(32)=dom.dist.targetLocDom.dim(1).length:int(32);
-    var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
+    var numLocales: int(32)=dom.dist.targetLocDom.dim(0).size:int(32);
+    var n:int(32)=dom.dist.boundingBox.dim(0).size:int(32);
     var src = locArr[lid].myElems._value.theData;
 
     dststrides[1]=1;
@@ -87,8 +89,8 @@ proc  BlockArr.copyCtoB(B)
     var srcstrides: [1..#stridelevels] size_t;
     var count: [1..#(stridelevels+1)] size_t;
     var lid=loc.id;
-    var numLocales: int=dom.dist.targetLocDom.dim(1).length;
-    var n:int(32)=dom.dist.boundingBox.dim(1).length:int(32);
+    var numLocales: int=dom.dist.targetLocDom.dim(0).size;
+    var n:int(32)=dom.dist.boundingBox.dim(0).size:int(32);
 
     var dststr=dststrides._value.theData;
     var srcstr=srcstrides._value.theData;
@@ -297,7 +299,7 @@ proc main() {
 // over domain ADom using twiddle vector W
 //
 proc dfft(A: [?ADom], W, cyclicPhase) {
-  const numElements = A.numElements;
+  const numElements = A.size;
   //
   // loop over the phases of the DFT sequentially using custom
   // iterator genDFTStrideSpan that yields the stride and span for
@@ -441,7 +443,7 @@ proc initVectors(Twiddles, z) {
 // Compute the twiddle vector values
 //
 proc computeTwiddles(Twiddles) {
-  const numTwdls = Twiddles.numElements,
+  const numTwdls = Twiddles.size,
     delta = 2.0 * atan(1.0) / numTwdls;
 
   Twiddles(0) = 1.0;
@@ -460,7 +462,7 @@ proc computeTwiddles(Twiddles) {
 // of the indices
 //
 proc bitReverseShuffle(Vect: [?Dom]) {
-  const numBits = log2(Vect.numElements),
+  const numBits = log2(Vect.size),
     Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
 }

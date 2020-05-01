@@ -4,7 +4,7 @@ var test_case_1: [1..5] real = [2.3, -3.4, 8.91, 12.04, 2.8];
 
 var test_case_2: string = 'This is a test sentence.';
 
-var test_case_3: range = -3..21 by 3;
+var test_case_3: range(?) = -3..21 by 3;
 
 
 //  Testing with an integer array

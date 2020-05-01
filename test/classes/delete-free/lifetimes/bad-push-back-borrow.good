@@ -1,4 +1,0 @@
-bad-push-back-borrow.chpl:20: In function 'addone':
-bad-push-back-borrow.chpl:25: error: Actual argument does not meet called function lifetime constraint
-note: called function [domain(1,int(64),false)] borrowed I.push_back(val: borrowed I)
-note: includes lifetime constraint this < val

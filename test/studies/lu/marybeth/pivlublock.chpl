@@ -1,5 +1,6 @@
 // Block LU with pivoting.
 // Magic square of dimension 10 as test matrix.
+use IO;
 
 param n = 10;
 param blk = 5;

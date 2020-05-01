@@ -1,0 +1,12 @@
+(owns = true, c = {x = 1})
+(owns = false, c = {x = 1})
+(owns = true, c = {x = 1})
+(owns = false, c = {x = 1})
+(owns = true, c = {x = 1})
+(owns = false, c = {x = 1})
+(owns = true, c = {x = 1})
+(owns = false, c = {x = 1})
+{owns = true, c = {x = 1}}
+{owns = false, c = {x = 1}}
+{owns = true, c = {x = 1}}
+{owns = false, c = {x = 1}}

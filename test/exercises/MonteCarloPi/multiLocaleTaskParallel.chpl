@@ -55,7 +55,7 @@ coforall loc in Locales {
             extras = locN%tasksPerLocale;
       rs.skipToNth(2*(locFirstPt + 
                       tid*locNPerTask + (if tid < extras then tid else extras))
-                   + 1);
+                   );
 
       var count = 0;
       for i in 1..locNPerTask + (tid < extras) do

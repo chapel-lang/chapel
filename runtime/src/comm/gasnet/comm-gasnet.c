@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -40,7 +41,6 @@
 #include "error.h"
 #include "chpl-mem-desc.h"
 #include "chpl-mem-sys.h" // mem layer not initialized in init, need sys alloc
-#include "chpl-cache.h" // to call chpl_cache_init()
 
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
@@ -152,6 +152,8 @@ void init_done_obj(done_t* done, int target) {
   done->flag = 0;
 }
 
+static inline void am_poll_try(void);
+
 static inline
 void wait_done_obj(done_t* done, chpl_bool do_yield)
 {
@@ -159,7 +161,7 @@ void wait_done_obj(done_t* done, chpl_bool do_yield)
   GASNET_BLOCKUNTIL(done->flag);
 #else
   while (!done->flag) {
-    (void) gasnet_AMPoll();
+    am_poll_try();
     if (do_yield)
       chpl_task_yield();
   }
@@ -721,12 +723,28 @@ int32_t chpl_comm_getMaxThreads(void) {
 static volatile int pollingRunning;
 static volatile int pollingQuit;
 static chpl_bool pollingRequired;
+static atomic_bool pollingLock;
+
+static inline void am_poll_try(void) {
+  // Serialize polling for IBV and Aries. Concurrent polling causes contention
+  // in these configurations. For other configurations that are AM-based
+  // (udp/amudp, mpi/ammpi) serializing can hurt performance.
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_ARIES)
+  if (!atomic_load_explicit_bool(&pollingLock, memory_order_acquire) &&
+      !atomic_exchange_explicit_bool(&pollingLock, true, memory_order_acquire)) {
+    (void) gasnet_AMPoll();
+    atomic_store_explicit_bool(&pollingLock, false, memory_order_release);
+  }
+#else
+    (void) gasnet_AMPoll();
+#endif
+}
 
 static void polling(void* x) {
   pollingRunning = 1;
 
   while (!pollingQuit) {
-    (void) gasnet_AMPoll();
+    am_poll_try();
     chpl_task_yield();
   }
 
@@ -734,6 +752,7 @@ static void polling(void* x) {
 }
 
 static void setup_polling(void) {
+  atomic_init_bool(&pollingLock, false);
 #if defined(GASNET_CONDUIT_IBV)
   pollingRequired = false;
   chpl_env_set("GASNET_RCV_THREAD", "1", 1);
@@ -785,10 +804,10 @@ static void set_max_segsize() {
 }
 
 static void set_num_comm_domains() {
-#if defined(GASNET_CONDUIT_GEMINI) || defined(GASNET_CONDUIT_ARIES)
+#if defined(GASNET_CONDUIT_ARIES)
   const int num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
   chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus, 0);
-  chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "3", 0);
+  chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "0", 0);
 
   // GASNET_DOMAIN_COUNT increases the shutdown time. Work around this for now.
   // See https://github.com/chapel-lang/chapel/issues/7251 and
@@ -896,11 +915,15 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 0;
 }
 
+//
+// No support for lldb for now
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
+  return 0;
+}
+
 void chpl_comm_post_task_init(void) {
   start_polling();
-
-  // Initialize the caching layer, if it is active.
-  chpl_cache_init();
 }
 
 void chpl_comm_rollcall(void) {
@@ -1068,7 +1091,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
+    chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
     chpl_comm_diags_incr(put);
 
     // Handle remote address not in remote segment.
@@ -1143,7 +1166,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
       chpl_comm_do_callbacks (&cb_data);
     }
 
-    chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
+    chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
     chpl_comm_diags_incr(get);
 
     // Handle remote address not in remote segment.
@@ -1285,7 +1308,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   }
   
   // the case (chpl_nodeID == srcnode) is internally managed inside gasnet
-  chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn);
+  chpl_comm_diags_verbose_rdmaStrd("get", srcnode, ln, fn, commID);
   if (chpl_nodeID != srcnode) {
     chpl_comm_diags_incr(get);
   }
@@ -1330,7 +1353,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   }
 
   // the case (chpl_nodeID == dstnode) is internally managed inside gasnet
-  chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn);
+  chpl_comm_diags_verbose_rdmaStrd("put", dstnode, ln, fn, commID);
   if (chpl_nodeID != dstnode) {
     chpl_comm_diags_incr(put);
   }
@@ -1338,6 +1361,54 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   // TODO -- handle strided put for non-registered memory
   gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls); 
 }
+
+#define MAX_UNORDERED_TRANS_SZ 1024
+void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                c_nodeid_t srcnode, void* srcaddr,
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn) {
+  assert(dstaddr != NULL);
+  assert(srcaddr != NULL);
+
+  if (size == 0)
+    return;
+
+  if (dstnode == chpl_nodeID && srcnode == chpl_nodeID) {
+    memmove(dstaddr, srcaddr, size);
+    return;
+  }
+
+  if (dstnode == chpl_nodeID) {
+    chpl_comm_get(dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  } else if (srcnode == chpl_nodeID) {
+    chpl_comm_put(srcaddr, dstnode, dstaddr, size, commID, ln, fn);
+  } else {
+    if (size <= MAX_UNORDERED_TRANS_SZ) {
+      char buf[MAX_UNORDERED_TRANS_SZ];
+      chpl_comm_get(buf, srcnode, srcaddr, size, commID, ln, fn);
+      chpl_comm_put(buf, dstnode, dstaddr, size, commID, ln, fn);
+    } else {
+      // Note, we do not expect this case to trigger, but if it does we may
+      // want to do on-stmt to src node and then transfer
+      char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
+      chpl_comm_get(buf, srcnode, srcaddr, size, commID, ln, fn);
+      chpl_comm_put(buf, dstnode, dstaddr, size, commID, ln, fn);
+      chpl_mem_free(buf, 0, 0);
+    }
+  }
+}
+
+void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn) {
+  chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+}
+
+void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn) {
+  chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) { }
 
 static inline
 void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,

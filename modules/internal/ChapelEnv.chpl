@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,7 +31,8 @@
 
  */
 module ChapelEnv {
-  use ChapelStandard;
+  private use String;
+  private use ChapelStandard;
 
   /* See :ref:`readme-chplenv.CHPL_HOME` for more information. */
   param CHPL_HOME:string            = __primitive("get compiler variable", "CHPL_HOME");

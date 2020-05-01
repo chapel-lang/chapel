@@ -6,14 +6,14 @@ class MyDomain : Domain {
 class Array {
   proc foo() {
     writeln("In parent foo");
-    return nil: unmanaged Domain;
+    return nil: unmanaged Domain?;
   }
 }
 class MyArray : Array {
   var dom;
   override proc foo() {
     writeln("In child foo");
-    return dom;
+    return dom: class?;
   }
 }
 

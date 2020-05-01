@@ -11,7 +11,7 @@ iter foo(param tag: iterKind, n: int) where tag == iterKind.leader {
 }
 
 iter foo(param tag: iterKind, followThis, n: int) where tag == iterKind.follower {
-  for i in followThis(1)+1 do
+  for i in followThis(0)+1 do
     yield i;
 }
 
@@ -29,7 +29,7 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = makeRandomStream(real, seed=315, algorithm=RNG.NPB);
+  var rs = createRandomStream(real, seed=315, algorithm=RNG.NPB);
 
   forall (i, r) in zip({1..n}, rs.iterate({1..n})) do
     B(i) = r;
@@ -40,7 +40,7 @@ use Random;
 {
   var B: [1..n] real;
 
-  var rs = makeRandomStream(real, seed=315, algorithm=RNG.NPB);
+  var rs = createRandomStream(real, seed=315, algorithm=RNG.NPB);
 
   forall (f, r) in zip(foo(n), rs.iterate({1..n})) do
     B(f) = r;

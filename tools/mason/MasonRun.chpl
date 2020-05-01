@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +22,7 @@ private use List;
 use MasonBuild;
 use MasonHelp;
 use MasonUtils;
+use MasonExample;
 use FileSystem;
 use TOML;
 
@@ -80,8 +82,8 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const tomlFile = new owned(parseToml(toParse));
-    const project = tomlFile["brick"]["name"].s;
+    const tomlFile = owned.create(parseToml(toParse));
+    const project = tomlFile["brick"]!["name"]!.s;
  
     // Find the Binary and execute
     if isDir(joinPath(projectHome, 'target')) {
@@ -196,10 +198,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
-      //
-      // TODO: If I pass list here, we get strange warnings along the lines
-      // of "parallel iteration is not supported over unbounded ranges (?).
-      //
+
       masonBuild(buildArgs);
       runProjectBinary(show, release, execopts);
     }

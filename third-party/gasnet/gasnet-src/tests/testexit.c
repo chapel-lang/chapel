@@ -238,10 +238,10 @@ int main(int argc, char **argv) {
       (testid > NUMTEST && testid < 100) || 
       numpthreads <= 1) test_usage_early();
 
-  peer = mynode ^ 1;
+  peer = mynode + 1;
   if (peer == nodes) {
-    /* w/ odd # of nodes, last one talks to self */
-    peer = mynode;
+    // w/ odd # of ranks, last one talks to self, else to 0
+    peer = (nodes%2) ? mynode : 0;
   }
 
   if (testid < 100) {

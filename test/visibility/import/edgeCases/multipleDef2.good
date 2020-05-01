@@ -1,0 +1,2 @@
+multipleDef2.chpl:2: error: symbol x is multiply defined
+multipleDef2.chpl:5: note: also defined here

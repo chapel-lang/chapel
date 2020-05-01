@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -127,6 +128,20 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status) {
   return 1;
 }
 
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
+  int i;
+  char* command = chpl_glom_strings(2, "lldb -o 'b gdbShouldBreakHere' -- ",
+                                    argv[0]);
+  for (i=1; i<argc; i++) {
+    if (i != lldbArgnum) {
+      command = chpl_glom_strings(3, command, " ", argv[i]);
+    }
+  }
+  *status = mysystem(command, "running lldb", 0);
+
+  return 1;
+}
+
 void chpl_comm_post_task_init(void) { }
 
 void chpl_comm_rollcall(void) {
@@ -182,6 +197,32 @@ void  chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides, c_nodeid_t srcno
                   1, NULL, // "nb" xfers block, so no need for yield
                   commID, ln, fn);
 }
+
+void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                c_nodeid_t srcnode, void* srcaddr,
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn)
+{
+  assert(srcnode==0);
+  assert(dstnode==0);
+  memmove(dstaddr, srcaddr, size);
+}
+
+void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn)
+{
+  assert(node == 0);
+  memmove(addr, raddr, size);
+}
+
+void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                             size_t size, int32_t commID, int ln, int32_t fn)
+{
+  assert(node == 0);
+  memmove(raddr, addr, size);
+}
+
+void chpl_comm_getput_unordered_task_fence(void) { }
 
 typedef struct {
   chpl_fn_int_t fid;

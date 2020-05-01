@@ -1,5 +1,5 @@
-use Grid_def;
-use GridSolution_def;
+public use Grid_def;
+public use GridSolution_def;
 
 
 

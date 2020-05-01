@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,12 +25,10 @@ class AggregateType;
 class CallExpr;
 class FnSymbol;
 class Type;
+class VarSymbol;
 
 void  resolveSignatureAndFunction(FnSymbol* fn);
-
-// Note: resolveSignature resolves declared return types
 void  resolveSignature(FnSymbol* fn);
-
 void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
 bool  isParallelIterator(FnSymbol* fn);
@@ -44,5 +43,7 @@ void  resolveSpecifiedReturnType(FnSymbol* fn);
 
 Type* getReturnedTupleType(FnSymbol*      fn,
                            AggregateType* retType);
+
+void markTempDeadLastMention(VarSymbol* var);
 
 #endif

@@ -1,0 +1,13 @@
+multiple-errors.chpl:9: In function 'main':
+multiple-errors.chpl:14: error: unresolved call 'borrowed C?.foo()'
+multiple-errors.chpl:4: note: this candidate did not match: C.foo()
+multiple-errors.chpl:14: note: because method call receiver with type borrowed C?
+multiple-errors.chpl:4: note: is passed to formal 'this: borrowed C'
+multiple-errors.chpl:16: error: unresolved call 'borrowed C?.bar()'
+multiple-errors.chpl:5: note: this candidate did not match: C.bar()
+multiple-errors.chpl:16: note: because method call receiver with type borrowed C?
+multiple-errors.chpl:5: note: is passed to formal 'this: borrowed C'
+multiple-errors.chpl:18: error: unresolved call 'baz(borrowed C?)'
+multiple-errors.chpl:7: note: this candidate did not match: baz(arg: C)
+multiple-errors.chpl:18: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:7: note: is passed to formal 'arg: C'

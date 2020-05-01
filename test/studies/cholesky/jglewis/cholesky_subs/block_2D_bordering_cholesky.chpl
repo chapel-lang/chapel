@@ -76,9 +76,9 @@ module block_2D_bordering_cholesky {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const row_indices = A.domain.dim (1);  // indices of either row or column
+    const row_indices = A.domain.dim (0);  // indices of either row or column
     var   pos_def : bool;
 
     // compute L from A
@@ -91,7 +91,7 @@ module block_2D_bordering_cholesky {
       // performisng a block forward solve with a block lower triangular 
       // matrix where every diagonal block is a unit lower triangular matrix
 
-      if prev_rows.length > 0 then {
+      if prev_rows.size > 0 then {
 	block_2D_transposed_block_triangular_solve 
 	  ( A (prev_rows, prev_rows), A (active_rows, prev_rows ) );
 	

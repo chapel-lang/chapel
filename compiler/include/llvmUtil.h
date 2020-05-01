@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -48,6 +49,9 @@ PromotedPair convertValuesToLarger(llvm::IRBuilder<> *irBuilder, llvm::Value *va
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);
 uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset);
+
+void print_llvm(llvm::Type* t);
+void print_llvm(llvm::Value* v);
 
 #if HAVE_LLVM_VER >= 60
 #define TOOL_OUTPUT_FILE ToolOutputFile

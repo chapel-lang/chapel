@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +36,7 @@
       }
     }
 
-  As an optimization, the user can register to receive a :class:`TokenWrapper`, and pass this
+  As an optimization, the user can register to receive a :class:`~EpochManager.TokenWrapper`, and pass this
   to the stack. This can provide significant improvement in performance by up to an order of magnitude
   by avoiding the overhead of registering and unregistering for each operation.
 
@@ -90,13 +91,13 @@
       Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms. 
       No. TR-600. ROCHESTER UNIV NY DEPT OF COMPUTER SCIENCE, 1995.
 */
-prototype module LockFreeQueue {
+module LockFreeQueue {
   use EpochManager;
   use AtomicObjects;
 
   class Node {
     type eltType;
-    var val : eltType?;
+    var val : toNilableIfClassType(eltType);
     var next : AtomicObject(unmanaged Node(eltType)?, hasGlobalSupport=true, hasABASupport=false);
 
     proc init(val : ?eltType) {
@@ -111,14 +112,16 @@ prototype module LockFreeQueue {
 
   class LockFreeQueue {
     type objType;
-    var _head : AtomicObject(unmanaged Node(objType?), hasGlobalSupport=true, hasABASupport=false);
-    var _tail : AtomicObject(unmanaged Node(objType?), hasGlobalSupport=true, hasABASupport=false);
+    var _head : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
+    var _tail : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
+
+    proc objTypeOpt type return toNilableIfClassType(objType);
 
     proc init(type objType) {
       this.objType = objType;
       this.complete();
-      var _node = new unmanaged Node(objType?);
+      var _node = new unmanaged Node(objType);
       _head.write(_node);
       _tail.write(_node);
     }
@@ -127,44 +130,44 @@ prototype module LockFreeQueue {
       return _manager.register();
     }
 
-    proc enqueue(newObj : objType?, tok : owned TokenWrapper = getToken()) {
+    proc enqueue(newObj : objType, tok : owned TokenWrapper = getToken()) {
       var n = new unmanaged Node(newObj);
       tok.pin();
       while (true) {
-        var curr_tail = _tail.read();
+        var curr_tail = _tail.read()!;
         var next = curr_tail.next.read();
         if (next == nil) {
-          if (curr_tail.next.compareExchange(next, n)) {
-            _tail.compareExchange(curr_tail, n);
+          if (curr_tail.next.compareAndSwap(next, n)) {
+            _tail.compareAndSwap(curr_tail, n);
             break;
           }
         }
         else {
-          _tail.compareExchange(curr_tail, next);
+          _tail.compareAndSwap(curr_tail, next);
         }
         chpl_task_yield();
       }
       tok.unpin();
     }
 
-    proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objType?) {
+    proc dequeue(tok : owned TokenWrapper = getToken()) : (bool, objTypeOpt) {
       tok.pin();
       while (true) {
-        var curr_head = _head.read();
+        var curr_head = _head.read()!;
         var curr_tail = _tail.read();
         var next_node = curr_head.next.read();
 
         if (curr_head == curr_tail) {
           if (next_node == nil) {
             tok.unpin();
-            var retval : objType?;
+            var retval : objTypeOpt;
             return (false, retval);
           }
-          _tail.compareExchange(curr_tail, next_node);
+          _tail.compareAndSwap(curr_tail, next_node);
         }
         else {
-          var ret_val = next_node.val;
-          if (_head.compareExchange(curr_head, next_node)) {
+          var ret_val = next_node!.val;
+          if (_head.compareAndSwap(curr_head, next_node)) {
             tok.deferDelete(curr_head);
             tok.unpin();
             return (true, ret_val);
@@ -174,11 +177,11 @@ prototype module LockFreeQueue {
       }
 
       tok.unpin();
-      var retval : objType?;
+      var retval : objTypeOpt;
       return (false, retval);
     }
 
-    iter drain() : objType? {
+    iter drain() : objTypeOpt {
       var tok = getToken();
       var (hasElt, elt) = dequeue(tok);
       while hasElt {
@@ -188,7 +191,7 @@ prototype module LockFreeQueue {
       tryReclaim();
     }
 
-    iter drain(param tag : iterKind) : objType? where tag == iterKind.standalone {
+    iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();
         var (hasElt, elt) = dequeue(tok);

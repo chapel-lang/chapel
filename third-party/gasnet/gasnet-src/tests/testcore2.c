@@ -26,8 +26,8 @@ static gex_TM_t myteam;
 static gex_Segment_t     mysegment;
 
 int myproc;
-int numproc;
 int peerproc;
+int fromproc;
 int numprocs;
 int iters = 0;
 size_t maxmed;
@@ -114,8 +114,9 @@ size_t MIN4(size_t a, size_t b, size_t c, size_t d) {
 
 gasnett_atomic_t pong_recvd;
 
-#define INIT_CHECKS() do {                               \
-    assert_always(test_msgsource(token) == peerproc);             \
+#define INIT_CHECKS(is_req) do {                               \
+    assert_always(test_msgsource(token) == (is_req ? fromproc     \
+                                                   : peerproc));  \
     assert_always(iter < iters);                                  \
     assert_always(nbytes <= max_payload);                         \
   } while (0)
@@ -123,7 +124,7 @@ gasnett_atomic_t pong_recvd;
 
 void ping_medhandler(gex_Token_t token, void *buf, size_t nbytes, 
                      gex_AM_Arg_t iter, gex_AM_Arg_t arg1) {
-  INIT_CHECKS();
+  INIT_CHECKS(1);
   int chunkidx = arg1 & ((1<<CHUNK_BITS)-1);
   validate_chunk("Medium Request (pre-reply)", buf, nbytes, iter, chunkidx);
   gex_AM_SrcDesc_t sd;
@@ -139,6 +140,8 @@ retry:
       break;
 
     case 1: // Negotiated-payload with client-provided buffer
+      // TODO: (lc_opt = &event) is legal, but we lack logic to test/wait outside handler context
+      //       additionally, we could not safely send buf with async LC
       sd = gex_AM_PrepareReplyMedium(token, buf, least_payload, most_payload, GEX_EVENT_NOW, flags, 2);
       imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
       if (imm) break;
@@ -170,7 +173,7 @@ retry:
 
 void pong_medhandler(gex_Token_t token, void *buf, size_t nbytes,
                      gex_AM_Arg_t iter, gex_AM_Arg_t arg1) {
-  INIT_CHECKS();
+  INIT_CHECKS(0);
   int chunkidx = arg1 & ((1<<CHUNK_BITS)-1);
   validate_chunk("Medium Reply", buf, nbytes, iter, chunkidx);
   gasnett_atomic_increment(&pong_recvd,0);
@@ -178,7 +181,7 @@ void pong_medhandler(gex_Token_t token, void *buf, size_t nbytes,
 
 void ping_longhandler(gex_Token_t token, void *buf, size_t nbytes,
                      gex_AM_Arg_t iter, gex_AM_Arg_t arg1) {
-  INIT_CHECKS();
+  INIT_CHECKS(1);
   int chunkidx = arg1 & ((1<<CHUNK_BITS)-1);
   size_t curr_sz = all_sizes[arg1 >> CHUNK_BITS];
   validate_chunk("Long Request", buf, nbytes, iter, chunkidx);
@@ -199,6 +202,8 @@ retry:
       break;
 
     case 1: // Negotiated-payload with client-provided buffer
+      // TODO: (lc_opt = &event) is legal, but we lack logic to test/wait outside handler context
+      //       additionally, we could not safely send buf with async LC
       sd = gex_AM_PrepareReplyLong(token, srcbuf, least_payload, most_payload, maybe_dest, GEX_EVENT_NOW, flags, 2);
       imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
       if (imm) break;
@@ -230,7 +235,7 @@ retry:
 
 void pong_longhandler(gex_Token_t token, void *buf, size_t nbytes,
                      gex_AM_Arg_t iter, gex_AM_Arg_t arg1) {
-  INIT_CHECKS();
+  INIT_CHECKS(0);
   int chunkidx = arg1 & ((1<<CHUNK_BITS)-1);
   validate_chunk("Long Reply", buf, nbytes, iter, chunkidx);
   gasnett_atomic_increment(&pong_recvd,0);
@@ -364,14 +369,23 @@ int main(int argc, char **argv) {
   myproc = gex_TM_QueryRank(myteam);
   numprocs = gex_TM_QuerySize(myteam);
 
-  peerproc = myproc ^ 1;
-  if (peerproc == numprocs) {
-    /* w/ odd # of nodes, last one talks to self */
-    peerproc = myproc;
+  if (numprocs%2) {
+    // w/ odd # of ranks, last one talks to self
+    int last = numprocs - 1;
+    if (myproc == last) {
+      peerproc = fromproc = myproc;
+    } else {
+      peerproc = (myproc + 1) % last;
+      fromproc = (myproc + last - 1) % last;
+    }
+  } else {
+    peerproc = (myproc + 1) % numprocs;
+    fromproc = (myproc + numprocs - 1) % numprocs;
   }
+
   myseg = TEST_MYSEG();
   peerreqseg = TEST_SEG(peerproc);
-  peerrepseg = peerreqseg+max_payload*depth*2;
+  peerrepseg = (uint8_t*)TEST_SEG(fromproc) + max_payload*depth*2;
   localseg = myseg + max_payload*depth*4;
   assert_always(TEST_SEGSZ >= max_payload*depth*5);
   privateseg = test_malloc(max_payload*depth*2); /* out-of-seg request src, long reply src */
@@ -484,7 +498,13 @@ void *doit(void *id) {
               case 1: // Negotiated-payload with client-provided buffer
               {
                 gex_Event_t lc = GEX_EVENT_NO_OP;
-                sd = gex_AM_PrepareRequestMedium(myteam, peerproc, srcbuf, least_payload, most_payload, &lc, flags, 2);
+                gex_Event_t *lc_opt = NULL;
+                switch (TEST_RAND(0,2)) {
+                  case 0: lc_opt = &lc;             break;
+                  case 1: lc_opt = GEX_EVENT_NOW;   break;
+                  case 2: lc_opt = GEX_EVENT_GROUP; break;
+                }
+                sd = gex_AM_PrepareRequestMedium(myteam, peerproc, srcbuf, least_payload, most_payload, lc_opt, flags, 2);
                 imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
                 if (imm) break;
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
@@ -492,7 +512,11 @@ void *doit(void *id) {
                 assert(gex_AM_SrcDescAddr(sd) == srcbuf);
                 len = MIN(len, gex_AM_SrcDescSize(sd));
                 gex_AM_CommitRequestMedium2(sd, hidx_ping_medhandler, len, iter, arg1);
-                gex_Event_Wait(lc);
+                if (lc_opt == GEX_EVENT_GROUP) {
+                  gex_NBI_Wait(GEX_EC_AM,0);
+                } else if (lc_opt != GEX_EVENT_NOW) {
+                  gex_Event_Wait(lc);
+                }
                 break;
               }
 
@@ -541,7 +565,13 @@ void *doit(void *id) {
               case 1: // Negotiated-payload with client-provided buffer
               {
                 gex_Event_t lc = GEX_EVENT_NO_OP;
-                sd = gex_AM_PrepareRequestLong(myteam, peerproc, srcbuf, least_payload, most_payload, maybe_dest, &lc, flags, 2);
+                gex_Event_t *lc_opt = NULL;
+                switch (TEST_RAND(0,2)) {
+                  case 0: lc_opt = &lc;             break;
+                  case 1: lc_opt = GEX_EVENT_NOW;   break;
+                  case 2: lc_opt = GEX_EVENT_GROUP; break;
+                }
+                sd = gex_AM_PrepareRequestLong(myteam, peerproc, srcbuf, least_payload, most_payload, maybe_dest, lc_opt, flags, 2);
                 imm = (sd == GEX_AM_SRCDESC_NO_OP); // IMMEDIATE was NO OP
                 if (imm) break;
                 assert(gex_AM_SrcDescSize(sd) >= least_payload);
@@ -549,7 +579,11 @@ void *doit(void *id) {
                 assert(gex_AM_SrcDescAddr(sd) == srcbuf);
                 len = MIN(len, sz);
                 gex_AM_CommitRequestLong2(sd, hidx_ping_longhandler, len, dstbuf, iter, arg1);
-                gex_Event_Wait(lc);
+                if (lc_opt == GEX_EVENT_GROUP) {
+                  gex_NBI_Wait(GEX_EC_AM,0);
+                } else if (lc_opt != GEX_EVENT_NOW) {
+                  gex_Event_Wait(lc);
+                }
                 break;
               }
 

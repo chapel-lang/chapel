@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -189,6 +190,10 @@ void AstCount::exitLoopExpr(LoopExpr* node) {
 
 void AstCount::visitUseStmt(UseStmt* node) {
   numUseStmt++;
+}
+
+void AstCount::visitImportStmt(ImportStmt* node) {
+  numImportStmt++;
 }
 
 bool AstCount::enterBlockStmt(BlockStmt* node) {

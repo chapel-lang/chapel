@@ -23,8 +23,6 @@ proc test()
   signedMul   = aSigned * bSigned;
   // CHECK: sub nsw i64
   signedSub   = aSigned - bSigned;
-  // CHECK: shl nsw i64
-  signedShl   = aSigned << bSigned;
   // CHECK: sub nsw i64
   signedNeg   = -aSigned;
   

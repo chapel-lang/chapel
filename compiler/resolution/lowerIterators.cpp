@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1653,6 +1654,7 @@ fixupErrorHandlingExits(BlockStmt* body, bool& adjustCaller) {
 
     if (g->gotoTag == GOTO_ERROR_HANDLING ||
         g->gotoTag == GOTO_BREAK_ERROR_HANDLING ||
+        g->gotoTag == GOTO_ERROR_HANDLING_RETURN ||
         g->gotoTag == GOTO_RETURN) {
       // Does the target of this Goto exist within the same function?
       LabelSymbol* target = g->gotoTarget();
@@ -1833,7 +1835,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
         }
       }
       se->setSymbol(errorArg);
-      INT_ASSERT(fixGoto->gotoTag == GOTO_RETURN);
+      INT_ASSERT(fixGoto->isGotoReturn());
     } else {
       // Just call gChplUncaughtError
       VarSymbol* tmp = newTemp("error", dtError);
@@ -2752,7 +2754,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
 
     // Now auto-copy it if appropriate
     Symbol* copyResult = fieldValue;
-    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+    if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       FnSymbol* autoCopy = getAutoCopyForType(field->type);
       Symbol* valueToCopy = fieldValue;
       Type* copyArgType = autoCopy->getFormal(1)->type;
@@ -2784,7 +2786,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   AggregateType* irt = toAggregateType(arg->type);
   for_fields(field, irt) {
     SET_LINENO(field);
-    if (isUserDefinedRecord(field->type) && !field->isRef() ) {
+    if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       if (FnSymbol* autoDestroy = autoDestroyMap.get(field->type)) {
         Symbol* tmp = newTemp(field->name, field->type);
         block->insertAtTail(new DefExpr(tmp));
@@ -2978,6 +2980,7 @@ void lowerIterators() {
   }
 
   fragmentLocalBlocks();
+  gatherPrimIRFieldValByFormal();
 
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->isIterator()) {
@@ -2987,6 +2990,8 @@ void lowerIterators() {
       lowerIterator(fn);
     }
   }
+
+  USR_STOP();
 
   removeUncalledIterators();
 
@@ -3000,6 +3005,7 @@ void lowerIterators() {
 
   cleanupTemporaryVectors();
   cleanupIteratorBreakToken();
+  cleanupPrimIRFieldValByFormal();
 
   iteratorsLowered = true;
 }

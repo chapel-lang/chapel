@@ -1,3 +1,5 @@
+use IO;
+
 config param testErrors = 0;
 
 const two: int = 2;

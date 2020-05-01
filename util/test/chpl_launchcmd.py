@@ -121,6 +121,8 @@ class AbstractJob(object):
         of PBS. Whereas moab provides a -d argument when calling qsub, both
         support the $PBS_O_WORKDIR argument. Optionally, this can redirect
         stdout/stderr directly to the output files to avoid using a spool file.
+        This also captures the current charset environment and prepends it to
+        the test_command.
 
         :type output_file: str
         :arg output_file: stdout output file location
@@ -142,6 +144,10 @@ class AbstractJob(object):
             logging.debug('Adding "test -f {0}" to launcher command.'.format(
                 self.test_command[0]))
             full_test_command += ['test', '-f', self.test_command[0], '&&']
+
+        envvars = ['LANG', 'LC_ALL',  'LC_COLLATE']
+        charset = ' '.join(['{0}="{1}"'.format(e, os.getenv(e, '')) for e in envvars])
+        full_test_command += [charset]
 
         full_test_command.extend(self.test_command)
         if self.redirect_output:
@@ -1074,13 +1080,18 @@ class SlurmJob(AbstractJob):
             logging.error(msg)
             raise ValueError(msg)
 
-        # Output is: Submitted batch job 106001
-        id_parts = stdout.split(' ')
-        if len(id_parts) < 4:
-            raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
-        else:
-            job_id = id_parts[3].strip()
-            return job_id
+        # The output line we want is: Submitted batch job 106001
+        lines = stdout.split('\n')
+        for line in lines:
+            if line.startswith('Submitted batch job'):
+                id_parts = line.split(' ')
+                if len(id_parts) < 4:
+                    raise ValueError('Could not parse output from sbatch submission: {0}'.format(stdout))
+                else:
+                    job_id = id_parts[3].strip()
+                    return job_id
+
+        raise ValueError('Did not see expected output from sbatch submission: {0}'.format(stdout))
 
 
 @contextlib.contextmanager

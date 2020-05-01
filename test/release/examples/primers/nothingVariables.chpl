@@ -5,7 +5,7 @@
    class/record fields. A variable or field that is of type ``nothing`` is
    removed by the compiler and doesn't exist during program execution.
 
-   The value ``none`` has type type ``nothing`` and can be assigned to a
+   The value ``none`` has type ``nothing`` and can be assigned to a
    ``nothing`` variable, or returned from a function with ``nothing``
    return type.
 

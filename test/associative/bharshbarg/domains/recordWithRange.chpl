@@ -10,9 +10,9 @@ proc <(x:R, y:R) {
   ref a = x.x;
   ref b = y.x;
 
-  if a.length == 0 && b.length != 0 then
+  if a.size == 0 && b.size != 0 then
     return true;
-  else if a.length != 0 && b.length == 0 then
+  else if a.size != 0 && b.size == 0 then
     return false;
   else if a.first != b.first then
     return a.first < b.first;

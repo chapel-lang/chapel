@@ -1,4 +1,4 @@
-use CommDiagnostics;
+public use CommDiagnostics;
 
 proc myPrintComms(mesg:string) {
   var A=getCommDiagnostics();

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,19 +51,22 @@ in the Chapel distribution.
 Using Regular Expression Support
 --------------------------------
 
+Chapel supports both string and bytes regular expressions.
+
 .. code-block:: chapel
 
    use Regexp;
-   var myRegexp = compile("a+");
+   var myRegexp = compile("a+");   // b"a+" for matching arbitrary bytes values
 
 Now you can use these methods on regular expressions: :proc:`regexp.search`,
 :proc:`regexp.match`, :proc:`regexp.split`, :proc:`regexp.matches`.
 
 You can also use the string versions of these methods: :proc:`string.search`,
-:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`.
+:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`. Methods
+with same prototypes exist for :record:`~Bytes.bytes` type, as well.
 
 Lastly, you can include regular expressions in the format string for
-:proc:`~IO.readf` for searching on QIO channels using the ``%/<regexp>/``
+:proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regexp>/``
 syntax.
 
 Regular Expression Examples
@@ -336,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regexp {
-  private use SysBasic, SysError;
+  private use SysBasic, SysError, SysCTypes;
 
 pragma "no doc"
 extern type qio_regexp_t;
@@ -408,29 +412,29 @@ class BadRegexpError : Error {
 }
 
 /*
-   Compile a regular expression. If the optional error argument is provided,
-   this routine will return an error code if compilation failed. Otherwise, it
-   will halt with an error message.
+   Compile a regular expression. This routine will throw a
+   class:`BadRegexpError` if compilation failed.
 
-   :arg pattern: the string regular expression to compile.
-                 See :ref:`regular-expression-syntax` for details. Note that
-                 you may have to escape backslashes. For example, to
+   :arg pattern: the regular expression to compile. This argument can be string
+                 or bytes. See :ref:`regular-expression-syntax` for details.
+                 Note that you may have to escape backslashes. For example, to
                  get the regular expression ``\s``, you'd have to write
                  ``"\\s"`` because the ``\`` is the escape character within
-                 Chapel string literals
-   :arg utf8: (optional, default true) set to `true` to create a regular
-               expression matching UTF-8; `false` for binary or ASCII only.
+                 Chapel string/bytes literals. Note that, Chapel supports
+                 triple-quoted raw string/bytes literals, which do not require
+                 escaping backslashes. For example ``"""\s"""`` or ``b"""\s"""``
+                 can be used.
    :arg posix: (optional) set to true to disable non-POSIX regular expression
                syntax
    :arg literal: (optional) set to true to treat the regular expression as a
                  literal (ie, create a regexp matching ``pattern`` as a string
                  rather than as a regular expression).
-   :arg nocapture: (optional) set to true in order to disable all capture groups
+   :arg noCapture: (optional) set to true in order to disable all capture groups
                    in the regular expression
-   :arg ignorecase: (optional) set to true in order to ignore case when
+   :arg ignoreCase: (optional) set to true in order to ignore case when
                     matching. Note that this can be set inside the regular
                     expression with ``(?i)``.
-   :arg multiline: (optional) set to true in order to activate multiline mode
+   :arg multiLine: (optional) set to true in order to activate multiline mode
                    (meaning that ``^`` and ``$`` match the beginning and end
                    of a line instead of just the beginning and end of the text.
                    Note that this can be set inside a regular expression
@@ -438,7 +442,7 @@ class BadRegexpError : Error {
    :arg dotnl: (optional, default false) set to true in order to allow ``.``
                to match a newline. Note that this can be set inside the
                regular expression with ``(?s)``.
-   :arg nongreedy: (optional) set to true in order to prefer shorter matches for
+   :arg nonGreedy: (optional) set to true in order to prefer shorter matches for
                    repetitions; for example, normally x* will match as many x
                    characters as possible and x*? will match as few as possible.
                    This flag swaps the two, so that x* will match as few as
@@ -447,7 +451,9 @@ class BadRegexpError : Error {
                    ``(?U)``.
 
  */
-proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false, /*s*/ dotnl=false, /*U*/ nongreedy=false):regexp throws {
+proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
+             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
+             /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {
 
   if CHPL_REGEXP == "none" {
     compilerError("Cannot use Regexp with CHPL_REGEXP=none");
@@ -455,60 +461,49 @@ proc compile(pattern: string, utf8=true, posix=false, literal=false, nocapture=f
 
   var opts:qio_regexp_options_t;
   qio_regexp_init_default_options(opts);
-  opts.utf8 = utf8;
+
+  // always use UTF8 for strings.
+  // For bytes, this is set to false which means use Latin1
+  opts.utf8 = t==string;
   opts.posix = posix;
   opts.literal = literal;
-  opts.nocapture = nocapture;
-  opts.ignorecase = ignorecase;
-  opts.multiline = multiline;
+  opts.nocapture = noCapture;
+  opts.ignorecase = ignoreCase;
+  opts.multiline = multiLine;
   opts.dotnl = dotnl;
-  opts.nongreedy = nongreedy;
+  opts.nongreedy = nonGreedy;
 
-  var ret: regexp;
+  var ret: regexp(t);
   qio_regexp_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regexp);
   if !qio_regexp_ok(ret._regexp) {
+    const patternStr = if t==string then pattern
+                                    else pattern.decode(decodePolicy.replace);
     var err_str = qio_regexp_error(ret._regexp);
-    var err_msg = err_str:string + " when compiling regexp '" + pattern + "'";
+    var err_msg: string;
+    try! {
+      err_msg = createStringWithNewBuffer(err_str) + 
+                  " when compiling regexp '" + patternStr + "'";
+    }
     throw new owned BadRegexpError(err_msg);
   }
   return ret;
 }
 
 pragma "no doc"
-proc compile(pattern: string, out error:syserr, utf8, posix, literal, nocapture, /*i*/ ignorecase, /*m*/ multiline, /*s*/ dotnl, /*U*/ nongreedy):regexp {
-  compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-  var ret: regexp;
-  try {
-    ret = compile(pattern, utf8, posix, literal, nocapture, ignorecase,
-                  multiline, dotnl, nongreedy);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return ret;
+pragma "last resort"  // otherwise compile("some regex") resolves calling this
+proc compile(pattern: string, utf8=true, posix=false, literal=false,
+             nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false,
+             /*s*/ dotnl=false, /*U*/ nongreedy=false): regexp(string) throws {
+  compilerWarning("Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead");
+
+  if utf8 == false then
+    throw new owned IllegalArgumentError("utf8 argument cannot be false");
+  else
+    return compile(pattern, posix, literal, noCapture=nocapture,
+                   ignoreCase=ignorecase, multiLine=multiline, dotnl,
+                   nonGreedy=nongreedy);
 }
 
-/***
- *** sungeun: AFAIK, there are no tests programs or examples that use
- *** this.  Depending on how it is generally used, it might be
- *** easier/cheaper to use a c_string here and provide a custom
- *** constructor.
- ***/
-/* mferguson - I agree - I think we should remove this one at some point,
-  at least it makes no sense if the string contained here will
-  copy the entire larger string, which is what I think we are building.
-  */
-/*  Regular expression search routines also can work with
-    a stringPart, which refers to a substring within another
-    string.
- */
-pragma "no doc"
-record stringPart {
-  var offset:byteIndex;
-  var numBytes:int;
-  var from:string;
-}
 
 /*  The reMatch record records a regular expression search match
     or a capture group.
@@ -531,7 +526,16 @@ record reMatch {
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var offset:byteIndex; // 0-based, -1 if matched==false
   /* the length of the match. 0 if matched==false */
-  var length:int; // 0 if matched==false
+  var size:int; // 0 if matched==false
+
+  /*
+    Deprecated - please use :proc:`reMatch.size`.
+   */
+  proc length ref {
+    compilerWarning("'reMatch.length' is deprecated - " +
+                    "please use 'reMatch.size' instead");
+    return size;
+  }
 }
 
 pragma "no doc"
@@ -558,29 +562,56 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset+1..#m.length];
+  if m.matched then return this[m.offset..#m.size];
   else return "";
+}
+
+/*  This function extracts the part of a bytes matching a regular
+    expression or capture group. This method is intended to be
+    called on the same bytes used as the `text` in a regular
+    expression search.
+
+    :arg m: a match (e.g. returned by :proc:`regexp.search`)
+    :returns: the portion of ``this`` referred to by the match
+ */
+proc bytes.this(m:reMatch) {
+  if m.matched then return this[m.offset:int..#m.size];
+  else return b"";
+}
+
+ private use IO;
+
+pragma "no doc"
+proc warnIfNoDefArg() type {
+  compilerWarning("string-by-default regexp is deprecated. ",
+                  "Use regexp(string) or regexp(bytes) instead.");
+  return string;
 }
 
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
-    To create a compiled regular expression, use the compile function.
+    To create a compiled regular expression, use the proc:`compile` function.
 
-    A regexp can be cast to a string (resulting in the pattern that
-    was compiled). A string can be cast to a regexp (resulting in a compiled
-    regexp).
+    A string-based regexp can be cast to a string (resulting in the pattern that
+    was compiled). A string can be cast to a string-based regexp (resulting in a
+    compiled regexp). Same applies for bytes.
   */
 pragma "ignore noinit"
 record regexp {
+
+  pragma "no doc"
+  type exprType = warnIfNoDefArg();
   pragma "no doc"
   var home: locale = here;
   pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
 
-  proc init() {
+  proc init(type exprType) {
+    this.exprType = exprType;
   }
 
-  proc init=(x: regexp) {
+  proc init=(x: regexp(?)) {
+    this.exprType = x.exprType;
     this.home = x.home;
     this._regexp = x._regexp;
     this.complete();
@@ -610,15 +641,16 @@ record regexp {
   }
 
   pragma "no doc"
-  proc _handle_captures(text: string, matches:_ddata(qio_regexp_string_piece_t), nmatches:int, ref captures) {
+  proc _handle_captures(text: exprType, matches:_ddata(qio_regexp_string_piece_t),
+                        nmatches:int, ref captures) {
     assert(nmatches >= captures.size);
-    for param i in 1..captures.size {
-      var m = _to_reMatch(matches[i]);
+    for param i in 0..captures.size-1 {
+      var m = _to_reMatch(matches[i+1]);
       if captures[i].type == reMatch {
         captures[i] = m;
       } else {
         if m.matched {
-          if captures[i].type == string {
+          if captures[i].type == exprType {
             captures[i] = text[m];
           } else {
             try {
@@ -648,34 +680,32 @@ record regexp {
      matched, the corresponding argument will get the default value for its
      type.
 
-     :arg text: a string to search
-     :arg captures: (optional) what to capture from the regular expression. These
-                    should be strings or types that strings can cast to.
+     :arg text: a string or bytes to search
+     :arg captures: (optional) what to capture from the regular expression.
+                    If the class:`regexp` was based on string, then, these
+                    should be strings or types that strings can cast to. Same
+                    applies for bytes.
      :returns: an :record:`reMatch` object representing the offset in text
                where a match occurred
 
     */
-  proc search(text: ?t, ref captures ...?k):reMatch
-    where t == string || t == stringPart
+  proc search(text: exprType, ref captures ...?k):reMatch
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1 + captures.size;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
+                             matches, nmatches);
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
@@ -687,27 +717,23 @@ record regexp {
 
   // documented in the captures version
   pragma "no doc"
-  proc search(text: ?t):reMatch
-    where t == string || t == stringPart
+  proc search(text: exprType):reMatch
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED,
+                             matches, nmatches);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
       _ddata_free(matches, nmatches);
@@ -725,37 +751,35 @@ record regexp {
 
      .. code-block:: chapel
 
-       if myregexp.match("some string") {
-         do_something_if_matched();
+       if myRegExp.match("some string") {
+         doSomethingIfMatched();
        }
 
-     :arg text: a string to search
-     :arg captures: what to capture from the regular expression. These should
-                    be strings or types that strings can cast to.
+     :arg text: a string or bytes to search
+     :arg captures: what to capture from the regular expression.
+                    If the class:`regexp` was based on string, then, these
+                    should be strings or types that strings can cast to. Same
+                    applies for bytes.
      :returns: an :record:`reMatch` object representing the offset in text
                where a match occurred
    */
-  proc match(text: ?t, ref captures ...?k):reMatch
-    where t == string || t == stringPart
+  proc match(text: exprType, ref captures ...?k):reMatch
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1 + captures.size;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
+                             matches, nmatches);
       // Now try to coerce the read strings into the captures.
       _handle_captures(text, matches, nmatches, captures);
       // Now return where we matched.
@@ -767,27 +791,23 @@ record regexp {
 
   // documented in the version taking captures.
   pragma "no doc"
-  proc match(text: ?t):reMatch
-    where t == string || t == stringPart
+  proc match(text: exprType):reMatch
   {
     var ret:reMatch;
     on this.home {
       var pos:byteIndex;
       var endpos:byteIndex;
 
-      if t == stringPart then pos = text.offset;
-      else pos = 0;
+      pos = 0;
       endpos = pos + text.numBytes;
 
       var matches:_ddata(qio_regexp_string_piece_t);
       var nmatches = 1;
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
       var got:bool;
-      if t == stringPart {
-        got = qio_regexp_match(_regexp, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      } else {
-        got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_START, matches, nmatches);
-      }
+      got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes,
+                             pos:int, endpos:int, QIO_REGEXP_ANCHOR_START,
+                             matches, nmatches);
       // Now return where we matched.
       ret = new reMatch(got, matches[0].offset:byteIndex, matches[0].len);
       _ddata_free(matches, nmatches);
@@ -803,12 +823,11 @@ record regexp {
      If *maxsplit* is nonzero, at most maxsplit splits occur, and the
      remaining text is returned as the last element.
 
-     :arg text: a string to split
+     :arg text: a string or bytes to split
      :arg maxsplit: if nonzero, the maximum number of splits to do
      :yields: each split portion, one at a time
    */
-  iter split(text: ?t, maxsplit: int = 0)
-    where t == string || t == stringPart
+  iter split(text: exprType, maxsplit: int = 0)
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var ncaptures = qio_regexp_get_ncaptures(_regexp);
@@ -820,8 +839,7 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
     }
 
-    if t == stringPart then pos = text.offset;
-    else pos = 0;
+    pos = 0;
     endpos = pos + text.numBytes;
 
     var splits = 0;
@@ -833,7 +851,6 @@ record regexp {
       var splitend:byteIndex = 0;
       var got:bool;
       on this.home {
-        // This doesn't have a case for stringPart.  Mistake?
         got = qio_regexp_match(_regexp, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
 
@@ -848,9 +865,9 @@ record regexp {
 
       if pos < splitstart {
         // Yield splitted value
-        yield text[pos+1..splitstart];
+        yield text[pos..splitstart-1];
       } else {
-        yield "";
+        yield "":exprType;
       }
 
       if got {
@@ -873,16 +890,15 @@ record regexp {
     }
   }
 
-  /* Enumerates matches in the string as well as capture groups.
+  /* Enumerates matches in the text as well as capture groups.
 
-     :arg text: the string to search
+     :arg text: the string or bytes to search
      :arg captures: (compile-time constant) the size of the captures to return
      :arg maxmatches: the maximum number of matches to return
      :yields: tuples of :record:`reMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
-  iter matches(text: ?t, param captures=0, maxmatches: int = max(int))
-    where t == string || t == stringPart
+  iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
   {
     var matches:_ddata(qio_regexp_string_piece_t);
     var nmatches = 1 + captures;
@@ -893,8 +909,7 @@ record regexp {
       matches = _ddata_allocate(qio_regexp_string_piece_t, nmatches);
     }
 
-    if t == stringPart then pos = text.offset;
-    else pos = 0;
+    pos = 0;
     textLength = text.numBytes;
     endpos = pos + textLength;
 
@@ -903,14 +918,13 @@ record regexp {
     while nfound < maxmatches && cur < endpos {
       var got:bool;
       on this.home {
-        // This doesn't have a case for stringPart.  Mistake?
         got = qio_regexp_match(_regexp, text.localize().c_str(), textLength, cur:int, endpos:int, QIO_REGEXP_ANCHOR_UNANCHORED, matches, nmatches);
       }
       if !got then break;
       param nret = captures+1;
       var ret:nret*reMatch;
       for i in 0..captures {
-        ret[i+1] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
+        ret[i] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
       cur = matches[0].offset + matches[0].len;
@@ -921,61 +935,73 @@ record regexp {
   }
 
   /* Perform the same operation as :proc:`regexp.sub` but return a tuple
-     containing the new string and the number of substitutions made.
+     containing the new text and the number of substitutions made.
 
-     :arg repl: replace matches with this string
+     :arg repl: replace matches with this string or bytes
      :arg text: the text to search and replace within
-     :type text: `string`
+     :type text: `string` or `bytes`
      :arg global: if true, replace multiple matches
-     :returns: a tuple containing (new string, number of substitutions made)
+     :returns: a tuple containing (new text, number of substitutions made)
    */
-  // TODO -- move subn after sub for documentation clarity
-  proc subn(repl:string, text: ?t, global = true ):(string, int)
-    where t == string || t == stringPart
+  proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
+    // TODO -- move subn after sub for documentation clarity
     var pos:byteIndex;
     var endpos:byteIndex;
 
-    if t == stringPart then pos = text.offset;
-    else pos = 0;
+    pos = 0;
     endpos = pos + text.numBytes;
 
     var replaced:c_string;
     var nreplaced:int;
     var replaced_len:int(64);
-    if t == stringPart {
-      nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.numBytes, text.from.localize().c_str(), text.from.numBytes, pos:int, endpos:int, global, replaced, replaced_len);
-    } else {
-      nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(), repl.numBytes, text.localize().c_str(), text.numBytes, pos:int, endpos:int, global, replaced, replaced_len);
+    nreplaced = qio_regexp_replace(_regexp, repl.localize().c_str(),
+                                   repl.numBytes, text.localize().c_str(),
+                                   text.numBytes, pos:int, endpos:int, global,
+                                   replaced, replaced_len);
+
+    if exprType==string {
+      try! {
+        const ret = createStringWithOwnedBuffer(replaced);
+        return (ret, nreplaced);
+      }
     }
-    const ret = createStringWithOwnedBuffer(replaced);
-    return (ret, nreplaced);
+    else {
+      const ret = createBytesWithOwnedBuffer(replaced);
+      return (ret, nreplaced);
+    }
   }
 
   /*
-     Find matches to this regular expression and create a new string in which
-     those matches are replaced by repl.
+     Find matches to this regular expression and create a new string or bytes in
+     which those matches are replaced by repl.
 
-     :arg repl: replace matches with this string
+     :arg repl: replace matches with this string or bytes
      :arg text: the text to search and replace within
-     :type text: `string`
+     :type text: `string` or `bytes`
      :arg global: if true, replace multiple matches
-     :returns: the new string
+     :returns: the new string or bytes
    */
-  proc sub(repl:string, text: ?t, global = true )
-    where t == string || t == stringPart
+  proc sub(repl: exprType, text: exprType, global = true )
   {
     var (str, count) = subn(repl, text, global);
     return str;
   }
 
   pragma "no doc"
-  proc writeThis(f) {
-    var pattern:string;
+  proc writeThis(f) throws {
+    var pattern:exprType;
     on this.home {
       var patternTemp:c_string;
       qio_regexp_get_pattern(this._regexp, patternTemp);
-      pattern = createStringWithNewBuffer(patternTemp);
+      if exprType == string then {
+        try! {
+          pattern = createStringWithNewBuffer(patternTemp);
+        }
+      } 
+      else {
+        pattern = createBytesWithNewBuffer(patternTemp);
+      }
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -983,32 +1009,29 @@ record regexp {
   }
 
   pragma "no doc"
-  proc readThis(f) {
-    var pattern:string;
+  proc readThis(f) throws {
+    var pattern:exprType;
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
 
-    try {
-      if (f.read(litOne, pattern, litTwo)) {
-        on this.home {
-          var localPattern = pattern.localize();
-          var opts:qio_regexp_options_t;
-          qio_regexp_init_default_options(opts);
-          qio_regexp_create_compile(localPattern.c_str(), localPattern.numBytes, opts, this._regexp);
-        }
+    if (f.read(litOne, pattern, litTwo)) then
+      on this.home {
+        var localPattern = pattern.localize();
+        var opts: qio_regexp_options_t;
+
+        qio_regexp_init_default_options(opts);
+        qio_regexp_create_compile(localPattern.c_str(),
+                                  localPattern.numBytes,
+                                  opts,
+                                  this._regexp);
       }
-    } catch e: SystemError {
-      f.setError(e.err);
-    } catch {
-      f.setError(EINVAL:syserr);
-    }
   }
 }
 
 pragma "no doc"
-proc =(ref ret:regexp, x:regexp)
+proc =(ref ret:regexp(?t), x:regexp(t))
 {
   // retain -- release
   if x.home == ret.home {
@@ -1029,28 +1052,50 @@ proc =(ref ret:regexp, x:regexp)
       qio_regexp_get_options(x._regexp, options);
     }
 
-    qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
+    qio_regexp_create_compile(pattern, pattern.size, options, ret._regexp);
   }
 }
 
 // Cast regexp to string.
 pragma "no doc"
-inline proc _cast(type t, x: regexp) where t == string {
-  var pattern: string;
+inline proc _cast(type t: string, x: regexp(string)) {
+  var pattern: t;
   on x.home {
     var cs: c_string;
     qio_regexp_get_pattern(x._regexp, cs);
-    pattern = createStringWithOwnedBuffer(cs);
+    if t == string {
+      try! {
+        pattern = createStringWithOwnedBuffer(cs);
+      }
+    }
   }
   return pattern;
 }
-// Cast string to regexp
+
+// Cast regexp to bytes.
 pragma "no doc"
-inline proc _cast(type t, x: string) throws where t == regexp {
-  return compile(x);
+inline proc _cast(type t:bytes, x: regexp(bytes)) {
+  var pattern: t;
+  on x.home {
+    var cs: c_string;
+    qio_regexp_get_pattern(x._regexp, cs);
+    pattern = createBytesWithOwnedBuffer(cs);
+  }
+  return pattern;
 }
 
 
+// Cast string to regexp
+pragma "no doc"
+inline proc _cast(type t: regexp(string), x: string) throws {
+  return compile(x);
+}
+
+// Cast bytes to regexp
+pragma "no doc"
+inline proc _cast(type t: regexp(bytes), x: bytes) throws {
+  return compile(x);
+}
 
 /*
 
@@ -1069,9 +1114,33 @@ proc string.search(needle: string, ignorecase=false):reMatch
   return re.search(this);
 }
 
+/*
+
+   Compile a regular expression and search the receiving bytes for matches at
+   any offset using :proc:`regexp.search`.
+
+   :arg needle: the regular expression to search for
+   :arg ignorecase: true to ignore case in the regular expression
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving bytes where a match occurred
+ */
+proc bytes.search(needle: bytes, ignorecase=false):reMatch
+{
+  // Create a regexp matching the literal for needle
+  var re = compile(needle, literal=true, nocapture=true, ignorecase=ignorecase);
+  return re.search(this);
+}
+
 // documented in the captures version
 pragma "no doc"
-proc string.search(needle: regexp):reMatch
+proc string.search(needle: regexp(string)):reMatch
+{
+  return needle.search(this);
+}
+
+// documented in the captures version
+pragma "no doc"
+proc bytes.search(needle: regexp(bytes)):reMatch
 {
   return needle.search(this);
 }
@@ -1085,14 +1154,35 @@ proc string.search(needle: regexp):reMatch
    :returns: an :record:`reMatch` object representing the offset in the
              receiving string where a match occurred
  */
-proc string.search(needle: regexp, ref captures ...?k):reMatch
+proc string.search(needle: regexp(string), ref captures ...?k):reMatch
+{
+  return needle.search(this, (...captures));
+}
+
+/* Search the receiving bytes for a regular expression already compiled
+   by calling :proc:`regexp.search`. Search for matches at any offset.
+
+   :arg needle: the compiled regular expression to search for
+   :arg captures: (optional) what to capture from the regular expression. These
+                  should be bytes or types that bytes can cast to.
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving bytes where a match occurred
+ */
+proc bytes.search(needle: regexp(bytes), ref captures ...?k):reMatch
 {
   return needle.search(this, (...captures));
 }
 
 // documented in the captures version
 pragma "no doc"
-proc string.match(pattern: regexp):reMatch
+proc string.match(pattern: regexp(string)):reMatch
+{
+  return pattern.match(this);
+}
+
+// documented in the captures version
+pragma "no doc"
+proc bytes.match(pattern: regexp(bytes)):reMatch
 {
   return pattern.match(this);
 }
@@ -1109,7 +1199,24 @@ proc string.match(pattern: regexp):reMatch
              receiving string where a match occurred
  */
 
-proc string.match(pattern: regexp, ref captures ...?k):reMatch
+proc string.match(pattern: regexp(string), ref captures ...?k):reMatch
+{
+  return pattern.match(this, (...captures));
+}
+
+/* Match the receiving bytes to a regular expression already compiled by
+   calling :proc:`regexp.match`. Note that function only returns a match if
+   the start of the bytes matches the pattern. Use :proc:`bytes.search`
+   to search for the pattern at any offset.
+
+   :arg pattern: the compiled regular expression to match
+   :arg captures: (optional) what to capture from the regular expression. These
+                  should be bytes or types that bytes can cast to.
+   :returns: an :record:`reMatch` object representing the offset in the
+             receiving bytes where a match occurred
+ */
+
+proc bytes.match(pattern: regexp(bytes), ref captures ...?k):reMatch
 {
   return pattern.match(this, (...captures));
 }
@@ -1122,7 +1229,22 @@ proc string.match(pattern: regexp, ref captures ...?k):reMatch
    :arg maxsplit: if nonzero, the maximum number of splits to do
    :yields: each split portion, one at a time
  */
-iter string.split(pattern: regexp, maxsplit: int = 0)
+iter string.split(pattern: regexp(string), maxsplit: int = 0)
+{
+  for v in pattern.split(this, maxsplit) {
+    yield v;
+  }
+}
+
+/*
+   Split the the receiving bytes by occurrences of the passed regular
+   expression by calling :proc:`regexp.split`.
+
+   :arg pattern: the regular expression to use to split
+   :arg maxsplit: if nonzero, the maximum number of splits to do
+   :yields: each split portion, one at a time
+ */
+iter bytes.split(pattern: regexp(bytes), maxsplit: int = 0)
 {
   for v in pattern.split(this, maxsplit) {
     yield v;
@@ -1140,7 +1262,27 @@ iter string.split(pattern: regexp, maxsplit: int = 0)
             the match for the whole pattern and the rest are the capture groups.
 
 */
-iter string.matches(pattern:regexp, param captures=0, maxmatches:int=max(int))
+iter string.matches(pattern:regexp(string), param captures=0,
+                    maxmatches:int=max(int))
+{
+  for v in pattern.matches(this, captures, maxmatches) {
+    yield v;
+  }
+}
+
+/*
+   Enumerates matches in the receiving bytes as well as capture groups
+   by calling :proc:`regexp.matches`.
+
+   :arg pattern: the regular expression to find matches
+   :arg captures: (compile-time constant) the size of the captures to return
+   :arg maxmatches: the maximum number of matches to return
+   :yields: tuples of :record:`reMatch` objects, the 1st is always
+            the match for the whole pattern and the rest are the capture groups.
+
+*/
+iter bytes.matches(pattern:regexp(bytes), param captures=0,
+                   maxmatches:int=max(int))
 {
   for v in pattern.matches(this, captures, maxmatches) {
     yield v;

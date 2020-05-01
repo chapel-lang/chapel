@@ -2,26 +2,26 @@ plus1
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (1..4, 1..4)
 5
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (1..4, 1..4)
 5
 plus2
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (1..4, 1..4)
 5
 ### numTasksPerLoc = 2
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 2 (parDim = 1)
+### numChunks = 2 (parDim = 0)
 ### nranges = (1..4, 1..4)
 5
 done

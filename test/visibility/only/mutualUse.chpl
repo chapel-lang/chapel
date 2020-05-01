@@ -1,7 +1,7 @@
 // Ensures that the addition of the 'only' keyword doesn't cause infinite
-// recursion when two modules use each other with an 'only' list.
+// recursion when two modules publicly use each other with an 'only' list.
 module A {
-  use B only b;
+  public use B only b;
 
   var a = 15 + 3i;
 
@@ -11,7 +11,7 @@ module A {
 }
 
 module B {
-  use A only a;
+  public use A only a;
 
   proc b () {
     writeln("naw, man");
@@ -21,7 +21,7 @@ module B {
 }
 
 module M {
-  use A;
+  public use A;
 
   proc main() {
     c();

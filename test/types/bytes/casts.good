@@ -19,3 +19,7 @@ Value = 3.0 + 2.0i Type = complex(128)
 Value = some string Type = bytes
 Value = Foo Type = bytes
 Value = Bar Type = bytes
+Value = Foo Type = E
+Value = Bar Type = E
+Value = Foo Type = E
+Value = Bar Type = E

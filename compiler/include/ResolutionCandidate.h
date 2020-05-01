@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,12 +24,16 @@
 #include "baseAST.h"
 #include "vec.h"
 
+#include <map>
 #include <vector>
 
 class ArgSymbol;
 class CallInfo;
 class FnSymbol;
 class Symbol;
+
+extern std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
+void clearCoercibleCache(void);
 
 typedef enum {
   // These are in order of severity, for failedCandidateIsBetterMatch.

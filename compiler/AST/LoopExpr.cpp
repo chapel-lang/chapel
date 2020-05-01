@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +29,7 @@
 #include "build.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "LoopExpr.h"
 #include "passes.h"
 #include "scopeResolve.h"
@@ -293,6 +295,7 @@ handleArrayTypeCase(LoopExpr* loopExpr, FnSymbol* fn, Expr* indices,
   //
   FnSymbol* isArrayTypeFn = new FnSymbol("_isArrayTypeFn");
   isArrayTypeFn->addFlag(FLAG_INLINE);
+  isArrayTypeFn->setGeneric(false);
   fn->insertAtTail(new DefExpr(isArrayTypeFn));
 
   // Result of '_isArrayTypeFn'
@@ -390,7 +393,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
-  sifn->addFlag(FLAG_GENERIC);
+  sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
   sifn->insertFormalAtTail(sifnIterator);
@@ -406,8 +409,8 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   sifn->insertAtTail(ForLoop::buildForLoop(indices,
                                            new SymExpr(sifnIterator),
                                            new BlockStmt(stmt),
-                                           false, // is it a coforall?
-                                           zippered));
+                                           zippered,
+                                           /*isForExpr*/ true));
 
   return sifn;
 }
@@ -426,7 +429,7 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 {
   FnSymbol* lifn = new FnSymbol(iteratorName);
   lifn->addFlag(FLAG_FN_RETURNS_ITERATOR);
-  lifn->addFlag(FLAG_GENERIC);
+  lifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gLeaderTag);
   ArgSymbol* lifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
@@ -460,7 +463,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
-  fifn->addFlag(FLAG_GENERIC);
+  fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
   ArgSymbol* fifnTag = new ArgSymbol(INTENT_PARAM, "tag", dtUnknown,
@@ -710,13 +713,32 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
   fn->addFlag(FLAG_FN_RETURNS_ITERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_GENERIC);
+  fn->setGeneric(true);
   if (forall) fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
 
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
   } else {
-    loopExpr->getStmtExpr()->insertBefore(new DefExpr(fn));
+    BlockStmt* block = NULL;
+    CondStmt* ifExprCond = NULL;
+    for (Expr* cur = loopExpr->getStmtExpr();
+         cur != NULL;
+         cur = cur->parentExpr) {
+      if (BlockStmt* b = toBlockStmt(cur)) {
+        block = b;
+        break;
+      }
+    }
+
+    if (block != NULL && isLoweredIfExprBlock(block)) {
+      ifExprCond = toCondStmt(block->parentExpr);
+    }
+
+    if (ifExprCond != NULL)
+      // for if-exprs, insert just before the CondStmt
+      ifExprCond->insertBefore(new DefExpr(fn));
+    else
+      loopExpr->getStmtExpr()->insertBefore(new DefExpr(fn));
   }
 
   SymbolMap outerMap;
@@ -769,7 +791,11 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
       indDefCopies.insertAtTail(defI->copy(&map));
     Expr* indicesCopy = (indices) ? indices->copy(&map) : NULL;
     Expr* bodyCopy = stmt->copy(&map);
-    fifn->insertAtTail(ForLoop::buildLoweredForallLoop(indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy), false, zippered));
+    fifn->insertAtTail(
+        ForLoop::buildLoweredForallLoop(
+          indicesCopy, new SymExpr(followerIterator), new BlockStmt(bodyCopy),
+          zippered,
+          /* isForExpr */ true));
     addOuterVariableFormals(fifn, outerVars);
     adjustIndexDefPoints(fifn, &indDefCopies);
   }

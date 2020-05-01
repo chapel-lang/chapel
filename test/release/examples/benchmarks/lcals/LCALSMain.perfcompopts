@@ -1,2 +1,1 @@
---legacy-classes -soutputFormat=OutputStyle.PERF_TEST --no-ieee-float
-# Pending #13721, run with the legacy option.
+-soutputFormat=OutputStyle.PERF_TEST --no-ieee-float

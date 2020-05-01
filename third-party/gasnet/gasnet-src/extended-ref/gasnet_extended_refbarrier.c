@@ -1146,7 +1146,7 @@ static void gasnete_amdbarrier_init(gasnete_coll_team_t team) {
 typedef struct {
   GASNETE_RMDBARRIER_LOCK(barrier_lock) /* no semicolon */
   struct {
-    gex_Rank_t node;
+    gex_Rank_t    jobrank;
     uintptr_t     addr;
   } *barrier_peers;           /*  precomputed list of peers to communicate with */
 #if GASNETI_PSHM_BARRIER_HIER
@@ -1223,9 +1223,9 @@ void gasnete_rmdbarrier_send(gasnete_coll_rmdbarrier_t *barrier_data,
 
   gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_PASS);
   for (i = 0; i < numsteps; ++i, state += 2, step += 1) {
-    const gex_Rank_t node = barrier_data->barrier_peers[step].node;
+    const gex_Rank_t jobrank = barrier_data->barrier_peers[step].jobrank;
     void * const addr = GASNETE_RDMABARRIER_INBOX_REMOTE(barrier_data, step, state);
-    gasnete_put_nbi(gasneti_THUNK_TM, node, addr, payload, sizeof(*payload),
+    gasnete_put_nbi(gasneti_THUNK_TM, jobrank, addr, payload, sizeof(*payload),
                     GEX_EVENT_DEFER, 0 GASNETI_THREAD_PASS);
   }
   event = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
@@ -1620,9 +1620,9 @@ static void gasnete_rmdbarrier_init(gasnete_coll_team_t team) {
     gasneti_leak(barrier_data->barrier_peers);
   
     for (step = 0; step < steps; ++step) {
-      gex_Rank_t node = peers->fwd[step];
-      barrier_data->barrier_peers[1+step].node = node;
-      barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasnete_rdmabarrier_auxseg[node].addr;
+      gex_Rank_t jobrank = peers->fwd[step]; // is always a job rank
+      barrier_data->barrier_peers[1+step].jobrank = jobrank;
+      barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasnete_rdmabarrier_auxseg[jobrank].addr;
     }
   } else {
     barrier_data->barrier_state = barrier_data->barrier_goal;
@@ -1675,8 +1675,8 @@ typedef struct {
   int volatile amcbarrier_response_value[2];    /*  consensus ambarrier value */
   
   int           amcbarrier_max;    /* length of amcbarrier_active */
-  gex_Rank_t amcbarrier_master; /* ACT, not REL */
-  gex_Rank_t *amcbarrier_active;/* nodes (ACT) that need to recv broadcast */
+  gex_Rank_t    amcbarrier_master; // jobrank of master
+  gex_Rank_t   *amcbarrier_active; // jobranks that need to recv broadcast
 
 #if GASNETI_PSHM_BARRIER_HIER
   gasnete_pshmbarrier_data_t *amcbarrier_pshm; /* non-NULL if using hierarchical code */

@@ -1,3 +1,5 @@
+use IO;
+
 config var inputfile = "test.dat";
 
 var infile = open(inputfile, iomode.r).reader();

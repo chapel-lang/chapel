@@ -1,7 +1,7 @@
 use List;
 
-config type listType = int;
-config param listLock = true;
+var lst1: list(int, false);
+var lst2: list(int, true);
 
-var lst : list(listType, listLock);
-writeln(lst);
+if lst1.parSafe == lst2.parSafe then
+  compilerError("Lists have matching parSafe values");

@@ -4,10 +4,10 @@ stringArgAndReturn.chpl_setup(1)
 
 x = stringArgAndReturn.noArgsRetString()
 stringArgAndReturn.stringArgsRetVoid(x)
-y = b"eek!"
+y = "eek!"
 stringArgAndReturn.stringArgsRetVoid(y)
-a = b"*slams "
-b = b"door*"
+a = "*slams "
+b = "door*"
 c = stringArgAndReturn.stringArgsRetString(a, b)
 stringArgAndReturn.stringArgsRetVoid(c)
 

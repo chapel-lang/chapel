@@ -1,4 +1,4 @@
-use DynamicIters;
+use DynamicIters, IO;
 
 config const n = 200,
              maxIter = 49,

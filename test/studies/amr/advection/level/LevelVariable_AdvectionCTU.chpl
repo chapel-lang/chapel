@@ -1,5 +1,5 @@
-use GridVariable_AdvectionCTU;
-use LevelVariable_def;
+public use GridVariable_AdvectionCTU;
+public use LevelVariable_def;
 
 
 proc LevelVariable.storeCTUOperator(
@@ -9,6 +9,6 @@ proc LevelVariable.storeCTUOperator(
 {
   
   for grid in level.grids do
-    this(grid).storeCTUOperator(q(grid), velocity, dt);
+    this(grid)!.storeCTUOperator(q(grid)!, velocity, dt);
   
 }

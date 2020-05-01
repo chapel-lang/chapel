@@ -1,7 +1,7 @@
 /*
   Jan 12, 2016: Michael Noakes
 
-  Cray's internal implementation of sparse arrays currently relies on
+  Our internal implementation of sparse arrays currently relies on
   the use of the setter param in a procedure with return by ref-intent.
 
   This simple test provides some confidence that this continues to

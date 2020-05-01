@@ -176,7 +176,7 @@ type`` statements shown above and could follow them:
   :lines: 9-11
 
 
-Compile time overrides for ``config var`` and ``config const``
+Compile-time overrides for ``config var`` and ``config const``
 --------------------------------------------------------------
 
 Users can also specify default expressions for ``config var`` and

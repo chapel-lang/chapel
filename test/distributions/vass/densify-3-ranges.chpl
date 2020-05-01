@@ -46,13 +46,13 @@ proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range
   verify(1..0);
   verify(1..0 by -1);
 
-  assert(len == w.length, "runSuite", (len, sa, ssign, w), ": w.length=", w.length, " (does not match 'len')");
+  assert(len == w.size, "runSuite", (len, sa, ssign, w), ": w.size=", w.size, " (does not match 'len')");
   const a: [1..len] w.idxType;
 
   // workaround for bug in implementing 'a = w;'
   for (aa,ww) in zip(a,w) do aa = ww;
 
-  // test with r.length == 1
+  // test with r.size == 1
   if len <= 1 then return;
 
   for aa in a {
@@ -60,7 +60,7 @@ proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range
     verify(aa..aa by -1);
   }
 
-  // test with r.length == 2
+  // test with r.size == 2
   if len <= 2 then return;
 
   for i1 in 1..len-1 {
@@ -79,7 +79,7 @@ proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range
     verify(w by -substride);
   }
 
-  // test with r.length == 3
+  // test with r.size == 3
   if len <= 3 then return;
 
   verify(w.alignedLow .. w.alignedLow + 2 * sa by sa);
@@ -103,7 +103,7 @@ proc verify(w, r) {
   proc report()  { report1(); report2(); }
   if verbose then report2();
 
-  if res.length != r.length {
+  if res.size != r.size {
     if !verbose then report();
     writeln("  UNEXPECTED: different length");
     return;

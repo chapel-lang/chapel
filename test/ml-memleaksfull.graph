@@ -1,0 +1,14 @@
+perfkeys: Total Allocated Memory:, Total Freed Memory:
+files: ml-memleaksfull.dat, ml-memleaksfull.dat
+ylabel: bytes
+graphtitle: Memory Usage for Multilocale Tests
+
+perfkeys: Total Leaked Memory:
+files: ml-memleaksfull.dat
+ylabel: bytes
+graphtitle: Memory Leaks for Multilocale Tests
+
+perfkeys: Number of Tests with Leaks:
+files: ml-memleaksfull.dat
+ylabel: # tests
+graphtitle: Number of Multilocale Tests with Leaks

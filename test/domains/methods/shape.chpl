@@ -1,6 +1,6 @@
 /* Test domain.shape method (called from array.shape) */
 
-use BlockDist;
+use BlockDist, IO;
 
 //
 // Regular Domains & Arrays

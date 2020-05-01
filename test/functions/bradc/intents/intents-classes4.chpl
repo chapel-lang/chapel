@@ -43,9 +43,9 @@ proc callout(out x: unmanaged pair?) {
     writeln("a and x differ on the way in");
   }
 
-  x   = new unmanaged pair();
-  x.a = 12;
-  x.b = 4.5;
+  x    = new unmanaged pair();
+  x!.a = 12;
+  x!.b = 4.5;
 
   if (x == a) {
     writeln("a and x are the same on the way out");
@@ -53,7 +53,7 @@ proc callout(out x: unmanaged pair?) {
     writeln("a and x differ on the way out");
   }
 
-  writeln("re-assigned to be new instance: ", x.a, " ", x.b);
+  writeln("re-assigned to be new instance: ", x!.a, " ", x!.b);
 }
 
 
@@ -107,7 +107,7 @@ proc main() {
     var aa: unmanaged pair? = a;
     var t1 = aa;
     callout(aa);
-    writeln("back at callsite, a is: ", aa.a, " ", aa.b);
+    writeln("back at callsite, a is: ", aa!.a, " ", aa!.b);
     writeln();
     delete t1;
     a = aa!;

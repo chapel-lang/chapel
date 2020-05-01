@@ -1,5 +1,6 @@
 use assocArrayAPItest;
 use HashedDist;
+use IO;
 
 record MyMapper {
   proc this(ind, targetLocs: [] locale) {

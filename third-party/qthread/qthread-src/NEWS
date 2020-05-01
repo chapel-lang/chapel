@@ -1,11 +1,18 @@
---- 1.14 --
+--- 1.15 ---
+New Features:
+ - Add experimental support for Thread Local Storage and new Condition variable initializers
+ - Non-blocking FEB functions are now exposed (e.g. qthread_readFF_nb), other runtimes (e.g. MPI) require access.
+Improvements:
+ - Remove the deprecated register keyword
+ - Fix automake machinery so that "make dist" works as expected
+--- 1.14 ---
 New Features:
  - Incorporate minor features requested by Chapel team
- - Add experimental supports for the MPI finepoints interface in test/benchmarks/finepoints
+ - Add experimental support for the MPI finepoints interface in test/benchmarks/finepoints
  - Added a new thread feature flag for "network tasks", allowing schedulers to treat communication tasks differently
  - Added a RUNTIME_DATA_SIZE flag to qthread_readstate (Courtesy of the Chapel team)
 Improvements:
- - Readd the "no" topology (fix proposed by the Chapel team)
+ - Read the "no" topology (fix proposed by the Chapel team)
  - Updated SINC implementations to use modern Qthreads APIs
  - Removed deprecated ROSE support
  - Removed deprecated RCRtool support

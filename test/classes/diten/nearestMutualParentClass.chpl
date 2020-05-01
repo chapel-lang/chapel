@@ -49,7 +49,7 @@ proc getSuperType(type t) type {
     if (t == object) then
       return t;
     else
-      return v.super.type;
+      return v!.super.type;
   }
   return st();
 }

@@ -9,7 +9,7 @@ module TypeDefiner {
 }
 
 module SecondaryDefiner {
-  use TypeDefiner;
+  public use TypeDefiner;
 
   proc Foo.other() {
     writeln("I'm a secondary on Foo!");

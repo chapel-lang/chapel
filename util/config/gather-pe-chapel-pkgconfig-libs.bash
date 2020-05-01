@@ -23,9 +23,7 @@ if [[ "$chpl_comm" != none ]]; then
 
   if [[ "$chpl_target_platform" == cray-x* ]]; then
     pe_chapel_pkgconfig_libs="cray-ugni:$pe_chapel_pkgconfig_libs"
-    if [[ "$chpl_comm" == gasnet && \
-          ( "$chpl_comm_substrate" == gemini || \
-            "$chpl_comm_substrate" == aries ) ]]; then
+    if [[ "$chpl_comm" == gasnet && "$chpl_comm_substrate" == aries  ]]; then
       pe_chapel_pkgconfig_libs="cray-udreg:$pe_chapel_pkgconfig_libs"
     fi
   fi

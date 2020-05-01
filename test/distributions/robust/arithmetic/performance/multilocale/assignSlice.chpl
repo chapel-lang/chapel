@@ -1,15 +1,16 @@
 use driver_domains;
+private use CommDiagnostics;
 
 config const doVerboseComm = false;
 
 const bigDom4D = Dom4D.expand((1,1,1,1));
 var A: [bigDom4D] 4*int = {(...bigDom4D.dims())};
-var B: [Dom4D] 4*int;
+var B: [Dom4D] 4*int = (0, 0, 0, 0);
 
 resetCommDiagnostics();
 startCommDiagnostics();
 if doVerboseComm then startVerboseComm();
-B = A[1..n4,1..n4,1..n4,1..n4];
+{ B = A[1..n4,1..n4,1..n4,1..n4]; }
 if doVerboseComm then stopVerboseComm();
 stopCommDiagnostics();
 writeln(getCommDiagnostics());

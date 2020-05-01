@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +26,8 @@
 //
 // Defined in main_launcher.c
 //
+void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
+                          const char* arg);
 int chpl_run_utility1K(const char *command, char *const argv[],
                        char *outbuf, int outbuflen);
 int chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen);

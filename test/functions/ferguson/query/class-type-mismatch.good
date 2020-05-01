@@ -1,0 +1,3 @@
+class-type-mismatch.chpl:21: error: unresolved call 'g(Wrapper(OtherGenericClass(int(64))))'
+class-type-mismatch.chpl:15: note: this candidate did not match: g(x: Wrapper(GenericClass(?)))
+class-type-mismatch.chpl:15: note: because an argument was incompatible

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -145,6 +146,7 @@ bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
 bool fLegacyClasses = false;
+bool fIgnoreNilabilityErrors = false;
 bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
 bool fNoInferLocalFields = false;
@@ -189,7 +191,10 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
-bool fLifetimeChecking = true;
+bool fNoLifetimeChecking = false;
+bool fNoSplitInit = false;
+bool fNoEarlyDeinit = false;
+bool fNoCopyElision = false;
 bool fCompileTimeNilChecking = true;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
@@ -548,14 +553,22 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   }
 }
 
-static void verifyStageAndSetStageNum(const ArgumentDescription* desc, const
-    char* arg)
+static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
+                                      const char* arg)
 {
   llvmStageNum_t stageNum = llvmStageNumFromLlvmStageName(arg);
   if(stageNum == llvmStageNum::NOPRINT)
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+static void warnUponLegacyClasses(const ArgumentDescription* desc,
+                                  const char* arg)
+{
+  USR_WARN("'--legacy-classes' option has been deprecated"
+           " and will be removed in the next Chapel release;"
+           " it no longer affects compilation");
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -685,14 +698,14 @@ static void setVectorize(const ArgumentDescription* desc, const char* unused)
     fYesVectorize = true;
 }
 
-static void turnOffChecks(const ArgumentDescription* desc, const char* unused) {
-  fNoNilChecks    = true;
-  fNoBoundsChecks = true;
-  fNoFormalDomainChecks = true;
-  fNoLocalChecks  = true;
-  fNoStackChecks  = true;
-  fNoCastChecks = true;
-  fNoDivZeroChecks = true;
+static void setChecks(const ArgumentDescription* desc, const char* unused) {
+  fNoNilChecks    = fNoChecks;
+  fNoBoundsChecks = fNoChecks;
+  fNoFormalDomainChecks = fNoChecks;
+  fNoLocalChecks  = fNoChecks;
+  fNoStackChecks  = fNoChecks;
+  fNoCastChecks = fNoChecks;
+  fNoDivZeroChecks = fNoChecks;
 }
 
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
@@ -728,7 +741,7 @@ static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   fNoOptimizeForallUnordered = false;
   optimizeCCode = true;
   specializeCCode = true;
-  turnOffChecks(desc, unused);
+  setChecks(desc, unused);
 }
 
 static void setFloatOptFlag(const ArgumentDescription* desc, const char* unused) {
@@ -896,7 +909,7 @@ static ArgumentDescription arg_desc[] = {
  {"cache-remote", ' ', NULL, "[Don't] enable cache for remote data", "N", &fCacheRemote, "CHPL_CACHE_REMOTE", setCacheEnable},
  {"copy-propagation", ' ', NULL, "Enable [disable] copy propagation", "n", &fNoCopyPropagation, "CHPL_DISABLE_COPY_PROPAGATION", NULL},
  {"dead-code-elimination", ' ', NULL, "Enable [disable] dead code elimination", "n", &fNoDeadCodeElimination, "CHPL_DISABLE_DEAD_CODE_ELIMINATION", NULL},
- {"fast", ' ', NULL, "Use fast default settings", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
+ {"fast", ' ', NULL, "Disable checks; optimize/specialize code", "F", &fFastFlag, "CHPL_FAST", setFastFlag},
  {"fast-followers", ' ', NULL, "Enable [disable] fast followers", "n", &fNoFastFollowers, "CHPL_DISABLE_FAST_FOLLOWERS", NULL},
  {"ieee-float", ' ', NULL, "Generate code that is strict [lax] with respect to IEEE compliance", "N", &fieeefloat, "CHPL_IEEE_FLOAT", setFloatOptFlag},
  {"ignore-local-classes", ' ', NULL, "Disable [enable] local classes", "N", &fIgnoreLocalClasses, NULL, NULL},
@@ -923,7 +936,7 @@ static ArgumentDescription arg_desc[] = {
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
- {"no-checks", ' ', NULL, "Disable all following run-time checks", "F", &fNoChecks, "CHPL_NO_CHECKS", turnOffChecks},
+ {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"cast-checks", ' ', NULL, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, NULL, NULL},
  {"div-by-zero-checks", ' ', NULL, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, NULL, NULL},
@@ -1058,8 +1071,12 @@ static ArgumentDescription arg_desc[] = {
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
- {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "N", &fLifetimeChecking, NULL, NULL},
- {"legacy-classes", ' ', NULL, "Class variables match 1.19 - borrowed by default, can store nil", "N", &fLegacyClasses, NULL, NULL},
+ {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
+ {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
+ {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
+ {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
+ {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
+ {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
  {"ignore-errors", ' ', NULL, "[Don't] attempt to ignore errors", "N", &ignore_errors, "CHPL_IGNORE_ERRORS", NULL},
@@ -1383,10 +1400,6 @@ static void setMultiLocaleInterop() {
     return;
   }
 
-  if (strcmp(CHPL_COMM, "gasnet") != 0) {
-    USR_FATAL("Multi-locale libraries are only supported on gasnet");
-  }
-
   if (llvmCodegen) {
     USR_FATAL("Multi-locale libraries do not support --llvm");
   }
@@ -1432,6 +1445,18 @@ static void checkIncrementalAndOptimized() {
               " using -O optimizations directly.");
 }
 
+static void checkUnsupportedConfigs(void) {
+  // Check for cce classic
+  if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
+    const char* cce_variant = getenv("CRAY_PE_CCE_VARIANT");
+    if (strstr(cce_variant, "CC=Classic")) {
+      USR_FATAL("CCE classic (cce < 9.x.x / 9.x.x-classic) is no longer supported."
+                 " Please notify the Chapel team if this configuration is"
+                 " important to you.");
+    }
+  }
+}
+
 static void checkMLDebugAndLibmode(void) {
 
   if (!fMultiLocaleLibraryDebug) { return; }
@@ -1440,11 +1465,16 @@ static void checkMLDebugAndLibmode(void) {
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
+    USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
+  }
 
-    const char* warning =
-        "Compiling a single locale library because CHPL_COMM is none.";
+  return;
+}
 
-    USR_WARN(warning);
+static void checkNotLibraryAndMinimalModules(void) {
+  const bool isLibraryCompile = fLibraryCompile || fMultiLocaleInterop;
+  if (isLibraryCompile && fMinimalModules) {
+    USR_FATAL("Libraries do not currently support \'--minimal-modules\'");
   }
 
   return;
@@ -1467,6 +1497,8 @@ static void postprocess_args() {
 
   checkMLDebugAndLibmode();
 
+  checkNotLibraryAndMinimalModules();
+
   setPrintCppLineno();
 
   checkLLVMCodeGen();
@@ -1474,6 +1506,8 @@ static void postprocess_args() {
   checkTargetCpu();
 
   checkIncrementalAndOptimized();
+
+  checkUnsupportedConfigs();
 }
 
 int main(int argc, char* argv[]) {
@@ -1505,9 +1539,7 @@ int main(int argc, char* argv[]) {
     initPrimitive();
     initPrimitiveTypes();
 
-    DefExpr* objectClass = defineObjectClass();
-
-    initChplProgram(objectClass);
+    initChplProgram();
 
     initStringLiteralModule();
 

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,7 +60,7 @@ static void removeUnusedFunctions() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
-    INT_ASSERT(fn->hasFlag(FLAG_GENERIC) == false);
+    INT_ASSERT(! fn->isGeneric());
 
     concreteWellKnownFunctionsSet.insert(fn);
   }
@@ -175,23 +176,6 @@ static void removeRandomPrimitive(CallExpr* call) {
     }
     break;
 
-    // Maybe this can be pushed into the following case, where a PRIM_MOVE gets
-    // removed if its rhs is a type symbol.  That is, resolution of a
-    // PRIM_TYPE_INIT replaces the primitive with symexpr that contains a type symbol.
-    case PRIM_TYPE_INIT:
-    {
-      // A "type init" call that is in the tree should always have a callExpr
-      // parent, as guaranteed by CallExpr::verify().
-      CallExpr* parent = toCallExpr(call->parentExpr);
-      // We expect all PRIM_TYPE_INIT primitives to have a PRIM_MOVE
-      // parent, following the insertion of call temps.
-      if (parent->isPrimitive(PRIM_MOVE))
-        parent->remove();
-      else
-        INT_FATAL(parent, "expected parent of PRIM_TYPE_EXPR to be a PRIM_MOVE");
-    }
-    break;
-
     case PRIM_MOVE:
     {
       // Remove types to enable --baseline
@@ -227,16 +211,10 @@ static void removeRandomPrimitives() {
 static void replaceTypeArgsWithFormalTypeTemps() {
   compute_call_sites();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
     if (! fn->isResolved())
       // Don't bother with unresolved functions.
       // They will be removed from the tree.
-      continue;
-
-    // Skip this function if it is not in the tree.
-    if (! fn->defPoint)
-      continue;
-    if (! fn->defPoint->parentSymbol)
       continue;
 
     // We do not remove type args from extern functions so that e.g.:
@@ -314,7 +292,7 @@ static void replaceTypeArgsWithFormalTypeTemps() {
 static void removeParamArgs() {
   compute_call_sites();
 
-  forv_Vec(FnSymbol, fn, gFnSymbols)
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols)
   {
     if (! fn->isResolved())
       // Don't bother with unresolved functions.
@@ -561,8 +539,9 @@ static void removeTypedefParts() {
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
         if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
           ClassTypeDecorator d = dt->getDecorator();
-          if (isDecoratorUnknownNilability(d) ||
-              isDecoratorUnknownManagement(d)) {
+          if ((isDecoratorUnknownNilability(d) ||
+              isDecoratorUnknownManagement(d)) &&
+              dt->getCanonicalClass()->inTree()) {
             // After resolution, can't consider it generic anymore...
             // The generic-ness will be moot though because later
             // it will all be replaced with the AggregateType.
@@ -675,7 +654,6 @@ static void cleanupAfterRemoves() {
   }
 }
 
-
 static bool isVoidOrVoidTupleType(Type* type) {
   if (type == NULL) {
     return false;
@@ -693,7 +671,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
     }
   }
   if (type->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    Symbol* field = type->getField("x1", false);
+    Symbol* field = type->getField("x0", false);
     if (field == NULL || field->type == dtNothing) {
       return true;
     }
@@ -801,8 +779,7 @@ static void cleanupVoidVarsAndFields() {
 
   // Remove void formal arguments from functions.
   // Change functions that return ref(void) to just return void.
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->defPoint->inTree()) {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
         if (isVoidOrVoidTupleType(formal->type)) {
           if (formal == fn->_this) {
@@ -815,12 +792,11 @@ static void cleanupVoidVarsAndFields() {
           isVoidOrVoidTupleType(fn->retType)) {
         fn->retType = dtNothing;
       }
-    }
-    if (fn->_this) {
-      if (isVoidOrVoidTupleType(fn->_this->type)) {
-        fn->_this = NULL;
+      if (fn->_this) {
+        if (isVoidOrVoidTupleType(fn->_this->type)) {
+          fn->_this = NULL;
+        }
       }
-    }
   }
 
   // Set for loop index variables that are void to the global void value

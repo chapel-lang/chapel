@@ -1,4 +1,4 @@
-use DateTime;
+use DateTime, IO;
 
 proc testReadWrite(dt) {
   var dt2: dt.type;

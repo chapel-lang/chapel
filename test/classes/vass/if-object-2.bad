@@ -1,7 +1,0 @@
-if-object-2.chpl:7: In function 'main':
-if-object-2.chpl:11: error: attempt to dereference nil
-if-object-2.chpl:11: note: variable obj is nil at this point
-if-object-2.chpl:8: note: this statement may be relevant
-if-object-2.chpl:14: error: attempt to dereference nil
-if-object-2.chpl:14: note: variable obj is nil at this point
-if-object-2.chpl:8: note: this statement may be relevant

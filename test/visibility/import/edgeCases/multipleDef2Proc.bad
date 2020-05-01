@@ -1,0 +1,2 @@
+multipleDef2Proc.chpl:18: In function 'main':
+multipleDef2Proc.chpl:19: error: Symbol 'foo' undeclared in module 'C'

@@ -98,6 +98,18 @@ var branchInfo = [
                   { "release" : "1.19",
                     "releaseDate": "2019-03-21",
                     "branchDate" : "2019-03-12",
+                    "revision" : -1},
+                  { "release" : "1.20",
+                    "releaseDate": "2019-09-19",
+                    "branchDate" : "2019-09-11",
+                    "revision" : -1},
+                  { "release" : "1.21",
+                    "releaseDate": "2020-04-09",
+                    "branchDate" : "2020-03-31",
+                    "revision" : -1},
+                  { "release" : "1.22",
+                    "releaseDate": "2020-04-16",
+                    "branchDate" : "2020-04-07",
                     "revision" : -1}
                   ];
 
@@ -404,7 +416,10 @@ function expandGraphs(graph, graphInfo, graphDivs, graphData, graphLabels) {
 
     // copy the graphInfo and add the key to the title (stripping the
     // configuration if we have multiple configurations.)
-    var newInfo = $.extend({}, graphInfo);
+    var newInfo = $.extend(true, {}, graphInfo);
+    for (var j = 0; j < newInfo.annotations.length; j++) {
+      newInfo.annotations[j].series = graphLabels[i];
+    }
     newInfo.title += ": " + graphLabels[i].replace(defaultConfiguration, '');
 
     // The new graph cannot be expanded

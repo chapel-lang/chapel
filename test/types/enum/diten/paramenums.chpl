@@ -23,9 +23,9 @@ proc main() {
   }
 }
 
-proc testeq(param a: enumerated, param b: enumerated) param return a==b;
-proc testneq(param a: enumerated, param b: enumerated) param return a!=b;
-proc testgt(param a: enumerated, param b: enumerated) param return a>b;
-proc testgte(param a: enumerated, param b: enumerated) param return a>=b;
-proc testlt(param a: enumerated, param b: enumerated) param return a<b;
-proc testlte(param a: enumerated, param b: enumerated) param return a<=b;
+proc testeq(param a: enum, param b: enum) param return a==b;
+proc testneq(param a: enum, param b: enum) param return a!=b;
+proc testgt(param a: enum, param b: enum) param return a>b;
+proc testgte(param a: enum, param b: enum) param return a>=b;
+proc testlt(param a: enum, param b: enum) param return a<b;
+proc testlte(param a: enum, param b: enum) param return a<=b;

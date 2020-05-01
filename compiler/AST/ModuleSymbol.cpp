@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +36,7 @@ ModuleSymbol*                      baseModule            = NULL;
 ModuleSymbol*                      stringLiteralModule   = NULL;
 ModuleSymbol*                      standardModule        = NULL;
 ModuleSymbol*                      printModuleInitModule = NULL;
+ModuleSymbol*                      ioModule              = NULL;
 
 Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
 Vec<ModuleSymbol*>                 allModules;  // Contains all modules except rootModule
@@ -381,6 +383,26 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ";" << std::endl << std::endl;
 
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  *file  << "or" << std::endl << std::endl;
+   
+  if (fDocsTextOnly == false) {
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  }
+
+  this->printTabs(file, tabs + 1);
+
+  *file << "import ";
+
+  if (parentName != "") {
+    *file << parentName << ".";
+  }
+
+  *file << name << ";" << std::endl << std::endl;
+
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {
     this->printTableOfContents(file);
@@ -621,7 +643,9 @@ void ModuleSymbol::addDefaultUses() {
   if (modTag != MOD_INTERNAL) {
     ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
 
-    assert (parentModule != NULL);
+    if (parentModule == NULL) {
+      USR_FATAL(this, "Modules must be declared at module- or file-scope");
+    }
 
     //
     // Don't insert 'use ChapelStandard' for nested user modules.
@@ -631,7 +655,7 @@ void ModuleSymbol::addDefaultUses() {
       SET_LINENO(this);
 
       UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef, /* isPrivate */ true));
+      block->insertAtHead(new UseStmt(modRef, "", /* isPrivate */ true));
     }
 
   // We don't currently have a good way to fetch the root module by name.
@@ -647,7 +671,7 @@ void ModuleSymbol::addDefaultUses() {
       SET_LINENO(this);
 
       UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-      block->insertAtTail(new UseStmt(modRef, /* isPrivate */ false));
+      block->insertAtTail(new UseStmt(modRef, "", /* isPrivate */ false));
     }
   }
 }
@@ -738,7 +762,7 @@ void initStringLiteralModule() {
                                                    MOD_INTERNAL,
                                                    new BlockStmt());
 
-  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), false));
+  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), "", false));
 
   stringLiteralModule->filename = astr("<internal>");
 

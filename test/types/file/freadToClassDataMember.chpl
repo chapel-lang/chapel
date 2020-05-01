@@ -1,5 +1,4 @@
-// NOTE:  This test prints a.x = 1 when it should print a.x = 9.
-// shannon, finish futurizing this.  commit.
+use IO;
 
 class myClass {
   var x: int;

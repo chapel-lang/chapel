@@ -13,13 +13,13 @@ proc main() {
   var z = atomicObj.readABA();
   writeln(z);
   var w = new unmanaged C(2);
-  writeln(atomicObj.compareExchange(x, z.getObject()));
+  writeln(atomicObj.compareAndSwap(x, z.getObject()));
   writeln(atomicObj.read());
   writeln(atomicObj.readABA());
-  writeln(atomicObj.compareExchangeABA(z, w));
+  writeln(atomicObj.compareAndSwapABA(z, w));
   writeln(atomicObj.read());
   writeln(atomicObj.readABA());
-  writeln(atomicObj.compareExchange(w, x));
+  writeln(atomicObj.compareAndSwap(w, x));
   writeln(atomicObj.read());
   writeln(atomicObj.readABA());
   writeln(atomicObj.exchange(nil));
@@ -32,7 +32,7 @@ proc main() {
   var b = atomicObj.readABA();
 
   writeln(a==b);
-  atomicObj.compareExchangeABA(a, x);
+  atomicObj.compareAndSwapABA(a, x);
   writeln(a==b);
 
   var c = atomicObj.readABA();

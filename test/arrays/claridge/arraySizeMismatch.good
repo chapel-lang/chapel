@@ -1,1 +1,1 @@
-arraySizeMismatch.chpl:3: error: halt reached - assigning between arrays of different shapes in dimension 1: 3 vs. 4
+arraySizeMismatch.chpl:3: error: halt reached - assigning between arrays of different shapes in dimension 0: 3 vs. 4

@@ -34,6 +34,7 @@ libqthread_la_SOURCES = \
 	affinity/common.c \
 	affinity/@qthread_topo@.c \
 	touch.c \
+	tls.c \
 	teams.c
 
 EXTRA_DIST = 

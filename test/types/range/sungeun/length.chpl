@@ -7,9 +7,9 @@ proc checkLen(lo, hi) {
   var len = if lo<=hi then hi-lo+1 else 0;
   if noisy {
     writeln("lo=", lo, ", hi=", hi);
-    writeln("\tr1.length=", r1.length, ", len=", len);
+    writeln("\tr1.size=", r1.size, ", len=", len);
   }
-  return(r1.length==len);
+  return(r1.size==len);
 }
 
 writeln(checkLen(lo, hi));

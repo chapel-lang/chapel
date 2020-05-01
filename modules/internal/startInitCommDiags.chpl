@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,7 +24,8 @@
 // and teardown.  See that module (or its chpldocs) for details.
 //
 module startInitCommDiags {
-  use CommDiagnostics;
+  private use ChapelBase;
+  private use CommDiagnostics;
 
   if printInitVerboseComm {
     startVerboseComm();

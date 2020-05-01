@@ -32,11 +32,11 @@ proc wordCount((s_c_string, block)) {
     then startWhite = 1;
 
   // We've ended the word and/or line
-  sss = s[s.length];
+  sss = s[s.size];
   if (sss == " " || sss == "\n")
     then endWhite = 1;
 
-  for incr in 1..#s.length { 
+  for incr in 1..#s.size { 
   var ss = s[incr];
 
     if (ss == "\n")
@@ -134,9 +134,9 @@ proc myMapFn((s, block)) {
     if (start == -1)  // done
       then break;
 
-    var end = indexOf("beer/beerId:", s, start + recordStart.length);
+    var end = indexOf("beer/beerId:", s, start + recordStart.size);
     if (end == -1) { // then close to EOF
-      end = s.length;
+      end = s.size;
       base = end;
     } else base = end; 
 
@@ -169,11 +169,11 @@ proc mapFn(s: string) {
     }
 
     // Get the end of the review as well
-    var j = indexOf(recordEnd, s, i + recordStart.length);
+    var j = indexOf(recordEnd, s, i + recordStart.size);
 
     if (j == -1) {
       // Find records at end of file
-      j = s.length;
+      j = s.size;
       base = j;
     } else base = j;
 

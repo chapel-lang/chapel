@@ -1,4 +1,6 @@
 
+use IO;
+
 var b: bool; 
 readln(b);
 var i: int; 

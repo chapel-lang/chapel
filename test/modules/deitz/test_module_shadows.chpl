@@ -1,16 +1,18 @@
-module M1 {
+module OuterModule {
+  module M1 {
 
-  module M2 {
-    proc main() {
-      foo();
+    module M2 {
+      proc main() {
+        foo();
+      }
+    }
+
+    proc foo() {
+      M2();
     }
   }
 
-  proc foo() {
-    M2();
+  proc M2() {
+    writeln("this should be shadowed");
   }
-}
-
-proc M2() {
-  writeln("this should be shadowed");
 }

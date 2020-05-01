@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +25,7 @@
 #include "build.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "stringutil.h"
 
 #include <algorithm>
 
@@ -150,14 +152,16 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
                           BlockStmt* body,
                           bool       coforall,
                           bool       zippered,
-                          bool       isLoweredForall)
+                          bool       isLoweredForall,
+                          bool       isForExpr)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
   CallExpr*    iterInit      = 0;
   CallExpr*    iterMove      = 0;
   ForLoop*     loop          = new ForLoop(index, iterator, body,
-                                           zippered, isLoweredForall);
+                                           zippered, isLoweredForall,
+                                           isForExpr);
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
@@ -279,19 +283,39 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
 BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
-                                 bool       coforall,
-                                 bool       zippered)
+                                 bool       zippered,
+                                 bool       isForExpr)
 {
-  return doBuildForLoop(indices, iteratorExpr, body, coforall, zippered, false);
+  return doBuildForLoop(indices, iteratorExpr, body,
+                        /* coforall */ false,
+                        zippered,
+                        /* isLoweredForall */ false,
+                        isForExpr);
 }
+
+BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
+                                      Expr*      iteratorExpr,
+                                      BlockStmt* body,
+                                      bool       zippered)
+{
+  return doBuildForLoop(indices, iteratorExpr, body,
+                        /* coforall */ true,
+                        zippered,
+                        /* isLoweredForall */ false,
+                        /* isForExpr */ false);
+}
+
 
 BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
                                            Expr*      iteratorExpr,
                                            BlockStmt* body,
-                                           bool       coforall,
-                                           bool       zippered)
+                                           bool       zippered,
+                                           bool       isForExpr)
 {
-  return doBuildForLoop(indices, iteratorExpr, body, coforall, zippered, true);
+  return doBuildForLoop(indices, iteratorExpr, body,
+                        /* coforall */ false,
+                        zippered, /* isLoweredForall */ true,
+                        isForExpr);
 }
 
 
@@ -307,18 +331,21 @@ ForLoop::ForLoop() : LoopStmt(0)
   mIterator = 0;
   mZippered = false;
   mLoweredForall = false;
+  mIsForExpr = false;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
                  VarSymbol* iterator,
                  BlockStmt* initBody,
                  bool       zippered,
-                 bool       isLoweredForall) : LoopStmt(initBody)
+                 bool       isLoweredForall,
+                 bool       isForExpr) : LoopStmt(initBody)
 {
   mIndex    = new SymExpr(index);
   mIterator = new SymExpr(iterator);
   mZippered = zippered;
   mLoweredForall = isLoweredForall;
+  mIsForExpr = isForExpr;
 }
 
 ForLoop::~ForLoop()
@@ -342,6 +369,10 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
   retval->mIndex            = mIndex->copy(map, true),
   retval->mIterator         = mIterator->copy(map, true);
   retval->mZippered         = mZippered;
+
+  // MPF 2020-01-21: It seems it should also copy mLoweredForall,
+  // but doing so causes problems in lowerIterators.
+  retval->mIsForExpr        = mIsForExpr;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -374,6 +405,24 @@ BlockStmt* ForLoop::copyBody(SymbolMap* map)
   return retval;
 }
 
+
+void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
+                             Symbol* continueSym)
+{
+  // Replace the continue label with a per-iteration label
+  // that is at the end of that iteration.
+  LabelSymbol* continueLabel = new
+    LabelSymbol(astr("_continueLabel", istr(i)));
+  Expr* defContinueLabel = new DefExpr(continueLabel);
+
+  beforeHere->insertBefore(defContinueLabel);
+
+  map->put(continueSym, continueLabel);
+
+  defContinueLabel->insertBefore(copyBody(map));
+}
+
+
 bool ForLoop::isForLoop() const
 {
   return true;
@@ -392,6 +441,11 @@ bool ForLoop::isCoforallLoop() const
 bool ForLoop::isLoweredForallLoop() const
 {
   return mLoweredForall;
+}
+
+bool ForLoop::isForExpr() const
+{
+  return mIsForExpr;
 }
 
 SymExpr* ForLoop::indexGet() const

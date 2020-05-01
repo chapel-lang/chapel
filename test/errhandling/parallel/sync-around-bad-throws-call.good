@@ -1,3 +1,3 @@
-sync-around-bad-throws-call.chpl:6: In function 'badFn':
-sync-around-bad-throws-call.chpl:8: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
-sync-around-bad-throws-call.chpl:5: note: throwing function throwingFn defined here
+sync-around-bad-throws-call.chpl:7: In function 'badFn':
+sync-around-bad-throws-call.chpl:9: error: call to throwing function throwingFn without throws, try, or try! (relaxed mode)
+sync-around-bad-throws-call.chpl:6: note: throwing function throwingFn defined here

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +23,7 @@
 
 typedef enum {
   // When updating, make sure that these numbers work with the masks below
-  // (last bit is nilable or not)
+  // (last two bits are generic nilable / non-nilable / nilable)
   CLASS_TYPE_BORROWED          = 0,
   CLASS_TYPE_BORROWED_NONNIL   = 1,
   CLASS_TYPE_BORROWED_NILABLE  = 2,

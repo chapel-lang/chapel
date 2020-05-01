@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -84,7 +85,7 @@
 
     var deque = new DistDeque(int, cap=maxElem, targetLocales=ourLocales);
 
-  The deque can be used as a queue by using the :proc:`enqueue` and :proc:`dequeue` convenience
+  The deque can be used as a queue by using the :proc:`DistributedDequeImpl.enqueue` and :proc:`DistributedDequeImpl.dequeue` convenience
   methods or inserting from one end to remove from another...
 
   .. code-block:: chapel
@@ -92,7 +93,7 @@
     deque.enqueue(1);
     var (hasElem, elem) = deque.dequeue();
 
-  The deque can be used as a stack by using the :proc:`push` and :proc:`pop` convenience methods,
+  The deque can be used as a stack by using the :proc:`DistributedDequeImpl.push` and :proc:`DistributedDequeImpl.pop` convenience methods,
   or insertion and removing from the same ends...
 
   .. code-block:: chapel
@@ -100,8 +101,8 @@
     deque.push(1);
     var (hasElem, elem) = deque.pop();
 
-  The deque can be used as a list by using the :proc:`pushBack`, :proc:`pushFront`, :proc:`popBack`,
-  and :proc:`popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
+  The deque can be used as a list by using the :proc:`DistributedDequeImpl.pushBack`, :proc:`DistributedDequeImpl.pushFront`, :proc:`DistributedDequeImpl.popBack`,
+  and :proc:`DistributedDequeImpl.popFront` methods. While the deque is not indexable, the ability to `append` or `prepend`
   is powerful enough to allow a total ordering, allowing the user to define the order by letting them
   insert and remove at whichever ends they so choose.
 
@@ -151,8 +152,8 @@
       atomic operations should be provided.
 
   4.  The ordered serial iterators currently do not work when the ``globalHead`` or ``globalTail`` are negative, which is a
-      result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`pushBack`
-      or :proc:`pushFront` methods, I would advise against using them for now.
+      result of iteration being an after-thought. This will be improved upon soon, but for now if you use :proc:`DistributedDequeImpl.pushBack`
+      or :proc:`DistributedDequeImpl.pushFront` methods, I would advise against using them for now.
 
   Planned Improvements
   ____________________
@@ -166,7 +167,7 @@
 */
 module DistributedDeque {
 
-  use Collection;
+  public use Collection;
 
   /*
     Size of each unroll block for each local deque node.
@@ -202,13 +203,15 @@ module DistributedDeque {
     insertion and removal from either end of the queue. Can be used as a Queue,
     Stack, or even a List.
   */
+  pragma "always RVF"
   record DistDeque {
     type eltType;
+
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Deque is forwarded. See :class:`DistributedDequeImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedDequeImpl(eltType)?;
 
     // Privatization id
@@ -298,6 +301,8 @@ module DistributedDeque {
       this.targetLocales = targetLocales;
       this.nSlots        = here.maxTaskPar * targetLocales.size;
       this.slotSpace     = {0..#this.nSlots};
+      const dummyLD = new unmanaged LocalDeque(eltType);
+      this.slots = dummyLD;
 
       complete();
 
@@ -309,6 +314,7 @@ module DistributedDeque {
           slots[i] = new unmanaged LocalDeque(eltType);
         }
       }
+      delete dummyLD;
 
       // Distribute the globalHead, globalTail, and queueSize over the first 3 nodes...
       var countersLeftToAlloc = 3;
@@ -381,7 +387,7 @@ module DistributedDeque {
           on queueSize {
             var readSize = queueSize!.read();
             // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-            while readSize < 0 && !queueSize!.compareExchangeWeak(readSize, 0) {
+            while readSize < 0 && !queueSize!.compareAndSwap(readSize, 0) {
               chpl_task_yield();
               readSize = queueSize!.read();
             }
@@ -426,7 +432,7 @@ module DistributedDeque {
             on queueSize {
               var readSize = queueSize!.read();
               // Attempt to fix, but yield to reduce potential contention and CPU hogging.
-              while readSize > this.cap && !queueSize!.compareExchangeWeak(readSize, this.cap) {
+              while readSize > this.cap && !queueSize!.compareAndSwap(readSize, this.cap) {
                 chpl_task_yield();
                 readSize = queueSize!.read();
               }
@@ -604,8 +610,8 @@ module DistributedDeque {
             yield node!.elements[headIdx];
 
             headIdx += 1;
-            if headIdx > distributedDequeBlockSize {
-              headIdx = 1;
+            if headIdx >= distributedDequeBlockSize {
+              headIdx = 0;
             }
           }
           node = node!.next;
@@ -656,8 +662,8 @@ module DistributedDeque {
         // Update state...
         size -= 1;
         headIdx += 1;
-        if headIdx > distributedDequeBlockSize {
-          headIdx = 1;
+        if headIdx >= distributedDequeBlockSize {
+          headIdx = 0;
         }
 
         // Advance...
@@ -712,8 +718,8 @@ module DistributedDeque {
         }
 
         tailIdx -= 1;
-        if tailIdx == 0 {
-          tailIdx = distributedDequeBlockSize;
+        if tailIdx < 0 {
+          tailIdx = distributedDequeBlockSize-1;
         }
         yield node!.elements[tailIdx];
 
@@ -761,8 +767,8 @@ module DistributedDeque {
           yield node!.elements[headIdx];
 
           headIdx += 1;
-          if headIdx > distributedDequeBlockSize {
-            headIdx = 1;
+          if headIdx >= distributedDequeBlockSize {
+            headIdx = 0;
           }
         }
         node = node!.next;
@@ -787,8 +793,8 @@ module DistributedDeque {
   class LocalDequeNode {
     type eltType;
     var elements : distributedDequeBlockSize * eltType;
-    var headIdx : int = 1;
-    var tailIdx : int = 1;
+    var headIdx : int = 0;
+    var tailIdx : int = 0;
     var size : int;
     var next : unmanaged LocalDequeNode(eltType)?;
     var prev : unmanaged LocalDequeNode(eltType)?;
@@ -805,16 +811,16 @@ module DistributedDeque {
       elements[tailIdx] = elt;
 
       tailIdx += 1;
-      if tailIdx > distributedDequeBlockSize {
-        tailIdx = 1;
+      if tailIdx >= distributedDequeBlockSize {
+        tailIdx = 0;
       }
       size += 1;
     }
 
     inline proc popBack() : eltType {
       tailIdx -= 1;
-      if tailIdx == 0 {
-        tailIdx = distributedDequeBlockSize;
+      if tailIdx < 0 {
+        tailIdx = distributedDequeBlockSize-1;
       }
 
       size -= 1;
@@ -823,8 +829,8 @@ module DistributedDeque {
 
     inline proc pushFront(elt : eltType) {
       headIdx -= 1;
-      if headIdx == 0 {
-        headIdx = distributedDequeBlockSize;
+      if headIdx == -1 {
+        headIdx = distributedDequeBlockSize-1;
       }
 
       elements[headIdx] = elt;
@@ -834,8 +840,8 @@ module DistributedDeque {
     inline proc popFront() : eltType {
       var elt = elements[headIdx];
       headIdx += 1;
-      if headIdx > distributedDequeBlockSize {
-        headIdx = 1;
+      if headIdx >= distributedDequeBlockSize {
+        headIdx = 0;
       }
 
       size -= 1;
@@ -873,8 +879,8 @@ module DistributedDeque {
         cached = nil;
 
         // Clean...
-        tmp.headIdx = 1;
-        tmp.tailIdx = 1;
+        tmp.headIdx = 0;
+        tmp.tailIdx = 0;
         tmp.size = 0;
         tmp.next = nil;
         tmp.prev = nil;

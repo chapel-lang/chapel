@@ -10,14 +10,14 @@ module M1 {
   }
 }
 module M3 {
-    use M5;
+    public use M5;
     proc h(r:real) { writeln("h(real"); }
           // does not shadow other h based on call to h since
           // there is another path (through M4) to the other h
 }
 
 module M4 {
-    use M5;
+    public use M5;
 }
 
 module M5 {

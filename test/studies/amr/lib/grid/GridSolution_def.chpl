@@ -1,5 +1,5 @@
-use Grid_def;
-use GridVariable_def;
+public use Grid_def;
+public use GridVariable_def;
 
 
 //|\"""""""""""""""""""""""""""|\

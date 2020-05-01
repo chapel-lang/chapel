@@ -1,5 +1,5 @@
 mix-type-and-var.chpl:1: error: unresolved call '_build_tuple(type int(64), "blah")'
 $CHPL_HOME/modules/internal/ChapelTuple.chpl:59: note: this candidate did not match: _build_tuple(type t ...)
 mix-type-and-var.chpl:1: note: because non-type call actual argument #2
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:59: note: is passed to formal '_e2_t'
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:59: note: is passed to formal '_e1_t'
 $CHPL_HOME/modules/internal/ChapelTuple.chpl:65: note: candidates are: _build_tuple(x ...)

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
         gasnet_exit(0); /* exit 0 to prevent false negatives in test harnesses for smp-conduit */
     }
     sender_p = !(myproc & 1);
-    peerproc = myproc ^ 1;
+    peerproc = (myproc + 1) % numprocs;
 
     if (seedoffset == 0) {
       seedoffset = (((unsigned int)TIME()) & 0xFFFF);

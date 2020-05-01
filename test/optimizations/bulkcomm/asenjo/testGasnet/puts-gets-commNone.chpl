@@ -10,6 +10,8 @@ proc TestGetsPuts(A:[], B:[])
 
 proc BlockArr.TestGetsPuts(B)
 {
+  use SysCTypes;
+
   param stridelevels=1;
   //Errors below if stridelevels=0 !!
   var dststrides:[1..#stridelevels] size_t;

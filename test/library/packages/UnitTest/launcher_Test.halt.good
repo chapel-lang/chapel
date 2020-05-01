@@ -2,7 +2,8 @@
 ======================================================================
 ERROR test_halt.chpl: test2()
 ----------------------------------------------------------------------
-test_halt.chpl:9: error: halt reached - array index out of bounds: (0)
+test_halt.chpl:9: error: halt reached - array index out of bounds
+note: index was 0 but array bounds are 1..0
 
 ======================================================================
 FAIL test_halt.chpl: test3()
@@ -10,6 +11,6 @@ FAIL test_halt.chpl: test3()
 AssertionError: assert failed - '2' != '3.0'
 
 ----------------------------------------------------------------------
-Run 3 tests
+Ran 3 tests in n seconds
 
-FAILED failures = 1 errors = 1 
+FAILED (passed = 1 failures = 1 errors = 1 )

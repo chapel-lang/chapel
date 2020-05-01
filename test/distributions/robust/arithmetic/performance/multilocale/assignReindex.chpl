@@ -1,11 +1,12 @@
 use driver_domains;
+private use CommDiagnostics;
 
 config const doVerboseComm = false;
 
 const bigDom4D = Dom4D.expand((1,1,1,1));
 const locBigDom = {(...bigDom4D.dims())};
 var A: [bigDom4D] 4*int = locBigDom;
-var B: [Dom4D] 4*int;
+var B: [Dom4D] 4*int = (0, 0, 0, 0);
 
 const offset = locBigDom.translate(1);
 const slice = offset.expand(-1);

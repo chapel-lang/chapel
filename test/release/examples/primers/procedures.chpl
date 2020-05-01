@@ -94,7 +94,7 @@ proc +(p1: Point, p2: Point)
 //
 // We can also overload the ``writeThis()`` routine called by writeln.
 //
-proc Point.writeThis(w)
+proc Point.writeThis(w) throws
 {
   // Writes it out as a coordinate pair.
   w.write("(");
@@ -134,7 +134,7 @@ class Circle {
 //
 proc create_circle(x = 0.0, y = 0.0, diameter = 0.0)
 {
-  var result = new owned Circle();
+  var result = new Circle();
 
   result.radius = diameter / 2;
   result.center.x = x;
@@ -298,11 +298,11 @@ writeln();
 // Note: see the :doc:`varargs` primer for further information on procedures
 // with a variable number of arguments
 //
-proc writeList(x ...?k) {
+proc writeList(xs ...?k) {
   var first = true;
-  for param i in 1..k {
+  for x in xs {
     if first then first = false; else write(" ");
-    write(x(i));
+    write(x);
   }
   writeln();
 }

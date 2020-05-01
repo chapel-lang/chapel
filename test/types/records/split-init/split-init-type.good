@@ -1,0 +1,3 @@
+a = int(64)
+b = complex(64)
+c = real(64)

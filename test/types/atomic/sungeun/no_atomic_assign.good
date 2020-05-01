@@ -1,1 +1,1 @@
-no_atomic_assign.chpl:3: error: Cannot directly assign atomic variables
+no_atomic_assign.chpl:4: error: Cannot directly assign atomic variables

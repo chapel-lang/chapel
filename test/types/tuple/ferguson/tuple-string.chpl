@@ -3,7 +3,7 @@ var g:string;
 proc t1( tup )
 {
   g = "bar";
-  writeln(tup(2));
+  writeln(tup(1));
 }
 
 proc t2( tup )

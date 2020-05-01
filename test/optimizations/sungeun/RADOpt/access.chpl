@@ -17,7 +17,7 @@ use CommDiagnostics;
 // Stole this from the setupTargetLocalesArray()
 const factors = _factor(rank, numLocales);
 var ranges: rank*range;
-for param i in 1..rank do
+for param i in 0..rank-1 do
   ranges(i) = 0..#factors(i);
 const D = {(...ranges)};
 
@@ -44,7 +44,7 @@ proc getIdx(loc) {
     var dims = D.dims(); // assume zero-based in all dimensions
     var idx: rank*D.idxType;
     var cur = loc;
-    for param i in 1..rank by -1 {
+    for param i in 0..rank-1 by -1 {
       if dims(i).high!= 0 {
         idx(i) = cur%(dims(i).high+1);
         cur /= dims(i).high+1;
@@ -122,7 +122,7 @@ proc doit(D, str) {
 
 proc fillIt(stuff: ?stuffType) {
   var t: rank*stuffType;
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     t(i) = stuff;
   return t;
 }

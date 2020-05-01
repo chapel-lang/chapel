@@ -38,7 +38,7 @@ for i in 0..#n by 2 {
 }
 
 // Check that the sparse domain has the correct size.
-assert(MatElems.numIndices == totalElts);
+assert(MatElems.size == totalElts);
 
 //
 // Print the sparse index set.

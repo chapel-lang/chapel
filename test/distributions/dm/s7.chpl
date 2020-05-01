@@ -11,10 +11,8 @@ type indexType = int, elemType = int(64);
 // locales
 config const tl1:indexType = sqrt(numLocales):int,
              tl2:indexType = sqrt(numLocales):int;
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const n = 8,
              blkSize = 2;
@@ -25,12 +23,10 @@ const st1=1, st2=1;
 const MatVectSpace = {1..n, 1..n+1};
 
 const
-  rdim1 = new unmanaged ReplicatedDim(tl1),
-  bdim1 = new unmanaged BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1,
-                              name="D1"),
-  rdim2 = new unmanaged ReplicatedDim(tl2),
-  bdim2 = new unmanaged BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2,
-                              name="D2");
+  rdim1 = new ReplicatedDim(tl1),
+  bdim1 = new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1),
+  rdim2 = new ReplicatedDim(tl2),
+  bdim2 = new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2);
 
 const AbD: domain(2, indexType)
    dmapped DimensionalDist2D(tla, bdim1, bdim2, "dim") //BC
@@ -58,15 +54,15 @@ var replA: [replAD] elemType,
     replB: [replBD] elemType;
 
 // initialize some arrays
-for (iloc,l) in zip(tla.domain.dim(2), tla[0,..]) do
+for (iloc,l) in zip(tla.domain.dim(1), tla[0,..]) do
   on l do
     forall (iarr, a) in zip(replAD, replA) do
-      a = (iloc*1000 + iarr(1) * 10 + iarr(2)) * 1000000;
+      a = (iloc*1000 + iarr(0) * 10 + iarr(1)) * 1000000;
 //
-for (iloc,l) in zip(tla.domain.dim(1), tla[..,0]) do
+for (iloc,l) in zip(tla.domain.dim(0), tla[..,0]) do
   on l do
     forall (iarr, a) in zip(replBD, replB) do
-      a = iloc*1000 + iarr(1)*100 + iarr(2);
+      a = iloc*1000 + iarr(0)*100 + iarr(1);
 
 if verb then
   for (iloc, l) in zip(tla.domain, tla) do
@@ -113,11 +109,12 @@ proc copyToDF(A:[]) {
 }
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale;
 //  writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
-    if numLocales > tla.numElements then
-      writeln("UNUSED LOCALES ", numLocales - tla.numElements);
+    if numLocales > tla.size then
+      writeln("UNUSED LOCALES ", numLocales - tla.size);
     for (l,i) in zip(tla,0..) do l = Locales[i];
   } else {
 writeln("insufficient locales");
@@ -125,4 +122,5 @@ halt();
     writeln("oversubscribing Locales(0)");
     tla = Locales(0);
   }
+  return tla;
 }

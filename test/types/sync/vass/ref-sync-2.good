@@ -1,2 +1,2 @@
 ref-sync-2.chpl:5: error: value from coercion passed to ref formal 'FORMAL'
-ref-sync-2.chpl:7: error: to function 'MYPROC' defined here
+ref-sync-2.chpl:7: note: to function 'MYPROC' defined here

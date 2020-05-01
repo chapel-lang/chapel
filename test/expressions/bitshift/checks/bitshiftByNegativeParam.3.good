@@ -1,0 +1,1 @@
+bitshiftByNegativeParam.chpl:11: error: Cannot bitshift 128 by -8 because -8 is less than 0

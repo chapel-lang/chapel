@@ -1,5 +1,6 @@
 pragma "error mode fatal"
 module unitTest {
+  use IO;
   use main;
 
   proc coforallLocal(type t) {

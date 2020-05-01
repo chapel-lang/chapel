@@ -57,18 +57,14 @@ proc buildTree(height: uint = treeHeight, id: int = 1): unmanaged node {
 // sum() walks the tree in parallel using a cobegin, computing the sum
 // of the node IDs using a postorder traversal.
 //
-proc sum(n: unmanaged node?): int {
-  if n == nil {
-    return 0;
-  }
-
+proc sum(n: unmanaged node): int {
   var total = n.id;
 
   if n.left != nil {
     var sumLeft, sumRight: int;
     cobegin with (ref sumLeft, ref sumRight) {
-      sumLeft = sum(n.left);
-      sumRight = sum(n.right);
+      sumLeft = sum(n.left!);
+      sumRight = sum(n.right!);
     }
     total += (sumLeft + sumRight);
   }

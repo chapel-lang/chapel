@@ -1,16 +1,6 @@
 Initializing Modules:
    ChapelStandard
-    CString
-    Bytes
-     ByteBufferHelpers
-     BytesStringCommon
-      String
-       SysCTypes
-       StringCasts
-       SysBasic
     OwnedObject
-     HaltWrappers
-    ChapelBase
     Atomics
      MemConsistency
     ChapelThreads
@@ -24,25 +14,22 @@ Initializing Modules:
        DefaultRectangular
         DSIUtil
         ChapelArray
+         ChapelDebugPrint
          Sort
+          List
+           ChapelLocks
+           IO
+            SysError
+            FormattedIO
+             Regexp
           MSBRadixSort
            RadixSortHelp
            ShellSort
           QuickSort
+           ShallowCopy
            InsertionSort
-          BubbleSort
-          HeapSort
-          BinaryInsertionSort
-          MergeSort
-          SelectionSort
         ChapelDistribution
-         ChapelLocks
          LinkedLists
-        SysError
-        ChapelDebugPrint
-        IO
-         FormattedIO
-          Regexp
         DefaultAssociative
         ExternalArray
         RangeChunk

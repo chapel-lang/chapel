@@ -1,4 +1,5 @@
 use BlockDist, Time, Memory, Types, Random;
+private use CommDiagnostics;
 
 type elemType = real(64);
 config const m: int(64) = 8, alpha = 3.0;

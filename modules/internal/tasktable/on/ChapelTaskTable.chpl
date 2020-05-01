@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -157,6 +158,7 @@ module ChapelTaskTable {
   
   export proc chpldev_taskTable_print() 
   {
+    use IO;
     extern proc chpl_lookupFilename(idx: int(32)): c_string;
 
     if (chpldev_taskTable == nil) then return;
@@ -164,7 +166,8 @@ module ChapelTaskTable {
     for taskID in chpldev_taskTable!.dom {
       try! stderr.writeln(
              "- ",
-             chpl_lookupFilename(chpldev_taskTable!.map[taskID].filename):string,
+             createStringWithNewBuffer(chpl_lookupFilename(
+                                        chpldev_taskTable!.map[taskID].filename)),
              ":",  chpldev_taskTable!.map[taskID].lineno,
              " is ", chpldev_taskTable!.map[taskID].state);
     }

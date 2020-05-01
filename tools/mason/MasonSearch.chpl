@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,9 +22,12 @@ private use List;
 use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
+use MasonUtils;
+use TOML;
 
 use FileSystem;
 use Regexp;
+use IO;
 
 //
 // TODO:
@@ -55,9 +59,9 @@ proc masonSearch(ref args: list(string)) {
   consumeArgs(args);
 
   // If no query is provided, list all packages in registry
-  const query = if args.size > 0 then args[args.size].toLower()
+  const query = if args.size > 0 then args[args.size-1].toLower()
                 else ".*";
-  const pattern = compile(query, ignorecase=true);
+  const pattern = compile(query, ignoreCase=true);
 
   var results: list(string);
   var packages: list(string);
@@ -94,8 +98,8 @@ proc masonSearch(ref args: list(string)) {
   // Handle --show flag
   if show {
     if results.size == 1 {
-      writeln('Displaying the latest version: ' + packages[1] + '@' + versions[1]);
-      const brickPath = '/'.join(registries[1], 'Bricks', packages[1], versions[1]) + '.toml';
+      writeln('Displaying the latest version: ' + packages[0] + '@' + versions[0]);
+      const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
       showToml(brickPath);
       exit(0);
     } else if results.size == 0 {
@@ -125,6 +129,8 @@ proc isHidden(name : string) : bool {
 /* Search TOML files within a package directory to find the latest package
    version number that is supported with current Chapel version */
 proc findLatest(packageDir: string): VersionInfo {
+  use Path;
+
   var ret = new VersionInfo(0, 0, 0);
   const suffix = ".toml";
   const packageName = basename(packageDir);
@@ -141,29 +147,29 @@ proc findLatest(packageDir: string): VersionInfo {
     const chplVersion = getChapelVersionInfo();
 
     const manifestReader = openreader(packageDir + '/' + manifest);
-    const manifestToml = new owned(parseToml(manifestReader));
+    const manifestToml = owned.create(parseToml(manifestReader));
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
     if chplVersion < low || chplVersion > high then continue;
 
     // Check that Chapel version is supported
-    const end = manifest.length - suffix.length;
-    const ver = new VersionInfo(manifest[1..end]);
+    const end = manifest.size - suffix.size;
+    const ver = new VersionInfo(manifest[0..<end]);
     if ver > ret then ret = ver;
   }
   return ret;
 }
 
 proc consumeArgs(ref args : list(string)) {
-  try! args.pop(1);
-  const sub = args[1];
+  args.pop(0);
+  const sub = args[0];
   assert(sub == "search");
-  try! args.pop(1);
+  args.pop(0);
 
   const options = {"--no-update", "--debug", "--show"};
 
-  while args.size > 0 && options.contains(args[1]) {
-    try! args.pop(1);
+  while args.size > 0 && options.contains(args[0]) {
+    args.pop(0);
   }
 }
 
@@ -171,7 +177,7 @@ proc consumeArgs(ref args : list(string)) {
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
   const openFile = openreader(tomlFile);
-  const toml = new owned parseToml(openFile);
+  const toml = owned.create(parseToml(openFile));
   writeln(toml);
   openFile.close();
 }

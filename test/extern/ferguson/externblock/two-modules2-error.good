@@ -1,1 +1,1 @@
-two-modules2-error.chpl:11: error: 'x' undeclared (first use this function)
+two-modules2-error.chpl:12: error: 'x' undeclared (first use this function)

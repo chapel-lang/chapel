@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,36 +38,47 @@
 FnSymbol* chplUserMain = NULL;
 static bool mainReturnsSomething;
 
-static void build_chpl_entry_points();
-static void build_accessors(AggregateType* ct, Symbol* field);
+static void buildChplEntryPoints();
+static void buildAccessors(AggregateType* ct, Symbol* field);
 
 static void buildDefaultOfFunction(AggregateType* ct);
 
-static void build_union_assignment_function(AggregateType* ct);
+static void buildUnionAssignmentFunction(AggregateType* ct);
 
-static void build_enum_cast_function(EnumType* et);
-static void build_enum_first_function(EnumType* et);
-static void build_enum_enumerate_function(EnumType* et);
-static void build_enum_size_function(EnumType* et);
-static void build_enum_order_functions(EnumType* et);
+static void buildEnumIntegerCastFunctions(EnumType* et);
+static void buildEnumFirstFunction(EnumType* et);
+static void buildEnumEnumerateFunction(EnumType* et);
+static void buildEnumSizeFunction(EnumType* et);
+static void buildEnumOrderFunctions(EnumType* et);
+static void buildEnumStringOrBytesCastFunctions(EnumType* type,
+                                                AggregateType* otherType);
 
-static void build_extern_assignment_function(Type* type);
+static void buildExternAssignmentFunction(Type* type);
 
-static void build_record_assignment_function(AggregateType* ct);
-static void check_not_pod(AggregateType* ct);
-static void build_record_hash_function(AggregateType* ct);
-static void build_record_equality_function(AggregateType* ct);
-static void build_record_inequality_function(AggregateType* ct);
+static void buildRecordAssignmentFunction(AggregateType* ct);
+static void checkNotPod(AggregateType* ct);
+static void buildRecordHashFunction(AggregateType* ct);
+
+static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct, const char* op);
+static void buildRecordComparisonFunc(AggregateType* ct, const char* op);
+static void buildRecordEqualsBody(AggregateType* ct, FnSymbol *fn,
+                                  ArgSymbol *arg1, ArgSymbol *arg2);
+static void buildRecordNotEqualsBody(AggregateType* ct, FnSymbol *fn,
+                                     ArgSymbol *arg1, ArgSymbol *arg2);
+static void buildRecordLessThanBody(AggregateType* ct, FnSymbol *fn,
+                                    ArgSymbol *arg1, ArgSymbol *arg2,
+                                    bool allowEquals);
+static void buildRecordGreaterThanBody(AggregateType* ct, FnSymbol *fn,
+                                       ArgSymbol *arg1, ArgSymbol *arg2,
+                                       bool allowEquals);
 
 static void buildDefaultReadWriteFunctions(AggregateType* type);
-
-static void buildStringCastFunction(EnumType* type);
 
 static void buildFieldAccessorFunctions(AggregateType* at);
 
 
 void buildDefaultFunctions() {
-  build_chpl_entry_points();
+  buildChplEntryPoints();
 
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
 
@@ -85,7 +97,9 @@ void buildDefaultFunctions() {
           ct->buildDefaultInitializer();
         }
 
-        ct->buildCopyInitializer();
+        if (!ct->hasUserDefinedInitEquals()) {
+          ct->buildCopyInitializer();
+        }
 
         if (!ct->symbol->hasFlag(FLAG_REF)) {
           buildDefaultDestructor(ct);
@@ -109,18 +123,22 @@ void buildDefaultFunctions() {
 
         if (isRecord(ct)) {
           if (!isRecordWrappedType(ct)) {
-            build_record_equality_function(ct);
-            build_record_inequality_function(ct);
+            buildRecordComparisonFunc(ct, "==");
+            buildRecordComparisonFunc(ct, "!=");
+            buildRecordComparisonFunc(ct, "<");
+            buildRecordComparisonFunc(ct, "<=");
+            buildRecordComparisonFunc(ct, ">");
+            buildRecordComparisonFunc(ct, ">=");
           }
 
-          build_record_assignment_function(ct);
-          build_record_hash_function(ct);
+          buildRecordAssignmentFunction(ct);
+          buildRecordHashFunction(ct);
 
-          check_not_pod(ct);
+          checkNotPod(ct);
         }
 
         if (isUnion(ct)) {
-          build_union_assignment_function(ct);
+          buildUnionAssignmentFunction(ct);
         }
 
       } else if (EnumType* et = toEnumType(type->type)) {
@@ -135,7 +153,7 @@ void buildDefaultFunctions() {
         // definitions for those assignments here.
         if (type->hasFlag(FLAG_EXTERN)) {
           //build_extern_init_function(type->type);
-          build_extern_assignment_function(type->type);
+          buildExternAssignmentFunction(type->type);
         }
       }
     }
@@ -147,23 +165,15 @@ static void buildFieldAccessorFunctions(AggregateType* at) {
   for_fields(field, at) {
     if (!field->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
       if (isVarSymbol(field)) {
-        build_accessors(at, field);
+        buildAccessors(at, field);
       } else if (isEnumType(field->type)) {
-        build_accessors(at, field);
+        buildAccessors(at, field);
       }
     }
   }
 }
 
-
-// function_exists returns true iff
-//  function's name matches name
-//  function's number of formals matches numFormals
-//  function's first formal's type matches formalType1 if not NULL
-//  function's second formal's type matches formalType2 if not NULL
-//  function's third formal's type matches formalType3 if not NULL
-
-static bool type_match(Type* type, Symbol* sym) {
+static bool typeMatch(Type* type, Symbol* sym) {
   if (type == dtAny)
     return true;
   if (sym->type == type)
@@ -178,20 +188,27 @@ typedef enum {
   FIND_EITHER = 0,
   FIND_REF,
   FIND_NOT_REF
-} function_exists_kind_t;
+} functionExistsKind;
 
-static FnSymbol* function_exists(const char* name,
+
+// functionExists returns true iff
+//  function's name matches name
+//  function's number of formals matches numFormals
+//  function's first formal's type matches formalType1 if not NULL
+//  function's second formal's type matches formalType2 if not NULL
+//  function's third formal's type matches formalType3 if not NULL
+static FnSymbol* functionExists(const char* name,
                                  int numFormals,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
                                  Type* formalType4,
-                                 function_exists_kind_t kind)
+                                 functionExistsKind kind)
 {
   switch(numFormals)
   {
    default:
-    INT_FATAL("function_exists checks at most 4 argument types.  Add more if needed.");
+    INT_FATAL("functionExists checks at most 4 argument types.  Add more if needed.");
     break;
    case 4:  if (!formalType4)   INT_FATAL("Missing argument formalType4");  break;
    case 3:  if (!formalType3)   INT_FATAL("Missing argument formalType3");  break;
@@ -210,19 +227,19 @@ static FnSymbol* function_exists(const char* name,
         continue;
 
     if (formalType1)
-      if (!type_match(formalType1, fn->getFormal(1)))
+      if (!typeMatch(formalType1, fn->getFormal(1)))
         continue;
 
     if (formalType2)
-      if (!type_match(formalType2, fn->getFormal(2)))
+      if (!typeMatch(formalType2, fn->getFormal(2)))
         continue;
 
     if (formalType3)
-      if (!type_match(formalType3, fn->getFormal(3)))
+      if (!typeMatch(formalType3, fn->getFormal(3)))
         continue;
 
     if (formalType4)
-      if (!type_match(formalType4, fn->getFormal(4)))
+      if (!typeMatch(formalType4, fn->getFormal(4)))
         continue;
 
     if (kind == FIND_REF && fn->retTag != RET_REF)
@@ -238,34 +255,34 @@ static FnSymbol* function_exists(const char* name,
   return NULL;
 }
 
-static FnSymbol* function_exists(const char* name,
+static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
-                                 function_exists_kind_t kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER)
 {
-  return function_exists(name, 1, formalType1, NULL, NULL, NULL, kind);
+  return functionExists(name, 1, formalType1, NULL, NULL, NULL, kind);
 }
 
 
 
-static FnSymbol* function_exists(const char* name,
+static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
-                                 function_exists_kind_t kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER)
 {
-  return function_exists(name, 2, formalType1, formalType2, NULL, NULL, kind);
+  return functionExists(name, 2, formalType1, formalType2, NULL, NULL, kind);
 }
 
-static FnSymbol* function_exists(const char* name,
+static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
                                  Type* formalType3,
-                                 function_exists_kind_t kind=FIND_EITHER)
+                                 functionExistsKind kind=FIND_EITHER)
 {
-  return function_exists(name, 3,
+  return functionExists(name, 3,
                          formalType1, formalType2, formalType3, NULL, kind);
 }
 
-static void fixup_accessor(AggregateType* ct, Symbol *field,
+static void fixupAccessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
                            FnSymbol* fn)
 {
@@ -291,12 +308,77 @@ static void fixup_accessor(AggregateType* ct, Symbol *field,
     fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
 }
 
+// Resetting a union to store a different field requires two steps:
+//   1. deinit anything that was stored
+//   2. default-init the requested field
+// If newField == NULL, skip step 2.
+static BlockStmt* buildResetUnionField(Symbol* _this,
+                                       AggregateType* ct,
+                                       Symbol* newField) {
+
+  INT_ASSERT(ct->isUnion());
+
+  BlockStmt* block = new BlockStmt();
+
+  // First, deinitialize whatever is there.
+  for_fields(field, ct) {
+    Symbol* fieldNameSym = new_CStringSymbol(field->name);
+
+    CallExpr* checkId = new CallExpr("==",
+                              new CallExpr(PRIM_GET_UNION_ID, _this),
+                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                           ct->symbol,
+                                           fieldNameSym));
+
+    BlockStmt* deinitBlock = new BlockStmt();
+    VarSymbol* tmp = newTemp("union_reset_deinit");
+    CallExpr* setTmp = new CallExpr(PRIM_MOVE,
+                                    tmp,
+                                    new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                 _this, fieldNameSym));
+    tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    deinitBlock->insertAtTail(new DefExpr(tmp));
+    deinitBlock->insertAtTail(setTmp);
+
+    block->insertAtTail(new CondStmt(checkId, deinitBlock));
+  }
+
+  if (newField != NULL) {
+    Symbol* newFieldNameSym = new_CStringSymbol(newField->name);
+    // Set the union ID to store the target field
+    block->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                     _this,
+                                     new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                                  ct->symbol,
+                                                  newFieldNameSym)));
+
+    // Next, initialize the requested field.
+    VarSymbol* tmp = newTemp("union_reset_init");
+    tmp->addFlag(FLAG_NO_AUTO_DESTROY); // will transfer to the field.
+    block->insertAtTail(new DefExpr(tmp));
+
+    block->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
+                                     new CallExpr(PRIM_STATIC_FIELD_TYPE,
+                                                  _this,
+                                                  newFieldNameSym)));
+
+    block->insertAtTail(new CallExpr(PRIM_SET_MEMBER,
+                                     _this,
+                                     newFieldNameSym,
+                                     tmp));
+  }
+
+  return block;
+}
+
 // This function builds the getter or the setter, depending on the
 // 'setter' argument.
 FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
                            bool setter, bool typeMethod) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike   = ct->isRecord() || ct->isUnion();
+  const bool chapelClass  = isClassLike(ct) && isClass(ct);
+  const bool typeOrParam  = field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM);
   FnSymbol*  fn           = new FnSymbol(field->name);
 
   fn->addFlag(FLAG_NO_IMPLICIT_COPY);
@@ -319,7 +401,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   fn->setMethod(true);
 
   Type* thisType = ct;
-  if (isClassLike(ct) && isClass(ct) && typeMethod)
+  if (chapelClass && (typeMethod || typeOrParam))
     thisType = ct->getDecoratedClass(CLASS_TYPE_GENERIC);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
@@ -355,24 +437,48 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     }
   }
 
+  Symbol* baseSym = _this;
+  if (typeOrParam && chapelClass) {
+    // Strip the _owned/_shared wrapper, if applicable.
+    VarSymbol* borrowOfThis = new VarSymbol("borrowOfThis");
+    if (typeMethod) borrowOfThis->addFlag(FLAG_TYPE_VARIABLE);
+
+    fn->insertAtTail(new DefExpr(borrowOfThis));
+    // This cast "throws" when the receiver actual is nilable. OK because:
+    // - If this field is a runtime type, we will generate an error below.
+    // - Otherwise this method will be eliminated before lowerErrorHandling.
+    fn->insertAtTail("'move'(%S,_cast(%S,%S))", borrowOfThis,
+                     dtBorrowedNonNilable->symbol, _this);
+    baseSym = borrowOfThis;
+  }
+
+  Symbol* fieldNameSym = new_CStringSymbol(field->name);
+
   if (isUnion(ct)) {
     if (setter) {
       // Set the union ID in the setter.
-      fn->insertAtTail(
-          new CallExpr(PRIM_SET_UNION_ID,
-                       _this,
-                       new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                                    ct->symbol,
-                                    new_CStringSymbol(field->name))));
+      // If the ID is different from the target, deinit whatever was
+      // there and then default-init the field.
+      CallExpr* idDiffers = new CallExpr("!=",
+                              new CallExpr(PRIM_GET_UNION_ID, _this),
+                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                           ct->symbol,
+                                           fieldNameSym));
+
+      BlockStmt* resetBlock = buildResetUnionField(_this, ct, field);
+      fn->insertAtTail(new CondStmt(idDiffers, resetBlock));
+
     } else {
       // Check the union ID in the getter.
-      fn->insertAtTail(new CondStmt(
-          new CallExpr("!=",
-            new CallExpr(PRIM_GET_UNION_ID, _this),
-            new CallExpr(PRIM_FIELD_NAME_TO_NUM,
-                         ct->symbol,
-                         new_CStringSymbol(field->name))),
-          new CallExpr("halt", new_StringSymbol("illegal union access"))));
+      CallExpr* idDiffers = new CallExpr("!=",
+                              new CallExpr(PRIM_GET_UNION_ID, _this),
+                              new CallExpr(PRIM_FIELD_NAME_TO_NUM,
+                                           ct->symbol,
+                                           fieldNameSym));
+      CallExpr* halt = new CallExpr("halt",
+                                    new_StringSymbol("illegal union access"));
+
+      fn->insertAtTail(new CondStmt(idDiffers, halt));
     }
   }
 
@@ -383,23 +489,27 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     ct->symbol->defPoint->insertBefore(field->defPoint->remove());
   } else if (field->hasFlag(FLAG_TYPE_VARIABLE) || field->hasFlag(FLAG_SUPER_CLASS)) {
     toReturn = new CallExpr(PRIM_GET_MEMBER_VALUE,
-                            new SymExpr(_this),
-                            new SymExpr(new_CStringSymbol(field->name)));
+                            new SymExpr(baseSym),
+                            new SymExpr(fieldNameSym));
+    if (chapelClass && field->hasFlag(FLAG_TYPE_VARIABLE))
+      // Issue an error when accessing a runtime-type field of a nilable class.
+      toReturn = new CallExpr("chpl_checkLegalTypeFieldAccessor", _this,
+                              toReturn, new_StringSymbol(field->name));
   } else {
     toReturn = new CallExpr(PRIM_GET_MEMBER,
-                            new SymExpr(_this),
-                            new SymExpr(new_CStringSymbol(field->name)));
+                            new SymExpr(baseSym),
+                            new SymExpr(fieldNameSym));
   }
 
   if (toReturn != NULL) {
-    if (field->hasEitherFlag(FLAG_TYPE_VARIABLE, FLAG_PARAM)) {
+    if (typeOrParam) {
       Symbol* alternate = NULL;
       if (field->hasFlag(FLAG_PARAM))
         alternate = gUninstantiated;
       else
         alternate = dtUninstantiated->symbol;
 
-      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, _this, new_CStringSymbol(field->name)),
+      fn->insertAtTail(new CondStmt(new CallExpr(PRIM_IS_BOUND, baseSym, fieldNameSym),
                                     new CallExpr(PRIM_RETURN, toReturn),
                                     new CallExpr(PRIM_RETURN, alternate)));
     } else {
@@ -435,20 +545,20 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 // These functions have the same binding strength as if they were user-defined.
 // This function calls build_accessor multiple times to create appropriate
 // accessors.
-static void build_accessors(AggregateType* ct, Symbol *field) {
+static void buildAccessors(AggregateType* ct, Symbol *field) {
   const bool fieldIsConst = field->hasFlag(FLAG_CONST);
   const bool recordLike = ct->isRecord() || ct->isUnion();
   const bool fieldTypeOrParam = field->isParameter() ||
                                 field->hasFlag(FLAG_TYPE_VARIABLE);
 
-  FnSymbol *setter = function_exists(field->name,
+  FnSymbol *setter = functionExists(field->name,
                                      dtMethodToken, ct, FIND_REF);
-  FnSymbol *getter = function_exists(field->name,
+  FnSymbol *getter = functionExists(field->name,
                                      dtMethodToken, ct, FIND_NOT_REF);
   if (setter)
-    fixup_accessor(ct, field, fieldIsConst, recordLike, setter);
+    fixupAccessor(ct, field, fieldIsConst, recordLike, setter);
   if (getter)
-    fixup_accessor(ct, field, fieldIsConst, recordLike, getter);
+    fixupAccessor(ct, field, fieldIsConst, recordLike, getter);
   if (getter || setter)
     return;
 
@@ -471,7 +581,7 @@ static void build_accessors(AggregateType* ct, Symbol *field) {
   }
 }
 
-static FnSymbol* chpl_gen_main_exists() {
+static FnSymbol* chplGenMainExists() {
   bool          errorP   = false;
   ModuleSymbol* module   = ModuleSymbol::mainModule();
   FnSymbol*     matchFn  = NULL;
@@ -538,12 +648,12 @@ static FnSymbol* chpl_gen_main_exists() {
 }
 
 
-static void build_chpl_entry_points() {
+static void buildChplEntryPoints() {
   //
   // chpl_user_main is the (user) programmatic portion of the app
   //
   ModuleSymbol* mainModule   = ModuleSymbol::mainModule();
-  chplUserMain = chpl_gen_main_exists();
+  chplUserMain = chplGenMainExists();
 
   if (fLibraryCompile == true && chplUserMain != NULL) {
     USR_WARN(chplUserMain,
@@ -704,11 +814,70 @@ static void build_chpl_entry_points() {
   normalize(chpl_gen_main);
 }
 
-static void build_record_equality_function(AggregateType* ct) {
-  if (function_exists("==", ct, ct))
+static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct,
+                                             const char* op) {
+  Symbol* opSym = new_CStringSymbol(op);
+
+  FnSymbol* fn = new FnSymbol("chpl_fields_are_comparable");
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_PARAM);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
+  arg1->addFlag(FLAG_MARKED_GENERIC);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
+  arg2->addFlag(FLAG_MARKED_GENERIC);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+  fn->retType = dtBool;
+  fn->retTag = RET_PARAM;
+
+  if (ct->numFields() == 0) {  // no fields, no need for &&
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  }
+  else {  // we have some fields, so possibly && them
+    std::vector<CallExpr *> fieldChecks;
+    for_fields(tmp, ct) {
+      if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+          !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+        Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+        Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+        fieldChecks.push_back(new CallExpr(PRIM_CALL_RESOLVES,
+                                           opSym, left, right));
+      }
+    }
+    if (fieldChecks.size() == 0) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+    }
+    else if (fieldChecks.size() == 1) {
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, fieldChecks[0]));
+    }
+    else {
+      CallExpr* boolExpr = new CallExpr(PRIM_AND);
+      for_vector(CallExpr, ce, fieldChecks) {
+        boolExpr->insertAtTail(ce);
+      }
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, boolExpr));
+    }
+  }
+
+  DefExpr* def = new DefExpr(fn);
+  ct->symbol->defPoint->insertBefore(def);
+  reset_ast_loc(def, ct->symbol);
+  normalize(fn);
+
+  return fn;
+}
+
+static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
+  if (functionExists(op, ct, ct))
     return;
 
-  FnSymbol* fn = new FnSymbol("==");
+  const char* astrOp = astr(op);
+
+  // we need to special case `!=`:
+  // it can return true early, and returns false after checking all fields
+  // all other operators do the exact opposite
+  FnSymbol* fn = new FnSymbol(op);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
@@ -718,56 +887,146 @@ static void build_record_equality_function(AggregateType* ct) {
   fn->insertFormalAtTail(arg1);
   fn->insertFormalAtTail(arg2);
   fn->retType = dtBool;
-  fn->where = new BlockStmt(new CallExpr("==",
-                                         new CallExpr(PRIM_TYPEOF, arg1),
-                                         new CallExpr(PRIM_TYPEOF, arg2)));
 
-  for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
-      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
-      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right), new CallExpr(PRIM_RETURN, gFalse)));
-    }
+  //build the where clause
+  Expr* typeComp = new CallExpr("==", new CallExpr(PRIM_TYPEOF, arg1),
+                                      new CallExpr(PRIM_TYPEOF, arg2));
+  Expr* fieldsCheckExpr = new CallExpr(buildRecordIsComparableFunc(ct, op),
+                                       arg1, arg2);
+  fn->where = new BlockStmt(new CallExpr(PRIM_AND, typeComp, fieldsCheckExpr));
+
+  if (astrOp == astrSeq) {
+    buildRecordEqualsBody(ct, fn, arg1, arg2);
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  else if (astrOp == astrSne) {
+    buildRecordNotEqualsBody(ct, fn, arg1, arg2);
+  }
+  else if (astrOp == astrSgt) {
+    buildRecordGreaterThanBody(ct, fn, arg1, arg2, false);
+  }
+  else if (astrOp == astrSgte) {
+    buildRecordGreaterThanBody(ct, fn, arg1, arg2, true);
+  }
+  else if (astrOp == astrSlt) {
+    buildRecordLessThanBody(ct, fn, arg1, arg2, false);
+  }
+  else if (astrOp == astrSlte) {
+    buildRecordLessThanBody(ct, fn, arg1, arg2, true);
+  }
+  else {
+    INT_FATAL("Unrecognized operator was passed to buildRecordComparisonFunc");
+  }
+
   DefExpr* def = new DefExpr(fn);
   ct->symbol->defPoint->insertBefore(def);
   reset_ast_loc(def, ct->symbol);
   normalize(fn);
 }
 
-
-static void build_record_inequality_function(AggregateType* ct) {
-  if (function_exists("!=", ct, ct))
-    return;
-
-  FnSymbol* fn = new FnSymbol("!=");
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "_arg1", ct);
-  arg1->addFlag(FLAG_MARKED_GENERIC);
-  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", ct);
-  arg2->addFlag(FLAG_MARKED_GENERIC);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
-  fn->retType = dtBool;
-  fn->where = new BlockStmt(new CallExpr("==",
-                                         new CallExpr(PRIM_TYPEOF, arg1),
-                                         new CallExpr(PRIM_TYPEOF, arg2)));
-
+static void buildRecordEqualsBody(AggregateType *ct, FnSymbol *fn,
+                                  ArgSymbol *arg1, ArgSymbol *arg2) {
+  // add comparisons for fields
   for_fields(tmp, ct) {
-    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD)) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      fn->insertAtTail(new CondStmt(new CallExpr("!=", left, right),
+      CallExpr *elemComp = new CallExpr("!=", left, right);
+      fn->insertAtTail(new CondStmt(elemComp,
+                                    new CallExpr(PRIM_RETURN, gFalse)));
+    }
+  }
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+
+  // for ==, in either case we return true
+  fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+}
+
+static void buildRecordNotEqualsBody(AggregateType *ct, FnSymbol *fn,
+                                  ArgSymbol *arg1, ArgSymbol *arg2) {
+  // add comparisons for fields
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+      Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
+      Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
+      CallExpr *elemComp = new CallExpr("!=", left, right);
+      fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gTrue)));
     }
   }
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+
+  // for !=, in either case we return false
   fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
-  DefExpr* def = new DefExpr(fn);
-  ct->symbol->defPoint->insertBefore(def);
-  reset_ast_loc(def, ct->symbol);
-  normalize(fn);
+}
+
+static void buildRecordLessThanBody(AggregateType *ct, FnSymbol *fn,
+                                    ArgSymbol *arg1, ArgSymbol *arg2,
+                                    bool allowEquals) {
+  // add comparisons for fields
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+
+        CallExpr *elemCompTrue = new CallExpr("<",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+        fn->insertAtTail(new CondStmt(elemCompTrue,
+                                      new CallExpr(PRIM_RETURN, gTrue)));
+
+        CallExpr *elemCompFalse = new CallExpr(">",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+
+        fn->insertAtTail(new CondStmt(elemCompFalse,
+                                      new CallExpr(PRIM_RETURN, gFalse)));
+    }
+  }
+
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+  if (allowEquals) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  }
+  else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+  }
+}
+
+static void buildRecordGreaterThanBody(AggregateType *ct, FnSymbol *fn,
+                                       ArgSymbol *arg1, ArgSymbol *arg2,
+                                       bool allowEquals) {
+  // add comparisons for fields
+  for_fields(tmp, ct) {
+    if (!tmp->hasFlag(FLAG_IMPLICIT_ALIAS_FIELD) &&
+        !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
+
+        CallExpr *elemCompTrue = new CallExpr(">",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+        fn->insertAtTail(new CondStmt(elemCompTrue,
+                                      new CallExpr(PRIM_RETURN, gTrue)));
+
+        CallExpr *elemCompFalse = new CallExpr("<",
+                                   new CallExpr(tmp->name, gMethodToken, arg1),
+                                   new CallExpr(tmp->name, gMethodToken, arg2));
+
+        fn->insertAtTail(new CondStmt(elemCompFalse,
+                                      new CallExpr(PRIM_RETURN, gFalse)));
+    }
+  }
+
+  // either it is an empty record, and we didn't add any meaningful comparisons,
+  // or we added those comparisons but they never returned
+  if (allowEquals) {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gTrue));
+  }
+  else {
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, gFalse));
+  }
 }
 
 // Builds default enum functions that are defined outside of the scope in which
@@ -775,18 +1034,19 @@ static void build_record_inequality_function(AggregateType* ct) {
 // It is necessary to have this separated out, because such functions are not
 // automatically created when the EnumType is copied.
 void buildEnumFunctions(EnumType* et) {
-  buildStringCastFunction(et);
+  buildEnumStringOrBytesCastFunctions(et, dtBytes);
+  buildEnumStringOrBytesCastFunctions(et, dtString);
 
-  build_enum_cast_function(et);
-  build_enum_enumerate_function(et);
-  build_enum_first_function(et);
-  build_enum_size_function(et);
-  build_enum_order_functions(et);
+  buildEnumIntegerCastFunctions(et);
+  buildEnumEnumerateFunction(et);
+  buildEnumFirstFunction(et);
+  buildEnumSizeFunction(et);
+  buildEnumOrderFunctions(et);
 }
 
 
-static void build_enum_size_function(EnumType* et) {
-  if (function_exists("size", et))
+static void buildEnumSizeFunction(EnumType* et) {
+  if (functionExists("size", et))
     return;
   // Build a function that returns the length of the enum specified
   FnSymbol* fn = new FnSymbol("size");
@@ -822,8 +1082,8 @@ static void build_enum_size_function(EnumType* et) {
 
 
 
-static void build_enum_first_function(EnumType* et) {
-  if (function_exists("chpl_enum_first", et))
+static void buildEnumFirstFunction(EnumType* et) {
+  if (functionExists("chpl_enum_first", et))
     return;
   // Build a function that returns the first option for the enum
   // specified, also known as the default.
@@ -858,7 +1118,7 @@ static void build_enum_first_function(EnumType* et) {
   fn->tagIfGeneric();
 }
 
-static void build_enum_enumerate_function(EnumType* et) {
+static void buildEnumEnumerateFunction(EnumType* et) {
   // Build a function that returns a tuple of the enum's values
   // Each enum type has its own chpl_enum_enumerate function.
   FnSymbol* fn = new FnSymbol("chpl_enum_enumerate");
@@ -882,7 +1142,7 @@ static void build_enum_enumerate_function(EnumType* et) {
   fn->tagIfGeneric();
 }
 
-static void build_enum_cast_function(EnumType* et) {
+static void buildEnumIntegerCastFunctions(EnumType* et) {
   bool initsExist = !et->isAbstract();
 
   FnSymbol* fn;
@@ -899,9 +1159,11 @@ static void build_enum_cast_function(EnumType* et) {
     arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtIntegral);
     fn->insertFormalAtTail(arg1);
     fn->insertFormalAtTail(arg2);
+    fn->throwsErrorInit();
 
-    // Generate a select statement with when clauses for each of the
-    // enumeration constants, and an otherwise clause that calls halt.
+    // Generate a select statement with a 'when' clause for each of
+    // the enumeration constants with an integer value which returns
+    // the enum constant.
     int64_t count = 0;
     BlockStmt* whenstmts = buildChapelStmt();
     Expr* lastInit = NULL;
@@ -925,14 +1187,22 @@ static void build_enum_cast_function(EnumType* et) {
         whenstmts->insertAtTail(when);
       }
     }
-    const char * errorString = "enumerated type out of bounds";
-    CondStmt* otherwise =
-      new CondStmt(new CallExpr(PRIM_WHEN),
-                   new BlockStmt(new CallExpr("halt",
-                                 new_StringSymbol(errorString))));
-    whenstmts->insertAtTail(otherwise);
     fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
 
+    // if we get through the select statement without finding our case
+    // and returning its value (which can happen for semi-concrete
+    // enums), call chpl_enum_cast_error(), which throws an error.
+    fn->insertAtTail(new TryStmt(false,
+                   new BlockStmt(new CallExpr("chpl_enum_cast_error",
+                                              arg2,
+                                              new_StringSymbol(et->symbol->name))),
+                                 NULL));
+
+    // in addition, insert a dummy return since the compiler doesn't
+    // know that chpl_enum_cast_error() always throws
+    fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                  toDefExpr(et->constants.first())->sym));
+    
     def = new DefExpr(fn);
     baseModule->block->insertAtTail(def);
     reset_ast_loc(def, et->symbol);
@@ -955,9 +1225,20 @@ static void build_enum_cast_function(EnumType* et) {
                                     new CallExpr(PRIM_CAST, arg1, arg2)));
       fn->addFlag(FLAG_INLINE);
     } else {
-      // Otherwise, it's semi-concrete, so we need errors for some cases.
-      // Generate a select statement with when clauses for each of the
-      // enumeration constants, and an otherwise clause that calls halt.
+      // Otherwise, it's semi-concrete, so we need errors for some
+      // cases.  Generate a select statement with when clauses for
+      // each of the enumeration constants, where the action is to
+      // call chpl_enum_cast_error_no_int() for enums without an
+      // associated integer value.  This routine throws an error.
+      fn->throwsErrorInit();
+
+      if (fWarnUnstable) {
+        USR_WARN(et->symbol, "it has been suggested that support for "
+                 "semi-concrete enums like this (in which initial members "
+                 "have no integer values, but later ones do) should be "
+                 "deprecated, so this enum could be considered unstable; "
+                 "if you value such enums, please let the Chapel team know.");
+      }
 
       count = 0;
       whenstmts = buildChapelStmt();
@@ -978,10 +1259,9 @@ static void build_enum_cast_function(EnumType* et) {
                                              new CallExpr("+", lastInit->copy(),
                                                           new SymExpr(new_IntSymbol(count)))));
         } else {
-          const char *errorString = astr("illegal cast: ", et->symbol->name,
-                                         ".", constant->sym->name,
-                                         " has no integer value");
-          result = new CallExpr("halt", new_StringSymbol(errorString));
+          result = new CallExpr("chpl_enum_cast_error_no_int",
+                                new_StringSymbol(et->symbol->name),
+                                new_StringSymbol(constant->sym->name));
         }
         CondStmt* when =
           new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
@@ -990,12 +1270,21 @@ static void build_enum_cast_function(EnumType* et) {
         whenstmts->insertAtTail(when);
       }
 
-      otherwise =
+      // We should never get to the otherwise clause because it would
+      // imply that the enum expression was storing a constant that
+      // isn't part of the enum.
+      CondStmt* otherwise =
         new CondStmt(new CallExpr(PRIM_WHEN),
                      new BlockStmt(new CallExpr("halt",
-                                                new_StringSymbol(errorString))));
+                                                new_StringSymbol("should never get here"))));
       whenstmts->insertAtTail(otherwise);
-      fn->insertAtTail(buildSelectStmt(new SymExpr(arg2), whenstmts));
+
+      // wrap a try statement around the select statement and insert a
+      // bogus return to help the compiler know that all paths return.
+      fn->insertAtTail(new TryStmt(false,
+                                   buildSelectStmt(new SymExpr(arg2), whenstmts),
+                                   NULL));
+      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
     }
 
     def = new DefExpr(fn);
@@ -1009,56 +1298,6 @@ static void build_enum_cast_function(EnumType* et) {
     normalize(fn);
     fn->tagIfGeneric();
   }
-
-  // string to enumerated type cast function
-  fn = new FnSymbol(astr_cast);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-  fn->addFlag(FLAG_LAST_RESORT);
-  arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
-  arg1->addFlag(FLAG_TYPE_VARIABLE);
-  arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", dtString);
-  fn->insertFormalAtTail(arg1);
-  fn->insertFormalAtTail(arg2);
-
-  CondStmt* cond = NULL;
-  for_enums(constant, et) {
-    cond = new CondStmt(
-             new CallExpr("==", arg2, new_StringSymbol(constant->sym->name)),
-             new CallExpr(PRIM_RETURN, constant->sym),
-             cond);
-    cond = new CondStmt(
-             new CallExpr("==", arg2,
-                          new_StringSymbol(
-                            astr(et->symbol->name, ".", constant->sym->name))),
-             new CallExpr(PRIM_RETURN, constant->sym),
-             cond);
-  }
-
-  fn->insertAtTail(cond);
-
-  fn->throwsErrorInit();
-  fn->insertAtTail(new TryStmt(
-                     false,
-                     new BlockStmt(
-                       new CallExpr("chpl_enum_cast_error",
-                                    arg2,
-                                    new_StringSymbol(et->symbol->name))),
-                     NULL));
-  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
-  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
-
-  fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                toDefExpr(et->constants.first())->sym));
-
-  def = new DefExpr(fn);
-  //
-  // these cast functions need to go in the base module because they
-  // are automatically inserted to handle implicit coercions
-  //
-  baseModule->block->insertAtTail(def);
-  reset_ast_loc(def, et->symbol);
-  normalize(fn);
-  fn->tagIfGeneric();
 }
 
 
@@ -1067,7 +1306,7 @@ static void build_enum_cast_function(EnumType* et) {
 //
 //   'proc chpl_enumToOrder([param] e: enumerated) [param] : int'
 //
-static void build_enum_to_order_function(EnumType* et, bool paramVersion) {
+static void buildEnumToOrderFunction(EnumType* et, bool paramVersion) {
   FnSymbol* fn = new FnSymbol(astr("chpl__enumToOrder"));
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
@@ -1109,7 +1348,7 @@ static void build_enum_to_order_function(EnumType* et, bool paramVersion) {
 //
 //   'proc chpl_enumToOrder(i: integral, type et: et): et'
 //
-static void build_order_to_enum_function(EnumType* et) {
+static void buildOrderToEnumFunction(EnumType* et) {
   FnSymbol* fn = new FnSymbol(astr("chpl__orderToEnum"));
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
@@ -1148,19 +1387,19 @@ static void build_order_to_enum_function(EnumType* et) {
 // Build functions for converting enums to 0-based ordinal values and
 // back again
 //
-static void build_enum_order_functions(EnumType* et) {
+static void buildEnumOrderFunctions(EnumType* et) {
   //
   // TODO: optimize case when enums are adjacent by using math rather
   // than select statements
   //
-  build_enum_to_order_function(et, true);
-  build_enum_to_order_function(et, false);
-  build_order_to_enum_function(et);
+  buildEnumToOrderFunction(et, true);
+  buildEnumToOrderFunction(et, false);
+  buildOrderToEnumFunction(et);
 }
 
 
-static void build_record_assignment_function(AggregateType* ct) {
-  if (function_exists("=", ct, ct))
+static void buildRecordAssignmentFunction(AggregateType* ct) {
+  if (functionExists("=", ct, ct))
     return;
 
   bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
@@ -1206,9 +1445,9 @@ static void build_record_assignment_function(AggregateType* ct) {
   normalize(fn);
 }
 
-static void build_extern_assignment_function(Type* type)
+static void buildExternAssignmentFunction(Type* type)
 {
-  if (function_exists("=", type, type))
+  if (functionExists("=", type, type))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1235,8 +1474,8 @@ static void build_extern_assignment_function(Type* type)
 
 
 // TODO: we should know what field is active after assigning unions
-static void build_union_assignment_function(AggregateType* ct) {
-  if (function_exists("=", ct, ct))
+static void buildUnionAssignmentFunction(AggregateType* ct) {
+  if (functionExists("=", ct, ct))
     return;
 
   FnSymbol* fn = new FnSymbol("=");
@@ -1276,14 +1515,14 @@ static void build_union_assignment_function(AggregateType* ct) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void check_not_pod(AggregateType* at) {
-  if (function_exists("chpl__initCopy", at) == NULL) {
+static void checkNotPod(AggregateType* at) {
+  if (functionExists("chpl__initCopy", at) == NULL) {
 
     if (at->hasUserDefinedInitEquals()) {
       at->symbol->addFlag(FLAG_NOT_POD);
     } else {
       // Compiler-generated copy-initializers should not disable POD
-      FnSymbol* fn = function_exists("init", dtMethodToken, at, at);
+      FnSymbol* fn = functionExists("init", dtMethodToken, at, at);
       if (fn != NULL && fn->hasFlag(FLAG_COMPILER_GENERATED) == false) {
         at->symbol->addFlag(FLAG_NOT_POD);
       }
@@ -1297,8 +1536,8 @@ static void check_not_pod(AggregateType* at) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void build_record_hash_function(AggregateType *ct) {
-  if (function_exists("chpl__defaultHash", ct))
+static void buildRecordHashFunction(AggregateType *ct) {
+  if (functionExists("chpl__defaultHash", ct))
     return;
 
   FnSymbol *fn = new FnSymbol("chpl__defaultHash");
@@ -1347,7 +1586,7 @@ static void build_record_hash_function(AggregateType *ct) {
 static void buildDefaultOfFunction(AggregateType* ct) {
   if (ct->symbol->hasEitherFlag(FLAG_TUPLE, FLAG_ITERATOR_RECORD) &&
       ct->defaultValue != gNil &&
-      function_exists("_defaultOf", ct) == NULL) {
+      functionExists("_defaultOf", ct) == NULL) {
 
     FnSymbol*  fn  = new FnSymbol("_defaultOf");
     ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "t", ct);
@@ -1470,15 +1709,15 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     return;
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (function_exists("readWriteThis", dtMethodToken, ct, dtAny)) {
+  if (functionExists("readWriteThis", dtMethodToken, ct, dtAny)) {
     hasReadWriteThis = true;
   }
 
-  if (function_exists("writeThis", dtMethodToken, ct, dtAny)) {
+  if (functionExists("writeThis", dtMethodToken, ct, dtAny)) {
     hasWriteThis = true;
   }
 
-  if (function_exists("readThis", dtMethodToken, ct, dtAny)) {
+  if (functionExists("readThis", dtMethodToken, ct, dtAny)) {
     hasReadThis = true;
   }
 
@@ -1493,6 +1732,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
+
+    // Compiler generated versions of readThis/writeThis now throw.
+    fn->throwsErrorInit();
 
     if (hasReadWriteThis == true) {
       Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
@@ -1511,6 +1753,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // Make readThis when appropriate
   if (makeReadThisAndWriteThis == true && hasReadThis == false) {
     FnSymbol* fn = new FnSymbol("readThis");
+
+    // Compiler generated versions of readThis/writeThis now throw.
+    fn->throwsErrorInit();
 
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
@@ -1563,14 +1808,18 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 }
 
 
-static void buildStringCastFunction(EnumType* et) {
-  if (function_exists(astr_cast, dtString, et))
+static void buildEnumStringOrBytesCastFunctions(EnumType* et,
+                                                AggregateType *otherType) {
+  if (otherType != dtString && otherType != dtBytes) {
+    INT_FATAL("wrong type was passed to buildEnumStringOrBytesCastFunctions");
+  }
+  if (functionExists(astr_cast, otherType, et))
     return;
 
   FnSymbol* fn = new FnSymbol(astr_cast);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", dtString);
+  ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", otherType);
   t->addFlag(FLAG_TYPE_VARIABLE);
   fn->insertFormalAtTail(t);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "this", et);
@@ -1581,11 +1830,65 @@ static void buildStringCastFunction(EnumType* et) {
     fn->insertAtTail(
       new CondStmt(
         new CallExpr("==", arg, constant->sym),
-        new CallExpr(PRIM_RETURN, new_StringSymbol(constant->sym->name))));
+        new CallExpr(PRIM_RETURN,
+                     new_StringOrBytesSymbol(constant->sym->name, otherType))));
   }
-  fn->insertAtTail(new CallExpr(PRIM_RETURN, new_StringSymbol("")));
+  fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                new_StringOrBytesSymbol("", otherType)));
 
   DefExpr* def = new DefExpr(fn);
+  //
+  // these cast functions need to go in the base module because they
+  // are automatically inserted to handle implicit coercions
+  //
+  baseModule->block->insertAtTail(def);
+  reset_ast_loc(def, et->symbol);
+  normalize(fn);
+  fn->tagIfGeneric();
+
+  // string to enumerated type cast function
+  fn = new FnSymbol(astr_cast);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
+  fn->addFlag(FLAG_LAST_RESORT);
+  ArgSymbol* arg1 = new ArgSymbol(INTENT_BLANK, "t", et);
+  arg1->addFlag(FLAG_TYPE_VARIABLE);
+  ArgSymbol* arg2 = new ArgSymbol(INTENT_BLANK, "_arg2", otherType);
+  fn->insertFormalAtTail(arg1);
+  fn->insertFormalAtTail(arg2);
+
+  CondStmt* cond = NULL;
+  for_enums(constant, et) {
+    cond = new CondStmt(
+             new CallExpr("==", arg2,
+                          new_StringOrBytesSymbol(constant->sym->name, otherType)),
+             new CallExpr(PRIM_RETURN, constant->sym),
+             cond);
+    cond = new CondStmt(
+             new CallExpr("==", arg2,
+                          new_StringOrBytesSymbol(
+                            astr(et->symbol->name, ".", constant->sym->name),
+                            otherType)),
+             new CallExpr(PRIM_RETURN, constant->sym),
+             cond);
+  }
+
+  fn->insertAtTail(cond);
+
+  fn->throwsErrorInit();
+  fn->insertAtTail(new TryStmt(
+                     false,
+                     new BlockStmt(
+                       new CallExpr("chpl_enum_cast_error",
+                                    arg2,
+                                    new_StringSymbol(et->symbol->name))),
+                     NULL));
+  fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
+  fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+
+  fn->insertAtTail(new CallExpr(PRIM_RETURN,
+                                toDefExpr(et->constants.first())->sym));
+
+  def = new DefExpr(fn);
   //
   // these cast functions need to go in the base module because they
   // are automatically inserted to handle implicit coercions
@@ -1598,7 +1901,7 @@ static void buildStringCastFunction(EnumType* et) {
 
 
 void buildDefaultDestructor(AggregateType* ct) {
-  if (function_exists("deinit", dtMethodToken, ct) == NULL) {
+  if (functionExists("deinit", dtMethodToken, ct) == NULL) {
     SET_LINENO(ct->symbol);
 
     FnSymbol* fn = new FnSymbol("deinit");
@@ -1626,10 +1929,15 @@ void buildDefaultDestructor(AggregateType* ct) {
 
     fn->retType = dtVoid;
 
+    if (ct->isUnion()) {
+      fn->insertAtTail(buildResetUnionField(fn->_this, ct, NULL));
+    }
+
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
     ct->symbol->defPoint->insertBefore(new DefExpr(fn));
 
+    normalize(fn);
 
     ct->methods.add(fn);
   }

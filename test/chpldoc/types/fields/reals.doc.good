@@ -10,6 +10,13 @@ reals.doc
 
    use reals.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import reals.doc;
+
 .. record:: Foo
 
    .. attribute:: var aReal: real = 2.0

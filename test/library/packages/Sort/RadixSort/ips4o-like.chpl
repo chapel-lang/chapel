@@ -480,7 +480,7 @@ proc copyifchecks(A:[], start_n:int, end_n:int) {
 
 proc putSampleAtArrayStart(in start_n:int, end_n:int, A:[], in numSamples:int) {
   use Random;
-  var randNums = makeRandomStream(0, eltType=int, parSafe=false);
+  var randNums = createRandomStream(0, eltType=int, parSafe=false);
   while numSamples > 0 {
     numSamples -= 1;
 
@@ -1866,7 +1866,7 @@ proc simpletestloop(input:[]) {
   }
 }
 proc simpletest(input:[]) {
-  var size = input.domain.numIndices;
+  var size = input.domain.size;
   simpletestloop(input);
   simpletestloop(input.reindex(1..#size));
   simpletestloop(input.reindex(0..#size));
@@ -1901,7 +1901,7 @@ proc randomtest(n:int) {
   var A: [blockDom] uint;
 
   if skew {
-    var rng = makeRandomStream(seed, eltType=uint);
+    var rng = createRandomStream(seed, eltType=uint);
     A = rng.choice([1:uint, 17:uint,
                     100:uint, 0xffff:uint, 0xffffffffffffffff:uint], n);
   } else {

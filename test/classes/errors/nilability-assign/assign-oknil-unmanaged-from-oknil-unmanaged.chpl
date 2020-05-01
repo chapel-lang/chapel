@@ -2,7 +2,7 @@
 
 class MyClass {  var x: int;  }
 
-var lhs: unmanaged MyClass?;
+var lhs: unmanaged MyClass? = nil;
 var rhs: unmanaged MyClass?;
 
 lhs = rhs;

@@ -43,7 +43,7 @@ proc ref R.setup(x:int, allow_zero:bool=false) {
     writeln(c);
   }
 
-  if this.c then trackFree(this.c, this.c.id, this.x);
+  if this.c then trackFree(this.c!, this.c!.id, this.x);
   delete this.c;
   this.c = nil;
 
@@ -56,11 +56,11 @@ proc ref R.setup(x:int, allow_zero:bool=false) {
     writeln(c);
   }
 
-  trackAllocation(c, c.id, this.x);
+  trackAllocation(this.c!, this.c!.id, this.x);
 }
 
 proc ref R.destroy() {
-  if c then trackFree(c, c.id, this.x);
+  if c then trackFree(c!, c!.id, this.x);
   delete c;
   c = nil;
 }
@@ -69,7 +69,7 @@ proc ref R.increment() {
   assert(x != 0);
   assert(c != nil);
   x += 1;
-  c.x += 1;
+  c!.x += 1;
 }
 
 
@@ -80,7 +80,7 @@ proc R.deinit() {
     writeln("x=", x, " ", c);
   }
 
-  if c then trackFree(c, c.id, this.x);
+  if c then trackFree(c!, c!.id, this.x);
   delete c;
 }
 
@@ -98,8 +98,8 @@ proc R.verify() {
     writeln("R.verify failed - no class but x != 0");
   }
   // otherwise, check that R.x == R.c.x
-  if x != c.x {
-    writeln("R.verify failed - got x=", x, " but c.x=", c.x);
+  else if x != c!.x {
+    writeln("R.verify failed - got x=", x, " but c.x=", c!.x);
     assert(false);
   }
 }

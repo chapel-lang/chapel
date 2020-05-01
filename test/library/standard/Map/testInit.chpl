@@ -16,3 +16,11 @@ use Map;
   var m2 = m;
   writeln(m2);
 }
+
+{
+  var m: map(int, string);
+  m[1] = "hello";
+  m[4] = "world";
+
+  writeln(m.toArray().sorted());
+}

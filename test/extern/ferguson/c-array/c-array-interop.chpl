@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern type mytriple = c_array(c_int, 3);
 
 extern var myglobal: mytriple;

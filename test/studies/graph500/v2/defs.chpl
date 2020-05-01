@@ -90,7 +90,7 @@ module Graph500_defs
          }
          else
          {
-           if (neighbor_count >= Neighbors.numElements) {
+           if (neighbor_count >= Neighbors.size) {
              grow_helper(); 
            }
            neighbor_count += 1;
@@ -101,7 +101,7 @@ module Graph500_defs
          
       proc grow_helper() { 
           halt("Should not call grow_helper");
-          var new_nd = Neighbors.numElements + 1;
+          var new_nd = Neighbors.size + 1;
           nd = {1..new_nd};
       }
 

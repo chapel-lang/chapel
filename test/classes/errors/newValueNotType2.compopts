@@ -1,2 +1,0 @@
---ignore-errors-for-pass --no-legacy-classes  # newValueNotType2.good
---ignore-errors-for-pass --legacy-classes     # newValueNotType2.legacy.good

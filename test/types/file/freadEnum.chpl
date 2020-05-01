@@ -1,3 +1,5 @@
+use IO;
+
 enum cleaningSupplies {MrClean, Windex, SoftScrub, mop, broom};
 var item1: cleaningSupplies;
 var item2: cleaningSupplies;

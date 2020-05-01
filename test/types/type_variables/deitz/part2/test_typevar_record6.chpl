@@ -16,7 +16,7 @@ record foo {
     anew.element = e;
 
     if length > 0 {
-      last.next = anew;
+      last!.next = anew;
       last = anew;
     } else {
       first = anew;
@@ -33,8 +33,8 @@ record foo {
     var tmp = first;
 
     while tmp != nil {
-      anew.append(tmp.element);
-      tmp  = tmp.next;
+      anew.append(tmp!.element);
+      tmp  = tmp!.next;
     }
 
     return anew;
@@ -45,22 +45,22 @@ record foo {
     var next: unmanaged node(t)?;
     cursor = first;
     while (cursor != nil) {
-      next = cursor.next;
+      next = cursor!.next;
       delete cursor;
       cursor = next;
     }
   }
 }
 
-proc foo.writeThis(fp) {
+proc foo.writeThis(fp) throws {
   fp.write("(/");
 
   var tmp = first;
 
   while tmp != nil {
-    fp.write(tmp.element);
+    fp.write(tmp!.element);
 
-    tmp = tmp.next;
+    tmp = tmp!.next;
 
     if (tmp != nil) {
       fp.write(", ");

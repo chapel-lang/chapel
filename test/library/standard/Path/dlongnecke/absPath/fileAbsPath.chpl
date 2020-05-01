@@ -1,4 +1,4 @@
-use Path;
+use IO, Path;
 
 
 const fileDoesNotExist = 'ThisFileDoesNotExist.txt';

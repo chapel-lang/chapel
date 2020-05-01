@@ -1,2 +1,2 @@
 domain(3): 		{1..4, 1..4, 1..4}
-interiorErrorNeg.chpl:5: error: halt reached - ***Error: Argument to 'interior' function out of range in dimension 3***
+interiorErrorNeg.chpl:5: error: halt reached - ***Error: Argument to 'interior' function out of range in dimension 2***

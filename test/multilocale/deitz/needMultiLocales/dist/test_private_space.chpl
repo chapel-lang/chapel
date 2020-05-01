@@ -5,6 +5,7 @@
 // Block-dmapped array on every locale without communication.
 //
 use BlockDist, PrivateDist;
+private use CommDiagnostics;
 
 config var n: int = 8;
 

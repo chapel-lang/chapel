@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -123,6 +124,7 @@ extern ModuleSymbol*      baseModule;
 extern ModuleSymbol*      stringLiteralModule;
 extern ModuleSymbol*      standardModule;
 extern ModuleSymbol*      printModuleInitModule;
+extern ModuleSymbol*      ioModule;
 
 extern Vec<ModuleSymbol*> allModules;
 extern Vec<ModuleSymbol*> userModules;

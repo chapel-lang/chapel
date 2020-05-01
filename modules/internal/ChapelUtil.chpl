@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +23,7 @@
 // Internal data structures module
 //
 module ChapelUtil {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   //
   // safeAdd: If a and b are of type t, return true iff no
@@ -120,7 +121,10 @@ module ChapelUtil {
 
     for i in 0..#arg.argc {
       // FIX ME: leak c_string
-      array[i] = chpl_get_argument_i(local_arg, i:int(32)):string;
+      try! {
+        array[i] = createStringWithNewBuffer(chpl_get_argument_i(local_arg,
+                                                               i:int(32)));
+      }
     }
 
     return array;
@@ -133,9 +137,9 @@ module ChapelUtil {
     var flag: c_string = chpl_get_argument_i(local_arg,
                                              (local_arg.argc-2): int(32));
     if (flag != "--chpl-mli-socket-loc") {
-      halt("chpl_get_mli_connection called with unexpected arguments, missing "
+      try! halt("chpl_get_mli_connection called with unexpected arguments, missing "
            + "'--chpl-mli-socket-loc <connection>', instead got " +
-           flag: string);
+           createStringWithNewBuffer(flag));
     }
     var result: c_string = chpl_get_argument_i(local_arg,
                                                (local_arg.argc-1): int(32));

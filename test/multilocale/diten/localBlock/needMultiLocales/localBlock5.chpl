@@ -9,7 +9,7 @@ on Locales(1) {
   [i in A.domain] A(i) = new unmanaged C(i);
 }
 
-[i in A.domain] A(i).next = new unmanaged C(i+1);
+[i in A.domain] A(i)!.next = new unmanaged C(i+1);
 
 var B = A!.next;
 local {

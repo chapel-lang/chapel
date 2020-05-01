@@ -1,0 +1,5 @@
+perfkeys: arrDeinit:, arrDeinit:, arrDeinit:, arrDeinit:
+graphkeys: blockArrDeinit:, cyclicArrDeinit:, blockCyclicArrDeinit:, stencilArrDeinit:
+files: distCreate-tiny-block.dat, distCreate-tiny-cyclic.dat, distCreate-tiny-blockCyc.dat, distCreate-tiny-stencil.dat
+ylabel: Time (seconds)
+graphtitle: Destroying distributed arrays (1 element per locale)

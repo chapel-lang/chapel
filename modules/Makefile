@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -168,7 +169,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
-	export CHPLDOC_AUTHOR='Cray Inc' && \
+	export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	@echo "Running post-processing scripts"
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}

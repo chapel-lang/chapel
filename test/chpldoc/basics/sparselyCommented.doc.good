@@ -1,3 +1,4 @@
+sparselyCommented.doc.chpl:36: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'sparselyCommented.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: sparselyCommented.doc
@@ -9,6 +10,13 @@ sparselyCommented.doc
 .. code-block:: chapel
 
    use sparselyCommented.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import sparselyCommented.doc;
 
 **Submodules**
 
@@ -53,6 +61,13 @@ Other
 .. code-block:: chapel
 
    use sparselyCommented.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import sparselyCommented.doc.Other;
 
 .. function:: proc inside()
 

@@ -1,18 +1,21 @@
 module Outer {
   proc foo() {
-    writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-            Reflection.moduleName, ".", Reflection.functionName);
+    writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+            Reflection.getModuleName(), ".", Reflection.getRoutineName());
   }
   module Inner {
     proc main {
-      writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-              Reflection.moduleName, ".", Reflection.functionName);
+      writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+              Reflection.getModuleName(), ".", Reflection.getRoutineName());
       foo();
       bar();
     }
     proc bar() {
-      writeln(Reflection.fileName, ":", Reflection.lineNumber, " ",
-              Reflection.moduleName, ".", Reflection.functionName);
+      writeln(Reflection.getFileName(), ":", Reflection.getLineNumber(), " ",
+              Reflection.getModuleName(), ".", Reflection.getRoutineName());
     }
+    import Reflection;
+    import Outer.foo;
   }
+  use Reflection only ;
 }

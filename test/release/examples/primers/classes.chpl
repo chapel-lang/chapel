@@ -23,11 +23,13 @@ class C {
 // initializer has an argument for each field in the class. Once a class
 // has been initialized, its methods can be called.
 //
-// Class types include a strategy for freeing them. We'll discuss this
-// more below.
+// Classes have various memory management strategies that determine how
+// they are freed.  We'll discuss these more below, but for now, know
+// that ``new C(...)`` is equivalent to writing out ``new owned C(...)``
+// where ``owned`` is one of these memory management strategies.
 //
 // A class variable can refer to an *instance* of a class.
-var foo = new owned C(1, 3);
+var foo = new C(1, 3);
 foo.printFields();
 
 //
@@ -43,8 +45,8 @@ writeln(foo);
 //
 // We'll talk more about ``borrow`` below.
 var alias = foo.borrow();
-// now alias.b and foo.b refer to the same field,
-// so the next line also modifies foo.b
+// now ``alias.b`` and ``foo.b`` refer to the same field,
+// so the next line also modifies ``foo.b``
 alias.b -= 1;
 writeln(foo);
 
@@ -84,33 +86,35 @@ class D: C {
 //
 // Note that since ``foo`` is an ``owned C``, assigning to it
 // will delete the previous instance "owned" by that variable.
-foo = new owned D(3, 4);
+foo = new D(3, 4);
 foo.printFields();
 
 
 // A class type includes a memory management strategy. The currently supported
 // strategies are ``owned``, ``shared``, ``unmanaged``, and ``borrowed``.
 var unm: unmanaged C = new unmanaged C();
-// 'unm' refers to a manually managed instance. It needs to have ``delete``
+// ``unm`` refers to a manually managed instance. It needs to have ``delete``
 // called on it to free the memory.
 delete unm;
 
 var own: owned C = new owned C(1, 10);
-// The instance referred to by 'own' is deleted when it is no longer in scope.
-// Only one `owned C` can refer to a given instance at a time but the
+// The instance referred to by ``own`` is deleted when it is no longer in scope.
+// Only one ``owned C`` can refer to a given instance at a time, but the
 // ownership can be transferred to another variable.
+
 var own2 = new C(1, 10);
 assert(own.type == own2.type);
-// The example above shows that the default behavior makes 'new C' equivalent
-// to 'new owned C'.
+// The example above shows that ``new C(...)`` can be used as a
+// shorthand for ``new owned C(...)`` because ``owned`` is the default
+// memory management strategy for classes.
 
 var share: shared C = new shared C(1, 10);
-// The instance referred to by 'share' is reference counted -- that is,
-// several `shared C` variables can refer to the same instance and
+// The instance referred to by ``share`` is reference counted -- that is,
+// several ``shared C`` variables can refer to the same instance and
 // will be reclaimed when the last one goes out of scope.
 
 var tmp: borrowed C = new borrowed C(1, 10);
-// The instance referred to by 'tmp' will be deleted when it is no longer in
+// The instance referred to by ``tmp`` will be deleted when it is no longer in
 // scope. The ownership can't be transferred to another variable.
 
 // It is possible to ``borrow`` from another class pointer.
@@ -123,10 +127,8 @@ var b1 = own.borrow();
 //  * use the borrow after the instance is deleted (for example if
 //    own is assigned to)
 
-// In most cases, a class type without a decorator, such as ``C``,
-// is the same as ``borrowed C``. The ``this`` argument of a method
-// is a borrow as well. The current exception is that ``new C`` is interpreted
-// as ``new owned C`` rather than ``new borrowed C``.
+// A class type without a decorator, such as ``C``, has generic management.
+// The ``this`` argument of a method is generally ``borrowed C``.
 
 // The compiler automatically adds conversion from ``owned``, ``shared``,
 // or ``unmanaged`` in the process of resolving a function call,
@@ -140,39 +142,26 @@ proc printSum(arg: borrowed C) {
 }
 printSum(own); // same as printSum(own.borrow())
 
+// A variable of class type cannot store ``nil`` unless it is
+// declared to have nilable class type. To create a nilable class
+// type, apply the ``?`` operator to another class type
+var x: borrowed C?; // default-initializes to ``nil``
+
+// Non-nilable class types can be implicitly converted to the corresponding
+// nilable class type.
+x = b2; // converting from borrowed C to borrowed C?
+
+// The method printFields is available on ``borrowed C``,
+// but not on ``borrowed C?``
 //
+// As a result, the call ``x.printFields()`` needs adjustment.
+// The ``!`` operator is available to assert that an expression
+// is not ``nil`` and return it as a non-nilable type. This operator
+// will halt if the value is actually ``nil``.
+//
+// Note that when applied to an ``owned`` or ``shared`` variable, ``!`` will
+// result in a borrow from that variable.
+x!.printFields();
+
 // There are a few method names that cause the method to have special
-// meaning.  A method named ``this`` allows a class to be indexed like
-// an array.  A method named ``these`` allows a class to be iterated
-// over.
-//
-class ArrayLike {
-  var a, b, c, d: int;
-  proc this(i:int) ref {
-    select i {
-      when 1 do return a;
-      when 2 do return b;
-      when 3 do return c;
-      when 4 do return d;
-      otherwise halt("index out of bounds", i);
-    }
-  }
-
-  iter these() ref {
-    yield a;
-    yield b;
-    yield c;
-    yield d;
-  }
-}
-
-//
-// This ``ArrayLike`` object can be indexed like a 4 element array and it
-// can be iterated over in a loop.
-//
-var a = new owned ArrayLike();
-a(2) = 1; // call to this method
-a(4) = 2; // call to this method
-
-for elt in a do // invocation of these iterator
-  writeln(elt);
+// meaning. Please see :ref:`primers-specialMethods` for details.

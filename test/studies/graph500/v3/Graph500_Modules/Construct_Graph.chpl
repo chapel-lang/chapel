@@ -63,7 +63,7 @@ proc constructGraph(Edges:[?ArrD] , G)
      // TODO: remove duplicates via sorting
      // sort(v.nd); ...
      const newNC = oldNC; // TODO: recompute after duplicate removal
-     if newNC != v.nd.numIndices {
+     if newNC != v.nd.size {
        // resize
        v.nd  = {1..newNC};
      }

@@ -7,7 +7,7 @@ module M1 {
     var x: int = 2;
 
     module M3 {
-
+      import M1.M2.x;
       proc foo() {
         writeln(x);
       }

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +27,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "type.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
 
@@ -56,9 +58,24 @@ checkConstLoops() {
   }
 }
 
+static void checkForClassAssignOps(FnSymbol* fn) {
+  if (fn->getModule()->modTag == MOD_USER) {
+    if (strcmp(fn->name, "=") == 0 &&
+        fn->formals.head) {
+      ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
+      Type* formalType = formal->type->getValType();
+      if (isOwnedOrSharedOrBorrowed(formalType) ||
+          isUnmanagedClass(formalType)) {
+        USR_FATAL_CONT(fn, "Can't overload assignments for class types");
+      }
+    }
+  }
+}
+
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
+    checkForClassAssignOps(fn);
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
@@ -80,13 +97,26 @@ checkResolved() {
 
   forv_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
+      std::set<std::string> enumVals;
       for_enums(def, et) {
         if (def->init) {
           SymExpr* sym = toSymExpr(def->init);
           if (!sym || (!sym->symbol()->hasFlag(FLAG_PARAM) &&
-                       !toVarSymbol(sym->symbol())->immediate))
+                       !toVarSymbol(sym->symbol())->immediate)) {
             USR_FATAL_CONT(def, "enumerator '%s' is not an integer param value",
                            def->sym->name);
+          } else if (fWarnUnstable) {
+            Immediate* imm = toVarSymbol(sym->symbol())->immediate;
+            std::string enumVal = imm->to_string();
+            if (enumVals.count(enumVal) != 0) {
+              USR_WARN(sym, "it has been suggested that support for enums "
+                       "with duplicate integer values should be deprecated, "
+                       "so this enum could be considered unstable; if you "
+                       "value such enums, please let the Chapel team know.");
+              break;
+            }
+            enumVals.insert(enumVal);
+          }
         }
       }
     }

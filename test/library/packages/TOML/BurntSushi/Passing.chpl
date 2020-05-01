@@ -1,4 +1,4 @@
-use TOML;
+use TOML, IO;
 
 /*
   Tests from BurntSushi/toml-test 'valid' suite:

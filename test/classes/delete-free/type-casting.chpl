@@ -10,10 +10,10 @@ proc makeBorrowed2(type t) type {
 }
 
 proc makeBorrowedBang1(type t) type {
-  return borrowed t!;
+  return borrowed (t :borrowed class);
 }
 proc makeBorrowedBang2(type t) type {
-  return t:borrowed!;
+  return t:borrowed class;
 }
 
 proc makeBorrowedQ1(type t) type {
@@ -51,14 +51,14 @@ proc main() {
   check(makeBorrowed2(unmanaged MyClass?) == borrowed MyClass?);
   check(makeBorrowed2(owned MyClass?) == borrowed MyClass?);
 
-  check(makeBorrowedBang1(MyClass) == borrowed MyClass);
   if DuplicateManagement {
+    check(makeBorrowedBang1(MyClass) == borrowed MyClass);
     check(makeBorrowedBang1(borrowed MyClass) == borrowed MyClass);
     check(makeBorrowedBang1(unmanaged MyClass) == borrowed MyClass);
     check(makeBorrowedBang1(owned MyClass) == borrowed MyClass);
   }
-  check(makeBorrowedBang1(MyClass?) == borrowed MyClass);
   if DuplicateManagement {
+    check(makeBorrowedBang1(MyClass?) == borrowed MyClass);
     check(makeBorrowedBang1(borrowed MyClass?) == borrowed MyClass);
     check(makeBorrowedBang1(unmanaged MyClass?) == borrowed MyClass);
     check(makeBorrowedBang1(owned MyClass?) == borrowed MyClass);

@@ -9,13 +9,118 @@ GASNet-EX ChangeLog
 
   GASNet-EX currently implements the following conduits:
   - InfiniBand Verbs (ibv-conduit)
-  - Cray uGNI (gemini- and aries-conduits)
-  - IBM PAMI (pami-conduit)
+  - Cray uGNI (aries-conduits)
   - Shared-memory (smp-conduit)
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
-  Users wishing to use other conduits are recommended to download the GASNet v1.x
-  distribution from https://gasnet.lbl.gov.
+  - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
+  Users wishing to use other retired conduits may need to download 
+  the GASNet v1.x distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+03-12-2020: GASNet-EX 2020.3.0 Release
+
+* InfiniBand Verbs (ibv-conduit)
+  - Negotiated-Payload Active Messages are implemented natively for ibv-conduit,
+    replacing use of a portable reference implementation.
+  - New environment variable GASNET_AM_GATHER_MIN controls use of gather-on-send
+    for AM Medium (and small Long) payloads.  See details in the conduit README.
+  - The gather-on-send optimization for AM Medium (and small Long) payloads is
+    now applied to out-of-segment sources when using ODP.
+  - A new `configure --with-ibv-max-medium` can set the size of AM Medium buffers.
+    See details, including supported values, in the conduit README.
+  - The default AM Max Medium is now 64KB minus space for headers (up from 4KB).
+  - Code paths for AM Long and RDMA Put have been separated, leading to simpler
+    (faster and more maintainable) logic for each.
+  - Code paths for AM and RMA have been revised to eliminate certain global
+    state in favor of per-endpoint state.  This is work toward multi-endpoint and
+    multi-segment support to appear in a later release.
+  - AM-over-RDMA (not compiled by default since 2019.6.0) has been removed.
+  - The environment variable GASNET_PIN_MAXSZ has been removed.  This variable
+    was introduced to help work-around a misbehavior not seen in modern HCAs,
+    and its support added significant complexity to the critical code paths
+    for RMA.
+
+* Cray XC uGNI (aries-conduit)
+  - AM Long request injection using GEX_EVENT_NOW may now service incoming AMs
+    while stalling for local completion of the outgoing payload.
+
+* Unified Communication X framework (ucx-conduit) [EXPERIMENTAL]
+  - This NEW conduit is now available for experimental use on Mellanox
+    InfiniBand devices including ConnectX-5 or newer.
+    The ucx-conduit code was contributed by Mellanox Technologies Ltd.
+  - For details, see ucx-conduit/README
+
+* IBM PAMI (pami-conduit)
+  - This conduit, deprecated since 2019.9.0, has been removed.
+
+* Portable UDP support (udp-conduit)
+  - Provide more robust default detection of shared-memory peers
+    (see GASNET_USE_GETHOSTID in udp-conduit/README for details).
+  - Improved startup error checking and reporting for DNS problems
+
+* GASNet tools (spec v1.15)
+  - Add runtime version queries gasnett_release_version*()
+
+* Platform support/portability
+  - PMI-based spawning now supports PMIx 
+  - Improve portable_inttypes to be more trusting of C99/C++11 compilers
+  - Improved warning behavior with recent versions of PGI
+  - Support for IBM BlueGene/Q has been removed.
+  - Support for native atomics on IBM XL compilers for big-endian PPC has been
+    removed.  These platforms now default to compiler-provided atomics.
+    Little-endian PPC platforms remain unchanged.
+
+* General and Misc.
+  - New make targets (run-)tests-installed-{seq,par,parsync} have been
+    added for use in post-install validation of the library.
+  - Now document and enforce use of GNU make version 3.79 or newer.
+
+* Notable bugs fixed in this release:
+  - bug4022: rare resource leak in aries-conduit AM Long protocol
+  - bug4024: erroneous behavior from `testam -async-req -np-cb`
+  - bug4025: erroneous assertion failure from loopback NPAM
+  - bug4035: link failures with GCC 10 or -fno-common
+  - bug4042: errors when configured using --with-aries-max-medium=65472
+
+----------------------------------------------------------------------
+09-14-2019: GASNet-EX 2019.9.0 Release
+
+* Cray XE/XK uGNI gemini-conduit
+  - This conduit, deprecated since 2019.6.0, has been removed.
+  - The aries-conduit remains supported and under active development.
+
+* Cray XC uGNI aries-conduit
+  - The performance of AMLong with payload of 4KB or larger has been
+    significantly improved.  The overhead of injection with synchronous
+    local completion is reduced.  The cases of asynchronous local
+    completion (both explicit and implicit event) are properly implemented
+    where previously they were strengthened to synchronous.
+  - New environment variables GASNET_GNI_PACKEDLONG_CUTOVER,
+    GASNET_LONG_DEPTH and GASNET_GNI_AMPOLL_BURST provide finer-grained
+    control over the AM protocol. See details in the conduit README.
+
+* InfiniBand Verbs (ibv-conduit)
+  - New envvars GASNET_IBV_LIST_PORTS{,_NODES} to request a list of
+    available InfiniBand HCAs, ports, and their respective status.
+  - Internal streamlining of AM paths to reduce code bloat (bug1879)
+
+* IBM PAMI (pami-conduit)
+  - This conduit is now DEPRECATED and will be removed in a future release
+    (see pami-conduit/README).
+
+* GASNet tools (spec v1.14)
+  - Add GASNETT_FALLTHROUGH
+
+* MPI-based job-launch (mpi-spawner)
+  - Improved logic for IBM's jsrun
+
+* Notable bugs fixed in this release:
+  - bug3338: ibv_reg_mr failure (EFAULT/Bad address) on read-only data
+  - bug3957: GASNET_DISABLE_MUNMAP_DEFAULT=0 when using ODP
+  - bug3994: backtrace hangs for forthcoming macOS 10.15
+  - bug3995: configure fails sizeof(ptrdiff_t) on Catalina/gcc
+  - bug4002: ibv-conduit: XRC and ODP are mutually exclusive
 
 ----------------------------------------------------------------------
 06-14-2019: GASNet-EX 2019.6.0 Release
@@ -27,11 +132,11 @@ GASNet-EX ChangeLog
   - Compilation of AM-over-RDMA support is now disabled by default
   - Improve error messages for some cases.
 
-* Cray uGNI aries-conduit
+* Cray XC uGNI aries-conduit
   - The Aries Collective Engine, if available, is now used to accelerate
     gex_Coll_BarrierNB().
 
-* Cray uGNI gemini-conduit
+* Cray XE/XK uGNI gemini-conduit
   - This conduit is now DEPRECATED and will be removed in a future release.
   - The aries-conduit remains supported and under active development.
 
@@ -354,8 +459,7 @@ GASNet-EX ChangeLog
 
 ----------------------------------------------------------------------
 The remainder of this file contains the unmodified ChangeLog from the GASNet-1
-code base, from which the EX code was branched (and is periodically
-synchronized).
+code base, from which the EX code was branched.
 Note some entries below do not apply to the EX branch.
 ----------------------------------------------------------------------
 GASNet-1 ChangeLog 

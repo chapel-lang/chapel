@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -285,9 +286,13 @@ buildFollowLoop(VarSymbol* iter,
                 BlockStmt* loopBody,
                 Expr*      ref,
                 bool       fast,
-                bool       zippered) {
+                bool       zippered,
+                bool       forallExpr) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered, /*forall*/ false);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody,
+                                       zippered,
+                                       /*isLoweredForall*/ false,
+                                       forallExpr);
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -583,7 +588,9 @@ static void hzsBuildZipperedForLoop(ForallStmt* fs, FnSymbol* origIterFn,
   origLoopBody->replace(newLoopBody);
 
   BlockStmt* forBlock = ForLoop::buildForLoop(indices, iterators,
-                                              origLoopBody, false, true);
+                                              origLoopBody,
+                                              /*zippered*/ true,
+                                              /*isForExpr*/ fs->isForallExpr());
   newLoopBody->insertAtTail(forBlock);
 
   ForLoop* forLoop = toForLoop(origLoopBody->parentExpr);
@@ -605,7 +612,7 @@ static CallExpr* hzsCallTrivialParIter(ForallStmt* fs) {
 
   if (trivialLeader == NULL) {
     result = new CallExpr("chpl_trivialLeader");
-    rootModule->block->insertAtTail(result);
+    fs->insertBefore(result);
     resolveCallAndCallee(result, false);
     result->remove();
 
@@ -779,7 +786,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   else {
     for_alist_backward(def, indvars)
       userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
-                                 followIdx, new_IntSymbol(idx--));
+                                 followIdx, new_IntSymbol(--idx));
   }
 
   // Move induction variables' DefExprs to the loop body.
@@ -928,8 +935,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                 followIdx,
                                 userBody,
                                 pfs,
-                                false,
-                                zippered);
+                                /* fast */ false,
+                                zippered,
+                                pfs->isForallExpr());
 
   if (fNoFastFollowers == false) {
     Symbol* T1 = newTemp();
@@ -971,8 +979,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                       fastFollowIdx,
                                       userBodyForFast,
                                       pfs,
-                                      true,
-                                      zippered);
+                                      /* fast */ true,
+                                      zippered,
+                                      pfs->isForallExpr());
 
     leadForLoop->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
   } else {

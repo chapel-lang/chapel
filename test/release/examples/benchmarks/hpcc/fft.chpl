@@ -128,7 +128,7 @@ proc main() {
 // over domain ADom using twiddle vector W
 //
 proc dfft(A: [?ADom], W, cyclicPhase) {
-  const numElements = A.numElements;
+  const numElements = A.size;
   //
   // loop over the phases of the DFT sequentially using custom
   // iterator genDFTStrideSpan that yields the stride and span for
@@ -272,7 +272,7 @@ proc initVectors(Twiddles, z) {
 // Compute the twiddle vector values
 //
 proc computeTwiddles(Twiddles) {
-  const numTwdls = Twiddles.numElements,
+  const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 
   Twiddles(0) = 1.0;
@@ -291,7 +291,7 @@ proc computeTwiddles(Twiddles) {
 // of the indices
 //
 proc bitReverseShuffle(Vect: [?Dom]) {
-  const numBits = log2(Vect.numElements),
+  const numBits = log2(Vect.size),
         Perm: [Dom] Vect.eltType = [i in Dom] Vect(bitReverse(i, revBits=numBits));
   Vect = Perm;
 }

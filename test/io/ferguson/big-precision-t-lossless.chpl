@@ -1,3 +1,5 @@
+use IO;
+
 config const verbose = false;
 
 {

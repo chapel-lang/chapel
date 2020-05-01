@@ -35,8 +35,8 @@ record ListStack {
     if isEmpty then
       halt("attempt to pop an item off an empty stack");
     var oldTop = top;
-    var oldItem = top.item;
-    top = top.next;
+    var oldItem = top!.item;
+    top = top!.next;
     delete oldTop;
     return oldItem;
   }
@@ -58,7 +58,7 @@ record ArrayStack {
   // push method: add an item to the top of the stack
   // note: the array is doubled if it is full
   proc push(item: itemType) {
-    var height = data.numElements;
+    var height = data.size;
     if numItems == height then
       dataSpace = {1..height*2};
     data(numItems+1) = item;

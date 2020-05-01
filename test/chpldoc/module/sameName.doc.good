@@ -1,3 +1,4 @@
+sameName.doc.chpl:2: warning: This file-scope code is outside of any explicit module declarations (e.g., module sameName), so an implicit module named 'sameName.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: sameName.doc
@@ -9,6 +10,13 @@ sameName.doc
 .. code-block:: chapel
 
    use sameName.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import sameName.doc;
 
 **Submodules**
 
@@ -34,6 +42,13 @@ sameName
 .. code-block:: chapel
 
    use sameName.doc.sameName;
+
+
+or
+
+.. code-block:: chapel
+
+   import sameName.doc.sameName;
 
 This module has the same name as its file but doesn't
 contain all the code within the file 

@@ -62,8 +62,8 @@ class DimensionalDist : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(1).length: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(2).length: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).size: locCntT;
+  proc numLocs2: locCntT  return targetIds.dim(1).size: locCntT;
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -488,7 +488,7 @@ proc DimensionalDom.dsiMyDist() return dist;
 
 proc DimensionalDom.dsiDims()     return whole.dims();
 
-proc DimensionalDom.dsiNumIndices return whole.numIndices;
+proc DimensionalDom.dsiNumIndices return whole.size;
 
 proc DimensionalDom.subordinate1dDist(param dim: int) {
   return dist.subordinate1dDist(dim);
@@ -581,11 +581,11 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(globDD, locId) {
   var myRange2 = local1dDdescs(2).dsiSetLocalIndices1d(globDD(2),locId(2));
 
   myBlock = {myRange1, myRange2};
-  myStorageDom = {0:stoSzT..#myRange1.length:stoSzT,
-                  0:stoSzT..#myRange2.length:stoSzT};
+  myStorageDom = {0:stoSzT..#myRange1.size:stoSzT,
+                  0:stoSzT..#myRange2.size:stoSzT};
 
   _traceddd("DimensionalDom.dsiSetIndices on ", here.id, " ", locId, " <- ",
-           myBlock, "  storage ", myRange1.length, "*", myRange2.length);
+           myBlock, "  storage ", myRange1.size, "*", myRange2.size);
 }
 
 proc DimensionalDom.dsiGetIndices(): domainT {
@@ -733,7 +733,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
       return dist.targetIds.dim(dd);
   }
   const overTargetIds = if dom1.dsiIsReplicated() || dom2.dsiIsReplicated()
-    then {helpTargetIds(dom1,1), helpTargetIds(dom2,2)}
+    then {helpTargetIds(dom1,0), helpTargetIds(dom2,1)}
     else dist.targetIds; // this case is here for efficiency
 
   // todo: lls is needed only for debugging printing?
@@ -760,8 +760,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           _computeChunkStuff(maxTasks, ignoreRunning, minSize, myDims)
         else
           ( min(_computeNumChunks(maxTasks, ignoreRunning, minSize,
-                                  locDdesc.myBlock.numIndices),
-                locDdesc.myBlock.dim(fakeDimensionalDistParDim).length):int,
+                                  locDdesc.myBlock.size),
+                locDdesc.myBlock.dim(fakeDimensionalDistParDim).size):int,
             fakeDimensionalDistParDim:int);
 
       // parDim gotta point to one of the dimensions that we have
@@ -806,8 +806,8 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
             // why dsiMyDensifiedRangeForTaskID1d() does not agree
             // with _computeChunkStuff (i.e. the latter returns more tasks
             // than the former wants to use) - fine. Then, replace assert with
-            //   if myPiece.length == 0 then do not yield anything
-            assert(myPiece.length > 0);
+            //   if myPiece.size == 0 then do not yield anything
+            assert(myPiece.size > 0);
 
             // apply myPiece
             follow(dd) = myPiece;

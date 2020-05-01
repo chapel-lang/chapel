@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +28,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpRuntime {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   // The chpl_localeID_t type is used internally.  It should not be exposed to
   // the user.  The runtime defines the actual type, as well as a functional

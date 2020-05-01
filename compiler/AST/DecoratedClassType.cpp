@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +25,13 @@
 #include "symbol.h"
 #include "expr.h"
 #include "iterator.h"
+
+static const char* nameForUser(const char* className) {
+  if (!strcmp(className, "_owned") || !strcmp(className, "_shared"))
+    return className+1;
+
+  return className;
+}
 
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
   switch (d) {
@@ -51,14 +59,17 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
       if (developer)
         return astr("managed anynil ", className);
       else
-        return astr(className);
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NONNIL:
-      return astr(className);
+      if (developer)
+        return astr("managed ", className);
+      else
+        return astr(nameForUser(className));
     case CLASS_TYPE_MANAGED_NILABLE:
       if (developer)
         return astr("managed ", className, "?");
       else
-        return astr(className, "?");
+        return astr(nameForUser(className), "?");
 
     case CLASS_TYPE_GENERIC:
       if (developer)
@@ -67,7 +78,7 @@ const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className) {
         return astr(className);
     case CLASS_TYPE_GENERIC_NONNIL:
       if (developer)
-        return astr("anymanaged ", className, "!");
+        return astr("anymanaged ", className);
       else
         return astr(className);
     case CLASS_TYPE_GENERIC_NILABLE:
@@ -514,4 +525,14 @@ void convertClassTypesToCanonical() {
       }
     }
   }
+}
+
+bool isClassDecoratorPrimitive(CallExpr* call) {
+  return (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+          call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+          call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
+          call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED) ||
+          call->isPrimitive(PRIM_TO_NON_NILABLE_CLASS));
 }

@@ -4,7 +4,7 @@ var cs: c_string = "this is a c_string";
 
 writeln(b);
 writeln(s);
-writeln(cs:string);
+writeln(createStringWithNewBuffer(cs));
 writeln();
 
 // TEST INITIALIZERS
@@ -28,9 +28,9 @@ writeln();
 
 // TEST length and size queries
 writeln("Length/size tests");
-writeln(b_from_s.length, " must be ", s.numBytes);
-writeln(b_from_cs.length, " must be ", cs.length);
-writeln(b_from_c_ptr.length, " must be ", 3);
+writeln(b_from_s.size, " must be ", s.numBytes);
+writeln(b_from_cs.size, " must be ", cs.size);
+writeln(b_from_c_ptr.size, " must be ", 3);
 writeln(b_from_s.size, " must be ", s.numBytes);
 writeln(b_from_cs.size, " must be ", cs.size);
 writeln(b_from_c_ptr.size, " must be ", 3);
@@ -38,17 +38,50 @@ writeln();
 
 // TEST ACCESSORS
 writeln("Accessor tests");
-for i in 1..b_from_c_ptr.length do
-  writeln(b_from_c_ptr[i], " as ", b_from_c_ptr[i].type:string);
-for i in 1..b_from_c_ptr.length do
-  writeln(b_from_c_ptr.byte(i), " as ", b_from_c_ptr[i].type:string);
+
+writeln("Should return uint(8)");
+for i in 0..<b_from_c_ptr.size {
+  var val = b_from_c_ptr[i];
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("Should return uint(8)");
+for i in 0..<b_from_c_ptr.size {
+  var val = b_from_c_ptr[i:byteIndex];
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("Should return uint(8)");
+for i in 0..<b_from_c_ptr.size {
+  var val = b_from_c_ptr.byte(i);
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("Should return bytes");
+for i in 0..<b_from_c_ptr.size {
+  var val = b_from_c_ptr.item(i);
+  writeln(val, " as ", val.type:string);
+}
+
+writeln("toByte returns uint(8)");
+var singleByteBytes = b"A";
+writeln(singleByteBytes.toByte(), " as ", singleByteBytes.toByte().type:string);
+
 writeln();
 
 //TEST ITERATORS
 writeln("Iterator tests");
+
+writeln("Should yield uint(8)");
 for byte in b_from_c_ptr do
   writeln(byte, " as ", byte.type:string);
+
+writeln("Should yield uint(8)");
 for byte in b_from_c_ptr.bytes() do
+  writeln(byte, " as ", byte.type:string);
+
+writeln("Should yield bytes");
+for byte in b_from_c_ptr.items() do
   writeln(byte, " as ", byte.type:string);
 writeln();
 
@@ -95,10 +128,21 @@ writeln();
 
 // TEST SLICE
 writeln("Slice tests");
-writeln(b[..4], " -- the type is ", b[1..4].type:string); // "this"
-writeln(b[6..], " -- the type is ", b[6..].type:string); // "is a bytes"
+writeln(b[0..3], " -- the type is ", b[0..3].type:string); // "this"
+writeln(b[..3], " -- the type is ", b[..3].type:string); // "this"
+writeln(b[5..], " -- the type is ", b[5..].type:string); // "is a bytes"
 writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
-writeln(b[11..b.length], " -- the type is ", b[..].type:string); // "bytes"
+writeln(b[10..<b.size], " -- the type is ", b[..].type:string); // "bytes"
+writeln();
+writeln(b[0:byteIndex..3:byteIndex],
+        " -- the type is ", b[0..3].type:string); // "this"
+writeln(b[..3:byteIndex],
+        " -- the type is ", b[..3].type:string); // "this"
+writeln(b[5:byteIndex..],
+        " -- the type is ", b[5..].type:string); // "is a bytes"
+writeln(b[..], " -- the type is ", b[..].type:string); // "this is a bytes"
+writeln(b[10:byteIndex..<b.size:byteIndex],
+        " -- the type is ", b[..].type:string); // "bytes"
 writeln();
 
 // TEST SEARCH ETC. -- this is getting too much without coercion
@@ -111,15 +155,15 @@ writeln(bytes_to_search.endsWith(b"start"));  //f
 writeln(bytes_to_search.endsWith(b"lorem", b"ipsum"));  //f
 writeln(bytes_to_search.endsWith(b"end"));   //t
 
-writeln(b.find(b"is")); //3
-writeln(b.rfind(b"is")); //6
+writeln(b.find(b"is")); //2
+writeln(b.rfind(b"is")); //5
 writeln(b.count(b"is")); //2
 
-writeln(b.find(b"is", region=4..)); //6
-writeln(b.rfind(b"is", region=..5)); //3
-writeln(b.count(b"is", region=..5)); //1
+writeln(b.find(b"is", region=3..)); //5
+writeln(b.rfind(b"is", region=..4)); //2
+writeln(b.count(b"is", region=..4)); //1
 
-writeln(b.find(b"is is")); //3
+writeln(b.find(b"is is")); //2
 writeln("Make it plural ", b.replace(b"is is a", b"ese are"));
 writeln();
 
@@ -144,7 +188,7 @@ writeln("Test join -- homogeneous tuple of bytes");
 writeln(baseBytes.join((b"dir1", b"dir2", b"file")));
 
 writeln("Test join -- array of bytes");
-writeln(baseBytes.join(b"dir1", b"dir2", b"file"));
+writeln(baseBytes.join([b"dir1", b"dir2", b"file"]));
 
 writeln("Test strip");
 var bytesToStrip = b" \n  a \t text\n";

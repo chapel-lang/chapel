@@ -135,7 +135,7 @@ proc transpose(ref outputMatrix: [?D] real, ref inputMatrix: [?E] real)
   // If not running with --fast (e.g. boundsChecking == true), ensure the array
   // dimensions are correct.
   if boundsChecking {
-    assert(D.dim(1) == E.dim(2) && D.dim(2) == E.dim(1),
+    assert(D.dim(0) == E.dim(1) && D.dim(1) == E.dim(0),
            "Dimensions of outputMatrix are not transpose of inputMatrix.");
   }
 
@@ -153,10 +153,10 @@ proc matMultiply(ref C: [?DC] real, ref A: [?DA] real, ref B: [?DB] real)
   // If not running with --fast (e.g. boundsChecking == true), ensure the array
   // dimensions are correct.
   if boundsChecking {
-    assert(DC.dim(1) == DA.dim(1) &&
-           DC.dim(2) == DB.dim(2),
+    assert(DC.dim(0) == DA.dim(0) &&
+           DC.dim(1) == DB.dim(1),
            "Outer dimensions for C, A, or B do not match.");
-    assert(DA.dim(2) == DB.dim(1),
+    assert(DA.dim(1) == DB.dim(0),
            "Inner array dimensions do not match.");
   }
 
@@ -165,7 +165,7 @@ proc matMultiply(ref C: [?DC] real, ref A: [?DA] real, ref B: [?DB] real)
   // $CHPL_HOME/test/performance/thomasvnadoren/ for more details.
   forall (row, col) in DC {
     C[row, col] = 0.0;
-    for z in DA.dim(2) do
+    for z in DA.dim(1) do
       C[row, col] += A[row, z] * B[z, col];
   }
 }

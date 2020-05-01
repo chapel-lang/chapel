@@ -3,6 +3,7 @@
 // Magic square of dimension 10, permuted according to
 // Matlab's p matrix for LU (so it doesn't need pivoting),
 // is used as test matrix A.
+use IO;
 
 param n = 10;
 

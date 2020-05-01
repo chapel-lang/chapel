@@ -2,16 +2,12 @@ e
   f
     e (Recursive)
     h
-      writeln
   g
     f
       e (Recursive)
       h
-        writeln
     h
-      writeln
   h
-    writeln
 main
 H
 H

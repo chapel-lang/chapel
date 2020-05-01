@@ -1,4 +1,5 @@
 use BigInteger;
+use GMP;
 
 // The default is to not output the limbs,
 // but to go through the motions of accessing them.

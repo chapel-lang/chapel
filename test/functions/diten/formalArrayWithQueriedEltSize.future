@@ -1,3 +1,3 @@
-bug: array formal with queried element size trips internal error
+feature request: ability to query aspects of an array formal's elements
 
 Issue #8316

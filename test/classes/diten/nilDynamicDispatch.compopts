@@ -1,1 +1,1 @@
---legacy-classes --no-compile-time-nil-checking
+--no-compile-time-nil-checking

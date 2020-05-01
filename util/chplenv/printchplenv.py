@@ -77,6 +77,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
+    ChapelEnv('  CHPL_LIBFABRIC', INTERNAL),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
@@ -100,12 +101,15 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_BIN_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_TARGET_BIN_SUBDIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_GASNET_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_HWLOC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_JEMALLOC_UNIQ_CFG_PATH',INTERNAL),
+    ChapelEnv('  CHPL_LIBFABRIC_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
+    ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
 ]
 
@@ -150,6 +154,7 @@ def compute_all_values():
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
+    ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
@@ -187,7 +192,10 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_BIN_SUBDIR'] = chpl_bin_subdir.get('target')
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
+    compile_args_3p = []
     link_args_3p = []
+
+    ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_3p_gasnet_configs.get_uniq_cfg_path()
 
     ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_3p_gmp_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(chpl_gmp.get()))
@@ -197,6 +205,11 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_3p_jemalloc_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args(chpl_jemalloc.get()))
+
+    ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_3p_libfabric_configs.get_uniq_cfg_path()
+    if chpl_comm.get() == 'ofi':
+      compile_args_3p.extend(chpl_3p_libfabric_configs.get_compile_args(chpl_libfabric.get()))
+      link_args_3p.extend(chpl_3p_libfabric_configs.get_link_args(chpl_libfabric.get()))
 
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_3p_libunwind_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(chpl_unwind.get()))
@@ -211,6 +224,11 @@ def compute_internal_values():
 
     # Remove duplicates, keeping last occurrence and preserving order
     # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."
+    seen = set()
+    compile_args_3p_dedup = [arg for arg in reversed(compile_args_3p)
+                             if not (arg in seen or seen.add(arg))]
+    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(reversed(compile_args_3p_dedup))
+
     seen = set()
     link_args_3p_dedup = [arg for arg in reversed(link_args_3p)
                           if not (arg in seen or seen.add(arg))]
@@ -320,8 +338,11 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
     # Print environment variables and their values
     for env in envs:
         value = ENV_VALS[env.name]
-        if env.name == 'CHPL_TARGET_CPU' and print_format == 'path':
-            value = ENV_VALS['CHPL_RUNTIME_CPU']
+        if print_format == 'path':
+            if env.name == 'CHPL_TARGET_CPU':
+                value = ENV_VALS['CHPL_RUNTIME_CPU']
+            elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
+                value += '-debug'
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path

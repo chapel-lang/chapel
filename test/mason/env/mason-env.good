@@ -1,18 +1,22 @@
 MASON_HOME: $PWD *
 MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
 MASON_OFFLINE: false
+SPACK_ROOT: $PWD/spack
 ----------
 MASON_HOME: $PWD *
 MASON_REGISTRY: foobar|foobar *
 MASON_OFFLINE: false
+SPACK_ROOT: $PWD/spack
 ----------
 MASON_HOME: $PWD *
 MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
 MASON_OFFLINE: true *
+SPACK_ROOT: $PWD/spack
 ---------
 MASON_HOME: $PWD *
 MASON_REGISTRY: mason-registry|https://github.com/chapel-lang/mason-registry
 MASON_OFFLINE: false
+SPACK_ROOT: $PWD/spack
 MASON_CACHED_REGISTRY: $PWD/mason-registry
 ----------
 Print environment variables recognized by mason

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -161,13 +162,12 @@ class SymExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  Symbol* symbol() {
+  Symbol* symbol() const {
     return var;
   }
 
   void setSymbol(Symbol* s);
 };
-
 
 class UnresolvedSymExpr : public Expr {
  public:

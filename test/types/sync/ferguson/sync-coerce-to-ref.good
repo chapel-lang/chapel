@@ -1,3 +1,3 @@
 sync-coerce-to-ref.chpl:5: In function 'test':
 sync-coerce-to-ref.chpl:10: error: value from coercion passed to ref formal 'arg'
-sync-coerce-to-ref.chpl:1: error: to function 'acceptRef' defined here
+sync-coerce-to-ref.chpl:1: note: to function 'acceptRef' defined here

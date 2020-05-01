@@ -1,0 +1,4 @@
+field-init-missing-args-bug.chpl:6: error: type in 'new' expression is missing its argument list
+field-init-missing-args-bug.chpl:18: error: type in 'new' expression is missing its argument list
+field-init-missing-args-bug.chpl:18: error: type in 'new' expression is missing its argument list
+field-init-missing-args-bug.chpl:18: error: type in 'new' expression is missing its argument list

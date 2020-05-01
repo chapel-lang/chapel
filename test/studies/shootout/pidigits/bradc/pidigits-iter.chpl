@@ -34,6 +34,8 @@ proc main() {
 
 
 iter gen_digits(numDigits) {
+  use SysCTypes;
+
   var numer, accum, denom, tmp1, tmp2: mpz_t;
 
   mpz_init_set_ui(numer, 1);               // numer = 1

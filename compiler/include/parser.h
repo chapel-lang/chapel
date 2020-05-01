@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,7 +22,7 @@
 #define _PARSER_H_
 
 class BlockStmt;
-class UseStmt;
+class VisibilityStmt;
 
 #include "symbol.h"
 
@@ -49,10 +50,12 @@ void               setupModulePaths();
 void               addFlagModulePath(const char* newpath);
 
 void               addModuleToParseList(const char* name,
-                                        UseStmt*    newUse);
+                                        VisibilityStmt* newUse);
 
 BlockStmt*         parseString(const char* string,
                                const char* filename,
                                const char* msg);
+
+ModuleSymbol*      parseIncludedSubmodule(const char* name);
 
 #endif

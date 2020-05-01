@@ -19,21 +19,21 @@ rng0.srandom(seed:uint(64), inc0);
 var rngs:width*pcg_setseq_64_xsh_rr_32_rng;
 var incs:width*uint(64);
 
-for j in 1..width {
-  incs(j) = pcg_getvalid_inc((101+4*(j-1)):uint(64));
+for j in 0..#width {
+  incs(j) = pcg_getvalid_inc((101+4*j):uint(64));
   rngs(j).srandom(seed:uint(64), incs(j));
 }
 
 for i in 0..#n {
   writef("% 12u ", rng0.random(inc0));
-  for j in 1..width {
+  for j in 0..#width {
     var r = rngs(j).random(incs(j));
     writef("% 12u ", r);
   }
   writeln();
 }
 
-var rs = makeRandomStream(seed=seed, parSafe=false, eltType=uint(32), algorithm=RNG.PCG);
+var rs = createRandomStream(seed=seed, parSafe=false, eltType=uint(32), algorithm=RNG.PCG);
 
 var got:[0..#n] uint(32);
 
@@ -47,14 +47,14 @@ for i in 0..#n {
 
 writeln("Numbers with skipToNth each time");
 for i in 0..#n {
-  rs.skipToNth(1 + i);
+  rs.skipToNth(i);
   var num = rs.getNext(0, max);
   writeln(num);
   assert(num <= max);
   assert(got[i] == num);
 }
 
-var rs2 = makeRandomStream(seed=seed, parSafe=false, eltType=uint(64), algorithm=RNG.PCG);
+var rs2 = createRandomStream(seed=seed, parSafe=false, eltType=uint(64), algorithm=RNG.PCG);
 
 var max2:uint = (2**32 + max):uint;
 
@@ -73,20 +73,20 @@ got2[n+2] = rs2.getNext();
 
 writeln("Numbers with skipToNth each time - 64");
 for i in 0..#n {
-  rs2.skipToNth(1 + i);
+  rs2.skipToNth(i);
   var num = rs2.getNext(0, max2);
   writeln(num);
   assert(num <= max2);
   assert(got2[i] == num);
 }
-rs2.skipToNth(n + 1);
+rs2.skipToNth(n);
 var num = rs2.getNext();
 assert(got2[n] == num);
 
-rs2.skipToNth(n + 2);
+rs2.skipToNth(n + 1);
 num = rs2.getNext(0, 2**32);
 assert(got2[n+1] == num);
 
-rs2.skipToNth(n + 3);
+rs2.skipToNth(n + 2);
 num = rs2.getNext();
 assert(got2[n+2] == num);

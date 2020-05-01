@@ -1,3 +1,5 @@
+use IO;
+
 config const nRepeat = 10;
 
 proc test(byteRange) {
@@ -22,7 +24,7 @@ proc test(byteRange) {
   const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
                                                       size=nBytes+1);
 
-  if randomBytes.length != nBytes {
+  if randomBytes.size != nBytes {
     halt("Error creating bytes object with correct length");
   }
 
@@ -53,7 +55,7 @@ proc test(byteRange) {
   {
     // write them to a channel
     var bytesWriter = bytesChannel.writer();
-    bytesWriter.writef("%|*s", randomBytes.length, randomBytes);
+    bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
     bytesWriter.close();
   }
 
@@ -61,7 +63,7 @@ proc test(byteRange) {
     // read them into a different object
     var bytesReader = bytesChannel.reader();
     var readBytes = b"";
-    var readLen = randomBytes.length;
+    var readLen = randomBytes.size;
     bytesReader.readf("%|*s", readLen, readBytes);
     bytesReader.close();
     // compare

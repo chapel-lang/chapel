@@ -1,3 +1,5 @@
+use IO;
+
 type newInt=  int;
 var  myInt:   newInt;
 

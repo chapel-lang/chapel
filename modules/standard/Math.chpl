@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,6 +48,8 @@ exception will be generated.
 
 */
 module Math {
+  import HaltWrappers;
+  private use SysCTypes;
 
   //////////////////////////////////////////////////////////////////////////
   // Constants (included in chpldocs)
@@ -1194,7 +1197,15 @@ module Math {
     return a;
   }
 
-
+  /* Returns true if `x` and `y` are approximately equal, else returns false. */
+  inline proc isclose(x, y, rtol = 1e-5, atol = 0.0): bool {
+    if boundsChecking && (rtol < 0) then
+      HaltWrappers.boundsCheckHalt("Input value for rtol must be positive");
+    if boundsChecking && (atol < 0) then
+      HaltWrappers.boundsCheckHalt("Input value for atol must be positive");
+    var diff: real = abs(x-y);
+    return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
+  }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   inline proc j0(x: real(32)): real(32) {

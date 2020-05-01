@@ -1,4 +1,4 @@
-use GMP;
+use GMP, SysCTypes;
 
 inline proc +=(ref x: mpz_t, ref y: mpz_t) {
   mpz_add(x, x, y);

@@ -126,9 +126,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         log_info "Building Chapel component: runtime"
 
         compilers=gnu,cray,intel
-        comms=gasnet,none,ugni
+        comms=none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
-        substrates=gemini,mpi,none
+        substrates=none
         auxfs=none,lustre
 
         log_info "Start build_configs $dry_run $verbose # no make target"
@@ -149,7 +149,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     esac
 
-    venv_targets="test-venv chpldoc"
+    venv_targets="test-venv"
     case ",$components," in
     ( *,venv,* )
         log_info "Building Chapel component: venv ($venv_targets)"
@@ -174,8 +174,10 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
         log_info "Start build_configs $dry_run $verbose -- mason"
 
+        # build mason but don't build chpldoc since it
+        # doesn't build on XE due to Python version dependencies
         $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.mason.log" \
-            --target-compiler=gnu -- mason
+            --target-compiler=gnu -- mason-no-chpldoc
         ;;
     ( * )
         log_info "NO building Chapel component: mason"

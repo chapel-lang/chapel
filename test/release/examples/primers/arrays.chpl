@@ -31,8 +31,8 @@ writeln("Initially, A is: ", A);
 // Arrays can also be declared using the the array literal syntax.
 // Array literals are specified by enclosing a comma separated list of
 // expressions in square brackets.  The domain of the array will be
-// 1-based in each dimension, and the type of the array's element
-// is the type of the first element listed.
+// 0-based, and the type of the array's element is the type of the
+// first element listed.
 //
 var A2 = [-1.1, -2.2, -3.3, -4.4, -5.5];
 
@@ -95,9 +95,10 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 //
 // An array's index set is referred to as a domain -- a first-class
 // language concept that stores the set of indices used to access the
-// array.  The arrays above are declared with the anonymous domains
-// ``{1..n}`` and ``{1..n, 1..n}``.  An array's domain can be accessed
-// using the ``.domain`` method:
+// array.  The arrays A and B above are respectively declared with the
+// anonymous but explicit domains ``{1..n}`` and ``{1..n, 1..n}``.
+// Array A2 above is declared with the implicit domain ``{0..4}``.  An
+// array's domain can be accessed using the ``.domain`` method:
 //
 
 forall (i,j) in B.domain do
@@ -167,7 +168,7 @@ writeln("After initializing C, its value is:\n", C, "\n");
 //
 
 for ij in ProbSpace do
-  D(ij) = ij(1) == ij(2);
+  D(ij) = ij(0) == ij(1);
 
 writeln("After initializing D, its value is:\n", D, "\n");
 

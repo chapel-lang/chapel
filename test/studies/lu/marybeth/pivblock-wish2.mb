@@ -79,7 +79,7 @@ writeln("Factored Matrix:");
 writeln(A);
 
 iterator IterateByBlocks(D,blksize) {
-  var n = D.numIndices;
+  var n = D.size;
   var lo,hi: int;
 
   for i in D by blksize {

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,7 +54,7 @@ proc masonPublish(ref args: list(string)) throws {
     var registryPath = '';
     var username = getUsername();
     var isLocal = false;
-    var travis = hasOptions(args, '--travis');
+    var ci = hasOptions(args, '--ci-check');
     var update = hasOptions(args, '--update');
     var noUpdate = hasOptions(args, '--no-update');
 
@@ -64,7 +65,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if args.size > 2 {
       var potentialPath = args.pop();
-          if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') && (potentialPath != '--upodate') {
+      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') && (potentialPath != '--update') && (potentialPath != '--ci-check') {
         registryPath = potentialPath;
       }
       args.append(potentialPath);
@@ -77,8 +78,11 @@ proc masonPublish(ref args: list(string)) throws {
       isLocal = isRegistryPathLocal(registryPath);
     }
 
-    if checkFlag {
-      check(username, registryPath, isLocal, travis);
+    if checkFlag || ci {
+      if ci then check(username, registryPath, isLocal, ci);
+      else {
+        check(username, registryPath, isLocal, ci);
+      }
     }
     if ((MASON_OFFLINE  && !update) || noUpdate == true) && !falseIfRemotePath() {
       if !isLocal {
@@ -114,7 +118,7 @@ proc masonPublish(ref args: list(string)) throws {
 /* Uses the existence of a colon to see if a passed registryPath is a local or remote registryPath
  */
 proc isRegistryPathLocal(registryPath : string) throws {
-  return registryPath.find(":") == 0;
+  return registryPath.find(":") == -1;
 }
 
 /* When passed a registryPath and whether or not that registryPath is a local or remote registryPath,
@@ -159,7 +163,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
 proc publishPackage(username: string, registryPath : string, isLocal : bool) throws {
   try! {
     const packageLocation = absPath(here.cwd());
-    var stream = makeRandomStream(int);
+    var stream = createRandomStream(int);
     var uniqueDir = stream.getNext(): string;
     const name = getPackageName();
     var safeDir = '';
@@ -348,8 +352,8 @@ proc branchMasonReg(username: string, name: string, safeDir: string, registryPat
 proc getPackageName() throws {
   try! {
     const toParse = open("Mason.toml", iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
-    const name = tomlFile['brick']['name'].s;
+    var tomlFile = owned.create(parseToml(toParse));
+    const name = tomlFile['brick']!['name']!.s;
     return name;
   }
   catch {
@@ -364,8 +368,8 @@ proc getPackageName() throws {
 private proc addPackageToBricks(projectLocal: string, safeDir: string, name : string,registryPath : string, isLocal : bool) throws {
   try! {
     const toParse = open(projectLocal+ "/Mason.toml", iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
-    const versionNum = tomlFile['brick']['version'].s;
+    var tomlFile:owned class? = owned.create(parseToml(toParse));
+    const versionNum = tomlFile!['brick']!['version']!.s;
     if !isLocal {
       if !exists(safeDir + '/mason-registry/Bricks/') {
         throw new owned MasonError('Registry does not have the expected structure. Ensure your registry has a Bricks directory.');
@@ -374,11 +378,11 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         mkdir(safeDir + "/mason-registry/Bricks/" + name);
       }
       if !exists(safeDir + '/mason-registry/Bricks/' + name + "/" + versionNum + ".toml") {
-        const baseToml = tomlFile;
+        const baseToml = tomlFile:owned class;
         var newToml = open(safeDir + "/mason-registry/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
         const url = gitUrl();
-        baseToml["brick"].set("source", url[1..url.length-1]);
+        baseToml["brick"]!.set("source", url[0..<url.size-1]);
         tomlWriter.write(baseToml);
         tomlWriter.close();
         return name + '@' + versionNum;
@@ -397,10 +401,10 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
         mkdir(safeDir + "/Bricks/" + name);
       }
       if !exists(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml") {
-        const baseToml = tomlFile;
+        const baseToml = tomlFile:owned class;
         var newToml = open(safeDir + "/Bricks/" + name + "/" + versionNum + ".toml", iomode.cw);
         var tomlWriter = newToml.writer();
-        baseToml["brick"].set("source", projectLocal);
+        baseToml["brick"]!.set("source", projectLocal);
         tomlWriter.write(baseToml);
         tomlWriter.close();
         const gitMessageString = ('git tag -a v' + versionNum + ' -m  "' + name + '"');
@@ -422,7 +426,7 @@ private proc addPackageToBricks(projectLocal: string, safeDir: string, name : st
 /* check is a function to run a quick list of checks of the package, the registry path, and other issues that may
    prevent a package from being published to a registry.
  */
-proc check(username : string, path : string, trueIfLocal : bool, travis : bool) throws {
+proc check(username : string, path : string, trueIfLocal : bool, ci : bool) throws {
   const spacer = '------------------------------------------------------';
   const package = (ensureMasonProject(here.cwd(), 'Mason.toml') == 'true');
   const projectCheckHome = here.cwd();
@@ -452,7 +456,7 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
     writeln(spacer);
   }
 
-  if package {
+  if package && !ci {
     writeln('Git Remote Check:');
     if doesGitOriginExist() {
       writeln('   Package has a git remote origin and can be published to a remote registry (PASSED)');
@@ -474,7 +478,7 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
   }
   
   writeln(spacer);
-  if package {
+  if package && !ci {
     writeln('Attempting to build package using following options:');
     writeln('   show = false');
     writeln('   release = false');
@@ -513,7 +517,7 @@ proc check(username : string, path : string, trueIfLocal : bool, travis : bool) 
 
   writeln(spacer);
 
-  if travis {
+  if ci {
     if package && moduleCheck(projectCheckHome) {
       attemptToBuild();
       exit(0);
@@ -620,7 +624,7 @@ private proc returnMasonEnv() {
 private proc falseIfRemotePath() {
   var registryInEnv = MASON_REGISTRY;
   for (name, registry) in registryInEnv {
-    if registry.find(':') != 0 {
+    if registry.find(':') != -1 {
       return false;
     }
   }

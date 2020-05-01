@@ -56,12 +56,15 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 # Note that the GCC option -### causes the compiler to not actually
 # compile anything but just print out what it would do to stderr.
 #
+# Note that the first /dev/null (before the stderr redirection) is
+# actually an "input file" for the compilation.
+#
 # -lchpl_lib_token allows the Chapel compiler to know
 # where to put additional arguments (they replace that argument).
 if [[ "$2" == "cray-shasta" ]] ; then
-  COMMANDS=`cc -craype-verbose -### -lchpl_lib_token 2>/dev/null`
+  COMMANDS=`cc -craype-verbose -### -lchpl_lib_token /dev/null 2>/dev/null`
 else
-  COMMANDS=`cc -craype-verbose -### -lhugetlbfs -lchpl_lib_token 2>/dev/null`
+  COMMANDS=`cc -craype-verbose -### -lhugetlbfs -lchpl_lib_token /dev/null 2>/dev/null`
 fi
 
   for arg in $COMMANDS

@@ -93,15 +93,15 @@ proc outputDuplicates(hashAndPath:[] (SHA256Hash, string)) {
     // Look for the group matching
     var next = i + 1;
     while next <= hashAndPath.size &&
-          hashAndPath[i](1) == hashAndPath[next](1) {
+          hashAndPath[i](0) == hashAndPath[next](0) {
       next += 1;
     }
     // Now i..next-1 is the group matching
     if i < next-1 {
-      writeln(hashAndPath[i](1));
+      writeln(hashAndPath[i](0));
       for j in i..next-1 {
-        assert(hashAndPath[i](1) == hashAndPath[j](1));
-        writeln("  ", hashAndPath[j](2));
+        assert(hashAndPath[i](0) == hashAndPath[j](0));
+        writeln("  ", hashAndPath[j](1));
       }
     }
     i = next;
@@ -132,7 +132,7 @@ proc main(args: [] string) {
   //
   // See issues #11344 and #9437.
   for (tup, path) in zip(hashAndPath, paths) {
-    tup(2) = path;
+    tup(1) = path;
   }
 
   // Call the computeHashes function to fill in the SHA256Hash

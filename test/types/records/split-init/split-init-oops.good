@@ -1,0 +1,5 @@
+split-init-oops.chpl:5: In function 'test':
+split-init-oops.chpl:7: error: variable 'a' is not initialized and has no type
+split-init-oops.chpl:8: note: 'a' use here prevents split-init from establishing the type
+split-init-oops.chpl:15: error: variable 'b' is not initialized and has no type
+split-init-oops.chpl:16: note: 'b' use here prevents split-init from establishing the type

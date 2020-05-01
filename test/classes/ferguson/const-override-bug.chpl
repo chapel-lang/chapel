@@ -3,6 +3,7 @@ class myLocale {
   proc name return chpl_name() : string;
 
   proc chpl_name() : string {
+    use HaltWrappers only ;
     HaltWrappers.pureVirtualMethodHalt();
     return "";
   }

@@ -866,6 +866,8 @@ static int pf_cnt_boolean, pf_cnt_counted;
 static gex_HSL_t pf_lock = GEX_HSL_INITIALIZER;
 static gasneti_weakatomic_t progressfn_req_sent = gasneti_weakatomic_init(0);
 static gasneti_weakatomic_t progressfn_rep_rcvd = gasneti_weakatomic_init(0);
+static gex_Event_t pf_events[2];
+static int pf_event_cnt = (sizeof(pf_events) / sizeof(gex_Event_t));
 static void progressfn_reqh(gex_Token_t token, void *buf, size_t nbytes) {
   // TODO-EX: nbytes = MIN(nbytes, gex_AM_MaxReplyMedium(..., GEX_EVENT_NOW, 0, 0));
   nbytes = MIN(nbytes, gex_AM_LUBReplyMedium()); /* In case Reply size smaller than Request */
@@ -890,12 +892,19 @@ static void progressfn_tester(int *counter) {
 #endif
   { static int tmp = 47;
     int sz;
-    gex_RMA_PutNBI(myteam, peer, peersegmid, &tmp, sizeof(tmp), GEX_EVENT_NOW, 0);
-    for (sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
-      gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
-      gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+    gex_Event_TestSome(pf_events, pf_event_cnt, 0);
+    if (pf_events[0] == GEX_EVENT_INVALID) {
+      pf_events[0] = gex_RMA_PutNB(myteam, peer, peersegmid, &tmp, sizeof(tmp), GEX_EVENT_NOW, 0);
     }
-    sz = (gasnet_AMPoll(),gex_NBI_Test(GEX_EC_ALL,0));
+    if (pf_events[1] == GEX_EVENT_INVALID) {
+      // Note _allowrecursion=1, since may run w/i client's access region
+      gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_GET);
+      for (sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
+        gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
+        gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+      }
+      pf_events[1] = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_GET);
+    }
     if (gasneti_diag_havehandlers) {
       const size_t max_sz = MIN(gex_AM_MaxRequestMedium(myteam, peer, GEX_EVENT_NOW, 0, 0),
                                 MIN(64*1024,TEST_SEGSZ/2));
@@ -958,6 +967,7 @@ static void progressfns_test(int id) {
     GASNETI_PROGRESSFNS_DISABLE(gasneti_pf_debug_counted,COUNTED);
     PTHREAD_BARRIER(num_threads);
     for (i=0; i < 1000; i++) { gasnet_AMPoll(); gasneti_sched_yield(); }
+    if (!id) gex_Event_WaitAll(pf_events, pf_event_cnt, 0);
     PTHREAD_BARRIER(num_threads);
     cnt_c = pf_cnt_counted; cnt_b = pf_cnt_boolean;
     PTHREAD_BARRIER(num_threads);

@@ -2,7 +2,7 @@
 
 class C {
   const home = here.id;
-  override proc writeThis(f) { f.write("here=", here.id, " home=", home); }
+  override proc writeThis(f) throws { f.write("here=", here.id, " home=", home); }
 }
 
 for l in Locales do on l do { const c = new borrowed C(); writeln(c); }
@@ -13,8 +13,8 @@ writeln();
 
 use DimensionalDist2D, ReplicatedDim, BlockCycDim;
 
-const dim1 = new unmanaged ReplicatedDim(numLocales);
-const dim2 = new unmanaged BlockCyclicDim(1, 1, 2);
+const dim1 = new ReplicatedDim(numLocales);
+const dim2 = new BlockCyclicDim(1, 1, 2);
 const dmp = newDimensionalDist2D(dim1, dim2, Locales);
 
 const ix = (1, 1);

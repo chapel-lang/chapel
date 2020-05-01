@@ -1,3 +1,5 @@
+use SysCTypes;
+
 proc printit(arg:c_string) {
   extern proc printf(fmt: c_string, str: c_string);
 

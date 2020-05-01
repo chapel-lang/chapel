@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -119,8 +120,8 @@ bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
     static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
     int result = mkdir(this->pathWithoutPostfix.c_str(), dirPerms);
     if (result != 0 && errno != 0 && errno != EEXIST) {
-      USR_FATAL(astr("Failed to create directory: ", this->pathWithoutPostfix.c_str(),
-                   " due to: ", strerror(errno)));
+      USR_FATAL("Failed to create directory: %s due to: %s",
+                this->pathWithoutPostfix.c_str(), strerror(errno));
     }
 
     std::string parent = "";

@@ -4,4 +4,4 @@ writeln(w.hasFirst());	// false
 writeln(w.hasLast());  // false
 writeln(w.first); // undefined (11 is OK)
 writeln(w.last); // undefined (9 is OK)
-writeln(w.length);  // 0
+writeln(w.size);  // 0

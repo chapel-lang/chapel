@@ -17,20 +17,20 @@ proc populate(ref A, ref ADom, nnz: int, seed: int) where isCSArr(A) {
   use Random;
   //const nnz = (ADom._value.parentDom.size * sparsity): int;
   var indices: [1..nnz] 2*int;
-  var randomIndices = makeRandomStream(eltType=int, seed=seed);
+  var randomIndices = createRandomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
     var newIdx = idx;
     while indices.find(newIdx)(1) {
-      newIdx = (randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high),
-                randomIndices.getNext(ADom.dim(2).low, ADom.dim(2).high));
+      newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high),
+                randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
   }
 
   ADom += indices;
 
-  var randomReals = makeRandomStream(eltType=real, seed=seed);
+  var randomReals = createRandomStream(eltType=real, seed=seed);
   for idx in ADom {
     A[idx] = 2.0; //randomReals.getNext();
   }

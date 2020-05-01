@@ -41,7 +41,7 @@ proc =(ref lhs: R, rhs: R) {
   lhs.x = rhs.x;
 }
 
-proc R.writeThis(writer) {
+proc R.writeThis(writer) throws {
   writer.write(x);
 }
 

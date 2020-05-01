@@ -17,7 +17,7 @@ class myseq {
     while ptr != nil {
       var head = ptr;
 
-      ptr = ptr.next;
+      ptr = ptr!.next;
 
       delete head;
     }
@@ -27,7 +27,7 @@ class myseq {
     var anew : unmanaged myseq_node(elementType) = new unmanaged myseq_node(elementType);
     anew.element = e;
     if length > 0 {
-      last.next = anew;
+      last!.next = anew;
       last = anew;
     } else {
       first = anew;
@@ -41,8 +41,8 @@ class myseq {
     write("Sequence (length = ", length, ") (/");
     var tmp = first;
     while tmp != nil {
-      write(tmp.element, " ");
-      tmp = tmp.next;
+      write(tmp!.element, " ");
+      tmp = tmp!.next;
     }
     writeln("/)");
   }

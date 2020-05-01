@@ -1,3 +1,5 @@
+use IO;
+
 var s1 = """This is a string with multiple lines.
   It uses a triple quotation mark to open and close the string.
   Newline escapes are not interpreted: \n <--no newline

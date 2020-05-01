@@ -46,8 +46,8 @@ class List {
     if head == nil then {
       return;
     }
-    var current=head;
-    head=head.next;
+    var current=head!;
+    head=head!.next;
     delete current ;
   }
 
@@ -71,17 +71,17 @@ class List {
     
 
     while(count!=pos-1 && current!=nil) {  
-     current=current.next;
+     current=current!.next;
      count=count+1;
     }
    
-    if current.next==nil then  { 
+    if current!.next==nil then  { 
      return;
     }
   
-    var temp=current.next;
+    var temp=current!.next!;
     var temp2=temp.next;
-    current.next=temp2;
+    current!.next=temp2;
     delete temp;
   }
     
@@ -105,22 +105,22 @@ class List {
     if head == nil then
       return;
 
-    if head.value == value {
-      const match = head;
-      head = head.next;
+    if head!.value == value {
+      const match = head!;
+      head = head!.next;
       delete match;
       return;
     }
 
-    var current = head;
+    var current = head!;
     while current.next != nil {
-      if current.next.value == value {
-        const match = current.next;
-        current.next = current.next.next;
+      if current.next!.value == value {
+        const match = current.next!;
+        current.next = current.next!.next;
         delete match;
         return;
       }
-      current = current.next;
+      current = current.next!;
     }
   }
 
@@ -131,8 +131,8 @@ class List {
   iter these() {
     var current = head;
     while current != nil {
-      const next = current.next;
-      yield current.value;
+      const next = current!.next;
+      yield current!.value;
       current = next;
     }
   }
@@ -140,7 +140,7 @@ class List {
   // Define the style of the output when a list is passed to the write or
   // writeln functions. The values will be written separated by spaces.
   // The argument 'w' is a writeable channel.
-  proc writeThis(w) {
+  proc writeThis(w) throws {
     var first = true;
     for i in this do
       if first {

@@ -126,6 +126,6 @@ Known issues:
 
 Contributors
 ------------
-| Ben Harshbarger [Cray Inc.]
+| Ben Harshbarger [HPE]
 | Nikhil Padmanabhan [Yale University]
 |

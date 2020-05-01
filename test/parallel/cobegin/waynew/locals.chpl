@@ -59,11 +59,11 @@ proc function3() {
 
   var d:unmanaged D = new unmanaged D();
   d.c = new unmanaged C();
-  d.c.a = 2;
+  d.c!.a = 2;
 
   cobegin {
     {
-      d.c.a = c.a * 6;
+      d.c!.a = c.a * 6;
       c.a = 5;
     }
   }

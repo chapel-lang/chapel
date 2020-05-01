@@ -26,5 +26,5 @@ proc main() {
   // the type mismatch between a narrow/local actual and a wide formal.
   //
   var data = new borrowed Foo();
-  printer.print(data);
+  printer!.print(data);
 }

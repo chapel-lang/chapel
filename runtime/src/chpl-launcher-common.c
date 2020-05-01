@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -67,6 +68,21 @@ static void chpl_launch_sanity_checks(const char* argv0) {
     }
     chpl_error(errorMsg, 0, 0);
   }
+}
+
+//
+// Use this utility routine to build up an argv[] list.  Start with
+// *largc==0, *largv==NULL, *largv_len==0, and it will keep those
+// updated as you append args one after another.
+//
+void chpl_append_to_largv(int* largc, const char*** largv, int* largv_len,
+                          const char* arg) {
+  if (*largc >= *largv_len) {
+    *largv_len += 10;
+    *largv = chpl_mem_realloc(*largv, *largv_len * sizeof(**largv),
+                              CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+  }
+  (*largv)[(*largc)++] = (arg);
 }
 
 //
@@ -275,7 +291,7 @@ void get_debugger_wrapper(int* argc, char*** argv) {
   *argv = NULL;
 
   const int use_gdb = (getenv("CHPL_COMM_USE_GDB") != NULL);
-  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB2") != NULL);
+  const int use_lldb = (getenv("CHPL_COMM_USE_LLDB") != NULL);
   if (!use_gdb && !use_lldb) {
     return;
   }
@@ -463,6 +479,7 @@ int chpl_launch_using_system(char* command, char* argv0) {
       printf("%s ", evList);
     }
     printf("%s\n", command);
+    fflush(stdout);
   }
   chpl_launch_sanity_checks(argv0);
   return system(command);

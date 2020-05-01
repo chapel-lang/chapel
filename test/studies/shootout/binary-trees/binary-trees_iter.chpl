@@ -59,8 +59,8 @@ proc itemCheck(T: borrowed Tree): int{
 // for additional testing goodness
 iter postorder(tree: unmanaged Tree?): unmanaged Tree {
   if tree != nil {
-    for child in postorder(tree.left) do yield child;
-    for child in postorder(tree.right) do yield child;
+    for child in postorder(tree!.left) do yield child;
+    for child in postorder(tree!.right) do yield child;
     yield tree!;
   }
 }

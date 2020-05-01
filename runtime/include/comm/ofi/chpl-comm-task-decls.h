@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,8 +29,15 @@
 
 #include "chpltypes.h"
 
+// The type of task private data.
+#include "chpl-cache-task-decls.h"
+#define HAS_CHPL_CACHE_FNS
+
 typedef struct {
-  int numTxnsOut;    // number of transactions outstanding
+  chpl_cache_taskPrvData_t cache_data;
+  void* amo_nf_buff;
+  void* get_buff;
+  void* put_buff;
 } chpl_comm_taskPrvData_t;
 
 //

@@ -14,4 +14,4 @@ class Foo {
 }
 
 var f: borrowed Foo(int)?;
-writeln(f.type!: string);
+writeln(f.type :class :string);

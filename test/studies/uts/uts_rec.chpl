@@ -50,7 +50,7 @@ class TreeNode {
   // By default, children will be empty since it has range [1..0]
   var nChildren: int = 0;
   var childDom = {1..nChildren};
-  var children:  [childDom] unmanaged TreeNode;
+  var children:  [childDom] unmanaged TreeNode?;
 
 
   // Generate this node's children
@@ -73,7 +73,7 @@ class TreeNode {
     forall i in childDom {
       if debug then writeln("  + (", depth, ", ", i, ")");
       children[i]    = new unmanaged TreeNode(depth+1);
-      rng_spawn(hash[1], children[i].hash[1], (i-1):sha_int);
+      rng_spawn(hash[1], children[i]!.hash[1], (i-1):sha_int);
     }
 
     return nChildren;
@@ -221,11 +221,11 @@ proc dfs_count(n: unmanaged TreeNode, wasParallel: bool = false):int {
       var count: sync int = 0;
 
       coforall i in 1..threads_granted {
-        count += dfs_count(n.children[i], true);
+        count += dfs_count(n.children[i]!, true);
       }
 
       for i in threads_granted+1..n.nChildren {
-        count += dfs_count(n.children[i], false);
+        count += dfs_count(n.children[i]!, false);
       }
 
       if (wasParallel) then thread_cnt -= 1;
@@ -235,7 +235,7 @@ proc dfs_count(n: unmanaged TreeNode, wasParallel: bool = false):int {
       var count: int;
 
       for i in n.childDom {
-        count += dfs_count(n.children[i], false);
+        count += dfs_count(n.children[i]!, false);
       }
       return count+1;
     }
@@ -260,12 +260,12 @@ proc create_tree(parent: unmanaged TreeNode, wasParallel: bool = false): int {
 
     // Spawn threads
     coforall i in 1..threads_granted {
-      count += create_tree(parent.children[i], true);
+      count += create_tree(parent.children[i]!, true);
     }
     
     // Run the rest sequentially
     for i in threads_granted+1..parent.nChildren {
-      count += create_tree(parent.children[i], false);
+      count += create_tree(parent.children[i]!, false);
     }
 
     if (wasParallel) then thread_cnt -= 1;
@@ -283,7 +283,7 @@ proc create_tree(parent: unmanaged TreeNode, wasParallel: bool = false): int {
 
 proc destroyTree(tn: unmanaged TreeNode) {
   for child in tn.children do
-    destroyTree(child);
+    destroyTree(child!);
   delete tn;
 }
 

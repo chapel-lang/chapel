@@ -1,3 +1,5 @@
+use IO;
+
 var f = opentmp();
 
 var w = f.writer();

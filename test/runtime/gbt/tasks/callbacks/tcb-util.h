@@ -29,6 +29,8 @@ void tcb_report(void);
 #include "chpl-linefile-support.h"
 
 
+#define TCB_DATA_N 100
+
 static struct tcb_data {
   const char* prefix;
   chpl_task_cb_info_t info;
@@ -60,7 +62,9 @@ static void tcb_record(const char* prefix,
     if (tcb_data_idx < TCB_DATA_N)
       p = &tcb_data[tcb_data_idx++];
     else {
-      fprintf(stderr, "tcb_data_idx overflow at %d!\n", tcb_data_idx);
+      fprintf(stderr,
+              "tcb_data_idx overflow at %d - please increase TCB_DATA_N\n",
+              tcb_data_idx);
       exit(1);
     }
 
@@ -84,7 +88,7 @@ static void tcb_record(const char* prefix,
   }
 
   if (pthread_mutex_unlock(&tcb_data_mux) != 0) {
-    perror("pthread_muutex_lock()");
+    perror("pthread_mutex_unlock()");
     exit(1);
   }
 }
@@ -243,6 +247,33 @@ void tcb_report(void) {
       struct tcb_data* p = &tcb_data[i];
       chpl_task_cb_info_t* pi = &p->info;
 
+      //
+      // If we see an 'end' event for a task but we didn't see its
+      // 'create' and 'begin' events, skip the 'end' one.
+      //
+      if (pi->event_kind == chpl_task_cb_event_kind_end) {
+        chpl_bool sawCreateBegin = false;
+        int ii;
+        for (ii = 0; ii < i; ii++) {
+          if (tcb_data[ii].info.event_kind == chpl_task_cb_event_kind_create
+              && tcb_data[ii].info.iu.full.id == pi->iu.id_only.id) {
+            break;
+          }
+        }
+
+        for ( ; ii < i; ii++) {
+          if (tcb_data[ii].info.event_kind == chpl_task_cb_event_kind_begin
+              && tcb_data[ii].info.iu.full.id == pi->iu.id_only.id) {
+            sawCreateBegin = true;
+            break;
+          }
+        }
+
+        if (!sawCreateBegin) {
+          continue;
+        }
+      }
+
       switch (pi->info_kind) {
       case chpl_task_cb_info_kind_full:
         printf("%s (%ld) %s task %ld @%s:%d, %s executeOn\n",
@@ -273,7 +304,7 @@ void tcb_report(void) {
   }
 
   if (pthread_mutex_unlock(&tcb_data_mux) != 0) {
-    perror("pthread_muutex_lock()");
+    perror("pthread_mutex_unlock()");
     exit(1);
   }
 }

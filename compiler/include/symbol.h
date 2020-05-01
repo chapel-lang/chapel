@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -177,6 +178,7 @@ public:
   void               removeFlag(Flag flag);
   void               copyFlags(const Symbol* other);
 
+  bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
   bool               noDocGen()                                const;
 
@@ -261,7 +263,6 @@ private:
 
 bool isString(Symbol* symbol);
 bool isBytes(Symbol* symbol);
-bool isUserDefinedRecord(Symbol* symbol);
 
 /************************************* | **************************************
 *                                                                             *
@@ -386,7 +387,7 @@ public:
   virtual bool    isVisible(BaseAST* scope)                 const;
 
   bool            requiresCPtr();
-  const char*     intentDescrString();
+  const char*     intentDescrString() const;
 
   GenRet          codegenType();
 
@@ -538,7 +539,7 @@ class TypeSymbol : public Symbol {
   const char* doc;
 
   BlockStmt* instantiationPoint;
-
+  astlocT userInstantiationPointLoc;
 };
 
 /************************************* | **************************************
@@ -603,6 +604,9 @@ public:
 *                                                                             *
 ************************************** | *************************************/
 
+// Checks whether a string is valid in UTF8 encoding
+bool isValidString(std::string str);
+
 // Processes a char* to replace any escape sequences with the actual bytes
 std::string unescapeString(const char* const str, BaseAST* astForError);
 
@@ -611,6 +615,9 @@ VarSymbol *new_StringSymbol(const char *s);
 //
 // Creates a new bytes literal with the given value.
 VarSymbol *new_BytesSymbol(const char *s);
+//
+// Creates a new string or bytes literal with the given value.
+VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
@@ -689,14 +696,18 @@ extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
 extern const char* astr_chpl_manager;
+extern const char* astr_chpl_statementLevelSymbol;
+extern const char* astr_chpl_waitDynamicEndCount;
 extern const char* astr_forallexpr;
 extern const char* astr_forexpr;
 extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
 extern const char* astrBorrow;
+extern const char* astr_init_coerce_tmp;
 
 void initAstrConsts();
 
@@ -731,6 +742,7 @@ extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
+extern Symbol *gSplitInit;
 extern Symbol *gVoid;
 extern Symbol *gNone;
 extern Symbol *gStringC;
@@ -742,7 +754,6 @@ extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
 extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
-extern VarSymbol *gLegacyClasses;
 extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
 extern VarSymbol *gPrivatization;

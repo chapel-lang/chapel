@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,7 +81,7 @@ module ChapelSyncvar {
     if isSupported(t) == false then
       compilerError("sync/single types cannot contain type '", t : string, "'");
 
-    if !chpl_legacyClasses && isNonNilableClass(t) then
+    if isNonNilableClass(t) then
       compilerError("sync/single types cannot contain non-nilable classes");
 
     if isGenericType(t) then
@@ -142,6 +143,19 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    proc init=(const other : _syncvar) {
+      // Allow initialization from compatible sync variables, e.g.:
+      //   var x : sync int = 5;
+      //   var y : sync real = x;
+      if isCoercible(other.valType, this.type.valType) == false {
+        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+        compilerError("cannot initialize ", theseTypes, " ",  because);
+      }
+      this.init(this.type.valType);
+      this.writeEF(other.readFE());
+    }
+
     pragma "dont disable remote value forwarding"
     proc init=(const other : this.valType) {
       this.init(other.type);
@@ -156,12 +170,12 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of sync vars.
-    proc readThis(x) {
+    proc readThis(x) throws {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
     // Do not allow implicit writes of sync vars.
-    proc writeThis(x) {
+    proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
      }
   }
@@ -668,6 +682,19 @@ module ChapelSyncvar {
       isOwned = false;
     }
 
+    proc init=(const other : _singlevar) {
+      // Allow initialization from compatible single variables, e.g.:
+      //   var x : single int = 5;
+      //   var y : single real = x;
+      if isCoercible(other.valType, this.type.valType) == false {
+        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+        compilerError("cannot initialize ", theseTypes, " ",  because);
+      }
+      this.init(this.type.valType);
+      this.writeEF(other.readFF());
+    }
+
     pragma "dont disable remote value forwarding"
     proc init=(const other : this.type.valType) {
       this.init(other.type);
@@ -681,12 +708,12 @@ module ChapelSyncvar {
     }
 
     // Do not allow implicit reads of single vars.
-    proc readThis(x) {
+    proc readThis(x) throws {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
     // Do not allow implicit writes of single vars.
-    proc writeThis(x) {
+    proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
      }
   }
@@ -889,7 +916,7 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
   use AlignedTSupport;
 
   //
@@ -944,10 +971,11 @@ private module SyncVarRuntimeSupport {
   // Native qthreads sync var helpers and externs
   //
 
-  // native qthreads aligned_t sync vars only work on 64-bit platforms right
-  // now, and we only support casting between certain types and aligned_t
+  // native qthreads aligned_t sync vars only work on non-ARM 64-bit platform,
+  // and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
-    return CHPL_TASKS == "qthreads"    &&
+    return CHPL_TASKS == "qthreads" &&
+           CHPL_TARGET_ARCH != "aarch64" &&
            castableToAlignedT(t) &&
            numBits(c_uintptr) == 64;
   }
@@ -1003,11 +1031,11 @@ private module AlignedTSupport {
   }
 
   // read/write support
-  proc aligned_t.writeThis(f) {
+  proc aligned_t.writeThis(f) throws {
     var tmp : uint(64) = this : uint(64);
     f <~> tmp;
   }
-  proc aligned_t.readThis(f) {
+  proc aligned_t.readThis(f) throws {
     var tmp : uint(64);
     f <~> tmp;
     this = tmp : aligned_t;

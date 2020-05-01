@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -527,30 +528,37 @@ static CallExpr* findRealOnCall(FnSymbol* wrapperFn) {
 }
 
 // Insert runningTaskCounter increment and decrement calls for on-stmts.
+// Adjust the callsite to decrement before migrating a task and adjust the
+// wrapper function to increment before calling the body of the moved task.
 //
 // TODO move this into its own pass
 static void addRunningTaskModifiers(void) {
   compute_call_sites();
 
-  forv_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* fn = call->resolvedFunction();
+  std::set<CallExpr*> visited;
+  forv_Vec(CallExpr, taskMigrationCall, gCallExprs) {
+    FnSymbol* fn = taskMigrationCall->resolvedFunction();
     if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {
-      // For non-fast on's increment the local runningTaskCounter before
-      // executing the body. Fast on's run directly in the comm-handler and
-      // will not spawn a task.
+      // Adjust runningTaskCounter in wrapper: For non-fast on's, increment the
+      // runningTaskCounter in the wrapper function before executing the body.
+      // Fast on's run directly in the comm-handler and will not spawn a task.
       if (fn->hasFlag(FLAG_FAST_ON) == false) {
-        CallExpr* call = findRealOnCall(fn);
-        SET_LINENO(call);
-        call->insertBefore(new CallExpr(gChplIncRunningTask));
-        call->insertAfter(new CallExpr(gChplDecRunningTask));
+        CallExpr* onFnCall = findRealOnCall(fn);
+        SET_LINENO(onFnCall);
+        if (visited.count(onFnCall) == 0) {
+          visited.insert(onFnCall);
+          onFnCall->insertBefore(new CallExpr(gChplIncRunningTask));
+          onFnCall->insertAfter(new CallExpr(gChplDecRunningTask));
+        }
       }
 
-      // For on stmts that aren't fast or non-blocking, decrement the local
-      // runningTaskCounter before migrating to a new locale
+      // Adjust runningTaskCounter at the callsite: Before initiating on-stmts
+      // that aren't fast or non-blocking, decrement the runningTaskCounter
+      // before migrating to a new locale
       if (fn->hasEitherFlag(FLAG_NON_BLOCKING, FLAG_FAST_ON) == false) {
-        SET_LINENO(call);
-        call->insertBefore(new CallExpr(gChplDecRunningTask));
-        call->insertAfter(new CallExpr(gChplIncRunningTask));
+        SET_LINENO(taskMigrationCall);
+        taskMigrationCall->insertBefore(new CallExpr(gChplDecRunningTask));
+        taskMigrationCall->insertAfter(new CallExpr(gChplIncRunningTask));
       }
     }
   }
@@ -561,23 +569,6 @@ optimizeOnClauses(void) {
   if (fNoOptimizeOnClauses) {
     addRunningTaskModifiers();
     return;
-  }
-
-  // If we're not using locks, the extern functions in
-  // atomics are local and safe for fast on.
-  if (0 != strcmp(CHPL_ATOMICS, "locks")) {
-    forv_Vec(ModuleSymbol, module, gModuleSymbols) {
-      if( module->hasFlag(FLAG_ATOMIC_MODULE) ) {
-        std::vector<FnSymbol*> moduleFunctions =
-          module->getTopLevelFunctions(true);
-        for_vector(FnSymbol, fn, moduleFunctions) {
-          if( fn->hasFlag(FLAG_EXTERN) ) {
-            fn->addFlag(FLAG_FAST_ON_SAFE_EXTERN);
-            fn->addFlag(FLAG_LOCAL_FN);
-          }
-        }
-      }
-    }
   }
 
   compute_call_sites();

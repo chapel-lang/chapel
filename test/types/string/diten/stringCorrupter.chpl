@@ -1,3 +1,5 @@
+use IO;
+
 config const filename = "stringCorrupterText.txt";
 
 proc main {
@@ -14,7 +16,7 @@ proc toAlpha(s: string) {
   var stripchars: string;
   writeln("toAlpha starting argument: '", s, "'");
 
-  for i in 1..s.length {
+  for i in 0..<s.size {
     if !s[i].isAlpha() then
       stripchars += s[i];
   }

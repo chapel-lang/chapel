@@ -80,6 +80,13 @@ proc Master() {
     socket.send(val);
   }
 
+  // Bytes
+  {
+    var val = socket.recv(bytes);
+    val += b"jumps over the \xff\xff\xff non-UTF8 bytes.";
+    socket.send(val);
+  }
+
   // "Basic" Records
   {
     var val = socket.recv(Foo);
@@ -118,6 +125,14 @@ proc Worker() {
     var val = "The quick brown fox...";
     socket.send(val);
     val = socket.recv(string);
+    writeln("val = ", val);
+  }
+
+  // Bytes
+  {
+    var val = b"The quick \xff\xff\xff brown fox...";
+    socket.send(val);
+    val = socket.recv(bytes);
     writeln("val = ", val);
   }
 

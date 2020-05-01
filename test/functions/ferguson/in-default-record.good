@@ -15,8 +15,6 @@ ending   foo, x=(x = 103) y=(x = 3)
 R.deinit 103
 test4
 R.init 4
-R.init copy 4
 starting foo, x=(x = 4) y=(x = 4)
 ending   foo, x=(x = 104) y=(x = 4)
 R.deinit 104
-R.deinit 4

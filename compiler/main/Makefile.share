@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -27,8 +28,7 @@ MAIN_SRCS =                  \
             version.cpp      \
             PhaseTracker.cpp
 
-SVN_SRCS = $(MAIN_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(MAIN_SRCS)
 
 MAIN_OBJS = \
 	$(MAIN_SRCS:%.cpp=$(MAIN_OBJDIR)/%.$(OBJ_SUFFIX))

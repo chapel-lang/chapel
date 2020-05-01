@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +28,7 @@
 // duplication. If necessary, a locale model using this file
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpMem {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
 
   //////////////////////////////////////////
   //
@@ -63,6 +64,18 @@ module LocaleModelHelpMem {
     pragma "insert line file info"
       extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "always propagate line file info"
+  proc chpl_here_aligned_alloc(alignment:integral, size:integral,
+                               md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+    return chpl_mem_memalign(alignment.safeCast(size_t),
+                             size.safeCast(size_t),
+                             md + chpl_memhook_md_num());
   }
 
   pragma "allocator"

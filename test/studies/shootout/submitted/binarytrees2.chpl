@@ -38,7 +38,7 @@ proc main() {
   forall depth in dynamic(depths) {
     const iterations = 2**(maxDepth - depth + minDepth);
     var sum = 0;
-			
+
     for i in 1..iterations {
       const t = new Tree(depth);
       sum += t.sum();
@@ -64,7 +64,7 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  var left, right: unmanaged Tree;
+  var left, right: unmanaged Tree?;
 
   //
   // A Tree-building initializer
@@ -82,7 +82,7 @@ class Tree {
   proc sum(): int {
     var sum = 1;
     if left {
-      sum += left.sum() + right.sum();
+      sum += left!.sum() + right!.sum();
       delete left, right;
     }
     return sum;

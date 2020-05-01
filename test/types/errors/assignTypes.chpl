@@ -10,8 +10,8 @@ record R {
   }
 }
 
-var myR: R(int);
-var myR2: R(int);
+var myR: R(int) = new R();
+var myR2: R(int) = new R();
 var myR3 = new R();
 
 proc =(ref lhs: R(?t), rhs: R(t)) {

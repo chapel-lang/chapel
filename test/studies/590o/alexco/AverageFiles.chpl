@@ -1,6 +1,7 @@
 /*
 Copied from the sample apps
 */
+use IO;
 
 config var n = 9,                 // the problem size
            filename = "Arr.dat";  // the filename for writing/reading the array

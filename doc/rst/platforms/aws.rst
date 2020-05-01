@@ -166,7 +166,7 @@ Some other common optional configurations are:
 
 See :ref:`chpl-rt-masterip` for details on that environment variable.
 
-.. _GASNet documentation: http://gasnet.lbl.gov/dist/udp-conduit/README
+.. _GASNet documentation: https://gasnet.lbl.gov/dist/udp-conduit/README
 
 **4. Run the program**
 

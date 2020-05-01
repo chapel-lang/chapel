@@ -24,7 +24,7 @@ const emptyNode = (-1,-1);
 
 // Check if we have None.
 proc isNone(x) {
-    return x.numElements == 0;
+    return x.size == 0;
 }
 
 record LocTree {
@@ -94,7 +94,7 @@ record LocTree {
     iter lvl_iter(lvl: int) {
         // AGS - Why are we doing indices.contains(i)?
         for i in locIndices do
-            if i(1) == lvl && locIndices.contains(i) then yield locNodes[i].data;
+            if i(0) == lvl && locIndices.contains(i) then yield locNodes[i].data;
     }
 
     /** Check if there are coefficients in box (lvl, idx)

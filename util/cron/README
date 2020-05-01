@@ -1,7 +1,7 @@
 Cray Testing
 ============
 
-The Chapel team at Cray, Inc. manages a suite of correctness and performance
+The Chapel team at HPE manages a suite of correctness and performance
 tests on a variety of platforms and environments.
 
 TODO: list the cray tests here... (thomasvandoren, 2014-07-01)

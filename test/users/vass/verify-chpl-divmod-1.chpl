@@ -48,6 +48,8 @@ proc launch(type ta, type tb) {
       verify(a:ta, b:tb);
     }
 
+  use IO;
+
   if verbose then
     writeln("%{####}".format(vtestcount - tcv), " var tests ",
             ta:string, ",", tb:string, " -> ",

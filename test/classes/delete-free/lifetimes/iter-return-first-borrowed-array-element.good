@@ -1,5 +1,5 @@
 iter-return-first-borrowed-array-element.chpl:8: In function 'getfirstborrow':
-iter-return-first-borrowed-array-element.chpl:16: error: Scoped variable cannot be returned
+iter-return-first-borrowed-array-element.chpl:21: error: Scoped variable cannot be returned
 iter-return-first-borrowed-array-element.chpl:9: note: consider scope of A
-iter-return-first-borrowed-array-element.chpl:18: error: Scoped variable cannot be returned
+iter-return-first-borrowed-array-element.chpl:23: error: Scoped variable cannot be returned
 iter-return-first-borrowed-array-element.chpl:9: note: consider scope of A

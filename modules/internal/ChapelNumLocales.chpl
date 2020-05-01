@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +21,7 @@
 // ChapelNumLocales.chpl
 //
 module ChapelNumLocales {
+  private use ChapelBase;
 
   extern proc chpl_comm_default_num_locales(): int;
 

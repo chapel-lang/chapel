@@ -1,7 +1,0 @@
-Problem size = 1024 (2**10)
-Bytes per array = 8192
-Total memory required (GB) = 7.62939e-06
-Number of updates = 4096
-
-(execute_on = 768, execute_on_nb = 3) (execute_on = 768, execute_on_fast = 1) (execute_on = 768, execute_on_fast = 1) (execute_on = 768, execute_on_fast = 1)
-Validation: SUCCESS

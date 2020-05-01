@@ -1,0 +1,2 @@
+renameModRenameSymBadAccess4.chpl:8: In function 'main':
+renameModRenameSymBadAccess4.chpl:11: error: 'Foo' undeclared (first use this function)

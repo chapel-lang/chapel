@@ -1,7 +1,7 @@
-use Time;
+public use Time;
 
 use Configs;
-use Potential;
+public use Potential;
 
 record SubTimer {
   var D : domain(string);
@@ -35,7 +35,7 @@ var Timers = new SubTimer("total", "commReduce", "redistribute",
 var RedistTimers = new SubTimer("atomHalo", "updateLinkCells", "pbc", "sort");
 
 inline proc dot(A:vec3, B:vec3) {
-  return A(1)*B(1) + A(2)*B(2) + A(3)*B(3);
+  return A(0)*B(0) + A(1)*B(1) + A(2)*B(2);
 }
 
 proc dateString() {

@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -22,8 +23,7 @@ COMM_SRCS = \
 	$(COMM_LAUNCHER_SRCS) \
 	comm-none.c \
 
-SVN_SRCS = $(COMM_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(COMM_SRCS)
 
 COMM_OBJS = \
 	$(COMM_SRCS:%.c=$(COMM_OBJDIR)/%.o)

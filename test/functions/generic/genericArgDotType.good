@@ -1,4 +1,4 @@
 test/functions/generic/genericArgDotType.chpl:8: error: unresolved call 'foo(color, size)'
-test/functions/generic/genericArgDotType.chpl:4: note: candidates are: foo(x: enumerated, y: x.type)
+test/functions/generic/genericArgDotType.chpl:4: note: candidates are: foo(x: enum, y: x.type)
 test/functions/generic/genericArgDotType.chpl:17: error: unresolved call 'bar(int(8), int(64))'
 test/functions/generic/genericArgDotType.chpl:10: note: candidates are: bar(x: integral, y: x.type)

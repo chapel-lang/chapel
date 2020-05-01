@@ -11,8 +11,8 @@ proc getvalue(pos:string,y) {
   var x = 0.0;
   select pos {
     when "first" do x = y(1);
-    when "last" do x = y(y.numElements);
-    when "middle" do x = y((y.numElements/2):int + y.numElements%2);
+    when "last" do x = y(y.size);
+    when "middle" do x = y((y.size/2):int + y.size%2);
     otherwise writeln("Unrecognized element position");
   }
   return x;

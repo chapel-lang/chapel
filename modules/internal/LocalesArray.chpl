@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +39,7 @@
 //
 
 module LocalesArray {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   // Initialize the rootLocale
   chpl_init_rootLocale();
@@ -50,11 +51,10 @@ module LocalesArray {
   // initialization (see chpl_rootLocaleInitPrivate()).  The copy for
   // locale 0 is set up here for the declaration.
   pragma "locale private"
-  const ref Locales = (rootLocale:borrowed RootLocale?)!.getDefaultLocaleArray();
+  const ref Locales = (rootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
 
   // We don't use the same private "trick" as with Locales above with
   // LocaleSpace/ because it's small enough to not matter.
   const LocaleSpace = Locales.domain;
-
 }
 

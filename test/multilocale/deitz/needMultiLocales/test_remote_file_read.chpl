@@ -1,3 +1,5 @@
+use IO;
+
 var f = open("test_remote_file_read.txt", iomode.r).reader();
 var i: int;
 

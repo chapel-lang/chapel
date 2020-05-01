@@ -20,6 +20,7 @@ proc test() {
   var x = foo(1);
   writeln(x);
   var y = foo(2);
+  ref refY = y;
   writeln(y);
   var z = foo(3);
   writeln(z);

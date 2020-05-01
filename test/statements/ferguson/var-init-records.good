@@ -33,7 +33,13 @@ R = lhs 0 rhs 1
 R deinit 1
 R deinit 1
 R deinit 1
-h
+h1
+R int init 1
+R default init 0
+R = lhs 0 rhs 1
+R deinit 1
+R deinit 1
+h2
 R default init 0
 R int init 1
 R = lhs 0 rhs 1

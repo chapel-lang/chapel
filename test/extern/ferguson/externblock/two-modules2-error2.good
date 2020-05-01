@@ -1,2 +1,2 @@
-two-modules2-error2.chpl:12: error: Symbol 'y' undeclared in module 'A'
-two-modules2-error2.chpl:15: error: Symbol 'y' undeclared in module 'A'
+two-modules2-error2.chpl:13: error: Symbol 'y' undeclared in module 'A'
+two-modules2-error2.chpl:16: error: Symbol 'y' undeclared in module 'A'

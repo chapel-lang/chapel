@@ -1,35 +1,37 @@
-module A {
-  enum foo {b, c, d};
+module weirdEnumHiding {
+  module A {
+    enum foo {b, c, d};
 
-}
-
-module B {
-  use A;
-
-  proc checkFoo() {
-    writeln(foo.b);
   }
-}
 
-module C {
-  private use A;
+  module B {
+    public use A;
 
-  proc checkFoo() {
-    writeln(foo.b);
+    proc checkFoo() {
+      writeln(foo.b);
+    }
   }
-}
 
-module D {
-  use C;
-  use B;
+  module C {
+    private use A;
 
-  proc checkFoo() {
-    writeln(foo.b);
+    proc checkFoo() {
+      writeln(foo.b);
+    }
   }
-}
 
-proc main() {
-  B.checkFoo();
-  C.checkFoo();
-  D.checkFoo();
+  module D {
+    public use C;
+    public use B;
+
+    proc checkFoo() {
+      writeln(foo.b);
+    }
+  }
+
+  proc main() {
+    B.checkFoo();
+    C.checkFoo();
+    D.checkFoo();
+  }
 }

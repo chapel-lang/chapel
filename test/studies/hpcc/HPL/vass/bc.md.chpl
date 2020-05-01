@@ -29,10 +29,8 @@ type indexType = int,
 //
 config const tl1 = 2,
              tl2 = 2;
-var tla: [0..#tl1, 0..#tl2] locale;
 var tld: bool;  // whether our targetLocales are all distinct
-
-setupTargetLocales();
+var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
@@ -58,13 +56,13 @@ const MatVectSpace = {1..n, 1..n+1};
 const
   bdim1 =
 //  new BlockDim(tl1, 1, nbb1), //MBD //BD
-    new unmanaged BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1, name="D1"), //MBC //BC
-  rdim1 = new unmanaged ReplicatedDim(tl1),
+    new BlockCyclicDim(lowIdx=st1, blockSize=blkSize, numLocales=tl1), //MBC //BC
+  rdim1 = new ReplicatedDim(tl1),
 
   bdim2 =
 //  new BlockDim(tl2, 1, nbb2), //MBD //BD
-    new unmanaged BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2, name="D2"), //MBC //BC
-  rdim2 = new unmanaged ReplicatedDim(tl2);
+    new BlockCyclicDim(lowIdx=st2, blockSize=blkSize, numLocales=tl2), //MBC //BC
+  rdim2 = new ReplicatedDim(tl2);
 
 const AbD: domain(2, indexType)
 // dmapped Block(boundingBox={1..nbb1, 1..nbb2}, targetLocales=tla) //MBD
@@ -135,58 +133,59 @@ proc LUFactorize() {
 }
 
 proc schurComplement(AD, BD, Rest) {
-  vwln("schurComplement(", BD.dim(1).low, ",", AD.dim(2).low, ")",
+  vwln("schurComplement(", BD.dim(0).low, ",", AD.dim(1).low, ")",
        //"  [2] ", Rest.low, "\n", "  AD ", AD, "  BD ", BD,
-       if BD.dim(1).low < 10 then "  " else "",
+       if BD.dim(0).low < 10 then "  " else "",
        "  Rest ", Rest);
 
 // If Rest is empty, panelSolve and updateBlockRow are still meaningful?
 // Otherwise don't invoke schurComplement at all.
-  if Rest.numIndices == 0 {
+  if Rest.size == 0 {
     vwln("  Rest is empty");
     return;
   }
 
-  vwln("  replA", replA.domain, " = Ab", AD, "  ", {1..n, AD.dim(2)});
-  vwln("  replB", replB.domain, " = Ab", BD, "  ", {BD.dim(1), 1..n+1});
+  vwln("  replA", replA.domain, " = Ab", AD, "  ", {1..n, AD.dim(1)});
+  vwln("  replB", replB.domain, " = Ab", BD, "  ", {BD.dim(0), 1..n+1});
 
   // TODO later: only assign from Ab[AD] and Ab[BD], resp.
-  // Note: AD.dim(2)  and BD.dim(1) are always blkSize wide;
-  // AD.dim(1)==Rest.dim(1) and BD.dim(2)==Rest.dim(2) are not necessarily
+  // Note: AD.dim(1)  and BD.dim(0) are always blkSize wide;
+  // AD.dim(0)==Rest.dim(0) and BD.dim(1)==Rest.dim(1) are not necessarily
   // a multiple of blkSize (but are always non-empty if Rest is non-empty).
 
   // replicating into replA, replB
-  coforall dest in tla[tla.domain.dim(1).high, tla.domain.dim(2)] do
+  coforall dest in tla[tla.domain.dim(0).high, tla.domain.dim(1)] do
     on dest do
       { vwln("copying to replA on ", here.id);
-      replA = Ab[1..n, AD.dim(2)];
+      replA = Ab[1..n, AD.dim(1)];
       }
-  coforall dest in tla[tla.domain.dim(1), tla.domain.dim(2).high] do
+  coforall dest in tla[tla.domain.dim(0), tla.domain.dim(1).high] do
     on dest do
       { vwln("copying to replB on ", here.id);
-      replB = Ab[BD.dim(1), 1..n+1];
+      replB = Ab[BD.dim(0), 1..n+1];
       }
 
   forall (row,col) in Rest by (blkSize, blkSize) {
 
-    vwln("  dgemm(", (Rest.dim(1))(row..#blkSize), ",",
-                     (Rest.dim(2))(col..#blkSize), ")  on ", here.id);
+    vwln("  dgemm(", (Rest.dim(0))(row..#blkSize), ",",
+                     (Rest.dim(1))(col..#blkSize), ")  on ", here.id);
 
     // This might be an implementation bug, as 'Rest' supports privatization.
     const RestLcl = Rest;
 
     local {
-      for a in (RestLcl.dim(1))(row..#blkSize) do
+      for a in (RestLcl.dim(0))(row..#blkSize) do
         for w in 1..blkSize do
-          for b in (RestLcl.dim(2))(col..#blkSize) do
+          for b in (RestLcl.dim(1))(col..#blkSize) do
             Ab[a,b] -= replA[a,w] * replB[w,b];
     }
   }
 }
 
 proc setupTargetLocales() {
+  var tla: [0..#tl1, 0..#tl2] locale;
   writeln("setting up for ", tl1, "*", tl2, " locales");
-  tld = numLocales >= tla.numElements;
+  tld = numLocales >= tla.size;
   if tld {
     var i = 0;
     for l in tla { l = Locales[i]; i += 1; }
@@ -195,6 +194,7 @@ proc setupTargetLocales() {
     tla = Locales(0);
   }
   vwln("target locales =\n", tla, "\n");
+  return tla;
 }
 
 // random initialization
@@ -276,8 +276,8 @@ proc schurComplementRef(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domai
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
-  for (iA, iC) in zip(A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in zip(A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in zip(B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
+    for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
+      for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }

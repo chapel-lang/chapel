@@ -761,18 +761,6 @@ GASNETE_DT_APPLY(GASNETE_RATOMIC_DISP)
 #endif
 
 /*---------------------------------------------------------------------------------*/
-//
-// Hook for conduit-specific additions
-//
-// To use, #define GASNETE_HAVE_RATOMIC_EXTRA_H in the conduit's
-// gasnet_extended_fwd.h or gasnet_ratomic_fwd.h.
-//
-
-#ifdef GASNETE_HAVE_RATOMIC_EXTRA_H
-  #include <gasnet_ratomic_extra.h>
-#endif
-
-/*---------------------------------------------------------------------------------*/
 
 GASNETI_END_NOWARN
 GASNETI_END_EXTERNC

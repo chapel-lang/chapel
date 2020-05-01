@@ -1,3 +1,4 @@
+use IO;
 use Path;
 
 /* Tests IO.file.getParentName() function */

@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern record R {
   var x: c_int;
 }

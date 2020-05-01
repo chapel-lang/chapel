@@ -1,3 +1,5 @@
+use IO;
+
 var filename = "remote-file.chpl";
 var f = open(filename, iomode.r);
 

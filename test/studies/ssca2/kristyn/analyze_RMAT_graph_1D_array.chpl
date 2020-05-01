@@ -111,7 +111,7 @@ module analyze_RMAT_graph_1D_array {
          }
          else
          {
-           if (neighbor_count >= Row_Neighbors.numElements) {
+           if (neighbor_count >= Row_Neighbors.size) {
              grow_helper();
            }
            neighbor_count += 1;
@@ -123,7 +123,7 @@ module analyze_RMAT_graph_1D_array {
 
       proc grow_helper() {
           halt("Should not call grow_helper");
-          var new_nd = Row_Neighbors.numElements + 1;
+          var new_nd = Row_Neighbors.size + 1;
           nd = [1..new_nd];
       }
 

@@ -1,5 +1,6 @@
-if unicodeSupported() {
+use IO;
 
+if unicodeSupported() {
   var f = opentmp();
 
   var euro = new ioChar(0x20ac); // euro sign "?";

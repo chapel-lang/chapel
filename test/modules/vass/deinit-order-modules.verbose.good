@@ -30,7 +30,7 @@ uv4ae.deinit UC
   LocalesArray
   LocaleModel
   DefaultRectangular
-  IO
   ChapelArray
   Sort
+  IO
   ChapelLocale

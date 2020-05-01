@@ -1,3 +1,4 @@
+use IO;
 
 const dom = {1..10, 1..10};
 const slice = {1..10, 1..5};

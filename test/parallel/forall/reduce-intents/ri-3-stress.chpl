@@ -45,7 +45,7 @@ proc onetestLF(ri: int) {
   check(resultLF, 66 + sum(1..t) * y + sum(1..y) * t, ri, "leader-follower");
 }
 
-proc sum(r) { const l = r.length; return l * (l+1) / 2; }
+proc sum(r) { const l = r.size; return l * (l+1) / 2; }
 
 proc check(actual, expected, ri, name) {
   if actual == expected then return; // OK!

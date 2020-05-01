@@ -1,3 +1,5 @@
+use IO;
+
 class R {
   var a:int;
   var b:int;

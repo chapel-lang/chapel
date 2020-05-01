@@ -17,7 +17,7 @@ proc ok0() {
     var bb = own.borrow();
     b = returnsGlobalBorrow(bb);
   }
-  writeln(b.x);
+  writeln(b!.x);
 }
 ok0();
 
@@ -33,7 +33,7 @@ proc ok1() {
     var b = getGlobalHashtableElement(own.borrow());
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok1();
 
@@ -65,7 +65,7 @@ proc ok3() {
     var b = returnOneOfThem(innerOwn, outerOwn);
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok3();
 
@@ -80,7 +80,7 @@ proc ok4() {
     var b = getGlobalHashtableElementGeneric(own.borrow());
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok4();
 
@@ -96,6 +96,6 @@ proc ok5() {
     var b = returnOneOfThemGeneric(innerOwn.borrow(), outerOwn.borrow());
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok5();

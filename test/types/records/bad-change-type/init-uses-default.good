@@ -1,0 +1,2 @@
+init-uses-default.chpl:11: error: Cannot default-initialize a variable with generic type
+init-uses-default.chpl:11: note: 'xx' has generic type 'R'

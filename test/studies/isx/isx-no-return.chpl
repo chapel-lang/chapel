@@ -307,7 +307,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
   forall i in 0..#myBucketSize {
     const key = allBucketKeys[bucketID][i];
     if !myKeys.contains(key) then
-      halt("got key value outside my range: "+key + " not in " + myKeys:string);
+      halt("got key value outside my range: " + key:string + " not in " + myKeys:string);
   }
 
   //
@@ -315,7 +315,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
   //
   const myTotalLocalKeys = + reduce myLocalKeyCounts.read();
   if myTotalLocalKeys != myBucketSize then
-    halt("local key count mismatch:" + myTotalLocalKeys + " != " + myBucketSize);
+    halt("local key count mismatch:" + myTotalLocalKeys:string + " != " + myBucketSize:string);
 
   //
   //
@@ -323,7 +323,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
   verifyKeyCount.add(myBucketSize);
   barrier.barrier();
   if verifyKeyCount.read() != totalKeys then
-    halt("total key count mismatch: " + verifyKeyCount.read() + " != " + totalKeys);
+    halt("total key count mismatch: " + verifyKeyCount.read():string + " != " + totalKeys:string);
 
   if (!quiet && bucketID == 0) then
     writeln("\nVerification successful!");

@@ -1,0 +1,6 @@
+error message: ownership transfer points to wrong line
+
+This test should generate an error similar to the one it is, but
+the ownership transfer here is pointing to the wrong line; its
+declaration rather than where the ownership transfer actually
+occurs (in a task intent).

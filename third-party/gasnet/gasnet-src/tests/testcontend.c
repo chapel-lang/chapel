@@ -351,7 +351,7 @@ int main(int argc, char **argv) {
         for (i = 1; i <= maxthreads; i++) { ptcount->activecnt = i; ptcount->passivecnt = 1; ptcount++; }
         for (i = 1; i <= maxthreads; i++) { ptcount->activecnt = 1; ptcount->passivecnt = i; ptcount++; }
         for (i = 1; i <= maxthreads; i++) { ptcount->activecnt = i; ptcount->passivecnt = i; ptcount++; }
-        peer = myrank ^ 1;
+        peer = (myrank + 1) % numranks;
         amactive = (myrank % 2 == 0);
 
         peerseg = TEST_SEG(peer);

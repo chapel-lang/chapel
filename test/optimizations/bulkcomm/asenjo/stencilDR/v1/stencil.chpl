@@ -5,14 +5,13 @@ Halo communications are implemented a la MPI:
 explicit Data[localeA].DR[sliceHalo]=Data[localeB].DR[sliceSource]
 */
 
-use BlockDist;
+public use BlockDist;
 use util;
 
 config const n=2, m=3: int;
 config const g=3, h=3;
 const gridDom = {1..g, 1..h};
-var gridLocales: [gridDom] locale;
-setupGridLocales();
+var gridLocales: [gridDom] locale = setupGridLocales();
 
 type elType = real;
 //const adjcoords = ((0,-1), (-1,0), (0,1), (1,0));

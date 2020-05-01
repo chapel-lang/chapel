@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -177,6 +178,16 @@ void deadExpressionElimination(FnSymbol* fn) {
             if (lhs->symbol() == rhs->symbol())
               expr->remove();
 
+      // remove calls to chpl__convertValueToRuntimeType or other
+      // functions returning a runtime type where the returned value
+      // is not captured at all. Note that RUNTIME_TYPE_VALUE values
+      // are not currently subject to the return-by-ref transformation.
+      if (FnSymbol* calledFn = expr->resolvedFunction()) {
+        if (calledFn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
+          if (expr->isStmtExpr())
+            expr->remove();
+      }
+
     } else if (CondStmt* cond = toCondStmt(ast)) {
       // Compensate for deadBlockElimination
       if (cond->condExpr == NULL) {
@@ -197,7 +208,7 @@ void deadExpressionElimination(FnSymbol* fn) {
 
         // NOAKES 2014/11/14 It's "odd" that folding is being done here
         } else {
-          cond->foldConstantCondition();
+          cond->foldConstantCondition(false);
         }
 
         // NOAKES 2014/11/14 Testing suggests this is always a NOP
@@ -322,10 +333,7 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
 //
 //   def  new_temp  : string; // defTemp
 //
-//   def  ret  : string;  // defFactoryTemp
-//   call init(ret);  // defaultInit
-//   call initWithBorrowedBuffer(ret, c"literal string", ...);  // factoryCall
-//   move new_temp, ret   //tmpMove
+//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
 //
 //   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
 //
@@ -333,26 +341,17 @@ static void removeDeadStringLiteral(DefExpr* defExpr) {
   SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
 
   // Step backwards from 'defn'
-  Expr* lastMove    = defn->getStmtExpr();
-  Expr* tmpMove    = lastMove->prev;
-  Expr* factoryCall    = tmpMove->prev;
-  Expr* defaultInit = factoryCall->prev;
-  Expr* defFactoryTemp = defaultInit->prev;
-  Expr* defTemp = defFactoryTemp->prev;
+  Expr* lastMove = defn->getStmtExpr();
+  Expr* factoryCall = lastMove->prev;
+  Expr* defTemp = factoryCall->prev;
 
   // Simple sanity checks
-  INT_ASSERT(isDefExpr (defTemp));
-  INT_ASSERT(isDefExpr (defFactoryTemp));
-  INT_ASSERT(isCallExpr(defaultInit));
+  INT_ASSERT(isDefExpr(defTemp));
   INT_ASSERT(isCallExpr(factoryCall));
-  INT_ASSERT(isCallExpr(tmpMove));
   INT_ASSERT(isCallExpr(lastMove));
 
   lastMove->remove();
-  tmpMove->remove();
   factoryCall->remove();
-  defaultInit->remove();
-  defFactoryTemp->remove();
   defTemp->remove();
 
   defExpr->remove();

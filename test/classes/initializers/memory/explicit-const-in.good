@@ -1,7 +1,5 @@
 R.init: 0
 R.init=(R): 1
-R.init=(R): 2
+c = {r = (x = 1)}
 R.deinit: 1
-c = {r = (x = 2)}
-R.deinit: 2
 R.deinit: 0

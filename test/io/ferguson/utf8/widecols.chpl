@@ -1,3 +1,4 @@
+use IO;
 
 /*
 extern proc qio_set_glocale();

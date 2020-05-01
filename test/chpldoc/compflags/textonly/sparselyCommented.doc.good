@@ -1,7 +1,12 @@
+sparselyCommented.doc.chpl:36: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'sparselyCommented.doc' is being introduced to contain the file's contents.
 sparselyCommented.doc
 
 Usage:
    use sparselyCommented.doc;
+
+or
+
+   import sparselyCommented.doc;
 
 Submodules for this module are located in the sparselyCommented.doc/ directory
 
@@ -25,6 +30,10 @@ Other
 
 Usage:
    use sparselyCommented.doc.Other;
+
+or
+
+   import sparselyCommented.doc.Other;
 
    proc inside()
       Comment for method inside module 

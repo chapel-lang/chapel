@@ -3,6 +3,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
+use IO, SysCTypes;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
@@ -10,8 +11,9 @@ config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
   const stdin = openfd(0);
-  var input = stdin.reader(iokind.native, locking=false);
-  var len = stdin.length();
+  var input = stdin.reader(iokind.native, locking=false,
+                           hints=QIO_HINT_PARALLEL);
+  var len = stdin.size;
   var data : [0..#len] uint(8);
   
   sync { // wait for all process() tasks to complete before continuing
@@ -78,7 +80,7 @@ proc process(data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.numBytes by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs.byte(i) != "\n".toByte() then
       table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);

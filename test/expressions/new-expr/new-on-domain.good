@@ -1,2 +1,2 @@
 new-on-domain.chpl:1: In function 'main':
-new-on-domain.chpl:2: error: invalid use of 'new' on chpl__buildDomainRuntimeType
+new-on-domain.chpl:2: error: Attempt to 'new' a function or undefined symbol

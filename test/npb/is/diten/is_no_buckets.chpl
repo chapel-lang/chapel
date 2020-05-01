@@ -233,7 +233,7 @@ proc fullVerify() {
     keyArray(ranks(buffer(i))) = buffer(i);
   }
 
-  for i in 0..D.numIndices-2 {
+  for i in 0..D.size-2 {
     if (keyArray(i) > keyArray(i+1)) then failures += 1;
   }
 

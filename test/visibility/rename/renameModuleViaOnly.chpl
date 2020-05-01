@@ -1,7 +1,9 @@
-module Toolbox {
-  var x = 1;
-}
+module OuterModule {
+  module Toolbox {
+    var x = 1;
+  }
 
-proc main() {
-  use Toolbox only Toolbox as tb; // This should not compile
+  proc main() {
+    use Toolbox only Toolbox as tb; // This should not compile
+  }
 }

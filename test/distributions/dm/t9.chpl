@@ -11,10 +11,8 @@ setupLocales(s1, s2);
 
 /////////// distribution
 
-var vdf = new unmanaged BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1,
-                              name="D1");
-var sdf = new unmanaged BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2,
-                              name="D2");
+var vdf = new BlockCyclicDim(lowIdx=-100, blockSize=3, numLocales=s1);
+var sdf = new BlockCyclicDim(lowIdx=-10, blockSize=2, numLocales=s2);
 
 hd("new DimensionalDist2D()");
 var ddf = new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "ddf");
@@ -102,49 +100,19 @@ tl();
 
 /////////// privatization
 
+fphase(91);
 hd("privatization tests");
-if manylocs {
-  if traceDimensionalDist {
-    msg("skipped because traceDimensionalDist = true");
-  } else {
-    proc test(locIds, arrIdx, expVal) {
-      on mylocs(locIds) {
-        msg(" mylocs", locIds, "  dmarr", arrIdx, "  expecting ", expVal,
-            "  on ", here.id);
-        var temp = 999999;
-        const idx = arrIdx;
-        assert(temp != expVal);
-        local {
-          temp = dmarr(idx);
-        }
-        if temp != expVal then
-          msg("*** error: expected ", expVal, ", got ", temp);
 
-      }
-    }  // proc test
+privTest(dmarr, (0,0), (1,2), 12);
+privTest(dmarr, (0,0), (1,3), 13);
+privTest(dmarr, (0,0), (3,2), 32);
 
-    test((0,0), (1,2), 12);
-    test((0,0), (1,3), 13);
-    test((0,0), (3,2), 32);
+privTest(dmarr, (0,1), (2,4), 24);
+privTest(dmarr, (0,1), (1,5), 15);
+privTest(dmarr, (0,1), (3,4), 34);
 
-    test((0,1), (2,4), 24);
-    test((0,1), (1,5), 15);
-    test((0,1), (3,4), 34);
+privTest(dmarr, (0,2), (2,7), 27);
+privTest(dmarr, (0,2), (4,6), 46);
+privTest(dmarr, (0,2), (5,1), 51);
 
-    test((0,2), (2,7), 27);
-    test((0,2), (4,6), 46);
-    test((0,2), (5,1), 51);
-  }
-} else {
-  msg("skipped because of oversubscribing Locales(0)");
-}
 tl();
-
-// Does not presently work (see t3.future). Once it does, replace the above.
-//
-//hd("privatization tests");
-//privTest(dmarr, (0,0), (1,2), 12);
-//privTest(dmarr, (0,1), (2,3), 23);
-//privTest(dmarr, (1,0), (3,1), 0);
-//privTest(dmarr, (1,1), (3,3), 0);
-//tl();

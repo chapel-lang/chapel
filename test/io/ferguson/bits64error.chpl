@@ -1,4 +1,6 @@
 // Configuration Constants
+use IO;
+
 config const n = 2048;
 config const fname = "error.data";
 

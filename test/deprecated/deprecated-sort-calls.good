@@ -1,7 +1,0 @@
-deprecated-sort-calls.chpl:6: warning: bubbleSort is deprecated - please use sort
-deprecated-sort-calls.chpl:7: warning: heapSort is deprecated - please use sort
-deprecated-sort-calls.chpl:8: warning: insertionSort is deprecated - please use sort
-deprecated-sort-calls.chpl:9: warning: binaryInsertionSort is deprecated - please use sort
-deprecated-sort-calls.chpl:10: warning: mergeSort is deprecated - please use sort
-deprecated-sort-calls.chpl:11: warning: quickSort is deprecated - please use sort
-deprecated-sort-calls.chpl:12: warning: selectionSort is deprecated - please use sort

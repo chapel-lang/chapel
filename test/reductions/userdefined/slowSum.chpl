@@ -13,6 +13,8 @@ class slowSum: ReduceScanOp {
   }
 
   proc accumulateOntoState(ref state, value) {
+    use SysCTypes;
+
     var exp: c_int;
     extern proc frexp(value: real, ref exp: c_int): real;
     frexp(value, exp);

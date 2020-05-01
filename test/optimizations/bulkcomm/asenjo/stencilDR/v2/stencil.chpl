@@ -21,8 +21,8 @@ config const gx=3, gy=3;
 const gridDom = {1..gx, 1..gy};
 const gridBig = {0..gx+1, 0..gy+1};
 
-var gridLocales: [gridDom] locale;
-setupGridLocales();
+var gridLocales: [gridDom] locale = setupGridLocales();
+
 const gridDist = gridDom dmapped Block(gridDom, gridLocales);
 
 /////////// the computation data and index sets ///////////
@@ -63,10 +63,8 @@ class GlobalInfo {
 
 // constructor for GlobalInfo
 proc GlobalInfo.init() {
-  this.complete();
-  forall ((ix,iy), inf) in zip(gridDist, infos) {
-    inf = new unmanaged LocalInfo(mygx=ix, mygy=iy);
-  }
+  infos = forall (ix,iy) in gridDist do
+            new unmanaged LocalInfo(mygx=ix, mygy=iy);
 }
 
 proc GlobalInfo.deinit() {
@@ -103,14 +101,20 @@ class GlobalData {
 // constructor for GlobalData
 proc GlobalData.init(nameArg: string) {
   name=nameArg;
-  this.complete();
-  forall (inf, dat, loc) in zip(WI.infos, datas, gridLocales) {
+  datas = forall (inf, loc) in zip(WI.infos, gridLocales) do
+            createAndCheckLocalData(inf, loc);
+
+  proc createAndCheckLocalData(inf, loc) {
+    const dat;
     dat = new unmanaged LocalData(inf);
     // sanity checks
     assert(dat.locale == loc);
     assert(dat.linfo.locale == loc);
     assert(dat.linfo == inf);
+    return dat;
   }
+
+  this.complete();
 
   /// get and store pointers to neighbor data slices ///
 

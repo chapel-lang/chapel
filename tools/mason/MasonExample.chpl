@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,6 +20,7 @@
 
 
 private use List;
+private use Map;
 use TOML;
 use Spawn;
 use MasonUtils;
@@ -39,7 +41,7 @@ proc masonExample(args) {
   var force = false;
   var noUpdate = false;
   var update = false;
-  var examples: list(string); 
+  var examples: list(string);
   for arg in args {
     if arg == '--show' {
       show = true;
@@ -89,8 +91,8 @@ private proc getBuildInfo(projectHome: string) {
   // parse lock and toml(examples dont make it to lock file)
   const lock = open(projectHome + "/Mason.lock", iomode.r);
   const toml = open(projectHome + "/Mason.toml", iomode.r);
-  const lockFile = new owned(parseToml(lock));
-  const tomlFile = new owned(parseToml(toml));
+  const lockFile = owned.create(parseToml(lock));
+  const tomlFile = owned.create(parseToml(toml));
   
   // Get project source code and dependencies
   const sourceList = genSourceList(lockFile);
@@ -101,7 +103,7 @@ private proc getBuildInfo(projectHome: string) {
   // have for good performance.
   //
   getSrcCode(sourceList, false);
-  const project = lockFile["root"]["name"].s;
+  const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
   
   // get the example names from lockfile or from example directory
@@ -126,18 +128,17 @@ private proc getBuildInfo(projectHome: string) {
 // returns assoc array of <example_name> -> <(compopts, execopts)>
 private proc getExampleOptions(toml: Toml, exampleNames: list(string)) {
 
-  var exampleDomain: domain(string);
-  var exampleOptions: [exampleDomain] (string, string);
+  var exampleOptions = new map(string, (string, string));
   for example in exampleNames {
     const exampleName = basename(stripExt(example, ".chpl"));
     exampleOptions[exampleName] = ("", "");
     if toml.pathExists("".join("examples.", exampleName, ".compopts")) {
-      var compopts = toml["".join("examples.", exampleName)]["compopts"].s;
-      exampleOptions[exampleName][1] = compopts;
+      var compopts = toml["".join("examples.", exampleName)]!["compopts"]!.s;
+      exampleOptions[exampleName][0] = compopts;
     }
     if toml.pathExists("".join("examples.", exampleName, ".execopts")) {
-      var execopts = toml["".join("examples.", exampleName)]["execopts"].s;
-      exampleOptions[exampleName][2] = execopts;
+      var execopts = toml["".join("examples.", exampleName)]!["execopts"]!.s;
+      exampleOptions[exampleName][1] = execopts;
     }
   }
   return exampleOptions;
@@ -199,12 +200,12 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
-    const buildInfo = getBuildInfo(projectHome);
-    const sourceList = buildInfo[1];
-    const projectPath = buildInfo[2];
-    const compopts = buildInfo[3];
-    const exampleNames = buildInfo[4];
-    const perExampleOptions = buildInfo[5];
+    var buildInfo = getBuildInfo(projectHome);
+    const sourceList = buildInfo[0];
+    const projectPath = buildInfo[1];
+    const compopts = buildInfo[2];
+    const exampleNames = buildInfo[3];
+    const perExampleOptions = buildInfo[4];
     const projectName = basename(stripExt(projectPath, ".chpl"));
     
     var numExamples = exampleNames.size;
@@ -221,8 +222,8 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
         // retrieves compopts and execopts found per example in the toml file      
         const optsFromToml = perExampleOptions[exampleName];
-        var exampleCompopts = optsFromToml[1];
-        var exampleExecopts = optsFromToml[2];
+        var exampleCompopts = optsFromToml[0];
+        var exampleExecopts = optsFromToml[1];
 
         if release then exampleCompopts += " --fast";
 
@@ -289,7 +290,9 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
 
   const exampleResult = runWithStatus(command, true);
   if exampleResult != 0 {
-    throw new owned MasonError("Mason failed to find and run compiled example: " + exampleName + ".chpl");
+    throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\n" +
+    "Try running: mason build --example " + exampleName + ".chpl\n" +
+    "         or: mason run --example " + exampleName + ".chpl --build");
   }
 }  
 
@@ -318,7 +321,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
 
   if toml.pathExists("examples.examples") {
 
-    var examples = toml["examples"]["examples"].toString();
+    var examples = toml["examples"]!["examples"]!.toString();
     var strippedExamples = examples.split(',').strip('[]');
     for example in strippedExamples {
       const t = example.strip().strip('"');
@@ -341,16 +344,16 @@ private proc getExamples(toml: Toml, projectHome: string) {
 /* Gets the path of the example by following the example dir */
 proc getExamplePath(fullPath: string, examplePath = "") : string {
   var split = splitPath(fullPath);
-  if split[2] == "example" {
+  if split[1] == "example" {
     return examplePath;
   }
   else {
     if examplePath == "" {
-      return getExamplePath(split[1], split[2]);
+      return getExamplePath(split[0], split[1]);
     }
     else {
-      var appendedPath = joinPath(split[2], examplePath);
-      return getExamplePath(split[1], appendedPath);
+      var appendedPath = joinPath(split[1], examplePath);
+      return getExamplePath(split[0], appendedPath);
     }
   }
 }
@@ -361,7 +364,7 @@ proc printAvailableExamples() {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const toml = new owned(parseToml(toParse));
+    const toml = owned.create(parseToml(toParse));
     const examples = getExamples(toml, projectHome);
     writeln("--- available examples ---");
     for example in examples {
@@ -387,7 +390,7 @@ proc exampleModified(projectHome: string, projectName: string,
       return true;
   }
   else {
-    // check for binary existance
+    // check for binary existence
      if isFile(exampleBinPath) {
       // check for changes to example
        const exModTime = getLastModified(joinPath(examplePath, exampleName));

@@ -11,6 +11,13 @@ basic
 
    use basic;
 
+
+or
+
+.. code-block:: chapel
+
+   import basic;
+
 **Submodules**
 
 .. toctree::
@@ -37,6 +44,13 @@ sadAndAlone
 .. code-block:: chapel
 
    use basic.sadAndAlone;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.sadAndAlone;
 
 **Submodules**
 
@@ -68,6 +82,13 @@ classesAreGrown
 .. code-block:: chapel
 
    use basic.sadAndAlone.classesAreGrown;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.sadAndAlone.classesAreGrown;
 
 This is the module whose classes are grown, sister of the
 class with nary a tone, declared in the module all sad and

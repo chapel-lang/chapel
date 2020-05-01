@@ -1,4 +1,4 @@
-perfkeys: (seconds):, (seconds):, (seconds):
+perfkeys: (seconds):, (seconds):, (seconds):, (seconds):
 files: insertionSort.dat, selectionSort.dat, bubbleSort.dat, binaryInsertionSort.dat
 graphkeys: insertionSort, selectionSort, bubbleSort, binaryInsertionSort
 graphtitle: Quadratic sorts on 2^12 bytes of shuffled data

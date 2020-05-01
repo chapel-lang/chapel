@@ -59,10 +59,8 @@ Data Parallelism
    Domains <domains>
    Arrays <arrays>
    Slices <slices>
-   Array Vector Operations <arrayVectorOps>
    Sparse Domains and Arrays <sparse>
    Associative Domains and Arrays <associative>
-   Opaque Domains and Arrays <opaque-domains>
    Reductions <reductions>
    Distributions <distributions>
    Replicated Distribution <replicated>
@@ -74,6 +72,7 @@ Library Utilities
    :maxdepth: 1
 
    File I/O <fileIO>
+   List <listOps>
    Timers <timers>
 
 Numerical Libraries

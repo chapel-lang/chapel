@@ -1,4 +1,5 @@
 use IO;
+use Map;
 use Sort;
 
 extern proc memcpy(x : [], b:c_string , len:int);
@@ -38,20 +39,20 @@ proc decode(data : uint, size : int) {
 }
 
 proc calculate(data : [] uint(8), size : int) {
-  var freqDom : domain(uint);
-  var freqs : [freqDom] int;
+  //var freqDom : domain(uint);
+  var freqs = new map(uint, int);
 
   var lock : sync bool;
   lock = true;
   const sizeRange = 0..size-1;
-  coforall tid in 1..here.maxTaskPar {
-    var curDom : domain(uint);
-    var curArr : [curDom] int;
+  coforall tid in 1..here.maxTaskPar with (ref freqs) {
+    //var curDom : domain(uint);
+    var curMap = new map(uint, int);
     for i in tid .. data.size-size by here.maxTaskPar {
-      curArr[hash(data, i, sizeRange)] += 1;
+      curMap[hash(data, i, sizeRange)] += 1;
     }
     lock; // acquire lock
-    for (k,v) in zip(curDom, curArr) do freqs[k] += v;
+    for (k,v) in curMap.items() do freqs[k] += v;
     lock = true; // free lock
   }
 
@@ -64,7 +65,7 @@ proc write_frequencies(data : [] uint(8), size : int) {
 
   // sort by frequencies
   var arr : [1..freqs.size] (int, uint);
-  for (a, k, v) in zip(arr, freqs.domain, freqs) do
+  for (a, (k, v)) in zip(arr, freqs.items()) do
     a = (v,k);
   sort(arr, comparator=reverseComparator);
 
@@ -91,7 +92,7 @@ inline proc startsWithThree(data : []) {
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
-  const fileLen = inFile.length();
+  const fileLen = inFile.size;
   var myin = inFile.reader(kind=ionative,locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'

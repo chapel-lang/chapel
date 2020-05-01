@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -30,6 +31,7 @@
 */
 module Assert {
 
+  private use IO;
 
 /*
   Assert that a boolean condition is true.  If it is false, prints
@@ -49,7 +51,7 @@ proc assert(test: bool) {
 /*
   Assert that a boolean condition is true.  If it is false, prints
   'assert failed - ' followed by all subsequent arguments, as though
-  printed using :proc:`~IO.write()`.
+  printed using :proc:`~ChapelIO.write()`.
 
   :arg test: the boolean condition
   :type test: `bool`

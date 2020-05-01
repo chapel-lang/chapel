@@ -1,1 +1,1 @@
-../MPlot.chpl:98: error: assert failed - NumSteps contains no positive values
+../MPlot.chpl:100: error: assert failed - NumSteps contains no positive values

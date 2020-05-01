@@ -36,7 +36,7 @@ proc main() {
   [i in TableSpace] T(i) = i;
 
   forall block in UpdateSpace.subBlocks do
-    for r in RAStream(block.numIndices, block.low) do
+    for r in RAStream(block.size, block.low) do
       T(r & indexMask) ^= r;
 
   const execTime = getCurrentTime() - startTime;

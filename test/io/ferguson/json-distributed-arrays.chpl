@@ -1,6 +1,7 @@
 use BlockDist;
 use CyclicDist;
 use BlockCycDist;
+use IO;
 
 var expect = "[1, 2, 3, 4, 5]";
 

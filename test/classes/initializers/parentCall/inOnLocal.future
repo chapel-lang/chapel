@@ -1,9 +1,0 @@
-feature request: error message for on statements with --local
-
-Today, it is an error to perform super.init() calls in an on statement.
-However, we only trigger the error message for --no-local compilation.  It would
-be better to trigger the error message regardless of whether compilation is
-local, no-local, or CHPL_COMM!=none.
-
-When this is resolved, remove this test and the .compopts file for all the on
-statement tests.

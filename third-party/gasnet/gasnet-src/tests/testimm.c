@@ -128,12 +128,21 @@ int main(int argc, char **argv) {
     } else break;
   }
 
+  if (!enable_given) {
+    enable_med = enable_long = 1;
+  }
+
   if (argc > arg) { param_N = atol(argv[arg]); ++arg; }
   if (!param_N) param_N = 10000;
 
   if (argc > arg) { param_SZ = atoi(argv[arg]); ++arg; }
-  if (!param_SZ) { param_SZ = 1024*1204; }
-  param_SZ = MIN(param_SZ, MIN(gex_AM_LUBRequestMedium(), gex_AM_LUBRequestLong()));
+  if (!param_SZ) { param_SZ = 1024*1024; }
+  if (enable_med) {
+    param_SZ = MIN(param_SZ, gex_AM_LUBRequestMedium());
+  }
+  if (enable_long) {
+    param_SZ = MIN(param_SZ, gex_AM_LUBRequestLong());
+  }
 
   if (!param_Z) param_Z = 500;
 
@@ -172,6 +181,8 @@ int main(int argc, char **argv) {
              "                 but poll only between loops over peers\n"
              "    -poll-always advance to the next peer upon back pressure,\n"
              "                 but poll before every IMMEDIATE operation\n"
+             "  Note that maxsz will be reduced if RequestMedium or RequestLong are\n"
+             "  to be timed and maxsz would exceed the respective LUBRequest limit.\n"
            );
   if (help || argc > arg) test_usage();
 
@@ -221,7 +232,6 @@ int main(int argc, char **argv) {
   }
 
   if (!enable_given) {
-    enable_med = enable_long = 1;
     enable_put = enable_get = !nbrhd_only;
   }
 
@@ -237,7 +247,10 @@ int main(int argc, char **argv) {
        param_N, (long)param_SZ,
        (in_segment ? "in" : "out"),
        param_B,
-       (poll_mode==TEST_POLL_NEXT?"next":(poll_mode==TEST_POLL_RETRY?"retry":"lazy")),
+       (poll_mode==TEST_POLL_NEXT   ? "next" :
+       (poll_mode==TEST_POLL_RETRY  ? "retry" :
+       (poll_mode==TEST_POLL_ALWAYS ? "always" :
+                                      "lazy"))),
        (numrank-nbrhdsize), (numrank-nbrhdsize>1)?"s":"", param_Z,
        enable_med?" RequestMedium":"", enable_long?" RequestLong":"",
        enable_put?" PutNBI":"", enable_get?" GetNBI":"",

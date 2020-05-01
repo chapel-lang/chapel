@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -17,7 +18,6 @@
 
 TASKS_SRCS = tasks-$(CHPL_MAKE_TASKS).c
 
-SVN_SRCS = $(TASKS_SRCS)
-SRCS = $(SVN_SRCS)
+SRCS = $(TASKS_SRCS)
 
 TASKS_OBJS = $(TASKS_SRCS:%.c=$(TASKS_OBJDIR)/%.o)

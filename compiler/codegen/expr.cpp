@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -101,7 +102,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 //static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
-//static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
+static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
@@ -1417,7 +1418,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
   if( baseType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
-    eltType = baseType->getField("x1")->typeInfo();
+    eltType = baseType->getField("x0")->typeInfo();
     isStarTuple = true;
     // Star tuples should only be passed by reference here...
     INT_ASSERT(base.isLVPtr != GEN_VAL);
@@ -2802,7 +2803,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCall(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -2816,7 +2817,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a6);
   codegenCall(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7)
@@ -3494,22 +3495,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 }
 
 
-static GenRet
-codegenExprMinusOne(Expr* expr)
-{
-  int64_t i;
-  IF1_int_type width = INT_SIZE_64;
-  if( get_width(expr->typeInfo()) <= 8 ) width = INT_SIZE_8;
-  else if( get_width(expr->typeInfo()) <= 16 ) width = INT_SIZE_16;
-  else if( get_width(expr->typeInfo()) <= 32 ) width = INT_SIZE_32;
-
-  if (get_int(expr, &i)) {
-    return new_IntSymbol(i-1, width)->codegen();
-  } else {
-    return codegenSub(expr, new_IntSymbol(1, width));
-  }
-}
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -3738,7 +3723,7 @@ GenRet CallExpr::codegen() {
       // Handle setting LLVM invariant on const records after
       // they are initialized
       if (fn->isInitializer() || fn->isCopyInit()) {
-        if (isUserDefinedRecord(get(1)->typeInfo())) {
+        if (typeNeedsCopyInitDeinit(get(1)->typeInfo())) {
           if (SymExpr* initedSe = toSymExpr(get(1))) {
             if (initedSe->symbol()->isConstValWillNotChange()) {
               GenRet genSe = args[0];
@@ -4248,23 +4233,6 @@ DEFINE_PRIM(PRIM_ASSIGN) {
   codegenAssign(lg, rg);
 }
 
-static bool commUnorderedOpsAvailable(Type* elementType) {
-  if (0 == strcmp(CHPL_COMM, "ugni")) {
-    // the ugni layer only supports unordered gets for up to 8 bytes
-    // and we use numeric type as a stand-in for that
-    if (is_bool_type(elementType) ||
-        is_int_type(elementType) ||
-        is_uint_type(elementType) ||
-        is_real_type(elementType) ||
-        is_imag_type(elementType) ||
-        elementType == dtComplex[COMPLEX_SIZE_64] ||
-        // note: default sized complex is too big at present
-        is_enum_type(elementType))
-      return true;
-  }
-  return false;
-}
-
 DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   Expr* lhsExpr = call->get(1);
@@ -4272,9 +4240,8 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
   bool lhsWide = lhsExpr->isWideRef();
   bool rhsWide = rhsExpr->isWideRef();
 
-  // Unordered ops not supported or both sides are narrow, do a normal assign
-  Type* elementType = lhsExpr->getValType();
-  if (!commUnorderedOpsAvailable(elementType) || (!lhsWide && !rhsWide)) {
+  // Both sides are narrow, do a normal assign
+  if (!lhsWide && !rhsWide) {
     FORWARD_PRIM(PRIM_ASSIGN);
     return;
   }
@@ -4290,7 +4257,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   if (!lhsWide && rhsWide) {
     // do an unordered GET
-    // chpl_comm_get_unordered(void *dst,
+    // chpl_gen_comm_get_unordered(void *dst,
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
@@ -4299,7 +4266,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     if (dstRef)
       dst = codegenDeref(dst);
 
-    codegenCall("chpl_comm_get_unordered",
+    codegenCall("chpl_gen_comm_get_unordered",
                 codegenCastToVoidStar(codegenAddrOf(dst)),
                 codegenRnode(src),
                 codegenRaddr(src),
@@ -4308,7 +4275,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 ln, fn);
   } else if (lhsWide && !rhsWide) {
     // do an unordered PUT
-    // chpl_comm_put_unordered(void *src,
+    // chpl_gen_comm_put_unordered(void *src,
     //   c_nodeid_t dst_locale, void* dst_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
@@ -4317,7 +4284,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     if (srcRef)
       src = codegenDeref(src);
 
-    codegenCall("chpl_comm_put_unordered",
+    codegenCall("chpl_gen_comm_put_unordered",
                 codegenCastToVoidStar(codegenAddrOf(src)),
                 codegenRnode(dst),
                 codegenRaddr(dst),
@@ -4331,7 +4298,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
     //   c_nodeid_t src_locale, void* src_raddr,
     //   size_t size, int32_t commID,
     //   int ln, int32_t fn);
-    codegenCall("chpl_comm_getput_unordered",
+    codegenCall("chpl_gen_comm_getput_unordered",
                 codegenRnode(dst),
                 codegenRaddr(dst),
                 codegenRnode(src),
@@ -4519,7 +4486,7 @@ DEFINE_PRIM(PRIM_GET_UNION_ID) {
 
 DEFINE_PRIM(PRIM_SET_SVEC_MEMBER) {
     // set tuple base=get(1) at index=get(2) to value=get(3)
-    GenRet ptr = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+    GenRet ptr = codegenElementPtr(call->get(1), call->get(2));
     GenRet val = call->get(3);
     // BHARSH TODO: 'getSvecSymbol' may also be useful here...
     if (call->get(3)->isRefOrWideRef() && !ptr.chplType->symbol->isRefOrWideRef()) {
@@ -4545,9 +4512,9 @@ DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
     // get tuple base=get(1) at index=get(2)
     Type* tupleType = call->get(1)->getValType();
 
-    ret = codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+    ret = codegenElementPtr(call->get(1), call->get(2));
 
-    if (tupleType->getField("x1")->type->symbol->hasFlag(FLAG_REF) == false)
+    if (tupleType->getField("x0")->type->symbol->hasFlag(FLAG_REF) == false)
       ret = codegenAddrOf(ret);
 }
 DEFINE_PRIM(PRIM_SET_MEMBER) {
@@ -4784,6 +4751,7 @@ DEFINE_PRIM(PRIM_CHPL_COMM_REMOTE_PREFETCH) {
                 locale,
                 remoteAddr,
                 len,
+                genCommID(gGenInfo),
                 call->get(4),
                 call->get(5));
 }
@@ -5687,8 +5655,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_SVEC_MEMBER: {
       if (call->get(1)->isWideRef()) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet elemPtr = codegenElementPtr(call->get(1),
-                                           codegenExprMinusOne(call->get(2)));
+        GenRet elemPtr = codegenElementPtr(call->get(1), call->get(2));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
 
@@ -5700,8 +5667,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
 
       } else if (target && (target->getValType() != call->getValType())) {
-        GenRet getElem = codegenElementPtr(call->get(1),
-                                           codegenExprMinusOne(call->get(2)));
+        GenRet getElem = codegenElementPtr(call->get(1), call->get(2));
 
 
         ret =  codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR));
@@ -5717,7 +5683,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
       //there was an if/else block checking if call->get(1) is wide or narrow,
       //however if/else blocks were identical. It may not be in the future.
-      ret =  codegenElementPtr(call->get(1), codegenExprMinusOne(call->get(2)));
+      ret =  codegenElementPtr(call->get(1), call->get(2));
 
       retval = true;
       break;

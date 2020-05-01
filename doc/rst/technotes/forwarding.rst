@@ -156,3 +156,25 @@ that is available. Other than that, the forwarded methods participate
 normally in the function resolution process. As with other ambiguous
 function declarations, ambiguity errors will be reported at the call
 site.
+
+Note that special IO methods such as ``writeThis``,
+``readThis``, and ``readWriteThis`` are not forwarded since the compiler
+generates these for the type by default. Similarly, a field accessor will not
+get forwarded if the class defines a conflicting field or method name. Consider
+the example below:
+
+.. code-block:: chapel
+
+  record ArrayWrapper {
+    var array: [1..0] int;
+
+    proc shape {
+      return 1;
+    }
+
+    forwarding array;
+  }
+
+The ``shape`` method above will resolve, meaning ``array.shape`` will not be
+forwarded.
+

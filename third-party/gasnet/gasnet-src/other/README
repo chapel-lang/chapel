@@ -95,7 +95,7 @@ PMI-SPAWNER
 The mpi-spawner directory contains an implementation of job-launch
 and GASNet communications bootstrapping using MPI.  It is optionally
 used by several GASNet for cluster-based systems, and unconditionally 
-by gemini and aries conduits.
+by aries conduit.
 
 ------------------------------------------------------------------
 

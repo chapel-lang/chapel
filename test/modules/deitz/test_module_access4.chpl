@@ -1,8 +1,10 @@
-proc foo(r: real) { writeln(r); }
+module OuterModule {
+  proc foo(r: real) { writeln(r); }
 
-module M {
-  proc foo(i: int) { writeln(i); }
+  module M {
+    proc foo(i: int) { writeln(i); }
+  }
+
+  M.foo(3.0);
+  foo(3.0);
 }
-
-M.foo(3.0);
-foo(3.0);

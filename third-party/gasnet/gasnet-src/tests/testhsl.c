@@ -78,8 +78,7 @@ int main(int argc, char **argv) {
 
   mynode = gex_TM_QueryRank(myteam);
   nodes = gex_TM_QuerySize(myteam);
-  peer = (mynode ^ 1);
-  if (peer == nodes) peer = mynode;
+  peer = (mynode + 1) % nodes;
 
   if (argc < 2) test_usage();
   {

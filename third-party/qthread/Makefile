@@ -18,7 +18,7 @@ QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 #
 # Cray X* builds are cross-compilations
 #
-ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
 else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
@@ -100,8 +100,8 @@ endif
 
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
-# determine which scheduler to use. Default to nemesis, except for numa where
-# we want distrib. Override with a user provided option if they requested one
+# determine which scheduler to use. Use nemesis for flat and distrib for
+# non-flat.  Override with a user provided option if they requested one
 SCHEDULER = nemesis
 ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
 SCHEDULER = distrib

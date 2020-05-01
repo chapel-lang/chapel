@@ -9,6 +9,10 @@ config const printStats = true,
 config const oversubscription = 1,
              tasksPerLocale = here.maxTaskPar * oversubscription;
 
+config type componentType = int;
+config param numComponents = 1;
+type copyType = if numComponents > 1 then numComponents*componentType else componentType;
+
 config param useUnorderedCopy = true;
 config const concurrentFencing = false;
 config param commDiags = false;
@@ -18,7 +22,12 @@ config const sizePerLocale = 10000,
 
 const space = {0..size};
 const D = space dmapped Block(space, dataParTasksPerLocale=tasksPerLocale);
-var A, reversedA: [D] int = D;
+var A, reversedA: [D] copyType;
+
+forall (a, r, d) in zip(A, reversedA, D) {
+  a += d:componentType;
+  r += d:componentType;
+}
 
 inline proc assign(ref dst, ref src) {
   if useUnorderedCopy then unorderedCopy(dst, src);
@@ -31,7 +40,7 @@ inline proc assign(ref dst, ref src) {
 var t: Timer;
 
 proc start() {
-  reversedA = 0;
+  reversedA -= reversedA;
   if commDiags { resetCommDiagnostics(); startCommDiagnostics(); }
   t.clear(); t.start();
 }
@@ -49,8 +58,11 @@ proc stop(opType: string) {
   writeln(ordering, opType, timing, " : ", ordering, opType, rate, diags);
 
   if verify then
-    forall (rA, i) in zip(reversedA, D) do
-      assert(rA == size-i);
+    forall (rA, i) in zip(reversedA, D) {
+      var expected: copyType;
+      expected += (size-i):componentType;
+      assert(rA == expected);
+    }
 }
 
 

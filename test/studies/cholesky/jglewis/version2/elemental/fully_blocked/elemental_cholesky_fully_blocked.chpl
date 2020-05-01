@@ -69,7 +69,7 @@ module elemental_cholesky_fully_blocked {
 
   use CyclicDist, Barriers;
 
-  use blocked_elemental_schur_complement, 
+  public use blocked_elemental_schur_complement, 
       locality_info, 
       local_reduced_matrix_cyclic_partition_fb,
       scalar_inner_product_cholesky,
@@ -82,9 +82,9 @@ module elemental_cholesky_fully_blocked {
     // argument checking -- would like to be able to check that A is
     // a cyclically distributed array
 
-    const A_idx_range = A.domain.dim (1);  // indices of either row or column
+    const A_idx_range = A.domain.dim (0);  // indices of either row or column
 
-    assert ( A_idx_range == A.domain.dim (2) );
+    assert ( A_idx_range == A.domain.dim (1) );
 
     // --------------------------------------------
     // Acquire the specifications of the underlying 
@@ -93,9 +93,9 @@ module elemental_cholesky_fully_blocked {
 
     const A_locale_grid = A.domain.dist.targetLocales();
     const A_grid_domain = A_locale_grid.domain,
-          n_processors  = A_grid_domain.numIndices;
+          n_processors  = A_grid_domain.size;
 
-    assert ( A_grid_domain.low(1) == 0 && A_grid_domain.low(2) == 0 );
+    assert ( A_grid_domain.low == (0,0) );
 
     assert ( A (A.domain.low).locale.id == 0 );
 	     
@@ -176,7 +176,7 @@ module elemental_cholesky_fully_blocked {
 	      A11 (my_A1x_rows, my_Ax1_cols);
 	    // }
 
-	    if pos_def && A22_cols.length > 0 then {
+	    if pos_def && A22_cols.size > 0 then {
 
 	      // ---------------------------------------------------------------
 	      // Compute the remainder of the active block column of L by a
@@ -199,7 +199,7 @@ module elemental_cholesky_fully_blocked {
 	      // a single processor row.  The test on non-zero length should not
 	      // be required, but is at present.
 
-	      if  I_compute_L21_indices.numIndices > 0 then {
+	      if  I_compute_L21_indices.size > 0 then {
 		I_compute_L21 [I_compute_L21_indices] =
 		  A [I_compute_L21_indices];
 	

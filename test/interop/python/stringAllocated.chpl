@@ -8,6 +8,6 @@ export proc g(size: int, ptr: c_ptr(uint(8))): int {
   }
 }
 
-export proc writeStr(x: c_string) {
-  writeln(x: string);
+export proc writeStr(in x: c_string) {
+  writeln(createStringWithNewBuffer(x));
 }

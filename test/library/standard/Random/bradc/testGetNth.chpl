@@ -5,11 +5,11 @@ config var n = 100;
 config param useNPB = true;
 config param rtype = if useNPB then RNG.NPB else RNG.PCG;
 
-var randStr1 = makeRandomStream(real, 314159265, algorithm=rtype);
-var randStr2 = makeRandomStream(real, 314159265, algorithm=rtype);
-var randStr3 = makeRandomStream(real, 314159265, algorithm=rtype);
+var randStr1 = createRandomStream(real, 314159265, algorithm=rtype);
+var randStr2 = createRandomStream(real, 314159265, algorithm=rtype);
+var randStr3 = createRandomStream(real, 314159265, algorithm=rtype);
 
-for i in 1..n {
+for i in 0..n-1 {
   const r1 = randStr1.getNext();
   const r2 = randStr2.getNth(i);
   const r3 = randStr3.getNth(i);

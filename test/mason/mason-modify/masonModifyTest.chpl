@@ -5,6 +5,7 @@ use MasonSearch;
 use TOML;
 use FileSystem;
 
+use SysCTypes;
 extern proc setenv(name : c_string, envval : c_string, overwrite : c_int) : c_int;
 
 /* Copy the toml file into a package (empty directory) as 'Mason.toml',

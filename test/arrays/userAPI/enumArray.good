@@ -5,7 +5,6 @@ idxType is: color
 rank is: 2
 
 size is: 25
-numElements is: 25
 shape is: (5, 5)
 
 X is:
@@ -128,7 +127,6 @@ idxType is: color
 rank is: 2
 
 size is: 16
-numElements is: 16
 shape is: (4, 4)
 
 X is:

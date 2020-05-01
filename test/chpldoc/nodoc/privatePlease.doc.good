@@ -10,6 +10,13 @@ Bar
 
    use Bar;
 
+
+or
+
+.. code-block:: chapel
+
+   import Bar;
+
 .. data:: config var blah3: int
 
 .. function:: proc c()

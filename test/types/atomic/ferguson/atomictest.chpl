@@ -70,7 +70,7 @@ proc test(type base_type, n_max:int) {
   assert(aint.read() == zero);
   writeln("Subtract OK");
 
-  aint.compareExchangeStrong(zero, mult);
+  aint.compareAndSwap(zero, mult);
 
   assert(aint.read() == mult);
 

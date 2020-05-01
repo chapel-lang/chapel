@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +31,12 @@
    process's file system state, which are performed on a specified locale
    (:ref:`locale-state`).  The module also contains iterators for traversing the
    file system (:ref:`filerator`).
+
+   .. note::
+
+      Functions in this module can use and return :ref:`escaped strings
+      <string.nonunicode>` on systems where UTF-8 file names are not enforced.
+
 
    .. _file-manip:
 
@@ -87,6 +94,9 @@ module FileSystem {
 
   use SysError;
   private use Path;
+  private use HaltWrappers;
+  private use SysCTypes;
+  use IO;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -151,6 +161,14 @@ extern const S_ISGID: int;
 */
 extern const S_ISVTX: int;
 
+/*
+   Localizes and unescapes string to create a bytes to be used for obtaining a
+   c_string to pass to extern file system operations.
+*/
+private inline proc unescape(str: string) {
+  return str.encode(policy=encodePolicy.unescape);
+}
+
 /* Change the current working directory of the locale in question to the
    specified path `name`.
 
@@ -169,7 +187,7 @@ proc locale.chdir(name: string) throws {
 
   var err: syserr = ENOERR;
   on this {
-    err = chpl_fs_chdir(name.localize().c_str());
+    err = chpl_fs_chdir(unescape(name).c_str());
   }
   if err then try ioerror(err, "in chdir", name);
 }
@@ -208,7 +226,7 @@ proc locale.chdir(out error: syserr, name: string) {
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): syserr;
 
-  var err = chpl_fs_chmod(name.localize().c_str(), mode);
+  var err = chpl_fs_chmod(unescape(name).c_str(), mode);
   if err then try ioerror(err, "in chmod", name);
 }
 
@@ -243,7 +261,7 @@ proc chmod(out error: syserr, name: string, mode: int) {
 proc chown(name: string, uid: int, gid: int) throws {
   extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):syserr;
 
-  var err = chpl_fs_chown(name.localize().c_str(), uid:c_int, gid:c_int);
+  var err = chpl_fs_chown(unescape(name).c_str(), uid:c_int, gid:c_int);
   if err then try ioerror(err, "in chown", name);
 }
 
@@ -311,7 +329,8 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
 
     // Copies the access time, and time of last modification.
     // Does not copy uid, gid, or mode
-    var err = chpl_fs_copy_metadata(src.localize().c_str(), dest.localize().c_str());
+    var err = chpl_fs_copy_metadata(unescape(src).c_str(),
+                                    unescape(dest).c_str());
     if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
 
     // Get uid and gid from src
@@ -409,11 +428,11 @@ proc copyFile(src: string, dest: string) throws {
   }
 
   // read in, write out.
-  var buf: string;
+  var buf: bytes;
   var numRead: int = 0;
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
-  while (try srcChnl.readstring(buf, len=4096)) {
+  while (try srcChnl.readbytes(buf, len=4096)) {
     try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
@@ -592,7 +611,11 @@ proc locale.cwd(): string throws {
     var tmp:c_string;
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
-    ret = createStringWithOwnedBuffer(tmp);
+    try! {
+      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
+    }
+    // tmp was qio_malloc'd by chpl_fs_cwd
+    chpl_free_c_string(tmp);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
@@ -636,7 +659,7 @@ proc exists(name: string): bool throws {
   }
 
   var ret:c_int;
-  var err = chpl_fs_exists(ret, name.localize().c_str());
+  var err = chpl_fs_exists(ret, unescape(name).c_str());
   if err then try ioerror(err, "in exists");
   return ret != 0;
 }
@@ -716,7 +739,7 @@ proc getGID(name: string): int throws {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
-  var err = chpl_fs_get_gid(result, name.localize().c_str());
+  var err = chpl_fs_get_gid(result, unescape(name).c_str());
   if err then try ioerror(err, "in getGID");
   return result;
 }
@@ -752,7 +775,7 @@ proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): syserr;
 
   var ret:c_int;
-  var err = chpl_fs_viewmode(ret, name.localize().c_str());
+  var err = chpl_fs_viewmode(ret, unescape(name).c_str());
   if err then try ioerror(err, "in getMode", name);
   return ret;
 }
@@ -785,7 +808,7 @@ proc getFileSize(name: string): int throws {
   extern proc chpl_fs_get_size(ref result: int, filename: c_string):syserr;
 
   var result: int;
-  var err = chpl_fs_get_size(result, name.localize().c_str());
+  var err = chpl_fs_get_size(result, unescape(name).c_str());
   if err then try ioerror(err, "in getFileSize", name);
   return result;
 }
@@ -819,7 +842,7 @@ proc getUID(name: string): int throws {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): syserr;
 
   var result: c_int;
-  var err = chpl_fs_get_uid(result, name.localize().c_str());
+  var err = chpl_fs_get_uid(result, unescape(name).c_str());
   if err then try ioerror(err, "in getUID");
   return result;
 }
@@ -845,17 +868,22 @@ proc getUID(out error: syserr, name: string): int {
 //
 private module GlobWrappers {
   extern type glob_t;
+  use SysCTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+    // want:
+    //  import FileSystem.unescape;
+    // but see issue #15308, so:
+    use FileSystem;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
     const GLOB_NOFLAGS = 0: c_int;
-    const err = chpl_glob(pattern.localize().c_str(), GLOB_NOFLAGS, ret_glob);
+    const err = chpl_glob(unescape(pattern).c_str(), GLOB_NOFLAGS, ret_glob);
 
     // When no flags are being passed, glob can only fail with GLOB_NOMATCH or
     // GLOB_NOSPACE. GLOB_NOMATCH is fine and will just result in a 0 length
@@ -875,7 +903,11 @@ private module GlobWrappers {
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
     extern proc chpl_glob_index(glb: glob_t, idx: size_t): c_string;
-    return chpl_glob_index(glb, idx.safeCast(size_t)): string;
+    try! {
+      return createStringWithNewBuffer(chpl_glob_index(glb,
+                                                       idx.safeCast(size_t)),
+                                       policy=decodePolicy.escape);
+    }
   }
 
   // globfree wrapper that exists only for symmetry in the routine names
@@ -956,7 +988,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
-  var r = followThis(1);
+  var r = followThis(0);
 
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
@@ -989,7 +1021,7 @@ proc isDir(name:string):bool throws {
   var doesExist = try exists(name);
   if !doesExist then return false;
 
-  var err = chpl_fs_is_dir(ret, name.localize().c_str());
+  var err = chpl_fs_is_dir(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isDir", name);
   return ret != 0;
 }
@@ -1028,7 +1060,7 @@ proc isFile(name:string):bool throws {
   var doesExist = try exists(name);
   if !doesExist then return false;
 
-  var err = chpl_fs_is_file(ret, name.localize().c_str());
+  var err = chpl_fs_is_file(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isFile", name);
   return ret != 0;
 }
@@ -1072,7 +1104,7 @@ proc isLink(name: string): bool throws {
   }
 
   var ret:c_int;
-  var err = chpl_fs_is_link(ret, name.localize().c_str());
+  var err = chpl_fs_is_link(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isLink", name);
   return ret != 0;
 }
@@ -1116,7 +1148,7 @@ proc isMount(name: string): bool throws {
   if doesExistFile then return false;
 
   var ret:c_int;
-  var err = chpl_fs_is_mount(ret, name.localize().c_str());
+  var err = chpl_fs_is_mount(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isMount", name);
   return ret != 0;
 }
@@ -1176,12 +1208,16 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
   var dir: DIRptr;
   var ent: direntptr;
   var err:syserr = ENOERR;
-  dir = opendir(path.localize().c_str());
+  dir = opendir(unescape(path).c_str());
   if (!is_c_nil(dir)) {
     ent = readdir(dir);
     while (!is_c_nil(ent)) {
-      const filename = ent.d_name():string;
-      if (hidden || filename[1] != '.') {
+      var filename: string;
+      try! {
+        filename = createStringWithNewBuffer(ent.d_name(),
+                                             policy=decodePolicy.escape);
+      }
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 
@@ -1248,7 +1284,7 @@ proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
   if name.isEmpty() then
     try ioerror(ENOENT:syserr, "mkdir called with illegal path: '" + name + "'");
 
-  var err = chpl_fs_mkdir(name.localize().c_str(), mode, parents);
+  var err = chpl_fs_mkdir(unescape(name).c_str(), mode, parents);
   if err then try ioerror(err, "in mkdir", name);
 }
 
@@ -1347,7 +1383,8 @@ proc moveDir(out error: syserr, src: string, dest: string) {
 proc rename(oldname: string, newname: string) throws {
   extern proc chpl_fs_rename(oldname: c_string, newname: c_string):syserr;
 
-  var err = chpl_fs_rename(oldname.localize().c_str(), newname.localize().c_str());
+  var err = chpl_fs_rename(unescape(oldname).c_str(),
+                           unescape(newname).c_str());
   if err then try ioerror(err, "in rename", oldname);
 }
 
@@ -1375,7 +1412,7 @@ proc rename(out error: syserr, oldname, newname: string) {
 proc remove(name: string) throws {
   extern proc chpl_fs_remove(name: c_string):syserr;
 
-  var err = chpl_fs_remove(name.localize().c_str());
+  var err = chpl_fs_remove(unescape(name).c_str());
   if err then try ioerror(err, "in remove", name);
 }
 
@@ -1464,10 +1501,12 @@ proc rmTree(out error: syserr, root: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc sameFile(file1: string, file2: string): bool throws {
-  extern proc chpl_fs_samefile_string(ref ret: c_int, file1: c_string, file2: c_string): syserr;
+  extern proc chpl_fs_samefile_string(ref ret: c_int,
+                                      file1: c_string, file2: c_string): syserr;
 
   var ret:c_int;
-  var err = chpl_fs_samefile_string(ret, file1.localize().c_str(), file2.localize().c_str());
+  var err = chpl_fs_samefile_string(ret, unescape(file1).c_str(),
+                                         unescape(file2).c_str());
   if err then try ioerror(err, "in sameFile(" + file1 + ", " + file2 + ")");
   return ret != 0;
 }
@@ -1546,7 +1585,8 @@ proc sameFile(out error: syserr, file1: file, file2: file): bool {
 proc symlink(oldName: string, newName: string) throws {
   extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): syserr;
 
-  var err = chpl_fs_symlink(oldName.localize().c_str(), newName.localize().c_str());
+  var err = chpl_fs_symlink(unescape(oldName).c_str(),
+                            unescape(newName).c_str());
   if err then try ioerror(err, "in symlink " + oldName, newName);
 }
 

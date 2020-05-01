@@ -6,7 +6,7 @@ config param testBlock       = true,
              testBlockCyclic = false;
 
 proc main {
-  use HDF5;
+  use HDF5, HDF5.IOusingMPI;
 
   var Space = {1..10, 1..10};
 

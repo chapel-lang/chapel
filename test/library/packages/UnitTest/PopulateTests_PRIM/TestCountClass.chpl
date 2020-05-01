@@ -2,7 +2,7 @@ use UnitTest;
 class dummy {
   /* A method that takes Test object as an argument*/
   proc test_class(test: borrowed Test) throws {
-    // Test inside a class 
+    // Test inside a class
   }
 }
 

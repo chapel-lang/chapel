@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +25,7 @@
 #include "callInfo.h"
 #include "expr.h"
 #include "PartialCopyData.h"
+#include "passes.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -200,7 +202,7 @@ static void expandVarArgsFixed(FnSymbol* fn, CallInfo& info) {
           expandVarArgsFormal(fn, formal, varArgsCount(formal, nVar));
         }
 
-      } else if (fn->hasFlag(FLAG_GENERIC) == false) {
+      } else if (! fn->isGeneric()) {
         INT_FATAL("bad variableExpr");
       }
 
@@ -284,6 +286,10 @@ static void       expandVarArgsWhere(FnSymbol*      fn,
                                      ArgSymbol*     formal,
                                      const Formals& varargs);
 
+static void       expandVarArgsLifetimeConstraints(FnSymbol* fn,
+                                     ArgSymbol*     formal,
+                                     const Formals& varargs);
+
 static void       expandVarArgsBody(FnSymbol*      fn,
                                     ArgSymbol*     formal,
                                     const Formals& varargs);
@@ -321,6 +327,8 @@ static void expandVarArgsFormal(FnSymbol* fn, ArgSymbol* formal, int n) {
     expandVarArgsWhere(fn, formal, formals);
   }
 
+  expandVarArgsLifetimeConstraints(fn, formal, formals);
+
   expandVarArgsBody(fn, formal, formals);
 
   formal->defPoint->remove();
@@ -338,8 +346,8 @@ static Formals insertFormalsForVarArg(ArgSymbol* varArg, int n) {
     // Please update FnSymbol::substitutionsToString if this changes
     newFormal->addFlag(FLAG_EXPANDED_VARARGS);
     newFormal->variableExpr = NULL;
-    newFormal->name         = astr("_e", istr(i + 1), "_", varArg->name);
-    newFormal->cname        = astr("_e", istr(i + 1), "_", varArg->cname);
+    newFormal->name         = astr("_e", istr(i), "_", varArg->name);
+    newFormal->cname        = astr("_e", istr(i), "_", varArg->cname);
 
     varArg->defPoint->insertBefore(newArgDef);
 
@@ -365,6 +373,45 @@ static void expandVarArgsWhere(FnSymbol*      fn,
   } else {
     substituteVarargTupleRefs(fn->where, formal, varargs);
   }
+}
+
+//
+// Replace all constraints like "something < varargs"
+// with "something < vararg1, ..., something < varargN"
+//
+static void expandVarArgsLifetimeConstraints(FnSymbol* fn,
+                                             ArgSymbol* formal,
+                                             const Formals& varargs) {
+  if (! fn->lifetimeConstraints) return; // nothing to do
+
+  std::vector<SymExpr*> symExprs;
+  collectSymExprsFor(fn->lifetimeConstraints, formal, symExprs);
+
+  for_vector(SymExpr, se, symExprs)
+    if (CallExpr* ltof = toCallExpr(se->parentExpr))
+      if (ltof->isPrimitive(PRIM_LIFETIME_OF))
+        if (CallExpr* constraint = toCallExpr(ltof->parentExpr))
+          {
+            // Replace 'constraint' with a copy for each of 'varargs'.
+            CallExpr* replAll = NULL;
+            for_vector(ArgSymbol, newarg, varargs) {
+              SymbolMap map;
+              map.put(formal, newarg);
+              CallExpr* repl1 = constraint->copy(&map);
+              if (replAll)
+                replAll = new CallExpr(",", replAll, repl1);
+              else
+                replAll = repl1;
+            }
+            constraint->replace(replAll);
+          }
+
+  // Are there any references to 'formal' still remaining?
+  // If so, complain, because it will be removed from tree.
+  symExprs.clear();
+  collectSymExprsFor(fn->lifetimeConstraints, formal, symExprs);
+  for_vector(SymExpr, se, symExprs)
+    USR_FATAL_CONT(se, "this use of the varargs formal %s is currently unsupported", formal->name);
 }
 
 static void expandVarArgsBody(FnSymbol*      fn,
@@ -463,15 +510,14 @@ static bool needVarArgTupleAsWhole(BlockStmt* block,
   std::vector<SymExpr*> symExprs;
   bool                  retval = false;
 
-  collectSymExprs(block, symExprs);
+  collectSymExprsFor(block, formal, symExprs);
 
   for (size_t i = 0; i < symExprs.size() && retval == false; i++) {
-    SymExpr* se = symExprs[i];
+      SymExpr* se = symExprs[i];
 
-    if (se->symbol() == formal) {
       if (CallExpr* parent = toCallExpr(se->parentExpr)) {
         if (parent->isPrimitive(PRIM_TUPLE_EXPAND) == false &&
-            varargAccessIndex(se, parent, numArgs) == 0     &&
+            varargAccessIndex(se, parent, numArgs) == -1     &&
             isVarargSizeExpr (se, parent)          == false) {
           retval =  true;
         }
@@ -479,7 +525,6 @@ static bool needVarArgTupleAsWhole(BlockStmt* block,
       } else {
         retval = true;
       }
-    }
   }
 
   return retval;
@@ -516,7 +561,7 @@ static CallExpr* expandVarArgString(FnSymbol*      fn,
 
   // Create a local for every blank string
   for (int i = 0; i < n; i++) {
-    const char* localName = astr("_e", istr(i + 1 + n), "_", formal->name);
+    const char* localName = astr("_e", istr(i + n), "_", formal->name);
     VarSymbol*  local     = newTemp(localName, formal->type);
     DefExpr*    localDefn = new DefExpr(local);
     CallExpr*   move      = new CallExpr(PRIM_MOVE, local, varargs[i]);
@@ -583,7 +628,7 @@ static void insertEpilogueTemps(FnSymbol*  fn,
     if (i > 0) {
       VarSymbol* tmp    = newTemp("_varargs_tmp_");
 
-      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i));
+      CallExpr*  elem   = new CallExpr(var, new_IntSymbol(i-1));
       CallExpr*  move   = new CallExpr(PRIM_MOVE, tmp,            elem);
 
       CallExpr*  assign = new CallExpr("=",       actual->copy(), tmp);
@@ -636,20 +681,23 @@ static void substituteVarargTupleRefs(BlockStmt*     block,
 
           parent->remove();
 
-        } else if (int idxNum = varargAccessIndex(se, parent, numArgs)) {
-          INT_ASSERT(1 <= idxNum && idxNum <= numArgs);
-
-          ArgSymbol* replFormal = varargs[idxNum - 1];
-
-          replaceVarargAccess(parent, se, replFormal, tempReps);
-
-        } else if (isVarargSizeExpr(se, parent) == true) {
-          parent->replace(new SymExpr(new_IntSymbol(numArgs)));
-
         } else {
-          INT_ASSERT(false);
-        }
+          int idxNum = varargAccessIndex(se, parent, numArgs);
+          if (idxNum != -1) {
+            INT_ASSERT(0 <= idxNum && idxNum < numArgs);
 
+            ArgSymbol* replFormal = varargs[idxNum];
+
+            replaceVarargAccess(parent, se, replFormal, tempReps);
+
+          } else if (isVarargSizeExpr(se, parent) == true) {
+            parent->replace(new SymExpr(new_IntSymbol(numArgs)));
+
+          } else {
+            INT_ASSERT(false);
+          }
+
+        }
       } else {
         INT_ASSERT(false);
       }
@@ -724,13 +772,13 @@ static int varargAccessIndex(SymExpr* se, CallExpr* parent, int numArgs) {
         idxVar->immediate->const_kind == NUM_KIND_INT) {
       int idxNum = idxVar->immediate->int_value();
 
-      if (1 <= idxNum && idxNum <= numArgs) {
+      if (0 <= idxNum && idxNum < numArgs) {
         return idxNum;
       }
     }
   }
 
-  return 0;
+  return -1;
 }
 
 

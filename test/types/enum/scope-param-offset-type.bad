@@ -1,2 +1,3 @@
+scope-param-offset-type.chpl:4: In function 'enumScopeTest':
 scope-param-offset-type.chpl:5: error: the type of the actual argument 'x' is generic
 note: generic actual arguments are not currently supported

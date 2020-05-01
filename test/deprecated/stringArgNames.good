@@ -1,0 +1,9 @@
+stringArgNames.chpl:5: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:6: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:7: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:10: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:11: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:13: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:14: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:15: warning: createStringWith* with formal argument `s` is deprecated. Use argument name `x` instead
+stringArgNames.chpl:20: warning: string.join with formal argument `S` is deprecated. Use argument name `x` instead

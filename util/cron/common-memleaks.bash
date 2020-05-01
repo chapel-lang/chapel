@@ -3,13 +3,13 @@
 # Configure environment for memory leaks testing. This should be sourced by
 # other scripts that wish to make use of the variables set here.
 
-export CHPL_NIGHTLY_MEMLEAKS_DIR=${CHPL_NIGHTLY_MEMLEAKS_DIR:-$logdir_prefix/NightlyMemLeaks}
-export CHPL_COMM=none
+export CHPL_NIGHTLY_MEMLEAKS_DIR=${CHPL_NIGHTLY_MEMLEAKS_DIR:-$PERF_LOGDIR_PREFIX/NightlyMemLeaks}
+export MEM_LEAKS_DATE_VAL=$(date '+%Y-%m-%d')
 
 function memleaks_log()
 {
     local tests=$1
-    local date_val=$(date '+%Y-%m-%d')
+    local date_val=$MEM_LEAKS_DATE_VAL
 
     case $tests in
         examples)
@@ -17,6 +17,9 @@ function memleaks_log()
             ;;
         full)
             local suffix=nightlyfull
+            ;;
+        ml)
+            local suffix=ml-nightlyfull
             ;;
         *)
             log_error "Unknown test suite: ${tests}"

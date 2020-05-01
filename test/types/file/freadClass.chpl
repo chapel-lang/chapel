@@ -1,3 +1,5 @@
+use IO;
+
 class myClass {
   var x: int;
   var y: real;

@@ -1,34 +1,27 @@
-use List;
-
-config type listType = int;
-config param listLock = true;
+private use List;
 
 config const testIters = 8;
 
-var lst = new list(listType, listLock);
+var lst: list(int, true);
+var idx = 0;
 
-try {
-  lst.indexOf(0);
-} catch e {
-  writeln(e);
-}
-
-for i in 1..testIters do {
+for i in 1..testIters {
   lst.append(i);
-  const idx = lst.indexOf(i);
-  writeln(idx);
+  idx = lst.indexOf(i);
+  assert(idx == i-1);
 }
 
-for i in 1..testIters by -1 do {
-  const idx = lst.indexOf(i, i);
-  writeln(idx);
-}
+for i in 1..testIters do
+  lst.append(i);
 
-lst.clear();
+// Value of `end` < 0 defaults to searching entire list.
+idx = lst.indexOf(testIters, testIters, -1);
 
-try {
-  lst.indexOf(0);
-} catch e {
-  writeln(e);
-}
+assert(idx >= 0);
+
+lst.pop();
+
+idx = lst.indexOf(testIters, testIters);
+
+assert(idx < 0);
 

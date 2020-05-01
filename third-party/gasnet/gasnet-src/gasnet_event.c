@@ -572,7 +572,6 @@ extern int gasnete_test_syncnbi_mask(gex_EC_t mask, gex_Flags_t flags GASNETI_TH
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *iop = mythread->current_iop;
   gasneti_assert_uint(iop->threadidx ,==, mythread->threadidx);
-  gasneti_assert(iop->next == NULL);
   gasneti_assert_uint(OPTYPE(iop) ,==, OPTYPE_IMPLICIT);
   #if GASNET_DEBUG
     if (iop->next != NULL)

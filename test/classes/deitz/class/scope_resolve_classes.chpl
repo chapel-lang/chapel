@@ -1,18 +1,21 @@
-var y = 3;
+module OuterModule {
+  var y = 3;
 
-class C {
-  var x = 2;
-}
-
-module M {
-  var y = 1;
-  proc C.foo() {
-    writeln(y, x);
+  class C {
+    var x = 2;
   }
 
-  proc main() {
-    var c = new unmanaged C();
-    c.foo();
-    delete c;
+  module M {
+    import OuterModule.C;
+    var y = 1;
+    proc C.foo() {
+      writeln(y, x);
+    }
+
+    proc main() {
+      var c = new unmanaged C();
+      c.foo();
+      delete c;
+    }
   }
 }

@@ -1,2 +1,2 @@
-./luleshInit.chpl:23: error: halt reached - you must either set --filename or --elemsPerEdge to run LULESH
+./luleshInit.chpl:25: error: halt reached - you must either set --filename or --elemsPerEdge to run LULESH
 cat: coords.out: No such file or directory

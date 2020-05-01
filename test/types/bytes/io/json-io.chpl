@@ -1,3 +1,5 @@
+use IO;
+
 record Rec {
   var foo: int;
   var bar: bytes;

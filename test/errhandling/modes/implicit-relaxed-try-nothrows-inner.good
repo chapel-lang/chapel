@@ -1,3 +1,4 @@
+implicit-relaxed-try-nothrows-inner.chpl:21: warning: This file-scope code is outside of any explicit module declarations (e.g., module mymodule), so an implicit module named 'implicit-relaxed-try-nothrows-inner' is being introduced to contain the file's contents.
 implicit-relaxed-try-nothrows-inner.chpl:5: In function 'propError':
 implicit-relaxed-try-nothrows-inner.chpl:6: error: call to throwing function throwAnError without throws, try, or try! (relaxed mode)
 ../ExampleErrors.chpl:1: note: throwing function throwAnError defined here

@@ -1,6 +1,7 @@
 //  Simple LU algorithm with pivoting.
 //  Using 1D slices into A for i only.
 //  Magic square of dimension 10 is used as test matrix.
+use IO;
 
 param n = 10;
 

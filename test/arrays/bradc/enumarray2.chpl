@@ -1,8 +1,8 @@
+use Map;
+
 enum classVals { S, W, A, B, C, D, O };
 
-var DClass: domain(classVals);
-
-var probSize: [DClass] int;
+var probSize = new map(classVals, int);
 
 probSize(classVals.S) = 123;
 probSize(classVals.W) = 456;

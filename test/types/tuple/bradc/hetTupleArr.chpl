@@ -14,13 +14,13 @@ var E: [1..n, 1..n] 3*(real, real, real);
 var F: [1..n, 1..n] ((real, real, real), (real, real, real), (real, real, real));
 
 forall (i,j) in {1..n, 1..n} {
-  forall (x,y) in {1..3, 1..3} {
-    A(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
-    B(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
-    C(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
-    D(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
-    E(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
-    F(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + (x-1)*3 + y;
+  forall (x,y) in {0..2, 0..2} {
+    A(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
+    B(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
+    C(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
+    D(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
+    E(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
+    F(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
   }
 }
 

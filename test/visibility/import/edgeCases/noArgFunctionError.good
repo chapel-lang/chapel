@@ -1,0 +1,5 @@
+noArgFunctionError.chpl:12: In function 'main':
+noArgFunctionError.chpl:13: error: unresolved call 'A.foo()'
+noArgFunctionError.chpl:2: note: this candidate did not match: foo(x: int)
+noArgFunctionError.chpl:13: note: because call does not supply enough arguments
+noArgFunctionError.chpl:2: note: it is missing a value for formal 'x: int(64)'

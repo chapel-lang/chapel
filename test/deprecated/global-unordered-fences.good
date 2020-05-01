@@ -1,2 +1,0 @@
-global-unordered-fences.chpl:4: error: unorderedAtomicFence() is no longer supported - please use unorderedAtomicTaskFence() instead
-global-unordered-fences.chpl:5: error: unorderedCopyFence() is no longer supported - please use unorderedCopyTaskFence() instead

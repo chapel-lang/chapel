@@ -1,3 +1,5 @@
+use IO;
+
 proc print(x) {
   writeln(x);
 

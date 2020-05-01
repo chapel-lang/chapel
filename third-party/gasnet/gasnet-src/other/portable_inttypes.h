@@ -23,18 +23,22 @@
 
 #ifndef _INTTYPES_DEFINED
 #define _INTTYPES_DEFINED
+  /* compilers complying to modern standards shouldn't need this header at all */
+  #if (__cplusplus >= 201103L || __STDC_VERSION__ >= 199901L) && !defined(COMPLETE_INTTYPES_H)
+    #define COMPLETE_INTTYPES_H 1
+  #endif
   /* first, check for the easy and preferred case - 
      if configure reports that a standards-compliant 
      system header is available, then use it */
-  #if defined(COMPLETE_INTTYPES_H)
+  #if COMPLETE_INTTYPES_H
     /* inttypes.h is preferred, because it also provides format specifiers */
     #ifndef __STDC_FORMAT_MACROS
     #define __STDC_FORMAT_MACROS 1 /* C99 mandates this predef for C++ clients */
     #endif
     #include <inttypes.h>
-  #elif defined(COMPLETE_STDINT_H)
+  #elif COMPLETE_STDINT_H
     #include <stdint.h>
-  #elif defined(COMPLETE_SYS_TYPES_H)
+  #elif COMPLETE_SYS_TYPES_H
     #include <sys/types.h>
   /* next, certain known systems are handled specially */
   #elif defined(_WIN32) && defined(_MSC_VER) /* MS Visual C++ */

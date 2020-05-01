@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +30,7 @@
 
 module Time {
   private use SysBasic;
+  import HaltWrappers;
 
 // Returns the number of seconds since midnight.  Has the potential for
 // microsecond resolution if supported by the runtime platform
@@ -108,7 +110,7 @@ proc getCurrentDayOfWeek() : Day {
 
   chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
 
-  return wday : Day;
+  return try! wday : Day;
 }
 
 /*

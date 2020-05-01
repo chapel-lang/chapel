@@ -8,27 +8,10 @@ module mymodule {
     var x: int;
   }
 
-  proc setupArrays(A, B, instance) lifetime A < instance, B < instance, B < A {
-    A[1] = instance;
-    A[2] = A[1];
-    B[1] = A[1];
-    B[2] = B[1];
-  }
-
-  proc setupArray(Arr) {
-    var ret:[1..n] borrowed MyClass = Arr!;
-    return ret;
-  }
-
   proc main() {
-    var Aq:[1..n] borrowed MyClass?;
-    var Bq:[1..n] borrowed MyClass?;
-
     var instance = new borrowed MyClass(0);
-    setupArrays(Aq, Bq, instance);
-
-    var A:[1..n] borrowed MyClass = Aq!; //setupArray(Aq);
-    var B:[1..n] borrowed MyClass = Bq!; //setupArray(Bq);
+    var A = [instance, instance];
+    var B = [instance, instance];
 
     var sum = 0;
     for k in 1..n {

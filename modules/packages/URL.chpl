@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +28,7 @@ For example, the following program downloads a web-page from http://example.com 
 
   use URL;
   var urlreader = openUrlReader("http://example.com");
-  var str:string;
+  var str:bytes;
   // Output each line read from the URL to stdout
   while(urlreader.readline(str)) {
     write(str);
@@ -41,19 +42,20 @@ For example, the following program downloads a web-page from http://example.com 
  */
 
 module URL {
+  public use IO;
 
   /*
 
   Open a channel reading from a particular URL.
 
   :arg url: which url to open (for example, "http://example.com").
-  :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+  :arg kind: :type:`~IO.iokind` compile-time argument to determine the
+              corresponding parameter of the :record:`~IO.channel` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
-              :record:`iostyle` controls the formatting choices.
+              :record:`~IO.iostyle` controls the formatting choices.
   :arg locking: compile-time argument to determine whether or not the
                 channel should use locking; sets the
-                corresponding parameter of the :record:`channel` type.
+                corresponding parameter of the :record:`~IO.channel` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
   :arg start: zero-based byte offset indicating where in the file the
@@ -83,13 +85,13 @@ module URL {
   Open a channel writing to a particular URL.
 
   :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
-  :arg kind: :type:`iokind` compile-time argument to determine the
-             corresponding parameter of the :record:`channel` type. Defaults
+  :arg kind: :type:`~IO.iokind` compile-time argument to determine the
+             corresponding parameter of the :record:`~IO.channel` type. Defaults
              to ``iokind.dynamic``, meaning that the associated
-             :record:`iostyle` controls the formatting choices.
+             :record:`~IO.iostyle` controls the formatting choices.
   :arg locking: compile-time argument to determine whether or not the
                 channel should use locking; sets the
-                corresponding parameter of the :record:`channel` type.
+                corresponding parameter of the :record:`~IO.channel` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
   :arg start: zero-based byte offset indicating where in the file the

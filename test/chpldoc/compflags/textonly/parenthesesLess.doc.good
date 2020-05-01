@@ -3,6 +3,10 @@ parenthesesLess.doc
 Usage:
    use parenthesesLess.doc;
 
+or
+
+   import parenthesesLess.doc;
+
    proc foo
    proc bar: bool
    proc foo2

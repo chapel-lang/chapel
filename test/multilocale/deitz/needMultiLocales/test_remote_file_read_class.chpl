@@ -1,3 +1,5 @@
+use IO;
+
 class C {
   var x: int;
   var y: real;

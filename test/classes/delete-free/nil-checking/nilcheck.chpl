@@ -6,64 +6,64 @@ class MyClass {
 }
 
 proc bad1() {
-  var x:borrowed MyClass;
-  x.method();
+  var x:borrowed MyClass?;
+  x!.method();
 }
 bad1();
 
 proc bad2() {
-  var x:borrowed MyClass;
+  var x:borrowed MyClass?;
   x = nil;
-  x.method();
+  x!.method();
 }
 bad2();
 
 proc bad3() {
-  var x:unmanaged MyClass;
-  x.method();
+  var x:unmanaged MyClass?;
+  x!.method();
 }
 bad3();
 
 proc bad4() {
-  var x:unmanaged MyClass;
+  var x:unmanaged MyClass?;
   x = nil;
-  x.method();
+  x!.method();
 }
 bad4();
 
 proc bad5() {
-  var x:owned MyClass;
-  x.method();
+  var x:owned MyClass?;
+  x!.method();
 }
 bad5();
 
 proc bad6() {
-  var x:owned MyClass;
+  var x:owned MyClass?;
   x = nil;
-  x.method();
+  x!.method();
 }
 bad6();
 
 proc bad7() {
-  var x:owned MyClass;
-  x.method();
+  var x:shared MyClass?;
+  x!.method();
 }
 bad7();
 
 proc bad8() {
-  var x:owned MyClass;
+  var x:shared MyClass?;
   x = nil;
-  x.method();
+  x!.method();
 }
 bad8();
 
 config param falseParam = false;
 
 proc bad9() {
-  var x:owned MyClass;
+  var x:owned MyClass?;
   if falseParam then
     x = new owned MyClass(1);
-  x.method();
+  x!.method();
 }
 bad9();
 
@@ -76,9 +76,9 @@ proc ok1() {
 ok1();
 
 proc ok2() {
-  var x:borrowed MyClass;
+  var x:borrowed MyClass?;
   x = new borrowed MyClass(1);
-  x.method();
+  x!.method();
 }
 ok2();
 
@@ -89,9 +89,9 @@ proc ok3() {
 ok3();
 
 proc ok4() {
-  var x:owned MyClass;
+  var x:owned MyClass?;
   x = new owned MyClass(1);
-  x.method();
+  x!.method();
 }
 ok4();
 
@@ -102,9 +102,9 @@ proc ok5() {
 ok5();
 
 proc ok6() {
-  var x:shared MyClass;
+  var x:shared MyClass?;
   x = new shared MyClass(1);
-  x.method();
+  x!.method();
 }
 ok6();
 
@@ -115,8 +115,8 @@ proc ok7() {
 ok7();
 
 proc ok8() {
-  var x:unmanaged MyClass;
+  var x:unmanaged MyClass?;
   x = new unmanaged MyClass(1);
-  x.method();
+  x!.method();
 }
 ok8();

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +29,7 @@
 #include "flags.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "ParamForLoop.h"
 #include "stlUtil.h"
@@ -1104,6 +1106,10 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
   newline();
   node->src->accept(this);
 
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
 
   if (!node->isPlainUse()) {
     node->writeListPredicate(mFP);
@@ -1116,7 +1122,46 @@ void AstDumpToNode::visitUseStmt(UseStmt* node)
     for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
          it != node->renamed.end(); ++it) {
       newline();
-      fprintf(mFP, "%s as %s", it->second, it->first);
+      fprintf(mFP, "%s 'as' %s", it->second, it->first);
+    }
+  }
+
+  mOffset = mOffset - 2;
+  newline();
+  exitNode(node);
+}
+
+void AstDumpToNode::visitImportStmt(ImportStmt* node)
+{
+  enterNode(node);
+
+  mOffset = mOffset + 2;
+
+  if (compact)
+  {
+    mNeedSpace = true;
+    fprintf(mFP, " 'import'");
+  }
+
+  newline();
+  node->src->accept(this);
+
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+
+    for_vector(const char, str, node->unqualified) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+
+    for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
+         it != node->renamed.end(); ++it) {
+      newline();
+      fprintf(mFP, "%s 'as' %s", it->second, it->first);
     }
   }
 
@@ -1226,6 +1271,9 @@ bool AstDumpToNode::enterGotoStmt(GotoStmt* node)
       fprintf(mFP, "tag:   gotoBreakErrorHandling");
       break;
 
+    case GOTO_ERROR_HANDLING_RETURN:
+      fprintf(mFP, "tag:   gotoErrorHandlingReturn");
+      break;
   }
 
   if (SymExpr* label = toSymExpr(node->label))

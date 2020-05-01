@@ -1,7 +1,9 @@
+use IO;
+
 class mything {
   var x:int;
 
-  proc readWriteThis(rw) {
+  proc readWriteThis(rw) throws {
     rw <~> x;
   }
 }
@@ -9,7 +11,7 @@ class mything {
 class subthing : mything {
   var y:int;
 
-  override proc readWriteThis(rw) {
+  override proc readWriteThis(rw) throws {
     rw <~> x;
     rw <~> new ioLiteral(",");
     rw <~> y;
