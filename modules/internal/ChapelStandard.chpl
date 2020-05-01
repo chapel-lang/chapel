@@ -67,6 +67,7 @@ module ChapelStandard {
   use Assert;
   use Types;
   use Math;
+  use Builtins;
 
   private use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }
