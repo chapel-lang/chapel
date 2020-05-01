@@ -306,8 +306,7 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
 }
 
 // Populate the pythonNames map with the translation for bools, differently
-// sized integers, etc. Only types marked (FLAG_PRIMITIVE_TYPE) go in this
-// table.
+// sized integers, etc.
 static void setupPythonTypeMap() {
   pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
   pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
