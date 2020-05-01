@@ -1645,8 +1645,9 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       if (!sym->isRef())
         sym->addFlag(FLAG_NO_AUTO_DESTROY);
 
-    retval = se;
-    call->replace(se->remove());
+    retval = se->remove();
+    call->replace(retval);
+
     break;
   }
 
