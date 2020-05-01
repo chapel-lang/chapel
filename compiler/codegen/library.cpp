@@ -330,7 +330,7 @@ static void setupPythonTypeMap() {
   }
 
   if (dtString != NULL) {
-    pythonNames[dtBytes->symbol] = std::make_pair("", "object");
+    pythonNames[dtString->symbol] = std::make_pair("", "object");
   }
 
   // TODO: Handle bigint (which should naturally match to Python's int)
