@@ -1251,6 +1251,27 @@ static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
 // become a QUAL_VAL.
 //
 static void replaceRecordWrappedRefs() {
+
+  /*
+
+   Disabling for now e.g. test/arrays/bradc/arrOfDom/arrOfDom.chpl
+
+    const D: [1..10] domain(1) = [i in 1..10] {1..i};
+
+   By design (of my current work), the array elements (which are domains) are
+   left uninitialized and then "move"d into to initialize them. That means that
+   later in compilation, somewhere, there is PRIM_ASSIGN aa, bb -- where aa is a
+   ref to the current element and bb is the value result of the iterator.
+
+   But, replaceRecordWrappedRefs is replacing the aa with a value. That value
+   isn't initialized. Then the PRIM_ASSIGN is dead code eliminated.
+
+   Note, this function was added in PR 4925.
+
+   */
+
+  return;
+
   std::vector<Symbol*> todo;
 
   // Changes reference fields with a record-wrapped type into value fields.
