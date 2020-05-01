@@ -1813,6 +1813,9 @@ void insertFormalTemps(FnSymbol* fn) {
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
 
+      // Don't destroy formal temps until the end of the function
+      tmp->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
       if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       if (formal->hasFlag(FLAG_NO_AUTO_DESTROY))
