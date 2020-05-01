@@ -326,6 +326,14 @@ static void setupPythonTypeMap() {
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
               std::make_pair("double complex", "numpy.complex128");
 
+  if (dtBytes != NULL) {
+    pythonNames[dtBytes->symbol] = std::make_pair("", "object");
+  }
+
+  if (dtString != NULL) {
+    pythonNames[dtBytes->symbol] = std::make_pair("", "object");
+  }
+
   // TODO: Handle bigint (which should naturally match to Python's int)
 
 }
@@ -342,6 +350,10 @@ std::string getPythonTypeName(Type* type, PythonFileType pxd) {
     std::string res = tNames.second;
     if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
       res += "_t";
+    } else if (strcmp(res.c_str(), "object") == 0) {
+      // Types like byte and string map to Python objects that have no 1-to-1
+      // representation in C.
+      return res;
     } else {
       res = getPythonTypeName(type, C_PXD);
     }

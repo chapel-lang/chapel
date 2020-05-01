@@ -2314,20 +2314,8 @@ static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
 
   funcCall += "cdef chpl_external_array ret_arr = ";
 
-  std::string typeStr;
-  std::string typeStrCDefs;
-
-  //
-  // String and bytes are not considered primitive types so we cannot fetch
-  // them from the Python type map.
-  //
-  if (eltType == dtString || eltType == dtBytes) {
-    typeStr = "object";
-    typeStrCDefs = "object";
-  } else {
-    typeStr = getPythonTypeName(eltType, PYTHON_PYX);
-    typeStrCDefs = getPythonTypeName(eltType, C_PYX);
-  }
+  std::string typeStr = getPythonTypeName(eltType, PYTHON_PYX);
+  std::string typeStrCDefs = getPythonTypeName(eltType, C_PYX);
 
   //
   // Create the numpy array to return. The form looks like:
