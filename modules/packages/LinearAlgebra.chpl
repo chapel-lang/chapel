@@ -1332,39 +1332,79 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
 }
 
 /* Compute least-squares solution to ``A * x = b``.
+   Compute a vector ``x`` such that the 2-norm ``|b - A x|`` is minimized.
+  Returns a tuple of ``(x, residues, rank, s)``, where:
 
-  Returns a tuple of ``(x, residues, rank)``, where:
+  - ``x`` is the the least-squares solution with shape of ``b``
+  - ``residues`` is the square of the 2-norm for each column in ``b - a x`` if ``M > N`` and ``A.rank == n``
+    - ``residues`` is a scalar if ``b`` is 1-D, otherwise it is a 1-element array
+  - ``rank`` is the effective rank of ``A``
+  - ``s`` is the singular values of ``a``
 
-  - ``x`` is the the least-squares solution
-  - ``residues`` is the ..
-  - ``rank`` is the ...
+    .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
 */
-proc leastSquares(A: [] ?t, b: [] t) throws
+proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
 {
+  use SysCTypes;
+  import LAPACK;
+  require LAPACK.header;
+
+
+  if A.shape[0] != b.shape[0] {
+    throw new LinearAlgebraError('leastSquares(): A.shape[0] != b.shape[0]: %i != %i'.format(A.shape[0], b.shape[0]));
+  }
+  if A.size == 0 || b.size == 0 {
+    throw new LinearAlgebraError('leastSquares(): A and b cannot be empty');
+  }
+
+  if A.shape[0] < A.shape[1] {
+    // TODO: Pad matrix with 0s
+  }
+
   // TODO: Support b.rank == 2  -- (m,k)
-  // TODO: additional checks:
-  //   - Confirm A.shape[2] matches b.shape[1]
-  //   - Throw error if A and b are empty
-  //   - Special case: if A.shape[1] < A.shape[2]
-  //     - Pad matrix with 0s
 
   const (m, n) = A.shape;
+
+  // TODO: Support overwrite=true/false
   var workA = A;
   var workB: [1..b.size, 1..1] real;
   workB[.., 1] = b;
 
-  // TODO: Make rcond an argument
-  var rcond = epsilon(t);
+  // TODO: decide which style of rcond to use:
+  // The previous default of -1 will use the machine precision as rcond parameter,
+  // the new default will use the machine precision times max(M, N). To silence the
+  // warning and use the new default, use rcond=None, to keep using the old
+  // behavior, use rcond=-1.
+  const rcond = if cond == -1.0 then epsilon(t) else cond;
 
-  var (x, s, rank) = gelsdWrapper(workA, workB, rcond);
+  proc minDim(a) {
+    const (m, n) = a.shape;
+    var minD = min(m, n);
+    return max(0, minD);
+  }
+
+  var matrix_order = lapack_memory_order.row_major;
+
+  var s: [0..<minDim(A)] real(64);
+  var rank: c_int;
+
+  var info = LAPACK.gelsd(matrix_order, workA, workB, s, rcond, rank);
+
+  // Check for errors
+  if info < 0 then
+    throw new owned IllegalArgumentError('gelsd(): Argument %i incorrect'.format(info));
+  else if info > 0 then
+    throw new owned LinearAlgebraError('gelsd(): SVD failed to converge with %i off-diagonal elements not converged to 0'.format(info));
+
+  var x1 = workB[1..n, 1];
 
   var residue: t;
-
-  var x1 = x[1..n, 1];
-
   if rank == n {
-    residue = + reduce (abs(x[n+1.., 1]**2));
+    residue = + reduce (abs(workB[n+1.., 1]**2));
   }
 
   return (x1, residue, rank, s);
@@ -1385,39 +1425,6 @@ private proc epsilon(type t: real(32)) : real {
 /* Machine epsilon for non-real */
 private proc epsilon(type t) param : real {
   return 0.0;
-}
-
-/* Clean wrapper around gelsd, needed b/c LAPACK.gelsd does not return rank */
-proc gelsdWrapper(a : [] real(64), b : [] real(64), rcond : real(64)) throws {
-  use LAPACK.ClassicLAPACK only LAPACKE_dgelsd;
-  require LAPACK.header;
-
-  var matrix_order = lapack_memory_order.row_major;
-  var rank = a.domain.dim(1).size: c_int;
-
-  proc minDim(a) {
-    const (m, n) = a.shape;
-    var minD = min(m, n);
-    return max(1, minD);
-  }
-
-  var s: [1..minDim(a)] real(64);
-
-  var m = (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(2).size): c_int;
-  var n = (if matrix_order == lapack_memory_order.row_major then a.domain.dim(2).size else a.domain.dim(1).size): c_int;
-  var nrhs = (if matrix_order == lapack_memory_order.row_major then b.domain.dim(2).size else b.domain.dim(1).size): c_int;
-  var lda = a.domain.dim(2).size : c_int;
-  var ldb = b.domain.dim(2).size : c_int;
-
-  var info = LAPACKE_dgelsd(matrix_order, m, n, nrhs, a, lda, b, ldb, s, rcond, rank);
-
-  // Check for errors
-  if info < 0 then
-    throw new owned IllegalArgumentError('gelsd(): Argument %i incorrect'.format(info));
-  else if info > 0 then
-    throw new owned LinearAlgebraError('gelsd(): SVD failed to converge with %i off-diagonal elements not converged to 0'.format(info));
-
-  return (b, s, rank);
 }
 
 
@@ -2397,13 +2404,13 @@ module Sparse {
 
     return B;
   }
-  
+
   pragma "no doc"
   proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                                && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
-    // TODO: sps should only contain non-zero entries in resulting array, 
+    // TODO: sps should only contain non-zero entries in resulting array,
     //       i.e. intersection of this.domain and Adom
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
@@ -2435,9 +2442,9 @@ module Sparse {
 
     return B;
   }
-  
+
   pragma "no doc"
-  proc _array.elementDiv(A: [?Adom] ?eltType) where 
+  proc _array.elementDiv(A: [?Adom] ?eltType) where
                                             isSparseArr(this) && !isCSArr(this)
                                             && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
