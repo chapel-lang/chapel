@@ -1367,6 +1367,61 @@ proc cholesky(A: [] ?t, lower = true)
 }
 
 
+/* Find the eigenvalues of a real-symmetric/complex-hermitian matrix
+   ``A``. ``A`` must be square.
+
+   The algorithms uses either the lower-triangular (if ``lower`` is ``true``,
+   or upper-triangular part of the matrix only. If ``overwrite`` is
+   true, on exiting, this part
+   of the matrix, including the diagonal is overwritten.
+
+   .. note::
+
+     This procedure currently just returns all eigenvalues. Future
+     versions may allow the user to selectively return certain eigenvalues.
+     If this functionality is currently desired, the user should
+     call the LAPACK routine directly.
+
+   .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
+
+*/
+proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+  const (n,m) = A.shape;
+  if n != m then throw new LinearAlgebraError("Non-square matrix passed to eigvalsh");
+  param nbits = numBits(t);
+  var w = Vector(n, eltType = if isComplexType(t) then real(nbits/2) else t);
+
+  var Acopy = if overwrite then none else A;
+  ref Aref = if overwrite then A else Acopy;
+
+  var info : int;
+  const uploStr = if lower then "L" else "U";
+
+  if isComplexType(t) {
+    if (nbits != 64) && (nbits != 128) then throw new LinearAlgebraError("LAPACK only supports 64 and 128 bit complex types");
+    info = LAPACK.heev(lapack_memory_order.row_major, "N", uploStr, Aref, w);
+  } else if isRealType(t) {
+    if (nbits != 32) && (nbits != 64) then throw new LinearAlgebraError("LAPACK only supports 32 and 64 bit real types");
+    info = LAPACK.syev(lapack_memory_order.row_major, "N", uploStr, Aref, w);
+  } else {
+    throw new LinearAlgebraError("Unsupported type");
+  }
+
+  if info > 0 {
+    var msg = 'Eigenvalue computation did not converge. Number of elements of the intermediate tridiagonal form that did not converge to zero: ' + info:string;
+    throw new owned LinearAlgebraError(msg);
+  } else if info < 0 {
+    var msg = 'eigvalsh received an illegal argument in LAPACK.heev/syev() argument position: ' + info:string;
+    throw new owned LinearAlgebraError(msg);
+  }
+
+  return w;
+}
+
+
 /* Find the eigenvalues of matrix ``A``. ``A`` must be square.
 
     .. note::

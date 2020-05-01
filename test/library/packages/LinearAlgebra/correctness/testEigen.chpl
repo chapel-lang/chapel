@@ -258,3 +258,89 @@ fillRandom(B);
   }
 }
 
+proc testArray(truth : [?Dom] ?t, check : [Dom] t, src : string) {
+  for (ndx, t1, c1) in zip(Dom, truth, check) {
+    if !isclose(t1, c1) then
+      writeln("Expected ", t1, " != obtained ", c1, " at index ", ndx, " in ",src);
+  }
+}
+
+
+proc testEigenvalSymm1(type t) {
+  var mat0 = Matrix([-2,1,0],[1,-2,1],[0,1,-2],eltType=t);
+  var true0 = Vector(-sqrt(2.0),0.0,sqrt(2.0), eltType=t) - 2.0 : t;
+  
+  // Lower tri, overwrite=false
+  {
+    var mat1 = tril(mat0);
+    var w = eigvalsh(mat1, lower=true);
+    testArray(true0, w, "lower tri, overwrite=false, symm");
+    testArray(tril(mat0), mat1, "lower tri, overwrite=false, symm"); // not overwritten
+  }
+
+  // Upper tri, overwrite=false
+  {
+    var mat1 = triu(mat0);
+    var w = eigvalsh(mat1, lower=false);
+    testArray(true0, w, "upper tri, overwrite=false, symm");
+    testArray(triu(mat0), mat1, "upper tri, overwrite=false, symm"); //not overwritten
+  }
+
+  // Lower tri, overwrite
+  {
+    var mat1 = tril(mat0);
+    var w = eigvalsh(mat1, lower=true, overwrite=false);
+    testArray(true0, w, "lower tri, symm");
+  }
+
+  // Upper tri, overwrite
+  {
+    var mat1 = triu(mat0);
+    var w = eigvalsh(mat1, lower=false, overwrite=false);
+    testArray(true0, w, "upper tri, symm");
+  }
+}
+
+
+proc testEigenvalHerm1(type t) {
+  var mat0 = Matrix([-2+0i,0+1i,3+0i],[0-1i,-2+0i,2+2i],[3+0i,2-2i,-2+0i],eltType=t);
+  var true0 = Vector(-6.5432665971054891651,
+                     -1.3155171261767867149,
+                      1.8587837232822758800, eltType=real(numBits(t)/2));
+  
+  // Lower tri, overwrite=false
+  {
+    var mat1 = tril(mat0);
+    var w = eigvalsh(mat1, lower=true);
+    testArray(true0, w, "lower tri, overwrite=false, herm");
+    testArray(tril(mat0), mat1, "lower tri, overwrite=false, herm"); // not overwritten
+  }
+
+  // Upper tri, overwrite=false
+  {
+    var mat1 = triu(mat0);
+    var w = eigvalsh(mat1, lower=false);
+    testArray(true0, w, "upper tri, overwrite=false, herm");
+    testArray(triu(mat0), mat1, "upper tri, overwrite=false, herm"); //not overwritten
+  }
+
+  // Lower tri, overwrite
+  {
+    var mat1 = tril(mat0);
+    var w = eigvalsh(mat1, lower=true, overwrite=false);
+    testArray(true0, w, "lower tri, herm");
+  }
+
+  // Upper tri, overwrite
+  {
+    var mat1 = triu(mat0);
+    var w = eigvalsh(mat1, lower=false, overwrite=false);
+    testArray(true0, w, "upper tri, herm");
+  }
+}
+
+testEigenvalSymm1(real(32));
+testEigenvalSymm1(real(64));
+testEigenvalHerm1(complex(64));
+testEigenvalHerm1(complex(128));
+
