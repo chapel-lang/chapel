@@ -1333,7 +1333,13 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
 
 /* Compute least-squares solution to ``A * x = b``.
    Compute a vector ``x`` such that the 2-norm ``|b - A x|`` is minimized.
-  Returns a tuple of ``(x, residues, rank, s)``, where:
+
+   ``cond`` is the cut-off threshold such that singular values will be
+   considered 0.0. If ``cond < 0.0`` (defaults to ``-1.0``), the treshold will
+   be set to ``max((...A.shape)) * epsilon``, where ``epsilon`` is the machine
+   precision for ``A.eltType``.
+
+   Returns a tuple of ``(x, residues, rank, s)``, where:
 
   - ``x`` is the the least-squares solution with shape of ``b``
   - ``residues`` is the square of the 2-norm for each column in ``b - a x`` if ``M > N`` and ``A.rank == n``
@@ -1374,22 +1380,11 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   var workB: [1..b.size, 1..1] real;
   workB[.., 1] = b;
 
-  // TODO: decide which style of rcond to use:
-  // The previous default of -1 will use the machine precision as rcond parameter,
-  // the new default will use the machine precision times max(M, N). To silence the
-  // warning and use the new default, use rcond=None, to keep using the old
-  // behavior, use rcond=-1.
-  const rcond = if cond == -1.0 then epsilon(t) else cond;
-
-  proc minDim(a) {
-    const (m, n) = a.shape;
-    var minD = min(m, n);
-    return max(0, minD);
-  }
+  const rcond = if cond == -1.0 then max((...A.shape))*epsilon(t) else cond;
 
   var matrix_order = lapack_memory_order.row_major;
 
-  var s: [0..<minDim(A)] real(64);
+  var s: [0..<min((...A.shape))] real(64);
   var rank: c_int;
 
   var info = LAPACK.gelsd(matrix_order, workA, workB, s, rcond, rank);
@@ -1408,23 +1403,6 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   }
 
   return (x1, residue, rank, s);
-}
-
-/* Machine epsilon for real(64) */
-private proc epsilon(type t: real(64)) : real {
-  extern const DBL_EPSILON: real;
-  return DBL_EPSILON;
-}
-
-/* Machine epsilon for real(32) */
-private proc epsilon(type t: real(32)) : real {
-  extern const FLT_EPSILON: real;
-  return FLT_EPSILON;
-}
-
-/* Machine epsilon for non-real */
-private proc epsilon(type t) param : real {
-  return 0.0;
 }
 
 
@@ -1654,7 +1632,6 @@ proc svd(A: [?Adom] ?t) throws
 {
 
   const (m, n) = A.shape;
-  var minDim = min(m, n);
 
   /* real(32) or real(64) for singular values and superb */
   type realType = if t == complex(128) || t == real(64) then real(64)
@@ -1667,7 +1644,7 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [1..minDim] realType;
+  var s: [1..min((...A.shape))] realType;
   // Unitary matrix, U
   var u: [1..m, 1..m] t;
   // Unitary matrix V^T (or V^H)
@@ -1675,7 +1652,7 @@ proc svd(A: [?Adom] ?t) throws
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
-  var superb: [1..minDim-1] realType;
+  var superb: [1..min((...A.shape))-1] realType;
 
   // TODO: Support option for gesdd (trading memory usage for speed)
   const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
@@ -1818,6 +1795,10 @@ proc type _array.rank param {
   return x.rank;
 }
 
+//
+// Type helperr
+//
+
 pragma "no doc"
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
@@ -1830,6 +1811,26 @@ private proc isDefaultSparseArr(A: []) param {
   return isDefaultSparseDom(A.domain);
 }
 
+//
+// Utility functions
+//
+
+/* Machine epsilon for real(64) */
+private proc epsilon(type t: real(64)) : real {
+  extern const DBL_EPSILON: real;
+  return DBL_EPSILON;
+}
+
+/* Machine epsilon for real(32) */
+private proc epsilon(type t: real(32)) : real {
+  extern const FLT_EPSILON: real;
+  return FLT_EPSILON;
+}
+
+/* Machine epsilon for non-real */
+private proc epsilon(type t) param : real {
+  return 0.0;
+}
 
 
 /* Linear Algebra Sparse Submodule
@@ -2588,6 +2589,7 @@ module Sparse {
   pragma "no doc"
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
   proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
+
 
 } // submodule LinearAlgebra.Sparse
 
