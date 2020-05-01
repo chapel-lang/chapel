@@ -1052,9 +1052,6 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     return symbols[0];
   }
   else if (symbols.size() > 1) {
-    // potentially start the error process here
-    checkConflictingSymbols(symbols, name, context,
-                            traversedRenames, renameLocs);
     if (numFuncs == symbols.size()) {
       // All options found were functions, but we found them from different
       // public imports.  That's okay, though, function resolution will handle
@@ -1062,6 +1059,10 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
       // first function
       return symbols[0];
     }
+
+    // likely start the error process here
+    checkConflictingSymbols(symbols, name, context,
+                            traversedRenames, renameLocs);
   }
   return NULL;
 }
