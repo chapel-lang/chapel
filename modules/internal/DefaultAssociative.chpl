@@ -397,7 +397,7 @@ module DefaultAssociative {
 
         // default initialize newly added array elements
         for a in _arrs do
-          a.clearEntry(idx);
+          a.defaultInitEntry(idx);
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
@@ -415,8 +415,9 @@ module DefaultAssociative {
         lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, needLock=!parSafe);
         if (foundSlot) {
+          // deinit the entry
           for a in _arrs do
-            a.clearEntry(idx);
+            a.deinitEntry(idx);
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -628,11 +629,16 @@ module DefaultAssociative {
     param parSafeDom: bool;
     var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
   
-    pragma "unsafe"
+    pragma "unsafe" pragma "no auto destroy"
+    // may be initialized separately
+    // always destroyed explicitly (to control deiniting elts)
     var data : [dom.tableDom] eltType;
   
     var tmpDom = {0..(-1:chpl_table_index_type)};
-    pragma "unsafe"
+
+    pragma "unsafe" pragma "no auto destroy"
+    // may be initialized separately
+    // always destroyed explicitly (to control deiniting elts)
     var tmpTable: [tmpDom] eltType;
 
     proc init(type eltType,
@@ -644,7 +650,8 @@ module DefaultAssociative {
       this.idxType = idxType;
       this.parSafeDom = parSafeDom;
       this.dom = dom;
-      this.data = dom.tableDom.buildArray(eltType, initElts);
+      this.data = dom.tableDom.buildArray(eltType, initElts=false);
+      this.tmpTable = tmpDom.buildArray(eltType, initElts=false);
       this.complete();
 
       //
@@ -656,6 +663,37 @@ module DefaultAssociative {
                   + " is a non-nilable class";
         compilerError(msg);
       }
+
+      // Initialize array elements for any full slots
+      if initElts {
+        var initMethod = init_elts_method(dom.tableSize, eltType);
+        select initMethod {
+          when ArrayInit.noInit {
+          }
+          when ArrayInit.serialInit {
+            for slot in dom {
+              defaultInitEntry(slot);
+            }
+          }
+          when ArrayInit.parallelInit {
+            forall slot in dom {
+              defaultInitEntry(slot);
+            }
+          }
+          otherwise {
+            halt("ArrayInit.heuristicInit should have been made concrete");
+          }
+        }
+      }
+    }
+
+    proc deinit() {
+      // Elements in data are deinited in dsiDestroyArr if necessary.
+      // Here we need to clean up the rest of the array.
+      _do_destroy_array(data, deinitElts=false);
+
+      // After resizing, tmpTable never stores initialized elements.
+      _do_destroy_array(tmpTable, deinitElts=false);
     }
 
     //
@@ -664,10 +702,20 @@ module DefaultAssociative {
   
     override proc dsiGetBaseDom() return dom;
   
-    override proc clearEntry(idx: idxType) {
-      var initval: eltType;
-      dsiAccess(idx) = initval;
+    override proc defaultInitEntry(idx: idxType) {
+      // default initialize an element and move it in to the
+      // uninitialized storage.
+      pragma "no auto destroy"
+      var initval: eltType; // default initialize
+      ref dst = dsiAccess(idx);
+      __primitive("=", dst, initval);
     }
+
+    override proc deinitEntry(idx: idxType) {
+      // deinitalize the element at idx
+      chpl__autoDestroy(dsiAccess(idx));
+    }
+
 
     // ref version
     proc dsiAccess(idx : idxType) ref {
@@ -887,7 +935,7 @@ module DefaultAssociative {
   
     override proc _backupArray() {
       tmpDom = dom.tableDom;
-      tmpTable = data;
+      chpl__transferArray(tmpTable, data, kind=_tElt.move);
     }
   
     override proc _removeArrayBackup() {
@@ -896,6 +944,9 @@ module DefaultAssociative {
   
     override proc _preserveArrayElement(oldslot, newslot) {
       data(newslot) = tmpTable[oldslot];
+      ref dst = data[newslot];
+      const ref src = tmpTable[oldslot];
+      __primitive("=", dst, src);
     }
 
     proc dsiTargetLocales() {
@@ -914,18 +965,11 @@ module DefaultAssociative {
     }
 
     override proc dsiDestroyArr(param deinitElts:bool) {
-      //
-      // BHARSH 2017-09-08: Workaround to avoid recursive iterator generation.
-      //
-      // If this method didn't exist, the compiler would incorrectly think
-      // that there was recursion between Replicated, DefaultAssociative, and
-      // DefaultRectangular due to virtual method dispatch on dsiDestroyArr.
-      //
-      // The generated recursive iterator would result in a use-after-free bug
-      // for the following test under --no-local:
-      //
-      // users/npadmana/bugs/replicated_invalid_ref_return/replicated_bug.chpl
-      //
+      if deinitElts {
+        for slot in dom {
+          chpl__autoDestroy(dsiAccess(slot));
+        }
+      }
     }
   }
   

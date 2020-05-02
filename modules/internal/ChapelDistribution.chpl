@@ -745,8 +745,11 @@ module ChapelDistribution {
 
     // methods for associative arrays
     // MPF:  why do these need to be in BaseDom at all?
-    proc clearEntry(idx) {
+    proc defaultInitEntry(idx) {
       halt("clearEntry() not supported for non-associative arrays");
+    }
+    proc deinitEntry(idx) {
+      halt("deinitEntry() not supported for non-associative arrays");
     }
 
     proc _backupArray() {
