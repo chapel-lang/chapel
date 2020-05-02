@@ -3969,10 +3969,16 @@ module ChapelArray {
           ref dst = a(j);
           const ref src = b(i);
           if kind == _tElt.move {
-            __primitive("=", dst, src);
+            if isArray(dst) {
+              pragma "no auto destroy" pragma "no copy"
+              var newArr = chpl__coerceMove(a.eltType, src);
+              __primitive("=", dst, newArr);
+            } else {
+              __primitive("=", dst, src);
+            }
           } else if kind == _tElt.initCopy {
             pragma "no auto destroy"
-            var copy = src; // init copy
+            var copy: a.eltType = src; // init copy
             __primitive("=", dst, copy);
           } else if kind == _tElt.assign {
             dst = src;
