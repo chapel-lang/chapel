@@ -3851,6 +3851,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       }
 
     } else if (info.name == astrSassign) {
+
       if        (info.actuals.v[0]                              !=  NULL  &&
                  info.actuals.v[1]                              !=  NULL  &&
                  info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
@@ -3885,6 +3886,14 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        toString(info.actuals.v[0]->type),
                        toString(info.actuals.v[1]->type));
       }
+
+    } else if (info.name == astr("chpl__coerceCopy") ||
+               info.name == astr("chpl__coerceMove")) {
+
+        USR_FATAL_CONT(call,
+                       "Cannot initialize %s from %s",
+                       toString(info.actuals.v[0]->type),
+                       toString(info.actuals.v[1]->type));
 
     } else if (info.name == astrThis) {
       Type* type = info.actuals.v[1]->getValType();
