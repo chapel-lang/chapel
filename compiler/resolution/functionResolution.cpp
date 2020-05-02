@@ -10263,8 +10263,8 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
     // Handle tuple variables marked "no init". Convert to NOP and leave.
     if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
-      if (val->hasFlag(FLAG_NO_INIT) ||
-          call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      if (val->hasFlag(FLAG_NO_INIT) &&
+          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
         call->convertToNoop();
         return;
       }
