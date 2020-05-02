@@ -1561,5 +1561,20 @@ module List {
     return !(a == b);
   }
 
-} // End module "Lists".
+  /*
+    Joins multiple LinkedLists together.
 
+    :arg ls: Lists to concatenate.
+    :type ls: `list(t, p)`
+
+    :return: A new list, which is the concatenation of all the lists passed in.
+    :rtype: `list(t, p)`
+  */
+  proc concat(ls: list(?t, ?p) ...?k) {
+    var res: list(t, p);
+    for param i in 0..#k do
+      res.extend(ls[i]);
+    return res;
+  }
+
+} // End module "Lists".

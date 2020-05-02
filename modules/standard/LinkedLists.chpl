@@ -349,4 +349,20 @@ proc makeList(x ...?k) {
   return s;
 }
 
+/*
+  Joins multiple LinkedLists together.
+
+  :arg ls: Lists to concatenate.
+  :type ls: `LinkedList(t)`
+
+  :return: A new list, which is the concatenation of all the lists passed in.
+  :rtype: `LinkedList(t)`
+*/
+proc concat(ls: LinkedList(?t) ...?k) {
+  var res: LinkedList(t);
+  for param i in 0..#k do
+    res.concat(ls[i]);
+  return res;
+}
+
 } // end module LinkedLists
