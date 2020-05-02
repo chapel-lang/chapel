@@ -1389,23 +1389,54 @@ proc cholesky(A: [] ?t, lower = true)
 
 */
 proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+  return eigh(A, lower=lower, overwrite=overwrite, eigvalsOnly=true);
+}
+
+/* Find the eigenvalues and eigenvectors of a real-symmetric/complex-hermitian matrix
+   ``A``. ``A`` must be square.
+
+   The algorithms uses either the lower-triangular (if ``lower`` is ``true``,
+   or upper-triangular part of the matrix only.
+
+   If ``overwrite`` is true, the matrix is overwritten with the eigenvectors and
+   only the eigenvalues are returned, otherwise the original matrix is preserved.
+
+   The eigenvectors are stored in the columns of the returned matrix i.e. ``A[..,i]`` is the
+   ``i``'th eigenvector.
+
+   .. note::
+
+     This procedure currently just returns all eigenvalues and eigenvectors. Future
+     versions may allow the user to selectively return certain eigenvalues and their
+     corresponding eigenvectors.
+     If this functionality is currently desired, the user should
+     call the LAPACK routine directly.
+
+   .. note::
+
+      This procedure depends on the :mod:`LAPACK` module, and will generate a
+      compiler error if ``lapackImpl`` is ``none``.
+
+*/
+proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   const (n,m) = A.shape;
-  if n != m then throw new LinearAlgebraError("Non-square matrix passed to eigvalsh");
+  if n != m then throw new LinearAlgebraError("Non-square matrix passed to eigh");
   param nbits = numBits(t);
   var w = Vector(n, eltType = if isComplexType(t) then real(nbits/2) else t);
 
   var Acopy = if overwrite then none else A;
   ref Aref = if overwrite then A else Acopy;
+  var jobz = if !eigvalsOnly then "V" else "N";
 
   var info : int;
   const uploStr = if lower then "L" else "U";
 
   if isComplexType(t) {
     if (nbits != 64) && (nbits != 128) then throw new LinearAlgebraError("LAPACK only supports 64 and 128 bit complex types");
-    info = LAPACK.heev(lapack_memory_order.row_major, "N", uploStr, Aref, w);
+    info = LAPACK.heev(lapack_memory_order.row_major, jobz, uploStr, Aref, w);
   } else if isRealType(t) {
     if (nbits != 32) && (nbits != 64) then throw new LinearAlgebraError("LAPACK only supports 32 and 64 bit real types");
-    info = LAPACK.syev(lapack_memory_order.row_major, "N", uploStr, Aref, w);
+    info = LAPACK.syev(lapack_memory_order.row_major, jobz, uploStr, Aref, w);
   } else {
     throw new LinearAlgebraError("Unsupported type");
   }
@@ -1418,9 +1449,8 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
     throw new owned LinearAlgebraError(msg);
   }
 
-  return w;
+  if (!eigvalsOnly && !overwrite) then return (w, Acopy); else return w;
 }
-
 
 /* Find the eigenvalues of matrix ``A``. ``A`` must be square.
 
