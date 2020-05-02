@@ -4653,7 +4653,7 @@ module ChapelArray {
   pragma "ignore transfer errors"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
-    pragma "unsafe"
+    pragma "unsafe" pragma "no copy"
     var result = shape.buildArray(iteratorToArrayElementType(ir.type),
                                   initElts=false);
 
