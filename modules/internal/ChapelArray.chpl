@@ -4516,7 +4516,7 @@ module ChapelArray {
     // always copies because there is 1 rhs but many array elts (generally)
     forall e in lhs with (in rhs) {
       pragma "no auto destroy"
-      var copy = rhs; // make a copy for this iteration
+      var copy: eltType = rhs; // make a copy for this iteration
       // move it into the array
       __primitive("=", e, copy);
     }
