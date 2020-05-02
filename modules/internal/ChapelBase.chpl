@@ -877,7 +877,8 @@ module ChapelBase {
     }
   }
 
-  proc init_elts(x, s, type t, lo=0:s.type) : void {
+  // s is the number of elements, t is the element type
+  proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
 
     // no need to init an array of zeros
@@ -925,6 +926,13 @@ module ChapelBase {
     if initMethod == ArrayInit.parallelInit && !rootLocaleInitialized {
       initMethod = ArrayInit.serialInit;
     }
+
+    return initMethod;
+  }
+
+  proc init_elts(x, s, type t, lo=0:s.type) : void {
+
+    var initMethod = init_elts_method(s, t);
 
     // Q: why is the declaration of 'y' in the following loops?
     //
