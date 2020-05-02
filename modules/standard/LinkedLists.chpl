@@ -205,10 +205,10 @@ record LinkedList {
 
   /*
     Returns true if this list contains an element equal to the value of
-    x. Returns false otherwise.
+    e. Returns false otherwise.
 
-    :arg e: The element to be checked for
-    :return: True if the item was found, otherwise returns false
+    :arg e: The element search for
+    :return: `true` if the `e` was found
     :rtype: `bool`
    */
   proc contains(const e: eltType): bool {
@@ -225,9 +225,8 @@ record LinkedList {
     
     .. warning::
       Calling this method on an empty list will cause the currently running 
-      program to halt. if the --fast flag is used, no safety checks will be
+      program to halt. If the --fast flag is used, no safety checks will be
       performed
-
 
     :return: a reference to the first item in the list
     :rtype: `ref eltType`
@@ -245,11 +244,10 @@ record LinkedList {
 
     .. warning::
       Calling this method on an empty list will cause the currently running 
-      program to halt. if the --fast flag is used, no safety checks will be
+      program to halt. If the --fast flag is used, no safety checks will be
       performed
 
-
-    :return: a reference to the last item in the lsit
+    :return: a reference to the last item in the list
     :rtype: `ref eltType`
    */
   proc ref last() ref: eltType {
