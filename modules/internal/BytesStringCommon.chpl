@@ -23,6 +23,7 @@ module BytesStringCommon {
   private use SysCTypes;
   private use Bytes;
   private use ByteBufferHelpers;
+  private use ChapelUtil;
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
@@ -271,19 +272,6 @@ module BytesStringCommon {
       x.buff[x.buffLen] = 0;
       x.buffSize = allocSize;
     }
-  }
-
-  //check if size of buffer to be allocated is within safe limits
- //if val > uint(64) resulting in casting error.
-  proc safeAdd(val1: int(64) , val2: int(64)){
-    if val1 + val2 < 0 then
-      halt("Buffer overflow allocating string copy data");
-  }
-
-  proc safeMul(val1: int(64), val2: int(64)){
-    var checkPosVal = max(int(64))/val2;
-    if val2 >0 && val1 > checkPosVal then
-      halt("Buffer overflow allocating string copy data");
   }
 
   // TODO: I wasn't very good about caching variables locally in this one.
@@ -540,8 +528,9 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      safeAdd(lhs.buffLen, rhs.buffLen);
-      const newLength = lhs.buffLen+rhs.buffLen;
+      if !safeAdd(lhs.buffLen,rhs.buffLen) then 
+        halt("Buffer overflow allocating string copy data");
+      const newLength = lhs.buffLen + rhs.buffLen;
       //resize the buffer if needed
       if lhs.buffSize <= newLength {
         const requestedSize = max(newLength+1,
@@ -623,7 +612,8 @@ module BytesStringCommon {
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
-    safeMul(sLen, n);
+    if !safeMul(sLen, n) then 
+      halt("Buffer overflow allocating string copy data");
     ret.buffLen = sLen * n;
     var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
