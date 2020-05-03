@@ -105,7 +105,7 @@ module ChapelUtil {
   proc safeMul(a: ?t, b:t){
     if !isIntegralType(t) then
       compilerError("Values must be of integral type.");
-    if (a==-1 && b == min(t) )then return false;
+    if a==-1 && b == min(t) then return false;
     if b==-1 && a == min(t) then return false; 
     if a > max(t)/b then return false;
     if a < min(t)/b then return false;
