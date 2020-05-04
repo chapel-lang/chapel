@@ -4,13 +4,13 @@ module A {
   }
 }
 module B {
-  proc foo(x: int) {
-    writeln("B.foo ", x);
+  proc bar(x: int) {
+    writeln("B.bar ", x);
   }
 }
 module C {
   public import A.foo;
-  public import B.foo;
+  public import B.bar as foo;
 }
 module D {
   import C;
