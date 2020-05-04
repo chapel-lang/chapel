@@ -2310,13 +2310,15 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (field->hasFlag(FLAG_UNSAFE))
           arg->addFlag(FLAG_UNSAFE);
 
-        /*if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
+        if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
-            CallExpr* copy = new CallExpr("chpl__initCopy");
-            defPoint->init->replace(copy);
-            copy->insertAtTail(fe);
+            if (defPoint->exprType == NULL) {
+              CallExpr* copy = new CallExpr("chpl__initCopy");
+              defPoint->init->replace(copy);
+              copy->insertAtTail(fe);
+            }
           }
-        }*/
+        }
 
         //
         // A generic field.  Could be type/param/variable
