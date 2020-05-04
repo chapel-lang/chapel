@@ -117,8 +117,6 @@ static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
                                         SymbolMap& copyMap,
                                         Symbol* curActual);*/
 
-static bool mustUseRuntimeTypeDefault(ArgSymbol* formal);
-
 static bool typeExprReturnsType(ArgSymbol* formal);
 
 static IntentTag getIntent(ArgSymbol* formal);
@@ -1533,7 +1531,35 @@ static void copyFormalTypeExprWrapper(FnSymbol* fn,
   body->flattenAndRemove();
 }
 
-/*static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
+static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
+                                        ArgSymbol* formal,
+                                        CallExpr* call,
+                                        BlockStmt* body,
+                                        SymbolMap& copyMap,
+                                        Symbol* curActual);
+
+static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
+                                            ArgSymbol* formal,
+                                            CallExpr* call,
+                                            SymExpr* curActual,
+                                            SymbolMap& copyMap) {
+
+  BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
+  call->getStmtExpr()->insertBefore(body);
+
+  Symbol* newSym = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, curActual->symbol());
+  copyMap.put(formal, newSym);
+
+  update_symbols(body, &copyMap);
+  normalize(body);
+  resolveBlockStmt(body);
+  reset_ast_loc(body, call);
+  body->flattenAndRemove();
+
+  curActual->setSymbol(newSym);
+}
+
+static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
                                         ArgSymbol* formal,
                                         CallExpr* call,
                                         BlockStmt* body,
@@ -1558,8 +1584,16 @@ static void copyFormalTypeExprWrapper(FnSymbol* fn,
   }
 
   return ret;
-}*/
+}
 
+// BHARSH 2018-05-02: For a case like 'in D = {1..4}' normalization
+// currently turns the AST into something like:
+//   in D : {1..4} = {1..4}
+// The typeExpr doesn't actually return a type, and is considered invalid in
+// this particular context.
+//
+// Note: typeExpr is assumed to have been resolved during signature
+// instantiation
 static bool typeExprReturnsType(ArgSymbol* formal) {
   if (formal->typeExpr != NULL) {
     Expr* last = formal->typeExpr->body.tail;
@@ -1578,27 +1612,14 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
   return false;
 }
 
-// We have to use the array default if:
-// 1) There is a valid type expr
-//   OR
-// 2) There is a defaultExpr that is not just gTypeDefaultToken
+// We have to use the array default if
+// *  There is not a valid type expr and there is a
+//    defaultExpr that is not just gTypeDefaultToken
 //
 // We do not want to generate defaults for fully or partially generic cases:
 //   in A : [] real;
 //   in A : []
-//
-// Note: typeExpr is assumed to have been resolved during signature
-// instantiation
-//
-// BHARSH 2018-05-02: For a case like 'in D = {1..4}' normalization
-// currently turns the AST into something like:
-//   in D : {1..4} = {1..4}
-// The typeExpr doesn't actually return a type, and is considered invalid in
-// this particular context.
 static bool mustUseRuntimeTypeDefault(ArgSymbol* formal) {
-  if (typeExprReturnsType(formal)) {
-    return true;
-  }
   if (formal->defaultExpr != NULL && defaultedFormalUsesDefaultForType(formal) == false) {
     return true;
   }
@@ -1654,12 +1675,14 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 
       // Arrays and domains need special handling in order to preserve their
       // runtime types.
-      bool runtimeTypes =
-        actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
-        mustUseRuntimeTypeDefault(formal);
+      bool rtt = actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+      bool coerceRuntimeTypes = rtt && typeExprReturnsType(formal);
+
+      // see issue #15628 for explanation and discussion
+      bool defaultInitAssign = rtt && mustUseRuntimeTypeDefault(formal);
 
       VarSymbol* runtimeTypeTemp = NULL;
-      if (runtimeTypes) {
+      if (coerceRuntimeTypes) {
         runtimeTypeTemp = newTemp("_formal_type_tmp");
         runtimeTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
         anchor->insertBefore(new DefExpr(runtimeTypeTemp));
@@ -1668,8 +1691,12 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                   call, anchor, copyMap);
       }
 
+      if (defaultInitAssign) {
+
+       insertRuntimeTypeDefaultWrapper(fn, formal, call, actual, copyMap);
+
       // A copy might be necessary here but might not.
-      if (doesCopyInitializationRequireCopy(actual)) {
+      } else if (doesCopyInitializationRequireCopy(actual)) {
         // Add a new formal temp at the call site that mimics variable
         // initialization from the actual.
         VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
@@ -1684,7 +1711,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         }
 
         CallExpr* copy = NULL;
-        if (runtimeTypes)
+        if (coerceRuntimeTypes)
           copy = new CallExpr("chpl__coerceCopy", runtimeTypeTemp, actualSym);
         else
           copy = new CallExpr("chpl__initCopy", actualSym);
@@ -1704,7 +1731,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         // (don't destroy it here, it will be destroyed there).
         actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
 
-        if (runtimeTypes) {
+        if (coerceRuntimeTypes) {
           VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
           tmp->addFlag(FLAG_NO_AUTO_DESTROY);
           tmp->addFlag(FLAG_EXPR_TEMP);
