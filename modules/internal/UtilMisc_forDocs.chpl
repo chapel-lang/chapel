@@ -56,15 +56,6 @@ module UtilMisc_forDocs {
      If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
   inline proc max(x, y...) return max();  // dummy
 
-  /*
-    Exit the program
-
-    :arg status: The exit code for the program
-  */
-  inline proc exit(status: int) {
-    __primitive("chpl_exit_any", status);
-  }
-
   /* Returns `true` if the type `from` is coercible to the type `to`,
      or if ``isSubtype(from, to)`` would return `true`.
    */

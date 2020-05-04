@@ -25,9 +25,9 @@
 module Builtins {
 
   /*
-   Terminates the application.
+    Exit the program
 
-   :arg status: The exit status
+    :arg status: The exit code for the program
   */
   pragma "function terminates program"
   inline proc exit(status: int=0) {
