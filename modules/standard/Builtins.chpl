@@ -19,23 +19,12 @@
  */
 
 /*
-  This module contains built-in functions that are included in every Chapel
-  program by default.
+  This module contains built-in functions.
 
   .. note:: All Chapel programs automatically ``use`` this module by default.
             An explicit ``use`` statement is not necessary.
 */
 module Builtins {
-
-  /*
-    Exit the program
-
-    :arg status: The exit code for the program
-  */
-  pragma "function terminates program"
-  inline proc exit(status: int=0) {
-    __primitive("chpl_exit_any", status);
-  }
 
   /*
     Assert that a boolean condition is true.  If it is false, prints
@@ -154,5 +143,19 @@ module Builtins {
   proc compilerAssert(param test: bool, param msg: string ...?n,
                       param errorDepth: int) {
     if !test then compilerError("assert failed - ", (...msg), errorDepth + 1);
+  }
+
+  //
+  // end compile-time diagnostics
+  //
+
+  /*
+    Exit the program
+
+    :arg status: The exit code for the program
+  */
+  pragma "function terminates program"
+  inline proc exit(status: int=0) {
+    __primitive("chpl_exit_any", status);
   }
 }
