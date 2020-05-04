@@ -24,7 +24,7 @@
 module ChapelBase {
   use ChapelStandard;
   private use ChapelEnv, SysCTypes;
-  private use Builtins;
+  private use Builtins only compilerError, compilerWarning;
 
   config param enablePostfixBangChecks = false;
 

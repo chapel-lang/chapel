@@ -21,7 +21,6 @@
 /*
  This module contains built-in functions that are included in every Chapel
  program by default.
-
 */
 module Builtins {
 
@@ -33,6 +32,46 @@ module Builtins {
   pragma "function terminates program"
   inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
+  }
+
+  /*
+    Assert that a boolean condition is true.  If it is false, prints
+    'assert failed' and halts the program.
+
+    .. note :: In the current implementation, this assert never becomes a no-op.
+               That is, using them will always incur execution-time checks.
+
+    :arg test: the boolean condition
+    :type test: `bool`
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc assert(test: bool) {
+    if !test then
+      __primitive("chpl_error", c"assert failed");
+  }
+    
+
+  /*
+    Assert that a boolean condition is true.  If it is false, prints
+    'assert failed - ' followed by all subsequent arguments, as though
+    printed using :proc:`~ChapelIO.write()`.
+
+    .. note :: In the current implementation, this assert never becomes a no-op.
+               That is, using them will always incur execution-time checks.
+
+    :arg test: the boolean condition
+    :type test: `bool`
+
+    :arg args: other arguments to print
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc assert(test: bool, args ...?numArgs) {
+    if !test {
+      var tmpstring = "assert failed - " + stringify((...args));
+      __primitive("chpl_error", tmpstring.c_str());
+    }
   }
 
   //

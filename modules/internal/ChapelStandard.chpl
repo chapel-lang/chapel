@@ -64,10 +64,9 @@ module ChapelStandard {
   use ExportWrappers;
 
   // Standard modules.
-  use Assert;
+  use Builtins;
   use Types;
   use Math;
-  use Builtins;
 
   private use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }
