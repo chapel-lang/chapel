@@ -24,7 +24,6 @@
 module ChapelBase {
   use ChapelStandard;
   private use ChapelEnv, SysCTypes;
-  private use Builtins only compilerError, compilerWarning;
 
   config param enablePostfixBangChecks = false;
 
@@ -854,7 +853,6 @@ module ChapelBase {
   //
   // More primitive funs
   //
-
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
 

@@ -68,6 +68,7 @@ module Builtins {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc assert(test: bool, args ...?numArgs) {
+    use IO only stringify;
     if !test {
       var tmpstring = "assert failed - " + stringify((...args));
       __primitive("chpl_error", tmpstring.c_str());
