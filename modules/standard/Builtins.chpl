@@ -34,4 +34,74 @@ module Builtins {
   inline proc exit(status: int=0) {
     __primitive("chpl_exit_any", status);
   }
+
+  //
+  // compile-time diagnostics
+  //
+  // Note: the message printed by "error" and "warning" primitives
+  // consists of the formals of the enclosing function, not their own args.
+  //
+
+  /*
+     Generate a compile-time error.
+     The error text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+    __primitive("error");
+  }
+
+  /*
+     Generate a compile-time error.
+     The error text is a concatenation of the arguments.
+  */
+  proc compilerError(param msg: string ...?n) {
+    __primitive("error");
+  }
+
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+    __primitive("warning");
+  }
+
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the arguments.
+  */
+  proc compilerWarning(param msg: string ...?n) {
+    __primitive("warning");
+  }
+
+  /* 
+     Generate a compile-time error if the `test` argument is false.
+  */
+  proc compilerAssert(param test: bool)
+  { if !test then compilerError("assert failed"); }
+
+  /* Generate a compile-time error if the `test` argument is false.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerAssert(param test: bool, param errorDepth: int)
+  { if !test then compilerError("assert failed", errorDepth + 1); }
+
+  /* Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
+  */
+  proc compilerAssert(param test: bool, param msg: string ...?n)
+  { if !test then compilerError("assert failed - ", (...msg)); }
+
+  /* Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
+  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
 }
