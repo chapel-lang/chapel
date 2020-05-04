@@ -4303,6 +4303,31 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_domain, rhs: _array) {
+    // assumes rhs is iterable
+    var lhs:dstType;
+    if isRectangularDom(lhs) then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_domain, rhs: _array) {
+    // assumes rhs is iterable
+    var lhs:dstType;
+    if isRectangularDom(lhs) then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+
 
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:_array) {
