@@ -2204,7 +2204,8 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
     return; // do not descend into nested symbols
 
   if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           Type* lhsType = lhs->symbol()->type;
 

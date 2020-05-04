@@ -630,7 +630,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // Noakes 2017/03/04
   // Cannot use the qualified-type here.  The formal may be still a _ref(type)
   // and using a qualified-type generates yet another temp.
-  Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->type);
+  Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->getValType());
 
   FnSymbol* unaliasFn = NULL;
 
