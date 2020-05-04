@@ -42,7 +42,7 @@ module Builtins {
     'assert failed' and halts the program.
 
     .. note :: In the current implementation, this assert never becomes a no-op.
-               That is, using them will always incur execution-time checks.
+               That is, using it will always incur execution-time checks.
 
     :arg test: the boolean condition
     :type test: `bool`
@@ -61,7 +61,7 @@ module Builtins {
     printed using :proc:`~ChapelIO.write()`.
 
     .. note :: In the current implementation, this assert never becomes a no-op.
-               That is, using them will always incur execution-time checks.
+               That is, using it will always incur execution-time checks.
 
     :arg test: the boolean condition
     :type test: `bool`
