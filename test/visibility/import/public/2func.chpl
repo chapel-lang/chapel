@@ -2,21 +2,18 @@ module A {
   proc foo(x: int, y: int) {
     writeln("A.foo ", x, y);
   }
-}
-module B {
   proc foo(x: int) {
-    writeln("B.foo ", x);
+    writeln("A.foo ", x);
   }
 }
-module C {
+module B {
   public import A.foo;
-  public import B.foo;
 }
-module D {
-  import C;
+module User {
+  import B;
 
   proc main() {
-    C.foo(10);
-    C.foo(2, 3);
+    B.foo(10);
+    B.foo(2, 4);
   }
 }
