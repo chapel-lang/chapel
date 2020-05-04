@@ -3987,7 +3987,7 @@ module ChapelArray {
       } else {
         for param i in 0..b.size-1 {
           j(a.rank-rank) = chpl__intToIdx(idxType, start:strType + (i*stride));
-          helpInitArrFromTuple(j, rank-1, a, b(i));
+          helpInitArrFromTuple(j, rank-1, a, b(i), kind);
         }
       }
   }
