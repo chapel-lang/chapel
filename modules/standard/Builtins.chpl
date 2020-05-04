@@ -19,8 +19,11 @@
  */
 
 /*
- This module contains built-in functions that are included in every Chapel
- program by default.
+  This module contains built-in functions that are included in every Chapel
+  program by default.
+
+  .. note:: All Chapel programs automatically ``use`` this module by default.
+            An explicit ``use`` statement is not necessary.
 */
 module Builtins {
 
