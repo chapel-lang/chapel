@@ -1,0 +1,3 @@
+listSetBorrow.chpl:10: In function 'setGlobalLst1':
+listSetBorrow.chpl:11: error: Scoped variable would outlive the value it is set to
+listSetBorrow.chpl:10: note: consider scope of arg

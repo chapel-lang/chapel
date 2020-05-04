@@ -172,7 +172,7 @@ void VisibilityStmt::validateRenamed() {
     } else if (symbols.size() == 1) {
       Symbol* sym = symbols[0];
 
-      if (sym->hasFlag(FLAG_PRIVATE)) {
+      if (sym->hasFlag(FLAG_PRIVATE) && !sym->isVisible(this)) {
         USR_FATAL_CONT(this,
                        "Bad identifier in rename, '%s' is private",
                        it->second);

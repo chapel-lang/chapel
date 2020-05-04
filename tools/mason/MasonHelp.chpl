@@ -35,10 +35,10 @@ proc masonHelp() {
   writeln('Options:');
   writeln('    -h, --help          Display this message');
   writeln('    -V, --version       Print version info and exit');
-  writeln('    --list              List installed commands');
   writeln();
-  writeln('Some common mason commands are (see all commands with --list):');
+  writeln('Mason commands:');
   writeln('    new         Create a new mason project');
+  writeln('    init        Initialize a mason project inside an existing directory');
   writeln('    add         Add a dependency to Mason.toml');
   writeln('    rm          Remove a dependency from Mason.toml');
   writeln('    update      Update/Generate Mason.lock');
@@ -53,27 +53,6 @@ proc masonHelp() {
   writeln('    external    Integrate external dependencies into mason packages');
   writeln('    publish     Publish package to mason-registry');
 }
-
-proc masonList() {
-  writeln('Installed Mason Commands:');
-  writeln('      add                ');
-  writeln('      rm                 ');
-  writeln('      new                ');
-  writeln('      update             ');
-  writeln('      build              ');
-  writeln('      run                ');
-  writeln('      test               ');
-  writeln('      external           ');
-  writeln('      search             ');
-  writeln('      env                ');
-  writeln('      clean              ');
-  writeln('      doc                ');
-  writeln('      help               ');
-  writeln('      version            ');
-  writeln('      system             ');
-  writeln('      publish            ');
-}
-
 
 proc masonRunHelp() {
   writeln('Run the compiled project and output to standard output');

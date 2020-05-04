@@ -91,15 +91,6 @@ public:
                           BaseAST *context,
                           std::map<Symbol *, astlocT *>& renameLocs);
 
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          ModuleSymbol*& modArg,
-                          BaseAST *context);
-
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          ModuleSymbol*& modArg,
-                          BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs);
-
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
   // Includes public and private fields

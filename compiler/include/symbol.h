@@ -387,7 +387,7 @@ public:
   virtual bool    isVisible(BaseAST* scope)                 const;
 
   bool            requiresCPtr();
-  const char*     intentDescrString();
+  const char*     intentDescrString() const;
 
   GenRet          codegenType();
 

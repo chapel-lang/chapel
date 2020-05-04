@@ -35,7 +35,7 @@ Expr*    aidExpr(int id);
 BaseAST* aid(BaseAST* ast);
 Expr*    aidExpr(BaseAST* ast);
 
-void        list_view_noline(BaseAST* ast);
+void        list_view_noline(const BaseAST* ast);
 void        nprint_view(BaseAST* ast);
 
 // defined in codegen/codegen.cpp
@@ -65,7 +65,7 @@ void        nprint_view_noline(BaseAST* ast);
 void        mark_view(BaseAST* ast, int id);
 
 void        list_view(int id);
-void        list_view(BaseAST* ast);
+void        list_view(const BaseAST* ast);
 
 void        astDump_view(int id);
 void        astDump_view(BaseAST* ast);
