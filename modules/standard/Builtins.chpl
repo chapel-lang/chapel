@@ -81,27 +81,35 @@ module Builtins {
   /* 
      Generate a compile-time error if the `test` argument is false.
   */
-  proc compilerAssert(param test: bool)
-  { if !test then compilerError("assert failed"); }
+  proc compilerAssert(param test: bool) { 
+    if !test then compilerError("assert failed");
+  }
 
-  /* Generate a compile-time error if the `test` argument is false.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerAssert(param test: bool, param errorDepth: int)
-  { if !test then compilerError("assert failed", errorDepth + 1); }
-
-  /* Generate a compile-time error if the `test` argument is false.
-     The warning text is a concatenation of the string arguments.
-  */
-  proc compilerAssert(param test: bool, param msg: string ...?n)
-  { if !test then compilerError("assert failed - ", (...msg)); }
-
-  /* Generate a compile-time error if the `test` argument is false.
-     The warning text is a concatenation of the string arguments.
+  /* 
+     Generate a compile-time error if the `test` argument is false.
 
      :arg errorDepth: controls the depth of the error stack trace
   */
-  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
-  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
+  proc compilerAssert(param test: bool, param errorDepth: int) {
+    if !test then compilerError("assert failed", errorDepth + 1);
+  }
+
+  /* 
+     Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
+  */
+  proc compilerAssert(param test: bool, param msg: string ...?n) {
+    if !test then compilerError("assert failed - ", (...msg));
+  }
+
+  /* 
+     Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  proc compilerAssert(param test: bool, param msg: string ...?n,
+                      param errorDepth: int) {
+    if !test then compilerError("assert failed - ", (...msg), errorDepth + 1);
+  }
 }
