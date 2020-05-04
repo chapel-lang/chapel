@@ -191,7 +191,7 @@ module HTable {
      `c_array` types fall into this class). If so, this
      flags that these need to be deallocated at destruction.
     */
-    var ownedtypes : [0..#nFields] bool;
+    var ownedtypes : [0..<nFields] bool;
 
     /* A string with all the names of the fields, needed
        for the table interface. */
@@ -205,7 +205,7 @@ module HTable {
       this.complete();
 
       var r : R;
-      for param ii in 0..nFields-1 {
+      for param ii in 0..<nFields {
         param fname = getFieldName(R, ii);
         if (ii==0) {
           nameList = fname;
@@ -245,7 +245,7 @@ module HTable {
 
     /* De-initializer. Cleans up any types the routine created. */
     proc deinit() {
-      for param ii in 0..nFields-1 {
+      for param ii in 0..<nFields {
         if ownedtypes[ii] then H5Tclose(types[ii]);
       }
     }
