@@ -23,7 +23,6 @@ module BytesStringCommon {
   private use SysCTypes;
   private use Bytes;
   private use ByteBufferHelpers;
-  private use ChapelUtil;
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
