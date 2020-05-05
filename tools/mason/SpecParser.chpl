@@ -139,10 +139,7 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
     if package == '' {
       const pkgSplit = toke.split('@');
       package = pkgSplit[0];
-      if pkgSplit.size > 1 then packageVersion = pkgSplit[1];
-      else throw new owned MasonError("Mason resolved to <pkg@version%clang>"+
-                                                      "could not be found");
-
+      packageVersion = pkgSplit[1];
     } else if reCompilerVersion.match(toke).matched && compilerVersion == '' {
       const strippedToke = toke.strip('%');
       const compilerSplit = strippedToke.split('@');
