@@ -2209,6 +2209,11 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           Type* lhsType = lhs->symbol()->type;
 
+          // PRIM_ASSIGN will set a value in the LHS type,
+          // never set what a reference points to.
+          if (call->isPrimitive(PRIM_ASSIGN))
+            lhsType = lhsType->getValType();
+
           if (lhsType != dtUnknown) {
             Expr*     rhs     = call->get(2);
             Type*     rhsType = rhs->typeInfo();
@@ -2474,7 +2479,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // types are the same.
                 // handle reference level adjustments. No cast necessary.
 
-                if (rhsType == lhsType->refType) {
+                if (rhsType == lhs->symbol()->type->refType) {
                   lhs->remove();
                   rhs->remove();
 
