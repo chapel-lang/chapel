@@ -948,6 +948,9 @@ inline proc AccumStencilArr.dsiAccess(i: idxType...rank) const ref
 where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
+inline proc AccumStencilArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.wholeFluff.contains(i);
+}
 
 iter AccumStencilArr.these() ref {
   for i in dom do
