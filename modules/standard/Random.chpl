@@ -66,7 +66,7 @@ module Random {
   public use PCGRandom;
   import HaltWrappers;
 
-  use Set;
+  import Set.set;
 
 
 
@@ -232,15 +232,15 @@ module Random {
 
   pragma "no doc"
   /* Actual implementation of choice() */
-  proc _choice(stream, X: domain, size:?sizeType, replace, prob:?probType)
+  proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
     throws
   {
 
     if X.rank != 1 {
-      compilerError('choice() domain must be 1 dimensional');
+      compilerError('choice() argument x must be 1 dimensional');
     }
     if X.size < 1 {
-      throw new owned IllegalArgumentError('choice() domain.size must be greater than 0');
+      throw new owned IllegalArgumentError('choice() x.size must be greater than 0');
     }
 
     // Check types of optional void args
@@ -253,7 +253,7 @@ module Random {
         compilerError('choice() prob array must be 1 dimensional');
       }
       if prob.size != X.size {
-        throw new owned IllegalArgumentError('choice() domain.size must be equal to prob.size');
+        throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
       }
     }
 
@@ -262,12 +262,12 @@ module Random {
         if size <= 0 then
           throw new owned IllegalArgumentError('choice() size must be greater than 0');
         if !replace && size > X.size then
-          throw new owned IllegalArgumentError('choice() size must be smaller than domain.size when replace=false');
+          throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else if isDomainType(sizeType) {
         if size.size <= 0 then
           throw new owned IllegalArgumentError('choice() size domain can not be empty');
         if !replace && size.size > X.size then
-          throw new owned IllegalArgumentError('choice() size must be smaller than domain.size when replace=false');
+          throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else {
         compilerError('choice() size must be integral or domain');
       }
@@ -282,7 +282,7 @@ module Random {
 
   pragma "no doc"
   /* _choice branch for uniform distribution */
-  proc _choiceUniform(stream, X:domain, size:?sizeType, replace) throws
+  proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
 
     const low = X.alignedLow,
@@ -305,7 +305,7 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] int;
+      var samples: [0..<numElements] int;
 
       if replace {
         for sample in samples {
@@ -316,21 +316,21 @@ module Random {
       } else {
         if numElements < log2(X.size) {
           var indices: set(int);
-          var i: int = 1;
-          while i <= numElements {
+          var i: int = 0;
+          while i < numElements {
             var randVal = stream.getNext(resultType=int, 0, X.size-1);
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
               samples[i] = randIdx;
               indices.add(randVal);
-              i = i + 1;
+              i += 1;
             }
           }
         } else {
           var indices: [X] int = X;
           shuffle(indices);
           for i in samples.domain {
-            samples[i] = (indices[(i-1)*stride+low]);
+            samples[i] = (indices[X.dim(0).orderToIndex(i)]);
           }
         }
       }
@@ -350,15 +350,15 @@ module Random {
     import Sort;
     
     if prob.size != X.size {
-      throw new owned IllegalArgumentError('choice() domain.size must be equal to prob.size');
+      throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
     
     if prob.size == 0 then
-      throw new owned IllegalArgumentError('choice() array cannot be empty');
+      throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
     const low = X.alignedLow,
           stride = abs(X.stride);
-    ref P = prob.reindex(1..X.size);
+    ref P = prob.reindex(0..<X.size);
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;
@@ -379,7 +379,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return X.dim(0).orderToIndex(idx-1);
+      return X.dim(0).orderToIndex(idx);
     } else {
       // Return numElements samples
 
@@ -392,17 +392,17 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] int;
+      var samples: [0..<numElements] int;
 
       if replace {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = X.dim(0).orderToIndex(idx-1);
+          sample = X.dim(0).orderToIndex(idx);
         }
       } else {
         var indicesChosen: domain(int);
-        var i = 1;
+        var i = 0;
         while indicesChosen.size < samples.size {
 
           // Recalculate normalized cumulativeArr
@@ -419,7 +419,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = X.dim(0).orderToIndex(indexChosen-1);;
+              samples[i] = X.dim(0).orderToIndex(indexChosen);;
               i += 1;
             }
             P[indexChosen] = 0;
