@@ -273,6 +273,75 @@ module BytesStringCommon {
     }
   }
 
+  // Checks to see if r is inside the bounds of this and returns a finite
+  // range that can be used to iterate over a section of the string
+  //
+  // This function handles ranges of codepointIndex, byteIndex or numeric types.
+  // codepointIndex only makes sense for string, whereas the others can be used
+  // with both bytes and string
+  //
+  // If codepointIndex range was given, converts that to byte index range in the
+  // process.
+  proc getView(const ref x: ?t, r: range(?)) {
+    assertArgType(t, "getView");
+    if t == bytes && r.idxType == codepointIndex {
+      compilerError("codepointIndex ranges cannot be used with bytes in getView");
+    }
+
+    if t == bytes || r.idxType == byteIndex {
+      // cast the argument r to `int` to make sure that we are not dealing with
+      // byteIndex
+      const intR = r:range(int, r.boundedType, r.stridable);
+      if boundsChecking {
+        if !x.byteIndices.boundsCheck(intR) {
+          halt("range ", r, " out of bounds for " + t:string + " with ",
+               x.numBytes, " bytes");
+        }
+      }
+      return intR[x.byteIndices];
+    }
+    else {  // string with codepoint indexing
+      if r.stridable {
+        // Slicing by stridable codepoint ranges is unsupported because it
+        // creates an irregular sequence of bytes.  We could add support in the
+        // future by refactoring the callers of _getView() to add a slow path,
+        // or by storing an array of indices marking the beginning of each
+        // codepoint alongside the string.
+        compilerError("string slicing doesn't support stridable codepoint ranges");
+      }
+
+      // cast the argument r to `int` to make sure that we are not dealing with
+      // codepointIdx
+      const intR = r:range(int, r.boundedType, r.stridable);
+      if boundsChecking {
+        if !x.indices.boundsCheck(intR) {
+          halt("range ", r, " out of bounds for string with length ", x.size);
+        }
+      }
+
+      // find the byte range of the given codepoint range
+      const cpRange = intR[x.indices];
+      var cpCount = 0;
+      var byteLow = x.buffLen;  // empty range if bounds outside string
+      var byteHigh = x.buffLen - 1;
+      if cpRange.high >= 0 {
+        for (i, nBytes) in x._indexLen() {
+          if cpCount == cpRange.low {
+            byteLow = i:int;
+            if !r.hasHighBound() then
+              break;
+          }
+          if cpCount == cpRange.high {
+            byteHigh = i:int + nBytes-1;
+            break;
+          }
+          cpCount += 1;
+        }
+      }
+      return byteLow..byteHigh;
+    }
+  }
+
   // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
@@ -280,7 +349,7 @@ module BytesStringCommon {
     var ret: t;
     if x.isEmpty() then return ret;
 
-    const r2 = x._getView(r);
+    const r2 = getView(x, r);
     if r2.size <= 0 {
       // TODO: I can't just return "" (ret var gets freed for some reason)
       ret = "";

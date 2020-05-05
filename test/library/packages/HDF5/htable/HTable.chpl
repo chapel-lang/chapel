@@ -61,7 +61,7 @@ module HTable {
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
     var nfields = meta.nFields : hsize_t;
-    var nrecords = arr.numElements: hsize_t;
+    var nrecords = arr.size: hsize_t;
     var type_size = meta.Rsize : hsize_t;
     var chunk_size = chunkSize:hsize_t;
     var fill_data = c_nil;
@@ -107,7 +107,7 @@ module HTable {
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
     var type_size = meta.Rsize : hsize_t;
-    var nrecords = arr.numElements: hsize_t;
+    var nrecords = arr.size: hsize_t;
     var data = if (nrecords==0) then c_nil else c_ptrTo(arr);
 
     H5TBappend_records(loc, cname, nrecords, type_size,
@@ -191,7 +191,7 @@ module HTable {
      `c_array` types fall into this class). If so, this
      flags that these need to be deallocated at destruction.
     */
-    var ownedtypes : [1..nFields] bool;
+    var ownedtypes : [0..<nFields] bool;
 
     /* A string with all the names of the fields, needed
        for the table interface. */
@@ -205,15 +205,15 @@ module HTable {
       this.complete();
 
       var r : R;
-      for param ii in 1..nFields {
+      for param ii in 0..<nFields {
         param fname = getFieldName(R, ii);
-        if (ii==1) {
+        if (ii==0) {
           nameList = fname;
         } else {
           nameList += ","+fname;
         }
-        names[ii-1] = fname.c_str();
-        offsets[ii-1] = c_offsetof(R, fname) : hsize_t;
+        names[ii] = fname.c_str();
+        offsets[ii] = c_offsetof(R, fname) : hsize_t;
         ref ifield = getField(r, ii);
         type fieldtype = ifield.type;
         // Handle some special cases
@@ -221,14 +221,14 @@ module HTable {
         // Arrays
         if (is_c_array(ifield)) {
           var dim : hsize_t = ifield.size : hsize_t; 
-          types[ii-1] = H5Tarray_create2(getHDF5Type(ifield.eltType), 1, c_ptrTo(dim));
+          types[ii] = H5Tarray_create2(getHDF5Type(ifield.eltType), 1, c_ptrTo(dim));
           ownedtypes[ii] = true;
-          sizes[ii-1] = (c_sizeof(ifield.eltType)*dim):size_t;
+          sizes[ii] = (c_sizeof(ifield.eltType)*dim):size_t;
           continue;
         }
         // All other cases
-        types[ii-1] = getHDF5Type(fieldtype);
-        sizes[ii-1] = c_sizeof(fieldtype) : size_t;
+        types[ii] = getHDF5Type(fieldtype);
+        sizes[ii] = c_sizeof(fieldtype) : size_t;
         ownedtypes[ii] = false;
       }
 
@@ -245,8 +245,8 @@ module HTable {
 
     /* De-initializer. Cleans up any types the routine created. */
     proc deinit() {
-      for param ii in 1..nFields {
-        if ownedtypes[ii] then H5Tclose(types[ii-1]);
+      for param ii in 0..<nFields {
+        if ownedtypes[ii] then H5Tclose(types[ii]);
       }
     }
   }
