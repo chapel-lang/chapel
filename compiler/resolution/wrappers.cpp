@@ -1024,14 +1024,13 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
   //     var A : [<something>] T;
   //     A = <fromExpr>;
   //
-  if (formal->getValType()->symbol->hasFlag(FLAG_ARRAY) &&
-      formal->intent & INTENT_FLAG_IN &&
+  if (formal->intent & INTENT_FLAG_IN &&
       typeExprReturnsType(formal)) {
     VarSymbol* nt = newTemp(temp->type);
     body->insertAtTail(new DefExpr(nt));
+
+    // When passing the 'fromExpr' below, the result is a PRIM_COERCE.
     defaultedFormalApplyDefaultForType(formal, body, nt, fromExpr);
-    //nt->addFlag(FLAG_INITIALIZED_LATER);
-    //body->insertAtTail(new CallExpr("=", nt, fromExpr));
     fromExpr = new SymExpr(nt);
   }
 
