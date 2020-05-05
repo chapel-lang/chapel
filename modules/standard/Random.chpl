@@ -66,7 +66,7 @@ module Random {
   public use PCGRandom;
   import HaltWrappers;
 
-  import Set.set;
+  use Set;
 
 
 
