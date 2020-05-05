@@ -270,7 +270,7 @@ static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
 
 static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                                   ArgSymbol* formal,
-                                                  bool       addAddrOf,
+                                                  IntentTag formalIntent,
                                                   BlockStmt* wrapFn,
                                                   VarSymbol* temp);
 
@@ -455,7 +455,20 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
     if (actualIsTypeAlias != formalIsTypeAlias ||
         dispatches == false ||
         promotes == true) {
-      USR_FATAL_CONT(formal, "Default expression not convertible to formal type");
+
+      if (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          (fn->name == astrNew ||
+           fn->name == astrInit || fn->name == astrInitEquals)) {
+        USR_FATAL_CONT(call, "Cannot initialize %s from %s",
+                       toString(formalValType), toString(actualValType));
+        USR_PRINT(formal, "when initializing %s with default value for %s",
+                  toString(fn->getFormal(1)->getValType()), formal->name);
+      } else {
+        USR_FATAL_CONT(call, "Cannot initialize %s from %s",
+                       toString(formalValType), toString(actualValType));
+        USR_PRINT(formal, "when calling %s with a default value for %s",
+                  fn->name, formal->name);
+      }
     }
   }
 
@@ -693,8 +706,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
 
   IntentTag  formalIntent = formal->intent;
   if (formal->type   != dtTypeDefaultToken &&
-      formal->type   != dtMethodToken      &&
-      formal->intent == INTENT_BLANK) {
+      formal->type   != dtMethodToken) {
     formalIntent = getIntent(formal);
   }
 
@@ -719,15 +731,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     defaultedFormalApplyDefaultForType(formal, block, temp, NULL);
 
   } else {
-    // If the default expression is a call or dtNil,
-    // don't use PRIM_ADDR_OF on it.
-    // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
-    bool addAddrOf = false;
-    if ((formalIntent & INTENT_FLAG_REF) != 0 &&
-        formalDefaultIsVariable(formal))
-      addAddrOf = true;
-
-    defaultedFormalApplyDefaultValue(fn, formal, addAddrOf, block, temp);
+    defaultedFormalApplyDefaultValue(fn, formal, formalIntent, block, temp);
   }
 
   /* TODO: update error checking
@@ -999,7 +1003,7 @@ static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
 
 static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                              ArgSymbol* formal,
-                                             bool addAddrOf,
+                                             IntentTag formalIntent,
                                              BlockStmt* body,
                                              VarSymbol* temp) {
   BlockStmt* defaultExpr = formal->defaultExpr->copy();
@@ -1011,7 +1015,12 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
 
   fromExpr = body->body.tail->remove();
 
-  if (addAddrOf == true) {
+  // If the default expression is a call or dtNil,
+  // don't use PRIM_ADDR_OF on it.
+  // Instead, we'll set temp to a ref or not based on FLAG_MAYBE_REF.
+  if ((formalIntent & INTENT_FLAG_REF) != 0 &&
+      formalDefaultIsVariable(formal))
+  {
     fromExpr = new CallExpr(PRIM_ADDR_OF, fromExpr);
   }
 
@@ -1024,7 +1033,8 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
   //     var A : [<something>] T;
   //     A = <fromExpr>;
   //
-  if (formal->intent & INTENT_FLAG_IN &&
+  // This case also handles coercions from the default to the formal type
+  if (formalIntent & INTENT_FLAG_IN &&
       typeExprReturnsType(formal)) {
     VarSymbol* nt = newTemp(temp->type);
     body->insertAtTail(new DefExpr(nt));

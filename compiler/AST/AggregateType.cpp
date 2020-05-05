@@ -2368,11 +2368,13 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
 
           } else {
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
           }
         }
 

@@ -3797,6 +3797,7 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
+static bool defaultValueMismatch(CallInfo& info);
 
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
@@ -3866,9 +3867,14 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        "illegal assignment to type");
 
       } else if (info.actuals.v[1]->type == dtNil) {
-        USR_FATAL_CONT(call,
-                       "type mismatch in assignment from nil to %s",
-                       toString(info.actuals.v[0]->type));
+
+        bool handled = defaultValueMismatch(info);
+
+        if (!handled) {
+          USR_FATAL_CONT(call,
+                         "type mismatch in assignment from nil to %s",
+                         toString(info.actuals.v[0]->type));
+        }
 
       } else if (info.actuals.v[0]->hasFlag(FLAG_RVV) ||
                  info.actuals.v[0]->hasFlag(FLAG_YVV)) {
@@ -3881,10 +3887,14 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        toString(info.actuals.v[0]->type));
 
       } else {
-        USR_FATAL_CONT(call,
-                       "Cannot assign to %s from %s",
-                       toString(info.actuals.v[0]->type),
-                       toString(info.actuals.v[1]->type));
+        bool handled = defaultValueMismatch(info);
+
+        if (!handled) {
+          USR_FATAL_CONT(call,
+                         "Cannot assign to %s from %s",
+                         toString(info.actuals.v[0]->type),
+                         toString(info.actuals.v[1]->type));
+        }
       }
 
     } else if (info.name == astr("chpl__coerceCopy") ||
@@ -3952,6 +3962,51 @@ static void sortExampleCandidates(CallInfo& info,
   ExampleCandidateComparator cmp(info);
   // Try to sort them so that the more relevant candidates are first.
   std::stable_sort(&visibleFns.v[0], &visibleFns.v[visibleFns.n], cmp);
+}
+
+static bool defaultValueMismatch(CallInfo& info) {
+  bool handled = false;
+  CallExpr* call = info.call;
+
+  if (FnSymbol* inFn = call->getFunction()) {
+    if (inFn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION)) {
+      // Look in the function for a FLAG_USER_VARIABLE_NAME variable
+      // for better error reporting
+      VarSymbol* userVariable = NULL;
+
+      for_alist(expr, inFn->body->body) {
+        if (DefExpr* def = toDefExpr(expr))
+          if (VarSymbol* definedVar = toVarSymbol(def->sym))
+            if (definedVar->hasFlag(FLAG_USER_VARIABLE_NAME))
+              if (definedVar->getValType() ==
+                  info.actuals.v[0]->getValType())
+                userVariable = definedVar;
+      }
+
+      if (userVariable != NULL) {
+        Type* formalType = userVariable->getValType();
+        Type* actualType = info.actuals.v[1]->getValType();
+
+        if (isNonNilableClassType(formalType) &&
+            actualType == dtNil) {
+          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from nil",
+                         userVariable->name,
+                         toString(formalType));
+        } else if (isNonNilableClassType(formalType) &&
+            isNilableClassType(actualType)) {
+          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from a nilable '%s'",
+                         userVariable->name,
+                         toString(formalType), toString(actualType));
+        } else {
+          USR_FATAL_CONT(call, "Cannot initialize '%s' of type %s from a '%s'",
+                         userVariable->name,
+                         toString(formalType), toString(actualType));
+        }
+        handled = true;
+      }
+    }
+  }
+  return handled;
 }
 
 void printResolutionErrorAmbiguous(CallInfo&                  info,

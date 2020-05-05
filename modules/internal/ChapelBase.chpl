@@ -76,11 +76,9 @@ module ChapelBase {
   pragma "last resort" // so user-supplied assignment will override this one.
     // The CG pragma is needed because this function interferes with
     // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
-  {
-    if isNonNilableClassType(a.type) {
-      compilerError("cannot assign to " + a.type:string + " from nil");
-    }
+  inline proc =(ref a, b:_nilType)
+  where isBorrowedOrUnmanagedClassType(a.type) &&
+        !isNonNilableClassType(a.type) {
     __primitive("=", a, nil);
   }
 
