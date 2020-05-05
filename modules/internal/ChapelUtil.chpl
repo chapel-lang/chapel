@@ -105,13 +105,25 @@ module ChapelUtil {
   proc safeMul(a: ?t, b:t){
     if !isIntegralType(t) then
       compilerError("Values must be of integral type.");
-    
-    if a==-1 && b == min(t) then return false;
-    if b==-1 && a == min(t) then return false; 
-    if a == 0 || b == 0 then return true ;
-    if (a > max(t)/b) || (a < min(t)/b) then return false;
-    //if all the case are false then multiplication is safe
+    if a>0{
+      if b>0 {
+        if a > max(t)/b then return false;
+      }
+      else {
+        if b < min(t)/a then return false;
+      }
+    }
+    else {
+      if b>0{
+        if a < min(t)/b then return false;
+      }
+      else {
+        if a!=0 && b < max(t)/a then return false;
+      }
+    }
+    // //if all the case are false then multiplication is safe
     return true;
+ 
   }
   
   pragma "no default functions"
