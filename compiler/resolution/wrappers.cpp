@@ -1607,8 +1607,11 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
   if (formal->typeExpr != NULL) {
     Expr* last = formal->typeExpr->body.tail;
     if (CallExpr* call = toCallExpr(last)) {
+      if (call->isPrimitive(PRIM_TYPEOF))
+        return true;
+
       FnSymbol* fn = call->isResolved() ? call->resolvedFunction() : NULL;
-      if (fn->retTag == RET_TYPE) {
+      if (fn && fn->retTag == RET_TYPE) {
         return true;
       }
     } else if (SymExpr* se = toSymExpr(last)) {
