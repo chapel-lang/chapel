@@ -163,15 +163,26 @@ class GC {
 // result of the promoted new-expr.
 record CR {
   var x : int;
-  proc init() { } // for arrays
+  proc init() {
+    this.x = 0;
+    writeln("CR.init default");
+  }
   proc init(x:int, mod = 1) {
     this.x = x * mod;
-    writeln("CC.init: ", x);
+    writeln("CR.init: ", x);
   }
+  proc init=(other: CR) {
+    this.x = other.x;
+    writeln("CR.init=: ", x);
+  }
+
   proc postinit() {
-    if x != 0 then
-      writeln("CC.postinit: ", x);
+    writeln("CR.postinit: ", x);
   }
+}
+proc =(ref lhs:CR, rhs:CR) {
+  writeln("CR ", lhs.x, " = ", rhs.x);
+  lhs.x = rhs.x;
 }
 
 record GR {
@@ -179,14 +190,25 @@ record GR {
   var x : t;
   proc init(type t) {
     this.t = t;
+    writeln("GR.init default");
   }
   proc init(x:integral, mod = 1) {
     this.t = x.type;
     this.x = x * mod;
-    writeln("GC.init: ", x);
+    writeln("GR.init: ", x);
   }
+  proc init=(other: GR) {
+    this.t = other.t;
+    this.x = other.x;
+    writeln("GR.init=: ", x);
+  }
+
   proc postinit() {
     if x != 0 then
-      writeln("GC.postinit: ", x);
+      writeln("GR.postinit: ", x);
   }
+}
+proc =(ref lhs:GR, rhs:GR) {
+  writeln("GR ", lhs.x, " = ", rhs.x);
+  lhs.x = rhs.x;
 }
