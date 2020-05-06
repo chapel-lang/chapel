@@ -100,6 +100,7 @@ proc setupSpack() throws {
   const clonePackages = "git clone -q" + getMasterBranch + depth + repo + destPackages;
   const statusCLI = runWithStatus(cloneCLI);
   const statusPackages = runWithStatus(clonePackages);
+  generateYAML();
   // check for status
   if statusCLI != 0 && statusPackages != 0 {
     throw new owned MasonError("Spack installation failed");
@@ -108,6 +109,23 @@ proc setupSpack() throws {
   }
 }
 
+/*
+  Generate site-specific repos.yaml :-
+  Replaces package repository path of repos.yaml file at
+  /spack/etc/spack/defaults with that of spack-registry
+*/
+private proc generateYAML() {
+  const yamlFilePath = SPACK_ROOT + '/etc/spack/defaults/repos.yaml';
+  if isFile(yamlFilePath) then {
+    remove(yamlFilePath);
+  }
+  const reposOverride = 'repos:\n'+
+                        '  - ~/.mason/spack-registry/var/spack/repos/builtin \n';
+  var yamlFile = open(yamlFilePath,iomode.cw);
+  var yamlWriter = yamlFile.writer();
+  yamlWriter.write(reposOverride);
+  yamlWriter.close();
+}
 
 /* lists available spack packages */
 private proc listSpkgs() {
