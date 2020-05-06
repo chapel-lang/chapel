@@ -555,11 +555,10 @@ module Random {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
-
     /*
-     Returns a random sample from a given 1-D array, ``arr``.
+     Returns a random sample from a given 1-D array, ``x``.
 
-     :arg arr: a 1-D array with values that will be sampled from.
+     :arg x: a 1-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -568,26 +567,94 @@ module Random {
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
      :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``arr``, otherwise elements will be chosen over
+                each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The domain must be equal to that of ``arr.domain``.
+                value. The size must be equal to that of ``x.domain``.
 
-     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
-              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``arr.size == 0``,
-                                   if ``arr`` contains a negative value,
-                                   if ``arr`` has no non-zero values.,
-                                   if ``arr.domain != prob.domain``,
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-    proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
-    {
-      compilerError("RandomStreamInterface.choice called");
-    }
+     proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
+     {
+       compilerError("RandomStreamInterface.choice called");
+     }
+
+    /*
+     Returns a random sample from a given 1-D range, ``x``.
+
+     :arg x: a 1-D range with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+                                   if ``isBoundedRange(x) == false``
+     */
+     proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
+     {
+       compilerError("RandomStreamInterface.choice called");
+     }
+
+    /*
+     Returns a random sample from a given 1-D domain, ``x``.
+
+     :arg x: a 1-D dom with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+     */
+     proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
+     {
+       compilerError("RandomStreamInterface.choice called");
+     }
+
 
     /*
 
@@ -2561,7 +2628,21 @@ module Random {
       }
 
       pragma "no doc"
-      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        compilerError("NPBRandomStream.choice() is not supported.");
+      }
+
+      pragma "no doc"
+      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        compilerError("NPBRandomStream.choice() is not supported.");
+      }
+
+      pragma "no doc"
+      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
