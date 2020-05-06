@@ -3749,6 +3749,16 @@ module ChapelArray {
     assign
   }
 
+  pragma "ignore transfer errors"
+  proc initCopyAfterTransfer(ref a: []) {
+    forall aa in a {
+      pragma "no auto destroy"
+      var copy: a.eltType = aa; // run copy initializer
+      // move it into the array
+      __primitive("=", aa, copy);
+    }
+  }
+
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[],
                                            param kind=_tElt.assign) {
 
@@ -3765,12 +3775,7 @@ module ChapelArray {
       // If we did a bulk transfer, it just bit copied, so need to
       // run copy initializer still
       if done && kind==_tElt.initCopy && !isPODType(a.eltType) {
-        forall aa in a {
-          pragma "no auto destroy"
-          var copy: a.eltType = aa; // run copy initializer
-          // move it into the array
-          __primitive("=", aa, copy);
-        }
+        initCopyAfterTransfer(a);
       }
     }
     if !done {
