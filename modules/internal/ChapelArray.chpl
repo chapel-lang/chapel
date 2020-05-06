@@ -4304,8 +4304,8 @@ module ChapelArray {
   }
 
   pragma "coerce fn"
-  proc chpl__coerceCopy(type dstType:_domain, rhs: _array) {
-    // assumes rhs is iterable
+  proc chpl__coerceCopy(type dstType:_domain, rhs) {
+    // assumes rhs is iterable (e.g. list)
     var lhs:dstType;
     if isRectangularDom(lhs) then
       compilerError("Illegal assignment to a rectangular domain");
@@ -4316,8 +4316,8 @@ module ChapelArray {
     return lhs;
   }
   pragma "coerce fn"
-  proc chpl__coerceMove(type dstType:_domain, rhs: _array) {
-    // assumes rhs is iterable
+  proc chpl__coerceMove(type dstType:_domain, in rhs) {
+    // assumes rhs is iterable (e.g. list)
     var lhs:dstType;
     if isRectangularDom(lhs) then
       compilerError("Illegal assignment to a rectangular domain");
@@ -4583,6 +4583,36 @@ module ChapelArray {
 
     return lhs;
   }
+
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_array, rhs) {
+    // assumes rhs is iterable (e.g. list)
+
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs = dom.buildArray(eltType, initElts=false);
+
+    chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
+
+    return lhs;
+  }
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_array, in rhs) {
+    // assumes rhs is iterable (e.g. list)
+
+    type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
+    const ref dom = chpl__domainFromArrayRuntimeType(dstType);
+
+    pragma "unsafe" // when eltType is non-nilable
+    var lhs = dom.buildArray(eltType, initElts=false);
+
+    chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
+
+    return lhs;
+  }
+
 
   // Used to implement the copy-out language semantics
   // Relies on the return types being different to detect an ArrayView at
