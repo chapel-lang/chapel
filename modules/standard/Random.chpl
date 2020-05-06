@@ -1242,7 +1242,7 @@ module Random {
           }
         }
 
-        PCGRandomStreamPrivate_count += 2*arraySize;
+        PCGRandomStreamPrivate_count += 2*arraySize - numOfSplits;
         _unlock();
       }
 
