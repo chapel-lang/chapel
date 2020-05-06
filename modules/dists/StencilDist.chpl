@@ -376,10 +376,28 @@ class LocStencilArr {
     this.idxType = idxType;
     this.stridable = stridable;
     this.locDom = locDom;
-    this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
+    this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
+
+    // Even if the array elements don't need to be initialized now,
+    // do initialize the fluff.
+    for i in this.locDom.myFluff {
+      if !this.locDom.contains(i) {
+        pragma "no auto destroy" pragma "unsafe"
+        var def: eltType;
+        __primitive("=", myElems[i], def);
+      }
+    }
   }
 
   proc deinit() {
+    // Even if the array elements don't need to be de-initialized now,
+    // do de-initialize the fluff.
+    for i in this.locDom.myFluff {
+      if !this.locDom.contains(i) {
+        chpl__autoDestroy(myElems[i]);
+      }
+    }
+
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
     // Here we need to clean up the rest of the array.
     _do_destroy_array(myElems, deinitElts=false);
