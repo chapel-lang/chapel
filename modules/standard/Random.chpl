@@ -589,9 +589,9 @@ module Random {
      }
 
     /*
-     Returns a random sample from a given 1-D range, ``x``.
+     Returns a random sample from a given bounded range, ``x``.
 
-     :arg x: a 1-D range with values that will be sampled from.
+     :arg x: a bounded range with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -1079,9 +1079,9 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given 1-D range, ``x``.
+     Returns a random sample from a given bounded range, ``x``.
 
-     :arg x: a 1-D range with values that will be sampled from.
+     :arg x: a bounded range with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
