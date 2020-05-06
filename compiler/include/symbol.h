@@ -694,6 +694,7 @@ extern const char* astrInit;
 extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
+extern const char* astrPostinit;
 extern const char* astrTag;
 extern const char* astrThis;
 extern const char* astrSuper;

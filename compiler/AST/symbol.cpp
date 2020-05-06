@@ -1985,6 +1985,7 @@ const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
+const char* astrPostinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
 const char* astrSuper = NULL;
@@ -2016,6 +2017,7 @@ void initAstrConsts() {
   astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
+  astrPostinit  = astr("postinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
   astrSuper   = astr("super");
