@@ -653,22 +653,7 @@ bool AggregateType::hasInitializers() const {
 }
 
 bool AggregateType::hasPostInitializer() const {
-  bool retval = false;
-
-  // If there is postinit() it is defined on the defining type
-  if (instantiatedFrom == NULL) {
-    int size = methods.n;
-
-    for (int i = 0; i < size && retval == false; i++) {
-      if (methods.v[i] != NULL)
-        retval = methods.v[i]->isPostInitializer();
-    }
-
-  } else {
-    retval = instantiatedFrom->hasPostInitializer();
-  }
-
-  return retval;
+  return symbol->hasFlag(FLAG_HAS_POSTINIT);
 }
 
 bool AggregateType::hasUserDefinedInitEquals() const {
