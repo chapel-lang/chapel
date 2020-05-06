@@ -1159,24 +1159,37 @@ module Random {
       }
 
       pragma "no doc"
-      proc _fisherYatesShuffle(arr : [?D], start : int, blockSize : int, seed: int) {
+      inline proc _fisherYatesShuffle(arr : [] eltType, start : int, blockSize : int) {
+        var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
+        var PCGRandomStreamPrivate_count: int(64) = 1;
         for i in start+1..#blockSize-1 {
-          var k = randlc_bounded(D.idxType,
+          var k = randlc_bounded(arr.domain.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
-                                 start+1, i);
+                                 start, i);
           arr[i] <=> arr[k];
         }
       }
 
+      proc foo(size : int){
+        forall x in 1..size{
+          var k = randlc_bounded(idxType,
+                                 PCGRandomStreamPrivate_rngs,
+                                 seed, PCGRandomStreamPrivate_count,
+                                 0, x);
+        }
+      }
+
       pragma "no doc"
-      proc _mergeShuffleMerge(arr : [?D], start : int, lArraySize : int, totalSize : int, seed: int) {
+      inline proc _mergeShuffleMerge(arr : [] eltType, start : int, lArraySize : int, totalSize : int) {
+        var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
+        var PCGRandomStreamPrivate_count: int(64) = 1;
         var i = start;
         var j = start + lArraySize;
         var n = start + totalSize;
 
         while true {
-          var k = randlc_bounded(D.idxType,
+          var k = randlc_bounded(arr.domain.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
                                  0, 1);
@@ -1191,7 +1204,7 @@ module Random {
         }
 
         while i < n {
-          var k = randlc_bounded(D.idxType,
+          var k = randlc_bounded(arr.domain.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
                                  start, i);
@@ -1200,15 +1213,14 @@ module Random {
         }
       }
 
-      proc shuffle(arr: [?D], const cutoff : int = 10000) {
-
-        if D.rank != 1 then
+      proc shuffle(arr: [] eltType, const cutoff : int = 10000) {
+        if arr.domain.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
         _lock();
 
-        ref array = arr.reindex(0..arr.size-1);
-        var arraySize = array.size;
+        var arraySize = arr.size;
+        ref array = arr.reindex(0..arraySize-1);
         var c : uint = 0;
         while((arraySize >> c) > cutoff) {
           c += 1;
@@ -1218,7 +1230,7 @@ module Random {
         forall i in 0..numOfSplits-1 {
           var start : int = arraySize * i >> c;
           var end : int = arraySize * (i+1) >> c;
-          _fisherYatesShuffle(array, start, end-start, seed);
+          _fisherYatesShuffle(array, start, end-start);
         }
 
         iter mergeLevels(const numOfSplits : int) {
@@ -1234,11 +1246,11 @@ module Random {
             var j = arraySize * blockIdx >> c;
             var k = arraySize * (blockIdx + mergeLevel) >> c;
             var l = arraySize * (blockIdx + 2*mergeLevel) >> c;
-            _mergeShuffleMerge(array, j, k-j, l-j, seed);
+            _mergeShuffleMerge(array, j, k-j, l-j);
           }
         }
 
-        PCGRandomStreamPrivate_count += D.size;
+        PCGRandomStreamPrivate_count += arraySize;
         _unlock();
       }
 
