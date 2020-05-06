@@ -1033,7 +1033,7 @@ module DefaultRectangular {
               data:_ddata(eltType) = nil,
               externArr = false,
               _borrowed = false,
-              externFreeFunc = nil) {
+              externFreeFunc: c_void_ptr = nil) {
       super.init(eltType=eltType, rank=rank,
                  idxType=idxType, stridable=stridable);
       this.dom = dom;
