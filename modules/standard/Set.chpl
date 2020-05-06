@@ -85,11 +85,18 @@ module Set {
 
   pragma "no doc"
   proc _checkElementType(type t) {
-    if isOwnedClass(t) || (isNonNilableClass(t) && isSharedClass(t)) then
-      compilerError('Sets do not support this class type', 2);
-    // TODO: Only error if tuple element is non-nilable class.
+    // Non-nilable shared classes fail with a strange compiler bug.
+    if false then
+      if isOwnedClass(t) || (isNonNilableClass(t) && isSharedClass(t)) then
+        compilerError('Sets do not support this class type', 2);
+
+    // Only error if a tuple element is a non-nilable class.
     if isTuple(t) then
-      compilerError('Sets do not support tuple types', 2);
+      for elem in t do
+        if isNonNilableClass(elem) then
+          compilerError('Sets do not support tuples containing ' +
+                        'non-nilable classes', 2);
+
     // In the future we might support it if the set is not default-inited.
     if isGenericType(t) {
       compilerWarning('creating a set with element type ' + t:string, 2);

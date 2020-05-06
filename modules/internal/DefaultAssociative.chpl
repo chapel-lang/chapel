@@ -336,7 +336,7 @@ module DefaultAssociative {
     proc dsiMember(idx: idxType): bool {
       return _findFilledSlot(idx)(0);
     }
-  
+ 
     override proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
@@ -355,7 +355,7 @@ module DefaultAssociative {
       return numInds;
     }
 
-    proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
+    proc _addWrapper(ref idx: idxType, in slotNum : index(tableDom) = -1, 
                      needLock = parSafe) {
 
       const inSlot = slotNum;
@@ -383,7 +383,7 @@ module DefaultAssociative {
     //
 
     pragma "unsafe" // see issue #11666
-    proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
+    proc _add(ref idx: idxType, in slotNum : index(tableDom) = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then
         (foundSlot, slotNum) = _findEmptySlot(idx);
@@ -996,32 +996,12 @@ module DefaultAssociative {
     return hash;
   }
 
-  /*  
-  inline proc chpl__defaultHash(o: owned object): uint {
-    return _gen_key(__primitive("object2int", o.chpl_p));
-  }
-
-  inline proc chpl__defaultHash(o: shared object): uint {
-    return _gen_key(__primitive("object2int", o.chpl_p));
-  }
-  */
-
-  // Non-nilable unmanaged objects will resolve to this.
+  // Non-nilable classes will coerce to this.
   inline proc chpl__defaultHash(o: borrowed object): uint {
     return _gen_key(__primitive("object2int", o));
   }
 
-  /*
-  inline proc chpl__defaultHash(o: owned object?): uint {
-    return _gen_key(__primitive("object2int", o.chpl_p));
-  }
-
-  inline proc chpl__defaultHash(o: shared object?): uint {
-    return _gen_key(__primitive("object2int", o.chpl_p));
-  }
-  */
-
-  // Nilable unmanaged objects will resolve to this.
+  // Nilable classes will coerce to this.
   inline proc chpl__defaultHash(o: borrowed object?): uint {
     return _gen_key(__primitive( "object2int", o));
   }
