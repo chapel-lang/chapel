@@ -1,4 +1,4 @@
-import AssocTest;
+import ArrayTest;
 
 class T {
   var value = 0;
@@ -6,4 +6,4 @@ class T {
 
 type t = borrowed T;
 
-AssocTest.testAssoc(t);
+ArrayTest.testArray(t);

@@ -1,2 +1,0 @@
-./SparseTest.chpl:1: In function 'testSparse':
-./SparseTest.chpl:10: error: Scoped variable would outlive the value it is set to
