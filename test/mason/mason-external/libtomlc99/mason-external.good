@@ -1,4 +1,6 @@
+  Fetch: <time>.  Build: <time>.  Total: <time>.
 Installing Spack backend ...
+Spack installation successful
 Updating registry
 Compiling [debug] target: CToml
 Build Successful

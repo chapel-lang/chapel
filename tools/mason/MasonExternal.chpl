@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-config const spackVersion = "releases/v0.11.2";
 
 private use List;
 private use Map;
@@ -89,13 +88,23 @@ private proc spackInstalled() throws {
 /* Spack installed to MASON_HOME/spack */
 proc setupSpack() throws {
   writeln("Installing Spack backend ...");
-  const destination = MASON_HOME + "/spack/";
-  const clone = "git clone -q https://github.com/spack/spack " + destination;
-  const checkout = "git checkout -q " + spackVersion;
-  const status = runWithStatus(clone);
-  gitC(destination, checkout);
-  if status != 0 {
+  // destination directory name for spack command line interface and registry
+  const destCLI = MASON_HOME + "/spack/";
+  const destPackages = MASON_HOME + "/spack-registry";
+  // git clone to download spack for CLI and registry
+  const depth = ' --depth 1 ';
+  const getRepoTag = ' --branch releases/v0.14 ';
+  const getMasterBranch = ' --branch master ';
+  const repo = "https://github.com/spack/spack ";
+  const cloneCLI = "git clone -q" + getRepoTag + depth + repo + destCLI;
+  const clonePackages = "git clone -q" + getMasterBranch + depth + repo + destPackages;
+  const statusCLI = runWithStatus(cloneCLI);
+  const statusPackages = runWithStatus(clonePackages);
+  // check for status
+  if statusCLI != 0 && statusPackages != 0 {
     throw new owned MasonError("Spack installation failed");
+  } else {
+    writeln("Spack installation successful");
   }
 }
 
