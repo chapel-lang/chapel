@@ -336,7 +336,7 @@ module DefaultAssociative {
     proc dsiMember(idx: idxType): bool {
       return _findFilledSlot(idx)(0);
     }
- 
+
     override proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
@@ -355,7 +355,7 @@ module DefaultAssociative {
       return numInds;
     }
 
-    proc _addWrapper(ref idx: idxType, in slotNum : index(tableDom) = -1, 
+    proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
                      needLock = parSafe) {
 
       const inSlot = slotNum;
@@ -383,7 +383,7 @@ module DefaultAssociative {
     //
 
     pragma "unsafe" // see issue #11666
-    proc _add(ref idx: idxType, in slotNum : index(tableDom) = -1) {
+    proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then
         (foundSlot, slotNum) = _findEmptySlot(idx);
