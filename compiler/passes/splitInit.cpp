@@ -523,6 +523,8 @@ static void doElideCopies(VarToCopyElisionState &map) {
         ok = findCopyElisionCandidate(call, lhs, rhs);
         INT_ASSERT(ok && rhs == var);
 
+        bool calledInitEq = call->isNamedAstr(astrInitEquals);
+
         SET_LINENO(call);
         if (call->isNamed("chpl__coerceCopy")) {
           // change chpl__coerceCopy into chpl__coerceMove with same args
@@ -546,6 +548,32 @@ static void doElideCopies(VarToCopyElisionState &map) {
           // Change the copy into a move and don't destroy the variable.
           call->convertToNoop();
           call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        }
+
+        if (AggregateType* at = toAggregateType(lhs->getValType())) {
+          if (calledInitEq && at->hasPostInitializer()) {
+            // check for a postinit call following the init=
+            // that has been replaced.
+            Expr* postinit = NULL;
+            for (Expr* cur = call->getStmtExpr()->next;
+                 cur != NULL;
+                 cur = cur->next) {
+              if (CallExpr* curCall = toCallExpr(cur)) {
+                if (curCall->isNamedAstr(astrPostinit)) {
+                  if (SymExpr* se = toSymExpr(curCall->get(1))) {
+                    if (se->symbol() == lhs) {
+                      postinit = cur;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+            if (postinit == NULL)
+              INT_FATAL("Could not find postinit");
+
+            postinit->remove();
+          }
         }
 
         var->addFlag(FLAG_MAYBE_COPY_ELIDED);
