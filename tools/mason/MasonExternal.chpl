@@ -18,6 +18,7 @@
  * limitations under the License.
  */
 
+config const version = 'releases/v0.14';
 
 private use List;
 private use Map;
@@ -40,7 +41,14 @@ proc masonExternal(args: [] string) {
       exit(0);
     }
     else if args[2] == "--setup" {
-      if isDir(SPACK_ROOT) then
+      if !isDir(getSpackRegistry) && isDir(SPACK_ROOT) then {
+        writeln("Installing Spack Registry ... ");
+        const statusPackages = cloneSpackRegistry();
+        if statusPackages != 0 then {
+          throw new owned MasonError("Spack Registry installation failed");
+        } else exit(0);
+      }
+      else if isDir(SPACK_ROOT) && isDir(getSpackRegistry) then
         throw new owned MasonError("Spack backend is already installed");
       else if MASON_OFFLINE then
         throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
@@ -82,6 +90,10 @@ private proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
     throw new owned MasonError("To use `mason external` call `mason external --setup`");
   }
+  if !isDir(getSpackRegistry) {
+    throw new owned MasonError("Mason has been updated, to use `mason external` "+
+                                "call `mason external --setup`");
+  }
   return true;
 }
 
@@ -90,16 +102,13 @@ proc setupSpack() throws {
   writeln("Installing Spack backend ...");
   // destination directory name for spack command line interface and registry
   const destCLI = MASON_HOME + "/spack/";
-  const destPackages = MASON_HOME + "/spack-registry";
   // git clone to download spack for CLI and registry
   const depth = ' --depth 1 ';
-  const getRepoTag = ' --branch releases/v0.14 ';
-  const getMasterBranch = ' --branch master ';
+  const getRepoTag = ' --branch ' + version + ' ';
   const repo = "https://github.com/spack/spack ";
   const cloneCLI = "git clone -q" + getRepoTag + depth + repo + destCLI;
-  const clonePackages = "git clone -q" + getMasterBranch + depth + repo + destPackages;
   const statusCLI = runWithStatus(cloneCLI);
-  const statusPackages = runWithStatus(clonePackages);
+  const statusPackages = cloneSpackRegistry();
   generateYAML();
   // check for status
   if statusCLI != 0 && statusPackages != 0 {
@@ -109,6 +118,16 @@ proc setupSpack() throws {
   }
 }
 
+proc cloneSpackRegistry() {
+  const destPackages = MASON_HOME + "/spack-registry";
+  const getMasterBranch = ' --branch master ';
+  const depth = ' --depth 1 ';
+  const repo = "https://github.com/spack/spack ";
+  const clonePackages = "git clone -q" + getMasterBranch + depth + repo + destPackages;
+  const statusPackages = runWithStatus(clonePackages);
+  if statusPackages != 0 then return -1;
+  else return 0;
+}
 /*
   Generate site-specific repos.yaml :-
   Replaces package repository path of repos.yaml file at

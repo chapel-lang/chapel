@@ -160,6 +160,10 @@ proc SPACK_ROOT : string {
   return spackRoot;
 }
 
+proc getSpackRegistry : string {
+  return MASON_HOME + "/spack-registry";
+}
+
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
    of the spack call.
