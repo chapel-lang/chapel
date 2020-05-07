@@ -136,8 +136,10 @@ proc setupSpack() throws {
 }
 
 private proc updateSpackCommandLine() {
-  const checkOutCommand = 'git checkout FETCH_HEAD -b ' + branch;
-  const command = 'git fetch --depth 1 origin ' + branch;
+  const checkOutCommand = 'git ' + '-C ' + MASON_HOME + '/spack ' +
+                      ' checkout -q FETCH_HEAD -b ' + version + '-branch';
+  const command = 'git ' + '-C ' + MASON_HOME + '/spack ' + ' fetch -q ' +
+                  ' --depth 1 origin ' + branch;
   const status = runWithStatus(command);
   const statusCheckOut = runWithStatus(checkOutCommand);
   if status != 0 || statusCheckOut != 0 then return -1;
