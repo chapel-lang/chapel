@@ -66,6 +66,7 @@ proc masonExternal(args: [] string) {
         when 'info' do spkgInfo(args);
         when 'find' do findSpkg(args);
         when '--spec' do specHelp();
+        when '-V' do spackVersion();
         otherwise {
           writeln('error: no such subcommand');
           writeln('try mason external --help');
@@ -144,6 +145,12 @@ private proc generateYAML() {
   var yamlWriter = yamlFile.writer();
   yamlWriter.write(reposOverride);
   yamlWriter.close();
+}
+
+private proc spackVersion() {
+  const command = "spack --version";
+  const version = runSpackCommandReturnLine(command);
+  write(version);
 }
 
 /* lists available spack packages */

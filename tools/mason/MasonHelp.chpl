@@ -193,6 +193,7 @@ proc masonExternalHelp() {
   writeln("    uninstall                   Uninstall an external package");
   writeln("    info                        Show information about an external package");
   writeln("    find                        Find information about installed external packages");
+  writeln("    -V                          Display Spack version");
   writeln("    -h, --help                  Display this message");
   writeln("        --setup                 Download and install Spack backend");
   writeln("        --spec                  Display Spack specification help");
