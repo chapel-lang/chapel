@@ -3872,7 +3872,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
         if (!handled) {
           USR_FATAL_CONT(call,
-                         "type mismatch in assignment from nil to %s",
+                         "Cannot assign to %s from nil",
                          toString(info.actuals.v[0]->type));
         }
 

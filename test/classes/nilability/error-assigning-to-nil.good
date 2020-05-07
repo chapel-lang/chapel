@@ -1,2 +1,2 @@
 error-assigning-to-nil.chpl:3: In function 'main':
-error-assigning-to-nil.chpl:6: error: cannot assign to unmanaged MyClass from nil
+error-assigning-to-nil.chpl:6: error: Cannot assign to unmanaged MyClass from nil
