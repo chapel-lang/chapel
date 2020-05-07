@@ -55,6 +55,7 @@ typedef struct {
 // Task argument bundle header.
 //
 typedef struct chpl_task_bundle {
+  chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
   chpl_bool is_executeOn;
   int lineno;
   int filename;
@@ -63,6 +64,7 @@ typedef struct chpl_task_bundle {
   chpl_fn_p requested_fn;
   chpl_taskID_t id;
   chpl_task_infoChapel_t infoChapel;
+  uint64_t payload[0];
 } chpl_task_bundle_t;
 
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
@@ -210,7 +212,7 @@ void chpl_task_executeTasksInList(void**);
 // as it cannot assume anything about the lifetime of that memory.
 //
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              chpl_task_bundle_t* arg,// function arg
+                              void* arg,              // function arg
                               size_t arg_size,        // length of arg
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
@@ -234,7 +236,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // the comms layer can use task-wrapper functions.
 void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry
                               chpl_fn_p,          // function to call
-                              chpl_task_bundle_t*,// function arg
+                              void*,              // function arg
                               size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
                               chpl_taskID_t      // task identifier

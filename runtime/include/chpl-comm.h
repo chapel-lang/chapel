@@ -76,14 +76,10 @@ extern void* const chpl_global_serialize_table[];
 // uses task-layer specific chpl_task_bundleData_t
 
 typedef struct {
-  // Including space for the task_bundle here helps with
-  // running tasks locally, but it doesn't normally need
-  // to be communicated over the network.
+  chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
+  chpl_comm_bundleData_t comm;  // for comm layer wrappers
   chpl_task_bundle_t task_bundle;
-  // Including space for some comm information here helps
-  // the comm layer communicate some values to a wrapper
-  // function that is run in a task.
-  chpl_comm_bundleData_t comm;
+  uint64_t payload[0];
 } chpl_comm_on_bundle_t;
 
 typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
@@ -107,8 +103,9 @@ void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
                               int32_t filename) {     // source filename
+    arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
     chpl_task_taskCallFTable(fid,
-                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                             arg, arg_size,
                              subloc,
                              lineno, filename);
 }

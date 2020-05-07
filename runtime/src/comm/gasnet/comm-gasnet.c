@@ -34,6 +34,7 @@
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
+#include "chpltypes.h"
 #include "chplcgfns.h"
 #include "chpl-gen-includes.h"
 #include "chpl-atomics.h"
@@ -273,7 +274,8 @@ size_t setup_small_fork_task(small_fork_task_t* dst, small_fork_hdr_t* f, size_t
 {
   chpl_comm_bundleData_t comm  = { .caller = f->caller,
                                    .ack    = f->ack };
-  chpl_comm_on_bundle_t bundle = { .comm =  comm };
+  chpl_comm_on_bundle_t bundle = { .kind = CHPL_ARG_BUNDLE_KIND_COMM,
+                                   .comm =  comm };
   chpl_comm_on_bundle_t *bptr  = &dst->bundle;
   size_t payload_size = nbytes - sizeof(small_fork_hdr_t);
 
@@ -294,7 +296,8 @@ size_t setup_large_fork_task(large_fork_task_t* dst, large_fork_t* f, size_t nby
 {
   chpl_comm_bundleData_t comm  = { .caller = f->hdr.caller,
                                    .ack    = f->hdr.ack };
-  chpl_comm_on_bundle_t bundle = { .comm =  comm };
+  chpl_comm_on_bundle_t bundle = { .kind = CHPL_ARG_BUNDLE_KIND_COMM,
+                                   .comm =  comm };
 
   // Copy task-local data to the new task
   bundle.task_bundle.infoChapel = f->hdr.infoChapel;
@@ -336,7 +339,7 @@ static void AM_fork(gasnet_token_t token, void* buf, size_t nbytes) {
   chpl_comm_on_bundle_t *f = (chpl_comm_on_bundle_t*) buf;
   chpl_task_startMovedTask(f->task_bundle.requested_fid,
                            (chpl_fn_p)fork_wrapper,
-                           chpl_comm_on_bundle_task_bundle(f), nbytes,
+                           f, nbytes,
                            f->task_bundle.requestedSubloc, chpl_nullTaskID);
 }
 
@@ -350,7 +353,7 @@ static void AM_fork_small(gasnet_token_t token, void* buf, size_t nbytes) {
   size = setup_small_fork_task(&task, f, nbytes);
  
   chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_wrapper,
-                           chpl_comm_on_bundle_task_bundle(bptr),
+                           bptr,
                            size,
                            f->subloc, chpl_nullTaskID);
 }
@@ -403,7 +406,7 @@ static void AM_fork_large(gasnet_token_t token, void* buf, size_t nbytes) {
   size = setup_large_fork_task(&task, f, nbytes);
 
   chpl_task_startMovedTask(f->hdr.fid, (chpl_fn_p)fork_large_wrapper,
-                           chpl_comm_on_bundle_task_bundle(bptr), size,
+                           bptr, size,
                            f->hdr.subloc, chpl_nullTaskID);
 }
 
@@ -418,7 +421,7 @@ static void AM_fork_nb(gasnet_token_t  token,
   
   chpl_task_startMovedTask(f->task_bundle.requested_fid,
                            (chpl_fn_p)fork_nb_wrapper,
-                           chpl_comm_on_bundle_task_bundle(f), nbytes,
+                           f, nbytes,
                            f->task_bundle.requestedSubloc, chpl_nullTaskID);
 }
 
@@ -434,7 +437,7 @@ static void AM_fork_nb_small(gasnet_token_t  token,
   size = setup_small_fork_task(&task, f, nbytes);
  
   chpl_task_startMovedTask(f->fid, (chpl_fn_p)fork_nb_wrapper,
-                           chpl_comm_on_bundle_task_bundle(bptr), size,
+                           bptr, size,
                            f->subloc, chpl_nullTaskID);
 }
 
@@ -482,7 +485,7 @@ static void AM_fork_nb_large(gasnet_token_t token, void* buf, size_t nbytes) {
   size = setup_large_fork_task(&task, f, nbytes);
 
   chpl_task_startMovedTask(f->hdr.fid, (chpl_fn_p)fork_nb_large_wrapper,
-                           chpl_comm_on_bundle_task_bundle(bptr), size,
+                           bptr, size,
                            f->hdr.subloc, chpl_nullTaskID);
 }
 
@@ -1452,6 +1455,7 @@ void  execute_on_common(c_nodeid_t node, c_sublocid_t subloc,
   if (large) {
     payload_size = sizeof(large_fork_t) - sizeof(small_fork_hdr_t);
   }
+  arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
 
   if (small || large) {
     special_fork_t tmp;
