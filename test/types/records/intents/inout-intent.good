@@ -50,8 +50,8 @@ init (default)
 init= 0 0
 init= 0 0
 lhs(0 0) = rhs(0 0)
-deinit 0 0
 lhs(0 0) = rhs(0 0)
+deinit 0 0
 deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
@@ -60,8 +60,8 @@ init (default)
 init (default)
 init= 0 0
 lhs(0 0) = rhs(0 0)
-deinit 0 0
 lhs(0 0) = rhs(0 0)
+deinit 0 0
 deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
