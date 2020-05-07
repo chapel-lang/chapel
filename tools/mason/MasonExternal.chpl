@@ -140,9 +140,12 @@ private proc updateSpackCommandLine() {
                       ' checkout -q FETCH_HEAD -b ' + version + '-branch';
   const command = 'git ' + '-C ' + MASON_HOME + '/spack ' + ' fetch -q ' +
                   ' --depth 1 origin ' + branch;
+  const commitTagCommand = 'git ' + '-C ' + MASON_HOME + '/spack ' +
+                      'tag v0.14.2 -m "updated version"';
   const status = runWithStatus(command);
   const statusCheckOut = runWithStatus(checkOutCommand);
-  if status != 0 || statusCheckOut != 0 then return -1;
+  const statusCommitTag = runWithStatus(commitTagCommand);
+  if status != 0 || statusCheckOut != 0 || statusCommitTag != 0 then return -1;
   else return 0;
 }
 
