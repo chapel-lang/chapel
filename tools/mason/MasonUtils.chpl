@@ -171,8 +171,6 @@ proc getSpackRegistry : string {
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
-
-
     var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
@@ -214,25 +212,6 @@ proc runSpackCommand(command) {
   return sub.exit_status;
 }
 
-/*
-Returns the output of a spack command provided it is a
-single line.
-*/
-proc runSpackCommandReturnLine(command) {
-  var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
-  " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
-  " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
-
-  var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stderr=PIPE, executable="bash");
-  sub.wait();
-  var returnLine : string;
-  for line in sub.stderr.lines() {
-    returnLine = line;
-    break;
-  }
-  return returnLine;
-}
 
 proc hasOptions(args: list(string), const opts: string ...) {
   var ret = false;
