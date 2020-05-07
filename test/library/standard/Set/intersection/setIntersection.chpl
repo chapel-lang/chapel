@@ -33,6 +33,8 @@ proc doTest(type eltType) {
   assert(s2.size == (testIters * 2));
 
   s3 = s1 & s2;
+
+  var s2copy = s2;
   
   assert(s3 == s1);
 
@@ -45,6 +47,9 @@ proc doTest(type eltType) {
   s4 = s2 & s3;
 
   assert(s4.size == 0 && s4.isEmpty());
+
+  s1 &= s2copy; // replicate s3 = s1 & s2 above
+  assert(s1 == s3);
 }
 
 doTest(int);
