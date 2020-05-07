@@ -1413,17 +1413,35 @@ module DefaultRectangular {
                                                          stridable=reallocD._value.stridable,
                                                          dom=reallocD._value);
 
-          forall i in reallocD((...dom.ranges)) do
-            copy.dsiAccess(i) = dsiAccess(i);
+          var keep = reallocD((...dom.ranges));
+          // Copy the preserved elements
+          forall i in keep {
+            // "move" from the old buffer to the new one
+            ref dst = copy.dsiAccess(i);
+            const ref src = dsiAccess(i);
+            __primitive("=", dst, src);
+          }
+
+          // Deinit the other elements if
+          //  * the type uses deinit
+          //  * the new array has fewer elements than the old
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if reallocD.size < dom.dsiNumIndices {
+              forall i in dom {
+                if !keep.contains(i) {
+                  chpl__autoDestroy(dsiAccess(i));
+                }
+              }
+            }
+          }
 
           off = copy.off;
           blk = copy.blk;
           str = copy.str;
           factoredOffs = copy.factoredOffs;
 
-          dsiDestroyArr(deinitElts=true);
-          // TODO: update to move preserved elements
-          // and separately deinit any going away above
+          dsiDestroyArr(deinitElts=false);
           data = copy.data;
           // We can't call initShiftedData here because the new domain
           // has not yet been updated (this is called from within the
