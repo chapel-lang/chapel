@@ -64,7 +64,7 @@ module ChapelStandard {
   use ExportWrappers;
 
   // Standard modules.
-  use Assert;
+  use Builtins;
   use Types;
   use Math;
 
