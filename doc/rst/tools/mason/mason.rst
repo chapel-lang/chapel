@@ -548,7 +548,8 @@ First, the Spack backend must be installed. Users can have mason install Spack
 or point mason to an existing spack installation.
 
 This command will install Spack into ``$MASON_HOME`` and set it up so that it
-can be used by Mason::
+can be used by Mason. It should be noted that this command pulls from the `master` branch of spack
+for setting up the spack registry at ``$MASON_HOME``::
 
   mason external --setup
 
