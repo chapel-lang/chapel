@@ -1522,7 +1522,7 @@ module ChapelArray {
 
        The domain must be irregular.
      */
-    proc add(i) {
+    proc add(in i) {
       return _value.dsiAdd(i);
     }
 

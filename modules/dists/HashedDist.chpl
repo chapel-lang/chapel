@@ -325,7 +325,7 @@ class UserMapAssocDom: BaseAssociativeDom {
     return dist;
   }
 
-  proc dsiAdd(i: idxType) {
+  proc dsiAdd(in i: idxType) {
     return locDoms(dist.indexToLocaleIndex(i))!.add(i);
   }
 

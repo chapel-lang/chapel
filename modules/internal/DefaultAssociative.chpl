@@ -2,15 +2,15 @@
  * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,8 @@ module DefaultAssociative {
 
   /* These declarations could/should both be nested within
      DefaultAssociativeDom? */
-  enum chpl__hash_status { empty, full, deleted };
+  // empty needs to be 0 so memset 0 sets it
+  enum chpl__hash_status { empty=0, full, deleted };
 
   record chpl_TableEntry {
     type idxType;
@@ -59,35 +60,34 @@ module DefaultAssociative {
   class DefaultAssociativeDom: BaseAssociativeDom {
     type idxType;
     param parSafe: bool;
-  
+
     var dist: unmanaged DefaultDist;
-  
+
     // The guts of the associative domain
-  
+
     // We explicitly use processor atomics here since this is not
     // by design a distributed data structure
     var numEntries: chpl__processorAtomicType(int);
     var tableLock: if parSafe then chpl_LocalSpinlock else nothing;
     var tableSizeNum = 0;
     var tableSize : int;
-    var tableDom = {0..tableSize-1};
-    var table: [tableDom] chpl_TableEntry(idxType);
-  
+    var table: _ddata(chpl_TableEntry(idxType)); // 0..<tableSize
+
     inline proc lockTable() {
       if parSafe then tableLock.lock();
     }
-  
+
     inline proc unlockTable() {
       if parSafe then tableLock.unlock();
     }
-  
+
     // TODO: An ugly [0..-1] domain appears several times in the code --
     //       replace with a named constant/param?
     var postponeResize = false;
-  
+
     override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
-  
+
     proc init(type idxType,
               param parSafe: bool,
               dist: unmanaged DefaultDist) {
@@ -99,8 +99,78 @@ module DefaultAssociative {
       this.parSafe = parSafe;
       this.dist = dist;
       this.tableSize = chpl__primes(tableSizeNum);
+      this.table = nil;
+
+      this.complete();
+
+      this.table = _allocateTable(this.tableSize);
     }
-  
+    proc deinit() {
+      // Go through the full slots in the current table and run
+      // chpl__autoDestroy on the index
+      param needsDestroy = __primitive("needs auto destroy", idxType);
+      if needsDestroy {
+        forall slot in _allSlots() {
+          ref aSlot = table[slot];
+          if _isSlotFull(aSlot) {
+            chpl__autoDestroy(aSlot.idx);
+          }
+        }
+      }
+
+      // Free the buffer
+      _ddata_free(table, tableSize);
+    }
+
+    // Leaves the elements 0 initialized
+    proc _allocateData(size:int, type tableEltType) {
+      var callPostAlloc: bool;
+      var ret = _ddata_allocate_noinit(tableEltType,
+                                       size,
+                                       callPostAlloc);
+
+      var initMethod = init_elts_method(size, tableEltType);
+
+      const numChunks = _computeNumChunks(size);
+      if numChunks == 1 then
+        initMethod = ArrayInit.serialInit;
+
+      const sizeofElement = _ddata_sizeof_element(ret);
+
+      select initMethod {
+        when ArrayInit.noInit {
+          // do nothing
+        }
+        when ArrayInit.serialInit {
+          for slot in _allSlots(size) {
+            c_memset(c_ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          }
+        }
+        when ArrayInit.parallelInit {
+          // This should match the 'these' iterator in terms of idx->task
+          forall slot in _allSlots(size) {
+            c_memset(c_ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          }
+        }
+        otherwise {
+          halt("ArrayInit.heuristicInit should have been made concrete");
+        }
+      }
+
+      if callPostAlloc {
+        _ddata_allocate_postalloc(ret, size);
+      }
+
+      return ret;
+    }
+
+    // Returns a _ddata(chpl_TableEntry(idxType)) storing the table
+    // All elements are memset to 0 (no initializer is run for the idxType)
+    // This allows them to be empty, but the idx is considered uninitialized.
+    proc _allocateTable(size:int) {
+      return _allocateData(size, chpl_TableEntry(idxType));
+    }
+
     //
     // Standard Internal Domain Interface
     //
@@ -111,7 +181,7 @@ module DefaultAssociative {
                                                  dom=_to_unmanaged(this),
                                                  initElts=initElts);
     }
-  
+
     proc dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
 
       var binary = f.binary();
@@ -127,9 +197,9 @@ module DefaultAssociative {
           var first = true;
           f <~> new ioLiteral("{");
           for idx in this {
-            if first then 
-              first = false; 
-            else 
+            if first then
+              first = false;
+            else
               f <~> new ioLiteral(", ");
             f <~> idx;
           }
@@ -178,11 +248,11 @@ module DefaultAssociative {
     }
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
     proc dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
-  
+
     //
     // Standard user domain interface
     //
-  
+
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     }
@@ -207,109 +277,165 @@ module DefaultAssociative {
       }
     }
 
-    iter these() {
-      for slot in _fullSlots() do
-        yield table[slot].idx;
-    }
- 
-    iter these(param tag: iterKind) where tag == iterKind.standalone {
-      if debugDefaultAssoc {
-        writeln("*** In associative domain standalone iterator");
-      }
-      // We are simply slicing up the table here.  Trying to do something
-      //  more intelligent (like evenly dividing up the full slots, led
-      //  to poor speed ups.
-      const numIndices = tableSize;
-      const numChunks = _computeNumChunks(numIndices);
-
-      if debugAssocDataPar {
-        writeln("### numChunks=", numChunks, ", numIndices=", numIndices);
-      }
-
-      if numChunks == 1 {
-        for slot in 0..numIndices-1 {
-          if table[slot].status == chpl__hash_status.full {
-            yield table[slot].idx;
-          }
-        }
-      } else {
-        coforall chunk in 0..#numChunks {
-          const (lo, hi) = _computeBlock(numIndices, numChunks,
-                                         chunk, numIndices-1);
-          if debugAssocDataPar then
-            writeln("*** chunk: ", chunk, " owns ", lo..hi);
-          for slot in lo..hi {
-            if table[slot].status == chpl__hash_status.full {
-              yield table[slot].idx;
-            }
-          }
-        }
-      }
-    }
- 
-    iter these(param tag: iterKind) where tag == iterKind.leader {
-      if debugDefaultAssoc then
-        writeln("*** In domain leader code:");
+    // Returns the number of chunks to use in parallel iteration
+    proc _allSlotsNumChunks(size: int) {
       const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
                        else dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
-      const minIndicesPerTask = dataParMinGranularity;
+      const minSizePerTask = dataParMinGranularity;
+
       // We are simply slicing up the table here.  Trying to do something
       //  more intelligent (like evenly dividing up the full slots, led
       //  to poor speed ups.
-      // This requires that the zipppered domains match.
-      const numIndices = tableSize;
-  
+
       if debugAssocDataPar {
         writeln("### numTasks = ", numTasks);
         writeln("### ignoreRunning = ", ignoreRunning);
-        writeln("### minIndicesPerTask = ", minIndicesPerTask);
+        writeln("### minSizePerTask = ", minSizePerTask);
       }
-  
+
       if debugDefaultAssoc then
         writeln("    numTasks=", numTasks, " (", ignoreRunning,
-                "), minIndicesPerTask=", minIndicesPerTask);
-  
+                "), minSizePerTask=", minSizePerTask);
+
       var numChunks = _computeNumChunks(numTasks, ignoreRunning,
-                                        minIndicesPerTask,
-                                        numIndices);
-      if debugDefaultAssoc then
-        writeln("    numChunks=", numChunks, "length=", numIndices);
-  
-      if debugAssocDataPar then writeln("### numChunks=", numChunks);
-  
+                                        minSizePerTask,
+                                        size);
+
+      if debugDefaultAssoc {
+        writeln("    numChunks=", numChunks, " size=", size);
+      }
+      if debugAssocDataPar {
+        writeln("### numChunks=", numChunks, ", size=", size);
+      }
+
+      return numChunks;
+    }
+
+    // _allSlots yields all slot numbers, empty or full,
+    // but does so in the preferred iteration order across tasks.
+
+    iter _allSlots(size=tableSize) {
+      for slot in 0..#size {
+        yield slot;
+      }
+    }
+
+    iter _allSlots(size=tableSize, param tag: iterKind)
+      where tag == iterKind.standalone {
+
+      if debugDefaultAssoc {
+        writeln("*** In associative domain _allSlots standalone iterator");
+      }
+
+      const numChunks = _allSlotsNumChunks(size);
+
       if numChunks == 1 {
-        yield (0..numIndices-1, this);
+        for slot in 0..#size {
+          yield slot;
+        }
       } else {
         coforall chunk in 0..#numChunks {
-          const (lo, hi) = _computeBlock(numIndices, numChunks,
-                                         chunk, numIndices-1);
+          const (lo, hi) = _computeBlock(size, numChunks, chunk, size-1);
+          if debugAssocDataPar then
+            writeln("*** chunk: ", chunk, " owns ", lo..hi);
+          for slot in lo..hi {
+            yield slot;
+          }
+        }
+      }
+    }
+
+    iter _allSlots(size=tableSize, param tag: iterKind)
+      where tag == iterKind.leader {
+
+      if debugDefaultAssoc then
+        writeln("*** In associative domain _allSlots leader iterator:");
+
+      const numChunks = _allSlotsNumChunks(size);
+
+      if numChunks == 1 {
+        yield (0..#size, this);
+      } else {
+        coforall chunk in 0..#numChunks {
+          const (lo, hi) = _computeBlock(size, numChunks, chunk, size-1);
           if debugDefaultAssoc then
             writeln("*** DI[", chunk, "]: tuple = ", (lo..hi,));
           yield (lo..hi, this);
         }
       }
     }
-  
+
+    iter _allSlots(size: int, followThis, param tag: iterKind)
+      where tag == iterKind.follower {
+
+      var (chunk, followThisDom) = followThis;
+
+      if debugDefaultAssoc then
+        writeln("In associative domain _allSlots follower iterator: ",
+                "Following ", chunk);
+
+      for slot in chunk {
+        yield slot;
+      }
+    }
+
+    inline proc _isSlotFull(const ref aSlot: chpl_TableEntry): bool {
+      return aSlot.status == chpl__hash_status.full;
+    }
+    inline proc _isSlotFull(slot: int): bool {
+      return table[slot].status == chpl__hash_status.full;
+    }
+
+    iter these() {
+      for slot in _allSlots() {
+        ref aSlot = table[slot];
+        if _isSlotFull(aSlot) {
+          yield aSlot.idx;
+        }
+      }
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.standalone {
+      if debugDefaultAssoc {
+        writeln("*** In associative domain standalone iterator");
+      }
+
+      for slot in _allSlots(tag=tag) {
+        ref aSlot = table[slot];
+        if _isSlotFull(aSlot) {
+          yield aSlot.idx;
+        }
+      }
+    }
+
+    iter these(param tag: iterKind) where tag == iterKind.leader {
+      if debugDefaultAssoc then
+        writeln("*** In associative domain leader iterator");
+
+      for followThis in _allSlots(tag=tag) do
+        yield followThis;
+    }
+
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
       if debugDefaultAssoc then
-        writeln("In domain follower code: Following ", chunk);
+        writeln("In associative domain follower code");
 
       const sameDom = followThisDom == this;
-      
+
       if !sameDom then
         if followThisDom.dsiNumIndices != this.dsiNumIndices then
           halt("zippered associative domains do not match");
 
       var otherTable = followThisDom.table;
-      for slot in chunk.low..chunk.high {
-        var entry = otherTable[slot];
-        if entry.status == chpl__hash_status.full {
+      for slot in chunk {
+        const ref aSlot = otherTable[slot];
+        if _isSlotFull(aSlot) {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = _findFilledSlot(entry.idx, needLock=false);
+            const (match, loc) = _findFilledSlot(aSlot.idx, needLock=false);
             if !match then halt("zippered associative domains do not match");
             idx = loc;
           }
@@ -317,7 +443,7 @@ module DefaultAssociative {
         }
       }
     }
-  
+
     //
     // Associative Domain Interface
     //
@@ -328,19 +454,19 @@ module DefaultAssociative {
     override proc dsiClear() {
       on this {
         lockTable();
-        for slot in tableDom {
+        for slot in 0..<tableSize {
           table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
         unlockTable();
       }
     }
-  
+
     proc dsiMember(idx: idxType): bool {
       return _findFilledSlot(idx)(0);
     }
 
-    override proc dsiAdd(idx) {
+    override proc dsiAdd(in idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
       // these two seemingly redundant lines were necessary to work around a
@@ -358,8 +484,7 @@ module DefaultAssociative {
       return numInds;
     }
 
-    proc _addWrapper(idx: idxType, in slotNum : index(tableDom) = -1, 
-                     needLock = parSafe) {
+    proc _addWrapper(in idx: idxType, in slotNum : int = -1, needLock = parSafe) {
 
       const inSlot = slotNum;
       var retVal = 0;
@@ -386,29 +511,39 @@ module DefaultAssociative {
     //
 
     pragma "unsafe" // see issue #11666
-    proc _add(idx: idxType, in slotNum : index(tableDom) = -1) {
+    proc _add(pragma "no auto destroy" in idx: idxType, in slotNum: int = -1) {
       var foundSlot : bool = (slotNum != -1);
       if !foundSlot then
         (foundSlot, slotNum) = _findEmptySlot(idx);
       if foundSlot {
         table[slotNum].status = chpl__hash_status.full;
-        table[slotNum].idx = idx;
+        ref dst = table[slotNum].idx;
+        __primitive("=", dst, idx);
         numEntries.add(1);
 
         // default initialize newly added array elements
-        for a in _arrs do
-          a.defaultInitEntry(idx);
+        for arr in _arrs {
+          arr._defaultInitEntry(slotNum);
+        }
+
       } else {
         if (slotNum < 0) {
           halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
           return (-1, 0);
         }
-        // otherwise, re-adding an index that's already in there
+
+        // otherwise, re-adding an index that's already in there,
+        // so destroy the one passed in
+        param needsDestroy = __primitive("needs auto destroy", idxType);
+        if needsDestroy {
+          chpl__autoDestroy(idx);
+        }
+
         return (slotNum, 0);
       }
       return (slotNum, 1);
     }
-  
+
     proc dsiRemove(idx: idxType) {
       var retval = 1;
       on this {
@@ -416,8 +551,9 @@ module DefaultAssociative {
         const (foundSlot, slotNum) = _findFilledSlot(idx, needLock=!parSafe);
         if (foundSlot) {
           // deinit the entry
-          for a in _arrs do
-            a.deinitEntry(idx);
+          for arr in _arrs {
+            arr._deinitEntry(slotNum);
+          }
           table[slotNum].status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
@@ -430,7 +566,7 @@ module DefaultAssociative {
       }
       return retval;
     }
-  
+
     proc findPrimeSizeIndex(numKeys:int) {
       //Find the first suitable prime
       var threshold = (numKeys + 1) * 2;
@@ -451,6 +587,74 @@ module DefaultAssociative {
       return primeLoc;
     }
 
+    // newSize is the new table size
+    // newSizeNum is an index into chpl__primes == newSize
+    // assumes the array is already locked
+    proc _do_rehash(newSizeNum, newSize) {
+      var entries = numEntries.read();
+      if entries > 0 {
+        // There were entries, so carefully move them to the a new allocation
+
+        // save the old table
+        // oldTable has elements 0..<oldSize
+        var oldSize = tableSize;
+        var oldTable = table;
+
+        tableSizeNum = newSizeNum;
+        tableSize = newSize;
+        table = _allocateTable(tableSize);
+
+        for arr in _arrs {
+          arr._startRehash(tableSize);
+        }
+
+        // numEntries stays the same during this operation
+
+        // move old data into newly resized table
+        forall oldslot in _allSlots(oldSize) {
+          if oldTable[oldslot].status == chpl__hash_status.full {
+            // move the index into a local variable
+            pragma "no init"
+            var stealIdx: idxType;
+            __primitive("=", stealIdx, oldTable[oldslot].idx);
+
+            // find a destination slot
+            var (foundSlot, newslot) = _findEmptySlot(stealIdx);
+            if !foundSlot then
+              halt("couldn't add element during resize");
+
+            // move the local variable into the destination slot
+            ref dstSlot = table[newslot];
+            dstSlot.status = chpl__hash_status.full;
+            ref dstIdx = dstSlot.idx;
+            __primitive("=", dstIdx, stealIdx);
+
+            // move array elements to the new location
+            for arr in _arrs {
+              arr._moveElementDuringRehash(oldslot, newslot);
+            }
+          }
+        }
+
+        for arr in _arrs {
+          arr._finishRehash(oldSize);
+        }
+
+        // delete the old allocation
+        _ddata_free(oldTable, oldSize);
+
+      } else {
+        // There were no entries, so just make a new allocation
+
+        // delete the old allocation
+        _ddata_free(table, tableSize);
+
+        tableSizeNum = newSizeNum;
+        tableSize = newSize;
+        table = _allocateTable(tableSize);
+      }
+    }
+
     proc dsiRequestCapacity(numKeys:int) {
       var entries = numEntries.read();
 
@@ -461,37 +665,8 @@ module DefaultAssociative {
 
         //Changing underlying structure, time for locking
         lockTable();
-        if entries > 0 {
-          // Slow path: back up required
-          _backupArrays();
 
-          // copy the table (TODO: could use swap between two versions)
-          var copyDom = tableDom;
-          var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
-
-          // Do not preserve entries
-          tableDom = {0..-1};
-
-          tableSizeNum = primeLoc;
-          tableSize = prime;
-          tableDom = {0..tableSize-1};
-
-          //numEntries will be reconstructed as keys are readded
-          numEntries.write(0);
-
-          // insert old data into newly resized table
-          for slot in _fullSlots(copyTable) {
-            const (newslot, _) = _add(copyTable[slot].idx);
-            _preserveArrayElements(oldslot=slot, newslot=newslot);
-          }
-            
-          _removeArrayBackups();
-        } else {
-          //Fast path, nothing to backup
-          tableSizeNum=primeLoc;
-          tableSize=prime;
-          tableDom = {0..tableSize-1};
-        }
+        _do_rehash(primeLoc, prime);
 
         unlockTable();
       } else if entries > numKeys {
@@ -499,20 +674,19 @@ module DefaultAssociative {
                 "is less than current size (", entries, ")");
       }
     }
-  
+
     iter dsiSorted(comparator) {
       use Sort;
-      var tableCopy: [0..#numEntries.read()] idxType;
-  
-      for (tmp, slot) in zip(tableCopy.domain, _fullSlots()) do
-        tableCopy(tmp) = table[slot].idx;
-  
+
+      var tableCopy: [0..#numEntries.read()] idxType =
+        for slot in _fullSlots() do table[slot].idx;
+
       sort(tableCopy, comparator=comparator);
-  
+
       for ind in tableCopy do
         yield ind;
     }
-  
+
     //
     // Internal interface (private)
     //
@@ -520,38 +694,25 @@ module DefaultAssociative {
     //
     proc _resize(grow:bool) {
       if postponeResize then return;
-      // back up the arrays
-      _backupArrays();
-  
-      // copy the table (TODO: could use swap between two versions)
-      var copyDom = tableDom;
-      var copyTable: [copyDom] chpl_TableEntry(idxType) = table;
-  
-      // grow original table
-      tableDom = {0..(-1:chpl_table_index_type)}; // non-preserving resize
-      numEntries.write(0); // reset, because the adds below will re-set this
-      tableSizeNum += if grow then 1 else -1;
-      if tableSizeNum > chpl__primes.size then halt("associative array exceeds maximum size");
-      tableSize = chpl__primes(tableSizeNum);
-      tableDom = {0..tableSize-1};
-  
-      // insert old data into newly resized table
-      for slot in _fullSlots(copyTable) {
-        const (newslot, _) = _add(copyTable[slot].idx);
-        _preserveArrayElements(oldslot=slot, newslot=newslot);
-      }
-      
-      _removeArrayBackups();
+
+      var newSizeNum = tableSizeNum;
+      newSizeNum += if grow then 1 else -1;
+      if newSizeNum > chpl__primes.size then
+        halt("associative array exceeds maximum size");
+
+      var newSize = chpl__primes(tableSizeNum);
+
+      _do_rehash(newSizeNum, newSize);
     }
 
     // Searches for 'idx' in a filled slot.
     //
     // Returns true if found, along with the first open slot that may be
     // re-used for faster addition to the domain
-    proc _findFilledSlot(idx: idxType, needLock = true) : (bool, index(tableDom)) {
+    proc _findFilledSlot(idx: idxType, needLock = true) : (bool, int) {
       if parSafe && needLock then lockTable();
       var firstOpen = -1;
-      for slotNum in _lookForSlots(idx, table.domain.high+1) {
+      for slotNum in _lookForSlots(idx) {
         const slotStatus = table[slotNum].status;
         // if we encounter a slot that's empty, our element could not
         // be found past this point.
@@ -575,7 +736,7 @@ module DefaultAssociative {
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
-    proc _findEmptySlot(idx: idxType): (bool, index(tableDom)) {
+    proc _findEmptySlot(idx: idxType): (bool, int) {
       for slotNum in _lookForSlots(idx) {
         const slotStatus = table[slotNum].status;
         if (slotStatus == chpl__hash_status.empty ||
@@ -587,7 +748,7 @@ module DefaultAssociative {
       }
       return (false, -1);
     }
-      
+
     //
     // NOTE: Calls to this routine assume that the tableLock has been acquired.
     //
@@ -603,9 +764,9 @@ module DefaultAssociative {
         yield ((baseSlot + uprobe**2)%n):int;
       }
     }
-  
-    iter _fullSlots(tab = table) {
-      for slot in tab.domain {
+
+    iter _fullSlots(n = tableSize, tab = table) {
+      for slot in 0..<n {
         if tab[slot].status == chpl__hash_status.full then
           yield slot;
       }
@@ -623,23 +784,18 @@ module DefaultAssociative {
     }
 
   }
-  
+
   class DefaultAssociativeArr: AbsBaseArr {
     type idxType;
     param parSafeDom: bool;
-    var dom : unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
-  
-    pragma "unsafe" pragma "no auto destroy"
-    // may be initialized separately
-    // always destroyed explicitly (to control deiniting elts)
-    var data : [dom.tableDom] eltType;
-  
-    var tmpDom = {0..(-1:chpl_table_index_type)};
+    var dom: unmanaged DefaultAssociativeDom(idxType, parSafe=parSafeDom);
 
-    pragma "unsafe" pragma "no auto destroy"
-    // may be initialized separately
-    // always destroyed explicitly (to control deiniting elts)
-    var tmpTable: [tmpDom] eltType;
+    var dataSize: int;
+    // elts initialized when they are added to the domain
+    var data: _ddata(eltType);
+
+    // used during rehashes (could move into an array in rehash fn)
+    var tmpData: _ddata(eltType);
 
     proc init(type eltType,
               type idxType,
@@ -650,15 +806,12 @@ module DefaultAssociative {
       this.idxType = idxType;
       this.parSafeDom = parSafeDom;
       this.dom = dom;
-      this.data = dom.tableDom.buildArray(eltType, initElts=false);
-      this.tmpTable = tmpDom.buildArray(eltType, initElts=false);
+      this.data = dom._allocateData(dom.tableSize, eltType);
+      this.tmpData = nil;
       this.complete();
 
-      //
-      // #14367 - Blanket ban on non-nilable classes for the time being.
-      //
-      if isNonNilableClass(this.eltType) {
-        param msg = "Cannot initialize associative array because"
+      if initElts && isNonNilableClass(this.eltType) {
+        param msg = "Cannot default initialize associative array because"
                   + " element type " + eltType:string
                   + " is a non-nilable class";
         compilerError(msg);
@@ -671,13 +824,17 @@ module DefaultAssociative {
           when ArrayInit.noInit {
           }
           when ArrayInit.serialInit {
-            for slot in dom {
-              defaultInitEntry(slot);
+            for slot in dom._allSlots() {
+              if dom._isSlotFull(slot) {
+                _doDefaultInitEntry(slot, inAdd=false);
+              }
             }
           }
           when ArrayInit.parallelInit {
-            forall slot in dom {
-              defaultInitEntry(slot);
+            forall slot in dom._allSlots() {
+              if dom._isSlotFull(slot) {
+                _doDefaultInitEntry(slot, inAdd=false);
+              }
             }
           }
           otherwise {
@@ -688,33 +845,15 @@ module DefaultAssociative {
     }
 
     proc deinit() {
-      // Elements in data are deinited in dsiDestroyArr if necessary.
-      // Here we need to clean up the rest of the array.
-      _do_destroy_array(data, deinitElts=false);
-
-      // After resizing, tmpTable never stores initialized elements.
-      _do_destroy_array(tmpTable, deinitElts=false);
+      // elements are deinited in dsiDestroyArr if necessary
+      _ddata_free(data, dom.tableSize);
     }
 
     //
     // Standard internal array interface
-    // 
-  
-    override proc dsiGetBaseDom() return dom;
-  
-    override proc defaultInitEntry(idx: idxType) {
-      // default initialize an element and move it in to the
-      // uninitialized storage.
-      pragma "no auto destroy"
-      var initval: eltType; // default initialize
-      ref dst = dsiAccess(idx);
-      __primitive("=", dst, initval);
-    }
+    //
 
-    override proc deinitEntry(idx: idxType) {
-      // deinitalize the element at idx
-      chpl__autoDestroy(dsiAccess(idx));
-    }
+    override proc dsiGetBaseDom() return dom;
 
 
     // ref version
@@ -768,8 +907,10 @@ module DefaultAssociative {
 
 
     iter these() ref {
-      for slot in dom {
-        yield dsiAccess(slot);
+      for slot in dom._allSlots() {
+        if dom._isSlotFull(slot) {
+          yield data[slot];
+        }
       }
     }
 
@@ -777,27 +918,10 @@ module DefaultAssociative {
       if debugDefaultAssoc {
         writeln("*** In associative array standalone iterator");
       }
-      const numIndices = dom.tableSize;
-      const numChunks = _computeNumChunks(numIndices);
-      if numChunks == 1 {
-        for slot in 0..#numIndices {
-          if dom.table[slot].status == chpl__hash_status.full {
-            yield data[slot];
-          }
-        }
-      } else {
-        coforall chunk in 0..#numChunks {
-          const (lo, hi) = _computeBlock(numIndices, numChunks,
-                                         chunk, numIndices-1);
-          if debugAssocDataPar {
-            writeln("In associative array standalone iterator: chunk = ", chunk);
-          }
-          var table = dom.table;
-          for slot in lo..hi {
-            if dom.table[slot].status == chpl__hash_status.full {
-              yield data[slot];
-            }
-          }
+
+      for slot in dom._allSlots(tag=tag) {
+        if dom._isSlotFull(slot) {
+          yield data[slot];
         }
       }
     }
@@ -806,7 +930,7 @@ module DefaultAssociative {
       for followThis in dom.these(tag) do
         yield followThis;
     }
-  
+
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -820,12 +944,12 @@ module DefaultAssociative {
           halt("zippered associative array does not match the iterated domain");
 
       var otherTable = followThisDom.table;
-      for slot in chunk.low..chunk.high {
-        var entry = otherTable[slot];
-        if entry.status == chpl__hash_status.full {
+      for slot in chunk {
+        const ref aSlot = otherTable[slot];
+        if followThisDom._isSlotFull(aSlot) {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = dom._findFilledSlot(entry.idx, needLock=false);
+            const (match, loc) = dom._findFilledSlot(aSlot.idx, needLock=false);
             if !match then halt("zippered associative array does not match the iterated domain");
             idx = loc;
           }
@@ -918,34 +1042,63 @@ module DefaultAssociative {
 
     iter dsiSorted(comparator) {
       use Sort;
-      var tableCopy: [0..dom.dsiNumIndices-1] eltType;
-      for (copy, slot) in zip(tableCopy.domain, dom._fullSlots()) do
-        tableCopy(copy) = data(slot);
+
+      var tableCopy: [0..#dom.dsiNumIndices] eltType =
+        for slot in dom._fullSlots() do data(slot);
 
       sort(tableCopy, comparator=comparator);
-  
+
       for elem in tableCopy do
         yield elem;
     }
-  
-  
+
+
     //
     // Internal associative array interface
     //
-  
-    override proc _backupArray() {
-      tmpDom = dom.tableDom;
-      chpl__transferArray(tmpTable, data, kind=_tElt.move);
+
+    // internal helper
+    proc _doDefaultInitEntry(slot: int, inAdd: bool) {
+      if (isNonNilableClass(eltType)) {
+        if inAdd {
+          halt("Can't resize domains whose arrays' elements don't have default values");
+        } else {
+          halt("Can't default initialize associative arrays whose elements have no default value");
+        }
+      }
+
+      // default initialize an element and move it in to the
+      // uninitialized storage.
+      pragma "no auto destroy"
+      var initval: eltType; // default initialize
+      ref dst = data[slot];
+      __primitive("=", dst, initval);
     }
-  
-    override proc _removeArrayBackup() {
-      tmpDom = {0..(-1:chpl_table_index_type)};
+
+    override proc _defaultInitEntry(slot: int) {
+      _doDefaultInitEntry(slot, inAdd=true);
     }
-  
-    override proc _preserveArrayElement(oldslot, newslot) {
-      data(newslot) = tmpTable[oldslot];
+
+    override proc _deinitEntry(slot: int) {
+      // deinitalize the element at idx
+      param needsDestroy = __primitive("needs auto destroy", eltType);
+      if needsDestroy then
+        chpl__autoDestroy(data[slot]);
+    }
+
+    override proc _startRehash(newSize: int) {
+      tmpData = data;
+      data = dom._allocateData(newSize, eltType);
+    }
+
+    override proc _finishRehash(oldSize: int) {
+      _ddata_free(tmpData, oldSize);
+      tmpData = nil;
+    }
+
+    override proc _moveElementDuringRehash(oldslot: int, newslot: int) {
+      const ref src = tmpData[oldslot];
       ref dst = data[newslot];
-      const ref src = tmpTable[oldslot];
       __primitive("=", dst, src);
     }
 
@@ -966,20 +1119,23 @@ module DefaultAssociative {
 
     override proc dsiDestroyArr(param deinitElts:bool) {
       if deinitElts {
-        for slot in dom {
-          chpl__autoDestroy(dsiAccess(slot));
+        param needsDestroy = __primitive("needs auto destroy", eltType);
+        if needsDestroy {
+          for slot in dom {
+            chpl__autoDestroy(dsiAccess(slot));
+          }
         }
       }
     }
   }
-  
-  
+
+
   proc chpl__defaultHashWrapper(x): chpl_table_index_type {
-    const hash = chpl__defaultHash(x); 
+    const hash = chpl__defaultHash(x);
     return (hash & max(chpl_table_index_type)): chpl_table_index_type;
   }
-  
-  
+
+
   // Mix the bits, so that e.g. numbers in 0..N generate
   // random-looking data across all the bits even if N is small.
   proc _gen_key(i: uint): uint {
@@ -1001,7 +1157,7 @@ module DefaultAssociative {
   proc _gen_key(i: int): uint {
     return _gen_key(i:uint);
   }
-  
+
   inline proc chpl__defaultHashCombine(a:uint, b:uint, fieldnum:int): uint {
     extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
     var n:uint = (17 + fieldnum):uint;
@@ -1014,11 +1170,11 @@ module DefaultAssociative {
     else
       return 1;
   }
-  
+
   inline proc chpl__defaultHash(i: int(64)): uint {
     return _gen_key(i);
   }
-  
+
   inline proc chpl__defaultHash(u: uint(64)): uint {
     return _gen_key(u);
   }
@@ -1026,23 +1182,23 @@ module DefaultAssociative {
   inline proc chpl__defaultHash(e) where isEnum(e) {
     return _gen_key(chpl__enumToOrder(e));
   }
-  
+
   inline proc chpl__defaultHash(f: real): uint {
     return _gen_key(__primitive( "real2int", f));
   }
-  
+
   inline proc chpl__defaultHash(c: complex): uint {
-    return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im)); 
+    return _gen_key(__primitive("real2int", c.re) ^ __primitive("real2int", c.im));
   }
-  
+
   inline proc chpl__defaultHash(a: imag): uint {
     return _gen_key(__primitive( "real2int", _i2r(a)));
   }
-  
+
   inline proc chpl__defaultHash(u: chpl_taskID_t): uint {
     return _gen_key(u:int(64));
   }
-  
+
   inline proc chpl__defaultHash(l : []): uint {
     var hash : uint = 0;
     var i = 1;
@@ -1083,13 +1239,13 @@ module DefaultAssociative {
     }
     return ret;
   }
-  
+
   // Is 'idxType' legal to create a default associative domain with?
   // Currently based on the availability of chpl__defaultHash().
   // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
-  
+
   proc chpl__validDefaultAssocDomIdxType(type idxType) param where
       // one check per an implementation of chpl__defaultHash() above
       isBoolType(idxType)     ||
@@ -1110,5 +1266,5 @@ module DefaultAssociative {
   {
     return true;
   }
-  
+
 }
