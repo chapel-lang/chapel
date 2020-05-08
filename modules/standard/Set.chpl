@@ -92,8 +92,8 @@ module Set {
 
     // Only error if a tuple element is a non-nilable class.
     if isTuple(t) then
-      for elem in t do
-        if isNonNilableClass(elem) then
+      for param i in 0..<t.size do
+        if isNonNilableClass(t[i]) then
           compilerError('Sets do not support tuples containing ' +
                         'non-nilable classes', 2);
 
