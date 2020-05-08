@@ -120,7 +120,7 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 typedef void* ptr_wide_ptr_t;
 #endif // LAUNCHER
 
-#define nil 0 
+#define nil 0
 typedef void* _nilType;
 typedef void* _nilRefType;
 typedef void* _chpl_object;

@@ -103,7 +103,7 @@ static uint64_t debug_flag = 0;
 #define DBGF_MEMMAPS     0x100          // memory maps
 #define DBGF_BARRIER    0x1000          // barriers
 #define DBGF_IN_FILE   0x10000          // output debug info to a file
-#define DBGF_1_NODE    0x20000          // only produce debug for one node 
+#define DBGF_1_NODE    0x20000          // only produce debug for one node
 #define DBGF_NODENAME  0x40000          // produce chpl_nodeID <-> nodename map
 
 static c_nodeid_t debug_nodeID = 0;
@@ -307,7 +307,7 @@ static uint64_t debug_stats_flag = 0;
 //   occurs between the regMemAlloc() return and the regMemPostAlloc()
 //   call, i.e., we continue with the current alloc-defaultInit-register
 //   sequence.
-// 
+//
 //#define PERFSTATS_TIME_ZERO_INIT 1
 
 #define _PSV_C_TYPE      int_least64_t
@@ -883,7 +883,7 @@ static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
 static mpool_idx_t rf_done_pool_i;
 
 static inline
-mpool_idx_base_t rf_done_next_pool_i(void) 
+mpool_idx_base_t rf_done_next_pool_i(void)
 {
   return mpool_idx_finc(&rf_done_pool_i) & (RF_DONE_NUM_POOLS - 1);
 }
@@ -1320,7 +1320,7 @@ static atomic_bool amo_res_pool_lock[AMO_RES_NUM_POOLS];
 static mpool_idx_t amo_res_pool_i;
 
 static inline
-mpool_idx_base_t amo_res_next_pool_i(void) 
+mpool_idx_base_t amo_res_next_pool_i(void)
 {
   return mpool_idx_finc(&amo_res_pool_i) & (AMO_RES_NUM_POOLS - 1);
 }
@@ -3100,7 +3100,7 @@ void make_registered_heap(void)
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-  
+
   //
   // On Gemini-based systems, if necessary reduce the heap size until
   // we can fit all the registered pages in the NIC TLB.  Otherwise,
@@ -3259,7 +3259,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // count won't drop below the index of that region, because we can't
   // remove the region until after it's registered and we can't finish
   // registering it without faulting in all its pages.
-  // 
+  //
   // Also note that although we replicate the format of the "official"
   // message chpl_memhook_check_post() produces, we can't just call it
   // directly or use the same functions as it does, because they're not
@@ -4217,7 +4217,7 @@ void rf_handler(gni_cq_entry_t* ev)
   switch (f->b.op) {
   case fork_op_small_call:
     DBG_P_LP(DBGF_RF, "forkFrom(%d) %s",
-             (int) req_li, sprintf_rf_req(-1, f)); 
+             (int) req_li, sprintf_rf_req(-1, f));
     {
       chpl_comm_on_bundle_t* f_c = (chpl_comm_on_bundle_t*) f;
 
@@ -4326,14 +4326,16 @@ void rf_handler(gni_cq_entry_t* ev)
   }
 }
 
+
 static
 void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
 {
-  // Call the on body 
+  // Call the on body
   chpl_ftable_call(f->comm.fid, f);
   indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
-  
+
+
 static
 void fork_call_wrapper_large(fork_large_call_info_t* lc)
 {
@@ -4369,11 +4371,11 @@ void fork_call_wrapper_large(fork_large_call_info_t* lc)
   if (!blocking) {
     fork_free(caller, lc->p_payload);
   }
-  
-  // Call the on body 
+
+  // Call the on body
   chpl_ftable_call(bundle->comm.fid, bundle);
 
-  // Free the bundle we just allocated. 
+  // Free the bundle we just allocated.
   chpl_mem_free(bundle, 0, 0);
 
   if (blocking) {
@@ -4382,6 +4384,7 @@ void fork_call_wrapper_large(fork_large_call_info_t* lc)
     indicate_done2(caller, comm->rf_done);
   }
 }
+
 
 static
 void fork_get_wrapper(fork_xfer_task_t* f)
@@ -5204,7 +5207,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
       if (size <= gbp_max_size) {
         //
         // The transfer will fit in a single trampoline buffer.
-        // 
+        //
         src_addr_xmit = get_buf_alloc(size);
         memcpy(src_addr_xmit, src_addr, size);
         fork_get(src_addr_xmit, locale, tgt_addr, size);
@@ -5214,7 +5217,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
         //
         // The transfer is larger than the largest trampoline buffer.
         // Do it in pieces.
-        // 
+        //
         src_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
@@ -5729,7 +5732,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
          .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -5840,7 +5843,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
- 
+
   int vi = info->vi;
   info->tgt_addr_v[vi] = tgt_addr;
   info->locale_v[vi] = locale;
@@ -5913,7 +5916,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
         //
         // The transfer is larger than the largest trampoline buffer.
         // Do it in pieces.
-        // 
+        //
         tgt_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
@@ -7040,7 +7043,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7067,7 +7070,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7094,7 +7097,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7328,6 +7331,7 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
   do_fork_post(locale, true /*blocking*/,
                sizeof(p_rf_req->a), &p_rf_req->a.b, NULL, NULL);
 }
+
 
 static
 void fork_shutdown(c_nodeid_t locale)
@@ -7944,7 +7948,7 @@ void local_yield(void)
     // Without a comm domain, just yield.
     //
     PERFSTATS_INC(tskyield_in_lyield_no_cd_cnt);
-    if (can_task_yield()) 
+    if (can_task_yield())
       chpl_task_yield();
     else
       sched_yield();

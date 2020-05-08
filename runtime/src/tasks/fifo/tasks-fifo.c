@@ -191,7 +191,7 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
           timed_out = chpl_thread_sync_suspend(s, &deadline);
         else
           chpl_thread_yield();
-        
+
         if (s->is_full != want_full && !timed_out)
           gettimeofday(&now, NULL);
       } while (s->is_full != want_full
@@ -428,12 +428,12 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   }
 
   stack_size  = chpl_thread_getCallStackSize();
-  
+
   if(chpl_alloc_stack_in_heap){
     stack = chpl_alloc_pthread_stack(stack_size);
     if(stack == NULL)
       chpl_internal_error("chpl_alloc_pthread_stack main failed");
-  
+
     rc = pthread_attr_setstack(&attr, stack, stack_size);
     if( rc != 0 ) {
       chpl_internal_error("pthread_attr_setstack main failed");
@@ -459,7 +459,7 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
   if(chpl_alloc_stack_in_heap){
     chpl_free_pthread_stack(stack);
   }
-  
+
   pthread_attr_destroy(&attr);
 }
 
@@ -1188,7 +1188,7 @@ thread_begin(void* ptask_void) {
 
       unset_block_loc();
     }
- 
+
     //
     // Just now the pool had at least one task in it.  Lock and see if
     // there's something still there.
