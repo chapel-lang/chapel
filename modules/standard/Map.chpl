@@ -123,14 +123,6 @@ module Map {
 
     proc init(type keyType, type valType, param parSafe=false)
     where isNonNilableClass(valType) {
-      if isOwnedClass(valType) {
-        compilerError("maps of non-nilable owned values are not allowed");
-      }
-
-      if isBorrowedClass(valType) {
-        compilerError("maps of non-nilable borrowed values are",
-                      " not currently supported");
-      }
       if isGenericType(keyType) {
         compilerWarning("creating a map with key type " +
                         keyType:string);
@@ -166,7 +158,7 @@ module Map {
       :type parSafe: bool
     */
     proc init=(pragma "intent ref maybe const formal"
-               other: map(?kt, ?vt, ?ps)) {
+               other: map(?kt, ?vt, ?ps)) lifetime this < other {
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
@@ -469,7 +461,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(in k: keyType, in v: valType): bool {
+    proc add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter();
       if myKeys.contains(k) {
         _leave();
