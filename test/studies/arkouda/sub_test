@@ -62,6 +62,15 @@ else
 fi
 test_end "make check"
 
+# Run Python unit tests
+test_start "make test-python"
+if make test-python ; then
+  log_success "make test-python output"
+else
+  log_error "running make test-python"
+fi
+test_end "make test-python"
+
 # Run benchmarks
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"

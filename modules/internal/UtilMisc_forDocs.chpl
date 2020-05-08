@@ -46,72 +46,6 @@ Additional utilities
 
 module UtilMisc_forDocs {
 
-  /*
-     Generate a compile-time error.
-     The error text is a concatenation of the arguments.
-  */
-  proc compilerError(param msg: string ...?n) {
-  }
-
-  /*
-     Generate a compile-time error.
-     The error text is a concatenation of the string arguments.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerError(param msg: string ...?n, param errorDepth: int) {
-  }
-
-
-  /*
-     Generate a compile-time warning.
-     The warning text is a concatenation of the arguments.
-  */
-  proc compilerWarning(param msg: string ...?n) {
-  }
-
-  /*
-     Generate a compile-time warning.
-     The warning text is a concatenation of the string arguments.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
-  }
-
-
-  //
-  // TODO: improve the compilerAssert() functions in ChapelBase.chpl:
-  //  * do we want to +1 when passing errorDepth to compilerError() ?
-  //
-
-  /* Generate a compile-time error if the `test` argument is false.
-  */
-  proc compilerAssert(param test: bool)
-  { }
-
-  /* Generate a compile-time error if the `test` argument is false.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerAssert(param test: bool, param errorDepth: int)
-  { }
-
-  /* Generate a compile-time error if the `test` argument is false.
-     The warning text is a concatenation of the string arguments.
-  */
-  proc compilerAssert(param test: bool, param msg: string ...?n)
-  { }
-
-  /* Generate a compile-time error if the `test` argument is false.
-     The warning text is a concatenation of the string arguments.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
-  { }
-
-
   /* Compute the minimum value of 2 or more arguments
      using the ``<`` operator for comparison.
      If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
@@ -121,15 +55,6 @@ module UtilMisc_forDocs {
      using the ``>`` operator for comparison.
      If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
   inline proc max(x, y...) return max();  // dummy
-
-  /*
-    Exit the program
-
-    :arg status: The exit code for the program
-  */
-  inline proc exit(status: int) {
-    __primitive("chpl_exit_any", status);
-  }
 
   /* Returns `true` if the type `from` is coercible to the type `to`,
      or if ``isSubtype(from, to)`` would return `true`.

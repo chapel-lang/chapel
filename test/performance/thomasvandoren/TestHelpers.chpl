@@ -1,6 +1,5 @@
 /* Test helpers... */
 
-public use Assert;
 public use Random;
 public use Time;
 
