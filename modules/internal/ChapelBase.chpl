@@ -1004,28 +1004,61 @@ module ChapelBase {
     return _ddata_sizeof_element(x.type);
   }
 
-  inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none,
-                              param initElts: bool=true) {
+  // Never initializes elements
+  //
+  // if callPostAlloc=true, then _ddata_allocate_postalloc should
+  // be called after the elements are initialized.
+  //
+  //
+  // Cyclic/Block will function OK if postAlloc isn't called yet
+  // during initialization and a PUT e.g. occurs.
+  //
+  // List could never call postAlloc or call it immediately
+  //   -> calling it immediately should result in allocating domain owning it
+  //   -> never calling it should result in always using bounce buffers
+  //
+  // Associative array - makes sense to call postAlloc
+  //  after touching memory in usual order
+  //
+
+  inline proc _ddata_allocate_noinit(type eltType, size: integral,
+                                     out callPostAlloc: bool,
+                                     subloc = c_sublocid_none) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
                                      subloc: chpl_sublocID_t,
                                      ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
-    var callPostAlloc: bool;
     ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
+    return ret;
+  }
+
+  inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
+                                         eltSize: size_t);
+    chpl_mem_array_postAlloc(data:c_void_ptr, size:size_t,
+                             _ddata_sizeof_element(data));
+  }
+
+  inline proc _ddata_allocate(type eltType, size: integral,
+                              subloc = c_sublocid_none,
+                              param initElts: bool=true) {
+    var callPostAlloc: bool;
+    var ret: _ddata(eltType);
+
+    ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc);
+
     if initElts then
       init_elts(ret, size, eltType);
+
     if callPostAlloc {
-      pragma "fn synchronization free"
-      pragma "insert line file info"
-      extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
-                                           eltSize: size_t);
-      chpl_mem_array_postAlloc(ret:c_void_ptr, size:size_t,
-                               _ddata_sizeof_element(ret));
+      _ddata_allocate_postalloc(ret, size);
     }
+
     return ret;
   }
 
@@ -1056,7 +1089,9 @@ module ChapelBase {
                                    newSize.safeCast(size_t),
                                    _ddata_sizeof_element(oldDdata),
                                    subloc, callPostAlloc): oldDdata.type;
+
     init_elts(newDdata, newSize, eltType, lo=oldSize);
+
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"

@@ -4362,6 +4362,12 @@ module ChapelArray {
       chpl__uncheckedArrayTransfer(lhs, rhs, kind=_tElt.initCopy);
     }
 
+    // TODO: indicate array/domain initialization completion
+    // here and in other array/domain initialization functions,
+    // including initCopy.
+    // To that end, store a bool field in DefaultRectangular
+    // indicating if postAlloc should still be called.
+
     //chpl_debug_writeln("end chpl__coerceCopy");
 
     return lhs;
