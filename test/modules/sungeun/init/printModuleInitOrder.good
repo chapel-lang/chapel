@@ -3,6 +3,7 @@ Initializing Modules:
     OwnedObject
     Atomics
      MemConsistency
+    NetworkAtomics
     ChapelThreads
     ChapelTuple
     ChapelRange
