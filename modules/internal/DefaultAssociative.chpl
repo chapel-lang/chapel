@@ -740,7 +740,7 @@ module DefaultAssociative {
       if newSizeNum > chpl__primes.size then
         halt("associative array exceeds maximum size");
 
-      var newSize = chpl__primes(tableSizeNum);
+      var newSize = chpl__primes(newSizeNum);
 
       _do_rehash(newSizeNum, newSize);
     }
