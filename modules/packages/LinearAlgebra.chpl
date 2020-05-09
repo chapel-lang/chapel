@@ -1377,10 +1377,9 @@ proc cholesky(A: [] ?t, lower = true)
 
    .. note::
 
-     This procedure currently just returns all eigenvalues. Future
-     versions may allow the user to selectively return certain eigenvalues.
-     If this functionality is currently desired, the user should
-     call the LAPACK routine directly.
+     This procedure currently just returns all eigenvalues.
+     To selectively return certain eigenvalues, the user should call the
+     LAPACK routine directly.
 
    .. note::
 
@@ -1406,11 +1405,9 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
 
    .. note::
 
-     This procedure currently just returns all eigenvalues and eigenvectors. Future
-     versions may allow the user to selectively return certain eigenvalues and their
-     corresponding eigenvectors.
-     If this functionality is currently desired, the user should
-     call the LAPACK routine directly.
+     This procedure currently returns all eigenvalues and eigenvectors.
+     To selectively return certain eigenvalues/eigenvectors, the user should call the
+     LAPACK routine directly.
 
    .. note::
 
@@ -1432,13 +1429,13 @@ proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) 
   const uploStr = if lower then "L" else "U";
 
   if isComplexType(t) {
-    if (nbits != 64) && (nbits != 128) then throw new LinearAlgebraError("LAPACK only supports 64 and 128 bit complex types");
+    compilerAssert((nbits==64)||(nbits==128),"LAPACK only supports 64 and 128 bit complex types");
     info = LAPACK.heev(lapack_memory_order.row_major, jobz, uploStr, Aref, w);
   } else if isRealType(t) {
-    if (nbits != 32) && (nbits != 64) then throw new LinearAlgebraError("LAPACK only supports 32 and 64 bit real types");
+    compilerAssert((nbits==32)||(nbits==64),"LAPACK only supports 32 and 64 bit complex types");
     info = LAPACK.syev(lapack_memory_order.row_major, jobz, uploStr, Aref, w);
   } else {
-    throw new LinearAlgebraError("Unsupported type");
+    compilerError("eigh received unsupported type : ",t:string);
   }
 
   if info > 0 {
