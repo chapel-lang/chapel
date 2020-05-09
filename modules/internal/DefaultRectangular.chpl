@@ -1426,9 +1426,17 @@ module DefaultRectangular {
           param needsDestroy = __primitive("needs auto destroy", eltType);
           if needsDestroy {
             if reallocD.size < dom.dsiNumIndices {
-              forall i in dom {
-                if !keep.contains(i) {
-                  chpl__autoDestroy(dsiAccess(i));
+              if _deinitElementsIsParallel(eltType) {
+                forall i in dom {
+                  if !keep.contains(i) {
+                    chpl__autoDestroy(dsiAccess(i));
+                  }
+                }
+              } else {
+                for i in dom {
+                  if !keep.contains(i) {
+                    chpl__autoDestroy(dsiAccess(i));
+                  }
                 }
               }
             }

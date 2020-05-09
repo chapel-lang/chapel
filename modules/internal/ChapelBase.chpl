@@ -1081,8 +1081,13 @@ module ChapelBase {
     param needsDestroy = __primitive("needs auto destroy",
                                      __primitive("deref", oldDdata[0]));
     if needsDestroy && (oldSize > newSize) {
-      forall i in newSize..oldSize-1 do
-        chpl__autoDestroy(oldDdata[i]);
+      if _deinitElementsIsParallel(eltType) {
+        forall i in newSize..oldSize-1 do
+          chpl__autoDestroy(oldDdata[i]);
+      } else {
+        for i in newSize..oldSize-1 do
+          chpl__autoDestroy(oldDdata[i]);
+      }
     }
 
     const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
