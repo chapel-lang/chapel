@@ -108,18 +108,29 @@ module DefaultAssociative {
     proc deinit() {
       // Go through the full slots in the current table and run
       // chpl__autoDestroy on the index
-      param needsDestroy = __primitive("needs auto destroy", idxType);
-      if needsDestroy {
+      if _keyNeedsDeinit() {
         forall slot in _allSlots() {
           ref aSlot = table[slot];
           if _isSlotFull(aSlot) {
-            chpl__autoDestroy(aSlot.idx);
+            _deinitSlot(aSlot);
           }
         }
       }
 
       // Free the buffer
       _ddata_free(table, tableSize);
+    }
+    // deinitialization helpers
+    proc _keyNeedsDeinit() param {
+      return __primitive("needs auto destroy", idxType);
+    }
+    proc _deinitKey(ref key: idxType) {
+      if _keyNeedsDeinit() {
+        chpl__autoDestroy(key);
+      }
+    }
+    proc _deinitSlot(ref aSlot: chpl_TableEntry(idxType)) {
+      _deinitKey(aSlot.idx);
     }
 
     // Leaves the elements 0 initialized
@@ -523,7 +534,7 @@ module DefaultAssociative {
 
         // default initialize newly added array elements
         for arr in _arrs {
-          arr._defaultInitEntry(slotNum);
+          arr._defaultInitSlot(slotNum);
         }
 
       } else {
@@ -534,10 +545,7 @@ module DefaultAssociative {
 
         // otherwise, re-adding an index that's already in there,
         // so destroy the one passed in
-        param needsDestroy = __primitive("needs auto destroy", idxType);
-        if needsDestroy {
-          chpl__autoDestroy(idx);
-        }
+        _deinitKey(idx);
 
         return (slotNum, 0);
       }
@@ -550,11 +558,15 @@ module DefaultAssociative {
         lockTable();
         const (foundSlot, slotNum) = _findFilledSlot(idx, needLock=!parSafe);
         if (foundSlot) {
-          // deinit the entry
+          ref aSlot = table[slotNum];
+          // deinit the key
+          _deinitSlot(aSlot);
+
+          // deinit any array entries
           for arr in _arrs {
-            arr._deinitEntry(slotNum);
+            arr._deinitSlot(slotNum);
           }
-          table[slotNum].status = chpl__hash_status.deleted;
+          aSlot.status = chpl__hash_status.deleted;
           numEntries.sub(1);
         } else {
           retval = 0;
@@ -826,14 +838,14 @@ module DefaultAssociative {
           when ArrayInit.serialInit {
             for slot in dom._allSlots() {
               if dom._isSlotFull(slot) {
-                _doDefaultInitEntry(slot, inAdd=false);
+                _doDefaultInitSlot(slot, inAdd=false);
               }
             }
           }
           when ArrayInit.parallelInit {
             forall slot in dom._allSlots() {
               if dom._isSlotFull(slot) {
-                _doDefaultInitEntry(slot, inAdd=false);
+                _doDefaultInitSlot(slot, inAdd=false);
               }
             }
           }
@@ -1058,7 +1070,7 @@ module DefaultAssociative {
     //
 
     // internal helper
-    proc _doDefaultInitEntry(slot: int, inAdd: bool) {
+    proc _doDefaultInitSlot(slot: int, inAdd: bool) {
       if (isNonNilableClass(eltType)) {
         if inAdd {
           halt("Can't resize domains whose arrays' elements don't have default values");
@@ -1075,15 +1087,22 @@ module DefaultAssociative {
       __primitive("=", dst, initval);
     }
 
-    override proc _defaultInitEntry(slot: int) {
-      _doDefaultInitEntry(slot, inAdd=true);
+    override proc _defaultInitSlot(slot: int) {
+      _doDefaultInitSlot(slot, inAdd=true);
     }
 
-    override proc _deinitEntry(slot: int) {
+    override proc _deinitSlot(slot: int) {
       // deinitalize the element at idx
-      param needsDestroy = __primitive("needs auto destroy", eltType);
-      if needsDestroy then
-        chpl__autoDestroy(data[slot]);
+      _deinitElement(data[slot]);
+    }
+
+    proc _elementNeedsDeinit() param {
+      return __primitive("needs auto destroy", eltType);
+    }
+    proc _deinitElement(ref elt: eltType) {
+      if _elementNeedsDeinit() {
+        chpl__autoDestroy(elt);
+      }
     }
 
     override proc _startRehash(newSize: int) {
@@ -1119,10 +1138,11 @@ module DefaultAssociative {
 
     override proc dsiDestroyArr(param deinitElts:bool) {
       if deinitElts {
-        param needsDestroy = __primitive("needs auto destroy", eltType);
-        if needsDestroy {
-          for slot in dom {
-            chpl__autoDestroy(dsiAccess(slot));
+        if _elementNeedsDeinit() {
+          forall slot in dom._allSlots() {
+            if dom._isSlotFull(slot) {
+              _deinitElement(data[slot]);
+            }
           }
         }
       }

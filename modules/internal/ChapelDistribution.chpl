@@ -731,11 +731,11 @@ module ChapelDistribution {
     // These are here because the _arrs field is generic over array
     // (and in particular eltType). So we can't cast the elements of _arr
     // to DefaultAssociativeArr (because we don't know the element type).
-    proc _defaultInitEntry(slot: int) {
-      halt("_defaultInitEntry() not supported for non-associative arrays");
+    proc _defaultInitSlot(slot: int) {
+      halt("_defaultInitSlot() not supported for non-associative arrays");
     }
-    proc _deinitEntry(slot: int) {
-      halt("_deinitEntry() not supported for non-associative arrays");
+    proc _deinitSlot(slot: int) {
+      halt("_deinitSlot() not supported for non-associative arrays");
     }
 
     proc _startRehash(newSize: int) {
