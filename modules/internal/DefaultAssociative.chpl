@@ -109,10 +109,19 @@ module DefaultAssociative {
       // Go through the full slots in the current table and run
       // chpl__autoDestroy on the index
       if _keyNeedsDeinit() {
-        forall slot in _allSlots() {
-          ref aSlot = table[slot];
-          if _isSlotFull(aSlot) {
-            _deinitSlot(aSlot);
+        if _deinitElementsIsParallel(idxType) {
+          forall slot in _allSlots() {
+            ref aSlot = table[slot];
+            if _isSlotFull(aSlot) {
+              _deinitSlot(aSlot);
+            }
+          }
+        } else {
+          for slot in _allSlots() {
+            ref aSlot = table[slot];
+            if _isSlotFull(aSlot) {
+              _deinitSlot(aSlot);
+            }
           }
         }
       }
@@ -1139,9 +1148,17 @@ module DefaultAssociative {
     override proc dsiDestroyArr(param deinitElts:bool) {
       if deinitElts {
         if _elementNeedsDeinit() {
-          forall slot in dom._allSlots() {
-            if dom._isSlotFull(slot) {
-              _deinitElement(data[slot]);
+          if _deinitElementsIsParallel(eltType) {
+            forall slot in dom._allSlots() {
+              if dom._isSlotFull(slot) {
+                _deinitElement(data[slot]);
+              }
+            }
+          } else {
+            for slot in dom._allSlots() {
+              if dom._isSlotFull(slot) {
+                _deinitElement(data[slot]);
+              }
             }
           }
         }

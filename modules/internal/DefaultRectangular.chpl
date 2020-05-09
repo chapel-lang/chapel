@@ -1060,16 +1060,6 @@ module DefaultRectangular {
     // can the compiler create this automatically?
     override proc dsiGetBaseDom() return dom;
 
-    // see also _deinitElements in ChapelArray
-    proc dsiDestroyDataHelper(dd, ddiNumIndices) {
-      compilerAssert(chpl_isDdata(dd.type));
-      // TODO: Would anything be hurt if this was a forall?
-      // one guess: arrays of arrays where all inner arrays share a domain?
-      for i in 0..ddiNumIndices-1 {
-        chpl__autoDestroy(dd[i]);
-      }
-    }
-
     override proc dsiDestroyArr(param deinitElts:bool) {
       if (externArr) {
         if (!_borrowed) {
@@ -1083,7 +1073,15 @@ module DefaultRectangular {
           numElts = dom.dsiNumIndices;
 
           if needsDestroy {
-            dsiDestroyDataHelper(data, numElts);
+            if _deinitElementsIsParallel(eltType) {
+              forall i in 0..#numElts {
+                chpl__autoDestroy(data[i]);
+              }
+            } else {
+              for i in 0..#numElts {
+                chpl__autoDestroy(data[i]);
+              }
+            }
           }
         }
         _ddata_free(data, numElts);

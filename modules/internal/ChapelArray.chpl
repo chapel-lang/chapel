@@ -3241,11 +3241,25 @@ module ChapelArray {
   inline proc _do_destroy_array(array: _array, param deinitElts=true) {
     _do_destroy_arr(array._unowned, array._instance, deinitElts);
   }
-  proc _deinitElements(array: _array) {
-    // TODO: Would anything be hurt if this was a forall?
+
+  proc _deinitElementsIsParallel(type eltType) param {
+    // TODO: Would anything be hurt if this always returned true?
     // one guess: arrays of arrays where all inner arrays share a domain?
-    for elt in array {
-      chpl__autoDestroy(elt);
+    return false;
+  }
+
+  proc _deinitElements(array: _array) {
+    param needsDestroy = __primitive("needs auto destroy", array.eltType);
+    if needsDestroy {
+      if _deinitElementsIsParallel(array.eltType) {
+        forall elt in array {
+          chpl__autoDestroy(elt);
+        }
+      } else {
+        for elt in array {
+          chpl__autoDestroy(elt);
+        }
+      }
     }
   }
 
