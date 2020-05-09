@@ -157,19 +157,29 @@ module DefaultAssociative {
 
       const sizeofElement = _ddata_sizeof_element(ret);
 
+      // The memset call below needs to be able to set _array records.
+      // But c_ptrTo on an _array will return a pointer to
+      // the first element, which messes up the shallowCopy/shallowSwap code
+      //
+      // As a workaround, this function just returns a pointer to the argument,
+      // whether or not it is an array.
+      inline proc ptrTo(ref x) {
+        return c_pointer_return(x);
+      }
+
       select initMethod {
         when ArrayInit.noInit {
           // do nothing
         }
         when ArrayInit.serialInit {
           for slot in _allSlots(size) {
-            c_memset(c_ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+            c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
           }
         }
         when ArrayInit.parallelInit {
           // This should match the 'these' iterator in terms of idx->task
           forall slot in _allSlots(size) {
-            c_memset(c_ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+            c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
           }
         }
         otherwise {
