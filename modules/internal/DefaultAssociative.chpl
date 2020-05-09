@@ -514,22 +514,19 @@ module DefaultAssociative {
       return numInds;
     }
 
-    proc _addWrapper(in idx: idxType, in slotNum : int = -1, needLock = parSafe) {
+    proc _addWrapper(in idx: idxType, needLock = parSafe) {
 
-      const inSlot = slotNum;
+      var slotNum = -1;
       var retVal = 0;
       on this {
         if parSafe && needLock then lockTable();
-        var findAgain = parSafe && needLock;
+        defer {
+          if parSafe && needLock then unlockTable();
+        }
         if ((numEntries.read()+1)*2 > tableSize) {
           _resize(grow=true);
-          findAgain = true;
         }
-        if findAgain then
-          (slotNum, retVal) = _add(idx, -1);
-        else
-          (_, retVal) = _add(idx, inSlot);
-        if parSafe && needLock then unlockTable();
+        (slotNum, retVal) = _add(idx);
       }
       return (slotNum, retVal);
     }
@@ -541,11 +538,28 @@ module DefaultAssociative {
     //
 
     pragma "unsafe" // see issue #11666
-    proc _add(pragma "no auto destroy" in idx: idxType, in slotNum: int = -1) {
-      var foundSlot : bool = (slotNum != -1);
-      if !foundSlot then
-        (foundSlot, slotNum) = _findEmptySlot(idx);
+    proc _add(pragma "no auto destroy" in idx: idxType) {
+      var slotNum = -1;
+      var foundSlot = false;
+      (foundSlot, slotNum) = _findFilledSlot(idx, needLock=false);
+
+      if (slotNum < 0) {
+        halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
+        return (-1, 0);
+      }
+
       if foundSlot {
+        // found a full slot
+
+        // re-adding an index that's already in there,
+        // so destroy the one passed in
+        _deinitKey(idx);
+
+        return (slotNum, 0);
+
+      } else {
+        // found an empty or deleted slot
+
         table[slotNum].status = chpl__hash_status.full;
         ref dst = table[slotNum].idx;
         __primitive("=", dst, idx);
@@ -555,18 +569,6 @@ module DefaultAssociative {
         for arr in _arrs {
           arr._defaultInitSlot(slotNum);
         }
-
-      } else {
-        if (slotNum < 0) {
-          halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
-          return (-1, 0);
-        }
-
-        // otherwise, re-adding an index that's already in there,
-        // so destroy the one passed in
-        _deinitKey(idx);
-
-        return (slotNum, 0);
       }
       return (slotNum, 1);
     }
@@ -656,8 +658,10 @@ module DefaultAssociative {
 
             // find a destination slot
             var (foundSlot, newslot) = _findEmptySlot(stealIdx);
-            if !foundSlot then
-              halt("couldn't add element during resize");
+            if !foundSlot {
+              halt("couldn't add element during resize - found slot ",
+                   newslot, " containing ", stealIdx);
+            }
 
             // move the local variable into the destination slot
             ref dstSlot = table[newslot];
@@ -747,6 +751,9 @@ module DefaultAssociative {
     // re-used for faster addition to the domain
     proc _findFilledSlot(idx: idxType, needLock = true) : (bool, int) {
       if parSafe && needLock then lockTable();
+      defer {
+        if parSafe && needLock then unlockTable();
+      }
       var firstOpen = -1;
       for slotNum in _lookForSlots(idx) {
         const slotStatus = table[slotNum].status;
@@ -754,18 +761,15 @@ module DefaultAssociative {
         // be found past this point.
         if (slotStatus == chpl__hash_status.empty) {
           if firstOpen == -1 then firstOpen = slotNum;
-          if parSafe && needLock then unlockTable();
           return (false, firstOpen);
         } else if (slotStatus == chpl__hash_status.full) {
           if (table[slotNum].idx == idx) {
-            if parSafe && needLock then unlockTable();
             return (true, slotNum);
           }
         } else { // this entry was removed, but is the first slot we could use
           if firstOpen == -1 then firstOpen = slotNum;
         }
       }
-      if parSafe && needLock then unlockTable();
       return (false, -1);
     }
 
