@@ -85,7 +85,7 @@ def try_parsing_annotations(ann_data, graph_list):
 def check_graph_names(ann_data, graph_list):
     """Check that graph names in the annotation file are listed in GRAPHFILES"""
     for graph in ann_data:
-        if graph != 'all' and graph not in graph_list:
+        if graph != 'all' and 'arkouda' not in graph and graph not in graph_list:
             warnings.warn('Warning: no .graph file found for "{0}"'.format(graph))
 
 def check_configs(ann_data):
