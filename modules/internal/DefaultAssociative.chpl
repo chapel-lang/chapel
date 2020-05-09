@@ -641,8 +641,13 @@ module DefaultAssociative {
 
         // numEntries stays the same during this operation
 
-        // move old data into newly resized table
-        forall oldslot in _allSlots(oldSize) {
+        // Move old data into newly resized table
+        //
+        // It would be nice if this could be done in parallel
+        // but it's possible that multiple old keys will go to the
+        // same position in the new array which would lead to data
+        // races. So it's not as simple as using forall here.
+        for oldslot in _allSlots(oldSize) {
           if oldTable[oldslot].status == chpl__hash_status.full {
             // move the index into a local variable
             pragma "no init" pragma "no auto destroy"
