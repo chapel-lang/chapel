@@ -645,7 +645,7 @@ module DefaultAssociative {
         forall oldslot in _allSlots(oldSize) {
           if oldTable[oldslot].status == chpl__hash_status.full {
             // move the index into a local variable
-            pragma "no init"
+            pragma "no init" pragma "no auto destroy"
             var stealIdx: idxType;
             __primitive("=", stealIdx, oldTable[oldslot].idx);
 
