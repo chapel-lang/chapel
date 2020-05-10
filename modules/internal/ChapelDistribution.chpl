@@ -845,11 +845,6 @@ module ChapelDistribution {
 
     var dom; /* : DefaultSparseDom(?); */
 
-    // NOTE I tried to put `data` in `BaseSparseArrImpl`. However, it wasn't
-    // clear how to initialize this in that class.
-    pragma "local field"
-    var data: [dom.nnzDom] eltType;
-
     override proc dsiGetBaseDom() return dom;
 
     proc deinit() {
@@ -864,10 +859,31 @@ module ChapelDistribution {
   pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
-    proc deinit() {
-      // this is a bug workaround
+    pragma "local field" pragma "unsafe" pragma "no auto destroy"
+    // may be initialized separately
+    // always destroyed explicitly (to control deiniting elts)
+    var data: [dom.nnzDom] eltType;
+
+    proc init(type eltType,
+              param rank : int,
+              type idxType,
+              dom,
+              param initElts:bool) {
+      super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
+
+      this.data = this.dom.nnzDom.buildArray(eltType, initElts=initElts);
     }
 
+    proc deinit() {
+      // Elements in data are deinited in dsiDestroyArr if necessary.
+      // Here we need to clean up the rest of the array.
+      _do_destroy_array(data, deinitElts=false);
+    }
+
+    override proc dsiDestroyArr(param deinitElts:bool) {
+      if deinitElts then
+        _deinitElements(data);
+    }
 
     // currently there is no support implemented for setting IRV for
     // SparseBlockArr, therefore I moved IRV related stuff to this class, and
