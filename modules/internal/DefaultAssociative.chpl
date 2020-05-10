@@ -324,17 +324,10 @@ module DefaultAssociative {
         writeln("### minSizePerTask = ", minSizePerTask);
       }
 
-      if debugDefaultAssoc then
-        writeln("    numTasks=", numTasks, " (", ignoreRunning,
-                "), minSizePerTask=", minSizePerTask);
-
       var numChunks = _computeNumChunks(numTasks, ignoreRunning,
                                         minSizePerTask,
                                         size);
 
-      if debugDefaultAssoc {
-        writeln("    numChunks=", numChunks, " size=", size);
-      }
       if debugAssocDataPar {
         writeln("### numChunks=", numChunks, ", size=", size);
       }
