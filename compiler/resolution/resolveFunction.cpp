@@ -2199,6 +2199,24 @@ static bool insertAndResolveCasts(FnSymbol* fn) {
   return changed;
 }
 
+static Type* arrayElementType(Type* arrayType) {
+  AggregateType* at = toAggregateType(arrayType);
+  if (at == NULL) return NULL;
+
+  Symbol* instField = at->getField("_instance", false);
+  if (instField == NULL) return NULL;
+
+  Type* instType = instField->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  if (instClass == NULL) return NULL;
+
+  Symbol* eltTypeField = instClass->getField("eltType", false);
+  if (eltTypeField == NULL) return NULL;
+
+  Type* eltType = eltTypeField->getValType();
+  return eltType;
+}
+
 static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   if (isSymbol(ast) && ! isShadowVarSymbol(ast))
     return; // do not descend into nested symbols
@@ -2336,6 +2354,13 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                              !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
                              !from->hasFlag(
                                  FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+                  // but don't steal for arrays with different element types
+                  Type* dstEltType = arrayElementType(fromType->getValType());
+                  Type* srcEltType = arrayElementType(from->getValType());
+
+                  if (dstEltType && srcEltType && dstEltType != srcEltType)
+                  stealRHS = false;
                 }
 
                 CallExpr* callCoerceFn = NULL;
@@ -2345,7 +2370,11 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 } else {
                   callCoerceFn = new CallExpr("chpl__coerceCopy",
                                               fromType, from);
-                  // Should this add FLAG_INSERT_AUTO_DESTROY?
+                  // Since the initialization pattern normally does not
+                  // require adding an auto-destroy for a call-expr-temp,
+                  // add FLAG_INSERT_AUTO_DESTROY since we're
+                  // copy-initializing from it.
+                  from->addFlag(FLAG_INSERT_AUTO_DESTROY);
                 }
 
                 CallExpr* move = new CallExpr(PRIM_MOVE, to, callCoerceFn);

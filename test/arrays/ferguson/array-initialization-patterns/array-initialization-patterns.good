@@ -119,6 +119,9 @@ init 1 1
 {D = {1..1}, A = (x = 1, ptr = {xx = 1})}
 deinit 1 1
 -
+testC7
+{xx = 1}
+-
 testR1
 init 1 1
 (A = (x = 1, ptr = {xx = 1}))

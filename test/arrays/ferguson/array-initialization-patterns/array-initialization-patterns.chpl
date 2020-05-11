@@ -350,6 +350,21 @@ proc testC6() {
 testC6();
 writeln("-");
 
+class C7 {
+  var x: R;
+  proc init(arg: int) {
+    this.x = new R(arg);
+  }
+}
+
+proc testC7() {
+  writeln("testC7");
+  var A : [1..1] borrowed C = [new C(1)];
+  writeln(A);
+}
+testC7();
+writeln("-");
+
 
 record R1 {
   var A: [1..1] R = [i in 1..1] new R(1);
