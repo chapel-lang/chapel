@@ -408,6 +408,7 @@ symbolFlag( FLAG_UNCHECKED_THROWS,  ypr, "unchecked throws" , "function throws b
 symbolFlag( FLAG_UNREF_FN,  ypr, "unref fn" , "function to remove reference fields from tuples or copy array slices when returning")
 symbolFlag( FLAG_UNSAFE,  ypr, "unsafe" , "unsafe (disable lifetime and nilability checking)")
 symbolFlag( FLAG_IGNORE_TRANSFER_ERRORS,  ypr, "ignore transfer errors" , "ignore errors for ownership transfer from non-nilable owned" )
+symbolFlag( FLAG_FIND_USER_LINE,  ypr, "find user line" , "report errors with user line number")
 symbolFlag( FLAG_USER_VARIABLE_NAME,  npr, "user variable name" , "temporary uses name of user variable")
 symbolFlag( FLAG_VECTORIZE_YIELDING_LOOPS, ypr, "vectorize yielding loops", "used to explicitly vectorize yielding loops in iterators" )
 symbolFlag( FLAG_VIRTUAL , npr, "virtual" , ncm )

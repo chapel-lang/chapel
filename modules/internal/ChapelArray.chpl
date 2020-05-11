@@ -3764,7 +3764,7 @@ module ChapelArray {
   }
 
   pragma "ignore transfer errors"
-  proc initCopyAfterTransfer(ref a: []) {
+  private proc initCopyAfterTransfer(ref a: []) {
     forall aa in a {
       pragma "no auto destroy"
       var copy: a.eltType = aa; // run copy initializer
@@ -3883,9 +3883,10 @@ module ChapelArray {
     return success;
   }
 
+  pragma "find user line"
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b,
-                                  param kind=_tElt.assign) lifetime a <= b {
+                           param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
 
@@ -3940,7 +3941,9 @@ module ChapelArray {
   }
 
   // assigning from a param
-  inline proc chpl__transferArray(a: [], param b) {
+  pragma "find user line"
+  inline proc chpl__transferArray(ref a: [], param b,
+                                  param kind=_tElt.assign) {
     forall aa in a do
       aa = b;
   }
@@ -4224,6 +4227,7 @@ module ChapelArray {
     return b;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
@@ -4238,6 +4242,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:_domain) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
@@ -4257,6 +4262,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_tuple) {
     var lhs:dstType;
@@ -4269,6 +4275,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:_tuple) {
     var lhs:dstType;
@@ -4282,6 +4289,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:range(?)) {
     var lhs:dstType;
@@ -4289,6 +4297,7 @@ module ChapelArray {
     lhs = {rhs};
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:range(?)) {
     var lhs:dstType;
@@ -4297,6 +4306,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs: _iteratorRecord) {
     // assumes rhs is iterable
@@ -4309,6 +4319,7 @@ module ChapelArray {
     }
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, rhs: _iteratorRecord) {
     // assumes rhs is iterable
@@ -4322,6 +4333,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs) {
     // assumes rhs is iterable (e.g. list)
@@ -4334,6 +4346,7 @@ module ChapelArray {
     }
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs) {
     // assumes rhs is iterable (e.g. list)
@@ -4348,6 +4361,7 @@ module ChapelArray {
   }
 
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:_array) {
 
@@ -4386,6 +4400,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array,
                         pragma "no auto destroy" in rhs:_array) {
@@ -4441,6 +4456,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:_domain) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4458,6 +4474,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array, in rhs:_domain) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4476,6 +4493,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:range(?)) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4489,6 +4507,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array, in rhs:range(?)) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4503,6 +4522,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:_tuple) {
 
@@ -4523,6 +4543,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array,
                         pragma "no auto destroy" in rhs:_tuple) {
@@ -4544,6 +4565,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:desyncEltType(dstType)) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4561,6 +4583,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array, in rhs:desyncEltType(dstType)) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4580,6 +4603,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs: _iteratorRecord) {
     // assumes rhs is iterable
@@ -4594,6 +4618,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array, rhs: _iteratorRecord) {
     // assumes rhs is iterable
@@ -4609,6 +4634,7 @@ module ChapelArray {
     return lhs;
   }
 
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs) {
     // assumes rhs is iterable (e.g. list)
@@ -4623,6 +4649,7 @@ module ChapelArray {
 
     return lhs;
   }
+  pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array, in rhs) {
     // assumes rhs is iterable (e.g. list)
