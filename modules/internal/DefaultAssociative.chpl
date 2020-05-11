@@ -540,9 +540,21 @@ module DefaultAssociative {
       // That is why this uses the function to look for filled slots.
       (foundSlot, slotNum) = _findSlot(idx, needLock=false);
 
-      if (slotNum < 0) {
-        halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
-        return (-1, 0);
+      if slotNum < 0 {
+        // This can happen if there are too many deleted elements in the
+        // table. In that event, we can garbage collect the table by rehashing
+        // everything now.
+        _do_rehash(tableSizeNum, tableSize);
+
+        (foundSlot, slotNum) = _findSlot(idx, needLock=false);
+
+        if slotNum < 0 {
+          // This shouldn't be possible since we just garbage collected
+          // the deleted entries & the table should only ever be half
+          // full of non-deleted entries.
+          halt("couldn't add ", idx, " -- ", numEntries.read(), " / ", tableSize, " taken");
+          return (-1, 0);
+        }
       }
 
       if foundSlot {
