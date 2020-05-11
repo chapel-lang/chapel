@@ -248,7 +248,7 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc this(k: keyType) ref where !isNonNilableClass(valType) {
+    proc ref this(k: keyType) ref where !isNonNilableClass(valType) {
       _enter();
 
       // TODO: optimize this to avoid looking up the slot multiple times
