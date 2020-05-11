@@ -86,8 +86,7 @@ module Set {
   pragma "no doc"
   proc _checkElementType(type t) {
     // Non-nilable shared classes fail with a strange compiler bug.
-    if false then
-      if isOwnedClass(t) || (isNonNilableClass(t) && isSharedClass(t)) then
+    if isOwnedClass(t) || (isNonNilableClass(t) && isSharedClass(t)) then
         compilerError('Sets do not support this class type', 2);
 
     // Only error if a tuple element is a non-nilable class.
