@@ -60,7 +60,7 @@ public:
                                         VisibleFunctionBlock();
 
   Map<const char*, Vec<FnSymbol*>*>     visibleFunctions;
-  std::map<const char*, std::pair<bool, std::vector<FnSymbol*>*>> reexports;
+  std::map<const char*, std::pair<bool, std::vector<FnSymbol*>*> > reexports;
 };
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
@@ -904,7 +904,7 @@ void visibleFunctionsClear() {
     }
 
     for(std::map<const char*, std::pair<bool,
-          std::vector<FnSymbol*>*>>::iterator it = vfb->reexports.begin();
+          std::vector<FnSymbol*>*> >::iterator it = vfb->reexports.begin();
         it != vfb->reexports.end(); ++it) {
       std::pair<bool, std::vector<FnSymbol*>*> val = it->second;
       delete val.second;

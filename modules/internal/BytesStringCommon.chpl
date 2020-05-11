@@ -90,10 +90,6 @@ module BytesStringCommon {
   */
   proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
-
-    pragma "fn synchronization free"
-    extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
-                                    buf:c_string, buflen:ssize_t): syserr;
     pragma "fn synchronization free"
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     pragma "fn synchronization free"
@@ -115,25 +111,23 @@ module BytesStringCommon {
     var thisIdx = 0;
     var decodedIdx = 0;
     while thisIdx < length {
-      var cp: int(32);
-      var nbytes: c_int;
-      var bufToDecode = (buff + thisIdx): c_string;
-      var maxbytes = (length - thisIdx): ssize_t;
-      const decodeRet = qio_decode_char_buf(cp, nbytes,
-                                            bufToDecode, maxbytes);
+      const (decodeRet, cp, nBytes) = decodeHelp(buff, length, 
+                                                 thisIdx, 
+                                                 allowEsc=false);
+      var buffToDecode = (buff + thisIdx): c_string;
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
           throw new owned DecodeError();
         }
         else {
-          // if nbytes is 1, then we must have read a single byte and found
-          // that it was invalid, if nbytes is >1 then we must have read
+          // if nBytes is 1, then we must have read a single byte and found
+          // that it was invalid, if nBytes is >1 then we must have read
           // multiple bytes where the last one broke the sequence. But it can
           // be a valid byte itself. So we rewind by 1 in that case
           // we use nInvalidBytes to store how many bytes we are ignoring or
           // replacing
-          const nInvalidBytes = if nbytes==1 then nbytes else nbytes-1;
+          const nInvalidBytes = if nBytes==1 then nBytes else nBytes-1;
           thisIdx += nInvalidBytes;
 
           if policy == decodePolicy.replace {
@@ -142,7 +136,7 @@ module BytesStringCommon {
             // Replacement can cause the string to be larger than initially
             // expected. The Unicode replacement character has codepoint
             // 0xfffd. It is encoded in `encodedReplChar` and its encoded
-            // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
+            // length is `nBytesRepl`, which is 3 bytes in UTF8. If it is used
             // in place of a single byte, we may overflow
             expectedSize += 3-nInvalidBytes;
             (ret.buff, ret.buffSize) = bufferEnsureSize(ret.buff, ret.buffSize,
@@ -171,16 +165,68 @@ module BytesStringCommon {
       }
       else {  // we got valid characters
         // do a naive copy
-        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
+        bufferMemcpyLocal(dst=ret.buff, src=buffToDecode, len=nBytes,
                           dst_off=decodedIdx);
-        thisIdx += nbytes;
-        decodedIdx += nbytes;
+        thisIdx += nBytes;
+        decodedIdx += nBytes;
       }
     }
 
     ret.buffLen = decodedIdx;
     ret.buff[ret.buffLen] = 0;
     return ret;
+  }
+
+  /*
+    This function decodeHelp is used to create a wrapper for 
+    qio_decode_char_buf* and qio_decode_char_buf_esc and return 
+    the value of syserr , cp and nBytes.
+      
+      :arg buff: Buffer to decode 
+      
+      :arg buffLen: Size of buffer
+      
+      :arg offset: Starting index of read buffer,
+      
+      :arg allowEsc:  Choice between "qio_decode_char_buf" 
+                      and "qio_decode_char_buf_esc" that allows 
+                      escaped sequences in the string
+    
+    :returns: Tuple of decodeRet, chr and nBytes
+              decodeRet : error code : syserr
+              chr : corresponds to codepoint 
+              nBytes : number of bytes of corresponding UTF-8 encoding
+   */
+  proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int, 
+                  offset:int, allowEsc: bool ) {
+    pragma "fn synchronization free"
+    extern proc qio_decode_char_buf(ref chr:int(32), 
+                                    ref nBytes:c_int,
+                                    buf:c_string,
+                                    buflen:ssize_t): syserr;
+    pragma "fn synchronization free"
+    extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                        ref nBytes:c_int,
+                                        buf:c_string,
+                                        buffLen:ssize_t): syserr;
+    // esc chooses between qio_decode_char_buf_esc and
+    // qio_decode_char_buf as a single wrapper function 
+    var chr: int(32);
+    var nBytes: c_int;
+    var start = offset:c_int;
+    var multibytes = (buff + start): c_string;
+    var maxbytes = (buffLen - start): ssize_t;
+    var decodeRet: syserr;
+    if(allowEsc) then
+      decodeRet = qio_decode_char_buf_esc(chr, nBytes, 
+                                          multibytes,
+                                          maxbytes);
+    else
+      decodeRet = qio_decode_char_buf(chr, nBytes,
+                                      multibytes, 
+                                      maxbytes);
+
+    return (decodeRet, chr, nBytes);
   }
 
   proc initWithBorrowedBuffer(ref x: ?t, other: t) {
@@ -273,6 +319,75 @@ module BytesStringCommon {
     }
   }
 
+  // Checks to see if r is inside the bounds of this and returns a finite
+  // range that can be used to iterate over a section of the string
+  //
+  // This function handles ranges of codepointIndex, byteIndex or numeric types.
+  // codepointIndex only makes sense for string, whereas the others can be used
+  // with both bytes and string
+  //
+  // If codepointIndex range was given, converts that to byte index range in the
+  // process.
+  proc getView(const ref x: ?t, r: range(?)) {
+    assertArgType(t, "getView");
+    if t == bytes && r.idxType == codepointIndex {
+      compilerError("codepointIndex ranges cannot be used with bytes in getView");
+    }
+
+    if t == bytes || r.idxType == byteIndex {
+      // cast the argument r to `int` to make sure that we are not dealing with
+      // byteIndex
+      const intR = r:range(int, r.boundedType, r.stridable);
+      if boundsChecking {
+        if !x.byteIndices.boundsCheck(intR) {
+          halt("range ", r, " out of bounds for " + t:string + " with ",
+               x.numBytes, " bytes");
+        }
+      }
+      return intR[x.byteIndices];
+    }
+    else {  // string with codepoint indexing
+      if r.stridable {
+        // Slicing by stridable codepoint ranges is unsupported because it
+        // creates an irregular sequence of bytes.  We could add support in the
+        // future by refactoring the callers of _getView() to add a slow path,
+        // or by storing an array of indices marking the beginning of each
+        // codepoint alongside the string.
+        compilerError("string slicing doesn't support stridable codepoint ranges");
+      }
+
+      // cast the argument r to `int` to make sure that we are not dealing with
+      // codepointIdx
+      const intR = r:range(int, r.boundedType, r.stridable);
+      if boundsChecking {
+        if !x.indices.boundsCheck(intR) {
+          halt("range ", r, " out of bounds for string with length ", x.size);
+        }
+      }
+
+      // find the byte range of the given codepoint range
+      const cpRange = intR[x.indices];
+      var cpCount = 0;
+      var byteLow = x.buffLen;  // empty range if bounds outside string
+      var byteHigh = x.buffLen - 1;
+      if cpRange.high >= 0 {
+        for (i, nBytes) in x._indexLen() {
+          if cpCount == cpRange.low {
+            byteLow = i:int;
+            if !r.hasHighBound() then
+              break;
+          }
+          if cpCount == cpRange.high {
+            byteHigh = i:int + nBytes-1;
+            break;
+          }
+          cpCount += 1;
+        }
+      }
+      return byteLow..byteHigh;
+    }
+  }
+
   // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
@@ -280,7 +395,7 @@ module BytesStringCommon {
     var ret: t;
     if x.isEmpty() then return ret;
 
-    const r2 = x._getView(r);
+    const r2 = getView(x, r);
     if r2.size <= 0 {
       // TODO: I can't just return "" (ret var gets freed for some reason)
       ret = "";

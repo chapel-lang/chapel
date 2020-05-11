@@ -975,6 +975,9 @@ module String {
     */
     proc indices return 0..<size;
 
+    pragma "no doc"
+    proc byteIndices return 0..<this.numBytes;
+
     /*
       :returns: The number of bytes in the string.
       */
@@ -1069,12 +1072,11 @@ module String {
         var readIdx = 0;
         var writeIdx = 0;
         while readIdx < localThis.buffLen {
-          var cp: int(32);
-          var nbytes: c_int;
           var multibytes = (localThis.buff + readIdx): c_string;
-          var maxbytes = (localThis.buffLen - readIdx): ssize_t;
-          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
-                                                    maxbytes);
+          const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                     buffLen=localThis.buffLen,
+                                                     offset=readIdx,
+                                                     allowEsc=true);
           if (0xdc80<=cp && cp<=0xdcff) {
             buff[writeIdx] = (cp-0xdc00):byteType;
             writeIdx += 1;
@@ -1084,14 +1086,14 @@ module String {
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
             // simply copy the data out
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
-            writeIdx += nbytes;
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nBytes);
+            writeIdx += nBytes;
           }
           else {
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
-            writeIdx += nbytes;
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nBytes);
+            writeIdx += nBytes;
           }
-          readIdx += nbytes;
+          readIdx += nBytes;
         }
         buff[writeIdx] = 0;
         return createBytesWithOwnedBuffer(buff, length=writeIdx, size=size);
@@ -1123,11 +1125,10 @@ module String {
       var i = 0;
       while i < localThis.buffLen {
         const curPos = localThis.buff+i;
-        var cp: int(32);
-        var nBytes: c_int;
-        var maxBytes = (localThis.buffLen - i): ssize_t;
-        qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
-
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                     buffLen=localThis.buffLen,
+                                                     offset=i,
+                                                     allowEsc=true);
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
         newBuf[nBytes] = 0;
 
@@ -1182,13 +1183,12 @@ module String {
 
       var i = 0;
       while i < localThis.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.buffLen - i): ssize_t;
-        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
         yield cp;
-        i += nbytes;
+        i += nBytes;
       }
     }
 
@@ -1208,13 +1208,12 @@ module String {
         while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
           i += 1; // in case `start` is in the middle of a multibyte character
       while i < localThis.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.buffLen - i): ssize_t;
-        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
-        yield (cp:int(32), i:byteIndex, nbytes:int);
-        i += nbytes;
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
+        yield (cp:int(32), i:byteIndex, nBytes:int);
+        i += nBytes;
       }
     }
 
@@ -1271,13 +1270,11 @@ module String {
       if localThis.isEmpty() then
         halt("string.toCodepoint() only accepts single-codepoint strings");
 
-      var cp: int(32);
-      var nbytes: c_int;
-      var multibytes = localThis.buff: c_string;
-      var maxbytes = localThis.buffLen: ssize_t;
-      qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
-
-      if localThis.buffLen != nbytes:int then
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                 buffLen=localThis.buffLen,
+                                                 offset=0,
+                                                 allowEsc=true);
+      if localThis.buffLen != nBytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
 
       return cp;
@@ -1325,13 +1322,12 @@ module String {
       ret.buff = newBuff;
       ret.isOwned = true;
 
-      var multibytes = ret.buff;
-      var cp: int(32);
-      var nbytes: c_int;
-      qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
-      ret.buff[nbytes] = 0;
-      ret.buffLen = nbytes;
-
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=ret.buff,
+                                                 buffLen=maxbytes,
+                                                 offset=0,
+                                                 allowEsc=true);
+      ret.buff[nBytes] = 0;
+      ret.buffLen = nBytes;
       return ret;
     }
 
@@ -1375,96 +1371,6 @@ module String {
      */
     inline proc item(i: int) : string {
       return this[i: codepointIndex];
-    }
-
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string
-    // TODO: move into the public interface in some form? better name if so?
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == byteIndex {
-      if boundsChecking {
-        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.alignedLow:int < 0 then
-            halt("range ", r, " out of bounds for string");
-        }
-        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          // This seems suspicious... why would a range with a high bound
-          // of -1 be in-bounds yet one whose high bound was -2 be out?
-          // It seems as though any bound < 0 or >= len should be OOB.
-          // (This logic pre-dated this PR, though the numbers differed
-          // in the 1-based string/bytes indexing world).
-          // I think that this exists in order to permit the doReplace()
-          // call to work when `find()` returns 0, but this doesn't
-          // seem principled.  See also the similar case in Bytes.chpl.
-          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.buffLen) then
-            halt("range ", r, " out of bounds for string with ", this.numBytes, " bytes");
-        }
-      }
-      const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
-      if r1.stridable {
-        const ret = r1.alignedLow:int..r1.alignedHigh:int by r1.stride;
-        return ret;
-      } else {
-        const ret = r1.alignedLow:int..r1.alignedHigh:int;
-        return ret;
-      }
-    }
-
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string.
-    // Converts from codepointIndex range to byte index range in the process.
-    //
-    // This function handles ranges of codepointIndex or of numeric types,
-    // both of which signify positions in the string measured in codepoints.
-    //
-    // Slicing by stridable codepoint ranges is unsupported because it
-    // creates an irregular sequence of bytes.  We could add support in the
-    // future by refactoring the callers of _getView() to add a slow path,
-    // or by storing an array of indices marking the beginning of each
-    // codepoint alongside the string.
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType != byteIndex {
-      if r.stridable {
-        compilerError("string slicing doesn't support stridable codepoint ranges");
-      }
-      if boundsChecking {
-        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.alignedLow:int < 0 then
-            halt("range ", r, " out of bounds for string");
-        }
-      }
-      // Loop to find whether the low and high codepoint indices
-      // appear within the string.  Note the byte indices of those
-      // locations, if they exist.
-      const cp_low = if r.hasLowBound() && r.alignedLow:int >= 0
-                       then r.alignedLow:int else 0;
-      const cp_high = if r.hasHighBound() then r.alignedHigh:int else this.buffLen;
-      var cp_count = 0;
-      var byte_low = this.buffLen;  // empty range if bounds outside string
-      var byte_high = this.buffLen - 1;
-      if cp_high > 0 {
-        for (i, nbytes) in this._indexLen() {
-          if cp_count == cp_low {
-            byte_low = i:int;
-            if !r.hasHighBound() then
-              break;
-          }
-          if cp_count == cp_high {
-            byte_high = i:int + nbytes-1;
-            break;
-          }
-          cp_count += 1;
-        }
-      }
-      if boundsChecking {
-        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.alignedHigh:int < 0) || (r.alignedHigh:int > cp_count) then
-            halt("range ", r, " out of bounds for string with length ", this.size);
-        }
-      }
-      const r1 = byte_low..byte_high;
-      const ret = r1[0..#(this.buffLen)];
-      return ret;
     }
 
     /*
@@ -1545,7 +1451,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const view = this._getView(region);
+        const view = getView(this, region);
         const thisLen = view.size;
 
         // Edge cases
@@ -1562,12 +1468,11 @@ module String {
               for i in view {
                 if i >= nextIdx {
                   nCodepoints += 1;
-                  var cp: int(32);
-                  var nbytes: c_int;
-                  var multibytes = (this.buff + i): c_string;
-                  var maxbytes = (this.buffLen - i): ssize_t;
-                  qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
-                  nextIdx = i + nbytes;
+                  const (decodeRet, cp, nBytes) = decodeHelp(buff=this.buff,
+                                                             buffLen=this.buffLen,
+                                                             offset=i,
+                                                             allowEsc=true);
+                  nextIdx = i + nBytes;
                 }
               }
               localRet = nCodepoints;
@@ -1632,7 +1537,8 @@ module String {
       :returns: the index of the first occurrence of `needle` within a
                 string, or -1 if the `needle` is not in the string.
      */
-    inline proc find(needle: string, region: range(?) = 0:byteIndex..) : byteIndex {
+    inline proc find(needle: string,
+                     region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
       // TODO: better name than region?
       return _search_helper(needle, region, count=false): byteIndex;
     }
@@ -1646,7 +1552,8 @@ module String {
       :returns: the index of the first occurrence from the right of `needle`
                 within a string, or -1 if the `needle` is not in the string.
      */
-    inline proc rfind(needle: string, region: range(?) = 0:byteIndex..) : byteIndex {
+    inline proc rfind(needle: string,
+                      region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
       return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
     }
 
@@ -1658,7 +1565,7 @@ module String {
 
       :returns: the number of times `needle` occurs in the string
      */
-    inline proc count(needle: string, region: range(?) = 0..) : int {
+    inline proc count(needle: string, region: range(?) = this.indices) : int {
       return _search_helper(needle, region, count=true);
     }
 
@@ -1716,7 +1623,7 @@ module String {
         var inChunk : bool = false;
         var chunkStart : byteIndex;
 
-        for (c, i, nbytes) in localThis._cpIndexLen() {
+        for (c, i, nBytes) in localThis._cpIndexLen() {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -1730,7 +1637,7 @@ module String {
             if !(inChunk || cSpace) {
               chunkStart = i;
               inChunk = true;
-              if i - 1 + nbytes > iEnd {
+              if i - 1 + nBytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -1751,7 +1658,7 @@ module String {
                   inChunk = false;
                 }
               // out of chars
-              } else if i - 1 + nbytes > iEnd {
+              } else if i - 1 + nBytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -1855,10 +1762,10 @@ module String {
       var end: byteIndex = localThis.buffLen-1;
 
       if leading {
-        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
           for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
-              start = i + nbytes;
+              start = i + nBytes;
               continue outer;
             }
           }
@@ -1872,14 +1779,14 @@ module String {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = -1;
-        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
           for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
               continue outer;
             }
           }
           // This was not a character to be removed, so update tentative end.
-          end = i + nbytes-1;
+          end = i + nBytes-1;
         }
       }
 
@@ -2117,18 +2024,17 @@ module String {
 
       var i = 0;
       while i < result.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.buffLen - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                   buffLen=result.buffLen,
+                                                   offset=i,
+                                                   allowEsc=false);
         var lowCodepoint = codepoint_toLower(cp);
-        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
           // Use the MacOS approach everywhere:  only change the case if
           // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, lowCodepoint);
         }
-        i += nbytes;
+        i += nBytes;
       }
       return result;
     }
@@ -2148,18 +2054,17 @@ module String {
 
       var i = 0;
       while i < result.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.buffLen - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                   buffLen=result.buffLen,
+                                                   offset=i,
+                                                   allowEsc=false);
         var upCodepoint = codepoint_toUpper(cp);
-        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
           // Use the MacOS approach everywhere:  only change the case if
           // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, upCodepoint);
         }
-        i += nbytes;
+        i += nBytes;
       }
       return result;
     }
@@ -2182,23 +2087,22 @@ module String {
       var last = UN;
       var i = 0;
       while i < result.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.buffLen - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                   buffLen=result.buffLen,
+                                                   offset=i,
+                                                   allowEsc=false);
         if codepoint_isAlpha(cp) {
           if last == UN {
             last = LETTER;
             var upCodepoint = codepoint_toUpper(cp);
-            if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+            if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
               // Use the MacOS approach everywhere:  only change the case if
               // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, upCodepoint);
             }
           } else { // last == LETTER
             var lowCodepoint = codepoint_toLower(cp);
-            if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+            if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
               // Use the MacOS approach everywhere:  only change the case if
               // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, lowCodepoint);
@@ -2208,7 +2112,7 @@ module String {
           // Uncased elements
           last = UN;
         }
-        i += nbytes;
+        i += nBytes;
       }
       return result;
     }
@@ -2222,14 +2126,13 @@ module String {
     proc capitalize() : string {
       var result: string = this.toLower();
       if result.isEmpty() then return result;
-
-      var cp: int(32);
-      var nbytes: c_int;
-      var multibytes = result.buff: c_string;
-      var maxbytes = result.buffLen: ssize_t;
-      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                 buffLen=result.buffLen,
+                                                 offset=0,
+                                                 allowEsc=false);
+      
       var upCodepoint = codepoint_toUpper(cp);
-      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
         // Use the MacOS approach everywhere:  only change the case if
         // the result does not change the number of encoded bytes.
         qio_encode_char_buf(result.buff, upCodepoint);

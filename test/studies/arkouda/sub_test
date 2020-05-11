@@ -48,7 +48,7 @@ fi
 
 # Install Arkouda and python dependencies to a python-deps subdir
 export PYTHONUSERBASE=$ARKOUDA_HOME/python-deps
-if ! python3 -m pip install --force-reinstall -e .[test] --user ; then
+if ! python3 -m pip install --force-reinstall --upgrade --no-cache-dir -e .[test] --user ; then
   log_fatal_error "installing arkouda"
 fi
 
@@ -61,6 +61,15 @@ else
   log_fatal_error "running make check"
 fi
 test_end "make check"
+
+# Run Python unit tests
+test_start "make test-python"
+if make test-python ; then
+  log_success "make test-python output"
+else
+  log_error "running make test-python"
+fi
+test_end "make test-python"
 
 # Run benchmarks
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then

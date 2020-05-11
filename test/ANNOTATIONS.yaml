@@ -68,12 +68,12 @@ all:
     - new 1-pass implementation of widening
   08/13/15:
     - text: remove restriction of soft-threads to 16 only
-      config: 16 node XC
+      config: 16-node-xc
   08/18/15:
     - fix task counting for coforall+on
   08/26/15:
     - text: re-enable optimization of op= in local blocks
-      config: 16 node XC
+      config: 16-node-xc
   09/01/15:
     - parallel array initialization
   09/02/15:
@@ -82,13 +82,13 @@ all:
     - domains of formal array args no longer mean reindex
   09/08/15:
     - text: localization optimization for endcounts
-      config: 16 node XC
+      config: 16-node-xc
   09/09/15:
     - text: ubuntu update to 15.04 (gcc upgraded to 4.9.2)
       config: shootout
   10/19/15:
     - text: can't repro old performance
-      config: 16 node XC
+      config: 16-node-xc
   10/29/15:
     - PR 2850 to split up and inline BlockArr.dsiAccess
   11/19/15:
@@ -96,10 +96,10 @@ all:
       config: shootout
   12/05/15:
     - text: improve comm=ugni comm domain handling
-      config: 16 node XC
+      config: 16-node-xc
   12/08/15:
     - text: default to qthreads+hwloc for cce (#2972)
-      config: Single node XC
+      config: 1-node-xc
   12/09/15:
     - Added record-based strings (#2884)
   12/17/15:
@@ -108,23 +108,23 @@ all:
     - Replace filenames with indices into a lookup table (#3049)
   02/14/16:
     - text: Default to jemalloc for gasnet configurations (#3287)
-      config: 16 node XC
+      config: 16-node-xc
   02/17/16:
     - text: Remove origin check to improve bulk transfer (#3301)
-      config: 16 node XC
+      config: 16-node-xc
   02/19/16:
     - text: Default to jemalloc for comm=ugni (#3321)
-      config: 16 node XC
+      config: 16-node-xc
   02/22/16:
     - Default to jemalloc for comm=none (#3333)
   03/04/16:
     - implemented doubling/halving for array-as-vec (#3380)
   03/17/16:
     - text: Switched gen compiler to gcc 5.1.0
-      config: 16 node XC, Single node XC
+      config: 16-node-xc, 1-node-xc
   04/27/16:
     - text: Optimization for returning wide pointers (#3742)
-      config: Single node XC, 16 node XC
+      config: 1-node-xc, 16-node-xc
   05/05/16:
     - text: ubuntu update to 16.04 (gcc upgraded to 5.3)
       config: shootout
@@ -137,7 +137,7 @@ all:
     - Upgrade target compiler versions (#218, internal)
   06/24/16:
     - text: Improve optimizeOnClauses optimization (#4008)
-      config: 16 node XC
+      config: 16-node-xc
   07/19/16:
     - Disable jemalloc's stat gathering by default (#4180)
   07/20/16:
@@ -146,7 +146,7 @@ all:
     - Restore static to normal compilation generated code (#4233)
   08/03/16:
     - text: Hardware upgrade
-      config: 16 node XC, Single node XC
+      config: 16-node-xc, 1-node-xc
   08/04/16:
     - Updates to Search module, required array slicing (partially reverted) (#4273)
   08/19/16:
@@ -175,30 +175,30 @@ all:
     - Add promoted fast follower support (#4558)
   10/08/16:
     - text: upgrade Intel target compiler from 15.0.3.187 to 17.0.0.098
-      config: Single node XC
+      config: 1-node-xc
   10/11/16:
     - text: Fix of races in the ugni comm layer (internal #253 and #258)
-      config: 16 node XC
+      config: 16-node-xc
   10/18/16:
     - First step to transition to qualified references (#4745)
   10/27/16:
     - Improve Array Memory Management (#4762)
   11/01/16:
     - text: upgrade Cray target compiler version from 8.4.0 to 8.5.3
-      config: Single node XC
+      config: 1-node-xc
     - text: upgrade gnu target compiler from 5.3.0 to 6.2.0
-      config: Single node XC, 16 node XC
+      config: 1-node-xc, 16-node-xc
   11/02/16:
     - text: remove usesOuterVars from virtual method call resolution due to bug in application (#4794)
-      config: Single node XC
+      config: 1-node-xc
   11/04/16:
     - text: Improve RVF by inferring const-refs (#4814)
-      config: 16 node XC
+      config: 16-node-xc
     - text: downgrade Cray target compiler from 8.5.3 to 8.4.6
-      config: Single node XC
+      config: 1-node-xc
   11/08/16:
     - text: RVF arrays in records (#4821)
-      config: 16 node XC
+      config: 16-node-xc
   11/26/16:
     - Use hybrid spin/condwait (#4902)
   12/07/16:
@@ -207,11 +207,11 @@ all:
     - Re-enable denormalization (#4547)
   12/13/16:
     - text: inferConst improvements related to _retArg (#4969)
-      config: 16 node XC
+      config: 16-node-xc
   12/14/16:
     - Reduce task creation time for "bounded" coforalls (#5018)
     - text: Ugni comm layer improvements for forks and the heap (internal #276)
-      config: 16 node XC
+      config: 16-node-xc
   12/22/16:
     - multi-ddata (#5047)
   01/11/17:
@@ -229,10 +229,10 @@ all:
     - Have qthreads use Chapel's allocator (#5637)
   03/15/17:
     - text: Increase QT_SPINCOUNT when running on a Cray (#5646)
-      config: 16 node XC
+      config: 16-node-xc
   03/16/17:
     - text: Stop limiting the number of ugni communication domains under slurm (#5653)
-      config: 16 node XC
+      config: 16-node-xc
   03/17/17:
     - Allow fields and vars to be 'void', make range.stride void if not stridable (#5681)
   03/20/17:
@@ -241,10 +241,10 @@ all:
     - Flag some compiler temps as const (#6154)
   06/08/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
-      config: Single node XC, 16 node XC
+      config: 1-node-xc, 16-node-xc
   06/10/17:
     - text: bounded-coforall optimization for remote coforalls (#6419)
-      config: 16 node XC
+      config: 16-node-xc
   06/14/17:
     - text: upgrade gnu target compiler from 6.3.0 to 7.1.0
       config: chapcs, chap04
@@ -253,7 +253,7 @@ all:
       config: chapcs, chap04
   06/20/17:
     - text: revert gnu target compiler from 7.1.0 to 6.3.0
-      config: Single node XC, 16 node XC
+      config: 1-node-xc, 16-node-xc
   06/21/17:
     - change tmp directory
   07/26/17:
@@ -261,15 +261,15 @@ all:
     - Move EndCount to task local storage (#6765)
   07/31/17:
     - text: Enable GASNet's multi-comm-domain support for gemini/aries (#6893)
-      config: 16 node XC
+      config: 16-node-xc
   08/08/17:
     - text: With comm=ugni, register large arrays dynamically (#6947)
-      config: 16 node XC
+      config: 16-node-xc
   08/15/17:
     - add error handling to the IO module (#6890)
   09/06/17:
     - text: Improve the accuracy of our running task counter (#7193)
-      config: 16 node XC
+      config: 16-node-xc
   09/19/17:
     - Fix LICM bug (#7371)
   10/21/17:
@@ -278,17 +278,17 @@ all:
     - New bulk transfer interface (#7775)
   12/08/17:
     - text: Machine upgraded to CLE6
-      config: 16 node XC
+      config: 16-node-xc
   12/12/17:
     - (no-local) QualifiedType ref improvements (#7990)
   01/16/18:
     - rework iterator memory management (#8073)
   01/17/18:
     - text: support dynamically extendable heap w/ ugni (#7700)
-      config: 16 node XC
+      config: 16-node-xc
   01/25/18:
     - text: Do nonblocking responses in the polling task (#8297)
-      config: 16 node XC
+      config: 16-node-xc
   02/07/18:
     - text: machine operating system update to SLES12
       config: chapcs
@@ -296,25 +296,25 @@ all:
     - Change default intent for range to const in (#8368)
   02/22/18:
     - text: Put the main process to sleep while waiting to shutdown (#8533)
-      config: 16 node XC
+      config: 16-node-xc
   03/03/18:
     - text: add error handling to casts from string #8547
       config: chapcs
   03/04/18:
     - text: system update
-      config: 16 node XC
+      config: 16-node-xc
   03/16/18:
     - text: QSBR (#8182)
-      config: 16 node XC
+      config: 16-node-xc
   03/18/18:
     - text: QSBR reverted (#8841)
-      config: 16 node XC
+      config: 16-node-xc
   03/20/18:
     - text: upgrade default LLVM to LLVM 6 (#8869)
       config: chapcs 
   04/03/18:
     - text: Reduce contention from ugni's polling thread (#9068)
-      config: 16 node XC
+      config: 16-node-xc
   04/08/18:
     - move lowering of ForallStmts at resolution (#8785)
   04/11/18:
@@ -334,48 +334,48 @@ all:
     - Represent if-expressions with IfExpr node instead of if-function (#9649)
   06/04/18:
     - text: Use the block transfer engine for large transfers under ugni (#9683)
-      config: 16 node XC
+      config: 16-node-xc
   06/20/18:
     - text: Optimize non-fetching network atomics (#9876)
-      config: 16 node XC
+      config: 16-node-xc
   06/29/18:
     - Avoid using syncvar_t in the qthreads shim (#10082)
   07/04/18:
     - Remove spinwaiting from qthreads chpl_sync_lock() (#10133)
   08/01/18:
     - text: cannot reproduce old numbers for gn+aries
-      config: 16 node XC
+      config: 16-node-xc
   08/15/18:
     - text: Revert to stack-allocated rfDone indicators. (#10728)
-      config: 16 node XC
+      config: 16-node-xc
   09/16/18:
     - text: chapcs rebooted
       config: chapcs
   09/25/18:
     - text: Optimize blocking puts/gets and fetching network AMOs (#11176)
-      config: 16 node XC
+      config: 16-node-xc
   12/04/18:
     - Set up gcc 8.2 as default gcc for nightly testing (#11762)
   12/07/18:
     - text: Optimize remote task spawning under ugni (#11799)
-      config: 16 node XC
+      config: 16-node-xc
   12/13/18:
     - text: Decrement the CQ counter when we consume the CQ event in ugni (#11875)
-      config: 16 node XC
+      config: 16-node-xc
   01/04/19:
     - text: Improve how we align and pad comm domains in ugni (#11973)
-      config: 16 node XC
+      config: 16-node-xc
   01/07/19:
     - Default to cstdlib atomics for gcc >= 5 (#11963)
   01/18/19:
     - text: Use acquire/release memory orders for buffered AMO/GET locks (#12089)
-      config: 16 node XC
+      config: 16-node-xc
   02/06/19:
     - text: Reduce contention on ugni's comm domains (#12240)
-      config: 16 node XC
+      config: 16-node-xc
   02/07/19:
     - text: Simplify how we acquire comm domains in ugni (#12258)
-      config: 16 node XC
+      config: 16-node-xc
   02/08/19:
     - replace PRIM_INIT with PRIM_DEFAULT_INIT_VAR (#12154)
   03/02/19:
@@ -389,7 +389,7 @@ all:
     - Improve task placement for local bounded coforalls (#12868)
   05/06/19:
     - text: Enable the unordered compiler optimization by default (#12952)
-      config: 16 node XC
+      config: 16-node-xc
   05/30/19:
     - Change LocalSpinLock to a test-and-testAndSet lock (#13116)
   07/12/19:
@@ -399,13 +399,13 @@ all:
       config: 16-node-cs
   08/08/19:
     - text: Machine upgraded to CLE7
-      config: 16 node XC
+      config: 16-node-xc
   10/02/19:
     - text: system update
-      config: 16 node XC
+      config: 16-node-xc
   10/10/19:
     - text: Optimize unorderedCopy for types larger than 8 bytes (#14255)
-      config: 16 node XC
+      config: 16-node-xc
   12/04/19:
     - Warm up the runtime before entering user code (#14567)
   01/17/20:
@@ -415,10 +415,10 @@ all:
       config: chapcs
   02/19/20:
     - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
-      config: 16 node XC, 16-node-cs
+      config: 16-node-xc, 16-node-cs
   02/21/20:
     - text: Poll for AMs on every call to gasnet_AMPoll for Aries (#14938)
-      config: 16 node XC
+      config: 16-node-xc
   02/28/20:
     - Add a spinlock to the atomic runtime interface. (#15015)
   03/05/20:
@@ -811,7 +811,7 @@ hpl_performance:
     - Fixed string leak in DimensionalDist2D (#3013)
   11/30/16:
     - text: Improvements to inferConstRefs (#4904)
-      config: 16 node XC
+      config: 16-node-xc
 
 ig-variants.ml-perf:
   01/30/20:
@@ -827,7 +827,7 @@ isx:
     - ISx ref to array (#3365)
   01/10/17:
     - text: Use comm primitive in ISx study version (#5131)
-      config: 16 node XC
+      config: 16-node-xc
 
 isx-bucket-spmd:
   02/26/16:
@@ -1443,7 +1443,7 @@ ptrans.ml-time:
 ra:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
-      config: Single node XC
+      config: 1-node-xc
   03/21/17:
     - Rank change dom dist view (#5694)
   04/05/18:
@@ -1520,7 +1520,7 @@ revcomp: &revcomp-base
     - Difficult to consistently replicate
   08/12/16:
     - text: Discontinued performance testing (data invalid) (#4333)
-      config: Single node XC
+      config: 1-node-xc
   03/10/17:
     - text: Re-enable binary IO optimization on NUMA (#5572)
       config: chapcs
@@ -1608,13 +1608,13 @@ STREAM_study_performance:
 stream-promoted.ml-perf:
   12/02/16:
     - text: RVF reference fields with record-wrapped type (#4925)
-      config: 16 node XC
+      config: 16-node-xc
   03/17/17:
     - text: Improve cullOverReferences and enable late const checking (#5624)
-      config: 16 node XC
+      config: 16-node-xc
   03/21/17:
     - text: Improve const inference for chpl__iterLF (#5736)
-      config: 16 node XC
+      config: 16-node-xc
 
 STREAM_study:
   10/21/16:
@@ -1635,10 +1635,10 @@ stencil:
 stream:
   05/13/16:
     - text: stridable ranges and domains safeCasts, compiler error, etc. (#3778)
-      config: Single node XC
+      config: 1-node-xc
   03/18/17:
     - text: Improve inferConstRefs' canRHSBeConstRef helper function (#5710)
-      config: 16 node XC
+      config: 16-node-xc
 
 stream-spmd-barrier:
   06/07/18:

@@ -46,7 +46,7 @@ Initializing Modules:
     ChapelUtil
     ChapelError
     ChapelTaskData
-    Assert
+    Builtins
     AlignedTSupport
     CPtr
    printModuleInitOrder
