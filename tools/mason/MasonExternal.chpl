@@ -47,6 +47,7 @@ proc masonExternal(args: [] string) {
     }
     else if args[2] == "--setup" {
       if !isDir(getSpackRegistry) && isDir(SPACK_ROOT) {
+        // if spack registry is not present, get spack registry
         writeln("Installing Spack Registry ... ");
         const destPackages = MASON_HOME + "/spack-registry";
         const spackMasterBranch = ' --branch master ';
@@ -59,6 +60,8 @@ proc masonExternal(args: [] string) {
       isDir(getSpackRegistry) &&
       getSpackVersion != spackVersion &&
       SPACK_ROOT == spackDefaultPath then {
+        /* Updates version of spack, if version of existing spack
+        doesnt match to that of latest supported by mason */
         writeln("Updating Spack backend ... ");
         const statusUpdate = updateSpackCommandLine();
         if statusUpdate != 0 then
@@ -105,6 +108,7 @@ private proc specHelp() {
   const status = runSpackCommand(command);
 }
 
+/* checks if updated spack and spack registry is installed*/
 private proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
     throw new owned MasonError("To use `mason external` call `mason external --setup`");
@@ -130,14 +134,12 @@ proc setupSpack() throws {
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
   const statusPackages = cloneSpackRepository(spackMasterBranch, destPackages);
   generateYAML();
-  // check for status
   if statusCLI != 0 && statusPackages != 0 {
     throw new owned MasonError("Spack installation failed");
-  } else {
-    writeln("Spack installation successful");
   }
 }
 
+/* clones the spack repository */
 proc cloneSpackRepository(branch : string, dest: string) {
   const repo = "https://github.com/spack/spack ";
   const depth = '--depth 1 ';
@@ -147,30 +149,34 @@ proc cloneSpackRepository(branch : string, dest: string) {
   else return 0;
 }
 
+/* git checkout command run at SPACK_ROOT */
 proc gitCheckOutSpack(version: string) {
-  const checkOutCommand = 'git ' + '-C ' + MASON_HOME + '/spack ' +
+  const checkOutCommand = 'git ' + '-C ' + SPACK_ROOT +
                       ' checkout -q FETCH_HEAD -b ' + version + '-branch';
   const status = runWithStatus(checkOutCommand);
   if status != 0 then return -1;
   else return 0;
 }
 
+/* git fetch command run at SPACK_ROOT */
 proc gitFetch(branch: string) {
-  const command = 'git ' + '-C ' + MASON_HOME + '/spack ' + ' fetch -q ' +
+  const command = 'git ' + '-C ' + SPACK_ROOT + ' fetch -q ' +
                   ' --depth 1 origin ' + branch;
   const status = runWithStatus(command);
   if status != 0 then return -1;
   else return 0;
 }
 
+/* git tag command run at SPACK_ROOT */
 proc gitCommitTag(tag: string) {
-  const commitTagCommand = 'git ' + '-C ' + MASON_HOME + '/spack ' +
-                    tag + ' -m "updated version"';
+  const commitTagCommand = 'git ' + '-C ' + SPACK_ROOT +
+                   ' tag ' + tag + ' -m "updated"';
   const status = runWithStatus(commitTagCommand);
   if status != 0 then return -1;
   else return 0;
 
 }
+
 /* Updates the spack directory used for spack commands */
 private proc updateSpackCommandLine() {
   const releaseTag = 'v' + spackVersion;
@@ -199,11 +205,13 @@ private proc generateYAML() {
   yamlWriter.close();
 }
 
+/* prints spack version */
 private proc printSpackVersion() {
   const command = "spack --version";
   const version = runSpackCommand(command);
 }
 
+/* returns spack version */
 private proc getSpackVersion : string {
   const command = "spack --version";
   const version = getSpackResult(command,true).strip();
