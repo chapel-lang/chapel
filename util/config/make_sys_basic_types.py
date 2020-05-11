@@ -102,7 +102,7 @@ def get_sys_c_types(docs=False):
     compileline_env.pop('CHPL_MAKE_CHPLENV_CACHE', None)
     compileline_proc = subprocess.Popen([compileline_cmd, '--compile'],
         stdout=subprocess.PIPE, env=compileline_env)
-    compileline = compileline_proc.communicate()[0].decode().strip();
+    compileline = compileline_proc.communicate()[0].decode(encoding="utf-8").strip();
     logging.debug('Compile line: {0}'.format(compileline))
 
     # Create temp header file with *_MAX macros, then run it through the C
