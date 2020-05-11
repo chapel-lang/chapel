@@ -1121,8 +1121,22 @@ override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
     var arr = locArr(localeIdx);
     on arr {
       if !ignoreFluff {
-        if deinitElts then
-          _deinitElements(arr.myElems);
+        if deinitElts {
+          // only deinitialize non-fluff elements
+          // fluff is always deinited in the LocArr deinit
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if _deinitElementsIsParallel(eltType) {
+              forall i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            } else {
+              for i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            }
+          }
+        }
         delete arr;
       }
     }
