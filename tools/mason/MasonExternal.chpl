@@ -19,7 +19,10 @@
  */
 
 const spackVersion = '0.14.2';
-const spackBranch = 'releases/v0.14';
+const v = spackVersion.split('.');
+const master = v[0];
+const minor = v[1];
+const spackBranch = 'releases/v' + '.'.join(master,minor);
 const spackDefaultPath = MASON_HOME + "/spack";
 
 private use List;
