@@ -196,7 +196,12 @@ static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
-    if (call->isNamed("=")) {
+    if (call->isPrimitive(PRIM_ASSIGN)) {
+      Symbol* lhs = toSymExpr(call->get(1))->symbol();
+      Symbol* rhs = toSymExpr(call->get(2))->symbol();
+      if (lhs->getValType() == rhs->getValType()) // same type
+        return true;
+    } else if (call->isNamed("=")) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Symbol* rhs = toSymExpr(call->get(2))->symbol();
       if (lhs->getValType() == rhs->getValType()) // same type
