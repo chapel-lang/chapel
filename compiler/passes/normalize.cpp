@@ -41,6 +41,7 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
+#include "view.h"
 #include "wellknown.h"
 
 #include <cctype>
@@ -121,7 +122,130 @@ static bool        firstConstructorWarning = true;
 *                                                                             *
 ************************************** | *************************************/
 
+static void analyzeArraysLog(const char *msg, BaseAST *node) {
+  const bool verbose = false;
+  if (verbose) {
+    std::cout << msg << std::endl;
+    if (node != NULL) {
+      std::cout << "Node location: " << node->stringLoc() << std::endl;
+      nprint_view(node);
+    }
+  }
+}
+
+static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
+  if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
+    // check the most basic idiom `var A: [D] int`
+    if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
+      if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
+        if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
+          if (ceInner->isNamed("chpl__ensureDomainExpr")) {
+            if (SymExpr *domSE = toSymExpr(ceInner->get(1))) {
+              return domSE->symbol();
+            }
+            else {
+              analyzeArraysLog("Argument to chpl__ensureDomainExpr is not a symbol", 
+                               def);
+            }
+          }
+          else {
+            analyzeArraysLog("Unexpected argument to chpl__buildArrayRuntimeType", 
+                             def);
+          }
+        }
+        else {
+          analyzeArraysLog("Argument to chpl__buildArrayRuntimeType is not a call",
+                           def);
+        }
+      }
+      else {
+        analyzeArraysLog("Unexpected call in array type definition", def);
+      }
+    }
+    else {
+      analyzeArraysLog("Type used in array definition is not a call", def);
+    }
+  }
+  return NULL;
+}
+
+static void analyzeArrays() {
+  const bool limitToTestFile = false;
+  forv_Vec(ForallStmt, forall, gForallStmts) {
+    const bool fileCheck = strncmp(forall->astloc.filename,
+           "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
+           64) == 0;
+    if (!limitToTestFile || fileCheck) {
+      analyzeArraysLog("**** Start forall ****", forall);
+      AList &iterExprs = forall->iteratedExpressions();
+      AList &indexVars = forall->inductionVariables();
+
+
+      if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
+        if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
+          analyzeArraysLog("Iterated expression", iterExprs.head);
+        }
+        else if (CallExpr *ce = toCallExpr(iterExprs.head)) {
+          // it might be in the form `A.domain` where A is used in the loop body
+          if (ce->isNamedAstr(astrSdot)) {
+            analyzeArraysLog("Iterated expression", ce);
+
+          }
+        }
+      }
+
+      std::vector<CallExpr *> callExprs;
+      collectCallExprs(forall->loopBody(), callExprs);
+      for_vector(CallExpr, call, callExprs) {
+     //if (strncmp(call->astloc.filename, "../playground/streamCompilation.chpl",
+                 //36) == 0) {
+        if (call->argList.length == 1) {
+          SymExpr *baseSE = toSymExpr(call->baseExpr);
+          SymExpr *argSE = toSymExpr(call->get(1));
+
+          if (baseSE != NULL && argSE != NULL) {
+            // (i,j) in forall (i,j) in bla is a tuple that is
+            // index-by-index accessed in loop body that throw off this
+            // analysis
+            if (baseSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST))
+              break;
+
+            // give up if the symbol we are looking to optimize is defined
+            // inside the loop itself
+            if (forall->loopBody()->contains(baseSE->symbol()->defPoint))
+              break;
+
+            analyzeArraysLog("Potential access", baseSE->symbol());
+            analyzeArraysLog("with DefExpr", baseSE->symbol()->defPoint);
+
+            Symbol *domSym = tryToGetDomainSymbol(baseSE->symbol());
+            analyzeArraysLog("with Domain", domSym);
+
+            if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
+              if (iterSE->symbol() == domSym) {
+                SET_LINENO(call);
+                analyzeArraysLog("Replacing", call);
+                call->replace(
+                    new CallExpr(
+                        new CallExpr(".", new SymExpr(baseSE->symbol()),
+                                          new UnresolvedSymExpr("localAccess")),
+                        new SymExpr(argSE->symbol())));
+              }
+            }
+          }
+        }
+
+
+      }
+      analyzeArraysLog("**** End forall ****", NULL);
+    }
+  }
+}
+
 void normalize() {
+
+  analyzeArrays();
+
   insertModuleInit();
 
   transformLogicalShortCircuit();
