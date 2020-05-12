@@ -148,7 +148,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         var sourceList = genSourceList(lockFile);
 
         if lockFile.pathExists('external') {
-          if !spackInstalled() then throw new owned MasonError("Error!");
+          spackInstalled();
         }
         //
         // TODO: Temporarily use `toArray` here because `list` does not yet
