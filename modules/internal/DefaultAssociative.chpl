@@ -996,12 +996,7 @@ module DefaultAssociative {
     return hash;
   }
 
-  // Non-nilable classes will coerce to this.
-  inline proc chpl__defaultHash(o: borrowed object): uint {
-    return _gen_key(__primitive("object2int", o));
-  }
-
-  // Nilable classes will coerce to this.
+  // Nilable and non-nilable classes will coerce to this.
   inline proc chpl__defaultHash(o: borrowed object?): uint {
     return _gen_key(__primitive( "object2int", o));
   }
