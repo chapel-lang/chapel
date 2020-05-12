@@ -36,6 +36,7 @@
 #include "arg.h"
 #include "error.h"
 #include "chplcgfns.h"
+#include "chpl-arg-bundle.h"
 #include "chpl-comm.h"
 #include "chpl-env.h"
 #include "chplexit.h"
@@ -47,6 +48,7 @@
 #include "chpl-tasks-callbacks-internal.h"
 #include "chpl-tasks-impl.h"
 #include "chpl-topo.h"
+#include "chpltypes.h"
 
 #include "qthread.h"
 #include "qthread/qtimer.h"
@@ -148,6 +150,7 @@ pthread_t chpl_qthread_process_pthread;
 pthread_t chpl_qthread_comm_pthread;
 
 chpl_task_bundle_t chpl_qthread_process_bundle = {
+                                   .kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_MAIN_TASK,
@@ -157,6 +160,7 @@ chpl_task_bundle_t chpl_qthread_process_bundle = {
                                    .id = chpl_nullTaskID };
 
 chpl_task_bundle_t chpl_qthread_comm_task_bundle = {
+                                   .kind = CHPL_ARG_BUNDLE_KIND_TASK,
                                    .is_executeOn = false,
                                    .lineno = 0,
                                    .filename = CHPL_FILE_IDX_COMM_TASK,
@@ -753,37 +757,10 @@ static inline void wrap_callbacks(chpl_task_cb_event_kind_t event_kind,
 }
 
 
-// If we stored chpl_taskID_t in chpl_task_bundleData_t,
-// this struct and the following function may not be necessary.
-typedef void (*main_ptr_t)(void);
-typedef struct {
-  chpl_task_bundle_t arg;
-  main_ptr_t chpl_main;
-} main_wrapper_bundle_t;
-
-static aligned_t main_wrapper(void *arg)
-{
-    chpl_qthread_tls_t         *tls = chpl_qthread_get_tasklocal();
-    main_wrapper_bundle_t *m_bundle = (main_wrapper_bundle_t*) arg;
-    chpl_task_bundle_t      *bundle = &m_bundle->arg;
-    chpl_qthread_tls_t         pv = {.bundle = bundle};
-
-    *tls = pv;
-
-    wrap_callbacks(chpl_task_cb_event_kind_begin, bundle);
-
-    (m_bundle->chpl_main)();
-
-    wrap_callbacks(chpl_task_cb_event_kind_end, bundle);
-
-    return 0;
-}
-
-
 static aligned_t chapel_wrapper(void *arg)
 {
     chpl_qthread_tls_t    *tls = chpl_qthread_get_tasklocal();
-    chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
+    chpl_task_bundle_t *bundle = chpl_argBundleTaskArgBundle(arg);
     chpl_qthread_tls_t      pv = {.bundle = bundle};
 
     *tls = pv;
@@ -815,21 +792,21 @@ static void *comm_task_wrapper(void *arg)
 // not use methods that require task context (e.g., task-local storage).
 void chpl_task_callMain(void (*chpl_main)(void))
 {
-    // Be sure to initialize Chapel managed task-local state with zeros
-    main_wrapper_bundle_t arg = { .chpl_main = NULL };
+    // We'll pass this arg to (*chpl_main)(), but it will just ignore it.
+    chpl_task_bundle_t arg =
+        (chpl_task_bundle_t)
+        { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
+          .is_executeOn    = false,
+          .requestedSubloc = c_sublocid_any_val,
+          .requested_fid   = FID_NONE,
+          .requested_fn    = (void(*)(void*)) chpl_main,
+          .lineno          = 0,
+          .filename        = CHPL_FILE_IDX_MAIN_TASK,
+          .id              = chpl_qthread_process_bundle.id,
+        };
 
-    arg.arg.is_executeOn      = false;
-    arg.arg.requestedSubloc   = c_sublocid_any_val;
-    arg.arg.requested_fid     = FID_NONE;
-    arg.arg.requested_fn      = NULL;
-    arg.arg.lineno            = 0;
-    arg.arg.filename           = CHPL_FILE_IDX_MAIN_TASK;
-    arg.arg.id                = chpl_qthread_process_bundle.id;
-    arg.chpl_main             = chpl_main;
-
-    wrap_callbacks(chpl_task_cb_event_kind_create, &arg.arg);
-
-    qthread_fork_copyargs(main_wrapper, &arg, sizeof(arg), &exit_ret);
+    wrap_callbacks(chpl_task_cb_event_kind_create, &arg);
+    qthread_fork_copyargs(chapel_wrapper, &arg, sizeof(arg), &exit_ret);
     qthread_readFF(NULL, &exit_ret);
 }
 
@@ -872,13 +849,17 @@ void chpl_task_addToTaskList(chpl_fn_int_t       fid,
     c_sublocid_t execution_subloc =
       chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
-    arg->is_executeOn      = false;
-    arg->requestedSubloc   = full_subloc;
-    arg->requested_fid     = fid;
-    arg->requested_fn      = requested_fn;
-    arg->lineno            = lineno;
-    arg->filename          = filename;
-    arg->id                = chpl_nullTaskID;
+    *arg = (chpl_task_bundle_t)
+           { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
+             .is_executeOn    = false,
+             .lineno          = lineno,
+             .filename        = filename,
+             .requestedSubloc = full_subloc,
+             .requested_fid   = fid,
+             .requested_fn    = requested_fn,
+             .id              = chpl_nullTaskID,
+             .infoChapel      = arg->infoChapel, // retain; set by caller
+           };
 
     wrap_callbacks(chpl_task_cb_event_kind_create, arg);
 
@@ -900,17 +881,21 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
                                 c_sublocid_t full_subloc,
                                 int lineno, int32_t filename)
 {
-    chpl_task_bundle_t *bundle = (chpl_task_bundle_t*) arg;
+    chpl_task_bundle_t *bundle = chpl_argBundleTaskArgBundle(arg);
     c_sublocid_t execution_subloc =
       chpl_localeModel_sublocToExecutionSubloc(full_subloc);
 
-    bundle->is_executeOn       = true;
-    bundle->requestedSubloc    = full_subloc;
-    bundle->requested_fid      = fid;
-    bundle->requested_fn       = fp;
-    bundle->lineno             = lineno;
-    bundle->filename           = filename;
-    bundle->id                 = chpl_nullTaskID;
+    *bundle = (chpl_task_bundle_t)
+              { .kind            = CHPL_ARG_BUNDLE_KIND_TASK,
+                .is_executeOn    = true,
+                .lineno          = lineno,
+                .filename        = filename,
+                .requestedSubloc = full_subloc,
+                .requested_fid   = fid,
+                .requested_fn    = fp,
+                .id              = chpl_nullTaskID,
+                .infoChapel      = bundle->infoChapel, // retain; set by caller
+              };
 
     wrap_callbacks(chpl_task_cb_event_kind_create, bundle);
 
@@ -923,7 +908,7 @@ static inline void taskCallBody(chpl_fn_int_t fid, chpl_fn_p fp,
 }
 
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,
-                              chpl_task_bundle_t *arg, size_t arg_size,
+                              void *arg, size_t arg_size,
                               c_sublocid_t subloc,
                               int lineno, int32_t filename)
 {
@@ -934,7 +919,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,
 
 void chpl_task_startMovedTask(chpl_fn_int_t       fid,
                               chpl_fn_p           fp,
-                              chpl_task_bundle_t *arg,
+                              void               *arg,
                               size_t              arg_size,
                               c_sublocid_t        subloc,
                               chpl_taskID_t       id)

@@ -24,18 +24,20 @@
 #ifndef _chpl_comm_task_decls_h
 #define _chpl_comm_task_decls_h
 
+#include <stdint.h>
+
 // Define the type of a n.b. communications handle.
 typedef void* chpl_comm_nb_handle_t;
 
 typedef struct {
-  int dummy;    // structs must be nonempty
+  int8_t dummy;    // structs must be nonempty
 } chpl_comm_taskPrvData_t;
 
 //
 // Comm layer private area within executeOn argument bundles
 // (bundle.comm)
 typedef struct {
-  int64_t dummy;    // structs must be nonempty
+  int8_t dummy;    // structs must be nonempty
 } chpl_comm_bundleData_t;
 
 #undef HAS_CHPL_CACHE_FNS
