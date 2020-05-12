@@ -1645,7 +1645,7 @@ static char* sprintf_rf_req(int loc, void* f_in)
                (lc->hdr.comm.rf_done != NULL) ? "" : ", nb");
 
       assert(lc->p_payload != NULL);
-      assert(lc->hdr.comm.arg_size > 0);
+      assert(lc->hdr.comm.size > 0);
     }
     break;
 
@@ -4344,7 +4344,7 @@ void fork_call_wrapper_large(fork_large_call_info_t* lc)
   chpl_bool blocking = (comm->rf_done != NULL);
 
   assert(lc->p_payload);
-  assert(comm->arg_size > 0);
+  assert(comm->size > 0);
 
   //
   // TODO: We could stack-allocate "bundle" here, if it was small enough
