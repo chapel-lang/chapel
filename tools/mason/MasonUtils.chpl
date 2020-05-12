@@ -161,8 +161,8 @@ proc SPACK_ROOT : string {
 }
 /*
 This fetches the mason-installed spack registry only.
-For an user who has explicitly installed spack, will be required
-to use their own spack registry
+Users that define SPACK_ROOT to their own spack installation will use 
+the registry of their spack installation.
 */
 proc getSpackRegistry : string {
   return MASON_HOME + "/spack-registry";

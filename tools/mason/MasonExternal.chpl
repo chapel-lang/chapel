@@ -113,7 +113,7 @@ private proc specHelp() {
   const status = runSpackCommand(command);
 }
 
-/* checks if updated spack and spack registry is installed*/
+/* Checks if updated spack and spack registry is installed*/
 proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
     throw new owned MasonError("To use `mason external` call `mason external --setup`");
