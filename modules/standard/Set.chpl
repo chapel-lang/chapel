@@ -169,11 +169,8 @@ module Set {
       this.parSafe = parSafe;
       this.complete();
 
-      for x in iterable do {
-        if !isCopyableType(x) then
-          compilerError('Iterator element type is not copyable');
+      for x in iterable do
         _dom.add(x);
-      }
     }
 
     /*
@@ -445,7 +442,7 @@ module Set {
       :return: An array containing a copy of each of the elements in this set.
       :rtype: `[] eltType`
     */
-    proc const toArray(): [] eltType where isCopyableType(eltType) {
+    proc const toArray(): [] eltType {
       var result: [1.._dom.size] eltType;
 
       on this {
@@ -480,8 +477,7 @@ module Set {
     :arg lhs: The set to assign to.
     :arg rhs: The set to assign from.
   */
-  proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?))
-  where isCopyableType(t) {
+  proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs.clear();
 
     for x in rhs do
@@ -497,8 +493,7 @@ module Set {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t)
-  where isCopyableType(t) {
+  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     for x in a do
@@ -521,8 +516,7 @@ module Set {
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
-  proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?))
-  where isCopyableType(t) {
+  proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs = lhs | rhs;
   }
 
@@ -536,8 +530,7 @@ module Set {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?)
-  where isCopyableType(t) {
+  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return a | b;
   }
 
@@ -552,8 +545,7 @@ module Set {
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
-  proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?))
-  where isCopyableType(t) {
+  proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs = lhs + rhs;
   }
 
@@ -566,8 +558,7 @@ module Set {
     :return: A new set containing the difference between `a` and `b`.
     :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t)
-  where isCopyableType(t) {
+  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result = new set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
@@ -594,8 +585,7 @@ module Set {
     :arg lhs: A set to take the difference of and then assign to.
     :arg rhs: A set to take the difference of.
   */
-  proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?))
-  where isCopyableType(t) {
+  proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs = lhs - rhs;
   }
 
@@ -608,8 +598,7 @@ module Set {
     :return: A new set containing the intersection of `a` and `b`.
     :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t)
-  where isCopyableType(t) {
+  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
@@ -637,8 +626,7 @@ module Set {
     :arg lhs: A set to take the intersection of and then assign to.
     :arg rhs: A set to take the intersection of.
   */
-  proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?))
-  where isCopyableType(t) {
+  proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs = lhs & rhs;
   }
 
@@ -651,8 +639,7 @@ module Set {
     :return: A new set containing the symmetric difference of `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t)
-  where isCopyableType(t) {
+  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
@@ -686,8 +673,7 @@ module Set {
     :arg lhs: A set to take the symmetric difference of and then assign to.
     :arg rhs: A set to take the symmetric difference of.
   */
-  proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?))
-  where isCopyableType(t) {
+  proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs = lhs ^ rhs;
   }
 
