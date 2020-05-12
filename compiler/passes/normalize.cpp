@@ -123,7 +123,7 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 static void analyzeArraysLog(const char *msg, BaseAST *node) {
-  const bool verbose = false;
+  const bool verbose = true;
   if (verbose) {
     std::cout << msg << std::endl;
     if (node != NULL) {
@@ -136,41 +136,45 @@ static void analyzeArraysLog(const char *msg, BaseAST *node) {
 static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
   if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
     // check the most basic idiom `var A: [D] int`
-    if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
-      if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
-        if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
-          if (ceInner->isNamed("chpl__ensureDomainExpr")) {
-            if (SymExpr *domSE = toSymExpr(ceInner->get(1))) {
-              return domSE->symbol();
+    if (def->exprType != NULL) {
+      if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
+        if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
+            if (ceInner->isNamed("chpl__ensureDomainExpr")) {
+              if (SymExpr *domSE = toSymExpr(ceInner->get(1))) {
+                return domSE->symbol();
+              }
+              else {
+                analyzeArraysLog("Argument to chpl__ensureDomainExpr is not a symbol", 
+                                 def);
+              }
             }
             else {
-              analyzeArraysLog("Argument to chpl__ensureDomainExpr is not a symbol", 
+              analyzeArraysLog("Unexpected argument to chpl__buildArrayRuntimeType", 
                                def);
             }
           }
           else {
-            analyzeArraysLog("Unexpected argument to chpl__buildArrayRuntimeType", 
+            analyzeArraysLog("Argument to chpl__buildArrayRuntimeType is not a call",
                              def);
           }
         }
         else {
-          analyzeArraysLog("Argument to chpl__buildArrayRuntimeType is not a call",
-                           def);
+          analyzeArraysLog("Unexpected call in array type definition", def);
         }
       }
-      else {
-        analyzeArraysLog("Unexpected call in array type definition", def);
-      }
     }
-    else {
-      analyzeArraysLog("Type used in array definition is not a call", def);
+    // check if the array variable was created with a call `var A = foo()`
+    else { // def->exprType == NULL
+      
+      analyzeArraysLog("There is no type expression in definition, or it is not a call", def);
     }
   }
   return NULL;
 }
 
 static void analyzeArrays() {
-  const bool limitToTestFile = false;
+  const bool limitToTestFile = true;
   forv_Vec(ForallStmt, forall, gForallStmts) {
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
@@ -197,8 +201,6 @@ static void analyzeArrays() {
       std::vector<CallExpr *> callExprs;
       collectCallExprs(forall->loopBody(), callExprs);
       for_vector(CallExpr, call, callExprs) {
-     //if (strncmp(call->astloc.filename, "../playground/streamCompilation.chpl",
-                 //36) == 0) {
         if (call->argList.length == 1) {
           SymExpr *baseSE = toSymExpr(call->baseExpr);
           SymExpr *argSE = toSymExpr(call->get(1));
