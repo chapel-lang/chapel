@@ -26,12 +26,54 @@
 #include <stdint.h>
 #include "chplcgfns.h"
 #include "chpltypes.h"
+#include "chpl-comm-task-decls.h"
 #include "chpl-tasks-impl.h"
-#include "chpl-tasks-prvdata.h"
 
-// chpl-tasks-impl.h must define the task bundle header type,
-// chpl_task_bundle_t.
+//
+// This holds per-runtime-task information the tasking layer maintains
+// on behalf of other runtime layers.  Its components are intended to
+// be accessed only by the layers that define them.  Because this info
+// has to do with runtime tasks, which are intra-node entities, there
+// is not an expectation that it will be retained when the Chapel task
+// hosted by a runtime task moves to another node due to an on-stmt.
+//
+typedef struct {
+  chpl_comm_taskPrvData_t comm_data;
+} chpl_task_infoRuntime_t;
+
+//
+// This holds per-Chapel-task information the tasking layer maintains
+// on behalf of Chapel module code, such as the task's serial state.
+// Because this is Chapel-centric information, it must be carried
+// along as a Chapel task moves by means of on-stmts.
+//
+typedef struct {
+  unsigned char data[32];
+} chpl_task_infoChapel_t;
+
+//
+// Task argument bundle header.
+//
+typedef struct chpl_task_bundle {
+  chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
+  chpl_bool is_executeOn;
+  int lineno;
+  int filename;
+  c_sublocid_t requestedSubloc;
+  chpl_fn_int_t requested_fid;
+  chpl_fn_p requested_fn;
+  chpl_taskID_t id;
+  chpl_task_infoChapel_t infoChapel;
+  uint64_t payload[0];
+} chpl_task_bundle_t;
+
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
+
+//
+// Interface functions
+//
+
+#include "chpl-tasks-impl-fns.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -170,7 +212,7 @@ void chpl_task_executeTasksInList(void**);
 // as it cannot assume anything about the lifetime of that memory.
 //
 void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
-                              chpl_task_bundle_t* arg,// function arg
+                              void* arg,              // function arg
                               size_t arg_size,        // length of arg
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
@@ -194,7 +236,7 @@ void chpl_task_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
 // the comms layer can use task-wrapper functions.
 void chpl_task_startMovedTask(chpl_fn_int_t,      // ftable[] entry
                               chpl_fn_p,          // function to call
-                              chpl_task_bundle_t*,// function arg
+                              void*,              // function arg
                               size_t,             // length of arg in bytes
                               c_sublocid_t,       // desired sublocale
                               chpl_taskID_t      // task identifier
@@ -261,37 +303,26 @@ void chpl_task_yield(void);
 //
 void chpl_task_sleep(double);
 
-// The type for task private data, chpl_task_prvData_t,
-// is defined in chpl-tasks-prvdata.h in order to support
-// proper initialization order with a task model .h
-
-// Get pointer to task private data.
-#ifndef CHPL_TASK_GET_PRVDATA_IMPL_DECL
-chpl_task_prvData_t* chpl_task_getPrvData(void);
+//
+// Get the current task's runtime-related per-task information.
+//
+#ifndef CHPL_TASK_GET_INFO_RUNTIME_IMPL_DECL
+chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void);
 #endif
 
-#ifndef CHPL_TASK_GET_PRVBUNDLE_IMPL_DECL
-chpl_task_bundle_t* chpl_task_getPrvBundle(void);
+//
+// Get the current task's Chapel-related per-task information.
+//
+#ifndef CHPL_TASK_GET_INFO_CHAPEL_IMPL_DECL
+chpl_task_infoChapel_t* chpl_task_getInfoChapel(void);
 #endif
 
 // Get the Chapel module-code managed task private data portion
 // of a task bundle.
 static inline
-chpl_task_ChapelData_t* chpl_task_getBundleChapelData(chpl_task_bundle_t* b)
+chpl_task_infoChapel_t* chpl_task_getInfoChapelInBundle(chpl_task_bundle_t* b)
 {
-  // this code assumes each chpl_task_bundle_t has a state field
-  // of type chpl_task_ChapelData_t.
-  return &b->state;
-}
-
-//
-// Get Chapel module-code managed task private data
-//
-static inline
-chpl_task_ChapelData_t* chpl_task_getChapelData(void)
-{
-  chpl_task_bundle_t* prv = chpl_task_getPrvBundle();
-  return chpl_task_getBundleChapelData(prv);
+  return &b->infoChapel;
 }
 
 

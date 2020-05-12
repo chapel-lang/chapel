@@ -52,6 +52,7 @@ static void findLoopExprDefs(LoopExpr* fe, Expr* indices, AList& defIndices) {
     VarSymbol* idx = new VarSymbol(se->unresolved);
     idx->addFlag(FLAG_INDEX_VAR);
     idx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    idx->addFlag(FLAG_NO_DOC);
     DefExpr* def = new DefExpr(idx);
     defIndices.insertAtTail(def);
   }

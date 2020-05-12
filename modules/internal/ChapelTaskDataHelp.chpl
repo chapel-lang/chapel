@@ -24,18 +24,19 @@ module ChapelTaskDataHelp {
 
   private use ChapelStandard;
 
-  extern type chpl_task_ChapelData_t;
+  extern type chpl_task_infoChapel_t;
   pragma "fn synchronization free"
-  extern proc chpl_task_getChapelData(): c_ptr(chpl_task_ChapelData_t);
+  extern proc chpl_task_getInfoChapel(): c_ptr(chpl_task_infoChapel_t);
   pragma "fn synchronization free"
-  extern proc chpl_task_getBundleChapelData(args: chpl_task_bundle_p):c_ptr(chpl_task_ChapelData_t);
+  extern proc chpl_task_getInfoChapelInBundle(args: chpl_task_bundle_p):c_ptr(chpl_task_infoChapel_t);
 
   // This function is called to set up the Chapel-managed portion
   // of task-local storage in the argument bundle when creating
   // a new task.
-  proc chpl_task_data_setup(args: chpl_task_bundle_p, tls:c_ptr(chpl_task_ChapelData_t)) {
-    var bundleData = chpl_task_getBundleChapelData(args);
-    c_memcpy(bundleData, tls, c_sizeof(chpl_task_ChapelData_t));
+  proc chpl_task_data_setup(args: chpl_task_bundle_p,
+                            infoChapel:c_ptr(chpl_task_infoChapel_t)) {
+    c_memcpy(chpl_task_getInfoChapelInBundle(args), infoChapel,
+             c_sizeof(chpl_task_infoChapel_t));
   }
 
   // Propagate an error from a task to its caller / sync point.

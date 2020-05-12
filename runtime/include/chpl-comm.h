@@ -76,14 +76,10 @@ extern void* const chpl_global_serialize_table[];
 // uses task-layer specific chpl_task_bundleData_t
 
 typedef struct {
-  // Including space for the task_bundle here helps with
-  // running tasks locally, but it doesn't normally need
-  // to be communicated over the network.
+  chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
+  chpl_comm_bundleData_t comm;  // for comm layer wrappers
   chpl_task_bundle_t task_bundle;
-  // Including space for some comm information here helps
-  // the comm layer communicate some values to a wrapper
-  // function that is run in a task.
-  chpl_comm_bundleData_t comm;
+  uint64_t payload[0];
 } chpl_comm_on_bundle_t;
 
 typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
@@ -107,8 +103,9 @@ void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
                               int32_t filename) {     // source filename
+    arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
     chpl_task_taskCallFTable(fid,
-                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                             arg, arg_size,
                              subloc,
                              lineno, filename);
 }
@@ -249,7 +246,7 @@ void chpl_comm_rollcall(void);
 //   the memory did indeed come from chpl_mem_regMemAlloc(), this frees
 //   it and returns true.  Otherwise it does nothing and returns false.
 //   Given some memory address to be freed it is therefore safe, though
-//   perhaps not performance-optimal, to first try to free it here, and 
+//   perhaps not performance-optimal, to first try to free it here, and
 //   only free it elsewhere if this function returns false.
 //
 #ifndef CHPL_COMM_IMPL_REG_MEM_HEAP_INFO
@@ -378,7 +375,7 @@ void chpl_comm_broadcast_private(int id, size_t size);
 // cannot be immediately satisfied, while it waits chpl_comm_barrier()
 // must call chpl_task_yield() in order not to monopolize the execution
 // resources and prevent making progress. This barrier must be available
-// for use in module code, so it cannot be tied up in the runtime 
+// for use in module code, so it cannot be tied up in the runtime
 //
 void chpl_comm_barrier(const char *msg);
 
@@ -436,8 +433,8 @@ void chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //            and strides.
 // When comm=gasnet, this function ends up calling gasnet_puts_bulk().
 //   More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
-//   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
-//   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
+//   Proposal for Extending the UPC Memory Copy Library Functions and Supporting
+//   Extensions to GASNet, Version 2.0. Author: Dan Bonachea
 //
 void chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
                         void* srcaddr, size_t* srcstrides, size_t* count,
@@ -524,4 +521,3 @@ void chpl_wait_for_shutdown(void);
 #include "chpl-comm-warning-macros.h"
 
 #endif
-

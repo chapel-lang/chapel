@@ -8184,7 +8184,6 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
   // a dynamic dispatch context to reduce potential user confusion.
   //
   if (call->isPrimitive(PRIM_ERROR)         == true          ||
-      call->getModule()->modTag             != MOD_INTERNAL  ||
       inDynamicDispatchResolution           == false         ||
       callStack.head()->getModule()->modTag != MOD_INTERNAL) {
 
@@ -10257,11 +10256,19 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     else
       call->convertToNoop(); // let the memory be uninitialized
 
-  // other types (sync, single, ..)
+  // other types (sync, single, tuple, ...)
   } else {
     errorInvalidParamInit(call, val, at);
 
-
+    // Handle tuple variables marked "no init". Convert to NOP and leave.
+    if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
+      if (val->hasFlag(FLAG_NO_INIT) &&
+          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+        call->convertToNoop();
+        return;
+      }
+    }
+        
     // enum types should have a defaultValue
     INT_ASSERT(!isEnumType(type));
 

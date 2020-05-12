@@ -263,6 +263,18 @@ void cleanAst() {
           }
         }
       }
+
+      //
+      // If an internal aggregate type is being deleted, set its global
+      // handle to NULL. See #15169.
+      //
+      if (!isAlive(at)) {
+        if (at == dtBytes) dtBytes = NULL;
+        if (at == dtString) dtString = NULL;
+        if (at == dtLocale) dtLocale = NULL;
+        if (at == dtOwned) dtOwned = NULL;
+        if (at == dtShared) dtShared = NULL;
+      }
     }
   }
 

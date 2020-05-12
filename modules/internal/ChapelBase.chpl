@@ -46,42 +46,6 @@ module ChapelBase {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
-  //
-  // compile-time diagnostics
-  //
-  // Note: the message printed by "error" and "warning" primitives
-  // consists of the formals of the enclosing function, not their own args.
-  //
-
-  proc compilerError(param msg: string ...?n, param errorDepth: int) {
-    __primitive("error");
-  }
-
-  proc compilerError(param msg: string ...?n) {
-    __primitive("error");
-  }
-
-  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
-    __primitive("warning");
-  }
-
-  proc compilerWarning(param msg: string ...?n) {
-    __primitive("warning");
-  }
-
-  proc compilerAssert(param test: bool)
-  { if !test then compilerError("assert failed"); }
-
-  proc compilerAssert(param test: bool, param errorDepth: int)
-  { if !test then compilerError("assert failed", errorDepth + 1); }
-
-  proc compilerAssert(param test: bool, param msg: string ...?n)
-  { if !test then compilerError("assert failed - ", (...msg)); }
-
-  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
-  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
-
-
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"
@@ -889,11 +853,6 @@ module ChapelBase {
   //
   // More primitive funs
   //
-  pragma "function terminates program"
-  inline proc exit(status: int=0) {
-    __primitive("chpl_exit_any", status);
-  }
-
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
 
