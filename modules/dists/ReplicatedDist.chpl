@@ -591,6 +591,14 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
+override proc ReplicatedArr.dsiElementInitializationComplete() {
+  coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
+    on loc {
+      locArr!.arrLocalRep.dsiElementInitializationComplete();
+    }
+  }
+}
+
 override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc {

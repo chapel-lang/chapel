@@ -1019,6 +1019,15 @@ proc BlockArr.setupRADOpt() {
   }
 }
 
+override proc BlockArr.dsiElementInitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    var arr = locArr(localeIdx);
+    on arr {
+      arr.myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
 override proc BlockArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     var arr = locArr(localeIdx);

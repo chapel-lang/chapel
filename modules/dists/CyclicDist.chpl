@@ -796,6 +796,16 @@ proc CyclicArr.setupRADOpt() {
   }
 }
 
+override proc CyclicArr.dsiElementInitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+
 override proc CyclicArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {

@@ -4368,8 +4368,6 @@ module ChapelArray {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
-    //chpl_debug_writeln("in  chpl__coerceCopy rhs.size=", rhs.size);
-
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
@@ -4390,13 +4388,8 @@ module ChapelArray {
       chpl__uncheckedArrayTransfer(lhs, rhs, kind=_tElt.initCopy);
     }
 
-    // TODO: indicate array/domain initialization completion
-    // here and in other array/domain initialization functions,
-    // including initCopy.
-    // To that end, store a bool field in DefaultRectangular
-    // indicating if postAlloc should still be called.
-
-    //chpl_debug_writeln("end chpl__coerceCopy");
+    // provide distributions a hook to call _ddata_allocate_postalloc etc.
+    lhs._value.dsiElementInitializationComplete();
 
     return lhs;
   }
@@ -4420,10 +4413,6 @@ module ChapelArray {
     if moveElts && dom._instance == rhs.domain._instance {
       return rhs;
     }
-
-    //chpl_debug_writeln("in  chpl__coerceMove",
-    //                   " typeMismatch=", typeMismatch,
-    //                   " moveElts=", moveElts);
 
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
@@ -4451,7 +4440,7 @@ module ChapelArray {
     // We still need to free any array memory.
     _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=!moveElts);
 
-    //chpl_debug_writeln("end chpl__coerceMove");
+    lhs._value.dsiElementInitializationComplete();
 
     return lhs;
   }
@@ -4472,6 +4461,8 @@ module ChapelArray {
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
   pragma "find user line"
@@ -4490,6 +4481,8 @@ module ChapelArray {
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
 
@@ -4505,6 +4498,8 @@ module ChapelArray {
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
   pragma "find user line"
@@ -4519,14 +4514,14 @@ module ChapelArray {
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
 
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_array, rhs:_tuple) {
-
-    //chpl_debug_writeln("in  chpl__coerceCopy");
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
@@ -4539,7 +4534,7 @@ module ChapelArray {
 
     initArrFromTuple(lhs, rhs, _tElt.initCopy);
 
-    //chpl_debug_writeln("end chpl__coerceCopy");
+    lhs._value.dsiElementInitializationComplete();
 
     return lhs;
   }
@@ -4547,7 +4542,6 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_array,
                         pragma "no auto destroy" in rhs:_tuple) {
-    //chpl_debug_writeln("in  chpl__coerceMove");
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
@@ -4560,7 +4554,7 @@ module ChapelArray {
 
     initArrFromTuple(lhs, rhs, _tElt.move);
 
-    //chpl_debug_writeln("end chpl__coerceMove");
+    lhs._value.dsiElementInitializationComplete();
 
     return lhs;
   }
@@ -4581,6 +4575,8 @@ module ChapelArray {
       __primitive("=", e, copy);
     }
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
   pragma "find user line"
@@ -4600,6 +4596,8 @@ module ChapelArray {
       __primitive("=", e, copy);
     }
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
 
@@ -4616,6 +4614,8 @@ module ChapelArray {
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
   pragma "find user line"
@@ -4630,6 +4630,8 @@ module ChapelArray {
     var lhs = dom.buildArray(eltType, initElts=false);
 
     chpl__transferArray(lhs, rhs, kind=_tElt.move);
+
+    lhs._value.dsiElementInitializationComplete();
 
     return lhs;
   }
@@ -4647,6 +4649,8 @@ module ChapelArray {
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
 
+    lhs._value.dsiElementInitializationComplete();
+
     return lhs;
   }
   pragma "find user line"
@@ -4661,6 +4665,8 @@ module ChapelArray {
     var lhs = dom.buildArray(eltType, initElts=false);
 
     chpl__transferArray(lhs, rhs, kind=_tElt.initCopy);
+
+    lhs._value.dsiElementInitializationComplete();
 
     return lhs;
   }
@@ -4780,6 +4786,9 @@ module ChapelArray {
         __primitive("=", r, copy);
       }
     }
+
+    result._value.dsiElementInitializationComplete();
+
     return result;
   }
 

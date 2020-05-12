@@ -1017,9 +1017,11 @@ module DefaultRectangular {
     var shiftedData : _ddata(eltType);
 
     // note: used for external array support
+    var externFreeFunc: c_void_ptr;
     var externArr: bool = false;
     var _borrowed: bool = true;
-    var externFreeFunc: c_void_ptr;
+    // should the comms post-alloc be called after initialization?
+    var callPostAlloc: bool = true;
 
     //var numelm: int = -1; // for correctness checking
 
@@ -1038,9 +1040,10 @@ module DefaultRectangular {
                  idxType=idxType, stridable=stridable);
       this.dom = dom;
       this.data = data;
+      this.externFreeFunc = externFreeFunc;
       this.externArr = externArr;
       this._borrowed = _borrowed;
-      this.externFreeFunc = externFreeFunc;
+      this.callPostAlloc = false;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
@@ -1060,7 +1063,27 @@ module DefaultRectangular {
     // can the compiler create this automatically?
     override proc dsiGetBaseDom() return dom;
 
+    override proc dsiElementInitializationComplete() {
+      const size = if storageOrder == ArrayStorageOrder.RMO
+                   then blk(0) * dom.dsiDim(0).size
+                   else blk(rank-1) * dom.dsiDim(rank-1).size;
+
+      if debugDefaultDist {
+        chpl_debug_writeln("*** DR calling postalloc ", eltType:string, " ",
+                           size);
+      }
+
+      if callPostAlloc {
+        _ddata_allocate_postalloc(data, size);
+        callPostAlloc = false;
+      }
+    }
+
     override proc dsiDestroyArr(param deinitElts:bool) {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
+      }
+
       if (externArr) {
         if (!_borrowed) {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
@@ -1208,14 +1231,23 @@ module DefaultRectangular {
 
       // Allow DR array initialization to pass in existing data
       if data == nil {
+        if debugDefaultDist {
+          chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
+        }
+
         if !localeModelHasSublocales {
-          data = _ddata_allocate(eltType, size, initElts=initElts);
+          data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
         } else {
-          data = _ddata_allocate(eltType, size,
-                                 subloc = (if here.getChildCount() > 1
-                                           then c_sublocid_all
-                                           else c_sublocid_none),
-                                 initElts=initElts);
+          data = _ddata_allocate_noinit(eltType, size,
+                                        callPostAlloc,
+                                        subloc = (if here.getChildCount() > 1
+                                                  then c_sublocid_all
+                                                  else c_sublocid_none));
+        }
+
+        if initElts {
+          init_elts(data, size, eltType);
+          dsiElementInitializationComplete();
         }
       }
 

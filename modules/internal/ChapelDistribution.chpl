@@ -686,7 +686,13 @@ module ChapelDistribution {
       return (ret_arr, ret_dom);
     }
 
-    proc dsiDestroyArr(param deinitElts:bool) { }
+    proc dsiElementInitializationComplete() {
+      halt("dsiElementInitializationComplete must be defined");
+    }
+
+    proc dsiDestroyArr(param deinitElts:bool) {
+      halt("dsiDestroyArr must be defined");
+    }
 
     proc dsiReallocate(d: domain) {
       halt("reallocating not supported for this array type");
@@ -878,6 +884,10 @@ module ChapelDistribution {
       // Elements in data are deinited in dsiDestroyArr if necessary.
       // Here we need to clean up the rest of the array.
       _do_destroy_array(data, deinitElts=false);
+    }
+
+    override proc dsiElementInitializationComplete() {
+      data.dsiElementInitializationComplete();
     }
 
     override proc dsiDestroyArr(param deinitElts:bool) {

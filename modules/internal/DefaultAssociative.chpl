@@ -1165,6 +1165,14 @@ module DefaultAssociative {
       }
     }
 
+    override proc dsiElementInitializationComplete() {
+      // No action necessary because associative array
+      // runs the post-allocate on the array in _allocateData
+      // (because not all elements are necessarily initialized, but
+      //  the access pattern is predictable at least in default forall
+      //  iteration).
+    }
+
     override proc dsiDestroyArr(param deinitElts:bool) {
       if deinitElts {
         if _elementNeedsDeinit() {
