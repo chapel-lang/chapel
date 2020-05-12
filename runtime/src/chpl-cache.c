@@ -2688,6 +2688,7 @@ static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
   chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  assert(infoRuntime);
   return &infoRuntime->comm_data.cache_data;
 }
 
