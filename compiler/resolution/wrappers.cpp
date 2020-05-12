@@ -263,10 +263,10 @@ static void      copyFormalTypeExpr(ArgSymbol* formal,
                                     BlockStmt* body,
                                     Symbol* temp);
 
-static void      defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                                    BlockStmt* wrapFn,
-                                                    VarSymbol* temp,
-                                                    Expr*      fromExpr);
+static void      defaultedFormalApplyDefault(ArgSymbol* formal,
+                                             BlockStmt* wrapFn,
+                                             VarSymbol* temp,
+                                             Expr*      fromExpr);
 
 static void      defaultedFormalApplyDefaultValue(FnSymbol*  fn,
                                                   ArgSymbol* formal,
@@ -725,10 +725,10 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   block->insertAtTail(new DefExpr(temp));
 
   if (defaultedFormalUsesDefaultForType(formal) == true) {
-    defaultedFormalApplyDefaultForType(formal, block, temp, NULL);
+    defaultedFormalApplyDefault(formal, block, temp, NULL);
 
   } else if (formalIntent == INTENT_OUT) {
-    defaultedFormalApplyDefaultForType(formal, block, temp, NULL);
+    defaultedFormalApplyDefault(formal, block, temp, NULL);
 
   } else {
     defaultedFormalApplyDefaultValue(fn, formal, formalIntent, block, temp);
@@ -969,12 +969,12 @@ static void copyFormalTypeExpr(ArgSymbol* formal,
   }
 }
 
-// Creates the default value if fromExpr=NULL.
+// Creates the default value for the type if fromExpr=NULL.
 // If fromExpr!=NULL, coerces fromExpr into the type of the formal.
-static void defaultedFormalApplyDefaultForType(ArgSymbol* formal,
-                                               BlockStmt* body,
-                                               VarSymbol* temp,
-                                               Expr* fromExpr) {
+static void defaultedFormalApplyDefault(ArgSymbol* formal,
+                                        BlockStmt* body,
+                                        VarSymbol* temp,
+                                        Expr* fromExpr) {
   Symbol* typeTmp = NULL;
   if (formal->typeExpr != NULL) {
     typeTmp = newTemp("_formal_type");
@@ -1040,7 +1040,7 @@ static void defaultedFormalApplyDefaultValue(FnSymbol*  fn,
     body->insertAtTail(new DefExpr(nt));
 
     // When passing the 'fromExpr' below, the result is a PRIM_COERCE.
-    defaultedFormalApplyDefaultForType(formal, body, nt, fromExpr);
+    defaultedFormalApplyDefault(formal, body, nt, fromExpr);
     fromExpr = new SymExpr(nt);
   }
 
