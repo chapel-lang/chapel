@@ -123,7 +123,15 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 static void analyzeArraysLog(const char *msg, BaseAST *node) {
-  const bool verbose = true;
+
+  //BaseAST *locationMarker = node;
+  //if (ForallStmt *forall = toForallStmt(node)) {
+    //locationMarker = forall->inductionVariables().head;
+  //}
+  const bool verbose = true && (node->getModule()->modTag != MOD_INTERNAL &&
+                                node->getModule()->modTag != MOD_STANDARD);
+  //const bool verbose = true;
+
   const bool veryVerbose = false;
   if (verbose) {
     std::cout << msg << std::endl;
@@ -180,7 +188,7 @@ static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
 }
 
 static void analyzeArrays() {
-  const bool limitToTestFile = true;
+  const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
     Symbol *iteratedSymbol = NULL;
     Symbol *domQueryIteratedSymbol = NULL;
@@ -188,7 +196,7 @@ static void analyzeArrays() {
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
            64) == 0;
-    if (!limitToTestFile || fileCheck) {
+    if ((!limitToTestFile) || fileCheck) {
       analyzeArraysLog("**** Start forall ****", forall);
       AList &iterExprs = forall->iteratedExpressions();
       AList &indexVars = forall->inductionVariables();
@@ -241,9 +249,8 @@ static void analyzeArrays() {
 
       // check if we have index symbol
       if (indexSymbol == NULL) {
-        analyzeArraysLog("No suitable index variables found in this loop", NULL);
-        analyzeArraysLog("**** End forall ****", NULL);
-        break;
+        analyzeArraysLog("**** End forall ****", forall);
+        continue;
       }
 
       std::vector<CallExpr *> callExprs;
@@ -294,7 +301,7 @@ static void analyzeArrays() {
 
 
       }
-      analyzeArraysLog("**** End forall ****", NULL);
+      analyzeArraysLog("**** End forall ****", forall);
     }
   }
 }

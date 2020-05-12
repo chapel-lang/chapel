@@ -44,6 +44,7 @@
 #include "symbol.h"
 #include "TryStmt.h"
 #include "type.h"
+#include "view.h"
 #include "WhileStmt.h"
 
 #include <ostream>
@@ -405,6 +406,7 @@ ModuleSymbol* BaseAST::getModule() {
       retval = x->parentSymbol->getModule();
 
   } else {
+    nprint_view(this);
     INT_FATAL(this, "Unexpected case in BaseAST::getModule()");
   }
 
