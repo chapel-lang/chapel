@@ -642,8 +642,9 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.buffLen;
-      const newLength = lhs.buffLen+rhsLen; //TODO: check for overflow
+      if !safeAdd(lhs.buffLen,rhs.buffLen) then 
+        halt("Buffer overflow allocating string copy data");
+      const newLength = lhs.buffLen + rhs.buffLen;
       //resize the buffer if needed
       if lhs.buffSize <= newLength {
         const requestedSize = max(newLength+1,
@@ -661,7 +662,7 @@ module BytesStringCommon {
         }
       }
       // copy the data from rhs
-      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
+      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhs.buffLen,
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
@@ -725,7 +726,9 @@ module BytesStringCommon {
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
-    ret.buffLen = sLen * n; // TODO: check for overflow
+    if !safeMul(sLen, n) then 
+      halt("Buffer overflow allocating string copy data");
+    ret.buffLen = sLen * n;
     var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
     ret.buffSize = allocSize;
