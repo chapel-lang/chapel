@@ -66,12 +66,13 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
 
-
     updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
+    if !isDir(SPACK_ROOT) || !isDir(MASON_HOME+'/spack-registry') then
+    throw new owned MasonError("Mason could not find Spack at $MASON_HOME. " +
+                  "To install Spack, use `mason external --setup`.");
     const lockFile = createDepTree(TomlFile);
-
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
@@ -81,10 +82,8 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
         stderr.writeln("  ", msg);
       exit(1);
     }
-
     // Generate Lock File
     genLock(lockFile, lockPath);
-
     // Close Memory
     openFile.close();
     delete TomlFile;
@@ -150,7 +149,6 @@ proc updateRegistry(tf: string, args: list(string)) {
     writeln('Skipping update due to MASON_OFFLINE=true');
     return;
   }
-
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 

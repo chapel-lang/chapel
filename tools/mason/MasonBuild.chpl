@@ -148,7 +148,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         var sourceList = genSourceList(lockFile);
 
         if lockFile.pathExists('external') {
-          spackInstalled();
+          if !spackInstalled() then throw new owned MasonError("Error!");
         }
         //
         // TODO: Temporarily use `toArray` here because `list` does not yet
@@ -159,7 +159,6 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
         // get compilation options including external dependencies
         const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
-
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
           writeln("Build Successful\n");

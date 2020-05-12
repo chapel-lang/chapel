@@ -395,10 +395,8 @@ proc getChapelVersionStr() {
 
 proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
-
   const oldDir = here.cwd();
   here.chdir(newDir);
-
   ret = runCommand(command, quiet);
 
   here.chdir(oldDir);
