@@ -124,11 +124,17 @@ static bool        firstConstructorWarning = true;
 
 static void analyzeArraysLog(const char *msg, BaseAST *node) {
   const bool verbose = true;
+  const bool veryVerbose = false;
   if (verbose) {
     std::cout << msg << std::endl;
     if (node != NULL) {
-      std::cout << "Node location: " << node->stringLoc() << std::endl;
-      nprint_view(node);
+      std::cout << "\t" << node->stringLoc() << std::endl;
+      if (veryVerbose) {
+        nprint_view(node);
+      }
+      else {
+        std::cout << std::endl;
+      }
     }
   }
 }
@@ -176,6 +182,9 @@ static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
 static void analyzeArrays() {
   const bool limitToTestFile = true;
   forv_Vec(ForallStmt, forall, gForallStmts) {
+    Symbol *iteratedSymbol = NULL;
+    Symbol *domQueryIteratedSymbol = NULL;
+    Symbol *indexSymbol = NULL;
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
            64) == 0;
@@ -187,15 +196,54 @@ static void analyzeArrays() {
 
       if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
         if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
-          analyzeArraysLog("Iterated expression", iterExprs.head);
+          if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
+            iteratedSymbol = iterSE->symbol();
+            analyzeArraysLog("Iterated symbol", iteratedSymbol);
+          }
+          else {
+            analyzeArraysLog("Iterated Expr is unresolved", iterExprs.head);
+          }
         }
         else if (CallExpr *ce = toCallExpr(iterExprs.head)) {
           // it might be in the form `A.domain` where A is used in the loop body
           if (ce->isNamedAstr(astrSdot)) {
-            analyzeArraysLog("Iterated expression", ce);
-
+            if (SymExpr *se = toSymExpr(ce->get(2))) {
+              if (VarSymbol *var = toVarSymbol(se->symbol())) {
+                if (var->immediate->const_kind == CONST_KIND_STRING) {
+                  if (strcmp(var->immediate->v_string, "_dom") == 0) {
+                    if (SymExpr *se = toSymExpr(ce->get(1))) {
+                      domQueryIteratedSymbol = se->symbol();
+                    }
+                  }
+                }
+              }
+            }
+          }
+          if (domQueryIteratedSymbol != NULL) {
+            analyzeArraysLog("Iteration is over an unrecognized call", ce);
           }
         }
+
+        if (iteratedSymbol != NULL || domQueryIteratedSymbol != NULL) {
+          // the iterator is something we can optimize
+          // now check the induction variables
+          if (SymExpr* se = toSymExpr(indexVars.head)) {
+            indexSymbol = se->symbol();
+          }
+          else if (DefExpr* de = toDefExpr(indexVars.head)) {
+            indexSymbol = de->sym;
+          }
+          else {
+            analyzeArraysLog("Unrecognized index symbol", indexVars.head);
+          }
+        }
+      }
+
+      // check if we have index symbol
+      if (indexSymbol == NULL) {
+        analyzeArraysLog("No suitable index variables found in this loop", NULL);
+        analyzeArraysLog("**** End forall ****", NULL);
+        break;
       }
 
       std::vector<CallExpr *> callExprs;
@@ -209,24 +257,31 @@ static void analyzeArrays() {
             // (i,j) in forall (i,j) in bla is a tuple that is
             // index-by-index accessed in loop body that throw off this
             // analysis
-            if (baseSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST))
+            if (baseSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST)) {
               break;
+            }
 
             // give up if the symbol we are looking to optimize is defined
             // inside the loop itself
-            if (forall->loopBody()->contains(baseSE->symbol()->defPoint))
+            if (forall->loopBody()->contains(baseSE->symbol()->defPoint)) {
               break;
+            }
 
-            analyzeArraysLog("Potential access", baseSE->symbol());
-            analyzeArraysLog("with DefExpr", baseSE->symbol()->defPoint);
+            // give up if the access uses a different symbol
+            if (argSE->symbol() != indexSymbol) {
+              break;
+            }
+
+            analyzeArraysLog("Potential access", call);
+            analyzeArraysLog("\twith DefExpr", baseSE->symbol()->defPoint);
 
             Symbol *domSym = tryToGetDomainSymbol(baseSE->symbol());
-            analyzeArraysLog("with Domain", domSym);
+            analyzeArraysLog("\twith Domain defined at", domSym);
 
             if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
               if (iterSE->symbol() == domSym) {
                 SET_LINENO(call);
-                analyzeArraysLog("Replacing", call);
+                analyzeArraysLog("\tReplacing", call);
                 call->replace(
                     new CallExpr(
                         new CallExpr(".", new SymExpr(baseSE->symbol()),
