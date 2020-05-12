@@ -114,7 +114,7 @@ private proc specHelp() {
 }
 
 /* checks if updated spack and spack registry is installed*/
-private proc spackInstalled() throws {
+proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
     throw new owned MasonError("To use `mason external` call `mason external --setup`");
   }
