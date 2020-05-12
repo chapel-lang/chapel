@@ -104,10 +104,9 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
   // compute the cumulative probabilities of the nucleotides
   var cumulProb: [nuclInds] randType,
       p = 0.0;
-  for i in nuclInds {
-    const (_,prob) = nuclInfo[i];
+  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
     p += prob;
-    cumulProb[i] = 1 + (p*IM):randType;
+    cp = 1 + (p*IM): randType;
   }
 
   // guard when tasks can access the random numbers or output stream
@@ -123,19 +122,21 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 
     // iterate over 0..n-1 in a round-robin fashion across tasks
     for i in tid*chunkSize..n-1 by numTasks*chunkSize {
-      const nBytes = min(chunkSize, n-i);
+      const numBytes = min(chunkSize, n-i);
 
-      // Get 'nBytes' random numbers in a coordinated manner
+      // Get 'numBytes' random numbers in a coordinated manner
       randGo[tid].waitFor(i);
-      getRands(nBytes, myRands);
+      getRands(numBytes, myRands);
       randGo[nextTid].write(i+chunkSize);
 
-      // Compute 'nBytes' nucleotides and store in 'myBuff'
+      // Compute 'numBytes' nucleotides and store in 'myBuff'
       var col = 0,
           off = 0;
 
-      for r in myRands[..<nBytes] {
-        const nid = + reduce (r >= cumulProb);
+      for r in myRands[..<numBytes] {
+        var nid = 0;
+        for p in cumulProb do
+          nid += (r >= p);
         const (nucl,_) = nuclInfo[nid];
 
         myBuff[off] = nucl: int(8);
@@ -163,7 +164,6 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 
 //
 // Deterministic random number generator
-// (lastRand really wants to be a local static...)
 //
 var lastRand = seed;
 
@@ -173,4 +173,3 @@ proc getRands(n, arr) {
     arr[i] = lastRand;
   }
 }
-
