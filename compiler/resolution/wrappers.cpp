@@ -1691,7 +1691,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       bool coerceRuntimeTypes = rtt && typeExprReturnsType(formal);
 
       // see issue #15628 for explanation and discussion
-      bool defaultInitAssign = rtt && mustUseRuntimeTypeDefault(formal);
+      bool defaultInitAssign = rtt && mustUseRuntimeTypeDefault(formal) &&
+                               !coerceRuntimeTypes;
 
       VarSymbol* runtimeTypeTemp = NULL;
       if (coerceRuntimeTypes) {

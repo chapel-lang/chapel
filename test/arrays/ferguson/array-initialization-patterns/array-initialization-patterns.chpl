@@ -262,6 +262,51 @@ proc testr7() {
 testr7();
 writeln("-");
 
+proc inIntentDefWithDom(D, in A:[D] R=buildArray(D)) {
+  return A;
+}
+
+proc testr8() {
+  writeln("testr8");
+  var D = {1..1};
+  var B:[D] R = inIntentDefWithDom(D);
+  writeln(B);
+}
+testr8();
+writeln("-");
+
+proc testr9() {
+  writeln("testr9");
+  var D = {1..1};
+  var B:[D] R = inIntentDefWithDom(D, buildArray(D));
+  writeln(B);
+}
+testr9();
+writeln("-");
+
+proc inIntentDef(in A:[1..1] R=makeA()) {
+  return A;
+}
+
+proc testr10() {
+  writeln("testr10");
+  var D = {1..1};
+  var B:[D] R = inIntentDef();
+  writeln(B);
+}
+testr10();
+writeln("-");
+
+proc testr11() {
+  writeln("testr11");
+  var D = {1..1};
+  var B:[D] R = inIntentDef(makeA());
+  writeln(B);
+}
+testr11();
+writeln("-");
+
+
 class C1 {
   var A: [1..1] R = [i in 1..1] new R(1);
 }
@@ -456,8 +501,3 @@ writeln("-");
 
 
 printInitDeinit = false;
-
-// TODO:
-// test 'in' default argument with default used
-// test default 'in' argument with default used and type previous domain arg
-// test 'in' argument with actual used and type is previous domain arg

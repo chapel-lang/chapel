@@ -89,6 +89,26 @@ init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 -
+testr8
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr9
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr10
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr11
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
 testC1
 init 1 1
 {A = (x = 1, ptr = {xx = 1})}
