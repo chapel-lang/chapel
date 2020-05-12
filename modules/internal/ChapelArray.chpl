@@ -4815,27 +4815,9 @@ module ChapelArray {
     var callPostAlloc: bool;
     var subloc = c_sublocid_none;
 
-    inline proc allocateData(param initialAlloc, allocSize) {
-      // data allocation should match DefaultRectangular
-      if initialAlloc {
-        pragma "insert line file info"
-          extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
-                                           subloc: chpl_sublocID_t,
-                                           ref callPostAlloc: bool): c_void_ptr;
-        data = chpl_mem_array_alloc(allocSize:size_t,
-                                    _ddata_sizeof_element(data),
-                                    subloc, callPostAlloc):data.type;
-
-      } else {
-        pragma "insert line file info"
-          extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
-                                               eltSize: size_t);
-        chpl_mem_array_postAlloc(data:c_void_ptr, allocSize:size_t,
-                                 _ddata_sizeof_element(data));
-      }
+    if size > 0 {
+      data = _ddata_allocate_noinit(elemType, size, callPostAlloc);
     }
-
-    if size > 0 then allocateData(true, size);
 
     try {
       for elt in ir {
@@ -4857,7 +4839,7 @@ module ChapelArray {
           else
             size = 2 * size;
 
-          allocateData(true, size);
+          data = _ddata_allocate_noinit(elemType, size, callPostAlloc);
 
           // Now copy the data over
           for i in 0..#oldSize {
@@ -4907,7 +4889,8 @@ module ChapelArray {
     if data != nil {
 
       // let the comm layer adjust array allocation
-      if callPostAlloc then allocateData(false, size);
+      if callPostAlloc then
+        _ddata_allocate_postalloc(data, size);
 
       // Now construct a DefaultRectangular array using the data
       var A = D.buildArrayWith(data[0].type, data, size:int);
@@ -4928,8 +4911,9 @@ module ChapelArray {
       // Construct and return an empty array.
 
       // Create space for 1 element as a placeholder.
-      allocateData(true, 1);
-      if callPostAlloc then allocateData(false, 1);
+      data = _ddata_allocate_noinit(elemType, size, callPostAlloc);
+      if callPostAlloc then
+        _ddata_allocate_postalloc(data, size);
 
       var A = D.buildArrayWith(elemType, data, size:int);
 
