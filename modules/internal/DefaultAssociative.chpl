@@ -336,7 +336,7 @@ module DefaultAssociative {
     proc dsiMember(idx: idxType): bool {
       return _findFilledSlot(idx)(0);
     }
-  
+
     override proc dsiAdd(idx) {
       // add helpers will return a tuple like (slotNum, numIndicesAdded);
 
@@ -995,8 +995,9 @@ module DefaultAssociative {
     }
     return hash;
   }
-  
-  inline proc chpl__defaultHash(o: borrowed object): uint {
+
+  // Nilable and non-nilable classes will coerce to this.
+  inline proc chpl__defaultHash(o: borrowed object?): uint {
     return _gen_key(__primitive( "object2int", o));
   }
 
