@@ -1,0 +1,14 @@
+
+ test0
+(x = 1, ptr = {xx = 1})
+(x = 2, ptr = {xx = 2})
+a init (default)
+a init (default)
+b init 1 1
+b init 2 2
+d lhs(0 0) = rhs(1 1)
+d lhs(0 0) = rhs(2 2)
+z deinit 1 1
+z deinit 1 1
+z deinit 2 2
+z deinit 2 2
