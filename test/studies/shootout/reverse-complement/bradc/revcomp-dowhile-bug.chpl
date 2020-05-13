@@ -56,9 +56,9 @@ proc main(args: [] string) {
 }
 
 proc process(buf, in from, in to) {
-  while buf[from] != eol do
+  do {
     from += 1;
-  from += 1;
+  } while buf[from-1] != eol;
 
   const len = to - from,
         off = 60 - (len % 61);

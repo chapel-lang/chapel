@@ -1,0 +1,1 @@
+bug: do...while loop causes assertion error in copyPropagation
