@@ -87,7 +87,7 @@ proc main(args: [] string) {
   
   param _1M = 1024**2;
   var bufLen = 8 * 1024;
-  var bufDom = {0..bufLen};
+  var bufDom = {0..<bufLen};
   var buf: [bufDom] uint(8);
   var end = 0;
 
@@ -99,7 +99,7 @@ proc main(args: [] string) {
     if success {
       end = bufLen;
       bufLen += if bufLen >= _1M then _1M else bufLen;;
-      bufDom = {0..bufLen};
+      bufDom = {0..<bufLen};
     }
   } while (success);
 
@@ -114,7 +114,7 @@ proc main(args: [] string) {
 
   // TODO: Is this conditional necessary?
   if end {  
-    var from, to = end;
+    var from, to = end-1;
     
     do {
       from = to;
@@ -132,21 +132,40 @@ proc main(args: [] string) {
 
 proc process(buf, in from, in to) {
   writeln((from,to));
-  while buf[from] != eol do
+  /*
+  for i in from..to do
+    writeln(buf[i]);
+  exit(0);
+  */
+  do {
     from += 1;
-  from += 1;
+  } while buf[from-1] != eol;
   writeln((from,to));
 
   const len = to - from,
         off = 60 - (len % 61);
 
+  writeln("Before:");
+  stdout.flush();
+  stdoutBin.writeln(buf[from..#3]);
+  stdoutBin.writeln(buf[..to#-3]);
+  stdoutBin.writeln(buf[from..to]);
+  
   if off {
     for m in from+60-off..<to by 61 {
+      writeln((m,off));
       for i in m..#off by -1 do
         buf[i+1] = buf[i];
       buf[m] = eol;
+      //      writeln("During:");
+      //      stdout.flush();
+      //      stdoutBin.writeln(buf[from..to]);
     }
   }
+
+  writeln("After:");
+  stdout.flush();
+  stdoutBin.writeln(buf[from..to]);
 
   to -= 1;
   do {
@@ -325,7 +344,8 @@ proc createTable() {
           dst = pairs[i+1];
 
     table[src] = dst;
-    table[src+upperToLower] = dst;
+    if src != eol then
+      table[src+upperToLower] = dst;
   }
 
   return table;
