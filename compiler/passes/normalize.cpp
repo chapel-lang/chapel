@@ -198,14 +198,17 @@ static Symbol *getDomSym(Symbol *arrSym) {
   return ret;
 }
 
+// return the closest parent of `ce` that can impact locality
 static Stmt *getLocalityDominator(CallExpr* ce) {
   Expr *cur = ce->parentExpr;
   while (cur != NULL) {
-    //if (OnStmt *s = toOnStmt(ce->parentExpr)) {
-      //return s;
-    //}
-    if (ForallStmt *s = toForallStmt(ce->parentExpr)) {
-      return s;
+    if (BlockStmt *block = toBlockStmt(cur)) {
+      if (!block->isRealBlockStmt()) { // check for on statement
+        return block;
+      }
+    }
+    if (ForallStmt *forall = toForallStmt(cur)) {
+      return forall;
     }
     cur = cur->parentExpr;
   }
