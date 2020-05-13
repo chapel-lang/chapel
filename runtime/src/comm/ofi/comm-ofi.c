@@ -267,6 +267,32 @@ static void ofiErrReport(const char*, int, const char*);
   } while (0)
 
 
+#define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
+
+
+////////////////////////////////////////
+//
+// Early declarations for AM handling and progress
+//
+
+//
+// Ideally these would be declared with related stuff later in the
+// file, but they're needed earlier than that and with each other,
+// so they're here instead.
+//
+
+//
+// Is this the (an) AM handler thread?
+//
+static __thread chpl_bool isAmHandler = false;
+
+
+//
+// Flag used to tell AM handler(s) to exit.
+//
+static atomic_bool amHandlersExit;
+
+
 //
 // The ofi_rxm provider may return -FI_EAGAIN for read/write/send while
 // doing on-demand connection when emulating FI_RDM endpoints.  The man
@@ -278,15 +304,23 @@ static void ofiErrReport(const char*, int, const char*);
 #define OFI_RIDE_OUT_EAGAIN(tcip, expr)                                 \
   do {                                                                  \
     ssize_t _ret;                                                       \
-    do {                                                                \
-      OFI_CHK_2(expr, _ret, -FI_EAGAIN);                                \
-      if (_ret == -FI_EAGAIN) {                                         \
-        (*tcip->ensureProgressFn)(tcip);                                \
-      }                                                                 \
-    } while (_ret == -FI_EAGAIN);                                       \
+    if (isAmHandler) {                                                  \
+      do {                                                              \
+        OFI_CHK_2(expr, _ret, -FI_EAGAIN);                              \
+        if (_ret == -FI_EAGAIN) {                                       \
+          (*tcip->ensureProgressFn)(tcip);                              \
+        }                                                               \
+      } while (_ret == -FI_EAGAIN                                       \
+               && !atomic_load_bool(&amHandlersExit));                  \
+    } else {                                                            \
+      do {                                                              \
+        OFI_CHK_2(expr, _ret, -FI_EAGAIN);                              \
+        if (_ret == -FI_EAGAIN) {                                       \
+          (*tcip->ensureProgressFn)(tcip);                              \
+        }                                                               \
+      } while (_ret == -FI_EAGAIN);                                     \
+    }                                                                   \
   } while (0)
-
-#define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
 
 
 ////////////////////////////////////////
@@ -471,8 +505,6 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 // libfabric, and then it hands it back to us in the CQ entry, and then
 // checkTxCQ() uses that to figure out what to update.
 //
-
-static __thread chpl_bool isAmHandler = false;
 
 typedef enum {
   txnTrkNone,  // no tracking, ptr is ignored
@@ -2485,7 +2517,6 @@ void amRequestCommon(c_nodeid_t node,
 //
 
 static int numAmHandlersActive;
-static atomic_bool amHandlersExit;
 static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -2529,7 +2560,7 @@ void fini_amHandling(void) {
 
   //
   // Tear down the AM handler thread(s).  On node 0, don't proceed from
-  // here until the last one has finished (TODO).
+  // here until the last one has finished.
   //
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   atomic_store_bool(&amHandlersExit, true);
