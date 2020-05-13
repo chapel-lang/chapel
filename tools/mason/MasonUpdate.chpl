@@ -72,7 +72,7 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
       if getSpackVersion != spackVersion then
       throw new owned MasonError("Mason has been updated. " +
-                  "To install Spack, call  : mason external --setup.");
+                  "To install Spack, call: mason external --setup.");
     }
     const lockFile = createDepTree(TomlFile);
     if failedChapelVersion.size > 0 {

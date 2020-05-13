@@ -121,15 +121,15 @@ private proc specHelp() {
 /* Checks if updated spack and spack registry is installed*/
 proc spackInstalled() throws {
   if !isDir(SPACK_ROOT) {
-    throw new owned MasonError("To use mason external, call : mason external --setup");
+    throw new owned MasonError("To use mason external, call: mason external --setup");
   }
   if !isDir(getSpackRegistry) {
     throw new owned MasonError("Mason has been updated. To use mason external, "+
-                                "call : mason external --setup");
+                                "call: mason external --setup");
   }
   if getSpackVersion != spackVersion && SPACK_ROOT == spackDefaultPath {
     throw new owned MasonError("Mason has been updated and requires a newer" +
-          " version of Spack.\nTo use mason external, call : mason external --setup");
+          " version of Spack.\nTo use mason external, call: mason external --setup");
   }
   return true;
 }
