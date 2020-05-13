@@ -147,6 +147,25 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
   }
 }
 
+static Symbol *getDotDomBaseSym(Expr *expr) {
+  if (CallExpr *ce = toCallExpr(expr)) {
+    if (ce->isNamedAstr(astrSdot)) {
+      if (SymExpr *se = toSymExpr(ce->get(2))) {
+        if (VarSymbol *var = toVarSymbol(se->symbol())) {
+          if (var->immediate->const_kind == CONST_KIND_STRING) {
+            if (strcmp(var->immediate->v_string, "_dom") == 0) {
+              if (SymExpr *se = toSymExpr(ce->get(1))) {
+                return se->symbol();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
 static Symbol *getRegularDomSym(Symbol *arrSym) {
   Symbol *ret = NULL;
   if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
@@ -175,23 +194,33 @@ static Symbol *getRegularDomSym(Symbol *arrSym) {
   return ret;
 }
 
-static Symbol *getDotDomBaseSym(Expr *expr) {
-  if (CallExpr *ce = toCallExpr(expr)) {
-    if (ce->isNamedAstr(astrSdot)) {
-      if (SymExpr *se = toSymExpr(ce->get(2))) {
-        if (VarSymbol *var = toVarSymbol(se->symbol())) {
-          if (var->immediate->const_kind == CONST_KIND_STRING) {
-            if (strcmp(var->immediate->v_string, "_dom") == 0) {
-              if (SymExpr *se = toSymExpr(ce->get(1))) {
-                return se->symbol();
+static Symbol *getDomSymFromDotDom(Symbol *arrSym) {
+  Symbol *ret = NULL;
+  if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
+    // check the most basic idiom `var A: [D] int`
+    if (def->exprType != NULL) {
+      if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
+        if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
+            if (ceInner->isNamed("chpl__ensureDomainExpr")) {
+              if (Symbol *domSym = getRegularDomSym(getDotDomBaseSym(ceInner->get(1)))) {
+                ret = domSym;
               }
             }
           }
         }
       }
     }
+    // check if the array variable was created with a call `var A = foo()`
+    else { // def->exprType == NULL
+      analyzeArrLog("There is no type expression in definition, or it is not a call", def);
+    }
   }
-  return NULL;
+  if (ret == NULL) {
+      analyzeArrLog("Domain symbol was not found from dot-domains", arrSym);
+  }
+  return ret;
+
 }
 
 static void analyzeArrays() {
@@ -293,7 +322,9 @@ static void analyzeArrays() {
             if (!canOptimize) {
               Symbol *domSym = getRegularDomSym(baseSE->symbol());
 
-              // if domSym was null, check other types of declarations here
+              if (domSym == NULL) {
+                domSym = getDomSymFromDotDom(baseSE->symbol());
+              }
 
               // forall i in A.domain do ... B[i] ... where B and A share domain
               if (dotDomIterSymDom != NULL &&
