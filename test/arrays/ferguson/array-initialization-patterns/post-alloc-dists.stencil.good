@@ -281,32 +281,32 @@ alloc int test4
 *** DR calling postalloc int(64) 0
 *** DR calling dealloc int(64)
 *** DR alloc int(64) 1
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR calling dealloc int(64)
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR calling dealloc int(64)
+*** DR calling dealloc int(64)
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR calling dealloc int(64)
+*** DR alloc int(64) 0
+*** DR calling postalloc int(64) 0
+*** DR calling dealloc int(64)
 *** DR calling postalloc int(64) 1
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR calling dealloc int(64)
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR calling dealloc int(64)
-*** DR calling dealloc int(64)
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR calling dealloc int(64)
-*** DR alloc int(64) 0
-*** DR calling postalloc int(64) 0
-*** DR calling dealloc int(64)
 *** DR calling dealloc int(64)
 *** DR calling dealloc int(64)
 *** DR calling dealloc int(64)

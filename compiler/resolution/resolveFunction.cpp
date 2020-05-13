@@ -742,6 +742,7 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_COERCE_FN) ||
           fn->hasFlag(FLAG_UNREF_FN) ||
           fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
           fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
@@ -761,6 +762,7 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
       fn->hasFlag(FLAG_INIT_COPY_FN)             || // tuple chpl__initCopy
       fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
+      fn->hasFlag(FLAG_COERCE_FN)                || // chpl__coerceCopy/Move
       fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
       fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
