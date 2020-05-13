@@ -2072,6 +2072,11 @@ typedef enum {
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
 
+static inline
+chpl_bool op_uses_on_bundle(amOp_t op) {
+  return op == am_opExecOn || op == am_opExecOnLrg;
+}
+
 //
 // Members are packed, potentially differently, in each AM request type
 // to reduce space requirements.  The 'op' member must come first in all
@@ -2405,12 +2410,11 @@ void amRequestCommon(c_nodeid_t node,
       PTHREAD_CHK(pthread_mutex_unlock(&seqLock));
     }
 
-    if (req->b.op == am_opExecOn || req->b.op == am_opExecOnLrg) {
-      chpl_comm_on_bundle_t* arg = (chpl_comm_on_bundle_t*) req;
-      arg->comm.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
+    if (op_uses_on_bundle(req->b.op)) {
+      req->xo.hdr.comm.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
 #ifdef DEBUG_CRC_MSGS
-      arg->comm.crc = 0;
-      arg->comm.crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
+      req->xo.hdr.comm.crc = 0;
+      req->xo.hdr.comm.crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
 #endif
     } else {
       req->b.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
@@ -2441,7 +2445,10 @@ void amRequestCommon(c_nodeid_t node,
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, "
              "pAmDone %p, ctx %p",
-             node, chpl_nodeID, myReq->b.seq,
+             node, chpl_nodeID,
+             (op_uses_on_bundle(req->b.op)
+              ? req->xo.hdr.comm.seq
+              : myReq->b.seq),
              am_opName(myReq->b.op), reqSize, pAmDone, ctx);
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_send(tcip->txCtx, myReq, reqSize,
@@ -2643,48 +2650,62 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       //
       // This event is for an inbound AM request.  Handle it.
       //
-      chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
+      amRequest_t* req = (amRequest_t*) cqes[i].buf;
       DBG_PRINTF(DBG_AM | DBG_AMRECV,
                  "CQ rx AM req @ buffer offset %zd: "
                  "seqId %d:%" PRIu64 ", %s, size %zd",
                  (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
-                 ((req->kind == am_opExecOn)
-                  ? req->comm.node
-                  : ((amRequest_t*) req)->b.node),
-                 ((req->kind == am_opExecOn)
-                  ? req->comm.seq
-                  : ((amRequest_t*) req)->b.seq),
-                 am_opName(req->kind), cqes[i].len);
+                 (op_uses_on_bundle(req->b.op)
+                  ? req->xo.hdr.comm.node
+                  : req->b.node),
+                 (op_uses_on_bundle(req->b.op)
+                  ? req->xo.hdr.comm.seq
+                  : req->b.seq),
+                 am_opName(req->b.op), cqes[i].len);
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
       if (DBG_TEST_MASK(DBG_AM)) {
-        uint32_t sent_crc = (req.b.op == am_opExecOn)
-                            ? ((chpl_comm_on_bundle_t*) req)->comm.crc,
-                            : req->b.crc;
-        req->b.crc = 0;
-        uint32_t rcvd_crc = xcrc32((void*) req, req->comm.argSize,
-                                   ~(uint32_t) 0);
+        uint32_t sent_crc, rcvd_crc;
+        size_t reqSize;
+        if (op_uses_on_bundle(req->b.op)) {
+          sent_crc = req->xo.hdr.comm.crc;
+          req->xo.hdr.comm.crc = 0;
+          reqSize = req->xo.hdr.comm.argSize;
+        } else {
+          sent_crc = req->b.crc;
+          req->b.crc = 0;
+          reqSize = (req->b.op == am_opGet || req->b.op == am_opPut)
+                    ? sizeof(struct amRequest_RMA_t)
+                    : (req->b.op == am_opAMO)
+                    ? sizeof(struct amRequest_AMO_t)
+                    : (req->b.op == am_opFree)
+                    ? sizeof(struct amRequest_free_t)
+                    : (req->b.op == am_opFree)
+                    ? sizeof(struct amRequest_free_t)
+                    : sizeof(struct amRequest_base_t);
+        }
+        uint32_t rcvd_crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
         CHK_TRUE(rcvd_crc == sent_crc);
       }
 #endif
 
-      switch (req->kind) {
+      switch (req->b.op) {
       case am_opExecOn:
-        if (req->comm.fast) {
-          amWrapExecOnBody(req);
+        if (req->xo.hdr.comm.fast) {
+          amWrapExecOnBody(&req->xo.hdr);
         } else {
-          amHandleExecOn(req);
+          amHandleExecOn(&req->xo.hdr);
         }
         break;
 
       case am_opExecOnLrg:
-        amHandleExecOnLrg(req);
+        amHandleExecOnLrg(&req->xol.hdr);
         break;
 
       case am_opGet:
         {
           struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
-                                       .rma = ((amRequest_t*) req)->rma, };
+                                       .rma = req->rma, };
           chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
                                    &arg, sizeof(arg), c_sublocid_any,
                                    chpl_nullTaskID);
@@ -2694,7 +2715,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       case am_opPut:
         {
           struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
-                                       .rma = ((amRequest_t*) req)->rma, };
+                                       .rma = req->rma, };
           chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
                                    &arg, sizeof(arg), c_sublocid_any,
                                    chpl_nullTaskID);
@@ -2702,11 +2723,11 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       case am_opAMO:
-        amHandleAMO(&((amRequest_t*) req)->amo);
+        amHandleAMO(&req->amo);
         break;
 
       case am_opFree:
-        CHPL_FREE(((amRequest_t*) req)->free.p);
+        CHPL_FREE(req->free.p);
         break;
 
       case am_opShutdown:
@@ -2714,7 +2735,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       default:
-        INTERNAL_ERROR_V("unexpected AM op %d", (int) req->kind);
+        INTERNAL_ERROR_V("unexpected AM op %d", (int) req->b.op);
         break;
       }
     }
@@ -2767,7 +2788,7 @@ void amWrapExecOnBody(void* p) {
   chpl_ftable_call(comm->fid, p);
   if (comm->pAmDone != NULL) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV,
-               "amWrapExecOnBody(seqId %d:%" PRIu64 " NB): set pAmDone %p",
+               "amWrapExecOnBody(seqId %d:%" PRIu64 "): set pAmDone %p",
                (int) comm->node, comm->seq, comm->pAmDone);
     amSendDone(comm->node, comm->pAmDone);
   } else {
@@ -2843,7 +2864,7 @@ void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
   chpl_ftable_call(bundle->comm.fid, bundle);
   if (comm->pAmDone != NULL) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV,
-               "amWrapExecOnLrgBody(seqId %d:%" PRIu64 " NB): set pAmDone %p",
+               "amWrapExecOnLrgBody(seqId %d:%" PRIu64 "): set pAmDone %p",
                (int) node, comm->seq, comm->pAmDone);
     amSendDone(node, comm->pAmDone);
   } else {
@@ -2868,7 +2889,7 @@ void amWrapGet(struct taskArg_RMA_t* tsk_rma) {
   (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapGet(seqId %d:%" PRIu64 " NB): set pAmDone %p",
+             "amWrapGet(seqId %d:%" PRIu64 "): set pAmDone %p",
              (int) rma->b.node, rma->b.seq, rma->b.pAmDone);
   amSendDone(rma->b.node, rma->b.pAmDone);
 }
@@ -2886,7 +2907,7 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
   (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapPut(seqId %d:%" PRIu64 " NB): set pAmDone %p",
+             "amWrapPut(seqId %d:%" PRIu64 "): set pAmDone %p",
              (int) rma->b.node, rma->b.seq, rma->b.pAmDone);
   amSendDone(rma->b.node, rma->b.pAmDone);
 }
@@ -2964,7 +2985,7 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
     chpl_atomic_thread_fence(memory_order_release);
   } else {
     DBG_PRINTF(DBG_AM | DBG_AMRECV,
-               "amHandleAMO(seqId %d:%" PRIu64 " NB): set pAmDone %p",
+               "amHandleAMO(seqId %d:%" PRIu64 "): set pAmDone %p",
                (int) amo->b.node, amo->b.seq, amo->b.pAmDone);
     amSendDone(amo->b.node, amo->b.pAmDone);
   }
