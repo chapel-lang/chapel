@@ -1,17 +1,185 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   contributed by Brad Chamberlain and Ben Harshbarger
-   based on the Chapel #1-#3 versions that we previously submitted, but
-   informed by the C gcc #6 version by Jeremy Zerfas in terms of the read
-   chunk size and the recursive doubling of the input data buffer
+   contributed by Brad Chamberlain
+   based on the C gcc #5 version by Mr Ledrug
 */
 
-use IO;
+/*
+#define _GNU_SOURCE
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <string.h>
+
+void process(char *from, char *to) {
+   while (*from++ != '\n');
+
+   size_t len = to - from;
+   size_t off = 60 - (len % 61);
+
+   if (off) {
+      char *m;
+      for (m = from + 60 - off; m < to; m += 61) {
+         memmove(m + 1, m, off);
+         *m = '\n';
+      }
+   }
+
+   char c;
+   for (to--; from <= to; from++, to--)
+      c = tbl[(int)*from], *from = tbl[(int)*to], *to = c;
+}
+
+int main() {
+   char *s;
+   for (s = pairs; *s; s += 2) {
+      tbl[toupper(s[0])] = s[1];
+      tbl[tolower(s[0])] = s[1];
+   }
+
+
+   const size_t _1M = 1024 * 1024;
+   size_t buflen = 8 * 1024, len, end = 0;
+   char *buf = malloc(buflen);
+
+   int in = fileno(stdin);
+   while ((len = read(in, buf + end, buflen - 256 - end))) {
+      if (len < 0) break;
+      end += len;
+      if (end >= buflen - 256) {
+         buflen = (buflen >= _1M) ? buflen + _1M : buflen * 2;
+         buf = realloc(buf, buflen);
+      }
+   }
+   buf[end] = '>';
+
+   char *from, *to = buf + end - 1;
+   while (1) {
+      for (from = to; *from != '>'; from--);
+
+      process(from, to);
+
+      to = from - 1;
+      if (to < buf) break;
+   }
+
+   write(fileno(stdout), buf, end);
+   free(buf);
+
+   return 0;
+}
+*/
+
 
 param eol = "\n".toByte();      // end-of-line, as an integer
 
 const table = createTable();    // create the table of code complements
+
+// move to local var
+  use IO;
+  var stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                   hints=QIO_CH_ALWAYS_UNBUFFERED);
+
+proc main(args: [] string) {
+  
+  param _1M = 1024**2;
+  var bufLen = 8 * 1024;
+  var bufDom = {0..bufLen};
+  var buf: [bufDom] uint(8);
+  var end = 0;
+
+  const stdin = openfd(0),
+        input = stdin.reader(iokind.native, locking=false,
+                             hints = QIO_CH_ALWAYS_UNBUFFERED);
+  do {
+    const success = input.read(buf[end..]);
+    if success {
+      end = bufLen;
+      bufLen += if bufLen >= _1M then _1M else bufLen;;
+      bufDom = {0..bufLen};
+    }
+  } while (success);
+
+  //  stdoutBin.writeln(buf);
+  
+  for i in buf.indices by -1 {
+    if buf[i] != 0 {
+      end = i+1;
+      break;
+    }
+  }
+
+  // TODO: Is this conditional necessary?
+  if end {  
+    var from, to = end;
+    
+    do {
+      from = to;
+      while buf[from] != '>'.toByte() do
+        from -= 1;
+
+      process(buf, from, to);
+
+      to = from - 1;
+    } while (to >= 0);
+
+    stdoutBin.writeln(buf[..<end]);
+  }
+}
+
+proc process(buf, in from, in to) {
+  writeln((from,to));
+  while buf[from] != eol do
+    from += 1;
+  from += 1;
+  writeln((from,to));
+
+  const len = to - from,
+        off = 60 - (len % 61);
+
+  if off {
+    for m in from+60-off..<to by 61 {
+      for i in m..#off by -1 do
+        buf[i+1] = buf[i];
+      buf[m] = eol;
+    }
+  }
+
+  to -= 1;
+  do {
+    ref d1 = buf[from],
+        d2 = buf[to];
+
+    (d1, d2) = (table[d2], table[d1]);
+
+    from += 1;
+    to -= 1;
+  } while (from <= to);
+}
+/*
+void process(char *from, char *to) {
+   while (*from++ != '\n');
+
+   size_t len = to - from;
+   size_t off = 60 - (len % 61);
+
+   if (off) {
+      char *m;
+      for (m = from + 60 - off; m < to; m += 61) {
+         memmove(m + 1, m, off);
+         *m = '\n';
+      }
+   }
+
+   char c;
+   for (to--; from <= to; from++, to--)
+      c = tbl[(int)*from], *from = tbl[(int)*to], *to = c;
+}
+*/
+/*
 
 config const readSize = 16384;  // the chunk size to read at a time
 
@@ -140,21 +308,21 @@ class Seq {
     seqToWrite.write(id+1);         // make it the next sequence's turn
   }
 }
-
+*/
 
 proc createTable() {
   // `pairs` compactly represents the table we're creating, where the
   // first byte of each pair (in either case) maps to the second:
   //   A|a -> T, C|c -> G, G|g -> C, T|t -> A, etc.
-  param pairs = b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN",
+  param pairs = b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n",
         upperToLower = "a".toByte() - "A".toByte();
 
   var table: [0..127] uint(8);
 
   table[eol] = eol;
   for i in pairs.indices by 2 {
-    const src = pairs.byte[i],
-          dst = pairs.byte[i+1];
+    const src = pairs[i],
+          dst = pairs[i+1];
 
     table[src] = dst;
     table[src+upperToLower] = dst;
