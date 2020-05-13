@@ -69,9 +69,11 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
     updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
-    if !isDir(SPACK_ROOT) || !isDir(MASON_HOME+'/spack-registry') then
-    throw new owned MasonError("Mason could not find Spack at $MASON_HOME. " +
+    if isDir(SPACK_ROOT) {
+      if getSpackVersion != spackVersion then
+      throw new owned MasonError("Mason could not find Spack at $MASON_HOME. " +
                   "To install Spack, use : mason external --setup.");
+    }
     const lockFile = createDepTree(TomlFile);
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1

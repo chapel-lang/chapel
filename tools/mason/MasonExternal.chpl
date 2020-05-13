@@ -208,7 +208,7 @@ private proc printSpackVersion() {
 }
 
 /* Returns spack version */
-private proc getSpackVersion : string {
+proc getSpackVersion : string {
   const command = "spack --version";
   const version = getSpackResult(command,true).strip();
   return version;
