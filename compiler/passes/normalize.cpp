@@ -227,7 +227,7 @@ static void analyzeArrays() {
               }
             }
           }
-          if (domQueryIteratedSymbol != NULL) {
+          if (domQueryIteratedSymbol == NULL) {
             analyzeArraysLog("Iteration is over an unrecognized call", ce);
           }
         }
@@ -261,45 +261,57 @@ static void analyzeArrays() {
           SymExpr *argSE = toSymExpr(call->get(1));
 
           if (baseSE != NULL && argSE != NULL) {
+            Symbol *accessBaseSymbol = baseSE->symbol();
             // (i,j) in forall (i,j) in bla is a tuple that is
             // index-by-index accessed in loop body that throw off this
             // analysis
-            if (baseSE->symbol()->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-              break;
+            if (accessBaseSymbol->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+              continue;
             }
 
             // give up if the symbol we are looking to optimize is defined
             // inside the loop itself
-            if (forall->loopBody()->contains(baseSE->symbol()->defPoint)) {
-              break;
+            if (forall->loopBody()->contains(accessBaseSymbol->defPoint)) {
+              continue;
             }
 
+            Symbol *accessIndexSymbol = argSE->symbol();
             // give up if the access uses a different symbol
-            if (argSE->symbol() != indexSymbol) {
-              break;
+            if (accessIndexSymbol != indexSymbol) {
+              continue;
             }
 
             analyzeArraysLog("Potential access", call);
-            analyzeArraysLog("\twith DefExpr", baseSE->symbol()->defPoint);
 
-            Symbol *domSym = tryToGetDomainSymbol(baseSE->symbol());
-            analyzeArraysLog("\twith Domain defined at", domSym);
+            bool canOptimize = false;
+            if (domQueryIteratedSymbol != NULL &&
+                domQueryIteratedSymbol == accessBaseSymbol) {
+              canOptimize = true;
+              analyzeArraysLog("Access base is the same as iterator's base", call);
+            }
+            else {
+              analyzeArraysLog("\twith DefExpr", baseSE->symbol()->defPoint);
 
-            if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
-              if (iterSE->symbol() == domSym) {
-                SET_LINENO(call);
-                analyzeArraysLog("\tReplacing", call);
-                call->replace(
-                    new CallExpr(
-                        new CallExpr(".", new SymExpr(baseSE->symbol()),
-                                          new UnresolvedSymExpr("localAccess")),
-                        new SymExpr(argSE->symbol())));
+              Symbol *domSym = tryToGetDomainSymbol(baseSE->symbol());
+              analyzeArraysLog("\twith Domain defined at", domSym);
+              if (iteratedSymbol != NULL &&
+                  iteratedSymbol == domSym) {
+                    canOptimize = true;
+                    analyzeArraysLog("Access base's domain is the iterator", call);
               }
+            }
+
+            if (canOptimize) {
+              SET_LINENO(call);
+              analyzeArraysLog("\tReplacing", call);
+              call->replace(
+                  new CallExpr(
+                      new CallExpr(".", new SymExpr(baseSE->symbol()),
+                                        new UnresolvedSymExpr("localAccess")),
+                      new SymExpr(argSE->symbol())));
             }
           }
         }
-
-
       }
       analyzeArraysLog("**** End forall ****", forall);
     }
