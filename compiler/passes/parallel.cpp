@@ -1225,6 +1225,13 @@ makeHeapAllocations() {
 static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
   Symbol* LHS = toSymExpr(move->get(1))->symbol();
   if (LHS->isRef()) {
+    if (LHS->hasFlag(FLAG_INDEX_VAR)) {
+      // This is a problem because in chpl__transferArray
+      // the index variable will be used to initialize array elements
+      // (consider e.g. an array of arrays/domains)
+      INT_FATAL("replaceRecordWrappedRefs updating index variable");
+    }
+
     LHS->type = LHS->getValType();
     LHS->qual = QUAL_VAL;
     todo.push_back(LHS);
@@ -1252,32 +1259,21 @@ static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
 //
 static void replaceRecordWrappedRefs() {
 
-  /*
-
-   Disabling for now e.g. test/arrays/bradc/arrOfDom/arrOfDom.chpl
-
-    const D: [1..10] domain(1) = [i in 1..10] {1..i};
-
-   By design (of my current work), the array elements (which are domains) are
-   left uninitialized and then "move"d into to initialize them. That means that
-   later in compilation, somewhere, there is PRIM_ASSIGN aa, bb -- where aa is a
-   ref to the current element and bb is the value result of the iterator.
-
-   But, replaceRecordWrappedRefs is replacing the aa with a value. That value
-   isn't initialized. Then the PRIM_ASSIGN is dead code eliminated.
-
-   Note, this function was added in PR 4925.
-
-   */
-
-  return;
-
   std::vector<Symbol*> todo;
 
   // Changes reference fields with a record-wrapped type into value fields.
   // Note that this will modify arg bundle classes.
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
-    if (!aggType->symbol->hasFlag(FLAG_REF)) {
+    bool isIterator = aggType->symbol->hasFlag(FLAG_ITERATOR_CLASS) ||
+                      aggType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+    bool isTuple = aggType->symbol->hasFlag(FLAG_TUPLE);
+
+    if (aggType->symbol->hasFlag(FLAG_REF)) {
+      // ignore the reference type itself
+    } else if (isIterator || isTuple) {
+      // workaround for problems in array initialization in chpl__transferArray
+      // ignore iterator class/records and tuples for now
+    } else {
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();
