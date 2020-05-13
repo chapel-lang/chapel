@@ -122,7 +122,7 @@ static bool        firstConstructorWarning = true;
 *                                                                             *
 ************************************** | *************************************/
 
-static void analyzeArraysLog(const char *msg, BaseAST *node) {
+static void analyzeArrLog(const char *msg, BaseAST *node) {
 
   //BaseAST *locationMarker = node;
   //if (ForallStmt *forall = toForallStmt(node)) {
@@ -147,7 +147,7 @@ static void analyzeArraysLog(const char *msg, BaseAST *node) {
   }
 }
 
-static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
+static Symbol *getRegularDomSym(Symbol *arrSym) {
   if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
     // check the most basic idiom `var A: [D] int`
     if (def->exprType != NULL) {
@@ -159,29 +159,29 @@ static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
                 return domSE->symbol();
               }
               else {
-                analyzeArraysLog("Argument to chpl__ensureDomainExpr is not a symbol", 
+                analyzeArrLog("Argument to chpl__ensureDomainExpr is not a symbol", 
                                  def);
               }
             }
             else {
-              analyzeArraysLog("Unexpected argument to chpl__buildArrayRuntimeType", 
+              analyzeArrLog("Unexpected argument to chpl__buildArrayRuntimeType", 
                                def);
             }
           }
           else {
-            analyzeArraysLog("Argument to chpl__buildArrayRuntimeType is not a call",
+            analyzeArrLog("Argument to chpl__buildArrayRuntimeType is not a call",
                              def);
           }
         }
         else {
-          analyzeArraysLog("Unexpected call in array type definition", def);
+          analyzeArrLog("Unexpected call in array type definition", def);
         }
       }
     }
     // check if the array variable was created with a call `var A = foo()`
     else { // def->exprType == NULL
       
-      analyzeArraysLog("There is no type expression in definition, or it is not a call", def);
+      analyzeArrLog("There is no type expression in definition, or it is not a call", def);
     }
   }
   return NULL;
@@ -190,15 +190,15 @@ static Symbol *tryToGetDomainSymbol(Symbol *arrSym) {
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
-    Symbol *iteratedSymbol = NULL;
-    Symbol *domQueryIteratedSymbol = NULL;
-    Symbol *domQueryIteratedSymbolDom = NULL;
-    Symbol *indexSymbol = NULL;
+    Symbol *iterSym = NULL;
+    Symbol *dotDomIterSym = NULL;
+    Symbol *dotDomIterSymDom = NULL;
+    Symbol *loopIdxSym = NULL;
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
            64) == 0;
     if ((!limitToTestFile) || fileCheck) {
-      analyzeArraysLog("**** Start forall ****", forall);
+      analyzeArrLog("**** Start forall ****", forall);
       AList &iterExprs = forall->iteratedExpressions();
       AList &indexVars = forall->inductionVariables();
 
@@ -206,11 +206,11 @@ static void analyzeArrays() {
       if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
         if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
           if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
-            iteratedSymbol = iterSE->symbol();
-            analyzeArraysLog("Iterated symbol", iteratedSymbol);
+            iterSym = iterSE->symbol();
+            analyzeArrLog("Iterated symbol", iterSym);
           }
           else {
-            analyzeArraysLog("Iterated Expr is unresolved", iterExprs.head);
+            analyzeArrLog("Iterated Expr is unresolved", iterExprs.head);
           }
         }
         else if (CallExpr *ce = toCallExpr(iterExprs.head)) {
@@ -221,37 +221,37 @@ static void analyzeArrays() {
                 if (var->immediate->const_kind == CONST_KIND_STRING) {
                   if (strcmp(var->immediate->v_string, "_dom") == 0) {
                     if (SymExpr *se = toSymExpr(ce->get(1))) {
-                      domQueryIteratedSymbol = se->symbol();
-                      domQueryIteratedSymbolDom = tryToGetDomainSymbol(domQueryIteratedSymbol);
+                      dotDomIterSym = se->symbol();
+                      dotDomIterSymDom = getRegularDomSym(dotDomIterSym);
                     }
                   }
                 }
               }
             }
           }
-          if (domQueryIteratedSymbol == NULL) {
-            analyzeArraysLog("Iteration is over an unrecognized call", ce);
+          if (dotDomIterSym == NULL) {
+            analyzeArrLog("Iteration is over an unrecognized call", ce);
           }
         }
 
-        if (iteratedSymbol != NULL || domQueryIteratedSymbol != NULL) {
+        if (iterSym != NULL || dotDomIterSym != NULL) {
           // the iterator is something we can optimize
           // now check the induction variables
           if (SymExpr* se = toSymExpr(indexVars.head)) {
-            indexSymbol = se->symbol();
+            loopIdxSym = se->symbol();
           }
           else if (DefExpr* de = toDefExpr(indexVars.head)) {
-            indexSymbol = de->sym;
+            loopIdxSym = de->sym;
           }
           else {
-            analyzeArraysLog("Unrecognized index symbol", indexVars.head);
+            analyzeArrLog("Unrecognized index symbol", indexVars.head);
           }
         }
       }
 
       // check if we have index symbol
-      if (indexSymbol == NULL) {
-        analyzeArraysLog("**** End forall ****", forall);
+      if (loopIdxSym == NULL) {
+        analyzeArrLog("**** End forall ****", forall);
         continue;
       }
 
@@ -263,63 +263,63 @@ static void analyzeArrays() {
           SymExpr *argSE = toSymExpr(call->get(1));
 
           if (baseSE != NULL && argSE != NULL) {
-            Symbol *accessBaseSymbol = baseSE->symbol();
+            Symbol *accBaseSym = baseSE->symbol();
             // (i,j) in forall (i,j) in bla is a tuple that is
             // index-by-index accessed in loop body that throw off this
             // analysis
-            if (accessBaseSymbol->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+            if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
               continue;
             }
 
             // give up if the symbol we are looking to optimize is defined
             // inside the loop itself
-            if (forall->loopBody()->contains(accessBaseSymbol->defPoint)) {
+            if (forall->loopBody()->contains(accBaseSym->defPoint)) {
               continue;
             }
 
-            Symbol *accessIndexSymbol = argSE->symbol();
+            Symbol *accIdxSym = argSE->symbol();
             // give up if the access uses a different symbol
-            if (accessIndexSymbol != indexSymbol) {
+            if (accIdxSym != loopIdxSym) {
               continue;
             }
 
-            analyzeArraysLog("Potential access", call);
+            analyzeArrLog("Potential access", call);
 
             bool canOptimize = false;
             // check for different patterns
             //
             // forall i in A.domain do ... A[i] ...
-            if (domQueryIteratedSymbol != NULL) {
-              if (domQueryIteratedSymbol == accessBaseSymbol) {
+            if (dotDomIterSym != NULL) {
+              if (dotDomIterSym == accBaseSym) {
                 canOptimize = true;
-                analyzeArraysLog("Access base is the same as iterator's base",
+                analyzeArrLog("Access base is the same as iterator's base",
                                  call);
               }
             }
 
             if (!canOptimize) {
-              Symbol *domSym = tryToGetDomainSymbol(baseSE->symbol());
+              Symbol *domSym = getRegularDomSym(baseSE->symbol());
               // forall i in A.domain do ... B[i] ... where B and A share domain
-              if (domQueryIteratedSymbolDom == domSym) {
+              if (dotDomIterSymDom == domSym) {
                 canOptimize = true;
-                analyzeArraysLog("Access base share the domain with iterator's base",
+                analyzeArrLog("Access base share the domain with iterator's base",
                                  call);
               }
               // forall i in D do ... A[i] ... where D is A's domain
               else {
-                analyzeArraysLog("\twith DefExpr", accessBaseSymbol->defPoint);
-                analyzeArraysLog("\twith Domain defined at", domSym);
-                if (iteratedSymbol != NULL &&
-                    iteratedSymbol == domSym) {
+                analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
+                analyzeArrLog("\twith Domain defined at", domSym);
+                if (iterSym != NULL &&
+                    iterSym == domSym) {
                       canOptimize = true;
-                      analyzeArraysLog("Access base's domain is the iterator", call);
+                      analyzeArrLog("Access base's domain is the iterator", call);
                 }
               }
             }
 
             if (canOptimize) {
               SET_LINENO(call);
-              analyzeArraysLog("\tReplacing", call);
+              analyzeArrLog("\tReplacing", call);
               call->replace(
                   new CallExpr(
                       new CallExpr(".", new SymExpr(baseSE->symbol()),
@@ -329,7 +329,7 @@ static void analyzeArrays() {
           }
         }
       }
-      analyzeArraysLog("**** End forall ****", forall);
+      analyzeArrLog("**** End forall ****", forall);
     }
   }
 }
