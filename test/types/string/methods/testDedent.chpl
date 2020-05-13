@@ -15,8 +15,7 @@ var testStrings = [
   c
   """.dedent(),
 
-  // [2] Lines with only whitespace are normalized to a single newline.
-  // Note there is trailing whitespace in this example:
+  // [2] Note there is trailing whitespace in this example:
   """  
   a
     
@@ -29,7 +28,7 @@ var testStrings = [
      b
      c""".dedent(columns=4),
 
-  // [4] Removing (up to) 10 columns (ignoring first line though)
+  // [4] removing (up to) 10 columns (ignoring first line though)
   """ a
         b
          c
@@ -78,6 +77,51 @@ var testStrings = [
   """ a
       b
       c""".dedent(ignoreFirst=true, columns=2),
+
+  // [12]
+  """ a
+        b
+         c
+          d
+           e""".dedent(),
+
+  // [13]
+  """      a
+          b
+         c
+        d
+       e""".dedent(),
+
+  // [14]
+  """
+   a
+    b
+ c
+  """.dedent(),
+
+  // [15] Empty lines
+  """
+  a
+
+  b
+  c
+  """.dedent(),
+
+  // [16] Note there is trailing white space in this string
+  """
+  a
+ 
+  b
+  c
+  """.dedent(),
+
+  // [17] Note there is trailing white space in this string
+  """
+  a
+  
+  b
+  c
+  """.dedent(),
   ];
 
 
