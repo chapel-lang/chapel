@@ -306,6 +306,26 @@ proc testr11() {
 testr11();
 writeln("-");
 
+proc testr12() {
+  writeln("testr12");
+  var A = makeA();
+  var B = A;
+  writeln(A);
+}
+testr12();
+writeln("-");
+
+proc testr13() {
+  writeln("testr13");
+  var A = makeA();
+  var B:A.type = A;
+  writeln(A);
+}
+testr13();
+writeln("-");
+
+
+
 
 class C1 {
   var A: [1..1] R = [i in 1..1] new R(1);
