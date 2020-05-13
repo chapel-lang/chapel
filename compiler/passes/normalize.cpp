@@ -132,7 +132,7 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
                                 node->getModule()->modTag != MOD_STANDARD);
   //const bool verbose = true;
 
-  const bool veryVerbose = true;
+  const bool veryVerbose = false;
   if (verbose) {
     std::cout << msg << std::endl;
     if (node != NULL) {
@@ -175,6 +175,25 @@ static Symbol *getRegularDomSym(Symbol *arrSym) {
   return ret;
 }
 
+static Symbol *getDotDomBaseSym(Expr *expr) {
+  if (CallExpr *ce = toCallExpr(expr)) {
+    if (ce->isNamedAstr(astrSdot)) {
+      if (SymExpr *se = toSymExpr(ce->get(2))) {
+        if (VarSymbol *var = toVarSymbol(se->symbol())) {
+          if (var->immediate->const_kind == CONST_KIND_STRING) {
+            if (strcmp(var->immediate->v_string, "_dom") == 0) {
+              if (SymExpr *se = toSymExpr(ce->get(1))) {
+                return se->symbol();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
@@ -201,27 +220,12 @@ static void analyzeArrays() {
             analyzeArrLog("Iterated Expr is unresolved", iterExprs.head);
           }
         }
-        else if (CallExpr *ce = toCallExpr(iterExprs.head)) {
-          // it might be in the form `A.domain` where A is used in the loop body
-          if (ce->isNamedAstr(astrSdot)) {
-            if (SymExpr *se = toSymExpr(ce->get(2))) {
-              if (VarSymbol *var = toVarSymbol(se->symbol())) {
-                if (var->immediate->const_kind == CONST_KIND_STRING) {
-                  if (strcmp(var->immediate->v_string, "_dom") == 0) {
-                    if (SymExpr *se = toSymExpr(ce->get(1))) {
-                      dotDomIterSym = se->symbol();
-                      dotDomIterSymDom = getRegularDomSym(dotDomIterSym);
-                      analyzeArrLog("Iterated over .domain of", dotDomIterSym);
-                      analyzeArrLog("where its domain is", dotDomIterSymDom);
-                    }
-                  }
-                }
-              }
-            }
-          }
-          if (dotDomIterSym == NULL) {
-            analyzeArrLog("Iteration is over an unrecognized call", ce);
-          }
+        // it might be in the form `A.domain` where A is used in the loop body
+        else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
+          dotDomIterSym = dotDomBaseSym;
+          dotDomIterSymDom = getRegularDomSym(dotDomIterSym);
+          analyzeArrLog("Iterated over .domain of", dotDomIterSym);
+          analyzeArrLog("where its domain is", dotDomIterSymDom);
         }
 
         if (iterSym != NULL || dotDomIterSym != NULL) {
@@ -301,6 +305,9 @@ static void analyzeArrays() {
               // forall i in D do ... A[i] ... where D is A's domain
               else {
                 analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
+                if (domSym != NULL) {
+                  analyzeArrLog("\twith domain defined at", domSym);
+                }
                 if (iterSym != NULL &&
                     iterSym == domSym) {
                       canOptimize = true;
