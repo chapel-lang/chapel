@@ -1,6 +1,0 @@
-$CHPL_HOME/modules/standard/Map.chpl:472: In function 'add':
-$CHPL_HOME/modules/standard/Map.chpl:480: error: Setting borrowed formal illegal without specifying formal lifetime constraint
-$CHPL_HOME/modules/standard/Map.chpl:472: note: consider scope of v
-$CHPL_HOME/modules/standard/Map.chpl:168: In function 'init=':
-$CHPL_HOME/modules/standard/Map.chpl:178: error: Setting borrowed formal illegal without specifying formal lifetime constraint
-$CHPL_HOME/modules/standard/Map.chpl:168: note: consider scope of other
