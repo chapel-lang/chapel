@@ -126,34 +126,41 @@ proc main(args: [] string) {
       to = from - 1;
     } while (to >= 0);
 
-    stdoutBin.writeln(buf[..<end]);
+    stdoutBin.write(buf[..<end]);
   }
 }
 
 proc process(buf, in from, in to) {
-  writeln((from,to));
+  //  writeln((from,to));
   /*
   for i in from..to do
     writeln(buf[i]);
   exit(0);
   */
+  while buf[from] != eol do
+    from += 1;
+  from += 1;
+  /* TODO: Causes an assertion error in copyPropagation!?!?
   do {
     from += 1;
   } while buf[from-1] != eol;
-  writeln((from,to));
+  */
+  //  writeln((from,to));
 
   const len = to - from,
         off = 60 - (len % 61);
 
+  /*
   writeln("Before:");
   stdout.flush();
   stdoutBin.writeln(buf[from..#3]);
   stdoutBin.writeln(buf[..to#-3]);
   stdoutBin.writeln(buf[from..to]);
+  */
   
   if off {
     for m in from+60-off..<to by 61 {
-      writeln((m,off));
+//      writeln((m,off));
       for i in m..#off by -1 do
         buf[i+1] = buf[i];
       buf[m] = eol;
@@ -163,9 +170,11 @@ proc process(buf, in from, in to) {
     }
   }
 
+  /*
   writeln("After:");
   stdout.flush();
   stdoutBin.writeln(buf[from..to]);
+  */
 
   to -= 1;
   do {
