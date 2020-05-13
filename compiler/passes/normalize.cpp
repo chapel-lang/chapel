@@ -166,7 +166,7 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
   return NULL;
 }
 
-static Symbol *getRegularDomSym(Symbol *arrSym) {
+static Symbol *getDomSym(Symbol *arrSym) {
   Symbol *ret = NULL;
   if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
     // check the most basic idiom `var A: [D] int`
@@ -175,8 +175,12 @@ static Symbol *getRegularDomSym(Symbol *arrSym) {
         if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
           if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
             if (ceInner->isNamed("chpl__ensureDomainExpr")) {
-              if (SymExpr *domSE = toSymExpr(ceInner->get(1))) {
+              Expr *arg = ceInner->get(1);
+              if (SymExpr *domSE = toSymExpr(arg)) {
                 ret = domSE->symbol();
+              }
+              else if(Symbol *dotDomBaseSym = getDotDomBaseSym(arg)) {
+                ret = getDomSym(dotDomBaseSym); // recurse
               }
             }
           }
@@ -192,35 +196,6 @@ static Symbol *getRegularDomSym(Symbol *arrSym) {
       analyzeArrLog("Regular domain symbol was not found", arrSym);
   }
   return ret;
-}
-
-static Symbol *getDomSymFromDotDom(Symbol *arrSym) {
-  Symbol *ret = NULL;
-  if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
-    // check the most basic idiom `var A: [D] int`
-    if (def->exprType != NULL) {
-      if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
-        if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
-          if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
-            if (ceInner->isNamed("chpl__ensureDomainExpr")) {
-              if (Symbol *domSym = getRegularDomSym(getDotDomBaseSym(ceInner->get(1)))) {
-                ret = domSym;
-              }
-            }
-          }
-        }
-      }
-    }
-    // check if the array variable was created with a call `var A = foo()`
-    else { // def->exprType == NULL
-      analyzeArrLog("There is no type expression in definition, or it is not a call", def);
-    }
-  }
-  if (ret == NULL) {
-      analyzeArrLog("Domain symbol was not found from dot-domains", arrSym);
-  }
-  return ret;
-
 }
 
 static void analyzeArrays() {
@@ -252,7 +227,7 @@ static void analyzeArrays() {
         // it might be in the form `A.domain` where A is used in the loop body
         else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
           dotDomIterSym = dotDomBaseSym;
-          dotDomIterSymDom = getRegularDomSym(dotDomIterSym);
+          dotDomIterSymDom = getDomSym(dotDomIterSym);
           analyzeArrLog("Iterated over .domain of", dotDomIterSym);
           analyzeArrLog("where its domain is", dotDomIterSymDom);
         }
@@ -320,11 +295,7 @@ static void analyzeArrays() {
 
             // if that didn't work...
             if (!canOptimize) {
-              Symbol *domSym = getRegularDomSym(baseSE->symbol());
-
-              if (domSym == NULL) {
-                domSym = getDomSymFromDotDom(baseSE->symbol());
-              }
+              Symbol *domSym = getDomSym(baseSE->symbol());
 
               // forall i in A.domain do ... B[i] ... where B and A share domain
               if (dotDomIterSymDom != NULL &&
