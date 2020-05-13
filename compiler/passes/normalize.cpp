@@ -198,6 +198,20 @@ static Symbol *getDomSym(Symbol *arrSym) {
   return ret;
 }
 
+static Stmt *getLocalityDominator(CallExpr* ce) {
+  Expr *cur = ce->parentExpr;
+  while (cur != NULL) {
+    //if (OnStmt *s = toOnStmt(ce->parentExpr)) {
+      //return s;
+    //}
+    if (ForallStmt *s = toForallStmt(ce->parentExpr)) {
+      return s;
+    }
+    cur = cur->parentExpr;
+  }
+  return NULL;
+}
+
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
@@ -278,6 +292,12 @@ static void analyzeArrays() {
             Symbol *accIdxSym = argSE->symbol();
             // give up if the access uses a different symbol
             if (accIdxSym != loopIdxSym) {
+              continue;
+            }
+
+            // this call has another tighter-enclosing stmt that may change
+            // locality, don't optimize
+            if (forall != getLocalityDominator(call)) {
               continue;
             }
 
