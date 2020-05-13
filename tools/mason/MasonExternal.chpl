@@ -133,7 +133,7 @@ proc spackInstalled() throws {
 proc setupSpack() throws {
   writeln("Installing Spack backend ...");
   const destCLI = MASON_HOME + "/spack/";
-  const spackLatestBranch = ' --branch ' + spackBranch + ' ';
+  const spackLatestBranch = ' --branch v' + spackVersion + ' ';
   const destPackages = MASON_HOME + "/spack-registry";
   const spackMasterBranch = ' --branch master ';
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
@@ -148,16 +148,16 @@ proc setupSpack() throws {
 proc cloneSpackRepository(branch : string, dest: string) {
   const repo = "https://github.com/spack/spack ";
   const depth = '--depth 1 ';
-  const command = 'git clone -q ' + branch + depth + repo + dest;
+  const command = 'git clone -q -c advice.detachedHead=false ' + branch + depth + repo + dest;
   const statusPackages = runWithStatus(command);
   if statusPackages != 0 then return -1;
   else return 0;
 }
 
 /* git checkout command run at SPACK_ROOT */
-proc gitCheckOutSpack(version: string) {
+proc gitCheckOutSpack(tag: string) {
   const checkOutCommand = 'git ' + '-C ' + SPACK_ROOT +
-                      ' checkout -q FETCH_HEAD -b ' + version + '-branch';
+                      ' checkout -q ' + tag;
   const status = runWithStatus(checkOutCommand);
   if status != 0 then return -1;
   else return 0;
@@ -172,23 +172,14 @@ proc gitFetch(branch: string) {
   else return 0;
 }
 
-/* git tag command run at SPACK_ROOT */
-proc gitCommitTag(tag: string) {
-  const commitTagCommand = 'git ' + '-C ' + SPACK_ROOT +
-                   ' tag ' + tag + ' -f -m "updated" &> /dev/null';
-  const status = runWithStatus(commitTagCommand);
-  if status != 0 then return -1;
-  else return 0;
-
-}
-
 /* Updates the spack directory used for spack commands */
 private proc updateSpackCommandLine() {
   const releaseTag = 'v' + spackVersion;
-  const statusFetch = gitFetch(spackBranch);
-  const statusCheckOut = gitCheckOutSpack(spackVersion);
-  const statusCommitTag = gitCommitTag(releaseTag);
-  if statusFetch != 0 || statusCheckOut != 0 || statusCommitTag != 0 then return -1;
+  var tag = 'refs/tags/' + releaseTag;
+  tag = tag + ':' + tag;
+  const statusFetch = gitFetch(tag);
+  const statusCheckOut = gitCheckOutSpack(releaseTag);
+  if statusFetch != 0 || statusCheckOut != 0 then return -1;
   else return 0;
 }
 
