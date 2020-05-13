@@ -47,6 +47,11 @@ proc masonExternal(args: [] string) {
       exit(0);
     }
     else if args[2] == "--setup" {
+      // if MASON_OFFLINE is set, then cannot install spack
+      if MASON_OFFLINE {
+        throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
+        exit(0);
+      }
       // If spack and spack registry is present with latest version, print message
       if isDir(SPACK_ROOT) &&
       isDir(MASON_HOME+'/spack-registry') &&
