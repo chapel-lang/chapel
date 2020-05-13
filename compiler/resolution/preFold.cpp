@@ -283,6 +283,20 @@ static void setRecordCopyableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordCopyableFlags(eltTypeAt);
+        if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test init= to set the flags
       const char* err = NULL;
@@ -321,6 +335,22 @@ static void setRecordAssignableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordAssignableFlags(eltTypeAt);
+
+        if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
@@ -360,6 +390,20 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
     } else if (isNilableClassType(at)) {
       ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordAssignableFlags(eltTypeAt);
+
+        if (eltType->symbol->hasFlag(FLAG_TYPE_DEFAULT_VALUE))
+          at->symbol->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE))
+          at->symbol->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      } else {
+         at->symbol->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      }
+
+
     } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
       // Currently extern records aren't initialized at all by default.
       // But it's not necessarily reasonable to expect them to have

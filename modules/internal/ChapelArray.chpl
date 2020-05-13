@@ -4395,6 +4395,8 @@ module ChapelArray {
 
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
+    if !isCopyableType(eltType) then
+      compilerError("Cannot copy-initialize array because element type cannot be copy-initialized");
 
     if rhs._value == nil {
       // This happens e.g. for 'new' on a record with an array field whose

@@ -2201,7 +2201,7 @@ static bool insertAndResolveCasts(FnSymbol* fn) {
   return changed;
 }
 
-static Type* arrayElementType(Type* arrayType) {
+Type* arrayElementType(Type* arrayType) {
   AggregateType* at = toAggregateType(arrayType);
   if (at == NULL) return NULL;
 
