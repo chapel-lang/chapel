@@ -148,6 +148,7 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
 }
 
 static Symbol *getRegularDomSym(Symbol *arrSym) {
+  Symbol *ret = NULL;
   if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
     // check the most basic idiom `var A: [D] int`
     if (def->exprType != NULL) {
@@ -156,35 +157,22 @@ static Symbol *getRegularDomSym(Symbol *arrSym) {
           if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
             if (ceInner->isNamed("chpl__ensureDomainExpr")) {
               if (SymExpr *domSE = toSymExpr(ceInner->get(1))) {
-                return domSE->symbol();
-              }
-              else {
-                analyzeArrLog("Argument to chpl__ensureDomainExpr is not a symbol", 
-                                 def);
+                ret = domSE->symbol();
               }
             }
-            else {
-              analyzeArrLog("Unexpected argument to chpl__buildArrayRuntimeType", 
-                               def);
-            }
           }
-          else {
-            analyzeArrLog("Argument to chpl__buildArrayRuntimeType is not a call",
-                             def);
-          }
-        }
-        else {
-          analyzeArrLog("Unexpected call in array type definition", def);
         }
       }
     }
     // check if the array variable was created with a call `var A = foo()`
     else { // def->exprType == NULL
-      
       analyzeArrLog("There is no type expression in definition, or it is not a call", def);
     }
   }
-  return NULL;
+  if (ret == NULL) {
+      analyzeArrLog("Regular domain symbol was not found", arrSym);
+  }
+  return ret;
 }
 
 static void analyzeArrays() {
