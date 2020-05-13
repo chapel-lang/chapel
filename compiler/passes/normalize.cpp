@@ -132,7 +132,7 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
                                 node->getModule()->modTag != MOD_STANDARD);
   //const bool verbose = true;
 
-  const bool veryVerbose = false;
+  const bool veryVerbose = true;
   if (verbose) {
     std::cout << msg << std::endl;
     if (node != NULL) {
@@ -211,6 +211,8 @@ static void analyzeArrays() {
                     if (SymExpr *se = toSymExpr(ce->get(1))) {
                       dotDomIterSym = se->symbol();
                       dotDomIterSymDom = getRegularDomSym(dotDomIterSym);
+                      analyzeArrLog("Iterated over .domain of", dotDomIterSym);
+                      analyzeArrLog("where its domain is", dotDomIterSymDom);
                     }
                   }
                 }
@@ -275,28 +277,30 @@ static void analyzeArrays() {
 
             bool canOptimize = false;
             // check for different patterns
-            //
             // forall i in A.domain do ... A[i] ...
-            if (dotDomIterSym != NULL) {
-              if (dotDomIterSym == accBaseSym) {
-                canOptimize = true;
-                analyzeArrLog("Access base is the same as iterator's base",
-                                 call);
-              }
+            if (dotDomIterSym != NULL &&
+                dotDomIterSym == accBaseSym) {
+              canOptimize = true;
+              analyzeArrLog("Access base is the same as iterator's base",
+                            call);
             }
 
+            // if that didn't work...
             if (!canOptimize) {
               Symbol *domSym = getRegularDomSym(baseSE->symbol());
+
+              // if domSym was null, check other types of declarations here
+
               // forall i in A.domain do ... B[i] ... where B and A share domain
-              if (dotDomIterSymDom == domSym) {
+              if (dotDomIterSymDom != NULL &&
+                  dotDomIterSymDom == domSym) {
                 canOptimize = true;
                 analyzeArrLog("Access base share the domain with iterator's base",
-                                 call);
+                              call);
               }
               // forall i in D do ... A[i] ... where D is A's domain
               else {
                 analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
-                analyzeArrLog("\twith Domain defined at", domSym);
                 if (iterSym != NULL &&
                     iterSym == domSym) {
                       canOptimize = true;
