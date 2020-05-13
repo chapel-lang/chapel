@@ -175,7 +175,7 @@ proc gitFetch(branch: string) {
 /* git tag command run at SPACK_ROOT */
 proc gitCommitTag(tag: string) {
   const commitTagCommand = 'git ' + '-C ' + SPACK_ROOT +
-                   ' tag ' + tag + ' -m "updated"';
+                   ' tag ' + tag + ' -f -m "updated" &> /dev/null';
   const status = runWithStatus(commitTagCommand);
   if status != 0 then return -1;
   else return 0;
