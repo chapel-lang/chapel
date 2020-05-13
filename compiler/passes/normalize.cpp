@@ -192,6 +192,7 @@ static void analyzeArrays() {
   forv_Vec(ForallStmt, forall, gForallStmts) {
     Symbol *iteratedSymbol = NULL;
     Symbol *domQueryIteratedSymbol = NULL;
+    Symbol *domQueryIteratedSymbolDom = NULL;
     Symbol *indexSymbol = NULL;
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
@@ -221,6 +222,7 @@ static void analyzeArrays() {
                   if (strcmp(var->immediate->v_string, "_dom") == 0) {
                     if (SymExpr *se = toSymExpr(ce->get(1))) {
                       domQueryIteratedSymbol = se->symbol();
+                      domQueryIteratedSymbolDom = tryToGetDomainSymbol(domQueryIteratedSymbol);
                     }
                   }
                 }
@@ -284,20 +286,34 @@ static void analyzeArrays() {
             analyzeArraysLog("Potential access", call);
 
             bool canOptimize = false;
-            if (domQueryIteratedSymbol != NULL &&
-                domQueryIteratedSymbol == accessBaseSymbol) {
-              canOptimize = true;
-              analyzeArraysLog("Access base is the same as iterator's base", call);
+            // check for different patterns
+            //
+            // forall i in A.domain do ... A[i] ...
+            if (domQueryIteratedSymbol != NULL) {
+              if (domQueryIteratedSymbol == accessBaseSymbol) {
+                canOptimize = true;
+                analyzeArraysLog("Access base is the same as iterator's base",
+                                 call);
+              }
             }
-            else {
-              analyzeArraysLog("\twith DefExpr", baseSE->symbol()->defPoint);
 
+            if (!canOptimize) {
               Symbol *domSym = tryToGetDomainSymbol(baseSE->symbol());
-              analyzeArraysLog("\twith Domain defined at", domSym);
-              if (iteratedSymbol != NULL &&
-                  iteratedSymbol == domSym) {
-                    canOptimize = true;
-                    analyzeArraysLog("Access base's domain is the iterator", call);
+              // forall i in A.domain do ... B[i] ... where B and A share domain
+              if (domQueryIteratedSymbolDom == domSym) {
+                canOptimize = true;
+                analyzeArraysLog("Access base share the domain with iterator's base",
+                                 call);
+              }
+              // forall i in D do ... A[i] ... where D is A's domain
+              else {
+                analyzeArraysLog("\twith DefExpr", accessBaseSymbol->defPoint);
+                analyzeArraysLog("\twith Domain defined at", domSym);
+                if (iteratedSymbol != NULL &&
+                    iteratedSymbol == domSym) {
+                      canOptimize = true;
+                      analyzeArraysLog("Access base's domain is the iterator", call);
+                }
               }
             }
 
