@@ -695,11 +695,11 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc BlockArr.dsiElementInitializationComplete() {
+  override proc dsiElementInitializationComplete() {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
-        var arr = locArr(localeIdx);
-        arr.myElems.dsiElementInitializationComplete();
+        var arr = locArrs(localeIdx);
+        arr!.myElems.dsiElementInitializationComplete();
       }
     }
   }
@@ -709,7 +709,7 @@ class UserMapAssocArr: AbsBaseArr {
       on dom.dist.targetLocales(localeIdx) {
         var arr = locArrs(localeIdx);
         if deinitElts then
-          _deinitElements(arr.myElems);
+          _deinitElements(arr!.myElems);
         delete arr;
       }
     }
@@ -923,7 +923,7 @@ class LocUserMapAssocArr {
             type mapperType,
             type eltType,
             const locDom: unmanaged LocUserMapAssocDom(idxType, mapperType),
-            proc initElts: bool) {
+            param initElts: bool) {
     this.idxType = idxType;
     this.mapperType = mapperType;
     this.eltType = eltType;
