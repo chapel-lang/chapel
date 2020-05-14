@@ -81,7 +81,7 @@ extern pthread_t chpl_qthread_comm_pthread;
 extern chpl_qthread_tls_t chpl_qthread_process_tls;
 extern chpl_qthread_tls_t chpl_qthread_comm_task_tls;
 
-// Wrap qthread_get_tasklocal() and assert that it is always available.
+// Wrap qthread_get_tasklocal().
 static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
 {
     chpl_qthread_tls_t* tls;
@@ -96,7 +96,6 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
             else if (pthread_equal(me, chpl_qthread_process_pthread))
                 tls = &chpl_qthread_process_tls;
         }
-        assert(tls);
     }
     else
         tls = NULL;
@@ -115,7 +114,6 @@ static inline chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void)
     if (data) {
         return &data->infoRuntime;
     }
-    assert(data);
     return NULL;
 }
 
@@ -147,7 +145,7 @@ static inline
 c_sublocid_t chpl_task_getRequestedSubloc(void)
 {
     chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
-    if (data) {
+    if (data && data->bundle) {
         return data->bundle->requestedSubloc;
     }
     return c_sublocid_any;
@@ -192,7 +190,7 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
         chpl_qthread_tls_t * data = chpl_qthread_get_tasklocal();
         c_sublocid_t execution_subloc =
           chpl_localeModel_sublocToExecutionSubloc(full_subloc);
-        if (data) {
+        if (data && data->bundle) {
             data->bundle->requestedSubloc = full_subloc;
         }
 

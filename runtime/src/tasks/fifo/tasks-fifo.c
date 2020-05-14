@@ -129,7 +129,7 @@ static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p,
                                             int, int32_t);
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
-static task_pool_p             get_current_ptask(void);
+static task_pool_p             get_current_ptask(chpl_bool);
 static void                    set_current_ptask(task_pool_p);
 static void                    report_locked_threads(void);
 static void                    report_all_tasks(void);
@@ -478,7 +478,7 @@ void chpl_task_stdModulesInitialized(void) {
   // Register this main task in the task table.
   //
   if (taskreport) {
-    thread_private_data_t* tp = chpl_thread_getPrivateData();
+    thread_private_data_t* tp = get_thread_private_data();
 
     chpldev_taskTable_add(tp->ptask->taskBundle->id,
                           tp->ptask->taskBundle->lineno,
@@ -647,7 +647,7 @@ void chpl_task_executeTasksInList(void** p_task_list_void) {
   // Note: this function needs to tolerate an empty task
   // list. That will happen for coforalls inside a serial block, say.
 
-  curr_ptask = get_current_ptask();
+  curr_ptask = get_current_ptask(true /*must_be_task*/);
 
   while (*p_task_list_head != NULL) {
     chpl_fn_p task_to_run_fun = NULL;
@@ -782,11 +782,8 @@ void chpl_task_startMovedTask(chpl_fn_int_t  fid, chpl_fn_p fp,
 
 
 chpl_taskID_t chpl_task_getId(void) {
-  task_pool_p ptask = get_current_ptask();
-  if (ptask)
-    return ptask->taskBundle->id;
-  else
-    return (chpl_taskID_t) -1;
+  task_pool_p ptask = get_current_ptask(false /*must_be_task*/);
+  return ptask ? ptask->taskBundle->id : (chpl_taskID_t) -1;
 }
 
 chpl_bool chpl_task_idEquals(chpl_taskID_t id1, chpl_taskID_t id2) {
@@ -849,11 +846,12 @@ uint32_t chpl_task_getMaxPar(void) {
 }
 
 chpl_task_infoRuntime_t* chpl_task_getInfoRuntime(void) {
-  return & get_current_ptask()->chpl_data.infoRuntime;
+  task_pool_p ptask = get_current_ptask(false /*must_be_task*/);
+  return ptask ? &ptask->chpl_data.infoRuntime : NULL;
 }
 
 chpl_task_infoChapel_t* chpl_task_getInfoChapel(void) {
-  return & get_current_ptask()->taskBundle->infoChapel;
+  return & get_current_ptask(true /*must_be_task*/)->taskBundle->infoChapel;
 }
 
 
@@ -912,7 +910,8 @@ static chpl_taskID_t get_next_task_id(void) {
 //
 // Get the the thread private data pointer for my thread.
 //
-static thread_private_data_t* get_thread_private_data(void) {
+static inline
+thread_private_data_t* get_thread_private_data(void) {
   thread_private_data_t* tp;
 
   tp = (thread_private_data_t*) chpl_thread_getPrivateData();
@@ -927,8 +926,16 @@ static thread_private_data_t* get_thread_private_data(void) {
 //
 // Get the descriptor for the task now running on my thread.
 //
-static task_pool_p get_current_ptask(void) {
-  return get_thread_private_data()->ptask;
+static inline
+task_pool_p get_current_ptask(chpl_bool must_be_task) {
+  thread_private_data_t* tp = chpl_thread_getPrivateData();
+  if (tp == NULL) {
+    if (must_be_task) {
+      chpl_internal_error("no thread private data");
+    }
+    return NULL;
+  }
+  return tp->ptask;
 }
 
 

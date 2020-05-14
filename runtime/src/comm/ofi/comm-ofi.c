@@ -598,17 +598,17 @@ void bitmapSet(struct bitmap_t* b, size_t i) {
 
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
-  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
-  chpl_comm_taskPrvData_t* prvData;
-  if (infoRuntime == NULL) {
-    assert(isAmHandler);
-    static __thread chpl_comm_taskPrvData_t amHandlerCommData;
-    prvData = &amHandlerCommData;
-  } else {
-    prvData = &infoRuntime->comm_data;
+  chpl_task_infoRuntime_t* infoRuntime;
+  if ((infoRuntime = chpl_task_getInfoRuntime()) != NULL) {
+    return &infoRuntime->comm_data;
   }
 
-  return prvData;
+  if (isAmHandler) {
+    static __thread chpl_comm_taskPrvData_t amHandlerCommData;
+    return &amHandlerCommData;
+  }
+
+  return NULL;
 }
 
 
