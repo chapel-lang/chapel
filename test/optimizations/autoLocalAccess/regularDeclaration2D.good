@@ -1,0 +1,134 @@
+**** Start forall ****
+	regularDeclaration2D.chpl:14
+
+Iterated symbol
+	regularDeclaration2D.chpl:4
+
+Loop index symbol
+	regularDeclaration2D.chpl:14
+
+Potential access
+	regularDeclaration2D.chpl:15
+
+	with DefExpr
+	regularDeclaration2D.chpl:6
+
+	with domain defined at
+	regularDeclaration2D.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+	Replacing
+	regularDeclaration2D.chpl:15
+
+Potential access
+	regularDeclaration2D.chpl:15
+
+	with DefExpr
+	regularDeclaration2D.chpl:7
+
+	with domain defined at
+	regularDeclaration2D.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+	Replacing
+	regularDeclaration2D.chpl:15
+
+Potential access
+	regularDeclaration2D.chpl:15
+
+	with DefExpr
+	regularDeclaration2D.chpl:8
+
+	with domain defined at
+	regularDeclaration2D.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+	Replacing
+	regularDeclaration2D.chpl:15
+
+**** End forall ****
+	regularDeclaration2D.chpl:14
+
+**** Start forall ****
+	regularDeclaration2D.chpl:31
+
+Iterated symbol
+	regularDeclaration2D.chpl:21
+
+Loop index symbol
+	regularDeclaration2D.chpl:31
+
+Potential access
+	regularDeclaration2D.chpl:32
+
+	with DefExpr
+	regularDeclaration2D.chpl:23
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+	Replacing
+	regularDeclaration2D.chpl:32
+
+Potential access
+	regularDeclaration2D.chpl:32
+
+	with DefExpr
+	regularDeclaration2D.chpl:24
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+	Replacing
+	regularDeclaration2D.chpl:32
+
+Potential access
+	regularDeclaration2D.chpl:32
+
+	with DefExpr
+	regularDeclaration2D.chpl:25
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+	Replacing
+	regularDeclaration2D.chpl:32
+
+**** End forall ****
+	regularDeclaration2D.chpl:31
+
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
