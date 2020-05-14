@@ -124,15 +124,10 @@ static bool        firstConstructorWarning = true;
 
 static void analyzeArrLog(const char *msg, BaseAST *node) {
 
-  //BaseAST *locationMarker = node;
-  //if (ForallStmt *forall = toForallStmt(node)) {
-    //locationMarker = forall->inductionVariables().head;
-  //}
   const bool verbose = true && (node->getModule()->modTag != MOD_INTERNAL &&
                                 node->getModule()->modTag != MOD_STANDARD);
-  //const bool verbose = true;
 
-  const bool veryVerbose = true;
+  const bool veryVerbose = false;
   if (verbose) {
     std::cout << msg << std::endl;
     if (node != NULL) {
@@ -145,6 +140,21 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
       }
     }
   }
+}
+
+static bool callHasSymArguments(CallExpr *ce, std::vector<Symbol *> &syms) {
+  if (ce->argList.length != syms.size()) return false;
+  for (int i = 0 ; i < ce->argList.length ; i++) {
+    if (SymExpr *arg = toSymExpr(ce->get(i+1))) {
+      if (arg->symbol() != syms[i]) {
+        return false;
+      }
+    }
+    else {
+      return false;
+    }
+  }
+  return true;
 }
 
 static Symbol *getDotDomBaseSym(Expr *expr) {
@@ -254,7 +264,6 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   AList &bodyExprs = forall->loopBody()->body;
 
   if (CallExpr *firstCall = toCallExpr(bodyExprs.get(bodyExprCount++))) {
-    nprint_view(firstCall);
     if (firstCall->isNamed("_check_tuple_var_decl")) {
       if (SymExpr *firstArgSE = toSymExpr(firstCall->get(1))) {
         if (firstArgSE->symbol() == baseSym) {
@@ -273,11 +282,9 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
 
     for (int i = 0 ; i < indexVarCount ; i++) {
       if (DefExpr *indexDE = toDefExpr(bodyExprs.get(bodyExprCount++))) {
-        nprint_view(indexDE);
         Symbol *indexSym = indexDE->sym;
         if(isSubIndexAssignment(bodyExprs.get(bodyExprCount++),
                                 indexSym, i, baseSym)) {
-          nprint_view(indexSym);
           indexSymbols.push_back(indexSym);
         }
       }
@@ -288,7 +295,6 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
     analyzeArrLog("Can't recognize loop's index symbols", baseSym);
     indexSymbols.clear();
   }
-
 
   return indexSymbols;
 }
@@ -351,21 +357,22 @@ static void analyzeArrays() {
 
       std::vector<Symbol *> multiDIndices;
       if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-        std::cout << "Calling helper" << std::endl;
         multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
       }
-      forv_Vec(Symbol *, loopIdx, multiDIndices) {
-        analyzeArrLog("multiD index", loopIdx);
+      else {
+        multiDIndices.push_back(loopIdxSym);
       }
+      //forv_Vec(Symbol *, loopIdx, multiDIndices) {
+        //analyzeArrLog("multiD index", loopIdx);
+      //}
 
       std::vector<CallExpr *> callExprs;
       collectCallExprs(forall->loopBody(), callExprs);
       for_vector(CallExpr, call, callExprs) {
-        if (call->argList.length == 1) {
+        //if (call->argList.length == 1) {
           SymExpr *baseSE = toSymExpr(call->baseExpr);
-          SymExpr *argSE = toSymExpr(call->get(1));
 
-          if (baseSE != NULL && argSE != NULL) {
+          if (baseSE != NULL) {
             Symbol *accBaseSym = baseSE->symbol();
             // (i,j) in forall (i,j) in bla is a tuple that is
             // index-by-index accessed in loop body that throw off this
@@ -380,9 +387,8 @@ static void analyzeArrays() {
               continue;
             }
 
-            Symbol *accIdxSym = argSE->symbol();
             // give up if the access uses a different symbol
-            if (accIdxSym != loopIdxSym) {
+            if (!callHasSymArguments(call, multiDIndices)) {
               continue;
             }
 
@@ -406,7 +412,7 @@ static void analyzeArrays() {
 
             // if that didn't work...
             if (!canOptimize) {
-              Symbol *domSym = getDomSym(baseSE->symbol());
+              Symbol *domSym = getDomSym(accBaseSym);
 
               // forall i in A.domain do ... B[i] ... where B and A share domain
               if (dotDomIterSymDom != NULL &&
@@ -432,14 +438,15 @@ static void analyzeArrays() {
             if (canOptimize) {
               SET_LINENO(call);
               analyzeArrLog("\tReplacing", call);
-              call->replace(
-                  new CallExpr(
-                      new CallExpr(".", new SymExpr(baseSE->symbol()),
-                                        new UnresolvedSymExpr("localAccess")),
-                      new SymExpr(argSE->symbol())));
+              CallExpr *base = new CallExpr(".", new SymExpr(accBaseSym),
+                                            new UnresolvedSymExpr("localAccess"));
+              CallExpr *repl = new CallExpr(base);
+              for (int i = 0 ; i < multiDIndices.size() ; i++) {
+                repl->insertAtTail(new SymExpr(multiDIndices[i]));
+              }
+              call->replace(repl);
             }
           }
-        }
       }
       analyzeArrLog("**** End forall ****", forall);
     }
