@@ -142,7 +142,7 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
   }
 }
 
-static bool callHasSymArguments(CallExpr *ce, std::vector<Symbol *> &syms) {
+static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms) {
   if (ce->argList.length != syms.size()) return false;
   for (int i = 0 ; i < ce->argList.length ; i++) {
     if (SymExpr *arg = toSymExpr(ce->get(i+1))) {
@@ -299,72 +299,89 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   return indexSymbols;
 }
 
-static void analyzeArrays() {
-  const bool limitToTestFile = false;
-  forv_Vec(ForallStmt, forall, gForallStmts) {
+class ForallOptimizationInfo {
+  public:
     Symbol *iterSym = NULL;
     Symbol *dotDomIterSym = NULL;
     Symbol *dotDomIterSymDom = NULL;
-    Symbol *loopIdxSym = NULL;
+    std::vector<Symbol *> multiDIndices;
+};
+
+static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
+
+  ForallOptimizationInfo ret;
+
+  Symbol *loopIdxSym = NULL;
+
+  AList &iterExprs = forall->iteratedExpressions();
+  AList &indexVars = forall->inductionVariables();
+
+  if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
+    if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
+      if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
+        ret.iterSym = iterSE->symbol();
+        analyzeArrLog("Iterated symbol", ret.iterSym);
+      }
+      else {
+        analyzeArrLog("Iterated Expr is unresolved", iterExprs.head);
+      }
+    }
+    // it might be in the form `A.domain` where A is used in the loop body
+    else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
+      ret.dotDomIterSym = dotDomBaseSym;
+      ret.dotDomIterSymDom = getDomSym(ret.dotDomIterSym);
+      analyzeArrLog("Iterated over .domain of", ret.dotDomIterSym);
+      analyzeArrLog("where its domain is", ret.dotDomIterSymDom);
+    }
+
+    if (ret.iterSym != NULL || ret.dotDomIterSym != NULL) {
+      // the iterator is something we can optimize
+      // now check the induction variables
+      if (SymExpr* se = toSymExpr(indexVars.head)) {
+        loopIdxSym = se->symbol();
+      }
+      else if (DefExpr* de = toDefExpr(indexVars.head)) {
+        loopIdxSym = de->sym;
+      }
+      else {
+        analyzeArrLog("Unrecognized index symbol", indexVars.head);
+      }
+
+      if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+        ret.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
+      }
+      else {
+        ret.multiDIndices.push_back(loopIdxSym);
+      }
+    }
+  }
+  return ret;
+}
+
+static bool checkLoopSuitableForOpt(const ForallOptimizationInfo &info) {
+  if (info.multiDIndices.size() == 0) {
+    return false;
+  }
+  else {
+    INT_ASSERT(info.iterSym != NULL || info.dotDomIterSym != NULL);
+    return true;
+  }
+}
+
+static void analyzeArrays() {
+  const bool limitToTestFile = false;
+  forv_Vec(ForallStmt, forall, gForallStmts) {
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
            64) == 0;
     if ((!limitToTestFile) || fileCheck) {
       analyzeArrLog("**** Start forall ****", forall);
-      AList &iterExprs = forall->iteratedExpressions();
-      AList &indexVars = forall->inductionVariables();
+      const ForallOptimizationInfo loopInfo = gatherForallInfo(forall);
 
-
-      if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
-        if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
-          if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
-            iterSym = iterSE->symbol();
-            analyzeArrLog("Iterated symbol", iterSym);
-          }
-          else {
-            analyzeArrLog("Iterated Expr is unresolved", iterExprs.head);
-          }
-        }
-        // it might be in the form `A.domain` where A is used in the loop body
-        else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
-          dotDomIterSym = dotDomBaseSym;
-          dotDomIterSymDom = getDomSym(dotDomIterSym);
-          analyzeArrLog("Iterated over .domain of", dotDomIterSym);
-          analyzeArrLog("where its domain is", dotDomIterSymDom);
-        }
-
-        if (iterSym != NULL || dotDomIterSym != NULL) {
-          // the iterator is something we can optimize
-          // now check the induction variables
-          if (SymExpr* se = toSymExpr(indexVars.head)) {
-            loopIdxSym = se->symbol();
-          }
-          else if (DefExpr* de = toDefExpr(indexVars.head)) {
-            loopIdxSym = de->sym;
-          }
-          else {
-            analyzeArrLog("Unrecognized index symbol", indexVars.head);
-          }
-        }
-      }
-
-      // check if we have index symbol
-      if (loopIdxSym == NULL) {
+      if (!checkLoopSuitableForOpt(loopInfo)) {
         analyzeArrLog("**** End forall ****", forall);
         continue;
       }
-      analyzeArrLog("Loop index symbol", loopIdxSym);
-
-      std::vector<Symbol *> multiDIndices;
-      if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-        multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
-      }
-      else {
-        multiDIndices.push_back(loopIdxSym);
-      }
-      //forv_Vec(Symbol *, loopIdx, multiDIndices) {
-        //analyzeArrLog("multiD index", loopIdx);
-      //}
 
       std::vector<CallExpr *> callExprs;
       collectCallExprs(forall->loopBody(), callExprs);
@@ -388,7 +405,7 @@ static void analyzeArrays() {
             }
 
             // give up if the access uses a different symbol
-            if (!callHasSymArguments(call, multiDIndices)) {
+            if (!callHasSymArguments(call, loopInfo.multiDIndices)) {
               continue;
             }
 
@@ -403,8 +420,8 @@ static void analyzeArrays() {
             bool canOptimize = false;
             // check for different patterns
             // forall i in A.domain do ... A[i] ...
-            if (dotDomIterSym != NULL &&
-                dotDomIterSym == accBaseSym) {
+            if (loopInfo.dotDomIterSym != NULL &&
+                loopInfo.dotDomIterSym == accBaseSym) {
               canOptimize = true;
               analyzeArrLog("Access base is the same as iterator's base",
                             call);
@@ -415,8 +432,8 @@ static void analyzeArrays() {
               Symbol *domSym = getDomSym(accBaseSym);
 
               // forall i in A.domain do ... B[i] ... where B and A share domain
-              if (dotDomIterSymDom != NULL &&
-                  dotDomIterSymDom == domSym) {
+              if (loopInfo.dotDomIterSymDom != NULL &&
+                  loopInfo.dotDomIterSymDom == domSym) {
                 canOptimize = true;
                 analyzeArrLog("Access base share the domain with iterator's base",
                               call);
@@ -427,8 +444,8 @@ static void analyzeArrays() {
                 if (domSym != NULL) {
                   analyzeArrLog("\twith domain defined at", domSym);
                 }
-                if (iterSym != NULL &&
-                    iterSym == domSym) {
+                if (loopInfo.iterSym != NULL &&
+                    loopInfo.iterSym == domSym) {
                       canOptimize = true;
                       analyzeArrLog("Access base's domain is the iterator", call);
                 }
@@ -441,8 +458,8 @@ static void analyzeArrays() {
               CallExpr *base = new CallExpr(".", new SymExpr(accBaseSym),
                                             new UnresolvedSymExpr("localAccess"));
               CallExpr *repl = new CallExpr(base);
-              for (int i = 0 ; i < multiDIndices.size() ; i++) {
-                repl->insertAtTail(new SymExpr(multiDIndices[i]));
+              for (int i = 0 ; i < loopInfo.multiDIndices.size() ; i++) {
+                repl->insertAtTail(new SymExpr(loopInfo.multiDIndices[i]));
               }
               call->replace(repl);
             }

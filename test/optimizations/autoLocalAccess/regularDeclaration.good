@@ -1,95 +1,128 @@
 **** Start forall ****
-	regularDeclaration.chpl:14
+	regularDeclaration2D.chpl:14
 
 Iterated symbol
-	regularDeclaration.chpl:4
+	regularDeclaration2D.chpl:4
 
 Potential access
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 	with DefExpr
-	regularDeclaration.chpl:6
+	regularDeclaration2D.chpl:6
 
 	with domain defined at
-	regularDeclaration.chpl:4
+	regularDeclaration2D.chpl:4
 
 Access base's domain is the iterator
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 	Replacing
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 Potential access
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 	with DefExpr
-	regularDeclaration.chpl:7
+	regularDeclaration2D.chpl:7
 
 	with domain defined at
-	regularDeclaration.chpl:4
+	regularDeclaration2D.chpl:4
 
 Access base's domain is the iterator
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 	Replacing
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 Potential access
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 	with DefExpr
-	regularDeclaration.chpl:8
+	regularDeclaration2D.chpl:8
 
 	with domain defined at
-	regularDeclaration.chpl:4
+	regularDeclaration2D.chpl:4
 
 Access base's domain is the iterator
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 	Replacing
-	regularDeclaration.chpl:15
+	regularDeclaration2D.chpl:15
 
 **** End forall ****
-	regularDeclaration.chpl:14
+	regularDeclaration2D.chpl:14
 
 **** Start forall ****
-	regularDeclaration.chpl:31
+	regularDeclaration2D.chpl:31
 
-Iterated over .domain of
-	regularDeclaration.chpl:23
-
-where its domain is
-	regularDeclaration.chpl:21
+Iterated symbol
+	regularDeclaration2D.chpl:21
 
 Potential access
-	regularDeclaration.chpl:32
+	regularDeclaration2D.chpl:32
 
-Access base is the same as iterator's base
-	regularDeclaration.chpl:32
+	with DefExpr
+	regularDeclaration2D.chpl:23
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
 
 	Replacing
-	regularDeclaration.chpl:32
+	regularDeclaration2D.chpl:32
 
 Potential access
-	regularDeclaration.chpl:32
+	regularDeclaration2D.chpl:32
 
-Access base share the domain with iterator's base
-	regularDeclaration.chpl:32
+	with DefExpr
+	regularDeclaration2D.chpl:24
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
 
 	Replacing
-	regularDeclaration.chpl:32
+	regularDeclaration2D.chpl:32
 
 Potential access
-	regularDeclaration.chpl:32
+	regularDeclaration2D.chpl:32
 
-Access base share the domain with iterator's base
-	regularDeclaration.chpl:32
+	with DefExpr
+	regularDeclaration2D.chpl:25
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
 
 	Replacing
-	regularDeclaration.chpl:32
+	regularDeclaration2D.chpl:32
 
 **** End forall ****
-	regularDeclaration.chpl:31
+	regularDeclaration2D.chpl:31
 
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
