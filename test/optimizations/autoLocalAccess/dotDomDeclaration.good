@@ -16,9 +16,6 @@ Potential access
 Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
-	Replacing
-	dotDomDeclaration.chpl:15
-
 Potential access
 	dotDomDeclaration.chpl:15
 
@@ -31,9 +28,6 @@ Potential access
 Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
-	Replacing
-	dotDomDeclaration.chpl:15
-
 Potential access
 	dotDomDeclaration.chpl:15
 
@@ -44,6 +38,12 @@ Potential access
 	dotDomDeclaration.chpl:4
 
 Access base's domain is the iterator
+	dotDomDeclaration.chpl:15
+
+	Replacing
+	dotDomDeclaration.chpl:15
+
+	Replacing
 	dotDomDeclaration.chpl:15
 
 	Replacing
@@ -67,7 +67,10 @@ Potential access
 Access base is the same as iterator's base
 	dotDomDeclaration.chpl:32
 
-	Replacing
+Potential access
+	dotDomDeclaration.chpl:32
+
+Access base share the domain with iterator's base
 	dotDomDeclaration.chpl:32
 
 Potential access
@@ -79,10 +82,7 @@ Access base share the domain with iterator's base
 	Replacing
 	dotDomDeclaration.chpl:32
 
-Potential access
-	dotDomDeclaration.chpl:32
-
-Access base share the domain with iterator's base
+	Replacing
 	dotDomDeclaration.chpl:32
 
 	Replacing
@@ -106,22 +106,22 @@ Potential access
 Access base share the domain with iterator's base
 	dotDomDeclaration.chpl:49
 
-	Replacing
-	dotDomDeclaration.chpl:49
-
 Potential access
 	dotDomDeclaration.chpl:49
 
 Access base is the same as iterator's base
 	dotDomDeclaration.chpl:49
 
-	Replacing
-	dotDomDeclaration.chpl:49
-
 Potential access
 	dotDomDeclaration.chpl:49
 
 Access base share the domain with iterator's base
+	dotDomDeclaration.chpl:49
+
+	Replacing
+	dotDomDeclaration.chpl:49
+
+	Replacing
 	dotDomDeclaration.chpl:49
 
 	Replacing
@@ -145,22 +145,22 @@ Potential access
 Access base share the domain with iterator's base
 	dotDomDeclaration.chpl:66
 
-	Replacing
-	dotDomDeclaration.chpl:66
-
 Potential access
 	dotDomDeclaration.chpl:66
 
 Access base share the domain with iterator's base
 	dotDomDeclaration.chpl:66
 
-	Replacing
-	dotDomDeclaration.chpl:66
-
 Potential access
 	dotDomDeclaration.chpl:66
 
 Access base is the same as iterator's base
+	dotDomDeclaration.chpl:66
+
+	Replacing
+	dotDomDeclaration.chpl:66
+
+	Replacing
 	dotDomDeclaration.chpl:66
 
 	Replacing

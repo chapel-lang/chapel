@@ -16,9 +16,6 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration.chpl:15
 
-	Replacing
-	regularDeclaration.chpl:15
-
 Potential access
 	regularDeclaration.chpl:15
 
@@ -31,9 +28,6 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration.chpl:15
 
-	Replacing
-	regularDeclaration.chpl:15
-
 Potential access
 	regularDeclaration.chpl:15
 
@@ -44,6 +38,12 @@ Potential access
 	regularDeclaration.chpl:4
 
 Access base's domain is the iterator
+	regularDeclaration.chpl:15
+
+	Replacing
+	regularDeclaration.chpl:15
+
+	Replacing
 	regularDeclaration.chpl:15
 
 	Replacing
@@ -67,7 +67,10 @@ Potential access
 Access base is the same as iterator's base
 	regularDeclaration.chpl:32
 
-	Replacing
+Potential access
+	regularDeclaration.chpl:32
+
+Access base share the domain with iterator's base
 	regularDeclaration.chpl:32
 
 Potential access
@@ -79,10 +82,7 @@ Access base share the domain with iterator's base
 	Replacing
 	regularDeclaration.chpl:32
 
-Potential access
-	regularDeclaration.chpl:32
-
-Access base share the domain with iterator's base
+	Replacing
 	regularDeclaration.chpl:32
 
 	Replacing

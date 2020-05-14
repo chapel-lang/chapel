@@ -16,9 +16,6 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration2D.chpl:15
 
-	Replacing
-	regularDeclaration2D.chpl:15
-
 Potential access
 	regularDeclaration2D.chpl:15
 
@@ -31,9 +28,6 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration2D.chpl:15
 
-	Replacing
-	regularDeclaration2D.chpl:15
-
 Potential access
 	regularDeclaration2D.chpl:15
 
@@ -44,6 +38,12 @@ Potential access
 	regularDeclaration2D.chpl:4
 
 Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+	Replacing
+	regularDeclaration2D.chpl:15
+
+	Replacing
 	regularDeclaration2D.chpl:15
 
 	Replacing
@@ -70,9 +70,6 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration2D.chpl:32
 
-	Replacing
-	regularDeclaration2D.chpl:32
-
 Potential access
 	regularDeclaration2D.chpl:32
 
@@ -85,9 +82,6 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration2D.chpl:32
 
-	Replacing
-	regularDeclaration2D.chpl:32
-
 Potential access
 	regularDeclaration2D.chpl:32
 
@@ -98,6 +92,12 @@ Potential access
 	regularDeclaration2D.chpl:21
 
 Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+	Replacing
+	regularDeclaration2D.chpl:32
+
+	Replacing
 	regularDeclaration2D.chpl:32
 
 	Replacing

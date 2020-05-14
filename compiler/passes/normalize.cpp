@@ -411,9 +411,13 @@ static void analyzeArrays() {
         continue;
       }
 
-      std::vector<CallExpr *> callExprs;
-      collectCallExprs(forall->loopBody(), callExprs);
-      for_vector(CallExpr, call, callExprs) {
+      std::vector<CallExpr *> allCallExprs;
+      collectCallExprs(forall->loopBody(), allCallExprs);
+
+      std::vector<CallExpr *> staticOptimizationCandidates;
+      std::vector<CallExpr *> dynamicOptimizationCandidates;
+
+      for_vector(CallExpr, call, allCallExprs) {
         if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall,
                                                           loopInfo)) {
                                                     
@@ -455,17 +459,29 @@ static void analyzeArrays() {
           }
 
           if (canOptimize) {
-            SET_LINENO(call);
-            analyzeArrLog("\tReplacing", call);
-            CallExpr *base = new CallExpr(".", new SymExpr(accBaseSym),
-                new UnresolvedSymExpr("localAccess"));
-            CallExpr *repl = new CallExpr(base);
-            for (int i = 0 ; i < loopInfo.multiDIndices.size() ; i++) {
-              repl->insertAtTail(new SymExpr(loopInfo.multiDIndices[i]));
-            }
-            call->replace(repl);
+            staticOptimizationCandidates.push_back(call);
           }
         } // end canOptimize
+      }
+
+      for_vector(CallExpr, sOptCandidate, staticOptimizationCandidates) {
+        SET_LINENO(sOptCandidate);
+        analyzeArrLog("\tReplacing", sOptCandidate);
+
+        Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
+        INT_ASSERT(baseSym);
+
+        CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
+                                      new UnresolvedSymExpr("localAccess"));
+        CallExpr *repl = new CallExpr(base);
+        for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
+          Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
+          INT_ASSERT(argSym);
+
+          repl->insertAtTail(new SymExpr(argSym));
+        }
+        sOptCandidate->replace(repl);
+
       }
       analyzeArrLog("**** End forall ****", forall);
     }
