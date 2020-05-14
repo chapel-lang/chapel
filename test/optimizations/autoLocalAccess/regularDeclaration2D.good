@@ -4,9 +4,6 @@
 Iterated symbol
 	regularDeclaration2D.chpl:4
 
-Loop index symbol
-	regularDeclaration2D.chpl:14
-
 Potential access
 	regularDeclaration2D.chpl:15
 
@@ -60,9 +57,6 @@ Access base's domain is the iterator
 
 Iterated symbol
 	regularDeclaration2D.chpl:21
-
-Loop index symbol
-	regularDeclaration2D.chpl:31
 
 Potential access
 	regularDeclaration2D.chpl:32

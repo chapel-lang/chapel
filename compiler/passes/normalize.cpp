@@ -368,6 +368,34 @@ static bool checkLoopSuitableForOpt(const ForallOptimizationInfo &info) {
   }
 }
 
+static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
+                                        const ForallOptimizationInfo &loopInfo) {
+  SymExpr *baseSE = toSymExpr(call->baseExpr);
+
+  if (baseSE != NULL) {
+    Symbol *accBaseSym = baseSE->symbol();
+
+    // (i,j) in forall (i,j) in bla is a tuple that is
+    // index-by-index accessed in loop body that throw off this
+    // analysis
+    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
+
+    // give up if the symbol we are looking to optimize is defined
+    // inside the loop itself
+    if (forall->loopBody()->contains(accBaseSym->defPoint)) { return NULL; }
+
+    // give up if the access uses a different symbol
+    if (!callHasSymArguments(call, loopInfo.multiDIndices)) { return NULL; }
+
+    // this call has another tighter-enclosing stmt that may change
+    // locality, don't optimize
+    if (forall != getLocalityDominator(call)) { return NULL; }
+
+    return accBaseSym;
+  }
+  return NULL;
+}
+
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
@@ -386,84 +414,58 @@ static void analyzeArrays() {
       std::vector<CallExpr *> callExprs;
       collectCallExprs(forall->loopBody(), callExprs);
       for_vector(CallExpr, call, callExprs) {
-        //if (call->argList.length == 1) {
-          SymExpr *baseSE = toSymExpr(call->baseExpr);
+        if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall,
+                                                          loopInfo)) {
+                                                    
+          analyzeArrLog("Potential access", call);
 
-          if (baseSE != NULL) {
-            Symbol *accBaseSym = baseSE->symbol();
-            // (i,j) in forall (i,j) in bla is a tuple that is
-            // index-by-index accessed in loop body that throw off this
-            // analysis
-            if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-              continue;
-            }
+          bool canOptimize = false;
+          // check for different patterns
+          // forall i in A.domain do ... A[i] ...
+          if (loopInfo.dotDomIterSym != NULL &&
+              loopInfo.dotDomIterSym == accBaseSym) {
+            canOptimize = true;
+            analyzeArrLog("Access base is the same as iterator's base",
+                call);
+          }
 
-            // give up if the symbol we are looking to optimize is defined
-            // inside the loop itself
-            if (forall->loopBody()->contains(accBaseSym->defPoint)) {
-              continue;
-            }
+          // if that didn't work...
+          if (!canOptimize) {
+            Symbol *domSym = getDomSym(accBaseSym);
 
-            // give up if the access uses a different symbol
-            if (!callHasSymArguments(call, loopInfo.multiDIndices)) {
-              continue;
-            }
-
-            // this call has another tighter-enclosing stmt that may change
-            // locality, don't optimize
-            if (forall != getLocalityDominator(call)) {
-              continue;
-            }
-
-            analyzeArrLog("Potential access", call);
-
-            bool canOptimize = false;
-            // check for different patterns
-            // forall i in A.domain do ... A[i] ...
-            if (loopInfo.dotDomIterSym != NULL &&
-                loopInfo.dotDomIterSym == accBaseSym) {
+            // forall i in A.domain do ... B[i] ... where B and A share domain
+            if (loopInfo.dotDomIterSymDom != NULL &&
+                loopInfo.dotDomIterSymDom == domSym) {
               canOptimize = true;
-              analyzeArrLog("Access base is the same as iterator's base",
-                            call);
+              analyzeArrLog("Access base share the domain with iterator's base",
+                  call);
             }
-
-            // if that didn't work...
-            if (!canOptimize) {
-              Symbol *domSym = getDomSym(accBaseSym);
-
-              // forall i in A.domain do ... B[i] ... where B and A share domain
-              if (loopInfo.dotDomIterSymDom != NULL &&
-                  loopInfo.dotDomIterSymDom == domSym) {
+            // forall i in D do ... A[i] ... where D is A's domain
+            else {
+              analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
+              if (domSym != NULL) {
+                analyzeArrLog("\twith domain defined at", domSym);
+              }
+              if (loopInfo.iterSym != NULL &&
+                  loopInfo.iterSym == domSym) {
                 canOptimize = true;
-                analyzeArrLog("Access base share the domain with iterator's base",
-                              call);
+                analyzeArrLog("Access base's domain is the iterator", call);
               }
-              // forall i in D do ... A[i] ... where D is A's domain
-              else {
-                analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
-                if (domSym != NULL) {
-                  analyzeArrLog("\twith domain defined at", domSym);
-                }
-                if (loopInfo.iterSym != NULL &&
-                    loopInfo.iterSym == domSym) {
-                      canOptimize = true;
-                      analyzeArrLog("Access base's domain is the iterator", call);
-                }
-              }
-            }
-
-            if (canOptimize) {
-              SET_LINENO(call);
-              analyzeArrLog("\tReplacing", call);
-              CallExpr *base = new CallExpr(".", new SymExpr(accBaseSym),
-                                            new UnresolvedSymExpr("localAccess"));
-              CallExpr *repl = new CallExpr(base);
-              for (int i = 0 ; i < loopInfo.multiDIndices.size() ; i++) {
-                repl->insertAtTail(new SymExpr(loopInfo.multiDIndices[i]));
-              }
-              call->replace(repl);
             }
           }
+
+          if (canOptimize) {
+            SET_LINENO(call);
+            analyzeArrLog("\tReplacing", call);
+            CallExpr *base = new CallExpr(".", new SymExpr(accBaseSym),
+                new UnresolvedSymExpr("localAccess"));
+            CallExpr *repl = new CallExpr(base);
+            for (int i = 0 ; i < loopInfo.multiDIndices.size() ; i++) {
+              repl->insertAtTail(new SymExpr(loopInfo.multiDIndices[i]));
+            }
+            call->replace(repl);
+          }
+        } // end canOptimize
       }
       analyzeArrLog("**** End forall ****", forall);
     }
