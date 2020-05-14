@@ -38,9 +38,9 @@ proc main(args: [] string) {
     }
   }
 
-  if end {  
+  if end {
     var to = end;
-    
+
     do {
       var from = to;
       while buf[from] != '>'.toByte() do

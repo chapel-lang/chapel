@@ -12,9 +12,6 @@ if [ -n "$CHPL_TEST_PERF" ] && [ ! -f $CHPL_TEST_TMP_DIR/fasta.rvcmp ]; then
   # needed by reverse-complement: n = 100 million
   ./tmpFasta --n=100000000 -nl 1 > $CHPL_TEST_TMP_DIR/fasta.rvcmp
 
-  # needed by reverse-complement: n = 250000
-  ./tmpFasta --n=250000 -nl 1 > fasta-250000.rvcmp
-
   # needed by k-nucleotide: n = 25 million
   ./tmpFasta --n=25000000 -nl 1 > $CHPL_TEST_TMP_DIR/fasta.knucl
 
