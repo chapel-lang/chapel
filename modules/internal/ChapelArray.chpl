@@ -3671,7 +3671,7 @@ module ChapelArray {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
-    if kind==_tElt.initCopy then return true;
+    if kind==_tElt.initCopy then return true; // TODO check copy init modifies
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     return true;
   }
@@ -3880,6 +3880,19 @@ module ChapelArray {
     return success;
   }
 
+
+  // This is a workaround for an issue with replaceRecordWrappedRefs
+  // when initializing arrays of domains (or arrays or distributions).
+  // replaceRecordWrappedRefs assumes that the wrapper records (e.g. _array)
+  // are immutable. That's not true before they are initialized
+  // which can happen in chpl__transferArray, so chpl__transferArray
+  // uses a different pattern to avoid the problem for those types.
+  private proc needsInitWorkaround(type t) param {
+    return isSubtype(t, _array) ||
+           isSubtype(t, _domain) ||
+           isSubtype(t, _distribution);
+  }
+
   pragma "find user line"
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b,
@@ -3889,11 +3902,22 @@ module ChapelArray {
 
       if kind==_tElt.move || kind==_tElt.initCopy {
         // need to copy if "move"ing from 1 element
-        forall aa in a with (in b) {
-          pragma "no auto destroy"
-          var copy: a.eltType = b; // make a copy for this iteration
-          // move it into the array
-          __primitive("=", aa, copy);
+        if needsInitWorkaround(a.eltType) {
+          forall (ai) in zip(a.domain) with (in b) {
+            ref aa = a[ai];
+            pragma "no auto destroy"
+            var copy: a.eltType = b; // make a copy for this iteration
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
+
+        } else {
+          forall aa in a with (in b) {
+            pragma "no auto destroy"
+            var copy: a.eltType = b; // make a copy for this iteration
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
         }
       } else if kind==_tElt.assign {
         forall aa in a with (in b) {
@@ -3902,16 +3926,37 @@ module ChapelArray {
       }
     } else if chpl__serializeAssignment(a, b) {
       if kind==_tElt.move {
-        for (aa,bb) in zip(a,b) {
-          __primitive("=", aa, __primitive("steal", bb));
+        if needsInitWorkaround(a.eltType) {
+          for (ai, bb) in zip(a.domain, b) {
+            ref aa = a[ai];
+            __primitive("=", aa, __primitive("steal", bb));
+          }
+
+        } else {
+          for (aa,bb) in zip(a,b) {
+            __primitive("=", aa, __primitive("steal", bb));
+          }
         }
+
       } else if kind==_tElt.initCopy {
-        for (aa,bb) in zip(a,b) {
-          pragma "no auto destroy"
-          var copy: a.eltType = b; // init copy
-          // move it into the array
-          __primitive("=", aa, copy);
+        if needsInitWorkaround(a.eltType) {
+          for (ai, bb) in zip(a.domain, b) {
+            ref aa = a[ai];
+            pragma "no auto destroy"
+            var copy: a.eltType = b; // init copy
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
+
+        } else {
+          for (aa,bb) in zip(a,b) {
+            pragma "no auto destroy"
+            var copy: a.eltType = b; // init copy
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
         }
+
       } else if kind==_tElt.assign {
         for (aa,bb) in zip(a,b) {
           aa = bb;
@@ -3919,15 +3964,34 @@ module ChapelArray {
       }
     } else {
       if kind==_tElt.move {
-        [ (aa,bb) in zip(a,b) ] {
-          __primitive("=", aa, __primitive("steal", bb));
+        if needsInitWorkaround(a.eltType) {
+          [ (ai, bb) in zip(a.domain, b) ] {
+            ref aa = a[ai];
+            __primitive("=", aa, __primitive("steal", bb));
+          }
+
+        } else {
+          [ (aa,bb) in zip(a,b) ] {
+            __primitive("=", aa, __primitive("steal", bb));
+          }
         }
       } else if kind==_tElt.initCopy {
-        [ (aa,bb) in zip(a,b) ] {
-          pragma "no auto destroy"
-          var copy: a.eltType = bb; // init copy
-          // move it into the array
-          __primitive("=", aa, copy);
+        if needsInitWorkaround(a.eltType) {
+          [ (ai, bb) in zip(a.domain, b) ] {
+            ref aa = a[ai];
+            pragma "no auto destroy"
+            var copy: a.eltType = bb; // init copy
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
+
+        } else {
+          [ (aa,bb) in zip(a,b) ] {
+            pragma "no auto destroy"
+            var copy: a.eltType = bb; // init copy
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
         }
       } else if kind==_tElt.assign {
         [ (aa,bb) in zip(a,b) ] {

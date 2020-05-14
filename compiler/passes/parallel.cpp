@@ -1225,13 +1225,6 @@ makeHeapAllocations() {
 static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
   Symbol* LHS = toSymExpr(move->get(1))->symbol();
   if (LHS->isRef()) {
-    if (LHS->hasFlag(FLAG_INDEX_VAR)) {
-      // This is a problem because in chpl__transferArray
-      // the index variable will be used to initialize array elements
-      // (consider e.g. an array of arrays/domains)
-      INT_FATAL("replaceRecordWrappedRefs updating index variable");
-    }
-
     LHS->type = LHS->getValType();
     LHS->qual = QUAL_VAL;
     todo.push_back(LHS);
@@ -1264,15 +1257,9 @@ static void replaceRecordWrappedRefs() {
   // Changes reference fields with a record-wrapped type into value fields.
   // Note that this will modify arg bundle classes.
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
-    bool isIterator = aggType->symbol->hasFlag(FLAG_ITERATOR_CLASS) ||
-                      aggType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
-    bool isTuple = aggType->symbol->hasFlag(FLAG_TUPLE);
 
     if (aggType->symbol->hasFlag(FLAG_REF)) {
       // ignore the reference type itself
-    } else if (isIterator || isTuple) {
-      // workaround for problems in array initialization in chpl__transferArray
-      // ignore iterator class/records and tuples for now
     } else {
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
