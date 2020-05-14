@@ -132,7 +132,7 @@ static void analyzeArrLog(const char *msg, BaseAST *node) {
                                 node->getModule()->modTag != MOD_STANDARD);
   //const bool verbose = true;
 
-  const bool veryVerbose = false;
+  const bool veryVerbose = true;
   if (verbose) {
     std::cout << msg << std::endl;
     if (node != NULL) {
@@ -215,6 +215,84 @@ static Stmt *getLocalityDominator(CallExpr* ce) {
   return NULL;
 }
 
+// check whether an expression is used to assign a subindex. e.g.
+//
+//   forall (i, j) in D
+//
+// will have in the beginning of its body assignments to i and j from an
+// "indexOfInterest" that represents that tuple in a single symbol
+static bool isSubIndexAssignment(Expr *expr,
+                                 Symbol *subIndex,
+                                 int indexIndex,
+                                 Symbol *indexBundle) {
+  if (CallExpr *moveCE = toCallExpr(expr)) {
+    if (moveCE->isPrimitive(PRIM_MOVE)) {
+      if (SymExpr *moveDstSE = toSymExpr(moveCE->get(1))) {
+        if (CallExpr *moveSrcCE = toCallExpr(moveCE->get(2))) {
+          if (SymExpr *moveSrcBaseSE = toSymExpr(moveSrcCE->baseExpr)) {
+            if (SymExpr *moveSrcIdxSE = toSymExpr(moveSrcCE->get(1))) {
+              if (VarSymbol *moveSrcIdxVS = toVarSymbol(moveSrcIdxSE->symbol())) {
+                return (moveDstSE->symbol() == subIndex) &&
+                       ( moveSrcBaseSE->symbol() == indexBundle &&
+                         moveSrcIdxVS->immediate->int_value() == indexIndex );
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
+                                                 Symbol *baseSym) {
+  std::vector<Symbol *> indexSymbols;
+  int indexVarCount = -1;
+  int bodyExprCount = 1;
+
+  AList &bodyExprs = forall->loopBody()->body;
+
+  if (CallExpr *firstCall = toCallExpr(bodyExprs.get(bodyExprCount++))) {
+    nprint_view(firstCall);
+    if (firstCall->isNamed("_check_tuple_var_decl")) {
+      if (SymExpr *firstArgSE = toSymExpr(firstCall->get(1))) {
+        if (firstArgSE->symbol() == baseSym) {
+          if (SymExpr *secondArgSE = toSymExpr(firstCall->get(2))) {
+            if (VarSymbol *vs = toVarSymbol(secondArgSE->symbol())) {
+              indexVarCount = vs->immediate->int_value();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (indexVarCount != -1) {
+    INT_ASSERT(indexVarCount > 0);
+
+    for (int i = 0 ; i < indexVarCount ; i++) {
+      if (DefExpr *indexDE = toDefExpr(bodyExprs.get(bodyExprCount++))) {
+        nprint_view(indexDE);
+        Symbol *indexSym = indexDE->sym;
+        if(isSubIndexAssignment(bodyExprs.get(bodyExprCount++),
+                                indexSym, i, baseSym)) {
+          nprint_view(indexSym);
+          indexSymbols.push_back(indexSym);
+        }
+      }
+    }
+  }
+
+  if (indexVarCount == -1 || indexVarCount != indexSymbols.size()) {
+    analyzeArrLog("Can't recognize loop's index symbols", baseSym);
+    indexSymbols.clear();
+  }
+
+
+  return indexSymbols;
+}
+
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
@@ -268,6 +346,16 @@ static void analyzeArrays() {
       if (loopIdxSym == NULL) {
         analyzeArrLog("**** End forall ****", forall);
         continue;
+      }
+      analyzeArrLog("Loop index symbol", loopIdxSym);
+
+      std::vector<Symbol *> multiDIndices;
+      if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+        std::cout << "Calling helper" << std::endl;
+        multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
+      }
+      forv_Vec(Symbol *, loopIdx, multiDIndices) {
+        analyzeArrLog("multiD index", loopIdx);
       }
 
       std::vector<CallExpr *> callExprs;
