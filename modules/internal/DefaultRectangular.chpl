@@ -1857,8 +1857,9 @@ module DefaultRectangular {
 
     if blk(rank-1) != 1 then return false;
 
+    const domDims = dom.dsiDims();
     for param dim in 0..(rank-2) by -1 do
-      if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).size then return false;
+      if blk(dim) != blk(dim+1)*domDims(dim+1).size then return false;
 
     if debugDefaultDistBulkTransfer then
       chpl_debug_writeln("\tYES!");
