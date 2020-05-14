@@ -2379,7 +2379,8 @@ void amRequestAMO(c_nodeid_t node, void* object,
     memcpy(&req.amo.operand2, operand2, size);
   }
   amRequestCommon(node, &req, sizeof(req.amo),
-                  &req.b.pAmDone, true /*yieldDuringTxnWait*/);
+                  (myResult != NULL) ? &req.b.pAmDone : NULL,
+                  true /*yieldDuringTxnWait*/);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
@@ -3015,10 +3016,16 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
     *amo->b.pAmDone = 1;
     chpl_atomic_thread_fence(memory_order_release);
   } else {
-    DBG_PRINTF(DBG_AM | DBG_AMRECV,
-               "amHandleAMO(seqId %d:%" PRIu64 "): set pAmDone %p",
-               (int) amo->b.node, amo->b.seq, amo->b.pAmDone);
-    amSendDone(amo->b.node, amo->b.pAmDone);
+    if (amo->b.pAmDone != NULL) {
+      DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                 "amHandleAMO(seqId %d:%" PRIu64 "): set pAmDone %p",
+                 (int) amo->b.node, amo->b.seq, amo->b.pAmDone);
+      amSendDone(amo->b.node, amo->b.pAmDone);
+    } else {
+      DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                 "amHandleAMO(seqId %d:%" PRIu64 " NB): done",
+                 (int) amo->b.node, amo->b.seq);
+    }
   }
 }
 
