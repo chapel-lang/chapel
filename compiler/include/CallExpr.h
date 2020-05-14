@@ -120,6 +120,8 @@ public:
 
   static void     registerPrimitivesForCodegen();
 
+  bool            maybeLocalAccess;
+
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();

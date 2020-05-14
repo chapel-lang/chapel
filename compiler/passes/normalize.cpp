@@ -396,6 +396,43 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
   return NULL;
 }
 
+static void buildLocalAccessLoops(ForallStmt *forall,
+                                  std::vector<CallExpr *> &sOptCandidates,
+                                  std::vector<CallExpr *> &dOptCandidates) {
+
+  const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
+  if (totalNumCandidates == 0) return;
+
+  // build static checks that are necessary for both static and dynamic
+  // candidates
+  CallExpr *
+
+  for_vector(CallExpr, sOptCandidate, sOptCandidates) {
+    SET_LINENO(sOptCandidate);
+    analyzeArrLog("\tReplacing", sOptCandidate);
+
+    Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
+    INT_ASSERT(baseSym);
+
+    CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
+        new UnresolvedSymExpr("localAccess"));
+    CallExpr *repl = new CallExpr(base);
+    for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
+      Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
+      INT_ASSERT(argSym);
+
+      repl->insertAtTail(new SymExpr(argSym));
+    }
+    sOptCandidate->replace(repl);
+
+  }
+
+  for_vector(CallExpr, dOptCandidate, dOptCandidates) {
+    analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
+    dOptCandidate->maybeLocalAccess = true;
+  }
+}
+
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
@@ -437,24 +474,32 @@ static void analyzeArrays() {
           if (!canOptimize) {
             Symbol *domSym = getDomSym(accBaseSym);
 
-            // forall i in A.domain do ... B[i] ... where B and A share domain
-            if (loopInfo.dotDomIterSymDom != NULL &&
-                loopInfo.dotDomIterSymDom == domSym) {
-              canOptimize = true;
-              analyzeArrLog("Access base share the domain with iterator's base",
-                  call);
-            }
-            // forall i in D do ... A[i] ... where D is A's domain
-            else {
-              analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
-              if (domSym != NULL) {
-                analyzeArrLog("\twith domain defined at", domSym);
-              }
-              if (loopInfo.iterSym != NULL &&
-                  loopInfo.iterSym == domSym) {
+            if (domSym != NULL) {  //  I can find the domain of the array
+              // forall i in A.domain do ... B[i] ... where B and A share domain
+              if (loopInfo.dotDomIterSymDom != NULL &&
+                  loopInfo.dotDomIterSymDom == domSym) {
                 canOptimize = true;
-                analyzeArrLog("Access base's domain is the iterator", call);
+                analyzeArrLog("Access base share the domain with iterator's base",
+                    call);
               }
+              // forall i in D do ... A[i] ... where D is A's domain
+              else {
+                analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
+                if (domSym != NULL) {
+                  analyzeArrLog("\twith domain defined at", domSym);
+                }
+                if (loopInfo.iterSym != NULL &&
+                    loopInfo.iterSym == domSym) {
+                  canOptimize = true;
+                  analyzeArrLog("Access base's domain is the iterator", call);
+                }
+              }
+            }
+            else {
+              // I couldn't find a domain symbol for this array, but it can
+              // still be a candidate for optimization based on analysis at
+              // runtime
+              dynamicOptimizationCandidates.push_back(call);
             }
           }
 
@@ -464,25 +509,9 @@ static void analyzeArrays() {
         } // end canOptimize
       }
 
-      for_vector(CallExpr, sOptCandidate, staticOptimizationCandidates) {
-        SET_LINENO(sOptCandidate);
-        analyzeArrLog("\tReplacing", sOptCandidate);
+      buildLocalAccessLoops(forall, staticOptimizationCandidates,
+                                    dynamicOptimizationCandidates);
 
-        Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
-        INT_ASSERT(baseSym);
-
-        CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
-                                      new UnresolvedSymExpr("localAccess"));
-        CallExpr *repl = new CallExpr(base);
-        for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
-          Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
-          INT_ASSERT(argSym);
-
-          repl->insertAtTail(new SymExpr(argSym));
-        }
-        sOptCandidate->replace(repl);
-
-      }
       analyzeArrLog("**** End forall ****", forall);
     }
   }
