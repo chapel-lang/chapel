@@ -1432,7 +1432,7 @@ proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) 
     compilerAssert((nbits==64)||(nbits==128),"LAPACK only supports 64 and 128 bit complex types");
     info = LAPACK.heev(lapack_memory_order.row_major, jobz, uploStr, Aref, w);
   } else if isRealType(t) {
-    compilerAssert((nbits==32)||(nbits==64),"LAPACK only supports 32 and 64 bit complex types");
+    compilerAssert((nbits==32)||(nbits==64),"LAPACK only supports 32 and 64 bit real types");
     info = LAPACK.syev(lapack_memory_order.row_major, jobz, uploStr, Aref, w);
   } else {
     compilerError("eigh received unsupported type : ",t:string);
