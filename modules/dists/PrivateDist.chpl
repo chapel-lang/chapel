@@ -146,13 +146,6 @@ class PrivateDom: BaseRectangularDom {
   override proc dsiMyDist() return dist;
 }
 
-pragma "unsafe"
-private proc uninitializedDefault(type eltType) {
-  pragma "no init"
-  var default: eltType;
-  return default;
-}
-
 private proc checkCanMakeDefaultValue(type eltType) param {
   var default: eltType;
 }
@@ -160,7 +153,7 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
 
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "no init" pragma "local field" pragma "unsafe" pragma "no auto destroy"
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
   var data: eltType;
@@ -177,7 +170,7 @@ class PrivateArr: BaseRectangularArr {
     super.init(eltType=eltType, rank=rank, idxType=idxType,
                stridable=stridable);
     this.dom = dom;
-    this.data = uninitializedDefault(eltType);
+    // this.data not initialized
     this.isPrivatizedCopy = false;
     this.defaultInitDataOnPrivatize = initElts;
 
@@ -194,7 +187,7 @@ class PrivateArr: BaseRectangularArr {
     super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
                idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
     this.dom = privdom;
-    this.data = uninitializedDefault(eltType);
+    // this.data not initialized
     this.isPrivatizedCopy = true;
     this.defaultInitDataOnPrivatize = false;
     this.complete();

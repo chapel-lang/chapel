@@ -493,6 +493,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
 
+  if (field->sym->hasFlag(FLAG_NO_INIT))
+    return NULL;
+
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
