@@ -875,10 +875,18 @@ proc AccumStencilArr.setupRADOpt() {
   }
 }
 
+override proc AccumStencilArr.dsiElementInitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
 override proc AccumStencilArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
-    var arr = locArr(localeIdx);
-    on arr {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
       if !ignoreFluff {
         if deinitElts {
           // only deinitialize non-fluff elements

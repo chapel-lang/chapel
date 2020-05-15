@@ -1118,9 +1118,8 @@ proc StencilArr.setupRADOpt() {
 
 override proc StencilArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
-    var arr = locArr(localeIdx);
-    on arr {
-      arr.myElems.dsiElementInitializationComplete();
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
     }
   }
 }
@@ -1128,8 +1127,8 @@ override proc StencilArr.dsiElementInitializationComplete() {
 
 override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
-    var arr = locArr(localeIdx);
-    on arr {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
       if !ignoreFluff {
         if deinitElts {
           // only deinitialize non-fluff elements
