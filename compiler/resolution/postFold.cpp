@@ -139,6 +139,8 @@ static Expr* postFoldNormal(CallExpr* call) {
 
     if (ret != NULL && ret->immediate != NULL) {
       retval = new SymExpr(ret);
+      
+      // my static checks are folded out here
 
       call->replace(retval);
 

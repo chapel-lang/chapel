@@ -544,6 +544,10 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       std::vector<CallExpr *> callsInForallUnopt;
       collectCallExprs(forallUnopt->loopBody(), callsInForallUnopt);
 
+      // TODO iterate over expressions in both loops, add static optimization
+      // calls to the static check maps
+
+      // TODO probably unnecessary, remove
       for_vector(CallExpr, call, callsInForallUnopt) {
         call->maybeLocalAccess = false;
       }
