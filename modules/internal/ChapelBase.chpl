@@ -54,9 +54,13 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
+  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain) param {
+    return accessBase.domain.type == loopDomain.type &&
+           loopDomain.supportsAutoLocalAccess();
+  }
+
   proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
-    if accessBase.eltType == int then return false;
-    return true;
+    return false;
   }
 
   proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {

@@ -1283,6 +1283,9 @@ inline proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
 
+override proc BlockDom.dsiSupportsAutoLocalAccess() param {
+  return true;
+}
 
 ///// Privatization and serialization ///////////////////////////////////////
 

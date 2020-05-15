@@ -298,6 +298,10 @@ module ChapelDistribution {
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
 
+    proc dsiSupportsAutoLocalAccess() param {
+      return false;
+    }
+
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 

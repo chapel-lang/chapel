@@ -2163,6 +2163,10 @@ module ChapelArray {
       }
     }
 
+    proc supportsAutoLocalAccess() param {
+      return _value.dsiSupportsAutoLocalAccess();
+    }
+
   }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
