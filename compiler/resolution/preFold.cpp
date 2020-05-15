@@ -135,11 +135,14 @@ Expr* preFold(CallExpr* call) {
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
         // Type constructor calls OK
       } else if (isLcnSymbol(symExpr->symbol()) == true) {
-      if (call->maybeLocalAccess) {
-        std::cout << "Maybe local 1" << std::endl;
-        nprint_view(call);
-      }
-        baseExpr->replace(new UnresolvedSymExpr("this"));
+        if (call->maybeLocalAccess) {
+          std::cout << "Replacing with runtime checks" << std::endl;
+          nprint_view(call);
+          baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+        }
+        else {
+          baseExpr->replace(new UnresolvedSymExpr("this"));
+        }
 
         call->insertAtHead(baseExpr);
         call->insertAtHead(gMethodToken);

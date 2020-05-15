@@ -58,6 +58,10 @@ module ChapelBase {
     return true;
   }
 
+  proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
+    return true;
+  }
+
   //
   // assignment on primitive types
   //
