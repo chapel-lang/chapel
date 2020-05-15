@@ -16,6 +16,7 @@ proc main(args: [] string) {
         stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                   hints=QIO_CH_ALWAYS_UNBUFFERED);;
 
+  // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,
       bufDom = {0..<bufLen},
       buf: [bufDom] uint(8),
@@ -30,57 +31,52 @@ proc main(args: [] string) {
       bufDom = {0..<bufLen};
     }
   } while more;
+  end = stdinBin.offset()-1;
 
-  for i in buf.indices by -1 {
-    if buf[i] != 0 {
-      end = i;
-      break;
-    }
+  // process the buffer a sequence at a time, working from the end
+  var hi = end;
+  while (hi >= 0) {
+    // search for the '>' that marks the start of a sequence
+    var lo = hi;
+    while buf[lo] != '>'.toByte() do
+      lo -= 1;
+
+    // reverse and complement the identified sequence
+    revcomp(buf, lo, hi);
+
+    hi = lo - 1;
   }
 
-  if end {
-    var to = end;
-
-    do {
-      var from = to;
-      while buf[from] != '>'.toByte() do
-        from -= 1;
-
-      process(buf, from, to);
-
-      to = from - 1;
-    } while (to >= 0);
-
-    stdoutBin.write(buf[..end]);
-  }
+  // write out the transformed buffer
+  stdoutBin.write(buf[..end]);
 }
 
-proc process(buf, in from, in to) {
-  while buf[from] != eol do
-    from += 1;
-  from += 1;
 
-  const len = to - from,
-        off = 60 - (len % 61);
+proc revcomp(buf, in lo, hi) {
+  param cols = 61;  // the number of characters per full row (including '\n')
+
+  // skip past header line
+  while (buf[lo] != eol) {
+    lo += 1;
+  }
+  lo += 1;
+
+  // shift all of the linefeeds into the right places
+  const len = hi - lo + 1,
+        off = (len-1)%cols,
+        shift = cols - off - 1;
 
   if off {
-    for m in from+60-off..<to by 61 {
-      for i in m..#off by -1 do
+    for m in lo+off..<hi by cols {
+      for i in m..#shift by -1 do
         buf[i+1] = buf[i];
       buf[m] = eol;
     }
   }
 
-  to -= 1;
-  do {
-    ref d1 = buf[from],
-        d2 = buf[to];
-
-    (d1, d2) = (table[d2], table[d1]);
-
-    from += 1;
-    to -= 1;
-  } while (from <= to);
+  // walk from both ends of the sequence, complementing and swapping
+  for (i,j) in zip(lo..#(len/2), ..<hi by -1) do
+    (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
 }
 
 
