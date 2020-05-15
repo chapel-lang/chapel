@@ -55,6 +55,7 @@ module ChapelBase {
   enum iterKind {leader, follower, standalone};
 
   proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
+    if accessBase.eltType == int then return false;
     return true;
   }
 

@@ -35,6 +35,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
+#include "resolution.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
@@ -444,6 +445,30 @@ static void generateCheckForAccess(CallExpr *access,
   }
 }
 
+std::map<Symbol *, std::vector<CallExpr *>> staticCheckCallMap;
+std::map<Symbol *, std::vector<CallExpr *>> dynamicCheckCallMap;
+
+bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
+  if (call->isNamed("chpl__staticAutoLocalCheck")) {
+    bool retval = imm->bool_value();
+    if (retval == false) {
+      Symbol *symToRevert = toSymExpr(call->get(1))->symbol();
+      for_vector(CallExpr, parentCall, staticCheckCallMap[symToRevert]) {
+        CallExpr *callToRevert = toCallExpr(parentCall->baseExpr);
+        INT_ASSERT(callToRevert->isNamed("localAccess"));
+
+        analyzeArrLog("Reverting optimization (can't statically confirm)",
+                      callToRevert);
+
+        callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
+        resolveCall(callToRevert);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 static void generateDynamicCheckForAccess(CallExpr *access,
                                          const ForallOptimizationInfo &loopInfo,
                                          CallExpr *&allChecks) {
@@ -513,6 +538,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
 
         repl->insertAtTail(new SymExpr(argSym));
       }
+      staticCheckCallMap[baseSym].push_back(repl);
       sOptCandidate->replace(repl);
     }
   }
@@ -580,6 +606,7 @@ static void analyzeArrays() {
       std::vector<CallExpr *> allCallExprs;
       collectCallExprs(forall->loopBody(), allCallExprs);
 
+      // TODO these two can be replaced by the maps
       std::vector<CallExpr *> staticOptimizationCandidates;
       std::vector<CallExpr *> dynamicOptimizationCandidates;
 
@@ -628,11 +655,15 @@ static void analyzeArrays() {
               // I couldn't find a domain symbol for this array, but it can
               // still be a candidate for optimization based on analysis at
               // runtime
+              dynamicCheckCallMap[accBaseSym].push_back(call);
               dynamicOptimizationCandidates.push_back(call);
             }
           }
 
           if (canOptimize) {
+            if (staticCheckCallMap.count(accBaseSym) == 0) {
+              staticCheckCallMap[accBaseSym] = std::vector<CallExpr *>();
+            }
             staticOptimizationCandidates.push_back(call);
           }
         } // end canOptimize
