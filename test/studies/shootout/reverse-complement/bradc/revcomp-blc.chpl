@@ -41,8 +41,8 @@ proc main(args: [] string) {
     while buf[lo] != '>'.toByte() do
       lo -= 1;
 
-    // reverse and complement the identified sequence
-    revcomp(buf, lo, hi);
+    // revcomp the sequence once we find it
+    revcomp(buf[lo..hi]);
 
     hi = lo - 1;
   }
@@ -52,14 +52,15 @@ proc main(args: [] string) {
 }
 
 
-proc revcomp(buf, in lo, hi) {
-  param cols = 61;  // the number of characters per full row (including '\n')
-
+proc revcomp(buf: [?inds]) {
+  param cols = 61;  // the number of characters per row (including '\n')
+  var lo = inds.low,
+      hi = inds.high;
+  
   // skip past header line
-  while (buf[lo] != eol) {
+  do {
     lo += 1;
-  }
-  lo += 1;
+  } while buf[lo-1] != eol;
 
   // shift all of the linefeeds into the right places
   const len = hi - lo + 1,
@@ -67,15 +68,15 @@ proc revcomp(buf, in lo, hi) {
         shift = cols - off - 1;
 
   if off {
-    for m in lo+off..<hi by cols {
+    forall m in lo+off..<hi by cols {
       for i in m..#shift by -1 do
         buf[i+1] = buf[i];
       buf[m] = eol;
     }
   }
 
-  // walk from both ends of the sequence, complementing and swapping
-  for (i,j) in zip(lo..#(len/2), ..<hi by -1) do
+  // wask from both ends of the sequence, complementing and swapping
+  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
     (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
 }
 
