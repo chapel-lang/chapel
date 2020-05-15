@@ -2,7 +2,8 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the C gcc #5 version by Mr Ledrug
+   based on the C gcc #5 version by Mr Ledrug 
+   and the Chapel #2 version by myself and Ben Harshbarger
 */
 
 param eol = "\n".toByte();      // end-of-line, as an integer
