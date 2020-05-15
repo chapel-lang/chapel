@@ -27,6 +27,7 @@
 
 #include "error.h"
 #include "chplexit.h"
+#include "chpl-mem.h"
 #include "chpl-env.h"
 
 #include <stdarg.h>
@@ -114,17 +115,13 @@ static int chpl_unwind_getLineNum(void *addr){
 }
 #endif
 
-static void chpl_stack_unwind(void){
+void chpl_stack_unwind(FILE* out, char sep) {
   // This is just a prototype using libunwind
   unw_cursor_t cursor;
   unw_context_t uc;
   unw_word_t wordValue;
-  char buffer[128];
+  char buffer[256];
   unsigned int line;
-
-#ifdef __linux__
-  unw_proc_info_t info;
-#endif
 
   // Check if we need to print the stack trace (default = yes)
   if(! chpl_env_rt_get_bool("UNWIND", true)) {
@@ -136,7 +133,7 @@ static void chpl_stack_unwind(void){
   unw_init_local(&cursor, &uc);
 
   if(chpl_sizeSymTable > 0)
-    fprintf(stderr,"Stacktrace\n\n");
+    fprintf(out,"Stacktrace%c%c", sep, sep);
 
   // This loop does the effective stack unwind, see libunwind documentation
   while (unw_step(&cursor) > 0) {
@@ -152,6 +149,7 @@ static void chpl_stack_unwind(void){
     for(int t = 0; t < chpl_sizeSymTable; t+=2 ){
       if (!strcmp(chpl_funSymTable[t], buffer)){
 #ifdef __linux__
+        unw_proc_info_t info;
         // Maybe we can get a more precise line number
         unw_get_proc_info(&cursor, &info);
         line = chpl_unwind_getLineNum((void *)(info.start_ip + wordValue));
@@ -162,15 +160,131 @@ static void chpl_stack_unwind(void){
 #else
         line = chpl_filenumSymTable[t+1];
 #endif
-        fprintf(stderr,"%s() at %s:%d\n",
+        fprintf(out,"%s() at %s:%d%c",
                   chpl_funSymTable[t+1],
                   chpl_lookupFilename(chpl_filenumSymTable[t]),
-                  line);
+                  line,
+                  sep);
         break;
       }
     }
   }
 }
+
+// bufsz is the allocate size of the buffer
+// strsz is the number of bytes in the buffer currently used
+// str is the buffer
+// append is a 0-terminated string to append
+static void append_to_string(size_t* bufszArg, size_t* strszArg, char** strArg,
+                             const char* append) {
+  size_t toadd = strlen(append);
+  size_t bufsz = *bufszArg;
+  size_t strsz = *strszArg;
+  char* str = *strArg;
+
+  // allocate/reallocate the buffer if necessary
+  if (str == NULL) {
+    bufsz = 128 + toadd;
+    str = chpl_mem_alloc(bufsz, CHPL_RT_MD_IO_BUFFER, __LINE__, 0);
+    strsz = 0;
+  } else if (strsz + toadd + 1 > bufsz) {
+    bufsz = 2*bufsz + strsz + toadd;
+    str = chpl_mem_realloc(str, bufsz, CHPL_RT_MD_IO_BUFFER, __LINE__, 0);
+  }
+  strncpy(str + strsz, append, toadd);
+  strsz += toadd;
+
+  *bufszArg = bufsz;
+  *strszArg = strsz;
+  *strArg = str;
+}
+
+
+char* chpl_stack_unwind_to_string(char sep) {
+  // This is just a prototype using libunwind
+  unw_cursor_t cursor;
+  unw_context_t uc;
+  unw_word_t wordValue;
+  char buffer[256];
+  int buffersz = 0;
+  unsigned int line;
+
+  char sepstr[2] = {sep, '\0'};
+
+  char* str = NULL;
+  size_t bufsz = 0;
+  size_t strsz= 0;
+
+  line = 0;
+  unw_getcontext(&uc);
+  unw_init_local(&cursor, &uc);
+
+  if(chpl_sizeSymTable > 0) {
+    append_to_string(&bufsz, &strsz, &str, "Stacktrace");
+    append_to_string(&bufsz, &strsz, &str, sepstr);
+    append_to_string(&bufsz, &strsz, &str, sepstr);
+  }
+
+  // This loop does the effective stack unwind, see libunwind documentation
+  while (unw_step(&cursor) > 0) {
+    unw_get_proc_name(&cursor, buffer, sizeof(buffer), &wordValue);
+    // Since this stack trace is printed out a program exit, we do not believe
+    // it is performance sensitive. Additionally, this initial implementation
+    // favors simplicity over performance.
+    //
+    // If it becomes necessary to improve performance, this code could use be
+    // faster using one of these two strategies:
+    // 1) Use a hashtable or map to find entries in chpl_funSymTable, or
+    // 2) Emit chpl_funSymTable in sorted order and use binary search on it
+    for(int t = 0; t < chpl_sizeSymTable; t+=2 ){
+      if (!strcmp(chpl_funSymTable[t], buffer)){
+#ifdef __linux__
+        unw_proc_info_t info;
+        // Maybe we can get a more precise line number
+        unw_get_proc_info(&cursor, &info);
+        line = chpl_unwind_getLineNum((void *)(info.start_ip + wordValue));
+        // We wasn't able to obtain the line number, let's use the procedure
+        // line number
+        if(line == 0)
+          line = chpl_filenumSymTable[t+1];
+#else
+        line = chpl_filenumSymTable[t+1];
+#endif
+
+        buffersz = snprintf(buffer, sizeof(buffer), "%d", line);
+        if (buffersz < 0)
+          buffer[0] = '\0';
+
+        append_to_string(&bufsz, &strsz, &str, chpl_funSymTable[t+1]);
+        append_to_string(&bufsz, &strsz, &str, "() at ");
+        append_to_string(&bufsz, &strsz, &str,
+                         chpl_lookupFilename(chpl_filenumSymTable[t]));
+        append_to_string(&bufsz, &strsz, &str, ":");
+        append_to_string(&bufsz, &strsz, &str, buffer); // line number
+        append_to_string(&bufsz, &strsz, &str, sepstr);
+
+        break;
+      }
+    }
+  }
+
+  // add null terminator
+  if (str != NULL) {
+    str[strsz] = '\0';
+  }
+
+  return str;
+}
+
+#else
+
+void chpl_stack_unwind(FILE* out, char sep) {
+}
+
+char* chpl_stack_unwind_to_string(char sep) {
+  return NULL;
+}
+
 #endif
 
 int verbosity = 1;
@@ -232,7 +346,7 @@ void chpl_error_explicit(const char *message, int32_t lineno,
   fprintf(stderr, "\n");
 
 #ifdef CHPL_UNWIND_NOT_LAUNCHER
-  chpl_stack_unwind();
+  chpl_stack_unwind(stderr, '\n');
 #endif
 
   chpl_exit_any(1);
@@ -299,7 +413,7 @@ void chpl_error_preformatted(const char* message) {
   fprintf(stderr, "%s\n", message);
 
 #ifdef CHPL_UNWIND_NOT_LAUNCHER
-  chpl_stack_unwind();
+  chpl_stack_unwind(stderr, '\n');
 #endif
 
   chpl_exit_any(1);

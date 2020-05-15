@@ -169,6 +169,11 @@
 module CommDiagnostics
 {
   /*
+    Print out stack traces for comm events printed after startVerboseComm
+   */
+  config param commDiagsStacktrace = false;
+
+  /*
     If this is `false`, a written `commDiagnostics` value does not
     include "unstable" fields even when they are non-zero.  Unstable
     fields are those expected to have unpredictable values for multiple
@@ -258,19 +263,23 @@ module CommDiagnostics
    */
   type commDiagnostics = chpl_commDiagnostics;
 
-  private extern proc chpl_comm_startVerbose(print_unstable: bool);
+  private extern proc chpl_comm_startVerbose(stacktrace: bool,
+                                             print_unstable: bool);
 
   private extern proc chpl_comm_stopVerbose();
 
-  private extern proc chpl_comm_startVerboseHere(print_unstable: bool);
+  private extern proc chpl_comm_startVerboseHere(stacktrace: bool,
+                                                 print_unstable: bool);
 
   private extern proc chpl_comm_stopVerboseHere();
 
-  private extern proc chpl_comm_startDiagnostics(print_unstable: bool);
+  private extern proc chpl_comm_startDiagnostics(stacktrace: bool,
+                                                 print_unstable: bool);
 
   private extern proc chpl_comm_stopDiagnostics();
 
-  private extern proc chpl_comm_startDiagnosticsHere(print_unstable: bool);
+  private extern proc chpl_comm_startDiagnosticsHere(stacktrace: bool,
+                                                     print_unstable: bool);
 
   private extern proc chpl_comm_stopDiagnosticsHere();
 
@@ -282,7 +291,7 @@ module CommDiagnostics
     Start on-the-fly reporting of communication initiated on any locale.
    */
   proc startVerboseComm() {
-    chpl_comm_startVerbose(commDiagsPrintUnstable);
+    chpl_comm_startVerbose(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
@@ -294,7 +303,7 @@ module CommDiagnostics
     Start on-the-fly reporting of communication initiated on this locale.
    */
   proc startVerboseCommHere() {
-    chpl_comm_startVerboseHere(commDiagsPrintUnstable);
+    chpl_comm_startVerboseHere(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
@@ -306,7 +315,7 @@ module CommDiagnostics
     Start counting communication operations across the whole program.
    */
   proc startCommDiagnostics() {
-    chpl_comm_startDiagnostics(commDiagsPrintUnstable);
+    chpl_comm_startDiagnostics(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
@@ -320,7 +329,7 @@ module CommDiagnostics
     Start counting communication operations initiated on this locale.
    */
   proc startCommDiagnosticsHere() {
-    chpl_comm_startDiagnosticsHere(commDiagsPrintUnstable);
+    chpl_comm_startDiagnosticsHere(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
