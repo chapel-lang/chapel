@@ -26,7 +26,6 @@ proc main(args: [] string) {
   do {
     const more = stdinBin.read(buf[end..]);
     if more {
-
       end = bufLen;
       bufLen += min(1024**2, bufLen);
       bufDom = {0..<bufLen};
@@ -42,7 +41,7 @@ proc main(args: [] string) {
     while buf[lo] != '>'.toByte() do
       lo -= 1;
 
-    // revcomp the sequence once we find it
+    // process the sequence once we find it
     revcomp(buf[lo..hi]);
 
     hi = lo - 1;
@@ -65,7 +64,7 @@ proc revcomp(buf: [?inds]) {
 
   // shift all of the linefeeds into the right places
   const len = hi - lo + 1,
-        off = (len-1)%cols,
+        off = (len - 1) % cols,
         shift = cols - off - 1;
 
   if off {
