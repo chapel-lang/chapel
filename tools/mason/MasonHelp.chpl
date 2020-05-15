@@ -73,7 +73,7 @@ proc masonRunHelp() {
   writeln('   - If no target directory, build and run is Mason.toml is present');
   writeln();
   writeln('Runtime arguments can be included after mason arguments.');
-  writeln('To ensure that runtime arguments and mason arguments to not conflict, separate them');
+  writeln('To ensure that runtime arguments and mason arguments do not conflict, separate them');
   writeln('with a single dash(`-`). For example');
   writeln('   e.g. mason run --build - --runtimeArg=true');
 }
