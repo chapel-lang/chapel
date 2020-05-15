@@ -615,6 +615,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
       const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank,
                                                    idxType, stridable,
                                                    dom.locDoms(localeIdx),
+                                                   dom.locDoms(localeIdx),
                                                    initElts=initElts);
       locArrTemp(localeIdx) = LBCA;
       if here == creationLocale then
@@ -1107,13 +1108,14 @@ class LocBlockCyclicArr {
             type idxType,
             param stridable: bool,
             allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
+            indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
             param initElts: bool) {
     this.eltType = eltType;
     this.rank = rank;
     this.idxType = idxType;
     this.stridable = stridable;
     this.allocDom = allocDom;
-    this.indexDom = allocDom;
+    this.indexDom = indexDom;
     this.myElems = this.allocDom.myFlatInds.buildArray(eltType, initElts=false);
     this.complete();
 
