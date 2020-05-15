@@ -10,7 +10,7 @@ use DynamicIters;
 config const n = 7,           // the array size over which to compute perms
              nchunks = 720;   // the number of chunks of parallelism to use
 
-const fact = computeFact(n);  // memoize n! (n-factorial)
+const fact: [1..n] int = computeFact(n);  // memoize n! (n-factorial)
 
 
 proc main() {
@@ -21,8 +21,8 @@ proc main() {
   chunksz += chunksz%2;
   const work = 0..(fact(n) - chunksz) by chunksz;
 
-  forall i in dynamic(work, 1) with (+ reduce checkSum,
-                                     max reduce maxFlips) {
+  forall i in dynamic(work) with (+ reduce checkSum,
+                                  max reduce maxFlips) {
     for (j, flips) in fannkuch(i..#chunksz) {
       maxFlips = max(maxFlips, flips);
       checkSum += if j % 2 == 0 then flips else -flips;

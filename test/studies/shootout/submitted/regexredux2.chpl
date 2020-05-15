@@ -1,11 +1,11 @@
 /* The Computer Language Benchmarks Game
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
-   regex-dna program contributed by Ben Harshbarger
+   contributed by Ben Harshbarger
    derived from the GNU C++ RE2 version by Alexey Zolotov
-
-   converted from regex-dna program
 */
+
+use IO, Regexp;
 
 proc main(args: [] string) {
   var variants = [
@@ -27,7 +27,7 @@ proc main(args: [] string) {
 
   var data: string;
   stdin.readstring(data); // read in the entire file
-  const initLen = data.length;
+  const initLen = data.size;
 
   // remove newlines
   data = compile(">.*\n|\n").sub("", data);
@@ -55,6 +55,6 @@ proc main(args: [] string) {
   writeln();
 
   writeln(initLen);
-  writeln(data.length);
-  writeln(copy.length);
+  writeln(data.size);
+  writeln(copy.size);
 }

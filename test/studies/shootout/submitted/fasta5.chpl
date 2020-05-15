@@ -53,12 +53,6 @@ const ALU: [0..286] nucleotide = [
 ];
 
 //
-// Index aliases for use with (nucleotide, probability) tuples
-//
-param nucl = 1,
-      prob = 2;
-
-//
 // Probability tables for sequences to be randomly generated
 //
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
@@ -80,6 +74,7 @@ proc main() {
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
+use IO;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = "\n".toByte();
 
@@ -103,16 +98,15 @@ proc repeatMake(desc, alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo, n) {
+proc randomMake(desc, nuclInfo: [?nuclInds], n) {
   stdout.writeln(desc);
 
   // compute the cumulative probabilities of the nucleotides
-  const numNucls = nuclInfo.size;
-  var cumulProb: [1..numNucls] randType,
+  var cumulProb: [nuclInds] randType,
       p = 0.0;
-  for i in 1..numNucls {
-    p += nuclInfo[i](prob);
-    cumulProb[i] = 1 + (p*IM):randType;
+  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
+    p += prob;
+    cp = 1 + (p*IM): randType;
   }
 
   // guard when tasks can access the random numbers or output stream
@@ -139,14 +133,13 @@ proc randomMake(desc, nuclInfo, n) {
       var col = 0,
           off = 0;
 
-      for j in 0..#numBytes {
-        const r = myRands[j];
-        var nid = 1;
-        for k in 1..numNucls do
-          if r >= cumulProb[k] then
-            nid += 1;
+      for r in myRands[..<numBytes] {
+        var nid = 0;
+        for p in cumulProb do
+          nid += (r >= p);
+        const (nucl,_) = nuclInfo[nid];
 
-        myBuff[off] = nuclInfo[nid](nucl): int(8);
+        myBuff[off] = nucl: int(8);
         off += 1;
         col += 1;
 
@@ -180,4 +173,3 @@ proc getRands(n, arr) {
     arr[i] = lastRand;
   }
 }
-
