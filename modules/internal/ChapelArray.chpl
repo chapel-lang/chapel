@@ -3671,7 +3671,7 @@ module ChapelArray {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
-    if kind==_tElt.initCopy then return true; // TODO check copy init modifies
+    if kind==_tElt.initCopy && isConstCopyableType(a.eltType) then return true;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     return true;
   }
