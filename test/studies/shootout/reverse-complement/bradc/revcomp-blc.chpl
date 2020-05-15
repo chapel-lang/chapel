@@ -2,7 +2,7 @@
    https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
 
    contributed by Brad Chamberlain
-   based on the C gcc #5 version by Mr Ledrug 
+   based on the C gcc #5 version by Mr Ledrug
    and the Chapel #2 version by myself and Ben Harshbarger
 */
 
@@ -41,7 +41,7 @@ proc main(args: [] string) {
     while buf[lo] != '>'.toByte() do
       lo -= 1;
 
-    // process the sequence once we find it
+    // reverse and complement the sequence once we find it
     revcomp(buf[lo..hi]);
 
     hi = lo - 1;
@@ -53,10 +53,10 @@ proc main(args: [] string) {
 
 
 proc revcomp(buf: [?inds]) {
-  param cols = 61;  // the number of characters per row (including '\n')
+  param cols = 61;  // the number of characters per full row (including '\n')
   var lo = inds.low,
       hi = inds.high;
-  
+
   // skip past header line
   do {
     lo += 1;
@@ -75,7 +75,7 @@ proc revcomp(buf: [?inds]) {
     }
   }
 
-  // wask from both ends of the sequence, complementing and swapping
+  // walk from both ends of the sequence, complementing and swapping
   forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
     (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
 }
