@@ -54,6 +54,9 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
+  proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
+    return true;
+  }
 
   //
   // assignment on primitive types

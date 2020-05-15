@@ -302,6 +302,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
 class ForallOptimizationInfo {
   public:
     Symbol *iterSym = NULL;
+    Expr *dotDomIterExpr = NULL;
     Symbol *dotDomIterSym = NULL;
     Symbol *dotDomIterSymDom = NULL;
     std::vector<Symbol *> multiDIndices;
@@ -328,6 +329,7 @@ static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
     }
     // it might be in the form `A.domain` where A is used in the loop body
     else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
+      ret.dotDomIterExpr = iterExprs.head;
       ret.dotDomIterSym = dotDomBaseSym;
       ret.dotDomIterSymDom = getDomSym(ret.dotDomIterSym);
       analyzeArrLog("Iterated over .domain of", ret.dotDomIterSym);
@@ -370,6 +372,8 @@ static bool checkLoopSuitableForOpt(const ForallOptimizationInfo &info) {
 
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
                                         const ForallOptimizationInfo &loopInfo) {
+  
+  // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
 
   if (baseSE != NULL) {
@@ -396,17 +400,75 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
   return NULL;
 }
 
+static Symbol *getCallBase(CallExpr *call) {
+
+  SymExpr *baseSE = toSymExpr(call->baseExpr);
+  if (baseSE != NULL) {
+    return baseSE->symbol();
+  }
+  return NULL;
+}
+
+static void generateStaticCheckForAccess(CallExpr *access,
+                                         const ForallOptimizationInfo &loopInfo,
+                                         CallExpr *&allChecks) {
+
+  CallExpr *currentCheck = new CallExpr("chpl__staticAutoLocalCheck");
+
+  Symbol *baseSym = getCallBase(access);
+  INT_ASSERT(baseSym);
+
+  currentCheck->insertAtTail(baseSym);
+  if (loopInfo.iterSym != NULL) {
+    currentCheck->insertAtTail(new SymExpr(loopInfo.iterSym));
+  }
+  else if (loopInfo.dotDomIterExpr != NULL) {
+    currentCheck->insertAtTail(loopInfo.dotDomIterExpr->copy());
+  }
+  else {
+    INT_FATAL("loopInfo didn't have enough information");
+  }
+
+  if (allChecks == NULL) {
+    allChecks = currentCheck;
+  }
+  else {
+    allChecks = new CallExpr(PRIM_AND, currentCheck, allChecks);
+  }
+}
+
 static void buildLocalAccessLoops(ForallStmt *forall,
+                                  const ForallOptimizationInfo &loopInfo,
                                   std::vector<CallExpr *> &sOptCandidates,
                                   std::vector<CallExpr *> &dOptCandidates) {
 
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
 
+  SET_LINENO(forall);
+
   // build static checks that are necessary for both static and dynamic
   // candidates
-  CallExpr *
+  CallExpr *cond = NULL;
+  for_vector(CallExpr, sOptCandidate, sOptCandidates) {
+    generateStaticCheckForAccess(sOptCandidate, loopInfo, cond);
+  }
 
+  for_vector(CallExpr, dOptCandidate, dOptCandidates) {
+    generateStaticCheckForAccess(dOptCandidate, loopInfo, cond);
+  }
+
+  ForallStmt *forallUnopt = forall->copy();
+  forallUnopt->autoLocalAccessChecked = true; // am I being paranoid?
+
+  BlockStmt *thenBlock = new BlockStmt();
+  BlockStmt *elseBlock = new BlockStmt();
+  CondStmt *staticCheck = new CondStmt(cond, thenBlock, elseBlock);
+  forall->insertAfter(staticCheck);
+  thenBlock->insertAtTail(forall->remove());
+  elseBlock->insertAtTail(forallUnopt);
+
+  // this modifies calls in `forall`
   for_vector(CallExpr, sOptCandidate, sOptCandidates) {
     SET_LINENO(sOptCandidate);
     analyzeArrLog("\tReplacing", sOptCandidate);
@@ -424,7 +486,6 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       repl->insertAtTail(new SymExpr(argSym));
     }
     sOptCandidate->replace(repl);
-
   }
 
   for_vector(CallExpr, dOptCandidate, dOptCandidates) {
@@ -436,6 +497,13 @@ static void buildLocalAccessLoops(ForallStmt *forall,
 static void analyzeArrays() {
   const bool limitToTestFile = false;
   forv_Vec(ForallStmt, forall, gForallStmts) {
+    if (forall->autoLocalAccessChecked) {
+      continue;
+    }
+    else {
+      forall->autoLocalAccessChecked = true;
+    }
+
     const bool fileCheck = strncmp(forall->astloc.filename,
            "/Users/ekayraklio/code/chapel/versions/f03/chapel/arrayTest.chpl",
            64) == 0;
@@ -509,8 +577,9 @@ static void analyzeArrays() {
         } // end canOptimize
       }
 
-      buildLocalAccessLoops(forall, staticOptimizationCandidates,
-                                    dynamicOptimizationCandidates);
+      buildLocalAccessLoops(forall, loopInfo,
+                            staticOptimizationCandidates,
+                            dynamicOptimizationCandidates);
 
       analyzeArrLog("**** End forall ****", forall);
     }

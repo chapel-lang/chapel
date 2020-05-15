@@ -89,6 +89,8 @@ public:
   // indicates a forall expression (vs a forall statement)
   bool isForallExpr() const;
 
+  bool autoLocalAccessChecked;
+
 private:
   AList          fIterVars;
   AList          fIterExprs;

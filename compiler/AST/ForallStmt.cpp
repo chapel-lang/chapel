@@ -54,6 +54,9 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fShadowVars.parent = this;
   INT_ASSERT(fLoopBody != NULL);
 
+
+  autoLocalAccessChecked = false;
+
   gForallStmts.add(this);
 }
 
