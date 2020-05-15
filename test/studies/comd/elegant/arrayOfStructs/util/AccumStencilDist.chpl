@@ -1623,7 +1623,7 @@ proc AccumStencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
 
   const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD);
+  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD, initElts=false);
   var locArrTemp: [privdom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
   var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   
