@@ -4879,16 +4879,34 @@ module ChapelArray {
       compilerError("creating an array of arrays using a for- or forall-expression is not supported, except when using a for-expression over a range");
 
     if chpl_iteratorFromForExpr(ir) {
-      for (r, src) in zip(result, ir) {
-        pragma "no auto destroy"
-        var copy = src; // init copy, might be elided
-        __primitive("=", r, copy);
+      if needsInitWorkaround(result.eltType) {
+        for (ri, src) in zip(result.domain, ir) {
+          ref r = result[ri];
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      } else {
+        for (r, src) in zip(result, ir) {
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
       }
     } else {
-      forall (r, src) in zip(result, ir) {
-        pragma "no auto destroy"
-        var copy = src; // init copy, might be elided
-        __primitive("=", r, copy);
+      if needsInitWorkaround(result.eltType) {
+        forall (ri, src) in zip(result.domain, ir) {
+          ref r = result[ri];
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      } else {
+        forall (r, src) in zip(result, ir) {
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
       }
     }
 
