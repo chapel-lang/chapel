@@ -1,0 +1,55 @@
+**** Start forall ****
+	copyInitDeclaration.chpl:14
+
+Iterated symbol
+	copyInitDeclaration.chpl:4
+
+Potential access
+	copyInitDeclaration.chpl:15
+
+	with DefExpr
+	copyInitDeclaration.chpl:6
+
+	with domain defined at
+	copyInitDeclaration.chpl:4
+
+Access base's domain is the iterator
+	copyInitDeclaration.chpl:15
+
+Potential access
+	copyInitDeclaration.chpl:15
+
+	with DefExpr
+	copyInitDeclaration.chpl:7
+
+	with domain defined at
+	copyInitDeclaration.chpl:4
+
+Access base's domain is the iterator
+	copyInitDeclaration.chpl:15
+
+Potential access
+	copyInitDeclaration.chpl:15
+
+There is no type expression in definition, or it is not a call
+	copyInitDeclaration.chpl:8
+
+Regular domain symbol was not found
+	copyInitDeclaration.chpl:8
+
+	Replacing
+	copyInitDeclaration.chpl:15
+
+	Replacing
+	copyInitDeclaration.chpl:15
+
+	Marking for dynamic analysis
+	copyInitDeclaration.chpl:15
+
+**** End forall ****
+	copyInitDeclaration.chpl:14
+
+Replacing with runtime checks
+	copyInitDeclaration.chpl:15
+
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

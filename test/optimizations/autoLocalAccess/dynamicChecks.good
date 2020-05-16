@@ -1,0 +1,76 @@
+**** Start forall ****
+	dynamicChecks.chpl:28
+
+Iterated symbol
+	dynamicChecks.chpl:16
+
+Potential access
+	dynamicChecks.chpl:29
+
+	with DefExpr
+	dynamicChecks.chpl:18
+
+	with domain defined at
+	dynamicChecks.chpl:16
+
+Access base's domain is the iterator
+	dynamicChecks.chpl:29
+
+Potential access
+	dynamicChecks.chpl:29
+
+	with DefExpr
+	dynamicChecks.chpl:19
+
+	with domain defined at
+	dynamicChecks.chpl:16
+
+Access base's domain is the iterator
+	dynamicChecks.chpl:29
+
+Potential access
+	dynamicChecks.chpl:30
+
+There is no type expression in definition, or it is not a call
+	dynamicChecks.chpl:20
+
+Regular domain symbol was not found
+	dynamicChecks.chpl:20
+
+Potential access
+	dynamicChecks.chpl:31
+
+	with DefExpr
+	dynamicChecks.chpl:21
+
+	with domain defined at
+	dynamicChecks.chpl:15
+
+Potential access
+	dynamicChecks.chpl:32
+
+There is no type expression in definition, or it is not a call
+	dynamicChecks.chpl:22
+
+Regular domain symbol was not found
+	dynamicChecks.chpl:22
+
+	Replacing
+	dynamicChecks.chpl:29
+
+	Replacing
+	dynamicChecks.chpl:29
+
+	Marking for dynamic analysis
+	dynamicChecks.chpl:30
+
+	Marking for dynamic analysis
+	dynamicChecks.chpl:32
+
+**** End forall ****
+	dynamicChecks.chpl:28
+
+Replacing with runtime checks
+	dynamicChecks.chpl:30
+
+6.0 9.0 12.0 15.0 18.0 21.0 24.0 27.0 30.0 33.0
