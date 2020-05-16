@@ -410,10 +410,19 @@ static Symbol *getCallBase(CallExpr *call) {
   return NULL;
 }
 
+
+std::map<Symbol *, std::vector<CallExpr *>> staticCheckCallMap;
+std::map<Symbol *, std::vector<CallExpr *>> dynamicCheckCallMap;
+
+std::map<Symbol *, CallExpr *> dynamicCheckRemovalMap;
+
 static void generateCheckForAccess(CallExpr *access,
                                    const ForallOptimizationInfo &loopInfo,
                                    CallExpr *&allChecks,
                                    bool isStatic) {
+
+  Symbol *baseSym = getCallBase(access);
+  INT_ASSERT(baseSym);
 
   CallExpr *currentCheck = NULL;
   if (isStatic) {
@@ -421,10 +430,9 @@ static void generateCheckForAccess(CallExpr *access,
   }
   else {
     currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
+    dynamicCheckRemovalMap[baseSym] = currentCheck;
   }
 
-  Symbol *baseSym = getCallBase(access);
-  INT_ASSERT(baseSym);
 
   currentCheck->insertAtTail(baseSym);
   if (loopInfo.iterSym != NULL) {
@@ -445,15 +453,26 @@ static void generateCheckForAccess(CallExpr *access,
   }
 }
 
-std::map<Symbol *, std::vector<CallExpr *>> staticCheckCallMap;
-std::map<Symbol *, std::vector<CallExpr *>> dynamicCheckCallMap;
+bool adjustAutoLocalAccessDynamic(CallExpr *call) {
+  if (call->maybeLocalAccess) {
+    analyzeArrLog("Replacing with runtime checks", call);
+    call->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+    return true;
+  }
+  else {
+    return false;
+  }
+}
 
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
+  bool madeAdjustments = false;
   if (call->isNamed("chpl__staticAutoLocalCheck")) {
     bool retval = imm->bool_value();
     if (retval == false) {
       Symbol *symToRevert = toSymExpr(call->get(1))->symbol();
       for_vector(CallExpr, parentCall, staticCheckCallMap[symToRevert]) {
+        madeAdjustments = true;
+
         CallExpr *callToRevert = toCallExpr(parentCall->baseExpr);
         INT_ASSERT(callToRevert->isNamed("localAccess"));
 
@@ -462,11 +481,24 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
 
         callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
         resolveCall(callToRevert);
-        return true;
+      }
+
+      for_vector(CallExpr, call, dynamicCheckCallMap[symToRevert]) {
+        madeAdjustments = true;
+
+        INT_ASSERT(call->maybeLocalAccess);
+        call->maybeLocalAccess = false;
+
+        dynamicCheckRemovalMap[getCallBase(call)]->replace(new SymExpr(gTrue));
+
+      }
+
+      if (madeAdjustments == false) {
+        INT_FATAL("Param folding static check didn't lead to adjustments");
       }
     }
   }
-  return false;
+  return madeAdjustments;
 }
 
 static void generateDynamicCheckForAccess(CallExpr *access,
@@ -553,6 +585,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
         generateDynamicCheckForAccess(dOptCandidate, loopInfo, dynamicCond);
         analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
         dOptCandidate->maybeLocalAccess = true;
+        dynamicCheckCallMap[getCallBase(dOptCandidate)].push_back(dOptCandidate);
       }
 
       ForallStmt *forallUnopt = forall->copy();
@@ -655,7 +688,6 @@ static void analyzeArrays() {
               // I couldn't find a domain symbol for this array, but it can
               // still be a candidate for optimization based on analysis at
               // runtime
-              dynamicCheckCallMap[accBaseSym].push_back(call);
               dynamicOptimizationCandidates.push_back(call);
             }
           }
