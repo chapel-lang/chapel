@@ -189,7 +189,7 @@ class PrivateArr: BaseRectangularArr {
     this.dom = privdom;
     // this.data not initialized
     this.isPrivatizedCopy = true;
-    this.defaultInitDataOnPrivatize = false;
+    this.defaultInitDataOnPrivatize = toPrivatize.defaultInitDataOnPrivatize;
     this.complete();
 
     if toPrivatize.defaultInitDataOnPrivatize {
