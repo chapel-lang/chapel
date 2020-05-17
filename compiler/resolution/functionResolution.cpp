@@ -2473,7 +2473,7 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
-static void resolveCoerceMoveForCoerceCopy(CallExpr* call);
+static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
@@ -2532,10 +2532,12 @@ void resolveCall(CallExpr* call) {
     if (resolveClassBorrowMethod(call))
       return;
 
-    resolveNormalCall(call);
+    if (call->isNamed("chpl__coerceCopy")) {
+      resolveCoerceCopyMove(call);
+      return;
+    }
 
-    if (call->isNamed("chpl__coerceCopy"))
-      resolveCoerceMoveForCoerceCopy(call);
+    resolveNormalCall(call);
   }
 }
 
@@ -2898,21 +2900,62 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 }
 
 // Save chpl__coerceMove with the same arguments as chpl__coerceCopy
-// in case copy elision decides to replace a chpl__coerceCopy with a coercMove.
-static void resolveCoerceMoveForCoerceCopy(CallExpr* call) {
+// in case copy elision decides to replace a chpl__coerceCopy with a coerceMove.
+//
+// compilerErrors reported in coerceMove are reported now, but errors in
+// coerceCopy will be put off until callDestructors.
+static void resolveCoerceCopyMove(CallExpr* call) {
+  // Try resolving the coerceCopy call
+  tryResolveCall(call, /* checkWithin */ false);
+
   // Note the chpl__coerceCopy fn
   FnSymbol* copyFn = call->resolvedFunction();
+
+  // Couldn't find a copy function - try again to give unresolved error
+  if (copyFn == NULL) {
+    resolveNormalCall(call);
+    return;
+  }
+
+  // Now try to find the corresponding chpl__coerceMove.
+  if (coerceMoveFromCopyMap.get(copyFn) != NULL) {
+    // already resolved and put into map; nothing more to do here.
+    return;
+  }
+
+  // Add a block in which we can temporarily resolve chpl__coerceMove
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+  call->getStmtExpr()->insertAfter(block);
+
   // Add another call next to it to chpl__coerceMove
   CallExpr* coerceMove = call->copy();
-  call->getStmtExpr()->insertBefore(coerceMove);
+  block->insertAtTail(coerceMove);
   coerceMove->baseExpr->replace(new UnresolvedSymExpr("chpl__coerceMove"));
   // Resolve the chpl__coerceMove call (and its body)
   resolveCallAndCallee(coerceMove, false);
   // Add it to the map
   FnSymbol* moveFn = coerceMove->resolvedFunction();
   coerceMoveFromCopyMap.put(copyFn, moveFn);
-  // Remove the chpl__coerceMove call
-  coerceMove->remove();
+  // Remove the chpl__coerceMove call and any temps added
+  block->remove();
+
+  // After the chpl__coerceMove body is resolved, resolve
+  // the body of chpl__coerceCopy. Doing it in this order allows
+  // compilerErrors in chpl__coerceMove to halt compilation.
+  // That prevents the compiler from trying to continue past severe
+  // errors, like rank mismatch, when compiling chpl__coerceCopy
+  // (since chpl__coerceCopy might save an error for later).
+  //
+  // A more robust solution would be preferred.
+  inTryResolve++;
+  tryResolveStates.push_back(CHECK_BODY_RESOLVES);
+  tryResolveFunctions.push_back(copyFn);
+
+  resolveFunction(copyFn);
+
+  tryResolveFunctions.pop_back();
+  tryResolveStates.pop_back();
+  inTryResolve--;
 }
 
 /************************************* | **************************************
@@ -8378,6 +8421,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
           bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
                            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
                            fn->hasFlag(FLAG_UNALIAS_FN) ||
+                           fn->hasFlag(FLAG_COERCE_FN) ||
                            fn->name == astrInitEquals;
           if (inCopyIsh) {
             fn->addFlag(FLAG_ERRONEOUS_COPY);
