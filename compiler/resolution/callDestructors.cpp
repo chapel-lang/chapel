@@ -245,7 +245,7 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
 
   // Also transform coerceMove if we transform coerceCopy
   // (since later in callDestructors we might replace coerceCopy with Move)
-  if (fn->name == astr("chpl__coerceCopy"))
+  if (fn->name == astr_coerceCopy)
     if (FnSymbol* coerceMove = getCoerceMoveFromCoerceCopy(fn))
       transformFunction(coerceMove);
 }

@@ -1516,7 +1516,7 @@ static void buildUnionAssignmentFunction(AggregateType* ct) {
 ************************************** | *************************************/
 
 static void checkNotPod(AggregateType* at) {
-  if (functionExists("chpl__initCopy", at) == NULL) {
+  if (functionExists(astr_initCopy, at) == NULL) {
 
     if (at->hasUserDefinedInitEquals()) {
       at->symbol->addFlag(FLAG_NOT_POD);

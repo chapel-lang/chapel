@@ -2000,6 +2000,10 @@ const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
 const char* astrBorrow = NULL;
 const char* astr_init_coerce_tmp = NULL;
+const char* astr_autoCopy = NULL;
+const char* astr_initCopy = NULL;
+const char* astr_coerceCopy = NULL;
+const char* astr_coerceMove = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2035,6 +2039,11 @@ void initAstrConsts() {
 
   astrBorrow = astr("borrow");
   astr_init_coerce_tmp = astr("init_coerce_tmp");
+
+  astr_autoCopy = astr("chpl__autoCopy");
+  astr_initCopy = astr("chpl__initCopy");
+  astr_coerceCopy = astr("chpl__coerceCopy");
+  astr_coerceMove = astr("chpl__coerceMove");
 }
 
 /************************************* | **************************************

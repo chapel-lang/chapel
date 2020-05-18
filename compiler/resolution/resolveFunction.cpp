@@ -1531,7 +1531,7 @@ void resolveIfExprType(CondStmt* stmt) {
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
       if (typeNeedsCopyInitDeinit(rhs->getValType())) {
-        CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
+        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
         if (isReferenceType(thenType)) {
@@ -2018,7 +2018,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      case INTENT_INOUT:
       fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                     tmp,
-                                    new CallExpr("chpl__initCopy", formal)));
+                                    new CallExpr(astr_initCopy, formal)));
 
       tmp->addFlag(FLAG_FORMAL_TEMP);
       tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
@@ -2030,7 +2030,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                       tmp,
-                                      new CallExpr("chpl__initCopy", formal)));
+                                      new CallExpr(astr_initCopy, formal)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -2078,8 +2078,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            // types.
            fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                          tmp,
-                                         new CallExpr("chpl__autoCopy",
-                                                      formal)));
+                                         new CallExpr(astr_autoCopy, formal)));
 
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
@@ -2318,7 +2317,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  toResolve = new CallExpr("chpl__autoCopy", new SymExpr(from));
+                  toResolve = new CallExpr(astr_autoCopy, new SymExpr(from));
                   rhs = toResolve;
 
                 } else if (rhsType->refType == lhsType) {
@@ -2367,10 +2366,10 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 CallExpr* callCoerceFn = NULL;
                 if (stealRHS) {
-                  callCoerceFn = new CallExpr("chpl__coerceMove",
+                  callCoerceFn = new CallExpr(astr_coerceMove,
                                               fromType, from);
                 } else {
-                  callCoerceFn = new CallExpr("chpl__coerceCopy",
+                  callCoerceFn = new CallExpr(astr_coerceCopy,
                                               fromType, from);
                   // Since the initialization pattern normally does not
                   // require adding an auto-destroy for a call-expr-temp,

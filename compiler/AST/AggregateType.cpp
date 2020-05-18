@@ -2298,7 +2298,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
             if (defPoint->exprType == NULL) {
-              CallExpr* copy = new CallExpr("chpl__initCopy");
+              CallExpr* copy = new CallExpr(astr_initCopy);
               defPoint->init->replace(copy);
               copy->insertAtTail(fe);
             }

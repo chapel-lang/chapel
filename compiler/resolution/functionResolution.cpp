@@ -2930,7 +2930,7 @@ static void resolveCoerceCopyMove(CallExpr* call) {
   // Add another call next to it to chpl__coerceMove
   CallExpr* coerceMove = call->copy();
   block->insertAtTail(coerceMove);
-  coerceMove->baseExpr->replace(new UnresolvedSymExpr("chpl__coerceMove"));
+  coerceMove->baseExpr->replace(new UnresolvedSymExpr(astr_coerceMove));
   // Resolve the chpl__coerceMove call (and its body)
   resolveCallAndCallee(coerceMove, false);
   // Add it to the map
@@ -3940,8 +3940,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         }
       }
 
-    } else if (info.name == astr("chpl__coerceCopy") ||
-               info.name == astr("chpl__coerceMove")) {
+    } else if (info.name == astr_coerceCopy || info.name == astr_coerceMove) {
 
         USR_FATAL_CONT(call,
                        "Cannot initialize %s from %s",
@@ -6457,10 +6456,10 @@ void resolveInitVar(CallExpr* call) {
     //
     // For example, even though domains can leverage 'init=' for basic
     // copy-initialization, the compiler only currently knows about calls to
-    // "chpl__initCopy" and how to turn them into something else when necessary
+    // 'chpl__initCopy' and how to turn them into something else when necessary
     // (e.g. chpl__unalias).
 
-    CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
+    CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove());
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -6576,7 +6575,7 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   CallExpr* call = NULL;
 
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr("chpl__initCopy", tmpAt);
+    call = new CallExpr(astr_initCopy, tmpAt);
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -9106,7 +9105,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 // records shouldn't be defining chpl__initCopy or chpl__autoCopy
 // and certainly shouldn't rely on the differences between the two.
 static const char* autoCopyFnForType(AggregateType* at) {
-  const char* retval = "chpl__autoCopy";
+  const char* retval = astr_autoCopy;
 
   if (typeNeedsCopyInitDeinit(at)            == true  &&
       at->symbol->hasFlag(FLAG_TUPLE)        == false &&
@@ -9115,7 +9114,7 @@ static const char* autoCopyFnForType(AggregateType* at) {
       isSyncType(at)                         == false &&
       isSingleType(at)                       == false &&
       at->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
-    retval = "chpl__initCopy";
+    retval = astr_initCopy;
   }
 
   return retval;

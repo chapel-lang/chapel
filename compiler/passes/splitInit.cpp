@@ -466,9 +466,9 @@ static bool findCopyElisionCandidate(CallExpr* call,
   if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
     if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
       if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-        if (rhsCall->isNamed("chpl__initCopy") ||
-            rhsCall->isNamed("chpl__autoCopy") ||
-            rhsCall->isNamed("chpl__coerceCopy")) {
+        if (rhsCall->isNamedAstr(astr_initCopy) ||
+            rhsCall->isNamedAstr(astr_autoCopy) ||
+            rhsCall->isNamedAstr(astr_coerceCopy)) {
           int nActuals = rhsCall->numActuals();
           if (nActuals >= 1) {
             if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals))) {
@@ -485,9 +485,9 @@ static bool findCopyElisionCandidate(CallExpr* call,
   }
 
   // a chpl__initCopy / chpl__autoCopy returning through RVV
-  if (call->isNamed("chpl__initCopy") ||
-      call->isNamed("chpl__autoCopy") ||
-      call->isNamed("chpl__coerceCopy")) {
+  if (call->isNamedAstr(astr_initCopy) ||
+      call->isNamedAstr(astr_autoCopy) ||
+      call->isNamedAstr(astr_coerceCopy)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       int nActuals = call->numActuals();
       if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 2) {
@@ -526,7 +526,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
         bool calledInitEq = call->isNamedAstr(astrInitEquals);
 
         SET_LINENO(call);
-        if (call->isNamed("chpl__coerceCopy")) {
+        if (call->isNamedAstr(astr_coerceCopy)) {
           // change chpl__coerceCopy into chpl__coerceMove with same args
           FnSymbol* copyFn = call->resolvedFunction();
           FnSymbol* moveFn = getCoerceMoveFromCoerceCopy(copyFn);

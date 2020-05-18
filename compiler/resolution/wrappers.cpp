@@ -744,7 +744,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   resolveBlockStmt(block);
 
   if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
-    CallExpr* copy = new CallExpr("chpl__initCopy", temp);
+    CallExpr* copy = new CallExpr(astr_initCopy, temp);
     block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
     resolveCallAndCallee(copy);
   } else {
@@ -1428,7 +1428,7 @@ static void addArgCoercion(FnSymbol*  fn,
     if (typeNeedsCopyInitDeinit(at) && propagateNotPOD(at) &&
         !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      castCall = new CallExpr("chpl__initCopy", prevActual);
+      castCall = new CallExpr(astr_initCopy, prevActual);
     } else {
       castCall   = new CallExpr(PRIM_DEREF, prevActual);
     }
@@ -1706,9 +1706,9 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 
         CallExpr* copy = NULL;
         if (coerceRuntimeTypes)
-          copy = new CallExpr("chpl__coerceCopy", runtimeTypeTemp, actualSym);
+          copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym);
         else
-          copy = new CallExpr("chpl__initCopy", actualSym);
+          copy = new CallExpr(astr_initCopy, actualSym);
 
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
         anchor->insertBefore(new DefExpr(tmp));
@@ -1735,7 +1735,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
             tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
           }
 
-          CallExpr* copy = new CallExpr("chpl__coerceMove",
+          CallExpr* copy = new CallExpr(astr_coerceMove,
                                         runtimeTypeTemp, actualSym);
 
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
