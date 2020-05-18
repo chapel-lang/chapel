@@ -228,10 +228,6 @@ Split initialization does not apply:
  * when the variable is a field, config variable, or ``extern`` variable.
  * when an applicable assignment statement setting the variable could not
    be identified
- * when the variable is mentioned before the earliest assignment
-   statement(s)
- * when an applicable assignment statement is in a loop, ``on``
-   statement, or ``begin`` statement
  * when an applicable assignment statement is in one branch of a
    conditional but not in the other, and when the other branch
    does not always return or throw. This rule prevents
@@ -245,6 +241,11 @@ In the case that the variable is declared without a ``type-part`` and
 where multiple applicable assignment statements are identified, all of
 the assignment statements need to contain an initialization expression of
 the same type.
+
+Any variables declared in a particular scope that are initialized with
+split init in both the ``then`` and ``else`` branches of a conditional
+must be initialized in the same order in the ``then`` and ``else``
+branches.
 
 .. _Default_Values_For_Types:
 
@@ -862,12 +863,15 @@ initialization* and the source variable is considered dead. Compile-time
 analysis provides compilation errors when a variable is used after it is
 dead in common cases.
 
-Like split initialization, copy elision considers mentions of variables
-to determine whether or not a copy can be elided. Since a ``return`` or
+Like split initialization, copy elision looks forward from variable
+declaration points and considers mentions of variables to determine
+whether or not a copy can be elided. After a copy, if the source variable
+is not mentioned again, the copy will be elided.  Since a ``return`` or
 ``throw`` exits a function, a copy can be elided if it is followed
-immediately by a ``return`` or ``throw``. Copy elision considers eliding
-copies only within block declarations ``{ }``, ``try`` blocks, ``try!``
-blocks, and conditionals.
+immediately by a ``return`` or ``throw``. When searching forward from
+variable declarations, copy elision considers eliding copies only within
+block declarations ``{ }``, ``try`` blocks, ``try!`` blocks, and
+conditionals.
 
    *Example (copy-elision.chpl)*
 
@@ -969,9 +973,6 @@ Copy elision does not apply:
 
  * when the source variable is a reference, field, or module-level
    variable
- * when the source variable is mentioned after the copy statement
- * when the copy statement is in a loop, ``on`` statement, or ``begin``
-   statement
  * when the copy statement is in one branch of a conditional but not in
    the other, or when the other branch does not always ``return`` or
    ``throw``.
