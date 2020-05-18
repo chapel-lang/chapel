@@ -410,11 +410,14 @@ static Symbol *getCallBase(CallExpr *call) {
   return NULL;
 }
 
+// checks added for symbol
+std::map<Symbol *, CallExpr *> staticCheckForSymMap;
+std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
+//
+// access CallExprs for each check added
+std::map<CallExpr *, std::vector<CallExpr *>> accessForStaticCheckMap;
+std::map<CallExpr *, std::vector<CallExpr *>> accessForDynamicCheckMap;
 
-std::map<Symbol *, std::vector<CallExpr *>> staticCheckCallMap;
-std::map<Symbol *, std::vector<CallExpr *>> dynamicCheckCallMap;
-
-std::map<Symbol *, CallExpr *> dynamicCheckRemovalMap;
 
 static void generateCheckForAccess(CallExpr *access,
                                    const ForallOptimizationInfo &loopInfo,
@@ -427,10 +430,11 @@ static void generateCheckForAccess(CallExpr *access,
   CallExpr *currentCheck = NULL;
   if (isStatic) {
     currentCheck = new CallExpr("chpl__staticAutoLocalCheck");
+    staticCheckForSymMap[baseSym] = currentCheck;
   }
   else {
     currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
-    dynamicCheckRemovalMap[baseSym] = currentCheck;
+    dynamicCheckForSymMap[baseSym] = currentCheck;
   }
 
 
@@ -457,6 +461,7 @@ bool adjustAutoLocalAccessDynamic(CallExpr *call) {
   if (call->maybeLocalAccess) {
     analyzeArrLog("Replacing with runtime checks", call);
     call->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+    call->maybeLocalAccess = false; // no longer a "maybe"
     return true;
   }
   else {
@@ -469,30 +474,40 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
   if (call->isNamed("chpl__staticAutoLocalCheck")) {
     bool retval = imm->bool_value();
     if (retval == false) {
+      
+      // remove statically-determined accesses based on this check
+      for_vector(CallExpr, parentCall, accessForStaticCheckMap[call]) {
+        madeAdjustments = true;
+
+        if (parentCall->maybeLocalAccess) {
+          // this was based on a dynamic check, so only unset the marker
+          parentCall->maybeLocalAccess = false;
+        }
+        else {
+          CallExpr *callToRevert = toCallExpr(parentCall->baseExpr);
+          INT_ASSERT(callToRevert->isNamed("localAccess"));
+
+          analyzeArrLog("Reverting optimization (can't statically confirm)",
+                        callToRevert);
+
+          callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
+          resolveCall(callToRevert);
+        }
+      }
+
+      //remove dynamic checks that are added to the same symbol
       Symbol *symToRevert = toSymExpr(call->get(1))->symbol();
-      for_vector(CallExpr, parentCall, staticCheckCallMap[symToRevert]) {
+      if (CallExpr *dynCheck = dynamicCheckForSymMap[symToRevert]) {
         madeAdjustments = true;
 
-        CallExpr *callToRevert = toCallExpr(parentCall->baseExpr);
-        INT_ASSERT(callToRevert->isNamed("localAccess"));
+        //INT_ASSERT(call->maybeLocalAccess); // this should have been true?
+        //call->maybeLocalAccess = false;
 
-        analyzeArrLog("Reverting optimization (can't statically confirm)",
-                      callToRevert);
-
-        callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
-        resolveCall(callToRevert);
+        dynCheck->replace(new SymExpr(gTrue));
       }
-
-      for_vector(CallExpr, call, dynamicCheckCallMap[symToRevert]) {
-        madeAdjustments = true;
-
-        INT_ASSERT(call->maybeLocalAccess);
-        call->maybeLocalAccess = false;
-
-        dynamicCheckRemovalMap[getCallBase(call)]->replace(new SymExpr(gTrue));
-
-      }
-
+      //
+      // as we had this static check, there must have been either a
+      // statically-determined access or another dynamic check
       if (madeAdjustments == false) {
         INT_FATAL("Param folding static check didn't lead to adjustments");
       }
@@ -570,7 +585,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
 
         repl->insertAtTail(new SymExpr(argSym));
       }
-      staticCheckCallMap[baseSym].push_back(repl);
+      accessForStaticCheckMap[staticCheckForSymMap[baseSym]].push_back(repl);
       sOptCandidate->replace(repl);
     }
   }
@@ -582,10 +597,12 @@ static void buildLocalAccessLoops(ForallStmt *forall,
 
       // this marks calls in `forall`
       for_vector(CallExpr, dOptCandidate, dOptCandidates) {
+        Symbol *callBase = getCallBase(dOptCandidate);
         generateDynamicCheckForAccess(dOptCandidate, loopInfo, dynamicCond);
         analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
         dOptCandidate->maybeLocalAccess = true;
-        dynamicCheckCallMap[getCallBase(dOptCandidate)].push_back(dOptCandidate);
+        accessForDynamicCheckMap[dynamicCheckForSymMap[callBase]].push_back(dOptCandidate);
+        accessForStaticCheckMap[staticCheckForSymMap[callBase]].push_back(dOptCandidate);
       }
 
       ForallStmt *forallUnopt = forall->copy();
@@ -693,9 +710,6 @@ static void analyzeArrays() {
           }
 
           if (canOptimize) {
-            if (staticCheckCallMap.count(accBaseSym) == 0) {
-              staticCheckCallMap[accBaseSym] = std::vector<CallExpr *>();
-            }
             staticOptimizationCandidates.push_back(call);
           }
         } // end canOptimize
