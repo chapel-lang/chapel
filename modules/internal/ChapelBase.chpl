@@ -63,6 +63,18 @@ module ChapelBase {
     return false;
   }
 
+  // these type overloads are for degenerate cases where the optimization can
+  // break a meaningful error message without these
+  proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain) param {
+    return false;
+  }
+  proc chpl__staticAutoLocalCheck(accessBase, type loopDomain) param {
+    return false;
+  }
+  proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
+    return false;
+  }
+
   proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
     return true;
   }
