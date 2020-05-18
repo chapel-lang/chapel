@@ -91,5 +91,23 @@ Access base share the domain with iterator's base
 **** End forall ****
 	regularDeclaration.chpl:31
 
+Statically confirmed optimization, using localAccess
+	regularDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration.chpl:32
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration.chpl:32
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration.chpl:32
+
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

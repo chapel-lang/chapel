@@ -2688,6 +2688,26 @@ module ChapelArray {
       return localAccess(i);
 
 
+    inline proc chpl_maybeLocalAccessStatic(i: _value.dom.idxType ...rank) ref {
+      use Reflection;
+      if canResolveMethod(_value, "dsiLocalAccess", (...i)) {
+        return localAccess((...i));
+      }
+      else {
+        return this((...i));
+      }
+    }
+
+    inline proc chpl_maybeLocalAccessDynamic(i: _value.dom.idxType ...rank) ref {
+      use Reflection;
+      if canResolveMethod(_value, "dsiLocalAccess", (...i)) {
+        return localAccess((...i));
+      }
+      else {
+        return this((...i));
+      }
+    }
+
     // array slicing by a domain
     //
     // requires dense domain implementation that returns a tuple of

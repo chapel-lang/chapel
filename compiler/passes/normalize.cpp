@@ -505,7 +505,7 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
         }
         else {
           CallExpr *callToRevert = toCallExpr(parentCall->baseExpr);
-          INT_ASSERT(callToRevert->isNamed("localAccess"));
+          INT_ASSERT(callToRevert->isNamed("chpl_maybeLocalAccessStatic"));
 
           analyzeArrLog("Reverting optimization (can't statically confirm)",
                         callToRevert);
@@ -531,6 +531,28 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
       if (madeAdjustments == false) {
         INT_FATAL("Param folding static check didn't lead to adjustments");
       }
+    }
+    else {
+      // update statically-determined accesses based on this check
+      for_vector(CallExpr, parentCall, accessForStaticCheckMap[call]) {
+        madeAdjustments = true;
+
+        if (parentCall->maybeLocalAccess) {
+          // this was based on a dynamic check, so only unset the marker
+          parentCall->maybeLocalAccess = false;
+        }
+        else {
+          CallExpr *callToConfirm = toCallExpr(parentCall->baseExpr);
+          INT_ASSERT(callToConfirm->isNamed("chpl_maybeLocalAccessStatic"));
+
+          analyzeArrLog("Statically confirmed optimization, using localAccess",
+                        callToConfirm);
+
+          callToConfirm->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+          resolveCall(callToConfirm);
+        }
+      }
+
     }
   }
   return madeAdjustments;
@@ -597,7 +619,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       INT_ASSERT(baseSym);
 
       CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
-          new UnresolvedSymExpr("localAccess"));
+          new UnresolvedSymExpr("chpl_maybeLocalAccessStatic"));
       CallExpr *repl = new CallExpr(base);
       for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
         Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
