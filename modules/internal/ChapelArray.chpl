@@ -4272,39 +4272,9 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: []) {
-
     pragma "no copy"
     var lhs = chpl__coerceCopy(rhs.type, rhs);
     return lhs;
-/*
-    type eltType = rhs.eltType;
-    const ref dom = rhs.domain;
-
-    pragma "no copy" // avoid error about recursion
-    pragma "unsafe" // when eltType is non-nilable
-    var lhs = dom.buildArray(eltType, initElts=false);
-
-    if lhs.rank != rhs.rank then
-      compilerError("rank mismatch in array assignment");
-
-    if rhs._value == nil {
-      // This happens e.g. for 'new' on a record with an array field whose
-      // default initializer is a forall expr. E.g. arrayInClassRecord.chpl.
-    } else if lhs._value == rhs._value {
-      // do nothing (assert?)
-    } else if lhs.size == 0 && rhs.size == 0 {
-      // Do nothing for zero-length assignments
-    } else {
-      if boundsChecking then
-        checkArrayShapesUponAssignment(lhs, rhs);
-
-      chpl__uncheckedArrayTransfer(lhs, rhs, kind=_tElt.initCopy);
-    }
-
-    // provide distributions a hook to call _ddata_allocate_postalloc etc.
-    lhs._value.dsiElementInitializationComplete();
-
-    return lhs;*/
   }
 
   pragma "auto copy fn" proc chpl__autoCopy(x: []) {
