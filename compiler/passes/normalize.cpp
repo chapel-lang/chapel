@@ -489,6 +489,47 @@ bool adjustAutoLocalAccessDynamic(CallExpr *call) {
   }
 }
 
+static void revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
+  // find the first conditional that comes after this check
+  if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
+    if (parentCall->isPrimitive(PRIM_MOVE)) {
+      Expr *curExpr = parentCall->next;
+      CondStmt *optCond = NULL;
+      while(curExpr != NULL && optCond == NULL) {
+        optCond = toCondStmt(curExpr);
+        curExpr = curExpr->next;
+      }
+
+      if (optCond != NULL) {
+        std::vector<CallExpr *> optCallExprs;
+        collectCallExprs(optCond->thenStmt, optCallExprs);
+
+        // remove statically-determined accesses based on this check
+        for_vector(CallExpr, parentCall, optCallExprs) {
+          //madeAdjustments = true;
+
+          if (parentCall->maybeLocalAccess) {
+            // this was based on a dynamic check, so only unset the marker
+            parentCall->maybeLocalAccess = false;
+          }
+          else {
+            if(CallExpr *callToRevert = toCallExpr(parentCall->baseExpr)) {
+              if (callToRevert->isNamed("chpl_maybeLocalAccessStatic")) {
+
+                analyzeArrLog("Reverting optimization (can't statically confirm)",
+                              callToRevert);
+
+                callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
+                resolveCall(callToRevert);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
   bool madeAdjustments = false;
   if (call->isNamed("chpl__staticAutoLocalCheck")) {
@@ -529,7 +570,8 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
       // as we had this static check, there must have been either a
       // statically-determined access or another dynamic check
       if (madeAdjustments == false) {
-        INT_FATAL("Param folding static check didn't lead to adjustments");
+        revertAutoLocalAccessesBasedOnStaticCheck(call);
+        //INT_FATAL("Param folding static check didn't lead to adjustments");
       }
     }
     else {
@@ -543,13 +585,13 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
         }
         else {
           CallExpr *callToConfirm = toCallExpr(parentCall->baseExpr);
-          INT_ASSERT(callToConfirm->isNamed("chpl_maybeLocalAccessStatic"));
+          if (callToConfirm->isNamed("chpl_maybeLocalAccessStatic")) {
+            analyzeArrLog("Statically confirmed optimization, using localAccess",
+                          callToConfirm);
 
-          analyzeArrLog("Statically confirmed optimization, using localAccess",
-                        callToConfirm);
-
-          callToConfirm->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
-          resolveCall(callToConfirm);
+            callToConfirm->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+            resolveCall(callToConfirm);
+          }
         }
       }
 
