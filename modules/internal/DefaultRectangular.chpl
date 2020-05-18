@@ -1089,11 +1089,11 @@ module DefaultRectangular {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
-        var numElts:intIdxType = 0;
-        if deinitElts && dom.dsiNumIndices > 0 {
+        var numInd = dom.dsiNumIndices;
+        var numElts:intIdxType = numInd;
+        if deinitElts && numInd > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          numElts = dom.dsiNumIndices;
 
           if needsDestroy {
             if _deinitElementsIsParallel(eltType) {
@@ -1107,7 +1107,7 @@ module DefaultRectangular {
             }
           }
         }
-        _ddata_free(data, numElts);
+        _ddata_free(data, numInd);
       }
     }
 
