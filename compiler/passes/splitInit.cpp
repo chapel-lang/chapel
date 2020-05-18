@@ -136,12 +136,6 @@ static bool allowSplitInit(Symbol* sym) {
   if (sym->hasFlag(FLAG_EXTERN))
     return false;
 
-  // For now, disable split init on non-user code
-  // unless there is no alternative
-  if (sym->defPoint->getModule()->modTag != MOD_USER &&
-      !isSplitInitExpr(sym->defPoint->init))
-    return false;
-
   return true;
 }
 

@@ -525,6 +525,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 
     // Ensure normalize doesn't try to auto destroy this
     elem->addFlag(FLAG_NO_AUTO_DESTROY);
+    elem->addFlag(FLAG_TEMP);
 
     fn->body->insertAtTail(new DefExpr(elem, NULL, type->symbol));
     fn->body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, tup, symName, elem));
