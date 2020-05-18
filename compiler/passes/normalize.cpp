@@ -415,6 +415,11 @@ std::map<Symbol *, CallExpr *> staticCheckForSymMap;
 std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
 //
 // access CallExprs for each check added
+// Note an important difference here. For static check map, we put the
+// compiler-injected `localAccess` to this map, whereas for the dynamic check we
+// put the same call that we find as a candidate to be checked again during
+// resolution. Such calls have their `maybeLocalAccess` set to true between this
+// analysis and resolution time where we make the final call for them
 std::map<CallExpr *, std::vector<CallExpr *>> accessForStaticCheckMap;
 std::map<CallExpr *, std::vector<CallExpr *>> accessForDynamicCheckMap;
 
@@ -429,12 +434,22 @@ static void generateCheckForAccess(CallExpr *access,
 
   CallExpr *currentCheck = NULL;
   if (isStatic) {
-    currentCheck = new CallExpr("chpl__staticAutoLocalCheck");
-    staticCheckForSymMap[baseSym] = currentCheck;
+    if (staticCheckForSymMap.count(baseSym) == 0) {
+      currentCheck = new CallExpr("chpl__staticAutoLocalCheck");
+      staticCheckForSymMap[baseSym] = currentCheck;
+    }
+    else {
+      return;
+    }
   }
   else {
-    currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
-    dynamicCheckForSymMap[baseSym] = currentCheck;
+    if (dynamicCheckForSymMap.count(baseSym) == 0) {
+      currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
+      dynamicCheckForSymMap[baseSym] = currentCheck;
+    }
+    else {
+      return;
+    }
   }
 
 
