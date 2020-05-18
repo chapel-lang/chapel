@@ -121,6 +121,7 @@ public:
   static void     registerPrimitivesForCodegen();
 
   bool            maybeLocalAccess;
+  bool            staticCheck = false;
 
 private:
   GenRet          codegenPrimitive();

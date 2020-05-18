@@ -334,7 +334,12 @@ static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
       ret.dotDomIterSym = dotDomBaseSym;
       ret.dotDomIterSymDom = getDomSym(ret.dotDomIterSym);
       analyzeArrLog("Iterated over .domain of", ret.dotDomIterSym);
-      analyzeArrLog("where its domain is", ret.dotDomIterSymDom);
+      if (ret.dotDomIterSymDom != NULL) {
+        analyzeArrLog("where its domain is", ret.dotDomIterSymDom);
+      }
+      else {
+        analyzeArrLog("Whose domain cannot be determined statically", ret.dotDomIterSym);
+      }
     }
 
     if (ret.iterSym != NULL || ret.dotDomIterSym != NULL) {
