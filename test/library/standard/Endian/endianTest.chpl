@@ -36,13 +36,15 @@ proc test(x) {
   
   // test for little endian
   a = hostToLittleEndian(x);
-  writeln(a);
+  writef("%xn\n", a);
   b = littleEndianToHost(a);
+  writef("%xn\n", b);
   writeln(b == x);
   
   //test for big Endian
   a = hostToBigEndian(x);
-  writeln(a);
+  writef("%xn\n", a);
   b = bigEndianToHost(a);
+  writef("%xn\n", b);
   writeln(b == x);
 }

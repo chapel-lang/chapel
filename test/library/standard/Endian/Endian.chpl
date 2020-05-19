@@ -1,47 +1,83 @@
 module Endian {
   use SysCTypes;
 
-  extern proc htole32(x: c_uint): c_uint;
-  extern proc le32toh(x: c_uint): c_uint;
-  extern proc htobe32(x: c_uint): c_uint;
-  extern proc be32toh(x: c_uint): c_uint;
-  extern proc htole64(x: c_ulong): c_ulong;
-  extern proc le64toh(x: c_ulong): c_ulong;
-  extern proc htobe64(x: c_ulong): c_ulong;
-  extern proc be64toh(x: c_ulong): c_ulong;
+  private extern proc htole32(x: c_uint): c_uint;
+  private extern proc le32toh(x: c_uint): c_uint;
+  private extern proc htobe32(x: c_uint): c_uint;
+  private extern proc be32toh(x: c_uint): c_uint;
+  private extern proc htole64(x: c_ulong): c_ulong;
+  private extern proc le64toh(x: c_ulong): c_ulong;
+  private extern proc htobe64(x: c_ulong): c_ulong;
+  private extern proc be64toh(x: c_ulong): c_ulong;
 
+  /* Returns the little endian order of the argument.
+
+      :arg x: a 32-bit unsigned integer
+  */
   proc hostToLittleEndian(x: uint(32)): uint(32) {
     return htole32(x);
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 32-bit unsigned integer
+  */
   proc littleEndianToHost(x: uint(32)): uint(32) {
     return le32toh(x);
   }
 
+  /* Returns the big endian order of the argument.
+
+      :arg x: a 32-bit unsigned integer
+  */
   proc hostToBigEndian(x: uint(32)): uint(32) {
     return htobe32(x);
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 32-bit unsigned integer
+  */
   proc bigEndianToHost(x: uint(32)): uint(32) {
     return be32toh(x);
   }
 
+  /* Returns the little endian order of the argument.
+
+      :arg x: a 64-bit unsigned integer
+  */
   proc hostToLittleEndian(x: uint(64)): uint(64) {
     return htole64(x);
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 64-bit unsigned integer
+  */
   proc littleEndianToHost(x: uint(64)): uint(64) {
     return le64toh(x);
   }
 
+  /* Returns the big endian order of the argument.
+
+      :arg x: a 64-bit unsigned integer
+  */
   proc hostToBigEndian(x: uint(64)): uint(64) {
     return htobe64(x);
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 64-bit unsigned integer
+  */
   proc bigEndianToHost(x: uint(64)): uint(64) {
     return be64toh(x);
   }
 
+  /* Returns the little endian order of the argument.
+
+      :arg x: a 32-bit signed integer or a 32-bit real
+  */
   proc hostToLittleEndian(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
@@ -51,6 +87,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 32-bit signed integer or a 32-bit real
+  */
   proc littleEndianToHost(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
@@ -60,6 +100,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the big endian order of the argument.
+
+      :arg x: a 32-bit signed integer or a 32-bit real
+  */
   proc hostToBigEndian(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
@@ -69,6 +113,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 32-bit signed integer or a 32-bit real
+  */
   proc bigEndianToHost(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
@@ -78,6 +126,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the little endian order of the argument.
+
+      :arg x: a 64-bit signed integer or a 64-bit real
+  */
   proc hostToLittleEndian(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
@@ -87,6 +139,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 64-bit signed integer or a 64-bit real
+  */
   proc littleEndianToHost(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
@@ -96,6 +152,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the big endian order of the argument.
+
+      :arg x: a 64-bit signed integer or a 64-bit real
+  */
   proc hostToBigEndian(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
@@ -105,6 +165,10 @@ module Endian {
     return a;
   }
 
+  /* Returns the host byte order of the argument.
+
+      :arg x: a 64-bit signed integer or a 64-bit real
+  */
   proc bigEndianToHost(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
