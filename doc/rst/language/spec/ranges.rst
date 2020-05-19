@@ -570,10 +570,12 @@ bit size as the base range’s ``idxType``, or an implicit conversion must
 be allowed to that type from the step’s type. It is an error for the
 step to be zero.
 
-   *Future*.
+   .. note::
 
-   We may consider allowing the step to be of any integer type, for
-   maximum flexibility.
+      *Future*.
+
+      We may consider allowing the step to be of any integer type, for
+      maximum flexibility.
 
 The type of the result of the ``by`` operator is the type of the base
 range, but with the ``stridable`` parameter set to ``true``.

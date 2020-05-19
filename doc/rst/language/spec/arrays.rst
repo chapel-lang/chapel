@@ -167,18 +167,21 @@ A trailing comma is allowed.
       3
       4
       5
+   .. note::
 
-   *Future*.
-
-   Provide syntax which allows users to specify the domain for a
-   rectangular array literal.
+      *Future:*
+      
+      Provide syntax which allows users to specify the domain for a
+      rectangular array literal.
 
 ..
 
-   *Future*.
-
-   Determine the type of a rectangular array literal based on the most
-   promoted type, rather than the first element’s type.
+   .. note::
+      
+      *Future:*
+      
+      Determine the type of a rectangular array literal based on the most
+      promoted type, rather than the first element’s type.
 
    *Example (decl-with-anon-domain.chpl)*.
 

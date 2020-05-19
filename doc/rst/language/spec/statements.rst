@@ -671,13 +671,16 @@ A ``break`` statement cannot be used to exit a parallel loop
 
 ..
 
-   *Future*.
+.. note::
 
-   We expect to support a *eureka* concept which would enable one or
-   more tasks to stop the execution of all current and future iterations
-   of the loop.
+  *Future:*
+    
+    We expect to support a *eureka* concept which would enable one or
+    more tasks to stop the execution of all current and future iterations
+    of the loop.
 
-   *Example*.
+
+*Example*.
 
    In the following code, the index of the first element in each row of
    ``A`` that is equal to ``findVal`` is printed. Once a match is found,

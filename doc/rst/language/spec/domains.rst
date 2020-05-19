@@ -179,9 +179,11 @@ expanded (as by an iterator), rectangular domain indices are ordered
 according to the lexicographic order of their values. That is, the index
 with the highest rank is listed first and changes most slowly. [3]_
 
-   *Future*.
+   .. note::
 
-   Domains defined using unbounded ranges may be supported.
+      *Future*
+
+      Domains defined using unbounded ranges may be supported.
 
 Literal rectangular domain values are represented by a comma-separated
 list of range expressions of matching ``idxType`` enclosed in curly
@@ -335,10 +337,12 @@ It is required that the types of the values used in constructing an
 associative domain literal value be of the same type. If the types of
 the indices does not match a compiler error will be issued.
 
-   *Future*.
+   .. note::
 
-   Due to implementation of == over arrays it is currently not possible
-   to use arrays as indices within an associative domain.
+      *Future*
+      
+      Due to implementation of == over arrays it is currently not possible
+      to use arrays as indices within an associative domain.
 
 ..
 

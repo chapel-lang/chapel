@@ -628,10 +628,12 @@ are defined for integral atomic types. Only add and sub (``+``, ``-``)
 are defined for ``real`` atomic types. None of the methods are defined
 for the ``bool`` atomic type.
 
-   *Future*.
+   .. note::
+   
+      *Future*.
 
-   In the future we may overload certain operations such as ``+=`` to call
-   the above methods automatically for atomic variables.
+      In the future we may overload certain operations such as ``+=`` to call
+      the above methods automatically for atomic variables.
 
 
 
@@ -951,11 +953,13 @@ subject to such treatment within nested task constructs, if any.
 
 ..
 
-   *Future*.
+   .. note::
 
-   For a given intent, we would also like to provide a blanket clause,
-   which would apply the intent to all variables. An example of syntax
-   for a blanket ``ref`` intent would be ``ref *``.
+      *Future*.
+
+      For a given intent, we would also like to provide a blanket clause,
+      which would apply the intent to all variables. An example of syntax
+      for a blanket ``ref`` intent would be ``ref *``.
 
 .. _Sync_Statement:
 
