@@ -23,6 +23,18 @@
 
 #include "stmt.h"
 
+class ForallOptimizationInfo {
+  public:
+    Symbol *iterSym = NULL;
+    Expr *dotDomIterExpr = NULL;
+    Symbol *dotDomIterSym = NULL;
+    Symbol *dotDomIterSymDom = NULL;
+    std::vector<Symbol *> multiDIndices;
+
+    // checks added for symbol
+    std::map<Symbol *, CallExpr *> staticCheckForSymMap;
+    std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
+};
 
 ///////////////////////////////////
     // forall loop statement //
@@ -90,6 +102,7 @@ public:
   bool isForallExpr() const;
 
   bool autoLocalAccessChecked;
+  ForallOptimizationInfo loopInfo;
 
 private:
   AList          fIterVars;

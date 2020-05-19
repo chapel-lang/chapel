@@ -35,6 +35,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
+#include "LoopStmt.h"
 #include "resolution.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
@@ -301,18 +302,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   return indexSymbols;
 }
 
-class ForallOptimizationInfo {
-  public:
-    Symbol *iterSym = NULL;
-    Expr *dotDomIterExpr = NULL;
-    Symbol *dotDomIterSym = NULL;
-    Symbol *dotDomIterSymDom = NULL;
-    std::vector<Symbol *> multiDIndices;
-};
-
-static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
-
-  ForallOptimizationInfo ret;
+static void gatherForallInfo(ForallStmt *forall) {
 
   Symbol *loopIdxSym = NULL;
 
@@ -322,8 +312,8 @@ static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
   if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
     if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
       if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
-        ret.iterSym = iterSE->symbol();
-        analyzeArrLog("Iterated symbol", ret.iterSym);
+        forall->loopInfo.iterSym = iterSE->symbol();
+        analyzeArrLog("Iterated symbol", forall->loopInfo.iterSym);
       }
       else {
         analyzeArrLog("Iterated Expr is unresolved", iterExprs.head);
@@ -331,19 +321,19 @@ static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
     }
     // it might be in the form `A.domain` where A is used in the loop body
     else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
-      ret.dotDomIterExpr = iterExprs.head;
-      ret.dotDomIterSym = dotDomBaseSym;
-      ret.dotDomIterSymDom = getDomSym(ret.dotDomIterSym);
-      analyzeArrLog("Iterated over .domain of", ret.dotDomIterSym);
-      if (ret.dotDomIterSymDom != NULL) {
-        analyzeArrLog("where its domain is", ret.dotDomIterSymDom);
+      forall->loopInfo.dotDomIterExpr = iterExprs.head;
+      forall->loopInfo.dotDomIterSym = dotDomBaseSym;
+      forall->loopInfo.dotDomIterSymDom = getDomSym(forall->loopInfo.dotDomIterSym);
+      analyzeArrLog("Iterated over .domain of", forall->loopInfo.dotDomIterSym);
+      if (forall->loopInfo.dotDomIterSymDom != NULL) {
+        analyzeArrLog("where its domain is", forall->loopInfo.dotDomIterSymDom);
       }
       else {
-        analyzeArrLog("Whose domain cannot be determined statically", ret.dotDomIterSym);
+        analyzeArrLog("Whose domain cannot be determined statically", forall->loopInfo.dotDomIterSym);
       }
     }
 
-    if (ret.iterSym != NULL || ret.dotDomIterSym != NULL) {
+    if (forall->loopInfo.iterSym != NULL || forall->loopInfo.dotDomIterSym != NULL) {
       // the iterator is something we can optimize
       // now check the induction variables
       if (SymExpr* se = toSymExpr(indexVars.head)) {
@@ -357,28 +347,27 @@ static ForallOptimizationInfo gatherForallInfo(ForallStmt *forall) {
       }
 
       if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-        ret.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
+        forall->loopInfo.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
       }
       else {
-        ret.multiDIndices.push_back(loopIdxSym);
+        forall->loopInfo.multiDIndices.push_back(loopIdxSym);
       }
     }
   }
-  return ret;
 }
 
-static bool checkLoopSuitableForOpt(const ForallOptimizationInfo &info) {
-  if (info.multiDIndices.size() == 0) {
+static bool checkLoopSuitableForOpt(ForallStmt *forall) {
+  if (forall->loopInfo.multiDIndices.size() == 0) {
     return false;
   }
   else {
-    INT_ASSERT(info.iterSym != NULL || info.dotDomIterSym != NULL);
+    INT_ASSERT(forall->loopInfo.iterSym != NULL ||
+               forall->loopInfo.dotDomIterSym != NULL);
     return true;
   }
 }
 
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
-                                        const ForallOptimizationInfo &loopInfo) {
+static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall) {
   
   // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
@@ -396,7 +385,7 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
     if (forall->loopBody()->contains(accBaseSym->defPoint)) { return NULL; }
 
     // give up if the access uses a different symbol
-    if (!callHasSymArguments(call, loopInfo.multiDIndices)) { return NULL; }
+    if (!callHasSymArguments(call, forall->loopInfo.multiDIndices)) { return NULL; }
 
     // this call has another tighter-enclosing stmt that may change
     // locality, don't optimize
@@ -416,37 +405,35 @@ static Symbol *getCallBase(CallExpr *call) {
   return NULL;
 }
 
-// checks added for symbol
-std::map<Symbol *, CallExpr *> staticCheckForSymMap;
-std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
-//
 // access CallExprs for each check added
 std::map<CallExpr *, std::vector<CallExpr *>> accessForStaticCheckMap;
 std::map<CallExpr *, std::vector<CallExpr *>> accessForDynamicCheckMap;
 
 
 static void generateCheckForAccess(CallExpr *access,
-                                   const ForallOptimizationInfo &loopInfo,
+                                   ForallStmt *forall,
                                    CallExpr *&allChecks,
                                    bool isStatic) {
+
+  ForallOptimizationInfo &loopInfo = forall->loopInfo;
 
   Symbol *baseSym = getCallBase(access);
   INT_ASSERT(baseSym);
 
   CallExpr *currentCheck = NULL;
   if (isStatic) {
-    if (staticCheckForSymMap.count(baseSym) == 0) {
+    if (loopInfo.staticCheckForSymMap.count(baseSym) == 0) {
       currentCheck = new CallExpr("chpl__staticAutoLocalCheck");
-      staticCheckForSymMap[baseSym] = currentCheck;
+      loopInfo.staticCheckForSymMap[baseSym] = currentCheck;
     }
     else {
       return;
     }
   }
   else {
-    if (dynamicCheckForSymMap.count(baseSym) == 0) {
+    if (loopInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
       currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
-      dynamicCheckForSymMap[baseSym] = currentCheck;
+      loopInfo.dynamicCheckForSymMap[baseSym] = currentCheck;
     }
     else {
       return;
@@ -575,6 +562,18 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
   return madeAdjustments;
 }
 
+static ForallStmt *getEnclosingForall(CallExpr *call) {
+  if (Stmt *tmp = LoopStmt::findEnclosingLoopOrForall(call)) {
+    do {
+      if (ForallStmt *ret = toForallStmt(tmp)) {
+        return ret;
+      }
+      tmp = LoopStmt::findEnclosingLoopOrForall(tmp);
+    } while (tmp != NULL);
+  }
+  return NULL;
+}
+
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
   bool madeAdjustments = false;
   if (call->isNamed("chpl__staticAutoLocalCheck")) {
@@ -587,7 +586,9 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
 
       //remove dynamic checks that are added to the same symbol
       Symbol *symToRevert = toSymExpr(call->get(1))->symbol();
-      if (CallExpr *dynCheck = dynamicCheckForSymMap[symToRevert]) {
+      ForallStmt *optForall = getEnclosingForall(call);
+      if (CallExpr *dynCheck = 
+              optForall->loopInfo.dynamicCheckForSymMap[symToRevert]) {
         madeAdjustments = true;
 
         //INT_ASSERT(call->maybeLocalAccess); // this should have been true?
@@ -601,22 +602,23 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
 }
 
 static void generateDynamicCheckForAccess(CallExpr *access,
-                                         const ForallOptimizationInfo &loopInfo,
-                                         CallExpr *&allChecks) {
-  generateCheckForAccess(access, loopInfo, allChecks, false);
+                                          ForallStmt *forall,
+                                          CallExpr *&allChecks) {
+  generateCheckForAccess(access, forall, allChecks, false);
 }
 
 static void generateStaticCheckForAccess(CallExpr *access,
-                                         const ForallOptimizationInfo &loopInfo,
+                                         ForallStmt *forall,
                                          CallExpr *&allChecks) {
-  generateCheckForAccess(access, loopInfo, allChecks, true);
+  generateCheckForAccess(access, forall, allChecks, true);
 }
 
 
 static void buildLocalAccessLoops(ForallStmt *forall,
-                                  const ForallOptimizationInfo &loopInfo,
                                   std::vector<CallExpr *> &sOptCandidates,
                                   std::vector<CallExpr *> &dOptCandidates) {
+
+  ForallOptimizationInfo &loopInfo = forall->loopInfo;
 
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
@@ -633,12 +635,12 @@ static void buildLocalAccessLoops(ForallStmt *forall,
   
     CallExpr *staticCond = NULL;
     for_vector(CallExpr, sOptCandidate, sOptCandidates) {
-      generateStaticCheckForAccess(sOptCandidate, loopInfo, staticCond);
+      generateStaticCheckForAccess(sOptCandidate, forall, staticCond);
     }
 
     // we need static checks for dynamic candidates, too
     for_vector(CallExpr, dOptCandidate, dOptCandidates) {
-      generateStaticCheckForAccess(dOptCandidate, loopInfo, staticCond);
+      generateStaticCheckForAccess(dOptCandidate, forall, staticCond);
     }
 
     ForallStmt *forallUnopt = forall->copy();
@@ -670,7 +672,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
         repl->insertAtTail(new SymExpr(argSym));
       }
       sOptCandidate->replace(repl);
-      accessForStaticCheckMap[staticCheckForSymMap[baseSym]].push_back(repl);
+      accessForStaticCheckMap[loopInfo.staticCheckForSymMap[baseSym]].push_back(repl);
     }
   }
 
@@ -686,7 +688,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       for_vector(CallExpr, dOptCandidate, dOptCandidates) {
         SET_LINENO(dOptCandidate);
         Symbol *callBase = getCallBase(dOptCandidate);
-        generateDynamicCheckForAccess(dOptCandidate, loopInfo, dynamicCond);
+        generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
         analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
         CallExpr *base = new CallExpr(".", new SymExpr(callBase),
             new UnresolvedSymExpr("chpl_maybeLocalAccessDynamic"));
@@ -698,8 +700,8 @@ static void buildLocalAccessLoops(ForallStmt *forall,
           repl->insertAtTail(new SymExpr(argSym));
         }
         dOptCandidate->replace(repl);
-        accessForDynamicCheckMap[dynamicCheckForSymMap[callBase]].push_back(repl);
-        accessForStaticCheckMap[staticCheckForSymMap[callBase]].push_back(repl);
+        accessForDynamicCheckMap[loopInfo.dynamicCheckForSymMap[callBase]].push_back(repl);
+        accessForStaticCheckMap[loopInfo.staticCheckForSymMap[callBase]].push_back(repl);
       }
 
       BlockStmt *thenBlock = new BlockStmt();
@@ -728,9 +730,9 @@ static void analyzeArrays() {
            64) == 0;
     if ((!limitToTestFile) || fileCheck) {
       analyzeArrLog("**** Start forall ****", forall);
-      const ForallOptimizationInfo loopInfo = gatherForallInfo(forall);
+      gatherForallInfo(forall);
 
-      if (!checkLoopSuitableForOpt(loopInfo)) {
+      if (!checkLoopSuitableForOpt(forall)) {
         analyzeArrLog("**** End forall ****", forall);
         continue;
       }
@@ -743,16 +745,15 @@ static void analyzeArrays() {
       std::vector<CallExpr *> dynamicOptimizationCandidates;
 
       for_vector(CallExpr, call, allCallExprs) {
-        if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall,
-                                                          loopInfo)) {
+        if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall)) {
                                                     
           analyzeArrLog("Potential access", call);
 
           bool canOptimize = false;
           // check for different patterns
           // forall i in A.domain do ... A[i] ...
-          if (loopInfo.dotDomIterSym != NULL &&
-              loopInfo.dotDomIterSym == accBaseSym) {
+          if (forall->loopInfo.dotDomIterSym != NULL &&
+              forall->loopInfo.dotDomIterSym == accBaseSym) {
             canOptimize = true;
             analyzeArrLog("Access base is the same as iterator's base",
                 call);
@@ -764,8 +765,8 @@ static void analyzeArrays() {
 
             if (domSym != NULL) {  //  I can find the domain of the array
               // forall i in A.domain do ... B[i] ... where B and A share domain
-              if (loopInfo.dotDomIterSymDom != NULL &&
-                  loopInfo.dotDomIterSymDom == domSym) {
+              if (forall->loopInfo.dotDomIterSymDom != NULL &&
+                  forall->loopInfo.dotDomIterSymDom == domSym) {
                 canOptimize = true;
                 analyzeArrLog("Access base share the domain with iterator's base",
                     call);
@@ -776,8 +777,8 @@ static void analyzeArrays() {
                 if (domSym != NULL) {
                   analyzeArrLog("\twith domain defined at", domSym);
                 }
-                if (loopInfo.iterSym != NULL &&
-                    loopInfo.iterSym == domSym) {
+                if (forall->loopInfo.iterSym != NULL &&
+                    forall->loopInfo.iterSym == domSym) {
                   canOptimize = true;
                   analyzeArrLog("Access base's domain is the iterator", call);
                 }
@@ -797,7 +798,7 @@ static void analyzeArrays() {
         } // end canOptimize
       }
 
-      buildLocalAccessLoops(forall, loopInfo,
+      buildLocalAccessLoops(forall,
                             staticOptimizationCandidates,
                             dynamicOptimizationCandidates);
 
