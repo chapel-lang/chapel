@@ -155,6 +155,7 @@ bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
+bool fAutoLocalAccessLog = false;
 
 bool  printPasses     = false;
 FILE* printPassesFile = NULL;
@@ -708,6 +709,11 @@ static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoDivZeroChecks = fNoChecks;
 }
 
+static void setAutoLocalAccessLog(const ArgumentDescription* desc,
+                                  const char* unused) {
+  fAutoLocalAccessLog = true;
+}
+
 static void setFastFlag(const ArgumentDescription* desc, const char* unused) {
   //
   // Enable all compiler optimizations, disable all runtime checks
@@ -934,6 +940,7 @@ static ArgumentDescription arg_desc[] = {
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
+ {"auto-local-access-log", ' ', NULL, "Enable compiler logs for auto local access optimization", "F", &fAutoLocalAccessLog, "CHPL_AUTO_LOCAL_ACCESS_LOG", setAutoLocalAccessLog},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},

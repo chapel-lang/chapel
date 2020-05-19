@@ -124,20 +124,21 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 static void analyzeArrLog(const char *msg, BaseAST *node) {
+  if (fAutoLocalAccessLog) {
+    const bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
+                          node->getModule()->modTag != MOD_STANDARD);
 
-  const bool verbose = true && (node->getModule()->modTag != MOD_INTERNAL &&
-                                node->getModule()->modTag != MOD_STANDARD);
-
-  const bool veryVerbose = false;
-  if (verbose) {
-    std::cout << msg << std::endl;
-    if (node != NULL) {
-      std::cout << "\t" << node->stringLoc() << std::endl;
-      if (veryVerbose) {
-        nprint_view(node);
-      }
-      else {
-        std::cout << std::endl;
+    const bool veryVerbose = false;
+    if (verbose) {
+      std::cout << msg << std::endl;
+      if (node != NULL) {
+        std::cout << "\t" << node->stringLoc() << std::endl;
+        if (veryVerbose) {
+          nprint_view(node);
+        }
+        else {
+          std::cout << std::endl;
+        }
       }
     }
   }
