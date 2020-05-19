@@ -49,6 +49,12 @@ Regular domain symbol was not found
 **** End forall ****
 	copyInitDeclaration.chpl:14
 
+Statically confirmed optimization, using localAccess
+	copyInitDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	copyInitDeclaration.chpl:15
+
 Replacing with runtime checks
 	copyInitDeclaration.chpl:15
 

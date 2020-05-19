@@ -106,6 +106,24 @@ Access base's domain is the iterator
 **** End forall ****
 	regularDeclaration2D.chpl:31
 
+Statically confirmed optimization, using localAccess
+	regularDeclaration2D.chpl:15
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration2D.chpl:15
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration2D.chpl:15
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration2D.chpl:32
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration2D.chpl:32
+
+Statically confirmed optimization, using localAccess
+	regularDeclaration2D.chpl:32
+
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

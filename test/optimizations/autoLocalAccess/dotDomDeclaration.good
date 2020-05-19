@@ -169,6 +169,42 @@ Access base is the same as iterator's base
 **** End forall ****
 	dotDomDeclaration.chpl:65
 
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:32
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:32
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:32
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:49
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:49
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:49
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:66
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:66
+
+Statically confirmed optimization, using localAccess
+	dotDomDeclaration.chpl:66
+
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

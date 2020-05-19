@@ -70,6 +70,15 @@ Regular domain symbol was not found
 **** End forall ****
 	dynamicChecks.chpl:28
 
+Reverting optimization (can't statically confirm)
+	dynamicChecks.chpl:32
+
+Statically confirmed optimization, using localAccess
+	dynamicChecks.chpl:29
+
+Statically confirmed optimization, using localAccess
+	dynamicChecks.chpl:29
+
 Replacing with runtime checks
 	dynamicChecks.chpl:30
 
