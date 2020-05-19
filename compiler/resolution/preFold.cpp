@@ -118,8 +118,14 @@ Expr* preFold(CallExpr* call) {
       retval = tmp;
     }
 
-  } else if (isUnresolvedSymExpr(baseExpr) == true) {
-    if (Expr* tmp = preFoldNamed(call)) {
+  } else if (UnresolvedSymExpr *baseURSE = toUnresolvedSymExpr(baseExpr)) {
+    if (call->isNamed("chpl_maybeLocalAccessDynamic")) {
+      CallExpr *parentCall = toCallExpr(call->parentExpr);
+      call->replace(call->get(2)->remove());
+      parentCall->maybeLocalAccess = true;
+      return preFold(parentCall);
+    }
+    else if (Expr* tmp = preFoldNamed(call)) {
       retval = tmp;
     }
 
