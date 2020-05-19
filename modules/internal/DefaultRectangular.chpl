@@ -46,6 +46,8 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
+  config param defaultRectangularSupportsAutoLocalAccess = true;
+
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
   // would like to move this into DefaultRectangularArr and
@@ -1619,6 +1621,10 @@ module DefaultRectangular {
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     chpl_serialReadWriteRectangular(f, this);
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsAutoLocalAccess() param {
+    return defaultRectangularSupportsAutoLocalAccess;
   }
 
   // Why can the following two functions not be collapsed into one

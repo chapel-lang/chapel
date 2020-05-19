@@ -2687,8 +2687,27 @@ module ChapelArray {
     where shouldReturnRvalueByConstRef(_value.eltType)
       return localAccess(i);
 
+    inline proc chpl_maybeLocalAccessStatic(i: rank*_value.dom.idxType) ref {
+      use Reflection;
+      if canResolveMethod(_value, "dsiLocalAccess", (...i)) {
+        return localAccess((...i));
+      }
+      else {
+        return this((...i));
+      }
+    }
 
     inline proc chpl_maybeLocalAccessStatic(i: _value.dom.idxType ...rank) ref {
+      use Reflection;
+      if canResolveMethod(_value, "dsiLocalAccess", (...i)) {
+        return localAccess((...i));
+      }
+      else {
+        return this((...i));
+      }
+    }
+
+    inline proc chpl_maybeLocalAccessDynamic(i: rank*_value.dom.idxType) ref {
       use Reflection;
       if canResolveMethod(_value, "dsiLocalAccess", (...i)) {
         return localAccess((...i));
