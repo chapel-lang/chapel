@@ -484,8 +484,9 @@ bool adjustAutoLocalAccessDynamic(CallExpr *call) {
   }
 }
 
-static void adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
+static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
                                                       bool confirmed) {
+  bool madeAdjustments = false;
   // find the first conditional that comes after this check
   if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
     if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -517,9 +518,11 @@ static void adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
                       if (confirmed) {
                         analyzeArrLog("Statically confirmed optimization, using localAccess",
                             callToAdjust);
+            gdbShouldBreakHere();
 
                         callToAdjust->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
                         resolveCall(callToAdjust);
+                        madeAdjustments = true;
                       }
                       else {
                         analyzeArrLog("Reverting optimization (can't statically confirm)",
@@ -527,9 +530,21 @@ static void adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
 
                         callToAdjust->baseExpr->replace(new UnresolvedSymExpr("this"));
                         resolveCall(callToAdjust);
+                        madeAdjustments = true;
                       }
                     }
                   }
+                }
+              }
+              else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
+                // can only revert for dynamic accesses
+                if (!confirmed) {
+                  analyzeArrLog("Reverting optimization (can't statically confirm)",
+                      callToAdjust);
+
+                  callToAdjust->baseExpr->replace(new UnresolvedSymExpr("this"));
+                  resolveCall(callToAdjust);
+                  madeAdjustments = true;
                 }
               }
             }
@@ -538,14 +553,16 @@ static void adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
       }
     }
   }
+
+  return madeAdjustments;
 }
 
-static void revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
-  adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/false);
+static bool revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
+  return adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/false);
 }
 
-static void confirmAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
-  adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/true);
+static bool confirmAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
+  return adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/true);
 }
 
 
@@ -590,7 +607,7 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
       // as we had this static check, there must have been either a
       // statically-determined access or another dynamic check
       if (madeAdjustments == false) {
-        revertAutoLocalAccessesBasedOnStaticCheck(call);
+        madeAdjustments = revertAutoLocalAccessesBasedOnStaticCheck(call);
         //INT_FATAL("Param folding static check didn't lead to adjustments");
       }
     }
@@ -609,13 +626,14 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
             analyzeArrLog("Statically confirmed optimization, using localAccess",
                           callToConfirm);
 
+            gdbShouldBreakHere();
             callToConfirm->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
             resolveCall(callToConfirm);
           }
         //}
       }
       if (madeAdjustments == false) {
-        confirmAutoLocalAccessesBasedOnStaticCheck(call);
+        madeAdjustments = confirmAutoLocalAccessesBasedOnStaticCheck(call);
         //INT_FATAL("Param folding static check didn't lead to adjustments");
       }
     }
