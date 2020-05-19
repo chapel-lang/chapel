@@ -484,52 +484,69 @@ bool adjustAutoLocalAccessDynamic(CallExpr *call) {
   }
 }
 
+static void revertAccess(CallExpr *call) {
+  analyzeArrLog("Reverting optimization (can't statically confirm)",
+                call);
+
+  call->baseExpr->replace(new UnresolvedSymExpr("this"));
+  resolveCall(call);
+}
+
+static void confirmAccess(CallExpr *call) {
+  analyzeArrLog("Statically confirmed optimization, using localAccess",
+                call);
+
+  call->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+  resolveCall(call);
+}
+
 static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
-                                                      bool confirmed) {
+                      std::vector<CallExpr *> knownCallExprs,
+                      bool confirmed) {
+
   bool madeAdjustments = false;
-  // find the first conditional that comes after this check
-  if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
-    if (parentCall->isPrimitive(PRIM_MOVE)) {
-      Expr *curExpr = parentCall->next;
-      CondStmt *optCond = NULL;
-      while(curExpr != NULL && optCond == NULL) {
-        optCond = toCondStmt(curExpr);
-        curExpr = curExpr->next;
+
+  if (knownCallExprs.size() > 0) {
+    for_vector(CallExpr, knownCallExpr, knownCallExprs) {
+      if(CallExpr *callToAdjust = toCallExpr(knownCallExpr->baseExpr)) {
+        if (confirmed) {
+          confirmAccess(callToAdjust);
+        }
+        else {
+          revertAccess(callToAdjust);
+        }
       }
+    }
+  }
+  else { // this may be inside an instantitation of a generic function
 
-      if (optCond != NULL) {
-        std::vector<CallExpr *> optCallExprs;
-        collectCallExprs(optCond->thenStmt, optCallExprs);
+    // find the first conditional that comes after this check
+    if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
+      if (parentCall->isPrimitive(PRIM_MOVE)) {
+        Expr *curExpr = parentCall->next;
+        CondStmt *optCond = NULL;
+        while(curExpr != NULL && optCond == NULL) {
+          optCond = toCondStmt(curExpr);
+          curExpr = curExpr->next;
+        }
 
-        // remove statically-determined accesses based on this check
-        for_vector(CallExpr, parentCall, optCallExprs) {
-          //madeAdjustments = true;
+        if (optCond != NULL) {
+          std::vector<CallExpr *> callExprs;
+          collectCallExprs(optCond->thenStmt, callExprs);
 
-          if (parentCall->maybeLocalAccess) {
-            // this was based on a dynamic check, so only unset the marker
-            parentCall->maybeLocalAccess = false;
-          }
-          else {
+          // remove statically-determined accesses based on this check
+          for_vector(CallExpr, parentCall, callExprs) {
             if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
               if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
                 if (SymExpr *checkSE = toSymExpr(check->get(1))) {
                   if (SymExpr *callSE = toSymExpr(callToAdjust->get(2)) ) {
                     if (checkSE->symbol() == callSE->symbol()) {
                       if (confirmed) {
-                        analyzeArrLog("Statically confirmed optimization, using localAccess",
-                            callToAdjust);
-            gdbShouldBreakHere();
-
-                        callToAdjust->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
-                        resolveCall(callToAdjust);
+                        confirmAccess(callToAdjust);
                         madeAdjustments = true;
                       }
                       else {
-                        analyzeArrLog("Reverting optimization (can't statically confirm)",
-                            callToAdjust);
-
-                        callToAdjust->baseExpr->replace(new UnresolvedSymExpr("this"));
-                        resolveCall(callToAdjust);
+                        revertAccess(callToAdjust);
                         madeAdjustments = true;
                       }
                     }
@@ -539,11 +556,7 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
               else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
                 // can only revert for dynamic accesses
                 if (!confirmed) {
-                  analyzeArrLog("Reverting optimization (can't statically confirm)",
-                      callToAdjust);
-
-                  callToAdjust->baseExpr->replace(new UnresolvedSymExpr("this"));
-                  resolveCall(callToAdjust);
+                  revertAccess(callToAdjust);
                   madeAdjustments = true;
                 }
               }
@@ -557,41 +570,15 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
   return madeAdjustments;
 }
 
-static bool revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
-  return adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/false);
-}
-
-static bool confirmAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
-  return adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/true);
-}
-
-
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
   bool madeAdjustments = false;
   if (call->isNamed("chpl__staticAutoLocalCheck")) {
     bool retval = imm->bool_value();
+
+    adjustAutoLocalAccessesBasedOnStaticCheck(call,
+                                              accessForStaticCheckMap[call],
+                                              retval);
     if (retval == false) {
-      
-      // remove statically-determined accesses based on this check
-      for_vector(CallExpr, parentCall, accessForStaticCheckMap[call]) {
-        madeAdjustments = true;
-
-        //if (parentCall->maybeLocalAccess) {
-          //// this was based on a dynamic check, so only unset the marker
-          //parentCall->maybeLocalAccess = false;
-        //}
-        //else {
-          CallExpr *callToRevert = toCallExpr(parentCall->baseExpr);
-          INT_ASSERT(callToRevert->isNamed("chpl_maybeLocalAccessStatic") ||
-                     callToRevert->isNamed("chpl_maybeLocalAccessDynamic"));
-
-          analyzeArrLog("Reverting optimization (can't statically confirm)",
-                        callToRevert);
-
-          callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
-          resolveCall(callToRevert);
-        //}
-      }
 
       //remove dynamic checks that are added to the same symbol
       Symbol *symToRevert = toSymExpr(call->get(1))->symbol();
@@ -602,39 +589,6 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
         //call->maybeLocalAccess = false;
 
         dynCheck->replace(new SymExpr(gTrue));
-      }
-      //
-      // as we had this static check, there must have been either a
-      // statically-determined access or another dynamic check
-      if (madeAdjustments == false) {
-        madeAdjustments = revertAutoLocalAccessesBasedOnStaticCheck(call);
-        //INT_FATAL("Param folding static check didn't lead to adjustments");
-      }
-    }
-    else {
-      // update statically-determined accesses based on this check
-      for_vector(CallExpr, parentCall, accessForStaticCheckMap[call]) {
-        madeAdjustments = true;
-
-        //if (parentCall->maybeLocalAccess) {
-          //// this was based on a dynamic check, so only unset the marker
-          //parentCall->maybeLocalAccess = false;
-        //}
-        //else {
-          CallExpr *callToConfirm = toCallExpr(parentCall->baseExpr);
-          if (callToConfirm->isNamed("chpl_maybeLocalAccessStatic")) {
-            analyzeArrLog("Statically confirmed optimization, using localAccess",
-                          callToConfirm);
-
-            gdbShouldBreakHere();
-            callToConfirm->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
-            resolveCall(callToConfirm);
-          }
-        //}
-      }
-      if (madeAdjustments == false) {
-        madeAdjustments = confirmAutoLocalAccessesBasedOnStaticCheck(call);
-        //INT_FATAL("Param folding static check didn't lead to adjustments");
       }
     }
   }
