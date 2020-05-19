@@ -720,4 +720,113 @@ private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, 
   return firstRange;
 }
 
+
+
+//************************* Triangle iterator
+
+/*
+
+  :arg c: The range to iterate over. Must have a length greater than zero.
+  :type c: `range(?)`
+
+  :arg numTasks: The number of tasks to use. Must be >= zero. If this argument
+                 has the value 0, it will use the value indicated by
+                 ``dataParTasksPerLocale``.
+  :type numTasks: `int`
+
+  :yields: Indices in the range ``c``.
+
+  This iterator expects that the work to be done by the ith index
+  returned is O(k-i).  That is, that it's being used in a loop like
+
+  forall j in triangle(1..n) {
+    for i in j..n {
+      constant_amount_of_work(i,j);
+    }
+  }
+
+  Essentially, we want to pair the 0th index and the nth,
+  and the 1st index and the (n-1)st,
+  and the 2nd index and the (n-2)nd, etc.
+  Due to the O(n-i) work for index i, we expect each of these pairings
+  to have n-(0) + n-(n) == n-(1) + n-(n-1) == n work, so there's no
+  imbalance.
+
+  Task 0 will get 0..t and n-t..n,
+  Task 1 will get t+1..2t and n-2t..n-t-1, etc.
+
+  n in the above two lines refers to the multiple of nTasks less than
+  the orignal n.  The leftovers will be the smallest amounts of work,
+  and will be divided evenly.
+
+  This iterator can be called in serial and zippered contexts.
+
+*/
+iter triangle(c:range(?), numTasks:int=0) {
+
+  if debugDynamicIters then
+    writeln("Serial triangle Iterator. Working with range ", c);
+
+  for i in c do yield i;
+}
+
+pragma "no doc"
+iter triangle(param tag:iterKind, c:range(?), numTasks:int=0)
+where tag == iterKind.leader
+{
+  // Check if the number of tasks is 0, in that case it returns a default value
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
+  type rType=c.type;
+  var remain:rType = densify(c,c);
+  // If the number of tasks is insufficient, yield in serial
+  if nTasks == 1 then {
+    if debugDynamicIters then
+      writeln("Triangle Iterator: serial execution because there is not enough work");
+    yield (remain,);
+  }
+
+  else {
+    const perTask = (remain.high / 2 / nTasks);
+    const triangularEnd = perTask * nTasks * 2;
+    const leftOver = remain.high - triangularEnd;
+
+    coforall tid in 0..#nTasks do {
+      const firstPart:rType = (perTask * tid) .. #perTask;
+      const secondPart:rType = (triangularEnd - perTask*(tid+1)) .. #perTask;
+      if debugDynamicIters then
+	writeln("Parallel triangle Iterator. Working at tid ", tid, " with firstPart ", unDensify(firstPart,c), " yielded as ", firstPart);
+      yield (firstPart,);
+      if debugDynamicIters then
+	writeln("Parallel triangle Iterator. Working at tid ", tid, " with secondPart ", unDensify(secondPart,c), " yielded as ", secondPart);
+      yield (secondPart,);
+
+      if tid < leftOver {
+	const lastPart:rType = (triangularEnd + tid)..#1;
+	if debugDynamicIters then
+	  writeln("Parallel triangle Iterator. Working at tid ", tid, " with lastPart ", unDensify(lastPart,c), " yielded as ", lastPart);
+
+	yield (lastPart,);
+      }
+    }
+  }
+}
+
+// Follower
+pragma "no doc"
+iter triangle(param tag:iterKind, c:range(?), numTasks:int, followThis)
+where tag == iterKind.follower
+
+{
+  type rType=c.type;
+  const current:rType=unDensify(followThis(0),c);
+  if debugDynamicIters then
+    writeln("Follower received range ", followThis, " ; shifting to ", current);
+  for i in current do {
+    yield i;
+  }
+}
+
+
+
+
 }
