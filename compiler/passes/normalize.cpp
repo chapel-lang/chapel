@@ -510,7 +510,11 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
     for_vector(CallExpr, knownCallExpr, knownCallExprs) {
       if(CallExpr *callToAdjust = toCallExpr(knownCallExpr->baseExpr)) {
         if (confirmed) {
-          confirmAccess(callToAdjust);
+          // can only confirm a static access
+          if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+            confirmAccess(callToAdjust);
+            madeAdjustments = true;
+          }
         }
         else {
           revertAccess(callToAdjust);
