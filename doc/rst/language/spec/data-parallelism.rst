@@ -498,14 +498,12 @@ iterator         0-based one-dimensional domain
 
    and the function 
 
-   .. code-block:: chapel
+   .. function:: proc square(x: int) return x**2;
 
-      proc square(x: int) return x**2;
-
-   then the call ``square(A)`` results in the promotion of the
-   ``square`` function over the values in the array ``A``. The result is
-   an iterator that returns the values ``1``, ``4``, ``9``, ``16``, and
-   ``25``. 
+      then the call ``square(A)`` results in the promotion of the
+      ``square`` function over the values in the array ``A``. The result is
+      an iterator that returns the values ``1``, ``4``, ``9``, ``16``, and
+      ``25``. 
 
    .. BLOCK-test-chapelnoprint
 

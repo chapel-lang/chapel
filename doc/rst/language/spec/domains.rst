@@ -875,9 +875,7 @@ The methods in this subsection can be applied to any domain.
 
 
 
-.. code-block:: chapel
-
-   proc domain.clear()
+.. function:: proc domain.clear()
 
 Resets this domain’s index set to the empty set.
 
@@ -904,9 +902,7 @@ Resets this domain’s index set to the empty set.
 
 
 
-.. code-block:: chapel
-
-   proc domain.dist : dmap
+.. function:: proc domain.dist : dmap
 
 Returns the domain map that implements this domain
 
@@ -935,17 +931,13 @@ Returns the domain map that implements this domain
 
 
 
-.. code-block:: chapel
-
-   proc domain.idxType type
+.. function:: proc domain.idxType type
 
 Returns the domain type’s ``idxType``.
 
 
 
-.. code-block:: chapel
-
-   proc domain.indexOrder(i: index(domain)): idxType
+.. function:: proc domain.indexOrder(i: index(domain)): idxType
 
 If ``i`` is a member of the domain, returns the ordinal value of ``i``
 using a total ordering of the domain’s indices using 0-based indexing.
@@ -956,35 +948,27 @@ indices are added and removed from the domain.
 
 
 
-.. code-block:: chapel
-
-   proc isIrregularDom(d: domain) param
+.. function:: proc isIrregularDom(d: domain) param
 
 Returns a param ``true`` if the given domain is irregular, false
 otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc isRectangularDom(d: domain) param
+.. function:: proc isRectangularDom(d: domain) param
 
 Returns a param ``true`` if the given domain is rectangular, false
 otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc isSparseDom(d: domain) param
+.. function:: proc isSparseDom(d: domain) param
 
 Returns a param ``true`` if the given domain is sparse, false otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc domain.member(i)
+.. function:: proc domain.member(i)
 
 Returns true if the given index ``i`` is a member of this domain’s index
 set, and false otherwise.
@@ -1006,9 +990,7 @@ domains only.
 
 
 
-.. code-block:: chapel
-
-   proc domain.dim(d: int): range
+.. function:: proc domain.dim(d: int): range
 
 Returns the range of indices described by dimension ``d`` of the domain,
 where ``d`` is a value from ``0`` to ``rank-1``.
@@ -1029,9 +1011,7 @@ where ``d`` is a value from ``0`` to ``rank-1``.
 
 
 
-.. code-block:: chapel
-
-   proc domain.dims(): rank*range
+.. function:: proc domain.dims(): rank*range
 
 Returns a tuple of ranges describing the dimensions of the domain.
 
@@ -1081,35 +1061,27 @@ the dimension; if positive, compute the interior from the high bound.
 
 
 
-.. code-block:: chapel
-
-   proc domain.low: index(domain)
+.. function:: proc domain.low: index(domain)
 
 Returns the low index of the domain as a value of the domain’s index
 type.
 
 
 
-.. code-block:: chapel
-
-   proc domain.rank param : int
+.. function:: proc domain.rank param : int
 
 Returns the rank of the domain.
 
 
 
-.. code-block:: chapel
-
-   proc domain.size: capType
+.. function:: proc domain.size: capType
 
 Returns the number of indices in the domain as a value of the capacity
 type.
 
 
 
-.. code-block:: chapel
-
-   proc domain.stridable param : bool
+.. function:: proc domain.stridable param : bool
 
 Returns whether or not the domain is stridable.
 
@@ -1151,35 +1123,27 @@ a member of that domain, it is ignored.
 
 
 
-.. code-block:: chapel
-
-   proc +(d1: domain, d2: domain)
+.. function:: proc +(d1: domain, d2: domain)
 
 Merges the index sets of the two domain arguments.
 
 
 
-.. code-block:: chapel
-
-   proc -(d: domain, i: index(d))
+.. function:: proc -(d: domain, i: index(d))
 
 Removes the given index from the given domain. It is an error if the
 domain does not contain the given index.
 
 
 
-.. code-block:: chapel
-
-   proc -(d1: domain, d2: domain)
+.. function:: proc -(d1: domain, d2: domain)
 
 Removes the indices in domain ``d2`` from those in ``d1``. It is an
 error if ``d2`` contains indices which are not also in ``d1``.
 
 
 
-.. code-block:: chapel
-
-   proc requestCapacity(s: int)
+.. function:: proc requestCapacity(s: int)
 
 Resizes the domain internal storage to hold at least ``s`` indices.
 

@@ -418,9 +418,7 @@ Ranges can be compared using equality and inequality.
 
 
 
-.. code-block:: chapel
-
-   proc ==(r1: range(?), r2: range(?)): bool
+.. function:: proc ==(r1: range(?), r2: range(?)): bool
 
 Returns ``true`` if the two ranges have the same represented sequence or
 the same four primary properties, and ``false`` otherwise.
@@ -953,25 +951,19 @@ Range Type Parameters
 
 
 
-.. code-block:: chapel
-
-   proc range.boundedType : BoundedRangeType
+.. function:: proc range.boundedType : BoundedRangeType
 
 Returns the ``boundedType`` parameter of the range’s type.
 
 
 
-.. code-block:: chapel
-
-   proc range.idxType : type
+.. function:: proc range.idxType : type
 
 Returns the ``idxType`` parameter of the range’s type.
 
 
 
-.. code-block:: chapel
-
-   proc range.stridable : bool
+.. function:: proc range.stridable : bool
 
 Returns the ``stridable`` parameter of the range’s type.
 
@@ -992,17 +984,13 @@ can be examined, for example, by iterating over the range in a for loop
 
 
 
-.. code-block:: chapel
-
-   proc range.aligned : bool
+.. function:: proc range.aligned : bool
 
 Reports whether the range’s alignment is unambiguous.
 
 
 
-.. code-block:: chapel
-
-   proc range.alignedHigh : idxType
+.. function:: proc range.alignedHigh : idxType
 
 Returns the range’s aligned high bound. If the aligned high bound is
 undefined (does not exist), the behavior is undefined.
@@ -1024,94 +1012,72 @@ undefined (does not exist), the behavior is undefined.
 
 
 
-.. code-block:: chapel
-
-   proc range.alignedLow : idxType
+.. function:: proc range.alignedLow : idxType
 
 Returns the range’s aligned low bound. If the aligned low bound is
 undefined (does not exist), the behavior is undefined.
 
 
 
-.. code-block:: chapel
-
-   proc range.alignment : idxType
+.. function:: proc range.alignment : idxType
 
 Returns the range’s alignment. If the alignment is ambiguous, the
 behavior is undefined. See also ``aligned``.
 
 
 
-.. code-block:: chapel
-
-   proc range.first : idxType
+.. function:: proc range.first : idxType
 
 Returns the range’s first index. If the range has no first index, the
 behavior is undefined. See also ``hasFirst``.
 
 
 
-.. code-block:: chapel
-
-   proc range.hasFirst(): bool
+.. function:: proc range.hasFirst(): bool
 
 Reports whether the range has the first index.
 
 
 
-.. code-block:: chapel
-
-   proc range.hasHighBound() param: bool
+.. function:: proc range.hasHighBound() param: bool
 
 Reports whether the range’s high bound is *not* +\ :math:`\infty`.
 
 
 
-.. code-block:: chapel
-
-   proc range.hasLast(): bool
+.. function:: proc range.hasLast(): bool
 
 Reports whether the range has the last index.
 
 
 
-.. code-block:: chapel
-
-   proc range.hasLowBound() param: bool
+.. function:: proc range.hasLowBound() param: bool
 
 Reports whether the range’s low bound is *not* -:math:`\infty`.
 
 
 
-.. code-block:: chapel
-
-   proc range.high : idxType
+.. function:: proc range.high : idxType
 
 Returns the range’s high bound. If the high bound is +\ :math:`\infty`,
 the behavior is undefined. See also ``hasHighBound``.
 
 
 
-.. code-block:: chapel
-
-   proc range.isAmbiguous(): bool
+.. function:: proc range.isAmbiguous(): bool
 
 Reports whether the range is ambiguously aligned.
 
 
 
-.. code-block:: chapel
-
-   proc range.last : idxType
+.. function:: proc range.last : idxType
 
 Returns the range’s last index. If the range has no last index, the
 behavior is undefined. See also ``hasLast``.
 
 
 
-.. code-block:: chapel
-
-   proc range.length : idxType
+.. function:: proc range.length : idxType
 
 Returns the number of indices in the range’s represented sequence. If
 the represented sequence is infinite or is undefined, an error is
@@ -1119,26 +1085,20 @@ generated.
 
 
 
-.. code-block:: chapel
-
-   proc range.low : idxType
+.. function:: proc range.low : idxType
 
 Returns the range’s low bound. If the low bound is -:math:`\infty`, the
 behavior is undefined. See also ``hasLowBound``.
 
 
 
-.. code-block:: chapel
-
-   proc range.size : idxType
+.. function:: proc range.size : idxType
 
 Same as :math:`range`.length.
 
 
 
-.. code-block:: chapel
-
-   proc range.stride : int(numBits(idxType))
+.. function:: proc range.stride : int(numBits(idxType))
 
 Returns the range’s stride. This will never return 0. If the range is
 not stridable, this will always return 1.
@@ -1150,9 +1110,7 @@ Other Queries
 
 
 
-.. code-block:: chapel
-
-   proc range.boundsCheck(r2: range(?)): bool
+.. function:: proc range.boundsCheck(r2: range(?)): bool
 
 Returns ``false`` if either range is ambiguously aligned. Returns
 ``true`` if range ``r2`` lies entirely within this range and ``false``
@@ -1160,9 +1118,7 @@ otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc ident(r1: range(?), r2: range(?)): bool
+.. function:: proc ident(r1: range(?), r2: range(?)): bool
 
 Returns ``true`` if the two ranges are the same in every respect: i.e.
 the two ranges have the same ``idxType``, ``boundedType``,
@@ -1170,9 +1126,7 @@ the two ranges have the same ``idxType``, ``boundedType``,
 
 
 
-.. code-block:: chapel
-
-   proc range.indexOrder(i: idxType): idxType
+.. function:: proc range.indexOrder(i: idxType): idxType
 
 If ``i`` is a member of the range’s represented sequence, returns an
 integer giving the ordinal index of ``i`` within the sequence using
@@ -1195,9 +1149,7 @@ range does not have the first index.
 
 
 
-.. code-block:: chapel
-
-   proc range.member(i: idxType): bool
+.. function:: proc range.member(i: idxType): bool
 
 Returns ``true`` if the range’s represented sequence contains ``i``,
 ``false`` otherwise. It is an error to invoke ``member`` if the
@@ -1205,9 +1157,7 @@ represented sequence is not defined.
 
 
 
-.. code-block:: chapel
-
-   proc range.member(other: range): bool
+.. function:: proc range.member(other: range): bool
 
 Reports whether ``other`` is a subrange of the receiver. That is, if the
 represented sequences of the receiver and ``other`` are defined and the
@@ -1220,27 +1170,21 @@ Range Transformations
 
 
 
-.. code-block:: chapel
-
-   proc range.alignHigh()
+.. function:: proc range.alignHigh()
 
 Sets the high bound of this range to its aligned high bound, if it is
 defined. Generates an error otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc range.alignLow()
+.. function:: proc range.alignLow()
 
 Sets the low bound of this range to its aligned low bound, if it is
 defined. Generates an error otherwise.
 
 
 
-.. code-block:: chapel
-
-   proc range.expand(i: idxType)
+.. function:: proc range.expand(i: idxType)
 
 Returns a new range whose bounds are extended by :math:`i` units on each
 end. If :math:`i <
@@ -1252,9 +1196,7 @@ ambiguously aligned, then so is the resulting range.
 
 
 
-.. code-block:: chapel
-
-   proc range.exterior(i: idxType)
+.. function:: proc range.exterior(i: idxType)
 
 Returns a new range containing the indices just outside the low or high
 bound of the range (low if :math:`i < 0` and high otherwise). The stride
@@ -1272,9 +1214,7 @@ range.
 
 
 
-.. code-block:: chapel
-
-   proc range.interior(i: idxType)
+.. function:: proc range.interior(i: idxType)
 
 Returns a new range containing the indices just inside the low or high
 bound of the range (low if :math:`i < 0` and high otherwise). The stride
@@ -1296,9 +1236,7 @@ the resulting range.
 
 .. _Range_Offset_Method:
 
-.. code-block:: chapel
-
-   proc range.offset(n: idxType)
+.. function:: proc range.offset(n: idxType)
 
 Returns a new range whose alignment is this range’s first index plus
 ``n``. The new alignment, therefore, is not ambiguous. If the range has
@@ -1306,9 +1244,7 @@ no first index, a run-time error is generated.
 
 
 
-.. code-block:: chapel
-
-   proc range.translate(i: integral)
+.. function:: proc range.translate(i: integral)
 
 Returns a new range with its ``low``, ``high`` and ``alignment`` values
 adjusted by :math:`i`. The ``stride`` value is preserved. If the range’s

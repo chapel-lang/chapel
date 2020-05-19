@@ -46,9 +46,7 @@ The locale type supports the following methods:
 
 
 
-.. code-block:: chapel
-
-   proc locale.callStackSize: uint(64);
+.. function:: proc locale.callStackSize: uint(64);
 
 Returns the per-task call stack size used when creating tasks on the
 locale in question. A value of 0 indicates that the call stack size is
@@ -56,35 +54,27 @@ determined by the system.
 
 
 
-.. code-block:: chapel
-
-   proc locale.id: int;
+.. function:: proc locale.id: int;
 
 Returns a unique integer for each locale, from 0 to the number of
 locales less one.
 
 
 
-.. code-block:: chapel
-
-   proc locale.maxTaskPar: int(32);
+.. function:: proc locale.maxTaskPar: int(32);
 
 Returns an estimate of the maximum parallelism available for tasks on a
 given locale.
 
 
 
-.. code-block:: chapel
-
-   proc locale.name: string;
+.. function:: proc locale.name: string;
 
 Returns the name of the locale.
 
 
 
-.. code-block:: chapel
-
-   proc locale.numPUs(logical: bool = false, accessible: bool = true);
+.. function:: proc locale.numPUs(logical: bool = false, accessible: bool = true);
 
 Returns the number of processing unit instances available on a given
 locale. Basically these are the things that execute instructions. If

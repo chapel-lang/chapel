@@ -1164,57 +1164,43 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 Predefined Functions and Methods on Tuples
 ------------------------------------------
 
-.. code-block:: chapel
-
-   proc tuple.size param
+.. function:: proc tuple.size param
 
 Returns the size of the tuple.
 
 
-.. code-block:: chapel
-
-   proc tuple.indices
+.. function:: proc tuple.indices
 
 Returns the range ``1..this.size`` representing the indices that are
 legal for indexing into the tuple.
 
 
-.. code-block:: chapel
-
-   proc isHomogeneousTuple(t: tuple) param
+.. function:: proc isHomogeneousTuple(t: tuple) param
 
 Returns true if ``t`` is a homogeneous tuple; otherwise false.
 
 
 
-.. code-block:: chapel
-
-   proc isTuple(t: tuple) param
+.. function:: proc isTuple(t: tuple) param
 
 Returns true if ``t`` is a tuple; otherwise false.
 
 
 
-.. code-block:: chapel
-
-  proc isTupleType(type t) param
+.. function:: proc isTupleType(type t) param
 
 Returns true if ``t`` is a tuple of types; otherwise false.
 
 
 
-.. code-block:: chapel
-
-   proc max(type t) where isTupleType(t)
+.. function:: proc max(type t) where isTupleType(t)
 
 Returns a tuple of type ``t`` with each component set to the maximum
 value that can be stored in its position.
 
 
 
-.. code-block:: chapel
-
-   proc min(type t) where isTupleType(t)
+.. function:: proc min(type t) where isTupleType(t)
 
 Returns a tuple of type ``t`` with each component set to the minimum
 value that can be stored in its position.
