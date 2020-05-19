@@ -489,7 +489,8 @@ bool adjustAutoLocalAccessDynamic(CallExpr *call) {
   }
 }
 
-static void revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
+static void adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
+                                                      bool confirmed) {
   // find the first conditional that comes after this check
   if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
     if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -513,14 +514,28 @@ static void revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
             parentCall->maybeLocalAccess = false;
           }
           else {
-            if(CallExpr *callToRevert = toCallExpr(parentCall->baseExpr)) {
-              if (callToRevert->isNamed("chpl_maybeLocalAccessStatic")) {
+            if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
+              if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+                if (SymExpr *checkSE = toSymExpr(check->get(1))) {
+                  if (SymExpr *callSE = toSymExpr(callToAdjust->get(2)) ) {
+                    if (checkSE->symbol() == callSE->symbol()) {
+                      if (confirmed) {
+                        analyzeArrLog("Statically confirmed optimization, using localAccess",
+                            callToAdjust);
 
-                analyzeArrLog("Reverting optimization (can't statically confirm)",
-                              callToRevert);
+                        callToAdjust->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
+                        resolveCall(callToAdjust);
+                      }
+                      else {
+                        analyzeArrLog("Reverting optimization (can't statically confirm)",
+                            callToAdjust);
 
-                callToRevert->baseExpr->replace(new UnresolvedSymExpr("this"));
-                resolveCall(callToRevert);
+                        callToAdjust->baseExpr->replace(new UnresolvedSymExpr("this"));
+                        resolveCall(callToAdjust);
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -528,6 +543,14 @@ static void revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
       }
     }
   }
+}
+
+static void revertAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
+  adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/false);
+}
+
+static void confirmAutoLocalAccessesBasedOnStaticCheck(CallExpr *check) {
+  adjustAutoLocalAccessesBasedOnStaticCheck(check, /*confirmed=*/true);
 }
 
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
@@ -594,7 +617,10 @@ bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
           }
         }
       }
-
+      if (madeAdjustments == false) {
+        confirmAutoLocalAccessesBasedOnStaticCheck(call);
+        //INT_FATAL("Param folding static check didn't lead to adjustments");
+      }
     }
   }
   return madeAdjustments;
