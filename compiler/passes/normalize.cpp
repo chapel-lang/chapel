@@ -357,14 +357,18 @@ static void gatherForallInfo(ForallStmt *forall) {
 }
 
 static bool checkLoopSuitableForOpt(ForallStmt *forall) {
+  // reduce-intent variables expect some special AST form that this optimization
+  // somehow breaks
+  if (forall->needsInitialAccumulate()) {
+    return false;
+  }
   if (forall->loopInfo.multiDIndices.size() == 0) {
     return false;
   }
-  else {
-    INT_ASSERT(forall->loopInfo.iterSym != NULL ||
-               forall->loopInfo.dotDomIterSym != NULL);
-    return true;
-  }
+
+  INT_ASSERT(forall->loopInfo.iterSym != NULL ||
+             forall->loopInfo.dotDomIterSym != NULL);
+  return true;
 }
 
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall) {
