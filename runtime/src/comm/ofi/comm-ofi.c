@@ -2947,6 +2947,8 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
 
 static
 void amHandleAMO(struct amRequest_AMO_t* amo) {
+  assert(amo->b.node != chpl_nodeID);    // should be handled on initiator
+
   if (amo->ofiOp == FI_CSWAP) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                "amHandleAMO(seqId %d:%" PRIu64 "): "
@@ -2990,42 +2992,29 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
            amo->ofiOp, amo->ofiType, amo->size);
 
   if (amo->result != NULL) {
-    if (amo->b.node == chpl_nodeID) {
-      //
-      // Short-circuit result delivery for same-node AMOs.
-      //
-      memcpy(amo->result, &result, resSize);
-      chpl_atomic_thread_fence(memory_order_release);
-    } else {
-      CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize) == 0);
-      (void) ofi_put(&result, amo->b.node, amo->result, resSize);
+    CHK_TRUE(mrGetKey(NULL, NULL, amo->b.node, amo->result, resSize) == 0);
+    (void) ofi_put(&result, amo->b.node, amo->result, resSize);
 
-      //
-      // We must guarantee the result has arrived at the destination
-      // before we send the 'done' indicator.  Currently ofi_put() does
-      // not return until after the data is visible in target memory, so
-      // the guarantee holds.  But someday we might like to get better
-      // comm/compute overlap by starting the next AM while this result
-      // PUT is still in flight, and sending this 'done' later once we
-      // know the latter got there.
-      //
-    }
+    //
+    // We must guarantee the result has arrived at the destination
+    // before we send the 'done' indicator.  Currently ofi_put() does
+    // not return until after the data is visible in target memory, so
+    // the guarantee holds.  But someday we might like to get better
+    // comm/compute overlap by starting the next AM while this result
+    // PUT is still in flight, and sending 'done' later once we know
+    // the latter got there.
+    //
   }
 
-  if (amo->b.node == chpl_nodeID) {
-    *amo->b.pAmDone = 1;
-    chpl_atomic_thread_fence(memory_order_release);
+  if (amo->b.pAmDone != NULL) {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amHandleAMO(seqId %d:%" PRIu64 "): set pAmDone %p",
+               (int) amo->b.node, amo->b.seq, amo->b.pAmDone);
+    amSendDone(amo->b.node, amo->b.pAmDone);
   } else {
-    if (amo->b.pAmDone != NULL) {
-      DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                 "amHandleAMO(seqId %d:%" PRIu64 "): set pAmDone %p",
-                 (int) amo->b.node, amo->b.seq, amo->b.pAmDone);
-      amSendDone(amo->b.node, amo->b.pAmDone);
-    } else {
-      DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                 "amHandleAMO(seqId %d:%" PRIu64 " NB): done",
-                 (int) amo->b.node, amo->b.seq);
-    }
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amHandleAMO(seqId %d:%" PRIu64 " NB): done",
+               (int) amo->b.node, amo->b.seq);
   }
 }
 
