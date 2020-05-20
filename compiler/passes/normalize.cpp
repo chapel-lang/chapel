@@ -552,6 +552,13 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
                   madeAdjustments = true;
                 }
               }
+              else if (!confirmed && parentCall->isPrimitive(PRIM_MOVE)) {
+                if (CallExpr *callToAdjust = toCallExpr(parentCall->get(2))) {
+                  if (callToAdjust->isNamed("chpl_dynamicAutoLocalCheck")) {
+                    callToAdjust->replace(new SymExpr(gTrue));
+                  }
+                }
+              }
             }
           }
         }
@@ -562,41 +569,15 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
   return madeAdjustments;
 }
 
-static ForallStmt *getEnclosingForall(CallExpr *call) {
-  if (Stmt *tmp = LoopStmt::findEnclosingLoopOrForall(call)) {
-    do {
-      if (ForallStmt *ret = toForallStmt(tmp)) {
-        return ret;
-      }
-      tmp = LoopStmt::findEnclosingLoopOrForall(tmp);
-    } while (tmp != NULL);
-  }
-  return NULL;
-}
-
+// This is the part of the "public" interface for resolution
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
   bool madeAdjustments = false;
   if (call->isNamed("chpl__staticAutoLocalCheck")) {
     bool retval = imm->bool_value();
 
-    adjustAutoLocalAccessesBasedOnStaticCheck(call,
-                                              accessForStaticCheckMap[call],
-                                              retval);
-    if (retval == false) {
-
-      //remove dynamic checks that are added to the same symbol
-      Symbol *symToRevert = toSymExpr(call->get(1))->symbol();
-      ForallStmt *optForall = getEnclosingForall(call);
-      if (CallExpr *dynCheck = 
-              optForall->loopInfo.dynamicCheckForSymMap[symToRevert]) {
-        madeAdjustments = true;
-
-        //INT_ASSERT(call->maybeLocalAccess); // this should have been true?
-        //call->maybeLocalAccess = false;
-
-        dynCheck->replace(new SymExpr(gTrue));
-      }
-    }
+    return adjustAutoLocalAccessesBasedOnStaticCheck(call,
+                                                     accessForStaticCheckMap[call],
+                                                     retval);
   }
   return madeAdjustments;
 }
