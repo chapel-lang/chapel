@@ -2069,11 +2069,11 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 
   BITMAP_FOREACH_SET(b, node) {
     bitmapClear(b, node);
-    (*tcip->checkTxCmplsFn)(myTcip);
+    (*myTcip->checkTxCmplsFn)(myTcip);
     // If using CQ, need room for at least 1 txn.
-    while (tcip->txCQ != NULL && myTcip->numTxnsOut >= txCQLen) {
+    while (myTcip->txCQ != NULL && myTcip->numTxnsOut >= txCQLen) {
       sched_yield();
-      (*tcip->checkTxCmplsFn)(myTcip);
+      (*myTcip->checkTxCmplsFn)(myTcip);
     }
     mcmReleaseOneNode(node, myTcip, dbgOrderStr);
   } BITMAP_FOREACH_SET_END
