@@ -128,8 +128,10 @@ bool findInitPoints(CallExpr* defaultInit,
 
 static bool allowSplitInit(Symbol* sym) {
 
-  // don't split init if the flag disabled it
-  if (fNoSplitInit)
+  // don't split init within user code if the flag disabled it;
+  // because we rely on split init in standard/internal modules,
+  // we ignore the flag there.
+  if (fNoSplitInit && sym->defPoint->getModule()->modTag == MOD_USER)
     return false;
 
   // split-init doesn't make sense for extern variables
