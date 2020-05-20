@@ -5,7 +5,7 @@ config const debug = false;
 // tests for 32-bit unsigned integer.
 var test1: uint(32) = 10;
 test(test1);
-var test2: uint(32) = 32487;
+var test2: uint(32) = 2147483600;
 test(test2);
 
 // tests for 64-bit unsigned integer.
@@ -32,6 +32,11 @@ test(test9);
 var test10: int = -32487;
 test(test10);
 
+// tests for 16-bit unsigned integer.
+var test11: uint(16) = 10;
+test(test11);
+var test12: uint(16) = 65500;
+test(test12);
 
 proc test(x) {
   var a, b, c, d;
