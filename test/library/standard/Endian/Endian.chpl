@@ -43,6 +43,16 @@ module Endian {
   private extern proc htobe64(x: c_ulong): c_ulong;
   private extern proc be64toh(x: c_ulong): c_ulong;
 
+  /*
+    Has value true if the host system is little-endian type.
+  */
+  const isLittleEndian = hostToLittleEndian(10) == 10;
+
+  /*
+    Has value true if the host system is big-endian type.
+  */
+  const isBigEndian = hostToBigEndian(10) == 10;
+
   /* Returns the little endian order of the argument.
 
       :arg x: a 16-bit signed integer or a 16-bit unsigned integer

@@ -1,7 +1,5 @@
 use Endian;
 
-config const debug = false;
-
 // tests for 32-bit unsigned integer.
 var test1: uint(32) = 10;
 test(test1);
@@ -41,23 +39,34 @@ test(test12);
 proc test(x) {
   var a, b, c, d;
 
-  // test for little endian
-  a = hostToLittleEndian(x);
-  b = littleEndianToHost(a);
-  writeln(b == x);
-
-  //test for big Endian
-  c = hostToBigEndian(x);
-  d = bigEndianToHost(c);
-  writeln(d == x);
-
-  if debug {
-    writeln("original value");
-    writef("%xn\n", x);
-    writeln("little endian encoded");
+  if isLittleEndian {
+    // test for little endian
+    a = hostToLittleEndian(x);
     writef("%xn\n", a);
-    writeln("big endian encoded");
+    b = littleEndianToHost(a);
+    writef("%xn\n", b);
+    writeln(b == x);
+
+    //test for big Endian
+    c = hostToBigEndian(x);
     writef("%xn\n", c);
+    d = bigEndianToHost(c);
+    writef("%xn\n", d);
+    writeln(d == x);
+  } else {
+    //test for big Endian
+    a = hostToBigEndian(x);
+    writef("%xn\n", a);
+    b = bigEndianToHost(a);
+    writef("%xn\n", b);
+    writeln(b == x);
+
+    // test for little endian
+    c = hostToLittleEndian(x);
+    writef("%xn\n", c);
+    d = littleEndianToHost(c);
+    writef("%xn\n", d);
+    writeln(d == x);
   }
 
 }
