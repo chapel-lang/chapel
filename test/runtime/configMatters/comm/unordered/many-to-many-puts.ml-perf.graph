@@ -1,7 +1,7 @@
 perfkeys: PUT    rate(mOps/sec):, PUT    rate(mOps/sec):, PUT    rate(mOps/sec):
 files: ordered-many-to-many.dat, ordered-oversub-many-to-many.dat, unordered-many-to-many.dat
 graphkeys: PUT (ordered), PUT (4x oversub), PUT (unordered)
-graphtitle: Remote many-to-many int PUT intPerformance
+graphtitle: Remote many-to-many int PUT Performance
 ylabel: Performance (10**6 ops/sec)
 
 perfkeys: PUT    rate(mOps/sec):, PUT    rate(mOps/sec):
