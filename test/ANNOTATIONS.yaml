@@ -1817,3 +1817,18 @@ topTotalTime:
   <<: *compiler-perf-base
 topPasses:
   <<: *compiler-perf-base
+
+arkouda: &arkouda-base
+  04/22/20:
+    - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
+  04/28/20:
+    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+      config: chapcs
+  04/28/20:
+    - text: Move XC testing from login to elogin node
+      config: 16-node-xc
+  05/20/20:
+    - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
+
+arkouda-comp:
+  <<: *arkouda-base
