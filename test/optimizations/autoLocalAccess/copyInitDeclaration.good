@@ -4,6 +4,9 @@
 Iterated symbol
 	copyInitDeclaration.chpl:4
 
+Loop is suitable for further analysis
+	copyInitDeclaration.chpl:14
+
 Potential access
 	copyInitDeclaration.chpl:15
 

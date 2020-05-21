@@ -21,6 +21,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -38,7 +39,6 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
-#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -174,10 +174,6 @@ Expr* preFold(CallExpr* call) {
       thisTemp->addFlag(FLAG_EXPR_TEMP);
 
       callExpr->replace(new UnresolvedSymExpr("this"));
-      if (callExpr->maybeLocalAccess) {
-        std::cout << "Maybe local 2" << std::endl;
-        nprint_view(callExpr);
-      }
 
       retval = new CallExpr(PRIM_MOVE, thisTemp, callExpr);
 

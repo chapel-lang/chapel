@@ -21,6 +21,7 @@
 #include "postFold.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "expr.h"

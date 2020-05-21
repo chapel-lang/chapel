@@ -1,0 +1,49 @@
+**** Start forall ****
+	staticSuccessDynamicFail.chpl:6
+
+There is no type expression in definition, or it is not a call
+	staticSuccessDynamicFail.chpl:4
+
+Regular domain symbol was not found
+	staticSuccessDynamicFail.chpl:4
+
+Iterated over .domain of
+	staticSuccessDynamicFail.chpl:4
+
+Whose domain cannot be determined statically
+	staticSuccessDynamicFail.chpl:4
+
+Loop is suitable for further analysis
+	staticSuccessDynamicFail.chpl:6
+
+Potential access
+	staticSuccessDynamicFail.chpl:7
+
+Access base is the same as iterator's base
+	staticSuccessDynamicFail.chpl:7
+
+Potential access
+	staticSuccessDynamicFail.chpl:7
+
+There is no type expression in definition, or it is not a call
+	staticSuccessDynamicFail.chpl:3
+
+Regular domain symbol was not found
+	staticSuccessDynamicFail.chpl:3
+
+	Replacing
+	staticSuccessDynamicFail.chpl:7
+
+	Marking for dynamic analysis
+	staticSuccessDynamicFail.chpl:7
+
+**** End forall ****
+	staticSuccessDynamicFail.chpl:6
+
+Statically confirmed optimization, using localAccess
+	staticSuccessDynamicFail.chpl:7
+
+Replacing with runtime checks
+	staticSuccessDynamicFail.chpl:7
+
+0 0 0 0 0 0 0 0 0

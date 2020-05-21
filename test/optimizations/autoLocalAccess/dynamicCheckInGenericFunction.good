@@ -13,6 +13,9 @@ Iterated over .domain of
 Whose domain cannot be determined statically
 	dynamicCheckInGenericFunction.chpl:13
 
+Loop is suitable for further analysis
+	dynamicCheckInGenericFunction.chpl:16
+
 Potential access
 	dynamicCheckInGenericFunction.chpl:17
 

@@ -4,6 +4,9 @@
 Iterated symbol
 	regularDeclaration.chpl:4
 
+Loop is suitable for further analysis
+	regularDeclaration.chpl:14
+
 Potential access
 	regularDeclaration.chpl:15
 
@@ -60,6 +63,9 @@ Iterated over .domain of
 
 where its domain is
 	regularDeclaration.chpl:21
+
+Loop is suitable for further analysis
+	regularDeclaration.chpl:31
 
 Potential access
 	regularDeclaration.chpl:32
