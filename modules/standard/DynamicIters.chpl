@@ -786,26 +786,95 @@ where tag == iterKind.leader
   }
 
   else {
-    const perTask = (remain.high / 2 / nTasks);
+    const perTask = (remain.size / 2 / nTasks);
     const triangularEnd = perTask * nTasks * 2;
-    const leftOver = remain.high - triangularEnd;
+    const leftOver = remain.size - triangularEnd;
+
+    const tasksWithTwo;
+    const tasksWithOne;
+
+    /*
+     * After the main loop, handle leftOver.
+     * Since we divided by 2*nTasks, tid may be assigned 0, 1, or 2
+     * left over indices, depending on remain.size % 2*nTasks
+     */
+    if leftOver >= nTasks {
+      // tids 0..#tasksWithTwo take two remaining,
+      // tids tasksWithTwo..#(tasksWithTwo+tasksWithOne) take one
+      tasksWithTwo = leftOver - nTasks;
+      tasksWithOne = nTasks - tasksWithTwo;
+    } else {
+      // ditto, just that tasksWithTwo is 0, so
+      // tids 0..#tasksWithOne take one, and the rest take 0.
+      // if leftOver is 0, they all take 0 extra
+      tasksWithTwo = 0;
+      tasksWithOne = leftOver;
+    }
 
     coforall tid in 0..#nTasks do {
       const firstPart:rType = (perTask * tid) .. #perTask;
       const secondPart:rType = (triangularEnd - perTask*(tid+1)) .. #perTask;
       if debugDynamicIters then
-	writeln("Parallel triangle Iterator. Working at tid ", tid, " with firstPart ", unDensify(firstPart,c), " yielded as ", firstPart);
+        writeln("Parallel triangle Iterator. Working at tid ", tid, " with firstPart ", unDensify(firstPart,c), " yielded as ", firstPart);
       yield (firstPart,);
       if debugDynamicIters then
-	writeln("Parallel triangle Iterator. Working at tid ", tid, " with secondPart ", unDensify(secondPart,c), " yielded as ", secondPart);
+        writeln("Parallel triangle Iterator. Working at tid ", tid, " with secondPart ", unDensify(secondPart,c), " yielded as ", secondPart);
       yield (secondPart,);
 
       if tid < leftOver {
-	const lastPart:rType = (triangularEnd + tid)..#1;
-	if debugDynamicIters then
-	  writeln("Parallel triangle Iterator. Working at tid ", tid, " with lastPart ", unDensify(lastPart,c), " yielded as ", lastPart);
+        const count;
+        // if there's more work than tasks, each task takes 1 to start
+        if leftOver >= nTasks {
+          if tid < tasksWithTwo then
+            count = 2;
+          else
+            count = 1;
+        } else {
+          if tid < tasksWithOne then
+            count = 1;
+          else
+            count = 0;
+        }
 
-	yield (lastPart,);
+        /*
+         * Now divide the leftOver iterations so that the tasks have
+         * as close to equal work left as we can manage.
+         *
+         * Tasks with 1 take the singletons just after triangularEnd
+         * triangularEnd+(tid-tasksWithTwo)
+         * since those are the longest of what's left.
+         *
+         * Tasks with 2 take two separate singletons, tid from the
+         * beginning and tid from the end of the remaining part of
+         * remain:
+         *
+         * triangularEnd + tasksWithOne + tid, and
+         * remain.size - 1 - tid
+         * It's triangles all the way down
+         */
+
+        var lastPart:rType;
+        var penultimatePart:rType;
+
+        if count > 0 {
+          if count == 1 {
+            lastPart = (triangularEnd+(tid-tasksWithTwo))..#1;
+          } else {
+            penultimatePart = (triangularEnd+tasksWithOne+tid)..#1;
+            lastPart = (remain.size-1-tid)..#1;
+          }
+
+          if count == 2 {
+            if debugDynamicIters then
+              writeln("Parallel triangle Iterator. Working at tid ", tid, " with penultimatePart ", unDensify(penultimatePart,c), " yielded as ", penultimatePart);
+            yield (penultimatePart,);
+          }
+
+          if debugDynamicIters then
+            writeln("Parallel triangle Iterator. Working at tid ", tid, " with lastPart ", unDensify(lastPart,c), " yielded as ", lastPart);
+
+          yield (lastPart,);
+        }
       }
     }
   }
@@ -825,8 +894,5 @@ where tag == iterKind.follower
     yield i;
   }
 }
-
-
-
 
 }
