@@ -36,6 +36,14 @@ test(test11);
 var test12: uint(16) = 65500;
 test(test12);
 
+/*
+   The conditional statements are used to make the `.good` file
+   pass for both little and big endian systems. If the host is little
+   endian `hostToLittleEndian(x)` will return the value unchanged, so
+   will `hostToBigEndian(x)` in case of a big endian host, so the order
+   of the function calls is changed in the else statement to match the
+   `.good` file.
+*/
 proc test(x) {
   var a, b, c, d;
 
