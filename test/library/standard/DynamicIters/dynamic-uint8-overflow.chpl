@@ -1,17 +1,14 @@
 // Regression test for https://github.com/chapel-lang/chapel/issues/14618
-
+//
 // variation of dynamic-int-overflow using uint(8) for easier
 // arithmetic, and so that the loop body doesn't need to be empty.
-
+//
 // Checks that there's not a problem when the previous chunk's end
 // point plus the chunkSize > max(uint(8)).
-
-// Loop body is empty so that it gets optimized out with --fast,
-// otherwise the test would take way too long.
-
+//
 // r and chunkSize are chosen so that one chunk will end towards the
 // end of r, but adding chunkSize will overlow max(uint(8))
-
+//
 // Excercise serial, standalone, leader, and follower iterators
 
 use DynamicIters;
