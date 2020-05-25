@@ -694,6 +694,7 @@ extern const char* astrInit;
 extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
+extern const char* astrPostinit;
 extern const char* astrTag;
 extern const char* astrThis;
 extern const char* astrSuper;
@@ -708,6 +709,11 @@ extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
 extern const char* astrBorrow;
 extern const char* astr_init_coerce_tmp;
+extern const char* astr_autoCopy;
+extern const char* astr_initCopy;
+extern const char* astr_coerceCopy;
+extern const char* astr_coerceCopy;
+extern const char* astr_coerceMove;
 
 void initAstrConsts();
 

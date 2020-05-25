@@ -1,0 +1,10 @@
+
+ test1
+b init 1 1
+b init 2 2
+b init 3 3
+b init 4 4
+z deinit 1 1
+z deinit 2 2
+z deinit 3 3
+z deinit 4 4

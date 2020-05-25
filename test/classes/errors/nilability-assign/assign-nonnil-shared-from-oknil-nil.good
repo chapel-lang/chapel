@@ -1,1 +1,1 @@
-assign-nonnil-shared-from-oknil-nil.chpl:8: error: type mismatch in assignment from nil to shared MyClass
+assign-nonnil-shared-from-oknil-nil.chpl:8: error: Cannot assign to shared MyClass from nil

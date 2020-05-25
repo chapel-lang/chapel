@@ -10,4 +10,4 @@ record MyRecord {
 
 var myr = new MyRecord();
 
-
+compilerError("done");

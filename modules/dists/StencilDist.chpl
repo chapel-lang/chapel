@@ -355,7 +355,9 @@ class LocStencilArr {
   param stridable: bool;
   const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -363,7 +365,43 @@ class LocStencilArr {
   var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;
   var sendRecvFlag : [locDom.NeighDom] atomic bool;
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            const locDom: unmanaged LocStencilDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
+
+    // Even if the array elements don't need to be initialized now,
+    // do initialize the fluff.
+    for i in this.locDom.myFluff {
+      if !this.locDom.contains(i) {
+        pragma "no auto destroy" pragma "unsafe"
+        var def: eltType;
+        __primitive("=", myElems[i], def);
+      }
+    }
+  }
+
   proc deinit() {
+    // Even if the array elements don't need to be de-initialized now,
+    // do de-initialize the fluff.
+    for i in this.locDom.myFluff {
+      if !this.locDom.contains(i) {
+        chpl__autoDestroy(myElems[i]);
+      }
+    }
+
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
+
     if locRAD != nil then
       delete locRAD;
   }
@@ -778,12 +816,12 @@ proc StencilDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc StencilDom.dsiBuildArray(type eltType) {
+proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, stridable);
   const dummyLSA = new unmanaged LocStencilArr(eltType, rank, idxType,
-                                               stridable, dummyLSD);
+                                               stridable, dummyLSD, false);
   var locArrTemp: [dom.dist.targetLocDom]
         unmanaged LocStencilArr(eltType, rank, idxType, stridable) = dummyLSA;
   var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, stridable)?;
@@ -792,7 +830,8 @@ proc StencilDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LSA = new unmanaged LocStencilArr(eltType, rank, idxType, stridable,
-                                              dom.getLocDom(localeIdx));
+                                              dom.getLocDom(localeIdx),
+                                              initElts=initElts);
       locArrTemp(localeIdx) = LSA;
       if here.id == creationLocale then
         myLocArrTemp = LSA;
@@ -1077,11 +1116,38 @@ proc StencilArr.setupRADOpt() {
   }
 }
 
-override proc StencilArr.dsiDestroyArr() {
+override proc StencilArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      if !ignoreFluff then
-        delete locArr(localeIdx);
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+
+override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
+      if !ignoreFluff {
+        if deinitElts {
+          // only deinitialize non-fluff elements
+          // fluff is always deinited in the LocArr deinit
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if _deinitElementsIsParallel(eltType) {
+              forall i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            } else {
+              for i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            }
+          }
+        }
+        delete arr;
+      }
     }
   }
 }

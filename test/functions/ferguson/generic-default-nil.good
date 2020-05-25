@@ -1,4 +1,5 @@
-generic-default-nil.chpl:3: error: Default expression not convertible to formal type
+generic-default-nil.chpl:7: error: Cannot initialize borrowed C from nil
+generic-default-nil.chpl:3: note: when calling foo with a default value for x
 generic-default-nil.chpl:3: In function 'foo':
 generic-default-nil.chpl:4: error: the type of the actual argument 'x' is generic
 note: generic actual arguments are not currently supported
