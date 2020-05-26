@@ -392,16 +392,38 @@ static void revertAccess(CallExpr *call) {
   analyzeArrLog("Reverting optimization (can't statically confirm)",
                 call);
 
-  call->baseExpr->replace(new UnresolvedSymExpr("this"));
-  resolveCall(call);
+  CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
+                                gMethodToken);
+
+  for (int i = 1 ; i <= call->argList.length ; i++) {
+    Symbol *argSym = toSymExpr(call->get(i))->symbol();
+    repl->insertAtTail(new SymExpr(argSym));
+  }
+
+  //call->primitive->replace(new UnresolvedSymExpr("this"));
+  //call->insertAtHead(gMethodToken);
+  //
+  call->replace(repl);
+  //resolveCall(repl);
 }
 
 static void confirmAccess(CallExpr *call) {
   analyzeArrLog("Statically confirmed optimization, using localAccess",
                 call);
 
-  call->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
-  resolveCall(call);
+  CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
+                                gMethodToken);
+
+  for (int i = 1 ; i <= call->argList.length ; i++) {
+    Symbol *argSym = toSymExpr(call->get(i))->symbol();
+    repl->insertAtTail(new SymExpr(argSym));
+  }
+
+  //call->primitive->replace(new UnresolvedSymExpr("this"));
+  //call->insertAtHead(gMethodToken);
+  //
+  call->replace(repl);
+  //resolveCall(repl);
 }
 
 static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
@@ -411,19 +433,18 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
   bool madeAdjustments = false;
 
   if (knownCallExprs.size() > 0) {
-    for_vector(CallExpr, knownCallExpr, knownCallExprs) {
-      if(CallExpr *callToAdjust = toCallExpr(knownCallExpr->baseExpr)) {
-        if (confirmed) {
-          // can only confirm a static access
-          if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
-            confirmAccess(callToAdjust);
-            madeAdjustments = true;
-          }
-        }
-        else {
-          revertAccess(callToAdjust);
+    for_vector(CallExpr, callToAdjust, knownCallExprs) {
+      if (confirmed) {
+        // can only confirm a static access
+        //if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+        if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
+          confirmAccess(callToAdjust);
           madeAdjustments = true;
         }
+      }
+      else {
+        revertAccess(callToAdjust);
+        madeAdjustments = true;
       }
     }
   }
@@ -448,11 +469,13 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
           // maybe assert here
 
           // remove statically-determined accesses based on this check
-          for_vector(CallExpr, parentCall, callExprs) {
-            if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
-              if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+          for_vector(CallExpr, callToAdjust, callExprs) {
+            CallExpr *parentCall = toCallExpr(callToAdjust->parentExpr);
+            //if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
+              //if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+              if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
                 // check the second argument; 1st is methodToken
-                if (SymExpr *argSE = toSymExpr(callToAdjust->get(2)) ) {
+                if (SymExpr *argSE = toSymExpr(callToAdjust->get(1)) ) {
                   if (argSE->symbol() == checkSym) {
                     if (confirmed) {
                       confirmAccess(callToAdjust);
@@ -465,11 +488,12 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
                   }
                 }
               }
-              else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
+              //else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
+              else if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_DYNAMIC)) { 
                 // can only revert for dynamic accesses
                 if (!confirmed) {
                   // check the second argument; 1st is methodToken
-                  if (SymExpr *argSE = toSymExpr(callToAdjust->get(2))) {
+                  if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
                     if(argSE->symbol() == checkSym) {
                       revertAccess(callToAdjust);
                       madeAdjustments = true;
@@ -488,7 +512,7 @@ static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
                   }
                 }
               }
-            }
+            //}
           }
         }
       }
@@ -579,9 +603,12 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
       INT_ASSERT(baseSym);
 
-      CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
-          new UnresolvedSymExpr("chpl_maybeLocalAccessStatic"));
-      CallExpr *repl = new CallExpr(base);
+      //CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
+          //new UnresolvedSymExpr("chpl_maybeLocalAccessStatic"));
+
+      CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS_STATIC,
+                                    new SymExpr(baseSym));
+      //CallExpr *repl = new CallExpr(base);
       for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
         Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
         INT_ASSERT(argSym);
@@ -607,9 +634,11 @@ static void buildLocalAccessLoops(ForallStmt *forall,
         Symbol *callBase = getCallBase(dOptCandidate);
         generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
         analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
-        CallExpr *base = new CallExpr(".", new SymExpr(callBase),
-            new UnresolvedSymExpr("chpl_maybeLocalAccessDynamic"));
-        CallExpr *repl = new CallExpr(base);
+        //CallExpr *base = new CallExpr(".", new SymExpr(callBase),
+            //new UnresolvedSymExpr("chpl_maybeLocalAccessDynamic"));
+        CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS_DYNAMIC,
+                                      new SymExpr(callBase));
+        //CallExpr *repl = new CallExpr(base);
         for (int i = 1 ; i <= dOptCandidate->argList.length ; i++) {
           Symbol *argSym = toSymExpr(dOptCandidate->get(i))->symbol();
           INT_ASSERT(argSym);

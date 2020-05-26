@@ -119,7 +119,8 @@ Expr* preFold(CallExpr* call) {
     }
 
   } else if (UnresolvedSymExpr *baseURSE = toUnresolvedSymExpr(baseExpr)) {
-    if (call->isNamed("chpl_maybeLocalAccessDynamic")) {
+    //if (call->isNamed("chpl_maybeLocalAccessDynamic")) {
+    if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS_DYNAMIC)) {
       CallExpr *parentCall = toCallExpr(call->parentExpr);
       call->replace(call->get(2)->remove());
       parentCall->maybeLocalAccess = true;

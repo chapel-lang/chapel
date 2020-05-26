@@ -2531,6 +2531,10 @@ void resolveCall(CallExpr* call) {
       resolveNew(call);
       break;
 
+    case PRIM_MAYBE_LOCAL_THIS_STATIC:
+      std::cout << "Attempting to resolve maybe static access\n";
+      break;
+
     default:
       break;
     }
