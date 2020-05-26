@@ -325,71 +325,6 @@ static Symbol *getCallBase(CallExpr *call) {
 std::map<CallExpr *, std::vector<CallExpr *>> accessForStaticCheckMap;
 std::map<CallExpr *, std::vector<CallExpr *>> accessForDynamicCheckMap;
 
-
-static void generateCheckForAccess(CallExpr *access,
-                                   ForallStmt *forall,
-                                   CallExpr *&allChecks,
-                                   bool isStatic) {
-
-  ForallOptimizationInfo &loopInfo = forall->loopInfo;
-
-  Symbol *baseSym = getCallBase(access);
-  INT_ASSERT(baseSym);
-
-  SET_LINENO(forall);
-
-  CallExpr *currentCheck = NULL;
-  if (isStatic) {
-    if (loopInfo.staticCheckForSymMap.count(baseSym) == 0) {
-      currentCheck = new CallExpr("chpl__staticAutoLocalCheck");
-      loopInfo.staticCheckForSymMap[baseSym] = currentCheck;
-    }
-    else {
-      return;
-    }
-  }
-  else {
-    if (loopInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
-      currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
-      loopInfo.dynamicCheckForSymMap[baseSym] = currentCheck;
-    }
-    else {
-      return;
-    }
-  }
-
-
-  currentCheck->insertAtTail(baseSym);
-  if (loopInfo.iterSym != NULL) {
-    currentCheck->insertAtTail(new SymExpr(loopInfo.iterSym));
-  }
-  else if (loopInfo.dotDomIterExpr != NULL) {
-    currentCheck->insertAtTail(loopInfo.dotDomIterExpr->copy());
-  }
-  else {
-    INT_FATAL("loopInfo didn't have enough information");
-  }
-
-  if (allChecks == NULL) {
-    allChecks = currentCheck;
-  }
-  else {
-    allChecks = new CallExpr(PRIM_AND, currentCheck, allChecks);
-  }
-}
-
-bool adjustAutoLocalAccessDynamic(CallExpr *call) {
-  if (call->maybeLocalAccess) {
-    analyzeArrLog("Replacing with runtime checks", call);
-    call->baseExpr->replace(new UnresolvedSymExpr("localAccess"));
-    call->maybeLocalAccess = false; // no longer a "maybe"
-    return true;
-  }
-  else {
-    return false;
-  }
-}
-
 static CallExpr *revertAccess(CallExpr *call) {
   analyzeArrLog("Reverting optimization (can't statically confirm)",
                 call);
@@ -431,7 +366,7 @@ static CallExpr *confirmAccess(CallExpr *call) {
   return repl;
 }
 
-Expr *resolveMaybeLocalThis(CallExpr *call) {
+Expr *preFoldMaybeLocalThis(CallExpr *call) {
   // PRIM_MAYBE_LOCAL_THIS looks like
   //
   //   (call "maybe local this" arrSymbol, idxSym0, ... ,idxSymN,
@@ -453,152 +388,46 @@ Expr *resolveMaybeLocalThis(CallExpr *call) {
 
   return NULL;
 }
-//void resolveMaybeLocalThis(CallExpr *call) {
-  //analyzeArrLog("Resolving maybe local this", call);
-
-  //if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length))) {
-    //if (controlSE->symbol() == gTrue) {
-      //confirmAccess(call);
-    //}
-    //else {
-      //revertAccess(call);
-    //}
-  //}
-  //else {
-    //INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
-  //}
-//}
-
-//static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
-                      //std::vector<CallExpr *> knownCallExprs,
-                      //bool confirmed) {
-
-  //bool madeAdjustments = false;
-
-  //if (knownCallExprs.size() > 0) {
-    //for_vector(CallExpr, callToAdjust, knownCallExprs) {
-      //if (confirmed) {
-        //// can only confirm a static access
-        ////if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
-        //if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
-          //confirmAccess(callToAdjust);
-          //madeAdjustments = true;
-        //}
-      //}
-      //else {
-        //revertAccess(callToAdjust);
-        //madeAdjustments = true;
-      //}
-    //}
-  //}
-  //else { // this may be inside an instantitation of a generic function
-
-    //// find the first conditional that comes after this check
-    //if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
-      //if (parentCall->isPrimitive(PRIM_MOVE)) {
-        //Expr *curExpr = parentCall->next;
-        //CondStmt *optCond = NULL;
-        //while(curExpr != NULL && optCond == NULL) {
-          //optCond = toCondStmt(curExpr);
-          //curExpr = curExpr->next;
-        //}
-
-        //if (optCond != NULL) {
-          //std::vector<CallExpr *> callExprs;
-          //collectCallExprs(optCond->thenStmt, callExprs);
-
-          //SymExpr *checkSE = toSymExpr(check->get(1));
-          //Symbol *checkSym = checkSE->symbol();
-          //// maybe assert here
-
-          //// remove statically-determined accesses based on this check
-          //for_vector(CallExpr, callToAdjust, callExprs) {
-            //CallExpr *parentCall = toCallExpr(callToAdjust->parentExpr);
-            ////if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
-              ////if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
-              //if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
-                //// check the second argument; 1st is methodToken
-                //if (SymExpr *argSE = toSymExpr(callToAdjust->get(1)) ) {
-                  //if (argSE->symbol() == checkSym) {
-                    //if (confirmed) {
-                      //confirmAccess(callToAdjust);
-                      //madeAdjustments = true;
-                    //}
-                    //else {
-                      //revertAccess(callToAdjust);
-                      //madeAdjustments = true;
-                    //}
-                  //}
-                //}
-              //}
-              ////else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
-              //else if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_DYNAMIC)) { 
-                //// can only revert for dynamic accesses
-                //if (!confirmed) {
-                  //// check the second argument; 1st is methodToken
-                  //if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
-                    //if(argSE->symbol() == checkSym) {
-                      //revertAccess(callToAdjust);
-                      //madeAdjustments = true;
-                    //}
-                  //}
-                //}
-              //}
-              //else if (!confirmed && parentCall->isPrimitive(PRIM_MOVE)) {
-                //if (CallExpr *callToAdjust = toCallExpr(parentCall->get(2))) {
-                  //if (callToAdjust->isNamed("chpl_dynamicAutoLocalCheck")) {
-                    //if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
-                      //if(argSE->symbol() == checkSym) {
-                        //callToAdjust->replace(new SymExpr(gTrue));
-                      //}
-                    //}
-                  //}
-                //}
-              //}
-            ////}
-          //}
-        //}
-      //}
-    //}
-  //}
-
-  //return madeAdjustments;
-//}
-
-// This is the part of the "public" interface for resolution
-//bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
-  //bool madeAdjustments = false;
-  //if (call->isNamed("chpl__staticAutoLocalCheck")) {
-    //bool retval = imm->bool_value();
-
-    //madeAdjustments =  adjustAutoLocalAccessesBasedOnStaticCheck(call,
-                                                  //accessForStaticCheckMap[call],
-                                                  //retval);
-
-    //if (retval == false && madeAdjustments == false) {
-      //analyzeArrLog("Something went wrong with this check", call);
-      //// maybe assert here: if this was a static check that was reverted, there
-      //// must be something associated with it that required adjustment
-    //}
-    
-  //}
-  //return madeAdjustments;
-//}
 
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
                                           CallExpr *&allChecks) {
-  generateCheckForAccess(access, forall, allChecks, false);
+  ForallOptimizationInfo &loopInfo = forall->loopInfo;
+  Symbol *baseSym = getCallBase(access);
+  INT_ASSERT(baseSym);
+
+  SET_LINENO(forall);
+
+  CallExpr *currentCheck = NULL;
+  if (loopInfo.dynamicCheckForSymMap.count(baseSym) == 0) {
+    currentCheck = new CallExpr("chpl__dynamicAutoLocalCheck");
+    loopInfo.dynamicCheckForSymMap[baseSym] = currentCheck;
+  }
+  else {
+    return;
+  }
+  currentCheck->insertAtTail(baseSym);
+
+  if (loopInfo.iterSym != NULL) {
+    currentCheck->insertAtTail(new SymExpr(loopInfo.iterSym));
+  }
+  else if (loopInfo.dotDomIterExpr != NULL) {
+    currentCheck->insertAtTail(loopInfo.dotDomIterExpr->copy());
+  }
+  else {
+    INT_FATAL("loopInfo didn't have enough information");
+  }
+
+  if (allChecks == NULL) {
+    allChecks = currentCheck;
+  }
+  else {
+    allChecks = new CallExpr(PRIM_AND, currentCheck, allChecks);
+  }
 }
 
-//static void generateStaticCheckForAccess(CallExpr *access,
-                                         //ForallStmt *forall,
-                                         //CallExpr *&allChecks) {
-  //generateCheckForAccess(access, forall, allChecks, true);
-//}
-
 static Symbol *generateStaticCheckForAccess(CallExpr *access,
-                                          ForallStmt *forall) {
+                                            ForallStmt *forall) {
                                           
   ForallOptimizationInfo &loopInfo = forall->loopInfo;
   Symbol *baseSym = getCallBase(access);
@@ -707,113 +536,6 @@ static void buildLocalAccessLoops(ForallStmt *forall,
     elseBlock->insertAtTail(staticOnly);
   }
 }
-
-
-//static void buildLocalAccessLoops(ForallStmt *forall,
-                                  //std::vector<CallExpr *> &sOptCandidates,
-                                  //std::vector<CallExpr *> &dOptCandidates) {
-
-  //ForallOptimizationInfo &loopInfo = forall->loopInfo;
-
-  //const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
-  //if (totalNumCandidates == 0) return;
-
-  //SET_LINENO(forall);
-
-
-  //// ENGIN: Below, there are two anonymous blocks to keep scopes for static and
-  //// dynamic checking separate. They are similar but not similar enough to
-  //// refactor, IMO So, I use same-named variables in separate blocks,
-  //// technically we shouldn't need them, but I believe it is good practice.
-
-  //{ //  all static optimization related stuff is here
-  
-    //CallExpr *staticCond = NULL;
-    //for_vector(CallExpr, sOptCandidate, sOptCandidates) {
-      //generateStaticCheckForAccess(sOptCandidate, forall, staticCond);
-    //}
-
-    //// we need static checks for dynamic candidates, too
-    //for_vector(CallExpr, dOptCandidate, dOptCandidates) {
-      //generateStaticCheckForAccess(dOptCandidate, forall, staticCond);
-    //}
-
-    //ForallStmt *forallUnopt = forall->copy();
-    //forallUnopt->autoLocalAccessChecked = true; // am I being paranoid?
-
-    //BlockStmt *thenBlock = new BlockStmt();
-    //BlockStmt *elseBlock = new BlockStmt();
-    //CondStmt *staticCheck = new CondStmt(staticCond, thenBlock,
-                                                     //elseBlock);
-    //forall->insertAfter(staticCheck);
-    //thenBlock->insertAtTail(forall->remove());
-    //elseBlock->insertAtTail(forallUnopt);
-
-    //// this modifies calls in `forall`
-    //for_vector(CallExpr, sOptCandidate, sOptCandidates) {
-      //SET_LINENO(sOptCandidate);
-      //analyzeArrLog("\tReplacing", sOptCandidate);
-
-      //Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
-      //INT_ASSERT(baseSym);
-
-      ////CallExpr *base = new CallExpr(".", new SymExpr(baseSym),
-          ////new UnresolvedSymExpr("chpl_maybeLocalAccessStatic"));
-
-      //CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS_STATIC,
-                                    //new SymExpr(baseSym));
-      ////CallExpr *repl = new CallExpr(base);
-      //for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
-        //Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
-        //INT_ASSERT(argSym);
-
-        //repl->insertAtTail(new SymExpr(argSym));
-      //}
-      //sOptCandidate->replace(repl);
-      //accessForStaticCheckMap[loopInfo.staticCheckForSymMap[baseSym]].push_back(repl);
-    //}
-  //}
-
-  //{ // all dynamic optimization related stuff is here
-    //if (dOptCandidates.size() > 0) {
-
-      //CallExpr *dynamicCond = NULL;
-
-      //ForallStmt *forallUnopt = forall->copy();
-      //forallUnopt->autoLocalAccessChecked = true;
-
-      //// this marks calls in `forall`
-      //for_vector(CallExpr, dOptCandidate, dOptCandidates) {
-        //SET_LINENO(dOptCandidate);
-        //Symbol *callBase = getCallBase(dOptCandidate);
-        //generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
-        //analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
-        ////CallExpr *base = new CallExpr(".", new SymExpr(callBase),
-            ////new UnresolvedSymExpr("chpl_maybeLocalAccessDynamic"));
-        //CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS_DYNAMIC,
-                                      //new SymExpr(callBase));
-        ////CallExpr *repl = new CallExpr(base);
-        //for (int i = 1 ; i <= dOptCandidate->argList.length ; i++) {
-          //Symbol *argSym = toSymExpr(dOptCandidate->get(i))->symbol();
-          //INT_ASSERT(argSym);
-
-          //repl->insertAtTail(new SymExpr(argSym));
-        //}
-        //dOptCandidate->replace(repl);
-        //accessForDynamicCheckMap[loopInfo.dynamicCheckForSymMap[callBase]].push_back(repl);
-        //accessForStaticCheckMap[loopInfo.staticCheckForSymMap[callBase]].push_back(repl);
-      //}
-
-      //BlockStmt *thenBlock = new BlockStmt();
-      //BlockStmt *elseBlock = new BlockStmt();
-      //CondStmt *dynamicCheck = new CondStmt(dynamicCond, thenBlock,
-                                                         //elseBlock);
-      //forall->insertAfter(dynamicCheck);
-      //thenBlock->insertAtTail(forall->remove());
-      //elseBlock->insertAtTail(forallUnopt);
-    //}
-  //}
-//}
 
 void analyzeArrays() {
   const bool limitToTestFile = false;

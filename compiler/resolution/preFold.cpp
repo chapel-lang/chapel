@@ -571,7 +571,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_MAYBE_LOCAL_THIS:
-    retval = resolveMaybeLocalThis(call);
+    retval = preFoldMaybeLocalThis(call);
     call->replace(retval);
     break;
 

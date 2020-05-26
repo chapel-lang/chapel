@@ -24,11 +24,10 @@
 #include "CallExpr.h"
 #include "symbol.h"
 
-bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm);
-bool adjustAutoLocalAccessDynamic(CallExpr *call);
-
-Expr *resolveMaybeLocalThis(CallExpr *call);
-
+// interface for normalize
 void analyzeArrays();
+
+// interface for resolution
+Expr *preFoldMaybeLocalThis(CallExpr *call);
 
 #endif
