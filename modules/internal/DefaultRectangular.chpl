@@ -86,8 +86,11 @@ module DefaultRectangular {
 
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
-                                       param stridable: bool, inds) {
-      const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
+                                       param stridable: bool,
+                                       param boundedType: BoundedRangeType,
+                                       inds) {
+      const dom = new unmanaged DefaultRectangularDom(rank, idxType,
+                                                      stridable, boundedType,
                                                       _to_unmanaged(this));
       dom.dsiSetIndices(inds);
       return dom;
@@ -139,8 +142,10 @@ module DefaultRectangular {
   }
 
   class DefaultRectangularDom: BaseRectangularDom {
+    param boundedType: BoundedRangeType = BoundedRangeType.bounded;
     var dist: unmanaged DefaultDist;
-    var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+
+    var ranges : rank*range(idxType,boundedType,stridable);
 
     override proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
@@ -148,8 +153,9 @@ module DefaultRectangular {
     proc type isDefaultRectangular() param return true;
     override proc isDefaultRectangular() param return true;
 
-    proc init(param rank, type idxType, param stridable, dist) {
+    proc init(param rank, type idxType, param stridable, param boundedType: BoundedRangeType, dist) {
       super.init(rank, idxType, stridable);
+      this.boundedType = boundedType;
       this.dist = dist;
     }
 
@@ -1000,7 +1006,8 @@ module DefaultRectangular {
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     var dom : unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
-                                           stridable=stridable);
+                                              stridable=stridable,
+                                              boundedType=BoundedRangeType.bounded);
     var off: rank*idxType;
     var blk: rank*chpl__idxTypeToIntIdxType(idxType);
     var sizesPerDim: rank*chpl__idxTypeToIntIdxType(idxType);

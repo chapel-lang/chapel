@@ -381,8 +381,9 @@ module ChapelArray {
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
                                    type idxType = int,
-                                   param stridable: bool = false)
-    return new _domain(d, rank, idxType, stridable);
+                                   param stridable: bool = false,
+                                   param boundedType = BoundedRangeType.bounded)
+    return new _domain(d, rank, idxType, stridable, boundedType);
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
@@ -579,13 +580,22 @@ module ChapelArray {
   proc chpl__buildDomainExpr(ranges...)
   where chpl__isTupleOfRanges(ranges) {
     param rank = ranges.size;
+    var bt: BoundedRangeType;
+
     for param i in 1..rank-1 do
       if ranges(0).idxType != ranges(i).idxType then
         compilerError("idxType varies among domain's dimensions");
-    for param i in 0..rank-1 do
+
+    for param i in 1..rank-1 do
+      if ranges(0).boundedType != ranges(i).boundedType then
+        compilerError("boundedType varies among domain's dimensions");
+
+    /*for param i in 0..rank-1 do
       if ! isBoundedRange(ranges(i)) then
         compilerError("one of domain's dimensions is not a bounded range");
-    var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
+    */
+    
+    var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges), ranges(0).boundedType);
     d.setIndices(ranges);
     return d;
   }
@@ -967,16 +977,16 @@ module ChapelArray {
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
-                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
+                           ranges: rank*range(idxType, ?boundedType, stridable)) {
+      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, boundedType, ranges);
       if x.linksDistribution() {
         _value.add_dom(x);
       }
       return x;
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool, param boundedType: BoundedRangeType) {
+      var ranges: rank*range(idxType, boundedType, stridable);
       return newRectangularDom(rank, idxType, stridable, ranges);
     }
 
@@ -1077,15 +1087,16 @@ module ChapelArray {
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
-              param stridable: bool = false) {
-      this.init(d.newRectangularDom(rank, idxType, stridable));
+              param stridable: bool = false,
+              param boundedType: BoundedRangeType) {
+      this.init(d.newRectangularDom(rank, idxType, stridable, boundedType));
     }
 
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
               param stridable: bool = false,
-              ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
+              ranges: rank*range(idxType, ?boundedType, stridable)) {
       this.init(d.newRectangularDom(rank, idxType, stridable, ranges));
     }
 
@@ -2609,6 +2620,11 @@ module ChapelArray {
       if boundsChecking then
         checkSlice(d, _value);
 
+      // create a bounded domain by slicing our domain with the argument
+      var D: domain(rank, idxType, this.stridable || d.stridable,
+                    BoundedRangeType.bounded)
+                      = this.domain((...d.getIndices()));
+
       //
       // If this is already a slice array view, we can short-circuit
       // down to the underlying array.
@@ -2618,8 +2634,8 @@ module ChapelArray {
                               else (this._value, this._pid);
 
       var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                              _DomPid=d._pid,
-                                              dom=d._instance,
+                                              _DomPid=D._pid,
+                                              dom=D._instance,
                                               _ArrPid=arrpid,
                                               _ArrInstance=arr);
 

@@ -107,7 +107,7 @@ module ChapelDistribution {
       }
     }
 
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, param boundedType: BoundedRangeType, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
