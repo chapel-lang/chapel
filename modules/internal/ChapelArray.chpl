@@ -765,6 +765,22 @@ module ChapelArray {
   }
 
   pragma "return not owned"
+  proc chpl__distributionFromDomainRuntimeType(type rtt) {
+    proc getDomDistType() type {
+      pragma "unsafe"
+      var arr : rtt;
+      return __primitive("static typeof", arr.dist);
+    }
+
+    pragma "no copy"
+    pragma "no auto destroy"
+    var dist = __primitive("get runtime type field",
+                           getDomDistType(), rtt, "d");
+
+    return _getDistribution(dist._value);
+  }
+
+  pragma "return not owned"
   proc chpl__domainFromArrayRuntimeType(type rtt) {
     proc getArrDomType() type {
       pragma "unsafe"
@@ -3763,13 +3779,87 @@ module ChapelArray {
     assign
   }
 
+  // This is a workaround for an issue with replaceRecordWrappedRefs
+  // when initializing arrays of domains (or arrays or distributions).
+  // replaceRecordWrappedRefs assumes that the wrapper records (e.g. _array)
+  // are immutable. That's not true before they are initialized
+  // which can happen in chpl__transferArray, so chpl__transferArray
+  // uses a different pattern to avoid the problem for those types.
+  private proc needsInitWorkaround(type t) param {
+    return isSubtype(t, _array) ||
+           isSubtype(t, _domain) ||
+           isSubtype(t, _distribution);
+  }
+
   pragma "ignore transfer errors"
   private proc initCopyAfterTransfer(ref a: []) {
-    forall aa in a {
-      pragma "no auto destroy"
-      var copy: a.eltType = aa; // run copy initializer
-      // move it into the array
-      __primitive("=", aa, copy);
+    if needsInitWorkaround(a.eltType) {
+      forall ai in a.domain {
+        ref aa = a[ai];
+        pragma "no auto destroy"
+        var copy: a.eltType = aa; // run copy initializer
+        // move it into the array
+        __primitive("=", aa, copy);
+      }
+    } else {
+      forall aa in a {
+        pragma "no auto destroy"
+        var copy: a.eltType = aa; // run copy initializer
+        // move it into the array
+        __primitive("=", aa, copy);
+      }
+    }
+  }
+
+  // If we move initialized an array element from another value,
+  // there is the potential for the runtime type to need adjustment
+  // (if the element type is an array/domain type). In that event,
+  // check that the runtime type components match. If not, copy-initialize.
+  private proc fixRuntimeType(type eltType, ref elt) {
+    var runtimeTypesDiffer = false;
+    if isSubtype(eltType, _array) || isSubtype(eltType, _domain) {
+      if isSubtype(eltType, _array) {
+        const ref lhsDomain = chpl__domainFromArrayRuntimeType(eltType);
+        const ref rhsDomain = elt.domain;
+        if lhsDomain._instance != rhsDomain._instance {
+          runtimeTypesDiffer = true;
+        }
+      }
+      if isSubtype(eltType, _domain) {
+        const ref lhsDist = chpl__distributionFromDomainRuntimeType(eltType);
+        const ref rhsDist = elt.dist;
+        if lhsDist._instance != rhsDist._instance {
+          runtimeTypesDiffer = true;
+        }
+      }
+      // the element has a runtime type
+      if runtimeTypesDiffer {
+        // if the runtime type does not match, re-initialize the element
+
+        // copy-initialize the element to a variable with the right type
+        // (this should call chpl__coerceCopy)
+        pragma "no auto destroy"
+        var copy: eltType = elt;
+
+        // deinitialize the old element
+        chpl__autoDestroy(elt);
+
+        // set the element to the copy
+        __primitive("=", elt, copy);
+      }
+    }
+  }
+
+  private proc fixEltRuntimeTypesAfterTransfer(ref a: []) {
+    if needsInitWorkaround(a.eltType) {
+      forall ai in a.domain {
+        ref aa = a[ai];
+        fixRuntimeType(a.eltType, aa);
+      }
+    } else {
+      forall aa in a {
+        fixRuntimeType(a.eltType, aa);
+      }
     }
   }
 
@@ -3785,8 +3875,13 @@ module ChapelArray {
       }
       // If we did a bulk transfer, it just bit copied, so need to
       // run copy initializer still
-      if done && kind==_tElt.initCopy && !isPODType(a.eltType) {
-        initCopyAfterTransfer(a);
+      if done {
+        if kind==_tElt.initCopy && !isPODType(a.eltType) {
+          initCopyAfterTransfer(a);
+        } else if kind==_tElt.move && (isSubtype(a.eltType, _array) ||
+                                       isSubtype(a.eltType, _domain)) {
+          fixEltRuntimeTypesAfterTransfer(a);
+        }
       }
     }
     if !done {
@@ -3880,19 +3975,6 @@ module ChapelArray {
     return success;
   }
 
-
-  // This is a workaround for an issue with replaceRecordWrappedRefs
-  // when initializing arrays of domains (or arrays or distributions).
-  // replaceRecordWrappedRefs assumes that the wrapper records (e.g. _array)
-  // are immutable. That's not true before they are initialized
-  // which can happen in chpl__transferArray, so chpl__transferArray
-  // uses a different pattern to avoid the problem for those types.
-  private proc needsInitWorkaround(type t) param {
-    return isSubtype(t, _array) ||
-           isSubtype(t, _domain) ||
-           isSubtype(t, _distribution);
-  }
-
   pragma "find user line"
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b,
@@ -3903,7 +3985,7 @@ module ChapelArray {
       if kind==_tElt.move || kind==_tElt.initCopy {
         // need to copy if "move"ing from 1 element
         if needsInitWorkaround(a.eltType) {
-          forall (ai) in zip(a.domain) with (in b) {
+          forall ai in a.domain with (in b) {
             ref aa = a[ai];
             pragma "no auto destroy"
             var copy: a.eltType = b; // make a copy for this iteration
@@ -3930,11 +4012,13 @@ module ChapelArray {
           for (ai, bb) in zip(a.domain, b) {
             ref aa = a[ai];
             __primitive("=", aa, __primitive("steal", bb));
+            fixRuntimeType(a.eltType, aa);
           }
 
         } else {
           for (aa,bb) in zip(a,b) {
             __primitive("=", aa, __primitive("steal", bb));
+            fixRuntimeType(a.eltType, aa);
           }
         }
 
@@ -3968,11 +4052,13 @@ module ChapelArray {
           [ (ai, bb) in zip(a.domain, b) ] {
             ref aa = a[ai];
             __primitive("=", aa, __primitive("steal", bb));
+            fixRuntimeType(a.eltType, aa);
           }
 
         } else {
           [ (aa,bb) in zip(a,b) ] {
             __primitive("=", aa, __primitive("steal", bb));
+            fixRuntimeType(a.eltType, aa);
           }
         }
       } else if kind==_tElt.initCopy {
@@ -4058,6 +4144,7 @@ module ChapelArray {
               __primitive("=", dst, newArr);
             } else {
               __primitive("=", dst, src);
+              fixRuntimeType(a.eltType, dst);
             }
           } else if kind == _tElt.initCopy {
             pragma "no auto destroy"
