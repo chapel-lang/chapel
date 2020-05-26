@@ -119,14 +119,7 @@ Expr* preFold(CallExpr* call) {
     }
 
   } else if (UnresolvedSymExpr *baseURSE = toUnresolvedSymExpr(baseExpr)) {
-    //if (call->isNamed("chpl_maybeLocalAccessDynamic")) {
-    if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS_DYNAMIC)) {
-      CallExpr *parentCall = toCallExpr(call->parentExpr);
-      call->replace(call->get(2)->remove());
-      parentCall->maybeLocalAccess = true;
-      return preFold(parentCall);
-    }
-    else if (Expr* tmp = preFoldNamed(call)) {
+    if (Expr* tmp = preFoldNamed(call)) {
       retval = tmp;
     }
 
@@ -143,9 +136,7 @@ Expr* preFold(CallExpr* call) {
         // Type constructor calls OK
       } else if (isLcnSymbol(symExpr->symbol()) == true) {
 
-        if (!adjustAutoLocalAccessDynamic(call)) {
-          baseExpr->replace(new UnresolvedSymExpr("this"));
-        }
+        baseExpr->replace(new UnresolvedSymExpr("this"));
 
         call->insertAtHead(baseExpr);
         call->insertAtHead(gMethodToken);
@@ -579,8 +570,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
   }
 
-  case PRIM_MAYBE_LOCAL_THIS_STATIC:
-  case PRIM_MAYBE_LOCAL_THIS_DYNAMIC:
+  case PRIM_MAYBE_LOCAL_THIS:
     retval = resolveMaybeLocalThis(call);
     call->replace(retval);
     break;

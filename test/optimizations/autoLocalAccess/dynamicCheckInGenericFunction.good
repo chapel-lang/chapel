@@ -40,10 +40,10 @@ Regular domain symbol was not found
 **** End forall ****
 	dynamicCheckInGenericFunction.chpl:16
 
-Reverting optimization (can't statically confirm)
+Statically confirmed optimization, using localAccess
 	dynamicCheckInGenericFunction.chpl:17
 
-Statically confirmed optimization, using localAccess
+Reverting optimization (can't statically confirm)
 	dynamicCheckInGenericFunction.chpl:17
 
 Statically confirmed optimization, using localAccess

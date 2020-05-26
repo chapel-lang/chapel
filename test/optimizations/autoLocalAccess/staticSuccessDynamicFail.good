@@ -46,4 +46,7 @@ Statically confirmed optimization, using localAccess
 Replacing with runtime checks
 	staticSuccessDynamicFail.chpl:7
 
+Statically confirmed optimization, using localAccess
+	staticSuccessDynamicFail.chpl:7
+
 0 0 0 0 0 0 0 0 0

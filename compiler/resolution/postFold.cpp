@@ -141,13 +141,6 @@ static Expr* postFoldNormal(CallExpr* call) {
     if (ret != NULL && ret->immediate != NULL) {
       retval = new SymExpr(ret);
       
-      // my static checks are folded out here
-      //if (adjustAutoLocalAccessStatic(call, ret->immediate)) {
-        //// short circuit this check to true so as not to impact the overall
-        //// check
-        //retval = new SymExpr(gTrue);
-      //}
-
       call->replace(retval);
 
     } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {

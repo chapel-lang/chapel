@@ -61,4 +61,10 @@ Statically confirmed optimization, using localAccess
 Replacing with runtime checks
 	copyInitDeclaration.chpl:15
 
+Statically confirmed optimization, using localAccess
+	copyInitDeclaration.chpl:15
+
+Statically confirmed optimization, using localAccess
+	copyInitDeclaration.chpl:15
+
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

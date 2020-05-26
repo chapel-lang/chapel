@@ -397,8 +397,9 @@ static CallExpr *revertAccess(CallExpr *call) {
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
 
-  // Don't take the last argument; it is the static control symbol
-  for (int i = 1 ; i < call->argList.length ; i++) {
+  // Don't take the last two args; they are the static control symbol, and flag
+  // that tells whether this is a statically-determined access
+  for (int i = 1 ; i < call->argList.length-1 ; i++) {
     Symbol *argSym = toSymExpr(call->get(i))->symbol();
     repl->insertAtTail(new SymExpr(argSym));
   }
@@ -407,15 +408,22 @@ static CallExpr *revertAccess(CallExpr *call) {
 }
 
 static CallExpr *confirmAccess(CallExpr *call) {
-  analyzeArrLog("Statically confirmed optimization, using localAccess",
-                call);
+
+  if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
+    analyzeArrLog("Statically confirmed optimization, using localAccess",
+                  call);
+  }
+  else {
+    analyzeArrLog("Replacing with runtime checks", call);
+  }
 
   //Expr *parent = call->parentExpr;
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
                                 gMethodToken);
 
-  // Don't take the last argument; it is the static control symbol
-  for (int i = 1 ; i < call->argList.length ; i++) {
+  // Don't take the last two args; they are the static control symbol, and flag
+  // that tells whether this is a statically-determined access
+  for (int i = 1 ; i < call->argList.length-1 ; i++) {
     Symbol *argSym = toSymExpr(call->get(i))->symbol();
     repl->insertAtTail(new SymExpr(argSym));
   }
@@ -424,7 +432,14 @@ static CallExpr *confirmAccess(CallExpr *call) {
 }
 
 Expr *resolveMaybeLocalThis(CallExpr *call) {
-  if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length))) {
+  // PRIM_MAYBE_LOCAL_THIS looks like
+  //
+  //   (call "maybe local this" arrSymbol, idxSym0, ... ,idxSymN,
+  //                            paramControlFlag, paramStaticallyDetermined)
+  //
+  // we need to check the second argument from last to determine whether we are
+  // confirming this to be a local access or not
+  if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
     if (controlSE->symbol() == gTrue) {
       return confirmAccess(call);
     }
@@ -635,8 +650,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
     Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
     INT_ASSERT(baseSym);
 
-    CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS_STATIC,
-                                  new SymExpr(baseSym));
+    CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(baseSym));
     for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
       Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
       INT_ASSERT(argSym);
@@ -644,6 +658,10 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       repl->insertAtTail(new SymExpr(argSym));
     }
     repl->insertAtTail(new SymExpr(checkSym));
+
+    // mark statically-determined access. Today, this is only used for more
+    // accurate logging
+    repl->insertAtTail(new SymExpr(gTrue));
 
     sOptCandidate->replace(repl);
   }
@@ -664,8 +682,7 @@ static void buildLocalAccessLoops(ForallStmt *forall,
       generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
 
       analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
-      CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS_DYNAMIC,
-                                    new SymExpr(callBase));
+      CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
       for (int i = 1 ; i <= dOptCandidate->argList.length ; i++) {
         Symbol *argSym = toSymExpr(dOptCandidate->get(i))->symbol();
         INT_ASSERT(argSym);
@@ -673,6 +690,10 @@ static void buildLocalAccessLoops(ForallStmt *forall,
         repl->insertAtTail(new SymExpr(argSym));
       }
       repl->insertAtTail(checkSym);
+
+      // mark dynamically-determined access. Today, this is only used for more
+      // accurate logging
+      repl->insertAtTail(new SymExpr(gFalse));
 
       dOptCandidate->replace(repl);
     }

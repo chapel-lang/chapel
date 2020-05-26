@@ -4,6 +4,9 @@
 Iterated symbol
 	dynamicChecks.chpl:16
 
+Loop is suitable for further analysis
+	dynamicChecks.chpl:28
+
 Potential access
 	dynamicChecks.chpl:29
 
@@ -70,9 +73,6 @@ Regular domain symbol was not found
 **** End forall ****
 	dynamicChecks.chpl:28
 
-Reverting optimization (can't statically confirm)
-	dynamicChecks.chpl:32
-
 Statically confirmed optimization, using localAccess
 	dynamicChecks.chpl:29
 
@@ -81,5 +81,14 @@ Statically confirmed optimization, using localAccess
 
 Replacing with runtime checks
 	dynamicChecks.chpl:30
+
+Reverting optimization (can't statically confirm)
+	dynamicChecks.chpl:32
+
+Statically confirmed optimization, using localAccess
+	dynamicChecks.chpl:29
+
+Statically confirmed optimization, using localAccess
+	dynamicChecks.chpl:29
 
 6.0 9.0 12.0 15.0 18.0 21.0 24.0 27.0 30.0 33.0
