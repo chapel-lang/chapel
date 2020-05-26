@@ -739,11 +739,11 @@ private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, 
   This iterator expects that the work to be done by the ith index
   returned is O(k-i).  That is, that it's being used in a loop like
 
-  forall j in triangle(1..n) {
-    for i in j..n {
-      constant_amount_of_work(i,j);
-    }
-  }
+  X  forall j in triangle(1..n) {
+  X    for i in j..n {
+  X      constant_amount_of_work(i,j);
+  X    }
+  X  }
 
   Essentially, we want to pair the 0th index and the nth,
   and the 1st index and the (n-1)st,
