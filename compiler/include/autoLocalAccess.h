@@ -27,6 +27,8 @@
 bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm);
 bool adjustAutoLocalAccessDynamic(CallExpr *call);
 
+Expr *resolveMaybeLocalThis(CallExpr *call);
+
 void analyzeArrays();
 
 #endif

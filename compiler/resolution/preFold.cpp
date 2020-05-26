@@ -579,6 +579,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
   }
 
+  case PRIM_MAYBE_LOCAL_THIS_STATIC:
+  case PRIM_MAYBE_LOCAL_THIS_DYNAMIC:
+    retval = resolveMaybeLocalThis(call);
+    call->replace(retval);
+    break;
+
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES:

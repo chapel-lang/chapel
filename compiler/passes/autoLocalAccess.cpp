@@ -390,159 +390,185 @@ bool adjustAutoLocalAccessDynamic(CallExpr *call) {
   }
 }
 
-static void revertAccess(CallExpr *call) {
+static CallExpr *revertAccess(CallExpr *call) {
   analyzeArrLog("Reverting optimization (can't statically confirm)",
                 call);
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
 
-  for (int i = 1 ; i <= call->argList.length ; i++) {
+  // Don't take the last argument; it is the static control symbol
+  for (int i = 1 ; i < call->argList.length ; i++) {
     Symbol *argSym = toSymExpr(call->get(i))->symbol();
     repl->insertAtTail(new SymExpr(argSym));
   }
 
-  //call->primitive->replace(new UnresolvedSymExpr("this"));
-  //call->insertAtHead(gMethodToken);
-  //
-  call->replace(repl);
-  //resolveCall(repl);
+  return repl;
 }
 
-static void confirmAccess(CallExpr *call) {
+static CallExpr *confirmAccess(CallExpr *call) {
   analyzeArrLog("Statically confirmed optimization, using localAccess",
                 call);
 
+  //Expr *parent = call->parentExpr;
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
                                 gMethodToken);
 
-  for (int i = 1 ; i <= call->argList.length ; i++) {
+  // Don't take the last argument; it is the static control symbol
+  for (int i = 1 ; i < call->argList.length ; i++) {
     Symbol *argSym = toSymExpr(call->get(i))->symbol();
     repl->insertAtTail(new SymExpr(argSym));
   }
 
-  //call->primitive->replace(new UnresolvedSymExpr("this"));
-  //call->insertAtHead(gMethodToken);
-  //
-  call->replace(repl);
-  //resolveCall(repl);
+  return repl;
 }
 
-static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
-                      std::vector<CallExpr *> knownCallExprs,
-                      bool confirmed) {
-
-  bool madeAdjustments = false;
-
-  if (knownCallExprs.size() > 0) {
-    for_vector(CallExpr, callToAdjust, knownCallExprs) {
-      if (confirmed) {
-        // can only confirm a static access
-        //if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
-        if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
-          confirmAccess(callToAdjust);
-          madeAdjustments = true;
-        }
-      }
-      else {
-        revertAccess(callToAdjust);
-        madeAdjustments = true;
-      }
+Expr *resolveMaybeLocalThis(CallExpr *call) {
+  if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length))) {
+    if (controlSE->symbol() == gTrue) {
+      return confirmAccess(call);
+    }
+    else {
+      return revertAccess(call);
     }
   }
-  else { // this may be inside an instantitation of a generic function
-
-    // find the first conditional that comes after this check
-    if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_MOVE)) {
-        Expr *curExpr = parentCall->next;
-        CondStmt *optCond = NULL;
-        while(curExpr != NULL && optCond == NULL) {
-          optCond = toCondStmt(curExpr);
-          curExpr = curExpr->next;
-        }
-
-        if (optCond != NULL) {
-          std::vector<CallExpr *> callExprs;
-          collectCallExprs(optCond->thenStmt, callExprs);
-
-          SymExpr *checkSE = toSymExpr(check->get(1));
-          Symbol *checkSym = checkSE->symbol();
-          // maybe assert here
-
-          // remove statically-determined accesses based on this check
-          for_vector(CallExpr, callToAdjust, callExprs) {
-            CallExpr *parentCall = toCallExpr(callToAdjust->parentExpr);
-            //if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
-              //if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
-              if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
-                // check the second argument; 1st is methodToken
-                if (SymExpr *argSE = toSymExpr(callToAdjust->get(1)) ) {
-                  if (argSE->symbol() == checkSym) {
-                    if (confirmed) {
-                      confirmAccess(callToAdjust);
-                      madeAdjustments = true;
-                    }
-                    else {
-                      revertAccess(callToAdjust);
-                      madeAdjustments = true;
-                    }
-                  }
-                }
-              }
-              //else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
-              else if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_DYNAMIC)) { 
-                // can only revert for dynamic accesses
-                if (!confirmed) {
-                  // check the second argument; 1st is methodToken
-                  if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
-                    if(argSE->symbol() == checkSym) {
-                      revertAccess(callToAdjust);
-                      madeAdjustments = true;
-                    }
-                  }
-                }
-              }
-              else if (!confirmed && parentCall->isPrimitive(PRIM_MOVE)) {
-                if (CallExpr *callToAdjust = toCallExpr(parentCall->get(2))) {
-                  if (callToAdjust->isNamed("chpl_dynamicAutoLocalCheck")) {
-                    if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
-                      if(argSE->symbol() == checkSym) {
-                        callToAdjust->replace(new SymExpr(gTrue));
-                      }
-                    }
-                  }
-                }
-              }
-            //}
-          }
-        }
-      }
-    }
+  else {
+    INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
   }
 
-  return madeAdjustments;
+  return NULL;
 }
+//void resolveMaybeLocalThis(CallExpr *call) {
+  //analyzeArrLog("Resolving maybe local this", call);
+
+  //if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length))) {
+    //if (controlSE->symbol() == gTrue) {
+      //confirmAccess(call);
+    //}
+    //else {
+      //revertAccess(call);
+    //}
+  //}
+  //else {
+    //INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
+  //}
+//}
+
+//static bool adjustAutoLocalAccessesBasedOnStaticCheck(CallExpr *check,
+                      //std::vector<CallExpr *> knownCallExprs,
+                      //bool confirmed) {
+
+  //bool madeAdjustments = false;
+
+  //if (knownCallExprs.size() > 0) {
+    //for_vector(CallExpr, callToAdjust, knownCallExprs) {
+      //if (confirmed) {
+        //// can only confirm a static access
+        ////if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+        //if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
+          //confirmAccess(callToAdjust);
+          //madeAdjustments = true;
+        //}
+      //}
+      //else {
+        //revertAccess(callToAdjust);
+        //madeAdjustments = true;
+      //}
+    //}
+  //}
+  //else { // this may be inside an instantitation of a generic function
+
+    //// find the first conditional that comes after this check
+    //if (CallExpr *parentCall = toCallExpr(check->parentExpr)) {
+      //if (parentCall->isPrimitive(PRIM_MOVE)) {
+        //Expr *curExpr = parentCall->next;
+        //CondStmt *optCond = NULL;
+        //while(curExpr != NULL && optCond == NULL) {
+          //optCond = toCondStmt(curExpr);
+          //curExpr = curExpr->next;
+        //}
+
+        //if (optCond != NULL) {
+          //std::vector<CallExpr *> callExprs;
+          //collectCallExprs(optCond->thenStmt, callExprs);
+
+          //SymExpr *checkSE = toSymExpr(check->get(1));
+          //Symbol *checkSym = checkSE->symbol();
+          //// maybe assert here
+
+          //// remove statically-determined accesses based on this check
+          //for_vector(CallExpr, callToAdjust, callExprs) {
+            //CallExpr *parentCall = toCallExpr(callToAdjust->parentExpr);
+            ////if(CallExpr *callToAdjust = toCallExpr(parentCall->baseExpr)) {
+              ////if (callToAdjust->isNamed("chpl_maybeLocalAccessStatic")) {
+              //if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_STATIC)) {
+                //// check the second argument; 1st is methodToken
+                //if (SymExpr *argSE = toSymExpr(callToAdjust->get(1)) ) {
+                  //if (argSE->symbol() == checkSym) {
+                    //if (confirmed) {
+                      //confirmAccess(callToAdjust);
+                      //madeAdjustments = true;
+                    //}
+                    //else {
+                      //revertAccess(callToAdjust);
+                      //madeAdjustments = true;
+                    //}
+                  //}
+                //}
+              //}
+              ////else if (callToAdjust->isNamed("chpl_maybeLocalAccessDynamic")) { 
+              //else if (callToAdjust->isPrimitive(PRIM_MAYBE_LOCAL_THIS_DYNAMIC)) { 
+                //// can only revert for dynamic accesses
+                //if (!confirmed) {
+                  //// check the second argument; 1st is methodToken
+                  //if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
+                    //if(argSE->symbol() == checkSym) {
+                      //revertAccess(callToAdjust);
+                      //madeAdjustments = true;
+                    //}
+                  //}
+                //}
+              //}
+              //else if (!confirmed && parentCall->isPrimitive(PRIM_MOVE)) {
+                //if (CallExpr *callToAdjust = toCallExpr(parentCall->get(2))) {
+                  //if (callToAdjust->isNamed("chpl_dynamicAutoLocalCheck")) {
+                    //if (SymExpr *argSE = toSymExpr(callToAdjust->get(1))) {
+                      //if(argSE->symbol() == checkSym) {
+                        //callToAdjust->replace(new SymExpr(gTrue));
+                      //}
+                    //}
+                  //}
+                //}
+              //}
+            ////}
+          //}
+        //}
+      //}
+    //}
+  //}
+
+  //return madeAdjustments;
+//}
 
 // This is the part of the "public" interface for resolution
-bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
-  bool madeAdjustments = false;
-  if (call->isNamed("chpl__staticAutoLocalCheck")) {
-    bool retval = imm->bool_value();
+//bool adjustAutoLocalAccessStatic(CallExpr *call, Immediate *imm) {
+  //bool madeAdjustments = false;
+  //if (call->isNamed("chpl__staticAutoLocalCheck")) {
+    //bool retval = imm->bool_value();
 
-    madeAdjustments =  adjustAutoLocalAccessesBasedOnStaticCheck(call,
-                                                  accessForStaticCheckMap[call],
-                                                  retval);
+    //madeAdjustments =  adjustAutoLocalAccessesBasedOnStaticCheck(call,
+                                                  //accessForStaticCheckMap[call],
+                                                  //retval);
 
-    if (retval == false && madeAdjustments == false) {
-      analyzeArrLog("Something went wrong with this check", call);
-      // maybe assert here: if this was a static check that was reverted, there
-      // must be something associated with it that required adjustment
-    }
+    //if (retval == false && madeAdjustments == false) {
+      //analyzeArrLog("Something went wrong with this check", call);
+      //// maybe assert here: if this was a static check that was reverted, there
+      //// must be something associated with it that required adjustment
+    //}
     
-  }
-  return madeAdjustments;
-}
+  //}
+  //return madeAdjustments;
+//}
 
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
