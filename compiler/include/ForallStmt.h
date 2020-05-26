@@ -33,6 +33,7 @@ class ForallOptimizationInfo {
 
     // checks added for symbol
     std::map<Symbol *, CallExpr *> staticCheckForSymMap;
+    std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
     std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
 };
 

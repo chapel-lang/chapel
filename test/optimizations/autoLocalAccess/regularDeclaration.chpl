@@ -5,7 +5,8 @@ use BlockDist;
 
   var A: [D] real;
   var B: [D] real;
-  var C: [D] real;
+  //var C: [D] real;
+  var C = newBlockArr({1..10}, real);
 
   B = 3;
   C = 7;
