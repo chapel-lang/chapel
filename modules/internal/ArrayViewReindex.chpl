@@ -136,7 +136,9 @@ module ArrayViewReindex {
     proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
       var ranges : rank*range(idxType, BoundedRangeType.bounded, stridable);
       var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType=idxType,
-                                              stridable=stridable, ranges);
+                                              stridable=stridable,
+                                              boundedType=BoundedRangeType.bounded,
+                                              ranges);
       return a.type;
     }
 
@@ -184,6 +186,7 @@ module ArrayViewReindex {
       var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
                                                            idxType=idxType,
                                                            stridable=dist.downdomInst.stridable,
+                                                           boundedType=BoundedRangeType.bounded,
                                                            ranges);
       pragma "no auto destroy"
       var downdomLoc = new _domain(downdomclass);

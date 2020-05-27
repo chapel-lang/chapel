@@ -121,7 +121,8 @@ module ArrayViewRankChange {
                            dist) type {
       var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
       var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
-                                                 stridable=stridable, ranges);
+                                                 stridable=stridable,
+                                                 boundedType = BoundedRangeType.bounded, ranges);
       return a.type;
   }
 
@@ -204,6 +205,7 @@ module ArrayViewRankChange {
       var downDomClass = dist.downDist.dsiNewRectangularDom(rank=downrank,
                                                            idxType,
                                                            stridable=stridable,
+                                                           boundedType=BoundedRangeType.bounded,
                                                            ranges);
       pragma "no auto destroy"
       var downDomLoc = new _domain(downDomClass);
