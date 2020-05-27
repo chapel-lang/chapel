@@ -86,7 +86,6 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
-    if (toStrip.size - ext.size) == 1 then return toStrip[0];
     var stripped = toStrip[..<(toStrip.size - ext.size)];
     return stripped;
   }
@@ -160,6 +159,14 @@ proc SPACK_ROOT : string {
 
   return spackRoot;
 }
+/*
+This fetches the mason-installed spack registry only.
+Users that define SPACK_ROOT to their own spack installation will use 
+the registry of their spack installation.
+*/
+proc getSpackRegistry : string {
+  return MASON_HOME + "/spack-registry";
+}
 
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
@@ -168,8 +175,6 @@ proc SPACK_ROOT : string {
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
-
-
     var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
@@ -390,10 +395,8 @@ proc getChapelVersionStr() {
 
 proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
-
   const oldDir = here.cwd();
   here.chdir(newDir);
-
   ret = runCommand(command, quiet);
 
   here.chdir(oldDir);

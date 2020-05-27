@@ -1,8 +1,15 @@
-import ArrayTest;
 class T {
   var value = 0;
 }
 
-type t = borrowed T?;
+var D: domain(int);
 
-ArrayTest.testArray(t);
+D += 1;
+
+var A: [D] borrowed T?;
+var a = new T();
+var b = a.borrow();
+
+A[1] = b;
+
+assert(A.size == 1);

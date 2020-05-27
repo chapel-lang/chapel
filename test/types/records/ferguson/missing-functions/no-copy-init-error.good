@@ -1,4 +1,4 @@
 no-copy-init-error.chpl:13: In function 'ret':
-no-copy-init-error.chpl:13: error: invalid implicit copy-initialization
+no-copy-init-error.chpl:13: error: invalid copy-initialization
 no-copy-init-error.chpl:13: error: You can't copy an R
 no-copy-init-error.chpl:1: note: R does not have a valid init=

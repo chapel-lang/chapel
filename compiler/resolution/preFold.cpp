@@ -283,6 +283,20 @@ static void setRecordCopyableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordCopyableFlags(eltTypeAt);
+        if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test init= to set the flags
       const char* err = NULL;
@@ -321,6 +335,22 @@ static void setRecordAssignableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordAssignableFlags(eltTypeAt);
+
+        if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
@@ -360,6 +390,20 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
     } else if (isNilableClassType(at)) {
       ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordAssignableFlags(eltTypeAt);
+
+        if (eltType->symbol->hasFlag(FLAG_TYPE_DEFAULT_VALUE))
+          at->symbol->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE))
+          at->symbol->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      } else {
+         at->symbol->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      }
+
+
     } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
       // Currently extern records aren't initialized at all by default.
       // But it's not necessarily reasonable to expect them to have
@@ -1538,17 +1582,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_DEFAULT_INIT_FIELD: {
-    SymExpr* initVal = toSymExpr(call->get(4)->remove());
-    SymExpr* toType = toSymExpr(call->get(3)->remove());
-    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
-
-    retval = new CallExpr("_createFieldDefault", toType, initVal);
-    call->replace(retval);
-
-    break;
-  }
-
   case PRIM_REDUCE_ASSIGN: {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 2);
@@ -1647,6 +1680,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_REDUCE: {
     // Need to do this ahead of resolveCall().
     retval = lowerPrimReduce(call);
+    break;
+  }
+
+  case PRIM_STEAL: {
+    SymExpr* se = toSymExpr(call->get(1));
+    if (Symbol* sym = se->symbol())
+      if (!sym->isRef())
+        sym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    retval = se->remove();
+    call->replace(retval);
+
     break;
   }
 
@@ -1926,8 +1971,8 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
     }
 
-  } else if (call->isNamed("chpl__initCopy") ||
-             call->isNamed("chpl__autoCopy")) {
+  } else if (call->isNamedAstr(astr_initCopy) ||
+             call->isNamedAstr(astr_autoCopy)) {
     if (call->numActuals() == 1) {
       if (SymExpr* symExpr = toSymExpr(call->get(1))) {
         if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {

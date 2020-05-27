@@ -4,16 +4,14 @@ class myC {
 }
 
 record myR {
-  var c: unmanaged myC;
-  proc init() { c = new unmanaged myC(); }
+  var c: shared myC;
+  proc init() { c = new shared myC(); }
   proc init=(other: myR) { c = other.c; }
-  proc deinit() { delete c; }
+  proc deinit() { }
 }
 
-inline proc chpl__autoDestroy(x: myR) { }
-
 proc =(ref a: myR, b: myR) {
-  a.c = new unmanaged myC(); // leak memory here.
+  a.c = new shared myC();
   a.c.i = b.c.i;
 }
 

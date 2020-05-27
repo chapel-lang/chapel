@@ -141,8 +141,7 @@ proc test6a() {
 test6a();
 
 proc outGenericArray2(out arr) {
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -156,8 +155,7 @@ test7();
 
 proc outGenericArray2a(out arr) {
   writeln(arr.domain, " ", arr); // preventing split-init
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -181,8 +179,7 @@ proc test8() {
 test8();
 
 proc outPartialArray2(out arr:[] R) {
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -216,8 +213,7 @@ proc test10b() {
 test10b();
 
 proc outConcreteArray2(out arr:[1..1] R) {
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -231,8 +227,7 @@ test11();
 
 proc outConcreteArray2a(out arr:[1..1] R) {
   writeln(arr.domain, " ", arr); // preventing split init
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 

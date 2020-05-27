@@ -39,7 +39,7 @@ module ChapelTaskData {
 
   // These functions get/set parts of the Chapel managed
   // task local storage starting from a pointer to the tls region.
-  proc chpl_task_data_setDynamicEndCount(tls:c_ptr(chpl_task_ChapelData_t), end: _remoteEndCountType) {
+  proc chpl_task_data_setDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t), end: _remoteEndCountType) {
     var prv = tls:c_ptr(c_uchar);
     var i:size_t;
 
@@ -56,7 +56,7 @@ module ChapelTaskData {
     c_memcpy(c_ptrTo(prv[i]), c_ptrTo(adr), c_sizeof(c_void_ptr));
   }
 
-  proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_ChapelData_t)) {
+  proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t)) {
     var prv = tls:c_ptr(c_uchar);
     var i:size_t;
 
@@ -77,7 +77,7 @@ module ChapelTaskData {
     return ret;
   }
 
-  proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_ChapelData_t), makeSerial: bool) : void {
+  proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_infoChapel_t), makeSerial: bool) : void {
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
     var v:uint(8) = 0;
@@ -86,7 +86,7 @@ module ChapelTaskData {
     // Using memcpy to avoid pointer type punning
     c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
   }
-  proc chpl_task_data_getSerial(tls:c_ptr(chpl_task_ChapelData_t)) : bool {
+  proc chpl_task_data_getSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
     var ret:bool = false;
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
@@ -107,22 +107,22 @@ module ChapelTaskData {
   // Note, these can be called before module initialization is complete.
 
   proc chpl_task_setDynamicEndCount(end: _remoteEndCountType) {
-    chpl_task_data_setDynamicEndCount(chpl_task_getChapelData(), end);
+    chpl_task_data_setDynamicEndCount(chpl_task_getInfoChapel(), end);
   }
   proc chpl_task_getDynamicEndCount() : _remoteEndCountType {
-    return chpl_task_data_getDynamicEndCount(chpl_task_getChapelData());
+    return chpl_task_data_getDynamicEndCount(chpl_task_getInfoChapel());
   }
 
   export proc chpl_task_setSerial(makeSerial: bool) : void {
-    chpl_task_data_setSerial(chpl_task_getChapelData(), makeSerial);
+    chpl_task_data_setSerial(chpl_task_getInfoChapel(), makeSerial);
   }
   export proc chpl_task_getSerial() : bool {
-    return chpl_task_data_getSerial(chpl_task_getChapelData());
+    return chpl_task_data_getSerial(chpl_task_getInfoChapel());
   }
 
 
   // module init function - check sizes
   {
-    assert(chpl_offset_end <= c_sizeof(chpl_task_ChapelData_t));
+    assert(chpl_offset_end <= c_sizeof(chpl_task_infoChapel_t));
   }
 }

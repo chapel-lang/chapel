@@ -1135,6 +1135,30 @@ static bool isSymbolThis(Expr* expr) {
   return retval;
 }
 
+// returns true if there is a postinit defined on the type
+// and in that event adds FLAG_HAS_POSTINIT to the type symbol
+static bool findPostinitAndMark(AggregateType* at) {
+  bool retval = false;
+
+  // If there is postinit() it is defined on the defining type
+  if (at->instantiatedFrom == NULL) {
+    int size = at->methods.n;
+
+    for (int i = 0; i < size && retval == false; i++) {
+      if (at->methods.v[i] != NULL)
+        retval = at->methods.v[i]->isPostInitializer();
+    }
+
+  } else {
+    retval = findPostinitAndMark(at->instantiatedFrom);
+  }
+
+  if (retval)
+    at->symbol->addFlag(FLAG_HAS_POSTINIT);
+
+  return retval;
+}
+
 //
 // Builds the list of AggregateTypes in the hierarchy of `at` that have or
 // require a postinit.
@@ -1156,14 +1180,14 @@ static bool buildPostInitChain(AggregateType* at,
   if (at == dtObject) {
     ret = false;
   } else if (at->isRecord()) {
-    if (at->hasPostInitializer()) {
+    if (findPostinitAndMark(at)) {
       chain.push_back(at);
       ret = true;
     }
   } else if (parent != NULL && buildPostInitChain(parent, chain) == true) {
     ret = true;
     chain.push_back(at);
-  } else if (at->hasPostInitializer()) {
+  } else if (findPostinitAndMark(at)) {
     ret = true;
     chain.push_back(at);
   }
@@ -1414,6 +1438,8 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   if (found == false) {
     buildPostInit(at);
   }
+
+  at->symbol->addFlag(FLAG_HAS_POSTINIT);
 
   return ret;
 }

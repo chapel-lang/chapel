@@ -73,7 +73,8 @@ Optimization Control Options:
                                       vectorization hints
 
 Run-time Semantic Check Options:
-      --no-checks                     Disable all following run-time checks
+      --[no-]checks                   Enable [disable] all following run-time
+                                      checks
       --[no-]bounds-checks            Enable [disable] bounds checking
       --[no-]cast-checks              Enable [disable] safeCast() value checks
       --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks

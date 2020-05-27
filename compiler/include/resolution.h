@@ -226,6 +226,7 @@ void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
+FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn);
 const char* getErroneousCopyError(FnSymbol* fn);
 void markCopyErroneous(FnSymbol* fn, const char* err);
 
@@ -327,5 +328,9 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
+
+
+// Return the array element type, or NULL if not an array
+Type* arrayElementType(Type* arrayType);
 
 #endif

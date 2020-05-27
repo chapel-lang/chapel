@@ -1,4 +1,0 @@
-shootout: Update once inferred yielded array sizes are 0-based
-
-This test doesn't work once inferred array sizes from captured
-iterators change from being 1-based to 0-based.

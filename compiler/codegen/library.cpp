@@ -305,8 +305,8 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
     beautify(fi);
 }
 
-// Populate the pythonNames map with the translation for bools, differently sized
-// integers, etc.
+// Populate the pythonNames map with the translation for bools, differently
+// sized integers, etc.
 static void setupPythonTypeMap() {
   pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
   pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
@@ -320,12 +320,18 @@ static void setupPythonTypeMap() {
   pythonNames[dtReal[FLOAT_SIZE_64]->symbol] = std::make_pair("double", "float");
   pythonNames[dtBool->symbol] = std::make_pair("bint", "bint");
   pythonNames[dtStringC->symbol] = std::make_pair("const char *", "bytes");
-  pythonNames[dtString->symbol] = std::make_pair("", "object");
-  pythonNames[dtBytes->symbol] = std::make_pair("", "object");
   pythonNames[dtComplex[COMPLEX_SIZE_64]->symbol] =
               std::make_pair("float complex", "numpy.complex64");
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
               std::make_pair("double complex", "numpy.complex128");
+
+  if (dtBytes != NULL) {
+    pythonNames[dtBytes->symbol] = std::make_pair("", "object");
+  }
+
+  if (dtString != NULL) {
+    pythonNames[dtString->symbol] = std::make_pair("", "object");
+  }
 
   // TODO: Handle bigint (which should naturally match to Python's int)
 

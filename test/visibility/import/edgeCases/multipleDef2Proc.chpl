@@ -1,6 +1,6 @@
 module A {
   proc foo(x: int, y: int) {
-    writeln("A.foo", x, y);
+    writeln("A.foo ", x, y);
   }
 }
 module B {
@@ -17,5 +17,6 @@ module D {
 
   proc main() {
     C.foo(10);
+    C.foo(2, 3);
   }
 }

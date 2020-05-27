@@ -450,6 +450,9 @@ module Bytes {
     */
     proc indices return 0..<size;
 
+    pragma "no doc"
+    proc byteIndices return 0..<size;
+
     /*
       :returns: The number of bytes in the :record:`bytes`.
       */
@@ -628,31 +631,6 @@ module Bytes {
       return getSlice(this, r);
     }
 
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string
-    // TODO: move into the public interface in some form? better name if so?
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
-      if boundsChecking {
-        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.alignedLow:int < 0 then
-            halt("range ", r, " out of bounds for bytes with length ", this.buffLen);
-        }
-        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.alignedHigh:int < -1) || (r.alignedHigh:int >= this.buffLen) then
-            halt("range ", r, " out of bounds for bytes with length ", this.buffLen);
-        }
-      }
-      const r1 = r[0:r.idxType..(this.buffLen-1):r.idxType];
-      if r1.stridable {
-        const ret = r1.alignedLow:int..r1.alignedHigh:int by r1.stride;
-        return ret;
-      } else {
-        const ret = r1.alignedLow:int..r1.alignedHigh:int;
-        return ret;
-      }
-    }
-
     /*
       Checks if the :record:`bytes` is empty.
 
@@ -700,7 +678,7 @@ module Bytes {
                 within the :record:`bytes`, or -1 if the `needle` is not in the
                 :record:`bytes`.
      */
-    inline proc find(needle: bytes, region: range(?) = 0:idxType..) : idxType {
+    inline proc find(needle: bytes, region: range(?) = this.indices) : idxType {
       return _search_helper(needle, region, count=false): idxType;
     }
 
@@ -717,7 +695,7 @@ module Bytes {
                 within the :record:`bytes`, or -1 if the `needle` is not in the
                 :record:`bytes`.
      */
-    inline proc rfind(needle: bytes, region: range(?) = 0:idxType..) : idxType {
+    inline proc rfind(needle: bytes, region: range(?) = this.indices) : idxType {
       return _search_helper(needle, region, count=false,
                             fromLeft=false): idxType;
     }
@@ -752,7 +730,7 @@ module Bytes {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const view = this._getView(region);
+        const view = getView(this, region);
         const thisLen = view.size;
 
         // Edge cases

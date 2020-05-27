@@ -9,7 +9,11 @@ with open(tmp_file, 'w') as tf:
   with open(out_file) as outf:
       for line in outf:
         line = re.sub(r'([0-9]+m )?[0-9]+([.][0-9]+)?s', '<time>', line)
-        if not (line.startswith("[+]") or line.startswith("==>")):
+        # Filter out spack output
+        if not (line.startswith("[+]")
+                or line.startswith("==>")
+                or 'compilers.yaml' in line
+                or '@' in line):
           tf.write(line)
 
 shutil.move(tmp_file, out_file)

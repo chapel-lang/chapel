@@ -292,9 +292,9 @@ OPTIONS
 
 *Run-time Semantic Check Options* 
 
-**--no-checks**
+**--[no-]checks**
 
-    Turns off all of the run-time checks in this section of the man page.
+    Enable [disable] all of the run-time checks in this section of the man page.
     Currently, it is typically necessary to use this flag (or **--fast**,
     which implies **--no-checks**) to achieve performance competitive with
     hand-coded C or Fortran.

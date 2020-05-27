@@ -155,7 +155,7 @@ static bool buildVirtualMaps() {
   int numTypes = gTypeSymbols.n;
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (AggregateType* at = fn->getReceiver()) {
+    if (AggregateType* at = fn->getReceiverType()) {
       if (at->isClass() == true) {
         if (at->isGeneric() == false) {
           if (fn->isResolved() && isVirtualizableMethod(fn)) {

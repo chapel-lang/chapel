@@ -47,9 +47,12 @@ module DefaultSparse {
       return _nnz;
     }
 
-    proc dsiBuildArray(type eltType)
-      return new unmanaged DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  dom=_to_unmanaged(this));
+    proc dsiBuildArray(type eltType, param initElts:bool) {
+      return new unmanaged DefaultSparseArr(eltType=eltType,
+                                            rank=rank, idxType=idxType,
+                                            dom=_to_unmanaged(this),
+                                            initElts=initElts);
+    }
 
     iter dsiIndsIterSafeForRemoving() {
       for i in 1.._nnz by -1 {
@@ -386,11 +389,16 @@ module DefaultSparse {
 
   class DefaultSparseArr: BaseSparseArrImpl {
 
-    /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/
-      /*this.dom = dom;*/
-      /*this.dataDom = dom.nnzDom;*/
-      /*writeln("dataDom is set : ", this.dataDom);*/
-    /*}*/
+    proc init(type eltType,
+              param rank : int,
+              type idxType,
+              dom,
+              param initElts:bool) {
+      super.init(eltType, rank, idxType, dom, initElts);
+    }
+
+    // dsiDestroyArr is defined in BaseSparseArrImpl
+
     // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box

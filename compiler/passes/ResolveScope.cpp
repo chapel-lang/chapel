@@ -609,15 +609,15 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
   if (name == NULL) {
     if (astrThis == getNameFrom(expr))
       USR_FATAL(expr, "'this.' can only be used as prefix of %s", stmtType);
-    else if (astrSuper == getNameFrom(expr))
-      USR_FATAL(expr, "'super.' can only be used as prefix of %s", stmtType);
-    else
+    else if (astrSuper == getNameFrom(expr)) {
+      if (isUse) {
+        USR_FATAL(expr, "'super.' can only be used as prefix of use");
+      }
+    } else
       INT_FATAL("case not handled");
   }
 
-  INT_ASSERT(name != NULL);
-
-  {
+  if (name != NULL) {
     const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
     ModuleSymbol* badCloserModule = NULL;
@@ -650,9 +650,15 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
         if (isUse)
           USR_FATAL(expr, "use must name a module or enum ('%s' is neither)",
                           sym->name);
-        else
+        else if (relativeScope == NULL || relativeScope == this)
           USR_FATAL(expr, "import must name a module ('%s' is not a module)",
-                          sym->name);
+                    sym->name);
+        else {
+          // It's okay for the symbol following a super to not be a module, so
+          // long as it is the last symbol in the import statement...
+          retval = sym;
+          break;
+        }
       }
 
       // otherwise follow uses/imports only (breadth first)
@@ -673,6 +679,19 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       USR_PRINT(expr, "or use a relative %s e.g. '%s this.M' or '%s super.M'",
                       stmtType, stmtType, stmtType);
       USR_STOP();
+    }
+  } else {
+    if (astrSuper == getNameFrom(expr) && !isUse) {
+      // This was `import super;`.  We've already handled the case where this
+      // occurs in a top-level module for which there is no super, so we can be
+      // certain this is okay to return
+      retval = toSymbol(relativeScope->mAstRef);
+      INT_ASSERT(retval != NULL);
+      return retval;
+    } else {
+      // Something other than just `import super;` was let through the check of
+      // the first imported module name
+      INT_FATAL("case not handled");
     }
   }
 
@@ -698,6 +717,10 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
 
     ResolveScope* scope = getScopeFor(outerMod->block);
     if (Symbol* symbol = scope->getField(rhsName)) {
+      if (retval == symbol) {
+        USR_FATAL(expr, "duplicate mention of the same module '%s'",
+                  symbol->name);
+      }
       retval = symbol;
 
     } else if (Symbol *symbol =
@@ -978,43 +1001,19 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   if (!this->canReexport) return NULL;
 
   std::map<Symbol *, astlocT *> renameLocs;
-  ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
-  return retval;
-}
-
-// This version is used in resolveModuleCall in scope resolution
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                                   ModuleSymbol*& modArg,
-                                                   BaseAST *context) {
-  if (!this->canReexport) return NULL;
-
-  std::map<Symbol *, astlocT *> renameLocs;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, modArg, context,
-                                                renameLocs);
-  return retval;
-
-}
-
-// This version is used in regular unresolvedsymexpr scope resolution
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-            BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) {
-  if (!this->canReexport) return NULL;
-
-  ModuleSymbol *ms = NULL;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, ms, context, renameLocs);
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs);
   return retval;
 }
 
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-         ModuleSymbol*& modArg, BaseAST *context,
-         std::map<Symbol*, astlocT*>& renameLocs) {
+         BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) {
   if (!this->canReexport) return NULL;
 
   std::vector<Symbol *> symbols;
 
   bool traversedRenames = false;
   bool hasPublicImport = false;
+  uint64_t numFuncs = 0;
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
     if (ImportStmt *impStmt = toImportStmt(visStmt)) {
       if (!impStmt->isPrivate) {
@@ -1029,11 +1028,13 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
             if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
               if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
-                modArg = ms;
                 symbols.push_back(retval);
                 if (isSymRenamed) {
                   renameLocs[retval] = &impStmt->astloc;
                   traversedRenames = true;
+                }
+                if (isFnSymbol(retval)) {
+                  numFuncs++;
                 }
               }
             }
@@ -1048,11 +1049,18 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   }
 
   if (symbols.size() == 1) {
-    // modArg must have been set correctly above
     return symbols[0];
   }
   else if (symbols.size() > 1) {
-    // potentially start the error process here
+    if (numFuncs == symbols.size()) {
+      // All options found were functions, but we found them from different
+      // public imports.  That's okay, though, function resolution will handle
+      // determining which one is the best choice.  Arbitrarily return the
+      // first function
+      return symbols[0];
+    }
+
+    // likely start the error process here
     checkConflictingSymbols(symbols, name, context,
                             traversedRenames, renameLocs);
   }

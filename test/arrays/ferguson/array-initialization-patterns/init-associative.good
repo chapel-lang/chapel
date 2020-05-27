@@ -1,0 +1,28 @@
+test1
+test2
+init (default)
+deinit 0 0
+test3
+init (default)
+deinit 0 0
+test4
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+deinit 1 1
+test5
+init (default)
+deinit 0 0
+test6
+init (default)
+init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+deinit 1 1
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+

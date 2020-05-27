@@ -35,6 +35,7 @@ _chpl ()
 --cast-checks \
 --cc-warnings \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -335,6 +336,7 @@ _chpl ()
 --cache-remote \
 --cast-checks \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \

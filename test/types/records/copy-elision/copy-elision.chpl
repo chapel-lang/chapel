@@ -22,6 +22,9 @@ record R {
     this.ptr = new shared C(other.ptr.xx);
     if printInitDeinit then writeln("init= ", other.x, " ", other.ptr.xx);
   }
+  proc postinit() {
+    if printInitDeinit then writeln("postinit ", x, " ", ptr.xx);
+  }
   proc deinit() {
     if printInitDeinit then writeln("deinit ", x, " ", ptr.xx);
   }

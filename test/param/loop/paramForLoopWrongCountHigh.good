@@ -1,0 +1,1 @@
+paramForLoopWrongCountHigh.chpl:1: error: count operators with positive count require the range to have a low bound

@@ -83,6 +83,26 @@ module Set {
     }
   }
 
+  pragma "no doc"
+  proc _checkElementType(type t) {
+    // Non-nilable shared classes fail with a strange compiler bug.
+    if isOwnedClass(t) || (isNonNilableClass(t) && isSharedClass(t)) then
+        compilerError('Sets do not support this class type', 2);
+
+    // Only error if a tuple element is a non-nilable class.
+    if isTuple(t) then
+      for param i in 0..<t.size do
+        if isNonNilableClass(t[i]) then
+          compilerError('Sets do not support tuples containing ' +
+                        'non-nilable classes', 2);
+
+    // In the future we might support it if the set is not default-inited.
+    if isGenericType(t) {
+      compilerWarning('creating a set with element type ' + t:string, 2);
+      compilerError('set element type cannot currently be generic', 2);
+    }
+  }
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -126,19 +146,8 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
-      // Only non-nilable borrowed classes work so far
-      if isClass(eltType) {
-        if !(isBorrowedClass(eltType) && isNonNilableClass(eltType)) then
-          compilerError('Sets do not support class types');
-      }
-      if isTuple(eltType) then
-        compilerError('Sets do not support tuple types');
-      if isGenericType(eltType) {
-        compilerWarning("creating a set with element type " +
-                        eltType:string);
-        compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the set is not default-inited
-      }
+      _checkElementType(eltType);
+
       this.eltType = eltType;
       this.parSafe = parSafe;
     }
@@ -153,17 +162,9 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, iterable, param parSafe=false)
-            where canResolveMethod(iterable, "these") {
-      if isClass(eltType) then
-        compilerError('Sets do not support class types');
-      if isTuple(eltType) then
-        compilerError('Sets do not support tuple types');
-      if isGenericType(eltType) {
-        compilerWarning("creating a set with element type " +
-                        eltType:string);
-        compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the set is not default-inited
-      }
+    where canResolveMethod(iterable, "these") lifetime this < iterable {
+      _checkElementType(eltType); 
+
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
@@ -179,7 +180,7 @@ module Set {
 
       :arg other: A set to initialize this set with.
     */
-    proc init=(const ref other: set(?t, ?)) {
+    proc init=(const ref other: set(?t, ?)) lifetime this < other {
       this.eltType = t;
       this.parSafe = other.parSafe;
       this.complete();
@@ -217,7 +218,7 @@ module Set {
 
       :arg x: The element to add to this set.
     */
-    proc add(in x: eltType) {
+    proc ref add(in x: eltType) lifetime this < x {
       on this {
         _enter();
         _dom.add(x);
@@ -308,7 +309,7 @@ module Set {
       :return: Whether or not an element equal to `x` was removed.
       :rtype: `bool`
     */
-    proc remove(const ref x: eltType): bool {
+    proc ref remove(const ref x: eltType): bool {
       var result = false;
 
       on this {
@@ -333,7 +334,7 @@ module Set {
         Clearing the contents of this set will invalidate all existing
         references to the elements contained in this set.
     */
-    proc clear() {
+    proc ref clear() {
       on this {
         _enter();
         _dom.clear();

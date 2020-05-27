@@ -1,7 +1,7 @@
 ===== on-stmt (variable domain) =====
 {1..10}
 LOCALE0: (<no communication>)
-LOCALE1: (get = 8, put = 1, execute_on = 1)
+LOCALE1: (get = 9, put = 1, execute_on = 1)
 ===== on-stmt (const domain) =====
 LOCALE0: (<no communication>)
 LOCALE1: (<no communication>)

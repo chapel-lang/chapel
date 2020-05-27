@@ -30,6 +30,7 @@ use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
 use MasonSystem;
+use MasonExternal;
 use MasonExample;
 
 proc masonBuild(args) throws {
@@ -145,6 +146,10 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
         // generate list of dependencies and get src code
         var sourceList = genSourceList(lockFile);
+
+        if lockFile.pathExists('external') {
+          spackInstalled();
+        }
         //
         // TODO: Temporarily use `toArray` here because `list` does not yet
         // support parallel iteration, which the `getSrcCode` method _must_
@@ -154,7 +159,6 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
         // get compilation options including external dependencies
         const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
-
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
           writeln("Build Successful\n");

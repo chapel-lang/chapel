@@ -100,7 +100,7 @@ module LocaleModelHelpAPU {
     }
 
    if dnode != chpl_nodeID {
-      var tls = chpl_task_getChapelData();
+      var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
     } else {
@@ -131,7 +131,7 @@ module LocaleModelHelpAPU {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      var tls = chpl_task_getChapelData();
+      var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on_fast(dnode, dsubloc, fn, args, args_size);
     } else {
@@ -163,7 +163,7 @@ module LocaleModelHelpAPU {
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
-    var tls = chpl_task_getChapelData();
+    var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if dnode == chpl_nodeID {
       if isSerial {
