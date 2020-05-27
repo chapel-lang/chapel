@@ -1,1 +1,2 @@
-defaultValArg.chpl:1: error: Default expression not convertible to formal type
+defaultValArg.chpl:6: error: Cannot initialize sync int(64) from int(64)
+defaultValArg.chpl:1: note: when calling foo with a default value for x$

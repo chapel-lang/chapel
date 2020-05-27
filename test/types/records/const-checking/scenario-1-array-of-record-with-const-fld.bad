@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:256: error: cannot assign to a record of the type localInfo using the default assignment operator because it has 'const' field(s)
+scenario-1-array-of-record-with-const-fld.chpl:13: error: cannot assign to a record of the type localInfo using the default assignment operator because it has 'const' field(s)
