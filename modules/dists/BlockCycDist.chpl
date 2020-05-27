@@ -300,7 +300,9 @@ proc BlockCyclic._locsize {
 // create a new rectangular domain over this distribution
 //
 override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
-                                      param stridable: bool, inds) {
+                                      param stridable: bool,
+                                      param boundedType: BoundedRangeType,
+                                      inds) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
   if rank != this.rank then

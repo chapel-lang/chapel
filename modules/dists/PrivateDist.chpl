@@ -68,7 +68,7 @@ This distribution may perform unnecessary communication
 between locales.
 */
 class Private: BaseDist {
-  override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+  override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, param boundedType: BoundedRangeType, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");

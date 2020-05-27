@@ -496,7 +496,9 @@ override proc Stencil.dsiDisplayRepresentation() {
 }
 
 override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                                           param stridable: bool, inds) {
+                                           param stridable: bool,
+                                           param boundedType: BoundedRangeType,
+                                           inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
