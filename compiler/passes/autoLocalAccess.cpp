@@ -291,6 +291,11 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall) {
   if (baseSE != NULL) {
     Symbol *accBaseSym = baseSE->symbol();
 
+    // Prevent making changes to `new C[i]`
+    if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+      if (parentCall->isPrimitive(PRIM_NEW)) { return NULL; } 
+    }
+
     // give up if the access uses a different symbol
     if (!callHasSymArguments(call, forall->loopInfo.multiDIndices)) { return NULL; }
 
@@ -336,7 +341,7 @@ static CallExpr *revertAccess(CallExpr *call) {
 
   // Don't take the last two args; they are the static control symbol, and flag
   // that tells whether this is a statically-determined access
-  for (int i = 1 ; i < call->argList.length-1 ; i++) {
+  for (int i = 2 ; i < call->argList.length-1 ; i++) {
     Symbol *argSym = toSymExpr(call->get(i))->symbol();
     repl->insertAtTail(new SymExpr(argSym));
   }

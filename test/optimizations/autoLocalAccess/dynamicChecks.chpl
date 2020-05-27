@@ -30,7 +30,7 @@ class MyClass {
            C[i] +
            D[i] +
            E[i] +
-           F[i];
+           F[i];  // functions are unresolved sym exprs, so they are skipped
   }
   writeln(A);
 }
