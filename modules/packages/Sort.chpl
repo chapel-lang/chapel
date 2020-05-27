@@ -982,7 +982,9 @@ module QuickSort {
         if cmp > 0 then
           break;
         if cmp == 0 {
-          ShallowCopy.shallowSwap(Data[a], Data[b]);
+          if a != b {
+            ShallowCopy.shallowSwap(Data[a], Data[b]);
+          }
           a += 1; // one more equal element (on left)
         }
         b += 1; // one more categorized element
