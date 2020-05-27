@@ -1,0 +1,111 @@
+#
+# Copyright (C) 2016 by Argonne National Laboratory.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+if HAVE_BGQ
+bgq_files = prov/bgq/src/fi_bgq_atomic.c \
+		prov/bgq/src/fi_bgq_av.c \
+		prov/bgq/src/fi_bgq_spi.c \
+		prov/bgq/src/fi_bgq_cm.c \
+		prov/bgq/src/fi_bgq_cntr.c \
+		prov/bgq/src/fi_bgq_cq.c \
+		prov/bgq/src/fi_bgq_domain.c \
+		prov/bgq/src/fi_bgq_ep.c \
+		prov/bgq/src/fi_bgq_fabric.c \
+		prov/bgq/src/fi_bgq_info.c \
+		prov/bgq/src/fi_bgq_init.c \
+		prov/bgq/src/fi_bgq_mr.c \
+		prov/bgq/src/fi_bgq_msg.c \
+		prov/bgq/src/fi_bgq_rma.c \
+		prov/bgq/src/fi_bgq_sep.c \
+		prov/bgq/src/fi_bgq_tagged.c \
+		prov/bgq/src/fi_bgq_node.c \
+		prov/bgq/src/fi_bgq_progress.c \
+		prov/bgq/src/fi_bgq_pmi.c
+
+bgq_files_nodist = prov/bgq/external/memory_impl.c
+
+bgq_CPPFLAGS = -I@bgq_driver@ -I@bgq_driver@/spi/include/kernel/cnk -I$(builddir)/prov/bgq/include -I$(srcdir)/prov/bgq/include
+bgq_LDFLAGS = -static
+
+prov/bgq/external/memory_impl.c: @bgq_external_source@/spi/src/kernel/cnk/memory_impl.c
+	@${MKDIR_P} $(@D)
+	@cp $< $@
+
+if HAVE_BGQ_DL
+pkglib_LTLIBRARIES += libbgq-fi.la
+libbgq_fi_la_SOURCES = $(bgq_files) $(common_srcs)
+nodist_libbgq_fi_la_SOURCES = $(bgq_files_nodist)
+libbgq_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+libbgq_fi_la_LDFLAGS = \
+    -module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+libbgq_fi_la_LIBADD = $(linkback) $(bgq_LIBS)
+libbgq_fi_la_DEPENDENCIES = $(linkback)
+else
+src_libfabric_la_SOURCES += $(bgq_files)
+nodist_src_libfabric_la_SOURCES += $(bgq_files_nodist)
+src_libfabric_la_CPPFLAGS += $(bgq_CPPFLAGS)
+src_libfabric_la_LDFLAGS += $(bgq_LDFLAGS)
+src_libfabric_la_LIBADD += $(bgq_LIBS)
+endif
+
+sbin_PROGRAMS = fi_bgq_agent0 fi_bgq_agent1
+fi_bgq_agent1_SOURCES = prov/bgq/src/fi_bgq_agent.c
+fi_bgq_agent1_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+fi_bgq_agent1_LDFLAGS = -all-static $(bgq_LDFLAGS) -Wl,--script=@bgq_driver@/cnk/tools/AppAgent1.lds
+fi_bgq_agent0_SOURCES = $(fi_bgq_agent1_SOURCES)
+fi_bgq_agent0_CPPFLAGS = $(fi_bgq_agent1_CPPFLAGS)
+fi_bgq_agent0_LDFLAGS = -all-static $(bgq_LDFLAGS) -Wl,--script=@bgq_driver@/cnk/tools/AppAgent0.lds
+
+include $(top_srcdir)/prov/bgq/src/test/Makefile.include
+
+rdma_bgqincludedir = $(includedir)/rdma/bgq
+
+rdma_bgqinclude_HEADERS =
+
+# internal utility functions shared by in-tree providers:
+if HAVE_DIRECT
+nodist_rdma_bgqinclude_HEADERS = \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_compiler.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_hwi.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_mu.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_spi.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_node.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_progress.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_flight_recorder.h \
+	$(top_srcdir)/prov/$(PROVIDER_DIRECT)/include/rdma/bgq/fi_bgq_l2atomic.h
+endif HAVE_DIRECT
+
+prov_install_man_pages += man/man7/fi_bgq.7
+
+endif #HAVE_BGQ
+
+prov_dist_man_pages += man/man7/fi_bgq.7
