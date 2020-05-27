@@ -209,7 +209,8 @@ returnInfoCast(CallExpr* call) {
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   }
-  return QualifiedType(t1); // what should qual be here?
+  INT_ASSERT(!isReferenceType(t1));
+  return QualifiedType(t1, QUAL_VAL);
 }
 
 static QualifiedType
