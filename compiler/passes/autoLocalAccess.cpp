@@ -291,20 +291,22 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall) {
   if (baseSE != NULL) {
     Symbol *accBaseSym = baseSE->symbol();
 
-    // (i,j) in forall (i,j) in bla is a tuple that is
-    // index-by-index accessed in loop body that throw off this
-    // analysis
-    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
-
-    // give up if the symbol we are looking to optimize is defined
-    // inside the loop itself
-    if (forall->loopBody()->contains(accBaseSym->defPoint)) { return NULL; }
-
     // give up if the access uses a different symbol
     if (!callHasSymArguments(call, forall->loopInfo.multiDIndices)) { return NULL; }
 
-    // this call has another tighter-enclosing stmt that may change
-    // locality, don't optimize
+    // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
+    // in loop body that throw off this analysis
+    if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
+
+    // give up if the symbol we are looking to optimize is defined inside the
+    // loop itself
+    if (forall->loopBody()->contains(accBaseSym->defPoint)) { return NULL; }
+
+    // similarly, give up if the base symbol is a shadow variable
+    if (isShadowVarSymbol(accBaseSym)) { return NULL; }
+
+    // this call has another tighter-enclosing stmt that may change locality,
+    // don't optimize
     if (forall != getLocalityDominator(call)) { return NULL; }
 
     return accBaseSym;
