@@ -55,7 +55,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   INT_ASSERT(fLoopBody != NULL);
 
 
-  autoLocalAccessChecked = false;
+  optInfo.autoLocalAccessChecked = false;
 
   gForallStmts.add(this);
 }
