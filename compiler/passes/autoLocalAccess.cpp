@@ -25,7 +25,7 @@
 #include "astutil.h"
 #include "resolution.h"
 
-static void analyzeArrLog(const char *msg, BaseAST *node) {
+static void LOG(const char *msg, BaseAST *node) {
   if (fAutoLocalAccessLog) {
     const bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                           node->getModule()->modTag != MOD_STANDARD);
@@ -90,7 +90,7 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
 // NULL if we can't find a domain symbol statically
 static Symbol *getDomSym(Symbol *arrSym) {
   Symbol *ret = NULL;
-  if(DefExpr *def = arrSym->defPoint) {  // TODO: what happens if ArgSymbol?
+  if(DefExpr *def = arrSym->defPoint) {
     // check the most basic idiom `var A: [D] int`
     if (def->exprType != NULL) {
       if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
@@ -109,13 +109,9 @@ static Symbol *getDomSym(Symbol *arrSym) {
         }
       }
     }
-    // check if the array variable was created with a call `var A = foo()`
-    else { // def->exprType == NULL
-      analyzeArrLog("There is no type expression in definition, or it is not a call", def);
-    }
   }
   if (ret == NULL) {
-      analyzeArrLog("Regular domain symbol was not found", arrSym);
+    LOG("Regular domain symbol was not found for array", arrSym);
   }
   return ret;
 }
@@ -210,7 +206,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   // initially found. Otherwise, clear the vector, which denotes an unknown
   // pattern.
   if (indexVarCount == -1 || indexVarCount != indexSymbols.size()) {
-    analyzeArrLog("Can't recognize loop's index symbols", baseSym);
+    LOG("Can't recognize loop's index symbols", baseSym);
     indexSymbols.clear();
   }
 
@@ -228,10 +224,8 @@ static void gatherForallInfo(ForallStmt *forall) {
     if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
       if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
         forall->optInfo.iterSym = iterSE->symbol();
-        analyzeArrLog("Iterated symbol", forall->optInfo.iterSym);
-      }
-      else {
-        analyzeArrLog("Iterated Expr is unresolved", iterExprs.head);
+
+        LOG("Iterated symbol", forall->optInfo.iterSym);
       }
     }
     // it might be in the form `A.domain` where A is used in the loop body
@@ -239,12 +233,14 @@ static void gatherForallInfo(ForallStmt *forall) {
       forall->optInfo.dotDomIterExpr = iterExprs.head;
       forall->optInfo.dotDomIterSym = dotDomBaseSym;
       forall->optInfo.dotDomIterSymDom = getDomSym(forall->optInfo.dotDomIterSym);
-      analyzeArrLog("Iterated over .domain of", forall->optInfo.dotDomIterSym);
+
+      LOG("Iterated over the domain of", forall->optInfo.dotDomIterSym);
       if (forall->optInfo.dotDomIterSymDom != NULL) {
-        analyzeArrLog("where its domain is", forall->optInfo.dotDomIterSymDom);
+        LOG(", which is", forall->optInfo.dotDomIterSymDom);
       }
       else {
-        analyzeArrLog("Whose domain cannot be determined statically", forall->optInfo.dotDomIterSym);
+        LOG(", whose domain cannot be determined statically",
+                      forall->optInfo.dotDomIterSym);
       }
     }
 
@@ -258,7 +254,7 @@ static void gatherForallInfo(ForallStmt *forall) {
         loopIdxSym = de->sym;
       }
       else {
-        analyzeArrLog("Unrecognized index symbol", indexVars.head);
+        INT_FATAL("Loop index cannot be extracted");
       }
 
       if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
@@ -441,7 +437,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   for_vector(CallExpr, sOptCandidate, sOptCandidates) {
     Symbol *checkSym = generateStaticCheckForAccess(sOptCandidate, forall);
 
-    analyzeArrLog("\tReplacing", sOptCandidate);
+    LOG("\tOptimizing static candidate", sOptCandidate);
 
     SET_LINENO(sOptCandidate);
     Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
@@ -477,7 +473,8 @@ static void generateOptimizedLoops(ForallStmt *forall) {
                                                        forall);
       generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
 
-      analyzeArrLog("\tMarking for dynamic analysis", dOptCandidate);
+      LOG("\tOptimizing dynamic candidate", dOptCandidate);
+
       SET_LINENO(dOptCandidate);
 
       CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
@@ -513,11 +510,11 @@ void analyzeArrays() {
     }
     forall->optInfo.autoLocalAccessChecked = true;
 
-    analyzeArrLog("**** Start forall ****", forall);
+    LOG("**** Start forall ****", forall);
     gatherForallInfo(forall);
 
     if (checkLoopSuitableForOpt(forall)) {
-      analyzeArrLog("Loop is suitable for further analysis", forall);
+      LOG("Loop is suitable for further analysis", forall);
 
       std::vector<CallExpr *> allCallExprs;
       collectCallExprs(forall->loopBody(), allCallExprs);
@@ -525,7 +522,7 @@ void analyzeArrays() {
       for_vector(CallExpr, call, allCallExprs) {
         if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall)) {
                                                     
-          analyzeArrLog("Potential access", call);
+          LOG("Potential access", call);
 
           bool canOptimize = false;
           // check for different patterns
@@ -533,32 +530,31 @@ void analyzeArrays() {
           if (forall->optInfo.dotDomIterSym != NULL &&
               forall->optInfo.dotDomIterSym == accBaseSym) {
             canOptimize = true;
-            analyzeArrLog("Access base is the same as iterator's base",
-                call);
+            LOG("\tCan optimize: Access base is the iterator's base",
+                          call);
           }
 
           // if that didn't work...
           if (!canOptimize) {
             Symbol *domSym = getDomSym(accBaseSym);
+            if (domSym != NULL) {
+              LOG("\twith domain defined at", domSym);
+            }
 
             if (domSym != NULL) {  //  I can find the domain of the array
               // forall i in A.domain do ... B[i] ... where B and A share domain
               if (forall->optInfo.dotDomIterSymDom != NULL &&
                   forall->optInfo.dotDomIterSymDom == domSym) {
                 canOptimize = true;
-                analyzeArrLog("Access base share the domain with iterator's base",
-                    call);
+                LOG("\tCan optimize: Access base has the same domain as iterator's base",
+                              call);
               }
               // forall i in D do ... A[i] ... where D is A's domain
               else {
-                analyzeArrLog("\twith DefExpr", accBaseSym->defPoint);
-                if (domSym != NULL) {
-                  analyzeArrLog("\twith domain defined at", domSym);
-                }
                 if (forall->optInfo.iterSym != NULL &&
                     forall->optInfo.iterSym == domSym) {
                   canOptimize = true;
-                  analyzeArrLog("Access base's domain is the iterator", call);
+                  LOG("Access base's domain is the iterator", call);
                 }
               }
             }
@@ -578,7 +574,7 @@ void analyzeArrays() {
 
       generateOptimizedLoops(forall);
     }
-    analyzeArrLog("**** End forall ****", forall);
+    LOG("**** End forall ****", forall);
   }
 }
 
@@ -588,8 +584,7 @@ void analyzeArrays() {
 // Resolution support
 //
 static CallExpr *revertAccess(CallExpr *call) {
-  analyzeArrLog("Reverting optimization (can't statically confirm)",
-                call);
+  LOG("Static check failed. Reverting optimization", call);
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
@@ -605,16 +600,13 @@ static CallExpr *revertAccess(CallExpr *call) {
 }
 
 static CallExpr *confirmAccess(CallExpr *call) {
-
   if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
-    analyzeArrLog("Statically confirmed optimization, using localAccess",
-                  call);
+    LOG("Static check successful. Using localAccess", call);
   }
   else {
-    analyzeArrLog("Replacing with runtime checks", call);
+    LOG("Static check successful. Using localAccess with dynamic check", call);
   }
 
-  //Expr *parent = call->parentExpr;
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
                                 gMethodToken);
 

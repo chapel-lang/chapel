@@ -1,16 +1,13 @@
 **** Start forall ****
 	withInitializerCall.chpl:13
 
-There is no type expression in definition, or it is not a call
+Regular domain symbol was not found for array
 	withInitializerCall.chpl:12
 
-Regular domain symbol was not found
+Iterated over the domain of
 	withInitializerCall.chpl:12
 
-Iterated over .domain of
-	withInitializerCall.chpl:12
-
-Whose domain cannot be determined statically
+, whose domain cannot be determined statically
 	withInitializerCall.chpl:12
 
 Loop is suitable for further analysis
@@ -19,10 +16,10 @@ Loop is suitable for further analysis
 Potential access
 	withInitializerCall.chpl:14
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:14
 
-	Replacing
+	Optimizing static candidate
 	withInitializerCall.chpl:14
 
 **** End forall ****
@@ -31,16 +28,13 @@ Access base is the same as iterator's base
 **** Start forall ****
 	withInitializerCall.chpl:20
 
-There is no type expression in definition, or it is not a call
+Regular domain symbol was not found for array
 	withInitializerCall.chpl:19
 
-Regular domain symbol was not found
+Iterated over the domain of
 	withInitializerCall.chpl:19
 
-Iterated over .domain of
-	withInitializerCall.chpl:19
-
-Whose domain cannot be determined statically
+, whose domain cannot be determined statically
 	withInitializerCall.chpl:19
 
 Loop is suitable for further analysis
@@ -49,10 +43,10 @@ Loop is suitable for further analysis
 Potential access
 	withInitializerCall.chpl:21
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:21
 
-	Replacing
+	Optimizing static candidate
 	withInitializerCall.chpl:21
 
 **** End forall ****
@@ -61,16 +55,13 @@ Access base is the same as iterator's base
 **** Start forall ****
 	withInitializerCall.chpl:27
 
-There is no type expression in definition, or it is not a call
+Regular domain symbol was not found for array
 	withInitializerCall.chpl:26
 
-Regular domain symbol was not found
+Iterated over the domain of
 	withInitializerCall.chpl:26
 
-Iterated over .domain of
-	withInitializerCall.chpl:26
-
-Whose domain cannot be determined statically
+, whose domain cannot be determined statically
 	withInitializerCall.chpl:26
 
 Loop is suitable for further analysis
@@ -79,10 +70,10 @@ Loop is suitable for further analysis
 Potential access
 	withInitializerCall.chpl:28
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:28
 
-	Replacing
+	Optimizing static candidate
 	withInitializerCall.chpl:28
 
 **** End forall ****
@@ -91,16 +82,13 @@ Access base is the same as iterator's base
 **** Start forall ****
 	withInitializerCall.chpl:34
 
-There is no type expression in definition, or it is not a call
+Regular domain symbol was not found for array
 	withInitializerCall.chpl:33
 
-Regular domain symbol was not found
+Iterated over the domain of
 	withInitializerCall.chpl:33
 
-Iterated over .domain of
-	withInitializerCall.chpl:33
-
-Whose domain cannot be determined statically
+, whose domain cannot be determined statically
 	withInitializerCall.chpl:33
 
 Loop is suitable for further analysis
@@ -109,24 +97,24 @@ Loop is suitable for further analysis
 Potential access
 	withInitializerCall.chpl:35
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:35
 
-	Replacing
+	Optimizing static candidate
 	withInitializerCall.chpl:35
 
 **** End forall ****
 	withInitializerCall.chpl:34
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	withInitializerCall.chpl:14
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	withInitializerCall.chpl:21
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	withInitializerCall.chpl:28
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	withInitializerCall.chpl:35
 

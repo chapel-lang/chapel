@@ -10,8 +10,14 @@ Loop is suitable for further analysis
 Potential access
 	regularDeclaration.chpl:15
 
-	with DefExpr
-	regularDeclaration.chpl:6
+	with domain defined at
+	regularDeclaration.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration.chpl:15
+
+Potential access
+	regularDeclaration.chpl:15
 
 	with domain defined at
 	regularDeclaration.chpl:4
@@ -22,34 +28,19 @@ Access base's domain is the iterator
 Potential access
 	regularDeclaration.chpl:15
 
-	with DefExpr
-	regularDeclaration.chpl:7
-
 	with domain defined at
 	regularDeclaration.chpl:4
 
 Access base's domain is the iterator
 	regularDeclaration.chpl:15
 
-Potential access
+	Optimizing static candidate
 	regularDeclaration.chpl:15
 
-	with DefExpr
-	regularDeclaration.chpl:8
-
-	with domain defined at
-	regularDeclaration.chpl:4
-
-Access base's domain is the iterator
+	Optimizing static candidate
 	regularDeclaration.chpl:15
 
-	Replacing
-	regularDeclaration.chpl:15
-
-	Replacing
-	regularDeclaration.chpl:15
-
-	Replacing
+	Optimizing static candidate
 	regularDeclaration.chpl:15
 
 **** End forall ****
@@ -58,10 +49,10 @@ Access base's domain is the iterator
 **** Start forall ****
 	regularDeclaration.chpl:31
 
-Iterated over .domain of
+Iterated over the domain of
 	regularDeclaration.chpl:23
 
-where its domain is
+, which is
 	regularDeclaration.chpl:21
 
 Loop is suitable for further analysis
@@ -70,49 +61,55 @@ Loop is suitable for further analysis
 Potential access
 	regularDeclaration.chpl:32
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	regularDeclaration.chpl:32
 
 Potential access
 	regularDeclaration.chpl:32
 
-Access base share the domain with iterator's base
+	with domain defined at
+	regularDeclaration.chpl:21
+
+	Can optimize: Access base has the same domain as iterator's base
 	regularDeclaration.chpl:32
 
 Potential access
 	regularDeclaration.chpl:32
 
-Access base share the domain with iterator's base
+	with domain defined at
+	regularDeclaration.chpl:21
+
+	Can optimize: Access base has the same domain as iterator's base
 	regularDeclaration.chpl:32
 
-	Replacing
+	Optimizing static candidate
 	regularDeclaration.chpl:32
 
-	Replacing
+	Optimizing static candidate
 	regularDeclaration.chpl:32
 
-	Replacing
+	Optimizing static candidate
 	regularDeclaration.chpl:32
 
 **** End forall ****
 	regularDeclaration.chpl:31
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	regularDeclaration.chpl:15
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	regularDeclaration.chpl:15
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	regularDeclaration.chpl:15
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	regularDeclaration.chpl:32
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	regularDeclaration.chpl:32
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	regularDeclaration.chpl:32
 
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

@@ -10,8 +10,14 @@ Loop is suitable for further analysis
 Potential access
 	dotDomDeclaration.chpl:15
 
-	with DefExpr
-	dotDomDeclaration.chpl:6
+	with domain defined at
+	dotDomDeclaration.chpl:4
+
+Access base's domain is the iterator
+	dotDomDeclaration.chpl:15
+
+Potential access
+	dotDomDeclaration.chpl:15
 
 	with domain defined at
 	dotDomDeclaration.chpl:4
@@ -22,34 +28,19 @@ Access base's domain is the iterator
 Potential access
 	dotDomDeclaration.chpl:15
 
-	with DefExpr
-	dotDomDeclaration.chpl:7
-
 	with domain defined at
 	dotDomDeclaration.chpl:4
 
 Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
-Potential access
+	Optimizing static candidate
 	dotDomDeclaration.chpl:15
 
-	with DefExpr
-	dotDomDeclaration.chpl:8
-
-	with domain defined at
-	dotDomDeclaration.chpl:4
-
-Access base's domain is the iterator
+	Optimizing static candidate
 	dotDomDeclaration.chpl:15
 
-	Replacing
-	dotDomDeclaration.chpl:15
-
-	Replacing
-	dotDomDeclaration.chpl:15
-
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:15
 
 **** End forall ****
@@ -58,10 +49,10 @@ Access base's domain is the iterator
 **** Start forall ****
 	dotDomDeclaration.chpl:31
 
-Iterated over .domain of
+Iterated over the domain of
 	dotDomDeclaration.chpl:23
 
-where its domain is
+, which is
 	dotDomDeclaration.chpl:21
 
 Loop is suitable for further analysis
@@ -70,28 +61,34 @@ Loop is suitable for further analysis
 Potential access
 	dotDomDeclaration.chpl:32
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	dotDomDeclaration.chpl:32
 
 Potential access
 	dotDomDeclaration.chpl:32
 
-Access base share the domain with iterator's base
+	with domain defined at
+	dotDomDeclaration.chpl:21
+
+	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:32
 
 Potential access
 	dotDomDeclaration.chpl:32
 
-Access base share the domain with iterator's base
+	with domain defined at
+	dotDomDeclaration.chpl:21
+
+	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:32
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:32
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:32
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:32
 
 **** End forall ****
@@ -100,10 +97,10 @@ Access base share the domain with iterator's base
 **** Start forall ****
 	dotDomDeclaration.chpl:48
 
-Iterated over .domain of
+Iterated over the domain of
 	dotDomDeclaration.chpl:41
 
-where its domain is
+, which is
 	dotDomDeclaration.chpl:38
 
 Loop is suitable for further analysis
@@ -112,28 +109,34 @@ Loop is suitable for further analysis
 Potential access
 	dotDomDeclaration.chpl:49
 
-Access base share the domain with iterator's base
+	with domain defined at
+	dotDomDeclaration.chpl:38
+
+	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:49
 
 Potential access
 	dotDomDeclaration.chpl:49
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	dotDomDeclaration.chpl:49
 
 Potential access
 	dotDomDeclaration.chpl:49
 
-Access base share the domain with iterator's base
+	with domain defined at
+	dotDomDeclaration.chpl:38
+
+	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:49
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:49
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:49
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:49
 
 **** End forall ****
@@ -142,10 +145,10 @@ Access base share the domain with iterator's base
 **** Start forall ****
 	dotDomDeclaration.chpl:65
 
-Iterated over .domain of
+Iterated over the domain of
 	dotDomDeclaration.chpl:59
 
-where its domain is
+, which is
 	dotDomDeclaration.chpl:55
 
 Loop is suitable for further analysis
@@ -154,67 +157,73 @@ Loop is suitable for further analysis
 Potential access
 	dotDomDeclaration.chpl:66
 
-Access base share the domain with iterator's base
+	with domain defined at
+	dotDomDeclaration.chpl:55
+
+	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:66
 
 Potential access
 	dotDomDeclaration.chpl:66
 
-Access base share the domain with iterator's base
+	with domain defined at
+	dotDomDeclaration.chpl:55
+
+	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:66
 
 Potential access
 	dotDomDeclaration.chpl:66
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	dotDomDeclaration.chpl:66
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:66
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:66
 
-	Replacing
+	Optimizing static candidate
 	dotDomDeclaration.chpl:66
 
 **** End forall ****
 	dotDomDeclaration.chpl:65
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:15
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:15
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:15
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:32
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:32
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:32
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:49
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:49
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:49
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:66
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:66
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	dotDomDeclaration.chpl:66
 
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

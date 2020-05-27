@@ -1,16 +1,13 @@
 **** Start forall ****
 	staticSuccessDynamicFail.chpl:6
 
-There is no type expression in definition, or it is not a call
+Regular domain symbol was not found for array
 	staticSuccessDynamicFail.chpl:4
 
-Regular domain symbol was not found
+Iterated over the domain of
 	staticSuccessDynamicFail.chpl:4
 
-Iterated over .domain of
-	staticSuccessDynamicFail.chpl:4
-
-Whose domain cannot be determined statically
+, whose domain cannot be determined statically
 	staticSuccessDynamicFail.chpl:4
 
 Loop is suitable for further analysis
@@ -19,34 +16,31 @@ Loop is suitable for further analysis
 Potential access
 	staticSuccessDynamicFail.chpl:7
 
-Access base is the same as iterator's base
+	Can optimize: Access base is the iterator's base
 	staticSuccessDynamicFail.chpl:7
 
 Potential access
 	staticSuccessDynamicFail.chpl:7
 
-There is no type expression in definition, or it is not a call
+Regular domain symbol was not found for array
 	staticSuccessDynamicFail.chpl:3
 
-Regular domain symbol was not found
-	staticSuccessDynamicFail.chpl:3
-
-	Replacing
+	Optimizing static candidate
 	staticSuccessDynamicFail.chpl:7
 
-	Marking for dynamic analysis
+	Optimizing dynamic candidate
 	staticSuccessDynamicFail.chpl:7
 
 **** End forall ****
 	staticSuccessDynamicFail.chpl:6
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	staticSuccessDynamicFail.chpl:7
 
-Replacing with runtime checks
+Static check successful. Using localAccess with dynamic check
 	staticSuccessDynamicFail.chpl:7
 
-Statically confirmed optimization, using localAccess
+Static check successful. Using localAccess
 	staticSuccessDynamicFail.chpl:7
 
 0 0 0 0 0 0 0 0 0
