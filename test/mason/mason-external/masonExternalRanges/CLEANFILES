@@ -1,0 +1,8 @@
+Mason.toml
+example/
+src/
+test/
+.git/
+.gitignore
+mason_home/
+
