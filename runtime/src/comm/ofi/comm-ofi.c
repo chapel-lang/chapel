@@ -71,10 +71,15 @@
 
 ////////////////////////////////////////
 //
-// This is the libfabric API version we need.
+// Libfabric API version
 //
 
-#define COMM_OFI_FI_VERSION FI_VERSION(1, 8)
+//
+// This is used to check that the libfabric version the runtime is
+// linked with in a user program is the same one it was compiled
+// against.
+//
+#define COMM_OFI_FI_VERSION FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION)
 
 
 ////////////////////////////////////////
