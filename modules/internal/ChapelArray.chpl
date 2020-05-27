@@ -766,6 +766,7 @@ module ChapelArray {
 
   pragma "return not owned"
   proc chpl__distributionFromDomainRuntimeType(type rtt) {
+    pragma "ignore runtime type"
     proc getDomDistType() type {
       pragma "unsafe"
       var arr : rtt;
@@ -782,6 +783,7 @@ module ChapelArray {
 
   pragma "return not owned"
   proc chpl__domainFromArrayRuntimeType(type rtt) {
+    pragma "ignore runtime type"
     proc getArrDomType() type {
       pragma "unsafe"
       var arr : rtt;

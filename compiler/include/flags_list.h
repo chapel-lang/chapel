@@ -165,6 +165,7 @@ symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_HAS_POSTINIT , ypr, "has postinit" , "type that has a postinit method" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
+symbolFlag( FLAG_IGNORE_RUNTIME_TYPE , ypr, "ignore runtime type" , "use the static type only in the return value" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
 symbolFlag( FLAG_YVV, npr, "YVV", "variable is a yield value variable" )
 symbolFlag( FLAG_HEAP , npr, "heap" , ncm )
