@@ -164,7 +164,8 @@ static Expr* postFoldNormal(CallExpr* call) {
   if (fn->retTag == RET_TYPE) {
     Symbol* ret = fn->getReturnSymbol();
 
-    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false ||
+        fn->hasFlag(FLAG_IGNORE_RUNTIME_TYPE)) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
