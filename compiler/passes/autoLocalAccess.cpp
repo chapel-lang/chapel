@@ -18,12 +18,13 @@
  * limitations under the License.
  */
 
-#include "LoopStmt.h"
-#include "view.h"
-#include "ForallStmt.h"
-#include "stlUtil.h"
 #include "astutil.h"
+#include "autoLocalAccess.h"
+#include "ForallStmt.h"
+#include "LoopStmt.h"
 #include "resolution.h"
+#include "stlUtil.h"
+#include "view.h"
 
 static void LOG(const char *msg, BaseAST *node) {
   if (fAutoLocalAccessLog) {
@@ -52,7 +53,7 @@ static void LOG(const char *msg, BaseAST *node) {
 
 // Return true if `ce`'s arguments are exactly identical to `syms`
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms) {
-  if (ce->argList.length != syms.size()) return false;
+  if (((std::size_t)ce->argList.length) != syms.size()) return false;
   for (int i = 0 ; i < ce->argList.length ; i++) {
     if (SymExpr *arg = toSymExpr(ce->get(i+1))) {
       if (arg->symbol() != syms[i]) {
@@ -205,7 +206,8 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   // we must have pushed the same number of indexes to the vector as we
   // initially found. Otherwise, clear the vector, which denotes an unknown
   // pattern.
-  if (indexVarCount == -1 || indexVarCount != indexSymbols.size()) {
+  if (indexVarCount == -1 ||
+      ((std::size_t)indexVarCount) != indexSymbols.size()) {
     LOG("Can't recognize loop's index symbols", baseSym);
     indexSymbols.clear();
   }
@@ -470,7 +472,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
     for_vector(CallExpr, dOptCandidate, dOptCandidates) {
       Symbol *callBase = getCallBase(dOptCandidate);
       Symbol *checkSym = generateStaticCheckForAccess(dOptCandidate,
-                                                       forall);
+                                                      forall);
       generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
 
       LOG("\tOptimizing dynamic candidate", dOptCandidate);
@@ -642,8 +644,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
     else {
       INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
     }
-
-    return NULL;
   }
+  return NULL;
 }
 
