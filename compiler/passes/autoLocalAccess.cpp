@@ -459,7 +459,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
     sOptCandidate->replace(repl);
   }
 
-  if (dOptCandidates.size() > 0) {
+  if (fAutoLocalAccessDynamic && dOptCandidates.size() > 0) {
     SET_LINENO(forall);
 
     ForallStmt *staticOnly = forall->copy();
@@ -504,77 +504,79 @@ static void generateOptimizedLoops(ForallStmt *forall) {
 }
 
 void analyzeArrays() {
-  forv_Vec(ForallStmt, forall, gForallStmts) {
-    if (forall->optInfo.autoLocalAccessChecked) {
-      continue;
-    }
-    forall->optInfo.autoLocalAccessChecked = true;
+  if (fAutoLocalAccess) {
+    forv_Vec(ForallStmt, forall, gForallStmts) {
+      if (forall->optInfo.autoLocalAccessChecked) {
+        continue;
+      }
+      forall->optInfo.autoLocalAccessChecked = true;
 
-    LOG("**** Start forall ****", forall);
-    gatherForallInfo(forall);
+      LOG("**** Start forall ****", forall);
+      gatherForallInfo(forall);
 
-    if (checkLoopSuitableForOpt(forall)) {
-      LOG("Loop is suitable for further analysis", forall);
+      if (checkLoopSuitableForOpt(forall)) {
+        LOG("Loop is suitable for further analysis", forall);
 
-      std::vector<CallExpr *> allCallExprs;
-      collectCallExprs(forall->loopBody(), allCallExprs);
+        std::vector<CallExpr *> allCallExprs;
+        collectCallExprs(forall->loopBody(), allCallExprs);
 
-      for_vector(CallExpr, call, allCallExprs) {
-        if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall)) {
-                                                    
-          LOG("Potential access", call);
+        for_vector(CallExpr, call, allCallExprs) {
+          if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall)) {
+                                                      
+            LOG("Potential access", call);
 
-          bool canOptimize = false;
-          // check for different patterns
-          // forall i in A.domain do ... A[i] ...
-          if (forall->optInfo.dotDomIterSym != NULL &&
-              forall->optInfo.dotDomIterSym == accBaseSym) {
-            canOptimize = true;
-            LOG("\tCan optimize: Access base is the iterator's base",
-                          call);
-          }
-
-          // if that didn't work...
-          if (!canOptimize) {
-            Symbol *domSym = getDomSym(accBaseSym);
-            if (domSym != NULL) {
-              LOG("\twith domain defined at", domSym);
+            bool canOptimize = false;
+            // check for different patterns
+            // forall i in A.domain do ... A[i] ...
+            if (forall->optInfo.dotDomIterSym != NULL &&
+                forall->optInfo.dotDomIterSym == accBaseSym) {
+              canOptimize = true;
+              LOG("\tCan optimize: Access base is the iterator's base",
+                            call);
             }
 
-            if (domSym != NULL) {  //  I can find the domain of the array
-              // forall i in A.domain do ... B[i] ... where B and A share domain
-              if (forall->optInfo.dotDomIterSymDom != NULL &&
-                  forall->optInfo.dotDomIterSymDom == domSym) {
-                canOptimize = true;
-                LOG("\tCan optimize: Access base has the same domain as iterator's base",
-                              call);
+            // if that didn't work...
+            if (!canOptimize) {
+              Symbol *domSym = getDomSym(accBaseSym);
+              if (domSym != NULL) {
+                LOG("\twith domain defined at", domSym);
               }
-              // forall i in D do ... A[i] ... where D is A's domain
-              else {
-                if (forall->optInfo.iterSym != NULL &&
-                    forall->optInfo.iterSym == domSym) {
+
+              if (domSym != NULL) {  //  I can find the domain of the array
+                // forall i in A.domain do ... B[i] ... where B and A share domain
+                if (forall->optInfo.dotDomIterSymDom != NULL &&
+                    forall->optInfo.dotDomIterSymDom == domSym) {
                   canOptimize = true;
-                  LOG("Access base's domain is the iterator", call);
+                  LOG("\tCan optimize: Access base has the same domain as iterator's base",
+                                call);
+                }
+                // forall i in D do ... A[i] ... where D is A's domain
+                else {
+                  if (forall->optInfo.iterSym != NULL &&
+                      forall->optInfo.iterSym == domSym) {
+                    canOptimize = true;
+                    LOG("Access base's domain is the iterator", call);
+                  }
                 }
               }
+              else {
+                // I couldn't find a domain symbol for this array, but it can
+                // still be a candidate for optimization based on analysis at
+                // runtime
+                forall->optInfo.dynamicCandidates.push_back(call);
+              }
             }
-            else {
-              // I couldn't find a domain symbol for this array, but it can
-              // still be a candidate for optimization based on analysis at
-              // runtime
-              forall->optInfo.dynamicCandidates.push_back(call);
-            }
-          }
 
-          if (canOptimize) {
-            forall->optInfo.staticCandidates.push_back(call);
+            if (canOptimize) {
+              forall->optInfo.staticCandidates.push_back(call);
+            }
           }
         }
-      }
 
-      generateOptimizedLoops(forall);
+        generateOptimizedLoops(forall);
+      }
+      LOG("**** End forall ****", forall);
     }
-    LOG("**** End forall ****", forall);
   }
 }
 
@@ -621,25 +623,27 @@ static CallExpr *confirmAccess(CallExpr *call) {
 }
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
-  // PRIM_MAYBE_LOCAL_THIS looks like
-  //
-  //   (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
-  //                               paramControlFlag, paramStaticallyDetermined)
-  //
-  // we need to check the second argument from last to determine whether we are
-  // confirming this to be a local access or not
-  if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
-    if (controlSE->symbol() == gTrue) {
-      return confirmAccess(call);
+  if (fAutoLocalAccess) {
+    // PRIM_MAYBE_LOCAL_THIS looks like
+    //
+    //  (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
+    //                              paramControlFlag, paramStaticallyDetermined)
+    //
+    // we need to check the second argument from last to determine whether we
+    // are confirming this to be a local access or not
+    if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
+      if (controlSE->symbol() == gTrue) {
+        return confirmAccess(call);
+      }
+      else {
+        return revertAccess(call);
+      }
     }
     else {
-      return revertAccess(call);
+      INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
     }
-  }
-  else {
-    INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
-  }
 
-  return NULL;
+    return NULL;
+  }
 }
 

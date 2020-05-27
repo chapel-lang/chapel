@@ -155,6 +155,10 @@ bool fUserSetStackChecks = false;
 bool fNoCastChecks = false;
 bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
+
+bool fAutoLocalAccess = true;
+bool fAutoLocalAccessStatic = true;
+bool fAutoLocalAccessDynamic = true;
 bool fAutoLocalAccessLog = false;
 
 bool  printPasses     = false;
@@ -709,6 +713,23 @@ static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoDivZeroChecks = fNoChecks;
 }
 
+static void setAutoLocalAccess(const ArgumentDescription* desc,
+                               const char* unused) {
+  fAutoLocalAccess= true;
+  fAutoLocalAccessStatic = true;
+  fAutoLocalAccessDynamic = true;
+}
+
+static void setAutoLocalAccessStatic(const ArgumentDescription* desc,
+                                     const char* unused) {
+  fAutoLocalAccessStatic = true;
+}
+
+static void setAutoLocalAccessDynamic(const ArgumentDescription* desc,
+                                      const char* unused) {
+  fAutoLocalAccessDynamic = true;
+}
+
 static void setAutoLocalAccessLog(const ArgumentDescription* desc,
                                   const char* unused) {
   fAutoLocalAccessLog = true;
@@ -940,6 +961,10 @@ static ArgumentDescription arg_desc[] = {
  {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
  {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
+
+ {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_AUTO_LOCAL_ACCESS", setAutoLocalAccess},
+ {"auto-local-access-static", ' ', NULL, "Enable [disable] using local access automatically (static only)", "N", &fAutoLocalAccessStatic, "CHPL_AUTO_LOCAL_ACCESS_STATIC", setAutoLocalAccessStatic},
+ {"auto-local-access-dynamic", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fAutoLocalAccessDynamic, "CHPL_AUTO_LOCAL_ACCESS_DYNAMIC", setAutoLocalAccessDynamic},
  {"auto-local-access-log", ' ', NULL, "Enable compiler logs for auto local access optimization", "F", &fAutoLocalAccessLog, "CHPL_AUTO_LOCAL_ACCESS_LOG", setAutoLocalAccessLog},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},

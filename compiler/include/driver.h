@@ -55,6 +55,10 @@ extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
+
+extern bool fAutoLocalAccess;
+extern bool fAutoLocalAccessStatic;
+extern bool fAutoLocalAccessDynamic;
 extern bool fAutoLocalAccessLog;
 
 extern bool fNoRemoteValueForwarding;
