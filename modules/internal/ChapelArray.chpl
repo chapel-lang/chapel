@@ -2680,9 +2680,8 @@ module ChapelArray {
         checkSlice(d, _value);
 
       // create a bounded domain by slicing our domain with the argument
-      var D: domain(rank, idxType, this.stridable || d.stridable,
-                    BoundedRangeType.bounded)
-                      = this.domain((...d.getIndices()));
+      pragma "no auto destroy" var D = this.domain((...d.getIndices()));
+      d._value._free_when_no_arrs = true;
 
       //
       // If this is already a slice array view, we can short-circuit
