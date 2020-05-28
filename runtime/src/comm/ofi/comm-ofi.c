@@ -294,6 +294,12 @@ static atomic_bool amHandlersExit;
 
 
 //
+// Should the AM handler do liveness checks?
+//
+static chpl_bool amDoLivenessChecks = false;
+
+
+//
 // The ofi_rxm provider may return -FI_EAGAIN for read/write/send while
 // doing on-demand connection when emulating FI_RDM endpoints.  The man
 // page says: "Applications should be aware of this and retry until the
@@ -1665,6 +1671,14 @@ void chpl_comm_rollcall(void) {
 
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
+
+  //
+  // Only node 0 does liveness checks, and only after we're sure all
+  // the other nodes' AM handlers are running.
+  //
+  if (chpl_nodeID == 0) {
+    amDoLivenessChecks = true;
+  }
 }
 
 
@@ -2180,6 +2194,7 @@ typedef enum {
   am_opPut,                                // do an RMA PUT
   am_opAMO,                                // do an AMO
   am_opFree,                               // free some memory
+  am_opLiveness,                           // periodic liveness checks
   am_opNop,                                // do nothing; used to ensure MCM
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
@@ -2269,6 +2284,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
+static void amRequestLiveness(c_nodeid_t, amDone_t*);
 static void amRequestNop(c_nodeid_t);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
@@ -2556,6 +2572,16 @@ void amRequestFree(c_nodeid_t node, void* p) {
 
 
 static inline
+void amRequestLiveness(c_nodeid_t node, amDone_t* pIsAlive) {
+  amRequest_t req = { .b = { .op = am_opLiveness,
+                             .node = chpl_nodeID,
+                             .pAmDone = pIsAlive}, };
+  amRequestCommon(node, &req, sizeof(req.b),
+                  NULL, false /*yieldDuringTxnWait*/, NULL);
+}
+
+
+static inline
 void amRequestNop(c_nodeid_t node) {
   assert(!isAmHandler);
   amRequest_t req = { .b = { .op = am_opNop,
@@ -2707,7 +2733,6 @@ static int numAmHandlersActive;
 static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
-
 static void amHandler(void*);
 static void processRxAmReq(struct perTxCtxInfo_t*);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
@@ -2718,6 +2743,7 @@ static void amWrapGet(struct taskArg_RMA_t*);
 static void amWrapPut(struct taskArg_RMA_t*);
 static void amHandleAMO(struct amRequest_AMO_t*);
 static inline void amSendDone(c_nodeid_t, amDone_t*);
+static inline void amCheckLiveness(void);
 
 static inline void doCpuAMO(void*, const void*, const void*, void*,
                             enum fi_op, enum fi_datatype, size_t size);
@@ -2829,6 +2855,10 @@ void amHandler(void* argNil) {
       (*checkRxRmaCmplsFn)();
 
       sched_yield();
+    }
+
+    if (amDoLivenessChecks) {
+      amCheckLiveness();
     }
   }
 
@@ -2948,10 +2978,17 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         CHPL_FREE(req->free.p);
         break;
 
+      case am_opLiveness:
       case am_opNop:
+        //
+        // We reuse the amDone mechanism for liveness checks, so these
+        // actually differ only in their debug output.
+        //
         DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "processRxAmReq(seqId %d:%" PRIu64 "): set pAmDone %p",
-                   (int) req->b.node, req->b.seq, req->b.pAmDone);
+                   "processRxAmReq(seqId %d:%" PRIu64 "): set %s %p",
+                   (int) req->b.node, req->b.seq,
+                   (req->b.op == am_opLiveness) ? "pIsAlive" : "pAmDone",
+                   req->b.pAmDone);
         amSendDone(req->b.node, req->b.pAmDone);
         break;
 
@@ -3226,6 +3263,62 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
   //
   ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
              txnTrkEncode(txnTrkNone, NULL), amTcip);
+}
+
+
+static inline
+void amCheckLiveness(void) {
+  //
+  // (Only node 0 does liveness checks.)  We cycle through the other
+  // nodes, checking to make sure they're still alive.  To reduce the
+  // overhead, we do a liveness check no more frequently than every 10
+  // seconds and we also try not to make time calls much more frequently
+  // than that, because they're expensive.  To do a liveness check we
+  // set isAlive to 0, then send a 'liveness' AM to a remote node.  That
+  // node, if alive, will respond by setting our isAlive back to 1.  So
+  // if everything is alive, we should always see isAlive==1 when we
+  // look at it again.
+  //
+  static __thread int countInterval = 10000;
+  static __thread int count = 10000;
+  static __thread double lastTime;
+  const double timeInterval = 10.0;
+
+  if (--count == 0) {
+    double time = chpl_comm_ofi_time_get();
+    if (time - lastTime < timeInterval) {
+      //
+      // We didn't wait long enough; adjust countInterval and try
+      // again.  Add some excess to avoid seeking perfection in
+      // countInterval, though.
+      //
+      int oldCountInterval = countInterval;
+      countInterval *= (timeInterval + 0.1) / (time - lastTime);
+      count = countInterval - oldCountInterval;
+    } else {
+      static __thread c_nodeid_t node = 1;  
+      static __thread amDone_t* pIsAlive = NULL;
+      if (pIsAlive == NULL) {
+        pIsAlive = allocBounceBuf(1);
+        *(volatile int*) pIsAlive = 1;
+      }
+
+      if (*(volatile int*) pIsAlive != 1) {
+        INTERNAL_ERROR_V("Node %d did not respond to liveness check "
+                         "in %.1f secs",
+                         (int) node, timeInterval);
+      }
+
+      if (--node == 0) {
+        node = chpl_numNodes - 1;
+      }
+      *(volatile int*) pIsAlive = 0;
+      amRequestLiveness(node, pIsAlive);
+
+      count = countInterval;
+      lastTime = time;
+    }
+  }
 }
 
 
