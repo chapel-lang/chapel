@@ -471,8 +471,7 @@ class LocReplicatedArr {
 
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
   pragma "local field" pragma "unsafe" pragma "no auto destroy"
-  // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
+  // may be re-initialized separately
   var arrLocalRep: [myDom.domLocalRep] eltType;
 
   proc init(type eltType,
@@ -486,14 +485,20 @@ class LocReplicatedArr {
     this.idxType = idxType;
     this.stridable = stridable;
     this.myDom = myDom;
+    // always initialize the elements because in an initialization
+    // context, we won't know which replicand is initialized,
+    // because the RHS could be an arbitrary forall or for expression.
     this.arrLocalRep = this.myDom.domLocalRep.buildArray(eltType,
-                                                         initElts=initElts);
+                                                         initElts=true);
+
+    if initElts == false && !isPODType(eltType) {
+
+      compilerError("ReplicatedDist array initialization is not currently supported for element type " + eltType:string + " - please default-initialize the array");
+    }
   }
 
   proc deinit() {
-    // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(arrLocalRep, deinitElts=false);
+    _do_destroy_array(arrLocalRep, deinitElts=true);
   }
 }
 
@@ -592,18 +597,11 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
 }
 
 override proc ReplicatedArr.dsiElementInitializationComplete() {
-  coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
-    on loc {
-      locArr!.arrLocalRep.dsiElementInitializationComplete();
-    }
-  }
 }
 
 override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc {
-      if deinitElts then
-        _deinitElements(locArr!.arrLocalRep);
       delete locArr;
     }
   }
