@@ -575,9 +575,8 @@ module List {
     }
 
     //
-    // Move all elements following `idx` one position left in memory
-    // so that they begin at index `idx`.  May release memory if
-    // possible.
+    // Shift all elements following "idx" one to the left.
+    // May release memory if possible.
     //
     // This method does not fire destructors, so do so before calling it.
     //
