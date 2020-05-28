@@ -21,7 +21,6 @@ GEN_HEADERS =                                              \
 
 PASSES_SRCS =                                              \
         addInitGuards.cpp                                  \
-        autoLocalAccess.cpp                                \
         buildDefaultFunctions.cpp                          \
         checkNormalized.cpp                                \
         checkParsed.cpp                                    \
