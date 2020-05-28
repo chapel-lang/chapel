@@ -124,7 +124,7 @@ static bool        firstConstructorWarning = true;
 
 void normalize() {
 
-  analyzeArrays();
+  autoLocalAccess();
 
   insertModuleInit();
 

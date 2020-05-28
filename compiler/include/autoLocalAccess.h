@@ -25,7 +25,7 @@
 #include "symbol.h"
 
 // interface for normalize
-void analyzeArrays();
+void autoLocalAccess();
 
 // interface for resolution
 Expr *preFoldMaybeLocalThis(CallExpr *call);

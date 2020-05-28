@@ -505,7 +505,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   }
 }
 
-void analyzeArrays() {
+void autoLocalAccess() {
   if (fAutoLocalAccess) {
     forv_Vec(ForallStmt, forall, gForallStmts) {
       if (forall->optInfo.autoLocalAccessChecked) {
