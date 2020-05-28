@@ -36,15 +36,12 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
-#include "LoopStmt.h"
-#include "resolution.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 #include "typeSpecifier.h"
-#include "view.h"
 #include "wellknown.h"
 
 #include <cctype>

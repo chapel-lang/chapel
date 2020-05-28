@@ -58,8 +58,6 @@ CallExpr::CallExpr(BaseAST* base,
 
   argList.parent = this;
 
-  maybeLocalAccess     = false;
-
   gCallExprs.add(this);
 }
 
@@ -85,8 +83,6 @@ CallExpr::CallExpr(PrimitiveOp* prim,
 
   argList.parent = this;
 
-  maybeLocalAccess = false;
-
   gCallExprs.add(this);
 }
 
@@ -111,8 +107,6 @@ CallExpr::CallExpr(PrimitiveTag prim,
 
   argList.parent = this;
 
-  maybeLocalAccess = false;
-
   gCallExprs.add(this);
 }
 
@@ -136,8 +130,6 @@ CallExpr::CallExpr(const char* name,
   callExprHelper(this, arg5);
 
   argList.parent = this;
-
-  maybeLocalAccess = false;
 
   gCallExprs.add(this);
 }

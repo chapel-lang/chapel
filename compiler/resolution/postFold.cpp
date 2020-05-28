@@ -21,7 +21,6 @@
 #include "postFold.h"
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "expr.h"
@@ -140,7 +139,7 @@ static Expr* postFoldNormal(CallExpr* call) {
 
     if (ret != NULL && ret->immediate != NULL) {
       retval = new SymExpr(ret);
-      
+
       call->replace(retval);
 
     } else if (EnumSymbol* es = toEnumSymbol(fn->getReturnSymbol())) {

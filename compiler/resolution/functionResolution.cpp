@@ -29,7 +29,6 @@
 
 #include "AstCount.h"
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
@@ -2531,11 +2530,6 @@ void resolveCall(CallExpr* call) {
     case PRIM_NEW:
       resolveNew(call);
       break;
-
-    //case PRIM_MAYBE_LOCAL_THIS_STATIC:
-    //case PRIM_MAYBE_LOCAL_THIS_DYNAMIC:
-      //resolveMaybeLocalThis(call);
-      //break;
 
     default:
       break;

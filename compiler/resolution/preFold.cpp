@@ -118,7 +118,7 @@ Expr* preFold(CallExpr* call) {
       retval = tmp;
     }
 
-  } else if (UnresolvedSymExpr *baseURSE = toUnresolvedSymExpr(baseExpr)) {
+  } else if (isUnresolvedSymExpr(baseExpr) == true) {
     if (Expr* tmp = preFoldNamed(call)) {
       retval = tmp;
     }
@@ -135,7 +135,6 @@ Expr* preFold(CallExpr* call) {
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
         // Type constructor calls OK
       } else if (isLcnSymbol(symExpr->symbol()) == true) {
-
         baseExpr->replace(new UnresolvedSymExpr("this"));
 
         call->insertAtHead(baseExpr);
