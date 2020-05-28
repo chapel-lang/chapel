@@ -812,15 +812,11 @@ module ChapelArray {
   // Support for index types
   //
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank == 1 {
-    pragma "unsafe"
-    var x: idxType;
-    return x.type;
+    return idxType;
   }
 
   proc chpl__buildIndexType(param rank: int, type idxType) type where rank > 1 {
-    pragma "unsafe"
-    var x: rank*idxType;
-    return x.type;
+    return rank*idxType;
   }
 
   proc chpl__buildIndexType(param rank: int) type
