@@ -1,2 +1,3 @@
 --n=0 < fasta.small
+--n=0 < fasta-250000.rvcmp  # revcomp-250000.good
 --n=0 < /dev/null           # revcomp-empty.good

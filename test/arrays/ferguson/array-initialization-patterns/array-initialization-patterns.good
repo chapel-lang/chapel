@@ -1,0 +1,194 @@
+test0
+0 0
+test1
+0 0
+test2
+0 0
+test3
+0 0
+test4
+1
+test5
+1
+test6
+1
+test7
+1
+test8
+1
+test9
+{1..2} 1 0
+test10
+{1..2} 1 0
+test11
+{1..2} 1 0
+-
+testr0
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr1 (copy required)
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr2
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr3
+in makeTuple
+init 1 1
+init= 1 1
+deinit 1 1
+done makeTuple
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr4
+init 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+deinit 1 1
+(x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1}) (x = 1, ptr = {xx = 1})
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+deinit 1 1
+-
+testr5
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr6 (copy required)
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr7
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr8
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr9
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr10
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr11
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr12
+init 1 1
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+deinit 1 1
+-
+testr13
+init 1 1
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+deinit 1 1
+-
+testC1
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC2
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC3
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC4
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC5
+init 1 1
+{D = {1..1}, A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC6
+init 1 1
+{D = {1..1}, A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC7
+{xx = 1}
+-
+testR1
+init 1 1
+(A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR2
+init 1 1
+(A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR3
+init 1 1
+(A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR4
+init 1 1
+{A = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testR5
+init 1 1
+(D = {1..1}, A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR6
+init 1 1
+(D = {1..1}, A = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+

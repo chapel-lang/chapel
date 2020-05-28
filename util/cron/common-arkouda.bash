@@ -27,8 +27,8 @@ currentSha=`git rev-parse HEAD`
 # test against Chapel release
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
-  export CHPL_TEST_PERF_CONFIGS="release:v,master:v"
-  git checkout 1.20.0
+  export CHPL_TEST_PERF_CONFIGS="release:v,master"
+  git checkout 1.22.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   $CWD/nightly -cron ${nightly_args}
@@ -37,7 +37,7 @@ function test_release() {
 # test against Chapel master
 function test_master() {
   export CHPL_TEST_PERF_DESCRIPTION=master
-  export CHPL_TEST_PERF_CONFIGS="release:v,master:v"
+  export CHPL_TEST_PERF_CONFIGS="release:v,master"
   git checkout $currentSha
   git clean -ffdx $CHPL_HOME
   $CWD/nightly -cron ${nightly_args}

@@ -171,7 +171,8 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
 
           // Or, if passing a 'const' thing into an 'in' formal,
           // that's OK
-          } else if (formal->intent == INTENT_IN &&
+          } else if ((formal->intent == INTENT_IN ||
+                      formal->originalIntent == INTENT_IN) &&
                      !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
             // OK, not an error
           } else {

@@ -209,7 +209,8 @@ returnInfoCast(CallExpr* call) {
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   }
-  return QualifiedType(t1); // what should qual be here?
+  INT_ASSERT(!isReferenceType(t1));
+  return QualifiedType(t1, QUAL_VAL);
 }
 
 static QualifiedType
@@ -654,9 +655,6 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
-  // dst, aggregate name, field name, type to default-init, value to init from
-  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
-
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
@@ -1080,6 +1078,10 @@ initPrimitive() {
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
+
+  // if the argument is a value, mark it with "no auto destroy"
+  // (no effect on a reference)
+  prim_def(PRIM_STEAL, "steal", returnInfoFirst, false, false);
 
   // Indicates the end of a statement. This is important for the
   // deinitialization location for some variables.

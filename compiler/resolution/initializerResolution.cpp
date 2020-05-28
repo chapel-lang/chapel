@@ -441,7 +441,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       Expr* tail = block->body.tail;
       if (tail->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         VarSymbol* ir_temp = newTemp("ir_temp");
-        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr("chpl__initCopy", tail->copy()));
+        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr(astr_initCopy, tail->copy()));
         tail->insertBefore(tempMove);
         normalize(tempMove);
         tail->replace(new SymExpr(ir_temp));

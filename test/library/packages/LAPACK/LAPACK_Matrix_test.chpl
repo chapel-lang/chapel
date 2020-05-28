@@ -38,14 +38,18 @@ var A_1_col_f_row = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.col
 writeln( A_1_col_f_row.data, "\n", A_1_col_f_row.toString(), "\n" );
 
 // 1.5D data
+var input_1_5_row1: [1..2] real = [3.0, 1.0];
+var input_1_5_row2: [1..2] real = [4.0, 2.0];
 var input_1_5_row: [1..2][1..2] real =
-  [ [3.0, 1.0], 
-    [4.0, 2.0] ];
+  [ input_1_5_row1,
+    input_1_5_row2 ];
 //var A_1_5_row = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.row_major, input_array = input_1_5_row  ); 
 
+var input_1_5_col1: [1..2] real = [3.0, 4.0];
+var input_1_5_col2: [1..2] real = [1.0, 2.0];
 var input_1_5_col: [1..2][1..2] real =
-  [ [3.0, 4.0], 
-    [1.0, 2.0] ];
+  [ input_1_5_col1,
+    input_1_5_col2 ];
 //var A_1_5_col = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.column_major, input_array = input_1_5_col  ); 
 
 

@@ -414,11 +414,30 @@ class LocBlockArr {
   param stridable: bool;
   const locDom: unmanaged LocBlockDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            const locDom: unmanaged LocBlockDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
+  }
+
   proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
     if locRAD != nil then
       delete locRAD;
   }
@@ -849,12 +868,12 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockDom.dsiBuildArray(type eltType) {
+proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
   const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
-                                             stridable, dummyLBD);
+                                             stridable, dummyLBD, false);
   var locArrTemp: [dom.dist.targetLocDom]
         unmanaged LocBlockArr(eltType, rank, idxType, stridable) = dummyLBA;
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
@@ -863,7 +882,8 @@ proc BlockDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
-                                            dom.getLocDom(localeIdx));
+                                            dom.getLocDom(localeIdx),
+                                            initElts=initElts);
       locArrTemp(localeIdx) = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
@@ -999,10 +1019,21 @@ proc BlockArr.setupRADOpt() {
   }
 }
 
-override proc BlockArr.dsiDestroyArr() {
+override proc BlockArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      delete locArr(localeIdx);
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc BlockArr.dsiDestroyArr(param deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
+      if deinitElts then
+        _deinitElements(arr.myElems);
+      delete arr;
     }
   }
 }

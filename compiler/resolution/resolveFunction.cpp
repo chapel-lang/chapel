@@ -742,6 +742,7 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_COERCE_FN) ||
           fn->hasFlag(FLAG_UNREF_FN) ||
           fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
           fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
@@ -761,6 +762,7 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
       fn->hasFlag(FLAG_INIT_COPY_FN)             || // tuple chpl__initCopy
       fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
+      fn->hasFlag(FLAG_COERCE_FN)                || // chpl__coerceCopy/Move
       fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
       fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
@@ -1529,7 +1531,7 @@ void resolveIfExprType(CondStmt* stmt) {
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
       if (typeNeedsCopyInitDeinit(rhs->getValType())) {
-        CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
+        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
         if (isReferenceType(thenType)) {
@@ -1813,6 +1815,9 @@ void insertFormalTemps(FnSymbol* fn) {
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
 
+      // Don't destroy formal temps until the end of the function
+      tmp->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
       if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       if (formal->hasFlag(FLAG_NO_AUTO_DESTROY))
@@ -2013,7 +2018,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      case INTENT_INOUT:
       fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                     tmp,
-                                    new CallExpr("chpl__initCopy", formal)));
+                                    new CallExpr(astr_initCopy, formal)));
 
       tmp->addFlag(FLAG_FORMAL_TEMP);
       tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
@@ -2025,7 +2030,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                       tmp,
-                                      new CallExpr("chpl__initCopy", formal)));
+                                      new CallExpr(astr_initCopy, formal)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -2073,8 +2078,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            // types.
            fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                          tmp,
-                                         new CallExpr("chpl__autoCopy",
-                                                      formal)));
+                                         new CallExpr(astr_autoCopy, formal)));
 
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
@@ -2196,14 +2200,38 @@ static bool insertAndResolveCasts(FnSymbol* fn) {
   return changed;
 }
 
+Type* arrayElementType(Type* arrayType) {
+  AggregateType* at = toAggregateType(arrayType);
+  if (at == NULL) return NULL;
+
+  Symbol* instField = at->getField("_instance", false);
+  if (instField == NULL) return NULL;
+
+  Type* instType = instField->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  if (instClass == NULL) return NULL;
+
+  Symbol* eltTypeField = instClass->getField("eltType", false);
+  if (eltTypeField == NULL) return NULL;
+
+  Type* eltType = eltTypeField->getValType();
+  return eltType;
+}
+
 static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
   if (isSymbol(ast) && ! isShadowVarSymbol(ast))
     return; // do not descend into nested symbols
 
   if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           Type* lhsType = lhs->symbol()->type;
+
+          // PRIM_ASSIGN will set a value in the LHS type,
+          // never set what a reference points to.
+          if (call->isPrimitive(PRIM_ASSIGN))
+            lhsType = lhsType->getValType();
 
           if (lhsType != dtUnknown) {
             Expr*     rhs     = call->get(2);
@@ -2246,14 +2274,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               bool involvesRuntimeType = false;
               {
                 Type* t1 = fromTypeExpr->getValType();
-                Type* t2 = fromExpr->getValType();
+                //Type* t2 = fromExpr->getValType();
 
                 involvesRuntimeType =
-                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-                  t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                // || t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
               }
 
-              bool useAssign = involvesRuntimeType;
+              bool useCoerceCall = involvesRuntimeType;
+              bool useAssign = involvesRuntimeType && !useCoerceCall;
 
               // Use assign (to get error) if coercion isn't normally
               // allowed between these types.
@@ -2269,6 +2298,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 useAssign = true;
               }
 
+
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
@@ -2277,7 +2307,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               // types are the same until runtime (at least without
               // some better smarts in the compiler).
 
-              if (!typesDiffer && !useAssign) {
+              if (!typesDiffer && !useAssign && !useCoerceCall) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
 
@@ -2287,7 +2317,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  toResolve = new CallExpr("chpl__autoCopy", new SymExpr(from));
+                  toResolve = new CallExpr(astr_autoCopy, new SymExpr(from));
                   rhs = toResolve;
 
                 } else if (rhsType->refType == lhsType) {
@@ -2301,6 +2331,63 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 if (toResolve) resolveExpr(toResolve);
 
                 casts.add(move);
+
+              } else if (useCoerceCall) {
+
+                INT_ASSERT(!to->isRef());
+                bool stealRHS = false;
+
+                AggregateType* ir = toAggregateType(from->getValType());
+                if (ir && ir->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+                  // For iterators, set stealRHS based upon whether
+                  // the iterator returns by value.
+                  IteratorInfo* ii = ir->iteratorInfo;
+                  INT_ASSERT(ii);
+                  bool yieldsRefs = ii->getValue->getReturnQualType().isRef();
+                  if (yieldsRefs)
+                    stealRHS = false;
+                  else
+                    stealRHS = true;
+                } else {
+                  // not an iterator, steal if it's a temp
+                  stealRHS = from->hasFlag(FLAG_TEMP) &&
+                             !from->isRef() &&
+                             !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+                             !from->hasFlag(
+                                 FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+                  // but don't steal for arrays with different element types
+                  Type* dstEltType = arrayElementType(fromType->getValType());
+                  Type* srcEltType = arrayElementType(from->getValType());
+
+                  if (dstEltType && srcEltType && dstEltType != srcEltType)
+                  stealRHS = false;
+                }
+
+                CallExpr* callCoerceFn = NULL;
+                if (stealRHS) {
+                  callCoerceFn = new CallExpr(astr_coerceMove,
+                                              fromType, from);
+                } else {
+                  callCoerceFn = new CallExpr(astr_coerceCopy,
+                                              fromType, from);
+                  // Since the initialization pattern normally does not
+                  // require adding an auto-destroy for a call-expr-temp,
+                  // add FLAG_INSERT_AUTO_DESTROY since we're
+                  // copy-initializing from it.
+                  from->addFlag(FLAG_INSERT_AUTO_DESTROY);
+                }
+
+                CallExpr* move = new CallExpr(PRIM_MOVE, to, callCoerceFn);
+
+                call->insertBefore(move);
+
+                // Resolve each of the new CallExprs They need to be resolved
+                // separately since resolveExpr does not recurse.
+                resolveExpr(callCoerceFn);
+                resolveExpr(move);
+
+                call->remove();
 
               } else if (useAssign) {
 
@@ -2333,13 +2420,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // separately since resolveExpr does not recurse.
                 resolveExpr(init);
                 resolveExpr(assign);
-
-                // Enable error messages assignment between local
-                // and distributed domains. It would be better if this
-                // could be handled by some flavor of initializer.
-                CallExpr* check = new CallExpr("chpl_checkCopyInit", to, from);
-                call->insertBefore(check);
-                resolveExpr(check);
 
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
@@ -2429,7 +2509,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // types are the same.
                 // handle reference level adjustments. No cast necessary.
 
-                if (rhsType == lhsType->refType) {
+                if (rhsType == lhs->symbol()->type->refType) {
                   lhs->remove();
                   rhs->remove();
 

@@ -90,10 +90,6 @@ module BytesStringCommon {
   */
   proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
-
-    pragma "fn synchronization free"
-    extern proc qio_decode_char_buf(ref chr:int(32), ref nbytes:c_int,
-                                    buf:c_string, buflen:ssize_t): syserr;
     pragma "fn synchronization free"
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     pragma "fn synchronization free"
@@ -115,25 +111,23 @@ module BytesStringCommon {
     var thisIdx = 0;
     var decodedIdx = 0;
     while thisIdx < length {
-      var cp: int(32);
-      var nbytes: c_int;
-      var bufToDecode = (buff + thisIdx): c_string;
-      var maxbytes = (length - thisIdx): ssize_t;
-      const decodeRet = qio_decode_char_buf(cp, nbytes,
-                                            bufToDecode, maxbytes);
+      const (decodeRet, cp, nBytes) = decodeHelp(buff, length, 
+                                                 thisIdx, 
+                                                 allowEsc=false);
+      var buffToDecode = (buff + thisIdx): c_string;
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
           throw new owned DecodeError();
         }
         else {
-          // if nbytes is 1, then we must have read a single byte and found
-          // that it was invalid, if nbytes is >1 then we must have read
+          // if nBytes is 1, then we must have read a single byte and found
+          // that it was invalid, if nBytes is >1 then we must have read
           // multiple bytes where the last one broke the sequence. But it can
           // be a valid byte itself. So we rewind by 1 in that case
           // we use nInvalidBytes to store how many bytes we are ignoring or
           // replacing
-          const nInvalidBytes = if nbytes==1 then nbytes else nbytes-1;
+          const nInvalidBytes = if nBytes==1 then nBytes else nBytes-1;
           thisIdx += nInvalidBytes;
 
           if policy == decodePolicy.replace {
@@ -142,7 +136,7 @@ module BytesStringCommon {
             // Replacement can cause the string to be larger than initially
             // expected. The Unicode replacement character has codepoint
             // 0xfffd. It is encoded in `encodedReplChar` and its encoded
-            // length is `nbytesRepl`, which is 3 bytes in UTF8. If it is used
+            // length is `nBytesRepl`, which is 3 bytes in UTF8. If it is used
             // in place of a single byte, we may overflow
             expectedSize += 3-nInvalidBytes;
             (ret.buff, ret.buffSize) = bufferEnsureSize(ret.buff, ret.buffSize,
@@ -171,16 +165,68 @@ module BytesStringCommon {
       }
       else {  // we got valid characters
         // do a naive copy
-        bufferMemcpyLocal(dst=ret.buff, src=bufToDecode, len=nbytes,
+        bufferMemcpyLocal(dst=ret.buff, src=buffToDecode, len=nBytes,
                           dst_off=decodedIdx);
-        thisIdx += nbytes;
-        decodedIdx += nbytes;
+        thisIdx += nBytes;
+        decodedIdx += nBytes;
       }
     }
 
     ret.buffLen = decodedIdx;
     ret.buff[ret.buffLen] = 0;
     return ret;
+  }
+
+  /*
+    This function decodeHelp is used to create a wrapper for 
+    qio_decode_char_buf* and qio_decode_char_buf_esc and return 
+    the value of syserr , cp and nBytes.
+      
+      :arg buff: Buffer to decode 
+      
+      :arg buffLen: Size of buffer
+      
+      :arg offset: Starting index of read buffer,
+      
+      :arg allowEsc:  Choice between "qio_decode_char_buf" 
+                      and "qio_decode_char_buf_esc" that allows 
+                      escaped sequences in the string
+    
+    :returns: Tuple of decodeRet, chr and nBytes
+              decodeRet : error code : syserr
+              chr : corresponds to codepoint 
+              nBytes : number of bytes of corresponding UTF-8 encoding
+   */
+  proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int, 
+                  offset:int, allowEsc: bool ) {
+    pragma "fn synchronization free"
+    extern proc qio_decode_char_buf(ref chr:int(32), 
+                                    ref nBytes:c_int,
+                                    buf:c_string,
+                                    buflen:ssize_t): syserr;
+    pragma "fn synchronization free"
+    extern proc qio_decode_char_buf_esc(ref chr:int(32),
+                                        ref nBytes:c_int,
+                                        buf:c_string,
+                                        buffLen:ssize_t): syserr;
+    // esc chooses between qio_decode_char_buf_esc and
+    // qio_decode_char_buf as a single wrapper function 
+    var chr: int(32);
+    var nBytes: c_int;
+    var start = offset:c_int;
+    var multibytes = (buff + start): c_string;
+    var maxbytes = (buffLen - start): ssize_t;
+    var decodeRet: syserr;
+    if(allowEsc) then
+      decodeRet = qio_decode_char_buf_esc(chr, nBytes, 
+                                          multibytes,
+                                          maxbytes);
+    else
+      decodeRet = qio_decode_char_buf(chr, nBytes,
+                                      multibytes, 
+                                      maxbytes);
+
+    return (decodeRet, chr, nBytes);
   }
 
   proc initWithBorrowedBuffer(ref x: ?t, other: t) {
@@ -320,18 +366,25 @@ module BytesStringCommon {
       }
 
       // find the byte range of the given codepoint range
-      const cpRange = intR[x.indices];
       var cpCount = 0;
+      const cpIdxLow = if intR.hasLowBound() && intR.alignedLow:int >= 0
+                          then intR.alignedLow:int
+                          else 0;
+      const cpIdxHigh = if intR.hasHighBound()
+                           then intR.alignedHigh:int
+                           else x.buffLen;
+
       var byteLow = x.buffLen;  // empty range if bounds outside string
       var byteHigh = x.buffLen - 1;
-      if cpRange.high >= 0 {
+
+      if cpIdxHigh >= 0 {
         for (i, nBytes) in x._indexLen() {
-          if cpCount == cpRange.low {
+          if cpCount == cpIdxLow {
             byteLow = i:int;
             if !r.hasHighBound() then
               break;
           }
-          if cpCount == cpRange.high {
+          if cpCount == cpIdxHigh {
             byteHigh = i:int + nBytes-1;
             break;
           }
@@ -596,8 +649,9 @@ module BytesStringCommon {
 
     on __primitive("chpl_on_locale_num",
                    chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
-      const rhsLen = rhs.buffLen;
-      const newLength = lhs.buffLen+rhsLen; //TODO: check for overflow
+      if !safeAdd(lhs.buffLen,rhs.buffLen) then 
+        halt("Buffer overflow allocating string copy data");
+      const newLength = lhs.buffLen + rhs.buffLen;
       //resize the buffer if needed
       if lhs.buffSize <= newLength {
         const requestedSize = max(newLength+1,
@@ -615,7 +669,7 @@ module BytesStringCommon {
         }
       }
       // copy the data from rhs
-      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhsLen,
+      bufferMemcpy(dst=lhs.buff, src_loc=rhs.locale_id, rhs.buff, rhs.buffLen,
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
@@ -679,7 +733,9 @@ module BytesStringCommon {
 
     // TODO Engin: Implement a factory function for this case
     var ret: t;
-    ret.buffLen = sLen * n; // TODO: check for overflow
+    if !safeMul(sLen, n) then 
+      halt("Buffer overflow allocating string copy data");
+    ret.buffLen = sLen * n;
     var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
     ret.buff = buff;
     ret.buffSize = allocSize;

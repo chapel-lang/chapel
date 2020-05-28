@@ -67,6 +67,7 @@
 #include "chpl-mem-sys.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpltypes.h"
 #include "chpl-atomics.h"
 #include "chplcast.h"
 #include "chpl-linefile-support.h"
@@ -102,7 +103,7 @@ static uint64_t debug_flag = 0;
 #define DBGF_MEMMAPS     0x100          // memory maps
 #define DBGF_BARRIER    0x1000          // barriers
 #define DBGF_IN_FILE   0x10000          // output debug info to a file
-#define DBGF_1_NODE    0x20000          // only produce debug for one node 
+#define DBGF_1_NODE    0x20000          // only produce debug for one node
 #define DBGF_NODENAME  0x40000          // produce chpl_nodeID <-> nodename map
 
 static c_nodeid_t debug_nodeID = 0;
@@ -306,7 +307,7 @@ static uint64_t debug_stats_flag = 0;
 //   occurs between the regMemAlloc() return and the regMemPostAlloc()
 //   call, i.e., we continue with the current alloc-defaultInit-register
 //   sequence.
-// 
+//
 //#define PERFSTATS_TIME_ZERO_INIT 1
 
 #define _PSV_C_TYPE      int_least64_t
@@ -882,7 +883,7 @@ static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
 static mpool_idx_t rf_done_pool_i;
 
 static inline
-mpool_idx_base_t rf_done_next_pool_i(void) 
+mpool_idx_base_t rf_done_next_pool_i(void)
 {
   return mpool_idx_finc(&rf_done_pool_i) & (RF_DONE_NUM_POOLS - 1);
 }
@@ -935,8 +936,7 @@ mpool_idx_base_t rf_done_next_pool_i(void)
 // spawns are usually between 128 and 512 bytes.
 //
 typedef enum {
-  fork_op_nil,
-  fork_op_small_call,
+  fork_op_small_call = CHPL_ARG_BUNDLE_KIND_COMM, // impl-nonspecific on-stmt
   fork_op_large_call,
   fork_op_put,
   fork_op_get,
@@ -949,7 +949,7 @@ typedef enum {
 #define FORK_OP_BITS 3
 
 typedef struct {
-  unsigned char op: FORK_OP_BITS;    // operation
+  chpl_arg_bundle_kind_t op;         // operation
   c_nodeid_t    caller;              // requesting locale
   rf_done_t*    rf_done;             // where to indicate completion
 #ifdef CHPL_COMM_DEBUG
@@ -957,29 +957,20 @@ typedef struct {
 #endif
 } fork_base_info_t;
 
-typedef struct {
-  fork_base_info_t b;
-
-  c_sublocid_t  subloc;  // target sublocale
-  unsigned char fast:          1;
-  unsigned char blocking:      1;
-  unsigned short payload_size;
-  chpl_fn_int_t fid;
-
-  // TODO: is there a way to "compress" this?
-  chpl_task_ChapelData_t state;
-} fork_small_call_info_t;
-
 #define MAX_SMALL_CALL_PAYLOAD 1024
 #define FORK_T_MAX_SIZE \
-  (sizeof(fork_small_call_info_t) + MAX_SMALL_CALL_PAYLOAD)
+  (sizeof(chpl_comm_on_bundle_t) + MAX_SMALL_CALL_PAYLOAD)
 
 
 typedef struct {
-  fork_small_call_info_t b;
-  c_sublocid_t           subloc;  // target sublocale
-  unsigned int           arg_size;
-  void*                  arg;
+  chpl_comm_on_bundle_t hdr;
+  unsigned char         space[MAX_SMALL_CALL_PAYLOAD];
+} fork_small_call_info_t;
+
+
+typedef struct {
+  chpl_comm_on_bundle_t hdr;
+  void*                 p_payload;
 } fork_large_call_info_t;
 
 
@@ -1035,19 +1026,14 @@ typedef struct {
   fork_base_info_t b;
 } fork_shutdown_info_t;
 
-typedef struct {
-  unsigned char buf[FORK_T_MAX_SIZE];
-} fork_space_t;
-
 typedef union fork_t {
   fork_base_info_t b;
-  fork_small_call_info_t sc;
+  fork_small_call_info_t sc;  // present only to set the max req size
   fork_large_call_info_t lc;
   fork_xfer_info_t x;
   fork_free_info_t f;
   fork_amo_info_t  a;
   fork_shutdown_info_t s;
-  fork_space_t bytes; // get fork_t to be >= FORK_T_MAX_SIZE bytes
 } fork_t;
 
 typedef struct {
@@ -1057,23 +1043,9 @@ typedef struct {
 } nb_fork_t;
 
 typedef struct {
-  chpl_task_bundle_t task;
+  chpl_task_bundle_t hdr;
   fork_xfer_info_t x;
 } fork_xfer_task_t;
-
-typedef struct {
-  chpl_task_bundle_t task;
-  fork_large_call_info_t large;
-} fork_large_call_task_t;
-
-typedef struct {
-  // unlike xfer/large call, need comm_on_bundle here for two reasons:
-  //  1) the generated code puts a comm_on_bundle_t as the first field
-  //     in any argument bundle for an on-statement
-  //  2) we need somewhere to store information to indicate completion.
-  chpl_comm_on_bundle_t bundle;
-  unsigned char buf[MAX_SMALL_CALL_PAYLOAD];
-} fork_small_call_task_t;
 
 #ifdef CHPL_COMM_DEBUG
 static int _fork_req_bufs_per_cd = 2;
@@ -1348,7 +1320,7 @@ static atomic_bool amo_res_pool_lock[AMO_RES_NUM_POOLS];
 static mpool_idx_t amo_res_pool_i;
 
 static inline
-mpool_idx_base_t amo_res_next_pool_i(void) 
+mpool_idx_base_t amo_res_next_pool_i(void)
 {
   return mpool_idx_finc(&amo_res_pool_i) & (AMO_RES_NUM_POOLS - 1);
 }
@@ -1458,7 +1430,7 @@ static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*);
 static void      fork_call_wrapper_blocking(chpl_comm_on_bundle_t*);
-static void      fork_call_wrapper_large(fork_large_call_task_t*);
+static void      fork_call_wrapper_large(fork_large_call_info_t*);
 static void      fork_get_wrapper(fork_xfer_task_t*);
 static size_t    do_amo_on_cpu(fork_amo_cmd_t, void*, void*, void*, void*);
 static void      fork_amo_wrapper(fork_amo_info_t*);
@@ -1514,7 +1486,7 @@ static void      fork_free(c_nodeid_t, void*);
 static void      fork_amo(fork_t*, c_nodeid_t);
 static void      fork_shutdown(c_nodeid_t);
 static void      do_fork_post(c_nodeid_t, chpl_bool,
-                              uint64_t, fork_base_info_t* const, int*, int*);
+                              uint64_t, fork_base_info_t*, int*, int*);
 static void      acquire_comm_dom(void);
 static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
@@ -1652,13 +1624,13 @@ static char* sprintf_rf_req(int loc, void* f_in)
   switch (op) {
   case fork_op_small_call:
     {
-      fork_small_call_info_t* pc = (fork_small_call_info_t*) f;
+      chpl_comm_bundleData_t* pc = &((chpl_comm_on_bundle_t*) f)->comm;
 
       snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
-               "ftable[%d](%d bytes)%s%s",
-               pc->fid, (int) pc->payload_size,
+               "ftable[%d](%zd bytes)%s%s",
+               pc->fid, pc->size,
                pc->fast ? ", fast" : "",
-               pc->blocking ? "" : ", nb");
+               (pc->rf_done != NULL) ? "" : ", nb");
     }
     break;
 
@@ -1667,14 +1639,13 @@ static char* sprintf_rf_req(int loc, void* f_in)
       fork_large_call_info_t* lc = (fork_large_call_info_t*) f;
 
       snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
-               "ftable[%d](%d bytes) (arg %p %d)%s%s, large",
-               lc->b.fid, (int) lc->b.payload_size,
-               lc->arg, (int) lc->arg_size,
-               lc->b.fast ? ", fast" : "",
-               lc->b.blocking ? "" : ", nb");
+               "large call (payload %p) ftable[%d](%zd bytes)%s",
+               lc->p_payload,
+               lc->hdr.comm.fid, lc->hdr.comm.size,
+               (lc->hdr.comm.rf_done != NULL) ? "" : ", nb");
 
-      assert(lc->arg != NULL);
-      assert(lc->arg_size > 0);
+      assert(lc->p_payload != NULL);
+      assert(lc->hdr.comm.size > 0);
     }
     break;
 
@@ -1761,8 +1732,8 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
-  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
-  if (task_prvData != NULL) return &task_prvData->comm_data;
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  if (infoRuntime != NULL) return &infoRuntime->comm_data;
   return NULL;
 }
 
@@ -1893,10 +1864,6 @@ int32_t chpl_comm_getMaxThreads(void)
 
 void chpl_comm_init(int *argc_p, char ***argv_p)
 {
-  // Sanity check: a maximal small call fits into a fork_t
-  assert(sizeof(fork_small_call_info_t)+MAX_SMALL_CALL_PAYLOAD
-         <= sizeof(fork_t));
-
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
@@ -3133,7 +3100,7 @@ void make_registered_heap(void)
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-  
+
   //
   // On Gemini-based systems, if necessary reduce the heap size until
   // we can fit all the registered pages in the NIC TLB.  Otherwise,
@@ -3292,7 +3259,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // count won't drop below the index of that region, because we can't
   // remove the region until after it's registered and we can't finish
   // registering it without faulting in all its pages.
-  // 
+  //
   // Also note that although we replicate the format of the "official"
   // message chpl_memhook_check_post() produces, we can't just call it
   // directly or use the same functions as it does, because they're not
@@ -4250,52 +4217,28 @@ void rf_handler(gni_cq_entry_t* ev)
   switch (f->b.op) {
   case fork_op_small_call:
     DBG_P_LP(DBGF_RF, "forkFrom(%d) %s",
-             (int) req_li, sprintf_rf_req(-1, f)); 
+             (int) req_li, sprintf_rf_req(-1, f));
     {
-      fork_small_call_info_t* f_c = (fork_small_call_info_t*) f;
-      
-      // Reconstruct the chpl_comm_on_bundle_t and copy the arguments to it
-      fork_small_call_task_t space;
-      chpl_comm_on_bundle_t* on_bundle = &space.bundle;
+      chpl_comm_on_bundle_t* f_c = (chpl_comm_on_bundle_t*) f;
 
-      size_t payload_size = f_c->payload_size;
-      size_t bundle_size;
-      chpl_fn_p fn;
-
-      // Copy task state (e.g. serial state) to space.
-      on_bundle->task_bundle.state = f_c->state;
-
-      // Copy the payload to space.
-      // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
-      // and it refers to the memory just after that structure.
-      // Also note that we could copy to space.buf directly, but
-      // it's possible for the C compiler to add padding before the buf field.
-      memcpy(on_bundle + 1, f_c + 1, payload_size);
-      bundle_size = sizeof(chpl_comm_on_bundle_t) + payload_size;
-
-      if (f_c->fast) {
-        chpl_ftable_call(f_c->fid, on_bundle);
-        indicate_done(&f_c->b);
+      if (f_c->comm.fast) {
+        chpl_ftable_call(f_c->comm.fid, f);
+        indicate_done2(f_c->comm.caller, (rf_done_t*) f_c->comm.rf_done);
         // doesn't call release_req_buf, because that
         // is handled on the sender side for fast forks
-      }
-      else {
-        if (f_c->blocking)
+      } else {
+        chpl_fn_p fn;
+
+        if (f_c->comm.rf_done != NULL) {
           fn = (chpl_fn_p) fork_call_wrapper_blocking;
-        else
-          fn = (chpl_fn_p) chpl_ftable[f_c->fid];
-
-        // Save fid, caller, ack so the wrapper function can use these.
-        // these are saved in the comm portion of the on_bundle.
-        on_bundle->comm.fid = f_c->fid;
-        on_bundle->comm.caller = f_c->b.caller;
-        on_bundle->comm.rf_done = f_c->b.rf_done;
-
-        chpl_task_startMovedTask(f_c->fid,
+        } else {
+          fn = (chpl_fn_p) chpl_ftable[f_c->comm.fid];
+        }
+        chpl_task_startMovedTask(f_c->comm.fid,
                                  fn,
-                                 chpl_comm_on_bundle_task_bundle(on_bundle),
-                                 bundle_size,
-                                 f_c->subloc,
+                                 f_c,
+                                 f_c->comm.size,
+                                 f_c->comm.subloc,
                                  chpl_nullTaskID);
 
         release_req_buf(req_li, req_cdi, req_rbi);
@@ -4305,26 +4248,15 @@ void rf_handler(gni_cq_entry_t* ev)
 
   case fork_op_large_call:
     DBG_P_LP(DBGF_RF, "forkFrom(%d) %s",
-             (int) req_li, sprintf_rf_req(-1, f)); 
+             (int) req_li, sprintf_rf_req(-1, f));
+
     {
-      fork_large_call_info_t* f_lc = (fork_large_call_info_t*) f;
-      fork_small_call_info_t* f_c = &f_lc->b;
-      
-      // Create a task bundle to complete a large call
-      fork_large_call_task_t bundle;
-
-      // Copy task state (e.g. serial state) to space.
-      bundle.task.state = f_c->state;
-
-      // copy the fork_large_call_info_t to it
-      bundle.large = *f_lc;
-
-      chpl_task_startMovedTask(f_c->fid,
+      fork_large_call_info_t* lc = (fork_large_call_info_t*) f;
+      lc->hdr.kind = fork_op_small_call;  // was large_call, to direct us here
+      chpl_task_startMovedTask(FID_NONE,
                                (chpl_fn_p) fork_call_wrapper_large,
-                               &bundle.task, sizeof(fork_large_call_task_t),
-                               f_c->subloc,
-                               chpl_nullTaskID);
-
+                               lc, sizeof(*lc),
+                               lc->hdr.comm.subloc, chpl_nullTaskID);
       release_req_buf(req_li, req_cdi, req_rbi);
     }
     break;
@@ -4347,11 +4279,11 @@ void rf_handler(gni_cq_entry_t* ev)
              (int) req_li, sprintf_rf_req((int) req_li, f));
 
     {
-      fork_xfer_task_t bundle = {.x = f->x};
-
+      fork_xfer_task_t bundle = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
+                                  .x = f->x};
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) fork_get_wrapper,
-                               &bundle.task, sizeof(fork_xfer_task_t),
+                               &bundle, sizeof(bundle),
                                c_sublocid_any, chpl_nullTaskID);
     }
     break;
@@ -4394,75 +4326,65 @@ void rf_handler(gni_cq_entry_t* ev)
   }
 }
 
+
 static
 void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
 {
-  // Call the on body 
+  // Call the on body
   chpl_ftable_call(f->comm.fid, f);
-
-  //
-  // In the blocking case, let the caller know we're done.  It will free
-  // the copy of the argument it made on our behalf.  In the nonblocking
-  // case, we have to do a remote fork back to the initiating locale to
-  // free that argument ourselves.
-  //
-
   indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
-  
+
+
 static
-void fork_call_wrapper_large(fork_large_call_task_t* f)
+void fork_call_wrapper_large(fork_large_call_info_t* lc)
 {
-  fork_large_call_info_t* lc = &f->large;
-  int caller;
-  chpl_comm_on_bundle_t* bundle;
-  chpl_bool blocking;
-  size_t arg_size;
-  void* remote_arg = NULL;
-  rf_done_t* rf_done;
- 
-  blocking = lc->b.blocking;
-  caller   = lc->b.b.caller;
-  rf_done  = lc->b.b.rf_done;
+  chpl_comm_bundleData_t* comm = &lc->hdr.comm;
+  int caller = comm->caller;
+  chpl_bool blocking = (comm->rf_done != NULL);
 
-  remote_arg = lc->arg;
-  arg_size   = lc->arg_size;
+  assert(lc->p_payload);
+  assert(comm->size > 0);
 
-  assert(remote_arg);
-  assert(arg_size > 0);
+  //
+  // TODO: We could stack-allocate "bundle" here, if it was small enough
+  //       (TBD) not to create the potential for stack overflow.  On an
+  //       XC the network is fast enough that saving the dynamic alloc
+  //       should be performance-visible.
+  //
 
-  // Allocate a buffer to hold the complete on bundle
-  bundle = chpl_mem_alloc(arg_size, CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
+  // Build a new bundle out of the header we got in the request to us
+  // plus the payload copied from the initiating side.
+  chpl_comm_on_bundle_t* bundle = chpl_mem_alloc(comm->size,
+                                                 CHPL_RT_MD_COMM_FRK_RCV_INFO,
+                                                 0, 0);
+  *bundle = lc->hdr;
 
-  // Get the complete on-bundle from the initiating side.
-  do_remote_get(bundle, caller, remote_arg, arg_size, may_proxy_true);
+  size_t payload_size = comm->size - offsetof(chpl_comm_on_bundle_t, payload);
+  do_remote_get(&bundle->payload, caller, lc->p_payload, payload_size,
+                may_proxy_true);
 
-  // In the large nonblocking case, we have to do a remote fork back to the
-  // initiating locale to free that argument ourselves. This can be
-  // done before the user code starts running in order to reduce
-  // memory pressure.
+  // In the nonblocking case, the "original" payload we just retrieved
+  // is actually a copy on the initiating node, and we need to do a
+  // remote fork back there to free it.  It might also be a copy in
+  // the blocking case, but if so that's handled by the initiator.
   if (!blocking) {
-    fork_free(caller, remote_arg);
+    fork_free(caller, lc->p_payload);
   }
-  
-  // Call the on body 
-  chpl_ftable_call(lc->b.fid, bundle);
 
-  // Free the bundle we just allocated. 
+  // Call the on body
+  chpl_ftable_call(bundle->comm.fid, bundle);
+
+  // Free the bundle we just allocated.
   chpl_mem_free(bundle, 0, 0);
 
-  //
-  // In the blocking case, let the caller know we're done.  It will free
-  // the copy of the argument it made on our behalf.  In the nonblocking
-  // case, we have to do a remote fork back to the initiating locale to
-  // free that argument ourselves.
-  //
   if (blocking) {
     // Blocking forks need to notify the caller that the
     // request has completed.
-    indicate_done2(caller, rf_done);
+    indicate_done2(caller, comm->rf_done);
   }
 }
+
 
 static
 void fork_get_wrapper(fork_xfer_task_t* f)
@@ -5285,7 +5207,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
       if (size <= gbp_max_size) {
         //
         // The transfer will fit in a single trampoline buffer.
-        // 
+        //
         src_addr_xmit = get_buf_alloc(size);
         memcpy(src_addr_xmit, src_addr, size);
         fork_get(src_addr_xmit, locale, tgt_addr, size);
@@ -5295,7 +5217,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
         //
         // The transfer is larger than the largest trampoline buffer.
         // Do it in pieces.
-        // 
+        //
         src_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
@@ -5810,7 +5732,7 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
          .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -5921,7 +5843,7 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
- 
+
   int vi = info->vi;
   info->tgt_addr_v[vi] = tgt_addr;
   info->locale_v[vi] = locale;
@@ -5994,7 +5916,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
         //
         // The transfer is larger than the largest trampoline buffer.
         // Do it in pieces.
-        // 
+        //
         tgt_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
@@ -7121,7 +7043,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7148,7 +7070,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7175,7 +7097,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7199,41 +7121,45 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
                       chpl_comm_on_bundle_t* arg, size_t arg_size,
                       chpl_bool fast, chpl_bool blocking)
 {
-  size_t payload_size = arg_size - sizeof(chpl_comm_on_bundle_t);
-  size_t small_msg_size = payload_size + sizeof(fork_small_call_info_t);
-  int small = small_msg_size <= sizeof(fork_t);
-  int large = !small;
-  // heapCopyLargeArg is set below and is only relevant when large=true
-  int heapCopyLargeArg = false;
-  size_t f_size;
+  int small = arg_size <= sizeof(fork_t);
   int cdi;
   int rbi;
-  chpl_bool do_fast_fork = fast && !large;
-  chpl_comm_on_bundle_t *large_arg = NULL;
-  fork_base_info_t *req = NULL;
-  fork_t f;
-
-
-  fork_base_info_t hdr = { .op           = ( large ?
-                                             fork_op_large_call :
-                                             fork_op_small_call ),
-                           .caller       = chpl_nodeID,
-                           .rf_done      = NULL };
-
-  fork_small_call_info_t sc = { .b            = hdr,
-                                .subloc       = subloc,
-                                .fast         = do_fast_fork,
-                                .blocking     = blocking,
-                                .payload_size = payload_size,
-                                .fid          = fid,
-                                .state        = arg->task_bundle.state };
-
-  fork_small_call_info_t *f_sc = &f.sc;
 
   if (locale < 0 || locale >= chpl_numNodes)
     CHPL_INTERNAL_ERROR("fork_call_common(): remote locale out of range");
 
-  if (large) {
+  fast = fast && small;  // large requests cannot run in the AM handler
+
+  arg->comm = (chpl_comm_bundleData_t)
+              { .fast = fast,
+                .fid = fid,
+                .caller = chpl_nodeID,
+                .subloc = subloc,
+                .size = arg_size,
+              };
+
+  if (small) {
+    //
+    // The arg bundle will fit in one of our request buffers.  Just
+    // send it.
+    //
+    arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
+    DBG_SET_SEQ(arg->comm.seq);
+    DBG_P_LP(DBGF_RF, "forkTo(%d) %s",
+             (int) locale,
+             sprintf_rf_req(locale, arg));
+    PERFSTATS_INC(fork_call_small_cnt);
+
+    do_fork_post(locale, blocking, arg_size, (fork_base_info_t*) arg,
+                 &cdi, &rbi);
+
+    //
+    // For fast forks, we free the remote fork request buffer on this
+    // side.  In all other cases the target side frees it.
+    //
+    if (fast)
+      *SEND_SIDE_FORK_REQ_FREE_ADDR(locale, cdi, rbi) = true;
+  } else {
     //
     // The argument is too large to send directly in the request, so the
     // target locale will have to GET it from us.  We must guarantee the
@@ -7247,81 +7173,46 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
     // instead of the original.  The remote locale will free the copy
     // with a remote fork_op_free back to our locale.
     //
-    // If the arg passed to us isn't in a registered region we should
-    // also copy it, but only if the copy will likely be in registered
-    // memory.  By copying it we save the target side the overhead of
-    // doing an executeOn back to us to PUT the large arg to themself,
-    // since if it's not in registered memory here they won't be able
-    // to GET it directly.
+    // Even for a blocking request, however, if the arg passed to us is
+    // not in a registered region we should duplicate it into registered
+    // memory.  Otherwise we'll incur an extra network round trip for
+    // the target side to do an executeOn back here to PUT the large arg
+    // to itself.
     //
-    if (!blocking ||
-        (get_hugepage_size() > 0 && mreg_for_local_addr(arg) == NULL)) {
-      heapCopyLargeArg = true;
+    arg->kind = fork_op_large_call;
+    fork_large_call_info_t req = { .hdr = *arg,
+                                   .p_payload = &arg->payload, };
+
+    chpl_bool heap_copy_arg = !blocking
+                              || (get_hugepage_size() > 0
+                                  && mreg_for_local_addr(arg) == NULL);
+
+    if (heap_copy_arg) {
+      size_t payload_size = arg_size
+                            - offsetof(chpl_comm_on_bundle_t, payload);
+      req.p_payload = chpl_mem_allocMany(payload_size, sizeof(char),
+                                         CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
+      memcpy(req.p_payload, &arg->payload, payload_size);
     }
 
-    if (heapCopyLargeArg) {
-      large_arg = chpl_mem_allocMany(arg_size, sizeof(char),
-                                     CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
-
-      memcpy(large_arg, arg, arg_size);
-    } else {
-      large_arg = arg;
-    }
-    payload_size = sizeof(fork_large_call_info_t) - 
-                   sizeof(fork_small_call_info_t);
-    sc.payload_size = payload_size;
-  }
-
-
-  if (!large) {
-    // Copy the header into the fork_t
-    f.sc = sc;
-    // Now copy the payload after it
-    // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
-    // and it refers to the memory just after that structure.
-    memcpy(f_sc + 1,
-           arg + 1,
-           payload_size);
-    f_size = small_msg_size;
-  } else {
-    // Copy the header into the fork_t
-    f.lc.b = sc;
-    // Set the pointer for the large call
-    f.lc.arg      = large_arg;
-    f.lc.arg_size = arg_size;
-    f_size = sizeof(fork_large_call_info_t);
-  }
-
-  req = &f_sc->b;
-
-  DBG_SET_SEQ(req->seq);
-  DBG_P_LP(DBGF_RF, "forkTo(%d) %s",
-           (int) locale,
-           sprintf_rf_req(locale, req));
-  if (!large) {
-    PERFSTATS_INC(fork_call_small_cnt);
-  } else {
+    DBG_SET_SEQ(req.hdr.comm.seq);
+    DBG_P_LP(DBGF_RF, "forkTo(%d) %s",
+             (int) locale,
+             sprintf_rf_req(locale, &req));
     PERFSTATS_INC(fork_call_large_cnt);
+
+    do_fork_post(locale, blocking, sizeof(req), (fork_base_info_t*) &req,
+                 &cdi, &rbi);
+
+    //
+    // If blocking, if we heap-copied the payload free that now.  The
+    // nonblocking case has to be handled from the target side, since
+    // only there do we know when we don't need the copy any more.
+    //
+    if (heap_copy_arg && blocking) {
+      chpl_mem_free(req.p_payload, 0, 0);
+    }
   }
-
-  //
-  // Send the request to the target.
-  //
-  do_fork_post(locale, blocking, f_size, req, &cdi, &rbi);
-  
-  //
-  // For fast forks, we free the remote fork request buffer on this
-  // side.  In all other cases the target side frees it.
-  //
-  if (do_fast_fork)
-    *SEND_SIDE_FORK_REQ_FREE_ADDR(locale, cdi, rbi) = true;
-
-  //
-  // For blocking large forks, we free any allocated argument now.
-  // For nonblocking large forks, it will be freed by an AM
-  // that the spawned task sends us.
-  if (blocking && heapCopyLargeArg)
-    chpl_mem_free(large_arg, 0, 0);
 }
 
 
@@ -7330,7 +7221,6 @@ void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 {
   fork_base_info_t hdr = { .op       = fork_op_put,
                            .caller   = chpl_nodeID,
-                           .rf_done  = NULL // set in do_fork_post
                          };
 
 
@@ -7359,12 +7249,14 @@ void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 static
 void fork_get(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 {
-  fork_base_info_t hdr = { .op       = fork_op_get,
-                           .caller   = chpl_nodeID,
-                           .rf_done  = NULL // set in do_fork_post
-                         };
+  //
+  // TODO: If the data we want the target to have is small enough we
+  //       could just put it directly in the request, only using the
+  //       GET-from-target technique for large transfers.
+  //
 
-  fork_xfer_info_t req = { .b = hdr,
+  fork_xfer_info_t req = { .b = { .op = fork_op_get,
+                                  .caller = chpl_nodeID },
                            .tgt = raddr,
                            .src = addr,
                            .size = size };
@@ -7440,6 +7332,7 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
                sizeof(p_rf_req->a), &p_rf_req->a.b, NULL, NULL);
 }
 
+
 static
 void fork_shutdown(c_nodeid_t locale)
 {
@@ -7464,9 +7357,10 @@ void fork_shutdown(c_nodeid_t locale)
 static
 void do_fork_post(c_nodeid_t locale,
                   chpl_bool blocking,
-                  uint64_t f_size, fork_base_info_t* const p_rf_req,
+                  uint64_t f_size, fork_base_info_t* p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
+  rf_done_t**            p_rf_done_addr = NULL;
   rf_done_t              stack_rf_done;
   gni_post_descriptor_t  stack_post_desc;
   gni_post_descriptor_t* post_desc_p;
@@ -7481,19 +7375,22 @@ void do_fork_post(c_nodeid_t locale,
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
+    p_rf_done_addr = (p_rf_req->op == fork_op_small_call
+                      || p_rf_req->op == fork_op_large_call)
+                     ? (rf_done_t**)
+                       &((chpl_comm_on_bundle_t*) p_rf_req)->comm.rf_done
+                     : &p_rf_req->rf_done;
     if (mreg_for_local_addr(&stack_rf_done) != NULL) {
-      p_rf_req->rf_done = &stack_rf_done;
+      *p_rf_done_addr = &stack_rf_done;
     } else {
-      p_rf_req->rf_done = rf_done_alloc();
+      *p_rf_done_addr = rf_done_alloc();
     }
-    *p_rf_req->rf_done = 0;
+    **p_rf_done_addr = 0;
     chpl_atomic_thread_fence(memory_order_release);
 
     stack_post_desc = (gni_post_descriptor_t) { 0 };
     post_desc_p = &stack_post_desc;
   } else {
-    p_rf_req->rf_done = NULL;
-
     // Initialize free flag on first call
     if (nb_fork_num == -1) {
       int i;
@@ -7558,7 +7455,11 @@ void do_fork_post(c_nodeid_t locale,
                                GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx,
                                                       rbi)));
   DBG_P_LPS(DBGF_RF, "post %s",
-            locale, cd_idx, rbi, p_rf_req->seq,
+            locale, cd_idx, rbi,
+            ((p_rf_req->op == fork_op_small_call
+              || p_rf_req->op == fork_op_large_call)
+             ? ((chpl_comm_on_bundle_t*) p_rf_req)->comm.seq
+             : p_rf_req->seq),
             fork_op_name(p_rf_req->op));
 
   if (blocking) {
@@ -7568,13 +7469,13 @@ void do_fork_post(c_nodeid_t locale,
     post_fma_and_wait(locale, post_desc_p, blocking);
 
     PERFSTATS_INC(wait_rfork_cnt);
-    while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
+    while (! *(volatile rf_done_t*) *p_rf_done_addr) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
       local_yield();
     }
 
-    if (p_rf_req->rf_done != &stack_rf_done)
-      rf_done_free(p_rf_req->rf_done);
+    if (*p_rf_done_addr != &stack_rf_done)
+      rf_done_free(*p_rf_done_addr);
   } else {
     //
     // Initiate the transaction and if we're out of space retire at least one
@@ -8047,7 +7948,7 @@ void local_yield(void)
     // Without a comm domain, just yield.
     //
     PERFSTATS_INC(tskyield_in_lyield_no_cd_cnt);
-    if (can_task_yield()) 
+    if (can_task_yield())
       chpl_task_yield();
     else
       sched_yield();

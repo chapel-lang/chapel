@@ -978,29 +978,48 @@ module List {
       var result = 0;
 
       on this {
+        var src_i, dst_i: int;
+        var removed = 0;
+        src_i = 0;
+
         _enter();
 
-        var removed = 0;
-
-        for i in 0..#(_size - removed) {
-          ref item = _getRef(i);
-        
-          // TODO: Reduce total work to O(n) by marking holes?
-          if x == item {
-            _destroy(item);
-            _collapse(i);
+        // Run through the leading non-x prefix
+        while dst_i < _size {
+          ref dst = _getRef(dst_i);
+          if dst == x {
+            _destroy(dst);
             removed += 1;
-          }
-
-          if count > 0 && removed >= count then
             break;
+          }
+          dst_i += 1;
         }
-        
-        _maybeReleaseMem(removed);
-        _size = _size - removed;
-        result = removed;
+
+        // Once we've found an x, everything after has to be _move()d.
+        // Run src_i ahead, moving everything that isn't x back to dst_i.
+        src_i = dst_i + 1;
+        while src_i < _size {
+          ref src = _getRef(src_i);
+          if (count == 0 || removed < count) && src == x {
+            _destroy(src);
+            src_i += 1;
+            removed += 1;
+            continue;
+          }
+          ref dst = _getRef(dst_i);
+          _move(src, dst);
+          src_i += 1;
+          dst_i += 1;
+        }
+
+        if (removed) {
+          _maybeReleaseMem(removed);
+          _size = _size - removed;
+        }
 
         _leave();
+
+        result = removed;
       }
 
       return result;

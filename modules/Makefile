@@ -70,6 +70,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
+	standard/Builtins.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \

@@ -654,6 +654,7 @@ module HeapSort {
 pragma "no doc"
 module InsertionSort {
   import Sort.defaultComparator;
+  import Sort.ShallowCopy;
   /*
    Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
@@ -689,6 +690,37 @@ module InsertionSort {
       }
       if (!inserted) {
         Data[low] = ithVal;
+      }
+    }
+  }
+
+  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("insertionSort() requires 1-D array");
+    }
+
+    const low = lo,
+          high = hi,
+          stride = abs(Dom.stride);
+
+    for i in low..high by stride {
+      pragma "no auto destroy"
+      var ithVal = ShallowCopy.shallowCopyInit(Data[i]);
+
+      var inserted = false;
+      for j in low..i-stride by -stride {
+        if chpl_compare(ithVal, Data[j], comparator) < 0 {
+          ShallowCopy.shallowCopy(Data[j+stride], Data[j]);
+        } else {
+          ShallowCopy.shallowCopy(Data[j+stride], ithVal);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) {
+        ShallowCopy.shallowCopy(Data[low], ithVal);
       }
     }
   }
@@ -950,7 +982,9 @@ module QuickSort {
         if cmp > 0 then
           break;
         if cmp == 0 {
-          ShallowCopy.shallowSwap(Data[a], Data[b]);
+          if a != b {
+            ShallowCopy.shallowSwap(Data[a], Data[b]);
+          }
           a += 1; // one more equal element (on left)
         }
         b += 1; // one more categorized element
@@ -1086,9 +1120,9 @@ module QuickSort {
           mid = lo + (hi-lo+1)/2;
     var piv = mid;
 
-    if hi - lo < minlen {
+    if hi - lo < 0 { // minlen {
       // base case -- use insertion sort
-      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+      InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
       return;
     } else if hi <= lo {
       // nothing to sort

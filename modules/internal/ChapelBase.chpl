@@ -46,42 +46,6 @@ module ChapelBase {
       compilerError("illegal use of '", op, "' on operands of type uint(64) and signed integer");
   }
 
-  //
-  // compile-time diagnostics
-  //
-  // Note: the message printed by "error" and "warning" primitives
-  // consists of the formals of the enclosing function, not their own args.
-  //
-
-  proc compilerError(param msg: string ...?n, param errorDepth: int) {
-    __primitive("error");
-  }
-
-  proc compilerError(param msg: string ...?n) {
-    __primitive("error");
-  }
-
-  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
-    __primitive("warning");
-  }
-
-  proc compilerWarning(param msg: string ...?n) {
-    __primitive("warning");
-  }
-
-  proc compilerAssert(param test: bool)
-  { if !test then compilerError("assert failed"); }
-
-  proc compilerAssert(param test: bool, param errorDepth: int)
-  { if !test then compilerError("assert failed", errorDepth + 1); }
-
-  proc compilerAssert(param test: bool, param msg: string ...?n)
-  { if !test then compilerError("assert failed - ", (...msg)); }
-
-  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
-  { if !test then compilerError("assert failed - ", (...msg), errorDepth + 1); }
-
-
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"
@@ -112,11 +76,9 @@ module ChapelBase {
   pragma "last resort" // so user-supplied assignment will override this one.
     // The CG pragma is needed because this function interferes with
     // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType) where isBorrowedOrUnmanagedClassType(a.type)
-  {
-    if isNonNilableClassType(a.type) {
-      compilerError("cannot assign to " + a.type:string + " from nil");
-    }
+  inline proc =(ref a, b:_nilType)
+  where isBorrowedOrUnmanagedClassType(a.type) &&
+        !isNonNilableClassType(a.type) {
     __primitive("=", a, nil);
   }
 
@@ -889,11 +851,6 @@ module ChapelBase {
   //
   // More primitive funs
   //
-  pragma "function terminates program"
-  inline proc exit(status: int=0) {
-    __primitive("chpl_exit_any", status);
-  }
-
   enum ArrayInit {heuristicInit, noInit, serialInit, parallelInit};
   config param chpl_defaultArrayInitMethod = ArrayInit.heuristicInit;
 
@@ -918,7 +875,8 @@ module ChapelBase {
     }
   }
 
-  proc init_elts(x, s, type t, lo=0:s.type) : void {
+  // s is the number of elements, t is the element type
+  proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
 
     // no need to init an array of zeros
@@ -966,6 +924,13 @@ module ChapelBase {
     if initMethod == ArrayInit.parallelInit && !rootLocaleInitialized {
       initMethod = ArrayInit.serialInit;
     }
+
+    return initMethod;
+  }
+
+  proc init_elts(x, s, type t, lo=0:s.type) : void {
+
+    var initMethod = init_elts_method(s, t);
 
     // Q: why is the declaration of 'y' in the following loops?
     //
@@ -1039,28 +1004,61 @@ module ChapelBase {
     return _ddata_sizeof_element(x.type);
   }
 
-  inline proc _ddata_allocate(type eltType, size: integral,
-                              subloc = c_sublocid_none,
-                              param initElts: bool=true) {
+  // Never initializes elements
+  //
+  // if callPostAlloc=true, then _ddata_allocate_postalloc should
+  // be called after the elements are initialized.
+  //
+  //
+  // Cyclic/Block will function OK if postAlloc isn't called yet
+  // during initialization and a PUT e.g. occurs.
+  //
+  // List could never call postAlloc or call it immediately
+  //   -> calling it immediately should result in allocating domain owning it
+  //   -> never calling it should result in always using bounce buffers
+  //
+  // Associative array - makes sense to call postAlloc
+  //  after touching memory in usual order
+  //
+
+  inline proc _ddata_allocate_noinit(type eltType, size: integral,
+                                     out callPostAlloc: bool,
+                                     subloc = c_sublocid_none) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
                                      subloc: chpl_sublocID_t,
                                      ref callPostAlloc: bool): c_void_ptr;
     var ret: _ddata(eltType);
-    var callPostAlloc: bool;
     ret = chpl_mem_array_alloc(size:size_t, _ddata_sizeof_element(ret),
                                subloc, callPostAlloc):ret.type;
+    return ret;
+  }
+
+  inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
+                                         eltSize: size_t);
+    chpl_mem_array_postAlloc(data:c_void_ptr, size:size_t,
+                             _ddata_sizeof_element(data));
+  }
+
+  inline proc _ddata_allocate(type eltType, size: integral,
+                              subloc = c_sublocid_none,
+                              param initElts: bool=true) {
+    var callPostAlloc: bool;
+    var ret: _ddata(eltType);
+
+    ret = _ddata_allocate_noinit(eltType, size, callPostAlloc, subloc);
+
     if initElts then
       init_elts(ret, size, eltType);
+
     if callPostAlloc {
-      pragma "fn synchronization free"
-      pragma "insert line file info"
-      extern proc chpl_mem_array_postAlloc(data: c_void_ptr, nmemb: size_t,
-                                           eltSize: size_t);
-      chpl_mem_array_postAlloc(ret:c_void_ptr, size:size_t,
-                               _ddata_sizeof_element(ret));
+      _ddata_allocate_postalloc(ret, size);
     }
+
     return ret;
   }
 
@@ -1083,15 +1081,22 @@ module ChapelBase {
     param needsDestroy = __primitive("needs auto destroy",
                                      __primitive("deref", oldDdata[0]));
     if needsDestroy && (oldSize > newSize) {
-      forall i in newSize..oldSize-1 do
-        chpl__autoDestroy(oldDdata[i]);
+      if _deinitElementsIsParallel(eltType) {
+        forall i in newSize..oldSize-1 do
+          chpl__autoDestroy(oldDdata[i]);
+      } else {
+        for i in newSize..oldSize-1 do
+          chpl__autoDestroy(oldDdata[i]);
+      }
     }
 
     const newDdata = chpl_mem_array_realloc(oldDdata: c_void_ptr, oldSize.safeCast(size_t),
                                    newSize.safeCast(size_t),
                                    _ddata_sizeof_element(oldDdata),
                                    subloc, callPostAlloc): oldDdata.type;
+
     init_elts(newDdata, newSize, eltType, lo=oldSize);
+
     if (callPostAlloc) {
       pragma "fn synchronization free"
       pragma "insert line file info"
@@ -1632,42 +1637,6 @@ module ChapelBase {
 
   inline proc _cast(type t:chpl_anybool, x: chpl_anyimag)
     return if x != 0i then true else false;
-
-  pragma "dont disable remote value forwarding"
-  pragma "no copy return"
-  pragma "no borrow convert"
-  pragma "suppress lvalue error"
-  pragma "unsafe"
-  inline proc _createFieldDefault(type t, init) {
-    if isNonNilableClassType(t) && isNilableClassType(init.type) then
-      compilerError("default-initializing a field with a non-nilable type ",
-          t:string, " from an instance of nilable ", init.type:string);
-
-    pragma "no auto destroy" var x: t = init;
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "no borrow convert"
-  pragma "no copy return"
-  pragma "unsafe"
-  inline proc _createFieldDefault(type t, param init) {
-    pragma "no auto destroy" var x: t = init;
-    return x;
-  }
-
-  pragma "dont disable remote value forwarding"
-  pragma "no borrow convert"
-  pragma "no copy return"
-  pragma "unsafe"
-  inline proc _createFieldDefault(type t, init: _nilType) {
-    if isNonNilableClassType(t) then
-      compilerError("default-initializing a field with a non-nilable type ",
-                    t:string, " from nil");
-
-    pragma "no auto destroy" var x: t;
-    return x;
-  }
 
   pragma "init copy fn"
   inline proc chpl__initCopy(type t) type {
@@ -2447,8 +2416,6 @@ module ChapelBase {
   inline proc _removed_cast(in x) {
     return x;
   }
-
-  proc chpl_checkCopyInit(lhs, rhs) param { }
 
   proc enumerated type {
     compilerWarning("'enumerated' is deprecated - please use 'enum' instead");

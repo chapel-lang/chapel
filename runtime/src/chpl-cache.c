@@ -2687,8 +2687,9 @@ struct rdcache_s* tls_cache_remote_data(void) {
 static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
-  chpl_task_prvData_t* task_local = chpl_task_getPrvData();
-  return &task_local->comm_data.cache_data;
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  assert(infoRuntime);
+  return &infoRuntime->comm_data.cache_data;
 }
 
 static
@@ -2964,4 +2965,3 @@ void chpl_cache_set_enabled(int enabled)
 
 #endif
 // end ifdef HAS_CHPL_CACHE_FNS
-
