@@ -284,22 +284,22 @@ isDmap
 isDmapValue
 isDmapType
 
-domain(1,int(64),false)
+domain(1,int(64),false,bounded)
 isDomain
 isDomainValue
 isDomainType
 
-domain(2,uint(32),true)
+domain(2,uint(32),true,bounded)
 isDomain
 isDomainValue
 isDomainType
 
-[domain(1,int(64),false)] int(64)
+[domain(1,int(64),false,bounded)] int(64)
 isArray
 isArrayValue
 isArrayType
 
-[domain(2,uint(32),true)] uint(16)
+[domain(2,uint(32),true,bounded)] uint(16)
 isArray
 isArrayValue
 isArrayType

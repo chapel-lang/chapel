@@ -343,7 +343,8 @@ proc AccumStencil.dsiDisplayRepresentation() {
 }
 
 override proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
-                                  param stridable: bool, inds) {
+                                  param stridable: bool,
+                                  param boundedType: BoundedRangeType, inds) {
   if idxType != this.idxType then
     compilerError("AccumStencil domain index type does not match distribution's");
   if rank != this.rank then

@@ -65,6 +65,7 @@ module ExternalArray {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
                                                stridable=false,
+                                               boundedType=BoundedRangeType.bounded,
                                                inds=(0..#value.num_elts,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged DefaultRectangularArr(eltType=eltType,

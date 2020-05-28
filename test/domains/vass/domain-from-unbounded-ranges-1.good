@@ -1,1 +1,1 @@
-domain-from-unbounded-ranges-1.chpl:2: error: one of domain's dimensions is not a bounded range
+domain-from-unbounded-ranges-1.chpl:3: error: Default Associative domains with idxType=domain(1,int(64),false,bounded) are not allowed

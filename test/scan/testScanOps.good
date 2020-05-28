@@ -1,4 +1,4 @@
-Testing type '[domain(1,int(64),false)] int(64)'
+Testing type '[domain(1,int(64),false,bounded)] int(64)'
 + scan
   Success
 min scan
@@ -58,7 +58,7 @@ minloc scan
 ^ scan
   Success
 
-Testing type '[domain(1,int(64),false)] real(64)'
+Testing type '[domain(1,int(64),false,bounded)] real(64)'
 + scan
   Success
 min scan
@@ -100,7 +100,7 @@ maxloc scan
 minloc scan
   Success
 
-Testing type '[domain(1,int(64),false)] bool'
+Testing type '[domain(1,int(64),false,bounded)] bool'
 && scan
   Success
 || scan

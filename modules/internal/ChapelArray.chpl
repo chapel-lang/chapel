@@ -2679,10 +2679,6 @@ module ChapelArray {
       if boundsChecking then
         checkSlice(d, _value);
 
-      // create a bounded domain by slicing our domain with the argument
-      pragma "no auto destroy" var D = this.domain((...d.getIndices()));
-      d._value._free_when_no_arrs = true;
-
       //
       // If this is already a slice array view, we can short-circuit
       // down to the underlying array.
@@ -2692,8 +2688,8 @@ module ChapelArray {
                               else (this._value, this._pid);
 
       var a = new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                              _DomPid=D._pid,
-                                              dom=D._instance,
+                                              _DomPid=d._pid,
+                                              dom=d._instance,
                                               _ArrPid=arrpid,
                                               _ArrInstance=arr);
 
