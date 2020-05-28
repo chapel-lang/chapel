@@ -888,7 +888,7 @@ override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
       if deinitElts {
         for subdom in do_dsiLocalSubdomains(arr!.indexDom) {
           forall j in subdom {
-            chpl__autoDestroy(dsiAccess(j));
+            chpl__autoDestroy(arr(j));
           }
         }
       }
