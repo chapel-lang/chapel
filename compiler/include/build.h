@@ -35,6 +35,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ImportStmt;
 class ModuleSymbol;
 class Type;
 
@@ -70,10 +71,10 @@ BlockStmt* buildUseStmt(Expr* mod, const char* rename,
 BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
                         std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
-BlockStmt* buildImportStmt(Expr* mod, bool privateImport);
-BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport);
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                           bool privateImport);
+ImportStmt* buildImportStmt(Expr* mod);
+ImportStmt* buildImportStmt(Expr* mod, const char* rename);
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names);
+void setImportPrivacy(BlockStmt* list, bool isPrivate);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
