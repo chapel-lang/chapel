@@ -1098,22 +1098,29 @@ module DefaultAssociative {
     // Internal associative array interface
     //
 
+
     // internal helper
     proc _doDefaultInitSlot(slot: int, inAdd: bool) {
-      if (isNonNilableClass(eltType)) {
+      //
+      // TODO: Add case checking for tuples containing non-default initial-
+      // izable elements to primitive "type has default value".
+      //
+      if !isDefaultInitializable(eltType) {
         if inAdd {
-          halt("Can't resize domains whose arrays' elements don't have default values");
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
         } else {
-          halt("Can't default initialize associative arrays whose elements have no default value");
+          halt("Can't default initialize associative arrays whose " +
+               "elements have no default value");
         }
+      } else {
+        // default initialize an element and move it in to the
+        // uninitialized storage.
+        pragma "no auto destroy"
+        var initval: eltType; // default initialize
+        ref dst = data[slot];
+        __primitive("=", dst, initval);
       }
-
-      // default initialize an element and move it in to the
-      // uninitialized storage.
-      pragma "no auto destroy"
-      var initval: eltType; // default initialize
-      ref dst = data[slot];
-      __primitive("=", dst, initval);
     }
 
     override proc _defaultInitSlot(slot: int) {

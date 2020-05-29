@@ -3695,11 +3695,25 @@ module ChapelArray {
     // These types cannot be default initialized
     if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
       return false;
+    } else if isRecordType(t) || isTupleType(t) {
+      // TODO: The current implementations of isPODType and
+      //       supportedDataTypeForBulkTransfer do not completely align. I'm
+      //       leaving it as future work to enable bulk transfer for other
+      //       types that are POD. In the long run it seems like we should be
+      //       able to have only one method for supportedDataType that just
+      //       calls isPODType.
+
+      // We can bulk transfer any record or tuple that is 'Plain Old Data'
+      // ie. a bag of bits
+      return isPODType(t);
+    } else if (isUnionType(t)) {
+      return false;
     } else {
       pragma "unsafe" var x:t;
       return chpl__supportedDataTypeForBulkTransfer(x);
     }
   }
+
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
@@ -3709,19 +3723,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
-    // TODO: The current implementations of isPODType and
-    //       supportedDataTypeForBulkTransfer do not completely align. I'm
-    //       leaving it as future work to enable bulk transfer for other types
-    //       that are POD. In the long run it seems like we should be able to
-    //       have only one method for supportedDataType that just calls
-    //       isPODType.
 
-    // We can bulk transfer any record or tuple that is 'Plain Old Data' ie. a
-    // bag of bits
-    return isPODType(t);
-  }
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   // TODO -- why is the below line here?
   proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
