@@ -1032,10 +1032,10 @@ private
 iter do_dsiLocalSubdomains(indexDom) {
   param rank = indexDom.rank;
   type idxType = indexDom.idxType;
+  const blockSizes = indexDom.globDom.dist.blocksize;
+  const globDims = indexDom.globDom.whole.dims();
   for i in indexDom.myStarts {
     var temp : rank*range(idxType);
-    const blockSizes = indexDom.globDom.dist.blocksize;
-    const globDims = indexDom.globDom.whole.dims();
     for param j in 0..rank-1 {
       var lo: idxType;
       if rank == 1 then lo = i;
