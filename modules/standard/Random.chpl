@@ -1113,7 +1113,7 @@ module Random {
 
         if !isBoundedRange(x) {
           throw new owned IllegalArgumentError('input range must be bounded');
-          dom = {1..2}; // this is a workaround for issue #TODO
+          dom = {1..2}; // this is a workaround for issue #15691
         } else {
           dom = {x};
         }

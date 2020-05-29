@@ -1,4 +1,5 @@
 bug: incorrect use-before-def error due to if-throw-else-don't pattern
+#15691
 
 This program demonstrates that when we have a conditional that throws
 along one branch and not the other, we sometimes get an incorrect
