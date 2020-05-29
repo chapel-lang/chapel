@@ -53,7 +53,7 @@ within strings.
 Casts from String to a Numeric Type
 -----------------------------------
 
-This module supports casts from :record:`string` to numeric types. Such casts
+This module supports casts from :mod:`String` to numeric types. Such casts
 will convert the string to the numeric type and throw an error if the string
 is invalid. For example:
 
@@ -91,7 +91,7 @@ Non-Unicode Data and Chapel Strings
 
 For doing string operations on non-Unicode or arbitrary data, consider using
 :record:`~Bytes.bytes` instead of string. However, there may be cases where
-:record:`string` must be used with non-Unicode data. Examples of this are file
+:mod:`String` must be used with non-Unicode data. Examples of this are file
 system and path operations on systems where UTF-8 file names are not enforced.
 
 
@@ -1194,10 +1194,10 @@ module String {
   }
   
   /*
-     Gets a version of the :record:`string` that is on the currently
+     Gets a version of the :mod:`String` that is on the currently
      executing locale.
 
-     :returns: A shallow copy if the :record:`string` is already on the
+     :returns: A shallow copy if the :mod:`String` is already on the
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
@@ -1210,11 +1210,11 @@ module String {
   }
 
   /*
-    Get a `c_string` from a :record:`string`.
+    Get a `c_string` from a :mod:`String`.
 
     .. warning::
 
-        This can only be called safely on a :record:`string` whose home is
+        This can only be called safely on a :mod:`String` whose home is
         the current locale.  This property can be enforced by calling
         :proc:`string.localize()` before :proc:`~string.c_str()`. If the
         string is remote, the program will halt.
@@ -1230,7 +1230,7 @@ module String {
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
-        :record:`string`. The returned `c_string` is only valid when used
+        :mod:`String`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
   inline proc string.c_str(): c_string {
@@ -1238,7 +1238,7 @@ module String {
   }
   
   /*
-    Returns a :record:`~Bytes.bytes` from the given :record:`string`. If the
+    Returns a :record:`~Bytes.bytes` from the given :mod:`String`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
         
@@ -1328,7 +1328,7 @@ module String {
 
   /*
     Iterates over the string character by character, yielding 1-codepoint
-    strings. (A synonym for :iter:`items`)
+    strings. (A synonym for :iter:`string.items`)
 
     For example:
 
@@ -1470,7 +1470,7 @@ module String {
   }
 
   /*
-    Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+    Return the `i` th codepoint in the string. (A synonym for :proc:`string.item`)
 
     :returns: A string with the complete multibyte character starting at the
               specified codepoint index from ``0..#string.numCodepoints``
@@ -1480,7 +1480,7 @@ module String {
   }
 
   /*
-    Return the `i` th codepoint in the string. (A synonym for :proc:`item`)
+    Return the `i` th codepoint in the string. (A synonym for :proc:`string.item`)
 
     :returns: A string with the complete multibyte character starting at the
               specified codepoint index from ``1..string.numCodepoints``
@@ -2116,7 +2116,6 @@ module String {
     }
     return result;
   }
-  //FIND END
 
   //
   // Assignment functions
