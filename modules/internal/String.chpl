@@ -500,12 +500,18 @@ module String {
     return x != 0;
   // End index arithmetic support
 
-  private proc validateEncoding(buf, len) throws {
-    extern proc chpl_enc_validate_buf(buf, len) : c_int;
-
-    if chpl_enc_validate_buf(buf, len) != 0 {
+  private proc validateEncoding(buf, len): int throws {
+    var numCodepoints: int;
+    extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
+    
+    if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
     }
+    extern proc printf(s...);
+
+    printf("%d", numCodepoints);
+    
+    return numCodepoints;
   }
 
   private proc stringFactoryArgDepr() {
@@ -606,7 +612,7 @@ module String {
   inline proc createStringWithBorrowedBuffer(x: bufferType,
                                              length: int, size: int) throws {
     var ret: string;
-    validateEncoding(x, length);
+    ret.cacheSize = validateEncoding(x, length);
     initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
@@ -693,7 +699,7 @@ module String {
   inline proc createStringWithOwnedBuffer(x: bufferType,
                                           length: int, size: int) throws {
     var ret: string;
-    validateEncoding(x, length);
+    ret.cacheSize = validateEncoding(x, length);
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
@@ -836,6 +842,7 @@ module String {
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
+    var cacheSize: int = -1;
     var buff: bufferType = nil;
     var isOwned: bool = true;
     var hasEscapes: bool = false;
@@ -1163,7 +1170,7 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc string.size return numCodepoints;
+  inline proc string.size return cacheSize;
 
   /*
     :returns: The indices that can be used to index into the string
@@ -1181,16 +1188,20 @@ module String {
               string is correctly-encoded UTF-8.
   */
   proc string.numCodepoints {
-    var localThis: string = this.localize();
-    var n = 0;
-    var i = 0;
-    while i < localThis.buffLen {
-      i += 1;
-      while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
+    if(cacheSize == -1) {
+      var localThis: string = this.localize();
+      var n = 0;
+      var i = 0;
+      while i < localThis.buffLen {
         i += 1;
-      n += 1;
-    }
-    return n;
+        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
+          i += 1;
+        n += 1;
+      }
+      return n;
+      } else {
+        return cacheSize;
+      }
   }
   
   /*
