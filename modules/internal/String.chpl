@@ -70,7 +70,7 @@ is invalid. For example:
 stores the value ``1`` in ``number``.
 
 To learn more about handling these errors, see the
-
+:ref:`Error Handling technical note <readme-errorHandling>`.
 
 Unicode Support
 ---------------
