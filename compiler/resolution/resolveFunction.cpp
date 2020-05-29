@@ -2122,14 +2122,16 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      }
     }
 
-    fn->insertAtHead(new DefExpr(tmp));
+    if (formal->getValType() != dtNothing) {
+      fn->insertAtHead(new DefExpr(tmp));
 
-    // For inout or out intent, this assigns the modified value back to the
-    // formal at the end of the function body.
-    if (formal->intent == INTENT_INOUT) {
-      fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
-    } else if (formal->intent == INTENT_OUT) {
-      fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
+      // For inout or out intent, this assigns the modified value back to the
+      // formal at the end of the function body.
+      if (formal->intent == INTENT_INOUT) {
+        fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
+      } else if (formal->intent == INTENT_OUT) {
+        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
+      }
     }
   }
 }
