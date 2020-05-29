@@ -419,7 +419,7 @@ module ChapelHashtable {
 
       // Note that when adding elements, if a deleted slot is encountered,
       // later slots need to be checked for the value.
-      // That is why this uses the function to look for filled slots.
+      // That is why this uses the same function that looks for filled slots.
       (foundSlot, slotNum) = _findSlot(key);
 
       if slotNum >= 0 {
@@ -570,25 +570,23 @@ module ChapelHashtable {
         // races. So it's not as simple as using forall here.
         for oldslot in _allSlots(oldSize) {
           if oldTable[oldslot].status == chpl__hash_status.full {
-            // move the key and value into local variables
-            var stealKey: keyType = _moveToReturn(oldTable[oldslot].key);
-            var stealVal: valType = _moveToReturn(oldTable[oldslot].val);
-
+            ref oldEntry = oldTable[oldslot];
             // find a destination slot
-            var (foundSlot, newslot) = _findSlot(stealKey);
+            var (foundSlot, newslot) = _findSlot(oldEntry.key);
             if foundSlot {
-              halt("duplicate element found while resizing for key ", stealKey);
+              halt("duplicate element found while resizing for key ",
+                   oldEntry.key);
             }
             if newslot < 0 {
               halt("couldn't add element during resize - got slot ", newslot,
-                   " for key ", stealKey);
+                   " for key ", oldEntry.key);
             }
 
-            // move the local variable into the destination slot
+            // move the key and value from the old entry into the new one
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            _moveInit(dstSlot.key, stealKey);
-            _moveInit(dstSlot.val, stealVal);
+            _moveInit(dstSlot.key, _moveToReturn(oldEntry.key));
+            _moveInit(dstSlot.val, _moveToReturn(oldEntry.val));
 
             // move array elements to the new location
             rehashHelpers.moveElementDuringRehash(oldslot, newslot);
