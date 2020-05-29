@@ -508,7 +508,7 @@ module String {
       throw new DecodeError();
     }
     extern proc printf(s...);
-    printf("validate encoding");
+    printf("validate encoding\n");
     
     return numCps;
   }
@@ -700,9 +700,9 @@ module String {
   inline proc createStringWithOwnedBuffer(x: bufferType,
                                           length: int, size: int) throws {
     var ret: string;
-    ret.cpNum = validateEncoding(x, length);
+    ret.cachedNumCodepoints = validateEncoding(x, length);
     extern proc printf(s...);
-    printf("owned buffer");
+    printf("owned buffer\n");
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
@@ -736,6 +736,8 @@ module String {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     initWithNewBuffer(ret, x);
+    extern proc printf(s...);
+    printf("new buffer\n");
     return ret;
   }
 
@@ -845,7 +847,7 @@ module String {
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
-    var cpNum: int = -1;
+    var cachedNumCodepoints: int = -1;
     var buff: bufferType = nil;
     var isOwned: bool = true;
     var hasEscapes: bool = false;
@@ -1175,8 +1177,8 @@ module String {
   */
   inline proc string.size {
     extern proc printf(s...);
-    printf("size called");
-    return cpNum;
+    printf("size called\n");
+    return cachedNumCodepoints;
   }
 
   /*
@@ -1195,7 +1197,7 @@ module String {
               string is correctly-encoded UTF-8.
   */
   proc string.numCodepoints {
-    if(cpNum  == -1) {
+    if(cachedNumCodepoints  == -1) {
       var localThis: string = this.localize();
       var n = 0;
       var i = 0;
@@ -1207,7 +1209,7 @@ module String {
       }
       return n;
       } else {
-        return cpNum;
+        return cachedNumCodepoints;
       }
   }
   

@@ -105,6 +105,7 @@ module BytesStringCommon {
     ret.buffSize = allocSize;
     ret.isOwned = true;
     ret.hasEscapes = false;
+    ret.cachedNumCodepoints = 0;
 
     var expectedSize = ret.buffSize;
 
@@ -115,6 +116,8 @@ module BytesStringCommon {
                                                  thisIdx, 
                                                  allowEsc=false);
       var buffToDecode = (buff + thisIdx): c_string;
+
+      ret.cachedNumCodepoints += 1;
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
