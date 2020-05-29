@@ -1,1 +1,1 @@
-init-field-dflt-nonnil-unmanaged-from-oknil-nil.chpl:11: error: default-initializing a field with a non-nilable type unmanaged MyClass from nil
+init-field-dflt-nonnil-unmanaged-from-oknil-nil.chpl:8: error: Cannot initialize lhs of non-nilable type 'unmanaged MyClass' from nil

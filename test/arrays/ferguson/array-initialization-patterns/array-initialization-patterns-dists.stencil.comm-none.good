@@ -1,0 +1,112 @@
+initial array is 0
+-
+test0
+0 0
+test1
+0 0
+test2
+0 0
+test3
+0 0
+test4
+1
+test5
+1
+test6
+1
+test7
+1
+test8
+1
+testrDefault
+init (default)
+(x = 0, ptr = {xx = 0})
+deinit 0 0
+-
+globalA is (x = 1, ptr = {xx = 1})
+-
+testr0
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr1 (copy required)
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr2
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr3
+in makeTuple
+init 1 1
+init= 1 1
+deinit 1 1
+done makeTuple
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr4
+init 1 1
+init= 1 1
+init= 1 1
+init= 1 1
+deinit 1 1
+deinit 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+deinit 1 1
+-
+testr5
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr6 (copy required)
+init= 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testC1
+init 1 1
+{AA = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC2
+init 1 1
+{AA = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC3
+init 1 1
+{AA = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testC4
+init 1 1
+{AA = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-
+testR1
+init 1 1
+(AA = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR2
+init 1 1
+(AA = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR3
+init 1 1
+(AA = (x = 1, ptr = {xx = 1}))
+deinit 1 1
+-
+testR4
+init 1 1
+{AA = (x = 1, ptr = {xx = 1})}
+deinit 1 1
+-

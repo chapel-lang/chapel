@@ -372,8 +372,25 @@ class DimensionalArr : BaseRectangularArr {
 class LocDimensionalArr {
   type eltType;
   const locDom;  // a LocDimensionalDom
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myStorageArr: [locDom.myStorageDom] eltType;
+
+  proc init(type eltType,
+            const locDom,
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.locDom = locDom;
+    this.myStorageArr = this.locDom.myStorageDom.buildArray(eltType,
+                                                            initElts=initElts);
+  }
+
+  proc deinit() {
+    // Elements in myStorageArr are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myStorageArr, deinitElts=false);
+  }
 }
 
 
@@ -936,7 +953,7 @@ proc DimensionalArr.isAlias
 //== creation and destruction
 
 // create a new array over this domain
-proc DimensionalDom.dsiBuildArray(type eltType)
+proc DimensionalDom.dsiBuildArray(type eltType, param initElts:bool)
 {
   _traceddd(this, ".dsiBuildArray");
   if rank != 2 then
@@ -949,7 +966,8 @@ proc DimensionalDom.dsiBuildArray(type eltType)
   coforall (loc, locDdesc, locAdesc)
    in zip(dist.targetLocales, localDdescs, localAdescsTemp) do
     on loc do
-      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc);
+      locAdesc = new unmanaged LocDimensionalArr(eltType, locDdesc,
+                                                 initElts=initElts);
 
   var localAdescsNN = localAdescsTemp!; //#15080
   const result = new unmanaged DimensionalArr(rank = rank,
@@ -1076,10 +1094,22 @@ override proc DimensionalArr.dsiPostReallocate() {
   // nothing for now
 }
 
-override proc DimensionalArr.dsiDestroyArr() {
-  coforall desc in localAdescs do
-    on desc do
+override proc DimensionalArr.dsiElementInitializationComplete() {
+  coforall desc in localAdescs {
+    on desc {
+      desc.myStorageArr.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc DimensionalArr.dsiDestroyArr(param deinitElts:bool) {
+  coforall desc in localAdescs {
+    on desc {
+      if deinitElts then
+        _deinitElements(desc.myStorageArr);
       delete desc;
+    }
+  }
 }
 
 

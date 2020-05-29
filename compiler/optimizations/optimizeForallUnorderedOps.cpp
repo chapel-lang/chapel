@@ -196,7 +196,12 @@ static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
-    if (call->isNamed("=")) {
+    if (call->isPrimitive(PRIM_ASSIGN)) {
+      Symbol* lhs = toSymExpr(call->get(1))->symbol();
+      Expr* rhs = call->get(2);
+      if (lhs->getValType() == rhs->getValType()) // same type
+        return true;
+    } else if (call->isNamed("=")) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Symbol* rhs = toSymExpr(call->get(2))->symbol();
       if (lhs->getValType() == rhs->getValType()) // same type
@@ -872,16 +877,17 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
 
 
 static void transformAssignStmt(Expr* stmt) {
+  SET_LINENO(stmt);
+
   CallExpr* call = toCallExpr(stmt);
 
   INT_ASSERT(call->isPrimitive(PRIM_ASSIGN));
 
   Symbol* lhs = toSymExpr(call->get(1))->symbol();
-  Symbol* rhs = toSymExpr(call->get(2))->symbol();
-
+  Expr* rhs = call->get(2);
   CallExpr* callToRemove = NULL;
 
-  if (rhs->isRef() == false) {
+  if (isSymExpr(rhs) && rhs->isRef() == false) {
     // Find a pattern like
     //
     // move rhs PRIM_DEREF rhsRef
@@ -892,13 +898,14 @@ static void transformAssignStmt(Expr* stmt) {
     //
     // PRIM_ASSIGN lhs rhsRef
     //
+    Symbol* rhsSym = toSymExpr(rhs)->symbol();
     Symbol* rhsRef = NULL;
     CallExpr* prevCall = toCallExpr(call->prev);
     if (prevCall != NULL) {
       if (prevCall->isPrimitive(PRIM_MOVE) ||
           prevCall->isPrimitive(PRIM_ASSIGN)) {
         Symbol* prevLhs = toSymExpr(prevCall->get(1))->symbol();
-        if (prevLhs == rhs) {
+        if (prevLhs == rhsSym) {
           if (CallExpr* rhsCall = toCallExpr(prevCall->get(2))) {
             if (rhsCall->isPrimitive(PRIM_DEREF))
               rhsRef = toSymExpr(rhsCall->get(1))->symbol();
@@ -912,12 +919,11 @@ static void transformAssignStmt(Expr* stmt) {
 
     if (rhsRef != NULL && prevCall != NULL) {
       callToRemove = prevCall;
-      rhs = rhsRef;
+      rhs = new SymExpr(rhsRef);
     }
   }
 
   if (lhs->isRef() && rhs->isRef()) {
-    SET_LINENO(call);
     // add the call to getput
     if (fReportOptimizeForallUnordered) {
       if (developer || printsUserLocation(call)) {
@@ -925,7 +931,7 @@ static void transformAssignStmt(Expr* stmt) {
       }
     }
 
-    call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs));
+    call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs->copy()));
     call->remove();
     if (callToRemove)
       callToRemove->remove();

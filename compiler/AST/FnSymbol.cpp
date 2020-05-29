@@ -907,11 +907,11 @@ bool FnSymbol::isCompilerGenerated() const {
 }
 
 bool FnSymbol::isInitializer() const {
-  return isMethod() == true && strcmp(name, "init")     == 0;
+  return isMethod() == true && name == astrInit;
 }
 
 bool FnSymbol::isPostInitializer() const {
-  return isMethod() == true && strcmp(name, "postinit") == 0;
+  return isMethod() == true && name == astrPostinit;
 }
 
 bool FnSymbol::isDefaultInit() const {

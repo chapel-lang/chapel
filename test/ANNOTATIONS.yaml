@@ -492,9 +492,13 @@ array-of-strings-read:
   12/11/18:
     - Turn off some range halts for --no-checks (#11780)
   05/24/19:
-    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+    - make codepoint indexing/iteration the default (#12899)
   08/01/19:
     - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  05/05/20:
+    - Rework the helper for string/bytes slicing (#15615)
+  05/20/20:
+    - Remove string.indices from getView (#15653)
 
 arr-forall:
   03/24/15:
@@ -633,10 +637,18 @@ create-views:
     - Close some multilocale distribution and privatization memleaks (#14510)
   12/10/19:
     - Guard privatization checks with param flag (#14604)
+  04/16/20:
+    - Close a leak with creating iterator records with domain shapes (#15512)
+  04/29/20:
+    - Put param conditionals before others in domain record initialization (#15591)
 
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
+
+dist-performance.cc:
+  04/29/20:
+    - Use workaround to enable lifetime checking for lists of borrowed classes (#15575)
 
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
@@ -1492,6 +1504,8 @@ regexdnaredux-submitted:
 remote-ons.ml-perf:
   05/17/19:
     - Avoid comm/compute overlap for short-lived tasks (#12964)
+  05/13/20:
+    - Reorganize arg bundles in the runtime (#15660)
 
 remote-record-read-copy:
   11/15/18:
@@ -1646,9 +1660,13 @@ stream-spmd-barrier:
 
 substring:
   05/24/19:
-    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+    - make codepoint indexing/iteration the default (#12899)
   08/01/19:
     - Take advantage of known UTF-8 encoding to speed up strings (#13580)
+  05/05/20:
+    - Rework the helper for string/bytes slicing (#15615)
+  05/20/20:
+    - Remove string.indices from getView (#15653)
 
 taskSpawn:
   07/24/16:
@@ -1664,11 +1682,15 @@ temporary-copies:
   12/11/18:
     - Turn off some range halts for --no-checks (#11780)
   05/24/19:
-    - Add the byteIndex type and its support, make string.find() return it, and make codepoint indexing/iteration the default (#12899)
+    - make codepoint indexing/iteration the default (#12899)
   08/01/19:
     - Take advantage of known UTF-8 encoding to speed up strings (#13580)
   02/20/20:
     - Add 1st draft of copy elision (#14903)
+  05/05/20:
+    - Rework the helper for string/bytes slicing (#15615)
+  05/20/20:
+    - Remove string.indices from getView (#15653)
 
 twopt-paircount:
   06/22/17:
@@ -1817,3 +1839,18 @@ topTotalTime:
   <<: *compiler-perf-base
 topPasses:
   <<: *compiler-perf-base
+
+arkouda: &arkouda-base
+  04/22/20:
+    - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
+  04/28/20:
+    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+      config: chapcs
+  04/28/20:
+    - text: Move XC testing from login to elogin node
+      config: 16-node-xc
+  05/20/20:
+    - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
+
+arkouda-comp:
+  <<: *arkouda-base

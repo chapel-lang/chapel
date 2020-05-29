@@ -383,6 +383,14 @@ module ArrayViewSlice {
       return arr._getRCREView();
     }
 
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(param deinitElts:bool) {
+      // no elements allocated here, so no action necessary
+    }
+
     override proc doiCanBulkTransferRankChange() param {
       return arr.doiCanBulkTransferRankChange();
     }

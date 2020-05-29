@@ -16,13 +16,13 @@ Initializing Modules:
         DSIUtil
         ChapelArray
          ChapelDebugPrint
+          IO
+           SysError
+           FormattedIO
+            Regexp
          Sort
           List
            ChapelLocks
-           IO
-            SysError
-            FormattedIO
-             Regexp
           MSBRadixSort
            RadixSortHelp
            ShellSort

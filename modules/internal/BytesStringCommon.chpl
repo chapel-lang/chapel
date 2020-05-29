@@ -366,18 +366,25 @@ module BytesStringCommon {
       }
 
       // find the byte range of the given codepoint range
-      const cpRange = intR[x.indices];
       var cpCount = 0;
+      const cpIdxLow = if intR.hasLowBound() && intR.alignedLow:int >= 0
+                          then intR.alignedLow:int
+                          else 0;
+      const cpIdxHigh = if intR.hasHighBound()
+                           then intR.alignedHigh:int
+                           else x.buffLen;
+
       var byteLow = x.buffLen;  // empty range if bounds outside string
       var byteHigh = x.buffLen - 1;
-      if cpRange.high >= 0 {
+
+      if cpIdxHigh >= 0 {
         for (i, nBytes) in x._indexLen() {
-          if cpCount == cpRange.low {
+          if cpCount == cpIdxLow {
             byteLow = i:int;
             if !r.hasHighBound() then
               break;
           }
-          if cpCount == cpRange.high {
+          if cpCount == cpIdxHigh {
             byteHigh = i:int + nBytes-1;
             break;
           }

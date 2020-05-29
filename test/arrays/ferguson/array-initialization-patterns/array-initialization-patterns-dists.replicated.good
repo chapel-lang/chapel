@@ -1,0 +1,15 @@
+array-initialization-patterns-dists.chpl:191: In function 'testr2':
+array-initialization-patterns-dists.chpl:193: error: invalid copy-initialization
+array-initialization-patterns-dists.chpl:193: error: ReplicatedDist array initialization is not currently supported for element type R - please default-initialize the array
+array-initialization-patterns-dists.chpl:270: In initializer:
+array-initialization-patterns-dists.chpl:271: error: invalid copy-initialization
+array-initialization-patterns-dists.chpl:271: error: ReplicatedDist array initialization is not currently supported for element type R - please default-initialize the array
+array-initialization-patterns-dists.chpl:287: In function 'testC4':
+array-initialization-patterns-dists.chpl:289: error: invalid copy-initialization
+array-initialization-patterns-dists.chpl:289: error: ReplicatedDist array initialization is not currently supported for element type R - please default-initialize the array
+array-initialization-patterns-dists.chpl:326: In initializer:
+array-initialization-patterns-dists.chpl:327: error: invalid copy-initialization
+array-initialization-patterns-dists.chpl:327: error: ReplicatedDist array initialization is not currently supported for element type R - please default-initialize the array
+array-initialization-patterns-dists.chpl:343: In function 'testR4':
+array-initialization-patterns-dists.chpl:345: error: invalid copy-initialization
+array-initialization-patterns-dists.chpl:345: error: ReplicatedDist array initialization is not currently supported for element type R - please default-initialize the array

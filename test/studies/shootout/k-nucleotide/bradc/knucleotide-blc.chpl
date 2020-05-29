@@ -83,7 +83,7 @@ proc calculate(data, param nclSize) {
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
-  coforall tid in 1..numTasks {
+  coforall tid in 1..numTasks with (ref freqs) {
     var myFreqs = new map(int, int);
 
     for i in tid..(data.size-nclSize) by numTasks do

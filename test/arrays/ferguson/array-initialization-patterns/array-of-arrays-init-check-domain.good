@@ -1,0 +1,43 @@
+test1
+{1..2}
+{1..2}
+test2
+{1..2}
+{1..2}
+test3
+{1..2}
+{1..2}
+test3a
+{1..2}
+{1..2}
+test4
+{1..2}
+{1..2}
+reproducer
+1D row input => row
+1D col input => col
+2D row input => row
+in putInto2D
+D1 is {1..2}
+arrayOfArrays is 3.0 1.0 4.0 2.0
+arrayOfArrays[D1.dim(0).low].domain is {1..2}
+arrayOfArrays[D1.dim(0).low] is 3.0 1.0
+arrayOfArrays[D1.dim(0).high].domain is {1..2}
+arrayOfArrays[D1.dim(0).high] is 4.0 2.0
+D2 is {1..2, 1..2}
+twoArray is 0.0 0.0
+0.0 0.0
+formed is {1..2, 1..2}
+trans is (0, 0)
+assigning (1, 1)
+assigning (1, 2)
+assigning (2, 1)
+assigning (2, 2)
+3.0 1.0
+4.0 2.0
+
+=================================================================================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+=================================================================================================================
+

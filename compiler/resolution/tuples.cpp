@@ -206,7 +206,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
       // Otherwise, copy it
       element = new VarSymbol(astr("elt_", name), args[i]->type);
       ctor->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr("chpl__autoCopy", arg);
+      CallExpr* copy = new CallExpr(astr_autoCopy, arg);
       ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
 
@@ -617,7 +617,7 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
       insertBefore->insertBefore(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
+      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
       insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
 
       resolveCallAndCallee(copy, true);
@@ -767,7 +767,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
+      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
     // Expecting insertCasts to fix any type mismatch in the last MOVE added
@@ -835,7 +835,7 @@ static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple",
-                                         "chpl__initCopy",
+                                         astr_initCopy,
                                          true);
 }
 
@@ -846,7 +846,7 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
   // with refs.
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple_always_allow_ref",
-                                         "chpl__autoCopy",
+                                         astr_autoCopy,
                                          false);
 }
 
@@ -862,7 +862,7 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  const char* useCopy = "chpl__initCopy";
+  const char* useCopy = astr_initCopy;
   ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);

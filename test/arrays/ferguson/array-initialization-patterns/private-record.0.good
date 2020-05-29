@@ -1,0 +1,26 @@
+
+ test0
+(x = 1, ptr = {xx = 1})
+(x = 2, ptr = {xx = 2})
+(x = 3, ptr = {xx = 3})
+(x = 4, ptr = {xx = 4})
+a init (default)
+a init (default)
+a init (default)
+a init (default)
+b init 1 1
+b init 2 2
+b init 3 3
+b init 4 4
+d lhs(0 0) = rhs(1 1)
+d lhs(0 0) = rhs(2 2)
+d lhs(0 0) = rhs(3 3)
+d lhs(0 0) = rhs(4 4)
+z deinit 1 1
+z deinit 1 1
+z deinit 2 2
+z deinit 2 2
+z deinit 3 3
+z deinit 3 3
+z deinit 4 4
+z deinit 4 4

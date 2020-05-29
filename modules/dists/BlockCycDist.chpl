@@ -2,15 +2,15 @@
  * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@
 
 //
 // BlockCyclic Distribution
-// 
+//
 //      BlockCyclic    BlockCyclicDom     BlockCyclicArr
 //
 //   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
@@ -109,7 +109,7 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3)) 
+      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3))
       = Space;
     var A: [D] int;
 
@@ -141,7 +141,7 @@ The ``BlockCyclic`` class initializer is defined as follows:
     proc BlockCyclic.init(
       startIdx,
       blocksize,
-      targetLocales: [] locale = Locales, 
+      targetLocales: [] locale = Locales,
       dataParTasksPerLocale    = // value of dataParTasksPerLocale config const
       param rank: int          = // inferred from startIdx argument,
       type idxType             = // inferred from startIdx argument )
@@ -355,7 +355,7 @@ proc BlockCyclic.getStarts(inds, locid) {
   var R: rank*range(idxType, stridable=true);
   for i in 0..rank-1 {
     var lo, hi: idxType;
-    const domlo = inds.dim(i).low, 
+    const domlo = inds.dim(i).low,
           domhi = inds.dim(i).high;
     const mylo = locDist(locid).myStarts(i).low;
     const mystr = locDist(locid).myStarts(i).stride;
@@ -373,7 +373,7 @@ proc BlockCyclic.getStarts(inds, locid) {
       }
     } else {
       halt("BLC: need to handle domain low less than lowIdx");
-        }     
+        }
       } else {
         lo = domlo;
         hi = domhi;
@@ -603,7 +603,7 @@ proc BlockCyclicDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockCyclicDom.dsiBuildArray(type eltType) {
+proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   var locArrTemp: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
   var myLocArrTemp: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
@@ -612,7 +612,11 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
   // formerly BlockCyclicArr.setup()
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
-      const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
+      const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank,
+                                                   idxType, stridable,
+                                                   dom.locDoms(localeIdx),
+                                                   dom.locDoms(localeIdx),
+                                                   initElts=initElts);
       locArrTemp(localeIdx) = LBCA;
       if here == creationLocale then
         myLocArrTemp = LBCA;
@@ -625,6 +629,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
                                          locArr = locArrNN,
                                          myLocArr = myLocArrTemp,
                                          dom=_to_unmanaged(this));
+
   return arr;
 }
 
@@ -797,13 +802,13 @@ proc LocBlockCyclicDom.enumerateBlocks() {
         lo = i;
       else
         lo = i(j);
-      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
+      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1,
                           globDom.whole.dim(j).high));
     }
     writeln("}");
-  } 
+  }
 }
-  
+
 
 //
 // queries for this locale's number of indices, low, and high bounds
@@ -867,10 +872,27 @@ class BlockCyclicArr: BaseRectangularArr {
 
 override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
-override proc BlockCyclicArr.dsiDestroyArr() {
+override proc BlockCyclicArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
-      delete locArr(localeIdx);
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      var arr = locArr(localeIdx);
+      if deinitElts {
+        for subdom in do_dsiLocalSubdomains(arr!.indexDom) {
+          forall j in subdom {
+            chpl__autoDestroy(arr(j));
+          }
+        }
+      }
+      delete arr;
     }
   }
 }
@@ -1059,6 +1081,7 @@ class LocBlockCyclicArr {
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
   const allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
+  // MPF TODO: Why do we need indexDom at all? is it always == allocDom?
   const indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
 
 
@@ -1067,7 +1090,9 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
@@ -1077,6 +1102,40 @@ class LocBlockCyclicArr {
   const numblocks : rank*int = allocDom._lens;
 
   const sizes : (rank+1)*int = allocDom._sizes;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
+            indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.allocDom = allocDom;
+    this.indexDom = indexDom;
+    this.myElems = this.allocDom.myFlatInds.buildArray(eltType, initElts=false);
+    this.complete();
+
+    // Initialize only those elements referring to valid indices
+    // since these are the only ones that will be deinitialized.
+    if initElts {
+      for subdom in do_dsiLocalSubdomains(indexDom) {
+        forall j in subdom {
+          pragma "no auto destroy" pragma "unsafe"
+          var def: eltType;
+          __primitive("=", this.this(j), def);
+        }
+      }
+    }
+  }
+  proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
+  }
 }
 
 

@@ -248,22 +248,17 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc this(k: keyType) ref where !isNonNilableClass(valType) {
+    proc ref this(k: keyType) ref where !isNonNilableClass(valType) {
       _enter();
-      var (found, slotNum) = myKeys._value._findFilledSlot(k, needLock=false);
 
-      if found {
-        ref result = vals._value.data[slotNum];
-        _leave();
-        return result;
-      } else if slotNum != -1 {
-        const (newSlot, _) = myKeys._value._addWrapper(k, slotNum, needLock=false);
-        ref result = vals._value.data[newSlot];
+      // TODO: optimize this to avoid looking up the slot multiple times
+      if myKeys.contains(k) {
+        ref result = vals[k];
         _leave();
         return result;
       } else {
-        boundsCheckHalt("map index out of bounds: " + k:string);
-        ref result = vals._value.data[0];
+        myKeys += k; // default initialize the element
+        ref result = vals[k];
         _leave();
         return result;
       }

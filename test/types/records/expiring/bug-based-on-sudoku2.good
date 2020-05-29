@@ -1,19 +1,7 @@
-init (default)
-init (default)
-init (default)
-init (default)
 init 11
-= 0 11
-deinit 11
 init 12
-= 0 12
-deinit 12
 init 21
-= 0 21
-deinit 21
 init 22
-= 0 22
-deinit 22
 init= 11
 deinit 11
 init= 12

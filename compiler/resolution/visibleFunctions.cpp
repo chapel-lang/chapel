@@ -107,8 +107,8 @@ void findVisibleFunctions(CallInfo&       info,
     typeHelperNames.insert(astr_cast);
     typeHelperNames.insert(astr_defaultOf);
     typeHelperNames.insert(astrNew);
-    typeHelperNames.insert(astr("chpl__initCopy"));
-    typeHelperNames.insert(astr("chpl__autoCopy"));
+    typeHelperNames.insert(astr_initCopy);
+    typeHelperNames.insert(astr_autoCopy);
     typeHelperNames.insert(astr("chpl__autoDestroy"));
     builtTypeHelperNames = true;
   }

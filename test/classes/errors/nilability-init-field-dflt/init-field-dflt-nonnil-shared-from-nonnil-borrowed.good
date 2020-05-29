@@ -1,1 +1,1 @@
-init-field-dflt-nonnil-shared-from-nonnil-borrowed.chpl:8: error: cannot initialize field MyRecord.lhs of type 'shared MyClass' from a 'borrowed MyClass'
+init-field-dflt-nonnil-shared-from-nonnil-borrowed.chpl:8: error: Cannot initialize 'lhs' of type shared MyClass from a 'borrowed MyClass'

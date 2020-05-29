@@ -164,7 +164,8 @@ static Expr* postFoldNormal(CallExpr* call) {
   if (fn->retTag == RET_TYPE) {
     Symbol* ret = fn->getReturnSymbol();
 
-    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false ||
+        fn->hasFlag(FLAG_IGNORE_RUNTIME_TYPE)) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
@@ -822,8 +823,7 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
 static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
   if (isSymExpr(call->get(2)) == true) {
     if (isReferenceType(lhsSym->type)                          == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
@@ -835,8 +835,7 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     }
 
     if (isReferenceType(lhsSym->type)                          == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
@@ -855,6 +854,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
+        // the below exceptions should be considered workarounds
         fn->name != astrSassign                                        &&
         fn->name != astr_defaultOf) {
       retval = true;
