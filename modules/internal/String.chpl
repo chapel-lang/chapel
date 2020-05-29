@@ -501,17 +501,16 @@ module String {
   // End index arithmetic support
 
   private proc validateEncoding(buf, len): int throws {
-    var numCodepoints: int;
-    extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
+    var numCps: int;
+    extern proc chpl_enc_validate_buf(buf, len, ref numCps) : c_int;
     
-    if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
+    if chpl_enc_validate_buf(buf, len, numCps) != 0 {
       throw new DecodeError();
     }
     extern proc printf(s...);
-
-    printf("%d", numCodepoints);
+    printf("validate encoding");
     
-    return numCodepoints;
+    return numCps;
   }
 
   private proc stringFactoryArgDepr() {
@@ -612,7 +611,9 @@ module String {
   inline proc createStringWithBorrowedBuffer(x: bufferType,
                                              length: int, size: int) throws {
     var ret: string;
-    ret.cacheSize = validateEncoding(x, length);
+    ret.numCp = validateEncoding(x, length);
+    extern proc printf(s...);
+    printf("borrowed buffer");
     initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
@@ -699,7 +700,9 @@ module String {
   inline proc createStringWithOwnedBuffer(x: bufferType,
                                           length: int, size: int) throws {
     var ret: string;
-    ret.cacheSize = validateEncoding(x, length);
+    ret.cpNum = validateEncoding(x, length);
+    extern proc printf(s...);
+    printf("owned buffer");
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
@@ -842,7 +845,7 @@ module String {
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
-    var cacheSize: int = -1;
+    var cpNum: int = -1;
     var buff: bufferType = nil;
     var isOwned: bool = true;
     var hasEscapes: bool = false;
@@ -1170,7 +1173,11 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc string.size return cacheSize;
+  inline proc string.size {
+    extern proc printf(s...);
+    printf("size called");
+    return cpNum;
+  }
 
   /*
     :returns: The indices that can be used to index into the string
@@ -1188,7 +1195,7 @@ module String {
               string is correctly-encoded UTF-8.
   */
   proc string.numCodepoints {
-    if(cacheSize == -1) {
+    if(cpNum  == -1) {
       var localThis: string = this.localize();
       var n = 0;
       var i = 0;
@@ -1200,7 +1207,7 @@ module String {
       }
       return n;
       } else {
-        return cacheSize;
+        return cpNum;
       }
   }
   
