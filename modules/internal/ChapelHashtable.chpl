@@ -59,17 +59,28 @@ module ChapelHashtable {
   // returns the value referred to by arg
   // arg should be considered uninitialized after this point
   private proc _moveToReturn(const ref arg) {
-    pragma "no init"
-    pragma "no copy"
-    pragma "no auto destroy"
-    var moved: arg.type;
-    __primitive("=", moved, arg);
-    return moved;
+    if arg.type == nothing {
+      return none;
+    } else {
+      pragma "no init"
+      pragma "no copy"
+      pragma "no auto destroy"
+      var moved: arg.type;
+      __primitive("=", moved, arg);
+      return moved;
+    }
   }
   // sets lhs to rhs using a move initialization
   // only makes sense if lhs is currently uninitialized
   private proc _moveInit(ref lhs, pragma "no auto destroy" in rhs) {
-    __primitive("=", lhs, rhs);
+    if lhs.type != rhs.type {
+      compilerError("type mismatch in _moveInit");
+    }
+    if lhs.type == nothing {
+      // then do nothing
+    } else {
+      __primitive("=", lhs, rhs);
+    }
   }
 
   // Leaves the elements 0 initialized
@@ -531,7 +542,7 @@ module ChapelHashtable {
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
-    proc rehash(newSizeNum, newSize) {
+    proc rehash(newSizeNum:int, newSize:int) {
       var entries = tableNumFullSlots;
       if entries > 0 {
         // There were entries, so carefully move them to the a new allocation
@@ -559,13 +570,9 @@ module ChapelHashtable {
         // races. So it's not as simple as using forall here.
         for oldslot in _allSlots(oldSize) {
           if oldTable[oldslot].status == chpl__hash_status.full {
-            // move the key and value into a local variables
-            pragma "no init" pragma "no auto destroy"
-            var stealKey: keyType;
-            __primitive("=", stealKey, oldTable[oldslot].key);
-            pragma "no init" pragma "no auto destroy"
-            var stealVal: valType;
-            __primitive("=", stealVal, oldTable[oldslot].val);
+            // move the key and value into local variables
+            var stealKey: keyType = _moveToReturn(oldTable[oldslot].key);
+            var stealVal: valType = _moveToReturn(oldTable[oldslot].val);
 
             // find a destination slot
             var (foundSlot, newslot) = _findSlot(stealKey);
@@ -580,8 +587,8 @@ module ChapelHashtable {
             // move the local variable into the destination slot
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            __primitive("=", dstSlot.key, stealKey);
-            __primitive("=", dstSlot.val, stealVal);
+            _moveInit(dstSlot.key, stealKey);
+            _moveInit(dstSlot.val, stealVal);
 
             // move array elements to the new location
             rehashHelpers.moveElementDuringRehash(oldslot, newslot);
