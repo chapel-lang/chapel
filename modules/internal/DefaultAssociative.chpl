@@ -274,13 +274,17 @@ module DefaultAssociative {
       on this {
         lockTable();
         for slot in table.allSlots() {
-          ref aSlot = table[slot];
+          ref aSlot = table.table[slot];
           if aSlot.isFull() {
             var tmpKey: idxType;
             var tmpVal: nothing;
-            clearSlot(aSlot, tmpKey, tmpVal);
+            table.clearSlot(aSlot, tmpKey, tmpVal);
+            // deinit any array entries
+            for arr in _arrs {
+              arr._deinitSlot(slot);
+            }
           }
-          table[slot].status = chpl__hash_status.empty;
+          table.table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
         unlockTable();
@@ -780,13 +784,13 @@ module DefaultAssociative {
       if deinitElts {
         if _elementNeedsDeinit() {
           if _deinitElementsIsParallel(eltType) {
-            forall slot in dom._allSlots() {
+            forall slot in dom.table.allSlots() {
               if dom._isSlotFull(slot) {
                 _deinitElement(data[slot]);
               }
             }
           } else {
-            for slot in dom._allSlots() {
+            for slot in dom.table.allSlots() {
               if dom._isSlotFull(slot) {
                 _deinitElement(data[slot]);
               }
