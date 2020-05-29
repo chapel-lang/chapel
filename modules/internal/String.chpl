@@ -61,7 +61,7 @@ is invalid. For example:
 
   var number = "a":int;
 
-  throws an error when it is executed, but
+throws an error when it is executed, but
 
 .. code-block:: chapel
 
@@ -833,7 +833,7 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
   pragma "no doc"
-  record _string { //Opening brace
+  record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
