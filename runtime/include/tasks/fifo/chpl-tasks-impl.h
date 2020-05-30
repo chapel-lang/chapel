@@ -18,27 +18,21 @@
  * limitations under the License.
  */
 
+//
+// Fifo tasking layer type declarations.
+//
+
 #ifndef _chpl_tasks_impl_h_
 #define _chpl_tasks_impl_h_
 
+#include <pthread.h>
 #include <stdint.h>
 
-#include "chpl-tasks-prvdata.h"
 #include "chpl-threads.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-//
-// Because we use the task tracking table for fifo tasking, this gives
-// us the ability to register the main task in the task table and
-// block report.
-//
-#define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
-
-void chpl_task_stdModulesInitialized(void);
 
 //
 // The FIFO implementation of tasking is a least-common-denominator
@@ -55,20 +49,6 @@ typedef uint64_t chpl_taskID_t;
 #ifndef CHPL_TASK_ID_STRING_MAX_LEN
 #define CHPL_TASK_ID_STRING_MAX_LEN 21
 #endif
-
-//
-// Task layer private area argument bundle header
-//
-typedef struct {
-  chpl_bool is_executeOn;
-  int lineno;
-  int filename;
-  c_sublocid_t requestedSubloc;  
-  chpl_fn_int_t requested_fid;
-  chpl_fn_p requested_fn;
-  chpl_taskID_t id;
-  chpl_task_ChapelData_t state;
-} chpl_task_bundle_t;
 
 
 //
@@ -87,47 +67,6 @@ typedef struct {
   chpl_thread_condvar_t signal_empty; // wait for empty; signal this when empty
   //  threadlayer_sync_aux_t tl_aux;
 } chpl_sync_aux_t;
-
-
-//
-// The fifo tasking layer doesn't really support sublocales.
-//
-// Putting these interface function definitions here and marking them
-// for inlining makes them cost-free at execution time.
-//
-#ifdef CHPL_TASK_GETSUBLOC_IMPL_DECL
-#error "CHPL_TASK_GETSUBLOC_IMPL_DECL is already defined!"
-#else
-#define CHPL_TASK_GETSUBLOC_IMPL_DECL 1
-#endif
-static inline
-c_sublocid_t chpl_task_getSubloc(void) {
-  return 0;
-}
-
-
-#ifdef CHPL_TASK_SETSUBLOC_IMPL_DECL
-#error "CHPL_TASK_SETSUBLOC_IMPL_DECL is already defined!"
-#else
-#define CHPL_TASK_SETSUBLOC_IMPL_DECL 1
-#endif
-static inline
-void chpl_task_setSubloc(c_sublocid_t subloc) {
-  // nothing to do
-}
-
-
-#ifdef CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL
-#error "CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL is already defined!"
-#else
-#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 1
-#endif
-static inline
-c_sublocid_t chpl_task_getRequestedSubloc(void) {
-  return c_sublocid_any;
-}
-
-#define CHPL_TASK_IMPL_CAN_MIGRATE_THREADS() 0
 
 #ifdef __cplusplus
 } // end extern "C"

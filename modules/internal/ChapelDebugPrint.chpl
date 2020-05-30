@@ -28,6 +28,7 @@
 
 module ChapelDebugPrint {
   private use ChapelStandard, SysCTypes;
+  private use IO;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";

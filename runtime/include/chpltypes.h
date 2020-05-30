@@ -120,7 +120,7 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 typedef void* ptr_wide_ptr_t;
 #endif // LAUNCHER
 
-#define nil 0 
+#define nil 0
 typedef void* _nilType;
 typedef void* _nilRefType;
 typedef void* _chpl_object;
@@ -276,5 +276,22 @@ static inline _complex64 complexUnaryMinus64(_complex64 c1) {
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
 
 #include "chpl-string-support.h"
+
+//
+// The first member of both the task and on-stmt body function argument
+// bundle header structs is a 'kind' indicator of this type.  This lets
+// us distinguish which kind of header is on the front of the bundle.
+//
+// By convention, arg bundle kind == 0 indicates that the bundle starts
+// with a chpl_task_bundle_t struct, kind == 1 indicates that it starts
+// with a chpl_comm_on_bundle_t struct, and kind > 1 indicates that it
+// is a comm layer defined (implementation-private) bundle.  This also
+// leaves values < 0 for tasking layer (implementation-defined) bundle
+// types, though we don't yet have any of those.
+//
+typedef int8_t chpl_arg_bundle_kind_t;
+
+#define CHPL_ARG_BUNDLE_KIND_TASK 0
+#define CHPL_ARG_BUNDLE_KIND_COMM 1
 
 #endif

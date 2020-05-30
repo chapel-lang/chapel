@@ -847,7 +847,6 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
              call->isPrimitive(PRIM_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
-             call->isPrimitive(PRIM_DEFAULT_INIT_FIELD) ||
              call->isPrimitive(PRIM_INIT_FIELD)) {
     lhsSe = toSymExpr(call->get(1));
     initOrCtor = NULL;

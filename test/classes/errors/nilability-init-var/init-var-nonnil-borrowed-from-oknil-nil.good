@@ -1,1 +1,1 @@
-init-var-nonnil-borrowed-from-oknil-nil.chpl:9: error: cannot assign to borrowed MyClass from nil
+init-var-nonnil-borrowed-from-oknil-nil.chpl:9: error: Cannot assign to borrowed MyClass from nil

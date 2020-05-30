@@ -1,1 +1,2 @@
-test_default_promote_instantiate.chpl:1: error: Default expression not convertible to formal type
+test_default_promote_instantiate.chpl:8: error: Cannot initialize int(64) from range(int(64),bounded,false)
+test_default_promote_instantiate.chpl:1: note: when calling foo with a default value for x

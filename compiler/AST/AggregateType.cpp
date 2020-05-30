@@ -653,22 +653,7 @@ bool AggregateType::hasInitializers() const {
 }
 
 bool AggregateType::hasPostInitializer() const {
-  bool retval = false;
-
-  // If there is postinit() it is defined on the defining type
-  if (instantiatedFrom == NULL) {
-    int size = methods.n;
-
-    for (int i = 0; i < size && retval == false; i++) {
-      if (methods.v[i] != NULL)
-        retval = methods.v[i]->isPostInitializer();
-    }
-
-  } else {
-    retval = instantiatedFrom->hasPostInitializer();
-  }
-
-  return retval;
+  return symbol->hasFlag(FLAG_HAS_POSTINIT);
 }
 
 bool AggregateType::hasUserDefinedInitEquals() const {
@@ -2312,9 +2297,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
-            CallExpr* copy = new CallExpr("chpl__initCopy");
-            defPoint->init->replace(copy);
-            copy->insertAtTail(fe);
+            if (defPoint->exprType == NULL) {
+              CallExpr* copy = new CallExpr(astr_initCopy);
+              defPoint->init->replace(copy);
+              copy->insertAtTail(fe);
+            }
           }
         }
 
@@ -2366,19 +2353,13 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
 
           } else {
             fieldToArgType(defPoint, arg);
 
-            CallExpr* def    = new CallExpr(PRIM_DEFAULT_INIT_FIELD,
-                    // It would be easiest to just put 'field' here, however
-                    // it is replaced with 'arg' in buildDefaultInitializer().
-                    new_StringSymbol(field->defPoint->parentSymbol->name),
-                                            new_StringSymbol(field->name),
-                                            defPoint->exprType->copy(),
-                                            defPoint->init->copy());
-
-            arg->defaultExpr = new BlockStmt(def);
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
           }
         }
 

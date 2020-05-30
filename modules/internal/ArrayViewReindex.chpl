@@ -147,9 +147,9 @@ module ArrayViewReindex {
         return downdomInst;
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param initElts:bool) {
       pragma "no auto destroy"
-      const downarr = _newArray(downdom.dsiBuildArray(eltType));
+      const downarr = _newArray(downdom.dsiBuildArray(eltType, initElts));
       return new unmanaged ArrayViewReindexArr(eltType  =eltType,
                                         _DomPid = this.pid,
                                         dom = _to_unmanaged(this),
@@ -671,7 +671,11 @@ module ArrayViewReindex {
       return this;
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(param deinitElts:bool) {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

@@ -35,6 +35,7 @@
 #include "ForallStmt.h"
 #include "expr.h"
 #include "errorHandling.h"
+#include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
 #include "TryStmt.h"
@@ -128,18 +129,14 @@ bool findInitPoints(CallExpr* defaultInit,
 
 static bool allowSplitInit(Symbol* sym) {
 
-  // don't split init if the flag disabled it
-  if (fNoSplitInit)
+  // don't split init within user code if the flag disabled it;
+  // because we rely on split init in standard/internal modules,
+  // we ignore the flag there.
+  if (fNoSplitInit && sym->defPoint->getModule()->modTag == MOD_USER)
     return false;
 
   // split-init doesn't make sense for extern variables
   if (sym->hasFlag(FLAG_EXTERN))
-    return false;
-
-  // For now, disable split init on non-user code
-  // unless there is no alternative
-  if (sym->defPoint->getModule()->modTag != MOD_USER &&
-      !isSplitInitExpr(sym->defPoint->init))
     return false;
 
   return true;
@@ -465,10 +462,12 @@ static bool findCopyElisionCandidate(CallExpr* call,
   if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
     if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
       if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
-        if (rhsCall->isNamed("chpl__initCopy") ||
-            rhsCall->isNamed("chpl__autoCopy")) {
-          if (rhsCall->numActuals() >= 1) {
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(1))) {
+        if (rhsCall->isNamedAstr(astr_initCopy) ||
+            rhsCall->isNamedAstr(astr_autoCopy) ||
+            rhsCall->isNamedAstr(astr_coerceCopy)) {
+          int nActuals = rhsCall->numActuals();
+          if (nActuals >= 1) {
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
                 rhs = rhsSe->symbol();
@@ -482,11 +481,14 @@ static bool findCopyElisionCandidate(CallExpr* call,
   }
 
   // a chpl__initCopy / chpl__autoCopy returning through RVV
-  if (call->isNamed("chpl__initCopy") || call->isNamed("chpl__autoCopy")) {
+  if (call->isNamedAstr(astr_initCopy) ||
+      call->isNamedAstr(astr_autoCopy) ||
+      call->isNamedAstr(astr_coerceCopy)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
-      if (calledFn->hasFlag(FLAG_FN_RETARG) && call->numActuals() >= 2) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(1))) {
-          if (SymExpr* lhsSe = toSymExpr(call->get(2))) {
+      int nActuals = call->numActuals();
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 2) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-1))) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
               rhs = rhsSe->symbol();
@@ -517,16 +519,64 @@ static void doElideCopies(VarToCopyElisionState &map) {
         ok = findCopyElisionCandidate(call, lhs, rhs);
         INT_ASSERT(ok && rhs == var);
 
+        bool calledInitEq = call->isNamedAstr(astrInitEquals);
+
         SET_LINENO(call);
-        // Change the copy into a move and don't destroy the variable.
-        call->convertToNoop();
-        call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        if (call->isNamedAstr(astr_coerceCopy)) {
+          // change chpl__coerceCopy into chpl__coerceMove with same args
+          FnSymbol* copyFn = call->resolvedFunction();
+          FnSymbol* moveFn = getCoerceMoveFromCoerceCopy(copyFn);
+          call->baseExpr->replace(new SymExpr(moveFn));
+
+          // Add a PRIM_ASSIGN_ELIDED_COPY to mark that the
+          // variable is dead after this point. Putting it before
+          // the chpl__coerceMove call works with code in addAutoDestroyCalls.
+          VarSymbol* tmp = newTemp("copy_tmp", rhs->getValType());
+          Expr* insertBefore = call->getStmtExpr();
+          insertBefore->insertBefore(new DefExpr(tmp));
+          insertBefore->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY,
+                                                  tmp,
+                                                  rhs));
+
+          // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
+          call->get(2)->replace(new SymExpr(tmp));
+        } else {
+          // Change the copy into a move and don't destroy the variable.
+          call->convertToNoop();
+          call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+        }
+
+        if (AggregateType* at = toAggregateType(lhs->getValType())) {
+          if (calledInitEq && at->hasPostInitializer()) {
+            // check for a postinit call following the init=
+            // that has been replaced.
+            Expr* postinit = NULL;
+            for (Expr* cur = call->getStmtExpr()->next;
+                 cur != NULL;
+                 cur = cur->next) {
+              if (CallExpr* curCall = toCallExpr(cur)) {
+                if (curCall->isNamedAstr(astrPostinit)) {
+                  if (SymExpr* se = toSymExpr(curCall->get(1))) {
+                    if (se->symbol() == lhs) {
+                      postinit = cur;
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+            if (postinit == NULL)
+              INT_FATAL("Could not find postinit");
+
+            postinit->remove();
+          }
+        }
+
         var->addFlag(FLAG_MAYBE_COPY_ELIDED);
 
         if (isCheckErrorStmt(call->next)) {
           INT_FATAL("code needs adjustment for throwing initializers");
         }
-
       }
     }
   }

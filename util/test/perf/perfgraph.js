@@ -507,6 +507,13 @@ function computeGitHubLinks(text) {
     var url = "https://github.com/chapel-lang/chapel/pull/" + num;
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
+
+  var ak_re = /\(mhmerrill\/arkouda#([0-9]+)\)/gi;
+  text = text.replace(ak_re, function(m, num) {
+    var url = "https://github.com/mhmerrill/arkouda/pull/" + num;
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
+  });
+
   text = text.replace("\n", "\n<hr/>");
 
   return text;

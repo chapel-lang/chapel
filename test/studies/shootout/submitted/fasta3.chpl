@@ -43,12 +43,6 @@ const ALU: [0..286] nucleotide = [
 ];
 
 //
-// Index aliases for use with (nucleotide, probability) tuples
-//
-param nucl = 1,
-      prob = 2;
-
-//
 // Probability tables for sequences to be randomly generated
 //
 var IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
@@ -76,14 +70,16 @@ proc main() {
 proc sumProbs(alphabet: []) {
   var p = 0.0;
   for letter in alphabet {
-    p += letter(prob);
-    letter(prob) = p;
+    ref (_,prob) = letter;
+    p += prob;
+    prob = p;
   }
 }
 
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
+use IO;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
 param newline = "\n".toByte();
 
@@ -118,19 +114,22 @@ proc randomMake(desc, a, n) {
   //
   proc addLine(numBytes) {
     for (r, i) in zip(getRands(numBytes), 0..) {
-      if r < a[1](prob) {
-        line_buff[i] = a[1](nucl): int(8);
+      const (nucl, prob) = a[0];
+      if r < prob {
+        line_buff[i] = nucl: int(8);
       } else {
         var lo = a.domain.low,
             hi = a.domain.high;
         while (hi > lo+1) {
           var ai = (hi + lo) / 2;
-          if (r < a[ai](prob)) then
+          const (_, prob) = a[ai];
+          if r < prob then
             hi = ai;
           else
             lo = ai;
         }
-        line_buff[i] = a[hi](nucl): int(8);
+        const (nucl, _) = a[hi];
+        line_buff[i] = nucl: int(8);
       }
     }
     line_buff[numBytes] = newline;

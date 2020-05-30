@@ -1,1 +1,1 @@
-init-field-dflt-nonnil-unmanaged-from-oknil-shared.chpl:8: error: cannot initialize field MyRecord.lhs of non-nilable type 'unmanaged MyClass' from a nilable 'shared MyClass?'
+init-field-dflt-nonnil-unmanaged-from-oknil-shared.chpl:8: error: Cannot initialize lhs of non-nilable type 'unmanaged MyClass' from a nilable 'shared MyClass?'

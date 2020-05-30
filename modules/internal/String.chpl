@@ -1072,12 +1072,11 @@ module String {
         var readIdx = 0;
         var writeIdx = 0;
         while readIdx < localThis.buffLen {
-          var cp: int(32);
-          var nbytes: c_int;
           var multibytes = (localThis.buff + readIdx): c_string;
-          var maxbytes = (localThis.buffLen - readIdx): ssize_t;
-          const decodeRet = qio_decode_char_buf_esc(cp, nbytes, multibytes,
-                                                    maxbytes);
+          const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                     buffLen=localThis.buffLen,
+                                                     offset=readIdx,
+                                                     allowEsc=true);
           if (0xdc80<=cp && cp<=0xdcff) {
             buff[writeIdx] = (cp-0xdc00):byteType;
             writeIdx += 1;
@@ -1087,14 +1086,14 @@ module String {
             // at this point this can only happen due to a failure in our
             // implementation of string encoding/decoding
             // simply copy the data out
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
-            writeIdx += nbytes;
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nBytes);
+            writeIdx += nBytes;
           }
           else {
-            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nbytes);
-            writeIdx += nbytes;
+            bufferMemcpyLocal(dst=(buff+writeIdx), src=multibytes, len=nBytes);
+            writeIdx += nBytes;
           }
-          readIdx += nbytes;
+          readIdx += nBytes;
         }
         buff[writeIdx] = 0;
         return createBytesWithOwnedBuffer(buff, length=writeIdx, size=size);
@@ -1126,11 +1125,10 @@ module String {
       var i = 0;
       while i < localThis.buffLen {
         const curPos = localThis.buff+i;
-        var cp: int(32);
-        var nBytes: c_int;
-        var maxBytes = (localThis.buffLen - i): ssize_t;
-        qio_decode_char_buf_esc(cp, nBytes, curPos:c_string, maxBytes);
-
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                     buffLen=localThis.buffLen,
+                                                     offset=i,
+                                                     allowEsc=true);
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
         newBuf[nBytes] = 0;
 
@@ -1185,13 +1183,12 @@ module String {
 
       var i = 0;
       while i < localThis.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.buffLen - i): ssize_t;
-        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
         yield cp;
-        i += nbytes;
+        i += nBytes;
       }
     }
 
@@ -1211,13 +1208,12 @@ module String {
         while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
           i += 1; // in case `start` is in the middle of a multibyte character
       while i < localThis.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (localThis.buff + i): c_string;
-        var maxbytes = (localThis.buffLen - i): ssize_t;
-        qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
-        yield (cp:int(32), i:byteIndex, nbytes:int);
-        i += nbytes;
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
+        yield (cp:int(32), i:byteIndex, nBytes:int);
+        i += nBytes;
       }
     }
 
@@ -1274,13 +1270,11 @@ module String {
       if localThis.isEmpty() then
         halt("string.toCodepoint() only accepts single-codepoint strings");
 
-      var cp: int(32);
-      var nbytes: c_int;
-      var multibytes = localThis.buff: c_string;
-      var maxbytes = localThis.buffLen: ssize_t;
-      qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
-
-      if localThis.buffLen != nbytes:int then
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                 buffLen=localThis.buffLen,
+                                                 offset=0,
+                                                 allowEsc=true);
+      if localThis.buffLen != nBytes:int then
         halt("string.toCodepoint() only accepts single-codepoint strings");
 
       return cp;
@@ -1328,13 +1322,12 @@ module String {
       ret.buff = newBuff;
       ret.isOwned = true;
 
-      var multibytes = ret.buff;
-      var cp: int(32);
-      var nbytes: c_int;
-      qio_decode_char_buf_esc(cp, nbytes, multibytes:c_string, maxbytes);
-      ret.buff[nbytes] = 0;
-      ret.buffLen = nbytes;
-
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=ret.buff,
+                                                 buffLen=maxbytes,
+                                                 offset=0,
+                                                 allowEsc=true);
+      ret.buff[nBytes] = 0;
+      ret.buffLen = nBytes;
       return ret;
     }
 
@@ -1475,12 +1468,11 @@ module String {
               for i in view {
                 if i >= nextIdx {
                   nCodepoints += 1;
-                  var cp: int(32);
-                  var nbytes: c_int;
-                  var multibytes = (this.buff + i): c_string;
-                  var maxbytes = (this.buffLen - i): ssize_t;
-                  qio_decode_char_buf_esc(cp, nbytes, multibytes, maxbytes);
-                  nextIdx = i + nbytes;
+                  const (decodeRet, cp, nBytes) = decodeHelp(buff=this.buff,
+                                                             buffLen=this.buffLen,
+                                                             offset=i,
+                                                             allowEsc=true);
+                  nextIdx = i + nBytes;
                 }
               }
               localRet = nCodepoints;
@@ -1631,7 +1623,7 @@ module String {
         var inChunk : bool = false;
         var chunkStart : byteIndex;
 
-        for (c, i, nbytes) in localThis._cpIndexLen() {
+        for (c, i, nBytes) in localThis._cpIndexLen() {
           // emit whole string, unless all whitespace
           if noSplits {
             done = true;
@@ -1645,7 +1637,7 @@ module String {
             if !(inChunk || cSpace) {
               chunkStart = i;
               inChunk = true;
-              if i - 1 + nbytes > iEnd {
+              if i - 1 + nBytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -1666,7 +1658,7 @@ module String {
                   inChunk = false;
                 }
               // out of chars
-              } else if i - 1 + nbytes > iEnd {
+              } else if i - 1 + nBytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
@@ -1770,10 +1762,10 @@ module String {
       var end: byteIndex = localThis.buffLen-1;
 
       if leading {
-        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen() {
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
           for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
-              start = i + nbytes;
+              start = i + nBytes;
               continue outer;
             }
           }
@@ -1787,14 +1779,14 @@ module String {
         // are already past the end of the string, and then update the end
         // point as we are proven wrong.
         end = -1;
-        label outer for (thisChar, i, nbytes) in localThis._cpIndexLen(start) {
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
           for removeChar in localChars.codepoints() {
             if thisChar == removeChar {
               continue outer;
             }
           }
           // This was not a character to be removed, so update tentative end.
-          end = i + nbytes-1;
+          end = i + nBytes-1;
         }
       }
 
@@ -2032,18 +2024,17 @@ module String {
 
       var i = 0;
       while i < result.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.buffLen - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                   buffLen=result.buffLen,
+                                                   offset=i,
+                                                   allowEsc=false);
         var lowCodepoint = codepoint_toLower(cp);
-        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
           // Use the MacOS approach everywhere:  only change the case if
           // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, lowCodepoint);
         }
-        i += nbytes;
+        i += nBytes;
       }
       return result;
     }
@@ -2063,18 +2054,17 @@ module String {
 
       var i = 0;
       while i < result.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.buffLen - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                   buffLen=result.buffLen,
+                                                   offset=i,
+                                                   allowEsc=false);
         var upCodepoint = codepoint_toUpper(cp);
-        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
           // Use the MacOS approach everywhere:  only change the case if
           // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, upCodepoint);
         }
-        i += nbytes;
+        i += nBytes;
       }
       return result;
     }
@@ -2097,23 +2087,22 @@ module String {
       var last = UN;
       var i = 0;
       while i < result.buffLen {
-        var cp: int(32);
-        var nbytes: c_int;
-        var multibytes = (result.buff + i): c_string;
-        var maxbytes = (result.buffLen - i): ssize_t;
-        qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                   buffLen=result.buffLen,
+                                                   offset=i,
+                                                   allowEsc=false);
         if codepoint_isAlpha(cp) {
           if last == UN {
             last = LETTER;
             var upCodepoint = codepoint_toUpper(cp);
-            if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+            if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
               // Use the MacOS approach everywhere:  only change the case if
               // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, upCodepoint);
             }
           } else { // last == LETTER
             var lowCodepoint = codepoint_toLower(cp);
-            if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nbytes {
+            if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
               // Use the MacOS approach everywhere:  only change the case if
               // the result does not change the number of encoded bytes.
               qio_encode_char_buf(result.buff + i, lowCodepoint);
@@ -2123,7 +2112,7 @@ module String {
           // Uncased elements
           last = UN;
         }
-        i += nbytes;
+        i += nBytes;
       }
       return result;
     }
@@ -2137,14 +2126,13 @@ module String {
     proc capitalize() : string {
       var result: string = this.toLower();
       if result.isEmpty() then return result;
-
-      var cp: int(32);
-      var nbytes: c_int;
-      var multibytes = result.buff: c_string;
-      var maxbytes = result.buffLen: ssize_t;
-      qio_decode_char_buf(cp, nbytes, multibytes, maxbytes);
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
+                                                 buffLen=result.buffLen,
+                                                 offset=0,
+                                                 allowEsc=false);
+      
       var upCodepoint = codepoint_toUpper(cp);
-      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nbytes {
+      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
         // Use the MacOS approach everywhere:  only change the case if
         // the result does not change the number of encoded bytes.
         qio_encode_char_buf(result.buff, upCodepoint);

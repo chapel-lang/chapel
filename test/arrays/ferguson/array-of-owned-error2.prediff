@@ -1,9 +1,0 @@
-#!/bin/sh
-
-# Ignore line numbers
-TESTNAME=$1
-OUTFILE=$2
-TMPFILE1=$OUTFILE.prediff.tmp.1
-sed 's/:[0-9]*:/:n:/g' < $OUTFILE > $TMPFILE1
-cat $TMPFILE1 > $OUTFILE
-rm $TMPFILE1

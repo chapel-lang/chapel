@@ -41,6 +41,7 @@
 #include "chplsys.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
+#include "chpltypes.h"
 #include "error.h"
 
 #include "comm-ofi-internal.h"
@@ -160,7 +161,18 @@ static memTab_t* memTabMap;
 //
 // Messaging (AM) support.
 //
-#define AM_MAX_MSG_SIZE (sizeof(chpl_comm_on_bundle_t) + 1024)
+
+#define AM_MAX_EXEC_ON_PAYLOAD_SIZE 1024
+
+struct amRequest_execOn_t {
+  chpl_comm_on_bundle_t hdr;
+  char space[AM_MAX_EXEC_ON_PAYLOAD_SIZE];
+};
+
+struct amRequest_execOnLrg_t {
+  chpl_comm_on_bundle_t hdr;
+  void* pPayload;                 // addr of arg payload on initiator node
+};
 
 static int numAmHandlers = 1;
 
@@ -255,6 +267,32 @@ static void ofiErrReport(const char*, int, const char*);
   } while (0)
 
 
+#define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
+
+
+////////////////////////////////////////
+//
+// Early declarations for AM handling and progress
+//
+
+//
+// Ideally these would be declared with related stuff later in the
+// file, but they're needed earlier than that and with each other,
+// so they're here instead.
+//
+
+//
+// Is this the (an) AM handler thread?
+//
+static __thread chpl_bool isAmHandler = false;
+
+
+//
+// Flag used to tell AM handler(s) to exit.
+//
+static atomic_bool amHandlersExit;
+
+
 //
 // The ofi_rxm provider may return -FI_EAGAIN for read/write/send while
 // doing on-demand connection when emulating FI_RDM endpoints.  The man
@@ -266,15 +304,23 @@ static void ofiErrReport(const char*, int, const char*);
 #define OFI_RIDE_OUT_EAGAIN(tcip, expr)                                 \
   do {                                                                  \
     ssize_t _ret;                                                       \
-    do {                                                                \
-      OFI_CHK_2(expr, _ret, -FI_EAGAIN);                                \
-      if (_ret == -FI_EAGAIN) {                                         \
-        (*tcip->ensureProgressFn)(tcip);                                \
-      }                                                                 \
-    } while (_ret == -FI_EAGAIN);                                       \
+    if (isAmHandler) {                                                  \
+      do {                                                              \
+        OFI_CHK_2(expr, _ret, -FI_EAGAIN);                              \
+        if (_ret == -FI_EAGAIN) {                                       \
+          (*tcip->ensureProgressFn)(tcip);                              \
+        }                                                               \
+      } while (_ret == -FI_EAGAIN                                       \
+               && !atomic_load_bool(&amHandlersExit));                  \
+    } else {                                                            \
+      do {                                                              \
+        OFI_CHK_2(expr, _ret, -FI_EAGAIN);                              \
+        if (_ret == -FI_EAGAIN) {                                       \
+          (*tcip->ensureProgressFn)(tcip);                              \
+        }                                                               \
+      } while (_ret == -FI_EAGAIN);                                     \
+    }                                                                   \
   } while (0)
-
-#define PTHREAD_CHK(expr) CHK_EQ_TYPED(expr, 0, int, "d")
 
 
 ////////////////////////////////////////
@@ -460,8 +506,6 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 // checkTxCQ() uses that to figure out what to update.
 //
 
-static __thread chpl_bool isAmHandler = false;
-
 typedef enum {
   txnTrkNone,  // no tracking, ptr is ignored
   txnTrkDone,  // *ptr is atomic bool 'done' flag
@@ -586,17 +630,17 @@ void bitmapSet(struct bitmap_t* b, size_t i) {
 
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
-  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
-  chpl_comm_taskPrvData_t* prvData;
-  if (task_prvData == NULL) {
-    assert(isAmHandler);
-    static __thread chpl_comm_taskPrvData_t amHandlerCommData;
-    prvData = &amHandlerCommData;
-  } else {
-    prvData = &task_prvData->comm_data;
+  chpl_task_infoRuntime_t* infoRuntime;
+  if ((infoRuntime = chpl_task_getInfoRuntime()) != NULL) {
+    return &infoRuntime->comm_data;
   }
 
-  return prvData;
+  if (isAmHandler) {
+    static __thread chpl_comm_taskPrvData_t amHandlerCommData;
+    return &amHandlerCommData;
+  }
+
+  return NULL;
 }
 
 
@@ -1521,7 +1565,7 @@ void init_ofiForAms(void) {
   // we'll die.
   //
   {
-    const size_t sz = AM_MAX_MSG_SIZE;
+    const size_t sz = chpl_numNodes * sizeof(struct amRequest_execOn_t);
     int ret;
     OFI_CHK_2(fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                         FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz)),
@@ -2050,16 +2094,87 @@ void chpl_comm_task_end(void) {
 // Interface: Active Messages
 //
 
-
 typedef enum {
-  am_opNil = 0,                         // no-op
-  am_opExecOn,                          // call a function table function
-  am_opExecOnLrg,                       // call fn tab fn, arg large/separate
-  am_opGet,                             // do an RMA GET
-  am_opPut,                             // do an RMA PUT
-  am_opAMO,                             // do an AMO
-  am_opShutdown,                        // signal main process for shutdown
+  am_opExecOn = CHPL_ARG_BUNDLE_KIND_COMM, // impl-nonspecific on-stmt
+  am_opExecOnLrg,                          // on-stmt, large arg
+  am_opGet,                                // do an RMA GET
+  am_opPut,                                // do an RMA PUT
+  am_opAMO,                                // do an AMO
+  am_opFree,                               // free some memory
+  am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
+
+static inline
+chpl_bool op_uses_on_bundle(amOp_t op) {
+  return op == am_opExecOn || op == am_opExecOnLrg;
+}
+
+//
+// Members are packed, potentially differently, in each AM request type
+// to reduce space requirements.  The 'op' member must come first in all
+// cases, so the AM handler can tell what kind of request it's looking
+// at.
+//
+
+typedef uint8_t amDone_t;
+
+struct amRequest_base_t {
+  chpl_arg_bundle_kind_t op;  // operation
+  c_nodeid_t node;            // initiator's node
+  amDone_t* pAmDone;          // initiator's 'done' flag; may be NULL
+#ifdef CHPL_COMM_DEBUG
+  uint32_t crc;
+  uint64_t seq;
+#endif
+};
+
+struct amRequest_RMA_t {
+  struct amRequest_base_t b;
+  void* addr;                   // address on AM target node
+  void* raddr;                  // address on AM initiator's node
+  size_t size;                  // number of bytes
+};
+
+typedef union {
+  int32_t i32;
+  uint32_t u32;
+  chpl_bool32 b32;
+  int64_t i64;
+  uint64_t u64;
+  _real32 r32;
+  _real64 r64;
+} chpl_amo_datum_t;
+
+struct amRequest_AMO_t {
+  struct amRequest_base_t b;
+  enum fi_op ofiOp;             // ofi AMO op
+  enum fi_datatype ofiType;     // ofi object type
+  int8_t size;                  // object size (bytes)
+  void* obj;                    // object address on target node
+  chpl_amo_datum_t operand1;    // first operand, if needed
+  chpl_amo_datum_t operand2;    // second operand, if needed
+  void* result;                 // result address on initiator's node
+};
+
+struct amRequest_free_t {
+  struct amRequest_base_t b;
+  void* p;                      // address to free, on AM target node
+};
+
+typedef union {
+  struct amRequest_base_t b;
+  struct amRequest_execOn_t xo;      // present only to set the max req size
+  struct amRequest_execOnLrg_t xol;
+  struct amRequest_RMA_t rma;
+  struct amRequest_AMO_t amo;
+  struct amRequest_free_t free;
+} amRequest_t;
+
+struct taskArg_RMA_t {
+  chpl_task_bundle_t hdr;
+  struct amRequest_RMA_t rma;
+};
+
 
 #ifdef CHPL_COMM_DEBUG
 static const char* am_opName(amOp_t);
@@ -2073,8 +2188,9 @@ static void amRequestExecOn(c_nodeid_t, c_sublocid_t, chpl_fn_int_t,
 static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
-static void amRequestCommon(c_nodeid_t, chpl_comm_on_bundle_t*, size_t,
-                            chpl_comm_amDone_t**, chpl_bool);
+static void amRequestFree(c_nodeid_t, void*);
+static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
+                            amDone_t**, chpl_bool);
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -2156,38 +2272,56 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
                      chpl_bool fast, chpl_bool blocking) {
   assert(!isAmHandler);
   CHK_TRUE(!(fast && !blocking)); // handler doesn't expect fast nonblocking
-  if (argSize <= AM_MAX_MSG_SIZE) {
-    arg->comm.xo = (struct chpl_comm_bundleData_execOn_t)
-                     { .b = (struct chpl_comm_bundleData_base_t)
-                            { .op = am_opExecOn, .node = chpl_nodeID },
-                       .fast = fast,
-                       .fid = fid,
-                       .argSize = argSize,
-                       .subloc = subloc,
-                       .pAmDone = NULL };
-    amRequestCommon(node, arg, argSize,
-                    blocking ? &arg->comm.xo.pAmDone : NULL, blocking);
+
+  arg->comm = (chpl_comm_bundleData_t) { .fast = fast,
+                                         .fid = fid,
+                                         .node = chpl_nodeID,
+                                         .subloc = subloc,
+                                         .argSize = argSize, };
+
+  if (argSize <= sizeof(amRequest_t)) {
+    //
+    // The arg bundle will fit in max-sized AM request; just send it.
+    //
+    arg->kind = am_opExecOn;
+    amRequestCommon(node, (amRequest_t*) arg, argSize,
+                    blocking ? (amDone_t**) &arg->comm.pAmDone : NULL,
+                    blocking /*yieldDuringTxnWait*/);
   } else {
-    arg->comm.xol = (struct chpl_comm_bundleData_execOnLrg_t)
-                      { .b = (struct chpl_comm_bundleData_base_t)
-                             { .op = am_opExecOnLrg, .node = chpl_nodeID },
-                        .fid = fid,
-                        .argSize = argSize,
-                        .arg = arg,
-                        .subloc = subloc,
-                        .gotArg = 0,
-                        .pAmDone = NULL };
-    chpl_atomic_thread_fence(memory_order_release);
-    amRequestCommon(node, arg, sizeof(*arg),
-                    blocking ? &arg->comm.xol.pAmDone : NULL, blocking);
-    if (!blocking) {
-      //
-      // Even if non-blocking, we cannot return until after the target
-      // node has retrieved the argument from us.
-      //
-      while (!*(volatile chpl_comm_amDone_t*) &arg->comm.xol.gotArg) {
-        local_yield();
-      }
+    //
+    // The arg bundle is too large for an AM request.  Send a copy of
+    // the header to the target and have it retrieve the payload part
+    // itself.
+    //
+    // For the nonblocking case we have to make a copy of the caller's
+    // payload because as soon as we return, the caller may destroy
+    // the original.  We also make a copy if the original is not in
+    // registered memory and needs to be, in order to save the target
+    // the overhead of doing an AM back to us to PUT the bundle to
+    // itself.
+    //
+    arg->kind = am_opExecOnLrg;
+    amRequest_t req = { .xol = { .hdr = *arg,
+                                 .pPayload = &arg->payload, }, };
+
+    chpl_bool heapCopyArg = !blocking || mrGetLocalKey(arg, argSize) != 0;
+    if (heapCopyArg) {
+      size_t payloadSize = argSize - offsetof(chpl_comm_on_bundle_t, payload);
+      CHPL_CALLOC_SZ(req.xol.pPayload, 1, payloadSize);
+      memcpy(req.xol.pPayload, &arg->payload, payloadSize);
+    }
+
+    amRequestCommon(node, &req, sizeof(req.xol),
+                    blocking ? (amDone_t**) &req.xol.hdr.comm.pAmDone : NULL,
+                    blocking /*yieldDuringTxnWait*/);
+
+    //
+    // If blocking and we heap-copied the arg, free that now.  The
+    // nonblocking case has to be handled from the target side, since
+    // only there do we know when we don't need the copy any more.
+    //
+    if (heapCopyArg && blocking) {
+      CHPL_FREE(req.xol.pPayload);
     }
   }
 }
@@ -2197,18 +2331,13 @@ static inline
 void amRequestRMA(c_nodeid_t node, amOp_t op,
                   void* addr, void* raddr, size_t size) {
   assert(!isAmHandler);
-  chpl_comm_on_bundle_t arg;
-  arg.comm.rma = (struct chpl_comm_bundleData_RMA_t)
-                   { .b = (struct chpl_comm_bundleData_base_t)
-                          { .op = op, .node = chpl_nodeID },
-                     .addr = raddr,
-                     .raddr = addr,
-                     .size = size,
-                     .pAmDone = NULL };
-  amRequestCommon(node, &arg,
-                  (offsetof(chpl_comm_on_bundle_t, comm)
-                   + sizeof(arg.comm.rma)),
-                  &arg.comm.rma.pAmDone, true);
+  amRequest_t req = { .rma = { .b = { .op = op,
+                                      .node = chpl_nodeID, },
+                               .addr = raddr,
+                               .raddr = addr,
+                               .size = size, }, };
+  amRequestCommon(node, &req, sizeof(req.rma),
+                  &req.b.pAmDone, true /*yieldDuringTxnWait*/);
 }
 
 
@@ -2235,28 +2364,22 @@ void amRequestAMO(c_nodeid_t node, void* object,
     }
   }
 
-  chpl_comm_on_bundle_t arg;
-  arg.comm.amo = (struct chpl_comm_bundleData_AMO_t)
-                   { .b = (struct chpl_comm_bundleData_base_t)
-                          { .op = am_opAMO, .node = chpl_nodeID },
-                     .ofiOp = ofiOp,
-                     .ofiType = ofiType,
-                     .size = size,
-                     .obj = object,
-                     .operand1 = { 0 },
-                     .operand2 = { 0 },
-                     .result = myResult,
-                     .pAmDone = NULL };
+  amRequest_t req = { .amo = { .b = { .op = am_opAMO,
+                                      .node = chpl_nodeID, },
+                               .ofiOp = ofiOp,
+                               .ofiType = ofiType,
+                               .size = size,
+                               .obj = object,
+                               .result = myResult, }, };
+
   if (operand1 != NULL) {
-    memcpy(&arg.comm.amo.operand1, operand1, size);
+    memcpy(&req.amo.operand1, operand1, size);
   }
   if (operand2 != NULL) {
-    memcpy(&arg.comm.amo.operand2, operand2, size);
+    memcpy(&req.amo.operand2, operand2, size);
   }
-  amRequestCommon(node, &arg,
-                  (offsetof(chpl_comm_on_bundle_t, comm)
-                   + sizeof(arg.comm.amo)),
-                  &arg.comm.amo.pAmDone, true);
+  amRequestCommon(node, &req, sizeof(req.amo),
+                  &req.b.pAmDone, true /*yieldDuringTxnWait*/);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
@@ -2265,27 +2388,35 @@ void amRequestAMO(c_nodeid_t node, void* object,
 
 
 static inline
+void amRequestFree(c_nodeid_t node, void* p) {
+  amRequest_t req = { .free = { .b = { .op = am_opFree,
+                                       .node = chpl_nodeID, },
+                                .p = p, }, };
+  amRequestCommon(node, &req, sizeof(req.free),
+                  NULL, false /*yieldDuringTxnWait*/);
+}
+
+
+static inline
 void amRequestShutdown(c_nodeid_t node) {
   assert(!isAmHandler);
-  chpl_comm_on_bundle_t arg;
-  arg.comm.b = (struct chpl_comm_bundleData_base_t)
-                 { .op = am_opShutdown, .node = chpl_nodeID };
-  amRequestCommon(node, &arg,
-                  (offsetof(chpl_comm_on_bundle_t, comm) + sizeof(arg.comm.b)),
-                  NULL, true);
+  amRequest_t req = { .b = { .op = am_opShutdown,
+                             .node = chpl_nodeID, }, };
+  amRequestCommon(node, &req, sizeof(req.b),
+                  NULL, true /*yieldDuringTxnWait*/);
 }
 
 
 static inline
 void amRequestCommon(c_nodeid_t node,
-                     chpl_comm_on_bundle_t* arg, size_t argSize,
-                     chpl_comm_amDone_t** ppAmDone,
+                     amRequest_t* req, size_t reqSize,
+                     amDone_t** ppAmDone,
                      chpl_bool yieldDuringTxnWait) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
-  chpl_comm_amDone_t amDone;
-  chpl_comm_amDone_t* pAmDone = NULL;
+  amDone_t amDone;
+  amDone_t* pAmDone = NULL;
   if (ppAmDone != NULL) {
     pAmDone = &amDone;
     if (mrGetLocalKey(pAmDone, sizeof(*pAmDone)) != 0) {
@@ -2311,25 +2442,32 @@ void amRequestCommon(c_nodeid_t node,
       PTHREAD_CHK(pthread_mutex_unlock(&seqLock));
     }
 
-    arg->comm.b.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
-
+    if (op_uses_on_bundle(req->b.op)) {
+      req->xo.hdr.comm.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
 #ifdef DEBUG_CRC_MSGS
-    arg->comm.b.crc = 0;
-    arg->comm.b.crc = xcrc32((void*) arg, argSize, 0xffffffff);
+      req->xo.hdr.comm.crc = 0;
+      req->xo.hdr.comm.crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
 #endif
+    } else {
+      req->b.seq = atomic_fetch_add_uint_least64_t(&seq, 1);
+#ifdef DEBUG_CRC_MSGS
+      req->b.crc = 0;
+      req->b.crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
+#endif
+    }
   }
 #endif
 
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-  chpl_comm_on_bundle_t* myArg = arg;
+  amRequest_t* myReq = req;
   void* mrDesc = NULL;
-  if (mrGetDesc(&mrDesc, myArg, argSize) != 0) {
-    myArg = allocBounceBuf(argSize);
-    DBG_PRINTF(DBG_AM, "AM arg BB: %p", myArg);
-    CHK_TRUE(mrGetDesc(NULL, myArg, argSize) == 0);
-    memcpy(myArg, arg, argSize);
+  if (mrGetDesc(&mrDesc, myReq, reqSize) != 0) {
+    myReq = allocBounceBuf(reqSize);
+    DBG_PRINTF(DBG_AM, "AM req BB: %p", myReq);
+    CHK_TRUE(mrGetDesc(NULL, myReq, reqSize) == 0);
+    memcpy(myReq, req, reqSize);
   }
 
   atomic_bool txnDone;
@@ -2339,10 +2477,13 @@ void amRequestCommon(c_nodeid_t node,
   DBG_PRINTF(DBG_AM | DBG_AMSEND,
              "tx AM req to %d: seqId %d:%" PRIu64 ", %s, size %zd, "
              "pAmDone %p, ctx %p",
-             node, chpl_nodeID, myArg->comm.b.seq,
-             am_opName(myArg->comm.b.op), argSize, pAmDone, ctx);
+             node, chpl_nodeID,
+             (op_uses_on_bundle(req->b.op)
+              ? req->xo.hdr.comm.seq
+              : myReq->b.seq),
+             am_opName(myReq->b.op), reqSize, pAmDone, ctx);
   OFI_RIDE_OUT_EAGAIN(tcip,
-                      fi_send(tcip->txCtx, myArg, argSize,
+                      fi_send(tcip->txCtx, myReq, reqSize,
                               mrDesc, rxMsgAddr(tcip, node), ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
@@ -2350,8 +2491,8 @@ void amRequestCommon(c_nodeid_t node,
   atomic_destroy_bool(&txnDone);
   tciFree(tcip);
 
-  if (myArg != arg) {
-    freeBounceBuf(myArg);
+  if (myReq != req) {
+    freeBounceBuf(myReq);
   }
 
   if (pAmDone != NULL) {
@@ -2360,7 +2501,7 @@ void amRequestCommon(c_nodeid_t node,
     //
     DBG_PRINTF(DBG_AM | DBG_AMSEND,
                "waiting for amDone indication in %p", pAmDone);
-    while (!*(volatile chpl_comm_amDone_t*) pAmDone) {
+    while (!*(volatile amDone_t*) pAmDone) {
       local_yield();
     }
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw amDone indication in %p", pAmDone);
@@ -2376,7 +2517,6 @@ void amRequestCommon(c_nodeid_t node,
 //
 
 static int numAmHandlersActive;
-static atomic_bool amHandlersExit;
 static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -2386,12 +2526,11 @@ static void processRxAmReq(struct perTxCtxInfo_t*);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
 static inline void amWrapExecOnBody(void*);
 static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
-static void amWrapExecOnLrgBody(void*);
-static void amWrapGet(void*);
-static void amWrapPut(void*);
-static void amHandleAMO(chpl_comm_on_bundle_t*);
-static inline void amSendDone(struct chpl_comm_bundleData_base_t*,
-                              chpl_comm_amDone_t*);
+static void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t*);
+static void amWrapGet(struct taskArg_RMA_t*);
+static void amWrapPut(struct taskArg_RMA_t*);
+static void amHandleAMO(struct amRequest_AMO_t*);
+static inline void amSendDone(c_nodeid_t, amDone_t*);
 
 static inline void doCpuAMO(void*, const void*, const void*, void*,
                             enum fi_op, enum fi_datatype, size_t size);
@@ -2421,7 +2560,7 @@ void fini_amHandling(void) {
 
   //
   // Tear down the AM handler thread(s).  On node 0, don't proceed from
-  // here until the last one has finished (TODO).
+  // here until the last one has finished.
   //
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   atomic_store_bool(&amHandlersExit, true);
@@ -2542,67 +2681,84 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       //
       // This event is for an inbound AM request.  Handle it.
       //
-      chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) cqes[i].buf;
+      amRequest_t* req = (amRequest_t*) cqes[i].buf;
       DBG_PRINTF(DBG_AM | DBG_AMRECV,
                  "CQ rx AM req @ buffer offset %zd: "
                  "seqId %d:%" PRIu64 ", %s, size %zd",
                  (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
-                 req->comm.b.node, req->comm.b.seq,
-                 am_opName(req->comm.b.op), cqes[i].len);
+                 (op_uses_on_bundle(req->b.op)
+                  ? req->xo.hdr.comm.node
+                  : req->b.node),
+                 (op_uses_on_bundle(req->b.op)
+                  ? req->xo.hdr.comm.seq
+                  : req->b.seq),
+                 am_opName(req->b.op), cqes[i].len);
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
       if (DBG_TEST_MASK(DBG_AM)) {
-        unsigned int sent_crc = req->comm.b.crc;
-        req->comm.b.crc = 0;
-        unsigned int rcvd_crc = xcrc32((void*) req, req->comm.xo.argSize,
-                                       0xffffffff);
+        uint32_t sent_crc, rcvd_crc;
+        size_t reqSize;
+        if (op_uses_on_bundle(req->b.op)) {
+          sent_crc = req->xo.hdr.comm.crc;
+          req->xo.hdr.comm.crc = 0;
+          reqSize = req->xo.hdr.comm.argSize;
+        } else {
+          sent_crc = req->b.crc;
+          req->b.crc = 0;
+          reqSize = (req->b.op == am_opGet || req->b.op == am_opPut)
+                    ? sizeof(struct amRequest_RMA_t)
+                    : (req->b.op == am_opAMO)
+                    ? sizeof(struct amRequest_AMO_t)
+                    : (req->b.op == am_opFree)
+                    ? sizeof(struct amRequest_free_t)
+                    : (req->b.op == am_opFree)
+                    ? sizeof(struct amRequest_free_t)
+                    : sizeof(struct amRequest_base_t);
+        }
+        uint32_t rcvd_crc = xcrc32((void*) req, reqSize, ~(uint32_t) 0);
         CHK_TRUE(rcvd_crc == sent_crc);
       }
 #endif
 
-      switch (req->comm.b.op) {
+      switch (req->b.op) {
       case am_opExecOn:
-        if (req->comm.xo.fast) {
-          amWrapExecOnBody(req);
+        if (req->xo.hdr.comm.fast) {
+          amWrapExecOnBody(&req->xo.hdr);
         } else {
-          amHandleExecOn(req);
+          amHandleExecOn(&req->xo.hdr);
         }
         break;
 
       case am_opExecOnLrg:
-        amHandleExecOnLrg(req);
+        amHandleExecOnLrg(&req->xol.hdr);
         break;
 
       case am_opGet:
-        //
-        // We use a task here mainly to ensure that the GET this AM
-        // performs completes before we send the 'done' indicator.  If
-        // the AM handler did the GET directly, its contextless RMA
-        // completion counter would make it hard to tell when that GET
-        // had completed.
-        //
-        chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
-                                 chpl_comm_on_bundle_task_bundle(req),
-                                 sizeof(*req), c_sublocid_any,
-                                 chpl_nullTaskID);
+        {
+          struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
+                                       .rma = req->rma, };
+          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
+                                   &arg, sizeof(arg), c_sublocid_any,
+                                   chpl_nullTaskID);
+        }
         break;
 
       case am_opPut:
-        //
-        // We use a task here mainly to ensure that the PUT this AM
-        // performs completes before we send the 'done' indicator.  If
-        // the AM handler did the PUT directly, its contextless RMA
-        // completion counter would make it hard to tell when that PUT
-        // had completed.
-        //
-        chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
-                                 chpl_comm_on_bundle_task_bundle(req),
-                                 sizeof(*req), c_sublocid_any,
-                                 chpl_nullTaskID);
+        {
+          struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
+                                       .rma = req->rma, };
+          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
+                                   &arg, sizeof(arg), c_sublocid_any,
+                                   chpl_nullTaskID);
+        }
         break;
 
       case am_opAMO:
-        amHandleAMO(req);
+        amHandleAMO(&req->amo);
+        break;
+
+      case am_opFree:
+        CHPL_FREE(req->free.p);
         break;
 
       case am_opShutdown:
@@ -2610,7 +2766,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       default:
-        INTERNAL_ERROR_V("unexpected AM op %d", req->comm.b.op);
+        INTERNAL_ERROR_V("unexpected AM op %d", (int) req->b.op);
         break;
       }
     }
@@ -2634,127 +2790,127 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
 static
 void amHandleExecOn(chpl_comm_on_bundle_t* req) {
-  struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+  chpl_comm_bundleData_t* comm = &req->comm;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amHandleExecOn(seqId %d:%" PRIu64 "): fid %d, pAmDone %p",
-             (int) xo->b.node, xo->b.seq, xo->fid, xo->pAmDone);
+             (int) comm->node, comm->seq, comm->fid, comm->pAmDone);
 
   //
   // We only need a wrapper if we have to send a 'done' indicator back
   // or we need to produce the AM debug output.
   //
-  chpl_fn_p fn = ((xo->pAmDone == NULL && !DBG_TEST_MASK(DBG_AM | DBG_AMRECV))
-                  ? chpl_ftable[xo->fid]
-                  : (chpl_fn_p) amWrapExecOnBody);
-  chpl_task_startMovedTask(xo->fid, fn, chpl_comm_on_bundle_task_bundle(req),
-                           xo->argSize, xo->subloc, chpl_nullTaskID);
+  chpl_fn_p fn = (comm->pAmDone == NULL && !DBG_TEST_MASK(DBG_AM | DBG_AMRECV))
+                 ? chpl_ftable[comm->fid]
+                 : (chpl_fn_p) amWrapExecOnBody;
+  chpl_task_startMovedTask(comm->fid, fn, req,
+                           comm->argSize, comm->subloc, chpl_nullTaskID);
 }
 
 
 static inline
 void amWrapExecOnBody(void* p) {
-  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
-  struct chpl_comm_bundleData_execOn_t* xo = &req->comm.xo;
+  chpl_comm_bundleData_t* comm = &((chpl_comm_on_bundle_t*) p)->comm;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amWrapExecOnBody(seqId %d:%" PRIu64 "): "
              "%schpl_ftable_call(%d, %p)",
-             (int) xo->b.node, xo->b.seq,
-             (xo->fast ? "fast " : ""), (int) xo->fid, p);
+             (int) comm->node, comm->seq,
+             (comm->fast ? "fast " : ""), (int) comm->fid, p);
 
-  chpl_ftable_call(xo->fid, p);
-  if (xo->pAmDone != NULL) {
-    amSendDone(&xo->b, xo->pAmDone);
+  chpl_ftable_call(comm->fid, p);
+  if (comm->pAmDone != NULL) {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amWrapExecOnBody(seqId %d:%" PRIu64 "): set pAmDone %p",
+               (int) comm->node, comm->seq, comm->pAmDone);
+    amSendDone(comm->node, comm->pAmDone);
   } else {
     DBG_PRINTF(DBG_AM | DBG_AMRECV,
-               "amWrapExecOnBody(seqId %d:%" PRIu64 " NB): amDone",
-               (int) xo->b.node, xo->b.seq);
+               "amWrapExecOnBody(seqId %d:%" PRIu64 " NB): done",
+               (int) comm->node, comm->seq);
   }
 }
 
 
-static
+static inline
 void amHandleExecOnLrg(chpl_comm_on_bundle_t* req) {
-  struct chpl_comm_bundleData_execOnLrg_t* xol = &req->comm.xol;
+  struct amRequest_execOnLrg_t* xol = (struct amRequest_execOnLrg_t*) req;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amHandleExecOnLrg(seqId %d:%" PRIu64 "): fid %d, pAmDone %p",
-             (int) xol->b.node, xol->b.seq, xol->fid, xol->pAmDone);
-
-  chpl_task_startMovedTask(xol->fid, (chpl_fn_p) amWrapExecOnLrgBody,
-                           chpl_comm_on_bundle_task_bundle(req),
-                           xol->argSize, xol->subloc, chpl_nullTaskID);
+             "amHandleExecOnLrg(seqId %d:%" PRIu64 "): pPayload %p, sz %zd, "
+             "pAmDone %p",
+             (int) xol->hdr.comm.node, xol->hdr.comm.seq,
+             xol->pPayload, xol->hdr.comm.argSize,
+             xol->hdr.comm.pAmDone);
+  xol->hdr.kind = am_opExecOn;  // was am_opExecOnLrg, to direct us here
+  chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapExecOnLrgBody,
+                           xol, sizeof(*xol),
+                           xol->hdr.comm.subloc, chpl_nullTaskID);
 }
 
 
 static
-void amWrapExecOnLrgBody(void* p) {
-  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
-  struct chpl_comm_bundleData_execOnLrg_t* xol = &req->comm.xol;
-  c_nodeid_t node = xol->b.node;
-  DBG_PRINTF(DBG_AM | DBG_AMRECV,
-             "amWrapExecOnLrgBody(seqId %d:%" PRIu64 "): "
-             "chpl_ftable_call(%d, %p)",
-             (int) node, xol->b.seq, (int) xol->fid, p);
+void amWrapExecOnLrgBody(struct amRequest_execOnLrg_t* xol) {
+  //
+  // TODO: We could stack-allocate "bundle" here, if it was small enough
+  //       (TBD) not to create the potential for stack overflow.  Some
+  //       systems have fast enough networks that saving the dynamic
+  //       alloc should be performance-visible.
+  //
 
   //
-  // Create space for the full bundle and fill in the header part from
-  // what we've already received.  Retrieve the remainder, that is, the
-  // args proper, from the initiating node.
+  // The bundle header is in our argument, but we have to retrieve the
+  // payload from the initiating side.
   //
-  chpl_comm_on_bundle_t* reqCopy;
-  CHPL_CALLOC_SZ(reqCopy, 1, xol->argSize);
-  chpl_memcpy(reqCopy, req, xol->argSize);
-  req = reqCopy;
-  xol = &req->comm.xol;
+  chpl_comm_bundleData_t* comm = &xol->hdr.comm;
+  c_nodeid_t node = comm->node;
 
-  chpl_comm_on_bundle_t* reqOnOrig = (chpl_comm_on_bundle_t*) xol->arg;
-  size_t remnantSize = xol->argSize - sizeof(*req);
-  CHK_TRUE(mrGetKey(NULL, NULL, node, &reqOnOrig[1], remnantSize) == 0);
-  (void) ofi_get(&req[1], node, &reqOnOrig[1], remnantSize);
+  chpl_comm_on_bundle_t* bundle;
+  CHPL_CALLOC_SZ(bundle, 1, comm->argSize);
+  *bundle = xol->hdr;
+
+  size_t payloadSize = comm->argSize
+                       - offsetof(chpl_comm_on_bundle_t, payload);
+  CHK_TRUE(mrGetKey(NULL, NULL, node, xol->pPayload, payloadSize) == 0);
+  (void) ofi_get(&bundle->payload, node, xol->pPayload, payloadSize);
 
   //
-  // Iff this is a nonblocking executeOn, tell the initiator we've got
-  // the rest of the bundle.  They have to be held until we've got it,
-  // so that it doesn't disappear before then.  We don't have to do this
-  // for blocking executeOn because the initiator won't proceed until
-  // the entire executeOn is complete anyway.  We can save a little bit
-  // of time here by not waiting for a network response.  Either we or
+  // Iff this is a nonblocking executeOn, now that we have the payload
+  // we can free the copy of it on the initiating side.  In the blocking
+  // case the initiator will free it if that is necessary, since they
+  // have to wait for the whole executeOn to complete anyway.  We save
+  // some time here by not waiting for a network response.  Either we or
   // someone else will consume that completion later.  In the meantime
   // we can go ahead with the executeOn body.
   //
-  if (xol->pAmDone == NULL) {
-    static __thread chpl_comm_amDone_t* myGotArg = NULL;
-    if (myGotArg == NULL) {
-      myGotArg = allocBounceBuf(1);
-      *myGotArg = 1;
-    }
-
-    chpl_comm_amDone_t* origGotArg = &reqOnOrig->comm.xol.gotArg;
-    DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set gotArg (NB) %p",
-               (int) node, xol->b.seq, origGotArg);
-    ofi_put_ll(myGotArg, node, origGotArg, sizeof(*origGotArg),
-               txnTrkEncode(txnTrkNone, NULL), amTcip);
+  if (comm->pAmDone == NULL) {
+    amRequestFree(node, xol->pPayload);
   }
 
   //
   // Now we can finally call the body function.
   //
-  chpl_ftable_call(xol->fid, req);
-  if (xol->pAmDone != NULL) {
-    amSendDone(&xol->b, xol->pAmDone);
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amWrapExecOnLrgBody(seqId %d:%" PRIu64 "): "
+             "chpl_ftable_call(%d, %p)",
+             (int) node, bundle->comm.seq, (int) bundle->comm.fid, bundle);
+
+  chpl_ftable_call(bundle->comm.fid, bundle);
+  if (comm->pAmDone != NULL) {
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amWrapExecOnLrgBody(seqId %d:%" PRIu64 "): set pAmDone %p",
+               (int) node, comm->seq, comm->pAmDone);
+    amSendDone(node, comm->pAmDone);
   } else {
     DBG_PRINTF(DBG_AM | DBG_AMRECV,
-               "amWrapExecOnLrgBody(seqId %d:%" PRIu64 " NB): amDone",
-               (int) node, xol->b.seq);
+               "amWrapExecOnLrgBody(seqId %d:%" PRIu64 " NB): done",
+               (int) node, comm->seq);
   }
 
-  CHPL_FREE(req);
+  CHPL_FREE(bundle);
 }
 
 
 static
-void amWrapGet(void* p) {
-  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
-  struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
+void amWrapGet(struct taskArg_RMA_t* tsk_rma) {
+  struct amRequest_RMA_t* rma = &tsk_rma->rma;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amWrapGet(seqId %d:%" PRIu64 "): %p <- %d:%p (%zd bytes)",
              (int) rma->b.node, rma->b.seq,
@@ -2763,14 +2919,16 @@ void amWrapGet(void* p) {
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size) == 0);
   (void) ofi_get(rma->addr, rma->b.node, rma->raddr, rma->size);
 
-  amSendDone(&rma->b, rma->pAmDone);
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amWrapGet(seqId %d:%" PRIu64 "): set pAmDone %p",
+             (int) rma->b.node, rma->b.seq, rma->b.pAmDone);
+  amSendDone(rma->b.node, rma->b.pAmDone);
 }
 
 
 static
-void amWrapPut(void* p) {
-  chpl_comm_on_bundle_t* req = (chpl_comm_on_bundle_t*) p;
-  struct chpl_comm_bundleData_RMA_t* rma = &req->comm.rma;
+void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
+  struct amRequest_RMA_t* rma = &tsk_rma->rma;
   DBG_PRINTF(DBG_AM | DBG_AMRECV,
              "amWrapPut(seqId %d:%" PRIu64 ") %d:%p <-- %p (%zd bytes)",
              (int) rma->b.node, rma->b.seq,
@@ -2779,13 +2937,15 @@ void amWrapPut(void* p) {
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size) == 0);
   (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
-  amSendDone(&rma->b, rma->pAmDone);
+  DBG_PRINTF(DBG_AM | DBG_AMRECV,
+             "amWrapPut(seqId %d:%" PRIu64 "): set pAmDone %p",
+             (int) rma->b.node, rma->b.seq, rma->b.pAmDone);
+  amSendDone(rma->b.node, rma->b.pAmDone);
 }
 
 
 static
-void amHandleAMO(chpl_comm_on_bundle_t* req) {
-  struct chpl_comm_bundleData_AMO_t* amo = &req->comm.amo;
+void amHandleAMO(struct amRequest_AMO_t* amo) {
   if (amo->ofiOp == FI_CSWAP) {
     DBG_PRINTF(DBG_AM | DBG_AMRECV | DBG_AMO,
                "amHandleAMO(seqId %d:%" PRIu64 "): "
@@ -2852,30 +3012,30 @@ void amHandleAMO(chpl_comm_on_bundle_t* req) {
   }
 
   if (amo->b.node == chpl_nodeID) {
-    *amo->pAmDone = 1;
+    *amo->b.pAmDone = 1;
     chpl_atomic_thread_fence(memory_order_release);
   } else {
-    amSendDone(&amo->b, amo->pAmDone);
+    DBG_PRINTF(DBG_AM | DBG_AMRECV,
+               "amHandleAMO(seqId %d:%" PRIu64 "): set pAmDone %p",
+               (int) amo->b.node, amo->b.seq, amo->b.pAmDone);
+    amSendDone(amo->b.node, amo->b.pAmDone);
   }
 }
 
 
 static inline
-void amSendDone(struct chpl_comm_bundleData_base_t* b,
-                chpl_comm_amDone_t* pAmDone) {
-  static __thread chpl_comm_amDone_t* amDone = NULL;
+void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
+  static __thread amDone_t* amDone = NULL;
   if (amDone == NULL) {
     amDone = allocBounceBuf(1);
     *amDone = 1;
   }
 
   //
-  // Send the 'done' indicator without waiting for a completion.
+  // Send the 'done' indicator without waiting for the completion.
   // Either we or someone else will consume that completion later.
   //
-  DBG_PRINTF(DBG_AM, "AM seqId %d:%" PRIu64 ": set pAmDone (NB) %p",
-             (int) b->node, b->seq, pAmDone);
-  ofi_put_ll(amDone, b->node, pAmDone, sizeof(*pAmDone),
+  ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
              txnTrkEncode(txnTrkNone, NULL), amTcip);
 }
 
@@ -5079,12 +5239,12 @@ char* chpl_comm_ofi_dbg_val(const void* pV, enum fi_datatype ofiType) {
 static
 const char* am_opName(amOp_t op) {
   switch (op) {
-  case am_opNil: return "opNil";
   case am_opExecOn: return "opExecOn";
   case am_opExecOnLrg: return "opExecOnLrg";
   case am_opGet: return "opGet";
   case am_opPut: return "opPut";
   case am_opAMO: return "opAMO";
+  case am_opFree: return "opFree";
   case am_opShutdown: return "opShutdown";
   default: return "op???";
   }
