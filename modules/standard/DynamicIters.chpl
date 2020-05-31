@@ -82,7 +82,7 @@ where tag == iterKind.leader
   assert(chunkSize > 0); // caller's responsibility
 
   // # of tasks the range can fill. (fast) ceil so all work is represented
-  const numChunks; // : int causes a split-init failure
+  const numChunks: int;
 
   // divceilpos() doesn't accept two unsigned ints.
   // divceil() doesn't accept args of non-matching signedness.
@@ -125,10 +125,12 @@ where tag == iterKind.leader
         // There is local work in remain
         const chunkIdx = curChunkIdx.fetchAdd(1);
         const low = chunkIdx * chunkSize; /* remain.low is 0, stride is 1 */
-        const high: low.type =
-          if chunkSize >= max(low.type) - low
-          then max(low.type)
-          else low + chunkSize-1;
+        const high: low.type;
+
+        if chunkSize >= max(low.type) - low then
+          high = max(low.type);
+        else
+          high = low + chunkSize-1;
 
         if chunkIdx >= numChunks {
           /*
