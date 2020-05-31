@@ -177,11 +177,15 @@ class LocAccumStencilArr {
 
     // Even if the array elements don't need to be initialized now,
     // do initialize the fluff.
-    for i in this.locDom.myFluff {
-      if !this.locDom.contains(i) {
-        pragma "no auto destroy" pragma "unsafe"
-        var def: eltType;
-        __primitive("=", myElems[i], def);
+    if initElts == false {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        forall i in this.locDom.myFluff {
+          if !this.locDom.contains(i) {
+            pragma "no auto destroy" pragma "unsafe"
+            var def: eltType;
+            __primitive("=", myElems[i], def);
+          }
+        }
       }
     }
   }
@@ -200,9 +204,14 @@ class LocAccumStencilArr {
   proc deinit() {
     // Even if the array elements don't need to be de-initialized now,
     // do de-initialize the fluff.
-    for i in this.locDom.myFluff {
-      if !this.locDom.contains(i) {
-        chpl__autoDestroy(myElems[i]);
+    param needsDestroy = __primitive("needs auto destroy", eltType);
+    if needsDestroy {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        forall i in this.locDom.myFluff {
+          if !this.locDom.contains(i) {
+            chpl__autoDestroy(myElems[i]);
+          }
+        }
       }
     }
 
