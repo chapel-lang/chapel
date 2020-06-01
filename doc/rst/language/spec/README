@@ -1,8 +1,5 @@
-Please Note the spec has migrated from .tex files
-to .rst files and is now stored in $CHPL_HOME/doc/rst/language.
-
-
-
+[The following was developed back when spec was written in Latex / .tex
+however the principles still hold for the rst-formatted spec.]
 
 Each chapter on a feature (e.g. a data type) should have this structure:
 
