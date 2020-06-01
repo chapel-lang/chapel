@@ -12,3 +12,15 @@ proc test2() {
 }
 test2();
 
+proc test3() {
+  type T = (int, (shared C?, shared C?));
+  writeln(isDefaultInitializable(T));
+}
+test3();
+
+proc test4() {
+  type T = (int, (shared C, shared C));
+  writeln(isDefaultInitializable(T));
+}
+test4();
+
