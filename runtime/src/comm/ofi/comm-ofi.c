@@ -1673,10 +1673,10 @@ void chpl_comm_rollcall(void) {
            chpl_numNodes, chpl_nodeName());
 
   //
-  // Only node 0 does liveness checks, and only after we're sure all
-  // the other nodes' AM handlers are running.
+  // Only node 0 in multi-node programs does liveness checks, and only
+  // after we're sure all the other nodes' AM handlers are running.
   //
-  if (chpl_nodeID == 0) {
+  if (chpl_numNodes > 1 && chpl_nodeID == 0) {
     amDoLivenessChecks = true;
   }
 }
@@ -2102,7 +2102,7 @@ int mrGetLocalKey(void* addr, size_t size) {
 // Interface: memory consistency
 //
 
-static inline void amRequestNop(c_nodeid_t);
+static inline void amRequestNop(c_nodeid_t, chpl_bool);
 
 static inline
 void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
@@ -2126,7 +2126,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
     DBG_PRINTF(DBG_ORDER,
                "dummy AM to %d for %s ordering",
                (int) node, dbgOrderStr);
-    amRequestNop(node);
+    amRequestNop(node, true /*blocking*/);
   }
 }
 
@@ -2194,8 +2194,7 @@ typedef enum {
   am_opPut,                                // do an RMA PUT
   am_opAMO,                                // do an AMO
   am_opFree,                               // free some memory
-  am_opLiveness,                           // periodic liveness checks
-  am_opNop,                                // do nothing; used to ensure MCM
+  am_opNop,                                // do nothing; for MCM & liveness
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
 
@@ -2284,8 +2283,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
-static void amRequestLiveness(c_nodeid_t, amDone_t*);
-static void amRequestNop(c_nodeid_t);
+static void amRequestNop(c_nodeid_t, chpl_bool);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
 
@@ -2572,22 +2570,13 @@ void amRequestFree(c_nodeid_t node, void* p) {
 
 
 static inline
-void amRequestLiveness(c_nodeid_t node, amDone_t* pIsAlive) {
-  amRequest_t req = { .b = { .op = am_opLiveness,
-                             .node = chpl_nodeID,
-                             .pAmDone = pIsAlive}, };
-  amRequestCommon(node, &req, sizeof(req.b),
-                  NULL, false /*yieldDuringTxnWait*/, NULL);
-}
-
-
-static inline
-void amRequestNop(c_nodeid_t node) {
+void amRequestNop(c_nodeid_t node, chpl_bool blocking) {
   assert(!isAmHandler);
   amRequest_t req = { .b = { .op = am_opNop,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
-                  &req.b.pAmDone, false /*yieldDuringTxnWait*/, NULL);
+                  blocking ? &req.b.pAmDone : NULL,
+                  false /*yieldDuringTxnWait*/, NULL);
 }
 
 
@@ -2978,18 +2967,13 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         CHPL_FREE(req->free.p);
         break;
 
-      case am_opLiveness:
       case am_opNop:
-        //
-        // We reuse the amDone mechanism for liveness checks, so these
-        // actually differ only in their debug output.
-        //
-        DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "processRxAmReq(seqId %d:%" PRIu64 "): set %s %p",
-                   (int) req->b.node, req->b.seq,
-                   (req->b.op == am_opLiveness) ? "pIsAlive" : "pAmDone",
-                   req->b.pAmDone);
-        amSendDone(req->b.node, req->b.pAmDone);
+        if (req->b.pAmDone != NULL) {
+          DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                     "processRxAmReq(seqId %d:%" PRIu64 "): set pAmDone %p",
+                     (int) req->b.node, req->b.seq, req->b.pAmDone);
+          amSendDone(req->b.node, req->b.pAmDone);
+        }
         break;
 
       case am_opShutdown:
@@ -3269,55 +3253,51 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
 static inline
 void amCheckLiveness(void) {
   //
-  // (Only node 0 does liveness checks.)  We cycle through the other
-  // nodes, checking to make sure they're still alive.  To reduce the
-  // overhead, we do a liveness check no more frequently than every 10
-  // seconds and we also try not to make time calls much more frequently
-  // than that, because they're expensive.  To do a liveness check we
-  // set isAlive to 0, then send a 'liveness' AM to a remote node.  That
-  // node, if alive, will respond by setting our isAlive back to 1.  So
-  // if everything is alive, we should always see isAlive==1 when we
-  // look at it again.
+  // Only node 0 does liveness checks.  It cycles through the others,
+  // checking to make sure we can AM to them.  To minimize overhead, we
+  // try not to do a liveness check any more frequently than about every
+  // 10 seconds and we also try not to make time calls much more often
+  // than that, because they're expensive.  A "liveness check" is really
+  // just a check that we can send a no-op AM without an unrecoverable
+  // error resulting.  That's sufficient to get us an -EMFILE return if
+  // we run up against the open file limit, for example.
   //
-  static __thread int countInterval = 10000;
-  static __thread int count = 10000;
-  static __thread double lastTime;
   const double timeInterval = 10.0;
+  static __thread double lastTime = 0.0;
 
-  if (--count == 0) {
+  static __thread int countInterval = 10000;
+  static __thread int count;
+
+  if (lastTime == 0.0) {
+    //
+    // The first time we've been called, initialize.
+    //
+    lastTime = chpl_comm_ofi_time_get();
+    count = countInterval;
+  } else if (--count == 0) {
+    //
+    // After the first time, do the "liveness" checks and adjust the
+    // counter interval as needed.
+    //
     double time = chpl_comm_ofi_time_get();
-    if (time - lastTime < timeInterval) {
-      //
-      // We didn't wait long enough; adjust countInterval and try
-      // again.  Add some excess to avoid seeking perfection in
-      // countInterval, though.
-      //
-      int oldCountInterval = countInterval;
-      countInterval *= (timeInterval + 0.1) / (time - lastTime);
-      count = countInterval - oldCountInterval;
-    } else {
-      static __thread c_nodeid_t node = 1;  
-      static __thread amDone_t* pIsAlive = NULL;
-      if (pIsAlive == NULL) {
-        pIsAlive = allocBounceBuf(1);
-        *(volatile int*) pIsAlive = 1;
-      }
 
-      if (*(volatile int*) pIsAlive != 1) {
-        INTERNAL_ERROR_V("Node %d did not respond to liveness check "
-                         "in %.1f secs",
-                         (int) node, timeInterval);
-      }
-
-      if (--node == 0) {
-        node = chpl_numNodes - 1;
-      }
-      *(volatile int*) pIsAlive = 0;
-      amRequestLiveness(node, pIsAlive);
-
-      count = countInterval;
-      lastTime = time;
+    double timeRatio = (time - lastTime) / timeInterval;
+    const double minTimeRatio = 3.0 / 4.0;
+    const double maxTimeRatio = 4.0 / 3.0;
+    if (timeRatio < minTimeRatio) {
+      timeRatio = minTimeRatio;
+    } else if (timeRatio > maxTimeRatio) {
+      timeRatio = maxTimeRatio;
     }
+    countInterval /= timeRatio;
+
+    static __thread c_nodeid_t node = 1;
+    if (--node == 0) {
+      node = chpl_numNodes - 1;
+    }
+    amRequestNop(node, false /*blocking*/);
+    count = countInterval;
+    lastTime = time;
   }
 }
 
