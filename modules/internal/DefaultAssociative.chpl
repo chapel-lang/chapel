@@ -1098,13 +1098,8 @@ module DefaultAssociative {
     // Internal associative array interface
     //
 
-
     // internal helper
     proc _doDefaultInitSlot(slot: int, inAdd: bool) {
-      //
-      // TODO: Add case checking for tuples containing non-default initial-
-      // izable elements to primitive "type has default value".
-      //
       if !isDefaultInitializable(eltType) {
         if inAdd {
           halt("Can't resize domains whose arrays' elements don't " +
