@@ -1,0 +1,16 @@
+tuple-split-init-out.chpl:8: In function 'returnSharedTupleOut':
+tuple-split-init-out.chpl:8: error: Cannot default-initialize a tuple component of the type shared C
+note: non-nil class types do not support default initialization
+note: Consider using the type shared C? instead
+tuple-split-init-out.chpl:8: error: Cannot default-initialize a tuple component of the type shared C
+note: non-nil class types do not support default initialization
+note: Consider using the type shared C? instead
+tuple-split-init-out.chpl:14: Function 'returnSharedTupleOut' instantiated as: returnSharedTupleOut(arg: 2*shared C)
+tuple-split-init-out.chpl:22: In function 'returnOwnedTupleOut':
+tuple-split-init-out.chpl:22: error: Cannot default-initialize a tuple component of the type owned C
+note: non-nil class types do not support default initialization
+note: Consider using the type owned C? instead
+tuple-split-init-out.chpl:22: error: Cannot default-initialize a tuple component of the type owned C
+note: non-nil class types do not support default initialization
+note: Consider using the type owned C? instead
+tuple-split-init-out.chpl:28: Function 'returnOwnedTupleOut' instantiated as: returnOwnedTupleOut(arg: 2*owned C)
