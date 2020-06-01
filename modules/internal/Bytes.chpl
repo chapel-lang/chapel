@@ -27,22 +27,22 @@ data as characters assume that the bytes are ASCII characters.
 Creating :mod:`bytes`
 ------------------------
 
-- A :record:`bytes` can be created using the literals similar to strings:
+- A :mod:`bytes` can be created using the literals similar to strings:
 
 .. code-block:: chapel
 
    var b = b"my bytes";
 
-- If you need to create :record:`bytes` using a specific buffer (i.e. data in
-  another :record:`bytes`, a `c_string` or a C pointer) you can use the
+- If you need to create :mod:`bytes` using a specific buffer (i.e. data in
+  another :mod:`bytes`, a `c_string` or a C pointer) you can use the
   factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
 
-:mod:`bytes` and :record:`~String.string`
+:mod:`bytes` and :mod:`~String.string`
 --------------------------------------------
 
 As :mod:`bytes` can store arbitrary data, any :record:`~String.string` can be
-cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
-character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
+cast to :mod:`bytes`. In that event, the bytes will store UTF-8 encoded
+character data. However, a :mod:`bytes` can contain non-UTF-8 bytes and needs
 to be decoded to be converted to string.
 
 .. code-block:: chapel
@@ -210,7 +210,7 @@ module Bytes {
 
   /*
     Creates a new :mod:`bytes` which takes ownership of the internal buffer of a
-    `c_string`.The buffer will be freed when the :record:`bytes` is deinitialized.
+    `c_string`.The buffer will be freed when the :mod:`bytes` is deinitialized.
 
     :arg s: The `c_string` to take ownership of the buffer from
 
@@ -727,22 +727,22 @@ module Bytes {
   }
 
   /*
-    Slices the :record:`bytes`. Halts if r is non-empty and not completely
+    Slices the :mod:`bytes`. Halts if r is non-empty and not completely
     inside the range ``this.indices`` when compiled with `--checks`.
     `--fast` disables this check.
 
-    :arg r: The range of indices the new :record:`bytes` should be made from
+    :arg r: The range of indices the new :mod:`bytes` should be made from
 
-    :returns: a new :record:`bytes` that is a slice within
+    :returns: a new :mod:`bytes` that is a slice within
               ``this.indices``. If the length of `r` is zero, an empty
-              :record:`bytes` is returned.
+              :mod:`bytes` is returned.
    */
   inline proc bytes.this(r: range(?)) : bytes {
     return getSlice(this, r);
   }
-
+  
   /*
-    Checks if the :record:`bytes` is empty.
+    Checks if the :mod:`bytes` is empty.
 
     :returns: * `true`  -- when empty
               * `false` -- otherwise
@@ -752,11 +752,11 @@ module Bytes {
   }
 
   /*
-    Checks if the :record:`bytes` starts with any of the given arguments.
+    Checks if the :mod:`bytes` starts with any of the given arguments.
 
-    :arg needles: :record:`bytes` (s) to match against.
+    :arg needles: :mod:`bytes` (s) to match against.
 
-    :returns: * `true`--when the :record:`bytes` begins with one or more of the `needles`
+    :returns: * `true`--when the :mod:`bytes` begins with one or more of the `needles`
               * `false`--otherwise
    */
   inline proc bytes.startsWith(needles: bytes ...) : bool {
@@ -764,11 +764,11 @@ module Bytes {
   }
 
   /*
-    Checks if the :record:`bytes` ends with any of the given arguments.
+    Checks if the :mod:`bytes` ends with any of the given arguments.
 
-    :arg needles: :record:`bytes` (s) to match against.
+    :arg needles: :mod:`bytes` (s) to match against.
 
-    :returns: * `true`--when the :record:`bytes` ends with one or more of the `needles`
+    :returns: * `true`--when the :mod:`bytes` ends with one or more of the `needles`
               * `false`--otherwise
    */
   inline proc bytes.endsWith(needles: bytes ...) : bool {
@@ -776,34 +776,34 @@ module Bytes {
   }
 
   /*
-    Finds the argument in the :record:`bytes`
+    Finds the argument in the :mod:`bytes`
 
-    :arg needle: :record:`bytes` to search for
+    :arg needle: :mod:`bytes` to search for
 
     :arg region: an optional range defining the indices to search
                  within, default is the whole. Halts if the range is not
                  within ``this.indices``
 
     :returns: the index of the first occurrence from the left of `needle`
-              within the :record:`bytes`, or -1 if the `needle` is not in the
-              :record:`bytes`.
+              within the :mod:`bytes`, or -1 if the `needle` is not in the
+              :mod:`bytes`.
    */
   inline proc bytes.find(needle: bytes, region: range(?) = this.indices) : idxType {
     return _search_helper(needle, region, count=false): idxType;
   }
 
   /*
-    Finds the argument in the :record:`bytes`
+    Finds the argument in the :mod:`bytes`
 
-    :arg needle: The :record:`bytes` to search for
+    :arg needle: The :mod:`bytes` to search for
 
     :arg region: an optional range defining the indices to search within,
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
     :returns: the index of the first occurrence from the right of `needle`
-              within the :record:`bytes`, or -1 if the `needle` is not in the
-              :record:`bytes`.
+              within the :mod:`bytes`, or -1 if the `needle` is not in the
+              :mod:`bytes`.
    */
   inline proc bytes.rfind(needle: bytes, region: range(?) = this.indices) : idxType {
     return _search_helper(needle, region, count=false,
@@ -811,31 +811,31 @@ module Bytes {
   }
 
   /*
-    Counts the number of occurrences of the argument in the :record:`bytes`
+    Counts the number of occurrences of the argument in the :mod:`bytes`
 
-    :arg needle: The :record:`bytes` to search for
+    :arg needle: The :mod:`bytes` to search for
 
     :arg region: an optional range defining the substring to search within,
                  default is the whole. Halts if the range is not
                  within ``this.indices``
 
-    :returns: the number of times `needle` occurs in the :record:`bytes`
+    :returns: the number of times `needle` occurs in the :mod:`bytes`
    */
   inline proc bytes.count(needle: bytes, region: range(?) = this.indices) : int {
     return _search_helper(needle, region, count=true);
   }
 
   /*
-    Replaces occurrences of a :record:`bytes` with another.
+    Replaces occurrences of a :mod:`bytes` with another.
 
-    :arg needle: The :record:`bytes` to search for
+    :arg needle: The :mod:`bytes` to search for
 
-    :arg replacement: The :record:`bytes` to replace `needle` with
+    :arg replacement: The :mod:`bytes` to replace `needle` with
 
     :arg count: an optional argument specifying the number of replacements to
                 make, values less than zero will replace all occurrences
 
-    :returns: a copy of the :record:`bytes` where `replacement` replaces
+    :returns: a copy of the :mod:`bytes` where `replacement` replaces
               `needle` up to `count` times
    */
   inline proc bytes.replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
@@ -843,17 +843,17 @@ module Bytes {
   }
 
   /*
-    Splits the :record:`bytes` on `sep` yielding the bytes between each
+    Splits the :mod:`bytes` on `sep` yielding the bytes between each
     occurrence, up to `maxsplit` times.
 
-    :arg sep: The delimiter used to break the :record:`bytes` into chunks.
+    :arg sep: The delimiter used to break the :mod:`bytes` into chunks.
 
-    :arg maxsplit: The number of times to split the :record:`bytes`, negative values indicate no limit.
+    :arg maxsplit: The number of times to split the :mod:`bytes`, negative values indicate no limit.
 
-    :arg ignoreEmpty: * `true`-- Empty :record:`bytes` will not be yielded,
-                      * `false`-- Empty :record:`bytes` will be yielded
+    :arg ignoreEmpty: * `true`-- Empty :mod:`bytes` will not be yielded,
+                      * `false`-- Empty :mod:`bytes` will be yielded
 
-    :yields: :record:`bytes` 
+    :yields: :mod:`bytes` 
    */
   iter bytes.split(sep: bytes, maxsplit: int = -1,
              ignoreEmpty: bool = false): bytes {
@@ -863,10 +863,10 @@ module Bytes {
   /*
     Works as above, but uses runs of whitespace as the delimiter.
 
-    :arg maxsplit: The maximum number of times to split the :record:`bytes`,
+    :arg maxsplit: The maximum number of times to split the :mod:`bytes`,
                    negative values indicate no limit.
 
-    :yields: :record:`bytes` 
+    :yields: :mod:`bytes` 
    */
   iter bytes.split(maxsplit: int = -1) : bytes {
     if !this.isEmpty() {
@@ -948,16 +948,16 @@ module Bytes {
           var x = b"|".join(b"a",b"10",b"d");
           writeln(x); // prints: "a|10|d"
 
-      :arg S: :record:`bytes` values to be joined
+      :arg S: :mod:`bytes` values to be joined
 
-      :returns: A :record:`bytes`
+      :returns: A :mod:`bytes`
     */
     inline proc bytes.join(const ref S: bytes ...) : bytes {
       return _join(S);
     }
 
     /*
-      Returns a new :record:`bytes`, which is the concatenation of all of
+      Returns a new :mod:`bytes`, which is the concatenation of all of
       the :mod:`bytes` passed in with the contents of the method
       receiver inserted between them.
 
@@ -968,9 +968,9 @@ module Bytes {
           writeln(x); // prints: "a|10|d"
 
       :arg S: :mod:`bytes` values to be joined
-      :type S: tuple or array of :record:`mod`
+      :type S: tuple or array of :mod:`bytes`
 
-      :returns: A :record:`bytes`
+      :returns: A :mod:`bytes`
     */
     inline proc bytes.join(const ref x) : bytes where isTuple(x) {
       if !isHomogeneousTuple(x) || !isBytes(x[1]) then
@@ -1042,7 +1042,7 @@ module Bytes {
 
       :returns: a `3*bytes` consisting of the section before `sep`,
                 `sep`, and the section after `sep`. If `sep` is not found, the
-                tuple will contain the whole :record:`bytes`, and then two empty
+                tuple will contain the whole :mod:`bytes`, and then two empty
                 :mod:`bytes`.
     */
     inline proc const bytes.partition(sep: bytes) : 3*bytes {
