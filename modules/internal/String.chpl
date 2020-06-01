@@ -580,7 +580,7 @@ module String {
   }
 
   pragma "no doc"
-  proc chpl_createStringWithLiteral(x: c_string, length:int) {
+  proc chpl_createStringWithLiteral(x: c_string, length:int, numCodepoints: int) {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
