@@ -549,30 +549,46 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 }
 
 //
-// Build an 'import' statement
+// Takes a BlockStmt* containing one or more import statements and updates all
+// the import statements to have the specified privacy setting
 //
-BlockStmt* buildImportStmt(Expr* mod, bool privateImport) {
-  ImportStmt* newImport = new ImportStmt(mod, privateImport);
-  addModuleToSearchList(newImport, mod);
-
-  return buildChapelStmt(newImport);
+void setImportPrivacy(BlockStmt* list, bool isPrivate) {
+  INT_ASSERT(list->isRealBlockStmt());
+  for_alist(stmt, list->body) {
+    ImportStmt* import = toImportStmt(stmt);
+    INT_ASSERT(import);
+    import->isPrivate = isPrivate;
+  }
 }
 
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
-  ImportStmt* newImport = new ImportStmt(mod, rename, privateImport);
+ImportStmt* buildImportStmt(Expr* mod) {
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod);
   addModuleToSearchList(newImport, mod);
 
-  return buildChapelStmt(newImport);
+  return newImport;
 }
 
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                           bool privateImport) {
+ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod, rename);
+  addModuleToSearchList(newImport, mod);
+
+  return newImport;
+}
+
+//
+// Build an 'import' statement
+//
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -610,13 +626,14 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
-                                         &renameMap);
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
 
-  return buildChapelStmt(newImport);
+  return newImport;
 }
 
 //
