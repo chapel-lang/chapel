@@ -108,9 +108,9 @@ proc beginInteractiveSession() throws {
    "create the project.\nSuggestions for defaults are also provided which will be ", 
    "considered if no input is given.\n");
   writeln("Press ^C to quit interactive mode.");
-  var packageName : string;
-  var version : string;
-  var chapelVersion : string;
+  var packageName: string;
+  var version: string;
+  var chapelVersion: string;
   var gotCorrectPackageName = false;
   var gotCorrectPackageVersion = false;
   var gotCorrectChapelVersion = false;
@@ -119,14 +119,16 @@ proc beginInteractiveSession() throws {
       if gotCorrectPackageName == false {
         write("Package name: ");
         IO.stdout.flush();
-        readf("%s", packageName);
+        IO.stdin.readline(packageName);
+        packageName = packageName.strip();
         if validatePackageName(packageName) == true then
           gotCorrectPackageName = true;
       }
       if gotCorrectPackageVersion == false {
         write("Package version (0.1.0): ");
         IO.stdout.flush();
-        readf("%s", version);
+        IO.stdin.readline(version);
+        version = version.strip();
         if version == "" then version = "0.1.0";
         checkVersion(version); 
         gotCorrectPackageVersion = true;
@@ -135,12 +137,13 @@ proc beginInteractiveSession() throws {
         var currChapelVersion = getChapelVersionStr();
         write("Chapel version (" + currChapelVersion + "): ");
         IO.stdout.flush();
-        readf("%s", chapelVersion);
-        if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
+        IO.stdin.readline(chapelVersion);
+        chapelVersion = chapelVersion.strip();
         if chapelVersion == "" then chapelVersion = currChapelVersion;
         if chapelVersion != currChapelVersion then 
           throw new owned MasonError("This version of Chapel is deprecated. Please use" +
               " latest version " + currChapelVersion);
+        else gotCorrectChapelVersion = true;
       }
       if gotCorrectPackageName == true &&
          gotCorrectPackageVersion == true &&
