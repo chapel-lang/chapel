@@ -1208,16 +1208,6 @@ proc LocBlockCyclicArr.mdInd2FlatInd(i) {
       idx += localIdx * sizes(d+1);
     }
 
-    /*writeln(" whole= ", allocDom.globDom.whole,
-            " localeIndex= ", localeIndex,
-            " blocksize= ", blocksize,
-            " low= ", low,
-            " locsize= ", locsize,
-            " numblocks= ", numblocks,
-            " sizes= ", sizes,
-            " globalIndex= ", i,
-            " flatIndex= ", idx);*/
-
     return idx;
   }
 }
