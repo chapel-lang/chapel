@@ -62,8 +62,9 @@ proc masonNew(args) throws {
             show = true;
           }
           when '--interactive' {
-            beginInteractiveSession();
-            exit(1);
+            var interactivePkgName = beginInteractiveSession();
+            packageName = interactivePkgName;
+            dirName = packageName; 
           }
           when '--name' {
               packageName = args[countArgs];
@@ -119,7 +120,6 @@ proc beginInteractiveSession() throws {
         write("Package name: ");
         IO.stdout.flush();
         readf("%s", packageName);
-        writeln();
         if validatePackageName(packageName) == true then
           gotCorrectPackageName = true;
       }
@@ -128,7 +128,6 @@ proc beginInteractiveSession() throws {
         IO.stdout.flush();
         readf("%s", version);
         if version == "" then version = "0.1.0";
-        writeln();
         checkVersion(version); 
         gotCorrectPackageVersion = true;
       }
@@ -146,12 +145,14 @@ proc beginInteractiveSession() throws {
       if gotCorrectPackageName == true &&
          gotCorrectPackageVersion == true &&
          gotCorrectChapelVersion == true then break;
+    
     }
     catch e: MasonError {
       writeln(e.message());
       continue;
     }
   }
+  return packageName;
 }
 
 proc validatePackageName(dirName) throws {
