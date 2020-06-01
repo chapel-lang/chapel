@@ -1457,7 +1457,7 @@ void createInitStringLiterals() {
 }
 
 bool isValidString(std::string str, int* numCodepoints) {
-  return chpl_enc_validate_buf(str.c_str(), str.length(), &numCodepoints) == 0;
+  return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
 // Note that string immediate values are stored
