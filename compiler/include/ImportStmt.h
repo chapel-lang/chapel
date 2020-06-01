@@ -30,11 +30,11 @@ class ResolveScope;
 
 class ImportStmt: public VisibilityStmt {
  public:
-  ImportStmt(BaseAST* source, bool isPrivate);
-  ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
-  ImportStmt(BaseAST* source, bool isPrivate,
-             std::vector<const char*>* namesList,
-             std::map<const char*, const char*>* renamesList);
+  ImportStmt(BaseAST* source, bool isPrivate = true);
+  ImportStmt(BaseAST* source, const char* rename, bool isPrivate = true);
+  ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+             std::map<const char*, const char*>* renamesList,
+             bool isPrivate = true);
 
   DECLARE_COPY(ImportStmt);
 

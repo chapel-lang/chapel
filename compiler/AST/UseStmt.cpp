@@ -709,8 +709,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // list (could be all of the outer unqualified list)
           SET_LINENO(this);
 
-          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
-                                &newRenamed);
+          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
+                                isPrivate);
         } else {
           // all the unqualified identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -765,8 +765,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // There were symbols that were in both our 'only' list and the outer
           // unqualified list, so this module use is still interesting.
           SET_LINENO(this);
-          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
-                                &newRenamed);
+          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
+                                isPrivate);
 
         } else {
           // all of the unqualified and renamed identifiers in the outer import

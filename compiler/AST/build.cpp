@@ -565,9 +565,9 @@ void setImportPrivacy(BlockStmt* list, bool isPrivate) {
 // Build an 'import' statement
 //
 ImportStmt* buildImportStmt(Expr* mod) {
-  // Set the privacy to a dummy value until we know what it should be (which
+  // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
-  ImportStmt* newImport = new ImportStmt(mod, true);
+  ImportStmt* newImport = new ImportStmt(mod);
   addModuleToSearchList(newImport, mod);
 
   return newImport;
@@ -577,9 +577,9 @@ ImportStmt* buildImportStmt(Expr* mod) {
 // Build an 'import' statement
 //
 ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
-  // Set the privacy to a dummy value until we know what it should be (which
+  // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
-  ImportStmt* newImport = new ImportStmt(mod, rename, true);
+  ImportStmt* newImport = new ImportStmt(mod, rename);
   addModuleToSearchList(newImport, mod);
 
   return newImport;
@@ -626,10 +626,9 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
     }
   }
 
-  // Set the privacy to a dummy value until we know what it should be (which
+  // Leave the privacy a dummy value until we know what it should be (which
   // happens when we are done determining how many subexpressions there are)
-  ImportStmt* newImport = new ImportStmt(mod, true, &namesList,
-                                         &renameMap);
+  ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
