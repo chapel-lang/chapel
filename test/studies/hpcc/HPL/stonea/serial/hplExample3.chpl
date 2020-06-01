@@ -6,7 +6,7 @@
 //    step process of extracting ranges and defining regions with these).
 
 use Random;
-use Norm;
+use LinearAlgebra;
 
 config const n = 100;
 config const trials = 3;
