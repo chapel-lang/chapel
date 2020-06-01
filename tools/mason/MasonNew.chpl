@@ -20,7 +20,9 @@
 
 
 use Path;
+use IO;
 use Spawn;
+use MasonModify;
 use FileSystem;
 use MasonUtils;
 use MasonHelp;
@@ -59,6 +61,10 @@ proc masonNew(args) throws {
           when '--show' {
             show = true;
           }
+          when '--interactive' {
+            beginInteractiveSession();
+            exit(1);
+          }
           when '--name' {
               packageName = args[countArgs];
           }
@@ -77,7 +83,7 @@ proc masonNew(args) throws {
         }
       }
 
-      if validatePackageName(dirName=packageName) {
+      if validatePackageName(dirName=packageName) { 
         if isDir(dirName) {
           throw new owned MasonError("A directory named '" + dirName + "' already exists");
         }
@@ -88,6 +94,63 @@ proc masonNew(args) throws {
   catch e: MasonError {
     writeln(e.message());
     exit(1);
+  }
+}
+
+/*
+  Starts an interactive session to create a
+  new library project. 
+*/
+proc beginInteractiveSession() throws {
+  writeln("This is an interactive session to walk you through creating a library ",  
+   "project using Mason.\nThe following queries covers the common items required to ", 
+   "create the project.\nSuggestions for defaults are also provided which will be ", 
+   "considered if no input is given.\n");
+  writeln("Press ^C to quit interactive mode.");
+  var packageName : string;
+  var version : string;
+  var chapelVersion : string;
+  var gotCorrectPackageName = false;
+  var gotCorrectPackageVersion = false;
+  var gotCorrectChapelVersion = false;
+  while(1){   
+    try {
+      if gotCorrectPackageName == false {
+        write("Package name: ");
+        IO.stdout.flush();
+        readf("%s", packageName);
+        writeln();
+        if validatePackageName(packageName) == true then
+          gotCorrectPackageName = true;
+      }
+      if gotCorrectPackageVersion == false {
+        write("Package version (0.1.0): ");
+        IO.stdout.flush();
+        readf("%s", version);
+        if version == "" then version = "0.1.0";
+        writeln();
+        checkVersion(version); 
+        gotCorrectPackageVersion = true;
+      }
+      if gotCorrectChapelVersion == false {
+        var currChapelVersion = getChapelVersionStr();
+        write("Chapel version (" + currChapelVersion + "): ");
+        IO.stdout.flush();
+        readf("%s", chapelVersion);
+        if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
+        if chapelVersion == "" then chapelVersion = currChapelVersion;
+        if chapelVersion != currChapelVersion then 
+          throw new owned MasonError("This version of Chapel is deprecated. Please use" +
+              " latest version " + currChapelVersion);
+      }
+      if gotCorrectPackageName == true &&
+         gotCorrectPackageVersion == true &&
+         gotCorrectChapelVersion == true then break;
+    }
+    catch e: MasonError {
+      writeln(e.message());
+      continue;
+    }
   }
 }
 
