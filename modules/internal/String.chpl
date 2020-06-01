@@ -501,16 +501,14 @@ module String {
   // End index arithmetic support
 
   private proc validateEncoding(buf, len): int throws {
-    var numCps: int;
-    extern proc chpl_enc_validate_buf(buf, len, ref numCps) : c_int;
+    var numCodepoints: int;
+    extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
     
-    if chpl_enc_validate_buf(buf, len, numCps) != 0 {
+    if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
     }
-    extern proc printf(s...);
-    printf("validate encoding\n");
     
-    return numCps;
+    return numCodepoints;
   }
 
   private proc stringFactoryArgDepr() {
@@ -586,7 +584,8 @@ module String {
     // compilation.
     return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
                                                  length=length,
-                                                 size=length+1);
+                                                 size=length+1,
+                                                 numCodepoints);
   }
 
   /*
@@ -611,9 +610,7 @@ module String {
   inline proc createStringWithBorrowedBuffer(x: bufferType,
                                              length: int, size: int) throws {
     var ret: string;
-    ret.numCp = validateEncoding(x, length);
-    extern proc printf(s...);
-    printf("borrowed buffer");
+    ret.cachedNumCodepoints = validateEncoding(x, length);
     initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
@@ -629,12 +626,14 @@ module String {
   pragma "no doc"
   private inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
                                                             length: int,
-                                                            size: int) {
+                                                            size: int,
+                                                            numCodepoints: int) {
     // NOTE: This is similar to chpl_createStringWithLiteral above, but only
     // used internally by the String module. These two functions cannot have the
     // same names, because "wellknown" implementation in the compiler does not
     // allow overloads.
     var ret: string;
+    ret.cachedNumCodepoints = numCodepoints;
     initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
@@ -701,8 +700,6 @@ module String {
                                           length: int, size: int) throws {
     var ret: string;
     ret.cachedNumCodepoints = validateEncoding(x, length);
-    extern proc printf(s...);
-    printf("owned buffer\n");
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
@@ -736,8 +733,6 @@ module String {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     initWithNewBuffer(ret, x);
-    extern proc printf(s...);
-    printf("new buffer\n");
     return ret;
   }
 
@@ -892,18 +887,18 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
-          return chpl_createStringWithNewBufferNV(
+          return try! createStringWithNewBuffer(
                       chpl__getInPlaceBufferData(data.shortData),
                       data.buffLen,
                       data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.buffLen);
-          return chpl_createStringWithOwnedBufferNV(localBuff,
+          return try! createStringWithOwnedBuffer(localBuff,
                                                     data.buffLen,
                                                     data.size);
         }
       } else {
-        return chpl_createStringWithBorrowedBufferNV(data.buff,
+        return try! createStringWithBorrowedBuffer(data.buff,
                                                      data.buffLen,
                                                      data.size);
       }
@@ -1175,11 +1170,7 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc string.size {
-    extern proc printf(s...);
-    printf("size called\n");
-    return cachedNumCodepoints;
-  }
+  inline proc string.size return cachedNumCodepoints;
 
   /*
     :returns: The indices that can be used to index into the string
@@ -1208,9 +1199,9 @@ module String {
         n += 1;
       }
       return n;
-      } else {
-        return cachedNumCodepoints;
-      }
+    } else {
+      return cachedNumCodepoints;
+    }
   }
   
   /*
