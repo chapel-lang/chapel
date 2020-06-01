@@ -186,7 +186,6 @@ are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 
 module LinearAlgebra {
 
-use Norm; // TODO -- merge Norm into LinearAlgebra
 import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
