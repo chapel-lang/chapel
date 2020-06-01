@@ -45,6 +45,15 @@ clobber: FORCE
 libfabric: configure-libfabric build-libfabric install-libfabric
 
 configure-libfabric: FORCE
+#
+# These first few lines touch some autoconf-oriented files in a
+# certain order to prevent autoconf from running again.
+#
+	touch $(LIBFABRIC_SUBDIR)/configure
+	find $(LIBFABRIC_SUBDIR)/. -name Makefile.in | xargs touch
+#
+# Then configure
+#
 	mkdir -p $(LIBFABRIC_BUILD_DIR)
 	cd $(LIBFABRIC_BUILD_DIR) && $(LIBFABRIC_SUBDIR)/configure CC='$(CC)' CFLAGS='$(CFLAGS)' $(CHPL_LIBFABRIC_CFG_OPTIONS)
 
