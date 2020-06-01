@@ -31,9 +31,9 @@ Initializing Modules:
            InsertionSort
         ChapelDistribution
          LinkedLists
-        DefaultAssociative
         ExternalArray
         RangeChunk
+        ChapelHashtable
        ChapelNumLocales
        Sys
       LocaleModelHelpRuntime
