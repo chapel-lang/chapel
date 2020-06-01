@@ -2594,6 +2594,7 @@ stylesheet
 
 FILEID: 3f2e197e-1d0a-11e6-a3a6-10ddb1d4c3d5
 fptr
+symi
 
 FILEID: 77ab2706-1d0a-11e6-a3a6-10ddb1d4c3d5
 linenum
@@ -3700,6 +3701,7 @@ adaptative
 binarytrees
 chapcs
 chplgmp
+coargsort
 dclass
 kace
 linkedlist
@@ -4431,6 +4433,7 @@ rview
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
 adom
 arange
+aref
 athbf
 atype
 azero
@@ -4445,6 +4448,7 @@ csrmatmat
 csrmatvec
 czero
 eigvals
+eigvalsh
 extbf
 geev
 gemm
@@ -4453,10 +4457,12 @@ gesdd
 gesvd
 getrf
 getri
+heev
 igma
 indptr
 ipiv
 itern
+jobz
 lapacke
 lblas
 ldom
@@ -4475,6 +4481,7 @@ smmp
 superdiagonal
 superdiagonals
 swaprow
+syev
 udom
 unconverged
 vlcplx
@@ -4692,6 +4699,8 @@ bxor
 cfgav
 cfgfab
 cfgfabsall
+cmpl
+cmpls
 commprogress
 comparand
 configmore
@@ -5220,6 +5229,9 @@ oldp
 FILEID: d56c6ea6-68b8-11ea-b972-843835579daa
 nomultithread
 
+FILEID: f824f208-a3e4-11ea-8acb-843835579daa
+globalvars
+
 NATURAL:
 aarch
 abcd
@@ -5304,10 +5316,12 @@ aries
 aristotle
 arity
 arizona
+arkouda
 armenian
 arounds
 arpa
 arrayness
+arrayview
 asciiz
 ascontiguousarray
 asenjo
@@ -5320,6 +5334,7 @@ astloc
 astlocs
 asts
 atanh
+atexit
 atlassian
 atleast
 atmpvc
@@ -5358,6 +5373,7 @@ bdver
 behaviour
 benchmarksgame
 bendre
+benefitted
 bengali
 benharsh
 benhavns
@@ -5699,6 +5715,7 @@ deinitialized
 deinitializers
 deinitializes
 deinitializing
+deiniting
 deinits
 deitz
 delaney
@@ -5876,6 +5893,7 @@ elibmax
 elibscn
 ellen
 elliot
+elogin
 eloop
 elts
 elttype
@@ -6718,6 +6736,7 @@ metaop
 mfac
 mferguson
 mgmt
+mhmerrill
 michael
 microsoft
 milano
@@ -6803,6 +6822,7 @@ myflag
 myfree
 myfunc
 myint
+mylist
 myloc
 mylow
 mymalloc
@@ -7099,6 +7119,7 @@ popcount
 portably
 posixpath
 poslast
+postalloc
 postamble
 postblit
 postfields
@@ -7272,6 +7293,7 @@ refactors
 refarg
 refcnt
 refcount
+referenceable
 referencees
 refness
 refpair
@@ -7631,6 +7653,7 @@ subregions
 subscripting
 subsequence
 substrings
+substrs
 subtable
 subtest
 subtime

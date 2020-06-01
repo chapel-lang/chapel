@@ -405,6 +405,9 @@
   "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/extern.rst"
   ],
+  "f824f208-a3e4-11ea-8acb-843835579daa": [
+    "doc/rst/technotes/globalvars.rst"
+  ],
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
   ],
