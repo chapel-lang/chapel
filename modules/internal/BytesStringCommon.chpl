@@ -26,7 +26,7 @@ module BytesStringCommon {
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`~String.string`.
+     when decoding a :mod:`Bytes` into a UTF-8 :record:`~String.string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
@@ -40,7 +40,7 @@ module BytesStringCommon {
   /*
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8
      bytes when encoding a :record:`~String.string` into a
-     :record:`~Bytes.bytes`.
+     :mod:`~Bytes`.
        
        - **pass**: default policy; copy directly
        - **unescape**: recover the original data from the escaped data
