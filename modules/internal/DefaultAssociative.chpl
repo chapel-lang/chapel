@@ -254,11 +254,11 @@ module DefaultAssociative {
         if aSlot.isFull() {
           var idx = slot;
           if !sameDom {
-            const (match, loc) = _findSlot(aSlot.key, needLock=false);
+            const (match, loc) = table.findFullSlot(aSlot.key);
             if !match then halt("zippered associative domains do not match");
             idx = loc;
           }
-          yield table[idx].key;
+          yield table.table[idx].key;
         }
       }
     }
@@ -341,6 +341,12 @@ module DefaultAssociative {
         // Add the element since it was not already present
         table.fillSlot(slotNum, idx, none);
         numEntries.add(1);
+
+        // default initialize newly added array elements
+        for arr in _arrs {
+          arr._defaultInitSlot(slotNum);
+        }
+
         return (slotNum, 1);
       }
     }
