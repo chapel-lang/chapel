@@ -37,10 +37,10 @@ Creating :record:`bytes`
   another :record:`bytes`, a `c_string` or a C pointer) you can use the
   factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
 
-:record:`bytes` and :record:`~String.string`
+:record:`bytes` and :mod:`~String`
 --------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`~String.string` can be
+As :record:`bytes` can store arbitrary data, any :mod:`~String` can be
 cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
 to be decoded to be converted to string.
