@@ -37,12 +37,13 @@ Creating :mod:`Bytes`
   another :mod:`Bytes`, a `c_string` or a C pointer) you can use the
   factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
 
-:mod:`Bytes` and :record:`~String.string`
+:mod:`Bytes` and :mod:`~String`
 --------------------------------------------
 
-As :mod:`Bytes` can store arbitrary data, any :record:`~String.string` can be
+As :mod:`Bytes` can store arbitrary data, any :mod:`~String` can be
 cast to :mod:`Bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :mod:`Bytes` can contain non-UTF-8 bytes and needs
+>>>>>>> master
 to be decoded to be converted to string.
 
 .. code-block:: chapel

@@ -67,9 +67,9 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
   gImportStmts.add(this);
 }
 
-ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
-                       std::vector<const char*>* namesList,
-                       std::map<const char*, const char*>* renamesMap):
+ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+                       std::map<const char*, const char*>* renamesMap,
+                       bool isPrivate):
   VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
@@ -108,7 +108,7 @@ ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   if (modRename != astr("")) {
     _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
   } else {
-    _this = new ImportStmt(COPY_INT(src), isPrivate, &unqualified, &renamed);
+    _this = new ImportStmt(COPY_INT(src), &unqualified, &renamed, isPrivate);
   }
 
   return _this;
@@ -647,7 +647,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // The list will be shorter, create a new ImportStmt with it.
       SET_LINENO(this);
 
-      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+      return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
     }
 
   } else {
@@ -703,7 +703,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // There were symbols that were in both lists, so this module use is still
       // interesting.
       SET_LINENO(this);
-      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+      return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
 
     } else {
       // all of the 'only' identifiers in the outer use
@@ -790,7 +790,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
         // There were symbols that were in both lists, so this module use is
         // still interesting.
         SET_LINENO(this);
-        return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+        return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
 
       } else {
         // all of the identifiers in the outer import were missing from the
