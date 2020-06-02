@@ -175,6 +175,7 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
   return (packageName, version, chapelVersion);
 }
 
+/* Previews the Mason.toml file that is going to be created */
 proc previewMasonFile(packageName, version, chapelVersion) {
   const baseToml = '[brick]\n' +
                      'name = "' + packageName + '"\n' +
@@ -187,6 +188,7 @@ proc previewMasonFile(packageName, version, chapelVersion) {
   writeln(baseToml);
 }
 
+/* Perform validation checks on Chapel Version */
 proc validateChplVersion(chapelVersion) throws {
   var low, hi : VersionInfo;
   const tInfo = getChapelVersionInfo();
@@ -199,6 +201,7 @@ proc validateChplVersion(chapelVersion) throws {
   else return true;
 }
 
+/* Checks for illegal package names */
 proc validatePackageName(dirName) throws {
   if dirName == '' {
     throw new owned MasonError("No package name specified");
@@ -246,13 +249,14 @@ proc InitProject(dirName, packageName, vcs, show,
   }
 }
 
-
+/* Runs the git init command */
 proc gitInit(dirName: string, show: bool) {
   var initialize = "git init -q " + dirName;
   if show then initialize = "git init " + dirName;
   runCommand(initialize);
 }
 
+/* Adds .gitignore to library project */
 proc addGitIgnore(dirName: string) {
   var toIgnore = "target/\nMason.lock\n";
   var gitIgnore = open(dirName+"/.gitignore", iomode.cw);
@@ -261,6 +265,7 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
+/* Creates the Mason.toml file */
 proc makeBasicToml(dirName: string, path: string, version: string, chplVersion: string) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();
@@ -281,10 +286,12 @@ proc makeBasicToml(dirName: string, path: string, version: string, chplVersion: 
   tomlWriter.close();
 }
 
+/* Creates the src directory */
 proc makeSrcDir(path:string) {
   mkdir(path + "/src");
 }
 
+/* Makes module file inside src/ */
 proc makeModule(path:string, fileName:string) {
   const libTemplate = '/* Documentation for ' + fileName +
   ' */\nmodule '+ fileName + ' {\n  writeln("New library: '+ fileName +'");\n}';
@@ -294,10 +301,12 @@ proc makeModule(path:string, fileName:string) {
   libWriter.close();
 }
 
+/* Creates the test directory */
 proc makeTestDir(path:string) {
   mkdir(path + "/test");
 }
 
+/* Creates the example directory */
 proc makeExampleDir(path:string) {
   mkdir(path + "/example");
 }
