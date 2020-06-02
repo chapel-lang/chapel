@@ -1170,7 +1170,7 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc string.size return cachedNumCodepoints;
+  inline proc const string.size return numCodepoints;
 
   /*
     :returns: The indices that can be used to index into the string
@@ -1187,7 +1187,7 @@ module String {
     :returns: The number of codepoints in the string, assuming the
               string is correctly-encoded UTF-8.
   */
-  proc string.numCodepoints {
+  proc const string.numCodepoints {
     if(cachedNumCodepoints  == -1) {
       var localThis: string = this.localize();
       var n = 0;
