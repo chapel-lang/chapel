@@ -11,7 +11,7 @@
 //   ugly code.
 
 use Random;
-use Norm;
+use LinearAlgebra;
 
 config const n = 100;
 config const seed = 3145;
