@@ -1202,7 +1202,6 @@ private proc _lu (in A: [?Adom] ?eltType) {
 
   `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
-
 */
 proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1341,7 +1340,7 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
     return max reduce forall j in D.dim(1) do (+ reduce abs(x[D.dim(0), j..j]));
 
   when normType.norm2 {
-    halt("2-norm for 2D arrays are not yet implemented");
+    compilerError("2-norm for 2D arrays are not yet implemented");
     // TODO: Add implementation:
     //var (U, s, Vh) = svd(x);
     //return max(s)
