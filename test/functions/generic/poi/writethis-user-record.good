@@ -1,0 +1,3 @@
+writethis-user-record.chpl:49: In function 'reproWriteln':
+writethis-user-record.chpl:52: error: success
+writethis-user-record.chpl:46: Function 'reproWriteln' instantiated as: reproWriteln(channel: owned object, arg: Color)
