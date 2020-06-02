@@ -40,7 +40,7 @@ module BytesStringCommon {
   /*
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8
      bytes when encoding a :record:`~String.string` into a
-     :mod:`~Bytes`.
+     :mod:`Bytes`.
        
        - **pass**: default policy; copy directly
        - **unescape**: recover the original data from the escaped data
