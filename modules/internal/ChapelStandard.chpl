@@ -52,6 +52,7 @@ module ChapelStandard {
   use ChapelDistribution;
   use ChapelIO;
   use LocaleTree;
+  use ChapelHashing;
   use DefaultAssociative;
   use DefaultSparse;
   use ChapelTaskID;
