@@ -1,0 +1,3 @@
+init-in-private-array.chpl:31: In initializer:
+init-in-private-array.chpl:32: error: success
+init-in-private-array.chpl:25: Initializer instantiated as: init(type eltType = R)

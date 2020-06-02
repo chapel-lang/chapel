@@ -1,0 +1,14 @@
+POI: Point of Instantiation examples
+
+This directory contains examples that rely on the Point of Instantiation rule
+or illustrate its current limitations. The focus is on scenarios that are
+likely to occur in user code.
+
+Many tests issue compilerError() upon successful resolution.
+This is because they illustrate the resolution of a specific call
+and do not have interesting run-time behavior.
+
+The .good files reflect the compiler's current behavior,
+which ideally we would like to preserve.
+
+See #15752 for a discussion.

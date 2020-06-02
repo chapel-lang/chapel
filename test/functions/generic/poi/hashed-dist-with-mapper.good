@@ -1,0 +1,3 @@
+hashed-dist-with-mapper.chpl:50: In function 'indexToLocaleIndex':
+hashed-dist-with-mapper.chpl:51: error: success
+hashed-dist-with-mapper.chpl:48: Function 'indexToLocaleIndex' instantiated as: indexToLocaleIndex(this: borrowed HashedDomain(MyMapper), elm: string)
