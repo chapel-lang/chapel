@@ -294,6 +294,12 @@ static atomic_bool amHandlersExit;
 
 
 //
+// Should the AM handler do liveness checks?
+//
+static chpl_bool amDoLivenessChecks = false;
+
+
+//
 // The ofi_rxm provider may return -FI_EAGAIN for read/write/send while
 // doing on-demand connection when emulating FI_RDM endpoints.  The man
 // page says: "Applications should be aware of this and retry until the
@@ -1665,6 +1671,14 @@ void chpl_comm_rollcall(void) {
 
   chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
+
+  //
+  // Only node 0 in multi-node programs does liveness checks, and only
+  // after we're sure all the other nodes' AM handlers are running.
+  //
+  if (chpl_numNodes > 1 && chpl_nodeID == 0) {
+    amDoLivenessChecks = true;
+  }
 }
 
 
@@ -2088,7 +2102,7 @@ int mrGetLocalKey(void* addr, size_t size) {
 // Interface: memory consistency
 //
 
-static inline void amRequestNop(c_nodeid_t);
+static inline void amRequestNop(c_nodeid_t, chpl_bool);
 
 static inline
 void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
@@ -2112,7 +2126,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
     DBG_PRINTF(DBG_ORDER,
                "dummy AM to %d for %s ordering",
                (int) node, dbgOrderStr);
-    amRequestNop(node);
+    amRequestNop(node, true /*blocking*/);
   }
 }
 
@@ -2180,7 +2194,7 @@ typedef enum {
   am_opPut,                                // do an RMA PUT
   am_opAMO,                                // do an AMO
   am_opFree,                               // free some memory
-  am_opNop,                                // do nothing; used to ensure MCM
+  am_opNop,                                // do nothing; for MCM & liveness
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
 
@@ -2269,7 +2283,7 @@ static void amRequestRMA(c_nodeid_t, amOp_t, void*, void*, size_t);
 static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
                          int, enum fi_datatype, size_t);
 static void amRequestFree(c_nodeid_t, void*);
-static void amRequestNop(c_nodeid_t);
+static void amRequestNop(c_nodeid_t, chpl_bool);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
 
@@ -2556,12 +2570,13 @@ void amRequestFree(c_nodeid_t node, void* p) {
 
 
 static inline
-void amRequestNop(c_nodeid_t node) {
+void amRequestNop(c_nodeid_t node, chpl_bool blocking) {
   assert(!isAmHandler);
   amRequest_t req = { .b = { .op = am_opNop,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
-                  &req.b.pAmDone, false /*yieldDuringTxnWait*/, NULL);
+                  blocking ? &req.b.pAmDone : NULL,
+                  false /*yieldDuringTxnWait*/, NULL);
 }
 
 
@@ -2707,7 +2722,6 @@ static int numAmHandlersActive;
 static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
-
 static void amHandler(void*);
 static void processRxAmReq(struct perTxCtxInfo_t*);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
@@ -2718,6 +2732,7 @@ static void amWrapGet(struct taskArg_RMA_t*);
 static void amWrapPut(struct taskArg_RMA_t*);
 static void amHandleAMO(struct amRequest_AMO_t*);
 static inline void amSendDone(c_nodeid_t, amDone_t*);
+static inline void amCheckLiveness(void);
 
 static inline void doCpuAMO(void*, const void*, const void*, void*,
                             enum fi_op, enum fi_datatype, size_t size);
@@ -2829,6 +2844,10 @@ void amHandler(void* argNil) {
       (*checkRxRmaCmplsFn)();
 
       sched_yield();
+    }
+
+    if (amDoLivenessChecks) {
+      amCheckLiveness();
     }
   }
 
@@ -2949,10 +2968,12 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
         break;
 
       case am_opNop:
-        DBG_PRINTF(DBG_AM | DBG_AMRECV,
-                   "processRxAmReq(seqId %d:%" PRIu64 "): set pAmDone %p",
-                   (int) req->b.node, req->b.seq, req->b.pAmDone);
-        amSendDone(req->b.node, req->b.pAmDone);
+        if (req->b.pAmDone != NULL) {
+          DBG_PRINTF(DBG_AM | DBG_AMRECV,
+                     "processRxAmReq(seqId %d:%" PRIu64 "): set pAmDone %p",
+                     (int) req->b.node, req->b.seq, req->b.pAmDone);
+          amSendDone(req->b.node, req->b.pAmDone);
+        }
         break;
 
       case am_opShutdown:
@@ -3226,6 +3247,58 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
   //
   ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
              txnTrkEncode(txnTrkNone, NULL), amTcip);
+}
+
+
+static inline
+void amCheckLiveness(void) {
+  //
+  // Only node 0 does liveness checks.  It cycles through the others,
+  // checking to make sure we can AM to them.  To minimize overhead, we
+  // try not to do a liveness check any more frequently than about every
+  // 10 seconds and we also try not to make time calls much more often
+  // than that, because they're expensive.  A "liveness check" is really
+  // just a check that we can send a no-op AM without an unrecoverable
+  // error resulting.  That's sufficient to get us an -EMFILE return if
+  // we run up against the open file limit, for example.
+  //
+  const double timeInterval = 10.0;
+  static __thread double lastTime = 0.0;
+
+  static __thread int countInterval = 10000;
+  static __thread int count;
+
+  if (lastTime == 0.0) {
+    //
+    // The first time we've been called, initialize.
+    //
+    lastTime = chpl_comm_ofi_time_get();
+    count = countInterval;
+  } else if (--count == 0) {
+    //
+    // After the first time, do the "liveness" checks and adjust the
+    // counter interval as needed.
+    //
+    double time = chpl_comm_ofi_time_get();
+
+    double timeRatio = (time - lastTime) / timeInterval;
+    const double minTimeRatio = 3.0 / 4.0;
+    const double maxTimeRatio = 4.0 / 3.0;
+    if (timeRatio < minTimeRatio) {
+      timeRatio = minTimeRatio;
+    } else if (timeRatio > maxTimeRatio) {
+      timeRatio = maxTimeRatio;
+    }
+    countInterval /= timeRatio;
+
+    static __thread c_nodeid_t node = 1;
+    if (--node == 0) {
+      node = chpl_numNodes - 1;
+    }
+    amRequestNop(node, false /*blocking*/);
+    count = countInterval;
+    lastTime = time;
+  }
 }
 
 
