@@ -43,6 +43,8 @@ proc masonNew(args) throws {
       var show = false;
       var packageName = '';
       var dirName = '';
+      var version = "";
+      var chplVersion = "";
       var countArgs = args.domain.low + 2;
       for arg in args[args.domain.low+2..] {
         countArgs += 1;
@@ -62,9 +64,11 @@ proc masonNew(args) throws {
             show = true;
           }
           when '--interactive' {
-            var interactivePkgName = beginInteractiveSession();
-            packageName = interactivePkgName;
+            var metadata = beginInteractiveSession();
+            packageName = metadata[0];
             dirName = packageName; 
+            version = metadata[1];
+            chplVersion = metadata[2];
           }
           when '--name' {
               packageName = args[countArgs];
@@ -88,7 +92,7 @@ proc masonNew(args) throws {
         if isDir(dirName) {
           throw new owned MasonError("A directory named '" + dirName + "' already exists");
         }
-        InitProject(dirName, packageName, vcs, show);
+        InitProject(dirName, packageName, vcs, show, version, chplVersion);
       }
     }
   }
@@ -155,7 +159,7 @@ proc beginInteractiveSession() throws {
       continue;
     }
   }
-  return packageName;
+  return (packageName, version, chapelVersion);
 }
 
 proc validatePackageName(dirName) throws {
@@ -182,7 +186,8 @@ proc validatePackageName(dirName) throws {
   A library project consists of .gitignore file, Mason.toml file, and 
   directories such as .git, src, example, test
 */
-proc InitProject(dirName, packageName, vcs, show) throws {
+proc InitProject(dirName, packageName, vcs, show, 
+                  version: string, chplVersion: string) throws {
   if vcs {
     gitInit(dirName, show);
     addGitIgnore(dirName);
@@ -192,7 +197,7 @@ proc InitProject(dirName, packageName, vcs, show) throws {
   }
   // Confirm git init before creating files
   if isDir(dirName) {
-    makeBasicToml(dirName=packageName, path=dirName);
+    makeBasicToml(dirName=packageName, path=dirName, version, chplVersion);
     makeSrcDir(dirName);
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
@@ -219,11 +224,17 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-proc makeBasicToml(dirName: string, path: string) {
+proc makeBasicToml(dirName: string, path: string, version: string, chplVersion: string) {
+  var defaultVersion: string = "0.1.0";
+  var defaultChplVersion: string = getChapelVersionStr();
+  if !version.isEmpty() 
+    then defaultVersion = version;
+  if !chplVersion.isEmpty()  
+    then defaultChplVersion = chplVersion;
   const baseToml = '[brick]\n' +
                      'name = "' + dirName + '"\n' +
-                     'version = "0.1.0"\n' +
-                     'chplVersion = "' + getChapelVersionStr() + '"\n' +
+                     'version = "' + defaultVersion + '"\n' +
+                     'chplVersion = "' + defaultChplVersion + '"\n' +
                      '\n' +
                      '[dependencies]' +
                      '\n';
