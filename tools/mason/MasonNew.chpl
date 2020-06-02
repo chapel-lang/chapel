@@ -64,7 +64,7 @@ proc masonNew(args) throws {
             show = true;
           }
           when '--interactive' {
-            var metadata = beginInteractiveSession();
+            var metadata = beginInteractiveSession(false,'');
             packageName = metadata[0];
             dirName = packageName; 
             version = metadata[1];
@@ -106,7 +106,7 @@ proc masonNew(args) throws {
   Starts an interactive session to create a
   new library project. 
 */
-proc beginInteractiveSession() throws {
+proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
   writeln("This is an interactive session to walk you through creating a library ",  
    "project using Mason.\nThe following queries covers the common items required to ", 
    "create the project.\nSuggestions for defaults are also provided which will be ", 
@@ -121,10 +121,14 @@ proc beginInteractiveSession() throws {
   while(1){   
     try {
       if gotCorrectPackageName == false {
-        write("Package name: ");
+        write("Package name ");
+        if isInit == true then write("(" + defaultPackageName + ") ");
+        write(": ");
         IO.stdout.flush();
         IO.stdin.readline(packageName);
         packageName = packageName.strip();
+        if isInit == true && packageName == '' then
+          packageName = defaultPackageName; 
         if validatePackageName(packageName) == true then
           gotCorrectPackageName = true;
       }

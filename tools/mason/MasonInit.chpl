@@ -41,6 +41,8 @@ proc masonInit(args) throws {
     var dirName = '';
     var show = false;
     var packageName = '';
+    var version = '';
+    var chplVersion = '';
     var countArgs = args.domain.low + 2;
     for arg in args[args.domain.low+2..] {
       countArgs += 1;
@@ -55,6 +57,24 @@ proc masonInit(args) throws {
         }
         when '--show' {
           show = true;
+        }
+        when '--interactive' {
+          var name = basename(getEnv("PWD"));
+          var legalName: string; 
+          if !isIdentifier(name) then {
+            // Replace illegal names with legal names
+            var splitName = name.split('-');
+            for (str, idx) in zip(splitName, 1..splitName.size) do {
+              if idx != 1 {
+                var strUpper = str.replace(str[0], str[0].toUpper());
+                legalName = legalName + strUpper;
+              } else legalName = legalName + str;
+            }
+          } else legalName = name;
+          var metadata = beginInteractiveSession(true, legalName);
+          packageName = metadata[0];
+          version = metadata[1];
+          chplVersion = metadata[2];
         }
         when '--name' {
           packageName = args[countArgs];
@@ -78,7 +98,7 @@ proc masonInit(args) throws {
       if packageName.size > 0 then name = packageName;
       var resName = validatePackageNameChecks(path, name);
       name = resName;
-      validateMasonFile(path, name, show);
+      validateMasonFile(path, name, show, version, chplVersion);
       var isInitialized = validateInit(path, name, true, show);
       if isInitialized > 0 then
       writeln("Initialized new library project: " + basename(cwd));
@@ -94,7 +114,7 @@ proc masonInit(args) throws {
         if packageName.size > 0 then name = packageName;
         var resName = validatePackageNameChecks(path, name);
         name = resName;
-        validateMasonFile(path, name, show);
+        validateMasonFile(path, name, show, version, chplVersion);
         var isInitialized = validateInit(path, name, true, show);
         if isInitialized > 0 then
         writeln("Initialized new library project in " + path + ": " + basename(path));
@@ -198,7 +218,8 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
 /*
 validates Mason.toml file in directory and ensures all fields are present
 */
-proc validateMasonFile(path: string, name: string, show: bool) throws {
+proc validateMasonFile(path: string, name: string, show: bool, 
+    explicitVersion: string, explicitChplVersion: string) throws {
    if isFile(path + "/Mason.toml") {
     if show then writeln("Found Mason.toml file.");
     var projectName = "";
@@ -245,7 +266,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     checkVersion(version);
   }
   else {
-    makeBasicToml(name, path);
+    makeBasicToml(name, path, explicitVersion, explicitChplVersion);
     if show then writeln("Created Mason.toml file.");
   }
 }
