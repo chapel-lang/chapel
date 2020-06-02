@@ -25,6 +25,7 @@ use Spawn;
 use MasonModify;
 use FileSystem;
 use MasonUtils;
+use MasonUpdate;
 use MasonHelp;
 use MasonEnv;
 
@@ -104,12 +105,12 @@ proc masonNew(args) throws {
 
 /*
   Starts an interactive session to create a
-  new library project. 
+  new library project.
 */
 proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
-  writeln("This is an interactive session to walk you through creating a library ",  
-   "project using Mason.\nThe following queries covers the common items required to ", 
-   "create the project.\nSuggestions for defaults are also provided which will be ", 
+  writeln("This is an interactive session to walk you through creating a library ",
+   "project using Mason.\nThe following queries covers the common items required to ",
+   "create the project.\nSuggestions for defaults are also provided which will be ",
    "considered if no input is given.\n");
   writeln("Press ^C to quit interactive mode.");
   var packageName: string;
@@ -118,7 +119,7 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
   var gotCorrectPackageName = false;
   var gotCorrectPackageVersion = false;
   var gotCorrectChapelVersion = false;
-  while(1){   
+  while(1){
     try {
       if gotCorrectPackageName == false {
         write("Package name ");
@@ -138,7 +139,7 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
         IO.stdin.readline(version);
         version = version.strip();
         if version == "" then version = "0.1.0";
-        checkVersion(version); 
+        checkVersion(version);
         gotCorrectPackageVersion = true;
       }
       if gotCorrectChapelVersion == false {
@@ -148,15 +149,23 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
         IO.stdin.readline(chapelVersion);
         chapelVersion = chapelVersion.strip();
         if chapelVersion == "" then chapelVersion = currChapelVersion;
-        if chapelVersion != currChapelVersion then 
-          throw new owned MasonError("This version of Chapel is deprecated. Please use" +
-              " latest version " + currChapelVersion);
-        else gotCorrectChapelVersion = true;
+        if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
+        else if validateChplVersion(chapelVersion) == true
+        then gotCorrectChapelVersion = true;
       }
       if gotCorrectPackageName == true &&
          gotCorrectPackageVersion == true &&
-         gotCorrectChapelVersion == true then break;
-    
+         gotCorrectChapelVersion == true then {
+          previewMasonFile(packageName, version, chapelVersion);
+          writeln();
+          write("Is this okay ? (Y/N): ");
+          IO.stdout.flush();
+          var option: string;
+          IO.stdin.readline(option);
+          option = option.strip();
+          if option == "Y" then break;
+          if option == "N" then exit(1);
+      }
     }
     catch e: MasonError {
       writeln(e.message());
@@ -166,13 +175,37 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
   return (packageName, version, chapelVersion);
 }
 
+proc previewMasonFile(packageName, version, chapelVersion) {
+  const baseToml = '[brick]\n' +
+                     'name = "' + packageName + '"\n' +
+                     'version = "' + version + '"\n' +
+                     'chplVersion = "' + chapelVersion + '"\n' +
+                     '\n' +
+                     '[dependencies]' +
+                     '\n';
+  writeln();
+  writeln(baseToml);
+}
+
+proc validateChplVersion(chapelVersion) throws {
+  var low, hi : VersionInfo;
+  const tInfo = getChapelVersionInfo();
+  const current = new VersionInfo(tInfo(0), tInfo(1), tInfo(2));
+  var ret = false;
+  (low, hi) = checkChplVersion(chapelVersion, low, hi);
+  ret = low <= current && current <= hi;
+  if ret == false then throw new owned MasonError("Warning: Your current " +
+    "Chapel version ( " + getChapelVersionStr() + " ) is not compatible with this chplVersion.");
+  else return true;
+}
+
 proc validatePackageName(dirName) throws {
   if dirName == '' {
     throw new owned MasonError("No package name specified");
   }
   else if !isIdentifier(dirName) {
     throw new owned MasonError("Bad package name '" + dirName +
-                        "' - only Chapel identifiers are legal package names.\n" +  
+                        "' - only Chapel identifiers are legal package names.\n" +
                         "Please use mason new %s --name <LegalName>".format(dirName));
   }
   else if dirName.count("$") > 0 {
@@ -187,10 +220,10 @@ proc validatePackageName(dirName) throws {
 /*
   Takes projectName, vcs (version control), show as inputs and
   initializes a library project at a directory of given projectName
-  A library project consists of .gitignore file, Mason.toml file, and 
+  A library project consists of .gitignore file, Mason.toml file, and
   directories such as .git, src, example, test
 */
-proc InitProject(dirName, packageName, vcs, show, 
+proc InitProject(dirName, packageName, vcs, show,
                   version: string, chplVersion: string) throws {
   if vcs {
     gitInit(dirName, show);
