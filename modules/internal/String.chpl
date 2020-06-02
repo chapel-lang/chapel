@@ -1238,7 +1238,7 @@ module String {
   }
   
   /*
-    Returns a :record:`~Bytes.bytes` from the given :mod:`String`. If the
+    Returns a :mod:`~Bytes` from the given :mod:`String`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
         
@@ -1246,7 +1246,7 @@ module String {
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
-    :returns: :record:`~Bytes.bytes`
+    :returns: :mod:`~Bytes`
   */
   proc string.encode(policy=encodePolicy.pass): bytes {
     var localThis: string = this.localize();
