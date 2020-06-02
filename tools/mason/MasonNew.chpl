@@ -155,7 +155,7 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
       }
       if gotCorrectPackageName == true &&
          gotCorrectPackageVersion == true &&
-         gotCorrectChapelVersion == true then {
+         gotCorrectChapelVersion == true  {
           previewMasonFile(packageName, version, chapelVersion);
           writeln();
           write("Is this okay ? (Y/N): ");
