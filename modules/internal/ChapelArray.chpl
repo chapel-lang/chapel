@@ -799,15 +799,37 @@ module ChapelArray {
   }
 
   proc chpl__eltTypeFromArrayRuntimeType(type rtt) type {
-    pragma "unsafe"
-    var arr: rtt;
-    return arr.eltType;
+    pragma "ignore runtime type"
+    proc getArrEltType() type {
+      pragma "unsafe"
+      var arr : rtt;
+      return __primitive("static typeof", arr.eltType);
+    }
+
+    // does the element type have a runtime component?
+    if isSubtype(getArrEltType(), _array) ||
+       isSubtype(getArrEltType(), _domain) {
+
+      pragma "no copy"
+      pragma "no auto destroy"
+      type eltType = __primitive("get runtime type field",
+                                 getArrEltType(), rtt, "eltType", true);
+
+      return eltType;
+
+    } else {
+      return getArrEltType();
+    }
   }
 
+  pragma "ignore runtime type"
   proc chpl__instanceTypeFromArrayRuntimeType(type rtt) type {
+    // this function is compile-time only and should not be run
+    __primitive("chpl_warning",
+                "chpl__instanceTypeFromArrayRuntimeType should not be run");
     pragma "unsafe"
     var arr: rtt;
-    return arr._instance.type;
+    return __primitive("static typeof", arr._instance);
   }
 
   //
