@@ -169,6 +169,7 @@ considered if no input is given.""");
           var option: string;
           IO.stdin.readline(option);
           option = option.strip();
+          option = option.toUpper();
           if option == "Y" then break;
           if option == "N" then {
             gotCorrectChapelVersion = false;

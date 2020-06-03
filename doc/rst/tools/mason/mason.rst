@@ -45,7 +45,7 @@ Mason packages can also be initialized using the ``mason init [options] [directo
 ``mason init [options]`` command outside or inside the project directory respectively. 
 
 There is also an interactive way to create Mason packages using ``mason new --interactive`` or
-``mason init --interactive``. The interactive sessions walks an user through creating a package in Mason.
+``mason init --interactive``. The interactive session walks an user through creating a package in Mason.
 
 For example, for an existing directory named MyPackage, 
     
