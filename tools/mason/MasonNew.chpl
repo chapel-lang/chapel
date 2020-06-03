@@ -149,7 +149,6 @@ considered if no input is given.""");
         gotCorrectPackageVersion = true;
       }
       if !gotCorrectChapelVersion {
-        
         write("Chapel version (" + currChapelVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(chapelVersion);
