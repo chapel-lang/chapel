@@ -393,7 +393,8 @@ static void generateDynamicCheckForAccess(CallExpr *access,
 // right before the `forall` and will return the symbol declared. If a check was
 // added for `A` before, it'll just return the symbol (that was created before)
 static Symbol *generateStaticCheckForAccess(CallExpr *access,
-                                            ForallStmt *forall) {
+                                            ForallStmt *forall,
+                                            Expr *&allChecks) {
                                           
   ForallOptimizationInfo &optInfo = forall->optInfo;
   Symbol *baseSym = getCallBase(access);
@@ -419,6 +420,13 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
       INT_FATAL("optInfo didn't have enough information");
     }
 
+    if (allChecks == NULL) {
+      allChecks = new SymExpr(checkSym);
+    }
+    else {
+      allChecks = new CallExpr(PRIM_OR, new SymExpr(checkSym), allChecks);
+    }
+
     DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
     forall->insertBefore(checkSymDef);
     return checkSym;
@@ -436,43 +444,56 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
 
-  for_vector(CallExpr, sOptCandidate, sOptCandidates) {
-    Symbol *checkSym = generateStaticCheckForAccess(sOptCandidate, forall);
+  ForallStmt *noOpt = NULL;
+  ForallStmt *noDyn = NULL;
+  Expr *staticCond = NULL;
+  CallExpr *dynamicCond = NULL;
 
-    LOG("\tOptimizing static candidate", sOptCandidate);
+  SET_LINENO(forall);
 
-    SET_LINENO(sOptCandidate);
-    Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
-    INT_ASSERT(baseSym);
+  noOpt = forall->copy();
+  noOpt->optInfo.autoLocalAccessChecked = true;
 
-    CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(baseSym));
-    for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
-      Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
-      INT_ASSERT(argSym);
+  if (sOptCandidates.size() > 0) {
+    for_vector(CallExpr, sOptCandidate, sOptCandidates) {
+      Symbol *checkSym = generateStaticCheckForAccess(sOptCandidate, forall,
+                                                      staticCond);
 
-      repl->insertAtTail(new SymExpr(argSym));
+      LOG("\tOptimizing static candidate", sOptCandidate);
+
+      SET_LINENO(sOptCandidate);
+      Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
+      INT_ASSERT(baseSym);
+
+      CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(baseSym));
+      for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
+        Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
+        INT_ASSERT(argSym);
+
+        repl->insertAtTail(new SymExpr(argSym));
+      }
+      repl->insertAtTail(new SymExpr(checkSym));
+
+      // mark statically-determined access. Today, this is only used for more
+      // accurate logging
+      repl->insertAtTail(new SymExpr(gTrue));
+
+      sOptCandidate->replace(repl);
     }
-    repl->insertAtTail(new SymExpr(checkSym));
-
-    // mark statically-determined access. Today, this is only used for more
-    // accurate logging
-    repl->insertAtTail(new SymExpr(gTrue));
-
-    sOptCandidate->replace(repl);
   }
 
   if (fAutoLocalAccessDynamic && dOptCandidates.size() > 0) {
     SET_LINENO(forall);
 
-    ForallStmt *staticOnly = forall->copy();
-    staticOnly->optInfo.autoLocalAccessChecked = true;
-    
-    CallExpr *dynamicCond = NULL;
+    noDyn = forall->copy();
+    noDyn->optInfo.autoLocalAccessChecked = true;
 
+    // static Cond is already in the tree now
     for_vector(CallExpr, dOptCandidate, dOptCandidates) {
       Symbol *callBase = getCallBase(dOptCandidate);
       Symbol *checkSym = generateStaticCheckForAccess(dOptCandidate,
-                                                      forall);
+                                                      forall,
+                                                      staticCond);
       generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
 
       LOG("\tOptimizing dynamic candidate", dOptCandidate);
@@ -486,7 +507,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
 
         repl->insertAtTail(new SymExpr(argSym));
       }
-      repl->insertAtTail(checkSym);
+      repl->insertAtTail(new SymExpr(checkSym));
 
       // mark dynamically-determined access. Today, this is only used for more
       // accurate logging
@@ -494,14 +515,27 @@ static void generateOptimizedLoops(ForallStmt *forall) {
 
       dOptCandidate->replace(repl);
     }
+  }
+  
+  // here create the main structure
+  if (staticCond != NULL) {
+    BlockStmt *thenBlock = new BlockStmt();
+    BlockStmt *elseBlock = new BlockStmt();
+    CondStmt *staticCheck = new CondStmt(staticCond, thenBlock, elseBlock);
 
+    forall->insertAfter(staticCheck);
+    thenBlock->insertAtTail(forall->remove());
+    elseBlock->insertAtTail(noOpt);
+  }
+  
+  if (dynamicCond != NULL) {
     BlockStmt *thenBlock = new BlockStmt();
     BlockStmt *elseBlock = new BlockStmt();
     CondStmt *dynamicCheck = new CondStmt(dynamicCond, thenBlock, elseBlock);
 
     forall->insertAfter(dynamicCheck);
     thenBlock->insertAtTail(forall->remove());
-    elseBlock->insertAtTail(staticOnly);
+    elseBlock->insertAtTail(noDyn);
   }
 }
 
