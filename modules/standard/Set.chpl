@@ -45,6 +45,7 @@ module Set {
   import ChapelLocks;
   private use IO;
   private use Reflection;
+  private use ChapelHashtable;
 
   pragma "no doc"
   private param _sanityChecks = true;
@@ -96,6 +97,23 @@ module Set {
     }
   }
 
+  // TODO: May not need this for now? Only override these routines if we
+  // want to provide our own hashing callbacks?
+  pragma "no doc"
+  class rehashHelpers: ChapelHashtable.chpl__rehashHelpers {
+    override proc startRehash(newSize: int) {
+
+    }
+
+    override proc moveElementDuringRehash(oldSLot: int, newSlot: int) {
+
+    }
+
+    override proc finishRehash(oldSize: int) {
+
+    }
+  }
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -130,7 +148,7 @@ module Set {
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
     pragma "no doc"
-    var _dom: domain(eltType, parSafe);
+    var _htb = ChapelHashtable.chpl__hashtable(eltType, nothing);
 
     /*
       Initializes an empty set containing elements of the given type.
@@ -140,9 +158,18 @@ module Set {
     */
     proc init(type eltType, param parSafe=false) {
       _checkElementType(eltType);
-
       this.eltType = eltType;
       this.parSafe = parSafe;
+    }
+
+    pragma "no doc"
+    proc _addElem(in elem: eltType) {
+      var (hasFoundSlot, idx) = _htb.findAvailableSlot(x);
+
+      if !hasFoundSlot then
+        halt('TODO: Set hashtable failed to find slot');
+
+      _htb.fillSlot(idx, x, none);
     }
 
     /*
@@ -162,8 +189,7 @@ module Set {
       this.parSafe = parSafe;
       this.complete();
 
-      for x in iterable do
-        _dom.add(x);
+      for elem in iterable do _addElem(elem);
     }
 
     /*
@@ -178,10 +204,12 @@ module Set {
       this.parSafe = other.parSafe;
       this.complete();
 
-      for x in other {
-        var cpy = x;
-        _dom.add(cpy);
-      }
+      if !isCopyableType(eltType) then
+        compilerError('Cannot initialize ' + this.type:string + ' from ' +
+                      other.type:string + ' because element type ' +
+                      eltType:string + ' is not copyable');
+
+      for elem in other do _addElem(elem);
     }
 
     pragma "no doc"
@@ -213,9 +241,8 @@ module Set {
     */
     proc ref add(in x: eltType) lifetime this < x {
       on this {
-        _enter();
-        _dom.add(x);
-        _leave();
+        _enter(); defer _leave();
+        _addElem(x);
       }
     }
 
@@ -231,9 +258,9 @@ module Set {
       var result = false;
 
       on this {
-        _enter();
-        result = _dom.contains(x);
-        _leave();
+        _enter(); defer _leave();
+        var (hasFoundSlot, _) = findFullSlot(x);
+        result = hasFoundSlot;
       }
 
       return result;
