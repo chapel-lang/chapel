@@ -378,6 +378,10 @@ static void generateDynamicCheckForAccess(CallExpr *access,
     INT_FATAL("optInfo didn't have enough information");
   }
 
+  CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT, 
+      new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
+  currentCheck = new CallExpr(PRIM_OR, staticOverride, currentCheck);
+
   if (allChecks == NULL) {
     allChecks = currentCheck;
   }

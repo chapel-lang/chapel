@@ -42,22 +42,10 @@ proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
 }
 
 proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
-  // here we do a counter-intuitive trick. Few things of note:
-  //
-  // 1. if static check fails, than all the accesses to `accessBase` use
-  //    regular access, regardless of the return value of this
-  // 2. if there are multiple dynamic candidates within a loop, their dynamic
-  //    checks are &&'ed by the compiler. So, we want this dynamic check to
-  //    not fail because of static failures fewer than the actual number of
-  //    dynamic checks
-  //
-  // To make sure that 2 happens, and relying on the fact in 1, we hardwire
-  // this check to be true if the static check fails. So the result of this
-  // doesn't affect the &&'ed check
-  if chpl__staticAutoLocalCheck(accessBase, loopDomain) == false then
-    return true;
-  else
+  if chpl__staticAutoLocalCheck(accessBase, loopDomain) then
     return accessBase.domain == loopDomain;
+  else
+    return false;
 }
 
 // these type overloads are for degenerate cases where the optimization can
