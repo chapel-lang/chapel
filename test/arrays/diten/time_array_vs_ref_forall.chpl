@@ -4,7 +4,7 @@ config const size = 100000;
 config const nTrials = 100;
 
 proc arrayAccess(A: [] real, B: [] real, param nAdds) {
-  const n = A.numElements;
+  const n = A.size;
   for 1..nTrials {
     forall i in 0..#n {
       for param adds in 1..nAdds {
@@ -15,7 +15,7 @@ proc arrayAccess(A: [] real, B: [] real, param nAdds) {
 }
 
 proc refAccess(A: [] real, B: [] real, param nAdds) {
-  const n = A.numElements;
+  const n = A.size;
   for 1..nTrials {
     forall i in 0..#n {
       ref rA = A[i];

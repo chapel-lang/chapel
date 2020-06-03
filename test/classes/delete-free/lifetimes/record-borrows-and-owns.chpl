@@ -6,10 +6,10 @@ class MyClass {
 }
 
 record R {
-  var _borrowed:borrowed MyClass;
+  var _borrowed:borrowed MyClass?;
 
   pragma "owned"
-  var myowned:unmanaged MyClass;
+  var myowned:unmanaged MyClass?;
 
   proc readOwned() {
     return _to_borrowed(myowned);
@@ -49,30 +49,30 @@ proc badF3() {
   var c = own.borrow();
   var r = makeR(c);
   {
-    var r2 = makeR(r._borrowed);
+    var r2 = makeR(r._borrowed!);
     return r2;
   }
 }
 
 proc badF4() {
   var a = new R(nil, new unmanaged MyClass(10));
-  return makeR(a.myowned);
+  return makeR(a.myowned!);
   // a's destructor will delete a.myowned
 }
-
+const badHelp = new MyClass();
 proc badF6() {
-  var a = makeR(nil);
-  return makeR(a.readOwned());
+  var a = makeR(badHelp);
+  return makeR(a.readOwned()!);
 }
 
 config const branch = false;
 
 proc badF8() {
-  var a = makeR(nil);
+  var a = makeR(badHelp);
   if branch then
     return a;
   else
-    return makeR(a.readOwned());
+    return makeR(a.readOwned()!);
 }
 
 

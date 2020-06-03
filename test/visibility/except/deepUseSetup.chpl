@@ -12,16 +12,16 @@ module M2 {
   var a = 32;
 }
 
-// This module provides one global and uses M1 without an except clause.
-// Thus, if a module foo uses it and M1, all of M1's symbols will be available
-// to foo, even if foo's use of M1 includes an except.
+// This module provides one global and publicly uses M1 without an except
+// clause.  Thus, if a module foo uses it and M1, all of M1's symbols will be
+// available to foo, even if foo's use of M1 includes an except.
 //
 // Note: this does not change the behavior in the case where another used
 // module also defines the 'except'ed symbol, merely the behavior where such
-// a variable is not also defined elsewhere.  Non-transitive uses would prevent
+// a variable is not also defined elsewhere.  Private uses would prevent
 // the current behavior
 module M3 {
-  use M1;
+  public use M1;
 
   var b = true;
 }

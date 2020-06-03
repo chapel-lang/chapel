@@ -120,7 +120,7 @@ F=C[1..5,1..5,1];
 for (a,b) in zip(C[1..5,1..5,1],F[1..5,1..5]) do if (a!=b) then {writeln("ERROR!!!!");}
 
 // All these examples would work if we remove the
-// a.dom.numIndices==b.dom.numIndices condition from ChapelArray to do
+// a.dom.size==b.dom.size condition from ChapelArray to do
 // bulkCopy in proc chpl__useBulkTransferStride(a:[], b:[]).
 /*
 writeln();

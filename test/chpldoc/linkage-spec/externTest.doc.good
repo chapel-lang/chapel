@@ -1,3 +1,4 @@
+externTest.doc.chpl:24: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'externTest.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: externTest.doc
@@ -9,6 +10,13 @@ externTest.doc
 .. code-block:: chapel
 
    use externTest.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc;
 
 **Submodules**
 
@@ -48,6 +56,10 @@ externTest.doc
 
 .. function:: proc hasReturnTypeAndArgCommentless(val: int): int
 
+.. function:: proc withExternCNameComment()
+
+   Commenting withExternCNameComment 
+
 .. function:: proc withExternCName()
 
 .. function:: proc getName() param
@@ -55,6 +67,30 @@ externTest.doc
    test param method for withParamExternCName 
 
 .. function:: proc withParamExternCName()
+
+.. record:: externRecordNoComment
+
+.. record:: externRecordComment
+
+   Commenting externRecordComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. record:: externRecordRenamedNoComment
+
+.. record:: externRecordRenamedComment
+
+   Commenting externRecordRenamedComment 
+
+
+   .. attribute:: var field: int
+
+      Commenting a field 
+
+.. function:: proc end()
 
 .. default-domain:: chpl
 
@@ -67,6 +103,13 @@ Other
 .. code-block:: chapel
 
    use externTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import externTest.doc.Other;
 
 .. function:: proc inside
 

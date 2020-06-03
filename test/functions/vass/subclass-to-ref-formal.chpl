@@ -7,8 +7,11 @@ class D: C { }
 
 proc test(ref lhs: unmanaged C) {}
 
-var c: unmanaged C;
-var d: unmanaged D;
+var c = new unmanaged C();
+var d = new unmanaged D();
 
 test(c);
 test(d); // must be an error
+
+delete c;
+delete d;

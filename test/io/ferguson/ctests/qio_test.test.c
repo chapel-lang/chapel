@@ -3,10 +3,10 @@
 #include <stdio.h>
 
 
-#ifdef CHPL_VALGRIND_TEST
-int valgrind = 1;
+#ifdef LIMIT_TESTING
+int limit_testing = 1;
 #else
-int valgrind = 0;
+int limit_testing = 0;
 #endif
 
 int verbose = 0;
@@ -26,8 +26,7 @@ void fill_testdata(int64_t start, int64_t len, unsigned char* data)
 
 // unbounded_channels <= 0 means no, > 0 means yes
 // -1 means advance.
-void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t len, int64_t chunksz, qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_channels, char reopen)
-{
+void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t len, int64_t chunksz, qio_hint_t file_hints, qio_hint_t ch_hints, char unbounded_channels, char reopen, char seek) {
   qio_file_t* f;
   qio_channel_t* writing;
   qio_channel_t* reading;
@@ -77,7 +76,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
   fhints = qio_hints_to_string(file_hints);
   chhints = qio_hints_to_string(ch_hints);
   if( verbose ) {
-    printf("check_channel(threadsafe=%i, type=%i, start=%lli, len=%lli, chunksz=%lli, file_hints=%s, ch_hints=%s, unbounded=%i, reopen=%i)\n",
+    printf("check_channel(threadsafe=%i, type=%i, start=%lli, len=%lli, chunksz=%lli, file_hints=%s, ch_hints=%s, unbounded=%i, reopen=%i, seek=%i)\n",
          (int) threadsafe,
          (int) type,
          (long long int) start,
@@ -86,7 +85,8 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
          fhints,
          chhints,
          (int) unbounded_channels,
-         (int) reopen );
+         (int) reopen,
+         (int) seek );
   }
   qio_free(fhints);
   qio_free(chhints);
@@ -132,6 +132,13 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
 
   // Write stuff to the file.
   for( offset = start; offset < end; offset += usesz ) {
+
+    if (seek && !writefp) {
+      err = qio_channel_seek(writing, offset, ch_end);
+      assert(!err);
+      assert(qio_channel_offset_unlocked(writing) == offset);
+    }
+
     usesz = chunksz;
     if( offset + usesz > end ) usesz = end - offset;
     // Fill chunk.
@@ -142,6 +149,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
     } else {
       err = qio_channel_write(threadsafe, writing, chunk, usesz, &amt_written);
       assert(!err);
+      assert(qio_channel_offset_unlocked(writing) == offset+usesz);
     }
     assert(amt_written == usesz);
 
@@ -205,8 +213,8 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
 
   // That was fun. Now start at the beginning of the file
   // and read the data.
-  
-  // Rewind the file 
+
+  // Rewind the file
   if( !memory ) {
     off_t off;
     int syserr;
@@ -222,6 +230,7 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
 
   // Read stuff from the file.
   for( offset = start; offset < end; offset += usesz ) {
+
     usesz = chunksz;
     if( offset + usesz > end ) usesz = end - offset;
     // Fill chunk.
@@ -235,12 +244,19 @@ void check_channel(char threadsafe, qio_chtype_t type, int64_t start, int64_t le
       err = qio_channel_read(threadsafe, reading, got_chunk, usesz, &amt_read);
       errcode = qio_err_to_int(err);
       assert( errcode == EEOF || errcode == 0);
+      assert(qio_channel_offset_unlocked(reading) == offset+usesz);
     }
     assert(amt_read == usesz);
 
     // Compare chunk.
     for( k = 0; k < usesz; k++ ) {
       assert(got_chunk[k] == chunk[k]);
+    }
+
+    if (seek && !readfp) {
+      err = qio_channel_seek(reading, offset+usesz, ch_end);
+      assert(!err);
+      assert(qio_channel_offset_unlocked(reading) == offset+usesz);
     }
   }
 
@@ -298,12 +314,13 @@ void check_channels(void)
   int nunbounded = sizeof(unboundedness)/sizeof(char);
   int unbounded;
   char reopen;
+  char seek;
   qio_hint_t hints[] = {QIO_METHOD_DEFAULT, QIO_METHOD_READWRITE, QIO_METHOD_PREADPWRITE, QIO_METHOD_FREADFWRITE, QIO_METHOD_MEMORY, QIO_METHOD_MMAP, QIO_METHOD_MMAP|QIO_HINT_PARALLEL, QIO_METHOD_PREADPWRITE | QIO_HINT_NOFAST};
   int nhints = sizeof(hints)/sizeof(qio_hint_t);
   int file_hint, ch_hint;
 
-  if( valgrind ) nlens = 4;
-  if( valgrind ) nchunkszs = 4;
+  if( limit_testing ) nlens = 4;
+  if( limit_testing ) nchunkszs = 4;
 
   for( file_hint = 0; file_hint < nhints; file_hint++ ) {
     for( ch_hint = 0; ch_hint < nhints; ch_hint++ ) {
@@ -312,20 +329,43 @@ void check_channels(void)
           for( k = 0; k < nchunkszs; k++ ) {
             for( type = 1; type <= QIO_CH_MAX_TYPE; type++ ) {
               for( threadsafe = 0; threadsafe < 2; threadsafe++ ) {
-                for( unbounded = 0; unbounded < nunbounded; unbounded++ ) {
-                  for( reopen = 0; reopen < 2; reopen++ ) {
-                    check_channel(threadsafe, type, starts[s], lens[i], chunkszs[k], hints[file_hint], hints[ch_hint], unboundedness[unbounded], reopen);
-                  }
-                }
+                check_channel(threadsafe, type, starts[s], lens[i],
+                    chunkszs[k], hints[file_hint], hints[ch_hint],
+                    unboundedness[0], 0, 0);
               }
             }
           }
         }
       }
     }
-    // only test default chanel hints with valgrind
+    // only test default chanel hints with limit_testing
     // moving over file hints should still give us good coverage.
-    if( valgrind ) break;
+    if( limit_testing ) break;
+  }
+
+  // check with reopen/seek variations while limiting other configurations
+  for( file_hint = 0; file_hint < nhints; file_hint++ ) {
+    ch_hint = file_hint;
+    for( i = 0; i < nlens; i++ ) {
+      for( s = 0; s < nstarts; s++ ) {
+        for( k = 0; k < nchunkszs; k++ ) {
+          type = QIO_CH_BUFFERED;
+          threadsafe = 0;
+          for( unbounded = 0; unbounded < nunbounded; unbounded++ ) {
+            for( reopen = 0; reopen < 2; reopen++ ) {
+              for( seek = 0; seek < 2; seek++ ) {
+                if (unbounded == 0 && reopen == 0 && seek == 0)
+                  continue; //handled in above loop
+
+                check_channel(threadsafe, type, starts[s], lens[i],
+                    chunkszs[k], hints[file_hint], hints[ch_hint],
+                    unboundedness[unbounded], reopen, seek);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   return;

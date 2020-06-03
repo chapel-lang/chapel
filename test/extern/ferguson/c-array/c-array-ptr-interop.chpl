@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern type mytriple = c_ptr(c_int); // a lie we intentionally support
 
 extern var myglobal: mytriple;

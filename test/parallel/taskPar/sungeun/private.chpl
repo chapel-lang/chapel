@@ -13,7 +13,7 @@ record taskPrivateData {
   var y: [0..#numLocales] real;
 
   // need our version of writeThis so we can print the sync field
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     f.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
   }
 };
@@ -44,7 +44,7 @@ class localePrivateData {
   }
 }
 
-var localePrivate: [PrivateSpace] unmanaged localePrivateData(taskPrivateData);
+var localePrivate: [PrivateSpace] unmanaged localePrivateData(taskPrivateData)?;
 forall l in localePrivate do l = new unmanaged localePrivateData(taskPrivateData);
 
 // an example use
@@ -53,7 +53,7 @@ config const printTemps = false;
 const D = {0..#nPerLocale*numLocales} dmapped Block(boundingBox={0..#nPerLocale*numLocales});
 forall d in D {
   // my copy of the task private vars
-  var lp = localePrivate[here.id];
+  var lp = localePrivate[here.id]!;
 
   var slot = lp.gettid();
 
@@ -66,13 +66,13 @@ forall d in D {
 
 }
 
-if printTemps then writeln(localePrivate.temps);
+if printTemps then writeln(localePrivate!.temps);
 
 const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
   else dataParTasksPerLocale;
 
 for l in 0..#numLocales {
-  var lp = localePrivate[l];
+  var lp = localePrivate[l]!;
   var y =  0.0;
   for slot in 0..#numTasks {
     y += + reduce lp.temps[slot].y;

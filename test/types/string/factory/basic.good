@@ -1,0 +1,18 @@
+Initialize from string
+A Chapel string
+A Chapel string
+A Chapel string
+
+Initialize from c_string
+ABC
+ABC
+ABC
+
+Initialize from c_ptr
+ABC
+ABC
+ABC
+ABC
+A C
+A C
+

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,9 +39,12 @@ static void checkParsedVar(VarSymbol* var);
 static void checkFunction(FnSymbol* fn);
 static void checkExportedNames();
 static void nestedName(ModuleSymbol* mod);
+static void includedStrictNames(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
+static void warnUnstableUnions(AggregateType* at);
+static void warnUnstableLeadingUnderscores();
 
 void
 checkParsed() {
@@ -67,6 +71,7 @@ checkParsed() {
 
   forv_Vec(DefExpr, def, gDefExprs) {
     if (toVarSymbol(def->sym)) {
+      bool needsInit = false;
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
       // to be declared without an explicit type or initializer expression.
       if ((!def->init || def->init->isNoInitExpr())
@@ -74,9 +79,20 @@ checkParsed() {
         if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
           if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
             if (!def->sym->hasFlag(FLAG_INDEX_VAR))
-              USR_FATAL_CONT(def->sym,
-                             "Variable '%s' is not initialized or has no type",
-                             def->sym->name);
+              needsInit = true;
+
+      if (needsInit) {
+        if ((def->init && def->init->isNoInitExpr()) ||
+            def->sym->hasFlag(FLAG_CONFIG)) {
+          USR_FATAL_CONT(def->sym,
+                         "Variable '%s' is not initialized and has no type",
+                         def->sym->name);
+        } else {
+          SET_LINENO(def);
+          def->init = new SymExpr(gSplitInit);
+          parent_insert_help(def, def->init);
+        }
+      }
     }
 
     //
@@ -110,13 +126,17 @@ checkParsed() {
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     nestedName(mod);
-
+    includedStrictNames(mod);
     checkModule(mod);
   }
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
+
+    warnUnstableUnions(at);
   }
+
+  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -145,15 +165,33 @@ checkNamedArguments(CallExpr* call) {
 
 static const char* getClassKindSpecifier(CallExpr* call) {
   if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
+      call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED) ||
       call->isNamed("_to_unmanaged"))
     return "unmanaged";
   if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
+      call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED) ||
       call->isNamed("_to_borrowed"))
     return "borrowed";
   if (call->isNamed("_owned"))
     return "owned";
   if (call->isNamed("_shared"))
     return "shared";
+
+  if (call->isPrimitive(PRIM_NEW) && call->numActuals() >= 1) {
+    if (NamedExpr* ne = toNamedExpr(call->get(1))) {
+      if (ne->name == astr_chpl_manager) {
+        Type* t = ne->actual->typeInfo();
+        if (t == dtBorrowed)
+          return "borrowed";
+        if (t == dtUnmanaged)
+          return "unmanaged";
+        if (t == dtOwned)
+          return "owned";
+        if (t == dtShared)
+          return "shared";
+      }
+    }
+  }
 
   return NULL;
 }
@@ -162,13 +200,27 @@ static void checkManagedClassKinds(CallExpr* call) {
   const char* outer = getClassKindSpecifier(call);
 
   if (outer != NULL) {
-    CallExpr* innerCall = toCallExpr(call->get(1));
+    Expr* inner = call->get(1);
+    // skip management decorator if present
+    if (NamedExpr* ne = toNamedExpr(inner))
+      if (ne->name == astr_chpl_manager)
+        inner = call->get(2);
+
+    CallExpr* innerCall = toCallExpr(inner);
     if (innerCall) {
       const char* inner = getClassKindSpecifier(innerCall);
       if (inner != NULL) {
         USR_FATAL_CONT(call,
                        "Type expression uses multiple class kinds: %s %s",
                        outer, inner);
+      }
+    }
+
+    if (call->numActuals() >= 1) {
+      if (SymExpr* se = toSymExpr(call->get(1))) {
+        if (se->symbol() == gUninstantiated) {
+          USR_FATAL(call, "Please use %s class? instead of %s?", outer, outer);
+        }
       }
     }
   }
@@ -208,6 +260,11 @@ static void checkPrivateDecls(DefExpr* def) {
   if (def->sym->hasFlag(FLAG_PRIVATE) == true) {
     // The symbol has been declared private.
     if (def->inTree()) {
+
+      if (isTypeSymbol(def->sym) || def->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        USR_FATAL_CONT(def, "Can't apply private to types yet");
+      }
+
       if (isFnSymbol(def->parentSymbol) == true) {
         // The parent symbol of this definition is a FnSymbol.
         // Private symbols at the function scope are meaningless
@@ -229,30 +286,37 @@ static void checkPrivateDecls(DefExpr* def) {
                          "a class or record yet");
 
         } else if (mod->block != def->parentExpr) {
-          if (BlockStmt* block = toBlockStmt(def->parentExpr)) {
-            // Scopeless blocks are used to define multiple symbols, for
-            // instance.  Those are valid "nested" blocks for private symbols.
-            if (block->blockTag != BLOCK_SCOPELESS) {
-              // The block in which we are defined is not the top level module
-              // block.  Private symbols at this scope are meaningless, so warn
-              // the user.
+          for (Expr* cur = def->parentExpr; cur; cur = cur->parentExpr) {
+            if (cur == mod->block)
+              break;
+
+            if (BlockStmt* block = toBlockStmt(cur)) {
+              // Scopeless blocks are used to define multiple symbols, for
+              // instance.  Those are valid "nested" blocks for private symbols.
+              if (block->blockTag != BLOCK_SCOPELESS) {
+                // The block in which we are defined is not the top level module
+                // block.  Private symbols at this scope are meaningless, so warn
+                // the user.
+                USR_WARN(def,
+                         "Private declarations within nested blocks "
+                         "are meaningless");
+
+                def->sym->removeFlag(FLAG_PRIVATE);
+                break;
+              }
+
+            } else {
+              // There are many situations which could lead to this else branch.
+              // Most of them will not reach here due to being banned at parse
+              // time.  However, those that aren't excluded by syntax errors will
+              // be caught here.
               USR_WARN(def,
-                       "Private declarations within nested blocks "
-                       "are meaningless");
+                       "Private declarations are meaningless outside "
+                       "of module level declarations");
 
               def->sym->removeFlag(FLAG_PRIVATE);
+              break;
             }
-
-          } else {
-            // There are many situations which could lead to this else branch.
-            // Most of them will not reach here due to being banned at parse
-            // time.  However, those that aren't excluded by syntax errors will
-            // be caught here.
-            USR_WARN(def,
-                     "Private declarations are meaningless outside "
-                     "of module level declarations");
-
-            def->sym->removeFlag(FLAG_PRIVATE);
           }
         }
 
@@ -294,11 +358,35 @@ checkParsedVar(VarSymbol* var) {
     USR_FATAL_CONT(var->defPoint,
                    "Configuration %s are allowed only at module scope.", varType);
   }
+
+  // Export vars are not yet supported
+  if (var->hasFlag(FLAG_EXPORT))
+    USR_FATAL_CONT(var->defPoint, "Export variables are not yet supported");
 }
 
 
 static void
 checkFunction(FnSymbol* fn) {
+
+  // Chapel doesn't really support procedures with no-op bodies (a
+  // semicolon only).  Doing so is likely to cause confusion for C
+  // programmers who will think of it as a prototype, but we don't
+  // support prototypes, so require such programmers to type the
+  // empty body instead.  This is consistent with the current draft
+  // of the spec as well.
+  if (fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_EXTERN))
+    USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
+
+  if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
+    USR_FATAL_CONT(fn, "Extern functions cannot have a body");
+
+  if (fn->hasFlag(FLAG_EXTERN) && fn->throwsError())
+    USR_FATAL_CONT(fn, "Extern functions cannot throw errors.");
+
+  if (fn->hasFlag(FLAG_EXPORT) && fn->where != NULL)
+    USR_FATAL_CONT(fn, "Exported functions cannot have where clauses.");
+
+
   if ((fn->name == astrThis) && fn->hasFlag(FLAG_NO_PARENS))
     USR_FATAL_CONT(fn, "method 'this' must have parentheses");
 
@@ -306,14 +394,31 @@ checkFunction(FnSymbol* fn) {
     USR_FATAL_CONT(fn, "method 'these' must have parentheses");
 
   if (fn->thisTag != INTENT_BLANK && fn->isMethod() == false) {
-    USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    if (fn->thisTag == INTENT_TYPE) {
+      USR_FATAL_CONT(fn, "Missing type for secondary type method");
+    } else {
+      USR_FATAL_CONT(fn, "'this' intents can only be applied to methods");
+    }
   }
 
-#if 0 // Do not issue the warning yet.
-  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
-    USR_WARN(fn, "\"~classname\" naming of deinitializers is deprecated");
+  if (fn->retTag == RET_TYPE || fn->retTag == RET_PARAM) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+        USR_FATAL_CONT(formal,
+                       "Cannot use %s in a "
+                       "function returning with '%s' intent",
+                       intentDescrString(formal->intent),
+                       retTagDescrString(fn->retTag));
+      }
+    }
   }
-#endif
+
+  if (fn->hasFlag(FLAG_DESTRUCTOR) && (fn->name[0] == '~')) {
+    USR_WARN("Destructors have been deprecated as of Chapel 1.21. "
+             "Please use deinit instead.");
+    USR_WARN(fn, "to fix, rename %s to deinit", fn->name);
+  }
 
   std::vector<CallExpr*> calls;
   collectMyCallExprs(fn, calls, fn);
@@ -353,7 +458,7 @@ checkFunction(FnSymbol* fn) {
 
   if (numVoidReturns != 0 && numNonVoidReturns != 0)
     USR_FATAL_CONT(fn, "Not all returns in this function return a value");
-  if (!isIterator &&
+  if (!isIterator && !fn->hasFlag(FLAG_NO_FN_BODY) &&
       fn->returnsRefOrConstRef() &&
       numNonVoidReturns == 0) {
     USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
@@ -373,6 +478,39 @@ static void nestedName(ModuleSymbol* mod) {
              mod->name);
     USR_PRINT(mod->defPoint,
               "did you mean to include all statements in the module declaration?");
+  }
+}
+
+static void includedStrictNames(ModuleSymbol* mod) {
+  if (mod->defPoint == NULL) {
+    return;
+  }
+
+  if (mod->hasFlag(FLAG_INCLUDED_MODULE)) {
+    ModuleSymbol* parent = mod->defPoint->getModule();
+
+    // module name should match file name
+    const char* fname = filenameToModulename(parent->astloc.filename);
+    if (fname != parent->name) {
+      USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
+    }
+
+    // parent module must be top-level in its file.
+    // in is not necessarily a top-level module, though.
+    ModuleSymbol* lastParentSameFile = parent;
+    for (ModuleSymbol* cur = parent;
+         cur != NULL && cur->defPoint != NULL;
+         cur = cur->defPoint->getModule()) {
+      if (parent->astloc.filename == cur->astloc.filename) {
+        lastParentSameFile = cur;
+      } else {
+        break;
+      }
+    }
+
+    if (lastParentSameFile != parent) {
+      USR_FATAL(parent, "Cannot include module from an in-line nested module");
+    }
   }
 }
 
@@ -428,5 +566,44 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
+  }
+}
+
+static void warnUnstableUnions(AggregateType* at) {
+  if (fWarnUnstable && at->isUnion()) {
+    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
+  }
+}
+
+static void warnUnstableLeadingUnderscores() {
+  if (fWarnUnstable) {
+    forv_Vec(DefExpr, def, gDefExprs) {
+      const char* name = def->name();
+      Symbol* sym = def->sym;
+      ModuleSymbol* mod = def->getModule();
+      FnSymbol* fn = def->getFunction();
+
+      if (name && name[0] == '_' &&
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          sym->type != dtMethodToken) {
+        USR_WARN(def,
+                 "Symbol names with leading underscores (%s) are unstable.", name);
+      }
+      if (name &&
+          name[0] == 'c' &&
+          name[1] == 'h' &&
+          name[2] == 'p' &&
+          name[3] == 'l' &&
+          name[4] == '_' &&
+          mod && mod->modTag == MOD_USER &&
+          !sym->hasFlag(FLAG_TEMP) &&
+          !sym->hasFlag(FLAG_INDEX_VAR) &&
+          !sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
+          !(fn && fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
+        USR_WARN(def,
+                 "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
+      }
+    }
   }
 }

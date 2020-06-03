@@ -107,9 +107,9 @@ proc main {
 
   /* Assign units attributes to coordinate variables. */
   cdfError(nc_put_att_text(ncid, lat_varid, units,
-                           degreesNorth.length, degreesNorth));
+                           degreesNorth.numBytes, degreesNorth));
   cdfError(nc_put_att_text(ncid, lon_varid, units,
-                           degreesEast.length, degreesEast));
+                           degreesEast.numBytes, degreesEast));
 
   /* The dimids array is used to pass the dimids of the dimensions of
      the netCDF variables. Both of the netCDF variables we are
@@ -129,9 +129,9 @@ proc main {
 
   /* Assign units attributes to the netCDF variables. */
   cdfError(nc_put_att_text(ncid, pres_varid, units,
-                           presUnits.length, presUnits));
+                           presUnits.numBytes, presUnits));
   cdfError(nc_put_att_text(ncid, temp_varid, units,
-                           tempUnits.length, tempUnits));
+                           tempUnits.numBytes, tempUnits));
 
   /* End define mode. */
   cdfError(nc_enddef(ncid));

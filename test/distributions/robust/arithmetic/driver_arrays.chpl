@@ -1,4 +1,4 @@
-use driver_domains;
+public use driver_domains;
 
 var A1D: [Dom1D] int;
 var A2D: [Dom2D] int;

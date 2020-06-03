@@ -18,7 +18,7 @@ QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 #
 # Cray X* builds are cross-compilations
 #
-ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
 else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
@@ -68,7 +68,7 @@ ifeq ($(CFLAGS_NEEDS_RT_INCLUDES), y)
   COMPILELINE_STDERR_REDIRECT=2> /dev/null
   COMM_NONE_CHPLENV_CACHE := $(shell echo "$(CHPL_MAKE_CHPLENV_CACHE)" | sed 's/|CHPL_MAKE_COMM=[^|]*|/|CHPL_MAKE_COMM=none|/')
   INCS_DEFS := \
-    $(shell CHPL_MAKE_CHPLENV_CACHE="$(COMM_NONE_CHPLENV_CACHE)" $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
+    $(shell CHPL_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_CHPLENV_CACHE="$(COMM_NONE_CHPLENV_CACHE)" $(CHPL_MAKE_HOME)/util/config/compileline --includes-and-defines \
                $(COMPILELINE_STDERR_REDIRECT) \
             || echo compilelineFAILURE)
   ifneq (, $(findstring compilelineFAILURE,$(INCS_DEFS)))
@@ -100,8 +100,8 @@ endif
 
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
-# determine which scheduler to use. Default to nemesis, except for numa where
-# we want distrib. Override with a user provided option if they requested one
+# determine which scheduler to use. Use nemesis for flat and distrib for
+# non-flat.  Override with a user provided option if they requested one
 SCHEDULER = nemesis
 ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
 SCHEDULER = distrib

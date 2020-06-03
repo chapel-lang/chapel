@@ -1,0 +1,3 @@
+onlyStillWorks.chpl:11: In function 'main':
+onlyStillWorks.chpl:14: error: 'a' undeclared (first use this function)
+accessOnly.chpl:3: error: 'b' undeclared (first use this function)

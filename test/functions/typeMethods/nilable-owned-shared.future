@@ -1,5 +1,0 @@
-bug: type methods called on nilable shared/owned do not resolve
-#13152
-
-When this issue is resolved, remove this test and uncomment
-the corresponding two cases in type-of-this.chpl

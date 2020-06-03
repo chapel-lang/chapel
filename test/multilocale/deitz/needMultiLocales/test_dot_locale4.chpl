@@ -1,7 +1,7 @@
 class C { }
 on Locales(0) {
   var x: int;
-  var c: unmanaged C;
+  var c: unmanaged C?;
   on Locales(1) {
     on Locales(2) {
       c = new unmanaged C();

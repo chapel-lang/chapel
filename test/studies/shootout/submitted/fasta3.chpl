@@ -13,11 +13,11 @@ config const n = 1000,   // controls the length of the generated strings
 // Nucleotide definitions
 //
 enum nucleotide {
-  A = ascii("A"), C = ascii("C"), G = ascii("G"), T = ascii("T"),
-  a = ascii("a"), c = ascii("c"), g = ascii("g"), t = ascii("t"),
-  B = ascii("B"), D = ascii("D"), H = ascii("H"), K = ascii("K"),
-  M = ascii("M"), N = ascii("N"), R = ascii("R"), S = ascii("S"),
-  V = ascii("V"), W = ascii("W"), Y = ascii("Y")
+  A = "A".toByte(), C = "C".toByte(), G = "G".toByte(), T = "T".toByte(),
+  a = "a".toByte(), c = "c".toByte(), g = "g".toByte(), t = "t".toByte(),
+  B = "B".toByte(), D = "D".toByte(), H = "H".toByte(), K = "K".toByte(),
+  M = "M".toByte(), N = "N".toByte(), R = "R".toByte(), S = "S".toByte(),
+  V = "V".toByte(), W = "W".toByte(), Y = "Y".toByte()
 }
 use nucleotide;
 
@@ -41,12 +41,6 @@ const ALU: [0..286] nucleotide = [
   C, G, A, C, A, G, A, G, C, G, A, G, A, C, T, C, C, G, T, C,
   T, C, A, A, A, A, A
 ];
-
-//
-// Index aliases for use with (nucleotide, probability) tuples
-//
-param nucl = 1,
-      prob = 2;
 
 //
 // Probability tables for sequences to be randomly generated
@@ -76,16 +70,18 @@ proc main() {
 proc sumProbs(alphabet: []) {
   var p = 0.0;
   for letter in alphabet {
-    p += letter(prob);
-    letter(prob) = p;
+    ref (_,prob) = letter;
+    p += prob;
+    prob = p;
   }
 }
 
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
+use IO;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = ascii("\n");
+param newline = "\n".toByte();
 
 //
 // Repeat sequence "alu" for n characters
@@ -94,7 +90,7 @@ proc repeatMake(desc, alu, n) {
   stdout.writef("%s", desc);
 
   const r = alu.size,
-        s = [i in {0..r+lineLength}] alu[i % r]: int(8);
+        s = [i in 0..r+lineLength] alu[i % r]: int(8);
 
   for i in 0..n by lineLength {
     const lo = i % r,
@@ -116,26 +112,29 @@ proc randomMake(desc, a, n) {
   //
   // Add a line of random sequence
   //
-  proc addLine(bytes) {
-    for (r, i) in zip(getRands(bytes), 0..) {
-      if r < a[1](prob) {
-        line_buff[i] = a[1](nucl): int(8);
+  proc addLine(numBytes) {
+    for (r, i) in zip(getRands(numBytes), 0..) {
+      const (nucl, prob) = a[0];
+      if r < prob {
+        line_buff[i] = nucl: int(8);
       } else {
         var lo = a.domain.low,
             hi = a.domain.high;
         while (hi > lo+1) {
           var ai = (hi + lo) / 2;
-          if (r < a[ai](prob)) then
+          const (_, prob) = a[ai];
+          if r < prob then
             hi = ai;
           else
             lo = ai;
         }
-        line_buff[i] = a[hi](nucl): int(8);
+        const (nucl, _) = a[hi];
+        line_buff[i] = nucl: int(8);
       }
     }
-    line_buff[bytes] = newline;
+    line_buff[numBytes] = newline;
 
-    stdout.write(line_buff[0..bytes]);
+    stdout.write(line_buff[0..numBytes]);
   }
 }
 

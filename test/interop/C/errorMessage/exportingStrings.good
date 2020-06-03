@@ -1,2 +1,0 @@
-exportingStrings.chpl:1: error: exported procedures should not take arguments of type string, use c_string instead
-exportingStrings.chpl:5: error: exported procedures should not return strings, use c_strings instead

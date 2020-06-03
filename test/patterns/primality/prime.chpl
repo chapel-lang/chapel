@@ -3,7 +3,7 @@
    https://en.wikipedia.org/wiki/Primality_test
  */
 
-use Time;
+use Time, IO;
 proc isPrime(n:int): bool {
 	if n <= 3 then return n>1;
 

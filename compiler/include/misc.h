@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +23,10 @@
 
 #include <cstdio>
 #include <cstdlib>
+
+#include "baseAST.h"
+
+#include "astlocs.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -65,7 +70,10 @@
 #define USR_STOP       exitIfFatalErrorsEncountered
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
-#define INT_ASSERT(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
+#define SELECT_ASSERT(_1, _2, NAME, ...) NAME
+#define INT_ASSERT(...) SELECT_ASSERT(__VA_ARGS__, INT_ASSERT2, INT_ASSERT1)(__VA_ARGS__)
+#define INT_ASSERT1(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
+#define INT_ASSERT2(s, x) do { if (!(x)) INT_FATAL((s), "assertion error"); } while (0)
 
 #define iterKindTypename          "iterKind"
 #define iterKindLeaderTagname     "leader"
@@ -86,15 +94,13 @@ const char* cleanFilename(const char*    name);
 
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
 
-void        handleError(const char* fmt, ...);
-void        handleError(const BaseAST* ast, const char* fmt, ...);
-void        handleError(FILE* file, const BaseAST* ast, const char* fmt, ...);
+void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
+void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 
 void        exitIfFatalErrorsEncountered();
 
 void        considerExitingEndOfPass();
-
-void        printCallStack(bool force, bool shortModule, FILE* out);
 
 void        startCatchingSignals();
 void        stopCatchingSignals();
@@ -104,6 +110,18 @@ void        clean_exit(int status) chpl_noreturn;
 void        printCallStack();
 void        printCallStackCalls();
 
+bool        fatalErrorsEncountered();
+void        clearFatalErrors();
+
+bool printsSameLocationAsLastError(const BaseAST* ast);
+void clearLastErrorLocation();
+
+astlocT getUserInstantiationLocation(const BaseAST* ast);
+
+// Returns true if an error/warning at this location
+// (e.g. with USR_FATAL(ast, ...)) would print out
+// a user line number.
+bool        printsUserLocation(const BaseAST* ast);
 
 // must be exported to avoid dead-code elimination by C++ compiler
 void        gdbShouldBreakHere();

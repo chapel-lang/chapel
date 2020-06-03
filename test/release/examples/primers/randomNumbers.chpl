@@ -10,7 +10,7 @@ use Random;
 // This primer shows two ways to generate a sequence of random numbers:
 // The first is by creating an array of random numbers using the
 // :proc:`Random.fillRandom` function. The second way is to use
-// a :class:`~PCGRandom.RandomStream` instance.
+// a :class:`~PCGRandom.PCGRandomStream` instance.
 //
 
 // Using fillRandom
@@ -27,7 +27,7 @@ fillRandom(rands);
 // To produce deterministic output, specify the starting seed to use when
 // filling the array.
 //
-var randsSeeded: [1..10] real;
+var randsSeeded: [0..9] real;
 var seed = 17;
 fillRandom(randsSeeded, seed);
 writeln("randsSeeded = ", randsSeeded); // Here the output is deterministic
@@ -45,16 +45,16 @@ writeln();
 
 //
 // The second way to generate a sequence of random numbers is by creating a
-// :class:`~PCGRandom.RandomStream` class instance.  The first argument is the
+// :class:`~PCGRandom.PCGRandomStream` class instance.  The first argument is the
 // type of the elements that the instance should generate. If a particular seed
 // is desired, it should be specified upon creation of this instance.
 //
-var randStream = new owned RandomStream(real);
-var randStreamSeeded = new owned RandomStream(real, seed);
+var randStream = new RandomStream(real);
+var randStreamSeeded = new RandomStream(real, seed);
 
 //
 // Then the instance can be used to obtain the numbers.  This can be done in a
-// large chunk by calling :proc:`~PCGRandom.RandomStream.fillRandom`:
+// large chunk by calling :proc:`~PCGRandom.PCGRandomStream.fillRandom`:
 //
 var randsFromStream: [1..10] real;
 randStream.fillRandom(randsFromStream);
@@ -62,8 +62,8 @@ randStream.fillRandom(randsFromStream);
 //
 // Or random numbers can be requested one at a a time.
 //
-var nextRand = randStreamSeeded.getNext();
-writeln(nextRand == randsSeeded[1]);
+var firstRand = randStreamSeeded.getNext();
+writeln(firstRand == randsSeeded[0]);
 
 // Note that since since we are using the same seed, the numbers generated will
 // match those generated earlier by ``fillRandom(randsSeeded, seed)``.
@@ -72,27 +72,27 @@ writeln(nextRand == randsSeeded[1]);
 // The next random number generated will follow the most
 // recent...
 //
-var secondRand = randStreamSeeded.getNext();
-writeln(secondRand == randsSeeded[2]);
+var nextRand = randStreamSeeded.getNext();
+writeln(nextRand == randsSeeded[1]);
 
 // ...unless the position to look at has been changed.
-randStreamSeeded.skipToNth(7);
-var seventhRand = randStreamSeeded.getNext();
-writeln(seventhRand == randsSeeded[7]);
+randStreamSeeded.skipToNth(6);
+var rand6 = randStreamSeeded.getNext();
+writeln(rand6 == randsSeeded[6]);
 
 //
 // A specific random number in the stream can be obtained by
 // specifying the position.  This argument must be greater
-// than ``0``.
+// than or equal to ``0``.
 //
-var secondRand2 = randStreamSeeded.getNth(2);
-writeln(secondRand2 == secondRand);
+var rand1 = randStreamSeeded.getNth(1);
+writeln(rand1 == nextRand);
 
 //
 // This position can be earlier or later than the most recent.
 //
-var fourthRand = randStreamSeeded.getNth(4);
-writeln(fourthRand == randsSeeded[4]);
+var rand3 = randStreamSeeded.getNth(3);
+writeln(rand3 == randsSeeded[3]);
 
 
 //
@@ -104,19 +104,19 @@ for i in randStreamSeeded.iterate({5..10}, real) {
 
 
 //
-// By default, access using the :class:`~PCGRandom.RandomStream` instance will
+// By default, access using the :class:`~PCGRandom.PCGRandomStream` instance will
 // be safe in the presence of parallelism. This can be changed for the entire
 // stream during class creation.  As a result, two parallel accesses or updates
 // to the position from which reading is intended may conflict.
 //
-var parallelUnsafe       = new owned RandomStream(real, parSafe=false);
-var parallelSeededUnsafe = new owned RandomStream(real, seed, false);
+var parallelUnsafe       = new RandomStream(real, parSafe=false);
+var parallelSeededUnsafe = new RandomStream(real, seed, false);
 
-// Now :class:`~PCGRandom.RandomStream` functions, such as
+// Now :class:`~PCGRandom.PCGRandomStream` functions, such as
 // ``parallelUnsafe.getNext()`` and ``parallelSeededUnsafe.getNext()`` can be
 // called.
 
 //
-// The ``RandomStream`` instances above were created with ``new owned``
+// The ``RandomStream`` instances above were created with ``new [owned]``
 // and so are automatically deleted when they go out of scope.
 //

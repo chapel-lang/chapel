@@ -20,9 +20,9 @@ proc main() {
 
 /* Broken keys */
 
-// Return record 'foobar'
+// Return class 'foobar'
 record rec { }
-record foobar { };
+class foobar { };
 
 proc rec.key(a) {
   return new foobar();

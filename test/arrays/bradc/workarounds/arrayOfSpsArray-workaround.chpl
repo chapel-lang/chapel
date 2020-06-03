@@ -20,7 +20,7 @@ record sps33 {
   }
 
   proc this(ij: 2*int) ref {
-    return this(ij(1), ij(2));
+    return this(ij(0), ij(1));
   }
 }
 

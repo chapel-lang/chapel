@@ -1,8 +1,9 @@
+use Map;
 
-proc pretty(a : []) {
+proc pretty(ref a : map) {
   write("{ ");
   var first = true;
-  for k in a.domain.sorted() {
+  for k in a.keysToArray().sorted() {
     if !first then write(", ", k, " => ", a[k]);
     else {
       write(k, " => ", a[k]);
@@ -12,9 +13,12 @@ proc pretty(a : []) {
   writeln(" }");
 }
 
-var a = ["a" => 1, "b" => 2, "c" => 3];
+var a = new map(string, int);
+a.add("a", 1); a.add("b", 2); a.add("c", 3);
 pretty(a);
-var b = ["b" => 111, "d" => 4];
+var b = new map(string, int);
+b.add("b", 111); b.add("d", 4);
+
 a += b;
 pretty(a);
 a -= b;

@@ -461,7 +461,6 @@ hwloc_backend_synthetic_init(struct hwloc_synthetic_backend_data_s *data,
       errno = EINVAL;
       goto error;
     }
-    data->level[count-1].arity = (unsigned)item;
 
     totalarity *= item;
     data->level[count].totalwidth = totalarity;
@@ -487,6 +486,7 @@ hwloc_backend_synthetic_init(struct hwloc_synthetic_backend_data_s *data,
       goto error;
     }
 
+    data->level[count-1].arity = (unsigned)item;
     count++;
   }
 
@@ -610,7 +610,7 @@ hwloc_backend_synthetic_init(struct hwloc_synthetic_backend_data_s *data,
 	  curlevel->memorysize = 32*1024;
 	else
 	  /* *4 at each level, starting from 1MB for L2, unified */
-	  curlevel->memorysize = 256*1024 << (2*curlevel->depth);
+	  curlevel->memorysize = 256ULL*1024 << (2*curlevel->depth);
       }
 
     } else if (type == HWLOC_OBJ_NUMANODE && !curlevel->memorysize) {

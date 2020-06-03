@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2018 Cray Inc.
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +20,7 @@
 
 module DataFrames {
   use Sort;
+  private use IO;
 
   class Index {
     pragma "no doc"
@@ -28,19 +30,20 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc uni(lhs: TypedSeries, rhs: TypedSeries, unifier: SeriesUnifier): owned Series {
+    proc uni(lhs: borrowed TypedSeries, rhs: borrowed TypedSeries, unifier:
+        borrowed SeriesUnifier): owned Series {
       halt("generic Index cannot be unioned");
       return new owned Series();
     }
 
     pragma "no doc"
-    proc map(s: TypedSeries, mapper: SeriesMapper): owned Series {
+    proc map(s: borrowed TypedSeries, mapper: borrowed SeriesMapper): owned Series {
       halt("generic Index cannot be mapped");
       return new owned Series();
     }
 
     pragma "no doc"
-    proc filter(s: TypedSeries, filterSeries: TypedSeries): owned Series {
+    proc filter(s: borrowed TypedSeries, filterSeries: borrowed TypedSeries): owned Series {
       halt("generic Index cannot be filtered");
       return new owned Series();
     }
@@ -52,12 +55,17 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeThis(f, s: TypedSeries(?) = nil) {
+    proc writeThis(f, s: borrowed TypedSeries(?)) throws {
       halt("cannot writeThis on generic Index");
     }
 
     pragma "no doc"
-    proc writeThis(f, d: DataFrame = nil) {
+    proc writeThis(f, d: borrowed DataFrame) throws {
+      halt("cannot writeThis on generic Index");
+    }
+
+    pragma "no doc"
+    proc writeThis(f) throws {
       halt("cannot writeThis on generic Index");
     }
 
@@ -135,44 +143,44 @@ module DataFrames {
     // TODO: enforce same index type with another dispatch
     // TODO: sort Index
     override
-    proc uni(lhs: TypedSeries(?lhsType), rhs: TypedSeries(?rhsType),
-             unifier: SeriesUnifier(lhsType)): owned Series
+    proc uni(lhs: borrowed TypedSeries(?lhsType), rhs: borrowed TypedSeries(?rhsType),
+             unifier: borrowed SeriesUnifier(lhsType)): owned Series
              where lhsType == rhsType {
-      var uni_ords = 1..(lhs.ords.size + rhs.ords.size);
+      var uni_ords = 0..#(lhs.ords.size + rhs.ords.size);
       var uni_rev_idx: [uni_ords] idxType;
       var uni_data: [uni_ords] lhsType;
       var uni_valid_bits: [uni_ords] bool;
 
       var curr_ord = 0;
       for (lhs_v, (lhs_i, lhs_d)) in lhs._items(idxType) {
-        curr_ord += 1;
         uni_rev_idx[curr_ord] = lhs_i;
 
-        if rhs.idx.contains(lhs_i) {
+        if rhs.idx!.contains(lhs_i) {
           uni_data[curr_ord] = unifier.f(lhs_d, rhs[lhs_i]);
           uni_valid_bits[curr_ord] = lhs_v && rhs.valid(lhs_i);
         } else {
           uni_data[curr_ord] = unifier.f_lhs(lhs_d);
           uni_valid_bits[curr_ord] = lhs_v;
         }
+        curr_ord += 1;
       }
 
       for (rhs_v, (rhs_i, rhs_d)) in rhs._items(idxType) {
-        if !lhs.idx.contains(rhs_i) {
-          curr_ord += 1;
+        if !lhs.idx!.contains(rhs_i) {
           uni_rev_idx[curr_ord] = rhs_i;
           uni_data[curr_ord] = unifier.f_rhs(rhs_d);
           uni_valid_bits[curr_ord] = rhs_v;
+          curr_ord += 1;
         }
       }
 
-      return new owned TypedSeries(uni_data[1..curr_ord],
-                             new shared TypedIndex(uni_rev_idx[1..curr_ord]),
-                             uni_valid_bits[1..curr_ord]);
+      return new owned TypedSeries(uni_data[0..#curr_ord],
+                             new shared TypedIndex(uni_rev_idx[0..#curr_ord]),
+                             uni_valid_bits[0..#curr_ord]);
     }
 
     override
-    proc map(s: TypedSeries(?T), mapper: SeriesMapper(T, ?R)): owned Series {
+    proc map(s: borrowed TypedSeries(?T), mapper: borrowed SeriesMapper(T, ?R)): owned Series {
       var mapped: [ords] R;
       for (i, d) in s.items(idxType) do
         mapped[this[i]] = mapper.f(d);
@@ -185,7 +193,7 @@ module DataFrames {
     }
 
     override
-    proc filter(s: TypedSeries(?T), filterSeries: TypedSeries(bool)): owned Series {
+    proc filter(s: borrowed TypedSeries(?T), filterSeries: borrowed TypedSeries(bool)): owned Series {
       var filter_rev_idx: [ords] idxType;
       var filter_data: [ords] T;
       var filter_valid_bits: [ords] bool;
@@ -193,16 +201,16 @@ module DataFrames {
       var curr_ord = 0;
       for (i, b) in filterSeries.items(idxType) {
         if b && this.contains(i) {
-          curr_ord += 1;
           filter_rev_idx[curr_ord] = i;
           filter_data[curr_ord] = s[i];
           filter_valid_bits[curr_ord] = s.valid(i);
+          curr_ord += 1;
         }
       }
 
-      return new owned TypedSeries(filter_data[1..curr_ord],
-                             new shared TypedIndex(filter_rev_idx[1..curr_ord]),
-                             filter_valid_bits[1..curr_ord]);
+      return new owned TypedSeries(filter_data[0..#curr_ord],
+                             new shared TypedIndex(filter_rev_idx[0..#curr_ord]),
+                             filter_valid_bits[0..#curr_ord]);
     }
 
     override
@@ -215,21 +223,21 @@ module DataFrames {
       var idxWidth = 0;
       for idx in this {
         // TODO: clean up to simple cast after bugfix
-        var idxStr = new string(idx: string);
-        if idxStr.length > idxWidth then
-          idxWidth = idxStr.length;
+        var idxStr = createStringWithNewBuffer(idx: string);
+        if idxStr.size > idxWidth then
+          idxWidth = idxStr.size;
       }
       return idxWidth;
     }
 
     override
-    proc writeThis(f, s: TypedSeries(?) = nil) {
+    proc writeThis(f, s: borrowed TypedSeries) throws {
       var idxWidth = writeIdxWidth() + 4;
-      for (idx, (v, d)) in zip(this, s._these()) {
+      for (idx, (v, d)) in zip(this, s!._these()) {
         // TODO: clean up to simple cast after bugfix
-        var idxStr = new string(idx: string);
+        var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idx;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         if v then
@@ -241,7 +249,7 @@ module DataFrames {
     }
 
     override
-    proc writeThis(f, d: DataFrame = nil) {
+    proc writeThis(f, d: borrowed DataFrame) throws {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
@@ -252,17 +260,34 @@ module DataFrames {
       for idx in this {
         f <~> "\n";
         // TODO: clean up to simple cast after bugfix
-        var idxStr = new string(idx: string);
+        var idxStr = createStringWithNewBuffer(idx: string);
         f <~> idxStr;
-        for space in 1..idxWidth-idxStr.length do
+        for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
         for (ser, lab) in zip(d, d.labels) {
-          ser.writeElem(f, idx, lab.length);
+          ser!.writeElem(f, idx, lab.size);
           f <~> "   ";
         }
       }
     }
+
+    override
+    proc writeThis(f) throws {
+      var idxWidth = writeIdxWidth() + 1;
+      for space in 1..idxWidth do
+        f <~> " ";
+
+      for idx in this {
+        f <~> "\n";
+        // TODO: clean up to simple cast after bugfix
+        var idxStr = createStringWithNewBuffer(idx: string);
+        f <~> idxStr;
+        for space in 1..idxWidth-idxStr.size do
+          f <~> " ";
+      }
+    }
+
 
     // TODO: label mutation (insert, drop)
     // TODO: ordinal mutation (delete)
@@ -277,12 +302,12 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc reindex(idx : shared Index) {
+    proc reindex(in idx : shared Index?) {
       halt("generic Series cannot be reindexed");
     }
 
     pragma "no doc"
-    proc reindex(type eltType, idx : shared Index) {
+    proc reindex(type eltType, in idx : shared Index?) {
       var _typed = this: TypedSeries(eltType)?;
       if _typed == nil then halt("Unable to cast generic index with type ", eltType:string);
 
@@ -290,13 +315,13 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc uni(lhs: TypedSeries, unifier: SeriesUnifier) {
+    proc uni(lhs: borrowed TypedSeries, unifier: borrowed SeriesUnifier) {
       halt("generic Series cannot be unioned");
       return new owned Series();
     }
 
     pragma "no doc"
-    proc map(mapper: SeriesMapper) {
+    proc map(mapper: borrowed SeriesMapper) {
       halt("generic Series cannot be unioned");
       return new owned Series();
     }
@@ -374,12 +399,12 @@ module DataFrames {
     }
 
     pragma "no doc"
-    proc writeElem(f, i, len: int) {
+    proc writeElem(f, i, len: int) throws {
       halt("generic Series cannot be indexed");
     }
 
     pragma "no doc"
-    proc writeElemNoIndex(f, i: int, len: int) {
+    proc writeElemNoIndex(f, i: int, len: int) throws {
       halt("generic Series cannot be accessed");
     }
   }
@@ -388,7 +413,7 @@ module DataFrames {
     type eltType;
 
     // TODO: ords dmap Block
-    var idx: shared Index;
+    var idx: shared Index?;
     var ords: domain(1);
     var data: [ords] eltType;
     var valid_bits: [ords] bool;
@@ -402,7 +427,7 @@ module DataFrames {
       super.init();
       eltType = T;
 
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = true;
     }
@@ -411,27 +436,27 @@ module DataFrames {
       super.init();
       eltType = T;
 
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = valid_bits;
     }
 
-    proc init(data: [] ?T, idx: shared Index) {
+    proc init(data: [] ?T, in idx: shared Index?) {
       super.init();
       eltType = T;
 
       this.idx = idx;
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = true;
     }
 
-    proc init(data: [] ?T, idx: shared Index, valid_bits: [] bool) {
+    proc init(data: [] ?T, in idx: shared Index?, valid_bits: [] bool) {
       super.init();
       eltType = T;
 
       this.idx = idx;
-      this.ords = 1..data.size;
+      this.ords = 0..#data.size;
       this.data = data;
       this.valid_bits = valid_bits;
     }
@@ -458,7 +483,7 @@ module DataFrames {
 
     iter items(type idxType) {
       if idx {
-        for (v, i, d) in zip(valid_bits, idx.these(idxType), data) do
+        for (v, i, d) in zip(valid_bits, idx!.these(idxType), data) do
           if v then yield (i, d);
       }
     }
@@ -476,7 +501,7 @@ module DataFrames {
 
     iter items_fast(type idxType) {
       if idx {
-        for t in zip(idx.these(idxType), data) do
+        for t in zip(idx!.these(idxType), data) do
           yield t;
       }
     }
@@ -507,7 +532,7 @@ module DataFrames {
 
     proc this(lab: ?idxType) {
       if idx then
-        return data[idx[lab]];
+        return data[idx![lab]];
 
       var default: eltType;
       return default;
@@ -515,14 +540,14 @@ module DataFrames {
 
     // TODO: filterSeries needs to be Owned
     proc this(filterSeries: ?T) : owned Series where isSubtype(T, Series) {
-      var castFilter = filterSeries: TypedSeries(bool)?;
+      var castFilter = filterSeries: borrowed TypedSeries(bool)?;
       if idx then
-        return idx.filter(this, castFilter!);
+        return idx!.filter(this, castFilter!);
 
       // TODO: needs Series with Index(int) to remove items not in range
       var filter_data: [ords] eltType;
       for (i, b) in castFilter!.items() {
-        if b && i <= data.size then
+        if b && i < data.size then
           filter_data[i] = this.at(i);
       }
       return new owned TypedSeries(filter_data, this.valid_bits);
@@ -534,7 +559,7 @@ module DataFrames {
 
     proc valid(lab: ?idxType) {
       if idx then
-        return valid_bits[idx[lab]];
+        return valid_bits[idx![lab]];
 
       return false;
     }
@@ -543,7 +568,7 @@ module DataFrames {
       return valid_bits[ord];
     }
 
-    override proc reindex(idx: shared Index) {
+    override proc reindex(in idx: shared Index?) {
       this.idx = idx;
     }
 
@@ -552,19 +577,19 @@ module DataFrames {
      */
 
     override
-    proc uni(lhs: TypedSeries(eltType), unifier: SeriesUnifier(eltType)): owned Series {
+    proc uni(lhs: borrowed TypedSeries(eltType), unifier: borrowed SeriesUnifier(eltType)): owned Series {
       if lhs.idx then
-        return lhs.idx.uni(lhs, this, unifier):owned Series;
+        return lhs.idx!.uni(lhs, this, unifier):owned Series;
 
       var uni_ords = if lhs.ords.size > this.ords.size
-                     then 1..lhs.ords.size
-                     else 1..this.ords.size;
+                     then 0..#lhs.ords.size
+                     else 0..#this.ords.size;
       var uni_data: [uni_ords] eltType;
       var uni_valid_bits: [uni_ords] bool;
 
       for i in uni_ords {
-        var inLhs = i <= lhs.ords.size;
-        var inThis = i <= this.ords.size;
+        var inLhs = i < lhs.ords.size;
+        var inThis = i < this.ords.size;
         if inLhs && inThis {
           uni_data[i] = unifier.f(lhs.at(i), this.at(i));
           uni_valid_bits[i] = lhs.valid_at(i) && this.valid_at(i);
@@ -581,10 +606,10 @@ module DataFrames {
     }
 
     override
-    proc map(mapper: SeriesMapper): owned Series {
+    proc map(mapper: borrowed SeriesMapper): owned Series {
       if idx {
         // Workaround for lack of shared this-intent for Index.map
-        var ret = idx.map(this, mapper);
+        var ret = idx!.map(this, mapper);
         ret.reindex(mapper.retType, idx);
         return ret;
       }
@@ -599,7 +624,7 @@ module DataFrames {
     // TODO: "in" operator for idx.contains(lab)
 
     override
-    proc add(rhs : Series): owned Series {
+    proc add(rhs : borrowed Series): owned Series {
       return rhs.uni(this, new borrowed SeriesAdd(eltType));
     }
 
@@ -683,18 +708,18 @@ module DataFrames {
     override
     proc nrows(): int {
       if idx then
-        return idx.nrows();
+        return idx!.nrows();
       else
         return ords.size;
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       if idx {
-        idx.writeThis(f, _to_unmanaged(this));
+        idx!.writeThis(f, _to_unmanaged(this));
       } else {
         for (v, (i, d)) in this._items() {
-          f <~> i + "    ";
+          f <~> i:string + "    ";
           if v then
             f <~> d;
           else
@@ -707,26 +732,26 @@ module DataFrames {
 
     pragma "no doc"
     override
-    proc writeElem(f, i, len: int) {
+    proc writeElem(f, i, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid(i)
-                   then new string(this[i]: string)
+                   then createStringWithNewBuffer(this[i]: string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
 
     pragma "no doc"
     override
-    proc writeElemNoIndex(f, i: int, len: int) {
+    proc writeElemNoIndex(f, i: int, len: int) throws {
       // TODO: clean up to simple cast after bugfix
       var output = if this.valid_at(i)
-                   then new string(this.at(i): string)
+                   then createStringWithNewBuffer(this.at(i): string)
                    else "None";
 
-      for space in 1..len-output.length do
+      for space in 1..len-output.size do
         f <~> " ";
       f <~> output;
     }
@@ -737,9 +762,9 @@ module DataFrames {
 
     // TODO: array of owned Series
     //   Currently run into confusing const errors in DefaultAssociative
-    var columns: [labels] unmanaged Series;
+    var columns: [labels] unmanaged Series?;
 
-    var idx: shared Index;
+    var idx: shared Index?;
 
     // TODO: init with labels arg
 
@@ -747,7 +772,7 @@ module DataFrames {
       this.complete();
     }
 
-    proc init(columns: [?D] Series) {
+    proc init(columns: [?D] ?E) where isSubtype(E, Series) {
       this.labels = D;
       this.idx = nil;
       this.complete();
@@ -756,13 +781,23 @@ module DataFrames {
         this.columns[lab] = s.copy().release();
     }
 
-    proc init(columns: [?D], idx: shared Index) {
+    pragma "no doc"
+    proc init(columns: [?D] ?E) where isSubtype(E, Series?) {
+      this.labels = D;
+      this.idx = nil;
+      this.complete();
+
+      for (lab, s) in zip(labels, columns) do
+        this.columns[lab] = s!.copy().release();
+    }
+
+    proc init(columns: [?D], in idx: shared Index) {
       this.labels = D;
       this.idx = idx;
       this.complete();
 
       for (lab, s) in zip(labels, columns) do
-        this.insert(lab, s);
+        this.insert(lab, s!);
     }
 
     proc deinit() {
@@ -778,35 +813,36 @@ module DataFrames {
       return columns[lab];
     }
 
-    proc insert(lab: string, s: Series) {
+    proc insert(lab: string, s: borrowed Series) {
       var sCopy = s.copy().release();
       sCopy.reindex(idx);
+      labels += lab;
       columns[lab] = sCopy;
     }
 
-    proc reindex(idx: shared Index) {
+    proc reindex(in idx: shared Index?) {
       this.idx = idx;
       for s in columns do
-        s.reindex(idx);
+        s!.reindex(idx);
     }
 
     proc nrows() {
       var nMax = 0;
       for s in this {
-        var n = s.nrows();
+        var n = s!.nrows();
         if n > nMax then nMax = n;
       }
       return nMax;
     }
 
     override
-    proc writeThis(f) {
+    proc writeThis(f) throws {
       if idx {
-        idx.writeThis(f, _to_unmanaged(this));
+        idx!.writeThis(f, _to_unmanaged(this));
       } else {
         var n = nrows();
-        var nStr = new string(n: string);
-        var idxWidth = nStr.length + 1;
+        var nStr = createStringWithNewBuffer(n: string);
+        var idxWidth = nStr.size + 1;
 
         for space in 1..idxWidth do
           f <~> " ";
@@ -814,15 +850,15 @@ module DataFrames {
           f <~> lab + "   ";
         }
 
-        for i in 1..n {
+        for i in 0..#n {
           f <~> "\n";
-          var iStr = new string(i: string);
+          var iStr = createStringWithNewBuffer(i: string);
           f <~> iStr;
-          for space in 1..idxWidth-iStr.length do
+          for space in 1..idxWidth-iStr.size do
             f <~> " ";
 
           for (ser, lab) in zip(this, labels) {
-            ser.writeElemNoIndex(f, i, lab.length);
+            ser!.writeElemNoIndex(f, i, lab.size);
             f <~> "   ";
           }
         }
@@ -994,75 +1030,75 @@ module DataFrames {
   /*
    * ARITHMETIC AND INEQUALITY OPERATORS
    */
-  proc +(lhs: Series, rhs: Series) {
+  proc +(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.add(rhs);
   }
 
-  proc +(lhs: Series, n: ?N) where isNumericType(N) {
+  proc +(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.add_scalar(n);
   }
 
-  proc +(n: ?N, rhs: Series) where isNumericType(N) {
+  proc +(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.add_scalar(n);
   }
 
-  proc -(lhs: Series, rhs: Series) {
+  proc -(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.subtr(rhs);
   }
 
-  proc -(lhs: Series, n: ?N) where isNumericType(N) {
+  proc -(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.subtr_scalar(n);
   }
 
-  proc *(lhs: Series, rhs: Series) {
+  proc *(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.mult(rhs);
   }
 
-  proc *(lhs: Series, n: ?N) where isNumericType(N) {
+  proc *(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.mult_scalar(n);
   }
 
-  proc *(n: ?N, rhs: Series) where isNumericType(N) {
+  proc *(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.mult_scalar(n);
   }
 
-  proc <(lhs: Series, n: ?N) where isNumericType(N) {
+  proc <(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lt_scalar(n);
   }
 
-  proc <(n: ?N, rhs: Series) where isNumericType(N) {
+  proc <(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gt_scalar(n);
   }
 
-  proc >(lhs: Series, n: ?N) where isNumericType(N) {
+  proc >(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gt_scalar(n);
   }
 
-  proc >(n: ?N, rhs: Series) where isNumericType(N) {
+  proc >(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lt_scalar(n);
   }
 
-  proc ==(lhs: Series, n: ?N) where isNumericType(N) {
+  proc ==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.eq_scalar(n);
   }
 
-  proc ==(n: ?N, rhs: Series) where isNumericType(N) {
+  proc ==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.eq_scalar(n);
   }
 
-  proc <=(lhs: Series, n: ?N) where isNumericType(N) {
+  proc <=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lteq_scalar(n);
   }
 
-  proc <=(n: ?N, rhs: Series) where isNumericType(N) {
+  proc <=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gteq_scalar(n);
   }
 
-  proc >=(lhs: Series, n: ?N) where isNumericType(N) {
+  proc >=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gteq_scalar(n);
   }
 
-  proc >=(n: ?N, rhs: Series) where isNumericType(N) {
+  proc >=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lteq_scalar(n);
   }
 }

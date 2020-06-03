@@ -88,7 +88,6 @@ class Chameneos {
      meeting has ended, setting both of their colors to this value. */
   proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp : uint(32);
-    var peer : Chameneos;
     var peer_idx : uint(32);
     var xchg : uint(32);
     var is_same : int;
@@ -106,13 +105,13 @@ class Chameneos {
         break;
       }
 
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg)) {
+      if (meetingPlace.state.compareAndSwap(stateTemp, xchg)) {
         if (peer_idx) {
           if (id == peer_idx) {
             is_same = 1;
             halt("halt: chameneos met with self");
           }
-          peer = population[peer_idx:int(32)];
+          const peer = population[peer_idx:int(32)].borrow();
           newColor = getComplement(color, peer.color);
           peer.color = newColor;
           peer.meetings += 1;
@@ -156,18 +155,18 @@ proc populate (size : int(32)) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int(32)) = {1..size};
-  var population : [D] owned Chameneos;
+  var population : [D] owned Chameneos?;
 
   if (size == 10) {
     for i in D {
-      population(i) = new owned Chameneos(i, colorsDefault10(i));
+      population(i) = new owned Chameneos(i, colorsDefault10(i-1));
     }
   } else {
     for i in D {
       population(i) = new owned Chameneos(i, ((i-1) % 3):Color);
     }
   }
-  return population;
+  return try! population:owned Chameneos;
 }
 
 /* run takes a population of Chameneos and a MeetingPlace, then allows the
@@ -223,7 +222,7 @@ proc printInfo(population : [] owned Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 0..<s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

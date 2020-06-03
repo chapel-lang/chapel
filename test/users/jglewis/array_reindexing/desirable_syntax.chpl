@@ -27,13 +27,13 @@ module desirable_syntax {
   }
 
   proc print_A (A) {
-    for i in A.domain.dim(1) do
+    for i in A.domain.dim(0) do
       writeln (i, A (i, ..) );
     writeln ();
   }
 
   proc print_A_reindexed (A : [0.., 0..]) {
-    for i in A.domain.dim(1) do
+    for i in A.domain.dim(0) do
       writeln (i, A (i, ..) );
   }
   

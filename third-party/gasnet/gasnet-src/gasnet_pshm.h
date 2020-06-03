@@ -13,23 +13,20 @@
 
 /* Must defined EXACTLY one */
 /* TO DO: add to GASNet's config string */
-#if defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM) && !defined(GASNETI_PSHM_GHEAP)
+#if defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM)
   #undef GASNETI_PSHM_POSIX
   #define GASNETI_PSHM_POSIX 1
-#elif !defined(GASNETI_PSHM_POSIX) && defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM) && !defined(GASNETI_PSHM_GHEAP)
+#elif !defined(GASNETI_PSHM_POSIX) && defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM)
   #undef GASNETI_PSHM_SYSV
   #define GASNETI_PSHM_SYSV 1
-#elif !defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM) && !defined(GASNETI_PSHM_GHEAP)
+#elif !defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM)
   #undef GASNETI_PSHM_FILE
   #define GASNETI_PSHM_FILE 1
-#elif !defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && defined(GASNETI_PSHM_XPMEM) && !defined(GASNETI_PSHM_GHEAP)
+#elif !defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && defined(GASNETI_PSHM_XPMEM)
   #undef GASNETI_PSHM_XPMEM
   #define GASNETI_PSHM_XPMEM 1
-#elif !defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && !defined(GASNETI_PSHM_XPMEM) && defined(GASNETI_PSHM_GHEAP)
-  #undef GASNETI_PSHM_GHEAP
-  #define GASNETI_PSHM_GHEAP 1
 #else
-  #error PSHM configuration must be exactly one of (GASNETI_PSHM_POSIX, GASNETI_PSHM_SYSV, GASNETI_PSHM_FILE, GASNETI_PSHM_XPMEM, GASNETI_PSHM_GHEAP)
+  #error PSHM configuration must be exactly one of (GASNETI_PSHM_POSIX, GASNETI_PSHM_SYSV, GASNETI_PSHM_FILE, GASNETI_PSHM_XPMEM)
 #endif
 
 #if GASNET_PAGESIZE < 4096
@@ -54,9 +51,18 @@ extern void gasneti_unlink_vnet(void);
 struct gasneti_pshmnet;			/* opaque type */
 typedef struct gasneti_pshmnet gasneti_pshmnet_t;
 
-/* Initialize pshm request and reply networks given a conduit-specific exchange function.
-   Returns pointer to shared memory of length "aux_sz" available for conduit-specific use */
-extern void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t localbcastfn, size_t aux_sz);
+/* Initialize pshm.
+ * This includes allocating the PSHM memory region, initializing PSHM internal
+ * state, and the request and reply networks for AMPSHM.
+ * The first argument must be a conduit-specific exchange function.
+ * The second argument is the amount of shared memory requested by the caller
+ * for conduit-specific use, the address of which is returned.
+ */
+extern void
+*gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t localbcastfn, size_t aux_sz);
+
+/* Provide a write of zero to at least one byte of each page in the given region */
+extern void gasneti_pshm_prefault(void *addr, size_t len);
 
 /*  PSHMnets needed for PSHM active messages.
  *

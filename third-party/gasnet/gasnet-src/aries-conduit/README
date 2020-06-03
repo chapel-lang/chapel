@@ -1,5 +1,790 @@
 README file for aries-conduit
 ================================
 Paul H. Hargrove <PHHargrove@lbl.gov>
+Larry Stewart <stewart@serissa.com> 
 
-See gemini-conduit/README.
+
+User Information:
+-----------------
+
+This documentation covers aries-conduit for Cray XC series systems.
+Because these Cray systems have non-trivial differences between the login
+nodes and the compute nodes, one must use a cross-configure script to build
+either of these conduits.  See other/contrib/cross-configure-cray-aries-* .
+
+Where this conduit runs:
+-----------------------
+
+The aries-conduit runs on systems with Cray's "Aries" interconnect, including
+their XC series machines.  To the best of our knowledge, there are no known
+compatibility issues with any release of the XC series system software.
+
+Optional configure-time settings:
+------------------------------
+
+--with-aries-max-medium=[value]
+   By default gasnet_AMMaxMedium() is 4032: a 4096 byte buffer minus
+   64 bytes reserved for up to 16 handler arguments.  This configure
+   option allows control over the value of gasnet_AMMaxMedium().
+   The value must be a multiple of 64, and cannot be less than 512.
+   It is recommended to use values that are 64-bytes less than a
+   power-of-two, to preserve efficient memory use.
+   The default value is 4032.
+
+--enable-aries-multi-domain
+   This configure option enables EXPERIMENTAL support for improved
+   performance of RDMA operations in a PAR (multi-threaded) build of
+   Aries conduit by allocating multiple GNI Communication
+   Domains and distributing the clients threads over these domains.
+   Since operations on a given domain must be serialized (we use a
+   pthread mutex), use of multiple domains can significantly reduce
+   lock contention.  The trade-offs are that with multiple domains
+   the maximum size of the GASNet segment may be reduced, and progress
+   on Active Messages may be slowed.
+
+   The following three environment variables are honored when
+   multi-domain support is enabled.  These three variables are not
+   required to be single-valued.
+
+   GASNET_DOMAIN_COUNT
+   This is the number of Communication Domains to create per process.
+   The multi-domain support has no benefits unless this is set to a
+   value larger than 1.
+   The default value is 1 (a single domain with no benefits).
+
+   GASNET_GNI_PTHREADS_PER_DOMAIN
+   This is the number of threads to assign to the first domain before
+   assigning any to the second.  When the last domain has been assigned
+   this many threads, then assignment resumes at the first domain.
+   The default value is 1 (cyclic/round-robin assignment).
+
+   GASNET_AM_DOMAIN_POLL_MASK
+   This value controls how often threads in domains other than the
+   first poll for arrival of Active Messages (threads in the first 
+   domain poll on every call to gasnet_AMPoll).  Since all Active
+   Message traffic arrives via the first domain, polling by more than
+   one thread will increase lock contention, but a total lack of
+   polling by threads in other domains can lead to deadlock in some
+   circumstances.
+   A value of 0 will result in polling for Active Messages on every
+   call (explicit or implicit) to gasnet_AMPoll().
+   Values of 1, 3, 7, 15, etc. will result in progressively lower
+   average frequencies (1 in (n+1)).
+   The default is 255 (1 in every 256 polls by threads outside the
+   first domain will poll for AM arrivals).
+
+Optional compile-time settings:
+------------------------------
+
+* All the compile-time settings from extended-ref (see the extended-ref README)
+
+in aries-conduit/gasnet_aries.h:
+
+GASNETC_USE_SPINLOCK	- 0 user gasneti_mutex_t (default)
+			  1 use gasneti_spinlock_t
+
+The _DEFAULT values for all of the GASNET_GNI_ environment variables.
+
+in aries-conduit/gasnet_aries.c:
+
+int gasnetc_poll_burst = 10;   /* number of rdma completions to get at once */
+
+Sets the number of events for arriving active messages taken at once
+#define AM_BURST 20
+
+Configuring job launch:
+----------------------
+
+Both ALPS (aprun) and native SLURM (srun) are supported for job-launch by the
+provided gasnetrun_aries script.  The value of the environment variable
+PMIRUN_CMD can be used to choose between these two.  The value when configure
+is run establishes a default, which a value set at job-launch time can
+override.  The corresponding cross-configure scripts establish the following
+default (recommended) values:
+ + For ALPS:             PMIRUN_CMD="aprun -n %N %C"
+ + For native SLURM:     PMIRUN_CMD="srun -K0 -W60 %V -mblock -n %N %C"
+
+If set at cross-configure time, the APRUN or SRUN environment variables
+can be used to provide full paths to the respective utilities.  If you
+require additional customization, please cross-configure with the option
+    --with-pmirun-cmd=VALUE
+where VALUE is the desired PMIRUN_CMD value (the format of which is the
+same as for MPIRUN_CMD, documented in mpi-conduit's README).
+
+NOTE:
+This release uses two distinct options when configuring Cray systems:
+    --with-mpirun-cmd=VALUE    used to configure gasnetrun_mpi
+    --with-pmirun-cmd=VALUE    used to configure gasnetrun_aries
+However, to support legacy configuration scripts, if one passes only the
+option '--with-mpirun-cmd=...' then it will set a default value for *both*
+the MPIRUN_CMD and PMIRUN_CMD environment variables.
+
+Recognized environment variables:
+---------------------------------
+
+* All the standard GASNet environment variables (see top-level README)
+
+All variable below must (unless otherwise noted) be single-valued
+(have the same value in all processes) or the behavior is undefined.
+
+GASNET_BARRIER - barrier algorithm selection
+  In addition to the algorithms in the top-level README, there is an
+  implementation specific to Aries:
+    GNIDISSEM - like RDMADISSEM, but implemented using lower-level
+                GNI operations for lower latency.
+  Currently GNIDISSEM is the default.
+
+GASNET_GNI_AM_RVOUS_CUTOVER - enable/disable rendezvous based AMs
+  At small scale, Active Messages are implemented using an "Eager" protocol
+  which allocates buffers sufficient for every process to receive up to
+  GASNET_NETWORKDEPTH_SPACE worth of AM traffic from every other process
+  simultaneously.  At large scale the memory consumption is untenable, and
+  an alternative "Rendezvous" algorithm is used.  It requires only constant
+  memory, but adds latency to AM traffic.
+  This parameter sets the cutover between the two implementations.
+  + If the value is 0, the Eager algorithm is always used
+  + If the value is 1, the Rendezvous algorithm is always used
+  + For all other positive values, the Rendezvous algorithm used for runs
+    with a process count greater than or equal to this parameter, and Eager
+    is used otherwise.
+  The default value is 16384.
+
+GASNET_GNI_AM_RVOUS_BUFFERS - number of AM rendezvous buffers
+  Used only for "Rendezvous" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the maximum number of incoming AM Requests that can be
+  concurrently received and processed by any given endpoint using the
+  Rendezvous protocol
+  The default value is 64, and the minimum is 1.
+
+GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
+  Used only for "Eager" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the maximum volume of AM Requests (in bytes) that can be
+  outstanding between a given pair of peers before flow-control in the Eager AM
+  protocol.  This differs from most other conduits in which the depth is given
+  by a count.  Values smaller than 2 maximum size Medium AMs, or larger than 64
+  maximum sized Medium AMs, will be silently adjusted to that range.
+  The default value is 12K.
+
+GASNET_NETWORKDEPTH_TOTAL - depth of AM Request queue
+  This determines the maximum number of AM Requests that can be
+  outstanding from one endpoint to all others before flow-control.
+  The default value is 64, and the minimum is 1.
+
+GASNET_NETWORKDEPTH - depth of per-peer Rendezvous AM Request queue
+  Used only for "Rendezvous" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the number of AM Requests (in messages) that can be
+  outstanding between a given pair of endpoints before flow-control in
+  the Rendezvous AM protocol.
+  If this value exceeds GASNET_NETWORKDEPTH_TOTAL, it will be reduced to
+  the same value (with a warning).
+  The default value is 64, and the minimum is 1.
+
+GASNET_LONG_DEPTH - depth of per-peer Long tracking
+  This determines the maximum number of AM Long Requests payload transfers
+  that can be outstanding between a given pair of peers before flow-control.
+  This is in addition to any flow-control required due to the "NETWORKDEPTH"
+  variables, above.
+  The default value is no limit, the minimum is 1, and the maximum is 64.
+
+GASNET_GNI_PACKEDLONG_CUTOVER
+  This determines the maximum Long AM size using a "Packed Long" protocol.
+  To perform an Long AM with non-empty payload requires transfer of both the
+  payload and a header (containing arguments and 12 bytes of metadata).  For
+  large payloads, it's most efficient to implement the payload transfer using
+  zero-copy RDMA.  However, for sufficiently small payloads, it is more
+  efficient (in terms of both CPU and network costs) to pack the header and
+  payload together and copy the payload into place using the target-side CPU
+  before running the handler.  For Long AMs with the sum of payload and
+  header sizes up to and including this value, this Packed Long protocol is
+  used.
+  The default value is system dependent.
+  The maximum value is 4096, unless --with-aries-max-medium=N was passed to
+  configure (in which case the maximum is N+64).  Larger values will be
+  silently reduced to this limit.
+  A value of zero ensures the payload and header always travel separately.
+
+GASNET_GNI_AMPOLL_BURST - max events processed per AMPoll
+  This determines the maximum number of GNI-level events processed per call to
+  gasnet_AMPoll(), both explicit and implicit.  If GASNet calls which poll for
+  AM arrival are infrequent, it may be desirable to increase this setting to
+  ensure any backlog of events can be cleared at each such call.
+  In a GASNET_PAR build, increased values of this setting may reduce the
+  opportunity for concurrent AM handler execution (since a thread may
+  serialize execution of handlers corresponding to this many consecutive
+  GNI-level events).
+  The default value is 20, the minimum is 1.
+
+GASNET_GNI_AM_MEMORY_REPORT
+  The value is a boolean: "0" to disable or "1" to enable the reporting of
+  the memory allocated for AM buffers (controlled by the GASNET_NETWORKDEPTH*
+  and GASNET_GNI_AM_RVOUS_* families of settings) on stderr.
+  The default is "0" (no report).
+
+GASNET_GNI_NUM_PD - number of post descriptors
+  AM and RDMA operations all requires use of a control block called a
+  Post Descriptor. This variable controls how many of these are
+  allocated, and therefore limit the total number of operations which
+  can be in-flight at any time.
+  The default value is 512, and the minimum is 32.
+  This variable is not required to be single-valued.
+
+GASNET_GNI_GET_FMA_RDMA_CUTOVER
+GASNET_GNI_PUT_FMA_RDMA_CUTOVER
+  These set the cutover from use of FMA (Fast Memory Access) to BTE (Block
+  Transfer Engine) NIC functional units for RMA Put and Get operations.
+  Transfers up to and including these sizes will be performed using FMA.  FMA
+  typically yields lower latency to start an operation at the expense of
+  greater involvement by the CPU (and thus less potential, for instance, for
+  overlap of non-blocking communication with computation).  Because the NIC
+  supports greater concurrency via FMA, it may also yield greater aggregate
+  throughput when multiple processes per node perform RMA concurrently.
+  Advantages of BTE include asynchrony of the transfer without CPU
+  involvement, and the ability to reach peak bandwidth with a lower volume
+  (size and count) of RMA transfers.
+  Performance of Puts and Gets in the 256 to 8192 byte range can be very
+  sensitive to these values and to the degree of communication concurrency.
+  You may want to adjust these parameters if you believe RMA operations in this
+  range determine the performance of your application.
+  Both values default to 1023
+  The maximum supported value is 16384
+  These variables are not required to be single-valued.
+
+GASNET_GNI_GET_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
+GASNET_GNI_PUT_BOUNCE_REGISTER_CUTOVER  - default 4096, max 32768
+  Every Post Descriptor has a small bounce buffer (128 bytes) for
+  handling out-of-segment transfers (normally FMAs) with the least
+  overhead.  Beyond that size out-of-segment can be performed using
+  either bounce buffers or dynamic registration.  Such transfers up
+  to and including these sizes will be conducted using bounce buffers.
+  Beyond these sizes, dynamic memory registration is used.
+  The minimum allowed is GASNET_PAGESIZE (normally 4K) and lower values
+  will be silently replaced by this value.
+  These variables are not required to be single-valued.
+  
+GASNET_GNI_BOUNCE_SIZE      - default 256K, space for bounce buffers
+  There is a pool of bounce buffers, each of a fixed size determined by the
+  larger of GASNET_GNI_{PUT,GET}_BOUNCE_REGISTER_CUTOVER (see above).  The
+  value of GASNET_GNI_BOUNCE_SIZE determines the size of the entire pool of
+  bounce buffers.  Thus the number of bounce buffers available is
+     GASNET_GNI_BOUNCE_SIZE / MAX(GASNET_GNI_PUT_BOUNCE_REGISTER_CUTOVER,
+                                  GASNET_GNI_GET_BOUNCE_REGISTER_CUTOVER,
+                                  (gasnet_AMMaxMedium() + 64))
+  Since all three terms in the MAX default to 4K, the default 256K gives
+  64 bounce buffers.
+
+  If an operation must allocate a bounce buffer and the pool is empty,
+  it will poll the completion queue until one is returned.  Therefore, this
+  setting may limit the number of operations requiring use of a bounce
+  buffer which can be in-flight at any time.
+
+  This variable is not required to be single-valued.
+
+GASNET_GNI_MEM_CONSISTENCY
+  This controls the use of the flag GNI_MEM_STRICT_PI_ORDERING,
+  GNI_MEM_RELAXED_PI_ORDERING, or neither when registering memory
+  for RDMA.  In general, users are not expected to have any need
+  to change the value away from the default.
+  The legal values are the strings "strict", "relaxed" or "none".
+  In this release the default is "relaxed".
+
+GASNET_GNI_MEMREG
+  This controls the maximum number of concurrent temporary memory
+  registrations, used for RDMA transfers to and from addresses outside of
+  the GASNet segment.
+  The default value is 3072.
+  This variable is not required to be single-valued.
+
+  If this vale is too large (possibly due to competition with MPI or
+  another runtime library) you will see a fatal error at startup.  If
+  GASNet detects the resource exhaustion, the message includes the
+  following text:
+      UDREG_CacheCreate() failed with rc=2
+  Alternatively, if the resource exhaustion is detected by the MPI runtime
+  you may see a message including the following text:
+      UDREG_CacheCreate unknown error return 2
+  Other runtimes may include similar failure messages.
+  If you encounter these failures you should reduce the value of this
+  parameter, or in the extreme you may wish to set GASNET_USE_UDREG=0 to
+  disable use of UDREG by GASNet.
+
+GASNET_GNI_FMA_SHARING
+  This controls the use of shared versus dedicated FMA resources, used for
+  the initiation of AMs and of Puts and Gets of size below the respective
+  GASNET_GNI_{PUT,GET}_FMA_RDMA_CUTOVER value.
+  The value is a boolean: "0" to disable or "1" to enable the use of shared
+  FMA resources.
+  The default is to use dedicated FMA resources (which are expected to give
+  better performance) unless it can be determined that the required resources
+  would exceed the available resources in dedicated mode.
+  This variable is not required to be single-valued.
+
+GASNET_GNI_MDD_SHARING
+  This controls the use of shared versus dedicated MDD resources, used for
+  the registration of memory with the NIC for Puts and Gets of size over
+  the respective GASNET_GNI_{PUT,GET}_FMA_RDMA_CUTOVER value.
+  Use of dedicated MDD resources may reduce latency of some operations at
+  the expense of being able to register less memory simultaneously.
+  The value is a boolean: "0" to disable or "1" to enable the use of shared
+  MDD resources.
+  The default is use of shared MDD resources.
+  This variable is not required to be single-valued.
+
+GASNET_GNI_BTE_MULTI_CHANNEL
+  The value is a boolean: "0" to disable or "1" to enable the use of all
+  available Block Transfer Engine (BTE) channels.  Rarely, an application
+  may benefit from use of a single channel (a setting of "0").  However,
+  for most applications the use of all channels gives higher sustained
+  bandwidth for large transfers.
+  The default is "1" (enabled).
+
+GASNET_PHYSMEM_MAX
+  If set, this parameter is used to determine the maximum amount of memory
+  the conduit may pin per compute node (each process on a given compute node is
+  allocated an equal share of this limit, assuming PSHM is enabled as per
+  default).  This indirectly limits how large the GASNet segment can be.
+  The value may specify either a relative or absolute size.  If the value
+  parses as a floating-point value less than 1.0 (including fractions such
+  as "5/8"), then this is taken as a fraction of the (estimated) physical
+  memory.  Otherwise the value is taken as an absolute memory size, with "M",
+  "G" and "T" suffixes accepted to indicate units of Megabytes, Gigabytes,
+  and Terabytes, respectively.
+  The default is "0.8" (80% of estimated physical memory).
+  This variable is not required to be single-valued.
+
+GASNET_USE_UDREG
+  AVAILABLE UNLESS CONFIGURED WITH --disable-aries-udreg.
+  This gives a boolean: "0" to disable or "1" to enable the use of the
+  UDREG library for caching of local memory registrations, and is
+  intended primarily for debugging purposes.
+  The default is enabled.
+  This variable is not required to be single-valued.
+
+GASNET_USE_CE
+  This gives a boolean: "0" to disable or "1" to enable the use of the Aries
+  Collective Engine (CE) for acceleration of certain collective operations
+  (barrier in particular).
+  The default is enabled.
+
+GASNET_USE_CE_PSHM
+  This gives a boolean: "0" to disable or "1" to enable the use of the Aries
+  CE when the count of processes per host exceeds what the CE can support
+  directly.  This uses a hybrid CE + shared-memory implementation when the
+  per-host process count is too large, but the per-host shared-memory
+  neighborhood count is not.
+  This setting is ignored if PSHM was disabled at configure time.
+  The default is enabled.
+
+GASNET_GNI_CE_RADIX
+  This gives an integer in the range 1 to 31 for the radix of the N-ary tree
+  tree used for inter-host communication by the Aries Collective Engine (CE).
+  Increased values of this parameter come at the expense of intra-host
+  communication.  If the sum of this value and the number of "leaves" per
+  host exceeds 32, then use of the Aries CE will be disabled.  Here "leaves"
+  means processes if GASNET_USE_CE_PSHM=0 at runtime (or PSHM was disabled at
+  configure time).  Otherwise it denotes shared-memory neighborhoods.
+  The default is 2.
+
+GASNET_DOMAIN_COUNT
+GASNET_GNI_PTHREADS_PER_DOMAIN
+GASNET_AM_DOMAIN_POLL_MASK
+  AVAILABLE ONLY IF CONFIGURED WITH --enable-aries-multi-domain.
+  These three variables are not required to be single-valued.
+  For their use, please see the multi-domain documentation under the
+  "Optional configure-time settings" section, above.
+
+MPICH_RANK_REORDER_METHOD
+  This environment variable is not processed directly by GASNet itself.
+  However, it controls the numbering of GASNet processes launched with
+  either 'aprun' or 'srun', as described in Cray's intro_mpi(3) manpage.
+
+PMI_GNI_LOC_ADDR   - NIC address on local node
+PMI_GNI_COOKIE     - Access code shared by all nodes in job
+PMI_GNI_PTAG       - Protection tag shared by all nodes in job
+PMI_GNI_DEV_ID     - Device ID (Selects which NIC is in use)
+  Provided by Cray runtime system.  Don't mess with these.
+
+Remote Atomics:
+---------------
+
+The following table indicates the pairs of atomic operation and data type that
+are eligible for offloaded to the Aries NIC.  The offloaded atomics will be
+used when the arguments to gex_AD_Create() express only supported pairs (unless
+suppressed by use of GEX_FLAG_AD_FAVOR_MY_RANK or GEX_FLAG_AD_FAVOR_MY_NBRHD
+flags, or in a single-process run).
+
+          I32   U32   I64   U64   FLT   DBL
+          ---   ---   ---   ---   ---   ---
+    SET:   Y     Y     Y     Y     Y     Y
+    GET:   Y     Y     Y     Y     Y     Y
+   SWAP:   Y     Y     Y     Y     Y     Y
+ (F)CAS:   Y     Y     Y     Y     Y     Y
+ (F)ADD:   Y     Y     Y     Y     Y     N
+ (F)SUB:   Y     Y     Y     Y     Y     N
+ (F)INC:   Y     Y     Y     Y     Y     N
+ (F)DEC:   Y     Y     Y     Y     Y     N
+(F)MULT:   N     N     N     N     N     N
+ (F)MIN:   Y     N     Y     N     Y     Y
+ (F)MAX:   Y     N     Y     N     Y     Y
+ (F)AND:   Y     Y     Y     Y    N/A   N/A
+  (F)OR:   Y     Y     Y     Y    N/A   N/A
+ (F)XOR:   Y     Y     Y     Y    N/A   N/A
+
+    Y = offload is supported
+    N = offload is not supported
+    N/A indicates invalid op/type pairs
+
+Known problems:
+---------------
+
+* Bug 3480
+  It has been observed on Cray systems running CLE6 that following a call to
+  munmap(), there may be a delay before the physical page frames are available
+  for reallocation.  At startup GASNet normally tries to determine the largest
+  available mmap() region, which is then unmapped, leading to the possibility
+  that subsequent allocation of a large GASNet segment may fail if timing is
+  "just right".  The configure option --enable-bug3480-workaround will enable
+  retries and an additional barrier to prevent the failure mode described
+  above, at the cost of a small additional delay at startup.
+  In this release, the provided cross-configure-cray-* scripts AUTOMATICALLY
+  enable the work-around if CLE6 is detected.  If you do *not* desire the
+  work-around, then you may pass the option --disable-bug3480-workaround to
+  the cross-configure script.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3480
+  It is currently unknown if this problem is specific to Cray systems.
+
+* See the GASNet Bugzilla server for details on other known bugs:
+  https://gasnet-bugs.lbl.gov/
+
+Future work:
+------------
+
+ * Inline
+
+It should be possible to inline the special cases of short blocking GET and short blocking PUT
+
+ * Alternative designs
+
+The O(N) AM buffers queues could be used only for wakeup, leaving AM transport
+to RDMA, more along the lines of the shmem-conduit.  This would reduce buffer
+requirements for large jobs.
+
+==============================================================================
+
+Design Overview:
+----------------
+
+The aries conduit provides the gasnet core and extended APIs on Cray systems
+based on the aries interconnect.  Initial work was done for the gemini
+interconnect on the XE6, and the notes which follow are based on that initial
+implementation (and thus are at least partly out-of-date).
+
+References:
+
+Cray documentation "Using the GNI and DMAPP APIs" document S-2446-3102/S-2446-5202
+
+http://docs.cray.com/books/S-2446-5202/S-2446-5202.pdf
+
+APIs:
+
+PMI-2
+
+/opt/cray/pmi/default/include
+
+GNI
+
+/opt/cray/gni-headers/default/include/gni_pub.h
+
+==Background==
+
+The Gemini interconnect was introduced with the Cray XE6 system.  It
+may be thought of as an evolutionary development of the Seastar
+interconnect used on the Red Storm system and the Cray XT series.
+Physically Gemini is a 3D torus system using network interfaces that
+connect directly to the Hyperchannel IO bus of AMD processors.
+
+Logically Gemini provides short messages, remote memory access, remote
+atomic operations, and remote block transfers. Memory must be
+registered with GNI before it can be used for communications.  Job
+launch services are provided by the Cray Application Level Placement
+Scheduler (ALPS), with API provided through implementations of the PMI
+(process management interface) API.
+
+During initialization, a parallel application creates a Communications
+Domain, which is basically a binding to a particular network interface.
+Data necessary to get permit ranks of a parallel application to
+communicate are provided via environment variables and PMI interfaces.
+
+In gemini, the address information for a remote rank is stored in a
+software structure called an Endpoint.  Generally a separate endpoint
+is needed for each rank of the job.  Each endpoint is associated with
+a Completion Queue (CQ) which signals when locally originated
+operations to a particular endpoint have finished.  Cqs may be used by
+multiple endpoints.
+
+NOTE: The next paragraph is no longer accurate - we no longer use SMSG
+
+To use the short message system (SMSG), the application allocates
+buffer space, and assigns a completion queue to be used to announce
+the arrival of messages from remote ranks.  Short message system
+messages can be of variable length, but each message uses a fixed
+length message buffer from a pool.  The shared message queue (MSGQ)
+system is similar, except that resources are shared at the node level,
+rather than each rank having separate resources. The shared message
+queue system has better scalability, scaling as O( (N/24)**2 ) rather
+than O( N**2 ). However, MSGQ has a maximum message length of 128,
+while the limit for SMSG is large enough to handle a complete GASNet
+Medium Active Message.  In ether SMSG or MSGQ, the buffer memory must
+be registered using the GNI API.
+
+The Gemini interconnect provides two flavors of RDMA.  FMA, or Fast
+Memory Access, provides remote atomic operations, and remote get and
+put. These operations are commanded by user-mode applications directly
+to the hardware, (so called OS Bypass).  For larger messages, Cray
+provides an RDMA facility based on a hardware Byte Transfer Engine,
+but its use is mediated by the kernel mode device driver.  It isn't
+clear when one should use RDMA rather than FMA, but a few hundred
+bytes to a few thousand bytes is likely.
+
+==Overview==
+
+The gemini conduit creates an endpoint for every rank, and then binds
+each endpoint to a particular rank using the address information
+exchanged through PMI.  Each endpoint in gemini is also associated
+with a common completion queue, which is a structure used for
+announcing the completion of locally originated messages.
+
+Next the gemini conduit allocates and registers storage for buffers
+for the gemini short message system.  The setup allocates buffers
+large enough to hold a complete AMMedium message.  Arriving short
+messages are signaled on a second completion queue.  Using defaults,
+about 32K per rank are reserved on each rank.
+
+==Active Message design==
+
+The gemini conduit supports PSHM for same-node communications. This
+isn't strictly necessary when using the Cray Short Message System, but
+it would be necessary when using the Cray Shared Message Queue system
+because MSGQ cannot send to the same node.
+
+Flow control and deadlock avoidance is done by a fixed credit
+system. The environment variable GASNET_NETWORKDEPTH is the number
+of AM buffers for each peer.  The default value is 12.  Each peer
+has an am_credit variable. When a rank wishes to send an active
+message, it atomic decrements the peer's credit counter and calls the
+gemini conduit's Poll routine until it succeeds.  At the receiver,
+every AM Request generates a "hidden" credit return message if and
+only if the handler did not send a Reply.
+
+NOTE: The Gemini short message system has some sort of internal credit
+accounting, but we don't rely on it because of lack of features
+(allocating space for replies) and lack of visibility (the only way to
+find out if there is credit is to try to send a message).  The
+gemini-conduit credit design is such that the underlying GNI_SmsgSend
+should never fail.
+
+Short and Medium active messages take one message each, so there is no
+need for a reassembly queue for arriving fragments.
+
+Long active messages are more complex.  If the data of a long AM will
+fit in a maximum sized message, then it is sent as immediate data
+and copied at the destination.  If the data is too large for the AM
+packet, then it is sent by RDMA, and when the RDMA completion event
+occurs, the Active message is sent.  For blocking AMs, the originator
+polls for completion of the RDMA by calling gasnetc_poll_local_queue, which
+checks for RDMA completions but does NOT check for arriving active
+messages.  In the case of a non-blocking long active message, the
+active message packet is constructed in memory attached to the RDMA
+post descriptor, and when the RDMA completion event occurs, the AM is
+sent by the completion routine.
+
+==RDMA==
+
+Within the Gemini API (GNI), RDMA is commanded by creating a Post
+Descriptor and passing it to GNI. Both the source and destination
+memory of an RDMA transfer must be registered.  The knowledge of RDMA
+is encapsulated in the functions named gasnetc_rdma_{put,get}*().
+
+GASNet requires that the remote address of a put or get will be within
+the GASNet memory segment, which is pre-registered by gemini-conduit.
+GASNet does not require that the local address of a put or get be
+registered.  There are a number of cases.
+
+As mentioned above, Gemini provides two kinds of RDMA: FMA and BTE
+(called "RDMA").  FMA is Fast Memory Access and is used for short
+transfers and is commanded entirely in user mode.  The Byte Transfer
+Engine is intended for larger transfers and is kernel mediated.
+
+Gemini-conduit allocates a pool of RDMA Post Descriptors, called
+gasnetc_post_descriptor.  These are kept on a LIFO queue in registered
+memory, because each one contains an "immediate" bounce buffer to
+be used in the event the local address of a short xfer is not
+registered.
+
+Gemini-conduit also allocates a pool of medium sized bounce buffers,
+which are used in the event the local address of a transfer is not
+registered and is too large for the immediate buffer.  For transfers
+to or from memory outside the GASNet segment that are too large for
+the medium sized bounce buffer, the local buffer is registered for
+the duration of the transfer, then unregistered.
+
+The post descriptor also contains a completion field, that defines
+what to do when the RDMA is finished, and a set of flags that control
+completion behavior.
+
+RDMA Completion event processing is done by gasnetc_poll_local_queue.
+A number of types of follow-on activities are implemented:
+
+ * For a GET, potentially copy data from a bounce buffer to the actual
+   target
+
+ * Potentially De-register specially registered memory
+
+ * Potentially free a dedicated bounce buffer
+
+ * Potentially send an Active Message that was waiting for the RDMA
+   completion
+
+ * Perform completion processing (signal other software waiting for
+   RDMA completion
+
+
+The GASNet Core API only uses RDMA PUT. The extended API uses both GET
+and PUT.  The logic for GET is similar to that for PUT.
+
+==Extended API==
+
+Gemini conduit uses the reference implementation of gasnet_op_t for
+completions.
+
+Due to occasional failures of memory registration of large blocks, if
+an RDMA transfer is larger than one megabyte, it is broken into
+smaller segments and all but the last are sent by blocking protocol.
+
+NOTE: The breakup of large blocks should probably be done for Long AMs
+as well, to allow increasing gasnet_AMMaxLong{Request,Reply}().
+
+==Locking==
+
+In order to support GASNET_PAR mode, a variety of locks are used.
+
+GASNETC_LOCK_GNI, GASNETC_UNLOCK_GNI
+
+The Cray gni API is not thread-safe, so the gemini conduit uses a
+single big lock around calls to gni.  Certain cases might be thread
+safe, but without knowledge of the internals of gni it is hard to tell.
+
+Queue Locks
+
+A singly linked lists are used for the smsg_work_queue, and has its
+own lock.  The are enqueue and dequeue functions that work on this
+queue.
+
+The bounce buffer pool and post descriptor pool use the
+gasneti_lifo_push and gasneti_lifo_pop functions.
+These are lock-free on the x86-64 architecture.
+
+
+
+==Event Processing==
+
+The gemini conduit uses two gni completion queues: bound_cq_handle for
+completions of locally originated RDMA, and smsg_cq_handle, for
+arriving short messages.
+
+===bound_cq_handle  (RDMA completion)===
+
+On a call to gasnetc_poll_local_queue, up to gasnetc_poll_burst (default 10)
+completions are processed.  If the completion queue is empty, the
+function exits early.  For each completed post descriptor, the flags
+are checked and post-completion activities performed:
+
+ GC_POST_COPY - copy from bounce buffer to target
+ GC_POST_SEND - send an AM that was waiting for PUT completion (AMLong)
+ GC_POST_UNREGISTER - deregister one-time memory registration
+ GC_POST_UNBOUNCE - free an allocated bounce buffer
+ GC_POST_COMPLETION_FLAG - atomic set a variable to signal a waiting thread
+ GC_POST_COMPLETION_OP - gasnete_op_markdone 
+
+===smsg_cq_handle===
+
+NOTE: This section no longer accurate - we no longer use SMSG
+
+When a short message arrives, an event is sent to the completion queue
+associated with the endpoint of the message source.  The receiver
+looks at the event to figure out which endpoint signaled, then calls
+GNI_SmsgGetNext(endpoint) to get the message.  However, events are
+generated whenever a message arrives, but they may be out of order,
+and SmsgGetNext only delivers messages in-order. Consequently, when
+you get an event, there may appear to be no message waiting, or there
+may be several messages waiting.  It is necessary to keep calling
+SmsgGetNext until you get all the waiting messages. At the same time,
+it is necessary to read the completion queue at least once for every
+message received or the completion queue will fill up.  If the
+completion queue overflows, some events may be lost and it will be
+necessary to drain all endpoints to make sure no messages are left
+waiting.
+
+The work starts in gasnetc_poll_smsg_queue.
+
+First a call is make to gasnetc_poll_smsg_completion_queue, which reads up
+to AM_BURST events from the completion queue and quickly adds the
+relevant endpoints to a temporary array.  Then, after releasing the
+GNI big lock, the array is scanned, and any peers which are not
+already on the smsg_work_queue are added to it.  The smsg_work_queue
+is a list of endpoints which may have arriving traffic.  Finally,
+gasnetc_poll_smsg_completion_queue checks to see if the smsg completion
+queue overflowed, in which case the completion queue is drained and
+ALL endpoints are added to the smsg_work_queue
+
+Then for up to SMSG_PEER_BURST ranks, gasnetc_process_smsg_q(source rank)
+is called to deal with any arriving messages.
+
+In gasnetc_process_smsg_q, arriving short messages are read and a dispatch
+is made on the message type.  In the case of active messages, the
+message is copied into a local variable, the SMSG buffer is released,
+and then the AM handler is called.  This is done in order to prevent
+stack growth caused by recursive calls to process arriving
+messages. Each time around the message processing loop,
+gasnetc_poll_smsg_completion_queue is called, which may result in
+additional ranks being queued on the smsg_work_queue, but does not
+cause recursive calls to gasnetc_process_smsg_q.  This is done so that the
+average rate of retiring completion events is equal to the rate of
+processing messages, and prevents completion queue overflow.
+
+==Exit protocol==
+
+NOTE: This section no longer accurate - we do more than is described here.
+
+The exit algorithm is borrowed from the portals-conduit.  The Cray
+runtime system ALPS (Application Layout and Placement System) is
+strict about exiting without calling PMI_Finalize. It will interpret
+that as an error exit and kill all the other ranks.
+
+
+==Initialization==
+
+The logic to determine the maximum size pinnable segment is borrowed
+from the portals-conduit.
+
+The gasnetc_bootstrap* functions contain the interface to PMI.  It also includes
+the implementation of AllGather for GASNet bootstrapExchange and GNI
+initialization.  It uses PMI_AllGather.  For some reason,
+PMI_AllGather does not return data in rank order, so it is sorted into
+the usual AllGather order internally.
+
+gasnet_core.c routine gasnetc_init also contains code to determine
+which ranks have shared memory. This is done using the
+PMI_Get_pes_on_smp() call, translated into the right format for
+gasnet_nodemap[].
+
+The gasnet auxseg machinery is used to allocate registered memory for
+bounce buffers and for the rdma post descriptor pool. This is done to
+reduce the number of separately registered segments, because
+registrations are a scarce resource.
+
+
+== Build notes ==
+
+
+

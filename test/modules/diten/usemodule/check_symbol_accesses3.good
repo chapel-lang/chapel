@@ -1,0 +1,2 @@
+check_symbol_accesses3.chpl:9: In function 'foo':
+check_symbol_accesses3.chpl:10: error: 'a' undeclared (first use this function)

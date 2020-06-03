@@ -1,3 +1,3 @@
 uncaught SystemError: Invalid argument (Operation attempted on an invalid channel)
-  error-invalid-channel.chpl:5: thrown here
-  error-invalid-channel.chpl:5: uncaught here
+  error-invalid-channel.chpl:7: thrown here
+  error-invalid-channel.chpl:7: uncaught here

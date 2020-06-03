@@ -1,0 +1,131 @@
+Error Caught in Unequal Array Same Type
+AssertionError: assert failed -
+'0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0'
+and
+'0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0'
+are not of same type
+================================================================================
+Error Caught in Equal High Array Diff Type
+AssertionError: assert failed -
+'0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0.0 0.0 0.0 0.0 0.0 0.0 0.0'
+and
+'0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0
+0 0 0 0 0 0 0'
+are not of same type
+================================================================================
+Error Caught in Unequal Offset Array
+AssertionError: assert failed -
+'1 5 7'
+!=
+'1 7 6'
+================================================================================
+Error Caught in Unequal 1D Array Type 1
+AssertionError: assert failed -
+'1 5 7'
+!=
+'1 7 6'
+================================================================================
+Error Caught in Unequal 1D Array Type 2
+AssertionError: assert failed -
+'1 7 8 5 8'
+and
+'1 7 6 4'
+are not of same size
+================================================================================
+Error Caught in Unequal 1D Array Type 3
+AssertionError: assert failed -
+'1 7 6 5 8'
+and
+'1 7 6'
+are not of same size
+================================================================================
+Error Caught in Unequal 0-based Arrays
+AssertionError: assert failed -
+'1 4 2'
+!=
+'1 7 6'
+================================================================================
+Error Caught in Unequal Complex Type 1
+AssertionError: assert failed - '5' != '7.0i'
+================================================================================
+Error Caught in Unequal Complex Type 2
+AssertionError: assert failed - '5.0 + 6.0i' != '7.0i'
+================================================================================
+Error Caught in Unequal Bool Types
+AssertionError: assert failed - 'true' != 'false'
+================================================================================
+Error Caught in Unequal Float
+AssertionError: assert failed - '1.5' != '1.55'
+================================================================================
+Error Caught in Unequal String
+AssertionError: Strings differ: 'unequalstring' != 'unequalString'
+First differing element at index 7:
+'s'
+'S'
+
+================================================================================
+Error Caught in Unequal Ranges Type 1
+AssertionError: assert failed - '..6 align 0' != '..7 align 0'
+================================================================================
+Error Caught in Unequal Ranges Type 2
+AssertionError: assert failed - '1..6' != '2..7'
+================================================================================
+Error Caught in Unequal Tuples Type 1
+AssertionError: assert failed - '(1, 2, 3)' and '(1, 2)' are not of same type
+================================================================================
+Error Caught in Unequal Tuples Type 2
+AssertionError: tuple(3*int(64))s differ: '(1, 2, 3)' != '(1, 2, 5)'
+First differing element at index 2:
+'3'
+'5'
+
+================================================================================

@@ -11,7 +11,7 @@ use VisualDebug;
 use rand;
 
 var vSim  : Validate;
-var f : unmanaged Force;
+var f : unmanaged Force?;
 
 proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
   simLow  = (0.0,0.0,0.0);
@@ -19,23 +19,20 @@ proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
   simHigh = simSize;
 
   const minSimSize = 2*force.cutoff;
-  assert(simSize(1) >= minSimSize && simSize(2) >= minSimSize && simSize(3) >= minSimSize);
+  assert(simSize(0) >= minSimSize && simSize(1) >= minSimSize && simSize(2) >= minSimSize);
   assert(force.latticeType == "FCC" || force.latticeType == "fcc");
 
-  for i in 1..3 do numBoxes(i) = (simSize(i)/force.cutoff) : int;
+  for i in 0..2 do numBoxes(i) = (simSize(i)/force.cutoff) : int;
 
-  // assert(numBoxes(1) >= xproc && numBoxes(2) >= yproc && numBoxes(3) >= zproc);
+  // assert(numBoxes(0) >= xproc && numBoxes(1) >= yproc && numBoxes(2) >= zproc);
 
   boxSize = simSize / numBoxes;
 
-  const targetLocales : [locDom] locale;
-  var count: int(32) = 0;
-  for l in targetLocales {
-    l = Locales(count);
-    count = count + 1;
-  }
+  assert(locDom.size <= numLocales);
+  const targetLocales : [locDom] locale =
+          for l in Locales[0..#locDom.size] do l;
 
-  const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
+  const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
   const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=targetLocales);
   // assert(locDom == distSpace._value.dist.targetLocDom);
 
@@ -49,15 +46,15 @@ proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
 
       const high = MyLocDom.high;
       const low  = MyLocDom.low - 1;
-      const domHigh = (high(1):real, high(2):real, high(3):real) * boxSize;
-      const domLow  = (low(1):real, low(2):real, low(3):real) * boxSize;
+      const domHigh = (high(0):real, high(1):real, high(2):real) * boxSize;
+      const domLow  = (low(0):real, low(1):real, low(2):real) * boxSize;
       const domSize = domHigh - domLow;
 
-      const invBoxSize = (1/boxSize(1), 1/boxSize(2), 1/boxSize(3));
+      const invBoxSize = (1/boxSize(0), 1/boxSize(1), 1/boxSize(2));
       var MyDom = new unmanaged Domain(localDom=MyLocDom,
                          invBoxSize=invBoxSize, boxSpace=boxSpace, numBoxes=numBoxes,
                          domHigh=domHigh, domLow=domLow,
-                         force=if(replicateForce) then force.replicate() else force);
+                         force=if(replicateForce) then force.replicate()! else force);
 
       Grid[ijk] = MyDom;
 
@@ -73,12 +70,11 @@ local {
       ref neighs = MyDom.neighs;
       const ref neighDom = MyDom.neighDom;
       ref temps1 = MyDom.temps1;
-      ref temps2 = MyDom.temps2;
       ref pbc = MyDom.pbc;
       {
-        const size0 = halo.dim(2).size * halo.dim(3).size;
-        const size1 = halo.dim(1).size * halo.dim(3).size;
-        const size2 = halo.dim(1).size * halo.dim(2).size;
+        const size0 = halo.dim(1).size * halo.dim(2).size;
+        const size1 = halo.dim(0).size * halo.dim(2).size;
+        const size2 = halo.dim(0).size * halo.dim(1).size;
         const maxSize = max(size0, size1, size2);
         MyDom.bufDom = {1..maxSize*2*MAXATOMS};
       }
@@ -91,13 +87,13 @@ local {
       neighOff[5] = (0,0,-1);
       neighOff[6] = (0,0,1);
 
-      for (dest, src, t1, t2, shift, neigh, nOff) in zip(destSlice, srcSlice, temps1, temps2, pbc, neighs, neighOff) {
+      for (dest, src, t1, shift, neigh, nOff) in zip(destSlice, srcSlice, temps1, pbc, neighs, neighOff) {
         dest = halo.interior(2*nOff);
         src = dest;
         var neighbor = ijk + nOff;
         var srcOff = (0,0,0);
-        t1 = new unmanaged FaceArr(d=dest);
-        for i in 1..3 {
+        t1.d = dest;
+        for i in 0..2 {
           if(neighbor(i) < 0) {
             //neighbor(i) = locDom.high(i);
             //srcOff(i) = boxSpace.high(i);
@@ -115,7 +111,6 @@ local {
           }
         }
         src = src.translate(srcOff);
-        t2 = new unmanaged FaceArr(d=src);
         neigh = neighbor;
       }
 }
@@ -130,7 +125,7 @@ tArray[timerEnum.COMMREDUCE].start();
   coforall ijk in locDom {
     on locGrid[ijk] {
       var vcmTemp = (0.0, 0.0, 0.0);
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] with (+ reduce vcmTemp) {
         for i in 1..box.count {
@@ -144,7 +139,7 @@ local {
   }
   var vcm = (0.0, 0.0, 0.0);
   forall ijk in locDom with (+ reduce vcm) {
-      vcm += Grid[ijk].vcmTemp;
+      vcm += Grid[ijk]!.vcmTemp;
   }
 tArray[timerEnum.COMMREDUCE].stop();
   return vcm/numAtoms;
@@ -156,7 +151,7 @@ proc setVcm(newVcm : real3) {
 
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -174,7 +169,7 @@ tArray[timerEnum.COMMREDUCE].start();
 if useChplVis then tagVdebug("totalEnergy");
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       var keTemp = 0.0;
       var peTemp = 0.0;
@@ -192,9 +187,9 @@ local {
   keTotal = 0.0;
   peTotal = 0.0;
   forall ijk in locDom with (+ reduce keTotal, + reduce peTotal) {
-    const e = Grid[ijk].domKEPE;
-    keTotal += e(1);
-    peTotal += e(2);
+    const e = Grid[ijk]!.domKEPE;
+    keTotal += e(0);
+    peTotal += e(1);
   }
 if useChplVis then pauseVdebug();
 tArray[timerEnum.COMMREDUCE].stop();
@@ -203,7 +198,7 @@ tArray[timerEnum.COMMREDUCE].stop();
 proc setTemperature(const in temp : real) : void {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -230,7 +225,7 @@ local {
 
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -249,7 +244,7 @@ local {
 proc randomDisplacements(temp : real) : void {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -268,7 +263,7 @@ tArray[timerEnum.SORT].start();
 //  if(doeam) then {
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
 local {
         forall box in MyDom.cells {
           //QuickSort(box.atoms[1..box.count]);
@@ -296,7 +291,7 @@ tArray[timerEnum.SORT].stop();
 proc updateLinkCells() {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       // alias to save typing
       const ref halo = MyDom.halo;
@@ -395,7 +390,7 @@ proc haloExchange(const ref MyDom : unmanaged Domain, const in face:int) {
     counter -= 1;
   }
 
-  const g = Grid[nf];
+  const g = Grid[nf]!;
   ref actualPack = pack[1..counter];
   
   // TODO: put 'counter' into a const to avoid communication
@@ -450,10 +445,10 @@ tArray[timerEnum.ATOMHALO].start();
   for i in 1..6 by 2 {
     coforall ijk in locDom {
       on locGrid[ijk] {
-        if Grid[ijk].localDom.dim((i/2):int+1).size > 1 {
-          exchangeDataTwo(Grid[ijk], i);
+        if Grid[ijk]!.localDom.dim((i/2):int).size > 1 {
+          exchangeDataTwo(Grid[ijk]!, i);
         } else {
-          exchangeData(Grid[ijk], i);
+          exchangeData(Grid[ijk]!, i);
         }
       }
     }
@@ -470,7 +465,7 @@ tArray[timerEnum.REDIST].stop();
 
 proc computeForce() {
 tArray[timerEnum.FORCE].start();
-  if(replicateForce) then f.computeLocal(); else f.compute();
+  if(replicateForce) then f!.computeLocal(); else f!.compute();
 tArray[timerEnum.FORCE].stop();
 }
 
@@ -484,28 +479,28 @@ tArray[timerEnum.FCREATE].start();
   }
 tArray[timerEnum.FCREATE].stop();
 
-  f.print();
+  f!.print();
 
   writeln(); 
 
   var latticeConstant : real = lat;
-  if(lat < 0.0) then latticeConstant = f.lat;
+  if(lat < 0.0) then latticeConstant = f!.lat;
 
 tArray[timerEnum.INITGRID].start();
 if useChplVis then tagVdebug("initGrid");
-  initGrid(latticeConstant, f);
+  initGrid(latticeConstant, f!);
 if useChplVis then pauseVdebug();
 tArray[timerEnum.INITGRID].stop();
 
 tArray[timerEnum.EPILOGUE].start();
-  f.epilogue();
+  f!.epilogue();
 tArray[timerEnum.EPILOGUE].stop();
 
 if useChplVis then tagVdebug("createLattice");
   createFccLattice(latticeConstant);
 if useChplVis then pauseVdebug();
 
-  const cutoff = f.cutoff;
+  const cutoff = f!.cutoff;
 
   // delete original force object since it has been replicated on all domains
   // if(replicateForce) then delete force;
@@ -529,15 +524,15 @@ tArray[timerEnum.F1].stop();
 
   writeln("Simulation data:");
   writeln("   Total atoms        : ",   numAtoms);
-  writef("   Min global bounds  : [%14.10dr, %14.10dr, %14.10dr ]\n", simLow(1), simLow(2), simLow(3));
-  writef("   Max global bounds  : [%14.10dr, %14.10dr, %14.10dr ]\n", simHigh(1), simHigh(2), simHigh(3));
+  writef("   Min global bounds  : [%14.10dr, %14.10dr, %14.10dr ]\n", simLow(0), simLow(1), simLow(2));
+  writef("   Max global bounds  : [%14.10dr, %14.10dr, %14.10dr ]\n", simHigh(0), simHigh(1), simHigh(2));
 
   writeln();
   writeln("Decomposition Data:");
   writef("   Locales            : %6i, %6i, %6i = %6i\n", xproc, yproc, zproc, numLocales);
-  writef("   Total boxes        : %6i, %6i, %6i = %6i\n", numBoxes(1), numBoxes(2), numBoxes(3), numBoxes(1)*numBoxes(2)*numBoxes(3));
-  writef("   Box size           : [%14.10dr, %14.10dr, %14.10dr ]\n", boxSize(1), boxSize(2), boxSize(3));
-  writef("   Box factor         : [%14.10dr, %14.10dr, %14.10dr ]\n", boxSize(1)/cutoff, boxSize(2)/cutoff, boxSize(3)/cutoff);
+  writef("   Total boxes        : %6i, %6i, %6i = %6i\n", numBoxes(0), numBoxes(1), numBoxes(2), numBoxes(0)*numBoxes(1)*numBoxes(2));
+  writef("   Box size           : [%14.10dr, %14.10dr, %14.10dr ]\n", boxSize(0), boxSize(1), boxSize(2));
+  writef("   Box factor         : [%14.10dr, %14.10dr, %14.10dr ]\n", boxSize(0)/cutoff, boxSize(1)/cutoff, boxSize(2)/cutoff);
   // writeln("   Max Link Cell Occupancy: ", maxOcc, " of ", MAXATOMS);
 
   writeln(); 
@@ -547,7 +542,7 @@ tArray[timerEnum.F1].stop();
   writeln(); 
 
   var yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(1), "-", yyyymmdd(2), "-", yyyymmdd(3), ", ", getCurrentTime(TimeUnits.hours), " Initialization Finished");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Initialization Finished");
 }
 
 // TODO: const ref these...
@@ -556,7 +551,7 @@ inline proc getBoxFromCoords(const ref r : real3, const ref invBoxSize: real3) {
   const temp = r * invBoxSize + (1,1,1);
 
   // can't cast from 3*real to 3*int (yet?)
-  for i in 1..3 do 
+  for i in 0..2 do
     boxCoords(i) = temp(i) : int;
 
   return boxCoords;
@@ -566,7 +561,7 @@ inline proc getBoxFromCoords(const ref r : real3, const ref invBoxSize: real3) {
 proc createFccLattice(lat : real) : void {
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
       const force = MyDom.force;
       const name : string = force.name;
       const mass : real = force.mass;
@@ -581,21 +576,21 @@ local {
       const domHigh = MyDom.domHigh;
       const invBoxSize = MyDom.invBoxSize;
       var start, end : (int(32), int(32), int(32));
-      for i in 1..3 {
+      for i in 0..2 {
         start(i) = floor(domLow(i)/lat) : int(32);
         end(i)   = ceil(domHigh(i)/lat) : int(32);
       }
-	  for ix in start(1)..end(1) {
-	    for iy in start(2)..end(2) {
-	      for iz in start(3)..end(3) {
+	  for ix in start(0)..end(0) {
+	    for iy in start(1)..end(1) {
+	      for iz in start(2)..end(2) {
             for ib in 1..nb {
-              var rx  : real = (ix+basis(ib)(1)) * lat;
-              var ry  : real = (iy+basis(ib)(2)) * lat;
-              var rz  : real = (iz+basis(ib)(3)) * lat;
+              var rx  : real = (ix+basis(ib)(0)) * lat;
+              var ry  : real = (iy+basis(ib)(1)) * lat;
+              var rz  : real = (iz+basis(ib)(2)) * lat;
               var gid : int(32) = ib+nb*(iz+nz*(iy+ny*(ix))) : int(32);
-              if (rx < domLow(1) || rx >= domHigh(1)) then continue;
-              if (ry < domLow(2) || ry >= domHigh(2)) then continue;
-              if (rz < domLow(3) || rz >= domHigh(3)) then continue;
+              if (rx < domLow(0) || rx >= domHigh(0)) then continue;
+              if (ry < domLow(1) || ry >= domHigh(1)) then continue;
+              if (rz < domLow(2) || rz >= domHigh(2)) then continue;
               var r = (rx, ry, rz);
               var box : int3 = getBoxFromCoords(r, invBoxSize);
 
@@ -626,7 +621,7 @@ tArray[timerEnum.COMMREDUCE].start();
   var maxOcc = 0;
   for ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
       var maxOccTemp = 0;
       for box in MyDom.cells[MyDom.localDom] {
         maxOccTemp = max(maxOccTemp, box.count);
@@ -643,7 +638,7 @@ tArray[timerEnum.COMMREDUCE].start();
 if useChplVis then tagVdebug("sumAtoms");
   numAtoms = 0;
   forall ijk in locDom with (+ reduce numAtoms) {
-    numAtoms += Grid[ijk].numLocalAtoms;
+    numAtoms += Grid[ijk]!.numLocalAtoms;
   }
 if useChplVis then pauseVdebug();
 tArray[timerEnum.COMMREDUCE].stop();
@@ -655,7 +650,7 @@ if useChplVis then tagVdebug("advanceVelocity");
   coforall ijk in locDom {
     on locGrid[ijk] {
       // TODO: Some communication when accessing our Domain class
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall (box, f) in zip(MyDom.cells[MyDom.localDom], MyDom.f) {
         for i in 1..box.count {
@@ -675,7 +670,7 @@ tArray[timerEnum.POSITION].start();
 if useChplVis then tagVdebug("advancePosition");
   coforall ijk in locDom {
     on locGrid[ijk] {
-      const MyDom = Grid[ijk];
+      const MyDom = Grid[ijk]!;
 local {
       forall box in MyDom.cells[MyDom.localDom] {
         for i in 1..box.count {
@@ -747,7 +742,7 @@ if useChplVis then pauseVdebug();
   writeln("Mini-Application Version: ", 1.0);
 
   var yyyymmdd = getCurrentDate();
-  writeln("Run Date/Time: ", yyyymmdd(1), "-", yyyymmdd(2), "-", yyyymmdd(3), ", ", getCurrentTime(TimeUnits.hours), "(number of hours since midnight)");
+  writeln("Run Date/Time: ", yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), "(number of hours since midnight)");
 
   writeln("Command Line Parameters:");
   writeln("   doeam               : ", doeam);
@@ -784,7 +779,7 @@ tArray[timerEnum.INIT].stop();
   writeln(); 
 
   yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(1), "-", yyyymmdd(2), "-", yyyymmdd(3), ", ", getCurrentTime(TimeUnits.hours), " Starting simulation");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Starting simulation");
   writeln(); 
   writeln("#                                                                                         Performance");
   writeln("#  Loop   Time(fs)       Total Energy   Potential Energy     Kinetic Energy  Temperature   (us/atom)     # Atoms");
@@ -813,7 +808,7 @@ tArray[timerEnum.TOTAL].stop();
 
   yyyymmdd = getCurrentDate();
   writeln(); 
-  writeln(yyyymmdd(1), "-", yyyymmdd(2), "-", yyyymmdd(3), ", ", getCurrentTime(TimeUnits.hours), " Ending simulation");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Ending simulation");
   writeln(); 
 
   const eInitial = vSim.eInit/vSim.nAtomsInit;
@@ -853,7 +848,7 @@ tArray[timerEnum.TOTAL].stop();
 
   writeln(); 
   yyyymmdd = getCurrentDate();
-  writeln(yyyymmdd(1), "-", yyyymmdd(2), "-", yyyymmdd(3), ", ", getCurrentTime(TimeUnits.hours), " CoMD Ending");
+  writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " CoMD Ending");
 
   // Cleanup
   for g in Grid do delete g;

@@ -106,9 +106,8 @@ gex_Event_t gasnete_get_nb(
  {
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */
-  gasnetc_rdma_get(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_get(tm, rank, src, dest, nbytes, flags,
                    &op->initiated_cnt, gasnetc_cb_eop_get
                    GASNETI_THREAD_PASS);
   return (gex_Event_t)op;
@@ -124,38 +123,30 @@ gex_Event_t gasnete_put_nb(
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
   GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
- {
+
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
-  gasnetc_counter_t    counter = GASNETC_COUNTER_INITIALIZER;
-  gasnetc_atomic_val_t *local_cnt, start_cnt;
-  gasnetc_cb_t         local_cb;
-  gasnetc_atomic_val_t lc_start;
 
-  if (gasneti_leaf_is_pointer(lc_opt)) {
-    GASNETE_EOP_LC_START(op);
-    start_cnt = op->initiated_alc;
-    local_cnt = &op->initiated_alc;
-    local_cb = gasnetc_cb_eop_alc;
-  } else if (lc_opt == GEX_EVENT_NOW) {
-    local_cnt = &counter.initiated;
-    local_cb = gasnetc_cb_counter;
-  } else if (lc_opt == GEX_EVENT_DEFER) {
-    local_cnt = NULL;
-    local_cb = NULL;
-  } else {
-    gasneti_fatalerror("Invalid lc_opt argument to Put_nb");
-  }
-
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */
-  gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,
-                   local_cnt, local_cb,
-                   &op->initiated_cnt, gasnetc_cb_eop_put
-                   GASNETI_THREAD_PASS);
+  #define GASNETC_RDMA_PUT(local_cnt, local_cb)              \
+    gasnetc_rdma_put(tm, rank, src, dest, nbytes, flags,     \
+                     local_cnt, local_cb,                    \
+                     &op->initiated_cnt, gasnetc_cb_eop_put  \
+                     GASNETI_THREAD_PASS)
 
   if (lc_opt == GEX_EVENT_NOW) {
+    gasnetc_counter_t counter = GASNETC_COUNTER_INITIALIZER;
+    GASNETC_RDMA_PUT(&counter.initiated, gasnetc_cb_counter);
     gasnetc_counter_wait(&counter, 0 GASNETI_THREAD_PASS);
-  } else if (gasneti_leaf_is_pointer(lc_opt)) {
+  } else if (lc_opt == GEX_EVENT_DEFER) {
+    GASNETC_RDMA_PUT(NULL, NULL);
+  } else {
+  // Intel C prior to 2019.0.117 (builddate 20180804) issues a buggy warning here
+  #if !(PLATFORM_COMPILER_INTEL && PLATFORM_COMPILER_VERSION_LT(19,0,20180800))
+    gasneti_assume(gasneti_leaf_is_pointer(lc_opt));
+  #endif
+    GASNETE_EOP_LC_START(op);
+    gasnetc_atomic_val_t start_cnt = op->initiated_alc;
+    GASNETC_RDMA_PUT(&op->initiated_alc, gasnetc_cb_eop_alc);
     if (start_cnt == op->initiated_alc) {
       // Synchronous LC - reset the eop's LC state
       GASNETE_EOP_LC_FINISH(op);
@@ -166,8 +157,8 @@ gex_Event_t gasnete_put_nb(
   }
 
   return (gex_Event_t)op;
- }
 }
+#undef GASNETC_RDMA_PUT
 
 /* ------------------------------------------------------------------------------------ */
 /*
@@ -193,9 +184,8 @@ int gasnete_get_nbi (gex_TM_t tm,
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */ 
-  gasnetc_rdma_get(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_get(tm, rank, src, dest, nbytes, flags,
                    &op->initiated_get_cnt,
                    op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get
                    GASNETI_THREAD_PASS);
@@ -231,9 +221,8 @@ int gasnete_put_nbi (gex_TM_t tm,
     gasneti_fatalerror("Invalid lc_opt argument to Put_nbi");
   }
 
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
   /* XXX check error returns */ 
-  gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_put(tm, rank, src, dest, nbytes, flags,
                    local_cnt, local_cb,
                    &op->initiated_put_cnt,
                    op->next ? gasnetc_cb_nar_put : gasnetc_cb_iop_put
@@ -258,9 +247,9 @@ extern int gasnete_get  (gex_TM_t tm,
   GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
  {
   gasnetc_counter_t req_oust = GASNETC_COUNTER_INITIALIZER;
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+
   /* XXX check error returns */ 
-  gasnetc_rdma_get(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_get(tm, rank, src, dest, nbytes, flags,
                    &req_oust.initiated, gasnetc_cb_counter_rel
                    GASNETI_THREAD_PASS);
   gasnetc_counter_wait(&req_oust, 0 GASNETI_THREAD_PASS);
@@ -277,9 +266,9 @@ extern int gasnete_put  (gex_TM_t tm,
   GASNETI_CHECKPSHM_PUT_NOLC(tm,rank,dest,src,nbytes);
  {
   gasnetc_counter_t req_oust = GASNETC_COUNTER_INITIALIZER;
-  gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+
   /* XXX check error returns */ 
-  gasnetc_rdma_put(jobrank, src, dest, nbytes, flags,
+  gasnetc_rdma_put(tm, rank, src, dest, nbytes, flags,
                    NULL, NULL,
                    &req_oust.initiated, gasnetc_cb_counter
                    GASNETI_THREAD_PASS);
@@ -362,7 +351,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 typedef struct {
   GASNETE_RMDBARRIER_LOCK(barrier_lock) /* no semicolon */
   struct {
-    gex_Rank_t node;
+    gex_Rank_t    jobrank;
     uintptr_t     addr;
   } *barrier_peers;           /*  precomputed list of peers to communicate with */
 #if GASNETI_PSHM_BARRIER_HIER
@@ -405,14 +394,14 @@ void gasnete_ibdbarrier_send(gasnete_coll_ibdbarrier_t *barrier_data,
   gasneti_assert(state < barrier_data->barrier_goal);
 
   for (i = 0; i < numsteps; ++i, state += 2, step += 1) {
-    const gex_Rank_t node = barrier_data->barrier_peers[step].node;
+    const gex_Rank_t jobrank = barrier_data->barrier_peers[step].jobrank;
     void * const addr = GASNETE_RDMABARRIER_INBOX_REMOTE(barrier_data, step, state);
 #if GASNET_PSHM
-    if (gasneti_pshm_jobrank_in_supernode(node)) {
+    if (gasneti_pshm_jobrank_in_supernode(jobrank)) {
       *(volatile gasnete_coll_rmdbarrier_inbox_t *)addr = *payload;
     } else
 #endif
-    (void) gasnetc_rdma_put(node, (void*)payload, addr, sizeof(*payload), 0,
+    (void) gasnetc_rdma_put(gasneti_THUNK_TM, jobrank, (void*)payload, addr, sizeof(*payload), 0,
                             NULL, NULL, NULL, NULL GASNETI_THREAD_PASS);
   }
 }
@@ -722,26 +711,6 @@ static int gasnete_ibdbarrier_try(gasnete_coll_team_t team, int id, int flags) {
   else return GASNET_ERR_NOT_READY;
 }
 
-#ifdef GASNETI_USE_FCA
-static int gasnete_ibdbarrier(gasnete_coll_team_t team, int id, int flags) {
-  #if GASNETI_STATS_OR_TRACE
-  gasneti_tick_t barrier_start = GASNETI_TICKS_NOW_IFENABLED(B);
-  #endif
-
-  int retval = gasnete_fca_barrier(team, &id, &flags);
-  if (retval != GASNET_ERR_RESOURCE) {
-    gasnete_coll_ibdbarrier_t * const barrier_data = team->barrier_data;
-    barrier_data->barrier_value = id;
-    barrier_data->barrier_flags = flags;
-    GASNETI_TRACE_EVENT_TIME(B,BARRIER,GASNETI_TICKS_NOW_IFENABLED(B)-barrier_start);
-    return retval;
-  } else {
-    (team->barrier_notify)(team, id, flags);
-    return gasnete_ibdbarrier_wait(team, id, flags);
-  }
-}
-#endif
-
 static int gasnete_ibdbarrier_result(gasnete_coll_team_t team, int *id) {
   gasneti_sync_reads();
   GASNETE_SPLITSTATE_RESULT(team);
@@ -799,12 +768,12 @@ static void gasnete_ibdbarrier_init(gasnete_coll_team_t team) {
     gasneti_leak(barrier_data->barrier_peers);
   
     for (step = 0; step < steps; ++step) {
-      gex_Rank_t node = peers->fwd[step];
-      void *addr = gasnete_rdmabarrier_auxseg[node].addr;
-      barrier_data->barrier_peers[1+step].node = node;
+      gex_Rank_t jobrank = peers->fwd[step]; // is always a jobrank
+      void *addr = gasnete_rdmabarrier_auxseg[jobrank].addr;
+      barrier_data->barrier_peers[1+step].jobrank = jobrank;
     #if GASNET_PSHM
-      if (gasneti_pshm_jobrank_in_supernode(node)) {
-        barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasneti_pshm_jobrank_addr2local(node, addr);
+      if (gasneti_pshm_jobrank_in_supernode(jobrank)) {
+        barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasneti_pshm_jobrank_addr2local(jobrank, addr);
       } else
     #endif
       barrier_data->barrier_peers[1+step].addr = (uintptr_t)addr;
@@ -828,9 +797,6 @@ static void gasnete_ibdbarrier_init(gasnete_coll_team_t team) {
   team->barrier_notify = steps ? &gasnete_ibdbarrier_notify : &gasnete_ibdbarrier_notify_singleton;
   team->barrier_wait =   &gasnete_ibdbarrier_wait;
   team->barrier_try =    &gasnete_ibdbarrier_try;
-#ifdef GASNETI_USE_FCA
-  team->barrier     =    &gasnete_ibdbarrier;
-#endif
   team->barrier_result = &gasnete_ibdbarrier_result;
   team->barrier_pf =     (team == GASNET_TEAM_ALL) ? &gasnete_ibdbarrier_kick_team_all : NULL;
 }

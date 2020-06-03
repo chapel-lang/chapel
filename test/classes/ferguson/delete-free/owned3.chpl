@@ -5,7 +5,7 @@ class C {
 }
 
 proc foo() {
-  var x:owned C;
+  var x:owned C?;
   var y = new owned C();
 
   x = y;

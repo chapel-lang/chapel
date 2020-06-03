@@ -30,7 +30,7 @@ proc test(d) {
   }
 
   hd("dsiAccess1d");
-  for i in d.dim(2) do
+  for i in d.dim(1) do
     msg(i, " at ", vd.dsiAccess1d(i));
   tl();
 
@@ -48,8 +48,8 @@ proc testsuite(type T, initphase) {
   hd("testsuite(", T:string, ")");
   tl();
 
-  const vdf = new unmanaged ReplicatedDim(1);
-  const sdf = new unmanaged BlockDim(3, 1:T, 8:T);
+  const vdf = new ReplicatedDim(1);
+  const sdf = new BlockDim(3, 1:T, 8:T);
   const dm = new dmap(new unmanaged DimensionalDist2D(mylocs, vdf, sdf, "dm", idxType=T));
 
   test({1:T..1:T, 0:T..9:T       } dmapped dm);

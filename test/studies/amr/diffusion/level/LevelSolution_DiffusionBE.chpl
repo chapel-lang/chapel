@@ -1,6 +1,6 @@
-use LevelVariable_DiffusionBE;
-use LevelSolution_def;
-use LevelBC_def;
+public use LevelVariable_DiffusionBE;
+public use LevelSolution_def;
+public use LevelBC_def;
 
 //|\"""""""""""""""""""""""""""""""""""""""""""""""""|\
 //| >    LevelSolution.advance_DiffusionBE method    | >

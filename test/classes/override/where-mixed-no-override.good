@@ -1,3 +1,3 @@
-where-mixed-no-override.chpl:8: warning: Child.f overrides parent class method Parent.f but missing override keyword
-where-mixed-no-override.chpl:9: warning: Child.g overrides parent class method Parent.g but missing override keyword
-where-mixed-no-override.chpl:10: warning: Child.h overrides parent class method Parent.h but missing override keyword
+where-mixed-no-override.chpl:8: error: Child.f overrides parent class method Parent.f but missing override keyword
+where-mixed-no-override.chpl:9: error: Child.g overrides parent class method Parent.g but missing override keyword
+where-mixed-no-override.chpl:10: error: Child.h overrides parent class method Parent.h but missing override keyword

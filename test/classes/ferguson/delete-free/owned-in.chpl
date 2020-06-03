@@ -5,12 +5,12 @@ class C {
   }
 }
 
-proc takeOwnershipAgain(in arg:owned C) {
+proc takeOwnershipAgain(in arg:owned C?) {
   writeln("in takeOwnershipAgain with arg=", arg.borrow());
 }
 
 
-proc takeOwnership(in arg:owned C) {
+proc takeOwnership(in arg:owned C?) {
   writeln("in takeOwnership with arg=", arg.borrow());
   takeOwnershipAgain(arg);
   writeln("in takeOwnership, now arg=", arg.borrow());

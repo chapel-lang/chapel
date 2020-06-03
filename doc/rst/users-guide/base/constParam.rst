@@ -45,7 +45,7 @@ value is 2 (as you'd hope):
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :caption:
   :language: chapel
-  :lines: 3
+  :lines: 5
 
 Unlike variables, attempting to assign to a constant after it has been
 initialized will result in a compile-time error.  For example, if we
@@ -53,7 +53,7 @@ later attempted to perform this assignment:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 6
+  :lines: 8
   :dedent: 2
 
 The compiler would report the following error:
@@ -68,7 +68,7 @@ will fill in any missing details:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 8-9
+  :lines: 10-11
 
 Of course, since constants cannot be re-assigned, in practice they
 typically do include an initialization expression.
@@ -79,7 +79,7 @@ shared:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 15-19
+  :lines: 15-21
 
 One of the main things that distinguishes ``const`` from ``param``
 declarations is that the initializing expression for a ``const`` need
@@ -89,13 +89,13 @@ from the console and then using that value to do some math:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 21-22
+  :lines: 23-24
 
 If we were to print their values as follows:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 24-25
+  :lines: 26-27
 
 And then typed '4' at the console after compiling and running the program,
 we'd see:
@@ -119,7 +119,7 @@ trivially be converted to ``param`` declarations as follows:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 28-34
+  :lines: 30-36
   :dedent: 2
 
 Attempting to initialize a ``param`` with a value not known to the
@@ -128,7 +128,7 @@ following initializers, which were legal in ``const`` declarations:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 37-38
+  :lines: 39-40
   :dedent: 4
 
 As ``param`` initializers, they result in the following error messages
@@ -145,7 +145,7 @@ initialized using expressions other than simple literal values:
 
 .. literalinclude:: examples/users-guide/base/constParam.chpl
   :language: chapel
-  :lines: 43-49
+  :lines: 45-51
 
 Specifically, procedures and operators that are declared to return
 ``param`` values are executed at compile-time and can be used to

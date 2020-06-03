@@ -1,6 +1,0 @@
-bug: compiler can't resolve recursive implicit calls to these()
-
-This test shows that the compiler has trouble resolving recurisve
-iterators that implicitly call these().  If the call to these() is
-made explicit, as shown in recursive-iter-works.chpl, then things work
-as expected.

@@ -11,7 +11,7 @@ iter myiter() throws {
   for j in 1..2 {
     yield j;
     if i == j then
-      throw new owned StringError("Test error " + j);
+      throw new owned StringError("Test error " + j:string);
   }
 
   if i == 3 then

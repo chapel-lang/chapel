@@ -1,0 +1,1 @@
+GetByName_MultipleArgs.chpl:18: error: too many arguments to 'get test by name'

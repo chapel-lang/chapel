@@ -1,2 +1,5 @@
 loopUpdate.chpl:5: In initializer:
 loopUpdate.chpl:7: error: field "N" used before it is initialized
+loopUpdate.chpl:8: error: field "N" used before it is initialized
+loopUpdate.chpl:9: error: field "N" used before it is initialized
+loopUpdate.chpl:9: error: field "N" used before it is initialized

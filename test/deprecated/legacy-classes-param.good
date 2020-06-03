@@ -1,0 +1,3 @@
+legacy-classes-param.chpl:2: warning: 'chpl_legacyClasses' is deprecated and will be removed in the next release; it is now always false
+legacy-classes-param.chpl:5: warning: 'chpl_legacyClasses' is deprecated and will be removed in the next release; it is now always false
+legacy-classes-param.chpl:6: error: no

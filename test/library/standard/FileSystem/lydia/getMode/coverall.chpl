@@ -23,7 +23,7 @@ for ur in [true, false] {
                   chmod("blah", permission);
                   var result = getMode("blah");
                   if (result != permission) {
-                    writeln("Expected " + permission + " on file blah, got " + result);
+                    writeln("Expected ", permission, " on file blah, got ", result);
                   }
                   permission -= if ox then 1 else 0;
                 }

@@ -2,7 +2,7 @@
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use Norm, Time;
+use LinearAlgebra, Time;
 
 // compile with stdlib.h
 extern proc rand(): int;
@@ -247,9 +247,9 @@ proc dgemmNativeInds(A: [] elemType,
                     C: [] elemType) {
   if verb { show2e(A); writeln("="); show2e(B); writeln("="); show2e(C); writeln("==="); }
 
-  for (iA, iC) in (A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in (A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in (B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in (A.domain.dim(0), C.domain.dim(0)) do
+    for (jA, iB) in (A.domain.dim(1), B.domain.dim(0)) do
+      for (jB, jC) in (B.domain.dim(1), C.domain.dim(1)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }
 
@@ -265,13 +265,13 @@ proc panelSolve(Ab: [] elemType,
 
   if verb then writeln("panelSolve");
 
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
     if verb then writeln("== ", k);
 
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (dum1 , (pivotRow, dum2)) = maxloc reduce(abs(Ab(col)), col);
@@ -318,9 +318,9 @@ proc updateBlockRow(Ab: [] elemType,
 
   if verb then writeln("updateBlockRow");
 
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     if verb then writeln("== ", row, "  ", prevRows, "  ", activeRow);
 
@@ -338,7 +338,7 @@ proc updateBlockRow(Ab: [] elemType,
 //
 proc backwardSub(n: indexType,
                  Ab: [] elemType) {
-  const bd = Ab.domain.dim(1);
+  const bd = Ab.domain.dim(0);
   var x: [bd] elemType;
 
   if verb then writeln("backwardSub");
@@ -381,8 +381,8 @@ proc show2e(Ab: [] elemType) {
   if elemType == int {
     writeln(" ", Ab);
   } else {
-    for i1 in Ab.domain.dim(1) {
-      for i2 in Ab.domain.dim(2) do write(tost(Ab[i1,i2]));
+    for i1 in Ab.domain.dim(0) {
+      for i2 in Ab.domain.dim(1) do write(tost(Ab[i1,i2]));
       writeln();
     }
   }

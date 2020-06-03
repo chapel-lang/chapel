@@ -372,7 +372,7 @@ static inline amudp_bufdesc_t *AMUDP_get_desc(ep_t ep, amudp_node_t proc, int in
   COMPUTE_MSG_SZ(AMUDP_MSG_NUMARGS(pmsg), (pmsg)->nBytes)
 #define GET_MSG_DATA(pmsg) \
   ((uint8_t*)((pmsg)+1) + 4*ACTUAL_NUM_ARGS(AMUDP_MSG_NUMARGS(pmsg)))
-#define GET_MSG_ARGS(pmsg) ( (pmsg)->_instance, /* typecheck pmsg */ \
+#define GET_MSG_ARGS(pmsg) ( (void)((pmsg)->_instance), /* typecheck pmsg */ \
   ((uint32_t *)((pmsg)+1)) )
 //------------------------------------------------------------------------------------
 // global helper functions

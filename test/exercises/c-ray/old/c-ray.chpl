@@ -24,6 +24,8 @@
  */
 
 use Image;    // use helper module related to writing out images
+use IO;       // allows access to stderr, stdin, iomode
+use List;
 
 //
 // Configuration constants
@@ -53,11 +55,11 @@ if usage then printUsage();
 
 const ssize = size.partition("x");    // split size string into 3-tuple (W,x,H)
 
-if (ssize.size != 3 || ssize[2] != "x") then
+if (ssize.size != 3 || ssize[1] != "x") then
   halt("--s option requires argument to be in WxH format");
 
-const xres = ssize[1]:int,                // x- and y-resolutions of the image
-      yres = ssize[3]:int;
+const xres = ssize[0]:int,                // x- and y-resolutions of the image
+      yres = ssize[2]:int;
 
 const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
@@ -65,9 +67,9 @@ const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
 //
 // set params representing dimensions symbolically
 //
-param X = 1,          // names for accessing vec3 elements
-      Y = 2,
-      Z = 3,
+param X = 0,          // names for accessing vec3 elements
+      Y = 1,
+      Z = 2,
       numdims = 3;
 
 //
@@ -108,9 +110,9 @@ record camera {
 //
 // variables used to store the scene
 //
-var objects: [1..0] owned sphere,  // the scene's spheres; initially empty
-    lights: [1..0] vec3,           // the scene's lights;  "
-    cam: camera;                   // camera (there will be only one)
+var objects: list(owned sphere),  // the scene's spheres; initially empty
+    lights: list(vec3),           // the scene's lights;
+    cam: camera;                  // camera (there will only be one)
 
 //
 // arrays for storing random numbers
@@ -204,7 +206,7 @@ proc getPrimaryRay(xy, sample) {
   const i = crossProduct((0.0, 1.0, 0.0), k),
         j = crossProduct(k, i);
 
-  const m: [1..numdims] vec3 = [i, j, k];
+  const m: [0..#numdims] vec3 = [i, j, k];
 
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample);
@@ -229,7 +231,7 @@ proc trace(ray, depth=0): vec3 {
     return (0.0, 0.0, 0.0);
 
   // find the nearest intersection...
-  var nearestObj: borrowed sphere,
+  var nearestObj: borrowed sphere?,
       nearestSp: spoint;
 
   for obj in objects {
@@ -242,7 +244,7 @@ proc trace(ray, depth=0): vec3 {
 
   // and perform shading calculations as needed by calling shade()
   if nearestObj then
-    return shade(nearestObj, nearestSp, depth);
+    return shade(nearestObj!, nearestSp, depth);
   else
     return (0.0, 0.0, 0.0);
 }
@@ -408,16 +410,16 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    objects.push_back(new owned sphere((-1.5, -0.3, -1), 0.7,
+    objects.append(new owned sphere((-1.5, -0.3, -1), 0.7,
                                  new material((1.0, 0.2, 0.05), 50.0, 0.3)));
-    objects.push_back(new owned sphere((1.5, -0.4, 0), 0.6,
+    objects.append(new owned sphere((1.5, -0.4, 0), 0.6,
                                  new material((0.1, 0.85, 1.0), 50.0, 0.4)));
-    objects.push_back(new owned sphere((0, -1000, 2), 999,
+    objects.append(new owned sphere((0, -1000, 2), 999,
                                  new material((0.1, 0.2, 0.6), 80.0, 0.8)));
-    objects.push_back(new owned sphere((0, 0, 2), 1,
+    objects.append(new owned sphere((0, 0, 2), 1,
                                  new material((1.0, 0.5, 0.1), 60.0, 0.7)));
-    lights.push_back((-50, 100, -50));
-    lights.push_back((40, 40, 150));
+    lights.append((-50, 100, -50));
+    lights.append((40, 40, 150));
     cam = new camera((0, 6, -17), (0, -1, 0), 45);
     return;
   }
@@ -438,14 +440,14 @@ proc loadScene() {
   for (rawLine, lineno) in zip(infile.lines(), 1..) {
     // drop any comments (text following '#')
     const linePlusComment = rawLine.split('#', maxsplit=1, ignoreEmpty=false),
-          line = linePlusComment[1];
+          line = linePlusComment[0];
 
     // split the line into its whitespace-separated strings
     const columns = line.split();
     if columns.size == 0 then continue;
 
     // grab the input type
-    const inType = columns[1];
+    const inType = columns[0];
 
     // handle error conditions
     if !expectedArgs.domain.contains(inType) then
@@ -456,17 +458,17 @@ proc loadScene() {
       inputError("too many arguments for input of type '" + inType + "'");
 
     // grab the position columns
-    const pos = (columns[2]:real, columns[3]:real, columns[4]:real);
+    const pos = (columns[1]:real, columns[2]:real, columns[3]:real);
 
     // if this is a light, store it as such
     if inType == 'l' {
-      lights.push_back(pos);
+      lights.append(pos);
       continue;
     }
 
     // grab the radius/field-of-view and color/target columns
-    const rad = columns[5]:real,
-          col = (columns[6]:real, columns[7]:real, columns[8]:real);
+    const rad = columns[4]:real,
+          col = (columns[5]:real, columns[6]:real, columns[7]:real);
 
     // if this is the camera, store it
     if inType == 'c' {
@@ -477,11 +479,11 @@ proc loadScene() {
     }
 
     // grab the shininess and reflectivity columns
-    const spow = columns[9]: real,
-          refl = columns[10]: real;
+    const spow = columns[8]: real,
+          refl = columns[9]: real;
 
     // this must be a sphere, so store it
-    objects.push_back(new owned sphere(pos, rad, new material(col, spow, refl)));
+    objects.append(new owned sphere(pos, rad, new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file
     proc inputError(msg) {
@@ -497,6 +499,8 @@ proc loadScene() {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
+  use SysCTypes;
+
   if useCRand {
     // extern declarations of C's random number generators.
     extern const RAND_MAX: c_int;

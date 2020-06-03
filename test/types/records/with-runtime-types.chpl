@@ -19,7 +19,7 @@ record QQQ {
 proc procq(type UUU) {
   var WW: UUU;
   writeln(WW);
-  writeln(WW.ARR.numElements);
+  writeln(WW.ARR.size);
 }
 
 proc main {

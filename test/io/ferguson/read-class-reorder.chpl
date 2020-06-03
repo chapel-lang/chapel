@@ -1,3 +1,5 @@
+use IO;
+
 /*class Base {
 }
 

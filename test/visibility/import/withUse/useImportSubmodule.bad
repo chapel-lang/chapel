@@ -1,0 +1,5 @@
+useImportSubmodule.chpl:3: error: Cannot import module 'N'
+useImportSubmodule.chpl:5: note: a module named 'N' is defined here
+useImportSubmodule.chpl:3: note: full path or explicit relative import required
+useImportSubmodule.chpl:3: note: please specify the full path to the module
+useImportSubmodule.chpl:3: note: or use a relative import e.g. 'import this.M' or 'import super.M'

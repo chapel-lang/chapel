@@ -1,2 +1,6 @@
+In B init
+In C init
+In A init
 in A.bar
 in B.baz
+in C.foo

@@ -1,1 +1,2 @@
-index-int.chpl:1: error: illegal type index expression
+index-int.chpl:1: error: illegal type index expression 'int(64)(42)'
+index-int.chpl:1: note: primitive type 'int(64)' cannot be used in an index expression

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -44,6 +45,7 @@
 module Sys {
   // get basic types from SysBasic
   use SysBasic;
+  private use SysCTypes;
 
  
   // CONSTANTS
@@ -283,6 +285,19 @@ module Sys {
   extern proc sys_shutdown(sockfd:fd_t, how:c_int):err_t;
   extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):err_t;
   extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):err_t;
+
+  extern type fd_set;
+  extern type time_t = c_long;
+  extern type suseconds_t = c_long;
+  extern "struct timeval" record timeval {
+     var tv_sec:time_t; // seconds
+     var tv_usec:suseconds_t; // microseconds
+  }
+  extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(timeval), ref nset:c_int):err_t;
+  extern proc sys_fd_clr(fd:c_int, ref set:fd_set);
+  extern proc sys_fd_isset(fd:c_int, ref set:fd_set):c_int;
+  extern proc sys_fd_set(fd:c_int, ref set:fd_set);
+  extern proc sys_fd_zero(ref set:fd_set);
 
   // recv, recvfrom, recvmsg, send, sendto, sendmsg are in io
 }

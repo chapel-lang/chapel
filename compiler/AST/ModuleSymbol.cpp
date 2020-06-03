@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +36,7 @@ ModuleSymbol*                      baseModule            = NULL;
 ModuleSymbol*                      stringLiteralModule   = NULL;
 ModuleSymbol*                      standardModule        = NULL;
 ModuleSymbol*                      printModuleInitModule = NULL;
+ModuleSymbol*                      ioModule              = NULL;
 
 Vec<ModuleSymbol*>                 userModules; // Contains user + main modules
 Vec<ModuleSymbol*>                 allModules;  // Contains all modules except rootModule
@@ -381,6 +383,26 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ";" << std::endl << std::endl;
 
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  *file  << "or" << std::endl << std::endl;
+   
+  if (fDocsTextOnly == false) {
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  }
+
+  this->printTabs(file, tabs + 1);
+
+  *file << "import ";
+
+  if (parentName != "") {
+    *file << parentName << ".";
+  }
+
+  *file << name << ";" << std::endl << std::endl;
+
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {
     this->printTableOfContents(file);
@@ -621,7 +643,9 @@ void ModuleSymbol::addDefaultUses() {
   if (modTag != MOD_INTERNAL) {
     ModuleSymbol* parentModule = toModuleSymbol(this->defPoint->parentSymbol);
 
-    assert (parentModule != NULL);
+    if (parentModule == NULL) {
+      USR_FATAL(this, "Modules must be declared at module- or file-scope");
+    }
 
     //
     // Don't insert 'use ChapelStandard' for nested user modules.
@@ -630,16 +654,8 @@ void ModuleSymbol::addDefaultUses() {
     if (parentModule->modTag != MOD_USER) {
       SET_LINENO(this);
 
-      UnresolvedSymExpr* modRef;
-
-      // If this is a Fortran compilation, we need to use ISO_Fortran_binding
-      if (fLibraryFortran) {
-        modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
-        block->insertAtHead(new UseStmt(modRef));
-      }
-
-      modRef = new UnresolvedSymExpr("ChapelStandard");
-      block->insertAtHead(new UseStmt(modRef));
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ChapelStandard");
+      block->insertAtHead(new UseStmt(modRef, "", /* isPrivate */ true));
     }
 
   // We don't currently have a good way to fetch the root module by name.
@@ -647,9 +663,30 @@ void ModuleSymbol::addDefaultUses() {
   } else if (this == baseModule) {
     SET_LINENO(this);
 
-    block->useListAdd(rootModule);
+    block->useListAdd(rootModule, false);
+  }
+
+  if (fLibraryFortran && modTag == MOD_INTERNAL) {
+    if (this == standardModule) {
+      SET_LINENO(this);
+
+      UnresolvedSymExpr* modRef = new UnresolvedSymExpr("ISO_Fortran_binding");
+      block->insertAtTail(new UseStmt(modRef, "", /* isPrivate */ false));
+    }
   }
 }
+
+// Helper function for computing the index in the module use list
+// within mod for a use of usedModule
+static int moduleUseIndex(ModuleSymbol* mod, ModuleSymbol* usedModule) {
+  for (size_t i=0; i < mod->modUseList.size(); i++) {
+    if (mod->modUseList[i] == usedModule) {
+      return (int)i;
+    }
+  }
+  return -1;
+}
+
 
 //
 // NOAKES 2014/07/22
@@ -664,12 +701,12 @@ void ModuleSymbol::addDefaultUses() {
 // Fortunately there are currently no tests that expose this fallacy so
 // long at ChapelStandard always appears first in the list
 void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
-  if (mod != this && modUseList.index(mod) < 0) {
+  if (mod != this && moduleUseIndex(this, mod) < 0) {
     if (mod == standardModule) {
-      modUseList.insert(0, mod);
+      modUseList.insert(modUseList.begin(), mod);
 
     } else {
-      modUseList.add(mod);
+      modUseList.push_back(mod);
     }
   }
 }
@@ -681,28 +718,31 @@ void ModuleSymbol::moduleUseAdd(ModuleSymbol* mod) {
 //
 // At this time this is only used for deadCodeElimination and
 // it is not clear if there will be other uses.
-void ModuleSymbol::moduleUseRemove(ModuleSymbol* mod) {
-  int index = modUseList.index(mod);
+void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
+  int index = moduleUseIndex(this, mod);
 
   if (index >= 0) {
     bool inBlock = block->useListRemove(mod);
 
-    modUseList.remove(index);
+    modUseList.erase(modUseList.begin() + index);
 
     // The dead module may have used other modules.  If so add them
     // to the current module
-    forv_Vec(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
-      if (modUseList.index(modUsedByDeadMod) < 0 && modUsedByDeadMod != this) {
+    for_vector(ModuleSymbol, modUsedByDeadMod, mod->modUseList) {
+      if (moduleUseIndex(this, modUsedByDeadMod) < 0 &&
+          modUsedByDeadMod != this) {
         if (modUsedByDeadMod == mod) {
           INT_FATAL("Dead module using itself");
         }
         SET_LINENO(this);
 
         if (inBlock == true) {
-          block->useListAdd(modUsedByDeadMod);
+          // Note: this drops only and except lists, renamings, and private uses
+          // on the floor.
+          block->useListAdd(modUsedByDeadMod, false);
         }
 
-        modUseList.add(modUsedByDeadMod);
+        modUseList.push_back(modUsedByDeadMod);
       }
     }
   }
@@ -722,7 +762,7 @@ void initStringLiteralModule() {
                                                    MOD_INTERNAL,
                                                    new BlockStmt());
 
-  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard")));
+  stringLiteralModule->block->useListAdd(new UseStmt(new UnresolvedSymExpr("ChapelStandard"), "", false));
 
   stringLiteralModule->filename = astr("<internal>");
 

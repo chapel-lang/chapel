@@ -5,6 +5,7 @@ Usage:
 
 Options:
     -h, --help                  Display this message
+    --show                      Display the manifest of a package
 
 When no query is provided, all packages in the registry will be listed. The
 query will be used in a case-insensitive search of all packages in the

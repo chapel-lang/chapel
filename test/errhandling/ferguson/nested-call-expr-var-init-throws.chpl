@@ -23,6 +23,7 @@ proc testc() throws {
 }
 proc testd() throws {
   var tmp: R;
+  ref rtmp = tmp;
   var r = gimmeanr().hello().hello();
 }
 

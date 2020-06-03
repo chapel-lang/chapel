@@ -9,6 +9,8 @@ module A {
 }
 
 module B {
+  use A only;
+
   proc foo() : int {
     return 20;
   }

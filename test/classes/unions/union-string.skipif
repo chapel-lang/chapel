@@ -1,2 +1,0 @@
-# Test output is unreliable outside of valgrind
-CHPL_TEST_VGRND_EXE != on

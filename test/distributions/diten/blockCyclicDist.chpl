@@ -8,8 +8,8 @@ class BlockCyclicDist {
 
   proc idxToLocaleInd(ind: idxType...nDims) {
     var locInd: nDims*idxType;
-    for i in 1..nDims {
-      locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).length;
+    for i in 0..#nDims {
+      locInd(i) = (startLoc(i) + (ind(i)-1)/blockSize(i)) % localeDomain.dim(i).size;
     }
     return locInd;
   }
@@ -19,14 +19,14 @@ class BlockCyclicDist {
   }
   proc getBlock(ind: idxType...nDims) {
     var locInd: nDims*idxType;
-    for i in 1..nDims {
-      locInd(i) = (ind(i) - 1) / (localeDomain.dim(i).length*blockSize(i));
+    for i in 0..#nDims {
+      locInd(i) = (ind(i) - 1) / (localeDomain.dim(i).size*blockSize(i));
     }
     return locInd;
   }
   proc getBlockPosition(ind: idxType...nDims) {
     var locInd: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       locInd(i) = ((ind(i)-1) % blockSize(i)) + 1;
     }
     return locInd;
@@ -35,7 +35,7 @@ class BlockCyclicDist {
     var blk = getBlock((...ind));
     var blkPos = getBlockPosition((...ind));
     var position: nDims*idxType;
-    for i in 1..nDims {
+    for i in 0..#nDims {
       position(i) = blk(i)*blockSize(i) + blkPos(i);
     }
     return position;
@@ -52,21 +52,21 @@ class BlockCyclicDom {
   type idxType;
   const whole: domain(nDims, idxType);
   const dist: unmanaged BlockCyclicDist(idxType);
-  var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType);
+  var locDoms: [dist.localeDomain] unmanaged LocBlockCyclicDom(nDims, idxType)?;
   proc postinit() {
     var blksInDim: nDims*idxType;
-    for i in 1..nDims {
-      blksInDim(i) = ceil(whole.dim(i).length:real(64) /
+    for i in 0..#nDims {
+      blksInDim(i) = ceil(whole.dim(i).size:real(64) /
                           dist.blockSize(i)):idxType;
     }
 
     for pos in dist.localeDomain {
       var locSize: nDims*idxType;
       
-      for dim in 1..nDims {
+      for dim in 0..#nDims {
         var remainder: idxType;
-        locSize(dim) = dist.blockSize(dim) * (blksInDim(dim) / dist.localeDomain.dim(dim).length);
-        remainder = whole.dim(dim).length - (locSize(dim) * dist.localeDomain.dim(dim).length);
+        locSize(dim) = dist.blockSize(dim) * (blksInDim(dim) / dist.localeDomain.dim(dim).size);
+        remainder = whole.dim(dim).size - (locSize(dim) * dist.localeDomain.dim(dim).size);
         if ((1+pos(dim))*dist.blockSize(dim) <= remainder) {
           locSize(dim) += dist.blockSize(dim);
         } else if (remainder - pos(dim)*dist.blockSize(dim) > 0) {
@@ -75,7 +75,7 @@ class BlockCyclicDom {
       }
       on dist.locales(pos) {
         var locRanges: nDims*range(idxType, BoundedRangeType.bounded);
-        for i in 1..nDims {
+        for i in 0..#nDims {
           locRanges(i) = 1..locSize(i);
         }
         locDoms(pos) = new unmanaged LocBlockCyclicDom(nDims, idxType, _to_unmanaged(this), locRanges);
@@ -114,11 +114,11 @@ class BlockCyclicArr {
   type idxType;
   type eltType;
   const dom: unmanaged BlockCyclicDom(nDims, idxType);
-  var locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType);
+  var locArrs: [dom.dist.localeDomain] unmanaged LocBlockCyclicArr(nDims, idxType, eltType)?;
   proc postinit() {
     for ind in dom.dist.localeDomain {
       on dom.dist.locales(ind) {
-        locArrs(ind) = new unmanaged LocBlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(ind));
+        locArrs(ind) = new unmanaged LocBlockCyclicArr(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(ind)!);
       }
     }
   }
@@ -129,7 +129,7 @@ class BlockCyclicArr {
   }
 
   proc this(ind:idxType...nDims) ref {
-    return locArrs(dom.dist.idxToLocaleInd((...ind))).arr(dom.dist.getLocalPosition((...ind)));
+    return locArrs(dom.dist.idxToLocaleInd((...ind)))!.arr(dom.dist.getLocalPosition((...ind)));
   }
 }
 
@@ -147,10 +147,9 @@ config const m, n = 2;
 
 proc main {
   var locDom: domain(2) = {0..#m, 0..#n};
-  var locs: [locDom] locale;
+  var locs: [locDom] locale =
+        [(i,j) in locDom] Locales((i*n + j) % numLocales);
   var undistributedDom: domain(2) = {1..5, 1..5};
-
-  [(i,j) in locDom] locs(i,j) = Locales((i*n + j) % numLocales);
 
   var dist = new unmanaged BlockCyclicDist(idxType=int, nDims=2,
                                    blockSize=(2,2), startLoc=(0,0),

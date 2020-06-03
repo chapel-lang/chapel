@@ -16,8 +16,8 @@ proc run() {
   var x = new shared Impl(1);
   writeln(x.borrow());
 
-  var c:unmanaged Impl = nil;
-  var y = new shared(c);
+  var c:unmanaged Impl? = nil;
+  var y = shared.create(c);
   writeln(y.borrow());
 }
 

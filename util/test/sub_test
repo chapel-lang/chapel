@@ -44,8 +44,8 @@
 # CHPL_TEST_PERF_TRIALS: Default number of trials for perf tests
 # CHPL_ONETEST: Name of the one test in this directory to run
 # CHPL_TEST_SINGLES: If false, test the entire directory
-# CHPL_SYSTEM_PREEXEC: If set, run script on test output prior to execution
-# CHPL_SYSTEM_PREDIFF: If set, run that script on each test output
+# CHPL_SYSTEM_PREEXEC: If set, run comma-separated scripts on test output prior to execution
+# CHPL_SYSTEM_PREDIFF: If set, run comma-separated scripts on each test output
 # CHPL_COMM: Chapel communication layer
 # CHPL_COMPONLY: Only build the test (same as -noexec flag)
 # CHPL_TEST_NUM_LOCALES_AVAILABLE: same as CHPL_TEST_MAX_LOCALES (for backwards compatibility)
@@ -228,9 +228,9 @@ def trim_output(output):
     return ''.join(s if s in string.printable else "~" for s in output)
 
 
-# return True if f has .chpl extension
-def IsChplTest(f):
-    if re.match(r'^.+\.(chpl|test\.c)$', f):
+# return True if f has .chpl, .test.c or .ml-test.c extension
+def hasTestableExtension(f):
+    if f.endswith(('.chpl', '.test.c', '.ml-test.c')):
         return True
     else:
         return False
@@ -543,7 +543,7 @@ def translateOutput(output):
     xlates = (('slurmstepd: Munge decode failed: Expired credential',
                'Jira 18 -- Expired slurm credential for'),
               ('output file from job .* does not exist',
-               'Jira 17 -- Missing output file for'),
+               'private issue #906 -- Missing output file for'),
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
@@ -557,7 +557,9 @@ def translateOutput(output):
               ('Fatal MPP reservation error on create',
                'Jira 329 -- Fatal MPP reservation error for'),
               ('Text file busy',
-               'Jira 333 -- Text file busy for'))
+               'private issue #474 -- Text file busy for'),
+              ('Socket timed out on send/recv operation',
+               'private issue #579 -- Slurm socket timed out on send/recv'))
 
     known_error = ''
     was_timeout = False
@@ -573,6 +575,66 @@ def translateOutput(output):
             was_timeout = True
 
     return known_error, was_timeout
+
+# Remove innocuous warnings about clock skew from when we `make` the generated code
+def remove_clock_skew_warning(output):
+    output = re.sub(r'g?make.*: Warning: File .* has modification time .* s in the future *\n', '', output)
+    output = re.sub(r'g?make.*: warning:  Clock skew detected\.  Your build may be incomplete\. *\n', '', output)
+    return output
+
+def filter_compiler_errors(compiler_output):
+    """Identify common errors that occur in compilation.
+    Return message to emit when error found."""
+
+    error_msg = ''
+    err_strings = ['could not checkout FLEXlm license']
+    for s in err_strings:
+        if re.search(s, compiler_output, re.IGNORECASE) != None:
+            error_msg = '(possible private issue #398) '
+            break
+
+    return error_msg
+
+def filter_errors(output, pre_exec_output, execgoodfile, execlog):
+    """Identify common errors that occur in runtime or compiler warnings.
+    Return message to emit when error found."""
+
+    # If the output contains messages consistent with JIRA 154, add a
+    # hint to the error summary and force a text base diff since
+    # sometimes the output contains a null character
+    extra_msg = ''
+    err_strings = ['got exn while reading exit code: connection closed',
+                   'slave got an unknown command on coord socket:',
+                   'Slave got an xSocket: connection closed on recv',
+                   'recursive failure in AMUDP_SPMDShutdown',
+                   'AM_ERR_RESOURCE \(Problem with requested resource\)']
+    for s in err_strings:
+        if re.search(s, output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 154) '
+            DiffBinaryFiles(execgoodfile, execlog)
+            break
+
+    err_strings = ['Master got an xSocket: error in sendAll']
+    for s in err_strings:
+        if re.search(s, output, re.IGNORECASE) != None:
+            extra_msg = '(possible JIRA 274) '
+            break
+
+    err_strings = ['Clock skew detected']
+    for s in err_strings:
+        # NOTE: checking pre_exec (compiler) output
+        if re.search(s, pre_exec_output, re.IGNORECASE) != None:
+            extra_msg = '(possible private issue #482) '
+            break
+
+    err_strings = ['could not checkout FLEXlm license']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None or
+            re.search(s, pre_exec_output, re.IGNORECASE) != None):
+            extra_msg = '(possible private issue #398) '
+            break
+
+    return extra_msg
 
 
 # Start of sub_test proper
@@ -657,17 +719,21 @@ platform = platform.strip()
 machine=os.uname()[1].split('.', 1)[0]
 # sys.stdout.write('machine='+machine+'\n')
 
-# Get the system-wide preexec
-systemPreexec = os.getenv('CHPL_SYSTEM_PREEXEC')
-if systemPreexec is not None:
-    if not os.access(systemPreexec, os.R_OK|os.X_OK):
-        Fatal("Cannot execute system-wide preexec '{0}'".format(systemPreexec))
+# Get the system-wide preexec(s)
+systemPreexecs = os.getenv('CHPL_SYSTEM_PREEXEC')
+if systemPreexecs:
+    systemPreexecs = systemPreexecs.strip().split(',')
+    for spreexec in systemPreexecs:
+        if not os.access(spreexec, os.R_OK|os.X_OK):
+            Fatal('Cannot execute system-wide preexec \''+spreexec+'\'')
 
-# Get the system-wide prediff
-systemPrediff = os.getenv('CHPL_SYSTEM_PREDIFF')
-if systemPrediff:
-  if not os.access(systemPrediff,os.R_OK|os.X_OK):
-    Fatal('Cannot execute system-wide prediff \''+systemPrediff+'\'')
+# Get the system-wide prediff(s)
+systemPrediffs = os.getenv('CHPL_SYSTEM_PREDIFF')
+if systemPrediffs:
+    systemPrediffs = systemPrediffs.strip().split(',')
+    for sprediff in systemPrediffs:
+        if not os.access(sprediff,os.R_OK|os.X_OK):
+            Fatal('Cannot execute system-wide prediff \''+sprediff+'\'')
 
 # Use the launcher walltime option for timeout
 useLauncherTimeout = os.getenv('CHPL_LAUNCHER_TIMEOUT')
@@ -1015,10 +1081,10 @@ else:
 #
 sys.stdout.write('[Starting subtest - %s]\n'%(time.strftime('%a %b %d %H:%M:%S %Z %Y', time.localtime())))
 #sys.stdout.write('[compiler: \'%s\']\n'%(compiler))
-if systemPreexec:
-    sys.stdout.write("[system-wide preexec: '{0}']\n".format(systemPreexec))
-if systemPrediff:
-    sys.stdout.write('[system-wide prediff: \'%s\']\n'%(systemPrediff))
+if systemPreexecs:
+    sys.stdout.write('[system-wide preexec(s): \'%s\']\n'%(', '.join(systemPreexecs)))
+if systemPrediffs:
+    sys.stdout.write('[system-wide prediff(s): \'%s\']\n'%(', '.join(systemPrediffs)))
 
 # consistently look only at the files in the current directory
 dirlist=os.listdir(".")
@@ -1026,7 +1092,7 @@ dirlist.sort()
 
 onetestsrc = os.getenv('CHPL_ONETEST')
 if onetestsrc==None:
-    testsrc=filter(IsChplTest, dirlist)
+    testsrc=filter(hasTestableExtension, dirlist)
 else:
     testsrc=list()
     testsrc.append(onetestsrc)
@@ -1040,16 +1106,14 @@ for testname in testsrc:
 
     # print testname
     sys.stdout.write('[test: %s/%s]\n'%(localdir,testname))
-    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c)$', testname).group(1)
+    test_filename = re.match(r'^(.*)\.(?:chpl|test\.c|ml-test\.c)$', testname).group(1)
     execname = test_filename
     if uniquifyTests:
         execname += '.{0}'.format(os.getpid())
     # print test_filename
 
-    if re.match(r'^.+\.test\.c$', testname):
-      is_c_test = True
-    else:
-      is_c_test = False
+    is_c_test = testname.endswith(".test.c");
+    is_ml_c_test = testname.endswith(".ml-test.c");
 
     # If the test name ends with .doc.chpl or the compiler was set to chpldoc
     # (i.e. is_chpldoc=True), run this test with chpldoc options.
@@ -1274,6 +1338,11 @@ for testname in testsrc:
         sys.stdout.write('[Skipping c test: %s/%s]\n'%(localdir,test_filename))
         continue
 
+    # .ml-test.c tests should only run when we are in a multilocale setting
+    if is_ml_c_test and chplcomm == 'none':
+        sys.stdout.write('[Skipping multilocale-only c test: %s/%s]\n'%(localdir,test_filename))
+        continue
+
     # Set numlocales
     if (numlocales == 0) or (chplcomm=='none') or is_c_test:
         numlocexecopts = None
@@ -1285,7 +1354,7 @@ for testname in testsrc:
                                  .format(os.path.join(localdir, test_filename),
                                          numlocales, maxLocalesAvailable))
                 continue
-        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1):
+        if os.getenv('CHPL_TEST_MULTILOCALE_ONLY') and (numlocales <= 1) and not is_ml_c_test:
             sys.stdout.write('[Skipping {0} because it does not '
                              'use more than one locale]\n'
                              .format(os.path.join(localdir, test_filename)))
@@ -1432,7 +1501,7 @@ for testname in testsrc:
             args += envCompopts + shlex.split(compopts)
         args += [testname]
 
-        if is_c_test:
+        if is_c_test or is_ml_c_test:
             # we need to drop envCompopts for C tests as those are options
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
@@ -1529,6 +1598,8 @@ for testname in testsrc:
         print('[Elapsed compilation time for "{0}" - {1:.3f} '
             'seconds]'.format(test_name, elapsedCompTime))
 
+        output = remove_clock_skew_warning(output)
+
         # remove some_file: output from C compilers
         if is_c_test:
           for arg in args:
@@ -1555,14 +1626,15 @@ for testname in testsrc:
             with open(complog, 'w') as complogfile:
                 complogfile.write('%s'%(output))
 
-            if systemPrediff:
-                sys.stdout.write('[Executing system-wide prediff]\n')
-                sys.stdout.flush()
-                p = py3_compat.Popen([systemPrediff, execname, complog, compiler,
-                                     ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+            if systemPrediffs:
+                for sprediff in systemPrediffs:
+                    sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
+                    sys.stdout.flush()
+                    p = py3_compat.Popen([sprediff, execname, complog, compiler,
+                                          ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    sys.stdout.write(p.communicate()[0])
+                    sys.stdout.flush()
 
             if globalPrediff:
                 sys.stdout.write('[Executing ./PREDIFF]\n')
@@ -1596,9 +1668,17 @@ for testname in testsrc:
 
             goodfile = FindGoodFile(basename)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
+            error_msg = filter_compiler_errors(origoutput)
+            if error_msg != '':
+                sys.stdout.write('[Error %s for %s]\n'%(error_msg, test_name))
+                sys.stdout.write('[Compiler output was as follows:]\n')
+                sys.stdout.write(origoutput)
+                cleanup(execname)
+                cleanup(printpassesfile)
+                continue
 
             if not os.path.isfile(goodfile) or not os.access(goodfile, os.R_OK):
-                if perftest:
+                if perftest or executebin:
                     sys.stdout.write('[Error compilation failed for %s]\n'%(test_name))
                 else:
                     sys.stdout.write('[Error cannot locate compiler output comparison file %s/%s]\n'%(localdir, goodfile))
@@ -1664,7 +1744,7 @@ for testname in testsrc:
                 for i in range(1, len(execoptslist) + 1):
                     exec_log_names.append(get_exec_log_name(execname, compoptsnum, i))
 
-            # Write the log(s), so it/they can be modified by preexec.
+            # Write the log(s), so it/they can be modified by preexec(s).
             for exec_log_name in exec_log_names:
                 with open(exec_log_name, 'w') as execlogfile:
                     execlogfile.write(compoutput)
@@ -1771,13 +1851,14 @@ for testname in testsrc:
                 explicitexecgoodfile = explicitcompgoodfile
             del tlist
 
-            if systemPreexec:
-                sys.stdout.write('[Executing system-wide preexec]\n')
-                sys.stdout.flush()
-                p = py3_compat.Popen([systemPreexec, execname, execlog, compiler],
-                                     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                sys.stdout.write(p.communicate()[0])
-                sys.stdout.flush()
+            if systemPreexecs:
+                for spreexec in systemPreexecs:
+                    sys.stdout.write('[Executing system-wide preexec %s]\n'%(spreexec))
+                    sys.stdout.flush()
+                    p = py3_compat.Popen([spreexec, execname, execlog, compiler],
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    sys.stdout.write(p.communicate()[0])
+                    sys.stdout.flush()
 
             if globalPreexec:
                 sys.stdout.write('[Executing ./PREEXEC]\n')
@@ -1813,7 +1894,8 @@ for testname in testsrc:
             # binary for launchers that use a queue so we don't include the
             # time to get the reservation. These are the launchers known to
             # support timing the _real using CHPL_LAUNCHER_REAL_WRAPPER.
-            timereal = chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun']
+            timereal = (chpllauncher in ['pbs-aprun', 'aprun', 'slurm-srun'] or
+                        'slurm-gasnetrun' in chpllauncher)
 
             args=list()
             if timer and timereal:
@@ -1850,6 +1932,9 @@ for testname in testsrc:
             # envExecopts are meant for chpl programs, dont add them to C tests
             if not is_c_test and envExecopts != None:
                 args+=shlex.split(envExecopts)
+            # lastexecopts really must be last, so add any launcher timeout now
+            if useLauncherTimeout:
+                args += LauncherTimeoutArgs(timeout)
             if lastexecopts:
                 args += lastexecopts
             # sys.stdout.write("args=%s\n"%(args))
@@ -1905,7 +1990,7 @@ for testname in testsrc:
                             my_stdin = None
                         else:
                             my_stdin=open(redirectin, 'r')
-                        test_command = [cmd] + args + LauncherTimeoutArgs(timeout)
+                        test_command = [cmd] + args
                         p = py3_compat.Popen(test_command,
                                              env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -2047,13 +2132,14 @@ for testname in testsrc:
                     execlogfile.write(output_content)
 
                 if not exectimeout and not launcher_error:
-                    if systemPrediff:
-                        sys.stdout.write('[Executing system-wide prediff]\n')
-                        sys.stdout.flush()
-                        p = py3_compat.Popen([systemPrediff, execname, execlog, compiler,
-                                             ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
-                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                        sys.stdout.write(p.communicate()[0])
+                    if systemPrediffs:
+                        for sprediff in systemPrediffs:
+                            sys.stdout.write('[Executing system-wide prediff %s]\n'%(sprediff))
+                            sys.stdout.flush()
+                            p = py3_compat.Popen([sprediff, execname, execlog, compiler,
+                                                  ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                            sys.stdout.write(p.communicate()[0])
 
                     if globalPrediff:
                         sys.stdout.write('[Executing ./PREDIFF]\n')
@@ -2105,41 +2191,7 @@ for testname in testsrc:
                             os.unlink(execlog)
                             sys.stdout.write('%s[Success '%(futuretest))
                         else:
-                            # If the output contains messages consistent with JIRA 154, add a
-                            # hint to the error summary and force a text base diff since
-                            # sometimes the output contains a null character
-                            extra_msg = ''
-                            err_strings = ['got exn while reading exit code: connection closed',
-                                           'slave got an unknown command on coord socket:',
-                                           'Slave got an xSocket: connection closed on recv',
-                                           'recursive failure in AMUDP_SPMDShutdown',
-                                           'AM_ERR_RESOURCE \(Problem with requested resource\)']
-                            for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 154) '
-                                    DiffBinaryFiles(execgoodfile, execlog)
-                                    break
-
-                            err_strings = ['Master got an xSocket: error in sendAll']
-                            for s in err_strings:
-                                if re.search(s, output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 274) '
-                                    break
-
-                            err_strings = ['could not checkout FLEXlm license']
-                            for s in err_strings:
-                                # NOTE: checking pre_exec (compiler) output
-                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 357) '
-                                    break
-
-                            err_strings = ['Clock skew detected']
-                            for s in err_strings:
-                                # NOTE: checking pre_exec (compiler) output
-                                if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-                                    extra_msg = '(possible JIRA 287) '
-                                    break
-
+                            extra_msg = filter_errors(output, pre_exec_output, execgoodfile, execlog)
                             sys.stdout.write('%s[Error %s'%(futuretest, extra_msg))
 
                         sys.stdout.write('matching program output for %s/%s'%

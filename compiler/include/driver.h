@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,7 +47,8 @@ extern bool fNoLiveAnalysis;
 extern bool fNoFormalDomainChecks;
 extern bool fNoLocalChecks;
 extern bool fNoNilChecks;
-extern bool fLegacyNilableClasses;
+extern bool fIgnoreNilabilityErrors;
+extern bool fOverloadSetsChecks;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
@@ -149,10 +151,12 @@ extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
-extern bool fLifetimeChecking;
+extern bool fNoLifetimeChecking;
+extern bool fNoSplitInit;
+extern bool fNoEarlyDeinit;
+extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
 extern bool fOverrideChecking;
-extern bool fHeterogeneous;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -136,7 +137,6 @@ typedef struct {
       void *addr;                // Source address
       void *raddr;               // Destination address
       size_t size;               // Size of communication
-      int32_t typeIndex;         // type of the communication
       int32_t commID;            // unique identifier for this get/put
       int lineno;                // source line of communication
       int32_t filename;          // source file of communication
@@ -151,7 +151,6 @@ typedef struct {
       size_t *count;            // Counts for the above
       int32_t stridelevels;
       size_t elemSize;
-      int32_t typeIndex;
       int32_t commID;           // unique identifier for this get/put
       int lineno;               // source line of communication
       int32_t filename;         // source file of communication

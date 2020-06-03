@@ -1,10 +1,10 @@
 /* Matrix multiplication */
 
 use LayoutCS;
+use Map;
 use Time;
 
-var timerDom: domain(string);
-var subTimers: [timerDom] Timer;
+var subTimers = new map(string, Timer);
 subTimers['multiply'] = new Timer();
 subTimers['add indices'] = new Timer();
 subTimers['find indices'] = new Timer();
@@ -94,10 +94,10 @@ proc multiply(A, B) {
 
 /* Dense matrix-matrix multiplication */
 proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
-  const CDom = {ADom.dim(1), BDom.dim(2)};
+  const CDom = {ADom.dim(0), BDom.dim(1)};
   var C: [CDom] eltType;
   forall (i, j) in CDom {
-    for k in BDom.dim(1) {
+    for k in BDom.dim(0) {
       C[i,j] += A[i, k] * B[k, j];
     }
   }
@@ -107,11 +107,13 @@ proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 // TODO: Optimize & Parallelize
 /* Sparse CSR-CSC multiplication */
 proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
+  use List;
+
   if !(ADom._value.compressRows && !BDom._value.compressRows) then
     compilerError('Only CSR-CSC multiplication is currently supported');
 
   if subtimers then subTimers['setup'].start();
-  var CDom: sparse subdomain({ADom._value.parentDom.dim(1), BDom._value.parentDom.dim(2)}) dmapped CS();
+  var CDom: sparse subdomain({ADom._value.parentDom.dim(0), BDom._value.parentDom.dim(1)}) dmapped CS();
   var C: [CDom] eltType;
 
   ref idxA = A.domain._value.idx,
@@ -126,7 +128,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
     }
   }
 
-  var indices: [1..0] 2*int;
+  var indices: list(2*int);
 
   if subtimers then subTimers['setup'].stop();
 
@@ -150,7 +152,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
       for (i, j) in overlap(aRange, bRange) {
         // Add to index!
         if subtimers then subTimers['  push_back'].start();
-        indices.push_back((r, c));
+        indices.append((r, c));
         if subtimers then subTimers['  push_back'].stop();
         break;
       }
@@ -160,7 +162,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
   if subtimers then subTimers['find indices'].stop();
 
   if subtimers then subTimers['add indices'].start();
-  CDom += indices;
+  CDom += indices.toArray();
   if subtimers then subTimers['add indices'].stop();
 
   if subtimers then subTimers['multiply'].start();
@@ -180,7 +182,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && i
 
   if subtimers {
     var s: real;
-    for key in timerDom {
+    for key in subTimers {
         write(key, ': ');
         var t = subTimers[key].elapsed();
         writeln(t);
@@ -203,8 +205,8 @@ inline proc idxRange(Arr: [?Dom], i) {
 
 
 proc writeDense(A: [?D]) {
-  for i in D.dim(1) {
-    for j in D.dim(2) {
+  for i in D.dim(0) {
+    for j in D.dim(1) {
       writef('%3n ', A[i, j]);
     }
     writeln();

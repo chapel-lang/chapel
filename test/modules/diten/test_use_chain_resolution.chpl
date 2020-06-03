@@ -3,11 +3,11 @@ module M1 {
 }
 
 module M2 {
-  use M1;
+  public use M1;
 }
 
 module M3 {
-  use M2;
+  public use M2;
 }
 
 module M4 {
@@ -15,13 +15,13 @@ module M4 {
 }
 
 module M5 {
-  use M4;
+  public use M4;
 }
 
 module M6 {
   var aaa = 6;
   proc main() {
-    use M3, M5;
+    public use M3, M5;
     writeln(aaa); // Expect 54
   }
 }

@@ -4,7 +4,7 @@ module M2 {
   }
 }
 module M1 {
-  use M2;
+  public use M2;
 
   proc foo() {
     writeln("foo");

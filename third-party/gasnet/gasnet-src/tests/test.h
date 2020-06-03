@@ -26,7 +26,9 @@
 #include <signal.h>
 #include <ctype.h>
 
-#if defined(HAVE_PTHREAD_H) && !defined(GASNET_SEQ)
+#if defined(HAVE_PTHREAD_H) && \
+    (defined(GASNET_PAR) || defined(GASNET_PARSYNC) || GASNETT_THREAD_SAFE)
+  #define TEST_PAR 1
   #include <pthread.h>
 #endif
 
@@ -57,6 +59,13 @@ GASNETT_BEGIN_EXTERNC
   #endif
 #endif
 
+// this macro is for annotating variables as "used" so compilers don't warn
+#if PLATFORM_COMPILER_OPEN64
+  #define test_mark_used(var) ((void)var)
+#else
+  #define test_mark_used(var) ((void)(&var?0:0))
+#endif
+
 #if HAVE_SRAND_DETERMINISTIC
   /* OpenBSD "breaks" rand() by design */
   #define srand(seed) srand_deterministic(seed)
@@ -84,6 +93,7 @@ GASNETT_BEGIN_EXTERNC
 // safe to use multiple times per line (eg in a macro expansion)
 #define test_static_assert(cond) do { \
   static const char *_test_static_assert[ (cond) ?1:-1] = { "Static assertion: " #cond }; \
+  test_mark_used(_test_static_assert); \
 } while (0)
 
 // static assertion at file scope
@@ -152,7 +162,7 @@ static int test_errs = 0;
 #define _TEST_MSG_BUFSZ 1024
 static char _test_baseformat[_TEST_MSG_BUFSZ];
 static volatile int _test_squashmsg = 0;
-#if defined(HAVE_PTHREAD_H) && !defined(GASNET_SEQ)
+#if TEST_PAR
   static gasnett_mutex_t _test_msg_lock = GASNETT_MUTEX_INITIALIZER;
   #define _test_LOCKMSG()   gasnett_mutex_lock(&_test_msg_lock)
   #define _test_UNLOCKMSG() gasnett_mutex_unlock(&_test_msg_lock)
@@ -245,9 +255,26 @@ static void _test_makeErrMsg(const char *format, ...)) {
   #define TEST_SRAND(seed)  srand(seed)
 #endif
 
+// Some platforms are missing these from stdint.h by default in C++ mode (without __STDC_LIMIT_MACROS)
+#ifndef INT64_MAX
+  #ifdef __INT64_MAX__
+    #define INT64_MAX __INT64_MAX__
+  #else
+    #define INT64_MAX (0x7fffffffffffffffLL)
+  #endif
+#endif
+#ifndef INT64_MIN
+#define INT64_MIN (-INT64_MAX - 1)
+#endif
+
+// NOTE: (high - low + 1) must be <= INT64_MAX to avoid undefined behavior
 static int64_t _test_rand(int64_t low, int64_t high) {
   assert(low <= high);
   assert(low <= high+1); /* We will overflow otherwise */
+  // conservatively avoid the use of the high bit to avoid any chance of overflow
+  // this could be made tighter, but this utility is not intended for generating 64-bits of randomness
+  assert(low > INT64_MIN/2);
+  assert(high < INT64_MAX/2);
   uint64_t const range = high - low + 1;
 #if _TEST_USE_LCG64
   // Implement the well-known LCG PRNG with widely used parameters.
@@ -534,16 +561,15 @@ static int64_t test_calibrate_delay(int iters, int pollcnt, int64_t *time_p)
 /* mimic Berkeley UPC build config strings, to allow running GASNet tests using upcrun */
 GASNETT_IDENT(GASNetT_IdentString_link_GASNetConfig, 
  "$GASNetConfig: (<link>) " TEST_CONFIG_STRING " $");
-#ifndef HAVE_PTHREAD_H
-  /* for systems lacking pthread support - ensure upcrun never tries to use it */
+#if !TEST_PAR
+  /* pthread support is compiled out - ensure upcrun never tries to use it */
   #if GASNET_PSHM || (defined(GASNETI_PSHM_ENABLED) && defined(TEST_GASNET_TOOLS_ONLY))
     #define TEST_SHMEM_CONFIG "pshm"
   #else
     #define TEST_SHMEM_CONFIG "none"
   #endif
 #else 
-  /* unconditionally mimic pthreads, to ensure harness -pthreads=T -threads=N will run us 
-     (otherwise upcrun will give an error about no -pthreads support)
+  /* mimic pthreads, to ensure harness -pthreads=T -threads=N will run us 
      such a setup will only run the gasnet test on N/T nodes (as opposed to N as one might like)
      but the alternative is not to run at all. harness -nopthreads does not have this problem.
    */
@@ -577,7 +603,7 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
  "$TitaniumCompilerFlags: *** GASNet test *** -g $");
 #endif
 
-#if defined(HAVE_PTHREAD_H) && !defined(GASNET_SEQ)
+#if TEST_PAR
 /* create numthreads pthreads to call start_routine. 
    if threadarg_arr is NULL, then a unique 0-based integer threadid is passed as arg to start_routine
    else threadarg_arr is an array of numthreads opaque datastructures of size threadarg_elemsz bytes each,
@@ -586,10 +612,7 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
    TEST_USE_PRIMORDIAL_THREAD can be defined to spawn only numthreads-1 new pthreads and run the last on this thread
  */
 #ifndef TEST_USE_PRIMORDIAL_THREAD
-  #if PLATFORM_OS_BGQ
-    /* some systems have strict limits on how many threads can exist */
-    #define TEST_USE_PRIMORDIAL_THREAD 1
-  #elif PLATFORM_OS_CNL
+  #if PLATFORM_OS_CNL
     /* some do default thread pinning that can mess with our results */
     #define TEST_USE_PRIMORDIAL_THREAD 1
   #else
@@ -609,12 +632,6 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
 static int test_thread_limit(int numthreads) {
     int limit = gasnett_getenv_int_withdefault("GASNET_TEST_THREAD_LIMIT", TEST_MAXTHREADS, 0);
     limit = MIN(limit, TEST_MAXTHREADS); /* Ignore attempt to raise above TEST_MAXTHREADS */
-  #if PLATFORM_OS_BGQ
-    { int cores = gasnett_cpu_count();
-      int depth = gasnett_getenv_int_withdefault("BG_APPTHREADDEPTH", 1, 0); /* V1R4M0 and later */
-      limit = MIN(limit, cores*depth);
-    }
-  #endif
     return MIN(numthreads, limit);
 }
 #if HAVE_PTHREAD_SETCONCURRENCY && __cplusplus
@@ -756,7 +773,7 @@ static gex_TM_t _test_tm0;
       barrier_count++;
       if (barrier_count < local_pthread_count) {
 	/* CAUTION: changing the "do-while" to a "while" triggers a bug in the SunStudio 2006-08
-         * compiler for x86_64.  See http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1858
+         * compiler for x86_64.  See https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1858
          * which includes a link to Sun's own database entry for this issue.
          */
         do {
@@ -1098,10 +1115,15 @@ static int _test_localprocs(void) { /* First call is not thread safe */
 }
 #define TEST_LOCALPROCS() (_test_localprocs())
 
-static void _test_set_waitmode(int threads) {
+static int _test_in_polite_mode = 0;
+static void test_yield_if_polite(void) {
+  if (_test_in_polite_mode) gasnett_sched_yield();
+}
+
+static void _test_set_waitmode(int threads, int reserve_cores) {
   const int local_procs = TEST_LOCALPROCS();
-  if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) return;
-#if defined(HAVE_PTHREAD_H) && !defined(GASNET_SEQ)
+  if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) return; // already set
+#if TEST_PAR
   if (threads > 1) {
     int threads_serialized = 0;
   #if PLATFORM_OS_OPENBSD
@@ -1116,24 +1138,30 @@ static void _test_set_waitmode(int threads) {
             "- enabling  \"polite\", low-performance synchronization algorithms",
             threads);
       gasnet_set_waitmode(GASNET_WAIT_BLOCK);
+      _test_in_polite_mode = 1;
       return;
     }
   }
 #endif
-#if PLATFORM_OS_BGQ
-  /* assume no overcommit, since gasnett_cpu_count() reports cores per proc, NOT per node */
-#else
   threads *= local_procs;
-  if (threads > gasnett_cpu_count()) {
-    if (_test_firstnode == TEST_MYPROC)
-      MSG("WARNING: per-node thread count (%i) exceeds actual cpu count (%i) "
+  if (threads + reserve_cores > gasnett_cpu_count()) {
+    if (_test_firstnode == TEST_MYPROC) {
+      char reserve[80];
+      if (reserve_cores) sprintf(reserve, " + %i reserved cores", reserve_cores);
+      else reserve[0] = 0;
+      MSG("WARNING: per-node thread count (%i%s) exceeds actual cpu count (%i) "
           "- enabling  \"polite\", low-performance synchronization algorithms",
-          threads, gasnett_cpu_count());
+          threads, reserve, gasnett_cpu_count());
+    }
     gasnet_set_waitmode(GASNET_WAIT_BLOCK);
+    _test_in_polite_mode = 1;
   }
-#endif
 }
-#define TEST_SET_WAITMODE _test_set_waitmode
+// Compute whether `th` (single-valued) threads per process for the current host
+// would lead to overcommit, and set waitmode appropriately.
+// The second variant reserves additional cores to leave idle, eg for system daemons
+#define TEST_SET_WAITMODE(th) _test_set_waitmode(th,0)
+#define TEST_SET_WAITMODE_RESERVE(th,reserve) _test_set_waitmode(th,reserve)
 
 #endif /* TEST_GASNETEX_H */
 /* ------------------------------------------------------------------------------------ */
@@ -1180,10 +1208,12 @@ static void _test_usage(int early) {
       gasnet_exit(1);
     } else { /* wait to die */
       if (early) {
+        // we are waiting for node 0 to kill the job, but cannot safely AMpoll before attach
+        // wait for a bounded time, and then force an exit to prevent zombies on polling-only conduits
         gasnett_tick_t starttime = gasnett_ticks_now();
-        /* only wait for a bounded time to prevent zombies on polling-only conduits */
+        sleep(1);
         while (gasnett_ticks_to_us(gasnett_ticks_now()-starttime)<5000000) gasnett_sched_yield();
-        gasnett_killmyprocess(-1);
+        gasnet_exit(-1);
       }
       else BARRIER();
     }
@@ -1224,6 +1254,7 @@ static void _test_init(const char *testname, int reports_performance, int early,
     if (gasnett_getenv_yesno_withdefault("GASNET_TEST_POLITE_SYNC",0)) {
       MSG0("WARNING: GASNET_TEST_POLITE_SYNC is set - enabling  \"polite\", low-performance synchronization algorithms");
       gasnet_set_waitmode(GASNET_WAIT_BLOCK);
+      _test_in_polite_mode = 1;
     }
     MSG0("=====> %s nprocs=%d config=%s compiler=%s/%s sys=%s",
         testname, (int)TEST_PROCS, GASNET_CONFIG_STRING,
@@ -1290,8 +1321,8 @@ static void _test_init(const char *testname, int reports_performance, int early,
   
 
 #define TEST_TRACING_MACROS() do {                                                 \
-  const char *file;                                                                \
-  unsigned int line;                                                               \
+  const char *file; test_mark_used(file);                                          \
+  unsigned int line; test_mark_used(line);                                         \
   GASNETT_TRACE_GETSOURCELINE(&file, &line);                                       \
   GASNETT_TRACE_SETSOURCELINE(file, line);                                         \
   GASNETT_TRACE_FREEZESOURCELINE();                                                \

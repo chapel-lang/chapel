@@ -1,4 +1,4 @@
-use AMRHierarchy_def;
+public use AMRHierarchy_def;
 
 
 //|"""""""""""""""""""\

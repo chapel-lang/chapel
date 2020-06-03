@@ -6,8 +6,8 @@ class Thing {
 
 }
 class Container {
-  var a: unmanaged Thing;
-  var b: unmanaged Thing;
+  var a: unmanaged Thing?;
+  var b: unmanaged Thing?;
   proc deinit() {
     writeln("in Container.deinit");
   }
@@ -20,9 +20,9 @@ proc shouldFail(x:int) {
   return x == failOnStep;
 }
 
-proc create_thing() : unmanaged Container {
+proc create_thing() : unmanaged Container? {
   var success = false;
-  var ret:unmanaged Container = nil;
+  var ret:unmanaged Container? = nil;
 
   writeln("creating Container");
   ret = new unmanaged Container();
@@ -31,14 +31,14 @@ proc create_thing() : unmanaged Container {
   if !shouldFail(1) {
 
     writeln("creating Thing 100");
-    ret.a = new unmanaged Thing(100);
-    defer { if !success then delete ret.a; }
+    ret!.a = new unmanaged Thing(100);
+    defer { if !success then delete ret!.a; }
 
     if !shouldFail(2) {
 
       writeln("creating Thing 200");
-      ret.b = new unmanaged Thing(200);
-      defer { if !success then delete ret.b; }
+      ret!.b = new unmanaged Thing(200);
+      defer { if !success then delete ret!.b; }
 
       if !shouldFail(3) {
         // success!
@@ -56,7 +56,7 @@ proc create_thing() : unmanaged Container {
 var thing = create_thing();
 if thing {
   writeln(thing);
-  delete thing.a;
-  delete thing.b;
+  delete thing!.a;
+  delete thing!.b;
   delete thing;
 }

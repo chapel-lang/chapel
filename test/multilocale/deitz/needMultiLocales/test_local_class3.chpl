@@ -3,15 +3,15 @@ class D {
 }
 
 class C {
-  var d = new unmanaged D();
+  var d:unmanaged D? = new unmanaged D();
 }
 
 proc main {
-  var c = new unmanaged C();
+  var c:unmanaged C? = new unmanaged C();
   writeln(c);
   on Locales(1) {
-    delete c.d;
-    c.d = nil; 
+    delete c!.d;
+    c!.d = nil; 
   }
   writeln(c);
 

@@ -1,3 +1,5 @@
+use IO;
+
 record Point {
   var x: int;
   var y: int;

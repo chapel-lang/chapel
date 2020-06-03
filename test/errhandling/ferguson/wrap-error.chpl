@@ -15,7 +15,7 @@ class UserError: Error {
 class Logger: Error {
   var x;
 
-  proc init(x: owned) {
+  proc init(in x: owned) {
     this.x = x;
     writeln("Logger inited with type ", this.x.type:string);
   }

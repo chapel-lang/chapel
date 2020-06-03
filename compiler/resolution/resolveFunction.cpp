@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +21,7 @@
 #include "resolveFunction.h"
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
 #include "DecoratedClassType.h"
@@ -29,6 +31,7 @@
 #include "ForLoop.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "iterator.h"
 #include "LoopExpr.h"
 #include "LoopStmt.h"
@@ -37,6 +40,7 @@
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveIntents.h"
+#include "splitInit.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -58,8 +62,7 @@ static bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet);
 
 static void protoIteratorClass(FnSymbol* fn, Type* yieldedType);
 
-static void resolveTypeConstructor(FnSymbol* fn);
-
+static bool insertAndResolveCasts(FnSymbol* fn);
 
 /************************************* | **************************************
 *                                                                             *
@@ -79,7 +82,6 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_GENERIC) == false) {
     // Don't resolve formals for concrete functions
     // more often than necessary.
     static std::set<FnSymbol*> done;
@@ -89,7 +91,6 @@ void resolveSignature(FnSymbol* fn) {
 
       resolveFormals(fn);
     }
-  }
 }
 
 /************************************* | **************************************
@@ -103,8 +104,6 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal);
 static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal, bool* needRefIntent);
 
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal);
-
-static bool recordContainingCopyMutatesField(Type* at);
 
 static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 
@@ -130,7 +129,8 @@ static void resolveFormals(FnSymbol* fn) {
     }
 
     if (formal->type->symbol->hasFlag(FLAG_REF) == false) {
-      if (formal->type                             != dtString ||
+      if ((formal->type                             != dtString &&
+           formal->type                             != dtBytes) ||
           formal->hasFlag(FLAG_INSTANTIATED_PARAM) == false) {
         updateIfRefFormal(fn, formal);
       }
@@ -249,12 +249,12 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
     INT_ASSERT(tupleType);
 
-    if (shouldAddFormalTempAtCallSite(formal, fn)) {
+    if (shouldAddInFormalTempAtCallSite(formal, fn)) {
       // In, const in, intents treat tuple as an value variable
       // so it should not contain any refs.
       formal->type = computeNonRefTuple(tupleType);
     } else {
-      // (for !shouldAddFormalTempAtCallSite),
+      // (for !shouldAddInFormalTempAtCallSite),
       // let 'in' intent work similarly to the blank intent.
       if (intent == INTENT_IN) {
         intent = INTENT_BLANK;
@@ -343,12 +343,12 @@ static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
          formal->hasFlag(FLAG_TYPE_VARIABLE)   == false        &&
          isAtomicType(formal->type)            == true         &&
 
-         fn->name                              != astrSequals  &&
+         fn->name                              != astrSassign  &&
 
          fn->hasFlag(FLAG_BUILD_TUPLE)         == false;
 }
 
-static bool recordContainingCopyMutatesField(Type* t) {
+bool recordContainingCopyMutatesField(Type* t) {
   AggregateType* at = toAggregateType(t);
   if (at == NULL) return false;
   if (!isRecord(at)) return false;
@@ -380,7 +380,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   VarSymbol* var = toVarSymbol(se->symbol());
-  if (!var->isParameter()) {
+  if (!var || !var->isParameter()) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   if (var->type == dtString || var->type == dtStringC) {
@@ -458,6 +458,8 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
+
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
   if (fn->isResolved() == false) {
     if (fn->id == breakOnResolveID) {
@@ -467,6 +469,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     }
 
     fn->addFlag(FLAG_RESOLVED);
+
+    fn->tagIfGeneric();
 
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
@@ -485,6 +489,9 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
         markIterator(fn);
       }
 
+      if (needsCapture(fn))
+        convertFieldsOfRecordThis(fn);
+
       insertFormalTemps(fn);
 
       resolveBlockStmt(fn->body);
@@ -494,14 +501,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       Type* yieldedType = NULL;
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
-      insertAndResolveCasts(fn);
+      fixPrimInitsAndAddCasts(fn);
 
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
         protoIteratorClass(fn, yieldedType);
-
-      } else if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) == true) {
-        resolveTypeConstructor(fn);
-
       }
 
       if (fn->isMethod() == true && fn->_this != NULL) {
@@ -511,7 +514,33 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       if (forCall != NULL) {
         resolveAlsoParallelIterators(fn, forCall);
       }
+
+      markTypesWithDefaultInitEqOrAssign(fn);
     }
+    popInstantiationLimit(fn);
+  }
+}
+
+static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
+
+  if (fn->name == astrSassign &&
+      fn->numFormals() >= 1) {
+    ArgSymbol* lhs = fn->getFormal(1);
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_ASSIGN);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_ASSIGN);
+  }
+
+  if (fn->name == astrInitEquals &&
+      fn->numFormals() >= 2) {
+    ArgSymbol* lhs = fn->getFormal(2); // 1 is mt
+    Type* t = lhs->getValType();
+    if (fn->hasFlag(FLAG_COMPILER_GENERATED))
+      t->symbol->addFlag(FLAG_TYPE_DEFAULT_INIT_EQUAL);
+    else
+      t->symbol->addFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
   }
 }
 
@@ -661,7 +690,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           SET_LINENO(call);
           Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp(arrayUnrefName, rhsType);
+          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);
@@ -713,6 +742,7 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
+          fn->hasFlag(FLAG_COERCE_FN) ||
           fn->hasFlag(FLAG_UNREF_FN) ||
           fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY) ||
           fn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
@@ -725,14 +755,14 @@ static bool doNotUnaliasArray(FnSymbol* fn) {
 //
 static
 bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
-  if (fn->hasFlag(FLAG_TYPE_CONSTRUCTOR)         || // _type_construct__tuple
-      fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
+  if (fn->hasFlag(FLAG_INIT_TUPLE)               || // chpl__init_tuple
       fn->hasFlag(FLAG_BUILD_TUPLE)              || // _build_tuple(_allow_ref)
       fn->hasFlag(FLAG_BUILD_TUPLE_TYPE)         || // _build_tuple_type
       fn->hasFlag(FLAG_TUPLE_CAST_FN)            || // _cast for tuples
       fn->hasFlag(FLAG_EXPAND_TUPLES_WITH_VALUES)|| // iteratorIndex
       fn->hasFlag(FLAG_INIT_COPY_FN)             || // tuple chpl__initCopy
       fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
+      fn->hasFlag(FLAG_COERCE_FN)                || // chpl__coerceCopy/Move
       fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
       fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
@@ -758,6 +788,497 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
       }
   // not found
   return NULL;
+}
+
+class SplitInitVisitor : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  bool changed;
+  std::map<Symbol*, Expr*>& preventMap;
+  SplitInitVisitor(std::map<Symbol*, Expr*>& preventMap)
+    : inFunction(false), changed(false), preventMap(preventMap)
+  { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterDefExpr(DefExpr* def);
+  virtual bool enterCallExpr(CallExpr* call);
+};
+
+bool SplitInitVisitor::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+
+bool SplitInitVisitor::enterDefExpr(DefExpr* def) {
+  return false;
+}
+
+bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+
+    // Can this be replaced by a split init?
+    std::vector<CallExpr*> initAssigns;
+    Expr* prevent = NULL;
+    bool foundSplitInit = false;
+
+    SymExpr* se = toSymExpr(call->get(1));
+    Symbol* sym = se->symbol();
+
+    bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP_OUT);
+
+    // Don't allow an out-formal to be split-init after a return because
+    // that would leave the out-formal uninitialized.
+    bool allowReturns = !isOutFormal;
+    foundSplitInit = findInitPoints(call, initAssigns, prevent, allowReturns);
+
+    if (foundSplitInit) {
+      // Check that all of the assignments have a same-type RHS
+      for_vector(CallExpr, call, initAssigns) {
+        Type* rhsType = call->get(2)->getValType();
+        if (rhsType != sym->type) {
+          prevent = call;
+          foundSplitInit = false;
+        }
+      }
+      // Check that it's not an array init we converted int =
+      // (This is a workaround - the actual solution is to have something
+      //  like init= for arrays)
+      if (sym->hasFlag(FLAG_INITIALIZED_LATER))
+        foundSplitInit = false;
+    }
+
+    if (foundSplitInit) {
+      // Change the PRIM_DEFAULT_INIT_VAR to PRIM_INIT_VAR_SPLIT_DECL
+      call->primitive = primitives[PRIM_INIT_VAR_SPLIT_DECL];
+      SymExpr* typeSe = toSymExpr(call->get(2));
+      Symbol* type = typeSe->symbol();
+
+      // Change the '=' calls found into PRIM_INIT_VAR_SPLIT_INIT
+      for_vector(CallExpr, assign, initAssigns) {
+        SET_LINENO(assign);
+        Expr* rhs = assign->get(2)->remove();
+        CallExpr* init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs, type);
+        assign->replace(init);
+        resolveInitVar(init);
+      }
+    } else if (prevent != NULL) {
+      preventMap[sym] = prevent;
+    }
+  }
+
+  return false;
+}
+
+class AddOutIntentTypeArgs : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  bool changed;
+  AddOutIntentTypeArgs()
+    : inFunction(false), changed(false)
+  { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterCallExpr(CallExpr* call);
+};
+
+bool AddOutIntentTypeArgs::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
+  // Also fix runtime types for function calls with untyped out formals.
+  // This needs to happen after considering split-init to avoid having
+  // it interfere with deciding to do split init.
+  if (call->resolvedOrVirtualFunction() != NULL) {
+    ArgSymbol* prevFormal = NULL;
+    Expr* prevActual = NULL;
+    for_formals_actuals(formal, actual, call) {
+      Type* formalType = formal->type->getValType();
+      bool outIntent = formal->intent == INTENT_OUT ||
+                       formal->originalIntent == INTENT_OUT;
+
+      if (outIntent &&
+          formal->typeExpr == NULL &&
+          formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+
+        INT_ASSERT(prevFormal && prevActual);
+        INT_ASSERT(prevFormal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT));
+
+        SymExpr* typeSe = toSymExpr(prevActual);
+        VarSymbol* typeVar = toVarSymbol(typeSe->symbol());
+        SymExpr* actualSe = toSymExpr(actual);
+        Symbol* actualSym = actualSe->symbol();
+
+        if (typeVar->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+          // Handle two different patterns that need adjustment
+          // in order to pass a runtime type for an untyped out formal.
+          //
+          // This happens here so that split-init can occur
+          // without a formalTmp.type call prohibiting it.
+          // Also, if split-init is applied to the out-intent argument,
+          // the resulting variable shouldn't be default-initialized at
+          // all, so we need to get the type for the argument another way.
+          //
+          // 1.
+          // Convert this pattern of code:
+          //   def dummyTypeTmp
+          //   outFn(dummyTypeTmp, formalTmp)
+          //   move coerce_tmp, (PRIM_COERCE formalTmp, coerceTypeTmp)
+          // into this
+          //   (def removed)
+          //   outFn(coerceTypeTmp, formalTmp)
+          //   move coerce_tmp, formalTmp
+          //
+          // 2.
+          // Convert this pattern of code:
+          //   def dummyTypeTmp
+          //   outFn(dummyTypeTmp, formalTmp)
+          //   call '=' otherVariable, formalTmp
+          // into this
+          //   def dummyTypeTmp
+          //   dummyTypeTemp = otherVariable.type
+          //   outFn(dummyTypeTmp, formalTmp)
+          //   call '=' otherVariable, formalTmp
+
+          SET_LINENO(call);
+
+          SymExpr* singleUse = actualSym->getSingleUse();
+          INT_ASSERT(singleUse);
+          CallExpr* usingCall = toCallExpr(singleUse->parentExpr);
+          INT_ASSERT(usingCall);
+
+          if (usingCall->isPrimitive(PRIM_COERCE)) {
+            // case 1
+            INT_ASSERT(usingCall && usingCall->isPrimitive(PRIM_COERCE));
+            CallExpr* moveCall = toCallExpr(usingCall->parentExpr);
+            INT_ASSERT(moveCall && (moveCall->isPrimitive(PRIM_MOVE) ||
+                                    moveCall->isPrimitive(PRIM_ASSIGN)));
+
+            SymExpr* coerceType = toSymExpr(usingCall->get(2));
+            INT_ASSERT(coerceType);
+            typeSe->setSymbol(coerceType->symbol());
+            typeVar->defPoint->remove();
+            usingCall->replace(new SymExpr(actualSym));
+
+            // Don't destroy the formal temp on the way into the coerce_tmp
+            actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+          } else {
+            // case 2
+            FnSymbol* fn = usingCall->resolvedFunction();
+            INT_ASSERT(fn && fn->hasFlag(FLAG_ASSIGNOP));
+
+            SymExpr* lhsSe = toSymExpr(usingCall->get(1));
+            Symbol* lhs = lhsSe->symbol();
+
+            BlockStmt* block = new BlockStmt(BLOCK_TYPE);
+            CallExpr* m = new CallExpr(PRIM_MOVE, typeVar,
+                                       new CallExpr(PRIM_TYPEOF, lhs));
+            block->insertAtTail(m);
+            call->insertBefore(block);
+            resolveBlockStmt(block);
+            block->flattenAndRemove();
+          }
+          changed = true;
+        }
+      }
+      prevFormal = formal;
+      prevActual = actual;
+    }
+  }
+  return true;
+}
+
+
+class FixPrimInitsVisitor : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  bool changed;
+  std::map<Symbol*, Expr*>& preventMap;
+  FixPrimInitsVisitor(std::map<Symbol*, Expr*>& preventMap)
+    : inFunction(false), changed(false), preventMap(preventMap)
+  { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterCallExpr(CallExpr* call);
+};
+
+bool FixPrimInitsVisitor::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+
+bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+    Expr* prevent = NULL;
+    SymExpr* se = toSymExpr(call->get(1));
+    Symbol* sym = se->symbol();
+    if (preventMap.count(sym))
+      prevent = preventMap[sym];
+
+    lowerPrimInit(call, prevent);
+    // It was lowered if the call has been removed and replaced.
+    if (call->isPrimitive(PRIM_NOOP))
+      changed = true;
+  }
+
+  return true;
+}
+
+class MarkTempsVisitor : public AstVisitorTraverse {
+ public:
+  bool inFunction;
+  MarkTempsVisitor() : inFunction(false) { }
+  virtual bool enterFnSym(FnSymbol* node);
+  virtual bool enterDefExpr(DefExpr* node);
+};
+
+bool MarkTempsVisitor::enterFnSym(FnSymbol* node) {
+  // Only visit the top level function requested
+  if (inFunction) return false;
+  inFunction = true;
+  return true;
+}
+
+static void gatherTempsDeadLastMention(VarSymbol* v,
+                                       std::set<VarSymbol*>& temps) {
+
+  // store the temporary we are working on in the set
+  if (temps.insert(v).second == false)
+    return; // stop here if it was already in the set.
+
+  for_SymbolSymExprs(se, v) {
+    if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+      SymExpr* lhsSe = NULL;
+      CallExpr* subCall = NULL;
+      if (isInitOrReturn(call, lhsSe, subCall)) {
+        // call above sets lhsSe and initOrCtor
+      } else if (call->resolvedOrVirtualFunction()) {
+        subCall = call;
+      }
+
+      // handle a returned variable being inited here
+      if (lhsSe != NULL) {
+        VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+        if (lhs != NULL && lhs != v && lhs->hasFlag(FLAG_TEMP))
+          gatherTempsDeadLastMention(lhs, temps);
+      }
+
+      // also handle out intent variables being inited here
+      FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
+      if (fn != NULL) {
+        int i = 1;
+        for_formals_actuals(formal, actual, subCall) {
+          bool outIntent = (formal->intent == INTENT_OUT ||
+                            formal->originalIntent == INTENT_OUT);
+          bool maybeLaterAssign = (i == 1 && fn->name == astrSassign);
+
+          if (outIntent || maybeLaterAssign) {
+            SymExpr* se = toSymExpr(actual);
+            if (NamedExpr* ne = toNamedExpr(actual)) {
+              INT_ASSERT(ne->name == formal->name);
+              se = toSymExpr(ne->actual);
+            }
+            INT_ASSERT(se != NULL);
+
+            VarSymbol* tmpVar = toVarSymbol(se->symbol());
+            if (tmpVar != NULL && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
+              if (outIntent) {
+                // initializing a temp with out intent
+                gatherTempsDeadLastMention(tmpVar, temps);
+              } else if (maybeLaterAssign &&
+                         tmpVar->hasFlag(FLAG_INITIALIZED_LATER)) {
+                // See through default-init/assign pattern generated for arrays
+                // In that pattern, a '=' call sets a init_coerce_tmp variable
+                // marked with FLAG_INITIALIZED_LATER. If that variable is involved
+                // in user variable initialization, we need to find it.
+                gatherTempsDeadLastMention(tmpVar, temps);
+              }
+            }
+          }
+          i++;
+        }
+      }
+    }
+  }
+}
+
+static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
+
+  bool makeThemEndOfBlock = false;
+  bool canMakeThemGlobal = true;
+
+  // Look at how the temps are used
+  for_set(VarSymbol, v, temps) {
+
+    if (v->hasFlag(FLAG_DEAD_END_OF_BLOCK) ||
+        v->hasFlag(FLAG_INDEX_VAR) ||
+        v->hasFlag(FLAG_CHPL__ITER) ||
+        v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
+        v->hasFlag(FLAG_FORMAL_TEMP) ||
+        v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+      // index vars, iterator records are always end-of-block
+      // but shouldn't be global variables.
+      makeThemEndOfBlock = true;
+      canMakeThemGlobal = false;
+      break;
+    }
+
+    for_SymbolSymExprs(se, v) {
+      if (CallExpr* call = toCallExpr(se->getStmtExpr())) {
+        SymExpr* lhsSe = NULL;
+        CallExpr* subCall = NULL;
+        if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN)) {
+          lhsSe = toSymExpr(call->get(1));
+        } else if (isInitOrReturn(call, lhsSe, subCall)) {
+          // call above sets lhsSe and initOrCtor
+        } else if (call->resolvedOrVirtualFunction()) {
+          subCall = call;
+        }
+
+        // returning into a user var?
+        if (lhsSe != NULL) {
+          VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
+          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+            // Used in initializing a user var, so mark end of block
+            makeThemEndOfBlock = true;
+            break;
+          }
+        }
+        // out intent setting a user var?
+        if (subCall != NULL && subCall->resolvedOrVirtualFunction() != NULL) {
+          for_formals_actuals(formal, actual, subCall) {
+            bool outIntent = (formal->intent == INTENT_OUT ||
+                              formal->originalIntent == INTENT_OUT);
+            if (outIntent) {
+              SymExpr* se = toSymExpr(actual);
+              if (NamedExpr* ne = toNamedExpr(actual)) {
+                INT_ASSERT(ne->name == formal->name);
+                se = toSymExpr(ne->actual);
+              }
+              INT_ASSERT(se != NULL);
+
+              VarSymbol* outVar = toVarSymbol(se->symbol());
+
+              if (outVar != NULL && outVar != v &&
+                  !outVar->hasFlag(FLAG_TEMP)) {
+                // Used in initializing a user var, so mark end of block
+                makeThemEndOfBlock = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (makeThemEndOfBlock)
+          break;
+      }
+    }
+  }
+
+  if (fNoEarlyDeinit)
+    makeThemEndOfBlock = true;
+
+  if (makeThemEndOfBlock) {
+    for_set(VarSymbol, temp, temps) {
+      temp->addFlag(FLAG_DEAD_END_OF_BLOCK);
+      if (temp->defPoint != NULL) {
+        FnSymbol* initFn = toFnSymbol(temp->defPoint->parentSymbol);
+        if (initFn && initFn->hasFlag(FLAG_MODULE_INIT)) {
+          ModuleSymbol* mod = temp->defPoint->getModule();
+          if (mod && temp->defPoint->parentExpr == initFn->body &&
+              canMakeThemGlobal) {
+            // Move the temporary to global scope.
+            mod->block->insertAtTail(temp->defPoint->remove());
+          }
+        }
+      }
+    }
+  } else {
+    for_set(VarSymbol, temp, temps) {
+      temp->addFlag(FLAG_DEAD_LAST_MENTION);
+    }
+  }
+}
+
+void markTempDeadLastMention(VarSymbol* var) {
+  INT_ASSERT(var && var->hasFlag(FLAG_TEMP));
+
+  std::set<VarSymbol*> temps;
+  gatherTempsDeadLastMention(var, temps);
+  markTempsDeadLastMention(temps);
+  INT_ASSERT(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+             var->hasFlag(FLAG_DEAD_END_OF_BLOCK));
+}
+
+bool MarkTempsVisitor::enterDefExpr(DefExpr* node) {
+  // Mark temps as dead either "last mention" or "end of block"
+  // and move temps marked "last mention" to global scope.
+  //
+  // This whole process depends on how split inits are handled
+  // and needs to happen before addAutoDestroyCalls makes decisions
+  // using the flags.
+  //
+  if (VarSymbol* var = toVarSymbol(node->sym)) {
+    if (var->hasFlag(FLAG_TEMP) &&
+        !(var->hasFlag(FLAG_DEAD_LAST_MENTION) ||
+          var->hasFlag(FLAG_DEAD_END_OF_BLOCK))) {
+      markTempDeadLastMention(var);
+    }
+  }
+  return true;
+}
+
+void fixPrimInitsAndAddCasts(FnSymbol* fn) {
+  // The function may contain default-init of a variable
+  // followed by assignment or passing to out intent.
+  //
+  // In that event, use split init.
+  //
+  // To enable split-init decisions for out intent,
+  // which needs to happen after types are established
+  // and functions are called, earlier resolution steps leave
+  // PRIM_DEFAULT_INIT_VAR in the tree and just use it to establish types.
+  // This function needs to lower these.
+
+  std::map<Symbol*, Expr*> splitInitPreventers;
+
+  // Convert PRIM_DEFAULT_INIT_VAR to split init where possible
+  if (fNoSplitInit == false) {
+    SplitInitVisitor visitor(splitInitPreventers);
+    fn->accept(&visitor);
+  }
+
+  // Fix out intent type formals
+  // Note that this can remove PRIM_COERCE calls.
+  {
+    AddOutIntentTypeArgs visitor;
+    fn->accept(&visitor);
+  }
+
+  // Handle PRIM_COERCE; insert and resolve casts
+  // Note also that insertAndResolveCasts can add default-inits.
+  insertAndResolveCasts(fn);
+
+  // Lower any remaining PRIM_DEFAULT_INIT_VAR
+  // Looping because the default init for a record might use
+  // default arguments which in turn are set with default init.
+  // This could be handled by adjusting the added AST instead of
+  // revisiting the entire function.
+  bool changed = true;
+  while (changed) {
+    FixPrimInitsVisitor visitor(splitInitPreventers);
+    fn->accept(&visitor);
+    changed = visitor.changed;
+  }
+
+  {
+    MarkTempsVisitor visitor;
+    fn->accept(&visitor);
+  }
 }
 
 /************************************* | **************************************
@@ -958,69 +1479,11 @@ static FnSymbol* makeIteratorMethod(IteratorInfo* ii,
 *                                                                             *
 ************************************** | *************************************/
 
-static void      resolveDefaultTypeConstructor(AggregateType* at);
-
-static void resolveTypeConstructor(FnSymbol* fn) {
-  AggregateType* at = toAggregateType(fn->retType);
-
-  if (at->scalarPromotionType == NULL &&
-      at->symbol->hasFlag(FLAG_REF) == false) {
-    resolvePromotionType(at);
-  }
-
-  if (developer == false) {
-    fixTypeNames(at);
-  }
-
-  forv_Vec(AggregateType, pt, at->dispatchParents) {
-    if (pt != dtObject) {
-      resolveDefaultTypeConstructor(pt);
-    }
-  }
-
-  for_fields(field, at) {
-    if (AggregateType* fct = toAggregateType(field->type)) {
-      resolveDefaultTypeConstructor(fct);
-    }
-  }
-
-
-  if (at->hasDestructor() == false) {
-    if (at->symbol->hasFlag(FLAG_REF)       == false &&
-        isTupleContainingOnlyReferences(at) == false) {
-      BlockStmt* block = new BlockStmt();
-      VarSymbol* tmp   = newTemp(at);
-      CallExpr*  call  = new CallExpr("deinit", gMethodToken, tmp);
-
-      // In case resolveCall drops other stuff into the tree ahead
-      // of the call, we wrap everything in a block for safe removal.
-      block->insertAtHead(call);
-
-      fn->insertAtHead(block);
-      fn->insertAtHead(new DefExpr(tmp));
-
-      resolveCallAndCallee(call);
-
-      at->setDestructor(call->resolvedFunction());
-
-      block->remove();
-
-      tmp->defPoint->remove();
-    }
-  }
-}
-
 void fixTypeNames(AggregateType* at) {
   const char* typeName = toString(at, false);
 
   if (at->symbol->name != typeName)
     at->symbol->name = typeName;
-}
-
-static void resolveDefaultTypeConstructor(AggregateType* at) {
-  if (at->typeConstructor != NULL) {
-    resolveSignatureAndFunction(at->typeConstructor);
-  }
 }
 
 /************************************* | **************************************
@@ -1067,8 +1530,8 @@ void resolveIfExprType(CondStmt* stmt) {
       BlockStmt* refBranch = isReferenceType(thenType) ? stmt->thenStmt : stmt->elseStmt;
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
-      if (isUserDefinedRecord(rhs->getValType())) {
-        CallExpr* copy = new CallExpr("chpl__autoCopy", rhs->remove());
+      if (typeNeedsCopyInitDeinit(rhs->getValType())) {
+        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
         if (isReferenceType(thenType)) {
@@ -1242,11 +1705,6 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
     fn->retType = retType;
 
-    if (retType->symbol->hasFlag(FLAG_GENERIC) &&
-        fn->retTag == RET_TYPE) {
-      USR_FATAL_CONT(fn, "returning a generic type variable is not supported");
-    }
-
   } else {
 
     // Update the yielded type argument if it was requested
@@ -1357,9 +1815,13 @@ void insertFormalTemps(FnSymbol* fn) {
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
 
-      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+      // Don't destroy formal temps until the end of the function
+      tmp->addFlag(FLAG_DEAD_END_OF_BLOCK);
+
+      if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-      }
+      if (formal->hasFlag(FLAG_NO_AUTO_DESTROY))
+        tmp->addFlag(FLAG_NO_AUTO_DESTROY);
 
       formals2vars.put(formal, tmp);
     }
@@ -1399,8 +1861,15 @@ bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
     );
 }
 
-bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
-  if (isRecord(formal->getValType())) {
+bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
+
+  // Don't add copies at call site if function body will be removed anyway.
+  // TODO: handle RET_TYPE but not for runtime types
+  if (fn && fn->retTag == RET_PARAM)
+    return false;
+
+  // TODO: remove this filtering on records/unions
+  if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
         formal->originalIntent == INTENT_IN ||
@@ -1410,7 +1879,6 @@ bool shouldAddFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
 
   return false;
 }
-
 
 //
 // Can Chapel rely on the compiler's back end (e.g.,
@@ -1473,63 +1941,96 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       INT_FATAL("Unexpected INTENT case.");
       break;
 
-     case INTENT_OUT:
+     case INTENT_OUT: {
+      BlockStmt* defaultExpr = NULL;
+      BlockStmt* typeExpr = NULL;
+
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
-        BlockStmt* defaultExpr = formal->defaultExpr->copy();
+        defaultExpr = formal->defaultExpr->copy();
+      }
 
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      defaultExpr->body.tail->remove()));
-        fn->insertAtHead(defaultExpr);
+      if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        VarSymbol* typeTmp = NULL;
+
+        if (formal->typeExpr != NULL) {
+          typeTmp = newTemp("_formal_type_tmp_");
+          typeTmp->addFlag(FLAG_MAYBE_TYPE);
+          typeExpr = formal->typeExpr->copy();
+        }
+
+        if (defaultExpr != NULL) {
+          CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
+                                        defaultExpr->body.tail->remove());
+          if (typeTmp != NULL)
+            init->insertAtTail(new SymExpr(typeTmp));
+          fn->insertAtHead(init);
+          fn->insertAtHead(defaultExpr);
+        } else {
+          CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp);
+          if (typeTmp != NULL) {
+            init->insertAtTail(new SymExpr(typeTmp));
+          } else {
+            // find the FLAG_TYPE_FORMAL_FOR_OUT formal just before this one
+            // and set typeTmp to that.
+            DefExpr* beforeDef = toDefExpr(formal->defPoint->prev);
+            INT_ASSERT(beforeDef != NULL);
+            ArgSymbol* typeFormal = toArgSymbol(beforeDef->sym);
+            INT_ASSERT(typeFormal != NULL);
+            init->insertAtTail(new SymExpr(typeFormal));
+          }
+          fn->insertAtHead(new CallExpr(PRIM_END_OF_STATEMENT));
+          fn->insertAtHead(init);
+        }
+
+        // Copy the type expr if present
+        if (typeExpr != NULL) {
+          CallExpr* setType = new CallExpr(PRIM_MOVE,
+                                           typeTmp,
+                                           typeExpr->body.tail->remove());
+          fn->insertAtHead(setType);
+          fn->insertAtHead(typeExpr);
+          typeExpr->flattenAndRemove();
+          fn->insertAtHead(new DefExpr(typeTmp));
+        }
 
       } else {
-        AggregateType* formalAt = toAggregateType(formal->getValType());
 
-        // BHARSH TODO: This pattern (is it concrete, otherwise use PRIM_INIT)
-        // is all over the place. Can we unify this stuff somewhere?
-        if (isNonGenericRecordWithInitializers(formalAt) &&
-            needsGenericRecordInitializer(formalAt) == false) {
-          fn->insertAtHead(new CallExpr("init",
-                                        gMethodToken,
-                                        tmp));
-          tmp->type = formalAt;
-
+        if (defaultExpr != NULL) {
+          CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
+                                        defaultExpr->body.tail->remove(),
+                                        formalType->symbol);
+          fn->insertAtHead(init);
+          fn->insertAtHead(defaultExpr);
         } else {
-          VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
-
-          typeTmp->addFlag(FLAG_MAYBE_TYPE);
-
-          fn->insertAtHead(new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp, typeTmp));
-
-          fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                        typeTmp,
-                                        new CallExpr(PRIM_TYPEOF, formal)));
-
-          fn->insertAtHead(new DefExpr(typeTmp));
+          CallExpr * init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
+                                         formalType->symbol);
+          fn->insertAtHead(new CallExpr(PRIM_END_OF_STATEMENT));
+          fn->insertAtHead(init);
         }
       }
 
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       tmp->addFlag(FLAG_FORMAL_TEMP);
+      tmp->addFlag(FLAG_FORMAL_TEMP_OUT);
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
-
+     }
      case INTENT_INOUT:
       fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                     tmp,
-                                    new CallExpr("chpl__initCopy", formal)));
+                                    new CallExpr(astr_initCopy, formal)));
 
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       tmp->addFlag(FLAG_FORMAL_TEMP);
-
+      tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
+      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
 
      case INTENT_IN:
      case INTENT_CONST_IN:
-      if (!shouldAddFormalTempAtCallSite(formal, fn)) {
+      if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
         fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                       tmp,
-                                      new CallExpr("chpl__initCopy", formal)));
+                                      new CallExpr(astr_initCopy, formal)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -1577,8 +2078,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            // types.
            fn->insertAtHead(new CallExpr(PRIM_MOVE,
                                          tmp,
-                                         new CallExpr("chpl__autoCopy",
-                                                      formal)));
+                                         new CallExpr(astr_autoCopy, formal)));
 
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
@@ -1622,12 +2122,16 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      }
     }
 
-    fn->insertAtHead(new DefExpr(tmp));
+    if (formal->getValType() != dtNothing) {
+      fn->insertAtHead(new DefExpr(tmp));
 
-    // For inout or out intent, this assigns the modified value back to the
-    // formal at the end of the function body.
-    if (formal->intent == INTENT_INOUT || formal->intent == INTENT_OUT) {
-      fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
+      // For inout or out intent, this assigns the modified value back to the
+      // formal at the end of the function body.
+      if (formal->intent == INTENT_INOUT) {
+        fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
+      } else if (formal->intent == INTENT_OUT) {
+        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
+      }
     }
   }
 }
@@ -1681,16 +2185,39 @@ static bool hasRefField(Type* type) {
 
 static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts);
 
-void insertAndResolveCasts(FnSymbol* fn) {
+static bool insertAndResolveCasts(FnSymbol* fn) {
+  bool changed = false;
+
   if (fn->retTag != RET_PARAM) {
     Vec<CallExpr*> casts;
 
     insertCasts(fn->body, fn, casts);
+    changed = casts.size() > 0;
 
     forv_Vec(CallExpr, cast, casts) {
       resolveCallAndCallee(cast, true);
     }
   }
+
+  return changed;
+}
+
+Type* arrayElementType(Type* arrayType) {
+  AggregateType* at = toAggregateType(arrayType);
+  if (at == NULL) return NULL;
+
+  Symbol* instField = at->getField("_instance", false);
+  if (instField == NULL) return NULL;
+
+  Type* instType = instField->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  if (instClass == NULL) return NULL;
+
+  Symbol* eltTypeField = instClass->getField("eltType", false);
+  if (eltTypeField == NULL) return NULL;
+
+  Type* eltType = eltTypeField->getValType();
+  return eltType;
 }
 
 static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
@@ -1698,9 +2225,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
     return; // do not descend into nested symbols
 
   if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isPrimitive(PRIM_MOVE)) {
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN)) {
         if (SymExpr* lhs = toSymExpr(call->get(1))) {
           Type* lhsType = lhs->symbol()->type;
+
+          // PRIM_ASSIGN will set a value in the LHS type,
+          // never set what a reference points to.
+          if (call->isPrimitive(PRIM_ASSIGN))
+            lhsType = lhsType->getValType();
 
           if (lhsType != dtUnknown) {
             Expr*     rhs     = call->get(2);
@@ -1718,6 +2251,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
             bool typesDiffer = (rhsType          != lhsType &&
                                 rhsType->refType != lhsType &&
                                 rhsType          != lhsType->refType);
+            bool isTypeOf = rhsCall && rhsCall->isPrimitive(PRIM_TYPEOF);
 
             SET_LINENO(rhs);
 
@@ -1742,14 +2276,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               bool involvesRuntimeType = false;
               {
                 Type* t1 = fromTypeExpr->getValType();
-                Type* t2 = fromExpr->getValType();
+                //Type* t2 = fromExpr->getValType();
 
                 involvesRuntimeType =
-                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
-                  t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                  t1->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
+                // || t2->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
               }
 
-              bool useAssign = involvesRuntimeType;
+              bool useCoerceCall = involvesRuntimeType;
+              bool useAssign = involvesRuntimeType && !useCoerceCall;
 
               // Use assign (to get error) if coercion isn't normally
               // allowed between these types.
@@ -1765,6 +2300,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 useAssign = true;
               }
 
+
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
 
@@ -1773,7 +2309,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               // types are the same until runtime (at least without
               // some better smarts in the compiler).
 
-              if (!typesDiffer && !useAssign) {
+              if (!typesDiffer && !useAssign && !useCoerceCall) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
 
@@ -1783,7 +2319,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  toResolve = new CallExpr("chpl__autoCopy", new SymExpr(from));
+                  toResolve = new CallExpr(astr_autoCopy, new SymExpr(from));
                   rhs = toResolve;
 
                 } else if (rhsType->refType == lhsType) {
@@ -1798,6 +2334,63 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 casts.add(move);
 
+              } else if (useCoerceCall) {
+
+                INT_ASSERT(!to->isRef());
+                bool stealRHS = false;
+
+                AggregateType* ir = toAggregateType(from->getValType());
+                if (ir && ir->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+                  // For iterators, set stealRHS based upon whether
+                  // the iterator returns by value.
+                  IteratorInfo* ii = ir->iteratorInfo;
+                  INT_ASSERT(ii);
+                  bool yieldsRefs = ii->getValue->getReturnQualType().isRef();
+                  if (yieldsRefs)
+                    stealRHS = false;
+                  else
+                    stealRHS = true;
+                } else {
+                  // not an iterator, steal if it's a temp
+                  stealRHS = from->hasFlag(FLAG_TEMP) &&
+                             !from->isRef() &&
+                             !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
+                             !from->hasFlag(
+                                 FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
+
+                  // but don't steal for arrays with different element types
+                  Type* dstEltType = arrayElementType(fromType->getValType());
+                  Type* srcEltType = arrayElementType(from->getValType());
+
+                  if (dstEltType && srcEltType && dstEltType != srcEltType)
+                  stealRHS = false;
+                }
+
+                CallExpr* callCoerceFn = NULL;
+                if (stealRHS) {
+                  callCoerceFn = new CallExpr(astr_coerceMove,
+                                              fromType, from);
+                } else {
+                  callCoerceFn = new CallExpr(astr_coerceCopy,
+                                              fromType, from);
+                  // Since the initialization pattern normally does not
+                  // require adding an auto-destroy for a call-expr-temp,
+                  // add FLAG_INSERT_AUTO_DESTROY since we're
+                  // copy-initializing from it.
+                  from->addFlag(FLAG_INSERT_AUTO_DESTROY);
+                }
+
+                CallExpr* move = new CallExpr(PRIM_MOVE, to, callCoerceFn);
+
+                call->insertBefore(move);
+
+                // Resolve each of the new CallExprs They need to be resolved
+                // separately since resolveExpr does not recurse.
+                resolveExpr(callCoerceFn);
+                resolveExpr(move);
+
+                call->remove();
+
               } else if (useAssign) {
 
                 // Here the types differ and we're expecting some
@@ -1805,6 +2398,11 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
 
                 // In the future, it would be nice if this could no-init
                 // a LHS array and then move records into it from the RHS.
+
+                // Tell compiler it shouldn't raise errors connected
+                // to default-initializing to since it is actually
+                // set below.
+                to->addFlag(FLAG_INITIALIZED_LATER);
 
                 CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                               to, fromType);
@@ -1824,13 +2422,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // separately since resolveExpr does not recurse.
                 resolveExpr(init);
                 resolveExpr(assign);
-
-                // Enable error messages assignment between local
-                // and distributed domains. It would be better if this
-                // could be handled by some flavor of initializer.
-                CallExpr* check = new CallExpr("chpl_checkCopyInit", to, from);
-                call->insertBefore(check);
-                resolveExpr(check);
 
                 // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
@@ -1863,7 +2454,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 casts.add(cast);
               }
 
-            } else {
+            } else if (!isTypeOf) {
               // handle adding casts for a regular PRIM_MOVE
 
               if (typesDiffer) {
@@ -1920,7 +2511,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 // types are the same.
                 // handle reference level adjustments. No cast necessary.
 
-                if (rhsType == lhsType->refType) {
+                if (rhsType == lhs->symbol()->type->refType) {
                   lhs->remove();
                   rhs->remove();
 

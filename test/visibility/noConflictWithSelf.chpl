@@ -3,12 +3,12 @@ module A {
 }
 
 module B {
-  use A;
+  public use A;
   var thriceAlone = 3*alone;
 }
 
 module C {
-  use A;
+  public use A;
   var twiceAlone = 2*alone;
 }
 

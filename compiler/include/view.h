@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -34,7 +35,7 @@ Expr*    aidExpr(int id);
 BaseAST* aid(BaseAST* ast);
 Expr*    aidExpr(BaseAST* ast);
 
-void        list_view_noline(BaseAST* ast);
+void        list_view_noline(const BaseAST* ast);
 void        nprint_view(BaseAST* ast);
 
 // defined in codegen/codegen.cpp
@@ -64,7 +65,7 @@ void        nprint_view_noline(BaseAST* ast);
 void        mark_view(BaseAST* ast, int id);
 
 void        list_view(int id);
-void        list_view(BaseAST* ast);
+void        list_view(const BaseAST* ast);
 
 void        astDump_view(int id);
 void        astDump_view(BaseAST* ast);
@@ -80,8 +81,10 @@ void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
-void        vec_view(std::vector<Symbol*>* vec);
-void        vec_view(std::vector<Symbol*>& vec);
+void        vec_view(std::vector<Symbol*>* syms);
+void        vec_view(std::vector<Symbol*>& syms);
+void        vec_view(std::vector<FnSymbol*>* syms);
+void        vec_view(std::vector<FnSymbol*>& syms);
 
 
 void        fnsWithName(const char* name);

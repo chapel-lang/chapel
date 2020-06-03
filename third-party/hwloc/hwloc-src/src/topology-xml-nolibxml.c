@@ -390,11 +390,12 @@ hwloc_nolibxml_backend_init(struct hwloc_xml_backend_data_s *bdata,
   bdata->data = nbdata;
 
   if (xmlbuffer) {
-    nbdata->buffer = malloc(xmlbuflen);
+    nbdata->buffer = malloc(xmlbuflen+1);
     if (!nbdata->buffer)
       goto out_with_nbdata;
-    nbdata->buflen = xmlbuflen;
+    nbdata->buflen = xmlbuflen+1;
     memcpy(nbdata->buffer, xmlbuffer, xmlbuflen);
+    nbdata->buffer[xmlbuflen] = '\0';
 
   } else {
     int err = hwloc_nolibxml_read_file(xmlpath, &nbdata->buffer, &nbdata->buflen);
@@ -403,9 +404,10 @@ hwloc_nolibxml_backend_init(struct hwloc_xml_backend_data_s *bdata,
   }
 
   /* allocate a temporary copy buffer that we may modify during parsing */
-  nbdata->copy = malloc(nbdata->buflen);
+  nbdata->copy = malloc(nbdata->buflen+1);
   if (!nbdata->copy)
     goto out_with_buffer;
+  nbdata->copy[nbdata->buflen] = '\0';
 
   bdata->look_init = hwloc_nolibxml_look_init;
   bdata->look_failed = hwloc_nolibxml_look_failed;
@@ -472,7 +474,7 @@ hwloc_nolibxml_import_diff(struct hwloc__xml_import_state_s *state,
   ret = hwloc__nolibxml_import_find_child(state, &childstate, &tag);
   if (ret < 0)
     goto out_with_buffer;
-  if (strcmp(tag, "topologydiff"))
+  if (!tag || strcmp(tag, "topologydiff"))
     goto out_with_buffer;
 
   while (1) {
@@ -497,6 +499,7 @@ hwloc_nolibxml_import_diff(struct hwloc__xml_import_state_s *state,
 
 out_with_buffer:
   free(buffer);
+  free(refname);
 out:
   return -1;
 }
@@ -682,7 +685,7 @@ hwloc___nolibxml_prepare_export(hwloc_topology_t topology, char *xmlbuffer, int 
   hwloc__xml_export_object (&childstate, topology, hwloc_get_root_obj(topology));
   hwloc__nolibxml_export_end_object(&childstate, "topology");
 
-  return ndata->written+1;
+  return ndata->written+1; /* ending \0 */
 }
 
 static int

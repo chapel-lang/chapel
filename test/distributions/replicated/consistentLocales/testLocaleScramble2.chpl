@@ -2,11 +2,7 @@ use ReplicatedDist;
 
 const GridD = {0..#(2*numLocales) by 2};
 
-var Grid: [GridD] locale;
-
-for (loc, i) in zip(Locales, 0..#numLocales by -1) {
-  Grid[2*i] = loc;
-}
+var Grid: [GridD] locale = for i in 0..#numLocales do Locales[numLocales-1-i];
 
 writeln("Grid is: ", Grid);
 

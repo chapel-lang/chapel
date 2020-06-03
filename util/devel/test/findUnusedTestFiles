@@ -1,4 +1,5 @@
 #!/bin/bash
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -143,8 +144,9 @@ for f in $(find $CHPL_HOME/test                                               \
    chpl=${base}.chpl
    toml=${base}.toml
    c=${base}.test.c
+   ml_c=${base}.ml\-test.c
 
-   if [ -f $d/$chpl -o -f $d/$c -o -f $d/$toml ]; then
+   if [ -f $d/$chpl -o -f $d/$c -o -f $d/$ml_c -o -f $d/$toml ]; then
       continue
    fi
 
@@ -182,7 +184,8 @@ for f in $(find $CHPL_HOME/test                                               \
 	   base=${base%.[0-9]*-[0-9]*}
 	   chpl=$base.chpl
 	   c=$base.test.c
-	   if [ -f $d/$chpl -o -f $d/$c ]; then
+	   ml_c=$base.ml\-test.c
+	   if [ -f $d/$chpl -o -f $d/$c -o -f $d/$ml_c ]; then
                continue
 	   fi
        fi

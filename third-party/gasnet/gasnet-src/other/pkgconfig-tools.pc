@@ -1,7 +1,7 @@
 
 Name: gasnet_tools-#thread_model#
 Description: GASNet Tools in #thread_model# threading mode
-URL: http://gasnet.lbl.gov
+URL: https://gasnet.lbl.gov
 Version: #version#
 Cflags: ${GASNETTOOLS_CPPFLAGS} ${GASNETTOOLS_CFLAGS}
 Libs: ${GASNETTOOLS_LDFLAGS} ${GASNETTOOLS_LIBS}

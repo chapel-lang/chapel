@@ -5,7 +5,7 @@
    derived from the GNU C version by Ledrug
 */
 
-use GMP, GMPops;
+use GMP, GMPops, SysCTypes;
 
 config const n = 50;                // Compute n digits of Pi, 50 by default
 

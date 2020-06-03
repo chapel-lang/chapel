@@ -1,4 +1,6 @@
 
+use IO;
+
 config const testfile="test.bin";
 var f = open(testfile, iomode.cwr);
 

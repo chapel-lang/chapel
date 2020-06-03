@@ -30,7 +30,7 @@ proc readBufferFromFile(filename: string) {
 
   var buf: c_ptr(TF_Buffer) = TF_NewBuffer();
   buf.deref().data = data;
-  buf.deref().length = length:size_t;
+  buf.deref().size = length:size_t;
   buf.deref().data_deallocator = c_ptrTo(deallocateBuffer);
 
   return buf;

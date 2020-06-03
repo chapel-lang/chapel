@@ -15,7 +15,7 @@ writeln();
  */
 proc printShifts(x: int(?width)) {
   writeln("the value ", x, "...");
-  for i in 1..width do
+  for i in 1..(width - 1) do
     writeln("  ...shifted ", i, " times: ", x >> i);
   writeln();
 }

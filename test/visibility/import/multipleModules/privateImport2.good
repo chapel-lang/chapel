@@ -1,0 +1,2 @@
+privateImport2.chpl:14: In function 'main':
+privateImport2.chpl:15: error: 'B' undeclared (first use this function)

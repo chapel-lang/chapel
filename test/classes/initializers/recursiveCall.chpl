@@ -56,8 +56,8 @@ proc main() {
   // Print out the stats for the trees of varying depths.
   //
   for depth in depths do
-    writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
-            stats[depth](2));
+    writeln(stats[depth](0), "\t trees of depth ", depth, "\t check: ",
+            stats[depth](1));
 
   //
   // Checksum the long-lived tree, print its stats, and free it.
@@ -72,7 +72,7 @@ proc main() {
 //
 class Tree {
   const item: int;
-  const left, right: unmanaged Tree;
+  const left, right: unmanaged Tree?;
 
   proc init(item, left, right) { // Leaves the type of left and right ambiguous
     this.item = item;
@@ -94,7 +94,7 @@ class Tree {
   proc sum(): int {
     var sum = item;
     if left {
-      sum += left.sum() - right.sum();
+      sum += left!.sum() - right!.sum();
       delete left;
       delete right;
     }

@@ -1,7 +1,9 @@
-module test {
-  proc getString() return "Hello World";
+module OuterModule {
+  module test {
+    proc getString() return "Hello World";
+  }
+
+  use test;
+
+  writeln(getString());
 }
-
-use test;
-
-writeln(getString());

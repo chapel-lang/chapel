@@ -356,9 +356,9 @@
   77   0 304  on 3
   77  dmarr, dmhelp - zippered iteration on 3
   90  
+  90  (numLocales = 2, bbStart = 1, bbLength = 3)
+  90  (numLocales = 2, localLocID = 0, localLocIDlegit = true)
   90  dmarr - dimSpecifier()
-  90  {numLocales = 2, bbStart = 1, bbLength = 3}
-  90  {numLocales = 2, localLocID = 0, localLocIDlegit = true}
   91  
   91   mylocs(0, 0)  dmarr(1, 2)  expecting 12  on 0
   91   mylocs(0, 1)  dmarr(2, 3)  expecting 23  on 1

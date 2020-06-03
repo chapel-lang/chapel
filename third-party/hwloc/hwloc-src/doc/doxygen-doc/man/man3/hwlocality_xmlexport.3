@@ -1,4 +1,4 @@
-.TH "hwlocality_xmlexport" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_xmlexport" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -88,6 +88,8 @@ If \fCname\fP is '-', the XML output is sent to the standard output\&.
 Export the topology into a newly-allocated XML memory buffer\&. \fCxmlbuffer\fP is allocated by the callee and should be freed with \fBhwloc_free_xmlbuffer()\fP later in the caller\&.
 .PP
 This memory buffer may be loaded later through \fBhwloc_topology_set_xmlbuffer()\fP\&.
+.PP
+The returned buffer ends with a \\0 that is included in the returned length\&.
 .PP
 \fBReturns:\fP
 .RS 4

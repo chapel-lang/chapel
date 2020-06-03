@@ -292,9 +292,9 @@ OPTIONS
 
 *Run-time Semantic Check Options* 
 
-**--no-checks**
+**--[no-]checks**
 
-    Turns off all of the run-time checks in this section of the man page.
+    Enable [disable] all of the run-time checks in this section of the man page.
     Currently, it is typically necessary to use this flag (or **--fast**,
     which implies **--no-checks**) to achieve performance competitive with
     hand-coded C or Fortran.
@@ -784,5 +784,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-Copyright (c) 2004-2018 Cray Inc. (See $CHPL\_HOME/LICENSE for more
-details.)
+| Copyright 2020 Hewlett Packard Enterprise Development LP
+| Copyright 2004-2019 Cray Inc.

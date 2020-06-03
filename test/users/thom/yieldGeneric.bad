@@ -1,8 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:78: In function 'iteratorToArrayElementType':
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:82: internal error: RES-CAL-NFO-nnnn chpl version mmmm
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+yieldGeneric.chpl:14: error: Could not coerce 'nil' to '_ddata(unmanaged C)' in initialization

@@ -1,0 +1,2 @@
+return-shared.chpl:3: In function 'P':
+return-shared.chpl:3: error: cannot return 'shared C?' when the declared return type is 'shared C'

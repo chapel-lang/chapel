@@ -22,25 +22,26 @@ source $cwd/common.bash
 # Generate the file
 
 cat <<EOF
-Now Available: Cray Chapel Compiler $major.$minor
+Now Available: HPE Chapel Compiler $major.$minor
 
 This is a draft/placeholder file for development purposes only.
 
 TODO:   Add "highlights of this release"
 TODO:   Add the official release dates
 
-    Cray Inc. and the Chapel open-source community are pleased to
-    announce the release of version $src_version of the Chapel compiler.
-    Chapel is a parallel programming language designed to improve the
-    productivity of high-end computer users while also serving as a
-    portable parallel programming model for use on multicore laptops,
-    commodity clusters, and the cloud.
+    Hewlett Packard Enterprise (HPE) and the Chapel open-source
+    community are pleased to announce the release of version
+    $src_version of the Chapel compiler.  Chapel is a parallel
+    programming language designed to improve the productivity of
+    high-end computer users while also serving as a portable parallel
+    programming model for use on multicore laptops, commodity
+    clusters, and the cloud.
 
 Chapel $major.$minor
 ===========
 
     Chapel is a productive parallel programming language whose design
-    and development are being led by Cray Inc. in a collaborative
+    and development are being led by HPE in a collaborative
     manner with members of academia, computing labs, and industry.
     Chapel's overall goal is to improve programmer productivity on
     large-scale systems.  Its implementation is being pursued in an
@@ -114,6 +115,7 @@ Dependencies:
 -------------
 
     Chapel $major.$minor is supported on the following Cray systems:
+    * Cray Shasta systems with CLE based on SLES15 or later
     * Cray XC systems with CLE 5.2UP04 or later
     * Cray XE and XK systems with CLE 5.2UP04 or later
     * Cray CS systems running Red Hat, CentOS, or SuSE Linux
@@ -128,8 +130,11 @@ Dependencies:
 Installation instructions:
 --------------------------
 
-    Copy the appropriate Chapel RPM file to the current directory and execute
-    one of the following commands:
+    Copy the Chapel RPM file to the current directory and execute
+    the appropriate one of the following commands:
+
+      #On Cray Shasta systems (x86_64):
+      rpm -ivh chapel-$pkg_version-$rpm_release.x86_64.rpm
 
       #On Cray XC systems (x86_64):
       rpm -ivh chapel-$pkg_version-crayxc$rc_number.x86_64.rpm

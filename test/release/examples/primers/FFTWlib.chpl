@@ -2,16 +2,14 @@
 
 /*
   Example usage of the :mod:`FFTW` module in Chapel. This particular file
-  demonstrates the single-threaded version of the code.  In order to
-  switch to a multi-threaded version of the code, substitute ``FFTW_MT``
-  for ``FFTW`` in the ``use`` statement just below this comment (see the
-  :mod:`FFTW_MT` module's documentation for further details).
+  demonstrates the single-threaded version of the code. In order to initialize
+  FFTW for multithreaded support, see the :mod:`FFTW` documentation.
 
   If FFTW is in your standard include/library paths, compile this code
   using:
 
   .. code-block:: text
-    
+
     chpl testFFTW.chpl
 
   Otherwise, use the following (where ``$FFTW_DIR`` points to your
@@ -64,7 +62,7 @@ proc main() {
 proc testAllDims() {
   for param d in 1..3 {
     writeln(d, "D");
-    runtest(d, "arr"+d+"d.dat");
+    runtest(d, "arr"+d:string+"d.dat");
   }
 }
 
@@ -121,20 +119,21 @@ proc runtest(param ndim : int, fn : string) {
 */
   var A,B,goodA,goodB : [D] complex(128);
   {
+    use IO;
     var f = open(fn,iomode.r).reader(kind=iokind.little);
 
     // Read in dimensions
-    for ii in 1..ndim {
-      f.read(dims(ii));
+    for d in dims {
+      f.read(d);
     }
 
 //
 // Set the domain ``D``, handling the different rank cases.
 //
     select ndim {
-      when 1 do D = 0.. #dims(1);
-      when 2 do D = {0.. #dims(1), 0.. #dims(2)};
-      when 3 do D = {0.. #dims(1), 0.. #dims(2), 0.. #dims(3)};
+      when 1 do D = 0.. #dims(0);
+      when 2 do D = {0.. #dims(0), 0.. #dims(1)};
+      when 3 do D = {0.. #dims(0), 0.. #dims(1), 0.. #dims(2)};
     }
 
     // Read in the arrays
@@ -156,7 +155,7 @@ proc runtest(param ndim : int, fn : string) {
 */
   select ndim {
     when 1 {
-      var ldim = dims(1)/2 + 1;
+      var ldim = dims(0)/2 + 1;
       //
       // Domains for real FFT
       //
@@ -173,9 +172,9 @@ proc runtest(param ndim : int, fn : string) {
       //
       // Domains for real FFT
       //
-      var ldim = dims(2)/2+1;
-      rD = {0.. #dims(1),0.. #(2*ldim)}; // Padding to do in-place transforms
-      cD = {0.. #dims(1),0.. #ldim};
+      var ldim = dims(1)/2+1;
+      rD = {0.. #dims(0),0.. #(2*ldim)}; // Padding to do in-place transforms
+      cD = {0.. #dims(0),0.. #ldim};
       //
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
@@ -187,9 +186,9 @@ proc runtest(param ndim : int, fn : string) {
       //
       // Domains for real FFT
       //
-      var ldim = dims(3)/2+1;
-      rD = {0.. #dims(1),0.. #dims(2),0.. #(2*ldim)}; // Padding to do in-place transforms
-      cD = {0.. #dims(1),0.. #dims(2),0.. #ldim};
+      var ldim = dims(2)/2+1;
+      rD = {0.. #dims(0),0.. #dims(1),0.. #(2*ldim)}; // Padding to do in-place transforms
+      cD = {0.. #dims(0),0.. #dims(1),0.. #ldim};
       //
       // Define domains to extract the real and imaginary parts for
       // in-place transforms
@@ -205,7 +204,7 @@ proc runtest(param ndim : int, fn : string) {
   var norm = * reduce dims;
 
 /* We start the FFT tests below. The structure is the same :
- 
+
      - Define plans for forward and reverse transforms.
      - Execute forward transform ``A -> B``.
      - Compare with ``goodB``.
@@ -218,7 +217,7 @@ proc runtest(param ndim : int, fn : string) {
 .. primers-fftw-complex-complex-out
 
    complex<->complex out-of-place transform
-   ---------------------------------------- 
+   ----------------------------------------
 
    Unlike the basic FFTW interface, we do not have specific 1D/2D/3D
    planner routines.  For the complex <-> complex case, the
@@ -239,7 +238,7 @@ proc runtest(param ndim : int, fn : string) {
 
 /*
 .. primers-fftw-complex-complex-in
- 
+
   complex <-> complex in-place transform
   --------------------------------------
 
@@ -317,7 +316,7 @@ proc runtest(param ndim : int, fn : string) {
   destroy_plan(rev);
 
 
-/* 
+/*
    This is another real <-> complex in-place transform, except we pass
    in a complex array instead of a real array. This can get a little
    ugly, so we just reverse engineer the previous case.

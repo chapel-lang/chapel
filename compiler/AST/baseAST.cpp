@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +30,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "ImportStmt.h"
 #include "log.h"
 #include "LoopExpr.h"
 #include "ModuleSymbol.h"
@@ -102,8 +104,12 @@ void printStatistics(const char* pass) {
 
   foreach_ast(decl_counters);
 
-  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt + nCatchStmt;
-  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt + kCatchStmt;
+  int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt +
+    nImportStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt +
+    nCatchStmt;
+  int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt +
+    kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
+    kCatchStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
     nContextCallExpr + nLoopExpr + nNamedExpr + nIfExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
@@ -163,6 +169,19 @@ void printStatistics(const char* pass) {
   last_nasts = nasts;
 }
 
+/* Certain AST elements, such as PRIM_END_OF_STATEMENT, should just
+   be adjusted when variables are removed. */
+static void remove_weak_links(VarSymbol* var) {
+  if (var != NULL) {
+    for_SymbolSymExprs(se, var) {
+      if (isAlive(se))
+        if (CallExpr* call = toCallExpr(se->parentExpr))
+          if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+            se->remove();
+    }
+  }
+}
+
 // for debugging purposes only
 void trace_remove(BaseAST* ast, char flag) {
   // crash if deletedIdHandle is not initialized but deletedIdFilename is
@@ -187,6 +206,8 @@ void trace_remove(BaseAST* ast, char flag) {
     if (isAlive(ast) || isRootModuleWithType(ast, type)) { \
       g##type##s.v[i##type++] = ast;            \
     } else {                                    \
+      if (E_##type == E_VarSymbol)              \
+        remove_weak_links(toVarSymbol(ast));    \
       trace_remove(ast, 'x');                   \
       delete ast; ast = 0;                      \
     }                                           \
@@ -241,6 +262,18 @@ void cleanAst() {
             at->dispatchChildren.v[i] = NULL;
           }
         }
+      }
+
+      //
+      // If an internal aggregate type is being deleted, set its global
+      // handle to NULL. See #15169.
+      //
+      if (!isAlive(at)) {
+        if (at == dtBytes) dtBytes = NULL;
+        if (at == dtString) dtString = NULL;
+        if (at == dtLocale) dtLocale = NULL;
+        if (at == dtOwned) dtOwned = NULL;
+        if (at == dtShared) dtShared = NULL;
       }
     }
   }
@@ -319,7 +352,12 @@ BaseAST::BaseAST(AstTag type) :
       astloc = currentAstLoc;
     } else {
       // neither yy* nor currentAstLoc are set
-      INT_FATAL("no line number available");
+      if (developer || fVerify) {
+        INT_FATAL("no line number available");
+      } else {
+        astloc.filename = "[file unknown]";
+        astloc.lineno = 0;
+      }
     }
   }
 }
@@ -391,18 +429,23 @@ bool BaseAST::isRefOrWideRef() {
 }
 
 FnSymbol* BaseAST::getFunction() {
-  if (ModuleSymbol* x = toModuleSymbol(this))
-    return x->initFn;
-  else if (FnSymbol* x = toFnSymbol(this))
-    return x;
-  else if (Type* x = toType(this))
-    return x->symbol->getFunction();
-  else if (Symbol* x = toSymbol(this))
-    return x->defPoint->getFunction();
-  else if (Expr* x = toExpr(this))
-    return x->parentSymbol->getFunction();
-  else
-    INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  BaseAST* cur = this;
+  while (cur != NULL) {
+    // base cases
+    if (ModuleSymbol* x = toModuleSymbol(cur))
+      return x->initFn;
+    else if (FnSymbol* x = toFnSymbol(cur))
+      return x;
+    // inductive cases
+    else if (Type* x = toType(cur))
+      cur = x->symbol;
+    else if (Symbol* x = toSymbol(cur))
+      cur = x->defPoint;
+    else if (Expr* x = toExpr(cur))
+      cur = x->parentSymbol;
+    else
+      INT_FATAL(this, "Unexpected case in BaseAST::getFunction()");
+  }
   return NULL;
 }
 
@@ -478,6 +521,10 @@ const char* BaseAST::astTagAsString() const {
 
     case E_UseStmt:
       retval = "UseStmt";
+      break;
+
+    case E_ImportStmt:
+      retval = "ImportStmt";
       break;
 
     case E_BlockStmt:
@@ -606,9 +653,6 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
   }
 }
 
-
-astlocT currentAstLoc(0,NULL);
-
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {
   case MOD_USER:
@@ -639,9 +683,29 @@ void registerModule(ModuleSymbol* mod) {
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    if (sym_expr->symbol())
-      if (Symbol* y = map->get(sym_expr->symbol()))
-        sym_expr->setSymbol(y);
+    if (sym_expr->symbol()) {
+      if (Symbol* y = map->get(sym_expr->symbol())) {
+        bool skip = false;
+
+        // Do not replace symbols for type constructor calls
+        //
+        // BENHARSH TODO 2019-06-20: I think we need to do this because in
+        // some cases the SymbolMap contains a mapping from the generic 'T' to
+        // an instantiation of 'T'. Is that mapping necessary?
+        CallExpr* call = toCallExpr(sym_expr->parentExpr);
+        if (call != NULL && call->baseExpr == sym_expr) {
+          if (y->getValType()->symbol->hasFlag(FLAG_TUPLE) == false &&
+              y->getValType() != dtUnknown &&
+              sym_expr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+            skip = true;
+          }
+        }
+
+        if (!skip) {
+          sym_expr->setSymbol(y);
+        }
+      }
+    }
 
 
   } else if (DefExpr* defExpr = toDefExpr(ast)) {
@@ -768,41 +832,4 @@ bool isCForLoop(const BaseAST* a)
   const BlockStmt* stmt = toConstBlockStmt(a);
 
   return (stmt != 0 && stmt->isCForLoop()) ? true : false;
-}
-
-/* Create a throw-away ast with a given filename and line number.
-   This can be used e.g. to pass a line and filename to USR_FATAL
-   since it only takes those from an AST, not directly. */
-VarSymbol* createASTforLineNumber(const char* filename, int line) {
-  astlocT astloc(line, filename);
-  astlocMarker markAstLoc(astloc);
-  VarSymbol* lineTemp = newTemp();
-  return lineTemp;
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Definitions for astlocMarker                                                *
-*                                                                             *
-************************************** | *************************************/
-
-// constructor, invoked upon SET_LINENO
-astlocMarker::astlocMarker(astlocT newAstLoc)
-  : previousAstLoc(currentAstLoc)
-{
-  //previousAstLoc = currentAstLoc;
-  currentAstLoc = newAstLoc;
-}
-
-// constructor, for special occasions
-astlocMarker::astlocMarker(int lineno, const char* filename)
-  : previousAstLoc(currentAstLoc)
-{
-  currentAstLoc.lineno   = lineno;
-  currentAstLoc.filename = astr(filename);
-}
-
-// destructor, invoked upon leaving SET_LINENO's scope
-astlocMarker::~astlocMarker() {
-  currentAstLoc = previousAstLoc;
 }

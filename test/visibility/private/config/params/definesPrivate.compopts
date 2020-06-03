@@ -1,2 +1,2 @@
  # definesPrivate.good
--sfoo=21 -sbar=25 # definesPrivate.set.good
+-sdefinesPrivate.foo=21 -sdefinesPrivate.bar=25 # definesPrivate.set.good

@@ -1,12 +1,12 @@
 class Parent {
-  proc clone() : unmanaged Parent {
+  proc clone() : unmanaged Parent? {
     writeln("in Parent.clone()");
     return nil;
   }
 }
 
 class Child : Parent {
-  override proc clone() : unmanaged Parent {
+  override proc clone() : unmanaged Parent? {
     writeln("in Child.clone()");
     return new unmanaged Child();
   }
@@ -15,7 +15,7 @@ class Child : Parent {
 
 
 record R {
-  var obj:unmanaged Parent = nil;
+  var obj:unmanaged Parent? = nil;
   proc deinit() {
     delete obj;
   }
@@ -48,7 +48,7 @@ proc chpl__initCopy(arg: R) {
 
   writeln("initCopy");
 
-  ret.obj = arg.obj.clone();
+  ret.obj = arg.obj!.clone();
 
   return ret;
 }

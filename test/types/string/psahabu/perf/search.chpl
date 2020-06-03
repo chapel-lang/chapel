@@ -1,5 +1,5 @@
-use Assert;
 use Time;
+use IO;
 
 config const timing = true;
 config const n = 10000000;

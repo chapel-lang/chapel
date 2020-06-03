@@ -184,7 +184,7 @@ def gen_rst(handle):
             rstline = line
             if state == 'linecomment':
                 # Strip white space for line comments
-                rstline = rstline.replace('//', '  ')
+                rstline = rstline.replace('//', '  ', 1)
                 rstline = rstline.strip()
             else:
                 # Preserve white space for block comments, for indent purposes

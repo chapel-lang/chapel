@@ -1,4 +1,5 @@
 use BlockDist, Time, Types, Random, HPCCProblemSize;
+use ChapelDebugPrint;
 
 const numVectors = 3;
 type elemType = real(64);

@@ -1,3 +1,5 @@
+use IO;
+
 enum week {Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday};
 var day: week;
 

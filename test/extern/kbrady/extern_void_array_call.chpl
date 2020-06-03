@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc printarr(x: [], n:c_int);
 
 proc go() {

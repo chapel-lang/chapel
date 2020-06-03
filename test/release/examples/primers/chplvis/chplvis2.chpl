@@ -48,6 +48,6 @@ proc main() {
    // done with visual debug
    stopVdebug();
 
-   writeln ("sum is " + i + ".");
+   writeln ("sum is ", i, ".");
 }
    

@@ -21,11 +21,11 @@ tochar[3] = "G";
 class Node {
   var data : uint;
   var count : int;
-  var next : unmanaged Node;
+  var next : unmanaged Node?;
 }
 
 class Table {
-  var table : [0..tableSize-1] unmanaged Node;
+  var table : [0..tableSize-1] unmanaged Node?;
   var size : int;
 
   proc this(d : uint) ref {
@@ -36,25 +36,25 @@ class Table {
       n = new unmanaged Node(d, 0, nil);
       size += 1;
       head = n;
-      return n.count;
+      return n!.count;
     }
 
     while n != nil {
-      if n.data == d then return n.count;
-      n = n.next;
+      if n!.data == d then return n!.count;
+      n = n!.next;
     }
     n = new unmanaged Node(d, 0, head);
     size += 1;
     head = n;
-    return n.count;
+    return n!.count;
   }
 
   iter these() {
     for t in table {
       var n = t;
       while n != nil {
-        yield (n.data, n.count);
-        n = n.next;
+        yield (n!.data, n!.count);
+        n = n!.next;
       }
     }
   }
@@ -63,7 +63,7 @@ class Table {
     for n in table do {
       var cur = n;
       while cur != nil {
-        var next = cur.next;
+        var next = cur!.next;
         delete cur;
         cur = next;
       }
@@ -126,15 +126,15 @@ proc write_frequencies(data : [] uint(8), size : int) {
 }
 
 proc write_count(data : [] uint(8), str : string) {
-  var freqs = calculate(data, str.length);
-  var d = hash(str.toBytes(), 1, 0..str.length-1);
-  writeln(freqs[d], "\t", decode(d, str.length));
+  var freqs = calculate(data, str.numBytes);
+  var d = hash(str.toBytes(), 1, 0..str.numBytes-1);
+  writeln(freqs[d], "\t", decode(d, str.numBytes));
   delete freqs;
 }
 
 proc string.toBytes() {
-   var b : [1..this.length] uint(8);
-   memcpy(b, this.c_str(), this.length);
+   var b : [1..this.numBytes] uint(8);
+   memcpy(b, this.c_str(), this.numBytes);
    return b;
 }
 
@@ -145,7 +145,7 @@ inline proc startsWithThree(data : []) {
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
-  const fileLen = inFile.length();
+  const fileLen = inFile.size;
   var myin = inFile.reader(kind=ionative,locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'

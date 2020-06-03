@@ -2,14 +2,14 @@
 proc _tuple.withIdx(idx, mergeVal) where isHomogeneousTuple(this) {
 
   // FIXME this if doesn't work as expected
-  if mergeVal.type != this[1].type then
+  if mergeVal.type != this[0].type then
     compilerError("Value to be merged is not of the type of tuple components");
 
   const defVal: mergeVal.type;
   var ret = createTuple(this.size+1, mergeVal.type, defVal);
 
   var partialIndexOffset = 0;
-  for i in 1..ret.size {
+  for i in 0..ret.size-1 {
     if i == idx {
       ret[i] = mergeVal;
       partialIndexOffset = 1;
@@ -24,13 +24,13 @@ proc _tuple.withIdx(idx, mergeVal) where isHomogeneousTuple(this) {
 
 proc _tuple.withoutIdx(idx) where isHomogeneousTuple(this) {
 
-  const defVal: this[1].type;
-  var ret = createTuple(this.size-1, this[1].type, defVal);
+  const defVal: this[0].type;
+  var ret = createTuple(this.size-1, this[0].type, defVal);
 
-  for i in 1..idx-1 do
+  for i in 0..idx-1 do
     ret[i] = this[i];
 
-  for i in idx+1..this.size do
+  for i in idx+1..this.size-1 do
     ret[i-1] = this[i];
 
   return ret;
@@ -41,7 +41,7 @@ proc lineSliceMask(dom, param dim, idx) {
   if !isTuple(idx) || !isHomogeneousTuple(idx) then
     compilerError("Index to get line slice must be a homogeneous tuple");
 
-  if idx[1].type != dom.idxType then 
+  if idx[0].type != dom.idxType then 
     compilerError("Index to get line slice is not of the domain's index type");
 
   param numIdxPre = dim - 1;
@@ -51,12 +51,12 @@ proc lineSliceMask(dom, param dim, idx) {
 
   var idxPre = createTuple(if numIdxPre>0 then numIdxPre else 1, 
       dom.idxType, 0:dom.idxType);
-  for param i in 1..numIdxPre do
+  for param i in 0..numIdxPre-1 do
     idxPre[i] = idx[i];
 
   var idxPost = createTuple(if numIdxPost > 0 then numIdxPost else 1, 
       dom.idxType, 0:dom.idxType);
-  for param i in 1..numIdxPost do
+  for param i in 0..numIdxPost-1 do
     idxPost[i] = idx[numIdxPre+1+i];
 
   if numIdxPre > 0 && numIdxPost > 0 {
@@ -76,8 +76,8 @@ proc lineSliceMask(dom, param dim, idx) {
 
 // name is creepy
 proc faceSliceMask(dom, param exceptDim) {
-  param numUbRangesPre = exceptDim - 1;
-  param numUbRangesPost = dom.rank - exceptDim;
+  param numUbRangesPre = exceptDim;
+  param numUbRangesPost = dom.rank - (exceptDim + 1);
 
   compilerAssert(numUbRangesPre + numUbRangesPost == dom.rank-1);
 

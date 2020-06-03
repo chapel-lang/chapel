@@ -739,7 +739,7 @@ int fhi_FreeVictimRemote(gex_Rank_t node, int count, firehose_region_t *reg)
    * This hack lets us grab the info from the "key" field of the first
    * bucket w/o exposing the bucket_t outside of firehose_region.c
    */
-  #define FH_PRIV_NODE(p) ((p)->bucket ? FH_NODE((p)->bucket) : -1)
+  #define FH_PRIV_NODE(p) ((p)->bucket ? FH_NODE((p)->bucket) : GEX_RANK_INVALID)
 #else
   #define FH_PRIV_NODE(p) FH_NODE(p)
 #endif

@@ -1,5 +1,5 @@
-use Level_def;
-use LevelVariable_def;
+public use Level_def;
+public use LevelVariable_def;
 
 
 

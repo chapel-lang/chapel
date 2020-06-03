@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -119,12 +120,12 @@ third-party-try-gmp: FORCE
 	fi
 
 third-party-test-venv: FORCE
-	-@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \
+	@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \
 	cd third-party && $(MAKE) test-venv; \
 	fi
 
 third-party-chpldoc-venv: FORCE
-	-@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
+	@if [ -z "$$CHPL_DONT_BUILD_CHPLDOC_VENV" ]; then \
 	cd third-party && $(MAKE) chpldoc-venv; \
 	fi
 
@@ -148,7 +149,7 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: compiler chpldoc modules FORCE
+mason: chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
 c2chapel: FORCE
@@ -187,6 +188,7 @@ clobber: FORCE
 	cd third-party && $(MAKE) clobber
 	cd tools/chplvis && $(MAKE) clobber
 	cd tools/c2chapel && $(MAKE) clobber
+	cd tools/mason && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib

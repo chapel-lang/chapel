@@ -89,7 +89,7 @@ class Chameneos {
   proc start(population : [] owned Chameneos, meetingPlace: MeetingPlace) {
     var stateTemp, peer_idx, xchg : int;
 
-    stateTemp = meetingPlace.state.read(memory_order_acquire);
+    stateTemp = meetingPlace.state.read(memoryOrder.acquire);
 
     while (true) {
       peer_idx = stateTemp & CHAMENEOS_IDX_MASK;
@@ -100,7 +100,7 @@ class Chameneos {
       } else {
         break;
       }
-      if (meetingPlace.state.compareExchangeStrong(stateTemp, xchg, memory_order_acq_rel)) {
+      if (meetingPlace.state.compareAndSwap(stateTemp, xchg, memoryOrder.acqRel)) {
         if (peer_idx) {
           runMeeting(population, peer_idx);
         } else {
@@ -108,11 +108,11 @@ class Chameneos {
 
           waitUntilCompleted();
 
-          meetingCompleted.write(false, memory_order_release);
-          stateTemp = meetingPlace.state.read(memory_order_acquire);
+          meetingCompleted.write(false, memoryOrder.release);
+          stateTemp = meetingPlace.state.read(memoryOrder.acquire);
         }
       } else {
-        stateTemp = meetingPlace.state.read(memory_order_acquire);
+        stateTemp = meetingPlace.state.read(memoryOrder.acquire);
       }
     }
   }
@@ -120,18 +120,17 @@ class Chameneos {
   /* Given the id of its peer, finds and updates the data of its peer and
      itself */
   proc runMeeting (population : [] owned Chameneos, peer_idx) {
-    var peer : Chameneos;
     var newColor : Color;
     var is_same : int;
     if (id == peer_idx) {
       is_same = 1;
     }
-    peer = population[peer_idx:int(32)];
+    const peer = population[peer_idx:int(32)].borrow();
     newColor = getComplement(color, peer.color);
     peer.color = newColor;
     peer.meetings += 1;
     peer.meetingsWithSelf += is_same;
-    peer.meetingCompleted.write(true, memory_order_release);
+    peer.meetingCompleted.write(true, memoryOrder.release);
     
     color = newColor;
     meetings += 1;
@@ -140,11 +139,11 @@ class Chameneos {
 
   // Implements a spin then yield in the hopes of speeding things up
   inline proc waitUntilCompleted() {
-    var completed = meetingCompleted.read(memory_order_acquire);
+    var completed = meetingCompleted.read(memoryOrder.acquire);
     while (!completed) {
       // read the value a few times before yielding
       for i in 1..numSpins /* play around with this number */ {
-        completed = meetingCompleted.read(memory_order_acquire);
+        completed = meetingCompleted.read(memoryOrder.acquire);
         if completed then break;
       }
       if !completed {
@@ -154,7 +153,7 @@ class Chameneos {
         // done
         break;
       }
-      completed = meetingCompleted.read(memory_order_acquire);
+      completed = meetingCompleted.read(memoryOrder.acquire);
     }
   }
 }
@@ -179,18 +178,18 @@ proc populate (size) {
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
   const D : domain(1, int) = {1..size};
-  var population : [D] owned Chameneos;
+  var population : [D] owned Chameneos?;
 
   if (size == 10) {
     for i in D {
-      population(i) = new owned Chameneos(i, colorsDefault10(i));
+      population(i) = new owned Chameneos(i, colorsDefault10(i-1));
     }
   } else {
     for i in D {
       population(i) = new owned Chameneos(i, ((i-1) % numColors):Color);
     }
   }
-  return population;
+  return try! population:owned Chameneos;
 }
 
 /* run takes a population of Chameneos and a MeetingPlace, then allows the
@@ -224,7 +223,7 @@ proc printInfo(population : [] owned Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 0..<s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

@@ -1,3 +1,5 @@
+use IO;
+
 var myInt = 123;
 var myFloat = 99.9;
 var myString = " ";

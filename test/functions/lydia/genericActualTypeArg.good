@@ -1,1 +1,2 @@
-genericActualTypeArg.chpl:6: error: the type of the actual argument 'Foo' is generic
+int(64)
+Foo

@@ -1,7 +1,7 @@
 
 use MasonEnv;
 
-use FileSystem;
+use FileSystem, SysCTypes;
 
 proc setEnv(name : string, val : string) {
   extern proc setenv(name : c_string, val : c_string, overwrite : c_int) : c_int;
@@ -20,6 +20,7 @@ proc main() {
   // Clear environment for testing
   unsetEnv("MASON_HOME");
   unsetEnv("MASON_REGISTRY");
+  unsetEnv("MASON_OFFLINE");
 
   setEnv("MASON_HOME", here.cwd());
 
@@ -35,6 +36,11 @@ proc main() {
   writeln("----------");
   unsetEnv("MASON_REGISTRY");
 
+  setEnv("MASON_OFFLINE", "true");
+	masonEnv(args);
+  writeln("---------");
+  unsetEnv("MASON_OFFLINE");
+	
   masonEnv(debugArgs);
   writeln("----------");
 

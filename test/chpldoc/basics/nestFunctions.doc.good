@@ -10,6 +10,13 @@ nestFunctions.doc
 
    use nestFunctions.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import nestFunctions.doc;
+
 .. function:: proc outer()
 
    This the comment for the outer function 

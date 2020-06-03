@@ -1,3 +1,4 @@
+private use List;
 use util;
 
 config const n = 15;
@@ -23,12 +24,21 @@ iter helper(param dim : int, param rank : int, ranges) {
 }
 
 proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
-  var ret : [1..0] domain(rank, stridable=true);
+  //
+  // The commented out code below triggers a strange bug related to the RTTI
+  // info for domains not being initialized correctly. However, using a "new"
+  // expression instead provides a workaround to this problem.
+  //
+  // See: #13808
+  //
+  // var ret : list(domain(rank, stridable=true));
+  //
+  var ret = new list(domain(rank, stridable=true));
 
   var innerDom = {1..0};
   var perDim : [1..rank] [innerDom] range(stridable=true);
 
-  for i in 1..rank {
+  for i in 0..#rank {
     const cur = Orig.dim(i);
     const low = cur.low;
     const high = cur.high;
@@ -37,25 +47,25 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
     const quart = size/4;
     const str = Orig.dim(i).stride;
 
-    var mine : [1..0] range(stridable=true);
+    var mine : list(range(stridable=true));
 
-    if cur.length == 1 {
-      mine.push_back(cur by str);
+    if cur.size == 1 {
+      mine.append(cur by str);
     } else {
       // dense ranges
-      mine.push_back(cur by str);
-      mine.push_back(low..#size/2 by str);
+      mine.append(cur by str);
+      mine.append(low..#size/2 by str);
 
       // Try to have a case where we test something like this:
       // {1..10, 1..5} = {1..10, 1..10 by 2}
-      mine.push_back(low..high by 2*str);
+      mine.append(low..high by 2*str);
 
       // single-element slice
-      mine.push_back(low..low by str);
+      mine.append(low..low by str);
 
       if rank <= 2 {
         // single-element due to really large stride
-        mine.push_back(low..high by (size+1)*str);
+        mine.append(low..high by (size+1)*str);
       }
       if rank <= 3 {
         // strides that either do or do not fit in the ranges
@@ -63,21 +73,21 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
         while !(size % even == 0) do even += str;
         while (size % odd == 0) do odd += str;
 
-        mine.push_back(low..high by even);
-        mine.push_back(low..high by odd);
-        mine.push_back((low+quart)..high by even);
-        mine.push_back((low+quart)..high by odd);
-        mine.push_back(low..mid by even);
+        mine.append(low..high by even);
+        mine.append(low..high by odd);
+        mine.append((low+quart)..high by even);
+        mine.append((low+quart)..high by odd);
+        mine.append(low..mid by even);
       }
     }
 
     if innerDom.size < mine.size then innerDom = {1..mine.size};
-    perDim[i][1..mine.size] = mine;
+    perDim[i+1][1..mine.size] = mine;
   }
 
   for r in helper(1, rank, perDim) {
     var dom : domain(rank, stridable=true) = r;
-    ret.push_back(dom);
+    ret.append(dom);
   }
   
   return ret;
@@ -97,8 +107,8 @@ proc test(param rank : int, Dom) {
   B = 3;
 
   var count = 0;
-  for i in 1..slices.size {
-    for j in i..slices.size {
+  for i in 0..slices.size-1 {
+    for j in i..slices.size-1 {
       var sa = slices[i];
       var sb = slices[j];
 
@@ -126,8 +136,8 @@ proc testReindex(param rank : int, Dom) {
   ref refB = B.reindex(Dom);
 
   var count = 0;
-  for i in 1..slices.size {
-    for j in i..slices.size {
+  for i in 0..slices.size-1 {
+    for j in i..slices.size-1 {
       var sa = slices[i];
       var sb = slices[j];
 
@@ -141,7 +151,7 @@ proc testReindex(param rank : int, Dom) {
 
 proc makeDom(param rank : int, low : int, str = 1) {
   var r : rank*range(stridable=true);
-  for param i in 1..rank do r(i) = low.. by str # n;
+  for param i in 0..rank-1 do r(i) = low.. by str # n;
   return r;
 }
 

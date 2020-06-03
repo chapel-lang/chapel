@@ -1,4 +1,0 @@
-vec-hint-ok-harder-zips.chpl:18: note: Vectorization disabled -- address taken
-vec-hint-ok-harder-zips.chpl:24: note: Vectorization disabled -- address taken
-2.0 10001.0
-3.0 10002.0

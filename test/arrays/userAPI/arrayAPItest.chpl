@@ -1,6 +1,8 @@
 config param testError = 0, testDisplayRepresentation = false;
 
 proc readArray(X) {
+  use IO;
+
   open("realValues.txt", iomode.r).reader().read(X);
 }
 
@@ -15,7 +17,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
+
   writeln("shape is: ", X.shape);
   writeln();
   // Test I/O
@@ -87,26 +89,8 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
     writeln("reindexed X[", i, "] = ", x);
   writeln();
   // Test vector ops
-  if testError == 2 then
-    X.push_back(99.99);
-  if testError == 3 then
-    writeln(X.pop_back());
-  if testError == 4 then
-    X.push_front(99.99);
-  if testError == 5 then
-    writeln(X.pop_front());
-  if testError == 6 then
-    X.insert(3, 99.99);
-  if testError == 7 then
-    X.remove(3);
-  if testError == 8 then
-    X.remove(3, 1);
-  if testError == 9 then
-    X.remove(3..3);
   if testError == 10 then
     X.reverse();
-  if testError == 11 then
-    X.clear();
   // Test sparse-specific things
   if testError == 12 then
     writeln("IRV is: ", X.IRV);
@@ -131,7 +115,7 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
+
   writeln("shape is: ", X.shape);
   writeln();
 
@@ -225,33 +209,15 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test views
   writeln("slice by ", sliceDom, ":\n", X[sliceDom]);
-  writeln("rank change 1: ", X[X.domain.alignedLow(1), ..]);
-  writeln("rank change 2: ", X[sliceDom.dim(1), X.domain.alignedHigh(2)]);
+  writeln("rank change 1: ", X[X.domain.alignedLow(0), ..]);
+  writeln("rank change 2: ", X[sliceDom.dim(0), X.domain.alignedHigh(1)]);
   for (i,x) in zip(reindexDom, X.reindex(reindexDom)) do
     writeln("reindexed X[", i, "] = ", x);
   writeln();
 
   // Test vector ops
-  if testError == 2 then
-    X.push_back(99.99);
-  if testError == 3 then
-    writeln(X.pop_back());
-  if testError == 4 then
-    X.push_front(99.99);
-  if testError == 5 then
-    writeln(X.pop_front());
-  if testError == 6 then
-    X.insert(3, 99.99);
-  if testError == 7 then
-    X.remove(3);
-  if testError == 8 then
-    X.remove(3, 1);
-  if testError == 9 then
-    X.remove(3..3);
   if testError == 10 then
     X.reverse();
-  if testError == 11 then
-    X.clear();
   
   // Test sparse-specific things
   if testError == 12 then

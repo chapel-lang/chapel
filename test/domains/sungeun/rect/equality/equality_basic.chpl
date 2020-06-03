@@ -14,39 +14,39 @@ proc checkit(d1, d2) {
 
 {
   var init_range: rank*range;
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     init_range(i) = 1..n*i;
   const D1: domain(rank) = init_range;
   var D2: domain(rank) = init_range;
   checkit(D1, D2);
 
-  init_range(rank/2+1) = 1..1;
+  init_range(rank/2) = 1..1;
   D2 = init_range;
   checkit(D1, D2);
 }
 
 {
   var init_range: rank*range(stridable=true);
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     init_range(i) = 1..n*i by s;
   const D1: domain(rank, stridable=true) = init_range;
   var D2: domain(rank, stridable=true) = init_range;
   checkit(D1, D2);
 
-  init_range(rank/2+1) = 1..1;
+  init_range(rank/2) = 1..1;
   D2 = init_range;
   checkit(D1, D2);
 }
 
 {
   var init_range: rank*range(stridable=true);
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     init_range(i) = 1..n*i by -s;
   const D1: domain(rank, stridable=true) = init_range;
   var D2: domain(rank, stridable=true) = init_range;
   checkit(D1, D2);
 
-  init_range(rank/2+1) = 1..1;
+  init_range(rank/2) = 1..1;
   D2 = init_range;
   checkit(D1, D2);
 }

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BRANCH=unknown
-ENABLE_RV=1
+ENABLE_RV=0
 
 if [ "$#" -eq 0 ]
 then

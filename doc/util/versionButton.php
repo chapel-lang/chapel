@@ -84,12 +84,12 @@ var chplTitle = "<?php echo "$chplTitle";?>";
 var pagePath = "<?php echo "$pagename";?>";
 if (pagePath == "") {
   // If no path is given, default to root of other docs
-  pagePath = "index.html";
+  pagePath = "index";
 }
 function dropSetup() {
-  var currentRelease = "1.19"; // what does the public have?
-  var stagedRelease = "1.20";  // is there a release staged but not yet public?
-  var nextRelease = "1.20";    // what's the next release? (on docs/master)
+  var currentRelease = "1.22"; // what does the public have?
+  var stagedRelease = "1.23";  // is there a release staged but not yet public?
+  var nextRelease = "1.23";    // what's the next release? (on docs/master)
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
@@ -117,7 +117,7 @@ function dropSetup() {
     // Add links to current version of docs
     var link = document.createElement("a");
     link.innerHTML = "version "+currentRelease+"<br>(latest release)";
-    link.href = "http://chapel-lang.org/docs/" + pagePath + ".html";
+    link.href = "https://chapel-lang.org/docs/" + pagePath + ".html";
     dropDiv.append(link);
   }
 
@@ -125,7 +125,7 @@ function dropSetup() {
     // Add links to master version of docs
     var link = document.createElement("a");
     link.innerHTML = "version " + nextRelease + "<br>(pre-release)";
-    link.href = "http://chapel-lang.org/docs/master/" + pagePath + ".html";
+    link.href = "https://chapel-lang.org/docs/master/" + pagePath + ".html";
     dropDiv.append(link);
   }
 }

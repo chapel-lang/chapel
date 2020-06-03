@@ -1,5 +1,5 @@
 CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:10): default rectangular domain standalone invoked on (1..20)
 CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:12): default rectangular domain standalone invoked on (1..20)
-CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:8): default rectangular domain standalone invoked on (1..20)
+CHPL TEST PAR (test_whole_array_assignment_of_elemental_value_is_parallel.chpl:14): default rectangular domain standalone invoked on (1..20)
 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0 2.0

@@ -25,6 +25,8 @@
  */
 
 use Image;    // use helper module related to writing out images
+use List;
+use IO;       // allow use of stderr, stdin, iomode
 
 //
 // =================================================
@@ -67,11 +69,11 @@ const rcpSamples = 1.0 / samples,         // the reciprocal of the # of samples
       halfFieldOfView = fieldOfView / 2;  // compute half the field-of-view
 
 //
-// Set params that symbolically represent dimensions using 1-based indexing
+// Set params that symbolically represent dimensions using 0-based indexing
 //
-param X = 1,
-      Y = 2,
-      Z = 3,
+param X = 0,
+      Y = 1,
+      Z = 2,
       numdims = 3;
 
 //
@@ -87,13 +89,11 @@ record randNums {  // random numbers used for jittering
 }
 
 record sceneType {
-  var lightDom = {1..0},
-      lights: [lightDom] vec3,  // a domain and array of light positions
+  var lights = new list(vec3), // a list of light positions
 
       camera: cameraType,       // the camera
 
-      objDom = {1..0},
-      objects: [objDom] sphere; // a domain and array of sphere objects
+      objects = new list(sphere); // a list of sphere objects
 }
 
 record cameraType {
@@ -227,7 +227,7 @@ proc getPrimaryRay(xy, sample, camera, rands) {
   const i = crossProduct((0.0, 1.0, 0.0), k),
         j = crossProduct(k, i);
 
-  const m: [1..numdims] vec3 = [i, j, k];
+  const m: [0..#numdims] vec3 = [i, j, k];
 
   var pRay = new ray();
   (pRay.dir(X), pRay.dir(Y)) = getSamplePos(xy, sample, rands);
@@ -434,10 +434,10 @@ proc printUsage() {
 proc computeDims(sizeString) {
   const sizeTup = sizeString.partition("x"); // make into 3-tuple ("W","x","H")
 
-  if (sizeTup.size != 3 || sizeTup[2] != "x") then
+  if (sizeTup.size != 3 || sizeTup[1] != "x") then
     halt("--s option requires argument to be in WxH format");
 
-  return (sizeTup[1]:int, sizeTup[3]:int);
+  return (sizeTup[0]:int, sizeTup[2]:int);
 }
 
 //
@@ -446,6 +446,8 @@ proc computeDims(sizeString) {
 // its results are portable, and it can optionally be used in parallel).
 //
 proc initRands() {
+  use SysCTypes;
+
   var rands: randNums;
   
   if useCRand {
@@ -489,20 +491,20 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    newScene.objects.push_back(new sphere((-1.5, -0.3, -1), 0.7,
+    newScene.objects.append(new sphere((-1.5, -0.3, -1), 0.7,
                                           new material((1.0, 0.2, 0.05), 50.0,
                                                        0.3)));
-    newScene.objects.push_back(new sphere((1.5, -0.4, 0), 0.6,
+    newScene.objects.append(new sphere((1.5, -0.4, 0), 0.6,
                                           new material((0.1, 0.85, 1.0), 50.0,
                                                        0.4)));
-    newScene.objects.push_back(new sphere((0, -1000, 2), 999,
+    newScene.objects.append(new sphere((0, -1000, 2), 999,
                                           new material((0.1, 0.2, 0.6), 80.0,
                                                        0.8)));
-    newScene.objects.push_back(new sphere((0, 0, 2), 1,
+    newScene.objects.append(new sphere((0, 0, 2), 1,
                                           new material((1.0, 0.5, 0.1), 60.0,
                                                        0.7)));
-    newScene.lights.push_back((-50, 100, -50));
-    newScene.lights.push_back((40, 40, 150));
+    newScene.lights.append((-50, 100, -50));
+    newScene.lights.append((40, 40, 150));
     newScene.camera = new cameraType((0, 6, -17), (0, -1, 0), 45);
 
     return newScene;
@@ -546,7 +548,7 @@ proc loadScene() {
 
     // if this is a light, store it as such
     if inType == 'l' {
-      newScene.lights.push_back(pos);
+      newScene.lights.append(pos);
       continue;
     }
 
@@ -567,7 +569,7 @@ proc loadScene() {
           refl = columns[10]: real;
 
     // this must be a sphere, so store it
-    newScene.objects.push_back(new sphere(pos, rad,
+    newScene.objects.append(new sphere(pos, rad,
                                           new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file

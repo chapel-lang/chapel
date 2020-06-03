@@ -1,0 +1,2 @@
+renameSameNameConflict2.chpl:1: error: symbol L is multiply defined
+renameSameNameConflict2.chpl:4: note: symbol 'LongName', defined here, was renamed to 'L' at renameSameNameConflict2.chpl:9

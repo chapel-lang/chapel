@@ -56,9 +56,9 @@ const jupiter = new body(pos = (4.84143144246472090e+00,
 
 inline proc sumOfSquares(x:_tuple) where isHomogeneousTuple(x) {
   if x.size == 1 then
-    return x(1)**2;
+    return x(0)**2;
   else
-    return (x(1)**2 + sumOfSquares(chpl__tupleRest(x)));
+    return (x(0)**2 + sumOfSquares(chpl__tupleRest(x)));
 }
 
 record NBodySystem {
@@ -68,7 +68,7 @@ record NBodySystem {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;
-    bodies[1].offsetMomentum(p);
+    bodies[0].offsetMomentum(p);
   }
 
   proc advance(dt) {
@@ -99,9 +99,9 @@ record NBodySystem {
   }
 }
 
-proc main(args: [] string) {
-  const n = args[1]:int;
+config const n = 10000;
 
+proc main(args: [] string) {
   var bodies: NBodySystem;
 
   writef("%.9r\n", bodies.energy());

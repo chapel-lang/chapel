@@ -13,6 +13,9 @@ def get():
         # Use ugni on cray-x* series
         if platform_val.startswith('cray-x'):
             comm_val = 'ugni'
+        # Use ofi on cray-shasta
+        elif platform_val == 'cray-shasta':
+            comm_val = 'ofi'
         # Use gasnet on cray-cs
         elif platform_val.startswith('cray-'):
             comm_val = 'gasnet'

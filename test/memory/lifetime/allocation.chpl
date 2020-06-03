@@ -16,7 +16,7 @@ proc doUnmanagedAllocation() {
   for trial in 0..numTrials {
     {
       timer.start();
-      var arr : [1..allocationsPerTrial] unmanaged object;
+      var arr : [1..allocationsPerTrial] unmanaged object?;
       for i in 1..allocationsPerTrial {
         arr[i] = new unmanaged object();
       }
@@ -39,7 +39,7 @@ proc doSharedAllocation() {
   for trial in 0..numTrials {
     {
       timer.start();
-      var arr : [1..allocationsPerTrial] shared object;
+      var arr : [1..allocationsPerTrial] shared object?;
       for i in 1..allocationsPerTrial {
         arr[i] = new shared object();
       }
@@ -59,7 +59,7 @@ proc doOwnedAllocation() {
   for trial in 0..numTrials {
     {
       timer.start();
-      var arr : [1..allocationsPerTrial] owned object;
+      var arr : [1..allocationsPerTrial] owned object?;
       for i in 1..allocationsPerTrial {
         arr[i] = new owned object();
       }

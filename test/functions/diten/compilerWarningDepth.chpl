@@ -11,7 +11,7 @@ proc f3(param d) {
 }
 
 proc f4(param d) {
-  compilerWarning("warning from f4 with d = " + d, d);
+  compilerWarning("warning from f4 with d = " + d:string, d);
 }
 
 f1(0);  // line = 14

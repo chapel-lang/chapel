@@ -13,10 +13,10 @@
 
 use Math;
 use Tensor;
-use FTree;
+public use FTree;
 use Quadrature;
 use TwoScale;
-use AnalyticFcn;
+public use AnalyticFcn;
 
 config const verbose = false;
 config const debug   = false;
@@ -24,7 +24,7 @@ config const debug   = false;
 class Function {
     const k             = 5;    // use first k Legendre polynomials as the basis in each box
     const thresh        = 1e-5; // truncation threshold for small wavelet coefficients
-    var   f: unmanaged AFcn       = nil;  // analytic f(x) to project into the numerical represntation
+    var   f: unmanaged AFcn?       = nil;  // analytic f(x) to project into the numerical represntation
     const initial_level = 2;    // initial level of refinement
     const max_level     = 30;   // maximum level of refinement mostly as a sanity check
     var   autorefine    = true; // automatically refine during multiplication
@@ -87,7 +87,7 @@ class Function {
     /** Initialize the quadrature coefficient matricies.
      */
     proc init_quadrature(order: int) {
-        for i in quad_phiDom.dim(1) {
+        for i in quad_phiDom.dim(0) {
             var p = phi(quad_x[i], k);
             quad_phi [i, ..] = p;
             quad_phiw[i, ..] = quad_w[i] * p;
@@ -102,10 +102,10 @@ class Function {
      */
     proc make_dc_periodic() {
         var iphase = 1.0;
-        for i in dcDom.dim(1) {
+        for i in dcDom.dim(0) {
             var jphase = 1.0;
 
-            for j in dcDom.dim(2) {
+            for j in dcDom.dim(1) {
                 var gammaij = sqrt((2*i+1) * (2*j+1));
                 var Kij = if (i-j) > 0 && ((i-j) % 2) == 1 then
                         2.0 else 0.0;
@@ -146,10 +146,10 @@ class Function {
         var h     = 0.5 ** n;
         var scale = sqrt(h);
 
-        for mu in quad_phiDom.dim(1) {
+        for mu in quad_phiDom.dim(0) {
             var x  = (l + quad_x[mu]) * h;
-            var fx = f(x);
-            for i in quad_phiDom.dim(2) do
+            var fx = f!(x);
+            for i in quad_phiDom.dim(1) do
                 s[i] += scale * fx * quad_phiw[mu, i];
         }
 
@@ -572,7 +572,7 @@ class Function {
         for i in 0..npt {
 	    // This truncation may lead to a loss of precision in the error calculation.
             // var (fval, Fval) = (truncate(f(i/npt:real)), truncate(this(i/npt:real)));
-            var (fval, Fval) = (f(i/npt:real), this(i/npt:real));
+            var (fval, Fval) = (f!(i/npt:real), this(i/npt:real));
             writef(" -- %.2dr:  F_numeric()=% .8dr  f_analytic()=% .8dr err=% .8dr%s\n",
 		   i/npt:real, truncate(Fval), truncate(fval), truncate(Fval-fval), 
 		   if abs(Fval-fval) > thresh then "  > thresh" else "");

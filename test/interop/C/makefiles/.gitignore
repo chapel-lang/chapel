@@ -7,3 +7,4 @@ libfoo.a
 checkRequire
 checkRequire2
 checkCommandLineLib
+envOverrides

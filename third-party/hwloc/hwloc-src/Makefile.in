@@ -316,6 +316,7 @@ HWLOC_DIFF_W = @HWLOC_DIFF_W@
 HWLOC_EMBEDDED_CFLAGS = @HWLOC_EMBEDDED_CFLAGS@
 HWLOC_EMBEDDED_CPPFLAGS = @HWLOC_EMBEDDED_CPPFLAGS@
 HWLOC_EMBEDDED_LDADD = @HWLOC_EMBEDDED_LDADD@
+HWLOC_EMBEDDED_LDFLAGS = @HWLOC_EMBEDDED_LDFLAGS@
 HWLOC_EMBEDDED_LIBS = @HWLOC_EMBEDDED_LIBS@
 HWLOC_GL_LIBS = @HWLOC_GL_LIBS@
 HWLOC_HAVE_LIBXML2 = @HWLOC_HAVE_LIBXML2@
@@ -928,10 +929,10 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@HWLOC_BUILD_STANDALONE_FALSE@uninstall-local:
-@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 @HWLOC_BUILD_STANDALONE_FALSE@install-data-local:
 @HWLOC_HAVE_WINDOWS_FALSE@install-data-local:
+@HWLOC_BUILD_STANDALONE_FALSE@uninstall-local:
+@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libtool mostlyclean-am

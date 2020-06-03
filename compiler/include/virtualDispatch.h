@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +29,9 @@ class Type;
 
 // Map a method to the set of methods being overridden
 extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualRootsMap;
+
+// Map a method to the set of methods that it may override
+extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualParentsMap;
 
 // Map a method to the set of methods that might be invoked
 extern Map<FnSymbol*, Vec<FnSymbol*>*> virtualChildrenMap;

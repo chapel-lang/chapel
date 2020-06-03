@@ -10,6 +10,13 @@ empty.doc
 
    use empty.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import empty.doc;
+
 .. function:: proc noComment()
 
 .. function:: proc noBody()

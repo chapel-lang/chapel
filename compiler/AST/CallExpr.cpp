@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -243,6 +244,7 @@ void CallExpr::verify() {
     case PRIM_BLOCK_COBEGIN:
     case PRIM_BLOCK_COFORALL:
     case PRIM_BLOCK_ON:
+    case PRIM_BLOCK_ELIDED_ON:
     case PRIM_BLOCK_BEGIN_ON:
     case PRIM_BLOCK_COBEGIN_ON:
     case PRIM_BLOCK_COFORALL_ON:
@@ -254,11 +256,6 @@ void CallExpr::verify() {
 
     case PRIM_BLOCK_UNLOCAL:
       INT_FATAL("PRIM_BLOCK_UNLOCAL between passes");
-      break;
-
-    case PRIM_TYPE_INIT:
-      // A "type init" call is always expected to have a parent.
-      INT_ASSERT(toCallExpr(this->parentExpr));
       break;
 
     default:
@@ -554,6 +551,21 @@ QualifiedType CallExpr::qualType(void) {
     }
 
     retval = QualifiedType(q, fn->retType);
+  } else if (SymExpr* se = toSymExpr(baseExpr)) {
+    // Handle type constructor calls
+    Type* retType = dtUnknown;
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      AggregateType* at = toAggregateType(se->typeInfo());
+      if (at && at->isGeneric() == false) {
+        retType = at;
+      } else if (isPrimitiveType(se->typeInfo()) && numActuals() == 0) {
+        // (call uint(64) 8) represents 'uint(8)', so we don't want to return
+        // a ``uint(64)`` unless there are zero arguments
+        retType = se->typeInfo();
+      }
+    }
+
+    retval = QualifiedType(QUAL_UNKNOWN, retType);
 
   } else {
     retval = QualifiedType(dtUnknown);
@@ -626,11 +638,6 @@ void CallExpr::prettyPrint(std::ostream* o) {
       baseExpr->prettyPrint(o);
     }
 
-  } else if (primitive != NULL) {
-    if (primitive->tag == PRIM_TYPE_INIT) {
-      unusual = true;
-      argList.head->prettyPrint(o);
-    }
   }
 
   if (!array && !unusual) {
@@ -815,4 +822,106 @@ FnSymbol* resolvedToTaskFun(CallExpr* call) {
   }
 
   return retval;
+}
+
+bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
+{
+
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN) ||
+      call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY)) {
+    // case 1: PRIM_MOVE/PRIM_ASSIGN into a variable
+    SymExpr* retSe = toSymExpr(call->get(1));
+    INT_ASSERT(retSe);
+
+    CallExpr* retCall = NULL;
+    if (CallExpr* rhsCallExpr = toCallExpr(call->get(2))) {
+      if (rhsCallExpr->resolvedOrVirtualFunction()) {
+        retCall = rhsCallExpr;
+      }
+    }
+    lhsSe = retSe;
+    initOrCtor = retCall;
+    return true;
+  } else if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+             call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
+             call->isPrimitive(PRIM_INIT_VAR) ||
+             call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
+             call->isPrimitive(PRIM_INIT_FIELD)) {
+    lhsSe = toSymExpr(call->get(1));
+    initOrCtor = NULL;
+    return true;
+  }
+
+  if (FnSymbol* calledFn = call->resolvedOrVirtualFunction()) {
+    if (calledFn->isMethod() &&
+        (calledFn->name == astrInit || calledFn->name == astrInitEquals)) {
+      // case 2: init or init=
+      for_formals_actuals(formal, actual, call) {
+        if (formal->hasFlag(FLAG_ARG_THIS)) {
+          SymExpr* se = toSymExpr(actual);
+          if (NamedExpr* ne = toNamedExpr(actual)) {
+            INT_ASSERT(ne->name == formal->name);
+            se = toSymExpr(ne->actual);
+          }
+
+          INT_ASSERT(se != NULL);
+          lhsSe = se;
+          initOrCtor = call;
+          return true;
+        }
+      }
+      INT_FATAL("init or init= pattern not handled");
+
+    } else if (calledFn->hasFlag(FLAG_FN_RETARG)) {
+      // case 3: return through ret-arg
+      for_formals_actuals(formal, actual, call) {
+        if (formal->hasFlag(FLAG_RETARG)) {
+          SymExpr* se = toSymExpr(actual);
+          if (NamedExpr* ne = toNamedExpr(actual)) {
+            INT_ASSERT(ne->name == formal->name);
+            se = toSymExpr(ne->actual);
+          }
+
+          INT_ASSERT(se != NULL);
+          lhsSe = se;
+          initOrCtor = call;
+          return true;
+        }
+      }
+    }
+  }
+
+  lhsSe = NULL;
+  initOrCtor = NULL;
+  return false;
+}
+
+// For use during/after resolution. Returns 'true' if the call is to
+// a function returning a record by value or an initializer.
+// Handles both 'move lhs, someCall()' and 'someCall(retarg=lhs)' forms.
+// lhsSe is the SymExpr indicating what is being set.
+// initOrCtor is the user call (e.g. someCall in the examples above).
+bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor) {
+  SymExpr* gotSe = NULL;
+  CallExpr* gotCall = NULL;
+  if (isInitOrReturn(call, gotSe, gotCall)) {
+    INT_ASSERT(gotSe);
+    Type* t = NULL;
+    if (call->isPrimitive(PRIM_MOVE))
+      t = gotSe->typeInfo();
+    else
+      t = gotSe->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      if (isRecord(at)) {
+        lhsSe = gotSe;
+        initOrCtor = gotCall;
+        return true;
+      }
+    }
+  }
+
+  lhsSe = NULL;
+  initOrCtor = NULL;
+  return false;
 }

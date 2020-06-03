@@ -119,13 +119,8 @@ typedef struct {
   ==========================
 */
 
-#if GASNETI_STATS_OR_TRACE
-  #define GASNETC_HDR_TIMESTAMP	8
-#else
-  #define GASNETC_HDR_TIMESTAMP	0
-#endif
-#define GASNETC_MEDIUM_HDRSZ	(GASNETC_HDR_TIMESTAMP + 4)
-#define GASNETC_LONG_HDRSZ	(GASNETC_HDR_TIMESTAMP + SIZEOF_VOID_P + 4)
+#define GASNETC_MEDIUM_HDRSZ	(4)
+#define GASNETC_LONG_HDRSZ	(SIZEOF_VOID_P + 4)
 
 #define GASNETC_MAX_ARGS_USER	16
 #define GASNETC_MAX_ARGS_EXTRA	1	/* For flow-control info */

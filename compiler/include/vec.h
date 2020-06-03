@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -53,6 +54,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <cstring>
 #include <stdint.h>
 #include <cstdlib>
+#include <vector>
 
 // Simple Vector class, also supports open hashed sets
 
@@ -116,6 +118,7 @@ class Vec {
   void copy(const Vec<C,S> &v);
   void fill(int n);
   void append(const Vec<C,S> &v);
+  void append(const std::vector<C> &v);
   void remove(int index);
   void insert(int index, C a);
   void reverse();
@@ -351,6 +354,14 @@ Vec<C,S>::append(const Vec<C,S> &vv)  {
   for (C *c = vv.v; c < vv.v + vv.n; c++)
     if (*c)
       add(*c);
+}
+
+// Added to ease the transition from using Vec to std::vector
+template <class C, int S> inline void
+Vec<C,S>::append(const std::vector<C> &v) {
+  for (uint64_t i = 0; i < v.size(); i++) {
+    add(v[i]);
+  }
 }
 
 template <class C, int S> inline void 

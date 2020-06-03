@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -30,19 +31,28 @@ bool printSystemCommands = false;
 
 int mysystem(const char* command, 
              const char* description,
-             bool        ignoreStatus) {
+             bool        ignoreStatus,
+             bool        quiet) {
   int status = 0;
 
-  // Treat a '#' at the start of a line as a comment
-  if (command[0] != '#') {
-    status = system(command);
+  if (printSystemCommands && !quiet) {
+    printf("\n# %s\n", description);
+    printf("%s\n", command);
+    fflush(stdout);
+    fflush(stderr);
   }
+
+  // Treat a '#' at the start of a line as a comment
+  if (command[0] == '#')
+    return 0;
+
+  status = system(command);
 
   if (status == -1) {
     USR_FATAL("system() fork failed: %s", strerror(errno));
 
   } else if (status != 0 && ignoreStatus == false) {
-    USR_FATAL(description);
+    USR_FATAL("%s", description);
   }
 
   return status;

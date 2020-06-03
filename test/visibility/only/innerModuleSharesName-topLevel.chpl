@@ -1,10 +1,12 @@
-module M {
+module OuterModule {
   module M {
-    proc whatev() {
-      writeln("whee");
+    module M {
+      proc whatev() {
+        writeln("whee");
+      }
     }
   }
-}
 
-use M only M;
-M.whatev();
+  use M only M;
+  M.whatev();
+}

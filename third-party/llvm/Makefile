@@ -28,11 +28,14 @@ ifeq ($(CHPL_LLVM_ASSERTS),1)
 endif
 
 ifdef CHPL_RV
-CHPL_RV_CMAKE = -DRV_ENABLE_CRT=on -DLLVM_ENABLE_CXX1Y=on
+CHPL_RV_CMAKE = -DRV_ENABLE_CRT=on -DLLVM_ENABLE_CXX1Y=on -DLLVM_CXX_STD:STRING=c++14
 endif
 
 ifneq ($(LLVM_SUBDIR),llvm-src)
   CHPL_LLVM_ENABLE_PROJECTS="-DLLVM_ENABLE_PROJECTS=clang"
+  ifdef CHPL_RV
+    CHPL_LLVM_ENABLE_PROJECTS="-DLLVM_ENABLE_PROJECTS=clang;compiler-rt"
+  endif
 endif
 
 LLVM_SRC_FILE := $(LLVM_SRC_DIR)/CMakeLists.txt
@@ -174,13 +177,14 @@ $(LLVM_CLANG_FILE):
 # This file is necessary on darwin where important headers are
 # not in /usr/include. This causes a problem when building another clang
 # because the new clang can't find the appropriate headers.
-$(LLVM_CLANG_CONFIG_FILE):
-	mkdir -p $(LLVM_INSTALL_DIR)
-	if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
-	  ../../util/config/gather-clang-sysroot-arguments clang > $(LLVM_CLANG_CONFIG_FILE) ; \
+$(LLVM_CLANG_CONFIG_FILE): FORCE
+	@mkdir -p $(LLVM_INSTALL_DIR)
+	@if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
+	  $(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments clang > $(LLVM_CLANG_CONFIG_FILE).incoming ; \
         else \
-          touch $(LLVM_CLANG_CONFIG_FILE) ; \
+          touch $(LLVM_CLANG_CONFIG_FILE).incoming ; \
         fi
+	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(LLVM_CLANG_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE).incoming
 
 configure-llvm: $(LLVM_CONFIGURED_HEADER_FILE)
 

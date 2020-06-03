@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -100,6 +101,7 @@ void expandExternArrayCalls() {
       fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
       fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
       fcopy->removeFlag(FLAG_EXTERN);
+      fcopy->removeFlag(FLAG_NO_FN_BODY);
       fcopy->addFlag(FLAG_INLINE);
 
       fcopy->cname = astr("chpl__extern_array_wrapper_", fcopy->cname);

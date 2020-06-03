@@ -1,0 +1,3 @@
+parent-child-mismatch.chpl:19: error: unresolved call 'g(Wrapper(unmanaged ChildGenericClass(int(64))))'
+parent-child-mismatch.chpl:13: note: this candidate did not match: g(x: Wrapper(unmanaged ParentGenericClass))
+parent-child-mismatch.chpl:13: note: because an argument was incompatible

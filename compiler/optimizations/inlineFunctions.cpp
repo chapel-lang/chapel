@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -223,6 +224,8 @@ static void inlineCall(CallExpr* call) {
   }
 }
 
+static void markTaskFunctionsInlined(BlockStmt* body);
+
 //
 // Make a copy of the function's body.  The symbol map is initialized
 // with a map from the function's formals to the actuals for the call.
@@ -284,8 +287,32 @@ BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* stmt) {
     reset_ast_loc(retval, call);
   }
 
+  // Look for calls to task functions in retval so that we can
+  // mark them as inlined task functions.
+  markTaskFunctionsInlined(retval);
+
   return retval;
 }
+
+static void markTaskFunctionsInlined(BlockStmt* body)
+{
+  std::vector<CallExpr*> fnCalls;
+  collectFnCalls(body, fnCalls);
+  for_vector(CallExpr, call, fnCalls) {
+    if (FnSymbol* cfn = call->resolvedFunction()) {
+      bool taskOrWrapper = isTaskFun(cfn) ||
+                           cfn->hasFlag(FLAG_ON_BLOCK) ||
+                           cfn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+                           cfn->hasFlag(FLAG_BEGIN_BLOCK);
+
+      if (taskOrWrapper && !cfn->hasFlag(FLAG_INLINED_FN)) {
+        cfn->addFlag(FLAG_INLINED_FN);
+        markTaskFunctionsInlined(cfn->body);
+      }
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *

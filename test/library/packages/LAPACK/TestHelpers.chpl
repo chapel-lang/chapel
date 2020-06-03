@@ -1,5 +1,5 @@
 module TestHelpers {
-  use LAPACK;
+  public use LAPACK;
   param default_epsilon: real = 10.0e-14;  
 
   class LAPACK_Matrix {
@@ -80,7 +80,7 @@ module TestHelpers {
       
     }
     
-    proc init( matrix: LAPACK_Matrix(?t), type data_type = t ){
+    proc init( matrix: borrowed LAPACK_Matrix, type data_type = matrix.data_type ){
       this.data_type = data_type;
       this.row_major = matrix.row_major;
       this.rows = matrix.rows;
@@ -103,7 +103,7 @@ module TestHelpers {
       assert( dimensions.size <= 2 );
       
       if dimensions.size == 1 {
-        var arrayRange: range = dimensions[1];
+        var arrayRange: range = dimensions[0];
         var shift = arrayRange.low - 1;
         //writeln( "(i, j, idx )" );
         for (i,j) in matrix_domain {
@@ -115,14 +115,14 @@ module TestHelpers {
 
         }
       } else {
-        var array_leading = if arrayIsRowMajor then 1 else 2;
-        var array_following = 3-array_leading;
-        var trans = ( d.dim(array_leading).low - this.matrix_domain.dim(1).low,
-                      d.dim(array_following).low - this.matrix_domain.dim(2).low );
+        var array_leading = if arrayIsRowMajor then 0 else 1;
+        var array_following = 1-array_leading;
+        var trans = ( d.dim(array_leading).low - this.matrix_domain.dim(0).low,
+                      d.dim(array_following).low - this.matrix_domain.dim(1).low );
                       
         for (i,j) in this.matrix_domain {
-          this[i,j] = if arrayIsRowMajor then array[i+trans[1],j+trans[2]] 
-                                         else array[j+trans[1],i+trans[2]] ;
+          this[i,j] = if arrayIsRowMajor then array[i+trans[0],j+trans[1]] 
+                                         else array[j+trans[0],i+trans[1]] ;
         }
       }
     }
@@ -139,27 +139,25 @@ module TestHelpers {
     }
     
     proc this( idx: 2*int ) ref : data_type {
-      return this( idx[1], idx[2] );
+      return this( idx[0], idx[1] );
     }
     
     proc rowRange : range {
-      return matrix_domain.dim(1);
+      return matrix_domain.dim(0);
     }
     
     proc columnRange : range {
-      return matrix_domain.dim(2);
+      return matrix_domain.dim(1);
     }
     
     proc toString(): string {
       var retstring: string = "";
-      var leading = if row_major then 1 else 2;
-      var following = 3 - leading;
       for i in this.rowRange{
         retstring += if i == 1 then ( "[ " )
                                else ( "  " );
                               
         for j in this.columnRange {
-          retstring += ( this[i,j] + ", " );
+          retstring += ( this[i,j]:string + ", " );
         }
         
         retstring += if i == this.rows then ( "]" )
@@ -177,7 +175,7 @@ module TestHelpers {
     }
     
     proc leadingDimension: int {
-      return this.data_domain.dim(2).size;
+      return this.data_domain.dim(1).size;
     }
     
     proc order: int {
@@ -191,7 +189,11 @@ module TestHelpers {
     return (matrix_order == lapack_memory_order.row_major);
   }
   
-  proc *( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): owned LAPACK_Matrix(t) {
+  // Not using type queries to work around issue #13721
+  proc *( A: borrowed LAPACK_Matrix, B: borrowed LAPACK_Matrix ): owned LAPACK_Matrix(A.data_type) {
+    if A.data_type != B.data_type then
+      compilerError("data_type mismatch in *");
+
     assert( A.columns == B.rows );
     var row_ordered = if ( A.isRowMajor &&  B.isRowMajor)
                       || (!A.isRowMajor && !B.isRowMajor) 
@@ -199,7 +201,7 @@ module TestHelpers {
                     else
                       true;
     
-    var retmatrix = new owned LAPACK_Matrix( t, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
+    var retmatrix = new owned LAPACK_Matrix( A.data_type, A.rows, B.columns, row_ordered, error = min( A.epsilon, B.epsilon ) );
     
     for i in A.rowRange do
       for j in B.columnRange do
@@ -209,7 +211,10 @@ module TestHelpers {
     return retmatrix;
   }
   
-  proc ==( A: LAPACK_Matrix(?t), B: LAPACK_Matrix(t) ): bool {
+  proc ==( A: borrowed LAPACK_Matrix, B: borrowed LAPACK_Matrix ): bool {
+    if A.data_type != B.data_type then
+      compilerError("data_type mismatch in ==");
+
     //if A == nil then halt( "A is nil" );
     //if B == nil then halt( "B is nil" );
     if !( A.rows == B.rows && A.columns == B.columns ) then

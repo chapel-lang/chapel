@@ -13,7 +13,7 @@ class Parent {
 }
 
 class Child : Parent {
-  var y : unmanaged Dummy(stridable);
+  var y : unmanaged Dummy(stridable)?;
 }
 
 var c = new unmanaged Child(false, 5);
@@ -32,7 +32,7 @@ class A {
 }
 
 class Z : A {
-  var x : unmanaged Dummy(stridable);
+  var x : unmanaged Dummy(stridable)?;
 }
 
 var z = new owned Z(1, int, false);
@@ -51,7 +51,7 @@ class DummyBaseDom {
 }
 
 class DummyMyDom : DummyBaseDom {
-  var locs : [1..4] unmanaged DummyLocMyDom(rank, idxType, stridable);
+  var locs : [1..4] unmanaged DummyLocMyDom(rank, idxType, stridable)?;
 }
 
 class DummyLocMyDom {

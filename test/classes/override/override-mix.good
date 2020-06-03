@@ -1,4 +1,4 @@
 override-mix.chpl:9: error: Child.f override keyword present but no superclass method matches signature to override
 override-mix.chpl:11: error: Child.g override keyword present but no superclass method matches signature to override
 override-mix.chpl:12: error: Child.g override keyword present but no superclass method matches signature to override
-override-mix.chpl:14: warning: Child.h override keyword required for method matching signature of superclass method
+override-mix.chpl:14: error: Child.h override keyword required for method matching signature of superclass method

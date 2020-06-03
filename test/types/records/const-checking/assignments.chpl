@@ -9,12 +9,12 @@ var RECGLOBvar: RECTYPE;
 const RECGLOBconst: RECTYPE;
 
 proc TEST1() {
-  var RECVAR: RECTYPE;
+  var RECVAR: RECTYPE = new RECTYPE();
   RECVAR = RECGLOBvar; // error - assignment to a record with a 'const' field
 }
 
 proc TEST2() {
-  const RECCONST: RECTYPE;
+  const RECCONST: RECTYPE = new RECTYPE();
   RECCONST = RECGLOBvar; // error -- assignment to a 'const'
 }
 
@@ -68,12 +68,12 @@ var OUTERGLOBvar: OUTERREC;
 const OUTERGLOBconst: OUTERREC;
 
 proc quest1() {
-  var RECVAR: OUTERREC;
+  var RECVAR: OUTERREC = new OUTERREC();
   RECVAR = OUTERGLOBvar; // error - assignment to a record with a 'const' field
 }
 
 proc quest2() {
-  const RECCONST: OUTERREC;
+  const RECCONST: OUTERREC = new OUTERREC();
   RECCONST = OUTERGLOBvar; // error -- assignment to a 'const'
 }
 

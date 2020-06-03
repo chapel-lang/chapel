@@ -1,6 +1,6 @@
 use Random;
 
-var rng = makeRandomStream(real);
+var rng = createRandomStream(real);
 
 var expectInt = rng.getNext(int, 1, 10);
 assert(expectInt.type == int);

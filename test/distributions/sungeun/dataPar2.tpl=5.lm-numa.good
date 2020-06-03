@@ -7,7 +7,7 @@
 ### nranges = (1..0)
 ### nranges = (1..1, 1..6, 1..3, 1..3, 1..3, 1..3)
 ### numChunks = 0 (parDim = -1)
-### numChunks = 5 (parDim = 2)
+### numChunks = 5 (parDim = 1)
 ### numTasksPerLoc = 5
 ### numTasksPerLoc = 5
 OK

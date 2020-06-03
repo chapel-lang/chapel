@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -309,13 +310,8 @@ FILE* openfile(const char* filename,
   FILE* newfile = fopen(filename, mode);
 
   if (newfile == NULL) {
-    const char* errorstr = "opening ";
-    const char* errormsg = astr(errorstr,
-                                filename, ": ",
-                                strerror(errno));
-
     if (fatal == true) {
-      USR_FATAL(errormsg);
+      USR_FATAL("opening %s: %s", filename, strerror(errno));
     }
   }
 
@@ -325,10 +321,7 @@ FILE* openfile(const char* filename,
 
 void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
-    const char* errorstr = "closing file: ";
-    const char* errormsg = astr(errorstr, strerror(errno));
-
-    USR_FATAL(errormsg);
+    USR_FATAL("closing file: %s", strerror(errno));
   }
 }
 
@@ -440,17 +433,14 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
 
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
-      USR_FATAL(astr("file '",
-                     filename[i],
-                     "' does not have a recognized suffix"));
+      USR_FATAL("file '%s' does not have a recognized suffix", filename[i]);
     }
     // WE SHOULDN"T TRY TO OPEN .h files, just .c and .chpl and .o
     if (!isCHeader(filename[i])) {
       FILE* testfile = openInputFile(filename[i]);
       if (fscanf(testfile, "%c", &achar) != 1) {
-        USR_FATAL(astr("source file '",
-                       filename[i],
-                       "' is either empty or a directory"));
+        USR_FATAL("source file '%s' is either empty or a directory",
+                  filename[i]);
       }
 
       closeInputFile(testfile);
@@ -542,8 +532,8 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   } else if (strcmp(debugger, "lldb") == 0) {
     fprintf(dbgfile, "settings set -- target.run-args");
   } else {
-      INT_FATAL(astr("createDebuggerFile doesn't know how to handle the given "
-                     "debugger: '", debugger, "'"));
+      INT_FATAL("createDebuggerFile doesn't know how to handle the given "
+                "debugger: '%s'", debugger);
   }
   for (i=1; i<argc; i++) {
     if (strcmp(argv[i], astr("--", debugger)) != 0) {
@@ -597,13 +587,11 @@ std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
   std::string result = "";
-  std::string error = "";
 
   // Call command
   FILE* pipe = popen(command.c_str(), "r");
   if (!pipe) {
-    error = "running " + command;
-    USR_FATAL(error.c_str());
+    USR_FATAL("running %s", command.c_str());
   }
 
   // Read output of command into result via buffer
@@ -614,8 +602,7 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    error = command + " did not run successfully";
-    USR_FATAL(error.c_str());
+    USR_FATAL("%s did not run successfully", command.c_str());
   }
 
   return result;
@@ -853,8 +840,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
 
-  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s %s\n",
-          lmode, ldflags.c_str());
+  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s\n",
+          lmode);
+  fprintf(makefile.fptr, "COMP_GEN_USER_LDFLAGS = %s\n",
+          ldflags.c_str());
 
   // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
@@ -1027,7 +1016,6 @@ void expandInstallationPaths(std::vector<std::string>& args) {
 }
 
 // would just use realpath, but it is not supported on all platforms.
-static
 char* chplRealPath(const char* path)
 {
   // We would really rather use

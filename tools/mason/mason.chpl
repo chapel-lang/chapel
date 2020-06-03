@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +24,7 @@
 use MasonModify;
 use MasonUtils;
 use MasonHelp;
+use MasonDoc;
 use MasonEnv;
 use MasonNew;
 use MasonBuild;
@@ -33,7 +35,8 @@ use MasonRun;
 use FileSystem;
 use MasonSystem;
 use MasonExternal;
-
+use MasonPublish;
+use MasonInit;
 
 /*
 
@@ -77,6 +80,7 @@ proc main(args: [] string) throws {
     }
     select (args[1]) {
       when 'new' do masonNew(args);
+      when 'init' do masonInit(args);
       when 'add' do masonModify(args);
       when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);
@@ -88,10 +92,10 @@ proc main(args: [] string) throws {
       when 'test' do masonTest(args);
       when 'env' do masonEnv(args);
       when 'doc' do masonDoc(args);
-      when 'clean' do masonClean();
+      when 'publish' do masonPublish(args);
+      when 'clean' do masonClean(args);
       when 'help' do masonHelp();
       when 'version' do printVersion();
-      when '--list' do masonList();
       when '-h' do masonHelp();
       when '--help' do masonHelp();
       when '-V' do printVersion();
@@ -109,8 +113,12 @@ proc main(args: [] string) throws {
 }
 
 
-proc masonClean() {
+proc masonClean(args) {
   try! {
+    if args.size == 3 {
+      masonCleanHelp();
+      exit(0);
+    }
     const cwd = getEnv("PWD");
 
     const projectHome = getProjectHome(cwd);
@@ -121,37 +129,6 @@ proc masonClean() {
   }
 }
 
-
-proc masonDoc(args) {
-  try! {
-    const tomlName = 'Mason.toml';
-    const cwd = getEnv("PWD");
-
-    const projectHome = getProjectHome(cwd, tomlName);
-    const tomlPath = projectHome + "/" + tomlName;
-
-    const toParse = open(projectHome + "/" + tomlName, iomode.r);
-    var tomlFile = new owned(parseToml(toParse));
-
-    const projectName = tomlFile["brick"]["name"].s;
-    const projectFile = projectName + '.chpl';
-
-    if isDir(projectHome + '/src/') {
-      if isFile(projectHome + '/src/' + projectFile) {
-        const command = 'chpldoc ' + projectHome + '/src/' + projectFile + ' -o ' + projectHome + '/doc/';
-        writeln(command);
-        runCommand(command);
-      }
-    }
-    else {
-      writeln('Mason could not find the project to document!');
-      runCommand('chpldoc');
-    }
-  }
-  catch e: MasonError {
-    stderr.writeln(e.message());
-  }
-}
 
 proc printVersion() {
   writeln('mason 0.1.2');

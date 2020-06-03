@@ -1,0 +1,12 @@
+--size=arraySize.tiny --dist=distType.block  #distCreate-tiny-block
+--size=arraySize.tiny --dist=distType.cyclic   #distCreate-tiny-cyclic
+--size=arraySize.tiny --dist=distType.blockCyc   #distCreate-tiny-blockCyc
+--size=arraySize.tiny --dist=distType.stencil   #distCreate-tiny-stencil
+--size=arraySize.small --dist=distType.block  #distCreate-small-block
+--size=arraySize.small --dist=distType.cyclic  #distCreate-small-cyclic
+--size=arraySize.small --dist=distType.blockCyc  #distCreate-small-blockCyc
+--size=arraySize.small --dist=distType.stencil  #distCreate-small-stencil
+--size=arraySize.large --dist=distType.block  #distCreate-large-block
+--size=arraySize.large --dist=distType.cyclic  #distCreate-large-cyclic
+--size=arraySize.large --dist=distType.blockCyc  #distCreate-large-blockCyc
+--size=arraySize.large --dist=distType.stencil  #distCreate-large-stencil

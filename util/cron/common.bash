@@ -85,28 +85,30 @@ export CHPL_TARGET_CPU=none
 
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
-cascade_prefix=/data/sea/chapel
+sea_prefix=/data/sea/chapel
 if [ -n "$explicit_prefix" ]; then
-    logdir_prefix=$explicit_prefix
-elif [ -d $cascade_prefix ] ; then
-    logdir_prefix=$cascade_prefix
+    LOGDIR_PREFIX=$explicit_prefix
+elif [ -d $sea_prefix ] ; then
+    LOGDIR_PREFIX=$sea_prefix
 else
-    logdir_prefix=$default_prefix
-    if [ ! -d $logdir_prefix ] ; then
-        mkdir -p $logdir_prefix
+    LOGDIR_PREFIX=$default_prefix
+    if [ ! -d $LOGDIR_PREFIX ] ; then
+        mkdir -p $LOGDIR_PREFIX
     fi
-    log_info "Using default dir for chapel logs. These are not permanent! Location: ${logdir_prefix}"
+    log_info "Using default dir for chapel logs. These are not permanent! Location: ${LOGDIR_PREFIX}"
 fi
-export logdir_prefix
+export LOGDIR_PREFIX
+export PERF_LOGDIR_PREFIX=${CHPL_NIGHTLY_PERF_LOG_PREFIX:-/cray/css/users/chapelu}
 
-export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-$logdir_prefix/Nightly}
+export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-$LOGDIR_PREFIX/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR=$CHPL_NIGHTLY_LOGDIR
 
 # It is tempting to use hostname --short, but macs only support the short form
 # of the argument.
+export CHPL_TEST_PERF_CONFIG_NAME=${CHPL_TEST_PERF_CONFIG_NAME:-$(hostname -s)}
 if [ -z "$CHPL_TEST_PERF_DIR" ]; then
-    export CHPL_TEST_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
+    export CHPL_TEST_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
 fi
 if [ -z "$CHPL_TEST_COMP_PERF_DIR" ]; then
-    export CHPL_TEST_COMP_PERF_DIR=$logdir_prefix/NightlyPerformance/$(hostname -s)
+    export CHPL_TEST_COMP_PERF_DIR=$PERF_LOGDIR_PREFIX/NightlyPerformance/$CHPL_TEST_PERF_CONFIG_NAME
 fi

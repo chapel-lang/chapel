@@ -33,9 +33,10 @@ MPI_CC="$CC" ; export MPI_CC     # MPI-enabled C compiler
 #MPI_CFLAGS='' ; export MPI_CFLAGS  # flags for MPI_CC
 MPI_LIBS='' ; export MPI_LIBS      # libs for linking with MPI_CC
 MPIRUN_CMD="${SRUN:-srun} -K0 -W60 %V -mblock -n %N %C" ; export MPIRUN_CMD  # launch command for MPI jobs
-EXTRA_CONFIGURE_ARGS="--disable-auto-conduit-detect --enable-smp --enable-mpi --enable-aries --enable-ofi=probe --with-ofi-provider=gni --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
-# OS string for test harness purposes
-EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_cnl"
+EXTRA_CONFIGURE_ARGS="--disable-auto-conduit-detect --enable-smp --enable-aries --enable-mpi=probe --enable-ofi=probe --with-ofi-provider=gni --disable-aligned-segments --enable-pshm --disable-pshm-posix --enable-pshm-xpmem --enable-throttle-poll"
+# OS string and PrgEnv identifier for test harness purposes
+PRGENV=`expr ":$LOADEDMODULES" : '.*:\(PrgEnv-[a-z]*\)' 2>/dev/null | tr '[A-Z]-' '[a-z]_'`
+EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --with-feature-list=os_cnl${PRGENV:+,$PRGENV}"
 # minimal backtracing support
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-backtrace-execinfo"
 if test -x /usr/bin/gdb ; then # Enable gdb probe if it appears to be present
@@ -51,9 +52,13 @@ fi
 #   by running config-aux/config.guess on the target machine
 TARGET_ID='x86_64-cnl-linux-gnu'
 
-# 3. Review the automatically-detected settings below and make corrections as necessary.
+# 3. Optionally cross-compile and run the detect-cachesz.c utility and
+#    fill in the value below and uncomment.  If not set the default is platform-dependent.
+CACHE_LINE_BYTES=64; export CACHE_LINE_BYTES
 
-# 4. Place this output script in your top-level source directory and run it,
+# 4. Review the automatically-detected settings below and make corrections as necessary.
+
+# 5. Place this output script in your top-level source directory and run it,
 #   passing it any additional configure arguments as usual (see configure --help).
 
 ################################################
@@ -96,12 +101,16 @@ CROSS_SIGKILL='9' ; export CROSS_SIGKILL
 CROSS_SIGTERM='15' ; export CROSS_SIGTERM
 CROSS_SIGUSR1='10' ; export CROSS_SIGUSR1
 
+# Find source directory
 
-SRCDIR=`dirname $0`
+if test -z "$SRCDIR" || test ! -f "$SRCDIR/configure" ; then
+  SRCDIR=`dirname $0`
+fi
 if test ! -f "$SRCDIR/configure" ; then
-  echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
+  echo "ERROR: Source directory not found. Either set \$SRCDIR=/path/to/src or copy/link the `basename $0` script to the same directory as the configure script"
   exit 1
 fi
+
 # Detect the build+host machine type
 HOST_APPEND=
 for sys in host build; do

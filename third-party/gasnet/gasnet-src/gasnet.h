@@ -386,6 +386,62 @@ int gasnet_AMGetMsgSource(gasnet_token_t _token, gasnet_node_t *_srcrank) {
         gex_AM_ReplyLong16(token, handler, source_addr, nbytes, dest_addr, GEX_EVENT_NOW, 0, (gex_AM_Arg_t)a0, (gex_AM_Arg_t)a1, (gex_AM_Arg_t)a2, (gex_AM_Arg_t)a3, (gex_AM_Arg_t)a4, (gex_AM_Arg_t)a5, (gex_AM_Arg_t)a6, (gex_AM_Arg_t)a7, (gex_AM_Arg_t)a8, (gex_AM_Arg_t)a9, (gex_AM_Arg_t)a10, (gex_AM_Arg_t)a11, (gex_AM_Arg_t)a12, (gex_AM_Arg_t)a13, (gex_AM_Arg_t)a14, (gex_AM_Arg_t)a15)
 
 /* ------------------------------------------------------------------------------------ */
+/*
+  Variable-Argument Active Message Request/Reply Functions
+  ========================================================
+  These were never a normative feature of GASNet-1, but are provided as best-effort for
+  backwards compatibility of clients who may rely upon them.
+  They will only be available for compilers supporting C99-style vararg macros - this is 
+  guaranteed by std C99 and C++11, but can otherwise be forced with -DGASNETI_FORCE_VA_ARG
+
+  Note these differed in signature from the similar feature in EX in that they require the
+  client to explicitly pass the argument count before the argument list
+*/
+
+#if GASNETI_USING_VA_ARG
+
+  #define _GASNETI_ARGCOUNT_VAL(_stem, ...) _stem
+  #define GASNETI_ARGCOUNT_VAL(...) _GASNETI_ARGCOUNT_VAL(__VA_ARGS__,gasneti_dummy)
+
+  // First element of VA_ARGS below is the (possibly computed) argument count, 
+  // which is checked against the actual argument count and then discarded by folding into the flags arg
+  #define gasnet_AMRequestShort(node,hidx,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMRequestShort()"), \
+          GASNETI_AMVA(RequestShort,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,0&&__VA_ARGS__) )
+
+  #define gasnet_AMRequestMedium(node,hidx,src_addr,nbytes,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMRequestMedium()"), \
+          GASNETI_AMVA(RequestMedium,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+
+  #define gasnet_AMRequestLong(node,hidx,src_addr,nbytes,dst_addr,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMRequestLong()"), \
+          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+
+  #define gasnet_AMRequestLongAsync(node,hidx,src_addr,nbytes,dst_addr,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMRequestLongAsync()"), \
+          GASNETI_AMVA(RequestLong,__VA_ARGS__)(gasneti_thunk_tm,node,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+
+  #define gasnet_AMReplyShort(token,hidx,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMReplyShort()"), \
+          GASNETI_AMVA(ReplyShort,__VA_ARGS__)(token,hidx,0&&__VA_ARGS__) )
+
+  #define gasnet_AMReplyMedium(token,hidx,src_addr,nbytes,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMReplyMedium()"), \
+          GASNETI_AMVA(ReplyMedium,__VA_ARGS__)(token,hidx,src_addr,nbytes,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+
+  #define gasnet_AMReplyLong(token,hidx,src_addr,nbytes,dst_addr,...) ( \
+          gasneti_assert_reason_always(GASNETI_ARGCOUNT_VAL(__VA_ARGS__) == GASNETI_AMNUMARGS(__VA_ARGS__), \
+                                       "Argument count mismatch to gasnet_AMReplyLong()"), \
+          GASNETI_AMVA(ReplyLong,__VA_ARGS__)(token,hidx,src_addr,nbytes,dst_addr,GEX_EVENT_NOW,0&&__VA_ARGS__) )
+#endif
+
+/* ------------------------------------------------------------------------------------ */
 /* Handler-safe locks */
 
 #define gasnet_hsl_t    	gex_HSL_t
@@ -474,6 +530,16 @@ gasnet_register_value_t gasnet_wait_syncnb_valget(gasnet_valget_handle_t _handle
                 gex_RMA_PutNBVal(gasneti_thunk_tm,node,dest,value,nbytes,0)
 #define gasnet_put_nbi_val(node,dest,value,nbytes) \
          ((void)gex_RMA_PutNBIVal(gasneti_thunk_tm,node,dest,value,nbytes,0))
+
+/* ------------------------------------------------------------------------------------ */
+/* Memset */
+
+extern gex_Event_t gasneti_legacy_memset_nb (gex_Rank_t _node, void *_dest, int _val, size_t _nbytes GASNETI_THREAD_FARG) GASNETI_WARN_UNUSED_RESULT;
+extern int         gasneti_legacy_memset_nbi(gex_Rank_t _node, void *_dest, int _val, size_t _nbytes GASNETI_THREAD_FARG);
+
+#define gasnet_memset(node,dest,val,nbytes)     gasnet_wait_syncnb(gasneti_legacy_memset_nb(node,dest,val,nbytes GASNETI_THREAD_GET))
+#define gasnet_memset_nb(node,dest,val,nbytes)  gasneti_legacy_memset_nb(node,dest,val,nbytes GASNETI_THREAD_GET)
+#define gasnet_memset_nbi(node,dest,val,nbytes) ((void)gasneti_legacy_memset_nbi(node,dest,val,nbytes GASNETI_THREAD_GET))
 
 /* ------------------------------------------------------------------------------------ */
 /* Explicit-handle sync operations */

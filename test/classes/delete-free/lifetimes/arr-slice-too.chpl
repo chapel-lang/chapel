@@ -10,7 +10,7 @@ proc refIdentity(ref x) ref {
 }
 
 proc returnsArraySliceCopy() {
-  var A:[1..10] borrowed MyClass;
+  var A:[1..10] borrowed MyClass?;
 
   return refIdentity(A[1..2]);
 }
@@ -22,13 +22,13 @@ proc returnsArraySliceCopy() {
 // destroyed by the array, but that's not the case here.
 // This issue is related to get_coeffs in MRA.chpl.
 proc returnsArrayElt1(i) {
-  var A:[1..10] borrowed MyClass;
+  var A:[1..10] borrowed MyClass?;
 
   return A[i];
 }
 
 proc returnsArrayElt2(i, j) {
-  var A:[1..10, 1..10] borrowed MyClass;
+  var A:[1..10, 1..10] borrowed MyClass?;
 
   return refIdentity(A[i,j]);
 }

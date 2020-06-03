@@ -1,0 +1,25 @@
+Value = true Type = bytes
+Value = false Type = bytes
+Value = true Type = bool
+Value = false Type = bool
+Value = 8 Type = bytes
+Value = 16 Type = bytes
+Value = 32 Type = bytes
+Value = 64 Type = bytes
+Value = 8 Type = int(8)
+Value = 16 Type = int(16)
+Value = 32 Type = int(32)
+Value = 64 Type = int(64)
+Value = 3.14 Type = bytes
+Value = 3.0i Type = bytes
+Value = 3.14 Type = real(64)
+Value = 3.0i Type = imag(64)
+Value = 3.0 + 2.0i Type = bytes
+Value = 3.0 + 2.0i Type = complex(128)
+Value = some string Type = bytes
+Value = Foo Type = bytes
+Value = Bar Type = bytes
+Value = Foo Type = E
+Value = Bar Type = E
+Value = Foo Type = E
+Value = Bar Type = E

@@ -1,0 +1,3 @@
+renameSameNameAsInMod.chpl:7: In function 'main':
+renameSameNameAsInMod.chpl:8: error: unresolved call 'string.Bar'
+renameSameNameAsInMod.chpl:8: note: because no functions named Bar found in scope

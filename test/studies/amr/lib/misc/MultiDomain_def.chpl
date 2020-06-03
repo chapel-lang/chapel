@@ -1,5 +1,5 @@
 
-use BasicDataStructures;
+public use BasicDataStructures;
 
 
 proc main {
@@ -84,13 +84,13 @@ class MultiDomain
 
   proc isEmpty ()
   {    
-    return (root.bisect_dim==-1 || root.Domain.numIndices==0);
+    return (root.bisect_dim==-1 || root.Domain.size==0);
   }
 
 
   proc subtract ( D: domain(rank,stridable=stridable) )
   {
-    if !isEmpty() && root.Domain(D).numIndices>0 then 
+    if !isEmpty() && root.Domain(D).size>0 then 
       root.subtract(D);
     if root.bisect_dim==-1 then root.Domain.clear();
   }  
@@ -140,19 +140,18 @@ class MultiDomain
   {
     
     const q = new unmanaged Queue( unmanaged MDNode(rank,stridable) );
-    var node: unmanaged MDNode(rank,stridable);
 
     q.enqueue( root );
     
     while !q.isEmpty()
     {
-      node = q.dequeue();
+      const node = q.dequeue();
 
       if node.bisect_dim==0 then yield node.Domain;
       else
       {
-        if node.left then q.enqueue( node.left );
-        if node.right then q.enqueue( node.right );
+        if node.left then q.enqueue( node.left! );
+        if node.right then q.enqueue( node.right! );
       }
     }
 
@@ -229,7 +228,7 @@ class MDNode
   var bisect_dim: int = -1;  // Indicates temporary, unfilled status
   var right_low:  int = 0;
 
-  var left, right:  unmanaged MDNode(rank,stridable);
+  var left, right:  unmanaged MDNode(rank,stridable)?;
 
 
 
@@ -238,22 +237,22 @@ class MDNode
 
   proc clearChildren ()
   {
-    if left  then { left.clearChildren();   delete left;  left = nil; }
-    if right then { right.clearChildren();  delete right;  right = nil; }
+    if left  then { left!.clearChildren();   delete left;  left = nil; }
+    if right then { right!.clearChildren();  delete right;  right = nil; }
   }
 
 
-  proc copy (in new_node: unmanaged MDNode(rank, stridable) = nil) : unmanaged MDNode(rank,stridable)
+  proc copy (in new_node_arg: unmanaged MDNode(rank, stridable)? = nil) : unmanaged MDNode(rank,stridable)
   {
-    if new_node == nil then
-      new_node = new unmanaged MDNode(rank, stridable);
+    const new_node = if new_node_arg != nil then new_node_arg!
+                     else new unmanaged MDNode(rank, stridable);
 
     new_node.Domain     = Domain;
     new_node.bisect_dim = bisect_dim;
     new_node.right_low  = right_low;
     
-    if left  then new_node.left  = left.copy();
-    if right then new_node.right = right.copy();
+    if left  then new_node.left  = left!.copy();
+    if right then new_node.right = right!.copy();
     
     return new_node;
   }
@@ -272,7 +271,7 @@ class MDNode
     var max_dim_length = 0;
     bisect_dim = 0;
     
-    for d in 1..rank
+    for d in 0..rank-1
     {
 
       //--------------------------------------------------------------------
@@ -283,11 +282,11 @@ class MDNode
       if D.low(d) > Domain.low(d) || D.high(d) < Domain.high(d)
       {
 
-        dim_length = Domain.dim(d).length;
+        dim_length = Domain.dim(d).size;
 
         if dim_length > max_dim_length {
           max_dim_length = dim_length;
-          bisect_dim = d;
+          bisect_dim = d+1;
         }
 
       }
@@ -309,13 +308,13 @@ class MDNode
     if bisect_dim > 0
     {    
       
-      var low_offset  = D.low(bisect_dim) - Domain.low(bisect_dim);
-      var high_offset = Domain.high(bisect_dim) - D.high(bisect_dim);
+      var low_offset  = D.low(bisect_dim-1) - Domain.low(bisect_dim-1);
+      var high_offset = Domain.high(bisect_dim-1) - D.high(bisect_dim-1);
       
       if low_offset > high_offset then
-        right_low = D.low(bisect_dim);
+        right_low = D.low(bisect_dim-1);
       else
-        right_low = D.high(bisect_dim) + Domain.stride(bisect_dim);
+        right_low = D.high(bisect_dim-1) + Domain.stride(bisect_dim-1);
     }
     
   }
@@ -365,26 +364,26 @@ class MDNode
       
       //---- Left child ----
       
-      if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)
+      if D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1)
       {
         if left==nil then createLeft( filled=false );
-        left.add( D );
+        left!.add( D );
       }
       
       
       //---- Right child ----
       
-      if D.high(bisect_dim) >= right_low
+      if D.high(bisect_dim-1) >= right_low
       {
         if right==nil then createRight( filled=false );
-        right.add( D );
+        right!.add( D );
       }
       
       
       //---- Check whether children can be merged ----
       
       if left!=nil && right!=nil then
-        if left.bisect_dim==0 && right.bisect_dim==0
+        if left!.bisect_dim==0 && right!.bisect_dim==0
         {
           delete left;
           left = nil;
@@ -440,19 +439,19 @@ class MDNode
       
       //---- Left child ----
       
-      if D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim)  &&  left!=nil
+      if D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1)  &&  left!=nil
       {
-        left.subtract( D );
-        if left.bisect_dim == -1 then { delete left;  left=nil; }
+        left!.subtract( D );
+        if left!.bisect_dim == -1 then { delete left;  left=nil; }
       }
 
 
       //---- Right child ----
 
-      if D.high(bisect_dim) >= right_low  &&  right!=nil
+      if D.high(bisect_dim-1) >= right_low  &&  right!=nil
       {
-        right.subtract( D );
-        if right.bisect_dim == -1 then { delete right;  right=nil; }
+        right!.subtract( D );
+        if right!.bisect_dim == -1 then { delete right;  right=nil; }
       }
     }
     
@@ -476,7 +475,7 @@ class MDNode
     if bisect_dim == 0
     {
       Domain = Domain(D);
-      if Domain.numIndices==0 then bisect_dim = -1; 
+      if Domain.size==0 then bisect_dim = -1; 
     }
 
 
@@ -503,14 +502,14 @@ class MDNode
         
         if left
         {
-          left.intersect(D);
-          if left.bisect_dim==-1  then { delete left;   left = nil; }
+          left!.intersect(D);
+          if left!.bisect_dim==-1  then { delete left;   left = nil; }
         } 
 
         if right
         {
-          right.intersect(D);
-          if right.bisect_dim==-1 then { delete right;  right = nil; }
+          right!.intersect(D);
+          if right!.bisect_dim==-1 then { delete right;  right = nil; }
         }
         
         if left==nil && right==nil then bisect_dim = -1;
@@ -528,9 +527,9 @@ class MDNode
       
       else if intersects_left
       {
-        if right { right.clearChildren();  delete right;  right = nil; }
+        if right { right!.clearChildren();  delete right;  right = nil; }
         
-        if left { left.intersect(D);  merge(left); }
+        if left { left!.intersect(D);  merge(left!); }
         else bisect_dim = -1;
       }
       
@@ -540,9 +539,9 @@ class MDNode
       
       else
       {
-        if left { left.clearChildren();  delete left; left = nil; }
+        if left { left!.clearChildren();  delete left; left = nil; }
         
-        if right { right.intersect(D);  merge(right); }
+        if right { right!.intersect(D);  merge(right!); }
         else bisect_dim = -1;
       }
 
@@ -559,14 +558,14 @@ class MDNode
   proc intersectsLeft( D: domain(rank, stridable=stridable) )
   {
     assert( bisect_dim>0, "Error: Called MDNode.intersectsLeft with bisect_dim<=0");
-    return D.low(bisect_dim) <= right_low - Domain.stride(bisect_dim);
+    return D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1);
   }
   
   
   proc intersectsRight( D: domain(rank, stridable=stridable) )
   {
     assert( bisect_dim>0, "Error: Called MDNode.intersectsRight with bisect_dim<=0");
-    return D.high(bisect_dim) >= right_low;
+    return D.high(bisect_dim-1) >= right_low;
   }
 
 
@@ -576,10 +575,10 @@ class MDNode
     
     var subranges: rank*range(stridable=stridable);
     
-    for d in 1..rank            do subranges(d) = Domain.dim(d);
-    for d in bisect_dim+1..rank do subranges(d) = Domain.dim(d);    
+    for d in 0..rank-1          do subranges(d) = Domain.dim(d);
+    for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);    
     
-    subranges(bisect_dim) = Domain.low(bisect_dim) .. right_low-Domain.stride(bisect_dim) by Domain.stride(bisect_dim);
+    subranges(bisect_dim-1) = Domain.low(bisect_dim-1) .. right_low-Domain.stride(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
     var child_domain: domain(rank, stridable=stridable) = subranges;
     
@@ -595,10 +594,10 @@ class MDNode
     
     var subranges: rank*range(stridable=stridable);
     
-    for d in 1..rank            do subranges(d) = Domain.dim(d);
-    for d in bisect_dim+1..rank do subranges(d) = Domain.dim(d);
+    for d in 0..rank-1          do subranges(d) = Domain.dim(d);
+    for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);
     
-    subranges(bisect_dim) = right_low .. Domain.high(bisect_dim) by Domain.stride(bisect_dim);
+    subranges(bisect_dim-1) = right_low .. Domain.high(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
     var child_domain: domain(rank, stridable=stridable) = subranges;
     
@@ -637,19 +636,19 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
   // writeln("Beginning MDNode.extendToContain on node with ", Domain, " ", left!=nil, " ", filled);
   // writeln("  Input domain is ", D);
   
-  var new_root: unmanaged MDNode(rank,stridable);
+  var new_root: unmanaged MDNode(rank,stridable)?;
   
   
   //===> Select the shortest dimension to extend ===>
   
   var dim_length     = 0;
-  var min_dim_length = Domain.numIndices+1;
+  var min_dim_length = Domain.size+1;
   var ext_d          = 0;
     
-  for d in 1..rank {
+  for d in 0..rank-1 {
     
     if D.high(d) > Domain.high(d) || D.low(d) < Domain.low(d) {
-      dim_length = Domain.dim(d).length;
+      dim_length = Domain.dim(d).size;
       
       if dim_length < min_dim_length {
         min_dim_length = dim_length;
@@ -676,14 +675,14 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
     var s = Domain.stride(ext_d);
     var ext_index: int;
     
-    var parent:  unmanaged MDNode(rank,stridable);
+    var parent:  unmanaged MDNode(rank,stridable)?;
     // var sibling: MDNode(rank,stridable);
     
     var subranges: rank*range(stridable=stridable);
     var D_temp:    domain(rank,stridable=stridable);
     
-    for d in 1..ext_d-1    do subranges(d) = Domain.dim(d);  
-    for d in ext_d+1..rank do subranges(d) = Domain.dim(d);
+    for d in 0..ext_d-1    do subranges(d) = Domain.dim(d);  
+    for d in ext_d+1..rank-1 do subranges(d) = Domain.dim(d);
     
     
     //===> Create parent and sibling node ===>   
@@ -704,13 +703,10 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
       
       subranges(ext_d) = D.low(ext_d) .. Domain.high(ext_d) by s;
       D_temp           = subranges;
-      parent            = new unmanaged MDNode( rank, stridable, D_temp );
-      parent.bisect_dim = ext_d;
-      parent.right_low  = ext_index;
-      
-      // parent.left  = sibling;
-      parent.right = _to_unmanaged(this);
-       
+      parent = new unmanaged MDNode( rank, stridable, D_temp,
+                                     ext_d, ext_index,
+                                     // parent.left = sibling
+                                     nil, _to_unmanaged(this) );
     }
     
     //---- Otherwise, extend in the high direction ----
@@ -727,12 +723,10 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
       
       subranges(ext_d)  = Domain.low(ext_d) .. D.high(ext_d) by s;
       D_temp            = subranges;
-      parent            = new unmanaged MDNode( rank, stridable, D_temp );
-      parent.bisect_dim = ext_d;
-      parent.right_low  = ext_index;
-      
-      parent.left  = _to_unmanaged(this);
-      // parent.right = sibling;
+      parent = new unmanaged MDNode( rank, stridable, D_temp,
+                                     ext_d, ext_index,
+                                     // parent.right = sibling
+                                     _to_unmanaged(this), nil );
     }
     
     //<=== Create parent and sibling node <===
@@ -740,12 +734,12 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
     
     //---- Now extend the parent; the new root returns down the call chain ----
     
-    new_root = parent.extendToContain( D );
+    new_root = parent!.extendToContain( D );
     
   }
   
   
-  return new_root;
+  return new_root!;
   
 }
 

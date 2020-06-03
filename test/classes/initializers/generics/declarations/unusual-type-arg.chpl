@@ -14,9 +14,9 @@ class Foo {
   }
 }
 
-var foo: Foo(uint);
-var foo2: Foo(string);
-var foo3: Foo(int);
+var foo: borrowed Foo(uint)?;
+var foo2: borrowed Foo(string)?;
+var foo3: borrowed Foo(int)?;
 writeln(foo3.type == foo.type);
 writeln(foo.type:string);
 writeln(foo2.type:string);

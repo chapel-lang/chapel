@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +19,7 @@
  */
 
 module AtomicsCommon {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   record atomic_refcnt {
     // The common case seems to be local access to this class, so we
@@ -37,7 +38,7 @@ module AtomicsCommon {
       // situations as well but currently our atomics implementation doesn't
       // do anything with the order argument (except for when the cache
       // for remote data is enabled).
-      if CHPL_CACHE_REMOTE then _cnt.add(cnt, order=memory_order_relaxed);
+      if CHPL_CACHE_REMOTE then _cnt.add(cnt, order=memoryOrder.relaxed);
       else _cnt.add(cnt);
     }
     // Returns the number of remaining references
@@ -47,9 +48,9 @@ module AtomicsCommon {
       var got:int(64);
       // See comment in addref about use of CHPL_CACHE_REMOTE here.
       if CHPL_CACHE_REMOTE {
-        got = _cnt.fetchSub(1, order=memory_order_release);
+        got = _cnt.fetchSub(1, order=memoryOrder.release);
         if got == 1 {
-          atomic_fence(memory_order_acquire);
+          atomicFence(memoryOrder.acquire);
           return 0;
         }
         return got - 1;

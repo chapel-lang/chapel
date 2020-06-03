@@ -1,4 +1,4 @@
-use Memory, Time;
+use Memory, Time, SysCTypes;
 
 config const oversubscription = 4;
 const desiredTasks = oversubscription * here.maxTaskPar;

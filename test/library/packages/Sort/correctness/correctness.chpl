@@ -21,13 +21,26 @@ proc main() {
 
 
   // Arrays and Domains
-  const largeD = {1..20}, // quickSort requires domain.size > 16
-        strideD = {2..8 by 2},
-      strideRevD = {2..8 by -2};
+
+  // First we test isSorted() against the arrays as written here, so
+  // they have to be sorted correctly to start with.  Then we'll
+  // shuffle them and sort them again.
+
+  // quickSort requires domain.size > 16
+  const largeD = {1..20},
+        strideD = {2..40 by 2},
+        strideAlignD = {2..41 by 2 align 3},
+        strideRevD = {2..40 by -2};
   var largeA: [largeD] int,
-      strideA: [strideD] int = [-3, -1, 4, 5],
-      strideRevA: [strideRevD] int = [-3, -1, 4, 5];
-    [i in largeD] largeA[i] = i;
+      strideA: [strideD] int,
+      strideAlignA: [strideAlignD] int,
+      strideRevA: [strideRevD] int;
+
+  largeA = [-17, -10, -4, -2, 0, 1, 2, 3, 5, 8,
+	    13, 21, 34, 55, 89, 4242, 424242, 42424242, 4242424242, 424242424242 ];
+  strideA = largeA;
+  strideAlignA = largeA;
+  strideRevA = largeA;
 
   // Pre-sorted arrays paired with comparators to test
   var tests = (
@@ -38,20 +51,21 @@ proc main() {
                 // Testing D.idxType / D.dims()
                 (largeA, defaultComparator),
                 (strideA, defaultComparator),
+                (strideAlignA, defaultComparator),
                 (strideRevA, defaultComparator),
 
                 // Testing comparators
-                ([-1, 2, 3, -4], absKey),
-                ([-1, 2, 3, -4], absKeyClass.borrow()),
-                ([-1, 2, 3, -4], absComp),
-                ([-1, 2, 3, -4], absCompClass.borrow()),
-                ([ 3, 2, -1, -4], reverseComparator),
-                ([ -4, 3, 2, -1], revAbsKey),
-                ([ -4, 3, 2, -1], revAbsKeyClass),
-                ([ -4, 3, 2, -1], revAbsComp),
-                ([ -4, 3, 2, -1], revAbsCompClass),
-                ([-4, -1, 2, 3], tupleKey),
-                ([-4, -1, 2, 3], tupleKeyClass.borrow())
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKey),
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKeyClass.borrow()),
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absComp),
+                ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absCompClass.borrow()),
+                ([20, 18, 17, 15, 14, 12, 11, 9, 8, 6, 5, 3, 2, -1, -4, -7, -10, -13, -16, -19], reverseComparator),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsKey),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsKeyClass),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsComp),
+                ([20, -19, 18, 17, -16, 15, 14, -13, 12, 11, -10, 9, 8, -7, 6, 5, -4, 3, 2, -1], revAbsCompClass),
+                ([-19, -16, -13, -10, -7, -4, -1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 20], tupleKey),
+                ([-19, -16, -13, -10, -7, -4, -1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17, 18, 20], tupleKeyClass.borrow())
               );
 
 
@@ -59,7 +73,7 @@ proc main() {
   {
     var isSortedWorks= true;
 
-    for param i in 1..tests.size {
+    for param i in 0..tests.size-1 {
       var (arr, cmp) = tests(i);
 
       if !isSorted(arr, comparator=cmp) {
@@ -80,7 +94,7 @@ proc main() {
   /* Correctness tests for sort routines */
   // TODO -- functionalize these tests when FCF support allows it
   {
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       sort(arr, comparator=cmp);
@@ -88,7 +102,7 @@ proc main() {
         writeln('  for sort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       ref (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       BubbleSort.bubbleSort(arr, comparator=cmp);
@@ -96,7 +110,7 @@ proc main() {
         writeln('  for bubbleSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       InsertionSort.insertionSort(arr, comparator=cmp);
@@ -104,7 +118,7 @@ proc main() {
         writeln('  for insertionSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       BinaryInsertionSort.binaryInsertionSort(arr, comparator=cmp);
@@ -112,7 +126,7 @@ proc main() {
         writeln('  for binaryInsertionSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       QuickSort.quickSort(arr, comparator=cmp);
@@ -120,7 +134,7 @@ proc main() {
         writeln('  for quickSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       HeapSort.heapSort(arr, comparator=cmp);
@@ -128,7 +142,7 @@ proc main() {
         writeln('  for heapSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       SelectionSort.selectionSort(arr, comparator=cmp);
@@ -136,7 +150,7 @@ proc main() {
         writeln('  for selectionSort() function.\n');
     }
 
-    for param i in 1..tests.size {
+    for param i in 1..tests.size-1 {
       var (arr, cmp) = tests(i);
       resetArray(arr, cmp);
       MergeSort.mergeSort(arr, comparator=cmp);

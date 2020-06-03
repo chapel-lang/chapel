@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,7 +18,7 @@
  * limitations under the License.
  */
 
-use RangeChunk only ;
+import RangeChunk;
 
 pragma "no doc"
 /* Debug flag */
@@ -30,7 +31,7 @@ config param LayoutCSDefaultToSorted = true;
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
-  proc key(idx: _tuple) { return (idx(2), idx(1));}
+  proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
 pragma "no doc"
@@ -95,7 +96,7 @@ class CS: BaseDist {
     return false;
   }
 
-  proc dsiIsLayout() param {
+  override proc dsiIsLayout() param {
     return true;
   }
 } // CS
@@ -113,12 +114,14 @@ class CSDom: BaseSparseDomImpl {
   /* (row|col) startIdxDom */
   var startIdxDom: domain(1, idxType);
 
+  var _nnz = 0;
+
   /* (row|col) start */
   pragma "local field"
   var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
   /* (row|col) idx */
   pragma "local field"
-  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
+  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(0))
 
   /* Initializer */
   proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
@@ -134,28 +137,55 @@ class CSDom: BaseSparseDomImpl {
     this.stridable = stridable;
 
     this.dist = dist;
-    rowRange = parentDom.dim(1);
-    colRange = parentDom.dim(2);
+    rowRange = parentDom.dim(0);
+    colRange = parentDom.dim(1);
     startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
 
     this.complete();
 
-    nnzDom = {1..nnz};
+    nnzDom = {1.._nnz};
     dsiClear();
   }
 
+  override proc getNNZ(): int {
+    return _nnz;
+  }
   override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+      // Optimized CSC->CSC / CSR->CSR
+
+      // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
+      // grow, which has a different heuristic to grow the internal arrays.
+      // That may result in size mismatch in the following internal array
+      // assignments
+      this._nnz = rhs._nnz;
+      this.nnzDom = rhs.nnzDom;
+
+      this.startIdx = rhs.startIdx;
+      this.idx = rhs.idx;
+    } else if _to_borrowed(rhs._instance.type) < DefaultSparseDom {
+      // Optimized COO -> CSR/CSC
+
+      // Note: only COO->CSR can take advantage of COO having sorted indices
+      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.low..#rhs._nnz],
+                      dataSorted=this.compressRows, isUnique=true);
+    } else {
+      // Unoptimized generic case
+      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+    }
   }
 
-  proc dsiBuildArray(type eltType)
-    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
+  proc dsiBuildArray(type eltType, param initElts: bool) {
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType,
+                               dom=_to_unmanaged(this),
+                               initElts=initElts);
+  }
 
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
-    for i in 1..nnz by -1 {
+    for i in 1.._nnz by -1 {
       while (startIdx(cursor) > i) {
         cursor -= 1;
       }
@@ -170,7 +200,7 @@ class CSDom: BaseSparseDomImpl {
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
     var cursor = if this.compressRows then rowRange.low else colRange.low;
-    for i in 1..nnz {
+    for i in 1.._nnz {
       while (startIdx(cursor+1) <= i) {
         cursor+= 1;
       }
@@ -183,7 +213,7 @@ class CSDom: BaseSparseDomImpl {
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     // same as DefaultSparseDom's leader
-    const numElems = nnz;
+    const numElems = _nnz;
     const numChunks = _computeNumChunks(numElems);
     if debugCS then
       writeln("CSDom leader: ", numChunks, " chunks, ", numElems, " elems");
@@ -192,7 +222,7 @@ class CSDom: BaseSparseDomImpl {
     if numChunks == 1 then
       yield (this, 1, numElems);
     else
-      coforall chunk in chunks(1..numElems, numChunks) do
+      coforall chunk in RangeChunk.chunks(1..numElems, numChunks) do
         yield (this, chunk.first, chunk.last);
     // TODO: to handle large numElems and numChunks faster, it would be great
     // to run the binary search in _private_findStart smarter, e.g.
@@ -292,7 +322,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiFirst {
-    if nnz == 0 then return (parentDom.low) - (1,1);
+    if _nnz == 0 then return (parentDom.low) - (1,1);
     const _low = nnzDom.low;
     for i in startIdxDom {
       if startIdx[i] > _low {
@@ -307,7 +337,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiLast {
-    if nnz == 0 then return (parentDom.low) - (1,1);
+    if _nnz == 0 then return (parentDom.low) - (1,1);
 
     var _last = parentDom.low[1] - 1;
     for i in startIdxDom do
@@ -315,9 +345,9 @@ class CSDom: BaseSparseDomImpl {
         _last = i-1;
 
     if this.compressRows then
-      return (_last, idx[nnz]);
+      return (_last, idx[_nnz]);
     else
-      return (idx[nnz], _last);
+      return (idx[_nnz], _last);
   }
 
   proc dsiAdd(ind: rank*idxType) {
@@ -330,16 +360,16 @@ class CSDom: BaseSparseDomImpl {
     if found then return 0;
 
     // increment number of nonzeroes
-    nnz += 1;
+    _nnz += 1;
 
     // double nnzDom if we've outgrown it; grab current size otherwise
     var oldNNZDomSize = nnzDom.size;
-    _grow(nnz);
+    _grow(_nnz);
 
     const (row,col) = ind;
 
     // shift row|column indices up
-    for i in insertPt..nnz-1 by -1 {
+    for i in insertPt.._nnz-1 by -1 {
       idx(i+1) = idx(i);
     }
 
@@ -363,13 +393,21 @@ class CSDom: BaseSparseDomImpl {
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
-      a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
+      a.sparseShiftArray(insertPt.._nnz-1, oldNNZDomSize+1..nnzDom.size);
     }
     return 1;
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] rank*idxType, dataSorted=false,
-                             isUnique=false) {
+  override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
+      dataSorted=false, isUnique=false, addOn=nilLocale) {
+    import Sort;
+
+    if addOn != nilLocale {
+      if addOn != this.locale {
+        halt("Bulk index addition is only possible on the locale where the\
+            sparse domain is created");
+      }
+    }
 
     if this.compressRows then
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=Sort.defaultComparator);
@@ -377,11 +415,11 @@ class CSDom: BaseSparseDomImpl {
       bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp=_columnComparator);
     }
 
-    if nnz == 0 {
+    if _nnz == 0 {
 
       const dupCount = if isUnique then 0 else _countDuplicates(inds);
 
-      nnz += inds.size-dupCount;
+      _nnz += inds.size-dupCount;
       _bulkGrow();
 
       var idxIdx = 1;
@@ -389,9 +427,9 @@ class CSDom: BaseSparseDomImpl {
       var current: idxType;
 
       if this.compressRows then
-        current = parentDom.dim(1).low;
+        current = parentDom.dim(0).low;
       else
-        current = parentDom.dim(2).low;
+        current = parentDom.dim(1).low;
 
       // Update startIdx && idx
       for (i,j) in inds {
@@ -426,13 +464,13 @@ class CSDom: BaseSparseDomImpl {
       }
 
       return idxIdx-1;
-    } // if nnz == 0
+    } // if _nnz == 0
 
     const (actualInsertPts, actualAddCnt) =
       __getActualInsertPts(this, inds, isUnique);
 
-    const oldnnz = nnz;
-    nnz += actualAddCnt;
+    const oldnnz = _nnz;
+    _nnz += actualAddCnt;
 
     // Grow nnzDom if necessary
     _bulkGrow();
@@ -449,7 +487,7 @@ class CSDom: BaseSparseDomImpl {
 
     var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
 
-    for i in 1..nnz by -1 {
+    for i in 1.._nnz by -1 {
       if oldIndIdx >= 1 && i > newLoc {
         // Shift from old values
         idx[i] = idx[oldIndIdx];
@@ -459,9 +497,9 @@ class CSDom: BaseSparseDomImpl {
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new guy in
         if this.compressRows {
-          idx[i] = inds[newIndIdx][2];
-        } else {
           idx[i] = inds[newIndIdx][1];
+        } else {
+          idx[i] = inds[newIndIdx][0];
         }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
@@ -478,15 +516,15 @@ class CSDom: BaseSparseDomImpl {
     }
 
     // Aggregated row || col shift
-    var prevCursor = if this.compressRows then parentDom.dim(1).low else parentDom.dim(2).low;
+    var prevCursor = if this.compressRows then parentDom.dim(0).low else parentDom.dim(1).low;
     var cursor: int;
     var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
       if this.compressRows {
-        cursor = ind[1];
+        cursor = ind[0];
       } else {
-        cursor = ind[2];
+        cursor = ind[1];
       }
       if cursor == prevCursor then cursorCnt += 1;
       else {
@@ -517,14 +555,14 @@ class CSDom: BaseSparseDomImpl {
     if (!found) then return 0;
 
     // increment number of nonzeroes
-    nnz -= 1;
+    _nnz -= 1;
 
-    _shrink(nnz);
+    _shrink(_nnz);
 
     const (row,col) = ind;
 
     // shift column indices down
-    for i in insertPt..nnz {
+    for i in insertPt.._nnz {
       idx(i) = idx(i+1);
     }
 
@@ -548,22 +586,22 @@ class CSDom: BaseSparseDomImpl {
     // this second initialization of any new values in the array.
     // we could also eliminate the oldNNZDomSize variable
     for a in _arrs {
-      a.sparseShiftArrayBack(insertPt..nnz-1);
+      a.sparseShiftArrayBack(insertPt.._nnz-1);
     }
 
     return 1;
   }
 
   override proc dsiClear() {
-    nnz = 0;
+    _nnz = 0;
     startIdx = 1;
   }
 
   iter dimIter(param d, ind) {
-    if (d != 2 && this.compressRows) {
-      compilerError("dimIter(1, ..) not supported on CS(compressRows=true) domains");
-    } else if (d != 1 && !this.compressRows) {
-      compilerError("dimIter(2, ..) not supported on CS(compressRows=false) domains");
+    if (d != 1 && this.compressRows) {
+      compilerError("dimIter(0, ..) not supported on CS(compressRows=true) domains");
+    } else if (d != 0 && !this.compressRows) {
+      compilerError("dimIter(1, ..) not supported on CS(compressRows=false) domains");
     }
 
     for i in startIdx[ind]..stopIdx[ind] do
@@ -599,6 +637,16 @@ class CSDom: BaseSparseDomImpl {
 
 
 class CSArr: BaseSparseArrImpl {
+
+  proc init(type eltType,
+            param rank : int,
+            type idxType,
+            dom,
+            param initElts:bool) {
+    super.init(eltType, rank, idxType, dom, initElts);
+  }
+
+  // dsiDestroyArr is defined in BaseSparseArrImpl
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
@@ -641,13 +689,13 @@ class CSArr: BaseSparseArrImpl {
 
 
   iter these() ref {
-    for i in 1..dom.nnz do yield data[i];
+    for i in 1..dom._nnz do yield data[i];
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     // forward to the leader iterator on our domain
     // Note: this is so that arrays can be zippered with domains;
-    // otherwise just chunk up data[1..dom.nnz] a-la DefaultSparseArr.
+    // otherwise just chunk up data[1..dom._nnz] a-la DefaultSparseArr.
     for followThis in dom.these(tag) do
       yield followThis;
   }

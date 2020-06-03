@@ -1,86 +1,103 @@
 /* The Computer Language Benchmarks Game
-   http://benchmarksgame.alioth.debian.org/
-   contributed by Ben Harshbarger and Brad Chamberlain
-   derived from the Rust #2 version by Matt Brubeck
+   https://salsa.debian.org/benchmarksgame-team/benchmarksgame/
+
+   contributed by Brad Chamberlain
+   based on the C gcc #5 version by Mr Ledrug
+   and the Chapel #2 version by myself and Ben Harshbarger
 */
 
-const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
+param eol = "\n".toByte();      // end-of-line, as an integer
+
+const table = createTable();    // create the table of code complements
 
 proc main(args: [] string) {
-  const stdin = openfd(0),
-        input = stdin.reader(iokind.native, locking=false),
-        len = stdin.length();
-  var data: [0..#len] uint(8);
+  use IO;
+  const stdinBin = openfd(0).reader(iokind.native, locking=false,
+                                 hints = QIO_CH_ALWAYS_UNBUFFERED),
+        stdoutBin = openfd(1).writer(iokind.native, locking=false,
+                                  hints=QIO_CH_ALWAYS_UNBUFFERED);
 
-  // if the file isn't empty, wait for all tasks to complete before continuing
-  if len then sync {
-    do {
-      // capture the starting offset
-      const descOffset = input.offset();
+  // read in the data using an incrementally growing buffer
+  var bufLen = 8 * 1024,
+      bufDom = {0..<bufLen},
+      buf: [bufDom] uint(8),
+      end = 0;
 
-      // Mark where we start scanning (keep bytes in I/O buffer in input)
-      input.mark();
+  do {
+    const more = stdinBin.read(buf[end..]);
+    if more {
+      end = bufLen;
+      bufLen += min(1024**2, bufLen);
+      bufDom = {0..<bufLen};
+    }
+  } while more;
+  end = stdinBin.offset()-1;
 
-      // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte("\n".byte(1));
-      const seqOffset = input.offset();
+  // process the buffer a sequence at a time, working from the end
+  var hi = end;
+  while (hi >= 0) {
+    // search for the '>' that marks the start of a sequence
+    var lo = hi;
+    while buf[lo] != '>'.toByte() do
+      lo -= 1;
 
-      // Scan forward until we get to '>' (end of sequence) or EOF
-      const (eof, nextDescOffset) = findNextDesc();
+    // reverse and complement the sequence once we find it
+    revcomp(buf[lo..hi]);
 
-      // look for the next description, returning '(eof, its offset)'
-      proc findNextDesc() throws {
-        try {
-          input.advancePastByte(">".byte(1));
-        } catch (e:EOFError) {
-          return (true, len-1);
-        }
-        return (false, input.offset()-1);
-      }
-
-      // Go back to the point we marked
-      input.revert();
-
-      // Read up to the nextDescOffset into the data array.
-      input.read(data[descOffset..nextDescOffset]);
-
-      // chars to rewind past: 1 for '\n' and 1 for '>' if we're not yet at eof
-      const rewind = if eof then 1 else 2;
-
-      // fire off a task to process the data for this sequence
-      begin process(data, seqOffset, nextDescOffset-rewind);
-    } while !eof;
+    hi = lo - 1;
   }
 
-  // write the data out to stdout once all tasks have completed
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
-  stdoutBin.write(data);
+  // write out the transformed buffer
+  stdoutBin.write(buf[..end]);
 }
 
-// process a sequence from both ends, replacing each extreme element
-// with the table lookup of the opposite one
-proc process(seq, in start, in end) {
-  while start <= end {
-    ref d1 = seq[start], d2 = seq[end];
-    (d1, d2) = (table[d2], table[d1]);
-    advance(start, 1);
-    advance(end, -1);
+
+proc revcomp(buf: [?inds]) {
+  param cols = 61;  // the number of characters per full row (including '\n')
+  var lo = inds.low,
+      hi = inds.high;
+
+  // skip past header line
+  do {
+    lo += 1;
+  } while buf[lo-1] != eol;
+
+  // shift all of the linefeeds into the right places
+  const len = hi - lo + 1,
+        off = (len - 1) % cols,
+        shift = cols - off - 1;
+
+  if off {
+    forall m in lo+off..<hi by cols {
+      for i in m..#shift by -1 do
+        buf[i+1] = buf[i];
+      buf[m] = eol;
+    }
   }
 
-  proc advance(ref cursor, dir) {
-    do { cursor += dir; } while seq[cursor] == "\n".byte(1);
-  }
+  // walk from both ends of the sequence, complementing and swapping
+  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
+    (buf[i], buf[j]) = (table[buf[j]], table[buf[i]]);
 }
 
-proc initTable(pairs) {
-  var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
-    table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs.byte(i) != "\n".byte(1) then
-      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
+proc createTable() {
+  // `pairs` compactly represents the table we're creating, where the
+  // first byte of each pair (in either case) maps to the second:
+  //   A|a -> T, C|c -> G, G|g -> C, T|t -> A, etc.
+  param pairs = b"ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN",
+        upperToLower = "a".toByte() - "A".toByte();
+
+  var table: [0..127] uint(8);
+
+  for i in pairs.indices by 2 {
+    const src = pairs[i],
+          dst = pairs[i+1];
+
+    table[src] = dst;
+    table[src+upperToLower] = dst;
   }
+  table[eol] = eol;
 
   return table;
 }

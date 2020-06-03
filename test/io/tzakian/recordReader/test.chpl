@@ -1,4 +1,4 @@
-use RecordParser;
+use RecordParser, IO;
 
 // Allow test to run with mmap or without since this test has exposed
 // QIO errors in the past for one of these configurations.

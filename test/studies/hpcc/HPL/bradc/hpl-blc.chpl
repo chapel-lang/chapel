@@ -2,7 +2,7 @@
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use Norm, Random, Time;
+use LinearAlgebra, Random, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -198,7 +198,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 
       dgemmNativeInds(replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       /*
-      dgemmReindexed(cBlkD.dim(1).length, aBlkD.dim(2).length, cBlkD.dim(2).length,
+      dgemmReindexed(cBlkD.dim(0).size, aBlkD.dim(1).size, cBlkD.dim(1).size,
                      replA[aBlkD], replB[bBlkD], Ab[cBlkD]);
       */
       /*
@@ -214,9 +214,9 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc dgemmNativeInds(A: [] elemType,
                     B: [] elemType,
                     C: [] elemType) {
-  for (iA, iC) in zip(A.domain.dim(1), C.domain.dim(1)) do
-    for (jA, iB) in zip(A.domain.dim(2), B.domain.dim(1)) do
-      for (jB, jC) in zip(B.domain.dim(2), C.domain.dim(2)) do
+  for (iA, iC) in zip(A.domain.dim(0), C.domain.dim(0)) do
+    for (jA, iB) in zip(A.domain.dim(1), B.domain.dim(0)) do
+      for (jB, jC) in zip(B.domain.dim(1), C.domain.dim(1)) do
         C[iC,jC] -= A[iA, jA] * B[iB, jB];
 }
 
@@ -236,9 +236,9 @@ proc dgemmReindexed(p: indexType,    // number of rows in A
 proc dgemmIdeal(A: [1.., 1..] elemType,
                B: [1.., 1..] elemType,
                C: [1.., 1..] elemType) {
-  for i in C.domain.dim(1) do
-    for j in C.domain.dim(2) do
-      for k in A.domain.dim(2) do
+  for i in C.domain.dim(0) do
+    for j in C.domain.dim(1) do
+      for k in A.domain.dim(1) do
         C[i,j] -= A[i, k] * B[k, j];
 }
 
@@ -254,11 +254,11 @@ proc panelSolve(Ab: [] elemType,
   //
   // TODO: Use on clause here (or avoid using a range?
   //
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
     var col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
@@ -298,9 +298,9 @@ proc updateBlockRow(Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows do

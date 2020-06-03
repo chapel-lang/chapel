@@ -32,8 +32,8 @@ module analyze_RMAT_graph_associative_array {
     //
     type nleType = (int(64), int(64));
     // Extract each component from a neighbor.
-    proc nleNID(nlElm: nleType)    return nlElm(1);
-    proc nleWeight(nlElm: nleType) return nlElm(2);
+    proc nleNID(nlElm: nleType)    return nlElm(0);
+    proc nleWeight(nlElm: nleType) return nlElm(1);
     // Mark a use of a neighbor as a pair.
     proc nleAsPair(nlElm: nleType) return nlElm;
     // Produce a neighbor from components.
@@ -46,7 +46,7 @@ module analyze_RMAT_graph_associative_array {
       var ndom = {initialFirstAvail..initialRMATNeighborListLength};
       var neighborList: [ndom] nleType;
 
-      proc numNeighbors()  return ndom.numIndices;
+      proc numNeighbors()  return ndom.size;
 
       // firstAvail$ must be passed by reference
       proc addEdgeOnVertex(uArg, vArg, wArg, firstAvail$: sync int) {
@@ -82,7 +82,7 @@ module analyze_RMAT_graph_associative_array {
           var edgeCount = firstAvail$.readXX() - 1;
           RemoveDuplicates(1, edgeCount);
           // TODO: ideally if we don't save much memory, do not resize
-          if edgeCount != ndom.numIndices {
+          if edgeCount != ndom.size {
             // statistics: shrinkCount += 1;
             ndom = 1..edgeCount;
           }
@@ -95,6 +95,8 @@ module analyze_RMAT_graph_associative_array {
       // there is another edge v1->v2, possibly with a different weight.
       //
       proc RemoveDuplicates(lo, inout hi) {
+        use IO;
+
         param showArrays = false;  // beware of 'local' in the caller
         const style = new iostyle(min_width_columns = 3);
         if showArrays {

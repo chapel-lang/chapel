@@ -1,3 +1,4 @@
+longerComments.doc.chpl:27: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'longerComments.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: longerComments.doc
@@ -9,6 +10,13 @@ longerComments.doc
 .. code-block:: chapel
 
    use longerComments.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import longerComments.doc;
 
 **Submodules**
 
@@ -51,6 +59,13 @@ Other
 .. code-block:: chapel
 
    use longerComments.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import longerComments.doc.Other;
 
 .. function:: proc inside
 

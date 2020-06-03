@@ -3,6 +3,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
+use IO, SysCTypes;
 
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
@@ -10,8 +11,9 @@ config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
   const stdin = openfd(0);
-  var input = stdin.reader(iokind.native, locking=false);
-  var len = stdin.length();
+  var input = stdin.reader(iokind.native, locking=false,
+                           hints=QIO_HINT_PARALLEL);
+  var len = stdin.size;
   var data : [0..#len] uint(8);
   
   sync { // wait for all process() tasks to complete before continuing
@@ -26,12 +28,12 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to the \n (end of description)
-      input.advancePastByte("\n".byte(1));
+      input.advancePastByte("\n".toByte());
       seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
-        input.advancePastByte(">".byte(1));
+        input.advancePastByte(">".toByte());
         nextDescOffset = input.offset();
       } catch e:EOFError {
         eof = true;
@@ -65,7 +67,7 @@ proc main(args: [] string) {
 proc process(data, in start, in end) {
 
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == "\n".byte(1);
+    do { cursor += dir; } while data[cursor] == "\n".toByte();
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
@@ -78,10 +80,10 @@ proc process(data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs.byte(i) != "\n".byte(1) then
-      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".toByte() then
+      table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);
   }
 
   return table;

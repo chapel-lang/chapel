@@ -23,8 +23,8 @@ proc LAPACK_dgees_no_sort_test(){
   if verbose_test then
     writeln( "===============================" );
   
-  var jobvs : c_char = "V".byte(1);
-  var sort : c_char = "N".byte(1);
+  var jobvs : c_char = "V".toByte();
+  var sort : c_char = "N".toByte();
   var chlapack_select : LAPACK_D_SELECT2;
   var n : c_int = A.order : c_int;
   var a = A.data;
@@ -112,8 +112,8 @@ proc LAPACK_dgees_sort_test(){
   if verbose_test then
     writeln( "===============================" );
   
-  var jobvs : c_char = "V".byte(1);
-  var sort : c_char = "S".byte(1);
+  var jobvs : c_char = "V".toByte();
+  var sort : c_char = "S".toByte();
   var chlapack_select : LAPACK_D_SELECT2 = LAPACK_D_SELECT2_LESS_THAN;
   var n : c_int = A.order : c_int;
   var a = A.data;
@@ -767,14 +767,14 @@ proc main(){
   var gees_col_major_sort_result = gees_col_major_sort_test();
   
   
-  writeln( "LAPACK_dgees_no_sort ", if LAPACK_dgees_no_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACK_dgees_sort ", if LAPACK_dgees_sort_result[1] then "passed" else "FAILED!" );    
-  writeln( "LAPACKE_dgees_row_major_no_sort ", if LAPACKE_dgees_row_major_no_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_dgees_col_major_no_sort ", if LAPACKE_dgees_col_major_no_sort_result[1] then "passed" else "FAILED!" );  
-  writeln( "LAPACKE_dgees_row_major_sort ", if LAPACKE_dgees_row_major_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "LAPACKE_dgees_col_major_sort ", if LAPACKE_dgees_col_major_sort_result[1] then "passed" else "FAILED!" );  
-  writeln( "gees_row_major_no_sort ", if gees_row_major_no_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "gees_col_major_no_sort ", if gees_col_major_no_sort_result[1] then "passed" else "FAILED!" );  
-  writeln( "gees_row_major_sort ", if gees_row_major_sort_result[1] then "passed" else "FAILED!" );
-  writeln( "gees_col_major_sort ", if gees_col_major_sort_result[1] then "passed" else "FAILED!" );  
+  writeln( "LAPACK_dgees_no_sort ", if LAPACK_dgees_no_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACK_dgees_sort ", if LAPACK_dgees_sort_result[0] then "passed" else "FAILED!" );    
+  writeln( "LAPACKE_dgees_row_major_no_sort ", if LAPACKE_dgees_row_major_no_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_dgees_col_major_no_sort ", if LAPACKE_dgees_col_major_no_sort_result[0] then "passed" else "FAILED!" );  
+  writeln( "LAPACKE_dgees_row_major_sort ", if LAPACKE_dgees_row_major_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "LAPACKE_dgees_col_major_sort ", if LAPACKE_dgees_col_major_sort_result[0] then "passed" else "FAILED!" );  
+  writeln( "gees_row_major_no_sort ", if gees_row_major_no_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "gees_col_major_no_sort ", if gees_col_major_no_sort_result[0] then "passed" else "FAILED!" );  
+  writeln( "gees_row_major_sort ", if gees_row_major_sort_result[0] then "passed" else "FAILED!" );
+  writeln( "gees_col_major_sort ", if gees_col_major_sort_result[0] then "passed" else "FAILED!" );  
 }

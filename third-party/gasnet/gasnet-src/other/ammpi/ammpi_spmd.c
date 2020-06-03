@@ -118,7 +118,7 @@ static int threadstr2int(const char *str) {
   char tmp[80];
   char *p;
   int ret = -1;
-  strncpy(tmp, str, sizeof(tmp));
+  strncpy(tmp, str, sizeof(tmp)-1);
   for (p = tmp; *p; p++) if (*p >= 'a' && *p <= 'z') *p -= 'a'-'A'; /* upper-case */
   #if HAVE_MPI_INIT_THREAD
     if (strstr(tmp,"SINGLE")) return MPI_THREAD_SINGLE;

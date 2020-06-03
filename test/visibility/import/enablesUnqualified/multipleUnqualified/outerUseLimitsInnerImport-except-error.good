@@ -1,0 +1,2 @@
+outerUseLimitsInnerImport-except-error.chpl:11: In function 'main':
+outerUseLimitsInnerImport-except-error.chpl:12: error: 'y' undeclared (first use this function)

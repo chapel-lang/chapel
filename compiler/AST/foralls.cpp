@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -155,7 +156,16 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
                                     Expr* nameExp, Expr* type, Expr* init)
 {
+  if (SymExpr* nameSE = toSymExpr(nameExp)) {
+    checkTypeParamTaskIntent(nameSE);
+    // when can this happen?
+    USR_FATAL(nameSE, "forall and task intents on '%s' are not implemented",
+              nameSE->symbol()->name);
+  }
+
   const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
+  if (nameString == astrThis)
+    USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
 
   if (type == NULL && init == NULL)
     // non-TPV forall intent
@@ -176,6 +186,12 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
 
 void addForallIntent(CallExpr* call, ShadowVarSymbol* svar) {
   call->insertAtTail(svar->defPoint);
+}
+
+void checkTypeParamTaskIntent(SymExpr* outerSE) {
+  Symbol* outerSym = outerSE->symbol();
+  if (outerSym->hasFlag(FLAG_TYPE_VARIABLE) || outerSym->hasFlag(FLAG_PARAM))
+    USR_FATAL(outerSE, "cannot apply a forall or task intent to a type or a param, here '%s'", outerSym->name);
 }
 
 
@@ -270,9 +286,13 @@ buildFollowLoop(VarSymbol* iter,
                 BlockStmt* loopBody,
                 Expr*      ref,
                 bool       fast,
-                bool       zippered) {
+                bool       zippered,
+                bool       forallExpr) {
   BlockStmt* followBlock = new BlockStmt();
-  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody, zippered, /*forall*/ false);
+  ForLoop*   followBody  = new ForLoop(followIdx, followIter, loopBody,
+                                       zippered,
+                                       /*isLoweredForall*/ false,
+                                       forallExpr);
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -568,7 +588,9 @@ static void hzsBuildZipperedForLoop(ForallStmt* fs, FnSymbol* origIterFn,
   origLoopBody->replace(newLoopBody);
 
   BlockStmt* forBlock = ForLoop::buildForLoop(indices, iterators,
-                                              origLoopBody, false, true);
+                                              origLoopBody,
+                                              /*zippered*/ true,
+                                              /*isForExpr*/ fs->isForallExpr());
   newLoopBody->insertAtTail(forBlock);
 
   ForLoop* forLoop = toForLoop(origLoopBody->parentExpr);
@@ -590,7 +612,7 @@ static CallExpr* hzsCallTrivialParIter(ForallStmt* fs) {
 
   if (trivialLeader == NULL) {
     result = new CallExpr("chpl_trivialLeader");
-    rootModule->block->insertAtTail(result);
+    fs->insertBefore(result);
     resolveCallAndCallee(result, false);
     result->remove();
 
@@ -764,7 +786,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   else {
     for_alist_backward(def, indvars)
       userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
-                                 followIdx, new_IntSymbol(idx--));
+                                 followIdx, new_IntSymbol(--idx));
   }
 
   // Move induction variables' DefExprs to the loop body.
@@ -799,6 +821,24 @@ static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
   }
 }
 
+static RetTag iteratorTag(FnSymbol* iterFn) {
+  IteratorInfo* ii = iterFn->iteratorInfo;
+  if (ii == NULL) {
+    // We got an iterator forwarder.
+    INT_ASSERT(iterFn->hasFlag(FLAG_FN_RETURNS_ITERATOR));
+    FnSymbol* underlyingIter = getTheIteratorFn(iterFn->retType);
+    ii = underlyingIter->iteratorInfo;
+  }
+  return ii->iteratorRetTag;
+}
+
+static bool defaultIntentYieldsConst(Type* rhsType) {
+  // copied from resolveMoveForRhsSymExpr()
+  return  ! isTupleContainingAnyReferences(rhsType)    &&
+          ! rhsType->symbol->hasFlag(FLAG_ARRAY)       &&
+          ! rhsType->symbol->hasFlag(FLAG_COPY_MUTATES);
+}
+
 static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
 {
   // Set QualifiedType of the index variable.
@@ -812,6 +852,29 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
   // FLAG_INDEX_OF_INTEREST is needed in setConstFlagsAndCheckUponMove():
   idxVar->addFlag(FLAG_INDEX_OF_INTEREST);
   idxVar->addFlag(FLAG_INDEX_VAR);
+
+  // Adjust the index variable's const-ness and ref-ness.
+  switch (iteratorTag(iterFn)) {
+    case RET_VALUE:
+      if (defaultIntentYieldsConst(idxVar->type)) {
+        idxVar->qual = QualifiedType::qualifierToConst(idxVar->qual);
+        idxVar->addFlag(FLAG_CONST);
+      }
+      break;
+    case RET_REF:
+      INT_ASSERT(idxVar->isRef());
+      idxVar->qual = QUAL_REF;
+      break;
+    case RET_CONST_REF:
+      INT_ASSERT(idxVar->isRef());
+      idxVar->qual = QUAL_CONST_REF;
+      idxVar->addFlag(FLAG_CONST);
+      break;
+    case RET_PARAM:
+    case RET_TYPE:
+      INT_FATAL(iterFn, "unexpected retTag in an iterator");
+      break;
+  }
 }
 
 static Expr* rebuildIterableCall(ForallStmt* pfs,
@@ -872,8 +935,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                 followIdx,
                                 userBody,
                                 pfs,
-                                false,
-                                zippered);
+                                /* fast */ false,
+                                zippered,
+                                pfs->isForallExpr());
 
   if (fNoFastFollowers == false) {
     Symbol* T1 = newTemp();
@@ -915,8 +979,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                       fastFollowIdx,
                                       userBodyForFast,
                                       pfs,
-                                      true,
-                                      zippered);
+                                      /* fast */ true,
+                                      zippered,
+                                      pfs->isForallExpr());
 
     leadForLoop->insertAtTail(new CondStmt(new SymExpr(T2), fastFollowBlock, followBlock));
   } else {

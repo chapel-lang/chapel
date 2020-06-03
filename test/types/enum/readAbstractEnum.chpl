@@ -1,3 +1,5 @@
+use IO;
+
 config const dontskip = 0;
 
 proc trybad(fmt, ref val) {

@@ -1,0 +1,7 @@
+queryMultiDimByRange.chpl:1: In function 'foo':
+queryMultiDimByRange.chpl:1: error: cannot query part of a domain
+queryMultiDimByRange.chpl:1: error: cannot query part of a domain
+queryMultiDimByRange.chpl:5: In function 'foo':
+queryMultiDimByRange.chpl:5: error: cannot query part of a domain
+queryMultiDimByRange.chpl:5: error: cannot query part of a domain
+queryMultiDimByRange.chpl:5: error: cannot query part of a domain

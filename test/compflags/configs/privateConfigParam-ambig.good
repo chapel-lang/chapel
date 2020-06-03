@@ -1,0 +1,1 @@
+privateConfigParam.chpl:9: error: config set ambiguously via '-sfoo' and '-sM2.foo'

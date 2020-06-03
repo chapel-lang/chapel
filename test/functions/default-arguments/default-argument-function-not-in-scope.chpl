@@ -1,16 +1,18 @@
-use A;
+module OuterModule {
+  use A;
 
-module A {
-  proc foo() : int {
-    return 10;
+  module A {
+    proc foo() : int {
+      return 10;
+    }
+
+    proc defaultFunc(x = foo()) {
+      writeln('x = ', x);
+    }
   }
 
-  proc defaultFunc(x = foo()) {
-    writeln('x = ', x);
+  proc main() {
+    defaultFunc();
+    writeln('foo = ', foo());
   }
-}
-
-proc main() {
-  defaultFunc();
-  writeln('foo = ', foo());
 }

@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2017 Inria.  All rights reserved.
+ * Copyright © 2009-2018 Inria.  All rights reserved.
  * Copyright © 2009-2012 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -253,24 +253,27 @@ hwloc_utils_print_distance_matrix(FILE *output, hwloc_topology_t topology, hwloc
   free(objs);
 }
 
-static __hwloc_inline hwloc_pid_t
-hwloc_pid_from_number(int pid_number, int set_info __hwloc_attribute_unused)
+static __hwloc_inline int
+hwloc_pid_from_number(hwloc_pid_t *pidp, int pid_number, int set_info __hwloc_attribute_unused, int verbose __hwloc_attribute_unused)
 {
   hwloc_pid_t pid;
 #ifdef HWLOC_WIN_SYS
   pid = OpenProcess(set_info ? PROCESS_SET_INFORMATION : PROCESS_QUERY_INFORMATION, FALSE, pid_number);
   if (!pid) {
-    DWORD error = GetLastError();
-    char *message;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-                  NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char *)&message, 0, NULL);
-    fprintf(stderr, "OpenProcess %d failed %ld: %s\n", pid_number, error, message);
-    exit(EXIT_FAILURE);
+    if (verbose) {
+      DWORD error = GetLastError();
+      char *message;
+      FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+		    NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char *)&message, 0, NULL);
+      fprintf(stderr, "OpenProcess %d failed %lu: %s\n", pid_number, (unsigned long) error, message);
+    }
+    return -1;
   }
 #else
   pid = pid_number;
 #endif
-  return pid;
+  *pidp = pid;
+  return 0;
 }
 
 static __hwloc_inline void

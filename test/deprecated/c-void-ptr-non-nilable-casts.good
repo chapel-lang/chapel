@@ -1,0 +1,5 @@
+c-void-ptr-non-nilable-casts.chpl:3: In function 'main':
+c-void-ptr-non-nilable-casts.chpl:7: warning: cast from c_void_ptr to borrowed MyClass is deprecated
+c-void-ptr-non-nilable-casts.chpl:7: warning: cast to borrowed MyClass? instead
+c-void-ptr-non-nilable-casts.chpl:8: warning: cast from c_void_ptr to unmanaged MyClass is deprecated
+c-void-ptr-non-nilable-casts.chpl:8: warning: cast to unmanaged MyClass? instead

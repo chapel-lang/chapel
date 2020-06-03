@@ -1,3 +1,5 @@
+use IO;
+
 config const output = "output.bin";
 var f = open(output, iomode.cwr);
 var w = f.writer(kind=iokind.native, locking=false);

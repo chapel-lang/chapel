@@ -1,5 +1,5 @@
 var watDom: domain(string);
-var wat: [watDom] unmanaged WAT;
+var wat: [watDom] unmanaged WAT?;
 
 class WAT { }
 

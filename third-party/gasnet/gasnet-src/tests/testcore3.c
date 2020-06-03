@@ -72,10 +72,11 @@ int main(int argc, char **argv) {
   TEST_PRINT_CONDUITINFO();
 
   mynode = gex_TM_QueryRank(myteam);
-  peer = mynode ^ 1;
-  if (peer == gex_TM_QuerySize(myteam)) {
-    /* w/ odd # of nodes, last one talks to self */
-    peer = mynode;
+  gex_Rank_t nnodes = gex_TM_QuerySize(myteam);
+  peer = mynode + 1;
+  if (peer == nnodes) {
+    // w/ odd # of nodes, last one talks to self, else to 0
+    peer = (nnodes%2) ? mynode : 0;
   }
 
   addr_tbl[0] = myseg = TEST_MYSEG();

@@ -1,19 +1,19 @@
 class stack_elt {
   type eltType;
   var value : eltType;
-  var next : unmanaged stack_elt(eltType);
+  var next : unmanaged stack_elt(eltType)?;
 }
 
 record stack {
   type eltType;
 
-  var  top : unmanaged stack_elt(eltType);
+  var  top : unmanaged stack_elt(eltType)?;
 
   proc deinit() {
     while top != nil {
       var t = top;
 
-      top = top.next;
+      top = top!.next;
 
       delete t;
     }
@@ -29,20 +29,20 @@ proc stack.push(v : eltType) {
 
 proc stack.pop() : eltType {
   var t = top;
-  var v = top.value;
+  var v = top!.value;
 
-  top = top.next;
+  top = top!.next;
 
   delete t;
 
   return v;
 }
 
-proc stack.writeThis(f) {
+proc stack.writeThis(f) throws {
   var tmp = top;
   while tmp != nil {
-    f.write(tmp.value, " ");
-    tmp = tmp.next;
+    f.write(tmp!.value, " ");
+    tmp = tmp!.next;
   }
 }
 

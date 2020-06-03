@@ -3,23 +3,23 @@ class MyClass {
 }
 
 record R5 {
-  var fo:owned MyClass = nil;
-  var fs:shared MyClass = nil;
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
 }
 
 record R6 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
 }
 
 class C5 {
-  var fo:owned MyClass = nil;
-  var fs:shared MyClass = nil;
+  var fo:owned MyClass? = nil;
+  var fs:shared MyClass? = nil;
 }
 
 class C6 {
-  var fo:owned MyClass;
-  var fs:shared MyClass;
+  var fo:owned MyClass?;
+  var fs:shared MyClass?;
 }
 
 proc test5a() {

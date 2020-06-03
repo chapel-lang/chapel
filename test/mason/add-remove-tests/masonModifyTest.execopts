@@ -1,8 +1,0 @@
---tf addDep.toml --add=true --external=false --system=false # addDep
---tf addWithDep.toml --add=true --external=false --system=false # addWithDep
---tf rmDep.toml --add=false --external=false --system=false # rmDep
---tf rmWithDep.toml --add=false --external=false --system=false # rmWithDep
---tf addExternal.toml --add=true --external=true --system=false # addExternal
---tf rmExternal.toml --add=false --external=true --system=false # rmExternal
---tf addSystem.toml --add=true --external=false --system=true # addSystem
---tf rmSystem.toml --add=false --external=false --system=true # rmSystem

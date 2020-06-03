@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,8 +65,9 @@
 */
 module Path {
 
-use SysError;
-use Sys;
+private use List;
+use SysError, IO;
+private use Sys;
 
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.
@@ -75,6 +77,14 @@ const curDir = ".";
 const parentDir = "..";
 /* Denotes the separator between a directory and its child. */
 const pathSep = "/";
+
+/*
+   Localizes and unescapes string to create a bytes to be used for obtaining a
+   c_string to pass to extern file system operations.
+*/
+private inline proc unescape(str: string) {
+  return str.encode(policy=encodePolicy.unescape);
+}
 
 /*
   Creates a normalized absolutized version of a path. On most platforms, when
@@ -151,7 +161,7 @@ proc file.absPath(): string throws {
    :type name: `string`
 */
 proc basename(name: string): string {
-   return splitPath(name)[2];
+   return splitPath(name)[1];
 }
 
 /* Determines and returns the longest common path prefix of
@@ -163,13 +173,10 @@ proc basename(name: string): string {
    :return: The longest common path prefix.
    :rtype: `string`
 */
-// NOTE: Add in intent here to temporarily fix compiler memory leak related
-// to use of varargs.
-proc commonPath(in paths: string ...?n): string {
-
+proc commonPath(paths: string ...?n): string {
   var result: string = "";    // result string
   var inputLength = n;   // size of input array
-  var firstPath = paths(1);
+  var firstPath = paths(0);
   var flag: int = 0;
 
   // if input is empty, return empty string.
@@ -182,25 +189,27 @@ proc commonPath(in paths: string ...?n): string {
     return firstPath;
   }
 
-  var prefixArray = firstPath.split(pathSep, -1, false);
-  // array of resultant prefix string
+  var prefixList = new list(string);
+  for x in firstPath.split(pathSep, -1, false) do
+    prefixList.append(x);
 
-  var pos = prefixArray.size;   // rightmost index of common prefix
-  var minPathLength = prefixArray.size;
+  var pos = prefixList.size;   // rightmost index of common prefix
+  var minPathLength = prefixList.size;
 
-  for i in 2..n do {
+  for i in 1..n-1 do {
 
-    var tempArray = paths(i).split(pathSep, -1, false);
-    // temporary array storing the current path under consideration
+    var tempList = new list(string);
+    for x in paths(i).split(pathSep, -1, false) do
+      tempList.append(x);
 
-    var minimum = min(prefixArray.size, tempArray.size);
+    var minimum = min(prefixList.size, tempList.size);
 
     if minimum < minPathLength then {
       minPathLength = minimum;
     }
 
-    for itr in 1..minimum do {
-      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+    for itr in 0..#minimum do {
+      if (tempList[itr]!=prefixList[itr] && itr<pos) {
         pos = itr;
         flag=1;   // indicating that pos was changed
         break;
@@ -209,15 +218,16 @@ proc commonPath(in paths: string ...?n): string {
   }
 
   if (flag == 1) {
-    prefixArray.remove(pos..prefixArray.size);
+    for i in pos..prefixList.size-1 by -1 do
+      try! prefixList.pop(i);
   } else {
-    prefixArray.remove(minPathLength+1..prefixArray.size);
+    for i in minPathLength..prefixList.size-1 by -1 do
+      try! prefixList.pop(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
 
-  result = pathSep.join(prefixArray);
-
+  result = pathSep.join(prefixList.these());
   return result;
 }
 
@@ -232,7 +242,6 @@ proc commonPath(in paths: string ...?n): string {
 */
 
 proc commonPath(paths: []): string {
-
   var result: string = "";    // result string
   var inputLength = paths.size;   // size of input array
   if inputLength == 0 then {     // if input is empty, return empty string.
@@ -254,31 +263,35 @@ proc commonPath(paths: []): string {
 
   // finding delimiter to split the paths.
 
-  if firstPath.find("\\", 1..firstPath.length) == 0 then {
+  if firstPath.find("\\") == -1 then {
     delimiter = "/";
   } else {
     delimiter = "\\";
   }
 
-  var prefixArray = firstPath.split(delimiter, -1, false);
+  var prefixList = new list(string);
+  for x in firstPath.split(delimiter, -1, false) do
+    prefixList.append(x);
   // array of resultant prefix string
 
-  var pos = prefixArray.size;   // rightmost index of common prefix
-  var minPathLength = prefixArray.size;
+  var pos = prefixList.size;   // rightmost index of common prefix
+  var minPathLength = prefixList.size;
 
   for i in (start+1)..end do {
 
-    var tempArray = paths[i].split(delimiter, -1, false);
+    var tempList = new list(string);
+    for x in paths[i].split(delimiter, -1, false) do
+      tempList.append(x);
     // temporary array storing the current path under consideration
 
-    var minimum = min(prefixArray.size, tempArray.size);
+    var minimum = min(prefixList.size, tempList.size);
 
     if minimum < minPathLength then {
       minPathLength = minimum;
     }
 
-    for itr in 1..minimum do {
-      if (tempArray[itr]!=prefixArray[itr] && itr<=pos) {
+    for itr in 0..#minimum do {
+      if (tempList[itr]!=prefixList[itr] && itr<=pos) {
         pos = itr;
         flag = 1;   // indicating that pos was changed
         break;
@@ -287,15 +300,16 @@ proc commonPath(paths: []): string {
   }
 
   if (flag == 1) {
-    prefixArray.remove(pos..prefixArray.size);
+    for i in pos..prefixList.size-1 by -1 do
+      try! prefixList.pop(i);
   } else {
-    prefixArray.remove(minPathLength+1..prefixArray.size);
+    for i in minPathLength..prefixList.size-1 by -1 do
+      try! prefixList.pop(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
 
-  result = delimiter.join(prefixArray);
-
+  result = delimiter.join(prefixList.these());
   return result;
 }
 
@@ -311,7 +325,7 @@ proc commonPath(paths: []): string {
    :type name: `string`
 */
 proc dirname(name: string): string {
-  return splitPath(name)[1];
+  return splitPath(name)[0];
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
@@ -330,50 +344,58 @@ proc dirname(name: string): string {
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
-   var ind: byteIndex = 1;
-   var pathlen: int = path_p.length;
-   while (ind <= pathlen) {
+   var ind: int = 0;
+   var pathlen: int = path_p.size;
+   while (ind < pathlen) {
      var c: string = path_p(ind);
-     if (c == "$" && ind + 1 <= pathlen) {
+     if (c == "$" && ind + 1 < pathlen) {
        if (path_p(ind+1) == "$") {
          res = res + c;
          ind += 1;
        } else if (path_p(ind+1) == "{") {
          path_p = path_p((ind+2)..);
-         pathlen = path_p.length;
-         ind = path_p.find("}");
-         if (ind == 0) {
+         pathlen = path_p.numBytes;
+         ind = path_p.find("}"):int;
+         if (ind == -1) {
            res += "${" +path_p;
-           ind = pathlen;
+           ind = pathlen-1;
          } else {
            var env_var: string = path_p(..(ind-1));
            var value: string;
            var value_c: c_string;
-           var h: int = sys_getenv(env_var.c_str(), value_c);
+           // buffer received from sys_getenv, shouldn't be freed
+           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
-             value = value_c: string;
+             try! {
+               value = createStringWithNewBuffer(value_c,
+                                                 policy=decodePolicy.escape);
+             }
            }
            res += value;
          }
        } else {
          var env_var: string = "";
          ind += 1;
-         while (ind <= path_p.length && varChars.find(path_p(ind)) != 0) {
+         while (ind < path_p.size && varChars.find(path_p(ind)) != -1) {
            env_var += path_p(ind);
            ind += 1;
          }
          var value: string;
          var value_c: c_string;
-         var h: int = sys_getenv(env_var.c_str(), value_c);
+         // buffer received from sys_getenv, shouldn't be freed
+         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
-           value = value_c: string;
+           try! {
+             value = createStringWithNewBuffer(value_c,
+                                               policy=decodePolicy.escape);
+           }
          }
          res += value;
-         if (ind <= path_p.length) {
+         if (ind < path_p.numBytes) {
            ind -= 1;
          }
        }
@@ -393,33 +415,19 @@ proc dirname(name: string): string {
      var myFile = open("/foo/bar/baz.txt", iomode.r);
      writeln(myFile.getParentName()); // Prints "/foo/bar"
 
-  Will throw a SystemError if one occurs.
-
   :return: The parent directory of the file.
   :rtype: `string`
+  :throws SystemError: If one occurs.
 */
 proc file.getParentName(): string throws {
   try check();
 
   try {
-    return dirname(new string(this.realPath()));
+    // realPath returns a string, nothing to worry about encoding-wise here
+    return dirname(createStringWithNewBuffer(this.realPath()));
   } catch {
     return "unknown";
   }
-}
-
-pragma "no doc"
-proc file.getParentName(out error:syserr): string {
-  compilerWarning("This version of file.getParentName() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return this.getParentName();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "unknown";
 }
 
 /* Determines whether the path specified is an absolute path.
@@ -440,8 +448,7 @@ proc isAbsPath(name: string): bool {
   if name.isEmpty() {
     return false;
   }
-  const len: int = name.length;
-  var str: string = name[1];
+  var str: string = name[0];
   if (str == '/') {
     return true;
   } else {
@@ -478,9 +485,7 @@ private proc joinPathComponent(comp: string, ref result: string) {
             present.
    :rtype: `string`
 */
-// NOTE: Add in intent here to temporarily fix compiler memory leak related
-// to use of varargs.
-proc joinPath(in paths: string ...?n): string {
+proc joinPath(paths: string ...?n): string {
   var result: string;
 
   for path in paths do
@@ -535,7 +540,7 @@ private proc normalizeLeadingSlashCount(name: string): int {
   :rtype: `string`
 */
 proc normPath(name: string): string {
-
+  
   // Python 3.7 implementation:
   // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
 
@@ -545,7 +550,7 @@ proc normPath(name: string): string {
   const leadingSlashes = normalizeLeadingSlashCount(name);
 
   var comps = name.split(pathSep);
-  var outComps : [1..0] string;
+  var outComps = new list(string);
 
   for comp in comps {
     if comp == "" || comp == curDir then
@@ -554,13 +559,13 @@ proc normPath(name: string): string {
     // Second case exists because we cannot go up past the top level.
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
-        (!outComps.isEmpty() && outComps.back() == parentDir) then
-      outComps.push_back(comp);
+        (!outComps.isEmpty() && outComps[outComps.size-1] == parentDir) then
+      outComps.append(comp);
     else if !outComps.isEmpty() then
-      outComps.pop_back();
+      try! outComps.pop();
   }
 
-  var result = pathSep * leadingSlashes + pathSep.join(outComps);
+  var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
 
   if result == "" then
     return curDir;
@@ -572,22 +577,24 @@ proc normPath(name: string): string {
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result.
 
-   Will throw a SystemError if one occurs.
-
    :arg name: A path to resolve.  If the path does not refer to a valid file
               or directory, an error will occur.
    :type name: `string`
 
    :return: A canonical version of the argument.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc realPath(name: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
 
   var res: c_string;
-  var err = chpl_fs_realpath(name.localize().c_str(), res);
+  var err = chpl_fs_realpath(unescape(name).c_str(), res);
   if err then try ioerror(err, "realPath", name);
-  return new string(res, needToCopy=false);
+  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
+  // res was qio_malloc'd by chpl_fs_realpath, so free it here
+  chpl_free_c_string(res);
+  return ret; 
 }
 
 pragma "no doc"
@@ -609,12 +616,11 @@ proc realPath(out error: syserr, name: string): string {
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
    result.
 
-   Will throw a SystemError if one occurs.
-
    :return: A canonical path to the file referenced by this :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.
    :rtype: `string`
+   :throws SystemError: If one occurs.
 */
 proc file.realPath(): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
@@ -625,7 +631,7 @@ proc file.realPath(): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(_file_internal, res);
   if err then try ioerror(err, "in file.realPath");
-  return new string(res, needToCopy=false);
+  return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
@@ -645,10 +651,18 @@ proc file.realPath(out error: syserr): string {
 /* Compute the common prefix length between two lists of path components. */
 private
 proc commonPrefixLength(const a1: [] string, const a2: [] string): int {
-  const ref (a, b) = if a1.size < a2.size then (a1, a2) else (a2, a1);
+  const ref a;
+  const ref b;
+  if a1.size < a2.size {
+    a = a1;
+    b = a2;
+  } else {
+    a = a2;
+    b = a1;
+  }
   var result = 0;
 
-  for i in 1..a.size do
+  for i in 0..<a.size do
     if a[i] != b[i] then
       return result;
     else
@@ -690,16 +704,19 @@ proc relPath(name: string, start:string=curDir): string throws {
   const prefixLen = commonPrefixLength(startComps, nameComps);
 
   // Append up-levels until we reach the point where the paths diverge.
-  var outComps : [1..(startComps.size - prefixLen)] string = parentDir;
+  var outComps = new list(string);
+  for i in 1..(startComps.size - prefixLen) do
+    outComps.append(parentDir);
 
   // Append the portion of name following the common prefix.
   if !nameComps.isEmpty() then
-    outComps.push_back(nameComps[(prefixLen + 1)..nameComps.size]);
+    for x in nameComps[prefixLen..<nameComps.size] do
+      outComps.append(x);
 
   if outComps.isEmpty() then
     return curDir;
 
-  return joinPath(outComps);
+  return joinPath(outComps.toArray());
 }
 
 /*
@@ -725,6 +742,7 @@ proc relPath(name: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc file.relPath(start:string=curDir): string throws {
+  import Path;
   // Have to prefix module name to avoid muddying name resolution.
   return Path.relPath(this.path, start);
 }
@@ -749,8 +767,8 @@ proc file.relPath(start:string=curDir): string throws {
    .. code-block:: Chapel
 
       var res = splitPath("foo/bar");
-      var dirnameVar = res(1);
-      var basenameVar = res(2);
+      var dirnameVar = res(0);
+      var basenameVar = res(1);
       writeln(dirnameVar + "/" + basenameVar); // Prints "foo/bar"
       writeln(joinPath(dirnameVar, basenameVar)); // Prints "foo/bar"
 
@@ -759,17 +777,17 @@ proc file.relPath(start:string=curDir): string throws {
 */
  proc splitPath(name: string): (string, string) {
    var rLoc, lLoc, prev: byteIndex = name.rfind(pathSep);
-   if (prev != 0) {
+   if (prev != -1) {
      do {
        prev = lLoc;
-       lLoc = name.rfind(pathSep, 1:byteIndex..prev-1);
-     } while (lLoc + 1 == prev && lLoc > 1);
+       lLoc = name.rfind(pathSep, 0:byteIndex..prev-1);
+     } while (lLoc + 1 == prev && lLoc > 0);
 
-     if (prev == 1) {
+     if (prev == 0) {
        // This happens when the only instance of pathSep in the string is
        // the first character
        return (name[prev..rLoc], name[rLoc+1..]);
-     } else if (lLoc == 1 && prev == 2) {
+     } else if (lLoc == 0 && prev == 1) {
        // This happens when there is a line of pathSep instances at the
        // start of the string
        return (name[..rLoc], name[rLoc+1..]);

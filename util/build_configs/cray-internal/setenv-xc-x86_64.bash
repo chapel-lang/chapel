@@ -126,11 +126,11 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=cray,intel,gnu
+        compilers=gnu,cray,intel
         comms=gasnet,none,ugni
         launchers=pbs-aprun,aprun,none,slurm-srun
         substrates=aries,mpi,none
-        locale_models=flat,knl
+        locale_models=flat
         auxfs=none,lustre
         libpics=none,pic
 
@@ -337,10 +337,7 @@ else
     # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
     gen_version_intel=16.0.3.210
-    gen_version_cce=8.6.3
-    if [ "$CHPL_LOCALE_MODEL" == knl ]; then
-        gen_version_cce=8.7.3
-    fi
+    gen_version_cce=9.1.3
 
     target_cpu_module=craype-sandybridge
 
@@ -356,6 +353,10 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
+
+        # pin to versions of mpich/libsci that work with gen_version_gcc
+        load_module_version cray-mpich 7.7.13
+        load_module_version cray-libsci 19.06.1
     }
 
     function load_prgenv_intel() {
@@ -384,16 +385,12 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
-
-        # pin to an mpich version compatible with the gen compiler
-        load_module_version cray-mpich 7.7.7
     }
 
     function load_target_cpu() {
 
         # legacy
-        unload_module perftools-base acml totalview atp cray-libsci xt-libsci
-        load_module cray-libsci
+        unload_module perftools-base acml totalview atp xt-libsci
 
         case "$1" in ( "" ) log_error "load_target_cpu missing arg 1"; exit 2;; esac
         local target=$1
@@ -429,12 +426,6 @@ else
         ;;
     ( compiler )
         load_prgenv_gnu
-
-        if [ "$CHPL_LLVM" == llvm ]; then
-            # Chapel make compiler with LLVM requires python 2.7 and cmake >= 3.4.1
-            load_module cmake
-            use_python27
-        fi
         ;;
     ( venv )
         load_prgenv_gnu

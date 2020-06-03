@@ -10,6 +10,13 @@ forwards-generic.doc
 
    use forwards-generic.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import forwards-generic.doc;
+
 .. class:: A
 
    This class should not get the forwarded methods from B 

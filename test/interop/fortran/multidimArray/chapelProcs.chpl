@@ -1,4 +1,6 @@
 export proc chpl_library_init_ftn() {
+  use SysCTypes;
+
   extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
   var filename = c"fake";
   chpl_library_init(1, c_ptrTo(filename): c_ptr(c_ptr(c_char)));;
@@ -17,8 +19,8 @@ export proc chpl_library_init_ftn() {
 proc CFI_cdesc_t.this(idx:int...?rank) ref {
   assert(this.rank == rank);
   var subscripts: [0..#rank] CFI_index_t;
-  for param i in 1..rank {
-    subscripts[i-1] = idx[i]: CFI_index_t;
+  for param i in 0..<rank {
+    subscripts[i] = idx[i]: CFI_index_t;
   }
   var x = CFI_address(this, c_ptrTo(subscripts)): c_ptr(real);
   return x.deref();

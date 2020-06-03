@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+# This file serves as a template for other SKIPIFs and .skipifs to symlink
+#
+
 # Skip this test for SuSE 11 and earlier. It requires an OpenSSL version that
 # is newer than is available on SuSe 11 due to github requirements.
 if [ -f /etc/SuSE-release ] ; then

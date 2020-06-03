@@ -67,30 +67,31 @@ extern void gasnete_packetize_verify(gasnete_packetdesc_t *pt, size_t ptidx, int
   size_t firstoffset = pt[ptidx].firstoffset;
   size_t lastidx = pt[ptidx].lastidx;
   size_t lastlen = pt[ptidx].lastlen;
-  gasneti_assert(firstidx <= lastidx);
-  gasneti_assert(lastidx < count);
+  gasneti_assert_uint(firstidx ,<=, lastidx);
+  gasneti_assert_uint(lastidx ,<, count);
   if (ptidx == 0) gasneti_assert(firstidx == 0 && firstoffset == 0); /* first packet */
   else if (firstidx == lastidx && lastlen == 0) ; /* empty local packet */
   else if (firstidx == pt[ptidx-1].lastidx) { /* continued from last packet */
-    gasneti_assert(firstoffset > 0 && firstoffset < (list?list[firstidx].gex_len:len));
+    gasneti_assert(firstoffset > 0);
+    gasneti_assert_uint(firstoffset ,<, (list?list[firstidx].gex_len:len));
     if (pt[ptidx-1].lastidx == pt[ptidx-1].firstidx)
-      gasneti_assert(firstoffset == pt[ptidx-1].lastlen+pt[ptidx-1].firstoffset);
+      gasneti_assert_uint(firstoffset ,==, pt[ptidx-1].lastlen+pt[ptidx-1].firstoffset);
     else
       gasneti_assert(firstoffset == pt[ptidx-1].lastlen);
   } else { /* packet starts a new entry */
-    gasneti_assert(firstidx == pt[ptidx-1].lastidx + 1);
+    gasneti_assert_uint(firstidx ,==, pt[ptidx-1].lastidx + 1);
     gasneti_assert(firstoffset == 0);
     if (pt[ptidx-1].lastidx == pt[ptidx-1].firstidx)
-      gasneti_assert(pt[ptidx-1].lastlen == (list?list[firstidx-1].gex_len:len)-pt[ptidx-1].firstoffset);
+      gasneti_assert_uint(pt[ptidx-1].lastlen ,==, (list?list[firstidx-1].gex_len:len)-pt[ptidx-1].firstoffset);
     else
-      gasneti_assert(pt[ptidx-1].lastlen == (list?list[firstidx-1].gex_len:len));
+      gasneti_assert_uint(pt[ptidx-1].lastlen ,==, (list?list[firstidx-1].gex_len:len));
   }
   if (lastpacket) {
     if (lastidx == firstidx) {
       if (lastlen == 0) ; /* empty local packet */
-      else gasneti_assert(lastlen == (list?list[lastidx].gex_len:len)-firstoffset);
+      else gasneti_assert_uint(lastlen ,==, (list?list[lastidx].gex_len:len)-firstoffset);
     }
-    else gasneti_assert(lastlen == (list?list[lastidx].gex_len:len));
+    else gasneti_assert_uint(lastlen ,==, (list?list[lastidx].gex_len:len));
   }
 }
 /*---------------------------------------------------------------------------------*/
@@ -114,12 +115,12 @@ size_t gasnete_packetize_memvec(size_t remotecount, gex_Memvec_t const remotelis
   size_t ridx = 0, roffset = 0, lidx = 0, loffset = 0;
   size_t const metadatasz = sizeof(gex_Memvec_t);
   size_t ptsz = 4; /* initial size guess - no fast way to know for sure */
-  gasneti_assert(maxpayload > metadatasz);
+  gasneti_assert_uint(maxpayload ,>, metadatasz);
   gasnete_packetdesc_t *remotept = gasneti_malloc(ptsz*sizeof(gasnete_packetdesc_t));
   gasnete_packetdesc_t *localpt = gasneti_malloc(ptsz*sizeof(gasnete_packetdesc_t));
   gasneti_assert(premotept && plocalpt && remotecount && localcount);
-  gasneti_assert(gasnete_memveclist_totalsz(remotecount,remotelist) == 
-                 gasnete_memveclist_totalsz(localcount,locallist));
+  gasneti_assert_uint(gasnete_memveclist_totalsz(remotecount,remotelist) ,==, 
+                      gasnete_memveclist_totalsz(localcount,locallist));
 
   for (ptidx = 0; ; ptidx++) {
     ssize_t packetremain = maxpayload;
@@ -173,12 +174,12 @@ size_t gasnete_packetize_memvec(size_t remotecount, gex_Memvec_t const remotelis
           else if (i == remotept[ptidx].firstidx) datachk += (remotelist[i].gex_len - remotept[ptidx].firstoffset);
           else datachk += remotelist[i].gex_len;
         }
-        gasneti_assert(packetdata == datachk);
+        gasneti_assert_uint(packetdata ,==, datachk);
         if (sharedpacket) { 
-          gasneti_assert((metadatasz*entries + packetdata) <= maxpayload); /* not overfull */
-          gasneti_assert(((metadatasz*entries + packetdata) >= maxpayload - metadatasz) || done); /* not underfull */
+          gasneti_assert_uint((metadatasz*entries + packetdata) ,<=, maxpayload); /* not overfull */
+          if (!done) gasneti_assert_uint((metadatasz*entries + packetdata) ,>=, maxpayload - metadatasz); /* not underfull */
         } else {
-          gasneti_assert(MAX(metadatasz*entries,packetdata) <= maxpayload); /* not overfull */
+          gasneti_assert_uint(MAX(metadatasz*entries,packetdata) ,<=, maxpayload); /* not overfull */
           /* algorithm currently may underfill for !sharedpacket, because it effectively always 
              subtracts the MAX(metadatasz, datasz) from *both* packets being managed simultaneously in packetremain,
              rather than maintaining independent packetremains and updating each accordingly (increasing arithmetic complexity)
@@ -186,7 +187,7 @@ size_t gasnete_packetize_memvec(size_t remotecount, gex_Memvec_t const remotelis
              In perverse cases we might end up with a packet which where the maximal packet is only 2/3 full
              this means in datasz dominated vectors with a few entries where datasz < metadatasz (or vice-versa)
            */
-          gasneti_assert((MAX(metadatasz*entries,packetdata) >= (maxpayload - metadatasz)/2) || done); /* not underfull */
+          if (!done) gasneti_assert_uint(MAX(metadatasz*entries,packetdata) ,>=, (maxpayload - metadatasz)/2); /* not underfull */
         }
       }
     #endif
@@ -331,7 +332,7 @@ gex_Event_t gasnete_putv_AMPipeline(gasnete_synctype_t synctype,
   for (size_t packetidx = 0; packetidx < packetcnt; packetidx++) {
     #if GASNETE_VIS_NPAM  // NPAM 1 or 2 (currently treated as 1)
       gex_AM_SrcDesc_t sd = gex_AM_PrepareRequestMedium(tm, rank, NULL, maxpacket, maxpacket, NULL, 0, HARGS(2,3));
-      gasneti_assert(gex_AM_SrcDescSize(sd) >= maxpacket);
+      gasneti_assert_uint(gex_AM_SrcDescSize(sd) ,>=, maxpacket);
       gex_Memvec_t * const packedbuf = gex_AM_SrcDescAddr(sd);
     #endif
 
@@ -347,14 +348,15 @@ gex_Event_t gasnete_putv_AMPipeline(gasnete_synctype_t synctype,
         size_t   vlen  = dstlist[ri].gex_len;
         uint8_t *vaddr = dstlist[ri].gex_addr;
         if (firstoffset) { // adjust first
-          gasneti_assert(rnum == 0 && ri == firstridx);
-          gasneti_assert(firstoffset <= vlen);
+          gasneti_assert(rnum == 0);
+          gasneti_assert_uint(ri ,==, firstridx);
+          gasneti_assert_uint(firstoffset ,<=, vlen);
           vaddr += firstoffset;
           vlen  -= firstoffset;
           firstoffset = 0;
         }
         if (ri == lastridx) { // truncate last
-          gasneti_assert(rpacket->lastlen <= vlen);
+          gasneti_assert_uint(rpacket->lastlen ,<=, vlen);
           vlen = rpacket->lastlen;
         }
         if_pt (vlen) { // add this non-empty iovec to the wire
@@ -389,8 +391,8 @@ gex_Event_t gasnete_putv_AMPipeline(gasnete_synctype_t synctype,
           datalen += thislen;
         }
         gasneti_assert(datalen > 0); 
-        gasneti_assert(packetlen == rnum*sizeof(gex_Memvec_t)+datalen);
-        gasneti_assert(packetlen <= maxpacket);
+        gasneti_assert_uint(packetlen ,==, rnum*sizeof(gex_Memvec_t)+datalen);
+        gasneti_assert_uint(packetlen ,<=, maxpacket);
       }
       #endif
 
@@ -433,7 +435,7 @@ void gasnete_putv_AMPipeline_reqh_inner(gex_Token_t token,
   gex_Memvec_t * const rlist = addr;
   uint8_t * const data = (uint8_t *)(&rlist[rnum]);
   uint8_t * const end = gasnete_memvec_unpack_noempty(rnum, rlist, data, 0, (size_t)-1);
-  gasneti_assert(end - (uint8_t *)addr == nbytes);
+  gasneti_assert_uint(end - (uint8_t *)addr ,==, nbytes);
   /* TODO: coalesce acknowledgements - need a per-rank, per-op seqnum & packetcnt */
   gex_AM_ReplyShort(token, gasneti_handleridx(gasnete_putvis_AMPipeline_reph), 0, PACK(iop));
 }
@@ -507,8 +509,8 @@ gex_Event_t gasnete_getv_AMPipeline(gasnete_synctype_t synctype,
     visop->type = GASNETI_VIS_CAT_GETV_AMPIPELINE;
     visop->count = dstcount;
   #endif
-  gasneti_assert(packetcnt <= GASNETI_ATOMIC_MAX);
-  gasneti_assert(packetcnt == (gex_AM_Arg_t)packetcnt);
+  gasneti_assert_uint(packetcnt ,<=, GASNETI_ATOMIC_MAX);
+  gasneti_assert_uint(packetcnt ,==, (gex_AM_Arg_t)packetcnt);
   visop->addr = localpt;
   GASNETI_MEMCPY(savedlst, dstlist, dstcount*sizeof(gex_Memvec_t));
   gasneti_weakatomic_set(&(visop->packetcnt), packetcnt, GASNETI_ATOMIC_WMB_POST);
@@ -517,7 +519,7 @@ gex_Event_t gasnete_getv_AMPipeline(gasnete_synctype_t synctype,
   for (size_t packetidx = 0; packetidx < packetcnt; packetidx++) {
     #if GASNETE_VIS_NPAM  // NPAM 1 or 2 (currently treated as 1)
       gex_AM_SrcDesc_t sd = gex_AM_PrepareRequestMedium(tm, rank, NULL, maxrequest, maxrequest, NULL, 0, HARGS(2,3));
-      gasneti_assert(gex_AM_SrcDescSize(sd) >= maxrequest);
+      gasneti_assert_uint(gex_AM_SrcDescSize(sd) ,>=, maxrequest);
       gex_Memvec_t * const packedbuf = gex_AM_SrcDescAddr(sd);
     #endif
 
@@ -531,14 +533,15 @@ gex_Event_t gasnete_getv_AMPipeline(gasnete_synctype_t synctype,
         size_t   vlen  = srclist[ri].gex_len;
         uint8_t *vaddr = srclist[ri].gex_addr;
         if (firstoffset) { // adjust first
-          gasneti_assert(rnum == 0 && ri == firstridx);
-          gasneti_assert(firstoffset <= vlen);
+          gasneti_assert(rnum == 0);
+          gasneti_assert_uint(ri ,==, firstridx);
+          gasneti_assert_uint(firstoffset ,<=, vlen);
           vaddr += firstoffset;
           vlen  -= firstoffset;
           firstoffset = 0;
         }
         if (ri == lastridx) { // truncate last
-          gasneti_assert(rpacket->lastlen <= vlen);
+          gasneti_assert_uint(rpacket->lastlen ,<=, vlen);
           vlen = rpacket->lastlen;
         }
         if_pt (vlen) { // add this non-empty iovec to the wire
@@ -605,7 +608,7 @@ void gasnete_getv_AMPipeline_reqh_inner(gex_Token_t token,
   gasneti_assert(addr && nbytes > 0);
   gex_Memvec_t * const rlist = addr;
   size_t const rnum = nbytes / sizeof(gex_Memvec_t);
-  gasneti_assert(nbytes == rnum * sizeof(gex_Memvec_t));
+  gasneti_assert_uint(nbytes ,==, rnum * sizeof(gex_Memvec_t));
   size_t const maxreply = gex_Token_MaxReplyMedium(token, (GASNETE_VIS_NPAM ? NULL : GEX_EVENT_NOW),
                                                        (GASNETE_VIS_NPAM ? GEX_FLAG_AM_PREPARE_LEAST_ALLOC : 0),
                                                        HARGS(2,3));
@@ -613,7 +616,7 @@ void gasnete_getv_AMPipeline_reqh_inner(gex_Token_t token,
     uint8_t * const packedbuf = gasnete_visbuf_malloc(maxreply);
   #else // NPAM 1 or 2
     gex_AM_SrcDesc_t sd = gex_AM_PrepareReplyMedium(token, NULL, maxreply, maxreply, NULL, 0, HARGS(2,3));
-    gasneti_assert(gex_AM_SrcDescSize(sd) >= maxreply);
+    gasneti_assert_uint(gex_AM_SrcDescSize(sd) ,>=, maxreply);
     uint8_t * const packedbuf = gex_AM_SrcDescAddr(sd);
   #endif
   gasneti_assert(packedbuf);
@@ -621,7 +624,7 @@ void gasnete_getv_AMPipeline_reqh_inner(gex_Token_t token,
   /* gather data payload from sourcelist into packet */
   uint8_t * const end = gasnete_memvec_pack_noempty(rnum, rlist, packedbuf, 0, (size_t)-1);
   size_t const replysz = end - packedbuf;
-  gasneti_assert(replysz <= maxreply);
+  gasneti_assert_uint(replysz ,<=, maxreply);
   gasneti_assert(replysz > 0);
 
   // send packet
@@ -647,11 +650,11 @@ void gasnete_getv_AMPipeline_reph_inner(gex_Token_t token,
   gex_Memvec_t * const savedlst = (gex_Memvec_t *)(visop + 1);
   gasnete_packetdesc_t * const lpacket = ((gasnete_packetdesc_t *)visop->addr) + (uint32_t)packetidx;
   size_t const lnum = lpacket->lastidx - lpacket->firstidx + 1;
-  gasneti_assert(visop->type == GASNETI_VIS_CAT_GETV_AMPIPELINE);
-  gasneti_assert(lpacket->lastidx < visop->count);
+  gasneti_assert_uint(visop->type ,==, GASNETI_VIS_CAT_GETV_AMPIPELINE);
+  gasneti_assert_uint(lpacket->lastidx ,<, visop->count);
   gasneti_assert(addr && nbytes > 0);
   uint8_t * const end = gasnete_memvec_unpack(lnum, savedlst+lpacket->firstidx, addr, lpacket->firstoffset, lpacket->lastlen);
-  gasneti_assert(end - (uint8_t *)addr == nbytes);
+  gasneti_assert_uint(end - (uint8_t *)addr ,==, nbytes);
   gasnete_getv_AMPipeline_visop_signal(visop);
 }
 MEDIUM_HANDLER(gasnete_getv_AMPipeline_reph,2,3, 
@@ -678,7 +681,7 @@ MEDIUM_HANDLER(gasnete_getv_AMPipeline_reph,2,3,
         _pp1 += _len2;                                                          \
       }                                                                         \
     }                                                                           \
-    gasneti_assert(_pp1 == (uintptr_t)(_list1[0].gex_addr)+_list1[0].gex_len);  \
+    gasneti_assert_uint(_pp1 ,==, (uintptr_t)(_list1[0].gex_addr)+_list1[0].gex_len); \
   } else if (_count2 == 1) { /* 2 is contiguous buffer */                       \
     uintptr_t _pp2 = (uintptr_t)(_list2[0].gex_addr);                           \
     for (size_t _i = 0; _i < _count1; _i++) {                                   \
@@ -690,17 +693,17 @@ MEDIUM_HANDLER(gasnete_getv_AMPipeline_reph,2,3,
         _pp2 += _len1;                                                          \
       }                                                                         \
     }                                                                           \
-    gasneti_assert(_pp2 == (uintptr_t)(_list2[0].gex_addr)+_list2[0].gex_len);  \
+    gasneti_assert_uint(_pp2 ,==, (uintptr_t)(_list2[0].gex_addr)+_list2[0].gex_len); \
   } else { /* general case */                                                   \
     size_t _idx1 = 0; size_t _idx2 = 0;                                         \
     size_t _off1 = 0; size_t _off2 = 0;                                         \
     _VEC_SKIPEMPTY(_idx1,_count1,_list1);                                       \
     _VEC_SKIPEMPTY(_idx2,_count2,_list2);                                       \
     while (_idx1 < _count1) {                                                   \
-      gasneti_assert(_idx2 < _count2);                                          \
+      gasneti_assert_uint(_idx2 ,<, _count2);                                   \
       size_t const _rem1 = _list1[_idx1].gex_len - _off1;                       \
       size_t const _rem2 = _list2[_idx2].gex_len - _off2;                       \
-      gasneti_assert(_rem1 > 0 && _rem2 > 0);                                   \
+      gasneti_assert(_rem1 > 0); gasneti_assert(_rem2 > 0);                     \
       void * const _p1 = (void *)(((uintptr_t)_list1[_idx1].gex_addr)+_off1);   \
       void * const _p2 = (void *)(((uintptr_t)_list2[_idx2].gex_addr)+_off2);   \
       if (_rem1 < _rem2) {                                                      \
@@ -713,7 +716,7 @@ MEDIUM_HANDLER(gasnete_getv_AMPipeline_reph,2,3,
         _idx2++; _VEC_SKIPEMPTY(_idx2,_count2,_list2);                          \
         _off2 = 0;                                                              \
         _off1 += _rem2;                                                         \
-      } else { gasneti_assert(_rem1 == _rem2);                                  \
+      } else { gasneti_assert_uint(_rem1 ,==, _rem2);                           \
         action(_p1, _p2, _rem1);                                                \
         _idx1++; _VEC_SKIPEMPTY(_idx1,_count1,_list1);                          \
         _idx2++; _VEC_SKIPEMPTY(_idx2,_count2,_list2);                          \
@@ -721,7 +724,9 @@ MEDIUM_HANDLER(gasnete_getv_AMPipeline_reph,2,3,
         _off2 = 0;                                                              \
       }                                                                         \
     }                                                                           \
-    gasneti_assert(_idx1 == _count1 && _idx2 == _count2 && _off1 == 0 && _off2 == 0); \
+    gasneti_assert_uint(_idx1 ,==, _count1);                                    \
+    gasneti_assert_uint(_idx2 ,==, _count2);                                    \
+    gasneti_assert(_off1 == 0); gasneti_assert(_off2 == 0);                     \
   }                                                                             \
 } while (0)
 /*---------------------------------------------------------------------------------*/
@@ -743,7 +748,8 @@ void gasnete_vector_memcpy(gex_Rank_t jobrank, int isput,
     if_pf (base == peercount) return; // empty list
     if_pt (peerlist[base].gex_len) break;
   }
-  gasneti_assert(base < peercount && peerlist[base].gex_len > 0);
+  gasneti_assert_uint(base ,<, peercount);
+  gasneti_assert(peerlist[base].gex_len > 0);
   uint8_t const * const rawptr = peerlist[base].gex_addr; 
   gasneti_assert(rawptr);
   uint8_t const * const refptr = GASNETI_NBRHD_JOBRANK_LOCAL_ADDR(jobrank,rawptr);
@@ -767,7 +773,7 @@ gex_Event_t gasnete_putv_ref_indiv(gasnete_synctype_t synctype,
                                    size_t srccount, gex_Memvec_t const srclist[],
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   GASNETI_TRACE_EVENT(C, PUTV_REF_INDIV);
-  gasneti_assert(srccount > 0 && dstcount > 0);
+  gasneti_assert(dstcount > 0); gasneti_assert(srccount > 0);
   gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
   gex_Event_t * const lc_opt = (flags & GEX_FLAG_ENABLE_LEAF_LC) ? GEX_EVENT_GROUP : GEX_EVENT_DEFER;
   GASNETE_START_NBIREGION(synctype);
@@ -786,7 +792,7 @@ gex_Event_t gasnete_getv_ref_indiv(gasnete_synctype_t synctype,
                                    size_t srccount, gex_Memvec_t const srclist[],
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   GASNETI_TRACE_EVENT(C, GETV_REF_INDIV);
-  gasneti_assert(srccount > 0 && dstcount > 0);
+  gasneti_assert(dstcount > 0); gasneti_assert(srccount > 0);
   gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
   GASNETE_START_NBIREGION(synctype);
 

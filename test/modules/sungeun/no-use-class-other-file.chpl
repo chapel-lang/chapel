@@ -1,6 +1,6 @@
 module Z {
   proc f() {
-    var c: X.C;
+    var c: unmanaged X.C?;
 
     writeln(c);
   }

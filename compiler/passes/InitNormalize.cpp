@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,7 +68,8 @@ InitNormalize::InitNormalize(BlockStmt* block, const InitNormalize& curr) {
                blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) == true) {
       mBlockType = cBlockCoforall;
 
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ON) == true) {
+    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ON) == true ||
+               blockInfo->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
       mBlockType = cBlockOn;
 
     } else {
@@ -491,6 +493,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
 
+  if (field->sym->hasFlag(FLAG_NO_INIT))
+    return NULL;
+
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
@@ -908,7 +913,7 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
 
   if (type != dtObject) {
     forv_Vec(FnSymbol, method, type->methods) {
-      if (strcmp(method->name, methodName) == 0) {
+      if (method && strcmp(method->name, methodName) == 0) {
         retval = true;
         break;
       }
@@ -1193,7 +1198,7 @@ static bool isAssignment(CallExpr* callExpr) {
 static bool isSimpleAssignment(CallExpr* callExpr) {
   bool retval = false;
 
-  if (callExpr->isNamedAstr(astrSequals) == true) {
+  if (callExpr->isNamedAstr(astrSassign) == true) {
     retval = true;
   }
 

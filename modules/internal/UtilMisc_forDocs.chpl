@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,87 +46,21 @@ Additional utilities
 
 module UtilMisc_forDocs {
 
-  /*
-     Generate a compile-time error.
-     The error text is a concatenation of the arguments.
-  */
-  proc compilerError(param msg: string ...?n) {
-  }
-
-  /*
-     Generate a compile-time error.
-     The error text is a concatenation of the string arguments.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerError(param msg: string ...?n, param errorDepth: int) {
-  }
-
-
-  /*
-     Generate a compile-time warning.
-     The warning text is a concatenation of the arguments.
-  */
-  proc compilerWarning(param msg: string ...?n) {
-  }
-
-  /*
-     Generate a compile-time warning.
-     The warning text is a concatenation of the string arguments.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
-  }
-
-
-  //
-  // TODO: improve the compilerAssert() functions in ChapelBase.chpl:
-  //  * do we want to +1 when passing errorDepth to compilerError() ?
-  //
-
-  /* Generate a compile-time error if the `test` argument is false.
-  */
-  proc compilerAssert(param test: bool)
-  { }
-
-  /* Generate a compile-time error if the `test` argument is false.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerAssert(param test: bool, param errorDepth: int)
-  { }
-
-  /* Generate a compile-time error if the `test` argument is false.
-     The warning text is a concatenation of the string arguments.
-  */
-  proc compilerAssert(param test: bool, param msg: string ...?n)
-  { }
-
-  /* Generate a compile-time error if the `test` argument is false.
-     The warning text is a concatenation of the string arguments.
-
-     :arg errorDepth: controls the depth of the error stack trace
-  */
-  proc compilerAssert(param test: bool, param msg: string ...?n, param errorDepth: int)
-  { }
-
-
   /* Compute the minimum value of 2 or more arguments
-     using the ``<`` operator for comparison. */
+     using the ``<`` operator for comparison.
+     If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
   inline proc min(x, y...) return min();  // dummy
 
   /* Compute the maximum value of 2 or more arguments
-     using the ``>`` operator for comparison. */
+     using the ``>`` operator for comparison.
+     If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
   inline proc max(x, y...) return max();  // dummy
 
-  /*
-    Exit the program
-
-    :arg status: The exit code for the program
-  */
-  inline proc exit(status: int) {
-    __primitive("chpl_exit_any", status);
+  /* Returns `true` if the type `from` is coercible to the type `to`,
+     or if ``isSubtype(from, to)`` would return `true`.
+   */
+  proc isCoercible(type from, type to) param {
+    return __primitive("is_coercible", from, to);
   }
 
   /* Returns `true` if the type `sub` is a subtype of the type `super`.
@@ -134,13 +69,12 @@ module UtilMisc_forDocs {
        * `sub` is the same type as `super`
        * `sub` is an instantiation of a generic type `super`
        * `sub` is a class type inheriting from `super`
-       * `sub` is a type that coerces to `super`
 
      Note that ``isSubtype(a,b)`` can also be written as
      ``a <= b`` or ``b >= a``.
      */
   proc isSubtype(type sub, type super) param {
-    __primitive("is_subtype", super, sub);
+    return __primitive("is_subtype", super, sub);
   }
 
   /* Similar to :proc:`isSubtype` but returns `false` if
@@ -150,7 +84,7 @@ module UtilMisc_forDocs {
      as ``a < b`` or ``b > a``.
      */
   proc isProperSubtype(type sub, type super) param {
-    __primitive("is_proper_subtype", super, sub);
+    return __primitive("is_proper_subtype", super, sub);
   }
 
   /* :returns: isProperSubtype(a,b) */

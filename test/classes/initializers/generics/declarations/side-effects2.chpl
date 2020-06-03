@@ -19,5 +19,5 @@ proc FooX(param p) type {
   return localvar.type;
 }
 
-var foo: FooX(3);
-writeln(foo.type:string);
+var foo: FooX(3)?;
+writeln(foo.type :class :string);

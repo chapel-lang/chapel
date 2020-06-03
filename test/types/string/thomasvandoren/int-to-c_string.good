@@ -1,4 +1,0 @@
-int-to-c_string.chpl:2: warning: cast from integral to c_string is deprecated
-5 : int(64)
-5 : c_string
-5 : string

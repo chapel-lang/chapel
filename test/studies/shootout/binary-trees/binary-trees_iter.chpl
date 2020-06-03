@@ -4,7 +4,7 @@
 config const n = 10;
 
 class Tree {
-  var left, right: unmanaged Tree;
+  var left, right: unmanaged Tree?;
 }
 
 proc main() {
@@ -52,16 +52,16 @@ proc bottomUpTree(depth: int): unmanaged Tree {
 
 proc itemCheck(T: borrowed Tree): int{
   if (T.left==nil) then return 1;
-  else return 1 + itemCheck(T.left) + itemCheck(T.right);
+  else return 1 + itemCheck(T.left!) + itemCheck(T.right!);
 }
 
 // Feel free to turn this into a parallel leader-follower
 // for additional testing goodness
-iter postorder(tree: unmanaged Tree): unmanaged Tree {
+iter postorder(tree: unmanaged Tree?): unmanaged Tree {
   if tree != nil {
-    for child in postorder(tree.left) do yield child;
-    for child in postorder(tree.right) do yield child;
-    yield tree;
+    for child in postorder(tree!.left) do yield child;
+    for child in postorder(tree!.right) do yield child;
+    yield tree!;
   }
 }
 

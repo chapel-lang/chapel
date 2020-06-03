@@ -31,10 +31,10 @@ proc test(param useUnordered, dynamicIters, iters, printStats) {
     if printStats {
       const ordering = if useUnordered then "Unordered " else "Ordered ";
       const scheduling = if dynamicIters then "dynamic " else "static ";
-      const time = "time(sec): " + t.elapsed();
-      const rate = "rate(mOps/sec): " + (iters / t.elapsed()) / 1e6;
-      writeln(ordering + scheduling + time);
-      writeln(ordering + scheduling + rate);
+      const time = "time(sec): " + t.elapsed():string;
+      const rate = "rate(mOps/sec): " + ((iters / t.elapsed()) / 1e6):string;
+      writeln(ordering, scheduling, time);
+      writeln(ordering, scheduling, rate);
     }
   }
   assert(a.read() == iters);

@@ -1,4 +1,5 @@
 // ensure "cannot pass lvalue" errors are reported
+use IO;
 
 proc with_constref_arg(const ref x_constref) { writeln(x_constref); }
 proc with_inout_arg(inout x_inout) { writeln(x_inout); }

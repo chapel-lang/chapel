@@ -1,3 +1,5 @@
+use IO;
+
 config const fileName = "test.txt";
 
 var f = open(fileName, iomode.cwr);

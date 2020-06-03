@@ -13,7 +13,7 @@ var r: real;             test("real", r);
 var cmp: complex;        test("complex", cmp);
 var img: imag;           test("imag", img);
 var str: string;         test("string", str);
-var cls: borrowed C;     test("class", cls);
+var cls: borrowed C = new borrowed C();     test("class", cls);
 var rec: R;              test("record", rec);
 var uni: U;              test("union", uni);
 var dm1 = new unmanaged Block(LocaleSpace); test("dist", dm1);
@@ -27,6 +27,7 @@ var tu3 = (1,2,3);       test("tuple-3", tu3);
 var atm: atomic int;     test("atomic", atm);
 var snc: sync int;       test("sync", snc);
 var sng: single int;     test("single", sng);
+var oc: owned C = new owned C();            test("owned class", oc);
 compilerError("done"); // no need for a C compile
 
 proc test(param msg, v) {

@@ -206,8 +206,9 @@ extern void gasnet_coll_set_dissem_limit(gasnet_team_handle_t _team, size_t _dis
         GASNETI_TRACE_PRINTF(D, (#name ": src = " GASNETI_LADDRFMT, GASNETI_LADDRSTR(src)));            \
       }                                                                                                 \
       if (op == GEX_OP_USER || op == GEX_OP_USER_NC) {                                                  \
+        const void * const * _tr_p_fnptr = (const void * const *)&(op_fnptr);                           \
         GASNETI_TRACE_PRINTF(D, (#name ": User-defined (fnptr, cdata) = (%p, %p)",                      \
-                                 (void*)(op_fnptr), (op_cdata)));                                       \
+                                 *_tr_p_fnptr, (op_cdata)));                                            \
       }                                                                                                 \
       gasneti_extern_free(_tr_dtstr);                                                                   \
       gasneti_extern_free(_tr_opstr);                                                                   \
@@ -225,8 +226,9 @@ extern void gasnet_coll_set_dissem_limit(gasnet_team_handle_t _team, size_t _dis
       GASNETI_TRACE_PRINTF(D, (#name ": src = " GASNETI_LADDRFMT ", dst = " GASNETI_LADDRFMT,           \
                                GASNETI_LADDRSTR(src), GASNETI_LADDRSTR(dst)));                          \
       if (op == GEX_OP_USER || op == GEX_OP_USER_NC) {                                                  \
+        const void * const * _tr_p_fnptr = (const void * const *)&(op_fnptr);                           \
         GASNETI_TRACE_PRINTF(D, (#name ": User-defined (fnptr, cdata) = (%p, %p)",                      \
-                                 (void*)(op_fnptr), (op_cdata)));                                       \
+                                 *_tr_p_fnptr, (op_cdata)));                                            \
       }                                                                                                 \
       gasneti_extern_free(_tr_dtstr);                                                                   \
       gasneti_extern_free(_tr_opstr);                                                                   \

@@ -16,6 +16,7 @@ SUBDIRS =            \
 # CONDUITMODE_DIST_SUBDIRS = 
 # CONDUITMODE_headers = 
 # CONDUITMODE_EXTRA_DIST = .gasnet_toolsonly_mode 
+# CONDUITMODE_INSTALL_DOCS =  
 # GASNET_TOOLSONLY_TRUE_END
 # GASNET_TOOLSONLY_FALSE_BEGIN
   # Directories we manually recurse into:
@@ -24,12 +25,8 @@ CONDUITMODE_DIST_SUBDIRS =    	\
 	smp-conduit  		\
 	udp-conduit  		\
 	ibv-conduit 		\
-	mxm-conduit		\
-	psm-conduit		\
-	portals4-conduit        \
-	gemini-conduit          \
+	ucx-conduit 		\
 	aries-conduit           \
-	pami-conduit			\
 	ofi-conduit
 CONDUITMODE_headers = 		\
 	gasnetex.h           	\
@@ -58,6 +55,8 @@ CONDUITMODE_EXTRA_DIST =    	\
 	gasnet_pshm.c		\
 	gasnet_syncops.h   	\
 	gasnet_trace.c
+CONDUITMODE_INSTALL_DOCS =    \
+	docs/GASNet-EX.txt
 # GASNET_TOOLSONLY_FALSE_END
 
 # bug3285: Order matters here: other should follow conduits to maintain dependencies for distclean
@@ -101,10 +100,10 @@ include_HEADERS = $(headers)
 
 # deliberately omitted git-only docs: README-devel README-git README-release gasnet.*
 INSTALL_DOCS =			\
+	$(CONDUITMODE_INSTALL_DOCS) \
 	README			\
 	README-tools		\
-	license.txt		\
-	docs/GASNet-EX.spec
+	license.txt		
 
 force:
 
@@ -151,13 +150,20 @@ echovar: force
 	@echo $(VARNAME)=\"$($(VARNAME))\"
 
 if CONDUIT_MODE
-test: tests-seq
-tests: tests-seq
+@BUILD_PAR_LIBS_TRUE@  DEFAULT_TEST_MODE=par
+@BUILD_PAR_LIBS_FALSE@ DEFAULT_TEST_MODE=seq
+test: tests-$(DEFAULT_TEST_MODE)
+tests: tests-$(DEFAULT_TEST_MODE)
+tests-installed: tests-installed-$(DEFAULT_TEST_MODE)
+# automake name, used by distcheck:
+installcheck-local: tests-installed-$(DEFAULT_TEST_MODE)
+# xSDK alias:
+test_install: run-tests-installed-$(DEFAULT_TEST_MODE)
 
 other-tests:
 	@cd $(top_builddir)/other && $(MAKE) all tests
 
-tests-seq tests-parsync tests-par: other-tests
+tests-seq tests-parsync tests-par tests-installed-seq tests-installed-par tests-installed-parsync: other-tests
 	@for conduit in $(CONDUITS) ; do                                       \
 	  ( cd "$(top_builddir)/$$conduit-conduit" && $(MAKE) $@ ) || exit $$?; \
 	done
@@ -165,8 +171,10 @@ tests-seq tests-parsync tests-par: other-tests
 TESTINSTANCE=$${PPID:-xxxx}
 TESTLOG=`pwd`/.test-results
 
-
-run-tests run-tests-seq run-tests-parsync run-tests-par: do-begin-tests
+RUN_TEST_TARGETS= \
+  run-tests run-tests-seq run-tests-parsync run-tests-par \
+  run-tests-installed-seq run-tests-installed-parsync run-tests-installed-par
+$(RUN_TEST_TARGETS): do-begin-tests
 	@testinst=$(TESTINSTANCE) ; 							\
 	testlog=$(TESTLOG) ; 								\
         err=0 ; 									\
@@ -271,13 +279,20 @@ install-data-local:
 	@$(MAKE) $(recurse_local) DO_WHAT=install-data
 	@$(MAKE) recurse_special DO_WHAT=install-data
 	$(mkinstalldirs) $(DESTDIR)$(docdir)
+	if test -f $(top_srcdir)/version.git ; then \
+	  $(INSTALL_DATA) $(top_srcdir)/version.git $(DESTDIR)$(docdir)/version.git || exit $$? ; \
+	fi
 	if test -f $(top_srcdir)/extended-ref/README ; then \
 	  $(INSTALL_DATA) $(top_srcdir)/extended-ref/README $(DESTDIR)$(docdir)/README-extref || exit $$? ; \
 	fi
+	@: Automake 1.4 correct handling of headers given by relative path: ensure nested ext-ref headers get correctly installed in top-level include
+	@for file in $(include_HEADERS) ; do \
+	  if test -f "$(srcdir)/$$file" ; then ( b=`basename $$file` ; set -x ;  \
+            $(INSTALL_DATA) "$(srcdir)/$$file" "$(DESTDIR)$(includedir)/$$b" ) || exit $$?; \
+	  fi; \
+	done
 	for file in $(INSTALL_DOCS) ; do \
-	  if test -f $(top_srcdir)/$$file ; then \
 	    $(INSTALL_DATA) $(top_srcdir)/$$file $(DESTDIR)$(docdir)/`basename $$file` || exit $$? ; \
-	  fi ; \
 	done
 	$(mkinstalldirs) $(DESTDIR)$(libdir)/pkgconfig
 	@list='$(fragments)'; for p in $$list; do \

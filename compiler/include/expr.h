@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,6 +70,16 @@ public:
   void            insertBefore(Expr* new_ast);
   void            insertAfter(Expr* new_ast);
   void            replace(Expr* new_ast);
+
+  // Insert multiple ASTs in the order of the arguments.
+  // Todo: replace with a single varargs version.
+  void            insertAfter(Expr* e1, Expr* e2);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                              Expr* e5);
+  void            insertAfter(Expr* e1, Expr* e2, Expr* e3, Expr* e4,
+                              Expr* e5, Expr* e6);
 
   void            insertBefore(AList exprs);
   void            insertAfter(AList exprs);
@@ -151,13 +162,12 @@ class SymExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  Symbol* symbol() {
+  Symbol* symbol() const {
     return var;
   }
 
   void setSymbol(Symbol* s);
 };
-
 
 class UnresolvedSymExpr : public Expr {
  public:
@@ -291,7 +301,11 @@ static inline bool isAlive(Symbol* symbol) {
 }
 
 static inline bool isAlive(Type* type) {
-  if (fMinimalModules && type == dtString) return false;
+  if (fMinimalModules) {
+    if(type == dtBytes || type == dtString) {
+      return false;
+    }
+  }
   return isAlive(type->symbol->defPoint);
 }
 
@@ -376,8 +390,8 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 
 
 #ifdef HAVE_LLVM
-llvm::Value* createTempVarLLVM(llvm::Type* type, const char* name);
-llvm::Value* createTempVarLLVM(llvm::Type* type);
+llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
+llvm::Value* createVarLLVM(llvm::Type* type);
 #endif
 
 GenRet codegenValue(GenRet r);
@@ -389,5 +403,7 @@ GenRet codegenDeref(GenRet toDeref);
 GenRet codegenLocalDeref(GenRet toDeref);
 GenRet codegenNullPointer();
 GenRet codegenCast(const char* typeName, GenRet value, bool Cparens = true);
+
+void codegenCallPrintf(const char* arg);
 
 #endif

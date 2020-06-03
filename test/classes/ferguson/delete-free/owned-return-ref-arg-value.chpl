@@ -13,7 +13,7 @@ proc returnByValue(ref arg)
 
 
 proc foo() {
-  var x = new owned C(1);
+  var x: owned C? = new owned C(1);
   writeln(" x=", x);
 
   var y = returnByValue(x);

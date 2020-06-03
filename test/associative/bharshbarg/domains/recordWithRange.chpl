@@ -1,3 +1,4 @@
+use List;
 
 config const n = 100;
 
@@ -9,9 +10,9 @@ proc <(x:R, y:R) {
   ref a = x.x;
   ref b = y.x;
 
-  if a.length == 0 && b.length != 0 then
+  if a.size == 0 && b.size != 0 then
     return true;
-  else if a.length != 0 && b.length == 0 then
+  else if a.size != 0 && b.size == 0 then
     return false;
   else if a.first != b.first then
     return a.first < b.first;
@@ -28,11 +29,11 @@ proc <(x:R, y:R) {
 var D : domain(R);
 var A : [D] int;
 
-var recs : [1..0] R;
-recs.push_back(new R(1..10));
-recs.push_back(new R(0..#10));
-recs.push_back(new R(1..0));
-recs.push_back(new R(0..-1));
+var recs = new list(R, false);
+recs.append(new R(1..10));
+recs.append(new R(0..#10));
+recs.append(new R(1..0));
+recs.append(new R(0..-1));
 
 for r in recs {
   D.add(r);

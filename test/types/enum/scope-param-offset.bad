@@ -1,1 +1,2 @@
+scope-param-offset.chpl:4: In function 'enumScopeTest':
 scope-param-offset.chpl:5: error: enumerator 'one' is not an integer param value

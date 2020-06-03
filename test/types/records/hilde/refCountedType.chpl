@@ -26,7 +26,7 @@ class Impl
 // When the reference count goes to zero, the implementation is deleted.
 record Handle
 {
-  var _impl : unmanaged Impl;
+  var _impl : unmanaged Impl?;
 
   proc init() { _impl = nil; }
 
@@ -35,7 +35,7 @@ record Handle
   proc init=(other: Handle) {
     if other._impl == nil then halt("Illegal copy of uninitialized Handle.");
     _impl = other._impl;
-    _impl.retain();
+    _impl!.retain();
   }
 
 
@@ -43,17 +43,17 @@ record Handle
   proc deinit() { this.release_helper(); }
   inline proc release_helper()
   {
-    if _impl != nil && _impl.release() == 0
+    if _impl != nil && _impl!.release() == 0
     {
-      _impl.freed = true;
+      _impl!.freed = true;
       delete _impl;
       _impl = nil;
     }
   }
 
 // Accessors
-  proc value return _impl.value;
-  proc freed return _impl.freed;
+  proc value return _impl!.value;
+  proc freed return _impl!.freed;
 }
 
 // Assignment
@@ -72,7 +72,7 @@ proc =(ref lhs: Handle, rhs:Handle)
 {
   // The rhs gains a new reference.
   if rhs._impl == nil then halt("Illegal read of uninitialized Handle.");
-  rhs._impl.retain();
+  rhs._impl!.retain();
 
   // The lhs loses a reference.
   lhs.release_helper();

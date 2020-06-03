@@ -24,13 +24,13 @@ module M1 {
     var field: int;
   }
 
-  var a:C = new C(1);
+  var a:borrowed C = new C(1);
 }
 
 module M2 {
   use M1;
 
-  var n:C = a;
+  var n:borrowed C = a;
 }
 
 module M3 {

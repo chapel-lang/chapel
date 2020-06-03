@@ -1,3 +1,0 @@
-generic-inherit5a.chpl:32: error: ambiguous call 'owned Child(int(64),real(64)).overridden_method()'
-generic-inherit5a.chpl:7: note: candidates are: Parent.overridden_method()
-generic-inherit5a.chpl:16: note:                 Child.overridden_method()

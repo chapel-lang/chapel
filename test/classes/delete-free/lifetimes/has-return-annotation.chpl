@@ -11,13 +11,13 @@ proc returnsGlobalBorrow(arg: borrowed C) lifetime return globly {
 }
 
 proc ok0() {
-  var b: borrowed C;
+  var b: borrowed C?;
   {
     var own = new owned C(2);
     var bb = own.borrow();
     b = returnsGlobalBorrow(bb);
   }
-  writeln(b.x);
+  writeln(b!.x);
 }
 ok0();
 
@@ -27,13 +27,13 @@ proc getGlobalHashtableElement (key: C) lifetime return globalValue {
 }
 
 proc ok1() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   {
     var own = new owned C(2);
     var b = getGlobalHashtableElement(own.borrow());
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok1();
 
@@ -53,19 +53,19 @@ proc callOk2() {
 }
 callOk2();
 
-proc returnOneOfThem (a: C, b: C) lifetime return b {
+proc returnOneOfThem (a: borrowed C, b: borrowed C) lifetime return b {
   return b;
 }
 
 proc ok3() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   var outerOwn = new owned C(1);
   {
     var innerOwn = new owned C(2);
     var b = returnOneOfThem(innerOwn, outerOwn);
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok3();
 
@@ -74,13 +74,13 @@ proc getGlobalHashtableElementGeneric (key) lifetime return globalValue {
 }
 
 proc ok4() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   {
     var own = new owned C(2);
     var b = getGlobalHashtableElementGeneric(own.borrow());
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok4();
 
@@ -89,13 +89,13 @@ proc returnOneOfThemGeneric (a, b) lifetime return b {
 }
 
 proc ok5() {
-  var bb: borrowed C;
+  var bb: borrowed C?;
   var outerOwn = new owned C(1);
   {
     var innerOwn = new owned C(2);
     var b = returnOneOfThemGeneric(innerOwn.borrow(), outerOwn.borrow());
     bb = b;
   }
-  writeln(bb.x);
+  writeln(bb!.x);
 }
 ok5();

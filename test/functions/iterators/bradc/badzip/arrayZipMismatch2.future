@@ -1,27 +1,2 @@
 bug: Zippered iteration fails to do size checks
-
-In the current implementation of leader-follower iterators, there is
-no good way to check for mismatches between the sizes of the things
-being iterated over.  In particular, each follower iterator only has
-a very local view as to what it's following and so there is no way
-for it to flag that only a subset of its values are being traversed
-when the language should be making size matching checks as it does
-for serial iteration.
-
-We've proposed having the leader-follower 2.0 interface include an
-"announce" phase in which the leader would tell the followers about
-the global iteration space and this would be one way to catch such
-errors (as well as to do other things like coherent advancement of
-cursors which are hard to do in a follower-centric world).  Until
-then, it tends to be a silent failure.
-
-Note that this only happens when the leader is smaller than the
-follower since the follower has an item for each in the leader.
-When the leader is bigger, the follower usually generates an
-error message indirectly, as shown in arrayMismatch2.chpl in
-this directory.  Ideally, that case should fail in the same way
-as this one.
-
-Note also that the error message in the .good file is just a
-placeholder that I'm not particularly wed to.  I'd be happy for a
-different/better one.
+#14264

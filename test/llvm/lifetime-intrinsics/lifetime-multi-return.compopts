@@ -1,0 +1,1 @@
+--ccflags -fno-discard-value-names --llvm --fast --llvm-print-ir-stage none --llvm-print-ir mytest_multi_return

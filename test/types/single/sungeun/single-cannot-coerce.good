@@ -1,0 +1,1 @@
+single-cannot-coerce.chpl:3: error: cannot initialize 'single string' from 'single int(64)' because 'int(64)' is not coercible to 'string'

@@ -1,1 +1,2 @@
+use-module-as.chpl:7: warning: This file-scope code is outside of any explicit module declarations (e.g., module JohannGambolputtyDeVonAusfernSchplendenSchlitterAppleBangerVonHautkopftOfUlm), so an implicit module named 'use-module-as' is being introduced to contain the file's contents.
 7

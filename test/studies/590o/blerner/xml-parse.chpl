@@ -1,13 +1,13 @@
 config const sourceText = "<a><ii>end</ii><none /></a>";
-const AllIndices: domain(1) = {1..(sourceText.length)};
-const AllPairs: domain(2) = {1..(sourceText.length), 1..(sourceText.length)};
+const AllIndices: domain(1) = {0..<sourceText.size};
+const AllPairs: domain(2) = {0..<sourceText.size, 0..<sourceText.size};
 var StartIndices: sparse subdomain(AllIndices);
 var EndIndices: sparse subdomain(AllIndices);
 var lock: sync int = 0;
 
 
 class XmlElement {
-  var length: int;
+  var size: int;
   proc print { printHelp(""); }
   proc printHelp(indent) { }
 }
@@ -21,28 +21,28 @@ class XmlTag : XmlElement {
   var attValues: [attNames] string;
   var numChildren: int;
   var childrenValueSpace: domain(1) = {1..2};
-  var childrenValues: [childrenValueSpace] unmanaged XmlElement;
+  var childrenValues: [childrenValueSpace] unmanaged XmlElement?;
   override proc printHelp(indent) {
     writeln(indent, "<", name, ">");
     for child in 1..numChildren do
-       childrenValues[child].printHelp(indent + "  ");
+       childrenValues[child]!.printHelp(indent + "  ");
   }
 }
 
-var parsedElements: [AllPairs] single unmanaged XmlElement;
+var parsedElements: [AllPairs] single unmanaged XmlElement?;
 
 proc main {
   forall z in AllIndices with (ref StartIndices, ref EndIndices) do {
     if sourceText[z] == '<' then {
       lock;
       StartIndices += z;
-      if z > 1 && sourceText[z-1] != ">" then EndIndices += z-1;
+      if z > 0 && sourceText[z-1] != ">" then EndIndices += z-1;
       lock = 0;
     }
     else if sourceText[z] == '>' then {
       lock;
       EndIndices += z;
-      if z < (sourceText.length) && sourceText[z+1] != "<" then StartIndices += z+1;
+      if z < (sourceText.size-1) && sourceText[z+1] != "<" then StartIndices += z+1;
       lock = 0;
     }
   }
@@ -60,7 +60,7 @@ proc main {
     writeln("Parse failed");
   else {
     writeln("Parse succeeded!");
-    parsedElements(minindex,maxindex).print;
+    parsedElements(minindex,maxindex)!.print;
   }
 
   for i in AllPairs do
@@ -75,7 +75,7 @@ proc hasIndex(start, stop, indices) {
 }
 
 proc hasSpace(str) {
-  for i in 1..(str.length) do
+  for i in 0..<str.size do
      if str[i] == " " then return true;
   return false;
 }
@@ -129,7 +129,7 @@ proc processTag(i,j) {
     return;
   }
   var tagName = sourceText[stop+2..j-1];
-  var tagLen = tagName.length;
+  var tagLen = tagName.size;
   if (hasSpace(tagName)) {
     parsedElements(i,j) = nil;
     writeln("End tag has spaces in it");
@@ -146,7 +146,7 @@ proc processTag(i,j) {
   var elt = new unmanaged XmlTag(j-i+1, tagName);
   start = min reduce ([x in StartIndices] if x > start then x);
   while (start < stop) {
-    var item : unmanaged XmlElement = nil;
+    var item : unmanaged XmlElement? = nil;
     for e in EndIndices do
       if e > start && e < stop &&
         item == nil && parsedElements(start, e) != nil {
@@ -158,12 +158,12 @@ proc processTag(i,j) {
       parsedElements(i,j) = nil;
       return;
     } else {
-      var curSize = elt.childrenValues.numElements;
+      var curSize = elt.childrenValues.size;
       if curSize == elt.numChildren then
         elt.childrenValueSpace = {1..curSize*2};
       elt.numChildren += 1;
-      elt.childrenValues(elt.numChildren) = item;
-      start += item.length;
+      elt.childrenValues(elt.numChildren) = item!;
+      start += item!.size;
     }     
   }
   parsedElements(i,j) = elt;

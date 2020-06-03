@@ -1,3 +1,0 @@
-bug: (sync XXX):string should produce 'sync XXX'
-
-Right now I get _syncvar(int(64)), which should be changed.

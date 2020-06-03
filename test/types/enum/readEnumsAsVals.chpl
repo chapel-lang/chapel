@@ -1,3 +1,5 @@
+use IO;
+
 proc readit(ref x) {
   writeln(x);
 

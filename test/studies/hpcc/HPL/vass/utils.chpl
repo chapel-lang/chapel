@@ -149,7 +149,7 @@ config var VTimerDigits: int(32) = 2;
 config var VTimerAutoWidth = true;
 var VTimerWidth = 1;
 proc VTimerAdjustWidth(name: string) {
-  VTimerWidth = max(VTimerWidth, name.length);
+  VTimerWidth = max(VTimerWidth, name.size);
 }
 
 record VTimerG {

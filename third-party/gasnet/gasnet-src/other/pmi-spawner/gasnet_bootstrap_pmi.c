@@ -6,6 +6,15 @@
 #include <gasnet_internal.h>
 #include <gasnet_core_internal.h>
 
+#if GASNETI_PMIX_HACK
+// PMIx uses [mc]alloc(), free(), strdup() within its headers (regardless of
+//  whether you use the PMI-1, PMI-2, or PMIx API)
+#  undef malloc
+#  undef calloc
+#  undef free
+#  undef strdup
+#endif
+
 #if HAVE_PMI_CRAY_H
 #  include <pmi_cray.h>
 #  define USE_PMI2_API 1
@@ -17,6 +26,12 @@
 #elif HAVE_PMI2_H
 #  include <pmi2.h>
 #  define USE_PMI2_API 1
+#elif HAVE_PMIX_H
+#  if HAVE_STDBOOL_H
+#  include <stdbool.h> /* For use of "bool" in PMIx headers */
+#  endif
+#  include <pmix.h>
+#  define USE_PMIX_API 1
 #else
 #  error "Unknown path to PMI header"
 #endif
@@ -35,6 +50,9 @@ static gasneti_spawnerfn_t const spawnerfn;
 static char *kvs_name = NULL, *kvs_key = NULL, *kvs_value = NULL;
 static int max_name_len, max_key_len, max_val_len;
 static int max_val_bytes;
+#ifdef USE_PMIX_API
+static pmix_proc_t myproc;
+#endif
 
 /* do_{en,de}code()
  * Use a (minor) variant on Adobe's Ascii85 encoding.
@@ -73,7 +91,7 @@ uint8_t a85_dec(uint8_t c) {
 static
 void do_encode(uint8_t *in, size_t len) {
     char *p = kvs_value;
-    gasneti_assert(5 * ((len + 3) / 4) <= max_val_len);
+    gasneti_assert_always(5 * ((len + 3) / 4) <= max_val_len);
     while (len) {
         uint32_t x = 0;
         const int sz = MIN(4, len);
@@ -111,7 +129,7 @@ void do_encode(uint8_t *in, size_t len) {
 }
 
 static
-void do_decode(uint8_t *out, size_t len) {
+void do_decode(uint8_t *out, size_t len, size_t in_len) {
     const char *p = kvs_value;
     while (len) {
         uint32_t x;
@@ -126,7 +144,7 @@ void do_decode(uint8_t *out, size_t len) {
             p += 1;
         } else {
             const int pad = 4 - sz;
-            gasneti_assert(!pad || (strlen(p) == (5 - pad)));
+            gasneti_assert_always(!pad || (strlen(p) == (5 - pad)));
             x  = a85_dec(p[0]);
             x *= 85;
             x += a85_dec(p[1]);
@@ -136,7 +154,7 @@ void do_decode(uint8_t *out, size_t len) {
             x += a85_dec((pad < 2) ? p[3] : 'u');
             x *= 85;
             x += a85_dec((pad < 1) ? p[4] : 'u');
-            p += 5;
+            p += (5 - pad);
             x = x >> (8 * pad);
         }
 
@@ -149,6 +167,9 @@ void do_decode(uint8_t *out, size_t len) {
         len -= sz;
         out += sz;
     }
+    // Check that we consumed the entire input
+    size_t decoded = p - kvs_value;
+    gasneti_assert_always_uint(decoded ,==, in_len);
 }
 
 /* Put/Get/Fence wrappers */
@@ -157,32 +178,79 @@ GASNETI_INLINE(do_kvs_put)
 void do_kvs_put(void *value, size_t sz) {
     int rc;
     do_encode(value, sz);
-#if USE_PMI2_API
+#if USE_PMIX_API
+    /* PMIx does not need to encode data - however,
+     * the current API doesn't allow us to avoid it,
+     * nor does it pass scope, so we'll have to assume
+     * global scope for now and pass encoded strings
+     *  - hopefully optimize this later */
+    pmix_value_t val;
+    pmix_status_t ret;
+    val.type = PMIX_STRING;
+    val.data.string = kvs_value;
+    ret = PMIx_Put(PMIX_GLOBAL, kvs_key, &val);
+    gasneti_assert_always_int(PMIX_SUCCESS, ==, ret);
+#elif USE_PMI2_API
     rc = PMI2_KVS_Put(kvs_key, kvs_value);
-    gasneti_assert(PMI2_SUCCESS == rc);
+    gasneti_assert_always_int(PMI2_SUCCESS, ==, rc);
 #else
     rc = PMI_KVS_Put(kvs_name, kvs_key, kvs_value);
-    gasneti_assert(PMI_SUCCESS == rc);
+    gasneti_assert_always_int(PMI_SUCCESS, ==, rc);
 #endif
 }
 
 GASNETI_INLINE(do_kvs_get)
 void do_kvs_get(void *value, size_t sz) {
+#if USE_PMIX_API
+    pmix_status_t ret;
+    pmix_proc_t proc;
+    pmix_value_t *val;
+    (void)strncpy(proc.nspace, myproc.nspace, PMIX_MAX_NSLEN);
+    proc.rank = PMIX_RANK_UNDEF;
+    ret = PMIx_Get(&proc, kvs_key, NULL, 0, &val);
+    gasneti_assert_always_int(PMIX_SUCCESS, ==, ret);
+    gasneti_assert_always_ptr(NULL, !=, val);
+    gasneti_assert_always_int(PMIX_STRING, ==, val->type);
+    gasneti_assert_always_ptr(NULL, !=, val->data.string);
+    strcpy(kvs_value, val->data.string);
+    size_t len = strlen(kvs_value);
+    PMIX_VALUE_RELEASE(val);
+#elif USE_PMI2_API
     int rc;
-#if USE_PMI2_API
     int len;
     rc = PMI2_KVS_Get(kvs_name, PMI2_ID_NULL, kvs_key, kvs_value, max_val_len, &len);
-    gasneti_assert(PMI2_SUCCESS == rc);
+    gasneti_assert_always_int(PMI2_SUCCESS, ==, rc);
+    gasneti_assert_always_int(len, >, 0); // Negative would mean value larger than max_val_len
 #else
+    int rc;
     rc = PMI_KVS_Get(kvs_name, kvs_key, kvs_value, max_val_len);
-    gasneti_assert(PMI_SUCCESS == rc);
+    gasneti_assert_always_int(PMI_SUCCESS, ==, rc);
+    size_t len = strlen(kvs_value);
 #endif
-    do_decode(value, sz);
+    do_decode(value, sz, len);
 }
 
 GASNETI_INLINE(do_kvs_fence)
 void do_kvs_fence(void) {
-#if USE_PMI2_API
+#if USE_PMIX_API
+    /* for now, we will assume that we direct the
+     * server to collect all data because GASNET
+     * will immediately pull all data for every
+     * process. This can be changed to a non-blocking
+     * fence, and to use the direct modex mode, at
+     * some later date when further optimization
+     * and/or memory footprint minimzation is desired */
+    pmix_info_t info;
+    pmix_status_t rc;
+    memset(&info, 0, sizeof(pmix_info_t));
+    (void)strncpy(info.key, PMIX_COLLECT_DATA, PMIX_MAX_KEYLEN);
+    info.value.type = PMIX_UNDEF;
+    info.value.data.flag = 1;
+    rc = PMIx_Commit();
+    gasneti_assert_always_int(PMIX_SUCCESS, ==, rc);
+    rc = PMIx_Fence(NULL, 0, &info, 1);
+    gasneti_assert_always_int(PMIX_SUCCESS, ==, rc);
+#elif USE_PMI2_API
     PMI2_KVS_Fence();
 #else
     PMI_KVS_Commit(kvs_name);
@@ -200,7 +268,33 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_pmi(
         gex_Rank_t *nodes_p, gex_Rank_t *mynode_p) {
     int size, rank;
 
-#if USE_PMI2_API
+#if USE_PMIX_API
+    pmix_value_t *val;
+    pmix_proc_t proc;
+
+    if (PMIX_SUCCESS != PMIx_Init(&myproc, NULL, 0)) {
+        return NULL;
+    }
+    /* the namespace is our kvs_name, and the rank is
+     * our rank */
+    rank = myproc.rank;
+    /* we will have been given our job size during init,
+     * so retrieve it from the local cache here */
+    memset(proc.nspace, 0, PMIX_MAX_NSLEN+1);
+    (void)strncpy(proc.nspace, myproc.nspace, PMIX_MAX_NSLEN);
+    proc.rank = PMIX_RANK_WILDCARD;
+
+    if (PMIX_SUCCESS != PMIx_Get(&proc, PMIX_JOB_SIZE,
+                                 NULL, 0, &val)) {
+        gasneti_fatalerror("PMIx Get Job Size failed");
+    }
+    if (NULL != val && PMIX_UINT32 == val->type) {
+        size = val->data.uint32;
+        PMIX_VALUE_RELEASE(val);
+    } else {
+        gasneti_fatalerror("PMIx Get Job Size failed");
+    }
+#elif USE_PMI2_API
     int spawned, appnum;
     if (PMI2_SUCCESS != PMI2_Init(&spawned, &size, &rank, &appnum)) {
         return NULL;
@@ -229,7 +323,11 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_pmi(
     *mynode_p = rank;
     *nodes_p = size;
 
-#if USE_PMI2_API
+#if USE_PMIX_API
+    max_name_len = PMIX_MAX_NSLEN + 1;
+    max_key_len = PMIX_MAX_KEYLEN + 1;
+    max_val_len = 2048;  /* totally arbitrary here */
+#elif USE_PMI2_API
     max_name_len = 1024; /* XXX: can almost certainly be shorter than this! */
     max_key_len = PMI2_MAX_KEYLEN;
     max_val_len = PMI2_MAX_VALLEN;
@@ -250,7 +348,9 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_pmi(
     kvs_value = (char*) gasneti_malloc(max_val_len);
     max_val_bytes = 4 * (max_val_len / 5);
 
-#if USE_PMI2_API
+#if USE_PMIX_API
+    (void)strncpy(kvs_name, myproc.nspace, PMIX_MAX_NSLEN);
+#elif USE_PMI2_API
     if (PMI2_SUCCESS != PMI2_Job_GetId(kvs_name, max_name_len)) {
         gasneti_fatalerror("PMI2_Job_GetId() failed");
     }
@@ -266,7 +366,9 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_pmi(
 /* bootstrapFini
  */
 static void bootstrapFini(void) {
-#if USE_PMI2_API
+#if USE_PMIX_API
+    PMIx_Finalize(NULL, 0);
+#elif USE_PMI2_API
     PMI2_Finalize();
 #else
     if (PMI_FALSE == gasneti_pmi_initialized) {
@@ -278,7 +380,9 @@ static void bootstrapFini(void) {
 /* bootstrapAbort
  */
 static void bootstrapAbort(int exitcode) {
-#if USE_PMI2_API
+#if USE_PMIX_API
+    PMIx_Abort(exitcode, "GASNet abnormal exit", NULL, 0);
+#elif USE_PMI2_API
     PMI2_Abort(1, "GASNet abnormal exit");
 #else
     PMI_Abort(exitcode, "GASNet abnormal exit");
@@ -290,7 +394,11 @@ static void bootstrapAbort(int exitcode) {
 /* bootstrapBarrier
  */
 static void bootstrapBarrier(void) {
-#if USE_PMI2_API
+#if USE_PMIX_API
+    if (PMIX_SUCCESS != PMIx_Fence(NULL, 0, NULL, 0)) {
+        gasneti_fatalerror("barrier failed");
+    }
+#elif USE_PMI2_API
 #if GASNETI_PMI2_FENCE_IS_BARRIER
     PMI2_KVS_Fence();
 #else
@@ -326,7 +434,7 @@ void gasnetc_pmi_allgather_init(void) {
         int rc;
         gasnetc_pmi_allgather_order = gasneti_malloc(gasneti_nodes * sizeof(gex_Rank_t));
         rc = PMI_Allgather(&gasneti_mynode, gasnetc_pmi_allgather_order, sizeof(gex_Rank_t));
-        gasneti_assert(PMI_SUCCESS == rc);
+        gasneti_assert_always(PMI_SUCCESS == rc);
     }
 }
 #endif
@@ -342,13 +450,13 @@ static void bootstrapExchange(void *src, size_t len, void *dest) {
     /* Allgather the callers data to a temporary array */
     gasnetc_pmi_allgather_init();
     rc = PMI_Allgather(src, unsorted, len);
-    gasneti_assert(PMI_SUCCESS == rc);
+    gasneti_assert_always(PMI_SUCCESS == rc);
 
     /* extract the records from the unsorted array by using the 'order' array */
     for (i = 0; i < gasneti_nodes; i += 1) {
       gex_Rank_t peer = gasnetc_pmi_allgather_order[i];
-      gasneti_assert(peer < gasneti_nodes);
-      memcpy((void *) ((uintptr_t) dest + (peer * len)), &unsorted[i * len], len);
+      gasneti_assert_always(peer < gasneti_nodes);
+      GASNETI_MEMCPY((void *) ((uintptr_t) dest + (peer * len)), &unsorted[i * len], len);
     }
 
     gasneti_free(unsorted);
@@ -380,7 +488,7 @@ static void bootstrapExchange(void *src, size_t len, void *dest) {
         ++counter;
     }
 
-    memcpy((uint8_t*)dest + len*gasneti_mynode, src, len);
+    GASNETI_MEMCPY((uint8_t*)dest + len*gasneti_mynode, src, len);
 #endif
 }
 
@@ -416,7 +524,7 @@ static void bootstrapAlltoall(void *src, size_t len, void *dest) {
         ++counter;
     }
 
-    memcpy((uint8_t*)dest + len*gasneti_mynode, (uint8_t*)src + len*gasneti_mynode, len);
+    GASNETI_MEMCPY((uint8_t*)dest + len*gasneti_mynode, (uint8_t*)src + len*gasneti_mynode, len);
 }
 
 /* bootstrapBroadcast
@@ -450,7 +558,7 @@ static void bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode) 
     }
 
     if (gasneti_mynode == rootnode) {
-        memcpy(dest, src, len);
+        GASNETI_MEMCPY_SAFE_IDENTICAL(dest, src, len);
     }
 #endif
 }
@@ -464,13 +572,13 @@ static void bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootn
     /* Allgather the data to the temporary array */
     gasnetc_pmi_allgather_init();
     rc = PMI_Allgather(src ? src : dest, tmp, len);
-    gasneti_assert(PMI_SUCCESS == rc);
+    gasneti_assert_always(PMI_SUCCESS == rc);
 
     /* Find the right piece */
     for (i = 0; i < gasneti_nodes; i += 1) {
         gex_Rank_t peer = gasnetc_pmi_allgather_order[i];
         if (peer == rootnode) {
-            memcpy(dest, &tmp[i * len], len);
+            GASNETI_MEMCPY(dest, &tmp[i * len], len);
             break;
         }
     }

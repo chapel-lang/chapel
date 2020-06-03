@@ -53,12 +53,12 @@ proc main() {
   t.stop();
 
   if printStats {
-    writeln("Time: " + t.elapsed());
+    writeln("Time: ", t.elapsed());
 
     const bytesPerTask = N * numBytes(int);
     const mbPerTask = bytesPerTask:real / (1<<20):real;
-    writeln("MB/s per task: " + mbPerTask / t.elapsed());
-    writeln("MB/s per node: " + mbPerTask * numTasksPerLocale / t.elapsed());
+    writeln("MB/s per task: ", mbPerTask / t.elapsed());
+    writeln("MB/s per node: ", mbPerTask * numTasksPerLocale / t.elapsed());
   }
 
   if verify {

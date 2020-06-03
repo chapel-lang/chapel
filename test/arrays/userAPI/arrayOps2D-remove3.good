@@ -1,2 +1,0 @@
-./arrayAPItest.chpl:121: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:250: error: remove() is only supported on dense 1D arrays

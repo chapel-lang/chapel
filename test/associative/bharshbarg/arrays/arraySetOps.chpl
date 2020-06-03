@@ -1,34 +1,32 @@
+use Map;
+
 config const n = 100;
 
 // Increase the number of trials to try and catch any sporadic data races
 // with the forall loops in the internal module.
 config const numTrials = 1000;
 
-var ad, bd, cd : domain(int);
-var a : [ad] int;
-var b : [bd] int;
-var c : [cd] int;
+//var ad, bd, cd : domain(int);
+var a : map(int, int, false);
+var b : map(int, int, false);
+var c : map(int, int, false);
 for i in 1..n by 2 {
-  ad.add(i);
-  bd.add(i + 1);
+  a.add(i, 1);
+  b.add(i + 1, 2);
 }
-for i in 1..n/2 do cd.add(i);
-a = 1;
-b = 2;
-c = 3;
+for i in 1..n/2 do c.add(i, 3);
 
 // contains all in 1..n
 var q = a + b;
 for 1..numTrials {
   var q = a + b;
 
-  var aad = a.domain;
-  var aa : [aad] int = a;
+  var aa = a;
   aa |= b;
 
   for i in 1..n {
-    assert(q.domain.contains(i));
-    assert(aa.domain.contains(i));
+    assert(q.contains(i));
+    assert(aa.contains(i));
     if i % 2 == 0 {
       assert(q[i] == 2);
       assert(aa[i] == 2);
@@ -44,52 +42,48 @@ for 1..numTrials {
 for 1..numTrials {
   var r = a - b;
 
-  var aad = a.domain;
-  var aa : [aad] int = a;
+  var aa = a;
   aa -= b;
 
-  for i in r.domain {
-    assert(ad.contains(i));
+  for i in r {
+    assert(a.contains(i));
     assert(r[i] == a[i]);
     assert(aa[i] == a[i]);
   }
-  assert(aa.domain == r.domain);
+  assert(aa == r);
 }
 
 for 1..numTrials {
   var s = a ^ b;
 
-  var aad = a.domain;
-  var aa : [aad] int = a;
+  var aa = a;
   aa ^= b;
 
-  for i in s.domain {
-    assert(q.domain.contains(i));
+  for i in s {
+    assert(q.contains(i));
     assert(s[i] == q[i]);
     assert(aa[i] == q[i]);
   }
-  assert(aa.domain == s.domain);
+  assert(aa == s);
 }
 
 // all indices should be less than n/2
 for 1..numTrials {
   var t = a & c;
 
-  var aad = a.domain;
-  var aa : [aad] int = a;
+  var aa = a;
   aa &= c;
 
-  for i in t.domain do assert(i <= n/2);
-  assert(aa.domain == t.domain);
+  for i in t do assert(i <= n/2);
+  assert(aa == t);
 }
 
 for 1..numTrials {
   var u = b ^ c;
 
-  var bbd = b.domain;
-  var bb : [bbd] int = b;
+  var bb = b;
   bb ^= c;
-  for i in u.domain do
+  for i in u do
     if i < n/2 then assert(i % 2 == 1);
-  assert(bb.domain == u.domain);
+  assert(bb == u);
 }

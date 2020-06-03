@@ -87,7 +87,7 @@ proc test_computations() {
   var a = new datetime(2002, 1, 31);
   var b = new datetime(1956, 1, 31);
   var diff = a-b;
-  assert(diff.days == 46*365 + (1956..2001 by 4).length);
+  assert(diff.days == 46*365 + (1956..2001 by 4).size);
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
   a = new datetime(2002, 3, 2, 17, 6);
@@ -147,7 +147,7 @@ proc test_more_compare() {
   //assert(cmp(t1, t2), 0);
   //assert(cmp(t2, t1), 0);
 
-  for i in 1..args.size {
+  for i in 0..#args.size {
     var newargs = args;
     newargs[i] = args[i] + 1;
     t2 = new datetime((...newargs));   // this is larger than t1
@@ -212,11 +212,11 @@ proc test_combine() {
 proc test_replace() {
   var args = (1, 2, 3, 4, 5, 6, 7);
   var base = new datetime((...args));
-  var nilTZ:shared TZInfo;
+  var nilTZ:shared TZInfo?;
 
   assert(base == base.replace(tzinfo=nilTZ));
 
-  var i = 1;
+  var i = 0;
   for (name, newval) in (("year", 2),
                          ("month", 3),
                          ("day", 4),

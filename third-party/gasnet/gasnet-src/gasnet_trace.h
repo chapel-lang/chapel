@@ -136,7 +136,7 @@
     }
     GASNETI_INLINE(gasneti_trace_unfreezesourceline)
     void gasneti_trace_unfreezesourceline(void) {
-      gasneti_assert(gasneti_srcfreeze > 0);
+      gasneti_assert_int(gasneti_srcfreeze ,>, 0);
       gasneti_srcfreeze--;
     }
   #endif
@@ -272,8 +272,7 @@
   #define GASNETI_TRACE_WAITSYNC_BEGIN() \
     gasneti_tick_t _waitstart = GASNETI_TICKS_NOW_IFENABLED(S)
 #else 
-  #define GASNETI_TRACE_WAITSYNC_BEGIN() \
-    static char _dummy_WAITSYNC = (char)sizeof(_dummy_WAITSYNC)
+  #define GASNETI_TRACE_WAITSYNC_BEGIN()  ((void)0)
 #endif
 
 #if GASNET_STATS
@@ -500,10 +499,11 @@
   #define _GASNETI_TRACE_HANDLER(name, info, timask) do { \
       if ((timask) & GEX_TI_ENTRY) {                                                       \
         const gex_AM_Entry_t * const _th_hentry = info.gex_entry;                          \
+        const void * const * _th_fnptr = (const void * const *)&(_th_hentry->gex_fnptr);   \
         const char *_th_hname = _th_hentry->gex_name ? _th_hentry->gex_name : "(none)";    \
         /* TODO-EX: print symbolc flags when available */                                  \
         GASNETI_TRACE_PRINTF(A,(#name": handler: name='%s' fnptr=%p flags=0x%x cdata=%p",  \
-                                _th_hname,_th_hentry->gex_fnptr,                           \
+                                _th_hname, *_th_fnptr,                                     \
                                 _th_hentry->gex_flags,_th_hentry->gex_cdata));             \
       }                                                                                    \
     } while(0)

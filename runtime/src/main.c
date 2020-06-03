@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -26,7 +27,7 @@
 int main(int argc, char* argv[]) {
 
   // Initialize the runtime
-  chpl_rt_init(argc, argv);                 
+  chpl_rt_init(argc, argv);
 
   // Run the main function for this node.
   chpl_task_callMain(chpl_executable_init); 

@@ -1,3 +1,0 @@
-override.chpl:10: error: ambiguous call 'type D.myTypeMethod()'
-override.chpl:3: note: candidates are: _any.myTypeMethod()
-override.chpl:6: note:                 _any.myTypeMethod()

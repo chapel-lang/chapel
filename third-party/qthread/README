@@ -2,7 +2,7 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads 1.14 is being released with Chapel for
+This copy of Qthreads 1.15 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/qthreads/qthreads
@@ -24,10 +24,3 @@ as follows:
 
 * We added a simple mechanism to reset the automatic task spawning
   order for better affinity between consecutive parallel loops.
-
-* We deleted the register keyword from the code because it is
-  deprecated in C++, causing warnings (that get turned into errors
-  with the compiler switch -Werror) when qthread.h is included from
-  C++ runtime code.  This change is from the following PR that we have
-  submitted upstream.
-  https://github.com/Qthreads/qthreads/pull/67

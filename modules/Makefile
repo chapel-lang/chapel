@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -83,6 +84,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
+	standard/Builtins.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
@@ -92,12 +94,14 @@ MODULES_TO_DOCUMENT = \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
 	standard/List.chpl \
+	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
 	standard/Regexp.chpl \
+	standard/Set.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
@@ -109,22 +113,25 @@ MODULES_TO_DOCUMENT = \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
+	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
+	packages/EpochManager.chpl \
 	packages/FFTW.chpl \
-	packages/FFTW_MT.chpl \
 	packages/FunctionalOperations.chpl \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
-	packages/HDFSiterator.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
+	packages/LockFreeQueue.chpl \
+	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
@@ -137,8 +144,10 @@ PACKAGES_TO_DOCUMENT = \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/TOML.chpl \
+	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
-	packages/UnorderedCopy.chpl
+	packages/UnorderedCopy.chpl \
+	packages/URL.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -164,6 +173,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelLocale.chpl            \
 	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
+	internal/Bytes.chpl                   \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
@@ -175,7 +185,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 
 documentation: $(SYS_CTYPES_MODULE_DOC) $(VERSION_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
-	export CHPLDOC_AUTHOR='Cray Inc' && \
+	export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	@echo "Running post-processing scripts"
 	./internal/fixInternalDocs.sh ${MODULE_SPHINX}

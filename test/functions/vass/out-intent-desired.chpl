@@ -6,9 +6,9 @@
 class C   { var x = 555; }
 class D:C { var y = 666; }
 
-proc testClasses(out i: D) { i = new D(); }
+proc testClasses(out i: borrowed D) { i = new D(); }
 
-var c: C;
+var c: borrowed C = new borrowed C();
 testClasses(c);
 writeln(c);
 

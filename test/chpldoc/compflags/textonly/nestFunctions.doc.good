@@ -3,6 +3,10 @@ nestFunctions.doc
 Usage:
    use nestFunctions.doc;
 
+or
+
+   import nestFunctions.doc;
+
    proc outer()
       This the comment for the outer function 
 

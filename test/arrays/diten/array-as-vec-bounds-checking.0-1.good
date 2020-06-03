@@ -1,1 +1,0 @@
-array-as-vec-bounds-checking.chpl:10: error: halt reached - pop_back called on empty array

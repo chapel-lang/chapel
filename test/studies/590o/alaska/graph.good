@@ -88,4 +88,4 @@ Init rank for {A} to 1
 	 propagate_rank(C)
 	F of rank 1
 	 propagate_rank(F)
-graph.chpl:258: error: halt reached - Edge from {C} to {F} but ranks are 2 -> 1
+graph.chpl:271: error: halt reached - Edge from {C} to {F} but ranks are 2 -> 1

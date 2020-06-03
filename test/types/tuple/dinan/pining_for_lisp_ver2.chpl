@@ -1,21 +1,23 @@
 class NilClass { }
+override proc NilClass.writeThis(f) throws { f <~> "nil"; }
+var gNil = new owned NilClass();
 
 proc Nil(): borrowed NilClass
-  return nil;
+  return gNil.borrow();
 
 proc isNil(x): bool {
-  if x.type == NilClass then
+  if x.type <= NilClass then
     return true;
   else
     return false;
 }
 
-proc car(x: _tuple) ref: x(1).type where x.size == 2 {
-  return x(1);
+proc car(x: _tuple) ref: x(0).type where x.size == 2 {
+  return x(0);
 }
 
-proc cdr(x: _tuple) ref: x(2).type where x.size == 2 {
-  return x(2);
+proc cdr(x: _tuple) ref: x(1).type where x.size == 2 {
+  return x(1);
 }
 
 proc cons(x: ?T1, y: ?T2): (T1, T2) {

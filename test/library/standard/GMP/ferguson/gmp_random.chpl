@@ -1,4 +1,5 @@
 use GMP;
+use BigInteger;
 
 config const printrandom = false;
 

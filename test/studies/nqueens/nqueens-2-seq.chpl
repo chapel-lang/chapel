@@ -142,14 +142,14 @@ proc Board.nextPlacementIsLegal(col: int): bool {
 //
 config var show1line: bool = true;
 
-override proc Board.writeThis(f) {
+override proc Board.writeThis(f) throws {
   if boardSize <= 0 {
     f.write("the board is empty");
     return;
   }
   var notFilledMsg = "";
   if lastfilled < boardSize then notFilledMsg =
-    " row(s) "+ (lastfilled + 1) + " to " + boardSize + " are not filled";
+    " row(s) "+ (lastfilled + 1):string + " to " + boardSize:string + " are not filled";
   if show1line {
     f.write(
             [row in 1..lastfilled] (row, queencol(row)),

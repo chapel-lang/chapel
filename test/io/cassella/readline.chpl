@@ -3,29 +3,29 @@
  * asked for, and that readline(array) will read the right number of
  * bytes.
  */
-
+use IO;
 
 // I can't figure out how to get from uint(8) to a string.
 // So do the comparison the other way around.
 proc check_expected(data, expected:string, len) {
-  for i in 1..min(len, expected.length) {
+  for i in 0..#min(len, expected.numBytes) {
     var n = data[i];
     var c = expected[i:byteIndex];
-    if n != c.byte(1) {
-      writeln("miscompare at ", i, ": expected ", c, " (", c.byte(1), "), got ", n);
+    if n != c.toByte() {
+      writeln("miscompare at ", i, ": expected ", c, " (", c.toByte(), "), got ", n);
     }
   }
 
-  if len < expected.length {
-    writeln("Short read -- expected ", expected.length, " bytes, got ", len);
-  } else if len > expected.length {
-    writeln("Got extra ", len - expected.length, " bytes: ");
-    writeln(data[expected.length+1..len]);
+  if len < expected.numBytes {
+    writeln("Short read -- expected ", expected.numBytes, " bytes, got ", len);
+  } else if len > expected.numBytes {
+    writeln("Got extra ", len - expected.numBytes, " bytes: ");
+    writeln(data[expected.numBytes+1..len]);
   }
 }
 
 /*
- * Read amount bytes from input into an array[1..10], and check that
+ * Read amount bytes from input into an array[0..9], and check that
  * the result is expected.  If amount is -1, allow readline() to use
  * its default values for start and amount, but the result should
  * still match expected.
@@ -42,22 +42,22 @@ proc test_readline(amount: int, input: string, expected: string) {
   var numRead: int;
 
 
-  var data: [1..10] uint(8);
+  var data: [0..9] uint(8);
   if amount >= 0 {
-    ret = r.readline(data, numRead, start=1, amount=amount);
+    ret = r.readline(data, numRead, start=0, amount=amount);
   } else {
     ret = r.readline(data, numRead);
   }
 
-  var invoke_string = if amount >= 0 then "readline(amount="+amount+")" else
+  var invoke_string = if amount >= 0 then "readline(amount="+amount:string+")" else
 					    "readline()";
 
   if (!ret) {
     writeln(invoke_string, " failed");
   } else {
     writeln(invoke_string," returned ", numRead, " bytes");
-    if numRead != expected.length then
-      writeln("but we expected ", expected.length, " bytes");
+    if numRead != expected.numBytes then
+      writeln("but we expected ", expected.numBytes, " bytes");
     check_expected(data, expected, numRead);
   }
 }

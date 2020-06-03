@@ -1,36 +1,36 @@
 class C { var x: int; }
 
-proc ref C.setClt(rhs: C) lifetime this < rhs {
+proc ref C.setClt(rhs: borrowed C) lifetime this < rhs {
   this = rhs;
 }
-proc ref C.setClt2(rhs: C) where true lifetime this < rhs, this < rhs {
-  this = rhs;
-}
-// this one never called
-proc ref C.setClt2(rhs: C) where false lifetime this < rhs, this < rhs {
-  this = rhs;
-}
-
-proc ref C.setClte(rhs: C) lifetime this <= rhs where true {
+proc ref C.setClt2(rhs: borrowed C) where true lifetime this < rhs, this < rhs {
   this = rhs;
 }
 // this one never called
-proc ref C.setClte(rhs: C) lifetime this <= rhs where false {
+proc ref C.setClt2(rhs: borrowed C) where false lifetime this < rhs, this < rhs {
   this = rhs;
 }
 
-proc ref C.setCgt(rhs: C) lifetime rhs > this {
+proc ref C.setClte(rhs: borrowed C) lifetime this <= rhs where true {
   this = rhs;
 }
-proc ref C.setCgte(rhs: C) lifetime rhs >= this {
+// this one never called
+proc ref C.setClte(rhs: borrowed C) lifetime this <= rhs where false {
   this = rhs;
 }
-proc ref C.setCbad(rhs: C) lifetime this > rhs {
+
+proc ref C.setCgt(rhs: borrowed C) lifetime rhs > this {
+  this = rhs;
+}
+proc ref C.setCgte(rhs: borrowed C) lifetime rhs >= this {
+  this = rhs;
+}
+proc ref C.setCbad(rhs: borrowed C) lifetime this > rhs {
   this = rhs;
 }
 
 proc badlt() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     b.setClt(own.borrow());
@@ -40,7 +40,7 @@ proc badlt() {
 badlt();
 
 proc badlt2() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     b.setClt2(own.borrow());
@@ -50,7 +50,7 @@ proc badlt2() {
 badlt2();
 
 proc badlte() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     b.setClte(own.borrow());
@@ -60,7 +60,7 @@ proc badlte() {
 badlte();
 
 proc badgt() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     b.setCgt(own.borrow());
@@ -70,7 +70,7 @@ proc badgt() {
 badgt();
 
 proc badgte() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     b.setCgte(own.borrow());
@@ -80,7 +80,7 @@ proc badgte() {
 badgte();
 
 proc callsBad() {
-  var b: borrowed C;
+  var b = new borrowed C();
   {
     var own = new owned C();
     b.setCbad(own.borrow());

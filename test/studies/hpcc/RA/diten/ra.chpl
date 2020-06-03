@@ -89,7 +89,7 @@ var T: [TableSpace] elemType;
 
 config const maxLookahead = 1024;
 
-pragma "locale private" var myBuckets: unmanaged Buckets;
+pragma "locale private" var myBuckets: unmanaged Buckets?;
 
 //
 // The program entry point
@@ -124,12 +124,12 @@ proc main() {
     if loc == here {
       T(r&indexMask) ^= r;
     } else {
-      if myBuckets.pendingUpdates < maxLookahead-1 {
-        myBuckets.insertUpdate(r, loc.id);
+      if myBuckets!.pendingUpdates < maxLookahead-1 {
+        myBuckets!.insertUpdate(r, loc.id);
       } else {
         var buffer: [0..#maxLookahead] uint(64);
-        myBuckets.insertUpdate(r, loc.id);
-        var (remloc, nu) = myBuckets.getUpdates(buffer);
+        myBuckets!.insertUpdate(r, loc.id);
+        var (remloc, nu) = myBuckets!.getUpdates(buffer);
         doUpdates(buffer, nu);
       }
     }

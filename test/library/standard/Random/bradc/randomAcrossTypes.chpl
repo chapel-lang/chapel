@@ -17,9 +17,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs1 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs2 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs3 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs1 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
+var rs2 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
+var rs3 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
 
 //
 // Check fillRandom method
@@ -31,9 +31,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs4 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs5 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs6 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs4 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
+var rs5 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
+var rs6 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
 
 //
 // Check consecutive implementations of fillRandom method()
@@ -52,11 +52,11 @@ writeln(C);
 // Check getNth() method
 //
 for i in 1..8 {
-  A[i] = rs4.getNth(i);
-  B[i] = rs5.getNth(i);
+  A[i] = rs4.getNth(i-1);
+  B[i] = rs5.getNth(i-1);
 }
 for i in 1..4 {
-  C[i] = rs6.getNth(i);
+  C[i] = rs6.getNth(i-1);
 }
 writeln(A);
 writeln(B);
@@ -66,22 +66,22 @@ writeln(C);
 // Check skipToNth()/getNext() methods
 //
 for i in 1..8 {
-  rs4.skipToNth(i);
+  rs4.skipToNth(i-1);
   A[i] = rs4.getNext();
-  rs5.skipToNth(i);
+  rs5.skipToNth(i-1);
   B[i] = rs5.getNext();
 }
 for i in 1..4 {
-  rs6.skipToNth(i);
+  rs6.skipToNth(i-1);
   C[i] = rs6.getNext();
 }
 writeln(A);
 writeln(B);
 writeln(C);
 
-var rs7 = makeRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs8 = makeRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs9 = makeRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs7 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
+var rs8 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
+var rs9 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
 //
 // Check getNext() method
 //

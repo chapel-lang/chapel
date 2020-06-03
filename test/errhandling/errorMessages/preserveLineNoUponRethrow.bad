@@ -1,6 +1,0 @@
-in rethrow
-in willthrow
-catch in rethrow
-uncaught Error: 
-  preserveLineNoUponRethrow.chpl:14: thrown here
-  preserveLineNoUponRethrow.chpl:18: uncaught here

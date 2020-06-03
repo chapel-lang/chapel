@@ -13,7 +13,7 @@ record RR {
       this.xx = 555;
     }
     begin {
-      this.yy = 666;
+      doModify(this, 666);
       done$ = true;
     }
     done$;
@@ -25,12 +25,14 @@ record RR {
       this.xx = ee;
     }
     begin {
-      this.yy = ff;
+      doModify(this, ff);
       done$ = true;
     }
     done$;
   }
 } // record RR
+
+proc doModify(ref recv: RR, newval: int) { recv.yy = newval; }
 
 record QQ {
   var aa, bb: int;
@@ -42,7 +44,7 @@ record QQ {
       this.aa = cc;
     }
     begin {
-      this.bb = dd;
+      doModify(this, dd);
       done$ = true;
     }
     done$;
@@ -54,12 +56,14 @@ record QQ {
       this.aa = 171717;
     }
     begin {
-      this.bb = 181818;
+      doModify(this, 181818);
       done$ = true;
     }
     done$;
   }
 } // record QQ
+
+proc doModify(ref recv: QQ, newval: int) { recv.bb = newval; }
 
 writeln("start");
 

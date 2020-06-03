@@ -3,6 +3,7 @@
 // Presently, uses the XMT/KM RMAT graph storage format for SSCA#2.
 //
 use SSCA2_compilation_config_params, Time, ReplicatedDist;
+private use IO;
 
 //
 // The data is stored in 5 files per graph.
@@ -81,7 +82,7 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     if dRow then writeln();
   }
 
-  const numVertices = G.vertices.numIndices;
+  const numVertices = G.vertices.size;
   debug("done writing ", numVertices, " vertices, ", startIx, " edges");
   assert(startIx == graphTotalEdges(G));
   const sb = numBytes(IONumType);
@@ -157,7 +158,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
     reportNumVerticesError(G, snapshot_prefix, vCount);
 
   ref GRow = G.Row;
-  const uxIDs = GRow.domain.dim(1);
+  const uxIDs = GRow.domain.dim(0);
   type VType = uxIDs.idxType;
   compilerAssert(!uxIDs.stridable); // for efficiency
 
@@ -212,7 +213,7 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
 
    if DISTRIBUTION_TYPE == "BLOCK" && IOsingleTaskPerLocale {
       coforall loc in GRow.targetLocales() do on loc {
-        const myIDs = GRow.localSubdomain().dim(1);
+        const myIDs = GRow.localSubdomain().dim(0);
 
         // All work is done in graphReaderReal() iterator.
         for graphReaderReal(GRow, uxIDs, VType, vCount, eCount, repfiles,
@@ -284,7 +285,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   compilerAssert(followThis.type ==
                  1*range(VType, BoundedRangeType.bounded, false));
 
-  const myIDs = unDensify(followThis(1), uxIDs);
+  const myIDs = unDensify(followThis(0), uxIDs);
 
   // Redirect to graphReaderReal() iterator.
   for dummy in graphReaderReal(GRow, uxIDs, VType, vCount, eCount, repfiles,
@@ -483,7 +484,7 @@ proc reportProgress() {
 ///////// graph helpers /////////
 
 proc graphTotalEdges(G)  return + reduce [v in G.Row] v.numNeighbors();
-proc graphNumVertices(G) return G.vertices.numIndices;
+proc graphNumVertices(G) return G.vertices.size;
 
 ///////// I/O helpers /////////
 

@@ -19,7 +19,7 @@ def get():
       error("CHPL_JEMALLOC must not be 'none' when CHPL_MEM is jemalloc")
 
     if mem_val != 'jemalloc' and jemalloc_val != 'none':
-      error("CHPL_JEMALLOC must not be none when CHPL_MEM is not jemalloc")
+      error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
 
     return jemalloc_val
 

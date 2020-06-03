@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,7 +91,7 @@ The following examples demonstrate such chaining of futures.
 Future Bundling
 ---------------
 
-A set of futures can be bundled via :proc:`Future.waitAll()`, which takes a
+A set of futures can be bundled via :proc:`waitAll`, which takes a
 variable number of futures as arguments and returns a new future whose return
 type is a tuple of the return types of the arguments.  The returned future is
 ready only when all the future arguments are ready.
@@ -104,8 +105,8 @@ The following example demonstrate bundling of futures.
 
 module Futures {
 
-  use Reflection;
-  use ExplicitRefCount;
+  private use Reflection;
+  private use ExplicitRefCount;
 
   pragma "no doc"
   class FutureClass: RefCountBase {
@@ -141,7 +142,7 @@ module Futures {
     type retType;
 
     pragma "no doc"
-    var classRef: unmanaged FutureClass(retType) = nil;
+    var classRef: unmanaged FutureClass(retType)? = nil;
 
     pragma "no doc"
     proc init(type retType) {
@@ -162,15 +163,15 @@ module Futures {
      */
     proc get(): retType {
       if !isValid() then halt("get() called on invalid future");
-      classRef.state.waitFor(true);
-      return classRef.value;
+      classRef!.state.waitFor(true);
+      return classRef!.value;
     }
 
     pragma "no doc"
     proc set(value: retType) {
       if !isValid() then halt("set() called on invalid future");
-      classRef.value = value;
-      var oldState = classRef.state.testAndSet();
+      classRef!.value = value;
+      var oldState = classRef!.state.testAndSet();
       if oldState then halt("set() called more than once on a future");
     }
 
@@ -181,7 +182,7 @@ module Futures {
      */
     proc isReady(): bool {
       if !isValid() then halt("isReady() called on invalid future");
-      return classRef.state.peek();
+      return classRef!.state.read(memoryOrder.relaxed);
     }
 
     /*
@@ -189,7 +190,7 @@ module Futures {
       :ref:`see above <valid-futures>`.
      */
     inline proc isValid(): bool {
-      return ((classRef != nil) && classRef.valid);
+      return ((classRef != nil) && classRef!.valid);
     }
 
     /*
@@ -204,7 +205,7 @@ module Futures {
       :arg taskFn: The function to invoke as a continuation.
       :returns: A future of the return type of `taskFn`
      */
-    proc andThen(taskFn) {
+    proc andThen(in taskFn) {
       /*
       if !canResolveMethod(taskFn, "this", retType) then
         compilerError("andThen() task function arguments are incompatible with parent future return type");
@@ -213,8 +214,8 @@ module Futures {
       if !canResolveMethod(taskFn, "retType") then
         compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
-      f.classRef.valid = true;
-      begin f.set(taskFn(this.get()));
+      f.classRef!.valid = true;
+      begin with (in taskFn) f.set(taskFn(this.get()));
       return f;
     }
 
@@ -222,20 +223,25 @@ module Futures {
     proc acquire(newRef: unmanaged FutureClass) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
-      classRef.incRefCount();
+      newRef.incRefCount();
     }
 
     pragma "no doc"
     proc acquire() {
       if classRef == nil then halt("acquire() called on nil future");
-      classRef.incRefCount();
+      classRef!.incRefCount();
     }
 
     pragma "no doc"
     proc release() {
       if classRef == nil then halt("release() called on nil future");
-      var rc = classRef.decRefCount();
+      var rc = classRef!.decRefCount();
       if rc == 1 {
+        // if the future has not already been completed,
+        // wait for that to happen to avoid a use-after-free
+        if isValid() && !isReady() then
+          classRef!.state.waitFor(true);
+
         delete classRef;
         classRef = nil;
       }
@@ -262,7 +268,7 @@ module Futures {
     if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
       lhs.release();
-    lhs.acquire(rhs.classRef);
+    lhs.acquire(rhs.classRef!);
   }
 
   /*
@@ -272,14 +278,14 @@ module Futures {
     :arg taskFn: A function taking no arguments
     :returns: A future of the return type of `taskFn`
    */
-  proc async(taskFn) {
+  proc async(in taskFn) {
     if !canResolveMethod(taskFn, "this") then
       compilerError("async() task function (expecting arguments) provided without arguments");
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
-    f.classRef.valid = true;
-    begin f.set(taskFn());
+    f.classRef!.valid = true;
+    begin with (in taskFn) f.set(taskFn());
     return f;
   }
 
@@ -291,14 +297,14 @@ module Futures {
     :arg args...: Arguments to `taskFn`
     :returns: A future of the return type of `taskFn`
    */
-  proc async(taskFn, args...) {
+  proc async(in taskFn, args...) {
     if !canResolveMethod(taskFn, "this", (...args)) then
       compilerError("async() task function provided with mismatching arguments");
     if !canResolveMethod(taskFn, "retType") then
       compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
-    f.classRef.valid = true;
-    begin f.set(taskFn((...args)));
+    f.classRef!.valid = true;
+    begin with (in taskFn) f.set(taskFn((...args)));
     return f;
   }
 
@@ -323,10 +329,10 @@ module Futures {
   proc waitAll(futures...?N) {
     type retTypes = getRetTypes((...futures));
     var f: Future(retTypes);
-    f.classRef.valid = true;
+    f.classRef!.valid = true;
     begin {
       var result: retTypes;
-      for param i in 1..N do
+      for param i in 0..N-1 do
         result[i] = futures[i].get();
       f.set(result);
     }

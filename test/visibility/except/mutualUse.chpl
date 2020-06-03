@@ -1,7 +1,7 @@
 // Ensures that the addition of the 'except' keyword doesn't cause infinite
-// recursion when two modules use each other with an 'except' list.
+// recursion when two modules publicly use each other with an 'except' list.
 module A {
-  use B except b;
+  public use B except b;
 
   var a = 15 + 3i;
 
@@ -11,7 +11,7 @@ module A {
 }
 
 module B {
-  use A except a;
+  public use A except a;
 
   proc b () {
     writeln("naw, man");
@@ -21,7 +21,7 @@ module B {
 }
 
 module M {
-  use A;
+  public use A;
 
   proc main() {
     c();

@@ -1,0 +1,3 @@
+docutils<=0.14
+six
+Sphinx==1.8.5

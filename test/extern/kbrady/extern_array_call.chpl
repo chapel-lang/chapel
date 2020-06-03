@@ -1,3 +1,5 @@
+use SysCTypes;
+
 extern proc sumarr(x: [] c_int, n:c_int): int;
 extern proc printarr(x: [] c_int, n:c_int);
 

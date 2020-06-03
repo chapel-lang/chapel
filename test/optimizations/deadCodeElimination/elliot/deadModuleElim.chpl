@@ -11,7 +11,7 @@ module aliveMod {
 }
 
 module deadMod {
-  use aliveMod;
+  public use aliveMod;
 }
 
 module deadModWithDeadProc {
@@ -21,7 +21,7 @@ module deadModWithDeadProc {
 }
 
 module mainMod {
-  use deadMod;
+  public use deadMod;
   proc main() {
     alive();
   }

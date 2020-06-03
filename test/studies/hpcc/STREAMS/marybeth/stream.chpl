@@ -14,7 +14,7 @@ const memInBytes = memInMBs*MB;
 
 type elemType = real(64);
 const elemSizeInBytes = numBits(elemType)/bitsPerByte;
-const bytes = 3*elemSizeInBytes;
+const nBytes = 3*elemSizeInBytes;
 
 const maxIntBits2 = numBits(int) - 2;
 const maxPossibleElems = (memInBytes/elemSizeInBytes)/numVectors;
@@ -148,7 +148,7 @@ proc writeStreamData() {
 proc writeStreamResults() {
   writeln( "Function\tRate (GB/s)\tAvg time\tMin time\tMax time");
   curGBs = mintime;
-  curGBs *= 1.0e-9 * bytes * vectorSize;
+  curGBs *= 1.0e-9 * nBytes * vectorSize;
   avgtime = sumtime/(numIters-1);  // skipped the 1st iteration
   writeln( "Triad    \t", curGBs, "\t", avgtime, "\t", mintime, "\t", maxtime);
 }

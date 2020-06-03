@@ -13,7 +13,7 @@ var output : [blockDom] string;
 
 forall i in array.domain {
   for j in 1..array(i) {
-    output[i] += j + " ";
+    output[i] += j:string + " ";
     if (j == 5) then {
       output[i] += "...";
       break; // this used to cause an error; not anymore.

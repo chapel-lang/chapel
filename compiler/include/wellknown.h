@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -44,10 +45,9 @@ extern AggregateType* dtLocaleID;
 extern AggregateType* dtMainArgument;
 extern AggregateType* dtOnBundleRecord;
 extern AggregateType* dtOpaqueArray;
-extern AggregateType* dtOwned;
-extern AggregateType* dtShared;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
+extern AggregateType* dtRef;
 
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;
@@ -69,5 +69,6 @@ extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
+extern FnSymbol *gChplCreateStringWithLiteral;
 
 #endif

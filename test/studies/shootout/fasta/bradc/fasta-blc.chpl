@@ -36,11 +36,11 @@ config param IM = 139968,         // parameters for random number generation
 // Nucleotide definitions
 //
 enum nucleotide {
-  A = "A".byte(1), C = "C".byte(1), G = "G".byte(1), T = "T".byte(1),
-  a = "a".byte(1), c = "c".byte(1), g = "g".byte(1), t = "t".byte(1),
-  B = "B".byte(1), D = "D".byte(1), H = "H".byte(1), K = "K".byte(1),
-  M = "M".byte(1), N = "N".byte(1), R = "R".byte(1), S = "S".byte(1),
-  V = "V".byte(1), W = "W".byte(1), Y = "Y".byte(1)
+  A = "A".toByte(), C = "C".toByte(), G = "G".toByte(), T = "T".toByte(),
+  a = "a".toByte(), c = "c".toByte(), g = "g".toByte(), t = "t".toByte(),
+  B = "B".toByte(), D = "D".toByte(), H = "H".toByte(), K = "K".toByte(),
+  M = "M".toByte(), N = "N".toByte(), R = "R".toByte(), S = "S".toByte(),
+  V = "V".toByte(), W = "W".toByte(), Y = "Y".toByte()
 }
 use nucleotide;
 
@@ -66,12 +66,6 @@ const ALU: [0..286] nucleotide = [
 ];
 
 //
-// Index aliases for use with (nucleotide, probability) tuples
-//
-param nucl = 1,
-      prob = 2;
-
-//
 // Probability tables for sequences to be randomly generated
 //
 const IUB = [(a, 0.27), (c, 0.12), (g, 0.12), (t, 0.27),
@@ -85,22 +79,23 @@ const HomoSapiens = [(a, 0.3029549426680),
                      (t, 0.3015094502008)];
 
 proc main() {
-  repeatMake(">ONE Homo sapiens alu\n", ALU, 2*n);
-  randomMake(">TWO IUB ambiguity codes\n", IUB, 3*n);
-  randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, 5*n);
+  repeatMake(">ONE Homo sapiens alu", ALU, 2*n);
+  randomMake(">TWO IUB ambiguity codes", IUB, 3*n);
+  randomMake(">THREE Homo sapiens frequency", HomoSapiens, 5*n);
 }
 
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
+use IO;
 const stdout = openfd(1).writer(kind=iokind.native, locking=false);
-param newline = "\n".byte(1);
+param newline = "\n".toByte();
 
 //
 // Repeat 'alu' to generate a sequence of length 'n'
 //
 proc repeatMake(desc, alu, n) {
-  stdout.write(desc);
+  stdout.writeln(desc);
 
   const r = alu.size,
         s = [i in 0..(r+lineLength)] alu[i % r]: int(8);
@@ -116,23 +111,19 @@ proc repeatMake(desc, alu, n) {
 // Use 'nuclInfo's probability distribution to generate a random
 // sequence of length 'n'
 //
-proc randomMake(desc, nuclInfo, n) {
-  stdout.write(desc);
+proc randomMake(desc, nuclInfo: [?nuclInds], n) {
+  stdout.writeln(desc);
 
   // compute the cumulative probabilities of the nucleotides
-  const numNucls = nuclInfo.size;
-  var cumulProb: [1..numNucls] randType,
+  var cumulProb: [nuclInds] randType,
       p = 0.0;
-  for i in 1..numNucls {
-    p += nuclInfo[i](prob);
-    cumulProb[i] = 1 + (p*IM):randType;
+  for (cp, (_,prob)) in zip(cumulProb, nuclInfo) {
+    p += prob;
+    cp = 1 + (p*IM): randType;
   }
 
   // guard when tasks can access the random numbers or output stream
   var randGo, outGo: [0..#numTasks] atomic int;
-
-  randGo.write(0);
-  outGo.write(0);
 
   // create tasks to pipeline the RNG, computation, and output
   coforall tid in 0..#numTasks {
@@ -144,25 +135,24 @@ proc randomMake(desc, nuclInfo, n) {
 
     // iterate over 0..n-1 in a round-robin fashion across tasks
     for i in tid*chunkSize..n-1 by numTasks*chunkSize {
-      const bytes = min(chunkSize, n-i);
+      const nBytes = min(chunkSize, n-i);
 
-      // Get 'bytes' random numbers in a coordinated manner
+      // Get 'nBytes' random numbers in a coordinated manner
       randGo[tid].waitFor(i);
-      getRands(bytes, myRands);
+      getRands(nBytes, myRands);
       randGo[nextTid].write(i+chunkSize);
 
-      // Compute 'bytes' nucleotides and store in 'myBuff'
+      // Compute 'nBytes' nucleotides and store in 'myBuff'
       var col = 0,
           off = 0;
 
-      for j in 0..#bytes {
-        const r = myRands[j];
-        var nid = 1;
-        for k in 1..numNucls do
-          if r >= cumulProb[k] then
-            nid += 1;
+      for r in myRands[..<nBytes] {
+        var nid = 0;
+        for p in cumulProb do
+          nid += (r >= p);
+        const (nucl,_) = nuclInfo[nid];
 
-        myBuff[off] = nuclInfo[nid](nucl):int(8);
+        myBuff[off] = nucl: int(8);
         off += 1;
         col += 1;
 

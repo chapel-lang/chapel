@@ -61,7 +61,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: unmanaged ClassType;
+var cls: unmanaged ClassType?;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -227,7 +227,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: unmanaged ClassType;
+var cls: unmanaged ClassType?;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -396,7 +396,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: unmanaged ClassType;
+var cls: unmanaged ClassType?;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -567,7 +567,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: unmanaged ClassType;
+var cls: unmanaged ClassType?;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;
@@ -736,7 +736,7 @@ var z128: complex(128);
 var enm: EnumType;
 /* no records for now */
 /* no unions for now */
-var cls: unmanaged ClassType;
+var cls: unmanaged ClassType?;
 /* no tuples for now */
 var dom1: DomType1;
 var dom2: DomType2;

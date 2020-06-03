@@ -3,3 +3,5 @@
 --inline-functions  # suggestions.3.good
 -ieee               # suggestions.4.good
 --CHPL_REGEXP=re2   # suggestions.5.good
+-                   # suggestions.6.good
+--                  # suggestions.7.good

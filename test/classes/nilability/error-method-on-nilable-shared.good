@@ -4,3 +4,4 @@ error-method-on-nilable-shared.chpl:11: error: unresolved call 'shared MyClass?.
 error-method-on-nilable-shared.chpl:3: note: this candidate did not match: MyClass.mymethod()
 error-method-on-nilable-shared.chpl:11: note: because method call receiver with type shared MyClass?
 error-method-on-nilable-shared.chpl:3: note: is passed to formal 'this: borrowed MyClass'
+error-method-on-nilable-shared.chpl:11: note: try to apply the postfix ! operator to method call receiver

@@ -45,8 +45,8 @@ EXTRA_CONFIGURE_ARGS='--disable-aligned-segments --enable-pshm --enable-large-ps
 TARGET_ID='x86_64-unknown-linux-gnu'
 
 # 3. Optionally cross-compile and run the detect-cachesz.c utility and
-#    fill in the value below and uncomment.  If not set the default is 128.
-CROSS_CACHE_LINE_BYTES=64; export CROSS_CACHE_LINE_BYTES
+#    fill in the value below and uncomment.  If not set the default is platform-dependent.
+CACHE_LINE_BYTES=64; export CACHE_LINE_BYTES
 
 # 4. Review the automatically-detected settings below and make corrections as necessary.
 
@@ -100,11 +100,16 @@ CROSS_HAVE_X86_CMPXCHG16B='1'; export CROSS_HAVE_X86_CMPXCHG16B
 # Enable Posix shared memory
 CROSS_HAVE_SHM_OPEN='1'; export CROSS_HAVE_SHM_OPEN
 
-SRCDIR=`dirname $0`
+# Find source directory
+
+if test -z "$SRCDIR" || test ! -f "$SRCDIR/configure" ; then
+  SRCDIR=`dirname $0`
+fi
 if test ! -f "$SRCDIR/configure" ; then
-  echo "ERROR: The $0 script should be placed in the same directory as the configure script before execution"
+  echo "ERROR: Source directory not found. Either set \$SRCDIR=/path/to/src or copy/link the `basename $0` script to the same directory as the configure script"
   exit 1
 fi
+
 # Detect the build+host machine type
 HOST_APPEND=
 for sys in host build; do

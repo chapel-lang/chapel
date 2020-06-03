@@ -64,9 +64,9 @@ module dataflow_block_cholesky {
 
     where ( A.domain.rank == 2 ) {
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
     var   pos_def : bool;
 
     // --------------------------------------------------------------------
@@ -144,7 +144,7 @@ module dataflow_block_cholesky {
 
       block_computed$ (I, I) . writeEF (true);
 
-      if pos_def && trailing_cols.length > 0 then {
+      if pos_def && trailing_cols.size > 0 then {
         
         // Initiate separate threads to compute each subdiagonal block
         // in this block column of the matrix.  Each block is subjected to

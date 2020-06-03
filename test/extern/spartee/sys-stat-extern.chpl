@@ -1,3 +1,4 @@
+use SysCTypes;
 
 extern "struct sys_stat_s" record chpl_stat {
   var st_mtim: chpl_timespec;

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -89,10 +90,47 @@ static void getLastStmts(BlockStmt* loop, std::vector<Expr*>& stmts) {
   helpGetLastStmts(last, stmts);
 }
 
+static Expr* skipIgnoredStmts(Expr* last) {
+
+  while (true) {
+    CallExpr* call = toCallExpr(last);
+    FnSymbol* calledFn = NULL;
+    if (call)
+      calledFn = call->resolvedFunction();
+
+    // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
+    // by the compiler. We will remove these if we optimize an atomic op.
+    if (calledFn && calledFn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
+      last = last->prev;
+
+    // Ignore calls to PRIM_END_OF_STATEMENT
+    } else if (call && call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      last = last->prev;
+
+    // Ignore PRIM_OPTIMIZATION_INFO and related DefExpr
+    // (move last before these if they are present)
+    } else if (call && call->isPrimitive(PRIM_OPTIMIZATION_INFO)) {
+      Symbol* optSym = toSymExpr(call->get(1))->symbol();
+      last = last->prev;
+      if (DefExpr* def = toDefExpr(last)) {
+        if (def->sym == optSym)
+          last = last->prev;
+      }
+
+    } else {
+      break; // stop looking
+    }
+  }
+
+  return last;
+}
+
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (last == NULL)
     return;
+
+  last = skipIgnoredStmts(last);
 
   if (CondStmt* cond = toCondStmt(last)) {
     helpGetLastStmts(cond->thenStmt->body.last(), stmts);
@@ -121,7 +159,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     }
   }
 
-  // Otherwise, add what we got.
+  last = skipIgnoredStmts(last);
   stmts.push_back(last);
 }
 
@@ -158,7 +196,12 @@ static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
-    if (call->isNamed("=")) {
+    if (call->isPrimitive(PRIM_ASSIGN)) {
+      Symbol* lhs = toSymExpr(call->get(1))->symbol();
+      Expr* rhs = call->get(2);
+      if (lhs->getValType() == rhs->getValType()) // same type
+        return true;
+    } else if (call->isNamed("=")) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Symbol* rhs = toSymExpr(call->get(2))->symbol();
       if (lhs->getValType() == rhs->getValType()) // same type
@@ -207,35 +250,13 @@ class MarkOptimizableForallLastStmts : public AstVisitorTraverse {
     LifetimeInformation* lifetimeInfo;
 
     virtual bool enterForallStmt(ForallStmt* forall);
+    void markLoopsInForall(ForallStmt* forall);
 };
 
 bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
-
   if (fNoOptimizeForallUnordered == false) {
     // If the optimization is enabled, do this
-    std::vector<BlockStmt*> bodies = forall->loopBodies();
-    for_vector(BlockStmt, block, bodies) {
-      std::vector<Expr*> lastStmts;
-      getLastStmts(block, lastStmts);
-      for_vector(Expr, stmt, lastStmts) {
-        if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
-          SymExpr* lhs = NULL;
-          SymExpr* rhs = NULL;
-          if (CallExpr* call = toCallExpr(stmt)) {
-            if (call->numActuals() >= 1)
-              lhs = toSymExpr(call->get(1));
-            if (call->numActuals() >= 2)
-              rhs = toSymExpr(call->get(2));
-          }
-          if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
-          if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
-            addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
-          if (forallNoTaskPrivate(forall))
-            addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
-        }
-      }
-    }
+    markLoopsInForall(forall);
   }
 
   // Either way, add chpl_comm_unordered_task_fence at the end of
@@ -245,6 +266,91 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
   forall->insertAfter(new CallExpr(gChplAfterForallFence));
 
   return true;
+}
+
+void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
+
+  bool addNoTaskPrivate = forallNoTaskPrivate(forall);
+  std::vector< std::vector<Expr*> > lastStatementsPerBody;
+
+  // Gather the last statements in each loop body
+  std::vector<BlockStmt*> bodies = forall->loopBodies();
+  for_vector(BlockStmt, block, bodies) {
+    std::vector<Expr*> lastStmts;
+    getLastStmts(block, lastStmts);
+    lastStatementsPerBody.push_back(lastStmts);
+  }
+
+  // Compute the number of last statements
+  // (expecting it matches across fast-follower/follower bodies)
+  int numLastStmts = -1;
+  for (size_t loopNum = 0;
+       loopNum < lastStatementsPerBody.size();
+       loopNum++) {
+    int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
+    if (numLastStmts == -1)
+      numLastStmts = numThisLoop;
+    else if (numLastStmts != numThisLoop)
+      return; // Give up on optimizing it
+  }
+
+  // Consider the last statements
+  for (int stmtNum = 0; stmtNum < numLastStmts; stmtNum++) {
+
+    int loopNum;
+
+    // For this last statement, compute the lifetime
+    // properties, but do so ignoring the difference between
+    // fast-follower/follower loops.
+    bool addLhsOutlivesForall = false;
+    bool addRhsOutlivesForall = false;
+
+    loopNum = 0;
+    for_vector(BlockStmt, block, bodies) {
+      Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+      if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+        SymExpr* lhs = NULL;
+        SymExpr* rhs = NULL;
+        if (CallExpr* call = toCallExpr(stmt)) {
+          if (call->numActuals() >= 1)
+            lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2)
+            rhs = toSymExpr(call->get(2));
+        }
+        if (lhs && symbolOutlivesLoop(block, lhs->symbol(), lifetimeInfo))
+          addLhsOutlivesForall = true;
+        if (rhs && symbolOutlivesLoop(block, rhs->symbol(), lifetimeInfo))
+          addRhsOutlivesForall = true;
+      }
+
+      loopNum++;
+    }
+
+    // Now that we have the lifetime properties, mark all follower
+    // loop bodies with the appropriate optimization info.
+    loopNum = 0;
+    for_vector(BlockStmt, block, bodies) {
+      Expr* stmt = lastStatementsPerBody[loopNum][stmtNum];
+      if (exprIsOptimizable(block, stmt, lifetimeInfo)) {
+        SymExpr* lhs = NULL;
+        SymExpr* rhs = NULL;
+        if (CallExpr* call = toCallExpr(stmt)) {
+          if (call->numActuals() >= 1)
+            lhs = toSymExpr(call->get(1));
+          if (call->numActuals() >= 2)
+            rhs = toSymExpr(call->get(2));
+        }
+        if (lhs && addLhsOutlivesForall)
+          addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+        if (rhs && addRhsOutlivesForall)
+          addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
+        if (addNoTaskPrivate)
+          addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
+      }
+
+      loopNum++;
+    }
+  }
 }
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
@@ -348,7 +454,7 @@ static bool loopContainsBlocking(BlockStmt* block) {
   MayBlockState state = gather.finalState();
 
   if (fReportBlocking)
-    if (block->getModule()->modTag == MOD_USER || developer)
+    if (developer || printsUserLocation(block))
       USR_PRINT(block, "loopContainsBlocking = %s",
                 blockStateString(state));
 
@@ -370,7 +476,8 @@ static MayBlockState mayBlock(FnSymbol* fn) {
   MayBlockState& state = fnMayBlock[fn];
   if (state == STATE_UNKNOWN) {
     if (fn->hasFlag(FLAG_FN_SYNCHRONIZATION_FREE) ||
-        fn->hasFlag(FLAG_FN_UNORDERED_SAFE)) {
+        fn->hasFlag(FLAG_FN_UNORDERED_SAFE) ||
+        fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
       state = STATE_COMPUTED;
     } else if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
       // No need for such a function to impede optimization
@@ -420,7 +527,7 @@ static MayBlockState mayBlock(FnSymbol* fn) {
         fnstate |= STATE_MAYBE_BLOCKING;
 
       if (fReportBlocking) {
-        bool user = (fn->defPoint->getModule()->modTag == MOD_USER &&
+        bool user = (printsUserLocation(fn->defPoint) &&
                      !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
                      !isTaskFunOrWrapper(fn));
 
@@ -679,7 +786,7 @@ static void transformAtomicStmt(Expr* stmt) {
     // Remove a memory_order argument if present
     ArgSymbol* orderFormal = NULL;
     for_formals(formal, newFn) {
-      if (formal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+      if (formal->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
         orderFormal = formal;
     }
     INT_ASSERT(orderFormal);
@@ -691,12 +798,52 @@ static void transformAtomicStmt(Expr* stmt) {
 
   SET_LINENO(call);
 
+  // Remove redundant remote-memory fences from --cache-remote.
+  if (fCacheRemote) {
+    // remove the chpl_rmem_consist_maybe_release added before the atomic
+    // This fence is redundant because we add a full fence immediately below.
+    for (Expr* cur = call->getStmtExpr()->prev; cur != NULL; cur = cur->prev) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+            cur->remove();
+          // if we encountered a function call, including the added fence, stop
+          break;
+        }
+      }
+    }
+    // remove the chpl_rmem_consist_maybe_acquire added after the atomic
+    // This fence is redundant because we add a full fence immediately below
+    // *and* because the optimization fired, we know that the atomic op
+    // we are making unordered is not being used to communicate to the current
+    // task.
+    for (Expr* cur = call->getStmtExpr()->next; cur != NULL; cur = cur->next) {
+      if (CallExpr* call = toCallExpr(cur)) {
+        if (FnSymbol* fn = call->resolvedFunction()) {
+          if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
+            cur->remove();
+          // if we encountered a function call, including the added fence, stop
+          break;
+        }
+      }
+    }
+  }
+
+  // TODO: This could just be a release fence (and then we could do an
+  // acquire fence at the end of the forall loop in addition to just
+  // completing the unordered ops). That could help in 2 cases:
+  //  1. If --cache-remote is used, we can still use cached GETs
+  //     during the unordered loop
+  //  2. If we improve the unordered ops the compiler is targeting to use
+  //     other methods that aggregate, within-thread performance might
+  //     matter & optimizing the fences could allow better compiler opt.
+
   // Add a fence call before the call.
   // First, gather the memory order argument from the call.
   // The loop below finds the last argument that is a memory_order.
   Expr* orderActual = NULL;
   for_actuals(actual, call) {
-    if (actual->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE))
+    if (actual->typeInfo()->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE))
       orderActual = actual;
   }
   INT_ASSERT(orderActual);
@@ -708,17 +855,6 @@ static void transformAtomicStmt(Expr* stmt) {
   INT_ASSERT(se && se->symbol() == oldFn);
   se->setSymbol(newFn);
 
-}
-
-static bool hasAcceptableType(Symbol* sym) {
-  Type* t = sym->getValType();
-  return is_bool_type(t) ||
-         is_int_type(t) ||
-         is_uint_type(t) ||
-         is_real_type(t) ||
-         is_imag_type(t) ||
-         is_complex_type(t) ||
-         is_enum_type(t);
 }
 
 static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
@@ -734,27 +870,24 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
         if (CallExpr* marker = findMarkerNear(stmt))
           if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
               hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
-            // This last check can be relaxed in the future if the
-            // runtime unordered code supports more cases.
-            // The earlier part already checked that it's a POD type.
-            if (hasAcceptableType(lhs))
-              return true;
+            return true;
 
   return false;
 }
 
 
 static void transformAssignStmt(Expr* stmt) {
+  SET_LINENO(stmt);
+
   CallExpr* call = toCallExpr(stmt);
 
   INT_ASSERT(call->isPrimitive(PRIM_ASSIGN));
 
   Symbol* lhs = toSymExpr(call->get(1))->symbol();
-  Symbol* rhs = toSymExpr(call->get(2))->symbol();
-
+  Expr* rhs = call->get(2);
   CallExpr* callToRemove = NULL;
 
-  if (rhs->isRef() == false) {
+  if (isSymExpr(rhs) && rhs->isRef() == false) {
     // Find a pattern like
     //
     // move rhs PRIM_DEREF rhsRef
@@ -765,13 +898,14 @@ static void transformAssignStmt(Expr* stmt) {
     //
     // PRIM_ASSIGN lhs rhsRef
     //
+    Symbol* rhsSym = toSymExpr(rhs)->symbol();
     Symbol* rhsRef = NULL;
     CallExpr* prevCall = toCallExpr(call->prev);
     if (prevCall != NULL) {
       if (prevCall->isPrimitive(PRIM_MOVE) ||
           prevCall->isPrimitive(PRIM_ASSIGN)) {
         Symbol* prevLhs = toSymExpr(prevCall->get(1))->symbol();
-        if (prevLhs == rhs) {
+        if (prevLhs == rhsSym) {
           if (CallExpr* rhsCall = toCallExpr(prevCall->get(2))) {
             if (rhsCall->isPrimitive(PRIM_DEREF))
               rhsRef = toSymExpr(rhsCall->get(1))->symbol();
@@ -785,18 +919,19 @@ static void transformAssignStmt(Expr* stmt) {
 
     if (rhsRef != NULL && prevCall != NULL) {
       callToRemove = prevCall;
-      rhs = rhsRef;
+      rhs = new SymExpr(rhsRef);
     }
   }
 
   if (lhs->isRef() && rhs->isRef()) {
-    SET_LINENO(call);
     // add the call to getput
-    if (fReportOptimizeForallUnordered)
-      if (call->getModule()->modTag == MOD_USER || developer)
+    if (fReportOptimizeForallUnordered) {
+      if (developer || printsUserLocation(call)) {
         USR_PRINT(call, "Optimized assign to be unordered");
+      }
+    }
 
-    call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs));
+    call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs->copy()));
     call->remove();
     if (callToRemove)
       callToRemove->remove();
@@ -811,7 +946,7 @@ void optimizeForallUnorderedOps() {
     // (analysis will print out result as it is computed)
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       ModuleSymbol* mod = fn->defPoint->getModule();
-      if (mod->modTag == MOD_USER &&
+      if (printsUserLocation(fn->defPoint) &&
           !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
           fn != mod->initFn &&
           fn != mod->deinitFn) {

@@ -1,15 +1,7 @@
 isX.sync-by-const.chpl:7: warning: true
 isX.sync-by-const.chpl:8: warning: true
-Note: This source location is a guess.
-isX.sync-by-const.chpl:8: warning: true
-isX.sync-by-const.chpl:9: warning: true
-Note: This source location is a guess.
 isX.sync-by-const.chpl:9: warning: true
 isX.sync-by-const.chpl:12: warning: false
 isX.sync-by-const.chpl:13: warning: false
-Note: This source location is a guess.
-isX.sync-by-const.chpl:13: warning: false
-isX.sync-by-const.chpl:14: warning: false
-Note: This source location is a guess.
 isX.sync-by-const.chpl:14: warning: false
 isX.sync-by-const.chpl:16: error: done

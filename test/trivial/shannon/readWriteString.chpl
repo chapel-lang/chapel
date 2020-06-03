@@ -1,3 +1,5 @@
+use IO;
+
 var myString: string;
 
 read(myString);

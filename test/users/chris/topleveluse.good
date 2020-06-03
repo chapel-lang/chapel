@@ -1,2 +1,2 @@
-topleveluse.chpl:3: warning: as written, 'b' is a sub-module of the module created for file 'topleveluse.chpl' due to the file-level 'use' statements.  If you meant for 'b' to be a top-level module, move the 'use' statements into its scope.
+topleveluse.chpl:3: warning: as written, 'b' is a sub-module of the module created for file 'topleveluse.chpl' due to the file-level 'require', 'use', and/or 'import' statements.  If you meant for 'b' to be a top-level module, move the 'require', 'use', and/or 'import' statements into its scope.
 But the code runs anyway!

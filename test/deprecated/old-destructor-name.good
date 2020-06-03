@@ -1,0 +1,10 @@
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
+old-destructor-name.chpl:8: warning: to fix, rename ~C to deinit
+warning: Destructors have been deprecated as of Chapel 1.21. Please use deinit instead.
+old-destructor-name.chpl:19: warning: to fix, rename ~R to deinit
+start
+C(44)
+R(55)
+~R(55)
+done
+~C(44)

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1093,6 +1094,87 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+static void genConfigGlobalsAndAbout() {
+  GenInfo* info = gGenInfo;
+
+  if (info->cfile) {
+    genComment("Compilation Info");
+    fprintf(info->cfile, "\n#include <stdio.h>");
+    fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
+  }
+
+  genGlobalString("chpl_compileCommand", compileCommand);
+  genGlobalString("chpl_compileVersion", compileVersion);
+  genGlobalString("chpl_compileDirectory", getCwd());
+  if (strcmp(saveCDir, "") != 0) {
+    char *actualPath = realpath(saveCDir, NULL);
+    genGlobalString("chpl_saveCDir", actualPath);
+  } else {
+    genGlobalString("chpl_saveCDir", "");
+  }
+
+  genGlobalString("CHPL_HOME", CHPL_HOME);
+
+  genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
+  genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
+
+  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+    if (env->first != "CHPL_HOME") {
+      genGlobalString(env->first.c_str(), env->second);
+    }
+  }
+
+  if (info->cfile) {
+    fprintf(info->cfile, "\nvoid chpl_program_about(void);\n");
+    fprintf(info->cfile, "\nvoid chpl_program_about() {\n");
+  } else {
+#ifdef HAVE_LLVM
+    llvm::FunctionType* programAboutType;
+    llvm::Function* programAboutFunc;
+    if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
+      programAboutType = programAboutFunc->getFunctionType();
+    } else {
+      programAboutType = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(info->module->getContext()), false
+      );
+      programAboutFunc = llvm::Function::Create(
+        programAboutType, llvm::Function::ExternalLinkage, "chpl_program_about", info->module
+      );
+    }
+
+    llvm::BasicBlock* programAboutBlock = llvm::BasicBlock::Create(
+      info->module->getContext(), "entry", programAboutFunc
+    );
+    info->irBuilder->SetInsertPoint(programAboutBlock);
+#endif
+  }
+
+  codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
+  codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
+  codegenCallPrintf("Chapel environment:\\n");
+  codegenCallPrintf(astr("  CHPL_HOME: ", CHPL_HOME, "\\n"));
+  for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
+    if (env->first != "CHPL_HOME") {
+      codegenCallPrintf(astr("  ", env->first.c_str(), ": ", env->second, "\\n"));
+    }
+  }
+
+  if (info->cfile) {
+    fprintf(info->cfile, "}\n");
+  } else {
+#ifdef HAVE_LLVM
+    info->irBuilder->CreateRetVoid();
+#endif
+  }
+}
+
+static void genFunctionTables() {
+  genComment("Filename Lookup Table");
+  genFilenameTable();
+
+  genComment("Unwind symbol tables");
+  genUnwindSymbolTable();
+}
 
 //
 // Produce compilation-time configuration info into a .c file and
@@ -1106,82 +1188,34 @@ static void codegen_aggregate_def(AggregateType* ct) {
 static const char* sCfgFname = "chpl_compilation_config";
 
 static void codegen_header_compilation_config() {
+  const bool usingLauncher = 0 != strcmp(CHPL_LAUNCHER, "none");
+  // Generate C code only when not in LLVM mode or when using a launcher
+  const bool genCCode = usingLauncher || !llvmCodegen;
+
+  GenInfo* info = gGenInfo;
+  FILE* save_cfile = info->cfile;
   fileinfo cfgfile = { NULL, NULL, NULL };
 
-  openCFile(&cfgfile, sCfgFname, "c");
-#ifdef HAVE_LLVM
-  gChplCompilationConfig = cfgfile; // so LLVM backend can use it too.
-#endif
-
-  // follow convention of just not writing to the file if we can't open it
-  if (cfgfile.fptr != NULL) {
-    FILE* save_cfile = gGenInfo->cfile;
-
-    gGenInfo->cfile = cfgfile.fptr;
-
-    genComment("Compilation Info");
-
-    fprintf(cfgfile.fptr, "\n#include <stdio.h>\n");
-    fprintf(cfgfile.fptr, "\n#include \"chpltypes.h\"\n");
-
-    genGlobalString("chpl_compileCommand", compileCommand);
-    genGlobalString("chpl_compileVersion", compileVersion);
-    genGlobalString("chpl_compileDirectory", getCwd());
-    if (strcmp(saveCDir, "") != 0) {
-      char *actualPath = realpath(saveCDir, NULL);
-      genGlobalString("chpl_saveCDir", actualPath);
-    } else {
-      genGlobalString("chpl_saveCDir", "");
-    }
-
-    genGlobalString("CHPL_HOME",           CHPL_HOME);
-
-    genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
-    genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
-
-    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      if (env->first != "CHPL_HOME") {
-        genGlobalString(env->first.c_str(), env->second);
-      }
-    }
-
-    // generate the "about" function
-    fprintf(cfgfile.fptr, "\nvoid chpl_program_about(void);\n");
-    fprintf(cfgfile.fptr, "\nvoid chpl_program_about() {\n");
-
-    fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"Compilation command: %s\\n\");\n",
-            compileCommand);
-    fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"Chapel compiler version: %s\\n\");\n",
-            compileVersion);
-    fprintf(cfgfile.fptr, "printf(\"Chapel environment:\\n\");\n");
-    fprintf(cfgfile.fptr,
-            "printf(\"%%s\", \"  CHPL_HOME: %s\\n\");\n",
-            CHPL_HOME);
-    for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
-      if (env->first != "CHPL_HOME") {
-        fprintf(cfgfile.fptr,
-          "printf(\"%%s\", \"  %s: %s\\n\");\n",
-          env->first.c_str(),
-          env->second);
-      }
-    }
-
-    fprintf(cfgfile.fptr, "}\n");
-
-    genComment("Filename Lookup Table");
-    genFilenameTable();
-
-    genComment("Unwind symbol tables");
-    genUnwindSymbolTable();
-
-    closeCFile(&cfgfile);
-
-    gGenInfo->cfile = save_cfile;
+  if (llvmCodegen) {
+    info->cfile = NULL;
+    genConfigGlobalsAndAbout();
+    genFunctionTables();
   }
-}
 
+  // Generate the about info and function tables for the C backend and for the launcher
+  if (genCCode) {
+    openCFile(&cfgfile, sCfgFname, "c");
+    // Follow convention of just not writing to the file if we can't open it
+    if (cfgfile.fptr) {
+      info->cfile = cfgfile.fptr;
+      genConfigGlobalsAndAbout();
+      genFunctionTables();
+      closeCFile(&cfgfile);
+    }
+  }
+
+  info->cfile = save_cfile;
+}
 
 static void protectNameFromC(Symbol* sym) {
   //
@@ -1194,31 +1228,19 @@ static void protectNameFromC(Symbol* sym) {
   }
 
   //
-  // For now, we only rename our user and standard symbols.  Internal
-  // modules symbols should arguably similarly be protected, to ensure
-  // that we haven't inadvertently used a name that some user library
-  // will; most file-level symbols should be protected by 'chpl_' or
-  // somesuch, but of course local symbols may not be, and can cause
-  // conflicts (at present, a local variable named 'socket' would).
-  // The challenges to handling MOD_INTERNAL symbols in the same way
-  // today is that things like chpl_string and uint64_t should not be
-  // renamed, and should arguably have FLAG_EXTERN on them; however,
-  // putting it on them causes it to bleed over onto type aliases in a
-  // way that breaks things and wasn't easy to fix.  So this remains
-  // a TODO (currently in Brad's court).
-  //
-  ModuleSymbol* symMod = sym->getModule();
-  if (symMod->modTag == MOD_INTERNAL) {
-    return;
-  }
-
-  //
-  // If this symbol is exported of an extern symbol then someone
-  // outside of Chapel is relying on it to have a certain name and we
-  // need to respect that.
+  // Don't rename the symbol if it's not able to be (typically because
+  // it's exported, extern, or has otherwise been flagged as not being
+  // renameable).
   //
   if (!sym->isRenameable()) {
     return;
+  }
+
+  // Don't rename fields
+  if (isVarSymbol(sym)) {
+    if (isAggregateType(sym->defPoint->parentSymbol->type)) {
+      return;
+    }
   }
 
   //
@@ -1226,6 +1248,7 @@ static void protectNameFromC(Symbol* sym) {
   // is declared within an extern declaration, we should preserve its
   // name for similar reasons.
   //
+  ModuleSymbol* symMod = sym->getModule();
   if (sym != symMod) {
     Symbol* parentSym = sym->defPoint->parentSymbol;
     while (parentSym != symMod) {
@@ -1380,7 +1403,6 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
           return; // Nothing in remainder of function should be done twice for LLVM
     #endif
   }
-  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, false);
   if( hdrfile ) {
     fprintf(hdrfile, "\nconst char* chpl_mem_descs[] = {\n");
     bool first = true;
@@ -1788,7 +1810,6 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
                               chpl_globals_registryGVar, GEN_PTR, true);
 #endif
   }
-  genGlobalInt("chpl_heterogeneous", fHeterogeneous?1:0, true);
   if( hdrfile ) {
       fprintf(hdrfile, "\nextern const char* chpl_mem_descs[];\n");
     } else {
@@ -1918,10 +1939,12 @@ codegen_config() {
           type = type->getField("addr")->type;
         fprintf(outfile, "%s", type->symbol->name);
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          fprintf(outfile, "\", \"Built-in\");\n");
+          fprintf(outfile, "\", \"Built-in\"");
         } else {
-          fprintf(outfile, "\", \"%s\");\n", var->getModule()->name);
+          fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
+        fprintf(outfile,", /* private = */ %d);\n", var->hasFlag(FLAG_PRIVATE));
+
       }
     }
 
@@ -1961,7 +1984,7 @@ codegen_config() {
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (3);
+        std::vector<llvm::Value *> args (4);
         args[0] = info->irBuilder->CreateLoad(
             new_CStringSymbol(var->name)->codegen().val);
 
@@ -1986,6 +2009,8 @@ codegen_config() {
           args[2] =info->irBuilder->CreateLoad(
               new_CStringSymbol(var->getModule()->name)->codegen().val);
         }
+
+        args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
 
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
@@ -2057,6 +2082,8 @@ shouldChangeArgumentTypeToRef(ArgSymbol* arg) {
   return (shouldPassRef &&
           !alreadyRef &&
           !fn->hasFlag(FLAG_EXTERN) &&
+          // TODO: Consider flag for export wrappers instead of this.
+          !(fLibraryCompile && fn->hasFlag(FLAG_EXPORT)) &&
           !arg->hasFlag(FLAG_NO_CODEGEN));
 }
 
@@ -2274,8 +2301,6 @@ void codegen() {
 
   if( llvmCodegen ) {
 #ifdef HAVE_LLVM
-    if( fHeterogeneous )
-      INT_FATAL("fHeterogeneous not yet supported with LLVM");
 
     if(fIncrementalCompilation)
       USR_FATAL("Incremental compilation is not yet supported with LLVM");
@@ -2365,30 +2390,14 @@ void codegen() {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
-      mysystem(astr("# codegen-ing module", currentModule->name),
-               "generating comment for --print-commands option");
       currentModule->codegenDef();
     }
 
     finishCodegenLLVM();
 #endif
   } else {
-    if (fHeterogeneous) {
-      codegenTypeStructureInclude(mainfile.fptr);
-      forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-        if ((ts->type != dtOpaque) &&
-            (!toPrimitiveType(ts->type) ||
-             !toPrimitiveType(ts->type)->isInternalType)) {
-          registerTypeToStructurallyCodegen(ts);
-        }
-      }
-    }
-
     ChainHashMap<char*, StringHashFns, int> fileNameHashMap;
     forv_Vec(ModuleSymbol, currentModule, allModules) {
-      mysystem(astr("# codegen-ing module", currentModule->name),
-               "generating comment for --print-commands option");
-
       const char* filename = NULL;
       filename = generateFileName(fileNameHashMap, filename,currentModule->name);
 
@@ -2411,9 +2420,6 @@ void codegen() {
 
     fprintf(strconfig.fptr, "#include \"chpl-string.h\"\n");
     fprintf(strconfig.fptr, "chpl_string defaultStringValue=\"\";\n");
-
-    if (fHeterogeneous)
-      codegenTypeStructures(hdrfile.fptr);
 
     info->cfile = hdrfile.fptr;
     codegen_header_addons();
@@ -2461,7 +2467,7 @@ GenInfo::GenInfo()
 #ifdef HAVE_LLVM
              ,
              lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
-             loopStack(),
+             loopStack(), currentStackVariables(),
              llvmContext(),
              tbaaRootNode(NULL),
              tbaaUnionsNode(NULL),

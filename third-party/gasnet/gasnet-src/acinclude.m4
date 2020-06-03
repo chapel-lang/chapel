@@ -363,6 +363,8 @@ AC_DEFUN([GASNET_CHECK_INTTYPES],[
       [$2]COMPLETE_[]uppername=1
       AC_SUBST([$2]COMPLETE_[]uppername)
       AC_DEFINE([$2]COMPLETE_[]uppername)
+    ],[
+      AC_DEFINE([$2]COMPLETE_[]uppername, 0)
     ])
   else 
     dnl otherwise, build and run the inttypes program to ensure the header values are actually correct
@@ -373,6 +375,8 @@ AC_DEFUN([GASNET_CHECK_INTTYPES],[
       [$2]COMPLETE_[]uppername=1
       AC_SUBST([$2]COMPLETE_[]uppername)
       AC_DEFINE([$2]COMPLETE_[]uppername)
+    ],[
+      AC_DEFINE([$2]COMPLETE_[]uppername, 0)
     ])
   fi
  fi
@@ -410,6 +414,13 @@ dnl all the inttypes goop required for portable_inttypes.h
 dnl second arg is optional prefix for defs
 AC_DEFUN([GASNET_SETUP_INTTYPES], [ 
   GASNET_FUN_BEGIN([$0($1,$2)])
+
+  AC_CHECK_HEADERS(stddef.h,[
+    dnl Some platforms define types like ptrdiff_t only in stddef.h
+    dnl so make sure that AC_CHECK_SIZEOF uses it
+    echo "#include <stddef.h>" >> confdefs.h
+  ])
+
   GASNET_CHECK_SIZEOF(char, $1)
   GASNET_CHECK_SIZEOF(short, $1)
   GASNET_CHECK_SIZEOF(int, $1)
@@ -643,6 +654,9 @@ gasnet_fn_split_linker_opts()
         -l* | -L*)
           gasnet_lo_append=$gasnet_lo_libs
         ;;
+	*.so | *.a)
+          gasnet_lo_append=$gasnet_lo_libs
+	;;
         *)
           gasnet_lo_append=$gasnet_lo_ldflags
         ;;
@@ -666,7 +680,7 @@ gasnet_fn_split_linker_opts()
 
 dnl GASNET_FILTER_LINKER_OPTS(LDFLAGS, LIBS)
 dnl Filter the current contents of $LDFLAGS and $LIBS 
-dnl Move all -l/-L options into LIBS and anything else into LDFLAGS
+dnl Move all -l/-L/*.{a,so} options into LIBS and anything else into LDFLAGS
 AC_DEFUN([GASNET_SPLIT_LINKER_OPTS],[
   GASNET_FUN_BEGIN([$0($@)])
   AC_REQUIRE([_GASNET_SPLIT_LINKER_OPTS_HELPER])
@@ -1222,6 +1236,17 @@ case "$enable_[]patsubst([$1], -, _)" in
 esac
 ])
 
+AC_DEFUN([GASNET_IF_DISABLED_NOHELP],[
+case "$enable_[]patsubst([$1], -, _)" in
+  '' | yes) :
+      $3
+  ;;
+  *)  :
+      $2
+  ;;
+esac
+])
+
 AC_DEFUN([GASNET_IF_ENABLED],[
 GASNET_FUN_BEGIN([$0($1,...)])
   ifdef([GASNET_SUPPRESSHELP], [], [
@@ -1236,14 +1261,7 @@ GASNET_FUN_BEGIN([$0($1,...)])
   ifdef([GASNET_SUPPRESSHELP], [], [
     AC_ARG_ENABLE($1,GASNET_OPTION_HELP(disable-$1,[$2]))
   ])
-  case "$enable_[]patsubst([$1], -, _)" in
-    '' | yes) :
-         $4
-    ;;
-    *)   :
-         $3
-    ;;
-  esac
+  GASNET_IF_DISABLED_NOHELP([$1],[$3],[$4])
 GASNET_FUN_END([$0($1,...)])
 ])
 
@@ -1846,6 +1864,8 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
             [__attribute__((__cold__)) int dummy(void) { return 1; }])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__deprecated__],
             [__attribute__((__deprecated__)) int dummy(void) { return 0; }])
+  GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__common__],
+            [__attribute__((__common__)) int x;])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__fallthrough__],
             [int dummy(int x) {
                int result = 0;
@@ -2577,7 +2597,9 @@ AC_DEFUN([GASNET_PROG_PERL],[
   MIN_PERL_VERSION="5.005"
   AC_MSG_CHECKING(for perl version $MIN_PERL_VERSION or later)
   if $PERL -e "require $MIN_PERL_VERSION;" 2>/dev/null; then
-    AC_MSG_RESULT(yes)
+    dnl NOTE: unused $x below avoids unbalanced square brackets
+    PERL_VERSION=[`$PERL -e 'my $x="["; print (defined $^V ? $^V : $])'`]
+    AC_MSG_RESULT(yes: $PERL_VERSION)
   else
     AC_MSG_ERROR(cannot find perl $MIN_PERL_VERSION or later)
   fi
@@ -2701,22 +2723,43 @@ if test "$$3" != "GNU" ; then
         GXX=""
     ;;
   esac
-  $2_SUBFAMILY='none'
-else
-  dnl GCC has sub-family too
-  $2_SUBFAMILY='GNU'
-  GASNET_TRY_CACHE_EXTRACT_STR([for gcc version string],$2_gcc_version_string,[
-      #ifndef __VERSION__
-        #define __VERSION__ "unknown"
-      #endif
-    ],[__VERSION__],[_gasnet_$2_gcc_version_string])
-  case "$_gasnet_$2_gcc_version_string" in
-    *gccfss*) $2_SUBFAMILY='GCCFSS';;
-    *) GASNET_IFDEF(__APPLE_CC__, [$2_SUBFAMILY='APPLE'])
-       GASNET_IFDEF(__NVCC__, [$2_SUBFAMILY='NVIDIA'])
-       ;;
-  esac
 fi
+dnl Compiler may have a sub-family too
+case "$$3" in
+  GNU)
+    $2_SUBFAMILY='GNU'
+    GASNET_TRY_CACHE_EXTRACT_STR([for gcc version string],$2_gcc_version_string,[
+        #ifndef __VERSION__
+          #define __VERSION__ "unknown"
+        #endif
+      ],[__VERSION__],[_gasnet_$2_gcc_version_string])
+    case "$_gasnet_$2_gcc_version_string" in
+      *gccfss*) $2_SUBFAMILY='GCCFSS';;
+      *Advance-Toolchain*) $2_SUBFAMILY='IBM';;
+      *) GASNET_IFDEF(__APPLE_CC__, [$2_SUBFAMILY='APPLE'])
+         GASNET_IFDEF(__NVCC__, [$2_SUBFAMILY='NVIDIA'])
+         ;;
+    esac
+    ;;
+  Clang)
+    $2_SUBFAMILY='LLVM'
+    GASNET_TRY_CACHE_EXTRACT_STR([for clang version string],$2_clang_version_string,[
+        #ifndef __VERSION__
+          #define __VERSION__ "unknown"
+        #endif
+      ],[__VERSION__],[_gasnet_$2_clang_version_string])
+    case "$_gasnet_$2_clang_version_string" in
+      *Apple*) $2_SUBFAMILY='APPLE';;
+      *Cray*) $2_SUBFAMILY='CRAY';;
+    esac
+    ;;
+  *)
+    $2_SUBFAMILY='none'
+    ;;
+esac
+AC_MSG_CHECKING([for $1 compiler sub-family])
+# real "checking" was done above
+AC_MSG_RESULT([$[]$2_SUBFAMILY])
 $2_FAMILY=$$3
 AC_SUBST($2_FAMILY)
 AC_SUBST($2_SUBFAMILY)

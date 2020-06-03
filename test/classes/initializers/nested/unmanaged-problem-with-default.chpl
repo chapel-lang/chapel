@@ -1,6 +1,6 @@
 class Outer {
 
-  var field:unmanaged Inner;
+  var field:unmanaged Inner?;
 
   class Inner {
     var x:int;

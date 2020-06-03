@@ -4,6 +4,8 @@ use AccumStencilDist;
 use Util;
 use Simulation;
 
+private use IO;
+
 class InterpolationObject {
   var n      : int;           // number of values in table
   var x0     : real;          // starting ordinate range
@@ -58,8 +60,8 @@ class PotentialEAM : BasePotential {
   var dfEmbed : [dfSpace] [1..MAXATOMS] real;
 
   proc init() {
-    var info : unmanaged BasePotential;
-    var p, r, f : unmanaged InterpolationObject;
+    var info : unmanaged BasePotential?;
+    var p, r, f : unmanaged InterpolationObject?;
 
     if potType == PotType.setfl then
       (info, p, r, f) = readSetFl();
@@ -68,15 +70,15 @@ class PotentialEAM : BasePotential {
     else
       halt("Unsupported pot type: ", potType);
 
-    super.init(info);
+    super.init(info!);
 
-    this.phiIO = p;
-    this.rhoIO = r;
-    this.fIO   = f;
+    this.phiIO = p!;
+    this.rhoIO = r!;
+    this.fIO   = f!;
 
-    const boxInfo  = computeBoxInfo(info.lat, info.cutoff);
-    const numBoxes = boxInfo(2);
-    rhoDom         = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
+    const boxInfo  = computeBoxInfo(info!.lat, info!.cutoff);
+    const numBoxes = boxInfo(1);
+    rhoDom         = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
 
     delete info;
   }
@@ -86,7 +88,7 @@ class PotentialEAM : BasePotential {
     delete rhoIO;
     delete fIO;
   }
-  proc print() {
+  override proc print() {
     writeln("  Potential type  : EAM");
     writeln("  Species name    : ", name);
     writeln("  Atomic number   : ", atomicNo);
@@ -102,7 +104,7 @@ proc readSetFl() {
   var r = chan.reader();
 
   var info = new unmanaged BasePotential();
-  var pIO, rIO, fIO : unmanaged InterpolationObject;
+  var pIO, rIO, fIO : unmanaged InterpolationObject?;
 
   // Skip comments
   r.readln();
@@ -140,7 +142,7 @@ proc readSetFl() {
   buf[1] = buf[2] + (buf[2] - buf[3]);
   pIO = new unmanaged InterpolationObject(nr, x0, dr, buf);
 
-  return (info, pIO, rIO, fIO);
+  return (info, pIO!, rIO!, fIO!);
 }
 
 proc readFuncFl() {
@@ -148,7 +150,7 @@ proc readFuncFl() {
   var r = chan.reader();
 
   var info = new unmanaged BasePotential();
-  var pIO, rIO, fIO : unmanaged InterpolationObject;
+  var pIO, rIO, fIO : unmanaged InterpolationObject?;
 
   // Comments
   info.name = r.readln(string);
@@ -179,7 +181,7 @@ proc readFuncFl() {
   for i in 1..nr do buf[i] = r.read(real);
   rIO = new unmanaged InterpolationObject(nr, x0, dr, buf);
 
-  return (info, pIO, rIO, fIO);
+  return (info, pIO!, rIO!, fIO!);
 }
 
 proc PotentialEAM.reset() {
@@ -272,7 +274,7 @@ proc PotentialEAM.computeElectronCloud() {
   }
 }
 
-proc PotentialEAM.force() {
+override proc PotentialEAM.force() {
   reset();
 
   const pairWiseEnergy = computePairWise();

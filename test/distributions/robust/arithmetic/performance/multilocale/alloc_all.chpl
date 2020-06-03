@@ -1,4 +1,5 @@
 use driver_domains;
+private use CommDiagnostics;
 
 config type myType = int;
 

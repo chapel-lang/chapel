@@ -1,0 +1,2 @@
+array-of-generic-record.chpl:2: warning: creating an array with element type GenericRecord
+array-of-generic-record.chpl:2: error: array element type cannot currently be generic

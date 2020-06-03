@@ -46,8 +46,8 @@ Known problems:
 * Bug 3480
   It has been observed on Cray systems running CLE6 that following a call to
   munmap(), there may be a delay before the physical page frames are available
-  for reallocation.  For more details see gemini-conduit/README (source), or
-  share/doc/gasnet/README-{aries,gemini} (installed).
+  for reallocation.  For more details see aries-conduit/README (source), or
+  share/doc/gasnet/README-aries (installed).
 
 * Bug 3727
   The smp-conduit support for remote atomics is limited to certain datatypes.
@@ -55,11 +55,11 @@ Known problems:
   to 32-bit datatypes on ILP32 platforms.  However, there are exceptions on both
   types of platform, many of which are compiler dependent.
   The most up-to-date information on this bug is maintained at:
-    http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3727
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=3727
   That bug report describes the problem in more detail.
 
 * See the GASNet Bugzilla server for details on other known bugs:
-  http://gasnet-bugs.lbl.gov/
+  https://gasnet-bugs.lbl.gov/
 
 Future work:
 ------------

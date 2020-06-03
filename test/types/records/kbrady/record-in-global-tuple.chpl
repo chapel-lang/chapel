@@ -4,12 +4,12 @@ module bar {
 
     proc init(y) where y.type != BadBaz {
       this.complete();
-      x[1] = y;
+      x[0] = y;
     }
 
     proc init=(other: BadBaz) {
       this.complete();
-      x[1] = other.x[1];
+      x[0] = other.x[0];
     }
   }
 
@@ -20,6 +20,6 @@ module foo {
   use bar;
 
   proc main() {
-    writeln(tuple_failure[1].x[1]);
+    writeln(tuple_failure[0].x[0]);
   }
 }

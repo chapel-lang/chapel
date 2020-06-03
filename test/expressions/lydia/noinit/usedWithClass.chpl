@@ -4,7 +4,7 @@ class Foo {
 
 }
 
-var foo:unmanaged Foo = noinit;
+var foo:unmanaged Foo? = noinit;
 
 foo = new unmanaged Foo(4, true);
 
@@ -14,7 +14,7 @@ delete foo;
 
 
 
-var bam:unmanaged Foo;
+var bam:unmanaged Foo?;
 
 bam = new unmanaged Foo(3, false);
 

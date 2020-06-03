@@ -1,4 +1,5 @@
 
+private use List;
 use MasonUpdate;
 use MasonUtils;
 use TOML;
@@ -25,7 +26,8 @@ proc main() {
     w.close();
   }
 
-  var args = ["--no-update"];
+  var args: list(string);
+  args.append("--no-update");
   var configs = UpdateLock(args, tf, temp.tryGetPath());
   var lock = open(temp.tryGetPath(), iomode.r);
   var lockFile = parseToml(lock);

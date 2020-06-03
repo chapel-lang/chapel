@@ -1,8 +1,8 @@
 proc chan_red(ref args ...?k)
 {
   var localArgs:args.type;
-  localArgs[1] = 17;
-  args[1] = localArgs[1];
+  localArgs[0] = 17;
+  args[0] = localArgs[0];
 }
 
 var a=0;

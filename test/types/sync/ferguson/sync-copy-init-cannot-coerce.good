@@ -1,0 +1,1 @@
+sync-copy-init-cannot-coerce.chpl:3: error: cannot initialize 'sync string' from 'sync int(64)' because 'int(64)' is not coercible to 'string'

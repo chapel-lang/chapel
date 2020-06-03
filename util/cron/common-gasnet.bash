@@ -6,6 +6,7 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
 source $CWD/common.bash
+source $CWD/common-oversubscribed.bash
 
 export CHPL_COMM=gasnet
 export GASNET_SPAWNFN=L
@@ -17,9 +18,6 @@ export CHPL_TEST_TIMEOUT=500
 
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 if [ "${tasks}" == "qthreads" ] ; then
-
-    source $CWD/common-oversubscribed.bash
-
     # Even with oversubscription we still have some timeouts with
     # qtheads+gasnet on "low" core count machines. The main issue is
     # that qthreads assumes it owns the whole machine. When running

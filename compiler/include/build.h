@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +35,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ImportStmt;
 class ModuleSymbol;
 class Type;
 
@@ -53,6 +55,7 @@ Expr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
 Expr* buildRealLiteral(const char* pch);
 Expr* buildImagLiteral(const char* pch);
 Expr* buildStringLiteral(const char* pch);
+Expr* buildBytesLiteral(const char* pch);
 Expr* buildCStringLiteral(const char* pch);
 
 Expr* buildDotExpr(BaseAST* base, const char* member);
@@ -61,11 +64,21 @@ Expr* buildDotExpr(const char* base, const char* member);
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
 
-BlockStmt* buildUseStmt(CallExpr* modules);
-BlockStmt* buildUseStmt(Expr* mod, std::vector<OnlyRename*>* names, bool except);
+BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, const char* rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse);
+BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
+                        std::vector<PotentialRename*>* names, bool except,
+                        bool privateUse);
+ImportStmt* buildImportStmt(Expr* mod);
+ImportStmt* buildImportStmt(Expr* mod, const char* rename);
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names);
+void setImportPrivacy(BlockStmt* list, bool isPrivate);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
+DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
@@ -77,6 +90,10 @@ ModuleSymbol* buildModule(const char* name,
                           bool        priv,
                           bool        prototype,
                           const char* docs);
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
@@ -142,7 +159,7 @@ DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
 FnSymbol* buildLambda(FnSymbol* fn);
 
-FnSymbol* buildLinkageFn(Flag externOrExport, Expr* paramCNameExpr);
+BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
 
 FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
                               const char* name,
@@ -158,7 +175,7 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              const char* docs);
 void applyPrivateToBlock(BlockStmt* block);
 BlockStmt* buildForwardingStmt(Expr* expr);
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<OnlyRename*>* names, bool except);
+BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except);
 BlockStmt* buildForwardingDeclStmt(BlockStmt*);
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
@@ -171,6 +188,17 @@ BlockStmt* buildExternBlockStmt(const char* c_code);
 CallExpr*  buildPreDecIncWarning(Expr* expr, char sign);
 BlockStmt* convertTypesToExtern(BlockStmt*);
 BlockStmt* handleConfigTypes(BlockStmt*);
+
+// In the following routines 'open[high|low]' are used to indicate
+// whether an open-range is being created, like `lo..<hi`.  At
+// present, Chapel only supports open intervals on the high bound,
+// so those that say that the low bound is open are unused, but
+// here if we decide to add `lo<..<hi` and/or `lo<..hi` later.
+CallExpr* buildBoundedRange(Expr* low, Expr* high,
+                            bool openlow=false, bool openhigh=false);
+CallExpr* buildLowBoundedRange(Expr* low, bool open=false);
+CallExpr* buildHighBoundedRange(Expr* high, bool open=false);
+CallExpr* buildUnboundedRange();
 
 Expr* tryExpr(Expr*);
 Expr* tryBangExpr(Expr*);

@@ -64,9 +64,9 @@ module scalar_outer_product_cholesky {
     // equations.
     // -----------------------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices of A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices of A
 
     // compute L from A
 

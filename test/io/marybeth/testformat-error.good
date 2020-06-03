@@ -1,3 +1,0 @@
-uncaught SystemError: Invalid argument: Too many arguments for format string (in string.format)
-  testformat-error.chpl:1: thrown here
-  testformat-error.chpl:1: uncaught here

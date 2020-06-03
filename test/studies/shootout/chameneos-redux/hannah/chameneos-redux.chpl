@@ -25,7 +25,7 @@ config const verbose = false;
 
 class MeetingPlace {
   var spotsLeft$ : sync int;
-  var partner : unmanaged Chameneos;
+  var partner : unmanaged Chameneos?;
 
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
@@ -74,7 +74,6 @@ class Chameneos {
      returns the color of the chameneos who arrives 2nd,
      otherwise returns the color of the chameneos who arrives 1st */
   proc meet(place : unmanaged MeetingPlace) {
-    var partner : unmanaged Chameneos;
     var spotsLeft = place.spotsLeft$;
 
     if (spotsLeft == 0) {
@@ -87,7 +86,7 @@ class Chameneos {
       place.spotsLeft$ = spotsLeft - 1;
       meetingCompleted$;
     } else if (spotsLeft % 2 == 1) {
-      partner = place.partner;
+      const partner = place.partner!;
       place.spotsLeft$ = spotsLeft - 1;
 
       if (id == partner.id) {
@@ -124,18 +123,10 @@ proc populate (size : int) {
   const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red,
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
-  const D : domain(1) = {1..size};
-  var population : [D] unmanaged Chameneos;
 
-  if (size == 10) {
-    for i in D {
-      population(i) = new unmanaged Chameneos(i, colorsDefault10(i));
-    }
-  } else {
-    for i in D {
-      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):Color);
-    }
-  }
+  var population = [i in 0..size-1]
+    new unmanaged Chameneos(i, if size == 10 then colorsDefault10(i)
+                                             else (i % 3):Color     );
   return population;
 }
 
@@ -197,7 +188,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 1..s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

@@ -1,3 +1,5 @@
+use IO;
+
 var buf: [1..10] uint(8);
 var numRead = 0;
 var rc: bool;

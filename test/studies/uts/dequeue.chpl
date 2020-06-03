@@ -5,14 +5,14 @@ module dequeue {
     class MyNode {
       type itemType;              // type of item
       var item: itemType;         // item in node
-      var prev: unmanaged MyNode(itemType); // reference to prev node (same type)
-      var next: unmanaged MyNode(itemType); // reference to next node (same type)
+      var prev: unmanaged MyNode(itemType)?; // reference to prev node (same type)
+      var next: unmanaged MyNode(itemType)?; // reference to next node (same type)
     }
 
     type itemType;             // type of items
     var size: int;             // Length of the DeQueue
-    var top: unmanaged MyNode(itemType); // top node on DeQueue linked list
-    var bottom: unmanaged MyNode(itemType);
+    var top: unmanaged MyNode(itemType)?; // top node on DeQueue linked list
+    var bottom: unmanaged MyNode(itemType)?;
     var id: int;
 
     // pushTop: add an item to the top of the DeQueue
@@ -21,7 +21,7 @@ module dequeue {
       if top == nil {
         bottom = newTop;
       } else {
-        top.prev = newTop;
+        top!.prev = newTop;
       }
       top = newTop;
       size += 1;
@@ -33,7 +33,7 @@ module dequeue {
       if bottom == nil {
         top = newBottom;
       } else {
-        bottom.next = newBottom;
+        bottom!.next = newBottom;
       }
       bottom = newBottom;
       size += 1;
@@ -45,10 +45,10 @@ module dequeue {
       if isEmpty() then
         halt("attempt to pop an item off an empty DeQueue");
       var oldTop = top;
-      top = top.next;
+      top = top!.next;
       if top == nil then bottom = nil;  // Empty
       size -= 1;
-      var result = oldTop.item;
+      var result = oldTop!.item;
       delete oldTop;
       return result;
     }
@@ -58,10 +58,10 @@ module dequeue {
       if isEmpty() then
         halt("attempt to pop an item off an empty DeQueue");
       var oldBottom = bottom;
-      bottom = bottom.prev;
+      bottom = bottom!.prev;
       if bottom == nil then top = nil;  // Empty
       size -= 1;
-      var result = oldBottom.item;
+      var result = oldBottom!.item;
       delete oldBottom;
       return result;
     }
@@ -76,16 +76,16 @@ module dequeue {
       var newBottom = bottom;
 
       for i in 1..n-1 {
-        newTop = newTop.prev;
+        newTop = newTop!.prev;
       }
 
       // Remove from the current stack
-      bottom = newTop.prev;
-      bottom.next = nil;
+      bottom = newTop!.prev;
+      bottom!.next = nil;
       size -= n;
 
       // Update new top
-      newTop.prev = nil;
+      newTop!.prev = nil;
 
       return new DeQueue(itemType, n, newTop, newBottom, id+1);
     }

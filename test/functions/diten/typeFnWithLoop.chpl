@@ -7,13 +7,13 @@ class C {
 }
 
 proc foo(x) type {
-  var nn = new C(x);
+  var nn = new borrowed C(x);
   for i in 1..x do
     writeln(i);
   return nn.type;
 }
 
 proc main {
-  var a: foo(3);
+  var a: foo(3)?;
   writeln(a.type:string);
 }

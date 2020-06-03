@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,11 +27,12 @@
  */
 
 module ChapelDebugPrint {
-  use ChapelStandard;
+  private use ChapelStandard, SysCTypes;
+  private use IO;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";
-    for param i in 1..args.size {
+    for param i in 0..args.size-1 {
       var tmp = args(i);
       if _can_stringify_direct(tmp) {
         // Call stringify from IO.chpl. Note that stringify
@@ -85,7 +87,10 @@ module ChapelDebugPrint {
       // yet defined).
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
-      const file = file_cs:string;
+      var file: string;
+      try! {
+        file = createStringWithNewBuffer(file_cs);
+      }
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
       extern proc printf(fmt:c_string, f:c_string, ln:c_int, s:c_string);
@@ -97,7 +102,10 @@ module ChapelDebugPrint {
     if chpl__testParFlag && chpl__testParOn {
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
-      const file = file_cs:string;
+      var file: string;
+      try! {
+        file = createStringWithNewBuffer(file_cs);
+      }
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));
     }

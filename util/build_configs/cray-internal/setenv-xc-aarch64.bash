@@ -126,7 +126,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=cray,gnu
+        compilers=gnu,cray
         comms=none,ugni
         launchers=aprun,none,slurm-srun
         substrates=aries,mpi,none
@@ -268,7 +268,7 @@ else
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
-    gen_version_cce=8.7.7
+    gen_version_cce=9.1.3
 
     target_cpu_module=craype-arm-thunderx2
 
@@ -284,6 +284,10 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
+
+        # pin to versions of mpich/libsci that work with gen_version_gcc
+        load_module_version cray-mpich 7.7.13
+        load_module_version cray-libsci 19.06.1
     }
 
     function load_prgenv_cray() {
@@ -298,9 +302,6 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
-
-        # pin to an mpich version compatible with the gen compiler
-        load_module_version cray-mpich 7.7.7
     }
 
     function load_target_cpu() {

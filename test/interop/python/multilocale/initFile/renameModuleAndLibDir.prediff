@@ -1,0 +1,9 @@
+#!/bin/bash
+
+sed '/from myModule.c:[0-9]*[:]*$/d' $2 > $2.tmp
+sed '/^ *$/d' $2.tmp > $2
+rm $2.tmp
+
+# No need to set PYTHONPATH since we're in the same directory as the generated
+# Python package.
+python3 use_renameModuleAndLibDir.py >> $2

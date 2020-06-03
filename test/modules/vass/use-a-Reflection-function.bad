@@ -1,0 +1,2 @@
+use-a-Reflection-function.chpl:6: error: 'use' of non-module/enum symbol numFields
+$CHPL_HOME/modules/standard/Reflection.chpl:: error: Definition of symbol numFields

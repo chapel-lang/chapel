@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -118,45 +119,28 @@ void initForTaskIntents() {
 
 // Return the tiMark symbol for the given ForallIntentTag.
 // Do not invoke on TFI_REDUCE, TPV and helper intents.
-ArgSymbol* tiMarkForForallIntent(ForallIntentTag intent) {
-  ArgSymbol* retval = NULL;
+ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar) {
+  switch (svar->intent) {
+    case TFI_DEFAULT:     return tiMarkBlank;
+    case TFI_CONST:       return tiMarkConstDflt;
+    case TFI_IN:          return tiMarkIn;
+    case TFI_CONST_IN:    return tiMarkConstIn;
+    case TFI_REF:         return tiMarkRef;
+    case TFI_CONST_REF:   return tiMarkConstRef;
 
-  switch (intent) {
-    case TFI_DEFAULT:
-      retval = tiMarkBlank;
-      break;
-
-    case TFI_CONST:
-      retval = tiMarkConstDflt;
-      break;
-
-    case TFI_IN:
-      retval = tiMarkIn;
-      break;
-
-    case TFI_CONST_IN:
-      retval = tiMarkConstIn;
-      break;
-
-    case TFI_REF:
-      retval = tiMarkRef;
-      break;
-
-    case TFI_CONST_REF:
-      retval = tiMarkConstRef;
+    case TFI_TASK_PRIVATE:
+      USR_FATAL_CONT(svar, "task-private variables are not supported in with-clauses for coforall/cobegin/begin blocks");
       break;
 
     case TFI_IN_PARENT:
-    case TFI_REDUCE:
+    case TFI_REDUCE:      // reduce intents are handled in addTaskIntent()
     case TFI_REDUCE_OP:
     case TFI_REDUCE_PARENT_AS:
     case TFI_REDUCE_PARENT_OP:
-    case TFI_TASK_PRIVATE:
       INT_FATAL("unexpected intent in tiMarkForForallIntent()");
       break;
   }
-
-  return retval;
+  return tiMarkBlank; //dummy
 }
 
 
@@ -355,11 +339,10 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore("'move'(%S, 'typeof'(%S))", eltType, origSym);
   headAnchor->insertBefore(new DefExpr(globalOp));
 
-  AggregateType* reduceAt = toAggregateType(reduceType->type);
-  INT_ASSERT(reduceAt);
+  Type* newT = getDecoratedClass(reduceType->type, CLASS_TYPE_GENERIC_NONNIL);
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,
-                                 reduceAt->symbol,
+                                 newT->symbol,
                                  new NamedExpr("eltType", new SymExpr(eltType)),
                                  new NamedExpr(astr_chpl_manager,
                                              new SymExpr(dtUnmanaged->symbol)));
@@ -368,18 +351,21 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   insertInitialAccumulate(headAnchor, globalOp, origSym);
 
   Expr* tailAnchor = findTailInsertionPoint(call, isCoforall);
-  // Doing insertAfter() calls in reverse order.
-  // Can't insertBefore() on tailAnchor->next - that can be NULL.
-  tailAnchor->insertAfter("chpl__delete(%S)",
-                         globalOp);
-  tailAnchor->insertAfter("'='(%S, generate(%S,%S))",
-                         origSym, gMethodToken, globalOp);
+  // origSym = globalOp.generate() (via genTemp); delete globalOp;
+  VarSymbol* genTemp = newTemp("genTemp");
+  genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+  tailAnchor->insertAfter(new DefExpr(genTemp),
+                          new CallExpr(PRIM_MOVE, genTemp,
+                            new CallExpr("generate", gMethodToken, globalOp)),
+                          new CallExpr("=", origSym, genTemp),
+                          new CallExpr("chpl__delete", globalOp));
 
   ArgSymbol* parentOp = new ArgSymbol(INTENT_BLANK, "reduceParent", dtUnknown);
   newFormal = parentOp;
 
   VarSymbol* currOp = new VarSymbol("reduceCurr");
   VarSymbol* svar  = new VarSymbol(origSym->name, origSym->type);
+  svar->addFlag(FLAG_INSERT_AUTO_DESTROY);
   symReplace = svar;
 
   redRef1->insertBefore(new DefExpr(currOp));
@@ -486,15 +472,13 @@ isOuterVar(Symbol* sym, FnSymbol* fn) {
 static void
 findOuterVars(FnSymbol* fn, SymbolMap& uses) {
   std::vector<SymExpr*> SEs;
-  collectSymExprs(fn, SEs);
+  collectLcnSymExprs(fn, SEs);
 
   for_vector(SymExpr, symExpr, SEs) {
       Symbol* sym = symExpr->symbol();
 
-      if (isLcnSymbol(sym)) {
-        if (considerAsOuterVar(sym, fn) && isOuterVar(sym, fn))
+      if (considerAsOuterVar(sym, fn) && isOuterVar(sym, fn))
           uses.put(sym, markUnspecified);
-      }
   }
 }
 
@@ -513,6 +497,7 @@ static void markOuterVarsWithIntents(CallExpr* byrefVars, SymbolMap& uses) {
                     //                 or over chpl__reduceGlob
     Symbol* var = se->symbol();
     if (marker) {
+      checkTypeParamTaskIntent(se);
       SymbolMapElem* elem = uses.get_record(var);
       if (elem) {
         elem->value = marker;
@@ -692,7 +677,7 @@ bool isAtomicFunctionWithOrderArgument(FnSymbol* fnSymbol, ArgSymbol** order = N
   int numFormals = fnSymbol->numFormals();
   if( numFormals >= 1 ) {
     ArgSymbol* lastFormal = fnSymbol->getFormal(numFormals);
-    int has_order_type = lastFormal->typeInfo()->symbol->hasFlag(FLAG_MEMORY_ORDER_TYPE);
+    int has_order_type = lastFormal->typeInfo()->symbol->hasEitherFlag(FLAG_MEMORY_ORDER_TYPE, FLAG_C_MEMORY_ORDER_TYPE);
     int has_order_name = (0 == strcmp(lastFormal->name, "order"));
     if( has_order_name && ! has_order_type ) {
       INT_FATAL(lastFormal, "atomic method has order without type");
@@ -775,6 +760,9 @@ void createTaskFunctions(void) {
       } else if (info->isPrimitive(PRIM_BLOCK_COFORALL)) {
         fn = new FnSymbol("coforall_fn");
         fn->addFlag(FLAG_COBEGIN_OR_COFORALL);
+      } else if (info->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
+        // ignore it until after resolution. It will be removed in
+        // callDestructors.
       } else if (info->isPrimitive(PRIM_BLOCK_ON) ||
                  info->isPrimitive(PRIM_BLOCK_BEGIN_ON) ||
                  info->isPrimitive(PRIM_BLOCK_COBEGIN_ON) ||

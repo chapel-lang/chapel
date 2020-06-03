@@ -5,10 +5,20 @@ config const N = 8;
 const dimRange = 0..#N;
 const ParentDom = {dimRange, dimRange};
 
-config type layoutType = DefaultDist;
-var layout = new unmanaged layoutType();
+enum layoutTypes {coo, csr, csc};
+config param layoutType = layoutTypes.coo;
 
-var SparseDom: sparse subdomain(ParentDom) dmapped new dmap(layout);
+var csrDom: sparse subdomain(ParentDom) dmapped CS(compressRows=true);
+var cscDom: sparse subdomain(ParentDom) dmapped CS(compressRows=false);
+var cooDom: sparse subdomain(ParentDom);
+
+var SparseDom = if layoutType == layoutTypes.csr then 
+                  csrDom
+               else if layoutType == layoutTypes.csc then
+                  cscDom
+               else
+                  cooDom;
+
 var SparseMat: [SparseDom] int;
 
 //left diagonal
@@ -70,8 +80,8 @@ writeln("After bulkAdd( , false, false, false)");
 print();
 
 proc print() {
-  for i in ParentDom.dim(1) {
-    for j in ParentDom.dim(2) {
+  for i in ParentDom.dim(0) {
+    for j in ParentDom.dim(1) {
       write(SparseMat[i,j], " ");
     }
     writeln();

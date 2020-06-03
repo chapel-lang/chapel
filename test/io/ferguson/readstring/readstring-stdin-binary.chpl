@@ -1,3 +1,5 @@
+use IO;
+
 var str:string;
 
 // set stdin to binary mode

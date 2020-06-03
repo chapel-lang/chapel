@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +26,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "ImportStmt.h"
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
 #include "misc.h"
@@ -95,6 +97,35 @@ GenRet UseStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+GenRet ImportStmt::codegen() {
+  GenRet ret;
+  INT_FATAL(this, "ImportStmt::codegen not implemented");
+  return ret;
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+#ifdef HAVE_LLVM
+static
+void codegenLifetimeEnd(llvm::Type *valType, llvm::Value *addr)
+{
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  int64_t sizeInBytes = -1;
+  if (valType->isSized())
+    sizeInBytes = dataLayout.getTypeStoreSize(valType);
+
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+    llvm::Type::getInt64Ty(info->llvmContext), sizeInBytes);
+
+  info->irBuilder->CreateLifetimeEnd(addr, size);
+}
+#endif
+
 GenRet BlockStmt::codegen() {
   GenInfo* info    = gGenInfo;
   FILE*    outfile = info->cfile;
@@ -142,7 +173,18 @@ GenRet BlockStmt::codegen() {
 
     info->lvt->addLayer();
 
-    body.codegen("");
+    for_alist(node, this->body) {
+      node->codegen();
+      if (CallExpr* call = toCallExpr(node)) {
+        if (call->isPrimitive(PRIM_RETURN)) {
+          for (std::size_t i = 0; i < info->currentStackVariables.size(); ++i) {
+            llvm::Value* val = info->currentStackVariables.at(i).first;
+            llvm::Type* type = info->currentStackVariables.at(i).second;
+            codegenLifetimeEnd(type, val);
+          };
+        }
+      }
+    }
 
     info->lvt->removeLayer();
 
@@ -176,7 +218,7 @@ CondStmt::codegen() {
 
     int numExtraPar = 0;
     //if (c_condExpr[0] == '(' && c_condExpr[c_condExpr.size()-1] == ')') {
-    if (c_condExpr[numExtraPar] == '(' && 
+    if (c_condExpr[numExtraPar] == '(' &&
         c_condExpr[c_condExpr.size()-(numExtraPar+1)] == ')') {
       numExtraPar++;
     }

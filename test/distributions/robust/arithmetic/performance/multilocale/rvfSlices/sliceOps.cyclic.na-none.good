@@ -1,7 +1,7 @@
 create slice (module-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 use slice via assignment (module-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 0 serializing a slice
 0 serializing a slice
 0 serializing a slice
@@ -25,7 +25,7 @@ use slice as follower (module-scope):
 create slice (local-scope):
 (<no communication>) (<no communication>) (<no communication>) (<no communication>)
 use slice via assignment (local-scope):
-(execute_on_nb = 3) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1) (get = 6, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1) (get = 8, execute_on_fast = 1)
 0 serializing a slice
 0 serializing a slice
 0 serializing a slice

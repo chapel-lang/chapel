@@ -52,7 +52,7 @@ proc fileGrep(toFind: string, fname: string) throws {
   // Search while handling errors, throwing if readline encounters an error.
   while (r.readline(line)) {
     if line.search(regEx) {
-      writeln("Found " + toFind + " at " + lineNum + " in " + fname);
+      writeln("Found ", toFind, " at ", lineNum, " in ", fname);
     }
     lineNum += 1;
   }

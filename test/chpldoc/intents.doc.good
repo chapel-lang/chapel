@@ -1,3 +1,4 @@
+intents.doc.chpl:78: warning: This file-scope code is outside of any explicit module declarations (e.g., module Inner), so an implicit module named 'intents.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: intents.doc
@@ -9,6 +10,13 @@ intents.doc
 .. code-block:: chapel
 
    use intents.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import intents.doc;
 
 **Submodules**
 
@@ -89,6 +97,13 @@ Inner
 .. code-block:: chapel
 
    use intents.doc.Inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import intents.doc.Inner;
 
 .. function:: proc one(in val)
 

@@ -26,7 +26,7 @@ proc m2() {
   mylock1.writeEF(1);
   for i in 1..5 {
     mylock2.readFE();
-    here.chdir("../"+i);
+    here.chdir("../"+i:string);
     mylock1.writeEF(1);
   }
 }

@@ -1,0 +1,3 @@
+exceptStillWorks.chpl:11: In function 'main':
+exceptStillWorks.chpl:14: error: 'b' undeclared (first use this function)
+accessExcept.chpl:3: error: 'a' undeclared (first use this function)

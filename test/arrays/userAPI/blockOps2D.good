@@ -5,7 +5,6 @@ idxType is: int(64)
 rank is: 2
 
 size is: 100
-numElements is: 100
 shape is: (10, 10)
 
 X is:
@@ -253,7 +252,6 @@ idxType is: int(64)
 rank is: 2
 
 size is: 49
-numElements is: 49
 shape is: (7, 7)
 
 X is:

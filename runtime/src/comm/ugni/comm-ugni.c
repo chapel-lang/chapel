@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,6 +67,7 @@
 #include "chpl-mem-sys.h"
 #include "chplsys.h"
 #include "chpl-tasks.h"
+#include "chpltypes.h"
 #include "chpl-atomics.h"
 #include "chplcast.h"
 #include "chpl-linefile-support.h"
@@ -101,7 +103,7 @@ static uint64_t debug_flag = 0;
 #define DBGF_MEMMAPS     0x100          // memory maps
 #define DBGF_BARRIER    0x1000          // barriers
 #define DBGF_IN_FILE   0x10000          // output debug info to a file
-#define DBGF_1_NODE    0x20000          // only produce debug for one node 
+#define DBGF_1_NODE    0x20000          // only produce debug for one node
 #define DBGF_NODENAME  0x40000          // produce chpl_nodeID <-> nodename map
 
 static c_nodeid_t debug_nodeID = 0;
@@ -249,6 +251,8 @@ static uint64_t debug_stats_flag = 0;
         MACRO(fork_amo_cnt)                                             \
         MACRO(regMemAlloc_cnt)                                          \
         MACRO(regMemPostAlloc_cnt)                                      \
+        MACRO(regMemRealloc_cnt)                                        \
+        MACRO(regMemPostRealloc_cnt)                                    \
         MACRO(regMemFree_cnt)                                           \
         MACRO(regMem_bCast_cnt)                                         \
         MACRO(regMem_locks)                                             \
@@ -303,7 +307,7 @@ static uint64_t debug_stats_flag = 0;
 //   occurs between the regMemAlloc() return and the regMemPostAlloc()
 //   call, i.e., we continue with the current alloc-defaultInit-register
 //   sequence.
-// 
+//
 //#define PERFSTATS_TIME_ZERO_INIT 1
 
 #define _PSV_C_TYPE      int_least64_t
@@ -523,6 +527,10 @@ static int hugepage_info_set;
 static pthread_once_t hugepage_once_flag = PTHREAD_ONCE_INIT;
 static size_t hugepage_size;
 
+
+// Yield during comm
+static chpl_bool yield_during_comm;
+
 //
 // Memory region support.
 //
@@ -727,7 +735,7 @@ typedef atomic_uint_least32_t cq_cnt_atomic_t;
 // is the only one with cheap atomic reads.)
 
 typedef struct {
-  atomic_bool        busy CACHE_LINE_ALIGN;
+  atomic_spinlock_t  busy CACHE_LINE_ALIGN;
   cq_cnt_atomic_t    cq_cnt_curr CACHE_LINE_ALIGN;
   chpl_bool          firmly_bound;
   gni_nic_handle_t   nih;
@@ -757,10 +765,9 @@ static __thread int comm_dom_free_idx = -1;
 static __thread comm_dom_t* cd = NULL;
 static __thread int cd_idx = -1;
 
-#define INIT_CD_BUSY(cd)      atomic_init_bool(&(cd)->busy, false)
-#define CHECK_CD_BUSY(cd)     atomic_load_explicit_bool(&(cd)->busy, memory_order_acquire)
-#define ACQUIRE_CD_MAYBE(cd)  (!atomic_exchange_explicit_bool(&(cd)->busy, true, memory_order_acquire))
-#define RELEASE_CD(cd)        atomic_store_explicit_bool(&(cd)->busy, false, memory_order_release)
+#define INIT_CD_BUSY(cd)      atomic_init_spinlock_t(&(cd)->busy)
+#define ACQUIRE_CD_MAYBE(cd)  atomic_try_lock_spinlock_t(&(cd)->busy)
+#define RELEASE_CD(cd)        atomic_unlock_spinlock_t(&(cd)->busy)
 
 
 //
@@ -815,29 +822,7 @@ static size_t rdma_threshold = DEFAULT_RDMA_THRESHOLD;
 // for that transaction.  So in order to match postings with their
 // later completions, we need the post descriptor to exist from the
 // time the transaction is posted until when the initiating task sees
-// it complete.  Here we define pools of post descriptors to use for
-// these non-blocking PUTs and GETs.  Each pool entry contains the
-// post descriptor itself, a "done" flag, and free list link.  We put
-// the address of the "done" flag in the post_id member of the post
-// descriptor so that we can set it when we receive the completion.
-//
-// We allocate these up front, with a fixed size.  There are
-// NB_DESC_NUM_POOLS pools, with NB_DESC_NUM_PER_POOL in each one.
-// The requirements/constraints on these values are as follows.
-//   - We don't need to acquire one of these unless we're holding a
-//     comm domain, so we don't need more pools than we have comm
-//     domains.  An Aries NIC supports 128 comm domains (FMA windows),
-//     so that is our maximum.
-//   - We cannot have more than CD_ACTIVE_TRANS_MAX NB transactions
-//     outstanding at the same time, per comm domain, so we don't need
-//     more that per pool.
-//   - We emulate an unsigned mod by NB_DESC_NUM_POOLS by means of
-//     & (NB_DESC_NUM_POOLS - 1), so that has to be a power of 2.
-//   - The code does divides and mods with NB_DESC_NUM_PER_POOL, so
-//     for performance that should be a power of 2.
-//
-#define NB_DESC_NUM_POOLS 128
-#define NB_DESC_NUM_PER_POOL CD_ACTIVE_TRANS_MAX
+// it complete.
 
 typedef struct {
   gni_post_descriptor_t post_desc;  // POST descriptor for an NB transaction
@@ -845,20 +830,6 @@ typedef struct {
   int cdi;                          // index of comm domain used for post
   mpool_idx_base_t next;            // free list index
 } nb_desc_t;
-
-static nb_desc_t nb_desc_pool[NB_DESC_NUM_POOLS][NB_DESC_NUM_PER_POOL];
-static mpool_idx_t nb_desc_pool_head[NB_DESC_NUM_POOLS];
-static atomic_bool nb_desc_pool_lock[NB_DESC_NUM_POOLS];
-
-static mpool_idx_t nb_desc_pool_i;
-
-static inline
-mpool_idx_base_t nb_desc_next_pool_i(void) 
-{
-  return mpool_idx_finc(&nb_desc_pool_i) & (NB_DESC_NUM_POOLS - 1);
-}
-
-typedef uint16_t nb_desc_idx_t;
 
 
 //
@@ -912,7 +883,7 @@ static atomic_bool rf_done_pool_lock[RF_DONE_NUM_POOLS];
 static mpool_idx_t rf_done_pool_i;
 
 static inline
-mpool_idx_base_t rf_done_next_pool_i(void) 
+mpool_idx_base_t rf_done_next_pool_i(void)
 {
   return mpool_idx_finc(&rf_done_pool_i) & (RF_DONE_NUM_POOLS - 1);
 }
@@ -965,8 +936,7 @@ mpool_idx_base_t rf_done_next_pool_i(void)
 // spawns are usually between 128 and 512 bytes.
 //
 typedef enum {
-  fork_op_nil,
-  fork_op_small_call,
+  fork_op_small_call = CHPL_ARG_BUNDLE_KIND_COMM, // impl-nonspecific on-stmt
   fork_op_large_call,
   fork_op_put,
   fork_op_get,
@@ -979,7 +949,7 @@ typedef enum {
 #define FORK_OP_BITS 3
 
 typedef struct {
-  unsigned char op: FORK_OP_BITS;    // operation
+  chpl_arg_bundle_kind_t op;         // operation
   c_nodeid_t    caller;              // requesting locale
   rf_done_t*    rf_done;             // where to indicate completion
 #ifdef CHPL_COMM_DEBUG
@@ -987,29 +957,20 @@ typedef struct {
 #endif
 } fork_base_info_t;
 
-typedef struct {
-  fork_base_info_t b;
-
-  c_sublocid_t  subloc;  // target sublocale
-  unsigned char fast:          1;
-  unsigned char blocking:      1;
-  unsigned short payload_size;
-  chpl_fn_int_t fid;
-
-  // TODO: is there a way to "compress" this?
-  chpl_task_ChapelData_t state;
-} fork_small_call_info_t;
-
 #define MAX_SMALL_CALL_PAYLOAD 1024
 #define FORK_T_MAX_SIZE \
-  (sizeof(fork_small_call_info_t) + MAX_SMALL_CALL_PAYLOAD)
+  (sizeof(chpl_comm_on_bundle_t) + MAX_SMALL_CALL_PAYLOAD)
 
 
 typedef struct {
-  fork_small_call_info_t b;
-  c_sublocid_t           subloc;  // target sublocale
-  unsigned int           arg_size;
-  void*                  arg;
+  chpl_comm_on_bundle_t hdr;
+  unsigned char         space[MAX_SMALL_CALL_PAYLOAD];
+} fork_small_call_info_t;
+
+
+typedef struct {
+  chpl_comm_on_bundle_t hdr;
+  void*                 p_payload;
 } fork_large_call_info_t;
 
 
@@ -1030,10 +991,10 @@ typedef enum {
   put_64,
   get_32,
   get_64,
-  xchg_32,
-  xchg_64,
-  cmpxchg_32,
-  cmpxchg_64,
+  swap_32,
+  swap_64,
+  cswap_32,
+  cswap_64,
   and_i32,
   and_i64,
   or_i32,
@@ -1065,19 +1026,14 @@ typedef struct {
   fork_base_info_t b;
 } fork_shutdown_info_t;
 
-typedef struct {
-  unsigned char buf[FORK_T_MAX_SIZE];
-} fork_space_t;
-
 typedef union fork_t {
   fork_base_info_t b;
-  fork_small_call_info_t sc;
+  fork_small_call_info_t sc;  // present only to set the max req size
   fork_large_call_info_t lc;
   fork_xfer_info_t x;
   fork_free_info_t f;
   fork_amo_info_t  a;
   fork_shutdown_info_t s;
-  fork_space_t bytes; // get fork_t to be >= FORK_T_MAX_SIZE bytes
 } fork_t;
 
 typedef struct {
@@ -1087,23 +1043,9 @@ typedef struct {
 } nb_fork_t;
 
 typedef struct {
-  chpl_task_bundle_t task;
+  chpl_task_bundle_t hdr;
   fork_xfer_info_t x;
 } fork_xfer_task_t;
-
-typedef struct {
-  chpl_task_bundle_t task;
-  fork_large_call_info_t large;
-} fork_large_call_task_t;
-
-typedef struct {
-  // unlike xfer/large call, need comm_on_bundle here for two reasons:
-  //  1) the generated code puts a comm_on_bundle_t as the first field
-  //     in any argument bundle for an on-statement
-  //  2) we need somewhere to store information to indicate completion.
-  chpl_comm_on_bundle_t bundle;
-  unsigned char buf[MAX_SMALL_CALL_PAYLOAD];
-} fork_small_call_task_t;
 
 #ifdef CHPL_COMM_DEBUG
 static int _fork_req_bufs_per_cd = 2;
@@ -1196,10 +1138,10 @@ static gni_fma_cmd_type_t nic_amos_gem_fetch[]  // Gemini, fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               -1,                       // xchg_32
-               -1,                       // xchg_64 (special-cased in code)
-               -1,                       // cmpxchg_32
-               GNI_FMA_ATOMIC_CSWAP,     // cmpxchg_64
+               -1,                       // swap_32
+               -1,                       // swap_64 (special-cased in code)
+               -1,                       // cswap_32
+               GNI_FMA_ATOMIC_CSWAP,     // cswap_64
                -1,                       // and_i32
                GNI_FMA_ATOMIC_FAND,      // and_i64
                -1,                       // or_i32
@@ -1217,10 +1159,10 @@ static gni_fma_cmd_type_t nic_amos_gem[]        // Gemini, non-fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               -1,                       // xchg_32
-               -1,                       // xchg_64
-               -1,                       // cmpxchg_32
-               -1,                       // cmpxchg_64
+               -1,                       // swap_32
+               -1,                       // swap_64
+               -1,                       // cswap_32
+               -1,                       // cswap_64
                -1,                       // and_i32
                GNI_FMA_ATOMIC_AND,       // and_i64
                -1,                       // or_i32
@@ -1238,10 +1180,10 @@ static gni_fma_cmd_type_t nic_amos_ari_fetch[]  // Aries, fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               GNI_FMA_ATOMIC2_FSWAP_S,  // xchg_32
-               GNI_FMA_ATOMIC2_FSWAP,    // xchg_64
-               GNI_FMA_ATOMIC2_FCSWAP_S, // cmpxchg_32
-               GNI_FMA_ATOMIC2_FCSWAP,   // cmpxchg_64
+               GNI_FMA_ATOMIC2_FSWAP_S,  // swap_32
+               GNI_FMA_ATOMIC2_FSWAP,    // swap_64
+               GNI_FMA_ATOMIC2_FCSWAP_S, // cswap_32
+               GNI_FMA_ATOMIC2_FCSWAP,   // cswap_64
                GNI_FMA_ATOMIC2_FAND_S,   // and_i32
                GNI_FMA_ATOMIC2_FAND,     // and_i64
                GNI_FMA_ATOMIC2_FOR_S,    // or_i32
@@ -1259,10 +1201,10 @@ static gni_fma_cmd_type_t nic_amos_ari[]        // Aries, non-fetching
                -1,                       // put_64
                -1,                       // get_32
                -1,                       // get_64
-               -1,                       // xchg_32
-               -1,                       // xchg_64
-               -1,                       // cmpxchg_32
-               -1,                       // cmpxchg_64
+               -1,                       // swap_32
+               -1,                       // swap_64
+               -1,                       // cswap_32
+               -1,                       // cswap_64
                GNI_FMA_ATOMIC2_AND_S,    // and_i32
                GNI_FMA_ATOMIC2_AND,      // and_i64
                GNI_FMA_ATOMIC2_OR_S,     // or_i32
@@ -1378,7 +1320,7 @@ static atomic_bool amo_res_pool_lock[AMO_RES_NUM_POOLS];
 static mpool_idx_t amo_res_pool_i;
 
 static inline
-mpool_idx_base_t amo_res_next_pool_i(void) 
+mpool_idx_base_t amo_res_next_pool_i(void)
 {
   return mpool_idx_finc(&amo_res_pool_i) & (AMO_RES_NUM_POOLS - 1);
 }
@@ -1446,14 +1388,6 @@ static chpl_bool polling_task_blocking_cq;
 
 
 //
-// These tell the state of, or give direction to, the main process
-//
-static chpl_bool can_shutdown = false;
-static pthread_mutex_t shutdown_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t shutdown_cond = PTHREAD_COND_INITIALIZER;
-
-
-//
 // Specialized argument type and values for the may_remote_proxy
 // argument to do_remote_put() and ..._get().
 //
@@ -1496,7 +1430,7 @@ static void      exit_all(int);
 static void      exit_any(int);
 static void      rf_handler(gni_cq_entry_t*);
 static void      fork_call_wrapper_blocking(chpl_comm_on_bundle_t*);
-static void      fork_call_wrapper_large(fork_large_call_task_t*);
+static void      fork_call_wrapper_large(fork_large_call_info_t*);
 static void      fork_get_wrapper(fork_xfer_task_t*);
 static size_t    do_amo_on_cpu(fork_amo_cmd_t, void*, void*, void*, void*);
 static void      fork_amo_wrapper(fork_amo_info_t*);
@@ -1505,14 +1439,6 @@ static void      indicate_done(fork_base_info_t* b);
 static void      indicate_done2(int, rf_done_t *);
 static void      send_polling_response(void*, c_nodeid_t, void*, size_t,
                                        mem_region_t*);
-static nb_desc_idx_t nb_desc_idx_encode(int, int);
-static void      nb_desc_idx_decode(int*, int*, nb_desc_idx_t);
-static nb_desc_t* nb_desc_idx_2_ptr(nb_desc_idx_t);
-static chpl_comm_nb_handle_t nb_desc_idx_2_handle(nb_desc_idx_t);
-static nb_desc_idx_t nb_desc_handle_2_idx(chpl_comm_nb_handle_t);
-static void      nb_desc_init(void);
-static nb_desc_idx_t nb_desc_alloc(void);
-static void      nb_desc_free(nb_desc_idx_t);
 static void      rf_done_pre_init(void);
 static void      rf_done_init(void);
 static rf_done_t* rf_done_alloc(void);
@@ -1550,8 +1476,6 @@ static void      do_nic_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                     gni_fma_cmd_type_t, mem_region_t*);
 static void      do_nic_amo_nf_V(int, uint64_t*, c_nodeid_t*, void**, size_t*,
                                  gni_fma_cmd_type_t*, mem_region_t**);
-static void      amo_add_real32_cpu_cmpxchg(void*, void*, void*);
-static void      amo_add_real64_cpu_cmpxchg(void*, void*, void*);
 static void      fork_call_common(int, c_sublocid_t,
                                   chpl_fn_int_t,
                                   chpl_comm_on_bundle_t*, size_t,
@@ -1562,7 +1486,7 @@ static void      fork_free(c_nodeid_t, void*);
 static void      fork_amo(fork_t*, c_nodeid_t);
 static void      fork_shutdown(c_nodeid_t);
 static void      do_fork_post(c_nodeid_t, chpl_bool,
-                              uint64_t, fork_base_info_t* const, int*, int*);
+                              uint64_t, fork_base_info_t*, int*, int*);
 static void      acquire_comm_dom(void);
 static void      acquire_comm_dom_and_req_buf(c_nodeid_t, int*);
 static void      release_comm_dom(void);
@@ -1667,10 +1591,10 @@ static const char* fork_amo_name(fork_amo_cmd_t cmd)
                                  "put_64",
                                  "get_32",
                                  "get_64",
-                                 "xchg_32",
-                                 "xchg_64",
-                                 "cmpxchg_32",
-                                 "cmpxchg_64",
+                                 "swap_32",
+                                 "swap_64",
+                                 "cswap_32",
+                                 "cswap_64",
                                  "and_i32",
                                  "and_i64",
                                  "or_i32",
@@ -1700,13 +1624,13 @@ static char* sprintf_rf_req(int loc, void* f_in)
   switch (op) {
   case fork_op_small_call:
     {
-      fork_small_call_info_t* pc = (fork_small_call_info_t*) f;
+      chpl_comm_bundleData_t* pc = &((chpl_comm_on_bundle_t*) f)->comm;
 
       snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
-               "ftable[%d](%d bytes)%s%s",
-               pc->fid, (int) pc->payload_size,
+               "ftable[%d](%zd bytes)%s%s",
+               pc->fid, pc->size,
                pc->fast ? ", fast" : "",
-               pc->blocking ? "" : ", nb");
+               (pc->rf_done != NULL) ? "" : ", nb");
     }
     break;
 
@@ -1715,14 +1639,13 @@ static char* sprintf_rf_req(int loc, void* f_in)
       fork_large_call_info_t* lc = (fork_large_call_info_t*) f;
 
       snprintf(&buf[bufcnt], sizeof(buf) - bufcnt,
-               "ftable[%d](%d bytes) (arg %p %d)%s%s, large",
-               lc->b.fid, (int) lc->b.payload_size,
-               lc->arg, (int) lc->arg_size,
-               lc->b.fast ? ", fast" : "",
-               lc->b.blocking ? "" : ", nb");
+               "large call (payload %p) ftable[%d](%zd bytes)%s",
+               lc->p_payload,
+               lc->hdr.comm.fid, lc->hdr.comm.size,
+               (lc->hdr.comm.rf_done != NULL) ? "" : ", nb");
 
-      assert(lc->arg != NULL);
-      assert(lc->arg_size > 0);
+      assert(lc->p_payload != NULL);
+      assert(lc->hdr.comm.size > 0);
     }
     break;
 
@@ -1809,8 +1732,8 @@ static void dbg_catf(FILE* out_f, const char* in_fname, const char* match)
 
 static inline
 chpl_comm_taskPrvData_t* get_comm_taskPrvdata(void) {
-  chpl_task_prvData_t* task_prvData = chpl_task_getPrvData();
-  if (task_prvData != NULL) return &task_prvData->comm_data;
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  if (infoRuntime != NULL) return &infoRuntime->comm_data;
   return NULL;
 }
 
@@ -1848,7 +1771,7 @@ typedef struct {
   void*         tgt_addr_v[MAX_CHAINED_PUT_LEN];
   c_nodeid_t    locale_v[MAX_CHAINED_PUT_LEN];
   void*         src_addr_v[MAX_CHAINED_PUT_LEN];
-  uint64_t      src_v[MAX_CHAINED_PUT_LEN];
+  char          src_v[MAX_CHAINED_PUT_LEN][MAX_UNORDERED_TRANS_SZ];
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   mem_region_t* remote_mr_v[MAX_CHAINED_PUT_LEN];
 } put_buff_task_info_t;
@@ -1941,10 +1864,6 @@ int32_t chpl_comm_getMaxThreads(void)
 
 void chpl_comm_init(int *argc_p, char ***argv_p)
 {
-  // Sanity check: a maximal small call fits into a fork_t
-  assert(sizeof(fork_small_call_info_t)+MAX_SMALL_CALL_PAYLOAD
-         <= sizeof(fork_t));
-
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
@@ -2004,8 +1923,14 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
 
+  // Yield during comm by default to allow comm/compute overlap, but
+  // disable if the user requested or if `--cache-remote` is enabled
+  // (it currently breaks when tasks switch during a GET/PUT.)
+  yield_during_comm = chpl_env_rt_get_bool("COMM_UGNI_YIELD_DURING_COMM",
+                                           true) && !chpl_cache_enabled();
+
   //
-  // We can easily reach 4k memory regions on Aries.  We can reach a
+  // We can easily reach 16k memory regions on Aries.  We can reach a
   // bit more than 3500 memory regions on Gemini but getting there is
   // tricky because we start bumping up against a number of limits
   // all at once (node memory sizes, limits on number of registered
@@ -2014,7 +1939,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   //
   max_mem_regions =
     chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
-                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 4096);
+                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 16384);
 
   //
   // We have to create the local memory region table before the first
@@ -2051,10 +1976,12 @@ int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status)
   return 0;
 }
 
-
-int chpl_comm_numPollingTasks(void)
+//
+// No support for lldb for now
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
 {
-  return 1;
+  return 0;
 }
 
 void chpl_comm_task_end(void) {
@@ -2184,7 +2111,6 @@ void chpl_comm_post_task_init(void)
   chpl_comm_mem_reg_init();
 
   get_buf_init();
-  nb_desc_init();
   rf_done_init();
   amo_res_init();
 
@@ -2226,11 +2152,6 @@ void chpl_comm_post_task_init(void)
   //
   while (polling_task_running == false)
     sched_yield();
-
-  //
-  // Initialize the caching layer, if it is active.
-  //
-  chpl_cache_init();
 }
 
 
@@ -3179,7 +3100,7 @@ void make_registered_heap(void)
   const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
   if (size > size_phys)
     size = size_phys;
-  
+
   //
   // On Gemini-based systems, if necessary reduce the heap size until
   // we can fit all the registered pages in the NIC TLB.  Otherwise,
@@ -3255,7 +3176,7 @@ void make_registered_heap(void)
 }
 
 
-static
+static inline
 size_t get_hugepage_size(void)
 {
   if (!hugepage_info_set
@@ -3338,7 +3259,7 @@ void SIGBUS_handler(int signo, siginfo_t *info, void *context)
   // count won't drop below the index of that region, because we can't
   // remove the region until after it's registered and we can't finish
   // registering it without faulting in all its pages.
-  // 
+  //
   // Also note that although we replicate the format of the "official"
   // message chpl_memhook_check_post() produces, we can't just call it
   // directly or use the same functions as it does, because they're not
@@ -3521,6 +3442,17 @@ size_t chpl_comm_impl_regMemAllocThreshold(void)
 static __thread uint64_t defaultInit_ts;
 #endif
 
+static pthread_once_t warned_out_of_mem_regions = PTHREAD_ONCE_INIT;
+static void issue_out_of_mem_regions_warning(void)
+{
+  char buf[200];
+  snprintf(buf, sizeof(buf),
+           "no more registered memory region table entries (max is %d).\n"
+           "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
+           max_mem_regions);
+  chpl_warning(buf, 0, 0);
+}
+
 void* chpl_comm_impl_regMemAlloc(size_t size,
                                  chpl_mem_descInt_t desc, int ln, int32_t fn)
 {
@@ -3539,15 +3471,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   if (atomic_fetch_sub_int_least32_t(&mreg_free_cnt, 1) < 1) {
     atomic_fetch_add_int_least32_t(&mreg_free_cnt, 1);
 
-    static atomic_int_least8_t spoke;
-    if (atomic_compare_exchange_strong_int_least8_t(&spoke, 0, 1)) {
-      char buf[200];
-      snprintf(buf, sizeof(buf),
-               "no more registered memory region table entries (max is %d).\n"
-               "         Change using CHPL_RT_COMM_UGNI_MAX_MEM_REGIONS.",
-               max_mem_regions);
-      chpl_warning(buf, 0, 0);
-    }
+    (void)pthread_once(&warned_out_of_mem_regions, issue_out_of_mem_regions_warning);
 
     DBG_P_LP(DBGF_MEMREG, "chpl_regMemAlloc(%#zx): out of table entries", size);
     return NULL;
@@ -3599,8 +3523,7 @@ void* chpl_comm_impl_regMemAlloc(size_t size,
   regMemUnlock();
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_regMemAlloc(%#" PRIx64 "): "
-           "mregs[%d] = %#" PRIx64 ", cnt %d",
+           "chpl_regMemAlloc(%#zx): mregs[%d] = %#" PRIx64 ", cnt %d",
            size, mr_i, mr->addr, (int) mem_regions->mreg_cnt);
 
 #ifdef PERFSTATS_TIME_ZERO_INIT
@@ -3633,7 +3556,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
                         "this isn't my memory");
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_impl_regMemPostAlloc(%p, %#" PRIx64 ")",
+           "chpl_comm_impl_regMemPostAlloc(%p, %#zx)",
            p, size);
 
   //
@@ -3673,7 +3596,7 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
   // the already-known range and the new count.  In general this will
   // include some new unregistered entries for which we have an address
   // but no length or MDH.  But the presence of those won't create
-  // confusion because the remote nodes won't by trying to address
+  // confusion because the remote nodes won't be trying to address
   // within them yet anyway, and later when we do register them we may
   // be able to send just the entries and not the count again.
   //
@@ -3702,6 +3625,144 @@ void chpl_comm_impl_regMemPostAlloc(void* p, size_t size)
 }
 
 
+void* chpl_comm_impl_regMemRealloc(void* p, size_t oldSize, size_t newSize,
+                                   chpl_mem_descInt_t desc,
+                                   int ln, int32_t fn)
+{
+  //
+  // If the old allocation isn't separately registered then we just
+  // return NULL without doing anything.  If it is registered and the
+  // new allocation will fit in the existing hugepages (smaller, or
+  // larger but not by enough to cross a hugepage boundary) then we
+  // return the old pointer.  Otherwise, we allocate anew and return
+  // that.  For the last two cases, we'll update and broadcast the
+  // table entry later, in ..._regMemPostRealloc().
+  //
+  if (get_hugepage_size() == 0)
+    return NULL;
+
+  PERFSTATS_INC(regMemRealloc_cnt);
+
+  //
+  // Is this memory in our table?
+  //
+  mem_region_t* mr;
+  int mr_i;
+  for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
+       mr_i >= 0 && (mr->addr != (uint64_t) p || mrtl_len(mr->len) != oldSize);
+       mr_i--, mr--)
+    ;
+
+  if (mr_i < 0)
+    return NULL;
+
+  assert(mrtl_isReg(mr->len));
+
+  //
+  // If the old and new allocations will fit in the same number of
+  // hugepages then we don't need to do an allocation (or copy).
+  // Otherwise, try to get the new, larger memory.
+  //
+  size_t oldHugeSize = ALIGN_UP(oldSize, get_hugepage_size());
+  size_t newHugeSize = ALIGN_UP(newSize, get_hugepage_size());
+  void* newp;
+  if (newHugeSize <= oldHugeSize) {
+    newp = p;
+  } else {
+    PERFSTATS_TSTAMP(alloc_ts);
+    newp = get_huge_pages(newHugeSize, GHP_DEFAULT);
+    PERFSTATS_ADD(regMem_alloc_nsecs, PERFSTATS_TELAPSED(alloc_ts));
+    if (newp == NULL) {
+      DBG_P_LP(DBGF_MEMREG, "chpl_regMemRealloc(%#zx): no hugepages", newSize);
+      return NULL;
+    }
+
+    //
+    // Copy the existing bytes from old to new memory.  If we're on
+    // a NUMA compute node this will result in locality that matches
+    // that of the calling thread.  That's not very good but we cannot
+    // do better in the runtime.  If it ever becomes an issue we might
+    // be able to do better in module code.
+    //
+    memcpy(newp, p, oldSize);
+  }
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_regMemRealloc(%p, %#zx, %#zx): %p",
+           p, oldSize, newSize, newp);
+
+  return newp;
+}
+
+
+void chpl_comm_impl_regMemPostRealloc(void* oldp, size_t oldSize,
+                                      void* newp, size_t newSize)
+{
+  mem_region_t* mr;
+  int mr_i;
+
+  PERFSTATS_INC(regMemPostRealloc_cnt);
+
+  if (get_hugepage_size() == 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostRealloc(): "
+                        "this isn't my memory");
+
+  DBG_P_LP(DBGF_MEMREG,
+           "chpl_comm_impl_regMemPostRealloc(%p, %#zx, %p, %#zx)",
+           oldp, oldSize, newp, newSize);
+
+  //
+  // Find the memory region table entry for this memory.
+  //
+  for (mr_i = mem_regions->mreg_cnt - 1, mr = &mem_regions->mregs[mr_i];
+       mr_i >= 0 &&
+         (mr->addr != (uint64_t) oldp || mrtl_len(mr->len) != oldSize);
+       mr_i--, mr--)
+    ;
+
+  if (mr_i < 0)
+    CHPL_INTERNAL_ERROR("chpl_comm_impl_regMemPostRealloc(): "
+                        "can't find the memory");
+
+  assert(mrtl_isReg(mr->len));
+
+  //
+  // If the reallocation didn't fit in the same hugepages, then we have
+  // to de-register and free the old memory and register the new.
+  //
+  if (newp != oldp) {
+    PERFSTATS_TSTAMP(dereg_ts);
+    deregister_mem_region(mr);
+    PERFSTATS_ADD(regMem_dereg_nsecs, PERFSTATS_TELAPSED(dereg_ts));
+
+    PERFSTATS_TSTAMP(free_ts);
+    free_huge_pages(oldp);
+    PERFSTATS_ADD(regMem_free_nsecs, PERFSTATS_TELAPSED(free_ts));
+
+    mr->addr = (uint64_t) (uintptr_t) newp;
+
+    PERFSTATS_TSTAMP(reg_ts);
+    (void) register_mem_region(mr->addr, newSize, &mr->mdh,
+                               false /*allow_failure*/);
+    PERFSTATS_ADD(regMem_reg_nsecs, PERFSTATS_TELAPSED(reg_ts));
+  }
+
+  mr->len = mrtl_encode(newSize, true);
+
+  //
+  // Broadcast an update to the affected table entry on all nodes.  We
+  // don't have to hold the lock while we do this.  Because this entry
+  // must be within the already-known range, nobody else will be
+  // sending it along with some other update of their own.
+  //
+  DBG_P_L(DBGF_MEMREG_BCAST,
+          "chpl_comm_impl_regMemPostRealloc(): entry %d, bcast",
+          mr_i);
+  PERFSTATS_INC(regMem_bCast_cnt);
+  regMemBroadcast(mr_i, 1, false /*send_mreg_cnt*/);
+}
+
+
 chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
 {
   mem_region_t* mr;
@@ -3726,7 +3787,7 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size)
   PERFSTATS_INC(regMemFree_cnt);
 
   DBG_P_LP(DBGF_MEMREG,
-           "chpl_comm_impl_regMemFree(%p, %#" PRIx64 "): [%d]",
+           "chpl_comm_impl_regMemFree(%p, %#zx): [%d]",
            p, size, mr_i);
 
   //
@@ -3904,7 +3965,7 @@ wide_ptr_t* chpl_comm_broadcast_global_vars_helper() {
 }
 
 
-void chpl_comm_broadcast_private(int id, size_t size, int32_t tid)
+void chpl_comm_broadcast_private(int id, size_t size)
 {
   int i;
 
@@ -4023,18 +4084,11 @@ void chpl_comm_pre_task_exit(int all)
 
   if (all) {
     if (chpl_nodeID == 0) {
-      int i;
-      for (i = 0; i < chpl_numNodes; i++) {
-        if (i != chpl_nodeID) {
-          fork_shutdown(i);
-        }
+      for (int i = 1; i < chpl_numNodes; i++) {
+        fork_shutdown(i);
       }
     } else {
-      pthread_mutex_lock(&shutdown_mutex);
-      while (!can_shutdown) {
-        pthread_cond_wait(&shutdown_cond, &shutdown_mutex);
-      }
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_wait_for_shutdown();
     }
 
     chpl_comm_barrier("chpl_comm_pre_task_exit");
@@ -4163,52 +4217,28 @@ void rf_handler(gni_cq_entry_t* ev)
   switch (f->b.op) {
   case fork_op_small_call:
     DBG_P_LP(DBGF_RF, "forkFrom(%d) %s",
-             (int) req_li, sprintf_rf_req(-1, f)); 
+             (int) req_li, sprintf_rf_req(-1, f));
     {
-      fork_small_call_info_t* f_c = (fork_small_call_info_t*) f;
-      
-      // Reconstruct the chpl_comm_on_bundle_t and copy the arguments to it
-      fork_small_call_task_t space;
-      chpl_comm_on_bundle_t* on_bundle = &space.bundle;
+      chpl_comm_on_bundle_t* f_c = (chpl_comm_on_bundle_t*) f;
 
-      size_t payload_size = f_c->payload_size;
-      size_t bundle_size;
-      chpl_fn_p fn;
-
-      // Copy task state (e.g. serial state) to space.
-      on_bundle->task_bundle.state = f_c->state;
-
-      // Copy the payload to space.
-      // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
-      // and it refers to the memory just after that structure.
-      // Also note that we could copy to space.buf directly, but
-      // it's possible for the C compiler to add padding before the buf field.
-      memcpy(on_bundle + 1, f_c + 1, payload_size);
-      bundle_size = sizeof(chpl_comm_on_bundle_t) + payload_size;
-
-      if (f_c->fast) {
-        chpl_ftable_call(f_c->fid, on_bundle);
-        indicate_done(&f_c->b);
+      if (f_c->comm.fast) {
+        chpl_ftable_call(f_c->comm.fid, f);
+        indicate_done2(f_c->comm.caller, (rf_done_t*) f_c->comm.rf_done);
         // doesn't call release_req_buf, because that
         // is handled on the sender side for fast forks
-      }
-      else {
-        if (f_c->blocking)
+      } else {
+        chpl_fn_p fn;
+
+        if (f_c->comm.rf_done != NULL) {
           fn = (chpl_fn_p) fork_call_wrapper_blocking;
-        else
-          fn = (chpl_fn_p) chpl_ftable[f_c->fid];
-
-        // Save fid, caller, ack so the wrapper function can use these.
-        // these are saved in the comm portion of the on_bundle.
-        on_bundle->comm.fid = f_c->fid;
-        on_bundle->comm.caller = f_c->b.caller;
-        on_bundle->comm.rf_done = f_c->b.rf_done;
-
-        chpl_task_startMovedTask(f_c->fid,
+        } else {
+          fn = (chpl_fn_p) chpl_ftable[f_c->comm.fid];
+        }
+        chpl_task_startMovedTask(f_c->comm.fid,
                                  fn,
-                                 chpl_comm_on_bundle_task_bundle(on_bundle),
-                                 bundle_size,
-                                 f_c->subloc,
+                                 f_c,
+                                 f_c->comm.size,
+                                 f_c->comm.subloc,
                                  chpl_nullTaskID);
 
         release_req_buf(req_li, req_cdi, req_rbi);
@@ -4218,26 +4248,15 @@ void rf_handler(gni_cq_entry_t* ev)
 
   case fork_op_large_call:
     DBG_P_LP(DBGF_RF, "forkFrom(%d) %s",
-             (int) req_li, sprintf_rf_req(-1, f)); 
+             (int) req_li, sprintf_rf_req(-1, f));
+
     {
-      fork_large_call_info_t* f_lc = (fork_large_call_info_t*) f;
-      fork_small_call_info_t* f_c = &f_lc->b;
-      
-      // Create a task bundle to complete a large call
-      fork_large_call_task_t bundle;
-
-      // Copy task state (e.g. serial state) to space.
-      bundle.task.state = f_c->state;
-
-      // copy the fork_large_call_info_t to it
-      bundle.large = *f_lc;
-
-      chpl_task_startMovedTask(f_c->fid,
+      fork_large_call_info_t* lc = (fork_large_call_info_t*) f;
+      lc->hdr.kind = fork_op_small_call;  // was large_call, to direct us here
+      chpl_task_startMovedTask(FID_NONE,
                                (chpl_fn_p) fork_call_wrapper_large,
-                               &bundle.task, sizeof(fork_large_call_task_t),
-                               f_c->subloc,
-                               chpl_nullTaskID);
-
+                               lc, sizeof(*lc),
+                               lc->hdr.comm.subloc, chpl_nullTaskID);
       release_req_buf(req_li, req_cdi, req_rbi);
     }
     break;
@@ -4260,11 +4279,11 @@ void rf_handler(gni_cq_entry_t* ev)
              (int) req_li, sprintf_rf_req((int) req_li, f));
 
     {
-      fork_xfer_task_t bundle = {.x = f->x};
-
+      fork_xfer_task_t bundle = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
+                                  .x = f->x};
       release_req_buf(req_li, req_cdi, req_rbi);
       chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) fork_get_wrapper,
-                               &bundle.task, sizeof(fork_xfer_task_t),
+                               &bundle, sizeof(bundle),
                                c_sublocid_any, chpl_nullTaskID);
     }
     break;
@@ -4297,10 +4316,7 @@ void rf_handler(gni_cq_entry_t* ev)
 
     {
       release_req_buf(req_li, req_cdi, req_rbi);
-      pthread_mutex_lock(&shutdown_mutex);
-      can_shutdown = true;
-      pthread_cond_signal(&shutdown_cond);
-      pthread_mutex_unlock(&shutdown_mutex);
+      chpl_signal_shutdown();
     }
     break;
 
@@ -4310,75 +4326,65 @@ void rf_handler(gni_cq_entry_t* ev)
   }
 }
 
+
 static
 void fork_call_wrapper_blocking(chpl_comm_on_bundle_t* f)
 {
-  // Call the on body 
+  // Call the on body
   chpl_ftable_call(f->comm.fid, f);
-
-  //
-  // In the blocking case, let the caller know we're done.  It will free
-  // the copy of the argument it made on our behalf.  In the nonblocking
-  // case, we have to do a remote fork back to the initiating locale to
-  // free that argument ourselves.
-  //
-
   indicate_done2(f->comm.caller, (rf_done_t*) f->comm.rf_done);
 }
-  
+
+
 static
-void fork_call_wrapper_large(fork_large_call_task_t* f)
+void fork_call_wrapper_large(fork_large_call_info_t* lc)
 {
-  fork_large_call_info_t* lc = &f->large;
-  int caller;
-  chpl_comm_on_bundle_t* bundle;
-  chpl_bool blocking;
-  size_t arg_size;
-  void* remote_arg = NULL;
-  rf_done_t* rf_done;
- 
-  blocking = lc->b.blocking;
-  caller   = lc->b.b.caller;
-  rf_done  = lc->b.b.rf_done;
+  chpl_comm_bundleData_t* comm = &lc->hdr.comm;
+  int caller = comm->caller;
+  chpl_bool blocking = (comm->rf_done != NULL);
 
-  remote_arg = lc->arg;
-  arg_size   = lc->arg_size;
+  assert(lc->p_payload);
+  assert(comm->size > 0);
 
-  assert(remote_arg);
-  assert(arg_size > 0);
+  //
+  // TODO: We could stack-allocate "bundle" here, if it was small enough
+  //       (TBD) not to create the potential for stack overflow.  On an
+  //       XC the network is fast enough that saving the dynamic alloc
+  //       should be performance-visible.
+  //
 
-  // Allocate a buffer to hold the complete on bundle
-  bundle = chpl_mem_alloc(arg_size, CHPL_RT_MD_COMM_FRK_RCV_INFO, 0, 0);
+  // Build a new bundle out of the header we got in the request to us
+  // plus the payload copied from the initiating side.
+  chpl_comm_on_bundle_t* bundle = chpl_mem_alloc(comm->size,
+                                                 CHPL_RT_MD_COMM_FRK_RCV_INFO,
+                                                 0, 0);
+  *bundle = lc->hdr;
 
-  // Get the complete on-bundle from the initiating side.
-  do_remote_get(bundle, caller, remote_arg, arg_size, may_proxy_true);
+  size_t payload_size = comm->size - offsetof(chpl_comm_on_bundle_t, payload);
+  do_remote_get(&bundle->payload, caller, lc->p_payload, payload_size,
+                may_proxy_true);
 
-  // In the large nonblocking case, we have to do a remote fork back to the
-  // initiating locale to free that argument ourselves. This can be
-  // done before the user code starts running in order to reduce
-  // memory pressure.
+  // In the nonblocking case, the "original" payload we just retrieved
+  // is actually a copy on the initiating node, and we need to do a
+  // remote fork back there to free it.  It might also be a copy in
+  // the blocking case, but if so that's handled by the initiator.
   if (!blocking) {
-    fork_free(caller, remote_arg);
+    fork_free(caller, lc->p_payload);
   }
-  
-  // Call the on body 
-  chpl_ftable_call(lc->b.fid, bundle);
 
-  // Free the bundle we just allocated. 
+  // Call the on body
+  chpl_ftable_call(bundle->comm.fid, bundle);
+
+  // Free the bundle we just allocated.
   chpl_mem_free(bundle, 0, 0);
 
-  //
-  // In the blocking case, let the caller know we're done.  It will free
-  // the copy of the argument it made on our behalf.  In the nonblocking
-  // case, we have to do a remote fork back to the initiating locale to
-  // free that argument ourselves.
-  //
   if (blocking) {
     // Blocking forks need to notify the caller that the
     // request has completed.
-    indicate_done2(caller, rf_done);
+    indicate_done2(caller, comm->rf_done);
   }
 }
+
 
 static
 void fork_get_wrapper(fork_xfer_task_t* f)
@@ -4413,8 +4419,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
   //
   // Here we implement AMOs which the NIC cannot do, either because
   // the target object is not in registered memory or because the NIC
-  // lacks native support.  For more information, see the comment
-  // before chpl_comm_atomic_store_int32().
+  // lacks native support.
   //
   switch (cmd) {
   case put_32:
@@ -4445,7 +4450,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case xchg_32:
+  case swap_32:
     {
       int_least32_t my_res;
       my_res = atomic_exchange_int_least32_t((atomic_int_least32_t*) obj,
@@ -4455,7 +4460,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case xchg_64:
+  case swap_64:
     {
       int_least64_t my_res;
       my_res = atomic_exchange_int_least64_t((atomic_int_least64_t*) obj,
@@ -4465,41 +4470,27 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     }
     break;
 
-  case cmpxchg_32:
+  case cswap_32:
     {
-      chpl_bool32 my_res;
-      my_res = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj,
-                  *(int_least32_t*) opnd1,
-                  *(int_least32_t*) opnd2);
-      memcpy(res, &my_res, sizeof(my_res));
-      res_size = sizeof(my_res);
+      int_least32_t opnd1Val = *(int_least32_t*) opnd1;
+      (void) atomic_compare_exchange_strong_int_least32_t
+               ((atomic_int_least32_t*) obj,
+                &opnd1Val,
+                *(int_least32_t*) opnd2);
+      memcpy(res, &opnd1Val, sizeof(opnd1Val));
+      res_size = sizeof(opnd1Val);
     }
     break;
 
-  case cmpxchg_64:
-    //
-    // If the object is not in memory registered with the NIC, use the
-    // processor.  Otherwise, since the other 64-bit AMOs are done on
-    // the NIC, for coherence do this one on the NIC as well.
-    //
+  case cswap_64:
     {
-      chpl_bool32 my_res;
-      mem_region_t* mr;
-      if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        my_res = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj,
-                    *(int_least64_t*) opnd1,
-                    *(int_least64_t*) opnd2);
-      }
-      else {
-        int_least64_t nic_res;
-        do_nic_amo(opnd1, opnd2, chpl_nodeID, obj, sizeof(nic_res),
-                   amo_cmd_2_nic_op(cmpxchg_64, 1), &nic_res, mr);
-        my_res = (nic_res == *(int_least64_t*) opnd1) ? true : false;
-      }
-      memcpy(res, &my_res, sizeof(my_res));
-      res_size = sizeof(my_res);
+      int_least64_t opnd1Val = *(int_least64_t*) opnd1;
+      (void) atomic_compare_exchange_strong_int_least64_t
+               ((atomic_int_least64_t*) obj,
+                &opnd1Val,
+                *(int_least64_t*) opnd2);
+      memcpy(res, &opnd1Val, sizeof(opnd1Val));
+      res_size = sizeof(opnd1Val);
     }
     break;
 
@@ -4536,26 +4527,7 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     break;
 
   case add_r32:
-    //
-    // Emulate 32-bit real add using compare-exchange.
-    //
-    {
-      int_least32_t expected;
-      int_least32_t desired;
-      chpl_bool32 done;
-
-      do {
-        expected = atomic_load_int_least32_t((atomic_int_least32_t*) obj);
-        *(float*) &desired  = *(float*) &expected + *(float*) opnd1;
-        done = atomic_compare_exchange_strong_int_least32_t
-                 ((atomic_int_least32_t*) obj, expected, desired);
-      } while (!done);
-
-      if (res != NULL) {
-        memcpy(res, &expected, sizeof(expected));
-        res_size = sizeof(expected);
-      }
-    }
+    CPU_INT_ARITH_AMO(add, _real32);
     break;
 
   case add_r64:
@@ -4566,22 +4538,13 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
     // coherence do this one on the NIC as well.
     //
     {
-      int_least64_t expected;
-      int_least64_t desired;
       mem_region_t* mr;
 
       if ((mr = mreg_for_local_addr(obj)) == NULL) {
-        chpl_bool32 done;
-
-        do {
-          expected =
-            atomic_load_int_least64_t((atomic_int_least64_t*) obj);
-          *(double*) &desired = *(double*) &expected + *(double*) opnd1;
-          done = atomic_compare_exchange_strong_int_least64_t
-                   ((atomic_int_least64_t*) obj, expected, desired);
-        } while (!done);
-      }
-      else {
+        CPU_INT_ARITH_AMO(add, _real64);
+      } else {
+        int_least64_t expected;
+        int_least64_t desired;
         int_least64_t nic_res;
 
         do {
@@ -4589,15 +4552,16 @@ size_t do_amo_on_cpu(fork_amo_cmd_t cmd,
                         may_proxy_false);
           *(double*) &desired = *(double*) &expected + *(double*) opnd1;
           do_nic_amo(&expected, &desired, chpl_nodeID, obj,
-                     sizeof(nic_res), amo_cmd_2_nic_op(cmpxchg_64, 1),
+                     sizeof(nic_res), amo_cmd_2_nic_op(cswap_64, 1),
                      &nic_res, mr);
         } while (nic_res != expected);
+
+        if (res != NULL) {
+          memcpy(res, &expected, sizeof(expected));
+          res_size = sizeof(expected);
+        }
       }
 
-      if (res != NULL) {
-        memcpy(res, &expected, sizeof(expected));
-        res_size = sizeof(expected);
-      }
     }
     break;
 
@@ -4743,131 +4707,6 @@ void send_polling_response(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   PERFSTATS_INC(put_cnt);
   PERFSTATS_ADD(put_byte_cnt, size);
   (void) post_fma(locale, post_desc);
-}
-
-
-//
-// Non-blocking PUT/GET descriptor management
-//
-
-static
-inline
-nb_desc_idx_t nb_desc_idx_encode(int i, int j)
-{
-  return (nb_desc_idx_t) (i << 8 | j);
-}
-
-
-static
-inline
-void nb_desc_idx_decode(int* ip, int* jp, nb_desc_idx_t nbdi)
-{
-  *ip = nbdi >> 8;
-  *jp = nbdi & 0xff;
-}
-
-
-static
-inline
-nb_desc_t* nb_desc_idx_2_ptr(nb_desc_idx_t nbdi)
-{
-  int i, j;
-  nb_desc_idx_decode(&i, &j, nbdi);
-  return &nb_desc_pool[i][j];
-}
-
-
-static
-inline
-chpl_comm_nb_handle_t nb_desc_idx_2_handle(nb_desc_idx_t nbdi)
-{
-  //
-  // We offset j by 1 in the external handle so that when i==0, j==0
-  // it doesn't end up producing a NULL handle pointer.
-  //
-  return (chpl_comm_nb_handle_t) ((intptr_t) nbdi + 1);
-}
-
-
-static
-inline
-nb_desc_idx_t nb_desc_handle_2_idx(chpl_comm_nb_handle_t h)
-{
-  //
-  // We offset j by 1 in the external handle so that when i==0, j==0
-  // it doesn't end up producing a NULL handle pointer.
-  //
-  return (nb_desc_idx_t) ((intptr_t) h - 1);
-}
-
-
-static
-void nb_desc_init(void)
-{
-  int i, j;
-
-  if (NB_DESC_NUM_POOLS < comm_dom_cnt)
-    chpl_warning("(NB_DESC_NUM_POOLS < comm_dom_cnt) may lead to hangs", 0, 0);
-
-  for (i = 0; i < NB_DESC_NUM_POOLS; i++) {
-    for (j = 0; j < NB_DESC_NUM_PER_POOL - 1; j++) {
-      atomic_init_bool(&nb_desc_pool[i][j].done, false);
-      nb_desc_pool[i][j].next = j + 1;
-    }
-    nb_desc_pool[i][j].next = -1;
-
-    mpool_idx_init(&nb_desc_pool_head[i], 0);
-
-    atomic_init_bool(&nb_desc_pool_lock[i], false);
-  }
-
-  mpool_idx_init(&nb_desc_pool_i, 0);
-}
-
-
-static
-inline
-nb_desc_idx_t nb_desc_alloc(void)
-{
-  int i, j;
-  nb_desc_idx_t nbdi = 0;
-
-  //
-  // Cycle through the pools and find one that contains a free nb_desc
-  // flag we can use.  Just keep trying until we find one.
-  //
-  for (i = nb_desc_next_pool_i(), j = -1;
-       j < 0;
-       i = (i + 1) % NB_DESC_NUM_POOLS) {
-    if (mpool_idx_load(&nb_desc_pool_head[i]) >= 0 &&
-        !atomic_exchange_bool(&nb_desc_pool_lock[i], true)) {
-      if ((j = mpool_idx_load(&nb_desc_pool_head[i])) >= 0) {
-        nbdi = nb_desc_idx_encode(i, j);
-        mpool_idx_store(&nb_desc_pool_head[i], nb_desc_pool[i][j].next);
-      }
-
-      atomic_store_bool(&nb_desc_pool_lock[i], false);
-    }
-  }
-
-  return nbdi;
-}
-
-
-static
-inline
-void nb_desc_free(nb_desc_idx_t nbdi)
-{
-  int i, j;
-
-  //
-  // Add this flag back to its pool.
-  //
-  nb_desc_idx_decode(&i, &j, nbdi);
-  while (atomic_exchange_bool(&nb_desc_pool_lock[i], true))
-    ;
-  nb_desc_pool[i][j].next = mpool_idx_exchange(&nb_desc_pool_head[i], j);
-  atomic_store_bool(&nb_desc_pool_lock[i], false);
 }
 
 
@@ -5286,8 +5125,7 @@ void consume_all_outstanding_cq_events(int cdi)
 
 
 void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t typeIndex,
-                   int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5306,11 +5144,11 @@ void chpl_comm_put(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("put", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   do_remote_put(addr, locale, raddr, size, NULL, may_proxy_true);
@@ -5369,7 +5207,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
       if (size <= gbp_max_size) {
         //
         // The transfer will fit in a single trampoline buffer.
-        // 
+        //
         src_addr_xmit = get_buf_alloc(size);
         memcpy(src_addr_xmit, src_addr, size);
         fork_get(src_addr_xmit, locale, tgt_addr, size);
@@ -5379,7 +5217,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
         //
         // The transfer is larger than the largest trampoline buffer.
         // Do it in pieces.
-        // 
+        //
         src_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
@@ -5406,6 +5244,7 @@ void do_remote_put(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_FMA_PUT;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -5498,7 +5337,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
   //
   int vi, ci = -1;
   mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
+  gni_post_descriptor_t pd = { 0 };
   gni_ct_put_post_descriptor_t pdc[MAX_CHAINED_PUT_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
@@ -5536,6 +5375,7 @@ void do_remote_put_V(int v_len, void** src_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
+      pdc[ci]                 = (gni_ct_put_post_descriptor_t) { 0 };
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) src_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) tgt_addr_v[vi];
@@ -5610,7 +5450,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
   int vi, ci = -1;
   mem_region_t* local_mr;
   mem_region_t* remote_mr;
-  gni_post_descriptor_t pd;
+  gni_post_descriptor_t pd = { 0 };
   gni_ct_get_post_descriptor_t pdc[MAX_CHAINED_GET_LEN - 1];
 
   for (vi = 0, ci = -1; vi < v_len; vi++) {
@@ -5651,6 +5491,7 @@ void do_remote_get_V(int v_len, void** tgt_addr_v, c_nodeid_t* locale_v,
       else
         pdc[ci - 1].next_descr = &pdc[ci];
 
+      pdc[ci]                 = (gni_ct_get_post_descriptor_t) { 0 };
       pdc[ci].next_descr      = NULL;
       pdc[ci].local_addr      = (uint64_t) (intptr_t) tgt_addr_v[vi];
       pdc[ci].remote_addr     = (uint64_t) (intptr_t) src_addr_v[vi];
@@ -5720,6 +5561,7 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
   //
   // Build up the base post descriptor
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.next_descr      = NULL;
   post_desc.type            = GNI_POST_AMO;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
@@ -5770,8 +5612,8 @@ void do_nic_amo_nf_V(int v_len, uint64_t* opnd1_v, c_nodeid_t* locale_v,
 
 void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
                                 c_nodeid_t src_locale, void* src_addr,
-                                size_t size, int32_t typeIndex,
-                                int32_t commID, int ln, int32_t fn)
+                                size_t size, int32_t commID,
+                                int ln, int32_t fn)
 {
   assert(dst_addr != NULL);
   assert(src_addr != NULL);
@@ -5785,30 +5627,29 @@ void chpl_comm_getput_unordered(c_nodeid_t dst_locale, void* dst_addr,
   }
 
   if (dst_locale == chpl_nodeID) {
-    chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, typeIndex, commID, ln, fn);
+    chpl_comm_get_unordered(dst_addr, src_locale, src_addr, size, commID, ln, fn);
   } else if (src_locale == chpl_nodeID) {
-    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+    chpl_comm_put_unordered(src_addr, dst_locale, dst_addr, size, commID, ln, fn);
   } else {
     // TODO use unordered ops in this case? Would have to ensure we always
     // flush GET buffer before the PUT buffer
     if (size <= MAX_UNORDERED_TRANS_SZ) {
       char buf[MAX_UNORDERED_TRANS_SZ];
-      chpl_comm_get(buf, src_locale, src_addr, size, typeIndex, commID, ln, fn);
-      chpl_comm_put(buf, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+      chpl_comm_get(buf, src_locale, src_addr, size, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, commID, ln, fn);
     } else {
       // Note, we do not expect this case to trigger, but if it does we may
       // want to do on-stmt to src locale and then transfer
       char* buf = chpl_mem_alloc(size, CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0);
-      chpl_comm_get(buf, src_locale, src_addr, size, typeIndex, commID, ln, fn);
-      chpl_comm_put(buf, dst_locale, dst_addr, size, typeIndex, commID, ln, fn);
+      chpl_comm_get(buf, src_locale, src_addr, size, commID, ln, fn);
+      chpl_comm_put(buf, dst_locale, dst_addr, size, commID, ln, fn);
       chpl_mem_free(buf, 0, 0);
     }
   }
 }
 
 void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t typeIndex, int32_t commID,
-                             int ln, int32_t fn)
+                             size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_unordered(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5827,19 +5668,18 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered get", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   do_remote_get_buff(addr, locale, raddr, size, may_proxy_true);
 }
 
 void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
-                             size_t size, int32_t typeIndex,
-                             int32_t commID, int ln, int32_t fn)
+                             size_t size, int32_t commID, int ln, int32_t fn)
 
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_unordered(%p, %d, %p, %zd)",
@@ -5859,11 +5699,11 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t locale, void* raddr,
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put)) {
       chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_put, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("unordered put", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(put);
 
   do_remote_put_buff(addr, locale, raddr, size, may_proxy_true);
@@ -5875,8 +5715,7 @@ void chpl_comm_getput_unordered_task_fence(void) {
 
 
 void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
-                   size_t size, int32_t typeIndex,
-                   int32_t commID, int ln, int32_t fn)
+                   size_t size, int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
@@ -5893,13 +5732,13 @@ void chpl_comm_get(void* addr, c_nodeid_t locale, void* raddr,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_get, chpl_nodeID, locale,
-         .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
+         .iu.comm={addr, raddr, size, commID, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
   }
 
-  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("get", locale, size, ln, fn, commID);
   chpl_comm_diags_incr(get);
 
   do_remote_get(addr, locale, raddr, size, may_proxy_true);
@@ -5936,7 +5775,7 @@ void do_remote_put_buff(void* src_addr, c_nodeid_t locale, void* tgt_addr,
   remote_mr = mreg_for_remote_addr(tgt_addr, locale);
   info = task_local_buff_acquire(put_buff);
 
-  if (remote_mr == NULL || info == NULL || size > 8) {
+  if (remote_mr == NULL || info == NULL || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_put(src_addr, locale, tgt_addr, size, remote_mr, may_proxy);
     return;
   }
@@ -6000,11 +5839,11 @@ void do_remote_get_buff(void* tgt_addr, c_nodeid_t locale, void* src_addr,
   if (local_mr == NULL || remote_mr == NULL || info == NULL ||
       !IS_ALIGNED_32((size_t) (intptr_t) src_addr) ||
       !IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) ||
-      !IS_ALIGNED_32(size)) {
+      !IS_ALIGNED_32(size) || size > MAX_UNORDERED_TRANS_SZ) {
     do_remote_get(tgt_addr, locale, src_addr, size, may_proxy);
     return;
   }
- 
+
   int vi = info->vi;
   info->tgt_addr_v[vi] = tgt_addr;
   info->locale_v[vi] = locale;
@@ -6077,7 +5916,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
         //
         // The transfer is larger than the largest trampoline buffer.
         // Do it in pieces.
-        // 
+        //
         tgt_addr_xmit = get_buf_alloc(gbp_max_size);
 
         do {
@@ -6142,13 +5981,11 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     return;
   }
 
-  local_mr = gnr_mreg;
-
   if (xmit_size <= gbp_max_size) {
     //
     // The transfer will fit in a single trampoline buffer.
     //
-    tgt_addr_xmit = get_buf_alloc(size);
+    tgt_addr_xmit = get_buf_alloc(xmit_size);
 
     do_nic_get(tgt_addr_xmit, locale, remote_mr,
                src_addr_xmit, xmit_size, gnr_mreg);
@@ -6172,21 +6009,39 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
     xmit_size -= gbp_max_size;
 
-    // The middle chunks are all full ones.
-    while (xmit_size > gbp_max_size) {
-      do_nic_get(tgt_addr_xmit, locale, remote_mr,
-                 src_addr_xmit, gbp_max_size, gnr_mreg);
-      memcpy(tgt_addr, tgt_addr_xmit, xmit_size);
-      tgt_addr = (char*) tgt_addr + gbp_max_size;
-      src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
-      xmit_size -= gbp_max_size;
+    // Peeling off the remote source misalignment allows us to do a single GET
+    // for the middle chunk on Aries, and if the local target had the same
+    // misalignment we can do this on Gemini too. PostFMA/PostDMA docs:
+    //   "On Gemini systems, GETs require 4-byte alignment for local address,
+    //   remote address, and the length. Aries systems differ in that GETs do
+    //   not require a 4-byte aligned local address."
+    if (local_mr != NULL &&
+       (IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) || nic_type == GNI_DEVICE_ARIES) &&
+        xmit_size > gbp_max_size) {
+      size_t large_xmit_size = ALIGN_32_DN(xmit_size);
+      do_nic_get(tgt_addr, locale, remote_mr, src_addr_xmit, large_xmit_size, local_mr);
+      tgt_addr = (char*) tgt_addr + large_xmit_size;
+      src_addr_xmit = (char*) src_addr_xmit + large_xmit_size;
+      xmit_size -= large_xmit_size;
+    } else {
+      // The middle chunks are all full ones.
+      while (xmit_size > gbp_max_size) {
+        do_nic_get(tgt_addr_xmit, locale, remote_mr,
+                   src_addr_xmit, gbp_max_size, gnr_mreg);
+        memcpy(tgt_addr, tgt_addr_xmit, gbp_max_size);
+        tgt_addr = (char*) tgt_addr + gbp_max_size;
+        src_addr_xmit = (char*) src_addr_xmit + gbp_max_size;
+        xmit_size -= gbp_max_size;
+      }
     }
 
     // In the last chunk chunk we handle length misalignment.
-    do_nic_get(tgt_addr_xmit, locale, remote_mr,
-               src_addr_xmit, xmit_size, gnr_mreg);
-    memcpy(tgt_addr, tgt_addr_xmit, (size + src_addr_xmit_off) % gbp_max_size);
+    if (xmit_size > 0) {
+      do_nic_get(tgt_addr_xmit, locale, remote_mr,
+                 src_addr_xmit, xmit_size, gnr_mreg);
+      memcpy(tgt_addr, tgt_addr_xmit, (size + src_addr_xmit_off) % gbp_max_size);
 
+    }
     get_buf_free(tgt_addr_xmit);
   }
 }
@@ -6208,6 +6063,7 @@ void do_nic_get(void* tgt_addr, c_nodeid_t locale, mem_region_t* remote_mr,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_FMA_GET;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -6286,7 +6142,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t dstlocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(put_strd_cnt);
   put_strd_common(dstaddr_arg, dststrides,
@@ -6294,7 +6150,7 @@ void chpl_comm_put_strd(void* dstaddr_arg, size_t* dststrides,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   strd_maxHandles, local_yield,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -6302,7 +6158,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                         int32_t srclocale,
                         void* srcaddr_arg, size_t* srcstrides,
                         size_t* count, int32_t stridelevels, size_t elemSize,
-                        int32_t typeIndex, int32_t commID, int ln, int32_t fn)
+                        int32_t commID, int ln, int32_t fn)
 {
   PERFSTATS_INC(get_strd_cnt);
   get_strd_common(dstaddr_arg, dststrides,
@@ -6310,7 +6166,7 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
                   srcaddr_arg, srcstrides,
                   count, stridelevels, elemSize,
                   strd_maxHandles, local_yield,
-                  typeIndex, commID, ln, fn);
+                  commID, ln, fn);
 }
 
 
@@ -6319,148 +6175,26 @@ void chpl_comm_get_strd(void* dstaddr_arg, size_t* dststrides,
 //
 chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
-  mem_region_t*          local_mr;
-  mem_region_t*          remote_mr;
-  nb_desc_idx_t          nbdi;
-  nb_desc_t*             nbdp;
-  gni_post_descriptor_t* post_desc;
-  chpl_bool              do_rdma = false;
 
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_get_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
 
-  assert(addr != NULL);
-  assert(raddr != NULL);
-  if (size == 0)
-    return NULL;
-
-  if (locale < 0 || locale >= chpl_numNodes)
-    CHPL_INTERNAL_ERROR("chpl_comm_get_nb(): remote locale out of range");
-
-  if (locale == chpl_nodeID) {
-    memmove(addr, raddr, size);
-    return NULL;
-  }
-
-  // Communications callback support
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_get_nb)) {
-    chpl_comm_cb_info_t cb_data = 
-      {chpl_comm_cb_event_kind_get_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-
-  chpl_comm_diags_verbose_rdma("non-blocking get", locale, size, ln, fn);
-  chpl_comm_diags_incr(get_nb);
-
-  //
-  // For now, if the local address isn't in a memory region known to the
-  // NIC, or if they give us an unaligned address or length, or if the
-  // remote address isn't in NIC-registered memory, or if the size is
-  // larger than the maximum transaction size, do a blocking GET.
-  // Eventually it might be worthwhile to do a nonblocking solution if
-  // we can.
-  //
-  if ((local_mr = mreg_for_local_addr(addr)) == NULL
-      || !IS_ALIGNED_32((size_t) (intptr_t) addr)
-      || !IS_ALIGNED_32((size_t) (intptr_t) raddr)
-      || !IS_ALIGNED_32(size)
-      || (remote_mr = mreg_for_remote_addr(raddr, locale)) == NULL
-      || size > MAX_RDMA_TRANS_SZ) {
-    PERFSTATS_INC(get_nb_b_cnt);
-    do_remote_get(addr, locale, raddr, size, may_proxy_true);
-    return NULL;
-  }
-
-  //
-  // Get a nonblocking completion descriptor, and fill in the POST
-  // descriptor within it.
-  //
-  // When we initiate a non-blocking GET the post_id of the reference
-  // is the address of the "done" flag in the NB descriptor.  When the
-  // reference completes we use that post_id to set the flag.  The
-  // POST descriptor has to exist all the way from the time the POST
-  // is done until the matching GNI_CqGetCompleted() call, so that we
-  // can pull the post_id out of it in order to record the completion.
-  // Therefore it, too, is stored in the NB descriptor.  The returned
-  // handle is a pointer to the descriptor itself, so that we can poll
-  // the right CQ when testing for the completion event.
-  //
-  nbdi = nb_desc_alloc();
-  nbdp = nb_desc_idx_2_ptr(nbdi);
-  post_desc = &nbdp->post_desc;
-  atomic_store_bool(&nbdp->done, false);
-
-  post_desc->post_id         = (uint64_t) (intptr_t) &nbdp->done;
-  post_desc->type            = GNI_POST_FMA_GET;
-  post_desc->cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
-  post_desc->dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
-  post_desc->rdma_mode       = 0;
-  post_desc->src_cq_hndl     = 0;
-
-  post_desc->local_addr      = (uint64_t) (intptr_t) addr;
-  post_desc->local_mem_hndl  = local_mr->mdh;
-  post_desc->remote_addr     = (uint64_t) (intptr_t) raddr;
-  post_desc->remote_mem_hndl = remote_mr->mdh;
-  post_desc->length          = size;
-
-  //
-  // If the GET size merits RDMA do an RDMA get instead of FMA
-  //
-  if (size >= rdma_threshold) {
-    do_rdma = true;
-    post_desc->type = GNI_POST_RDMA_GET;
-  }
-
-  //
-  // Initiate the transaction.  Don't wait for it to complete.
-  //
-  PERFSTATS_INC(get_nb_cnt);
-  PERFSTATS_ADD(get_byte_cnt, size);
-
-  if (do_rdma) {
-    nbdp->cdi = post_rdma(locale, post_desc);
-  } else {
-    nbdp->cdi = post_fma(locale, post_desc);
-  }
-
-  return nb_desc_idx_2_handle(nbdi);
+  chpl_comm_get(addr, locale, raddr, size, commID, ln, fn);
+  return NULL;
 }
 
 
 chpl_comm_nb_handle_t chpl_comm_put_nb(void* addr, c_nodeid_t locale,
                                        void* raddr, size_t size,
-                                       int32_t typeIndex, int32_t commID,
-                                       int ln, int32_t fn)
+                                       int32_t commID, int ln, int32_t fn)
 {
   DBG_P_LP(DBGF_IFACE|DBGF_GETPUT, "IFACE chpl_comm_put_nb(%p, %d, %p, %zd)",
            addr, (int) locale, raddr, size);
 
-  //
-  // For now, just do a blocking PUT.  At some point it will be worth
-  // it do a real nonblocking implementation, but right now we don't
-  // have time.
-  //
-  chpl_comm_put(addr, locale, raddr, size, typeIndex, commID, ln, fn);
+  chpl_comm_put(addr, locale, raddr, size, commID, ln, fn);
   return NULL;
-
-#if 0
-  // When non blocking PUT is implemented, this is the code to
-  // enable for communication callbacks, don't enable while using
-  // blocking puts as it will log two communications
-  
-  // Communication callbacks
-  if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_put_nb)) {
-    chpl_comm_cb_info_t cb_data = 
-      {chpl_comm_cb_event_kind_put_nb, chpl_nodeID, locale,
-       .iu.comm={addr, raddr, size, typeIndex, commID, ln, fn}};
-    chpl_comm_do_callbacks (&cb_data);
-  }
-#endif
-
 }
 
 
@@ -6479,63 +6213,16 @@ void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   chpl_comm_diags_incr(wait_nb);
 
   PERFSTATS_INC(wait_nb_cnt);
-
-  for (int i = 0; i < (int) nhandles; i++) {
-    nb_desc_idx_t nbdi;
-    nb_desc_t* nbdp;
-
-    if (h[i] == NULL)
-      continue;
-
-    nbdi = nb_desc_handle_2_idx(h[i]);
-    nbdp = nb_desc_idx_2_ptr(nbdi);
-
-    //
-    // Wait for the transaction to complete.  Don't yield initially
-    // as we do in some other cases, because we've presumably done
-    // all the other work we could already.
-    //
-    consume_all_outstanding_cq_events(nbdp->cdi);
-    while (!atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
-      local_yield();
-      consume_all_outstanding_cq_events(nbdp->cdi);
-    }
-
-    nb_desc_free(nbdi);
-  }
 }
 
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
-  int rv = 0;
-
   chpl_comm_diags_incr(try_nb);
 
   PERFSTATS_INC(try_nb_cnt);
 
-  for (int i = 0; i < (int) nhandles; i++) {
-    nb_desc_idx_t nbdi;
-    nb_desc_t* nbdp;
-
-    if (h[i] == NULL)
-      continue;
-
-    nbdi = nb_desc_handle_2_idx(h[i]);
-    nbdp = nb_desc_idx_2_ptr(nbdi);
-
-    //
-    // If the transaction is not already done, try to complete it.
-    //
-    consume_all_outstanding_cq_events(nbdp->cdi);
-    if (atomic_load_explicit_bool(&nbdp->done, memory_order_acquire)) {
-      h[i] = NULL;
-      rv = 1;
-      nb_desc_free(nbdi);
-    }
-  }
-
-  return rv;
+  return 0;
 }
 
 
@@ -6618,31 +6305,35 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
         (sizeof(_t) == sizeof(int32_t) && nic_type == GNI_DEVICE_GEMINI)
 
 //
-// Do an AMO by means of an AM to a remote locale.
+// Do an AMO on the CPU (locally or by means of an AM to a remote locale.)
 //   _f: interface function name suffix (type)
 //   _c: network AMO command
 //   _t: AMO type
 //
-#define DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
-  static inline void do_fork_amo_##_c##_##_f(void* obj,                 \
+#define DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
+  static inline void do_non_nic_amo_##_c##_##_f(void* obj,              \
                                              void* res,                 \
                                              void* opnd1,               \
                                              void* opnd2,               \
                                              int32_t loc) {             \
-    fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                         \
-    if (opnd1 != NULL)                                                  \
-      memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                       \
-    if (opnd2 != NULL)                                                  \
-      memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));                       \
-    if (res != NULL && mreg_for_local_addr(res) == NULL) {              \
-      rf_req.a.res = amo_res_alloc();                                   \
-      fork_amo(&rf_req, loc);                                           \
-      memcpy(res, rf_req.a.res, sizeof(_t));                            \
-      amo_res_free(rf_req.a.res);                                       \
-    }                                                                   \
-    else {                                                              \
-      rf_req.a.res = res;                                               \
-      fork_amo(&rf_req, loc);                                           \
+    if (loc == chpl_nodeID) {                                           \
+      (void) do_amo_on_cpu(_c, res, obj, opnd1, opnd2);                 \
+    } else {                                                            \
+      fork_t rf_req = { .a={.cmd=_c, .obj=obj} };                       \
+      if (opnd1 != NULL)                                                \
+        memcpy(&rf_req.a.opnd1, opnd1, sizeof(_t));                     \
+      if (opnd2 != NULL)                                                \
+        memcpy(&rf_req.a.opnd2, opnd2, sizeof(_t));                     \
+      if (res != NULL && mreg_for_local_addr(res) == NULL) {            \
+        rf_req.a.res = amo_res_alloc();                                 \
+        fork_amo(&rf_req, loc);                                         \
+        memcpy(res, rf_req.a.res, sizeof(_t));                          \
+        amo_res_free(rf_req.a.res);                                     \
+      }                                                                 \
+      else {                                                            \
+        rf_req.a.res = res;                                             \
+        fork_amo(&rf_req, loc);                                         \
+      }                                                                 \
     }                                                                   \
   }
 
@@ -6653,7 +6344,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_WRITE(_f, _c, _t)                       \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_write_##_f(void* val,                     \
@@ -6667,19 +6358,11 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                    "IFACE chpl_comm_atomic_write_"#_f"(%p, %d, %p)",    \
                    val, (int) loc, obj);                                \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            atomic_store_##_t((atomic_##_t*) obj, *(_t*) val);          \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, val, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, val, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, val, NULL, loc);      \
           }                                                             \
           else if (nic_type == GNI_DEVICE_GEMINI) {                     \
             /*                                                          \
@@ -6718,7 +6401,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_READ(_f, _c, _t)                        \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_read_##_f(void* res,                      \
@@ -6733,19 +6416,11 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
                    "IFACE chpl_comm_atomic_read_"#_f"(%p, %d, %p)",     \
                    res, (int) loc, obj);                                \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res = atomic_load_##_t((atomic_##_t*) obj);          \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, NULL, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, NULL, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, res, NULL, NULL, loc);      \
           }                                                             \
           else {                                                        \
             size_t sz = sizeof(_t);                                     \
@@ -6773,7 +6448,7 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_XCHG(_f, _c, _t)                        \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_xchg_##_f(void* xchgval,                  \
@@ -6788,20 +6463,11 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                    "IFACE chpl_comm_atomic_xchg_"#_f"(%p, %d, %p, %p)", \
                    xchgval, (int) loc, obj, res);                       \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res =                                                \
-              atomic_exchange_##_t((atomic_##_t*) obj, *(_t*) xchgval); \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, xchgval, NULL);        \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, xchgval, NULL, loc);    \
+            do_non_nic_amo_##_c##_##_f(obj, res, xchgval, NULL, loc);   \
           }                                                             \
           else if (nic_type == GNI_DEVICE_GEMINI) {                     \
             /*                                                          \
@@ -6818,12 +6484,12 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_XCHG(int32, xchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(int64, xchg_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(uint32, xchg_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(uint64, xchg_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(real32, xchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(int32, swap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(int64, swap_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(uint32, swap_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(uint64, swap_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(real32, swap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_XCHG
 
@@ -6835,7 +6501,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(_f, _c, _t)                     \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_cmpxchg_##_f(void* cmpval,                \
@@ -6843,7 +6509,8 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                                            int32_t loc,                 \
                                            void* obj,                   \
                                            chpl_bool32* res,            \
-                                           memory_order order,          \
+                                           memory_order succ,           \
+                                           memory_order fail,           \
                                            int ln, int32_t fn)          \
         {                                                               \
           mem_region_t* remote_mr;                                      \
@@ -6852,37 +6519,30 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, xchg_64, int_least64_t)
                    "(%p, %p, %d, %p, %p)",                              \
                    cmpval, xchgval, (int) loc, obj, res);               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *res =                                                      \
-              atomic_compare_exchange_strong_##_t((atomic_##_t*) obj,   \
-                                                  *(_t*) cmpval,        \
-                                                  *(_t*) xchgval);      \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo cmpxchg", loc, ln, fn);      \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          _t old_value;                                                 \
+          _t old_expected;                                              \
+          memcpy(&old_expected, cmpval, sizeof(_t));                    \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, cmpval, xchgval);      \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, cmpval, xchgval, loc);  \
+            do_non_nic_amo_##_c##_##_f(obj, &old_value, &old_expected,  \
+                                       xchgval, loc);                   \
           }                                                             \
           else {                                                        \
-            _t my_res = 0;                                              \
-            do_nic_amo(cmpval, xchgval, loc, obj, sizeof(_t),           \
-                       amo_cmd_2_nic_op(_c, 1), &my_res, remote_mr);    \
-            *res = (my_res == *(_t*) cmpval) ? true : false;            \
+            do_nic_amo(&old_expected, xchgval, loc, obj, sizeof(_t),    \
+                       amo_cmd_2_nic_op(_c, 1), &old_value, remote_mr); \
           }                                                             \
+          *res = (chpl_bool32)(old_value == old_expected);              \
+          if (!*res) memcpy(cmpval, &old_value, sizeof(_t));            \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cmpxchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int64, cmpxchg_64, int_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint32, cmpxchg_32, uint_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint64, cmpxchg_64, uint_least64_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real32, cmpxchg_32, int_least32_t)
-DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int32, cswap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(int64, cswap_64, int_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint32, cswap_32, uint_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(uint64, cswap_64, uint_least64_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real32, cswap_32, int_least32_t)
+DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_CMPXCHG
 
@@ -6895,7 +6555,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
 //   _t: AMO type
 //
 #define DEFINE_CHPL_COMM_ATOMIC_INT_OP(_f, _o, _c, _t)                  \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_##_o##_##_f(void* opnd,                   \
@@ -6910,20 +6570,11 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
-                                            *(_t*) opnd);               \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
           else {                                                        \
             do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
@@ -6943,20 +6594,11 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            (void) atomic_fetch_##_o##_##_t((atomic_##_t*) obj,         \
-                                            *(_t*) opnd);               \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
           else {                                                        \
             do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
@@ -6978,21 +6620,11 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cmpxchg_64, int_least64_t)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            *(_t*) res =                                                \
-              atomic_fetch_##_o##_##_t((atomic_##_t*) obj,              \
-                                       *(_t*) opnd);                    \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
-          if (IS_32_BIT_AMO_ON_GEMINI(_t)                               \
+          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, opnd, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, opnd, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, res, opnd, NULL, loc);      \
           }                                                             \
           else {                                                        \
             do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
@@ -7035,7 +6667,7 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
 //       Aries.
 //
 #define DEFINE_CHPL_COMM_ATOMIC_REAL_OP(_f, _c, _t)                     \
-        DEFINE_DO_FORK_AMO(_f, _c, _t)                                  \
+        DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
                                                                         \
         /*==============================*/                              \
         void chpl_comm_atomic_add_##_f(void* opnd,                      \
@@ -7050,24 +6682,16 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            amo_add_##_f##_cpu_cmpxchg(NULL, obj, opnd);                \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
           chpl_comm_diags_incr(amo);                                    \
-          if (sizeof(_t) == sizeof(int_least32_t)                       \
+          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
                           amo_cmd_2_nic_op(_c, 0), remote_mr);          \
           }                                                             \
           else {                                                        \
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
         }                                                               \
                                                                         \
@@ -7083,24 +6707,16 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    "(%p, %d, %p)",                                      \
                    opnd, (int) loc, obj);                               \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            amo_add_##_f##_cpu_cmpxchg(NULL, obj, opnd);                \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
-          if (sizeof(_t) == sizeof(int_least32_t)                       \
+          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
                                amo_cmd_2_nic_op(_c, 0), remote_mr);     \
           }                                                             \
           else {                                                        \
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, NULL, obj, opnd, NULL);          \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);      \
+            do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
         }                                                               \
                                                                         \
@@ -7118,29 +6734,21 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
                    "(%p, %d, %p, %p)",                                  \
                    opnd, (int) loc, obj, res);                          \
                                                                         \
-          if (chpl_numNodes == 1) {                                     \
-            amo_add_##_f##_cpu_cmpxchg(res, obj, opnd);                 \
-            return;                                                     \
-          }                                                             \
-                                                                        \
           chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
-          if (sizeof(_t) == sizeof(int_least32_t)                       \
+          if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
               && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
                        amo_cmd_2_nic_op(_c, 1), res, remote_mr);        \
           }                                                             \
           else {                                                        \
-            if (loc == chpl_nodeID)                                     \
-              (void) do_amo_on_cpu(_c, res, obj, opnd, NULL);           \
-            else                                                        \
-              do_fork_amo_##_c##_##_f(obj, res, opnd, NULL, loc);       \
+            do_non_nic_amo_##_c##_##_f(obj, res, opnd, NULL, loc);      \
           }                                                             \
         }
 
-DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real32, add_r32, float)
-DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, double)
+DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real32, add_r32, _real32)
+DEFINE_CHPL_COMM_ATOMIC_REAL_OP(real64, add_r64, _real64)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_REAL_OP
 
@@ -7212,8 +6820,8 @@ DEFINE_CHPL_COMM_ATOMIC_SUB(int32, int_least32_t, NEGATE_I32)
 DEFINE_CHPL_COMM_ATOMIC_SUB(int64, int_least64_t, NEGATE_I64)
 DEFINE_CHPL_COMM_ATOMIC_SUB(uint32, int_least32_t, NEGATE_U_OR_R)
 DEFINE_CHPL_COMM_ATOMIC_SUB(uint64, int_least64_t, NEGATE_U_OR_R)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real32, float, NEGATE_U_OR_R)
-DEFINE_CHPL_COMM_ATOMIC_SUB(real64, double, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real32, _real32, NEGATE_U_OR_R)
+DEFINE_CHPL_COMM_ATOMIC_SUB(real64, _real64, NEGATE_U_OR_R)
 
 #undef DEFINE_CHPL_COMM_ATOMIC_SUB
 
@@ -7331,6 +6939,7 @@ void do_nic_amo_nf(void* opnd1, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                 = (gni_post_descriptor_t) { 0 };
   post_desc.type            = GNI_POST_AMO;
   post_desc.cq_mode         = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode       = GNI_DLVMODE_PERFORMANCE;
@@ -7386,6 +6995,7 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
   //
   // Fill in the POST descriptor.
   //
+  post_desc                    = (gni_post_descriptor_t) { 0 };
   post_desc.type               = GNI_POST_AMO;
   post_desc.cq_mode            = GNI_CQMODE_GLOBAL_EVENT;
   post_desc.dlvr_mode          = GNI_DLVMODE_PERFORMANCE;
@@ -7420,56 +7030,6 @@ void do_nic_amo(void* opnd1, void* opnd2, c_nodeid_t locale,
 }
 
 
-static
-inline
-void amo_add_real32_cpu_cmpxchg(void* result, void* object, void* operand)
-{
-  float val;
-  int_least32_t expected;
-  int_least32_t desired;
-  chpl_bool cxr;
-
-  assert(sizeof(val) == sizeof(expected));
-
-  do {
-    val = *(volatile float*) object;
-    memcpy(&expected, &val, sizeof(val));
-    val += *(float*) operand;
-    memcpy(&desired, &val, sizeof(val));
-    cxr = atomic_compare_exchange_strong_int_least32_t
-            ((atomic_int_least32_t*) object, expected, desired);
-  } while (!cxr);
-
-  if (result != NULL)
-    memcpy(result, &expected, sizeof(val));
-}
-
-
-static
-inline
-void amo_add_real64_cpu_cmpxchg(void* result, void* object, void* operand)
-{
-  double val;
-  int_least64_t expected;
-  int_least64_t desired;
-  chpl_bool cxr;
-
-  assert(sizeof(val) == sizeof(expected));
-
-  do {
-    val = *(volatile double*) object;
-    memcpy(&expected, &val, sizeof(val));
-    val += *(double*) operand;
-    memcpy(&desired, &val, sizeof(val));
-    cxr = atomic_compare_exchange_strong_int_least64_t
-            ((atomic_int_least64_t*) object, expected, desired);
-  } while (!cxr);
-
-  if (result != NULL)
-    memcpy(result, &expected, sizeof(val));
-}
-
-
 void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
                           chpl_fn_int_t fid,
                           chpl_comm_on_bundle_t* arg, size_t arg_size,
@@ -7483,7 +7043,7 @@ void chpl_comm_execute_on(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7510,7 +7070,7 @@ void chpl_comm_execute_on_nb(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7537,7 +7097,7 @@ void chpl_comm_execute_on_fast(c_nodeid_t locale, c_sublocid_t subloc,
 
   // Communications callback support
   if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
-      chpl_comm_cb_info_t cb_data = 
+      chpl_comm_cb_info_t cb_data =
         {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, locale,
          .iu.executeOn={subloc, fid, arg, arg_size, ln, fn}};
       chpl_comm_do_callbacks (&cb_data);
@@ -7561,41 +7121,45 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
                       chpl_comm_on_bundle_t* arg, size_t arg_size,
                       chpl_bool fast, chpl_bool blocking)
 {
-  size_t payload_size = arg_size - sizeof(chpl_comm_on_bundle_t);
-  size_t small_msg_size = payload_size + sizeof(fork_small_call_info_t);
-  int small = small_msg_size <= sizeof(fork_t);
-  int large = !small;
-  // heapCopyLargeArg is set below and is only relevant when large=true
-  int heapCopyLargeArg = false;
-  size_t f_size;
+  int small = arg_size <= sizeof(fork_t);
   int cdi;
   int rbi;
-  chpl_bool do_fast_fork = fast && !large;
-  chpl_comm_on_bundle_t *large_arg = NULL;
-  fork_base_info_t *req = NULL;
-  fork_t f;
-
-
-  fork_base_info_t hdr = { .op           = ( large ?
-                                             fork_op_large_call :
-                                             fork_op_small_call ),
-                           .caller       = chpl_nodeID,
-                           .rf_done      = NULL };
-
-  fork_small_call_info_t sc = { .b            = hdr,
-                                .subloc       = subloc,
-                                .fast         = do_fast_fork,
-                                .blocking     = blocking,
-                                .payload_size = payload_size,
-                                .fid          = fid,
-                                .state        = arg->task_bundle.state };
-
-  fork_small_call_info_t *f_sc = &f.sc;
 
   if (locale < 0 || locale >= chpl_numNodes)
     CHPL_INTERNAL_ERROR("fork_call_common(): remote locale out of range");
 
-  if (large) {
+  fast = fast && small;  // large requests cannot run in the AM handler
+
+  arg->comm = (chpl_comm_bundleData_t)
+              { .fast = fast,
+                .fid = fid,
+                .caller = chpl_nodeID,
+                .subloc = subloc,
+                .size = arg_size,
+              };
+
+  if (small) {
+    //
+    // The arg bundle will fit in one of our request buffers.  Just
+    // send it.
+    //
+    arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
+    DBG_SET_SEQ(arg->comm.seq);
+    DBG_P_LP(DBGF_RF, "forkTo(%d) %s",
+             (int) locale,
+             sprintf_rf_req(locale, arg));
+    PERFSTATS_INC(fork_call_small_cnt);
+
+    do_fork_post(locale, blocking, arg_size, (fork_base_info_t*) arg,
+                 &cdi, &rbi);
+
+    //
+    // For fast forks, we free the remote fork request buffer on this
+    // side.  In all other cases the target side frees it.
+    //
+    if (fast)
+      *SEND_SIDE_FORK_REQ_FREE_ADDR(locale, cdi, rbi) = true;
+  } else {
     //
     // The argument is too large to send directly in the request, so the
     // target locale will have to GET it from us.  We must guarantee the
@@ -7609,81 +7173,46 @@ void fork_call_common(c_nodeid_t locale, c_sublocid_t subloc,
     // instead of the original.  The remote locale will free the copy
     // with a remote fork_op_free back to our locale.
     //
-    // If the arg passed to us isn't in a registered region we should
-    // also copy it, but only if the copy will likely be in registered
-    // memory.  By copying it we save the target side the overhead of
-    // doing an executeOn back to us to PUT the large arg to themself,
-    // since if it's not in registered memory here they won't be able
-    // to GET it directly.
+    // Even for a blocking request, however, if the arg passed to us is
+    // not in a registered region we should duplicate it into registered
+    // memory.  Otherwise we'll incur an extra network round trip for
+    // the target side to do an executeOn back here to PUT the large arg
+    // to itself.
     //
-    if (!blocking ||
-        (get_hugepage_size() > 0 && mreg_for_local_addr(arg) == NULL)) {
-      heapCopyLargeArg = true;
+    arg->kind = fork_op_large_call;
+    fork_large_call_info_t req = { .hdr = *arg,
+                                   .p_payload = &arg->payload, };
+
+    chpl_bool heap_copy_arg = !blocking
+                              || (get_hugepage_size() > 0
+                                  && mreg_for_local_addr(arg) == NULL);
+
+    if (heap_copy_arg) {
+      size_t payload_size = arg_size
+                            - offsetof(chpl_comm_on_bundle_t, payload);
+      req.p_payload = chpl_mem_allocMany(payload_size, sizeof(char),
+                                         CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
+      memcpy(req.p_payload, &arg->payload, payload_size);
     }
 
-    if (heapCopyLargeArg) {
-      large_arg = chpl_mem_allocMany(arg_size, sizeof(char),
-                                     CHPL_RT_MD_COMM_FRK_SND_ARG, 0, 0);
-
-      memcpy(large_arg, arg, arg_size);
-    } else {
-      large_arg = arg;
-    }
-    payload_size = sizeof(fork_large_call_info_t) - 
-                   sizeof(fork_small_call_info_t);
-    sc.payload_size = payload_size;
-  }
-
-
-  if (!large) {
-    // Copy the header into the fork_t
-    f.sc = sc;
-    // Now copy the payload after it
-    // Note ptr+1 here is the same as (unsigned char*)ptr + sizeof(*ptr)
-    // and it refers to the memory just after that structure.
-    memcpy(f_sc + 1,
-           arg + 1,
-           payload_size);
-    f_size = small_msg_size;
-  } else {
-    // Copy the header into the fork_t
-    f.lc.b = sc;
-    // Set the pointer for the large call
-    f.lc.arg      = large_arg;
-    f.lc.arg_size = arg_size;
-    f_size = sizeof(fork_large_call_info_t);
-  }
-
-  req = &f_sc->b;
-
-  DBG_SET_SEQ(req->seq);
-  DBG_P_LP(DBGF_RF, "forkTo(%d) %s",
-           (int) locale,
-           sprintf_rf_req(locale, req));
-  if (!large) {
-    PERFSTATS_INC(fork_call_small_cnt);
-  } else {
+    DBG_SET_SEQ(req.hdr.comm.seq);
+    DBG_P_LP(DBGF_RF, "forkTo(%d) %s",
+             (int) locale,
+             sprintf_rf_req(locale, &req));
     PERFSTATS_INC(fork_call_large_cnt);
+
+    do_fork_post(locale, blocking, sizeof(req), (fork_base_info_t*) &req,
+                 &cdi, &rbi);
+
+    //
+    // If blocking, if we heap-copied the payload free that now.  The
+    // nonblocking case has to be handled from the target side, since
+    // only there do we know when we don't need the copy any more.
+    //
+    if (heap_copy_arg && blocking) {
+      chpl_mem_free(req.p_payload, 0, 0);
+    }
   }
-
-  //
-  // Send the request to the target.
-  //
-  do_fork_post(locale, blocking, f_size, req, &cdi, &rbi);
-  
-  //
-  // For fast forks, we free the remote fork request buffer on this
-  // side.  In all other cases the target side frees it.
-  //
-  if (do_fast_fork)
-    *SEND_SIDE_FORK_REQ_FREE_ADDR(locale, cdi, rbi) = true;
-
-  //
-  // For blocking large forks, we free any allocated argument now.
-  // For nonblocking large forks, it will be freed by an AM
-  // that the spawned task sends us.
-  if (blocking && heapCopyLargeArg)
-    chpl_mem_free(large_arg, 0, 0);
 }
 
 
@@ -7692,7 +7221,6 @@ void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 {
   fork_base_info_t hdr = { .op       = fork_op_put,
                            .caller   = chpl_nodeID,
-                           .rf_done  = NULL // set in do_fork_post
                          };
 
 
@@ -7721,12 +7249,14 @@ void fork_put(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 static
 void fork_get(void* addr, c_nodeid_t locale, void* raddr, size_t size)
 {
-  fork_base_info_t hdr = { .op       = fork_op_get,
-                           .caller   = chpl_nodeID,
-                           .rf_done  = NULL // set in do_fork_post
-                         };
+  //
+  // TODO: If the data we want the target to have is small enough we
+  //       could just put it directly in the request, only using the
+  //       GET-from-target technique for large transfers.
+  //
 
-  fork_xfer_info_t req = { .b = hdr,
+  fork_xfer_info_t req = { .b = { .op = fork_op_get,
+                                  .caller = chpl_nodeID },
                            .tgt = raddr,
                            .src = addr,
                            .size = size };
@@ -7802,6 +7332,7 @@ void fork_amo(fork_t* p_rf_req, c_nodeid_t locale)
                sizeof(p_rf_req->a), &p_rf_req->a.b, NULL, NULL);
 }
 
+
 static
 void fork_shutdown(c_nodeid_t locale)
 {
@@ -7826,9 +7357,10 @@ void fork_shutdown(c_nodeid_t locale)
 static
 void do_fork_post(c_nodeid_t locale,
                   chpl_bool blocking,
-                  uint64_t f_size, fork_base_info_t* const p_rf_req,
+                  uint64_t f_size, fork_base_info_t* p_rf_req,
                   int* cdi_p, int* rbi_p)
 {
+  rf_done_t**            p_rf_done_addr = NULL;
   rf_done_t              stack_rf_done;
   gni_post_descriptor_t  stack_post_desc;
   gni_post_descriptor_t* post_desc_p;
@@ -7843,18 +7375,22 @@ void do_fork_post(c_nodeid_t locale,
     // Our completion flag has to be in registered memory so the
     // remote locale can PUT directly back here to it.
     //
+    p_rf_done_addr = (p_rf_req->op == fork_op_small_call
+                      || p_rf_req->op == fork_op_large_call)
+                     ? (rf_done_t**)
+                       &((chpl_comm_on_bundle_t*) p_rf_req)->comm.rf_done
+                     : &p_rf_req->rf_done;
     if (mreg_for_local_addr(&stack_rf_done) != NULL) {
-      p_rf_req->rf_done = &stack_rf_done;
+      *p_rf_done_addr = &stack_rf_done;
     } else {
-      p_rf_req->rf_done = rf_done_alloc();
+      *p_rf_done_addr = rf_done_alloc();
     }
-    *p_rf_req->rf_done = 0;
+    **p_rf_done_addr = 0;
     chpl_atomic_thread_fence(memory_order_release);
 
+    stack_post_desc = (gni_post_descriptor_t) { 0 };
     post_desc_p = &stack_post_desc;
   } else {
-    p_rf_req->rf_done = NULL;
-
     // Initialize free flag on first call
     if (nb_fork_num == -1) {
       int i;
@@ -7919,7 +7455,11 @@ void do_fork_post(c_nodeid_t locale,
                                GNI_ENCODE_REM_INST_ID(chpl_nodeID, cd_idx,
                                                       rbi)));
   DBG_P_LPS(DBGF_RF, "post %s",
-            locale, cd_idx, rbi, p_rf_req->seq,
+            locale, cd_idx, rbi,
+            ((p_rf_req->op == fork_op_small_call
+              || p_rf_req->op == fork_op_large_call)
+             ? ((chpl_comm_on_bundle_t*) p_rf_req)->comm.seq
+             : p_rf_req->seq),
             fork_op_name(p_rf_req->op));
 
   if (blocking) {
@@ -7929,13 +7469,13 @@ void do_fork_post(c_nodeid_t locale,
     post_fma_and_wait(locale, post_desc_p, blocking);
 
     PERFSTATS_INC(wait_rfork_cnt);
-    while (! *(volatile rf_done_t*) p_rf_req->rf_done) {
+    while (! *(volatile rf_done_t*) *p_rf_done_addr) {
       PERFSTATS_INC(lyield_in_wait_rfork_cnt);
       local_yield();
     }
 
-    if (p_rf_req->rf_done != &stack_rf_done)
-      rf_done_free(p_rf_req->rf_done);
+    if (*p_rf_done_addr != &stack_rf_done)
+      rf_done_free(*p_rf_done_addr);
   } else {
     //
     // Initiate the transaction and if we're out of space retire at least one
@@ -8023,7 +7563,7 @@ void acquire_comm_dom(void)
 #ifdef DEBUG_STATS
     acq_looks++;
 #endif
-    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
+    if (ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         break;
       } else {
@@ -8090,7 +7630,7 @@ void acquire_comm_dom_and_req_buf(c_nodeid_t remote_locale, int* p_rbi)
     acq_looks++;
 #endif
 
-    if (!CHECK_CD_BUSY(want_cd) && ACQUIRE_CD_MAYBE(want_cd)) {
+    if (ACQUIRE_CD_MAYBE(want_cd)) {
       if (CQ_CNT_LOAD(want_cd) < want_cd->cq_cnt_max) {
         for (rbi = 0; rbi < FORK_REQ_BUFS_PER_CD; rbi++) {
           if (*SEND_SIDE_FORK_REQ_FREE_ADDR(remote_locale, want_cdi, rbi)) {
@@ -8193,6 +7733,21 @@ chpl_bool reacquire_comm_dom(int want_cdi)
   return true;
 }
 
+static
+inline
+chpl_bool should_yield_during_comm(chpl_bool do_yield) {
+  do_yield = do_yield && yield_during_comm;
+  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
+  // the lifetime of short-lived tasks.
+  if (do_yield) {
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (prvData != NULL && prvData->num_comm < 100) {
+      prvData->num_comm++;
+      do_yield = false;
+    }
+  }
+  return do_yield;
+}
 
 static
 inline
@@ -8221,15 +7776,7 @@ void post_fma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
   atomic_bool post_done;
   uint64_t iters = 0;
 
-  // Avoid yielding for tasks with limited comm. Avoids artificially increasing
-  // the lifetime of short-lived tasks.
-  if (do_yield) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->num_fma < 100) {
-      prvData->num_fma++;
-      do_yield = false;
-    }
-  }
+  do_yield = should_yield_during_comm(do_yield);
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
@@ -8309,6 +7856,8 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   int cdi;
   atomic_bool post_done;
 
+  chpl_bool do_yield = should_yield_during_comm(true);
+
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
 
@@ -8320,7 +7869,9 @@ void post_fma_ct_and_wait(c_nodeid_t* locale_v,
   // we can find something else to do in the meantime.
   //
   do {
-    local_yield();
+    if (do_yield) {
+      local_yield();
+    }
     consume_all_outstanding_cq_events(cdi);
   } while (!atomic_load_explicit_bool(&post_done, memory_order_acquire));
 }
@@ -8355,6 +7906,8 @@ void post_rdma_and_wait(c_nodeid_t locale, gni_post_descriptor_t* post_desc,
 {
   int cdi;
   atomic_bool post_done;
+
+  do_yield = should_yield_during_comm(do_yield);
 
   atomic_init_bool(&post_done, false);
   post_desc->post_id = (uint64_t) (intptr_t) &post_done;
@@ -8395,7 +7948,7 @@ void local_yield(void)
     // Without a comm domain, just yield.
     //
     PERFSTATS_INC(tskyield_in_lyield_no_cd_cnt);
-    if (can_task_yield()) 
+    if (can_task_yield())
       chpl_task_yield();
     else
       sched_yield();
@@ -8438,7 +7991,7 @@ void chpl_comm_statsReport(chpl_bool sum_over_locales)
     sum = chpl_comm_pstats;
     for (int li = 0; li < chpl_numNodes; li++) {
       if (li != chpl_nodeID) {
-        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), -1, CHPL_COMM_UNKNOWN_ID, 0, -1);
+        chpl_comm_get(&ps, li, &chpl_comm_pstats, sizeof(ps), CHPL_COMM_UNKNOWN_ID, 0, -1);
 #define _PSV_SUM(psv) _PSV_ADD_FUNC(&sum.psv, _PSV_LD_FUNC(&ps.psv));
         PERFSTATS_DO_ALL(_PSV_SUM);
 #undef _PSV_SUM

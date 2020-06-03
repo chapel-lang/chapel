@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -165,8 +166,7 @@ void printClass(std::ofstream *file, AggregateType *cl, unsigned int tabs) {
 // or module copy of a class method.  These functions are only printed in
 // developer mode.  Is not applicable to printing class functions.
 bool devOnlyFunction(FnSymbol *fn) {
-  return (fn->hasFlag(FLAG_MODULE_INIT) || fn->hasFlag(FLAG_TYPE_CONSTRUCTOR) 
-          || fn->isPrimaryMethod());
+  return (fn->hasFlag(FLAG_MODULE_INIT) || fn->isPrimaryMethod());
 }
 
 // Returns true if the provide module is one of the internal or standard 
@@ -262,8 +262,8 @@ static void makeDir(const char* dirpath) {
   static const int dirPerms = S_IRWXU | S_IRWXG | S_IRWXO;
   int result = mkdir(dirpath, dirPerms);
   if (result != 0 && errno != 0 && errno != EEXIST) {
-    USR_FATAL(astr("Failed to create directory: ", dirpath,
-                   " due to: ", strerror(errno)));
+    USR_FATAL("Failed to create directory: %s due to: %s",
+              dirpath, strerror(errno));
   }
 }
 
@@ -296,6 +296,81 @@ std::string generateSphinxProject(std::string dirpath) {
   return std::string(moddir);
 }
 
+/* Checks for the valid Project Version (non-recursively). If an error occurs, exit and report
+ * error.
+ */
+static char * checkProjectVersion(char * projectVersion) {
+  int length = strlen(projectVersion);
+  int i = 0;
+  int dot = 0;
+  bool check = true;
+  int tagIndex = 0;
+
+  // Supported version tags
+  const char * tags[] = {"alpha", "beta", "rc"};
+  const char * error = "";
+  for(i=0; i<length; i++) {
+    if(i>0 && projectVersion[i] == '.') {
+      if(projectVersion[i-1] != '.') {
+        dot++;
+        if(dot>2) {
+          error = "Required only two dots which separates three numbers";
+          check = false;
+          break;
+        }
+        if(i == length-1) {
+          error = "Cannot end with dot, can end with either number or tag";
+          check = false;
+          break;
+        }
+      } else {
+        error = "Missing number between dots";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot == 2) {
+      if(projectVersion[i-1] != '.') {
+        tagIndex = i+1;
+        break;
+      } else {
+        error = "Missing number before tag";
+        check = false;
+        break;
+      }
+    } else if(projectVersion[i] == '-' && dot != 2) {
+      error = "Required only two dots which separates three numbers";
+      check = false;
+      break;
+    } else if((int)projectVersion[i] > (int)'9' || (int)projectVersion[i] < (int)'0') {
+      error = "Invalid Characters, only digits and dots permitted before a hyphen";
+      check = false;
+      break;
+    }
+  }
+  if(dot != 2 && i == length) {
+    error = "Required two dots which separates three numbers";
+    check = false;
+  }
+  if(check && tagIndex>0) {
+    int count = sizeof(tags)/sizeof(*tags);
+    for(int i=0; i<count; i++) {
+      if(strcmp(projectVersion+tagIndex,tags[i]) == 0) {
+        check = true;
+        break;
+      } else {
+        error = "Tag not supported, supported tags are alpha/beta/rc";
+        check = false;
+      }
+    }
+  }
+  if(check) {
+    return projectVersion;
+  } else {
+    USR_FATAL("Invalid version format: %s due to: %s", projectVersion, error);
+  }
+  return NULL;
+}
+
 
 /*
  * Invoke sphinx-build using sphinxDir to find conf.py and rst sources, and
@@ -308,10 +383,12 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
   const char * venvDir = astr(getVenvDir().c_str());
   const char * venvBinDir = astr(venvDir, "/bin");
   const char * sphinxBuild = astr("sphinx-build");
+  const char * venvProjectVersion = checkProjectVersion(fDocsProjectVersion);
 
   const char * envVars = astr("export PATH=\"", venvBinDir, ":$PATH\" && "
                               "export VIRTUAL_ENV=", venvDir, " && "
-                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "'");
+                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "' && "
+                              "export CHPLDOC_PROJECT_VERSION='", venvProjectVersion, "'");
 
   // Run:
   //   $envVars &&

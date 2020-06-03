@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,18 +21,19 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
-  use ChapelStandard;
-  use RangeChunk only ;
+  private use ChapelStandard;
+  import RangeChunk;
 
   config param debugDefaultSparse = false;
 
   class DefaultSparseDom: BaseSparseDomImpl {
     var dist: unmanaged DefaultDist;
+    var _nnz = 0;
 
     pragma "local field"
-    var indices: [nnzDom] index(rank, idxType);
+    var _indices: [nnzDom] index(rank, idxType);
 
-    proc linksDistribution() param return false;
+    override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
@@ -41,24 +43,31 @@ module DefaultSparse {
       this.dist = dist;
     }
 
-    proc dsiBuildArray(type eltType)
-      return new unmanaged DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  dom=_to_unmanaged(this));
+    override proc getNNZ(): int{
+      return _nnz;
+    }
+
+    proc dsiBuildArray(type eltType, param initElts:bool) {
+      return new unmanaged DefaultSparseArr(eltType=eltType,
+                                            rank=rank, idxType=idxType,
+                                            dom=_to_unmanaged(this),
+                                            initElts=initElts);
+    }
 
     iter dsiIndsIterSafeForRemoving() {
-      for i in 1..nnz by -1 {
-        yield indices(i);
+      for i in 1.._nnz by -1 {
+        yield _indices(i);
       }
     }
 
     iter these() {
-      for i in 1..nnz {
-        yield indices(i);
+      for i in 1.._nnz {
+        yield _indices(i);
       }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.standalone {
-      const numElems = nnz;
+      const numElems = _nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
       if debugDefaultSparse {
         writeln("DefaultSparseDom standalone: ", numChunks, " chunks, ",
@@ -69,18 +78,18 @@ module DefaultSparse {
       if numChunks <= 1 {
         // ... except if 1, just use the current thread
         for i in 1..numElems {
-          yield indices(i);
+          yield _indices(i);
         }
       } else {
-        coforall chunk in chunks(1..numElems, numChunks) {
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) {
           for i in chunk do
-            yield indices(i);
+            yield _indices(i);
         }
       }
     }
 
     iter these(param tag: iterKind) where tag == iterKind.leader {
-      const numElems = nnz;
+      const numElems = _nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
       if debugDefaultSparse then
         writeln("DefaultSparseDom leader: ", numChunks, " chunks, ",
@@ -91,7 +100,7 @@ module DefaultSparse {
         // ... except if 1, just use the current thread
         yield (this, 1, numElems);
       else
-        coforall chunk in chunks(1..numElems, numChunks) do
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) do
           yield (this, chunk.first, chunk.last);
     }
 
@@ -104,7 +113,7 @@ module DefaultSparse {
         writeln("DefaultSparseDom follower: ", startIx, "..", endIx);
 
       for i in startIx..endIx do
-        yield indices(i);
+        yield _indices(i);
     }
 
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
@@ -120,9 +129,9 @@ module DefaultSparse {
       // sjd: unfortunate specialization for rank == 1
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
-        return binarySearch(indices, ind(1), lo=1, hi=nnz);
+        return binarySearch(_indices, ind(0), lo=1, hi=_nnz);
       else
-        return binarySearch(indices, ind, lo=1, hi=nnz);
+        return binarySearch(_indices, ind, lo=1, hi=_nnz);
     }
 
     proc dsiMember(ind) { // ind should be verified to be index type
@@ -131,11 +140,11 @@ module DefaultSparse {
     }
 
     proc dsiFirst {
-      return indices[indices.domain.first];
+      return _indices[_indices.domain.first];
     }
 
     proc dsiLast {
-      return indices[nnz];
+      return _indices[_nnz];
     }
 
     proc add_help(ind) {
@@ -149,18 +158,18 @@ module DefaultSparse {
         this.boundsCheck(ind);
 
       // increment number of nonzeroes
-      nnz += 1;
+      _nnz += 1;
 
       const oldNNZDomSize = nnzDom.size;
       // double nnzDom if we've outgrown it; grab current size otherwise
-      _grow(nnz);
+      _grow(_nnz);
 
       // shift indices up
-      for i in insertPt..nnz-1 by -1 {
-        indices(i+1) = indices(i);
+      for i in insertPt.._nnz-1 by -1 {
+        _indices(i+1) = _indices(i);
       }
 
-      indices(insertPt) = ind;
+      _indices(insertPt) = ind;
 
       // shift all of the arrays up and initialize nonzeroes if
       // necessary
@@ -170,7 +179,7 @@ module DefaultSparse {
       // this second initialization of any new values in the array.
       // we could also eliminate the oldNNZDomSize variable
       for a in _arrs {
-        a.sparseShiftArray(insertPt..nnz-1, oldNNZDomSize+1..nnzDom.size);
+        a.sparseShiftArray(insertPt.._nnz-1, oldNNZDomSize+1..nnzDom.size);
       }
 
       return 1;
@@ -186,20 +195,20 @@ module DefaultSparse {
         halt("index not in domain: ", ind);
 
       // increment number of nonzeroes
-      nnz -= 1;
+      _nnz -= 1;
 
       // TODO: should halve nnzDom if we've outgrown it; grab current
       // size otherwise
       /*
       var oldNNZDomSize = nnzDomSize;
-      if (nnz > nnzDomSize) {
+      if (_nnz > nnzDomSize) {
         nnzDomSize = if (nnzDomSize) then 2*nnzDomSize else 1;
         nnzDom = [1..nnzDomSize];
       }
       */
       // shift indices up
-      for i in insertPt..nnz {
-        indices(i) = indices(i+1);
+      for i in insertPt.._nnz {
+        _indices(i) = _indices(i+1);
       }
 
       // shift all of the arrays up and initialize nonzeroes if
@@ -210,7 +219,7 @@ module DefaultSparse {
       // this second initialization of any new values in the array.
       // we could also eliminate the oldNNZDomSize variable
       for a in _arrs {
-        a.sparseShiftArrayBack(insertPt..nnz-1);
+        a.sparseShiftArrayBack(insertPt.._nnz-1);
       }
 
       return 1;
@@ -226,7 +235,7 @@ module DefaultSparse {
 
     proc dsiAdd(ind: rank*idxType) {
       if (rank == 1) {
-        return add_help(ind(1));
+        return add_help(ind(0));
       } else {
         return add_help(ind);
       }
@@ -234,29 +243,37 @@ module DefaultSparse {
 
     proc dsiRemove(ind: rank*idxType) {
       if (rank == 1) {
-        return rem_help(ind(1));
+        return rem_help(ind(0));
       } else {
         return rem_help(ind);
       }
     }
 
-    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType), dataSorted=false,
-        isUnique=false){
+    override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+        dataSorted=false, isUnique=false, addOn=nilLocale){
+      import Sort;
+
+      if addOn != nilLocale {
+        if addOn != this.locale {
+          halt("Bulk index addition is only possible on the locale where the\
+              sparse domain is created");
+        }
+      }
 
       bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
 
-      if nnz == 0 {
+      if _nnz == 0 {
 
         const dupCount = if isUnique then 0 else _countDuplicates(inds);
 
-        nnz += inds.size-dupCount;
+        _nnz += inds.size-dupCount;
         _bulkGrow();
 
-        var indIdx = indices.domain.low;
+        var indIdx = _indices.domain.low;
         var prevIdx = parentDom.low - 1;
 
         if isUnique {
-          indices[indices.domain.low..#inds.size]=inds;
+          _indices[_indices.domain.low..#inds.size]=inds;
           return inds.size;
         }
         else {
@@ -264,7 +281,7 @@ module DefaultSparse {
             if i == prevIdx then continue;
             else prevIdx = i;
 
-            indices[indIdx] = i;
+            _indices[indIdx] = i;
             indIdx += 1;
           }
           return indIdx-1;
@@ -274,8 +291,8 @@ module DefaultSparse {
       const (actualInsertPts, actualAddCnt) =
         __getActualInsertPts(this, inds, isUnique);
 
-      const oldnnz = nnz;
-      nnz += actualAddCnt;
+      const oldnnz = _nnz;
+      _nnz += actualAddCnt;
 
       //grow nnzDom if necessary
       _bulkGrow();
@@ -292,16 +309,16 @@ module DefaultSparse {
 
       var arrShiftMap: [{1..oldnnz}] int; //to map where data goes
 
-      for i in 1..nnz by -1 {
+      for i in 1.._nnz by -1 {
         if oldIndIdx >= 1 && i > newLoc {
           //shift from old values
-          indices[i] = indices[oldIndIdx];
+          _indices[i] = _indices[oldIndIdx];
           arrShiftMap[oldIndIdx] = i;
           oldIndIdx -= 1;
         }
         else if newIndIdx >= indsDom.low && i == newLoc {
           //put the new guy in
-          indices[i] = inds[newIndIdx];
+          _indices[i] = inds[newIndIdx];
           newIndIdx -= 1;
           if newIndIdx >= indsDom.low then 
             newLoc = actualInsertPts[newIndIdx];
@@ -327,7 +344,7 @@ module DefaultSparse {
     }
 
     override proc dsiClear() {
-      nnz = 0;
+      _nnz = 0;
       // should we empty the domain too ?
       // nnzDom = {1..0};
     }
@@ -337,11 +354,24 @@ module DefaultSparse {
         compilerError("dimIter() not supported on sparse domains for dimensions other than the last");
       }
       halt("dimIter() not yet implemented for sparse domains");
-      yield indices(1);
+      yield _indices(0);
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+
+        // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
+        // grow, which has a different heuristic to grow the internal arrays.
+        // That may result in size mismatch in the following internal array
+        // assignments
+        this._nnz = rhs._nnz;
+        this.nnzDom = rhs.nnzDom;
+
+        this._indices = rhs._indices;
+      }
+      else {
+        chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
+      }
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -359,11 +389,16 @@ module DefaultSparse {
 
   class DefaultSparseArr: BaseSparseArrImpl {
 
-    /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/
-      /*this.dom = dom;*/
-      /*this.dataDom = dom.nnzDom;*/
-      /*writeln("dataDom is set : ", this.dataDom);*/
-    /*}*/
+    proc init(type eltType,
+              param rank : int,
+              type idxType,
+              dom,
+              param initElts:bool) {
+      super.init(eltType, rank, idxType, dom, initElts);
+    }
+
+    // dsiDestroyArr is defined in BaseSparseArrImpl
+
     // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
@@ -448,11 +483,11 @@ module DefaultSparse {
     }
 
     iter these() ref {
-      for i in 1..dom.nnz do yield data[i];
+      for i in 1..dom._nnz do yield data[i];
     }
 
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
-      const numElems = dom.nnz;
+      const numElems = dom._nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
       if debugDefaultSparse {
         writeln("DefaultSparseArr standalone: ", numChunks, " chunks, ",
@@ -463,7 +498,7 @@ module DefaultSparse {
           yield data[i];
         }
       } else {
-        coforall chunk in chunks(1..numElems, numChunks) {
+        coforall chunk in RangeChunk.chunks(1..numElems, numChunks) {
           for i in chunk do
             yield data[i];
         }
@@ -510,26 +545,26 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) {
+  proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) throws {
     if (rank == 1) {
       if printBrackets then f <~> "{";
-      if (nnz >= 1) {
-        f <~> indices(1);
-        for i in 2..nnz {
-          f <~> " " <~> indices(i);
+      if (_nnz >= 1) {
+        f <~> _indices(1);
+        for i in 2.._nnz {
+          f <~> " " <~> _indices(i);
         }
       }
       if printBrackets then f <~> "}";
     } else {
       if printBrackets then f <~> "{\n";
-      if (nnz >= 1) {
-        var prevInd = indices(1);
+      if (_nnz >= 1) {
+        var prevInd = _indices(1);
         f <~> " " <~> prevInd;
-        for i in 2..nnz {
-          if (prevInd(1) != indices(i)(1)) {
+        for i in 2.._nnz {
+          if (prevInd(0) != _indices(i)(0)) {
             f <~> "\n";
           }
-          prevInd = indices(i);
+          prevInd = _indices(i);
           f <~> " " <~> prevInd;
         }
         f <~> "\n";
@@ -539,25 +574,25 @@ module DefaultSparse {
   }
 
 
-  proc DefaultSparseArr.dsiSerialWrite(f) {
+  proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {
-      if (dom.nnz >= 1) {
+      if (dom._nnz >= 1) {
         f <~> data(1);
-        for i in 2..dom.nnz {
+        for i in 2..dom._nnz {
           f <~> " " <~> data(i);
         }
       }
     } else {
-      if (dom.nnz >= 1) {
-        var prevInd = dom.indices(1);
+      if (dom._nnz >= 1) {
+        var prevInd = dom._indices(1);
         f <~> data(1);
-        for i in 2..dom.nnz {
-          if (prevInd(1) != dom.indices(i)(1)) {
+        for i in 2..dom._nnz {
+          if (prevInd(0) != dom._indices(i)(0)) {
             f <~> "\n";
           } else {
             f <~> " ";
           }
-          prevInd = dom.indices(i);
+          prevInd = dom._indices(i);
           f <~> data(i);
         }
         f <~> "\n";

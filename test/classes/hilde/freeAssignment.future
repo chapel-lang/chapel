@@ -1,5 +1,0 @@
-semantic: assign overloads for class types?
-
-Should we allow assign for classes to be overloaded?
-If we do, we might need to update isTrivialAssignment
-in bulkCopyRecords.

@@ -9,3 +9,9 @@ files: array-put-1M.dat, array-put-1G.dat, array-put-FR4.dat
 graphkeys: 1M array, 1G array, 1/4 mem array
 graphtitle: Large Array PUT Performance
 ylabel: Performance (MB/s)
+
+perfkeys: MB/s: , MB/s: 
+files: array-put-1M.dat, array-misaligned-put-1M.dat
+graphkeys: 1M array, 1M misaligned array
+graphtitle: Misaligned Array PUT Performance
+ylabel: Performance (MB/s)

@@ -1,2 +1,0 @@
-onInIterator-local.chpl:1: In iterator 'foo':
-onInIterator-local.chpl:3: error: invalid use of 'yield' within 'on' in serial iterator

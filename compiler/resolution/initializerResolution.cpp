@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,7 +40,7 @@
 #include "wellknown.h"
 #include "wrappers.h"
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL);
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias = NULL, bool forNewExpr = false);
 
 static void gatherInitCandidates(CallInfo&                  info,
                                  Vec<FnSymbol*>&            visibleFns,
@@ -113,6 +114,8 @@ static std::map<FnSymbol*,FnSymbol*> newWrapperMap;
 // Note: The wrapper for classes always returns unmanaged
 // Note: A wrapper might be generated for records in the case of promotion
 static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
+  SET_LINENO(initFn);
+
   AggregateType* type = toAggregateType(initFn->_this->getValType());
   if (newWrapperMap.find(initFn) != newWrapperMap.end()) {
     return newWrapperMap[initFn];
@@ -173,7 +176,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   VarSymbol* result = newTemp();
   Expr* resultExpr = NULL;
   if (isClass(type)) {
-    Type* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED);
+    Type* uct = type->getDecoratedClass(CLASS_TYPE_UNMANAGED_NONNIL);
     resultExpr = new CallExpr(PRIM_CAST, uct->symbol, initTemp);
   } else {
     resultExpr = new SymExpr(initTemp);
@@ -211,6 +214,11 @@ static void insertNamedInstantiationInfo(CallExpr* newExpr,
     }
 
     for_fields(field, at) {
+      if (at->symbol->hasFlag(FLAG_GENERIC)) {
+        if (field->type == dtUnknown || field->type->symbol->hasFlag(FLAG_GENERIC)) {
+          continue;
+        }
+      }
       if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
         initCall->insertAtTail(new NamedExpr(field->name, new SymExpr(field->type->symbol)));
       } else if (field->hasFlag(FLAG_PARAM)) {
@@ -269,19 +277,58 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   // Find the correct 'init' function without wrapping/promoting
   AggregateType* alias = at == rootType ? NULL : at;
-  resolveInitCall(call, alias);
+  resolveInitCall(call, alias, true);
   resolveInitializerMatch(call->resolvedFunction());
   tmp->type = call->resolvedFunction()->_this->getValType();
   resolveTypeWithInitializer(toAggregateType(tmp->type), call->resolvedFunction());
 
+  // Check for arguments where the type is not known.
+  // These arguments indicate that something needed to be provided
+  // at the initializer call site.
+  for_formals(arg, call->resolvedFunction()) {
+    if (arg->type == dtUnknown || arg->type == dtTypeDefaultToken)
+      USR_FATAL(call, "initialization requires an argument for %s", arg->name);
+  }
+
+  // check that the type created by init is compatible with the requested
+  // type (e.g. for `type t = C(int); var x = new t(real);`).
+  if (isSubtypeOrInstantiation(tmp->type, at, call) == false) {
+    USR_FATAL_CONT(call, "initializer produces a different type");
+    USR_PRINT(call, "new was provided type '%s'", toString(at));
+    USR_PRINT(call, "init resulted in type '%s'", toString(tmp->type));
+  }
+
   return call;
+}
+
+// Creates a new temp and stores the DefExpr for it at the end
+// of block, or, if in a module init fn, in global scope.
+static
+VarSymbol* resolveNewInitializerMakeTemp(const char* name, BlockStmt* block) {
+  VarSymbol* tmp = newTemp(name);
+  tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+  BlockStmt* inBlock = toBlockStmt(block->parentExpr);
+  FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
+  if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
+    // make it a global variable
+    inFn->defPoint->insertAfter(new DefExpr(tmp));
+  } else {
+    block->insertAtTail(new DefExpr(tmp));
+  }
+
+  return tmp;
 }
 
 void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   // Get root instantiation so we can easily check against e.g. dtOwned
-  if (AggregateType* mat = toAggregateType(manager)) {
-    manager = mat->getRootInstantiation();
-  }
+  bool nilable = isNilableClassType(manager);
+  if (isManagedPtrType(manager))
+    manager = getManagedPtrManagerType(manager);
+  else if (manager == dtBorrowedNilable)
+    manager = dtBorrowed;
+  else if (manager == dtUnmanagedNilable)
+    manager = dtUnmanaged;
 
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
   AggregateType* at = resolveNewFindType(newExpr);
@@ -336,6 +383,14 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     } else if (isManagedPtrType(manager) == false) {
       Expr* new_temp_rhs = newCall;
 
+      if (nilable) {
+        // new unmanaged T(...)?
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_n", block);
+
+        block->insertAtTail(new CallExpr(PRIM_MOVE, tmpM, new_temp_rhs));
+        new_temp_rhs = createCast(tmpM, dtAnyManagementNilable->symbol);
+      }
+
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, new_temp_rhs);
       block->insertAtTail(newMove);
       newExpr->replace(new SymExpr(new_temp));
@@ -344,25 +399,28 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       CallExpr* newMove = new CallExpr(PRIM_MOVE, new_temp, newCall);
       block->insertAtTail(newMove);
 
-      CallExpr* new_temp_rhs = new CallExpr(PRIM_NEW, manager->symbol, new_temp);
+      Expr* new_temp_rhs = new CallExpr(PRIM_NEW, manager->symbol, new_temp);
 
       if (getBorrow) {
         // (new owned T(...)).borrow()
-        VarSymbol* tmpM = newTemp("new_temp_m");
-        tmpM->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-        BlockStmt* inBlock = toBlockStmt(block->parentExpr);
-        FnSymbol* inFn = toFnSymbol(inBlock->parentSymbol);
-        if (inFn && inFn->hasFlag(FLAG_MODULE_INIT) && inFn->body == inBlock) {
-          // make it a global variable
-          inFn->defPoint->insertAfter(new DefExpr(tmpM));
-        } else {
-          block->insertAtTail(new DefExpr(tmpM));
-        }
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_m", block);
+        VarSymbol* tmpR = resolveNewInitializerMakeTemp("new_temp_r", block);
 
         block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
+        block->insertAtTail(new CallExpr(PRIM_MOVE,
+                                         tmpR,
+                                         new CallExpr("borrow",
+                                                      gMethodToken,
+                                                      tmpM)));
+        new_temp_rhs = new SymExpr(tmpR);
+      }
 
-        new_temp_rhs = new CallExpr("borrow", gMethodToken, tmpM);
+      if (nilable) {
+        // new owned T(...)? or new borrowed T()?
+        VarSymbol* tmpM = resolveNewInitializerMakeTemp("new_temp_n", block);
+
+        block->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmpM, new_temp_rhs));
+        new_temp_rhs = createCast(tmpM, dtAnyManagementNilable->symbol);
       }
 
       newExpr->replace(new_temp_rhs);
@@ -383,13 +441,12 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       Expr* tail = block->body.tail;
       if (tail->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         VarSymbol* ir_temp = newTemp("ir_temp");
-        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr("chpl__initCopy", tail->copy())); 
+        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr(astr_initCopy, tail->copy()));
         tail->insertBefore(tempMove);
         normalize(tempMove);
         tail->replace(new SymExpr(ir_temp));
       }
     }
-
   } else {
     block->insertAtTail(initTemp->defPoint->remove());
     block->insertAtTail(initCall->remove());
@@ -413,7 +470,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
+static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool forNewExpr) {
   CallInfo info;
 
   if (call->id == breakOnResolveID) {
@@ -439,13 +496,39 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
 
     if (best == NULL) {
       if (call->partialTag == false) {
-        if (newExprAlias != NULL) {
-          USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
-        }
-        if (candidates.n == 0) {
-          printResolutionErrorUnresolved(info, mostApplicable);
+        if (forNewExpr == true) {
+          // This exists to enable multiple fatal error messages when an
+          // initializer fails to resolve due to nilability errors. If the
+          // compiler is able to resolve the initializer call while being
+          // more flexible with nilability rules, compilation can continue.
+          //
+          // TODO: We do not issue an error here because the compiler will
+          // later attempt to resolve the initializer call once again, in
+          // which case it would issue the same error. Instead, issue no errors
+          // in this conditional and let another part of resolution handle that.
+          // In the future, the compiler should not be attempting to resolve
+          // an already-resolved call.
+          bool existingErrors = fatalErrorsEncountered();
+          if (newExprAlias != NULL) {
+            USR_FATAL_CONT(call, "Unable to resolve new-expression with type alias '%s'", newExprAlias->symbol->name);
+          }
+          if (!inGenerousResolutionForErrors()) {
+            startGenerousResolutionForErrors();
+            resolveInitCall(call, newExprAlias, /*forNewExpr*/ false);
+            FnSymbol* retry = call->resolvedFunction();
+            stopGenerousResolutionForErrors();
+
+            if (fIgnoreNilabilityErrors && existingErrors == false && retry)
+              clearFatalErrors();
+          }
         } else {
-          printResolutionErrorAmbiguous (info, candidates);
+          if (candidates.n == 0) {
+            printResolutionErrorUnresolved(info, mostApplicable);
+
+            USR_STOP();
+          } else {
+            printResolutionErrorAmbiguous (info, candidates);
+          }
         }
       }
 
@@ -463,7 +546,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias) {
 
         checkForStoringIntoTuple(call, best->fn);
 
-        resolveNormalCallCompilerWarningStuff(best->fn);
+        resolveNormalCallCompilerWarningStuff(call, best->fn);
       }
     }
 
@@ -516,7 +599,7 @@ static void doGatherInitCandidates(CallInfo&                  info,
       // function should be a no-parens function or a type constructor.
       // (a type constructor call without parens uses default arguments)
       if (info.call->methodTag) {
-        if (visibleFn->hasEitherFlag(FLAG_NO_PARENS, FLAG_TYPE_CONSTRUCTOR)) {
+        if (visibleFn->hasFlag(FLAG_NO_PARENS)) {
           // OK
 
         } else {
@@ -587,6 +670,8 @@ static void resolveInitializerMatch(FnSymbol* fn) {
     insertFormalTemps(fn);
     at->setFirstGenericField();
     resolveInitializerBody(fn);
+
+    popInstantiationLimit(fn);
   }
 }
 
@@ -599,7 +684,7 @@ static void resolveInitializerBody(FnSymbol* fn) {
 
   toAggregateType(fn->_this->type)->initializerResolved = true;
 
-  insertAndResolveCasts(fn);
+  fixPrimInitsAndAddCasts(fn);
 
   ensureInMethodList(fn);
 }
@@ -682,7 +767,7 @@ static void makeActualsVector(const CallInfo&          info,
       // Fail if no matching formal is found.
       if (!match) {
         INT_FATAL(call,
-                  "Compilation should have already ensured this action ",
+                  "Compilation should have already ensured this action "
                   "would be valid");
       }
     }
@@ -716,7 +801,7 @@ static void makeActualsVector(const CallInfo&          info,
       }
 
       // Fail if there are too many unnamed actuals.
-      if (!match && !(fn->hasFlag(FLAG_GENERIC) && fn->hasFlag(FLAG_INIT_TUPLE))) {
+      if (!match && !(fn->isGeneric() && fn->hasFlag(FLAG_INIT_TUPLE))) {
         INT_FATAL(call,
                   "Compilation should have verified this action was valid");
       }

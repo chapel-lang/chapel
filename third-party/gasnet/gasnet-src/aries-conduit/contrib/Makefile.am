@@ -5,6 +5,7 @@
 AUTOMAKE_OPTIONS = foreign 1.4
 
 target = gasnetrun_aries
+target_pl = $(target).pl
 
 # Need a bin_DATA rule, but automake disallows that.  So, fake it.
 dotpldir = $(bindir)
@@ -16,23 +17,20 @@ $(top_builddir)/other/perlstart: $(top_srcdir)/other/perlstart.in
 $(top_builddir)/other/mpirun_common: $(top_srcdir)/other/mpirun_common.in
 	@cd $(top_builddir)/other && $(MAKE) mpirun_common
 $(target): $(top_builddir)/other/perlstart $(top_builddir)/other/mpirun_common
-$(target).pl: $(top_srcdir)/mpi-conduit/contrib/gasnetrun_mpi.pl
-	cp -f "$?" $@
-all-local: $(target) $(target).pl
+$(target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
+	cp -f "$<" $@
+all-local: $(target) $(target_pl)
 
-DISTCLEANFILES = $(target) $(target).pl
+DISTCLEANFILES = $(target) $(target_pl)
 
 # Conditionally install the .pl and its wrapper
 if USE_ARIES_CONDUIT
 scripts = $(target)
-data = $(target).pl
+data = $(target_pl)
 else
 scripts =
 data =
 endif
 bin_SCRIPTS = $(scripts)
 dotpl_DATA = $(data)
-
-.PHONY: force
-force:
 

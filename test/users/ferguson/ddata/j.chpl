@@ -1,3 +1,5 @@
+use SysCTypes;
+
 var a:_ddata(c_int);
 var size = 10;
 

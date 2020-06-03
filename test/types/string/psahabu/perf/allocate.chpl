@@ -8,7 +8,7 @@ var tConcat: Timer;
 if timing then tConcat.start();
 var concat: string;
 for i in 1..n do
-  concat = "concat is short for " + "concatenation" + i;
+  concat = "concat is short for " + "concatenation" + i:string;
 if timing then tConcat.stop();
 
 // append
@@ -25,8 +25,8 @@ if timing then tCopy.start();
 var keepAlive: int;
 var copied = "copycat";
 for i in 1..n {
-  var copy = new string(copied);
-  keepAlive += copy.len;
+  var copy = createStringWithNewBuffer(copied);
+  keepAlive += copy.buffLen;
 }
 if timing then tCopy.stop();
 

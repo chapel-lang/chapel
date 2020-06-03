@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -60,12 +61,12 @@
 
 //
 // If this code is being run on the server, mli_malloc() is a wrapper for
-// chpl_malloc(). If this code is being run on the client, then it is a
+// chpl_mem_alloc(). If this code is being run on the client, then it is a
 // wrapper for the system allocator.
 //
 #ifdef CHPL_MLI_IS_SERVER
-#   define mli_malloc(bytes) chpl_malloc(bytes)
-#   define mli_free(ptr) chpl_free(ptr)
+#   define mli_malloc(bytes) chpl_mem_alloc(bytes, CHPL_RT_MD_MLI_DATA, 0, 0)
+#   define mli_free(ptr) chpl_mem_free(ptr, 0, 0)
 #elif defined(CHPL_MLI_IS_CLIENT)
 #   define mli_malloc(bytes) sys_malloc(bytes)
 #   define mli_free(ptr) sys_free(ptr)
@@ -250,19 +251,37 @@ char * chpl_mli_connection_info(void* socket) {
   traveler = strchr(traveler + 1, ':');
   traveler++;
 
-  // Determine hostname of where we are currently running
-  size_t lenHostname = 256;
-  char* hostRes = (char *)mli_malloc(lenHostname);
-  int hostErr = gethostname(hostRes, lenHostname);
+  int lenConnBoilerplate = strlen("tcp://:");
+  char* chpl_rt_masterip = getenv("CHPL_RT_MASTERIP");
+  chpl_mli_debugf("got env var value for CHPL_RT_MASTERIP: %s\n",
+                  chpl_rt_masterip);
+  char* fullConnection = NULL;
+  if (chpl_rt_masterip != NULL) {
+    int lenMasterip = strlen(chpl_rt_masterip);
+    int lenFull = lenConnBoilerplate + lenMasterip + lenPort;
+    fullConnection = (char*)mli_malloc(lenFull + 1);
+    strcpy(fullConnection, "tcp://");
+    strcat(fullConnection, chpl_rt_masterip);
+    chpl_mli_debugf("full connection before port was %s\n", fullConnection);
 
-  // Recreate the connection using the hostname instead of 0.0.0.0
-  char* fullConnection = (char *)mli_malloc(lenHostname + lenPort);
-  strcpy(fullConnection, "tcp://");
-  strcat(fullConnection, hostRes);
+  } else {
+    // Determine hostname of where we are currently running
+    size_t lenHostname = 256;
+    char* hostRes = (char *)mli_malloc(lenHostname);
+    int hostErr = gethostname(hostRes, lenHostname);
+    chpl_mli_debugf("hostname was %s\n", hostRes);
+
+    // Recreate the connection using the hostname instead of 0.0.0.0
+    int lenFull = lenHostname + lenPort + lenConnBoilerplate;
+    fullConnection = (char *)mli_malloc(lenFull + 1);
+    strcpy(fullConnection, "tcp://");
+    strcat(fullConnection, hostRes);
+    chpl_mli_debugf("full connection before port was %s\n", fullConnection);
+    mli_free(hostRes);
+  }
   strcat(fullConnection, ":");
   strcat(fullConnection, traveler);
 
-  mli_free(hostRes);
   mli_free(portRes);
   return fullConnection;
 }

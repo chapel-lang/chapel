@@ -1,0 +1,5 @@
+error-out-used.chpl:9: In function 'test1':
+error-out-used.chpl:11: error: Cannot default-initialize c: owned C
+error-out-used.chpl:12: error: use here prevents split-init
+note: non-nil class types do not support default initialization
+note: Consider using the type owned C? instead

@@ -15,10 +15,7 @@ record Foo {
   }
 
   proc type chpl__deserialize(data) where foo {
-    var f : Foo;
-    f.h = new unmanaged Helper(data);
-    f.serialized = true;
-    return f;
+    return new Foo(new unmanaged Helper(data), true);
   }
 
   proc deinit() {

@@ -1,4 +1,4 @@
-use driver;
+public use driver;
 
 const Dom1D: domain(1) dmapped Dist1D = Space1;
 const Dom2D: domain(2) dmapped Dist2D = Space2;

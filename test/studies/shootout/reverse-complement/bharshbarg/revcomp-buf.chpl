@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
+private use IO, SysCTypes;
 
 /*
    This is very ugly because we don't have good IO support for
@@ -14,6 +15,8 @@
    because 'readBytes' doesn't tell us how many bytes it actually
    read...
 */
+
+private use List;
 
 config param columns = 61;
 
@@ -31,7 +34,7 @@ record buf {
     this.complete();
 
     chan = fi.reader(locking=false);
-    numLeft = fi.length();
+    numLeft = fi.size;
   }
 
   // Returns (by ref-ish) a slice of the buffer starting at 'low'
@@ -69,7 +72,7 @@ record buf {
     return -1;
   }
 
-  proc readUntil(term : uint(8), data : [] uint(8)) : int {
+  proc readUntil(term : uint(8), ref data : list(uint(8))) : int {
     var read = 0;
     while true {
       var done = false, used = 0;
@@ -79,10 +82,10 @@ record buf {
         if idx >= 0 {
           // Character found, bulk-append characters up to and including 'idx'
           // to the 'data' array.
-          data.push_back(avail[..idx]);
+          data.extend(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
-          data.push_back(avail);
+          data.extend(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;
@@ -99,32 +102,35 @@ config const readSize = 16 * 1024;
 proc main(args: [] string) {
   const stdin = openfd(0);
   var input = new buf(stdin, readSize);
-  var data : [1..0] uint(8);
+  var data: list(uint(8));
   
   // Use undocumented internals to fake a request for capacity.
   // Sets up 'data' to have an underlying capacity equal to the size of the
   // input file.
+  // NOTE: We can't do this with lists yet.
+  /*
   {
-    const r = 1..stdin.length();
+    const r = 1..stdin.size;
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();
   }
+  */
 
   sync {     // wait for all process() tasks to complete before continuing
     while true {
-      input.readUntil("\n".byte(1), data);
-      const start = data.size + 1;
-      input.readUntil(">".byte(1), data);
-      const last = data.size;
+      input.readUntil("\n".toByte(), data);
+      const start = data.size;
+      input.readUntil(">".toByte(), data);
+      const last = data.size-1;
 
-      if data[last] == ">".byte(1) {
+      if data[last] == ">".toByte() {
         // '-2' to skip over '\n>'
-        begin process(data, start, last-2);
+        begin with (ref data) process(data, start, last-2);
       } else {
         // Final section
         // '-1' to skip over '\n'
-        begin process(data, start, last-1);
+        begin with (ref data) process(data, start, last-1);
         break;
       }
     }
@@ -132,12 +138,16 @@ proc main(args: [] string) {
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
                                      hints=QIO_CH_ALWAYS_UNBUFFERED);
-  stdoutBin.write(data);
+  //
+  // This conversion wastes memory, but correct output requires array stdout
+  // specifically at the moment.
+  //
+  stdoutBin.write(data.toArray());
 }
 
-proc process(data, in start, in end) {
+proc process(ref data, in start, in end) {
   proc advance(ref cursor, dir) {
-    do { cursor += dir; } while data[cursor] == "\n".byte(1);
+    do { cursor += dir; } while data[cursor] == "\n".toByte();
   }
   while start <= end {
     ref d1 = data[start], d2 = data[end];
@@ -150,10 +160,10 @@ proc process(data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs.byte(i) != "\n".byte(1) then
-      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".toByte() then
+      table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);
   }
 
   return table;

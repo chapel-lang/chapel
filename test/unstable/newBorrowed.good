@@ -1,0 +1,3 @@
+newBorrowed.chpl:3: In function 'test':
+newBorrowed.chpl:4: warning: new borrowed C is unstable
+newBorrowed.chpl:4: note: use 'new unmanaged C' 'new owned C' or 'new shared C'

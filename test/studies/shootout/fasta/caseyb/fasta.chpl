@@ -1,6 +1,8 @@
 //Fasta Shootout
 //http://benchmarksgame.alioth.debian.org
 //Casey Battaglino
+use IO;
+
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
@@ -9,7 +11,7 @@ config const n = 1000;
 var outfd = openfd(1);
 var stdout = outfd.writer(locking=false);
 
-class Freq {
+record Freq {
   var c: string;
   var p: real;
 }
@@ -25,28 +27,28 @@ var ALU : string = "GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCAC" +
                    "GCGACAGAGCGAGACTCCGTCTCAAAAA";
 
 //Sequences to be randomly generated (probability table)
-var IUB : [0..14] unmanaged Freq;
-IUB[0] = new unmanaged Freq('a', 0.27);
-IUB[1] = new unmanaged Freq('c', 0.12);
-IUB[2] = new unmanaged Freq('g', 0.12);
-IUB[3] = new unmanaged Freq('t', 0.27);
-IUB[4] = new unmanaged Freq('B', 0.02);
-IUB[5] = new unmanaged Freq('D', 0.02);
-IUB[6] = new unmanaged Freq('H', 0.02);
-IUB[7] = new unmanaged Freq('K', 0.02);
-IUB[8] = new unmanaged Freq('M', 0.02);
-IUB[9] = new unmanaged Freq('N', 0.02);
-IUB[10] = new unmanaged Freq('R', 0.02);
-IUB[11] = new unmanaged Freq('S', 0.02);
-IUB[12] = new unmanaged Freq('V', 0.02);
-IUB[13] = new unmanaged Freq('W', 0.02);
-IUB[14] = new unmanaged Freq('Y', 0.02);
+var IUB : [0..14] Freq;
+IUB[0] = new Freq('a', 0.27);
+IUB[1] = new Freq('c', 0.12);
+IUB[2] = new Freq('g', 0.12);
+IUB[3] = new Freq('t', 0.27);
+IUB[4] = new Freq('B', 0.02);
+IUB[5] = new Freq('D', 0.02);
+IUB[6] = new Freq('H', 0.02);
+IUB[7] = new Freq('K', 0.02);
+IUB[8] = new Freq('M', 0.02);
+IUB[9] = new Freq('N', 0.02);
+IUB[10] = new Freq('R', 0.02);
+IUB[11] = new Freq('S', 0.02);
+IUB[12] = new Freq('V', 0.02);
+IUB[13] = new Freq('W', 0.02);
+IUB[14] = new Freq('Y', 0.02);
 
-var HomoSapiens : [0..3] unmanaged Freq;
-HomoSapiens[0] = new unmanaged Freq('a', 0.3029549426680);
-HomoSapiens[1] = new unmanaged Freq('c', 0.1979883004921);
-HomoSapiens[2] = new unmanaged Freq('g', 0.1975473066391);
-HomoSapiens[3] = new unmanaged Freq('t', 0.3015094502008);
+var HomoSapiens : [0..3] Freq;
+HomoSapiens[0] = new Freq('a', 0.3029549426680);
+HomoSapiens[1] = new Freq('c', 0.1979883004921);
+HomoSapiens[2] = new Freq('g', 0.1975473066391);
+HomoSapiens[3] = new Freq('t', 0.3015094502008);
 
 // (Scan operation)
 proc sumAndScale(a :[?D]) {
@@ -55,7 +57,7 @@ proc sumAndScale(a :[?D]) {
     p += item.p;
     item.p = p * LOOKUP_SCALE;
   }
-  a[a.numElements-1].p = LOOKUP_SCALE;
+  a[a.size-1].p = LOOKUP_SCALE;
 }
 
 // Deterministic random number generator as specified
@@ -72,8 +74,8 @@ class Random {
   }
 }
 
-var lookup : [0..LOOKUP_SIZE-1] unmanaged Freq;
-var random = new unmanaged Random();
+var lookup : [0..LOOKUP_SIZE-1] Freq;
+var random = new Random();
 
 // Make lookup table for random sequence generation
 proc makeLookup(a :[?D]) {
@@ -85,8 +87,8 @@ proc makeLookup(a :[?D]) {
 }
 
 // Add a line of random sequence
-proc addLine(bytes: int) {
-  for i in 0..bytes-1 {
+proc addLine(nBytes: int) {
+  for i in 0..nBytes-1 {
     var r  = random.next();
     var ai = r : int; 
     while (lookup[ai].p < r) {
@@ -103,26 +105,26 @@ proc randomMake(desc : string, a :[?D], n : int) {
   makeLookup(a);
   stdout.write(desc);
   while (len > 0) {
-    var bytes : int = min(LINE_LENGTH, len);
-    addLine(bytes);
-    len = len - bytes;
+    var nBytes : int = min(LINE_LENGTH, len);
+    addLine(nBytes);
+    len = len - nBytes;
   }
 }
 
 // Repeat sequence "alu" for n characters
 proc repeatMake(desc : string, alu : string, n : int) {
   stdout.write(desc);
-  var r : int = alu.length;
-  var s : string = alu + alu + alu[1..n%r];
+  var r : int = alu.size;
+  var s : string = alu + alu + alu[0..(n%r-1)];
   var j : int;
 
   for i in 0..(n / LINE_LENGTH)-1 {
     j = i*LINE_LENGTH % r;
-    stdout.writeln(s[j + 1..j + LINE_LENGTH]);
+    stdout.writeln(s[j..#LINE_LENGTH]);
   }
   if (n % LINE_LENGTH) {
     j = (n / LINE_LENGTH)*LINE_LENGTH % r;
-    stdout.writeln(s[j + 1..j + (n % LINE_LENGTH)]);
+    stdout.writeln(s[j..#(n % LINE_LENGTH)]);
   }
 }
 
@@ -132,8 +134,4 @@ proc main() {
   repeatMake(">ONE Homo sapiens alu\n", ALU, n * 2);
   randomMake(">TWO IUB ambiguity codes\n", IUB, n * 3);
   randomMake(">THREE Homo sapiens frequency\n", HomoSapiens, n * 5);
-
-  delete random;
-  for h in HomoSapiens do delete h;
-  for i in IUB         do delete i;
 }

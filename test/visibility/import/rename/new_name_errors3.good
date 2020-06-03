@@ -1,0 +1,3 @@
+new_name_errors3.chpl:11: In function 'main':
+new_name_errors3.chpl:12: error: unresolved call 'bar()'
+new_name_errors3.chpl:12: note: because no functions named bar found in scope

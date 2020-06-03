@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +24,7 @@
 // represent slices of another array via a domain.
 //
 module ArrayViewSlice {
-  use ChapelStandard;
+  private use ChapelStandard;
 
   config param chpl_debugSerializeSlice = false,
                chpl_serializeSlices = false;
@@ -107,6 +108,7 @@ module ArrayViewSlice {
     // domain and array
     //
     proc chpl__serialize() where chpl__rvfMe() {
+      use SysCTypes;
       if chpl_debugSerializeSlice {
         // use printf to avoid messing up tests checking comm counts
         extern proc printf(x...);
@@ -124,12 +126,12 @@ module ArrayViewSlice {
     proc type chpl__deserialize(data) {
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
-      const dom = _to_borrowed(domType).chpl__deserialize(data(1));
-      const arr = _to_borrowed(arrType).chpl__deserialize(data(2));
+      const dom = _to_borrowed(domType).chpl__deserialize(data(0));
+      const arr = _to_borrowed(arrType).chpl__deserialize(data(1));
       return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
-                                             _DomPid=data(1),
+                                             _DomPid=data(0),
                                              dom = dom,
-                                             _ArrPid=data(2),
+                                             _ArrPid=data(1),
                                              _ArrInstance=arr);
     }
 
@@ -159,7 +161,7 @@ module ArrayViewSlice {
     // must be (or should be) some way to do it without relying on
     // methods like this...
     //
-    proc isSliceArrayView() param {
+    override proc isSliceArrayView() param {
       return true;
     }
 
@@ -199,11 +201,11 @@ module ArrayViewSlice {
     // I/O
     //
 
-    proc dsiSerialWrite(f) {
+    proc dsiSerialWrite(f) throws {
       chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
-    proc dsiSerialRead(f) {
+    proc dsiSerialRead(f) throws {
       chpl_serialReadWriteRectangular(f, arr, privDom);
     }
 
@@ -237,7 +239,6 @@ module ArrayViewSlice {
     }
 
     inline proc dsiAccess(i) ref {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -248,7 +249,6 @@ module ArrayViewSlice {
 
     inline proc dsiAccess(i)
       where shouldReturnRvalueByValue(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -259,7 +259,6 @@ module ArrayViewSlice {
 
     inline proc dsiAccess(i) const ref
       where shouldReturnRvalueByConstRef(eltType) {
-      checkBounds(i);
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -268,12 +267,9 @@ module ArrayViewSlice {
       }
     }
 
-    inline proc checkBounds(i) {
-      if boundsChecking then
-        if !privDom.dsiMember(i) then
-          halt("array index out of bounds: ", i);
+    inline proc dsiBoundsCheck(i) {
+      return privDom.dsiMember(i);
     }
-
 
     //
     // locality-oriented queries
@@ -295,7 +291,7 @@ module ArrayViewSlice {
     // them proactively anymore.  If we're not serializing them, then we:
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param
     {
       if chpl_serializeSlices then return false;
       return _ArrInstance.dsiSupportsPrivatization();
@@ -307,10 +303,10 @@ module ArrayViewSlice {
 
     proc dsiPrivatize(privatizeData) {
       return new unmanaged ArrayViewSliceArr(eltType=this.eltType,
-                                   _DomPid=privatizeData(1),
-                                   dom=privatizeData(2),
-                                   _ArrPid=privatizeData(3),
-                                   _ArrInstance=privatizeData(4));
+                                   _DomPid=privatizeData(0),
+                                   dom=privatizeData(1),
+                                   _ArrPid=privatizeData(2),
+                                   _ArrInstance=privatizeData(3));
     }
 
     //
@@ -387,7 +383,15 @@ module ArrayViewSlice {
       return arr._getRCREView();
     }
 
-    proc doiCanBulkTransferRankChange() param {
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(param deinitElts:bool) {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc doiCanBulkTransferRankChange() param {
       return arr.doiCanBulkTransferRankChange();
     }
 

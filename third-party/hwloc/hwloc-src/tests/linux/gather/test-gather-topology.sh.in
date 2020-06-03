@@ -2,7 +2,7 @@
 #-*-sh-*-
 
 #
-# Copyright © 2012-2017 Inria.  All rights reserved.
+# Copyright © 2012-2019 Inria.  All rights reserved.
 # Copyright © 2010 Cisco Systems, Inc.  All rights reserved.
 # Copyright © 2011 Université Bordeaux
 # See COPYING in top-level directory.
@@ -16,6 +16,11 @@ gather="$HWLOC_top_builddir/utils/hwloc/hwloc-gather-topology"
 LANG=C
 LC_ALL=C
 export LANG LC_ALL
+
+# This test can quite long on large server, allow to skip it
+if test "x$HWLOC_TEST_GATHER_TOPOLOGY" = x0; then
+    exit 77
+fi
 
 # Ensure we're running on linux.  If not, then just exit with status
 # code 77 (the GNU standard for a skipped test)

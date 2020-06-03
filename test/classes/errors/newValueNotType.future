@@ -1,3 +1,0 @@
-bug: compiler is permitting 'new' to be called on values rather than types
-
-#12886

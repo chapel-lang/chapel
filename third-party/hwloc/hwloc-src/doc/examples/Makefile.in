@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Copyright © 2009-2016 Inria.  All rights reserved.
+# Copyright © 2009-2018 Inria.  All rights reserved.
 # Copyright © 2009-2013, 2017 Université Bordeaux
 # Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 # See COPYING in top-level directory.
@@ -100,8 +100,9 @@ target_triplet = @target@
 TESTS = hwloc-hello$(EXEEXT) $(am__EXEEXT_1)
 @HWLOC_HAVE_CXX_TRUE@am__append_1 = hwloc-hello-cpp
 check_PROGRAMS = $(am__EXEEXT_2) cpuset+bitmap+cpubind$(EXEEXT) \
-	nodeset+membind+policy$(EXEEXT) sharedcaches$(EXEEXT) \
-	get-knl-modes$(EXEEXT) gpu$(EXEEXT)
+	nodeset+membind+policy$(EXEEXT) get-knl-modes$(EXEEXT) \
+	gpu$(EXEEXT) $(am__EXEEXT_3)
+@HWLOC_HAVE_WINDOWS_FALSE@am__append_2 = sharedcaches
 subdir = doc/examples
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
@@ -126,6 +127,7 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 @HWLOC_HAVE_CXX_TRUE@am__EXEEXT_1 = hwloc-hello-cpp$(EXEEXT)
 am__EXEEXT_2 = hwloc-hello$(EXEEXT) $(am__EXEEXT_1)
+@HWLOC_HAVE_WINDOWS_FALSE@am__EXEEXT_3 = sharedcaches$(EXEEXT)
 cpuset_bitmap_cpubind_SOURCES = cpuset+bitmap+cpubind.c
 cpuset_bitmap_cpubind_OBJECTS = cpuset+bitmap+cpubind.$(OBJEXT)
 cpuset_bitmap_cpubind_LDADD = $(LDADD)
@@ -498,6 +500,7 @@ HWLOC_DIFF_W = @HWLOC_DIFF_W@
 HWLOC_EMBEDDED_CFLAGS = @HWLOC_EMBEDDED_CFLAGS@
 HWLOC_EMBEDDED_CPPFLAGS = @HWLOC_EMBEDDED_CPPFLAGS@
 HWLOC_EMBEDDED_LDADD = @HWLOC_EMBEDDED_LDADD@
+HWLOC_EMBEDDED_LDFLAGS = @HWLOC_EMBEDDED_LDFLAGS@
 HWLOC_EMBEDDED_LIBS = @HWLOC_EMBEDDED_LIBS@
 HWLOC_GL_LIBS = @HWLOC_GL_LIBS@
 HWLOC_HAVE_LIBXML2 = @HWLOC_HAVE_LIBXML2@

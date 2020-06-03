@@ -1,1 +1,0 @@
-forwarding-generic-default-unm.chpl:35: error: cannot assign expression of type unmanaged C(3*string) to field 'driver' of type unmanaged B(3*string)

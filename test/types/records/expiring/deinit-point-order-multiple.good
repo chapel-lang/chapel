@@ -1,0 +1,46 @@
+t1
+init 1
+init 2
+init 3
+init 4
+init 5
+init 6
+init 7
+init 8
+init 9
+init 10
+after last use of temporaries
+sum1: 55
+deinit 10
+deinit 9
+deinit 8
+deinit 7
+deinit 6
+deinit 5
+deinit 4
+deinit 3
+deinit 2
+deinit 1
+t2
+init 1
+init 2
+init 3
+init 4
+init 5
+init 6
+init 7
+init 8
+init 9
+init 10
+choose: (x = 10)
+at end of function
+deinit 10
+deinit 9
+deinit 8
+deinit 7
+deinit 6
+deinit 5
+deinit 4
+deinit 3
+deinit 2
+deinit 1

@@ -1,3 +1,5 @@
+use IO;
+
 var s: string;
 
 write("Enter a roman numeral: ");
@@ -23,7 +25,7 @@ arabicNumerals("M") = 1000;
 
 var n, current, last: int;;
 last = 0;
-for i in 1..(s.length) {
+for i in 0..<s.size {
   current = arabicNumerals(s[i]);
   if current > last then
     current -= last;

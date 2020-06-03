@@ -1,3 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:94: error: unable to resolve return type of function '_getIterator'
-recursive-iter.chpl:6: In iterator 'these':
-recursive-iter.chpl:8: error: called recursively at this point

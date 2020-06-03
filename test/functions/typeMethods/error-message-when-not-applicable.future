@@ -1,6 +1,0 @@
-error message: indicate correct reason when type method is not applicable
-#13155
-
-When this issue is resolve, adjust the .good file for:
-
-  test/classes/diten/typeMethodWrongReceiverType.chpl

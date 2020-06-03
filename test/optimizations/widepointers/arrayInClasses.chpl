@@ -32,7 +32,7 @@ proc testSimpleClass() {
 proc testArrayOfClasses() {
   writeln("----- array of classes -----");
 
-  var chunks : [0..#numLocales] unmanaged Chunk;
+  var chunks : [0..#numLocales] unmanaged Chunk?;
 
   for loc in Locales do on loc {
     chunks[loc.id] = new unmanaged Chunk();
@@ -40,12 +40,12 @@ proc testArrayOfClasses() {
 
   coforall c in chunks do on c {
     writeln("class is wide: ", __primitive("is wide pointer", c));
-    ref data = c.data;
+    ref data = c!.data;
     writeln("array is wide: ", __primitive("is wide pointer", data._value.shiftedData));
     for d in data do d += 1;
   }
 
-  for c in chunks do writeln(c.data);
+  for c in chunks do writeln(c!.data);
 
   delete chunks;
 }

@@ -278,7 +278,7 @@ A is:
 Incrementing A[Dinner] via routine:
 Incrementing in routine by access
 ---------------------------------
-(execute_on_nb = 3) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 45, put = 9, execute_on_fast = 1) (get = 45, put = 9, execute_on_fast = 1) (get = 45, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -295,7 +295,7 @@ A is:
 Incrementing A[Dinner] via routine:
 Incrementing in routine by iteration
 ------------------------------------
-(execute_on_nb = 3) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 27, put = 9, execute_on_fast = 1) (get = 27, put = 9, execute_on_fast = 1) (get = 27, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -327,7 +327,7 @@ A is:
 
 Incrementing B via access
 -------------------------
-(execute_on_nb = 3) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 45, put = 9, execute_on_fast = 1) (get = 45, put = 9, execute_on_fast = 1) (get = 45, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -343,7 +343,7 @@ A is:
 
 Incrementing B via iteration
 ----------------------------
-(execute_on_nb = 3) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 27, put = 9, execute_on_fast = 1) (get = 27, put = 9, execute_on_fast = 1) (get = 27, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -360,7 +360,7 @@ A is:
 Incrementing B via routine:
 Incrementing in routine by access
 ---------------------------------
-(execute_on_nb = 3) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1) (get = 72, put = 9, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 45, put = 9, execute_on_fast = 1) (get = 45, put = 9, execute_on_fast = 1) (get = 45, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -377,7 +377,7 @@ A is:
 Incrementing B via routine:
 Incrementing in routine by iteration
 ------------------------------------
-(execute_on_nb = 3) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1) (get = 54, put = 9, execute_on_fast = 1)
+(execute_on_nb = 3) (get = 27, put = 9, execute_on_fast = 1) (get = 27, put = 9, execute_on_fast = 1) (get = 27, put = 9, execute_on_fast = 1)
 
 A is:
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0

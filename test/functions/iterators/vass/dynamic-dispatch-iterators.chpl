@@ -9,8 +9,9 @@ class Subclass:Superclass {
   override iter itest() { yield "Subclass"; }
 }
 
-var c: unmanaged Superclass;
-c = if numLocales > 1 then new unmanaged Superclass() else new unmanaged Subclass();
+var tmp: unmanaged Superclass?;
+tmp = if numLocales > 1 then new unmanaged Superclass() else new unmanaged Subclass();
+var c = tmp:unmanaged Superclass;
 
 // check whether dynamic dispatch within a paren-less function works
 c.noparns;

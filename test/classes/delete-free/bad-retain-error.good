@@ -1,0 +1,2 @@
+bad-retain-error.chpl:13: In function 'main':
+bad-retain-error.chpl:15: error: cannot retain 'unmanaged B' (expected 'unmanaged A')

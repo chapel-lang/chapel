@@ -1,3 +1,5 @@
+use IO;
+
 var complexNumber: complex;
 var numTestCases: int = 8;
 var i: int = 0;

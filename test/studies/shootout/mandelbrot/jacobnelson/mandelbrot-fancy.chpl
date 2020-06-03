@@ -11,27 +11,21 @@ proc main()
   const bytesRequired : uint = (size + 7) / 8;
   const byteRange = 0..#bytesRequired:int(64);
   const sizeRange = 0..#size:int(64);
-
-
-  //const myLocales : [ell in 0..#(bytesRequired:int)] locale = Locales(ell % numLocales);
-  var myLocales : [0..#(bytesRequired:int)] locale;
-  forall loc in 0..#(bytesRequired:int) do {
-    myLocales(loc) = Locales(loc % numLocales);
-  }
+  const myLocales = [loc in 0..#(bytesRequired:int)] Locales[loc % numLocales];
 
   var ByteDist = new dmap(new Block(rank=2,idxType=int(64),
                                     targetLocales=reshape(myLocales, {1..#(bytesRequired:int), 1..1}),
                                     boundingBox={sizeRange, byteRange}));
 
   var ByteDom: domain(2, int(64)) dmapped ByteDist = {sizeRange, byteRange};
-  var bytes : [ByteDom] uint(8);
+  var ByteArr : [ByteDom] uint(8);
 
 
   const limit : real = 2.0;
   const maxIter : int = 50;
 
 
-  forall (byte,(y,bytex)) in zip(bytes,bytes.domain) do
+  forall (byte,(y,bytex)) in zip(ByteArr,ByteArr.domain) do
     {
       var byte_acc : uint(8) = 0;
 
@@ -69,9 +63,9 @@ proc main()
   writeln("P4");
   writeln(size," ",size);
 
-  for (x,y) in bytes.domain do
+  for (x,y) in ByteArr.domain do
     {
-      putchar(bytes(x,y));
+      putchar(ByteArr(x,y));
     }
 
 }

@@ -4,6 +4,7 @@
    contributed by Ben Harshbarger and Brad Chamberlain
    derived from the GNU C version by Mr Ledrug
 */
+use IO;
 
 config param columns = 61;
 
@@ -13,7 +14,7 @@ proc main(args: [] string) {
   const consoleIn = openfd(0),
         stdinNoLock = consoleIn.reader(locking=false);
 
-  var data: [1..consoleIn.length()] uint(8),
+  var data: [1..consoleIn.size] uint(8),
       idx = 1,
       start = 0;
 
@@ -21,7 +22,7 @@ proc main(args: [] string) {
     var numRead: int;
 
     while stdinNoLock.readline(data, numRead, idx) {
-      if data[idx] == ">".byte(1) {       // is this the start of a section?
+      if data[idx] == ">".toByte() {       // is this the start of a section?
 
         // spawn a task to process the previous sequence, if there was one
         if start then
@@ -54,7 +55,7 @@ proc process(data, start, end) {
     for m in (start+extra)..(end-1) by columns {
       for i in 1..off-1 by -1 do
         data[m+i+1] = data[m+i];
-      data[m+1] = "\n".byte(1);
+      data[m+1] = "\n".toByte();
     }
 
   // replace the data items with their table entries
@@ -68,10 +69,10 @@ proc process(data, start, end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.length by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
-    if pairs.byte(i) != "\n".byte(1) then
-      table[pairs[i:byteIndex].toLower().byte(1)] = pairs.byte(i+1);
+    if pairs.byte(i) != "\n".toByte() then
+      table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);
   }
 
   return table;

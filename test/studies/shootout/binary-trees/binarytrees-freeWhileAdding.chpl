@@ -49,9 +49,8 @@ proc main() {
   //
   // Print out the stats for the trees of varying depths.
   //
-  for depth in depths do
-    writeln(stats[depth](1), "\t trees of depth ", depth, "\t check: ",
-            stats[depth](2));
+  for (depth, (numTrees, checksum)) in zip(depths, stats) do
+    writeln(numTrees, "\t trees of depth ", depth, "\t check: ", checksum);
 
   //
   // Checksum the long-lived tree, print its stats, and free it.
@@ -65,7 +64,7 @@ proc main() {
 // A simple balanced tree node class
 //
 class Tree {
-  const left, right: unmanaged Tree;
+  const left, right: unmanaged Tree?;
 
   proc type build(depth): unmanaged Tree {
     if depth <= 0 then
@@ -81,7 +80,7 @@ class Tree {
   proc sum(): int {
     var sum = 1;
     if left {
-      sum += left.sum() + right.sum();
+      sum += left!.sum() + right!.sum();
       delete left;
       delete right;
     }

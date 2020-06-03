@@ -49,8 +49,8 @@ var fluffTime : Timer;
 
 proc main() {
   // Allocate the levels
-  var Levels : [LevelDom] owned MGLevel;
-  for ilevel in LevelDom do Levels[ilevel] = new owned MGLevel(2**ilevel);
+  var Levels : [LevelDom] owned MGLevel =
+    for ilevel in LevelDom do new owned MGLevel(2**ilevel);
 
   var U,V,R : [Levels[numlevels].dom] real;
 
@@ -266,8 +266,8 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
       const (w0, w1, w2, w3) = w;
 
       const locdom = dest.localSubdomain();
-      const outer  = {locdom.dim(1),locdom.dim(2)},
-            inner  = locdom.dim(3);
+      const outer  = {locdom.dim(0),locdom.dim(1)},
+            inner  = locdom.dim(2);
       const (klo, khi) = (inner.low, inner.high);
       local {
         // Helpers
@@ -286,7 +286,7 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
           dest.localAccess[i,j,klo] += w2 * valA(i,j,klo-1) +
                                        w3 * valB(i,j,klo-1);
 
-          for k in vectorizeOnly(klo..khi) {
+          for k in klo..khi {
             const val1 = locSrc[i,j,k];
             const val2 = valA(i,j,k);
             const val3 = valB(i,j,k);
@@ -298,8 +298,10 @@ proc stencilConvolve(dest : [?Dom] real, const ref src : []real, const w : coeff
             // Update previous and next destinations with this iteration's
             // val2 and val3
             const temp = w2 * val2 + w3 * val3;
-            dest.localAccess[i,j,k-1] += temp;
-            dest.localAccess[i,j,k+1] += temp;
+            if k-1>=klo then
+              dest.localAccess[i,j,k-1] += temp;
+            if k+1<=khi then
+              dest.localAccess[i,j,k+1] += temp;
           }
 
           dest.localAccess[i,j,khi] += w2 * valA(i,j,khi+1) +

@@ -59,7 +59,7 @@ proc main() {
   const j : U(r=10);
   writeln(j.type:string);
 
-  writeln( Z         :string ); // Z(1)(2)(3)
+  writeln( Z         :string ); // Z
   writeln( Z(p=0)    :string ); // Z(0)(2)(3)
   writeln( Z(q=0)    :string ); // Z(1,0)(3)
   writeln( Z(q=2)    :string ); // Z(1)(2)(3)

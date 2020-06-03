@@ -1,4 +1,4 @@
-var myObject: object;
+var myObject: borrowed object?;
 
 var mysync: sync int;
 

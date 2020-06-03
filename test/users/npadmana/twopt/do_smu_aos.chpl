@@ -2,6 +2,7 @@ use Regexp;
 use Histogram;
 use Time;
 use Random;
+use IO;
 
 // Use the test/twopt code
 config const isTest=false;
@@ -70,12 +71,12 @@ proc readFile(fn : string, pp : []WeightedParticle3D)  {
   for iff in ff.lines() {
    icol = 1; 
    for col1 in iff.split(spaces) {
-     if (col1.length==0) then continue;
+     if (col1.size==0) then continue;
      cols[icol] = col1 : real;
      icol += 1;
    }
    if (icol < 4) then assert(false,"malformed line...");
-   for jj in Ddim do pp[ipart].x(jj) = cols[jj];
+   for jj in Ddim do pp[ipart].x(jj-1) = cols[jj];
    pp[ipart].w = cols[4];
    pp[ipart].r2 = + reduce (pp[ipart].x**2);
    ipart += 1;
@@ -87,10 +88,10 @@ proc smuAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, d1,d2 : doma
    
     var x1,y1,z1,w1,r2 : real;
     var sl, s2, l1, s1, l2, mu, wprod : real;
-    x1 = p1[ii].x(1); y1 = p1[ii].x(2); z1 = p1[ii].x(3); w1 = p1[ii].w; r2 = p1[ii].r2;
+    x1 = p1[ii].x(0); y1 = p1[ii].x(1); z1 = p1[ii].x(2); w1 = p1[ii].w; r2 = p1[ii].r2;
 
     for jj in d2 { // Second set of particles
-      mu=2*(p2[jj].x(1)*x1 + p2[jj].x(2)*y1 + p2[jj].x(3)*z1);
+      mu=2*(p2[jj].x(0)*x1 + p2[jj].x(1)*y1 + p2[jj].x(2)*z1);
       sl = r2 - p2[jj].r2;
       l1 = r2 + p2[jj].r2;
       s2 = l1 - mu;
@@ -115,12 +116,12 @@ proc splitOn(pp : []WeightedParticle3D, scr : []WeightedParticle3D, splitDim : i
   npart = pp.domain.size;
   lnpart = 0;
   for ipp in pp {
-    if (ipp.x(splitDim) < xsplit) then lnpart+=1;
+    if (ipp.x(splitDim-1) < xsplit) then lnpart+=1;
   }
   var li, ri : int;
   li = lo; ri = (lo+lnpart);
   for ipp in pp {
-    if (ipp.x(splitDim) < xsplit) {
+    if (ipp.x(splitDim-1) < xsplit) {
       scr[li] = ipp;
       li+=1;
     } else {
@@ -141,7 +142,7 @@ class KDNode {
   var dom : domain(1);
   var xcen : NDIM*real;
   var rcell : real;
-  var left, right : owned KDNode;
+  var left, right : owned KDNode?;
 
   proc isLeaf() : bool {
     return (left==nil) && (right==nil);
@@ -164,8 +165,8 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   var pmax = pp[me.lo].x;
   for ipp in pp {
     for idim in Ddim {
-      if (ipp.x(idim) < pmin(idim)) then pmin(idim) = ipp.x(idim);
-      if (ipp.x(idim) > pmax(idim)) then pmax(idim) = ipp.x(idim);
+      if (ipp.x(idim-1) < pmin(idim-1)) then pmin(idim-1) = ipp.x(idim-1);
+      if (ipp.x(idim-1) > pmax(idim-1)) then pmax(idim-1) = ipp.x(idim-1);
     }
   }
   me.xcen = (pmax+pmin)/2.0;
@@ -187,11 +188,11 @@ proc BuildTree(pp : []WeightedParticle3D, scr : []WeightedParticle3D, id : int) 
   dx = pmax - pmin; 
   var splitDim = 1;
   for idim in Ddim {
-    if (dx(idim) > dx(splitDim)) then splitDim=idim;
+    if (dx(idim-1) > dx(splitDim-1)) then splitDim=idim;
   }
 
   // Split
-  var lnpart = splitOn(pp, scr,splitDim, me.xcen(splitDim));
+  var lnpart = splitOn(pp, scr,splitDim, me.xcen(splitDim-1));
   var ldom = {me.lo..(me.lo+lnpart-1)};
   var rdom = {(me.lo+lnpart)..me.hi};
   gtime1.stop();
@@ -216,24 +217,24 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
 
   // If one node is a leaf 
   if (node1.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
   if (node2.isLeaf()) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   }
 
   // Split the larger case;
   if (node1.npart > node2.npart) {
-    TreeAccumulate(hh, p1, p2, node1.left, node2);
-    TreeAccumulate(hh, p1, p2, node1.right, node2);
+    TreeAccumulate(hh, p1, p2, node1.left!, node2);
+    TreeAccumulate(hh, p1, p2, node1.right!, node2);
     return;
   } else {
-    TreeAccumulate(hh, p1, p2, node1, node2.left);
-    TreeAccumulate(hh, p1, p2, node1, node2.right);
+    TreeAccumulate(hh, p1, p2, node1, node2.left!);
+    TreeAccumulate(hh, p1, p2, node1, node2.right!);
     return;
   }
 

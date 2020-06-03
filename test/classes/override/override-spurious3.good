@@ -1,0 +1,3 @@
+override-spurious3.chpl:12: error: Child.f override keyword present but no superclass method matches signature to override
+override-spurious3.chpl:15: error: Child.g override keyword present but no superclass method matches signature to override
+override-spurious3.chpl:18: error: Child.g override keyword present but no superclass method matches signature to override

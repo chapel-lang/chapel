@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -21,6 +22,8 @@
 /*
   Support for simple assert() routines.
 
+  .. warning:: This module has been deprecated - please use :mod:`Builtins` instead.
+
   .. note:: All Chapel programs automatically ``use`` this module by default.
             An explicit ``use`` statement is not necessary.
 
@@ -29,7 +32,8 @@
 
 */
 module Assert {
-
+  compilerWarning("Assert module is deprecated. 'assert' functions are now in ",
+                  "the Builtins module, which is 'use'd by default");
 
 /*
   Assert that a boolean condition is true.  If it is false, prints
@@ -40,16 +44,17 @@ module Assert {
 */
 pragma "insert line file info"
 pragma "always propagate line file info"
+pragma "last resort"
 proc assert(test: bool) {
-  if !test then
-    __primitive("chpl_error", c"assert failed");
+  // last resort avoids recursion
+  assert(test);
 }
   
 
 /*
   Assert that a boolean condition is true.  If it is false, prints
   'assert failed - ' followed by all subsequent arguments, as though
-  printed using :proc:`~IO.write()`.
+  printed using :proc:`~ChapelIO.write()`.
 
   :arg test: the boolean condition
   :type test: `bool`
@@ -58,11 +63,9 @@ proc assert(test: bool) {
 */
 pragma "insert line file info"
 pragma "always propagate line file info"
+pragma "last resort"
 proc assert(test: bool, args ...?numArgs) {
-  if !test {
-    var tmpstring = "assert failed - " + stringify((...args));
-    __primitive("chpl_error", tmpstring.c_str());
-  }
+  // last resort avoids recursion
+  assert(test, (...args));
 }
-
 }

@@ -1,5 +1,5 @@
 config const printResults = false;
-var mo = memory_order_seq_cst; // can't have configs of extern types
+param mo = memoryOrder.seqCst;
 
 proc doit(type myType) {
   var ax: atomic myType;
@@ -30,31 +30,11 @@ proc doit(type myType) {
   ax.write(0:myType, mo);
   coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
       var a = (ax.fetchAdd(i:myType, mo)+i:myType):myType;
-      ax.compareExchange(a, a, mo);
+      ax.compareAndSwap(a, a, mo);
     }
   x = ax.read(mo);
   if x != 120:myType then
-    writeln(myType:string, ": ERROR: (fetchAdd/compareExchange) x=", x, " (should be 120)");
-  if printResults then writeln(x);
-
-  ax.write(0:myType, mo);
-  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
-      var a = (ax.fetchAdd(i:myType, mo)+i:myType):myType;
-      ax.compareExchangeStrong(a, a, mo);
-    }
-  x = ax.read(mo);
-  if x != 120:myType then
-    writeln(myType:string, ": ERROR: (fetchAdd/compareExchangeStrong) x=", x, " (should be 120)");
-  if printResults then writeln(x);
-
-  ax.write(0:myType, mo);
-  coforall i in 1..15 do on Locales[i%numLocales] { // 15 is max for int(8)
-      var a = (ax.fetchAdd(i:myType, mo)+i:myType):myType;
-      ax.compareExchangeWeak(a, a, mo);
-    }
-  x = ax.read(mo);
-  if x != 120:myType then
-    writeln(myType:string, ": ERROR: (fetchAdd/compareExchangeWeak) x=", x, " (should be 120)");
+    writeln(myType:string, ": ERROR: (fetchAdd/compareAndSwap) x=", x, " (should be 120)");
   if printResults then writeln(x);
 
   var b: atomic bool;

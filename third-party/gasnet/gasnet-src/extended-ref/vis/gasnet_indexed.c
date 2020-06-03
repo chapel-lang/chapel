@@ -13,7 +13,8 @@
 #define _GASNETE_ADDRLIST_PACK(copy) {                                       \
   size_t i;                                                                  \
   uint8_t *ploc = (uint8_t *)buf;                                            \
-  gasneti_assert(count > 0 && list && len > 0 && buf && first_offset < len); \
+  gasneti_assert(count > 0 && list && len > 0 && buf);                       \
+  gasneti_assert_uint(first_offset ,<, len);                                 \
   if (last_len == (size_t)-1) last_len = len;                                \
   if (count == 1) {                                                          \
     copy(ploc, ((uint8_t*)list[0])+first_offset, last_len);                  \
@@ -70,8 +71,8 @@ size_t gasnete_packetize_addrlist(size_t remotecount, size_t remotelen,
   gasnete_packetdesc_t *remotept = gasneti_malloc(ptsz*sizeof(gasnete_packetdesc_t));
   gasnete_packetdesc_t *localpt = gasneti_malloc(ptsz*sizeof(gasnete_packetdesc_t));
   gasneti_assert(premotept && plocalpt && remotecount && remotelen && localcount && locallen);
-  gasneti_assert(maxpayload > metadatasz);
-  gasneti_assert(remotecount*remotelen == localcount*locallen);
+  gasneti_assert_uint(maxpayload ,>, metadatasz);
+  gasneti_assert_uint(remotecount*remotelen ,==, localcount*locallen);
   gasneti_assert(remotecount*remotelen > 0);
 
   for (ptidx = 0; ; ptidx++) {
@@ -80,7 +81,7 @@ size_t gasnete_packetize_addrlist(size_t remotecount, size_t remotelen,
     size_t ldatasz; 
     size_t rdatasz = 0; // init to avoid a warning on gcc -O3 -Wall
 
-    gasneti_assert(ptidx < ptsz);
+    gasneti_assert_uint(ptidx ,<, ptsz);
 
     /* begin remote packet */
     remotept[ptidx].firstidx = ridx;
@@ -91,7 +92,7 @@ size_t gasnete_packetize_addrlist(size_t remotecount, size_t remotelen,
     localpt[ptidx].firstoffset = loffset;
 
     if (roffset > 0) { /* initial partial entry */
-      gasneti_assert(roffset < remotelen);
+      gasneti_assert_uint(roffset ,<, remotelen);
       rdatasz = remotelen - roffset; /* data left in current entry */
       /* try to add the entire entry to packet */
       if (sharedpacket) packetremain -= (metadatasz + rdatasz);
@@ -119,7 +120,7 @@ size_t gasnete_packetize_addrlist(size_t remotecount, size_t remotelen,
       if (ridx == remotecount) { done = 1; goto rend; } /* done - this is last packet */
     }
     if (packetremain > metadatasz) { /* trailing partial entry */
-      gasneti_assert(packetremain < runit);
+      gasneti_assert_int(packetremain ,<, runit);
       if (sharedpacket) rdatasz = packetremain - metadatasz;
       else              rdatasz = packetremain;
       packetdata += rdatasz;
@@ -140,20 +141,20 @@ size_t gasnete_packetize_addrlist(size_t remotecount, size_t remotelen,
           else if (i == remotept[ptidx].firstidx) datachk += (remotelen - remotept[ptidx].firstoffset);
           else datachk += remotelen;
         }
-        gasneti_assert(packetdata == datachk);
+        gasneti_assert_uint(packetdata ,==, datachk);
         if (sharedpacket) { 
-          gasneti_assert((metadatasz*entries + packetdata) <= maxpayload); /* not overfull */
-          gasneti_assert(((metadatasz*entries + packetdata) >= maxpayload - metadatasz) || done); /* not underfull */
+          gasneti_assert_int((metadatasz*entries + packetdata) ,<=, maxpayload); /* not overfull */
+          if (!done) gasneti_assert_int((metadatasz*entries + packetdata) ,>=, maxpayload - metadatasz); /* not underfull */
         } else {
-          gasneti_assert(MAX(metadatasz*entries,packetdata) <= maxpayload); /* not overfull */
-          gasneti_assert((MAX(metadatasz*entries,packetdata) >= maxpayload - 2*metadatasz) || done); /* not underfull */
+          gasneti_assert_int(MAX(metadatasz*entries,packetdata) ,<=, maxpayload); /* not overfull */
+          if (!done) gasneti_assert_int(MAX(metadatasz*entries,packetdata) ,>=, maxpayload - 2*metadatasz); /* not underfull */
         }
       }
     #endif
 
     ldatasz = 0;
     if (loffset > 0) { /* initial partial entry */
-      gasneti_assert(loffset < locallen);
+      gasneti_assert_uint(loffset ,<, locallen);
       ldatasz = locallen - loffset; /* data left in current entry */
       packetdata -= ldatasz;
       if (packetdata < 0) { /* overflowed - this entry spills into next packet */
@@ -176,7 +177,7 @@ size_t gasnete_packetize_addrlist(size_t remotecount, size_t remotelen,
       gasneti_assert(loffset == 0);
     }
     if (packetdata > 0) { /* trailing partial entry */
-      gasneti_assert(packetdata < locallen);
+      gasneti_assert_uint(packetdata ,<, locallen);
       ldatasz = packetdata;
       loffset = ldatasz;
     }
@@ -300,7 +301,7 @@ gex_Event_t gasnete_puti_AMPipeline(gasnete_synctype_t synctype,
   for (size_t packetidx = 0; packetidx < packetcnt; packetidx++) {
     #if GASNETE_VIS_NPAM  // NPAM 1 or 2 (currently treated as 1)
       gex_AM_SrcDesc_t sd = gex_AM_PrepareRequestMedium(tm, rank, NULL, maxpacket, maxpacket, NULL, 0, HARGS(5,6));
-      gasneti_assert(gex_AM_SrcDescSize(sd) >= maxpacket);
+      gasneti_assert_uint(gex_AM_SrcDescSize(sd) ,>=, maxpacket);
       void * * const packedbuf = gex_AM_SrcDescAddr(sd);
     #endif
      
@@ -314,7 +315,7 @@ gex_Event_t gasnete_puti_AMPipeline(gasnete_synctype_t synctype,
       uint8_t * const end = gasnete_addrlist_pack(lnum, &srclist[lpacket->firstidx], srclen, &packedbuf[rnum], 
                                   lpacket->firstoffset, lpacket->lastlen);
       size_t const nbytes = end - (uint8_t *)packedbuf;
-      gasneti_assert(nbytes <= maxpacket);
+      gasneti_assert_uint(nbytes ,<=, maxpacket);
 
       /* send AM(rnum, iop) from packedbuf */
     #define ARGS PACK(iop), rnum, dstlen, rpacket->firstoffset, rpacket->lastlen
@@ -352,7 +353,7 @@ void gasnete_puti_AMPipeline_reqh_inner(gex_Token_t token,
   void * const * const rlist = addr;
   uint8_t * const data = (uint8_t *)(&rlist[rnum]);
   uint8_t * const end = gasnete_addrlist_unpack(rnum, rlist, dstlen, data, firstoffset, lastlen);
-  gasneti_assert(end - (uint8_t *)addr == nbytes);
+  gasneti_assert_uint(end - (uint8_t *)addr ,==, nbytes);
   /* TODO: coalesce acknowledgements - need a per-rank, per-op seqnum & packetcnt */
   gex_AM_ReplyShort(token, gasneti_handleridx(gasnete_putvis_AMPipeline_reph), 0, PACK(iop));
 }
@@ -398,8 +399,8 @@ gex_Event_t gasnete_geti_AMPipeline(gasnete_synctype_t synctype,
     visop->type = GASNETI_VIS_CAT_GETI_AMPIPELINE;
     visop->count = dstcount;
   #endif
-  gasneti_assert(packetcnt <= GASNETI_ATOMIC_MAX);
-  gasneti_assert(packetcnt == (gex_AM_Arg_t)packetcnt);
+  gasneti_assert_uint(packetcnt ,<=, GASNETI_ATOMIC_MAX);
+  gasneti_assert_uint(packetcnt ,==, (gex_AM_Arg_t)packetcnt);
   visop->len = dstlen;
   visop->addr = localpt;
   GASNETI_MEMCPY(savedlst, dstlist, dstcount*sizeof(void *));
@@ -409,7 +410,7 @@ gex_Event_t gasnete_geti_AMPipeline(gasnete_synctype_t synctype,
   for (size_t packetidx = 0; packetidx < packetcnt; packetidx++) {
     #if GASNETE_VIS_NPAM  // NPAM 1 or 2 (currently treated as 1)
       gex_AM_SrcDesc_t sd = gex_AM_PrepareRequestMedium(tm, rank, NULL, maxrequest, maxrequest, NULL, 0, HARGS(5,6));
-      gasneti_assert(gex_AM_SrcDescSize(sd) >= maxrequest);
+      gasneti_assert_uint(gex_AM_SrcDescSize(sd) ,>=, maxrequest);
       void * * const packedbuf = gex_AM_SrcDescAddr(sd);
     #endif
       gasnete_packetdesc_t * const rpacket = &remotept[packetidx];
@@ -448,7 +449,7 @@ void gasnete_geti_AMPipeline_reqh_inner(gex_Token_t token,
   gex_AM_Arg_t dstlen, gex_AM_Arg_t firstoffset, gex_AM_Arg_t lastlen) {
   void * const * const rlist = addr;
   size_t const rnum = nbytes / sizeof(void *);
-  gasneti_assert(nbytes == rnum * sizeof(void *));
+  gasneti_assert_uint(nbytes ,==, rnum * sizeof(void *));
   size_t const maxreply = gex_Token_MaxReplyMedium(token, (GASNETE_VIS_NPAM ? NULL : GEX_EVENT_NOW),
                                                        (GASNETE_VIS_NPAM ? GEX_FLAG_AM_PREPARE_LEAST_ALLOC : 0),
                                                        HARGS(2,3));
@@ -456,14 +457,14 @@ void gasnete_geti_AMPipeline_reqh_inner(gex_Token_t token,
     uint8_t * const packedbuf = gasnete_visbuf_malloc(maxreply);
   #else // NPAM 1 or 2
     gex_AM_SrcDesc_t sd = gex_AM_PrepareReplyMedium(token, NULL, maxreply, maxreply, NULL, 0, HARGS(2,3));
-    gasneti_assert(gex_AM_SrcDescSize(sd) >= maxreply);
+    gasneti_assert_uint(gex_AM_SrcDescSize(sd) ,>=, maxreply);
     uint8_t * const packedbuf = gex_AM_SrcDescAddr(sd);
   #endif
 
   /* gather data payload from sourcelist into packet */
   uint8_t * const end = gasnete_addrlist_pack(rnum, rlist, dstlen, packedbuf, firstoffset, lastlen);
   size_t const replysz = end - packedbuf;
-  gasneti_assert(replysz <= maxreply);
+  gasneti_assert_uint(replysz ,<=, maxreply);
 
   // send packet
   #define ARGS PACK(_visop), packetidx
@@ -488,10 +489,10 @@ void gasnete_geti_AMPipeline_reph_inner(gex_Token_t token,
   void * const * const savedlst = (void * *)(visop + 1);
   gasnete_packetdesc_t * const lpacket = ((gasnete_packetdesc_t *)visop->addr) + packetidx;
   size_t const lnum = lpacket->lastidx - lpacket->firstidx + 1;
-  gasneti_assert(visop->type == GASNETI_VIS_CAT_GETI_AMPIPELINE);
-  gasneti_assert(lpacket->lastidx < visop->count);
+  gasneti_assert_uint(visop->type ,==, GASNETI_VIS_CAT_GETI_AMPIPELINE);
+  gasneti_assert_uint(lpacket->lastidx ,<, visop->count);
   uint8_t * const end = gasnete_addrlist_unpack(lnum, savedlst+lpacket->firstidx, visop->len, addr, lpacket->firstoffset, lpacket->lastlen);
-  gasneti_assert(end - (uint8_t *)addr == nbytes);
+  gasneti_assert_uint(end - (uint8_t *)addr ,==, nbytes);
   if (gasneti_weakatomic_decrement_and_test(&(visop->packetcnt), 
                                             GASNETI_ATOMIC_WMB_PRE|GASNETI_ATOMIC_WEAK_FENCE)) {
     /* last response packet completes operation and cleans up */
@@ -511,7 +512,7 @@ MEDIUM_HANDLER(gasnete_geti_AMPipeline_reph,2,3,
   size_t const _count1 = (count1); void * const * const _list1 = (list1); size_t const _len1 = (len1); \
   size_t const _count2 = (count2); void * const * const _list2 = (list2); size_t const _len2 = (len2); \
   if (_len1 == _len2) { /* matched sizes (fast case) */                      \
-    gasneti_assert(_count1 == _count2);                                      \
+    gasneti_assert_uint(_count1 ,==, _count2);                               \
     for (size_t _i = 0; _i < _count1; _i++) {                                \
       void * const _p1 = _list1[_i]; void * const _p2 = _list2[_i];          \
       action(_p1, _p2, _len1);                                               \
@@ -524,7 +525,7 @@ MEDIUM_HANDLER(gasnete_geti_AMPipeline_reph,2,3,
       action(_p1, _p2, _len2);                                               \
       _pp1 += _len2;                                                         \
     }                                                                        \
-    gasneti_assert(_pp1 == (uintptr_t)_list1[0]+_len1);                      \
+    gasneti_assert_uint(_pp1 ,==, (uintptr_t)_list1[0]+_len1);               \
   } else if (_count2 == 1) { /* 2 is contiguous buffer */                    \
     uintptr_t _pp2 = (uintptr_t)_list2[0];                                   \
     for (size_t _i = 0; _i < _count1; _i++) {                                \
@@ -533,15 +534,15 @@ MEDIUM_HANDLER(gasnete_geti_AMPipeline_reph,2,3,
       action(_p1, _p2, _len1);                                               \
       _pp2 += _len1;                                                         \
     }                                                                        \
-    gasneti_assert(_pp2 == (uintptr_t)_list2[0]+_len2);                      \
+    gasneti_assert_uint(_pp2 ,==, (uintptr_t)_list2[0]+_len2);               \
   } else { /* mismatched sizes (general case) */                             \
     size_t _idx1 = 0; size_t _idx2 = 0;                                      \
     size_t _off1 = 0; size_t _off2 = 0;                                      \
     while (_idx1 < _count1) {                                                \
-      gasneti_assert(_idx2 < _count2);                                       \
+      gasneti_assert_uint(_idx2 ,<, _count2);                                \
       size_t const _rem1 = _len1 - _off1;                                    \
       size_t const _rem2 = _len2 - _off2;                                    \
-      gasneti_assert(_rem1 > 0 && _rem2 > 0);                                \
+      gasneti_assert(_rem1 > 0); gasneti_assert(_rem2 > 0);                  \
       void * const _p1 = (uint8_t*)(_list1[_idx1]) + _off1;                  \
       void * const _p2 = (uint8_t*)(_list2[_idx2]) + _off2;                  \
       if (_rem1 < _rem2) {                                                   \
@@ -554,13 +555,15 @@ MEDIUM_HANDLER(gasnete_geti_AMPipeline_reph,2,3,
         _idx2++;                                                             \
         _off2 = 0;                                                           \
         _off1 += _rem2;                                                      \
-      } else { gasneti_assert(_rem1 == _rem2);                               \
+      } else { gasneti_assert_uint(_rem1 ,==, _rem2);                        \
         action(_p1, _p2, _rem1);                                             \
         _idx1++; _idx2++;                                                    \
         _off1 = 0; _off2 = 0;                                                \
       }                                                                      \
     }                                                                        \
-    gasneti_assert(_idx1 == _count1 && _idx2 == _count2 && _off1 == 0 && _off2 == 0); \
+    gasneti_assert_uint(_idx1 ,==, _count1);                                 \
+    gasneti_assert_uint(_idx2 ,==, _count2);                                 \
+    gasneti_assert(_off1 == 0 && _off2 == 0);                                \
   }                                                                          \
 } while (0)
 /*---------------------------------------------------------------------------------*/
@@ -596,8 +599,9 @@ gex_Event_t gasnete_puti_ref_indiv(gasnete_synctype_t synctype,
                                    size_t srccount, void * const srclist[], size_t srclen,
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   GASNETI_TRACE_EVENT(C, PUTI_REF_INDIV);
-  gasneti_assert(srccount > 0 && dstcount > 0 && ((uintptr_t)dstcount)*dstlen == ((uintptr_t)srccount)*srclen);
-  gasneti_assert(srclen > 0 && dstlen > 0);
+  gasneti_assert(srccount > 0); gasneti_assert(dstcount > 0);
+  gasneti_assert(srclen > 0); gasneti_assert(dstlen > 0);
+  gasneti_assert_uint(((uintptr_t)dstcount)*dstlen ,==, ((uintptr_t)srccount)*srclen);
   gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
   gex_Event_t * const lc_opt = (flags & GEX_FLAG_ENABLE_LEAF_LC) ? GEX_EVENT_GROUP : GEX_EVENT_DEFER;
   GASNETE_START_NBIREGION(synctype);
@@ -616,8 +620,9 @@ gex_Event_t gasnete_geti_ref_indiv(gasnete_synctype_t synctype,
                                    size_t srccount, void * const srclist[], size_t srclen,
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   GASNETI_TRACE_EVENT(C, GETI_REF_INDIV);
-  gasneti_assert(srccount > 0 && dstcount > 0 && ((uintptr_t)dstcount)*dstlen == ((uintptr_t)srccount)*srclen);
-  gasneti_assert(srclen > 0 && dstlen > 0);
+  gasneti_assert(srccount > 0); gasneti_assert(dstcount > 0);
+  gasneti_assert(srclen > 0); gasneti_assert(dstlen > 0);
+  gasneti_assert_uint(((uintptr_t)dstcount)*dstlen ,==, ((uintptr_t)srccount)*srclen);
   gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
   GASNETE_START_NBIREGION(synctype);
 
@@ -693,7 +698,7 @@ extern gex_Event_t gasnete_puti(gasnete_synctype_t synctype,
   gasneti_assert(dstcount*dstlen > 0);
   gasneti_assert(srccount*srclen > 0);
   gasneti_assert(dstcount > 1 || srccount > 1);
-  gasneti_assert(dstcount*dstlen == srccount*srclen);
+  gasneti_assert_uint(((uintptr_t)dstcount)*dstlen ,==, ((uintptr_t)srccount)*srclen);
   gasneti_assert(dstlist); gasneti_assert(srclist);
   flags &= ~GEX_FLAG_IMMEDIATE; // TODO-EX
 
@@ -744,7 +749,7 @@ extern gex_Event_t gasnete_geti(gasnete_synctype_t synctype,
   gasneti_assert(dstcount*dstlen > 0);
   gasneti_assert(srccount*srclen > 0);
   gasneti_assert(dstcount > 1 || srccount > 1);
-  gasneti_assert(dstcount*dstlen == srccount*srclen);
+  gasneti_assert_uint(((uintptr_t)dstcount)*dstlen ,==, ((uintptr_t)srccount)*srclen);
   gasneti_assert(dstlist); gasneti_assert(srclist);
   flags &= ~GEX_FLAG_IMMEDIATE; // TODO-EX
 

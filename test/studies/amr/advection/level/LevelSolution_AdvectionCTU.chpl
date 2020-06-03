@@ -1,6 +1,6 @@
-use LevelVariable_AdvectionCTU;
-use LevelSolution_def;
-use LevelBC_def;
+public use LevelVariable_AdvectionCTU;
+public use LevelSolution_def;
+public use LevelBC_def;
 
 
 

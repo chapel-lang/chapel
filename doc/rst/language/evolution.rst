@@ -3,15 +3,679 @@
 Chapel Evolution
 ================
 
-Like any language, Chapel has changed over time. This page is designed to
-capture significant language changes that have the possibility of breaking
-existing user codes or code samples from old presentations or papers that
-predated the changes.
+Like any language, Chapel has changed over time. This page is designed
+to describe significant language changes that have a high likelihood
+of breaking existing user codes or code samples from presentations or
+papers that predated the changes.
 
 Note that the compiler flag ``--warn-unstable`` is available and can be
 useful when migrating programs to the current version of the language.
-The purpose of this flag is to identify  portions of a program that use a
-language feature that has changed meaning.
+The purpose of this flag is to identify portions of a program that use a
+language feature which has changed meaning.  It also flags features that
+are considered unstable and may change in the future.
+
+
+version 1.22, April 2020
+------------------------
+
+0- vs. 1-based Indexing
+***********************
+
+Version 1.22 makes a major breaking change to Chapel with respect to
+indexing for cases that involve implicit indices.  Historically,
+Chapel has used 1-based indexing for such cases, where it now uses
+0-based indexing.
+
+The major types that are affected by this change are tuples, strings,
+``bytes``, and lists.  In addition, arrays that don't have a
+well-defined index set also start at 0.  Such cases include array
+literals or inferred-type arrays formed by capturing a general
+iterator expression.
+
+This change also has a ripple-down effect to features and routines
+related to these types.  For example, varargs arguments are equivalent
+to tuples in Chapel, so inherit their 0-based indexing.  Similarly,
+queries on rectangular domains and arrays are based on tuples,
+so their dimensions are now numbered from 0 as well.
+Certain library routines such as ``find()`` on strings used to return 0
+when no match was found, but now return -1 in order to avoid returning
+a legal string index.
+
+The following sections summarize the rationale for this change and
+then provide some tips for updating existing Chapel code.
+
+Rationale for 0- vs. 1-based Indexing
+*************************************
+
+In the original design of Chapel, we hoped to make the language as
+neutral to 1- vs. 0-based indexing as possible, to avoid running afoul
+of the strong emotions that such choices evoke in users when it
+doesn't match their preference.  As a result, Chapel's primary types
+for parallel computation on regular collections of data—namely, its
+ranges and rectangular domains, as well as rectangular arrays defined
+by ranges or domains—require users to specify both low and high
+bounds.  Happily, these core features are not affected by this change
+in Chapel 1.22, so codes relying solely on such features will not
+require updates.
+
+However, for other types such as tuples and strings, we were forced to
+make a decision.  At the time of Chapel's inception, the main
+languages from which we were trying to attract users were C/C++, Java,
+Fortran, and Matlab.  Since half of these languages used 0-based
+indexing and the other half used 1-based, there didn't seem to be an
+obvious best answer.  In the end, we decided to go with 1-based
+indexing on the argument that we were striving to create a productive
+language, and that counting from 1 is arguably most natural for most
+people.
+
+Over time, however, the vast majority of newer languages that we look
+to for users or inspiration—most notably Python, Swift, and Rust—have
+been almost exclusively 0-based.  Meanwhile, very few notable new
+languages have used 1-based indexing.
+
+Furthermore, when polled, the vast majority of active Chapel users
+expressed a strong preference for 0-based programming, given the
+choice (though there were also notable outliers, particularly from the
+Fortran community).  We also realized (a) that Chapel's design should
+be more concerned with lowering barriers for existing programmers than
+for non-programmers; and (b) that even though we had arguably biased
+the original design in favor of Fortran programmers, most of Chapel's
+early adopters have come from C/C++ and Python backgrounds.
+
+Based on this, we undertook an experiment to see what it would take to
+convert from 1-based to 0-based programming.  Reviewing Chapel's
+~10,000 tests and modules resulted in changes to ~1,000 of them.  We
+also updated some significant applications such as Arkouda and Cray
+HPO.  While the overall effort of making the change was not
+insignificant, it also wasn't particularly difficult for the most
+part.  Overall, our finding was that in cases where the changes
+weren't simply neutral in their impact on style, it almost always
+benefitted the code in terms of clarity, because there tended to
+be fewer adjustments of +/- 1 in the code.
+
+For these reasons, we decided to bite the bullet and make the switch
+now, while we felt we still could, rather than later when it would
+clearly be too late to do so and cause more of a revolt among our
+users.
+
+Index-neutral Features
+**********************
+
+This experience also led to a number of new programming features in
+Chapel 1.21 designed to help write code in more of an index-neutral
+style.  Chief among these are new ``.indices`` queries on most of the
+relevent types as well as support for loops over heterogeneous tuples.
+We also introduced features that we found to be useful in updating
+code, such as support for open-interval ranges and ``.first`` and
+``.last`` queries on enumerated types.  To this end, even though Chapel
+still has cases that require making this 0- vs. 1-based indexing
+decision, we encourage code to be written in an index-neutral style
+whenever possible, and believe that most common code patterns can be.
+
+Tips for Updating Existing Chapel code
+**************************************
+
+The following are some tips for updating codes based on our
+experiences:
+
+* First, updating code is easiest when it has some sort of testing
+  infrastructure that can be used to validate that its behavior is
+  unchanged.  If you don't already have such testing for your code, it
+  may be worthwhile to invest in creating some before attempting this
+  upgrade.
+
+* Next, when transitioning code to Chapel 1.22, make sure to compile
+  it with neither ``--fast`` nor ``--no-checks`` enabled so that bounds
+  checks are turned on in the generated code.  In cases where a
+  program is accessing all of the elements of a collection (as is
+  common for tuples) this will help identify data structures that
+  require updates.  When you do get an out-of-bounds error, don't
+  simply update the specific access, but use it as a cue to look
+  through the code for other references to that variable that will
+  also need updating.
+
+* When possible, try rewriting your updated code to use an
+  index-neutral style of programming.  For example, given code like
+  this:
+
+  .. code-block:: chapel
+
+      var t: 2*int = ...;
+
+      var x = t(1),
+          y = t(2);
+
+      for i in 1..2 do
+        writeln("t(", i, ") = ", t(i));
+
+  It would be reasonable to rewrite it like this:
+
+  .. code-block:: chapel
+
+      var t: 2*int = ...;
+
+      var x = t(0),
+          y = t(1);
+
+      for i in 0..1 do
+        writeln("t(", i, ") = ", t(i));
+
+  But arguably preferable to update it like this:
+
+  .. code-block:: chapel
+
+      var t: 2*int = ...;
+
+      var (x, y) = t;
+
+      for i in t.indices do
+        writeln("t(", i, ") = ", t(i));
+
+  If you have a pattern that you're trying to write in an
+  index-neutral style, but can't, don't hesitate to `ask for tips
+  <https://chapel-lang.org/users.html>`_.
+        
+
+* Some common pitfalls to check for in your code include:
+
+  - Search for queries on the dimensions of rectangular domains and
+    arrays.  For example, ``myDomain.dim(1)``, ``myDomain.low(1)``,
+    ``myDomain.high(1)``, or ``myDomain.stride(1)`` will need to be
+    updated to reflect that array dimensions now count from 0 rather
+    than 1.  These will result in out-of-bounds errors in cases where
+    you query all dimensions of an array, making them easy to find;
+    but it can be worthwhile to grep your code for such patterns to
+    make sure you don't miss any.
+
+  - Also search for instances of ``find()`` or ``rfind()`` that are
+    relying on comparisons to zero/nonzero values, and update them to
+    compare against -1.  For example, patterns like ``if
+    mystring.find('z')`` need to be updated to ``if mystring.find('z')
+    != -1``.
+
+  - Search for instances of ``split()``.  A common idiom is to write
+    ``var substrs = mystring.split(5);`` and then to index into the
+    result using ``substrs[1]``, ``substrs[2]``, etc.  Since this is
+    an instance of capturing an iterator expression, you'll either
+    need to subtract one from the indices, or else declare `substrs`
+    to have a specific type, like ``var substrs: [1..5] string =
+    mystring.split(5);``
+
+  - Search for varargs functions and make sure they are updated to use
+    0-based indexing or index-neutral features.
+
+  - Search for any calls to ``Reflection.getField*()`` and update
+    those the cases that use integer indices to reflect 0-based
+    numbering.
+
+  - Look for any calls on lists that use explicit offsets, as these
+    will likely need updates.  For example ``mylist.pop(1);`` will
+    need to become ``mylist.pop(0);``
+
+  - Some other common string patterns to look for in your code that
+    `may` indicate something requiring an update include:
+
+    - ``1..``
+    - ``[1]``
+    - ``(1)``
+    - ``[2]``
+    - ``(2)``
+
+  - Think about whether there are other places in your code that
+    compute index values numerically yet which don't have obvious
+    syntactic cues.
+
+
+Need Help?
+**********
+
+If you are able to share your code with us and would like help
+updating it to Chapel 1.22, please don't hesitate to `ask for help
+<https://chapel-lang.org/users.html>`_.  Given our experience in
+updating the Chapel code base itself, we have found it fairly easy to
+update most codes, even when we're unfamiliar with them.
+
+
+version 1.21, April 2020
+------------------------
+
+Version 1.21 made several improvements related to record initialization,
+assignment, and deinitialization.
+
+In summary:
+
+ * Some patterns of default initialization followed by assignment are now
+   converted to initialization. See :ref:`readme-evolution.split-init`.
+ * Some patterns of copy initialization followed by deinitialization are
+   converted to move initialization. See :ref:`readme-evolution.copy-elision`.
+ * The result of a nested call expression can now be deinitialized at the end of
+   the containing statement. See :ref:`readme-evolution.statement-deinit`.
+
+.. _readme-evolution.split-init:
+
+split initialization
+********************
+
+Split initialization a new language feature in 1.21 that is described in
+the language specification - see :ref:`Split_Initialization`.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  var x: myRecord;    // default-initialization in 1.20
+  x = new myRecord(); // assignment in 1.20 -- initialization in 1.21
+
+In 1.21, instead of default-initializing ``x`` and then assigning to it,
+``x`` will be initialized on the second line.
+
+Note that split initialization also changes the copy and assignment
+behavior of ``out`` intent formal arguments.
+
+Occasionally programs that are written to test assignment (separately
+from copy initialization) need to avoid split initialization. One way to
+do so is to add a mention of the variable immediately after it is
+declared, as in the following code:
+
+.. code-block:: chapel
+
+  var x: myRecord;
+  x; // adding this mention prevents split-initialization
+     // instead, x is default-initialized at its declaration point above
+  x = new myRecord();
+
+.. _readme-evolution.copy-elision:
+
+copy elision
+************
+
+Copy elision a new language feature in 1.21.
+When the last mention of a variable is the source of a copy-initialization,
+the copy-initialization is replaced by move-initialization.
+
+For example:
+
+.. code-block:: chapel
+
+  class MyClass {
+    var field;
+    proc init(in arg) {
+      this.field = arg;
+    }
+  }
+
+  proc copyElisionExample() {
+    var a = new myRecord();
+    var b = a;             // now move-initializes `b` from `a`
+    return new MyClass(b); // now move-initializes the field from `b`
+  }
+
+
+.. _readme-evolution.statement-deinit:
+
+deinitialization point of nested call expressions
+*************************************************
+
+In 1.20, all variables are deinitialized at the end of the enclosing
+block. That changed in 1.21. Compiler-introduced temporary
+variables storing the result of a nested call expression can now be
+deinitialized at the end of a statement. In particular, results of nested
+call expressions are now deinitialized at the end of the statement unless the
+statement is initializing a user variable.
+
+For example:
+
+.. code-block:: chapel
+
+  proc makeRecord() {
+    return new myRecord();
+  }
+  proc f(arg) {
+    return arg;
+  }
+  proc deinitExample() {
+    f(makeRecord());
+    // Compiler converts the above statement into
+    //   var tmp = makeRecord();
+    //   f(tmp);
+    // In 1.20, tmp is destroyed at the end of the block.
+    // In 1.21, tmp is destroyed at the end of the above statement.
+
+    var x = f(makeRecord());
+    // In both 1.20 and 1.21, the temporary storing the result of
+    // `makeRecord()` is deinitialized at the end of the block.
+  }
+
+
+version 1.20, September 2019
+----------------------------
+
+Version 1.20 made language changes that address problems with classes.
+
+In summary:
+
+ * variables of class type can no longer store `nil` by default but can
+   opt-in to possibly being `nil` with `?`.
+   See :ref:`readme-evolution.nilability-changes`
+ * certain casts have changed behavior to support nilability changes
+   See :ref:`readme-evolution.nilability-and-casts`
+ * un-decorated class types such as `MyClass` (as opposed to `borrowed
+   MyClass`) now have generic management
+   See :ref:`readme-evolution.undecorated-classes-generic-management`
+ * arguments with `owned` or `shared` declared type now use `const ref`
+   default intent rather than `in` intent.
+   See :ref:`readme-evolution.new-default-intent-for-owned-and-shared`
+ * ``new C`` now creates an `owned C` rather than a `borrowed C`
+   See :ref:`readme-evolution.new-C-is-owned`
+
+
+.. _readme-evolution.nilability-changes:
+
+nilability changes
+******************
+
+Previous to 1.20, variables of class type could always store ``nil``.  In
+1.20, only nilable class types can store ``nil``. Non-nilable class types
+and nilable class types are different types. A class type expression
+such as ``borrowed C`` indicates a non-nilable class type.
+
+As an aid in migrating code to this change, the flag ``--legacy-classes``
+will disable this new behavior.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  var a: borrowed C = (new owned C()).borrow();
+
+In 1.19, variables of type ``borrowed C`` could store ``nil``:
+
+.. code-block:: chapel
+
+  var b: borrowed C = nil;
+  var c: borrowed C;
+  a = nil;
+
+The 1.20 compiler will report errors for all 3 of these lines. To resolve
+the errors, it is necessary to use a nilable class type. Nilable class
+types are written with ``?`` at the end of the type. In this example:
+
+.. code-block:: chapel
+
+  var a: borrowed C? = (new owned C()).borrow();
+  var b: borrowed C? = nil;
+  var c: borrowed C?;
+  a = nil;
+
+Implicit conversions are allowed from non-nilable class types to nilable
+class types.
+
+When converting variables to nilable types to migrate code, there will be
+situations in which it is known by the developer that a variable cannot
+be ``nil`` at a particular point in the code. For example:
+
+.. code-block:: chapel
+
+  proc f(arg: borrowed C) { }
+  proc C.method() { }
+
+  config const choice = true;
+  var a: owned C?;
+  if choice then
+    a = new owned C(1);
+  else
+    a = new owned C(2);
+
+  f(a);
+  a.method();
+
+Errors on the last two lines can be resolved by writing
+
+.. code-block:: chapel
+
+  f(a!);
+  a!.method();
+
+where here the ``!`` asserts that the value is not ``nil`` and it can
+halt if the value is ``nil``.
+
+Note that in ``prototype`` and implicit file-level modules, the compiler
+will automatically add ``!`` on method calls with nilable receivers
+(i.e. in the ``a.method()`` case above).
+
+In the above case, a cleaner way to write the conditional would be to
+create a function that always returns a value or throws if there is a
+problem. For example:
+
+.. code-block:: chapel
+
+  proc makeC() throws {
+    var a: owned C?;
+    if choice then
+      a = new owned C(1);
+    else
+      a = new owned C(2);
+    return a:owned C; // this cast throws if a stores nil
+  }
+
+  proc main() throws {
+    var a:owned C = makeC();
+    f(a);
+    a.method();
+  }
+
+
+.. _readme-evolution.nilability-and-casts:
+
+nilability and casts
+********************
+
+Because casts to class types should necessarily return something of the
+requested type, and because many class types now cannot store ``nil``,
+certain patterns involving casts will need to change to work with 1.20.
+
+class downcasts
+^^^^^^^^^^^^^^^
+
+In a class downcast, a class is casted to a subtype. If the dynamic type
+of the variable does not match the requested subtype, the downcast fails.
+In 1.19, a failed downcast would result in ``nil``. In 1.20, a failed
+downcast will result in ``nil`` only if the target type is nilable and
+will throw an error otherwise.
+
+For example:
+
+.. code-block:: chapel
+
+  class Parent { }
+  class Child : Parent { }
+
+  var p:borrowed Parent = (new owned Parent()).borrow();
+  var c:borrowed Parent = (new owned Child()).borrow();
+
+  writeln(c:Child?); // downcast succeeds
+  writeln(c:Child);  // downcast succeeds
+
+  writeln(p:Child?); // this downcast fails and results in `nil`
+  writeln(p:Child); // this downcast fails and will throw a ClassCastError
+
+casting C pointers to classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Casts from ``c_void_ptr`` to class types were previously allowed. However,
+since ``c_void_ptr`` can store ``NULL``, this case needs adjustment
+following the nilability changes. Additionally, since ``c_void_ptr``
+refers to a C pointer, and C pointers are manually managed (i.e. you call
+``free`` on them at the appropriate time), it makes the most sense
+for casts from ``c_void_ptr`` to end up with an unmanaged type.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  var myC = new owned C();
+  var ptr:c_void_ptr = myC.borrow(); // store the instance in a C ptr
+
+Now we can cast from ``ptr`` to the class type:
+
+.. code-block:: chapel
+
+  var c = ptr:C; // cast from a C pointer to the borrowed type
+
+This example would work in 1.19. In 1.20, it needs to be updated to
+cast to ``unmanaged C?``:
+
+.. code-block:: chapel
+
+  var c = ptr:unmanaged C?;
+
+As with other values of type ``unmanaged C?``, from there it can:
+
+ * be borrowed, e.g. ``c.borrow()``
+ * have ``!`` applied to convert to a non-nilable value or halt, e.g. ``c!``
+ * be cast to a non-nilable type, throwing if it is ``nil``, e.g.
+   ``c:borrowed C``
+
+.. _readme-evolution.undecorated-classes-generic-management:
+
+undecorated classes have generic management
+********************************************
+
+Undecorated classes now have generic management. As an aid in migrating
+code to this change, the flag ``--legacy-classes`` will disable this
+new behavior.
+
+Supposing that we have a ``class C`` declaration as in the following:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+Code using ``C`` might refer to the type ``C`` on its own or it might use
+a decorator to specify memory management strategy, as in ``borrowed C``.
+
+The type expression ``C`` was the same as ``borrowed C`` in 1.18 and
+1.19 but now means generic management. For example, in the following code:
+
+.. code-block:: chapel
+
+  var myC:C = new owned C();
+
+``myC`` previously had type ``borrowed C``, and was initialized using
+including an implicit conversion from ``owned C`` to ``borrowed C``. In 1.20,
+``myC`` has type ``owned C``. Since the variable's type expression is
+generic management, it takes its management from the initializing
+expression.
+
+This change combines with the nilability changes described above
+to prevent compilation of existing code like the following:
+
+.. code-block:: chapel
+
+  var x:C;
+
+Knowing that ``C`` now cannot store ``nil``, one might try to update this
+program to:
+
+.. code-block:: chapel
+
+  var x:C?;
+
+However this does not work either. ``C?`` indicates a nilable class type
+with generic management, and a variable with generic type cannot be
+default-initialized.
+
+To update such a variable declaration to 1.20, it is necessary to include
+a memory management decorator as well as ``?``. For example:
+
+.. code-block:: chapel
+
+  var x:borrowed C?;
+
+The resulting variable will initially store ``nil``.
+
+.. _readme-evolution.new-default-intent-for-owned-and-shared:
+
+new default intent for owned and shared
+***************************************
+
+The default intent for `owned` and `shared` arguments is now
+`const ref` where it was previously `in`. Cases where such arguments
+will be interpreted differently can be reported with the ``--warn-unstable``
+compilation flag.
+
+Consider the following example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  var global: owned C?;
+  proc f(arg: owned C) {
+    global = arg;
+  }
+
+  f(new owned C(1));
+
+This program used to compile and run, performing ownership transfer
+once when passing the result of ``new`` to ``f`` and a second time
+in the assignment statement ``global = arg``.
+
+This program does not work in 1.20. The compiler will issue an error for
+the statement ``global = arg`` because the ownership transfer requires
+modifying ``arg`` but it is not modifiable because it was passed with
+``const ref`` intent.
+
+To continue working, this program needs to be updated to add the `in`
+intent to ``f``, as in ``proc f(in arg: owned C)``.
+
+Note that for totally generic arguments, the 1.18 and 1.19 compiler
+would instantiate the argument with the borrow type when passed
+``owned`` or ``shared`` classes. For example:
+
+.. code-block:: chapel
+
+  class C {
+    var x:int;
+  }
+
+  proc f(arg) { }
+
+  var myC = new owned C(1);
+
+  f(myC);       // does this call transfer ownership out of myC?
+  writeln(myC); // prints `nil` if ownership transfer occurred
+
+This example functions the same in 1.18 and 1.20, but for different
+reasons. In 1.18, ``f`` is instantiated as accepting an argument of type
+``borrowed C``. In the call ``f(myC)``, the compiler applies a coercion
+from ``owned C`` to ``borrowed C``, so ownership transfer does not occur.
+In 1.20, ``f`` is instantiated as accepting an argument of type ``owned C``
+but this type uses the default intent (``const ref``). As a result,
+ownership transfer does not occur.
+
+.. _readme-evolution.new-C-is-owned:
+
+new C is owned
+**************
+
+Supposing that `C` is a class type, `new C()` was equivalent to
+`new borrowed C()` before this release - meaning that it resulted in
+something of type `borrowed C`. However, it is now equivalent to `new
+owned C()` which produces something of type `owned C`.
+
 
 version 1.18, September 2018
 ----------------------------

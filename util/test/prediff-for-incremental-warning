@@ -12,7 +12,7 @@ import sys, subprocess
 import re
 
 # These are the tests that currently do not require the warning to be present in the output
-incrementalTests = ["time_iterate", "timeVectorArray", "time_access", "optimizeOnClauses_basic", "optimizeOnClauses_basic_record",
+incrementalTests = ["time_iterate", "time_access", "optimizeOnClauses_basic", "optimizeOnClauses_basic_record",
                     "optimizeOnClauses_basic_tuple", "parSafeMember", "formalDomainChecks", "formalDomainChecks2", "access1d",
                     "access2d", "access3d", "ri-4-arrdom", "ri-4-arrdom.replicated", "ri-3-stress", "ri-3-stress-coforall", "assign",
                     "assign_across_locales", "copy_to_local", "dgemm", "init", "reductions-stress-fast", "sparse-iter-performance",

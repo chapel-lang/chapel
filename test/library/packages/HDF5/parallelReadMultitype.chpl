@@ -12,7 +12,7 @@ proc main {
 
   var t = new Timer();
 
-  for param i in 1..inputTypes.size {
+  for param i in 0..<inputTypes.size {
     type inType = inputTypes(i);
     param typeName = inType:string;
     t.start();

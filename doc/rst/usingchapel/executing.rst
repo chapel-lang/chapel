@@ -95,6 +95,13 @@ or:
 The compiler-established default can still be overridden when
 executing the program, as shown above.
 
+Command-line overrides of configs may also use fully qualified names.
+Thus, each of the above examples could have referred to ``message`` as
+``Hello.message`` instead.  This is useful for disambiguating when
+multiple modules declare configs with the same name.  In addition,
+``private config`` declarations `must` be set using fully-qualified
+names.
+
 ~~~~~~~~~~~~~~~~~~
 Configuration File
 ~~~~~~~~~~~~~~~~~~

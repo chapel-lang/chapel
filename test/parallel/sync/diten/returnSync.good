@@ -1,1 +1,1 @@
-int(64), _syncvar(int(64))
+int(64), sync int(64)

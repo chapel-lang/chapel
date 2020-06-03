@@ -1,3 +1,5 @@
+use IO;
+
 iter linearize(Xs) {for x in Xs do yield x;}
 
 var S = {0..8,0..8}, A: [S] int = for S do read(int);

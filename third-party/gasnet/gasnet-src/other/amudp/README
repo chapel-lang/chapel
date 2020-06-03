@@ -2,7 +2,7 @@ AMUDP Documentation
 ===================
 Author: Dan Bonachea and Dan Hettena
 Contact email: gasnet-devel@lbl.gov
-Home page: http://gasnet.lbl.gov/amudp
+Home page: https://gasnet.lbl.gov/amudp
 
 AMUDP is an implementation of the AM-2 specification over UDP/IP. 
 
@@ -31,9 +31,9 @@ AMUDP includes an extension interface called AMUDP_SPMD that performs job
 spawning and initialization services, using either ssh or a provided
 site-specific job spawner. See the paper above and test code for details.
 
-AMUDP is used to implement the GASNet communication system (http://gasnet.lbl.gov). 
+AMUDP is used to implement the GASNet communication system (https://gasnet.lbl.gov). 
 Further documentation about using AMUDP is available in the udp-conduit
-documentation: http://gasnet.lbl.gov/dist/udp-conduit/README
+documentation: https://gasnet.lbl.gov/dist/udp-conduit/README
 
 Requirements
 ------------
@@ -68,6 +68,9 @@ AMUDP has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
+AMUDP 3.16 (03/2020)
+- Improved startup error checking and reporting for DNS misconfigurations
+
 AMUDP 3.15 (06/2018)
 - Medium and Long AM handlers change in signature on 64-bit platforms: 
   the nbytes argument now has type size_t instead of int

@@ -1,2 +1,2 @@
 testBadSyncSingle.chpl:4: In function 'main':
-testBadSyncSingle.chpl:5: error: sync/single types cannot be of type 'range(int(64),bounded,false)'
+testBadSyncSingle.chpl:5: error: sync/single types cannot contain type 'range(int(64),bounded,false)'

@@ -71,8 +71,9 @@ class Cyclic1DDist {
   //
   // but this doesn't work yet because an array forall initializer
   // apparently can't refer to a local member domain.
+  // Also, cannot use 'this' when initializing a field of 'this'.
   //
-  const locDist: [targetLocDom] unmanaged LocCyclic1DDist(glbIdxType);
+  const locDist: [targetLocDom] unmanaged LocCyclic1DDist(glbIdxType)?;
   //
   // WORKAROUND: Initialize in the constructor instead
   //
@@ -115,7 +116,7 @@ class Cyclic1DDist {
   //
 
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.writeln("Cyclic1DPar");
     x.writeln("---------------");
     x.writeln("across locales: ", targetLocs);
@@ -146,20 +147,14 @@ class Cyclic1DDist {
     // locale owns and the domain's index set
 
     // Force this to be strided
-    return locDist(locid).myChunk(inds.dim(1) by 1);
+    return locDist(locid)!.myChunk(inds.dim(0) by 1);
   }
 
   //
   // Determine which locale owns a particular index
   //
   proc idxToLocaleInd(ind: glbIdxType) {
-    proc mod(a, b) {
-      if (a >= 0) then
-        return a % b;
-      else
-        return (b + (a % b)) % b;
-    }
-    const numlocs = targetLocDom.numIndices;
+    const numlocs = targetLocDom.size;
     return (mod(mod(ind, numlocs) - mod(min(glbIdxType), numlocs),
                numlocs) + targetLocDom.low):index(targetLocs.domain);
   }
@@ -201,7 +196,7 @@ class LocCyclic1DDist {
     const locid0 = dist.targetLocDom.indexOrder(_locid); // 0-based locale ID
     const lo = min(glbIdxType) + locid0;
     const hi = max(glbIdxType);
-    const numlocs = dist.targetLocDom.numIndices;
+    const numlocs = dist.targetLocDom.size;
     myChunk = {lo..hi by numlocs};
     locid = _locid;
     loc = dist.targetLocs(locid);
@@ -210,7 +205,7 @@ class LocCyclic1DDist {
       writeln("locale ", locid, " owns ", myChunk);
   }
 
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
@@ -245,8 +240,10 @@ class Cyclic1DDom {
   // an on-clause at the expression list to make this work.
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
+  // Beware that we cannot pass 'this' to 'new unmanaged LocCyclic1DDom'
+  // while initializing 'this.locDoms'.
   //
-  var locDoms: [dist.targetLocDom] unmanaged LocCyclic1DDom(glbIdxType);
+  var locDoms: [dist.targetLocDom] unmanaged LocCyclic1DDom(glbIdxType)?;
 
   proc init(type idxType, myDist, myDom) {
     glbIdxType = idxType;
@@ -277,7 +274,7 @@ class Cyclic1DDom {
       // TODO: Would want to do something like:     
       // on blk do
       // But can't currently have yields in on clauses
-        for ind in blk do
+        for ind in blk! do
         {
 	  if debugCyclic1D then
             writeln("yielding: ", ind, " in: ", blk);
@@ -327,7 +324,7 @@ class Cyclic1DDom {
     // support? (esp. given how frequent this seems likely to be?)
     //
     for locDom in locDoms do
-      yield locDom.myBlock.translate(-whole.low);
+      yield locDom!.myBlock.translate(-whole.low);
   }
 
 
@@ -355,7 +352,7 @@ class Cyclic1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(whole);
   }
 
@@ -369,8 +366,8 @@ class Cyclic1DDom {
   //
   // queries for the number of indices, low, and high bounds
   //
-  proc numIndices {
-    return whole.numIndices;
+  proc size {
+    return whole.size;
   }
 
   proc low {
@@ -433,15 +430,15 @@ class LocCyclic1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myBlock);
   }
 
   //
   // queries for this locale's number of indices, low, and high bounds
   //
-  proc numIndices {
-    return myBlock.numIndices;
+  proc size {
+    return myBlock.size;
   }
 
   proc low {
@@ -453,6 +450,7 @@ class LocCyclic1DDom {
   }
 }
 
+private use IO;
 
 //
 // the global array class
@@ -482,7 +480,7 @@ class Cyclic1DArr {
   // Otherwise, would have to move the allocation into a function
   // just to get it at the statement level.
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclic1DArr(glbIdxType, elemType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocCyclic1DArr(glbIdxType, elemType)?;
 
   proc init(type idxType, type eltType, myDom) {
     glbIdxType = idxType;
@@ -491,7 +489,7 @@ class Cyclic1DArr {
     this.complete();
     for locid in dom.dist.targetLocDom do
       on dom.dist.targetLocs(locid) do
-        locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid));
+        locArr(locid) = new unmanaged LocCyclic1DArr(glbIdxType, elemType, dom.locDoms(locid)!);
   }
 
   proc deinit() {
@@ -504,7 +502,7 @@ class Cyclic1DArr {
   // the global accessor for the array
   //
   proc this(i: glbIdxType) ref {
-    return locArr(dom.dist.idxToLocaleInd(i))(i);
+    return locArr(dom.dist.idxToLocaleInd(i))!(i);
   }
 
   //
@@ -515,7 +513,7 @@ class Cyclic1DArr {
       // TODO: May want to do something like:     
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArr(loc) {
+      for elem in locArr(loc)! {
         yield elem;
       }
     }
@@ -544,13 +542,13 @@ class Cyclic1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
       //      on loc {
       // but it causes deadlock -- see writeThisUsingOn.chpl
-        if (locArr(loc).numElements >= 1) {
+        if (locArr(loc)!.size >= 1) {
           if (first) {
             first = false;
           } else {
@@ -568,8 +566,8 @@ class Cyclic1DArr {
   //
   // a query for the number of elements in the array
   //
-  proc numElements {
-    return dom.numIndices;
+  proc size {
+    return dom.size;
   }
 }
 
@@ -630,7 +628,7 @@ class LocCyclic1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -640,7 +638,7 @@ class LocCyclic1DArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
-    return myElems.numElements;
+  proc size {
+    return myElems.size;
   }
 }

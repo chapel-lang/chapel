@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:3781: In function '=':
-$CHPL_HOME/modules/internal/ChapelArray.chpl:3783: error: cannot assign to a record of the type R using the default assignment operator because it has 'const' field(s)

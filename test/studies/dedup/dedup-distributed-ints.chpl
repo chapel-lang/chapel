@@ -3,6 +3,7 @@ use Spawn;
 use Sort;
 use BlockDist;
 use VisualDebug;
+use List;
 
 config const verbose = false;
 config const vis = "vis_ints";
@@ -13,24 +14,24 @@ type Hash = (int,int,int);
 
 proc main(args:[] string)
 {
-  var paths:[1..0] string;
+  var paths: list(string);
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.push_back(arg);
+      paths.append(arg);
     else if isDir(arg) then
       for path in findfiles(arg, recursive=true) do
-        paths.push_back(path);
+        paths.append(path);
   }
 
   var n:int = paths.size;
-  var BlockN = {1..n} dmapped Block({1..n});
+  var BlockN = {0..#n} dmapped Block({0..#n});
   var distributedPaths:[BlockN] string;
-  distributedPaths = paths;
+  distributedPaths = paths.toArray();
  
   // Create an array of hashes and file ids
   // a file id is just the index into the paths array.
-  var hashAndFileId:[1..paths.size] (Hash, int);
+  var hashAndFileId:[0..#paths.size] (Hash, int);
  
   if visualize then
     startVdebug(vis);
@@ -101,7 +102,7 @@ proc stringToHash(s:string): Hash {
   var r = f.reader();
   var hash:Hash;
   // Use Formatted I/O to read hex values into integers
-  r.readf("%xu%xu%xu", hash(1), hash(2), hash(3));
+  r.readf("%xu%xu%xu", hash(0), hash(1), hash(2));
   r.close();
   return hash;
 }

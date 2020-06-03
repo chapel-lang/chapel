@@ -1,4 +1,4 @@
-.TH "hwlocality_diff" 3 "Sun Sep 2 2018" "Version 1.11.11" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_diff" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -206,6 +206,8 @@ The \fCtopology\fP parameter must be a valid topology but it is not required tha
 
 .PP
 Export a list of topology differences to a XML buffer\&. If not \fCNULL\fP, \fCrefname\fP defines an identifier string for the reference topology which was used as a base when computing this difference\&. This identifier is usually the name of the other XML file that contains the reference topology\&. This attribute is given back when reading the diff from XML\&.
+.PP
+The returned buffer ends with a \\0 that is included in the returned length\&.
 .PP
 \fBNote:\fP
 .RS 4

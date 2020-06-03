@@ -54,6 +54,8 @@ Outline
        - `Comparing to a C version`_
 
      - `Creating a graph comparing multiple variations`_
+     - `Multilocale Performance Testing`_
+     - `Multilocale Communication Counts Testing`_
      - `Test Your Test Before Submitting`_
 
    - `A Test That Tracks A Failure`_
@@ -142,11 +144,11 @@ line - specifying multiple lines will result in multiple compilations of the
 test file.
 
 For instance, to specify that the program should be compiled statically, this
-file would provided:
+file would be provided:
 
 ``hi.compopts``
 
-  .. code-block::
+  .. code-block:: bash
 
      --static
 
@@ -155,7 +157,7 @@ dynamically, the file would look like this:
 
 ``hi.compopts``
 
-  .. code-block::
+  .. code-block:: bash
 
      --static
      --dynamic
@@ -183,14 +185,14 @@ combination.  For example, a test specified like this:
 
 ``multiple-options.compopts``
 
-  .. code-block::
+  .. code-block:: bash
 
     --static
     --dynamic
 
 ``multiple-options.execopts``
 
-  .. code-block::
+  .. code-block:: bash
 
     --x=true
     --x=false
@@ -235,7 +237,7 @@ on a separate line, but all will be set for a particular run.
 
 Here is an example ``.execenv`` file:
 
-  .. code-block::
+  .. code-block:: bash
 
     CHPL_RT_NUM_THREADS_PER_LOCALE=100
 
@@ -290,7 +292,7 @@ single-locale setting:
 
 ``foo.skipif``
 
-  .. code-block::
+  .. code-block:: bash
 
      CHPL_COMM != none
 
@@ -314,7 +316,7 @@ For instance:
 
 ``foo.skipif``
 
-  .. code-block::
+  .. code-block:: python
 
      #!/usr/bin/env python
 
@@ -353,7 +355,7 @@ instance:
 
 ``foo.execopts``
 
-  .. code-block::
+  .. code-block:: bash
 
      --x=true # foo.true.good
      --x=false # foo.false.good
@@ -463,7 +465,7 @@ in a file named ``foo.dat``.
 Here is a sample ``.dat`` file, for the performance test at
 `$CHPL_HOME/test/Samples/Performance`_:
 
-  .. code-block::
+  .. code-block:: text
 
      # Date	Time:	Memory:
      03/26/18 	194.3	24
@@ -541,13 +543,13 @@ and write its output to ``bar-10000.dat``.
 Comparing to a C version
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-To compare a C version of a test to a Chapel version, the C version of
-the test must end with the suffix ``.test.c``.  Since ``.dat`` files must have
-unique names, the base name for the C test should vary from the Chapel
-equivalent.  For example, I might name the C version of the ``foo.chpl``
-performance test ``foo-c.test.c``.  Like any other test, the C test needs
-a ``.good`` file for correctness testing and a ``.perfkeys`` file for
-performance testing.
+To compare a C version of a test to a Chapel version, the C version of the test
+must end with the suffix ``.test.c`` for single locale tests and ``.ml-test.c``
+for multilocale tests.  Since ``.dat`` files must have unique names, the base
+name for the C test should vary from the Chapel equivalent.  For example, I
+might name the C version of the ``foo.chpl`` performance test ``foo-c.test.c``.
+Like any other test, the C test needs a ``.good`` file for correctness testing
+and a ``.perfkeys`` file for performance testing.
 
 C versions do not have to be performance tests, but this is their most common
 use case.
@@ -561,7 +563,7 @@ like to graph, you'll create a ``.graph`` file indicating which data from
 which ``.dat`` files should be graphed.  For example, to compare the
 timing data from the ``foo.chpl`` and ``foo-c.c`` tests described above, one
 might use the following ``foo.graph`` file (note that the graph file's
-base name need not have any relation to the tests it is graphing since
+basename need not have any relation to the tests it is graphing since
 they are typically pulling from multiple ``.dat`` files; making the
 filename useful to human readers is the main consideration).
 
@@ -606,13 +608,59 @@ suite(s) in which your graph appears, and you should see data for it.
 (Note that for a new graph with only one day of data, it can be hard
 to see the singleton points at first).
 
+Multilocale Performance Testing
++++++++++++++++++++++++++++++++
+Writing a performance test for multilocale setting has similarities to single
+locale performance testing and multilocale correctness testing. However, helper
+file suffixes differ from the previously covered ones as follows:
+
+========================= =======================
+Single Locale Performance Multilocale Performance
+========================= =======================
+ ``.perfexecopts``         ``.ml-execopts``    
+ ``.perfcompopts``         ``.ml-compopts``    
+ ``.perfkeys``             ``.ml-keys``        
+ ``.graph``                ``.ml-perf.graph``  
+ ``.execenv``              ``.ml-execenv``     
+========================= =======================
+
+======================= =======================
+Multilocale Correctness Multilocale Performance
+======================= =======================
+ ``.numlocales``         ``.ml-numlocales``
+======================= =======================
+
+Graph files for multilocale performance tests are listed in ``ML-GRAPHFILES``
+instead of ``GRAPHFILES``.
+
+Finally to run a multilocale performance test ``start_test --perflabel ml-``
+must be used.
+
+Multilocale Communication Counts Testing
+++++++++++++++++++++++++++++++++++++++++
+Another type of multilocale testing is where the number of communication calls
+(e.g. GETs, PUTs, ONs) generated is tracked. These numbers can be obtained with
+the help of `CommDiagnostics`_ module and be printed out similar to printing out
+the time elapsed or throughput.
+
+.. _`CommDiagnostics`: https://chapel-lang.org/docs/modules/standard/CommDiagnostics.html
+
+Communication counts testing is only applicable in a multilocale setting, and it
+is similar to multilocale performance testing. However, for helper files ``cc-``
+label is used instead of ``ml-``.
+
 Test Your Test Before Submitting
 ++++++++++++++++++++++++++++++++
 
 Before submitting your test for review, be sure that it works under
-both ``start_test`` and ``start_test -performance`` modes when running
-within the directory (or directories) in question.  Nothing is more
-embarrassing than committing a test that doesn't work on day one.
+
+- ``start_test``
+- ``start_test --performance``
+- ``start_test --perflabel ml-`` (if applicable)
+- ``start_test --perflabel cc-`` (if applicable)
+
+modes when running within the directory (or directories) in question. Nothing is
+more embarrassing than committing a test that doesn't work on day one.
 
 Once the test(s), ``.graph`` files, and ``GRAPHFILES`` are committed to the
 Chapel repository, they will start showing up on the Chapel public
@@ -780,7 +828,7 @@ The output from ``start_test`` will end with the location of the log file
 containing all the output from its execution, as well as a summary of all tests
 that failed and any futures that were run.  This will look something like this:
 
-  .. code-block::
+  .. code-block:: text
 
      [Test Summary - 180328.134706]
      [Error matching program output for path/to/failing/correctness/test]
@@ -820,8 +868,10 @@ File                Contents of file
 **correctness**
 -------------------------------------------------------------------------------
 foo.chpl            Chapel test program to compile and run
-foo.test.c          C test program to compile and run. See `Comparing to a C
-                    version`_ for more information
+foo.test.c          Single locale C test program to compile and run. See
+                    `Comparing to a C version`_ for more information
+foo.ml-test.c       Multilocale C test program to compile and run.  See
+                    `Comparing to a C version`_ for more information
 foo.good            expected output of test program
 ..
 -------------------------------------------------------------------------------
@@ -836,8 +886,8 @@ EXECOPTS            directory-wide runtime flags
 foo.execenv         line separated list of environment variables settings.  See
                     `Environment Variables`_ for more information
 EXECENV             directory-wide environment variables
-foo.numlocales      number of locales to use in multi-locale run
-NUMLOCALES          directory-wide number of locales to use in multi-locale run
+foo.numlocales      number of locales to use in multilocale run
+NUMLOCALES          directory-wide number of locales to use in multilocale run
 ..
 -------------------------------------------------------------------------------
 **Helper files**
@@ -856,7 +906,7 @@ PREEXEC             directory-wide script that is run prior to execution
 -------------------------------------------------------------------------------
 **Testing System Settings**
 -------------------------------------------------------------------------------
-foo.cleanfiles      line separated list of files to remove before next test run
+foo.cleanfiles      line separated list of files to remove before the next test run
 CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
                     not executed.  See `Controlling How It Runs`_ for more
@@ -876,7 +926,7 @@ foo.timeout         time in seconds after which start_test should stop this test
                     See `Limiting Time Taken`_ for more information
 ..
 -------------------------------------------------------------------------------
-**performance**
+**performance** (replace "perf" with "ml-" and "cc-" as necessary)
 -------------------------------------------------------------------------------
 foo.perfcompopts    compiler flags, overrides .compopts for --performance
 PERFCOMPOPTS        directory-wide performance compiler flags

@@ -1,2 +1,0 @@
-coerce-owned-to-shared.chpl:6: In function 'test':
-coerce-owned-to-shared.chpl:9: error: Could not coerce 'owned MyClass' to '_shared' in initialization

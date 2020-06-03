@@ -15,7 +15,7 @@ var dc: domain(complex);
 var dg: domain(imag);
 //not interesting: var dt: domain(chpl_taskID_t);
 var ds: domain(string);
-var dC: domain(object);
+var dC: domain(borrowed object);
 var dE: domain(E);
 var dT: domain((int,real));
 var dR: domain(R);

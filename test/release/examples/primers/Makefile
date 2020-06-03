@@ -5,7 +5,6 @@ CHPL = chpl
 
 TARGETS = \
 	arrays \
-	arrayVectorOps \
 	associative \
 	atomics \
 	chpldoc.doc \
@@ -17,10 +16,10 @@ TARGETS = \
 	genericClasses \
 	iterators \
 	learnChapelInYMinutes \
+	listOps \
 	locales \
 	modules \
 	nothingVariables \
-	opaque-domains \
 	parIters \
 	procedures \
 	randomNumbers \

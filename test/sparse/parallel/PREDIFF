@@ -10,7 +10,7 @@ case $outfile in
      ;;
   (sparse-iter-performance.*)
      # smooth out the timings
-     cat $outfile | sed 's@ [0-9][0-9.]* ms@ XXX ms@' > $outfile.tmp
+     cat $outfile | sed 's@ -*[0-9][0-9.]* ms@ XXX ms@' > $outfile.tmp
      mv $outfile.tmp $outfile
      ;;
   (sparse-csr-simple-dom-manips.* | sparse-default-simple-dom-manips.*)

@@ -1,4 +1,0 @@
-constAndParamInHeader.chpl:6: In initializer:
-constAndParamInHeader.chpl:6: error: invalid access of class member in initializer argument list
-constAndParamInHeader.chpl:14: In initializer:
-constAndParamInHeader.chpl:14: error: invalid access of class member in initializer argument list

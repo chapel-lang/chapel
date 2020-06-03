@@ -67,7 +67,6 @@ users/npadmana/npb-mg/mg-b.graph
 arrays/diten/time_iterate.graph
 arrays/diten/time_array_vs_tuple.graph
 arrays/diten/time_array_vs_ddata.graph
-arrays/diten/timeVectorArray.graph
 arrays/ferguson/return-array-40000000.graph
 arrays/lydia/time_access.graph
 domains/ferguson/build-associative.graph
@@ -97,6 +96,7 @@ users/npadmana/twopt/twopt-paircount.graph
 performance/compiler/bradc/AllCompTime.graph
 memleaksfull.graph
 studies/jacobi/jacobi.graph
+library/standard/List/perf/listBenchmark1.graph
 # suite: HPC Challenge
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
@@ -214,6 +214,8 @@ arrays/ferguson/return-array-8.graph
 arrays/ferguson/return-array-20000000.graph
 arrays/ferguson/return-array-40000000.graph
 domains/ferguson/build-associative.graph
+performance/sparse/domainAssignment-similar.graph
+performance/sparse/domainAssignment-dissimilar.graph
 # suite: Atomic performance
 types/atomic/ferguson/atomictest.graph
 # suite: Dynamic iterators
@@ -242,6 +244,7 @@ performance/compiler/bradc/AllCompTime.graph
 # suite: Memory tracking
 memleaks.graph
 memleaksfull.graph
+ml-memleaksfull.graph
 # suite: Memory allocation
 memory/lifetime/allocation.graph
 # suite: Code size tracking
@@ -276,7 +279,6 @@ users/franzf/v0/chpl/main.graph
 reductions/diten/testSerialReductions.graph
 reductions/vass/reductions-perf.graph
 parallel/forall/reduce-intents/ri-a2-AoA.graph
-spectests.graph
 studies/paracr/asenjo/PARACR-BC.graph
 library/standard/BitOps/c-tests/performance/bitops.graph
 library/standard/Random/performance/getNextPerf.graph

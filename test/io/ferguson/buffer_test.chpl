@@ -1,13 +1,17 @@
 use Buffers;
 
 proc testassign() {
-  var b = new bytes(50);
+  var b = new byteBuffer(50);
   {
     // test assignment overload.
-    var b_tmp:bytes;
-    var b_tmp2 = new bytes();
+    var b_tmp:byteBuffer = new byteBuffer();
+    var b_tmp2 = new byteBuffer();
     b_tmp2 = b;
     b_tmp = b;
+  }
+  {
+    // test copy-init
+    var b_tmp3 = b;
   }
 }
 
@@ -15,11 +19,11 @@ proc main() {
   testassign();
 
   // allocate 50 bytes
-  var b = new bytes(50);
+  var b = new byteBuffer(50);
   {
     // test assignment overload.
-    var b_tmp:bytes;
-    var b_tmp2 = new bytes();
+    var b_tmp:byteBuffer;
+    var b_tmp2 = new byteBuffer();
     b_tmp2 = b;
     b_tmp = b;
   }
@@ -65,6 +69,4 @@ proc main() {
   buf.copyout(start, got);
   //writeln("checking");
   assert( got == num );
- 
-
 }

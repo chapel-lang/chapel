@@ -1,2 +1,2 @@
-renameModuleViaOnly.chpl:5: In function 'main':
-renameModuleViaOnly.chpl:6: error: Bad identifier in rename, no known 'Toolbox' in 'Toolbox'
+renameModuleViaOnly.chpl:6: In function 'main':
+renameModuleViaOnly.chpl:7: error: Bad identifier in rename, no known 'Toolbox' in 'Toolbox'

@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -196,7 +197,7 @@ Here is a ``keyPart`` to support sorting of strings:
 .. code-block:: chapel
 
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
-    var len = x.length;
+    var len = x.numBytes;
     var section = if i <= len then 0:int(8) else -1:int(8);
     var part =    if i <= len then x.byte(i) else  0:uint(8);
     return (section, part);
@@ -251,6 +252,8 @@ comparator to the initializer of the module-defined
  */
 module Sort {
 
+  private use List;
+  private use Reflection;
 
 /* Module-defined comparators */
 
@@ -266,7 +269,6 @@ const defaultComparator: DefaultComparator;
    argument of a sort function to reverse the sort order.
  */
 const reverseComparator: ReverseComparator(DefaultComparator);
-
 
 /* Private methods */
 
@@ -315,8 +317,6 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
 */
 pragma "no doc"
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
-  use Reflection;
-
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
   // Compare results of comparator.key(a) if is defined by user
@@ -335,6 +335,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 
 
 pragma "no doc"
+pragma "unsafe" // due to 'data' default-initialized to nil for class types
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
@@ -345,8 +346,6 @@ pragma "no doc"
 
  */
 proc chpl_check_comparator(comparator, type eltType) param {
-  use Reflection;
-
   // Dummy data for checking method resolution
   // This may need updating when constructors support non-default args
   const data: eltType;
@@ -382,8 +381,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
     if !isTupleType(partType) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
     var tmp: partType;
-    var expectInt = tmp(1);
-    var expectIntUint = tmp(2);
+    var expectInt = tmp(0);
+    var expectIntUint = tmp(1);
     if !isInt(expectInt.type) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
@@ -400,12 +399,11 @@ proc chpl_check_comparator(comparator, type eltType) param {
 
 /* Basic Functions */
 
+pragma "unsafe" // due to 'tmp' default-initialized to nil for class types
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
-  use Reflection;
-
   if !Dom.stridable {
-    var tmp:Data[Dom.low].type;
+    var tmp:Data[Dom.alignedLow].type;
     if canResolveMethod(comparator, "keyPart", tmp, 1) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
@@ -453,8 +451,8 @@ the sorting algorithm.
   data is sorted.
 
  */
-// TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
@@ -492,7 +490,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   const stride = if Dom.stridable then abs(Dom.stride) else 1;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
-    if i > Dom.low {
+    if i > Dom.alignedLow {
       sorted &&= (chpl_compare(Data[i-stride], element, comparator) <= 0);
     }
   }
@@ -549,127 +547,9 @@ iter sorted(x, comparator:?rec=defaultComparator) {
     yield i;
 }
 
-/*
-   Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
-
-   .. note:: This function is deprecated - please use :proc:`sort`.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc bubbleSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("bubbleSort is deprecated - please use sort");
-  BubbleSort.bubbleSort(Data, comparator);
-}
-
-/*
-   Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
-
-   .. note:: This function is deprecated - please use :proc:`sort`.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc heapSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("heapSort is deprecated - please use sort");
-  HeapSort.heapSort(Data, comparator);
-}
-
-/*
-   Sort the 1D array `Data` in-place using a sequential insertion sort
-   algorithm.
-
-   .. note:: This function is deprecated - please use :proc:`sort`.
-
-   :arg Data: The array to be sorted
-   :type Data: [] `eltType`
-   :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
-
- */
-proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
-  compilerWarning("insertionSort is deprecated - please use sort");
-  InsertionSort.insertionSort(Data, comparator, lo, hi);
-}
-
-/*
-  Sort the 1D array `Data` in-place using a sequential, stable binary
-  insertion sort algorithm.
-  Should be used when there is a high cost of comparison.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-     data is sorted.
-
- */
-proc binaryInsertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("binaryInsertionSort is deprecated - please use sort");
-  BinaryInsertionSort.binaryInsertionSort(Data, comparator);
-}
-
-/*
-  Sort the 1D array `Data` using a parallel merge sort algorithm.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-  :type minlen: `integral`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-    data is sorted.
- */
-proc mergeSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  compilerWarning("mergeSort is deprecated - please use sort");
-  MergeSort.mergeSort(Data, minlen, comparator);
-}
-
-/*
-  Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-  :type minlen: `integral`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-    data is sorted.
-
- */
-proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-  compilerWarning("quickSort is deprecated - please use sort");
-  QuickSort.quickSort(Data, minlen, comparator);
-}
-
-/*
-  Sort the 1D array `Data` in-place using a sequential selection sort
-  algorithm.
-
-  .. note:: This function is deprecated - please use :proc:`sort`.
-
-  :arg Data: The array to be sorted
-  :type Data: [] `eltType`
-  :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-     data is sorted.
-
- */
-proc selectionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
-  compilerWarning("selectionSort is deprecated - please use sort");
-  SelectionSort.selectionSort(Data, comparator);
-}
-
 pragma "no doc"
 module BubbleSort {
+  import Sort.defaultComparator;
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -687,8 +567,8 @@ module BubbleSort {
       compilerError("bubbleSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           stride = abs(Dom.stride);
 
     var swapped = true;
@@ -707,6 +587,7 @@ module BubbleSort {
 
 pragma "no doc"
 module HeapSort {
+  import Sort.defaultComparator;
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -724,8 +605,8 @@ module HeapSort {
       compilerError("heapSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           size = Dom.size,
           stride = abs(Dom.stride);
 
@@ -772,7 +653,8 @@ module HeapSort {
 
 pragma "no doc"
 module InsertionSort {
-
+  import Sort.defaultComparator;
+  import Sort.ShallowCopy;
   /*
    Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
@@ -783,7 +665,7 @@ module InsertionSort {
       data is sorted.
 
    */
-  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
+  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -811,10 +693,42 @@ module InsertionSort {
       }
     }
   }
+
+  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("insertionSort() requires 1-D array");
+    }
+
+    const low = lo,
+          high = hi,
+          stride = abs(Dom.stride);
+
+    for i in low..high by stride {
+      pragma "no auto destroy"
+      var ithVal = ShallowCopy.shallowCopyInit(Data[i]);
+
+      var inserted = false;
+      for j in low..i-stride by -stride {
+        if chpl_compare(ithVal, Data[j], comparator) < 0 {
+          ShallowCopy.shallowCopy(Data[j+stride], Data[j]);
+        } else {
+          ShallowCopy.shallowCopy(Data[j+stride], ithVal);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) {
+        ShallowCopy.shallowCopy(Data[low], ithVal);
+      }
+    }
+  }
 }
 
 pragma "no doc"
 module BinaryInsertionSort {
+  import Sort.defaultComparator;
   /*
     Sort the 1D array `Data` in-place using a sequential, stable binary
     insertion sort algorithm.
@@ -832,8 +746,8 @@ module BinaryInsertionSort {
       compilerError("binaryInsertionSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           stride = abs(Dom.stride);
 
     for i in low..high by stride {
@@ -858,7 +772,7 @@ module BinaryInsertionSort {
     If `val` is not in `Data`, the index that it should be inserted at is returned.
     Does not check for a valid comparator.
   */
-  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
+  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh) {
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
     var loc = -1;                                        // index of the last occurrence of val in Data
@@ -884,6 +798,7 @@ module BinaryInsertionSort {
 
 pragma "no doc"
 module MergeSort {
+  import Sort.defaultComparator;
   /*
     Sort the 1D array `Data` using a parallel merge sort algorithm.
 
@@ -902,130 +817,277 @@ module MergeSort {
       compilerError("mergeSort() requires 1-D array");
     }
 
-    _MergeSort(Data, Dom.low, Dom.high, minlen, comparator);
+    var Scratch: Data.type;
+
+    _MergeSort(Data, Scratch, Dom.alignedLow, Dom.alignedHigh, minlen, comparator, 0);
   }
 
-  private proc _MergeSort(Data: [?Dom], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator)
+  /*
+   * Use Scratch[lo..hi] as scratch space to sort the Data[lo..hi].
+   *
+   * Rather than copy our portion of Data into Scratch to start off
+   * each _Merge(), the recursive levels will alternate merging from
+   * Data into Scratch, and merging from Scratch into Data.
+   *
+   * At even depths -- including the initial one -- we leave the
+   * sorted data in Data.  At odd depths, we leave the sorted data in
+   * Scratch.
+   *
+   * The data stays in Data "all they way down" until the first
+   * _Merge(), then is moved back and forth as we return up the chain.
+   */
+  private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
-    if (hi-lo < minlen) {
+    import Sort.InsertionSort;
+
+    const stride = if Dom.stridable then abs(Dom.stride) else 1,
+          size = (hi - lo) / stride,
+          mid = lo + (size/2) * stride;
+
+    /*
+     * When we return from an even depth, the data must be in Data.
+     * When we return from an odd depth, the data must be in Scratch.
+     * At the point we dispatch to insertionSort, the data is still in
+     * Data.  So, if we get here at an odd depth, we'd have to sort
+     * Data and then copy to Scratch.  Avoid the copy by doing the
+     * sort one level before that, while we're still even.
+     *
+     * "size" is a misnomer.  For 1..10, size works out to 9.  That's
+     * the value we want to base the calculation of mid on.  But for
+     * the loop control, we really need to consider the size as 10.
+     */
+    if ((size+1) < minlen || (((depth & 1) == 0) && (size+1) < 2 * minlen)) {
       InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+
+      if depth & 1 {
+        // At odd depths, we need to return the results in Scratch.
+        // But if the test above is correct, we'll never reach this point.
+        if Dom.stridable then
+          Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
+        else
+          Scratch[lo..hi] = Data[lo..hi];
+      }
       return;
     }
-    const mid = (hi-lo)/2+lo;
+
     if(here.runningTasks() < here.numPUs(logical=true)) {
       cobegin {
-        { _MergeSort(Data, lo, mid, minlen, comparator); }
-        { _MergeSort(Data, mid+1, hi, minlen, comparator); }
+        { _MergeSort(Data, Scratch, lo, mid, minlen, comparator, depth+1); }
+        { _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator, depth+1); }
       }
     } else {
-      _MergeSort(Data, lo, mid, minlen, comparator);
-      _MergeSort(Data, mid+1, hi, minlen, comparator);
+      _MergeSort(Data, Scratch, lo, mid, minlen, comparator, depth+1);
+      _MergeSort(Data, Scratch, mid+stride, hi, minlen, comparator, depth+1);
     }
-    _Merge(Data, lo, mid, hi, comparator);
+
+    if depth & 1 == 0 {
+      _Merge(Data, Scratch, lo, mid, hi, comparator);
+    } else {
+      _Merge(Scratch, Data, lo, mid, hi, comparator);
+    }
   }
 
-  private proc _Merge(Data: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
-    var a1max = mid;
-    var A1 = Data[lo..(a1max)];
-    var a2max = hi;
-    var A2 = Data[mid..(a2max)];
-    var a1 = lo;
-    var a2 = mid + 1;
+  private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
+     * Dom is unstrided.  So specify the latter explicitly when possible. */
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const a1max = mid;
+
+    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2max = hi;
+
+    ref A1 = Src[a1range];
+    ref A2 = Src[a2range];
+
+    var a1 = a1range.first;
+    var a2 = a2range.first;
     var i = lo;
     while ((a1 <= a1max) && (a2 <= a2max)) {
       if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
-        Data[i] = A1[a1];
-        a1 += 1;
-        i += 1;
+        Dst[i] = A1[a1];
+        a1 += stride;
+        i += stride;
       } else {
-        Data[i] = A2[a2];
-        a2 += 1;
-        i += 1;
+        Dst[i] = A2[a2];
+        a2 += stride;
+        i += stride;
       }
     }
     while (a1 <= a1max) {
-      Data[i] = A1[a1];
-      a1 += 1;
-      i += 1;
+      Dst[i] = A1[a1];
+      a1 += stride;
+      i += stride;
     }
     while (a2 <= a2max) {
-      Data[i] = A2[a2];
-      a2 += 1;
-      i += 1;
+      Dst[i] = A2[a2];
+      a2 += stride;
+      i += stride;
     }
   }
 }
 
 pragma "no doc"
 module QuickSort {
+  import Sort.defaultComparator;
+  use Sort.ShallowCopy;
+
   /*
-    Sort the 1D array `Data` in-place using a sequential quick sort algorithm.
+   Partition the array Data[lo..hi] using the pivot at Data[pivIdx].
 
-    :arg Data: The array to be sorted
-    :type Data: [] `eltType`
-    :arg minlen: When the array size is less than `minlen` use :proc:`insertionSort` algorithm
-    :type minlen: `integral`
-    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
-      data is sorted.
+   This is the 3-way symmetric partition described
+   in Engineering a Sort Function (1993) by Jon L. Bentley , M. Douglas McIlroy
 
+   Returns the (eqStart,eqEnd) where eqStart..eqEnd elements are
+   equal to the pivot (and elements less are before eqStart and elements
+   greater are after eqEnd).
    */
-  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator) {
-    chpl_check_comparator(comparator, eltType);
-    if Dom.rank != 1 {
-      compilerError("quickSort() requires 1-D array");
-    }
+  proc partition(Data: [?Dom] ?eltType,
+                 lo: int, pivIdx: int, hi: int,
+                 comparator)
+  {
+    // The following section categorizes array elements as follows:
+    //
+    //   |  =  |  <  |  ?  |  >  |  =   |
+    //    lo    a     b   c     d     hi
+    //
+    //  lo..a-1 stores equal elements
+    //   a..b-1 stores elements < pivot
+    //   b..c   store uncategorized elements
+    // c+1..d-1 store elements > pivot
+    // d+1..hi  stores equal elements
 
-    // grab obvious indices
-    const stride = abs(Dom.stride),
-          lo = Dom.low,
-          hi = Dom.high,
-          size = Dom.size,
-          mid = if hi == lo then hi
-                else if size % 2 then lo + ((size - 1)/2) * stride
-                else lo + (size/2 - 1) * stride;
+    // initially, entire array is in b..c
+    var a = lo;
+    var b = lo;
+    var c = hi;
+    var d = hi;
 
-    // base case -- use insertion sort
-    if (hi - lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator);
-      return;
-    }
+    // Now put the pivot in Data[lo] so we can
+    // avoid keeping track of its position.
+    if lo != pivIdx then
+      ShallowCopy.shallowSwap(Data[lo], Data[pivIdx]);
 
-    // find pivot using median-of-3 method
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
+    a += 1;
+    b += 1;
 
-    const pivotVal = Data(mid);
-    Data(mid) = Data(hi-stride);
-    Data(hi-stride) = pivotVal;
-    // end median-of-3 partitioning
+    // Now swap the pivot to a local variable
+    pragma "no auto destroy"
+    var piv: eltType = ShallowCopy.shallowCopyInit(Data[lo]); // leaves Data[lo] empty
 
-    var loptr = lo,
-        hiptr = hi-stride;
-    while (loptr < hiptr) {
-      do { loptr += stride; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-      do { hiptr -= stride; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-      if (loptr < hiptr) {
-        Data(loptr) <=> Data(hiptr);
+    while true {
+      while b <= c {
+        // continue while Data[b] <= piv
+        var cmp = chpl_compare(Data[b], piv, comparator);
+        if cmp > 0 then
+          break;
+        if cmp == 0 {
+          if a != b {
+            ShallowCopy.shallowSwap(Data[a], Data[b]);
+          }
+          a += 1; // one more equal element (on left)
+        }
+        b += 1; // one more categorized element
       }
+      while c >= b {
+        // continue while Data[c] >= piv
+        var cmp = chpl_compare(Data[c], piv, comparator);
+        if cmp < 0 then
+          break;
+        if cmp == 0 {
+          ShallowCopy.shallowSwap(Data[d], Data[c]);
+          d -= 1; // one more equal element (on right)
+        }
+        c -= 1; // one more categorized element
+      }
+      if b > c then
+        break; // stop here
+
+      // then Data[b] > piv and Data[c] < piv,
+      // so Data[c] < Data[b] and they are an inversion
+      ShallowCopy.shallowSwap(Data[b], Data[c]);
+      b += 1;
+      c -= 1;
     }
 
-    Data(hi-stride) = Data(loptr);
-    Data(loptr) = pivotVal;
+    // Now put piv back in Data[lo]
+    ShallowCopy.shallowCopy(Data[lo], piv); // leaves piv empty
 
-    // TODO -- Get this cobegin working and tested
-    //  cobegin {
-      quickSort(Data[..loptr-stride], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+stride..], minlen, comparator);
-    //  }
+    // now we are in the state:
+    //   |  =  |  <  |  > |  =   |
+    //    lo    a   c b  d     hi
+
+    // now place the equal regions in the right places
+    var s, l, h: int;
+
+    // Fix the first = region
+    s = min(a-lo, b-a); // the number of of elements to swap
+    l = lo;
+    h = b-s;
+    while s > 0 {
+      ShallowCopy.shallowSwap(Data[l], Data[h]);
+      l += 1;
+      h += 1;
+      s -= 1;
+    }
+
+    // Fix the second = region
+    var n = hi+1;
+    s = min(d-c, hi-d);
+    l = b;
+    h = n-s;
+    while s > 0 {
+      ShallowCopy.shallowSwap(Data[l], Data[h]);
+      l += 1;
+      h += 1;
+      s -= 1;
+    }
+
+    var eqStart = b-a+lo;
+    var eqEnd = hi-(d-c);
+
+    return (eqStart, eqEnd);
   }
 
-  /* Non-stridable quickSort */
-  proc quickSort(Data: [?Dom] ?eltType, minlen=16, comparator:?rec=defaultComparator)
-    where !Dom.stridable {
+
+  // Returns the index of the median element
+  // of Data[lo], Data[mid], Data[hi]
+  // (in other words it returns lo, mid, or hi).
+  proc order3(Data: [?Dom] ?eltType,
+              lo: int, mid: int, hi: int,
+              comparator): int {
+
+    if chpl_compare(Data[lo], Data[mid], comparator) < 0 {
+      // lo < mid
+      if chpl_compare(Data[hi], Data[lo], comparator) < 0 {
+        // lo < mid, hi < lo -> hi < lo < mid
+        return lo;
+      } else if chpl_compare(Data[mid], Data[hi], comparator) < 0 {
+        // lo < mid, lo <= hi, mid < hi -> lo < mid < hi
+        return mid;
+      } else {
+        // lo < mid, lo <= hi, hi <= mid -> lo <= hi <= mid
+        return hi;
+      }
+    } else {
+      // mid <= lo
+      if chpl_compare(Data[lo], Data[hi], comparator) < 0 {
+        // mid <= lo, lo < hi -> mid <= lo < hi
+        return lo;
+      } else if chpl_compare(Data[hi], Data[mid], comparator) < 0 {
+        // mid <= lo, hi <= lo, hi < mid -> hi < mid <= lo
+        return mid;
+      } else {
+        // mid <= lo, hi <= lo, mid <= hi -> mid <= hi <= lo
+        return hi;
+      }
+    }
+  }
+
+ /* Use quickSort to sort Data */
+ proc quickSort(Data: [?Dom] ?eltType,
+                minlen=16,
+                comparator:?rec=defaultComparator) {
 
     chpl_check_comparator(comparator, eltType);
 
@@ -1033,53 +1095,77 @@ module QuickSort {
       compilerError("quickSort() requires 1-D array");
     }
 
-    // grab obvious indices
-    const lo = Dom.low,
-          hi = Dom.high,
-          mid = lo + (hi-lo+1)/2;
-
-    // base case -- use insertion sort
-    if (hi - lo < minlen) {
-      InsertionSort.insertionSort(Data, comparator=comparator);
+    if Dom.stridable && Dom.stride != 1 {
+      ref reindexed = Data.reindex(Dom.alignedLow..#Dom.size);
+      assert(reindexed.domain.stride == 1);
+      quickSortImpl(reindexed, minlen, comparator);
       return;
     }
 
-    // find pivot using median-of-3 method
-    if (chpl_compare(Data(mid), Data(lo), comparator) < 0) then
-      Data(mid) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(lo), comparator) < 0) then
-      Data(hi) <=> Data(lo);
-    if (chpl_compare(Data(hi), Data(mid), comparator) < 0) then
-      Data(hi) <=> Data(mid);
+    assert(Dom.stride == 1);
+    quickSortImpl(Data, minlen, comparator);
+  }
 
-    const pivotVal = Data(mid);
-    Data(mid) = Data(hi-1);
-    Data(hi-1) = pivotVal;
-    // end median-of-3 partitioning
 
-    var loptr = lo,
-        hiptr = hi-1;
-    while (loptr < hiptr) {
-      do { loptr += 1; } while (chpl_compare(Data(loptr), pivotVal, comparator) < 0);
-      do { hiptr -= 1; } while (chpl_compare(pivotVal, Data(hiptr), comparator) < 0);
-      if (loptr < hiptr) {
-        Data(loptr) <=> Data(hiptr);
-      }
+  /* Non-stridable quickSort to sort Data[start..end] */
+  proc quickSortImpl(Data: [?Dom] ?eltType,
+                     minlen=16,
+                     comparator:?rec=defaultComparator,
+                     start:int = Dom.low, end:int = Dom.high) {
+    import Sort.InsertionSort;
+
+    // grab obvious indices
+    const lo = start,
+          hi = end,
+          mid = lo + (hi-lo+1)/2;
+    var piv = mid;
+
+    if hi - lo < 0 { // minlen {
+      // base case -- use insertion sort
+      InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
+      return;
+    } else if hi <= lo {
+      // nothing to sort
+      return;
     }
 
-    Data(hi-1) = Data(loptr);
-    Data(loptr) = pivotVal;
+    // find pivot using median-of-3 method for small arrays
+    // and a "ninther" for bigger arrays. Places the pivot in
+    // Data[lo].
+    if hi - lo < 100 {
+      piv = order3(Data, lo, mid, hi, comparator);
+    } else {
+      // assumes array size > 9 at the very least
 
-    // TODO -- Get this cobegin working and tested
-    //  cobegin {
-      quickSort(Data[..loptr-1], minlen, comparator);  // could use unbounded ranges here
-      quickSort(Data[loptr+1..], minlen, comparator);
-    //  }
+      // median of each group of 3
+      const medLo  = order3(Data, lo,    lo+1, lo+2,  comparator);
+      const medMid = order3(Data, mid-1, mid,  mid+1, comparator);
+      const medHi  = order3(Data, hi-2,  hi-1, hi,    comparator);
+      // median of the medians
+      piv = order3(Data, medLo, medMid, medHi, comparator);
+    }
+
+    var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
+
+    if hi-lo < 300 {
+      // stay sequential
+      quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+      quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+    } else {
+      // do the subproblems in parallel
+      forall i in 1..2 {
+        if i == 1 then
+          quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+        else
+          quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+      }
+    }
   }
 }
 
 pragma "no doc"
 module SelectionSort {
+  import Sort.defaultComparator;
   /*
     Sort the 1D array `Data` in-place using a sequential selection sort
     algorithm.
@@ -1096,8 +1182,8 @@ module SelectionSort {
       compilerError("selectionSort() requires 1-D array");
     }
 
-    const low = Dom.low,
-          high = Dom.high,
+    const low = Dom.alignedLow,
+          high = Dom.alignedHigh,
           stride = abs(Dom.stride);
 
     for i in low..high-stride by stride {
@@ -1114,8 +1200,9 @@ module SelectionSort {
 
 pragma "no doc"
 module ShellSort {
+  import Sort.defaultComparator;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-                 start=Dom.low, end=Dom.high)
+                 start=Dom.alignedLow, end=Dom.alignedHigh)
   {
     chpl_check_comparator(comparator, eltType);
 
@@ -1147,8 +1234,257 @@ module ShellSort {
   }
 }
 
+
+pragma "no doc"
+module SampleSortHelp {
+  param maxLogBuckets = 8; // not counting equality buckets.
+  param classifyUnrollFactor = 7;
+  const equalBucketThreshold = 5;
+  const maxInline = 16;
+  const oversampleFactor = 0.2;
+
+  // compute logarithm base 2 rounded down
+  proc log2int(n: int) {
+    if n <= 0 then
+      return 0;
+    return log2(n);
+  }
+
+  proc computeLogBucketSize(n: int) {
+    const LogBuckets = 8;
+    const BaseCaseSize = 16;
+    const BaseCaseMultiplier = 16;
+    const SingleLevelThreshold = maxInline * LogBuckets;
+    const TwoLevelThreshold = SingleLevelThreshold * LogBuckets;
+    var ret = 0;
+    if n <= SingleLevelThreshold {
+      ret = log2int(n / maxInline / 2);
+    } else if n <= TwoLevelThreshold {
+      ret = (log2int(n / maxInline / 2)+1)/2;
+    } else {
+      ret = maxLogBuckets;
+    }
+
+    ret = max(1, ret); // make sure it's at least 1
+    ret = min(maxLogBuckets, ret); // make sure it's at most maxLogBuckets.
+
+    return ret;
+  }
+  proc chooseSampleStep(n:int, logNumBuckets:int) {
+    var oversample = min(1.0, oversampleFactor * log2int(n));
+    var step = max(1, oversample:int);
+    return step;
+  }
+
+
+
+  record SampleBucketizer {
+    type eltType;
+
+    // filled from 1 to num_buckets_
+    var storage: c_array(eltType, 1<<maxLogBuckets);
+    // filled from 0 to num_buckets, last one is duplicated
+    var sortedStorage: c_array(eltType, 1<<maxLogBuckets);
+
+    var logBuckets: int;
+    var numBuckets: int;
+    var equalBuckets: bool;
+
+    proc writeThis(ch) throws {
+      ch <~> "SampleBucketizer(";
+      ch <~> "\n logBuckets=" <~> logBuckets;
+      ch <~> "\n numBuckets=" <~> numBuckets;
+      ch <~> "\n equalBuckets=" <~> equalBuckets;
+      ch <~> "\n storage=";
+      for i in 0..numBuckets {
+        ch <~> (try! " %xt".format(storage[i]));
+      }
+      ch <~> "\n sortedStorage=";
+      for i in 0..numBuckets {
+        ch <~> (try! " %xt".format(sortedStorage[i]));
+      }
+      ch <~> ")\n";
+    }
+
+    proc getNumBuckets() {
+      return numBuckets * (1 + equalBuckets:int);
+    }
+    proc getBinsToRecursivelySort() {
+      var r:range(stridable=true);
+      if equalBuckets {
+        // odd bins will be equality buckets
+        r = (0..(getNumBuckets()-1)) by 2;
+      } else {
+        r = 0..(getNumBuckets()-1);
+      }
+      return r;
+    }
+    proc getNextStartBit(start_bit:int) {
+      return start_bit;
+    }
+
+    // Build the tree from the sorted splitters
+    // logBuckets does not account for equalBuckets.
+    proc build(logBuckets: int, equalBuckets: bool) {
+      this.logBuckets = logBuckets;
+      this.numBuckets = 1 << logBuckets;
+      this.equalBuckets = equalBuckets;
+
+      var numSplitters = this.numBuckets - 1;
+      // Copy the last element
+      sortedStorage[numSplitters] = sortedStorage[numSplitters-1];
+      build(0, numSplitters, 1);
+    }
+    // Recursively builds the tree
+    proc build(left: int, right: int, pos: int) {
+      var mid = left + (right - left) / 2;
+      storage[pos] = sortedStorage[mid];
+      if 2*pos < numBuckets {
+        build(left, mid, 2*pos);
+        build(mid, right, 2*pos + 1);
+      }
+    }
+    inline proc splitter(i:int) const ref : eltType {
+      return storage[i];
+    }
+    inline proc sortedSplitter(i:int) const ref : eltType {
+      return sortedStorage[i];
+    }
+
+    proc bucketForRecord(a, criterion, startbit) {
+      var bk = 1;
+      for lg in 0..#logBuckets {
+        bk = 2*bk + (chpl_compare(splitter(bk), a, criterion) < 0):int;
+      }
+      if equalBuckets {
+        bk = 2*bk + (chpl_compare(a, sortedSplitter(bk-numBuckets), criterion) == 0):int;
+      }
+      return bk - (if equalBuckets then 2*numBuckets else numBuckets);
+    }
+    // yields (index, bucket index) for A[start_n..end_n]
+    iter classify(A, start_n, end_n, criterion, startbit) {
+      const paramEqualBuckets = equalBuckets;
+      const paramLogBuckets = logBuckets;
+      const paramNumBuckets = 1 << (paramLogBuckets + paramEqualBuckets:int);
+      var b:c_array(int, classifyUnrollFactor);
+
+      var cur = start_n;
+      // Run the main (unrolled) loop
+      while cur <= end_n-(classifyUnrollFactor-1) {
+        for /*param*/ i in 0..classifyUnrollFactor-1 {
+          b[i] = 1;
+        }
+        for /*param*/ lg in 0..paramLogBuckets-1 {
+          for /*param*/ i in 0..classifyUnrollFactor-1 {
+            b[i] = 2*b[i] + (chpl_compare(splitter(b[i]), A[cur+i],criterion)<0):int;
+          }
+        }
+        if paramEqualBuckets {
+          for /*param*/ i in 0..classifyUnrollFactor-1 {
+            b[i] = 2*b[i] +
+                   (chpl_compare(A[cur+i],
+                           sortedSplitter(b[i] - paramNumBuckets/2),criterion)==0):int;
+          }
+        }
+        for /*param*/ i in 0..classifyUnrollFactor-1 {
+          yield (cur+i, b[i]-paramNumBuckets);
+        }
+        cur += classifyUnrollFactor;
+      }
+      // Handle leftover
+      while cur <= end_n {
+        var bk = 1;
+        for lg in 0..#paramLogBuckets {
+          bk = 2*bk + (chpl_compare(splitter(bk), A[cur], criterion)<0):int;
+        }
+        if paramEqualBuckets {
+          bk = 2*bk + (chpl_compare(A[cur],
+                               sortedSplitter(bk - paramNumBuckets/2),criterion)==0):int;
+        }
+        yield (cur, bk - paramNumBuckets);
+        cur += 1;
+      }
+    }
+  }
+
+  proc createSplittersFromSample(A,
+                                 ref splitterBucketizer:SampleBucketizer,
+                                 criterion,
+                                 start_n: int,
+                                 sampleSize: int,
+                                 sampleStep: int,
+                                 in numBuckets: int,
+                                 forceEqualBuckets:? = none) {
+
+    // Create the splitters
+    ref splitters = splitterBucketizer.sortedStorage;
+    var arrayIndex = start_n + sampleStep - 1;
+    var splitterIndex = 0;
+    splitters[splitterIndex] = A[arrayIndex];
+    for i in 2..numBuckets-1 {
+      arrayIndex += sampleStep;
+      // Skip duplicates
+      if chpl_compare(splitters[splitterIndex], A[arrayIndex], criterion)!=0 {
+        splitterIndex += 1;
+        splitters[splitterIndex] = A[arrayIndex];
+      }
+    }
+
+    // Check for duplicate splitters
+    var uniqueSplitters = 1 + splitterIndex;
+    var myUseEqualBuckets = numBuckets - 1 - uniqueSplitters >= equalBucketThreshold;
+    if 1+2*uniqueSplitters < 1<<maxLogBuckets {
+      myUseEqualBuckets = true;
+    }
+    if forceEqualBuckets.type != nothing then
+      myUseEqualBuckets = forceEqualBuckets;
+
+    // Fill the array to the next power of two
+    var logBuckets = log2(uniqueSplitters) + 1;
+    numBuckets = 1 << logBuckets;
+    for i in uniqueSplitters+1 .. numBuckets-1 {
+      splitterIndex += 1;
+      splitters[splitterIndex] = A[arrayIndex];
+    }
+
+    // Build the tree
+    splitterBucketizer.build(logBuckets, myUseEqualBuckets);
+  }
+
+  // Using this to build the sample is inherently un-stable.
+  // A stable sort would probably sort several subsections of the array,
+  // and then use a median approach to create the samples. Alternatively,
+  // it could copy the sample somewhere else for sorting.
+  proc putRandomSampleAtArrayStart(in start_n:int,
+                                   end_n:int,
+                                   A:[],
+                                   in numSamples:int,
+                                   seed=1) {
+    private use Random;
+    import Sort.ShallowCopy;
+    var Tmp:[1..1] A.eltType;
+    var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
+    while numSamples > 0 {
+      numSamples -= 1;
+
+      var offset = randNums.getNext(start_n, end_n);
+      if offset != start_n {
+        // A[start_n] <=> A[offset] but with shallow copy.
+        var tmp: A.eltType;
+        ShallowCopy.shallowCopy(Tmp, 1, A, start_n, 1);
+        ShallowCopy.shallowCopy(A, start_n, offset, 1);
+        ShallowCopy.shallowCopy(A, offset, Tmp, 1, 1);
+      }
+
+      start_n += 1;
+    }
+  }
+}
+
 pragma "no doc"
 module RadixSortHelp {
+  import Sort.{defaultComparator, DefaultComparator};
+  import Reflection.canResolveMethod;
 
   // This is the number of bits to sort at a time in the radix sorter.
   // The code assumes that all integer types are a multiple of it.
@@ -1156,6 +1492,8 @@ module RadixSortHelp {
   //
   // At the same time, using a value less than 8 will probably perform poorly.
   param RADIX_BITS = 8;
+
+  param classifyUnrollFactor = 7;
 
   // Get the bin for a record by calling criterion.keyPart
   //
@@ -1172,7 +1510,7 @@ module RadixSortHelp {
   {
     // We have keyPart(element, start):(section:int(8), part:int/uint)
     const testRet: criterion.keyPart(a, 1).type;
-    const testPart = testRet(2);
+    const testPart = testRet(1);
     param bitsPerPart = numBits(testPart.type);
     param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
     if bitsPerPartModRadixBits != 0 then
@@ -1211,8 +1549,6 @@ module RadixSortHelp {
   inline
   proc binForRecord(a, criterion, startbit:int)
   {
-    use Reflection;
-
     if canResolveMethod(criterion, "keyPart", a, 1) {
       return binForRecordKeyPart(a, criterion, startbit);
     } else if canResolveMethod(criterion, "key", a) {
@@ -1235,7 +1571,7 @@ module RadixSortHelp {
 
     if (isHomogeneousTuple(eltTy)) {
       var tmp:eltTy;
-      return tmp.size * numBits(tmp(1).type);
+      return tmp.size * numBits(tmp(0).type);
     }
 
     return -1;
@@ -1247,8 +1583,6 @@ module RadixSortHelp {
   //
   // Returns -1 if no such ending is known at compile-time.
   proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
-    use Reflection;
-
     // Compute end_bit if it's known
     // Default comparator on integers has fixed width
     const ref element = Data[Data.domain.low];
@@ -1302,6 +1636,9 @@ module RadixSortHelp {
     return new_start_bit_rounded:int;
   }
   // Check that the elements from start_n..end_n in A are sorted by criterion
+
+  pragma "insert line file info"
+  pragma "always propagate line file info"
   proc checkSorted(start_n:int, end_n:int, A:[], criterion, startbit = 0)
   {
     for i in start_n+1..end_n {
@@ -1315,12 +1652,1156 @@ module RadixSortHelp {
       }
     }
   }
+
+  record RadixBucketizer {
+    proc getNumBuckets() {
+      return (1 << RADIX_BITS) + 2; // +2 for end-before and end-after bins
+    }
+    proc getBinsToRecursivelySort() {
+      // first and last bin represent end-of-key and do not need
+      // to be recursively sorted.
+      return 1..(1 << RADIX_BITS);
+    }
+    proc getNextStartBit(start_bit:int) {
+      return start_bit+8;
+    }
+
+    // returns the bin for classifying a single record
+    inline proc bucketForRecord(a, criterion, startbit) {
+      const (bin, _) = binForRecord(a, criterion, startbit);
+      return bin;
+    }
+
+    // yields (index, bucket index) for A[start_n..end_n]
+    iter classify(A, start_n, end_n, criterion, startbit) {
+      var cur = start_n;
+      while cur <= end_n-(classifyUnrollFactor-1) {
+        for /*param*/ j in 0..classifyUnrollFactor-1 {
+          yield (cur+j, bucketForRecord(A[cur+j], criterion, startbit));
+        }
+        cur += classifyUnrollFactor;
+      }
+      while cur <= end_n {
+        yield (cur, bucketForRecord(A[cur], criterion, startbit));
+        cur += 1;
+      }
+    }
+  }
 }
 
 pragma "no doc"
-module MSBRadixSort {
+module ShallowCopy {
+  private use SysCTypes;
 
-  use RadixSortHelp;
+  // The shallowCopy / shallowSwap code needs to be able to copy/swap
+  // _array records. But c_ptrTo on an _array will return a pointer to
+  // the first element, which messes up the shallowCopy/shallowSwap code
+  //
+  // As a workaround, this function just returns a pointer to the argument,
+  // whether or not it is an array.
+  private inline proc ptrTo(ref x) {
+    return c_pointer_return(x);
+  }
+
+  // These shallow copy functions "move" a record around
+  // (i.e. they neither swap nor call a copy initializer).
+  //
+  // TODO: move these out of the Sort module and/or consider
+  // language support for it. See issue #14576.
+
+  inline proc shallowCopy(ref dst, ref src) {
+    type st = __primitive("static typeof", dst);
+    if isPODType(st) {
+      dst = src;
+    } else {
+      var size = c_sizeof(st);
+      c_memcpy(ptrTo(dst), ptrTo(src), size);
+      if boundsChecking {
+        // The version moved from should never be used again,
+        // but we clear it out just in case.
+        c_memset(ptrTo(src), 0, size);
+      }
+    }
+  }
+
+  // returns the result of shallow copying src
+  pragma "unsafe"
+  pragma "no copy return"
+  inline proc shallowCopyInit(ref src) {
+    type st = __primitive("static typeof", src);
+    pragma "no init"
+    pragma "no auto destroy"
+    var dst: st;
+    shallowCopy(dst, src);
+    return dst;
+  }
+
+  pragma "unsafe"
+  inline proc shallowSwap(ref lhs:?t, ref rhs:t) {
+    type st = __primitive("static typeof", lhs);
+    pragma "no init"
+    pragma "no auto destroy"
+    var tmp: st;
+    if isPODType(st) {
+      tmp = lhs;
+      lhs = rhs;
+      rhs = tmp;
+    } else {
+      var size = c_sizeof(st);
+      // tmp = lhs
+      c_memcpy(ptrTo(tmp), ptrTo(lhs), size);
+      // lhs = rhs
+      c_memcpy(ptrTo(lhs), ptrTo(rhs), size);
+      // rhs = tmp
+      c_memcpy(ptrTo(rhs), ptrTo(tmp), size);
+    }
+  }
+
+  // TODO: These shallowCopy functions should handle Block,Cyclic arrays
+  inline proc shallowCopy(ref A, dst, src, nElts) {
+    use SysCTypes;
+    // Ideally this would just be
+    //A[dst..#nElts] = A[src..#nElts];
+
+    if boundsChecking {
+      assert(nElts > 0);
+      assert(A.domain.contains(dst..#nElts));
+      assert(A.domain.contains(src..#nElts));
+    }
+
+    if A._instance.isDefaultRectangular() {
+      type st = __primitive("static field type", A._value, "eltType");
+      var size = (nElts:size_t)*c_sizeof(st);
+      c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
+    } else {
+      var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
+                                       /*src*/ A, {src..#nElts});
+      if !ok {
+        halt("bulk transfer failed in sorting");
+        for i in vectorizeOnly(0..#nElts) {
+          __primitive("=", A[dst+i], A[src+i]);
+        }
+      }
+    }
+  }
+  inline proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
+    use SysCTypes;
+    // Ideally this would just be
+    //DstA[dst..#nElts] = SrcA[src..#nElts];
+
+    if boundsChecking {
+      assert(nElts > 0);
+      assert(DstA.domain.contains(dst..#nElts));
+      assert(SrcA.domain.contains(src..#nElts));
+    }
+
+    if DstA._instance.isDefaultRectangular() &&
+       SrcA._instance.isDefaultRectangular() {
+      type st = __primitive("static field type", DstA._value, "eltType");
+      var size = (nElts:size_t)*c_sizeof(st);
+      c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
+    } else {
+      var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
+                                       /*src*/ SrcA, {src..#nElts});
+      if !ok {
+        halt("bulk transfer failed in sorting");
+        for i in vectorizeOnly(0..#nElts) {
+          __primitive("=", DstA[dst+i], SrcA[src+i]);
+        }
+      }
+    }
+  }
+}
+pragma "no doc"
+module SequentialInPlacePartitioning {
+  private param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
+
+  // Returns the count for each bucket
+  // Stores the data in dst in buckets according to the bucketizer.
+  // (e.g. sorted by the next digit in radix sort)
+  proc bucketize(start_n: int, end_n: int, A:[],
+                 bucketizer,
+                 criterion, startbit:int) {
+
+    var nBuckets = bucketizer.getNumBuckets();
+    const nTasks = if dataParTasksPerLocale > 0
+               then dataParTasksPerLocale
+               else here.maxTaskPar;
+
+    // Divide the input into nTasks chunks.
+    const countsSize = nTasks * nBuckets;
+    const n = end_n - start_n + 1;
+    const blockSize = divceil(n, nTasks);
+    const nBlocks = divceil(n, blockSize);
+
+    var counts: [0..#nBuckets] int;
+
+    // Step 1: count
+    coforall tid in 0..#nTasks with (+ reduce counts) {
+      var start = start_n + tid * blockSize;
+      var end = start + blockSize - 1;
+      if end > end_n {
+        end = end_n;
+      }
+
+      for (i,bin) in bucketizer.classify(A, start, end, criterion, startbit) {
+        counts[bin] += 1;
+      }
+    }
+
+    // Step 2: scan
+    var end_offsets = (+ scan counts) + start_n;
+    var offsets = end_offsets - counts;
+
+    // Step 3: distribute/shuffle
+    var curbin = 0;
+    while true {
+      // Find the next bin that isn't totally in place.
+      while curbin < nBuckets && offsets[curbin] == end_offsets[curbin] {
+        curbin += 1;
+      }
+      if curbin >= nBuckets {
+        break;
+      }
+
+      // TODO: I think it might be possible to make this sort stable
+      // by populating buf from the start of the data instead of from the end.
+      // buf would need to be populated with the first M elements that aren't
+      // already in the correct bin.
+
+      // TODO: I think it's possible to make this shuffle parallel
+      // by imagining each task has a max_buf and have them update
+      // atomic offsets.
+      param max_buf = DISTRIBUTE_BUFFER;
+      var buf: max_buf*A.eltType;
+      var used_buf = 0;
+      var end = end_offsets[curbin];
+      var endfast = max(offsets[curbin], end_offsets[curbin]-2*max_buf);
+      var bufstart = max(offsets[curbin], end_offsets[curbin]-max_buf);
+      var i = bufstart;
+
+      // Fill buf with up to max_buf records from the end of this bin.
+      while i < end {
+        buf[used_buf] <=> A[i];
+        used_buf += 1;
+        i += 1;
+      }
+
+      while offsets[curbin] < endfast {
+        // Now go through the records in buf
+        // putting them in their right home.
+        for (idx, bin) in bucketizer.classify(buf, 0, max_buf-1,
+                                              criterion, startbit) {
+          // Swap buf[j] into its appropriate bin.
+          // Leave buf[j] with the next unsorted item.
+          A[offsets[bin]] <=> buf[idx];
+          offsets[bin] += 1;
+        }
+      }
+      // Now, handle elements in bufstart...end_offsets[cur_bin]
+      while offsets[curbin] < end {
+        // Put buf[j] into its right home
+        var j = 0;
+        while used_buf >= 0 && j < used_buf {
+          const bin = bucketizer.bucketForRecord(buf[j], criterion, startbit);
+          // Swap buf[j] into its appropriate bin.
+          var offset = offsets[bin];
+          A[offset] <=> buf[j];
+          offsets[bin] += 1;
+          // Leave buf[j] with the next unsorted item.
+          // But offsets[bin] might be in the region we already read.
+          if bin == curbin && offset >= bufstart {
+            used_buf -= 1;
+            buf[j] <=> buf[used_buf];
+          }
+          j += 1;
+        }
+      }
+    }
+
+    return counts;
+  }
+}
+
+pragma "no doc"
+module TwoArrayPartitioning {
+  private use BlockDist;
+  private use MSBRadixSort;
+  public use List only list;
+  import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
+
+  private param debug = false;
+  param maxBuckets = 512;
+
+  record TwoArraySortTask {
+    var start: int;
+    var size: int;
+    var startbit: int;
+    var inA: bool;
+    var doSort: bool;
+
+    proc init() { }
+    // To make sure all fields are specified
+    proc init(start:int, size:int, startbit:int, inA:bool, doSort:bool) {
+      this.start = start;
+      this.size = size;
+      this.startbit = startbit;
+      this.inA = inA;
+      this.doSort = doSort;
+    }
+  }
+
+  record TwoArrayBucketizerPerTaskState {
+    var localCounts: [0..#maxBuckets] int;
+  }
+
+  record TwoArrayBucketizerSharedState {
+    var nTasks:int = if dataParTasksPerLocale > 0
+                      then dataParTasksPerLocale
+                      else here.maxTaskPar;
+    var countsSize:int = nTasks*maxBuckets;
+
+    var bucketizer; // contains e.g. sample
+
+    // globalCounts stores counts like this:
+    //   count for bin 0, task 0
+    //   count for bin 0, task 1
+    //   ...
+    //   count for bin 1, task 0
+    //   count for bin 1, task 1
+    // i.e. bin*nTasks + taskId
+    var globalCounts:[0..#countsSize] int;
+    var globalEnds:[0..#countsSize] int;
+
+    var localState:[0..#nTasks] TwoArrayBucketizerPerTaskState;
+
+    // Set by bucketizer, used by sorter
+    var counts:[0..#maxBuckets] int;
+
+    // Used by sorter
+    var ends:[0..#maxBuckets] int;
+    var outputInA:[0..#maxBuckets] bool;
+
+    // start, end, isInA
+    // were [0..-1]
+    var bigTasks: list(TwoArraySortTask);
+    var smallTasks: list(TwoArraySortTask);
+
+    var baseCaseSize:int = 16;
+    var sequentialSizePerTask:int = 4096;
+    var endbit:int = max(int);
+  }
+
+  record TwoArrayDistributedBucketizerStatePerLocale {
+    type bucketizerType;
+
+    var compat:TwoArrayBucketizerSharedState(bucketizerType);
+
+    var countsSize:int = numLocales*maxBuckets;
+    // globalCounts stores counts like this:
+    //   count for bin 0, locale 0
+    //   count for bin 0, locale 1
+    //   ...
+    //   count for bin 1, locale 0
+    //   count for bin 1, locale 1
+    // i.e. bin*nTasks + localeId
+    var globalCounts:[0..#countsSize] int;
+    var globalEnds:[0..#countsSize] int;
+  }
+
+  record TasksForLocale {
+    // was [0..-1]
+    var localTasks: list(TwoArraySortTask);
+  }
+
+  record TwoArrayDistributedBucketizerSharedState {
+    type bucketizerType;
+
+    var numLocales:int;
+    var perLocale = newBlockArr(0..#numLocales,
+        TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
+
+    const baseCaseSize:int;
+    const endbit:int = max(int);
+
+    const countsSize:int = numLocales*maxBuckets;
+
+    // globalCounts stores counts like this:
+    //   count for bin 0, locale 0
+    //   count for bin 0, locale 1
+    //   ...
+    //   count for bin 1, locale 0
+    //   count for bin 1, locale 1
+    // i.e. bin*nTasks + localeId
+    var globalCounts:[0..#countsSize] int;
+    var globalEnds:[0..#countsSize] int;
+
+    // was [0..-1]
+    var distTasks: list(TwoArraySortTask);
+    var localTasks: [0..#numLocales] TasksForLocale;
+
+    proc postinit() {
+      // Copy some vars to the compat
+      for p in perLocale {
+        p.compat.baseCaseSize = baseCaseSize;
+        p.compat.endbit = endbit;
+        assert(p.compat.nTasks > 0);
+        assert(p.compat.countsSize > 0);
+      }
+    }
+  }
+
+  // Stores the data in dst in buckets according to the bucketizer.
+  // (e.g. sorted by the next digit in radix sort)
+  // Counts per bin are stored in state.counts. Other data in
+  // state is used locally by this routine or used elsewhere
+  proc bucketize(start_n: int, end_n: int, dst:[], src:[],
+                 ref state: TwoArrayBucketizerSharedState,
+                 criterion, startbit:int) {
+
+    if debug then
+      writeln("bucketize ", start_n..end_n, " startbit=", startbit);
+
+    const nBuckets = state.bucketizer.getNumBuckets();
+    const n = end_n - start_n + 1;
+    const nTasks = if n >= state.nTasks then state.nTasks else 1;
+    assert(nTasks > 0);
+
+    if n == 0 {
+      state.counts = 0;
+      return;
+    }
+
+    // Divide the input into nTasks chunks.
+    const countsSize = nTasks * nBuckets;
+    const blockSize = divceil(n, nTasks);
+    const nBlocks = divceil(n, blockSize);
+
+    // Count
+    coforall tid in 0..#nTasks with (ref state) {
+      var start = start_n + tid * blockSize;
+      var end = start + blockSize - 1;
+      if end > end_n {
+        end = end_n;
+      }
+
+      if debug then
+        writeln("tid ", tid, " considering ", start..end);
+
+      ref counts = state.localState[tid].localCounts;
+      for bin in 0..#nBuckets {
+        counts[bin] = 0;
+      }
+      for (i,bin) in state.bucketizer.classify(src, start, end,
+                                               criterion, startbit) {
+        counts[bin] += 1;
+      }
+      // Now store the counts into the global counts array
+      for bin in vectorizeOnly(0..#nBuckets) {
+        state.globalCounts[bin*nTasks + tid] = counts[bin];
+      }
+    }
+
+    // Step 2: scan
+    state.globalEnds = (+ scan state.globalCounts) + start_n;
+
+    if debug {
+      for bin in 0..#nBuckets {
+        for tid in 0..#nTasks {
+          var gb = bin*nTasks+tid;
+          if state.globalCounts[gb] != 0 {
+            writeln("tid ", tid, " count[", bin, "] = ", state.globalCounts[gb],
+                    " end = ", state.globalEnds[gb] - 1);
+          }
+        }
+      }
+    }
+
+    // Step 3: distribute
+    coforall tid in 0..#nTasks with (ref state) {
+      var start = start_n + tid * blockSize;
+      var end = start + blockSize - 1;
+      if end > end_n {
+        end = end_n;
+      }
+
+      ref nextOffsets = state.localState[tid].localCounts;
+      // initialize nextOffsets
+      for bin in 0..#nBuckets {
+        var globalBin = bin*nTasks+tid;
+        nextOffsets[bin] = if globalBin > 0
+                           then state.globalEnds[globalBin-1]
+                           else start_n;
+        if debug {
+          if state.globalCounts[globalBin] != 0 {
+            writeln("tid ", tid, " nextOffsets[", bin, "] = ", nextOffsets[bin]);
+          }
+        }
+      }
+
+      for (i,bin) in state.bucketizer.classify(src, start, end,
+                                               criterion, startbit) {
+        // Store it in the right bin
+        ref next = nextOffsets[bin];
+        if debug {
+          writeln("tid ", tid, " dst[", next, "] = src[", i, "] bin ", bin);
+        }
+        ShallowCopy.shallowCopy(dst, next, src, i, 1);
+        next += 1;
+      }
+    }
+
+    // Compute the total counts
+    ref counts = state.counts;
+    forall bin in 0..#nBuckets {
+      var total = 0;
+      for tid in 0..#nTasks {
+        total += state.globalCounts[bin*nTasks + tid];
+      }
+      counts[bin] = total;
+    }
+  }
+  proc testBucketize(start_n: int, end_n: int, dst:[], src:[],
+                     bucketizer, criterion, startbit:int) {
+
+    var state = new TwoArrayBucketizerSharedState(bucketizer=bucketizer);
+
+    bucketize(start_n, end_n, dst, src, state, criterion, startbit);
+
+    return state.counts;
+  }
+
+
+  private proc partitioningSortWithScratchSpaceHandleSampling(
+          start_n:int, end_n:int, A:[], Scratch:[],
+          ref state: TwoArrayBucketizerSharedState,
+          criterion, startbit:int):void {
+    // If we are doing a sample sort, we need to gather a fresh sample.
+    // (Otherwise we'll never be able to solve recursive subproblems,
+    //  as if in quicksort we never chose a new pivot).
+    if isSubtype(state.bucketizer.type, SampleSortHelp.SampleBucketizer) {
+      var n = 1 + end_n - start_n;
+      var logNumBuckets = SampleSortHelp.computeLogBucketSize(n);
+      var numBuckets = 1 << logNumBuckets;
+      var sampleStep = SampleSortHelp.chooseSampleStep(n, logNumBuckets);
+      var sampleSize = sampleStep * numBuckets - 1;
+
+      if sampleSize >= n {
+        if debug then
+          writeln("Reducing sample size because it was too big");
+        sampleSize = max(1, n/2);
+      }
+
+      // select the sample
+      SampleSortHelp.putRandomSampleAtArrayStart(start_n, end_n, A, sampleSize);
+
+      if debug then
+        writeln("recursing to sort the sample");
+
+      // sort the sample
+
+
+      // TODO: make it adjustable from the settings
+      if sampleSize <= 1024*1024 {
+        // base case sort, parallel OK
+        msbRadixSort(start_n, start_n + sampleSize - 1,
+                     A, criterion,
+                     startbit, state.endbit,
+                     settings=new MSBRadixSortSettings());
+      } else {
+        partitioningSortWithScratchSpace(start_n, start_n + sampleSize - 1,
+                                         A, Scratch,
+                                         state, criterion, startbit);
+      }
+      if debug {
+        RadixSortHelp.checkSorted(start_n, start_n + sampleSize - 1, A, criterion, startbit);
+      }
+
+      createSplittersFromSample(A,
+                                state.bucketizer, criterion,
+                                start_n, sampleSize, sampleStep, numBuckets);
+      if debug {
+        writeln("sample bucketizer ", state.bucketizer);
+        writef("A %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+      }
+    }
+
+  }
+
+  // Sorts the data in A.
+  proc partitioningSortWithScratchSpace(
+          start_n:int, end_n:int, A:[], Scratch:[],
+          ref state: TwoArrayBucketizerSharedState,
+          criterion, startbit:int):void {
+
+    if startbit > state.endbit then
+      return;
+
+    if end_n - start_n < state.baseCaseSize {
+      ShellSort.shellSort(A, criterion, start=start_n, end=end_n);
+      return;
+    }
+
+    if debug {
+      writeln("partitioningSortWithScratchSpace(", start_n, ",", end_n, ")");
+      writef("A %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+    }
+
+
+    const n = (end_n - start_n + 1);
+    const maxSequentialSize = max(n / state.nTasks,
+                                  state.nTasks*state.sequentialSizePerTask);
+
+    state.bigTasks.append(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
+    assert(state.bigTasks.size == 1);
+    assert(state.smallTasks.size == 0);
+
+    while !state.bigTasks.isEmpty() {
+      const task = state.bigTasks.pop();
+      const taskEnd = task.start + task.size - 1;
+
+      assert(task.doSort);
+
+      if debug then {
+        writeln("doing big task ", task.start..taskEnd);
+      }
+
+      if task.inA {
+        partitioningSortWithScratchSpaceHandleSampling(
+              task.start, taskEnd, A, Scratch,
+              state, criterion, task.startbit);
+
+        // Count and partition
+        bucketize(task.start, taskEnd, Scratch, A, state,
+                  criterion, task.startbit);
+        // bucketized data now in Scratch
+        if debug {
+          writef("pb %i %i Scratch=%xt\n", task.start, taskEnd, Scratch[task.start..taskEnd]);
+        }
+      } else {
+        partitioningSortWithScratchSpaceHandleSampling(
+              task.start, taskEnd, Scratch, A,
+              state, criterion, task.startbit);
+
+        // Count and partition
+        bucketize(task.start, taskEnd, A, Scratch, state,
+                  criterion, task.startbit);
+        // bucketized data now in A
+        if debug {
+          writef("pb %i %i A=%xt\n", task.start, taskEnd, A[task.start..taskEnd]);
+        }
+      }
+      const nowInA = !task.inA;
+
+      // Compute the bucket ends
+      state.ends = (+ scan state.counts) + task.start;
+
+      // enqueue any sorting tasks not yet completed
+      const nBuckets = state.bucketizer.getNumBuckets();
+      for bin in 0..#nBuckets {
+        const binSize = state.counts[bin];
+        const binStart = state.ends[bin] - binSize;
+        const binEnd = binStart + binSize - 1;
+        const binStartBit = state.bucketizer.getNextStartBit(task.startbit);
+
+        const sortit = state.bucketizer.getBinsToRecursivelySort().contains(bin);
+
+        if binSize == 0 {
+          // Do nothing
+        } else if !nowInA && !sortit {
+          // Enqueue a small task to do the copy.
+          // TODO: handle large copies in big tasks, or enqueue several tasks here
+          state.smallTasks.append(
+            new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
+
+        } else if binStartBit > state.endbit ||
+                  binStart >= binEnd ||
+                  binSize <= maxSequentialSize {
+          if debug && binSize > 0 {
+            writeln("handling bin ", bin, " ", binStart..binEnd, " as small");
+          }
+
+          // Enqueue a small task to sort and possibly copy.
+          state.smallTasks.append(
+            new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
+
+        } else {
+          if debug && binSize > 0 {
+            writeln("handling bin ", bin, " ", binStart..binEnd, " as big");
+          }
+
+          // Enqueue a big task
+          state.bigTasks.append(
+            new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
+        }
+      }
+    }
+
+    // Now handle any small tasks.
+
+    // TODO: sort small tasks by size
+
+    forall task in state.smallTasks {
+      const size = task.size;
+      const taskEnd = task.start + size - 1;
+      if size > 0 {
+        if !task.inA {
+          ShallowCopy.shallowCopy(A, task.start, Scratch, task.start, size);
+        }
+
+        if debug {
+          writef("doing small task %i %i A=%xt\n", task.start, taskEnd, A[task.start..taskEnd]);
+        }
+
+        if task.doSort {
+          // Sort it serially.
+          msbRadixSort(task.start, taskEnd,
+                       A, criterion,
+                       task.startbit, state.endbit,
+                       settings=new MSBRadixSortSettings(alwaysSerial=true));
+        }
+      }
+    }
+
+    if debug {
+      writef("ps %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+      writef("ps %i %i Scratch=%xt\n", start_n, end_n, Scratch[start_n..end_n]);
+      RadixSortHelp.checkSorted(start_n, end_n, A, criterion, startbit);
+    }
+  }
+
+  private proc distributedPartitioningSortWithScratchSpaceBaseCase(
+          start_n:int, end_n:int, A:[], Scratch:[],
+          ref state: TwoArrayDistributedBucketizerSharedState,
+          criterion, startbit:int):void {
+
+    if startbit > state.endbit then
+      return;
+
+    const n = end_n - start_n + 1;
+
+    const localSubdomain = A.localSubdomain();
+    const curDomain = {start_n..end_n};
+    const intersect = curDomain[localSubdomain];
+    if curDomain == intersect {
+      if n > state.baseCaseSize {
+        msbRadixSort(start_n, end_n,
+                     A.localSlice(curDomain), criterion,
+                     startbit, state.endbit,
+                     settings=new MSBRadixSortSettings());
+      } else {
+        ShellSort.shellSort(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
+      }
+    } else {
+      const size = end_n-start_n+1;
+      // Copy it to one locale
+      var LocalA:[start_n..end_n] A.eltType;
+      ShallowCopy.shallowCopy(LocalA, start_n, A, start_n, size);
+      // Sort it
+      if n > state.baseCaseSize {
+        msbRadixSort(start_n, end_n,
+                     LocalA, criterion,
+                     startbit, state.endbit,
+                     settings=new MSBRadixSortSettings());
+      } else {
+        ShellSort.shellSort(LocalA, criterion, start=start_n, end=end_n);
+      }
+      // Copy it back
+      ShallowCopy.shallowCopy(A, start_n, LocalA, start_n, size);
+    }
+
+    if debug {
+      RadixSortHelp.checkSorted(start_n, end_n, A, criterion);
+    }
+    return;
+  }
+
+
+  private proc distributedPartitioningSortWithScratchSpaceHandleSampling(
+          start_n:int, end_n:int, A:[], Scratch:[],
+          ref state: TwoArrayDistributedBucketizerSharedState,
+          criterion, startbit:int):void {
+    // If we are doing a sample sort, we need to gather a fresh sample.
+    // (Otherwise we'll never be able to solve recursive subproblems,
+    //  as if in quicksort we never chose a new pivot).
+    if isSubtype(state.perLocale[0].compat.bucketizer.type, SampleSortHelp.SampleBucketizer) {
+      var n = 1 + end_n - start_n;
+      var logNumBuckets = SampleSortHelp.computeLogBucketSize(n);
+      var numBuckets = 1 << logNumBuckets;
+      var sampleStep = SampleSortHelp.chooseSampleStep(n, logNumBuckets);
+      var sampleSize = sampleStep * numBuckets - 1;
+
+      if sampleSize >= n {
+        if debug then
+          writeln("Reducing sample size because it was too big");
+        sampleSize = max(1, n/2);
+      }
+
+      // select the sample
+      SampleSortHelp.putRandomSampleAtArrayStart(start_n, end_n, A, sampleSize);
+
+      if debug then
+        writeln("recursing to sort the sample");
+
+      // sort the sample
+
+      // TODO: make it adjustable in the settings
+      if sampleSize <= 1024*1024 {
+        // base case sort, parallel OK
+        distributedPartitioningSortWithScratchSpaceBaseCase(start_n, start_n + sampleSize - 1,
+                                                            A, Scratch,
+                                                            state, criterion,
+                                                            startbit);
+      } else {
+        distributedPartitioningSortWithScratchSpace(start_n, start_n + sampleSize - 1,
+                                                    A, Scratch,
+                                                    state, criterion, startbit);
+      }
+      if debug {
+        RadixSortHelp.checkSorted(start_n, start_n + sampleSize - 1, A, criterion, startbit);
+      }
+
+      createSplittersFromSample(A,
+                                state.perLocale[0].compat.bucketizer, criterion,
+                                start_n, sampleSize, sampleStep, numBuckets);
+      if debug {
+        writeln("sample bucketizer ", state.perLocale[0].compat.bucketizer);
+        writef("A %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+      }
+
+      // Now copy the bucketizer sample to all other locales
+      for lid in 1..state.numLocales {
+        state.perLocale[lid].bucketizer = state.perLocale[0].bucketizer;
+      }
+    }
+  }
+
+  proc distributedPartitioningSortWithScratchSpace(
+          start_n:int, end_n:int, A:[], Scratch:[],
+          ref state: TwoArrayDistributedBucketizerSharedState,
+          criterion, startbit:int): void {
+
+    //use BlockDist only;
+
+    if !A.hasSingleLocalSubdomain() {
+      compilerError("distributedPartitioningSortWithScratchSpace needs single local subdomain");
+    }
+    // TODO: assert that src and dst have the same distribution?
+
+    if startbit > state.endbit then
+      return;
+
+    if end_n - start_n < state.baseCaseSize {
+      distributedPartitioningSortWithScratchSpaceBaseCase(start_n, end_n,
+                                                          A, Scratch,
+                                                          state, criterion,
+                                                          startbit);
+      return;
+    }
+
+
+    if debug {
+      writeln("in distributed radix sort ", start_n, "..", end_n,
+              " startbit ", startbit, " endbit ", state.endbit);
+    }
+
+    const n = (end_n - start_n + 1);
+    state.distTasks.append(new TwoArraySortTask(start_n, n, startbit, true, true));
+    assert(state.distTasks.size == 1);
+
+    while !state.distTasks.isEmpty() {
+      const task = state.distTasks.pop();
+      const taskStart = task.start;
+      const taskEnd = task.start + task.size - 1;
+
+      assert(task.doSort);
+      assert(task.inA);
+
+      distributedPartitioningSortWithScratchSpaceHandleSampling(
+            task.start, taskEnd, A, Scratch,
+            state, criterion, task.startbit);
+
+      const nBuckets = state.perLocale[0].compat.bucketizer.getNumBuckets();
+      const nTasks = state.numLocales;
+
+      // Step 1: Each locale sorts local portions into buckets
+      // and saves counts in globalCounts
+      coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
+        on loc do {
+          const localDomain = A.localSubdomain()[task.start..taskEnd];
+          ref localSrc = A.localSlice(localDomain);
+          ref localDst = Scratch.localSlice(localDomain);
+
+          bucketize(localDomain.alignedLow,
+                    localDomain.alignedHigh,
+                    localDst, localSrc,
+                    state.perLocale[tid].compat, criterion, task.startbit);
+          ref localCounts = state.perLocale[tid].compat.counts;
+          if debug {
+            var total = 0;
+            for bin in 0..#nBuckets {
+              if localCounts[bin] > 0 {
+                writeln("localCounts[", bin, "]=", localCounts[bin]);
+                total += localCounts[bin];
+              }
+            }
+            assert(total == localDomain.size);
+          }
+          // Now store the counts into the global counts array
+          for bin in vectorizeOnly(0..#nBuckets) {
+            state.perLocale[0].globalCounts[bin*nTasks + tid] = localCounts[bin];
+          }
+          //state.globalCounts[tid.. by nTasks] = localCounts;
+        }
+      }
+      // Now the data is in Scratch
+
+      if debug {
+        writef("after bucketize local portions, Scratch is %xt\n", Scratch[task.start..taskEnd]);
+      }
+
+      // Step 2: scan
+      state.perLocale[0].globalEnds = (+ scan state.perLocale[0].globalCounts) + task.start;
+
+      // Store counts on each other locale
+      forall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
+        if tid != 0 {
+          state.perLocale[tid].globalCounts = state.perLocale[0].globalCounts;
+          state.perLocale[tid].globalEnds = state.perLocale[0].globalEnds;
+        }
+      }
+
+      if debug {
+        var total = 0;
+        for i in 0..#state.countsSize {
+          if state.perLocale[0].globalCounts[i] != 0 {
+            total += state.perLocale[0].globalCounts[i];
+            writeln("state.globalCounts[", i, "]=", state.perLocale[0].globalCounts[i]);
+            writeln("state.globalEnds[", i, "]=", state.perLocale[0].globalEnds[i]);
+          }
+        }
+        assert(total == task.size);
+      }
+
+      // Step 3: distribute the keys to the src array according
+      // to the globalEnds.
+      // In particular, bin i from task j should be stored into
+      // globalEnds[i*ntasks+j-1] .. globalEnds[i*ntasks+j] - 1
+      // (because the scan is inclusive)
+      coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
+        on loc do {
+          const ref globalCounts = state.perLocale[tid].globalCounts;
+          const ref globalEnds = state.perLocale[tid].globalEnds;
+          const localSubdomain = A.localSubdomain()[task.start..taskEnd];
+          // Compute localOffsets array based on the counts here
+          // This could be written as a scan expression...
+          ref localOffsets = state.perLocale[tid].compat.counts;
+          {
+            var offset = localSubdomain.low;
+            for bin in 0..#nBuckets {
+              localOffsets[bin] = offset;
+              offset += globalCounts[bin*nTasks + tid];
+            }
+          }
+
+          forall bin in 0..#nBuckets {
+            var size = globalCounts[bin*nTasks + tid];
+            if size > 0 {
+              var localStart = localOffsets[bin];
+              var localEnd = localStart + size - 1;
+              var globalStart = if bin*nTasks+tid > 0
+                                then globalEnds[bin*nTasks+tid-1]
+                                else taskStart;
+              var globalEnd = globalEnds[bin*nTasks+tid] - 1;
+              if debug {
+                writeln("bin ", bin, " tid ", tid, " range ", taskStart..taskEnd,
+                        " A[", globalStart, "..", globalEnd, "] = Scratch[",
+                        localStart, "..", localEnd, "]");
+                assert(globalCounts[bin*nTasks+tid] ==
+                    state.perLocale[0].globalCounts[bin*nTasks+tid]);
+                assert(globalEnds[bin*nTasks+tid] ==
+                    state.perLocale[0].globalEnds[bin*nTasks+tid]);
+              }
+              ShallowCopy.shallowCopy(A, globalStart, Scratch, localStart, size);
+            }
+          }
+        }
+      }
+      // now the data is all in A
+      if debug {
+        writef("after distribute, A is %xt\n", A[task.start..taskEnd]);
+      }
+
+      // Step 4: Add sub-tasks depending on if the bin is local or distributed
+      // still.
+      for bin in state.perLocale[0].compat.bucketizer.getBinsToRecursivelySort() {
+        const binStart = if bin*nTasks > 0
+                          then state.perLocale[0].globalEnds[bin*nTasks-1]
+                          else task.start;
+        const binEnd = state.perLocale[0].globalEnds[bin*nTasks+nTasks-1] - 1;
+        const binSize = binEnd - binStart + 1;
+        const binStartBit = state.perLocale[0].compat.bucketizer.getNextStartBit(task.startbit);
+        if binSize > 1 {
+          // could this work for block?
+          //var isOnOneLocale = A.domain.dist.idxToLocale(globalStart) ==
+          //                    A.domain.dist.idxToLocale(globalEnd)
+          var isOnOneLocale = false;
+          var theLocaleId = -1;
+          for (loc,tid) in zip(A.targetLocales(),0..) {
+            const localSubdomain = A.localSubdomain(loc)[task.start..taskEnd];
+            const curDomain = {binStart..binEnd};
+            const intersect = curDomain[localSubdomain];
+            if curDomain == intersect { // curDomain.isSubset(localSubdomain)
+              isOnOneLocale = true;
+              theLocaleId = tid;
+            }
+          }
+
+          if isOnOneLocale {
+            state.localTasks[theLocaleId].localTasks.append(
+                new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
+          } else {
+            state.distTasks.append(
+                new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
+          }
+        }
+      }
+    }
+
+    // Handle the local tasks
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
+      on loc do {
+        // Copy the tasks to do from locale 0
+        var myTasks = state.localTasks[tid].localTasks;
+        var baseCaseSize = state.baseCaseSize;
+        ref compat = state.perLocale[tid].compat;
+
+        for task in myTasks {
+          const taskEnd = task.start + task.size - 1;
+          const curDomain = {task.start..taskEnd};
+
+          // Great! Just sort it locally.
+          if n > baseCaseSize {
+            compat.bigTasks.clear();
+            compat.smallTasks.clear();
+            partitioningSortWithScratchSpace(
+                task.start, taskEnd,
+                A.localSlice(curDomain), Scratch.localSlice(curDomain),
+                compat, criterion, task.startbit);
+          } else {
+            ShellSort.shellSort(A.localSlice(curDomain), criterion,
+                start=task.start, end=taskEnd);
+          }
+          if debug {
+            writef("after recursive sorts, dst is %xt\n", A[task.start..taskEnd]);
+          }
+        }
+      }
+    }
+  }
+}
+
+pragma "no doc"
+module TwoArrayRadixSort {
+  import Sort.defaultComparator;
+  private use TwoArrayPartitioning;
+  private use RadixSortHelp;
+
+  proc twoArrayRadixSort(Data:[], comparator:?rec=defaultComparator) {
+
+    var sequentialSizePerTask=4096;
+    var baseCaseSize=16;
+
+    var endbit:int;
+    endbit = msbRadixSortParamLastStartBit(Data, comparator);
+    if endbit < 0 then
+      endbit = max(int);
+
+    // Allocate the Scratch array.
+    var Scratch: Data.type;
+
+    if Data._instance.isDefaultRectangular() {
+      var state = new TwoArrayBucketizerSharedState(
+        bucketizer=new RadixBucketizer(),
+        baseCaseSize=baseCaseSize,
+        sequentialSizePerTask=sequentialSizePerTask,
+        endbit=endbit);
+
+
+      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
+                                       Data, Scratch,
+                                       state, comparator, 0);
+    } else {
+      var state = new TwoArrayDistributedBucketizerSharedState(
+        bucketizerType=RadixBucketizer,
+        numLocales=Data.targetLocales().size,
+        baseCaseSize=baseCaseSize,
+        endbit=endbit);
+
+
+      distributedPartitioningSortWithScratchSpace(
+                                       Data.domain.low, Data.domain.high,
+                                       Data, Scratch,
+                                       state,
+                                       comparator, 0);
+    }
+  }
+}
+
+
+pragma "no doc"
+module TwoArraySampleSort {
+  import Sort.defaultComparator;
+  private use TwoArrayPartitioning;
+  private use SampleSortHelp;
+  private use RadixSortHelp;
+
+  proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
+
+    var baseCaseSize=16;
+
+    var endbit:int;
+    endbit = msbRadixSortParamLastStartBit(Data, comparator);
+    if endbit < 0 then
+      endbit = max(int);
+
+    // Allocate the Scratch array.
+    var Scratch: Data.type;
+
+    if Data._instance.isDefaultRectangular() {
+      var state = new TwoArrayBucketizerSharedState(
+        bucketizer=new SampleBucketizer(Data.eltType),
+        baseCaseSize=baseCaseSize,
+        endbit=endbit);
+
+      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
+                                       Data, Scratch,
+                                       state, comparator, 0);
+    } else {
+      var state = new TwoArrayDistributedBucketizerSharedState(
+        bucketizerType=SampleBucketizer(Data.eltType),
+        numLocales=Data.targetLocales().size,
+        baseCaseSize=baseCaseSize,
+        endbit=endbit);
+
+      distributedPartitioningSortWithScratchSpace(
+                                       Data.domain.low, Data.domain.high,
+                                       Data, Scratch,
+                                       state, comparator, 0);
+    }
+  }
+}
+
+pragma "no doc"
+module InPlacePartitioning {
+  // TODO -- based on ips4o
+}
+
+
+pragma "no doc"
+module MSBRadixSort {
+  import Sort.{defaultComparator, ShellSort};
+  private use RadixSortHelp;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
@@ -1330,7 +2811,7 @@ module MSBRadixSort {
     param CHECK_SORTS = false; // do costly extra checks that data is sorted
     param progress = false; // print progress
     const alwaysSerial = false; // never create tasks
-    const maxTasks = here.numPUs(logical=true); // maximum number of tasks to make
+    const maxTasks = here.maxTaskPar;//;here.numPUs(logical=true); // maximum number of tasks to make
   }
 
   proc msbRadixSort(Data:[], comparator:?rec=defaultComparator) {
@@ -1368,7 +2849,7 @@ module MSBRadixSort {
     // 0th bin is for records where we've consumed all the key.
     var offsets:[0..radix] int;
     var end_offsets:[0..radix] int;
-    type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+    type ubitsType = binForRecord(A[start_n], criterion, startbit)(1).type;
     var min_ubits: ubitsType = max(ubitsType);
     var max_ubits: ubitsType = 0;
     var min_bin = radix+1;
@@ -1404,6 +2885,9 @@ module MSBRadixSort {
         offsets[bin] += 1;
       }
     }
+
+    // TODO: any_ending should be replaced by checking
+    // offsets[0] and offsets[radix]
 
     // If the data parts we gathered all have the same leading bits,
     // we might be able to skip ahead immediately to the next count step.
@@ -1461,7 +2945,7 @@ module MSBRadixSort {
 
       // Fill buf with up to max_buf records from the end of this bin.
       while i < end {
-        buf[used_buf+1] <=> A[i];
+        buf[used_buf] <=> A[i];
         used_buf += 1;
         i += 1;
       }
@@ -1469,7 +2953,7 @@ module MSBRadixSort {
       while offsets[curbin] < endfast {
         // Now go through the records in buf
         // putting them in their right home.
-        for param j in 1..max_buf {
+        for param j in 0..max_buf-1 {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // prefetch(A[offsets[bin]]) could be here but doesn't help
 
@@ -1482,8 +2966,8 @@ module MSBRadixSort {
       // Now, handle elements in bufstart...end_offsets[cur_bin]
       while offsets[curbin] < end {
         // Put buf[j] into its right home
-        var j = 1;
-        while used_buf > 0 && j <= used_buf {
+        var j = 0;
+        while used_buf >= 0 && j < used_buf {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
           var offset = offsets[bin];
@@ -1492,8 +2976,8 @@ module MSBRadixSort {
           // Leave buf[j] with the next unsorted item.
           // But offsets[bin] might be in the region we already read.
           if bin == curbin && offset >= bufstart {
-            buf[j] <=> buf[used_buf];
             used_buf -= 1;
+            buf[j] <=> buf[used_buf];
           }
           j += 1;
         }
@@ -1561,7 +3045,6 @@ module MSBRadixSort {
     if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
   }
 }
-
 
 /* Comparators */
 
@@ -1658,10 +3141,10 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
-                                       (isInt(x(1)) || isUint(x(1)) ||
-                                        isReal(x(1)) || isImag(x(1))) {
+                                       (isInt(x(0)) || isUint(x(0)) ||
+                                        isReal(x(0)) || isImag(x(0))) {
     // Re-use the keyPart for imag, real
-    const (_,part) = this.keyPart(x(i), 1);
+    const (_,part) = this.keyPart(x(i-1), 1);
     if i > x.size then
       return (-1, 0:part.type);
     else
@@ -1690,7 +3173,7 @@ record DefaultComparator {
       assert(x.locale_id == here.id);
 
     var ptr = x.c_str():c_ptr(uint(8));
-    var len = x.length;
+    var len = x.numBytes;
     var section = if i <= len then 0:int(8) else -1:int(8);
     var part =    if i <= len then ptr[i-1] else  0:uint(8);
     return (section, part);
@@ -1757,7 +3240,7 @@ record ReverseComparator {
   proc typeIsBitReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
-      return typeIsBitReversible(tmp(1).type);
+      return typeIsBitReversible(tmp(0).type);
     }
     if isUintType(t) then
       return true;
@@ -1770,7 +3253,7 @@ record ReverseComparator {
   proc typeIsNegateReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
-      return typeIsNegateReversible(tmp(1).type);
+      return typeIsNegateReversible(tmp(0).type);
     }
     if isIntType(t) || isUintType(t) then
       // You might think that int(8) should have its sort order
@@ -1785,12 +3268,10 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasKeyPart(a) param {
-    use Reflection;
     return canResolveMethod(this.comparator, "keyPart", a, 1);
   }
   pragma "no doc"
   proc hasKeyPartFromKey(a) param {
-    use Reflection;
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
@@ -1801,12 +3282,10 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasCompare(a,b) param {
-    use Reflection;
     return canResolveMethod(this.comparator, "compare", a, b);
   }
   pragma "no doc"
   proc hasCompareFromKey(a) param {
-    use Reflection;
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a compare for this?

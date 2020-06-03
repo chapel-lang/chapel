@@ -31,8 +31,8 @@ static void gasneti_am_validate(
   if (table[0].gex_nargs == GASNETI_HANDLER_NARGS_UNK ||
       table[0].gex_flags & GASNETI_FLAG_INIT_LEGACY) {
     for (int i = 0; i < numentries; ++i) {
-       gasneti_assert_always(table[i].gex_nargs == GASNETI_HANDLER_NARGS_UNK);
-       gasneti_assert_always(table[i].gex_flags == (GASNETI_FLAG_AM_ANY | GASNETI_FLAG_INIT_LEGACY));
+       gasneti_assert_always_uint(table[i].gex_nargs ,==, GASNETI_HANDLER_NARGS_UNK);
+       gasneti_assert_always_uint(table[i].gex_flags ,==, (GASNETI_FLAG_AM_ANY | GASNETI_FLAG_INIT_LEGACY));
     }
     return;
   }
@@ -163,7 +163,7 @@ extern int gasneti_amregister_client(
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
   }
 
-  gasneti_assert(numreg1 + numreg2 == numentries);
+  gasneti_assert_uint(numreg1 + numreg2 ,==, numentries);
 
   return GASNET_OK;
 }
@@ -263,11 +263,11 @@ extern gex_TI_t gasneti_token_info_return(gex_TI_t result, gex_Token_Info_t *inf
   }
 
   // Validate conduit's returned mask (any requested+required fields missing?);
-  gasneti_assert(! (~result & (mask & GASNETI_TI_REQUIRED)));
+  gasneti_assert_uint( (~result & (mask & GASNETI_TI_REQUIRED)) ,==, 0);
 
   // For each field set: validate
   if (result & GEX_TI_SRCRANK) {
-    gasneti_assert(info->gex_srcrank < gasneti_nodes);
+    gasneti_assert_uint(info->gex_srcrank ,<, gasneti_nodes);
   }
   if (result & GEX_TI_EP) {
     // TODO-EX: will need some means to validate in conduit-independent manner
@@ -279,14 +279,14 @@ extern gex_TI_t gasneti_token_info_return(gex_TI_t result, gex_Token_Info_t *inf
     gasneti_am_validate(info->gex_entry, 1);
   }
   if (result & GEX_TI_IS_REQ) {
-    gasneti_assert(info->gex_is_req == !!info->gex_is_req); // Is 0 or 1
+    gasneti_assert_uint(info->gex_is_req ,==, !!info->gex_is_req); // Is 0 or 1
     if (result & GEX_TI_ENTRY) {
       gasneti_assert(info->gex_entry->gex_flags &
                      (info->gex_is_req ? GEX_FLAG_AM_REQUEST : GEX_FLAG_AM_REPLY));
     }
   }
   if (result & GEX_TI_IS_LONG) {
-    gasneti_assert(info->gex_is_long == !!info->gex_is_long); // Is 0 or 1
+    gasneti_assert_uint(info->gex_is_long ,==, !!info->gex_is_long); // Is 0 or 1
     if (result & GEX_TI_ENTRY) {
       gasneti_assert(info->gex_entry->gex_flags &
                      (info->gex_is_long ? GEX_FLAG_AM_LONG : GEX_FLAG_AM_SHORT|GEX_FLAG_AM_MEDIUM));
@@ -337,7 +337,7 @@ static void check_max_payload_args(
   if (lc_opt && gasneti_leaf_is_pointer(lc_opt)) {
     // Following assumes minimum 4-byte alignment of gex_Event_t
     if (0x3 & (uintptr_t)lc_opt) {
-      gasneti_fatalerror("Call to %s() with invalid lc_opt=%p", fname, lc_opt);
+      gasneti_fatalerror("Call to %s() with invalid lc_opt=%p", fname, (void *)lc_opt);
     }
     // Following attempts to elicit SIGSEGV/SIGBUS/SIGILL on bogus pointers
     static uintptr_t dummy;
@@ -358,7 +358,7 @@ static void check_max_payload_args(
 
 static void check_max_payload_result(gex_Flags_t flags, size_t lub, size_t result)
 {
-  gasneti_assert(result >= 512);
+  gasneti_assert_uint(result ,>=, 512);
   gasneti_assert((result >= lub) ||
                  (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT) ||
                  (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));
@@ -450,6 +450,7 @@ gex_AM_SrcDesc_t gasneti_export_srcdesc(gasneti_AM_SrcDesc_t _real_srcdesc) {
 }
 #endif
 
+#if GASNETI_NEED_INIT_SRCDESC
 void gasneti_init_srcdesc(GASNETI_THREAD_FARG_ALONE)
 {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
@@ -467,8 +468,12 @@ void gasneti_init_srcdesc(GASNETI_THREAD_FARG_ALONE)
   mythread->reply_sd._isreq = 0;
 #endif
 
+  gasneti_assert( mythread->request_sd._tofree == NULL );
+  gasneti_assert( mythread->reply_sd._tofree == NULL );
+
   mythread->sd_is_init = 1;
 }
+#endif // GASNETI_NEED_INIT_SRCDESC
 #endif // _GEX_AM_SRCDESC_T
 
 #ifndef GASNETC_HAVE_NP_REQ_MEDIUM
@@ -504,7 +509,7 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
         #endif
         size_t limit = gex_AM_MaxRequestMedium(tm, rank, lc_opt, flags, nargs);
         size_t size = MIN(most_payload, limit);
-        gasneti_prepare_request_common(sd, tm, rank, client_buf, size, lc_opt, flags, nargs);
+        sd->_tofree = gasneti_prepare_request_common(sd, tm, rank, client_buf, size, lc_opt, flags, nargs);
         gasneti_init_sd_poison(sd);
     }
 
@@ -537,7 +542,7 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
 
         size_t limit = gex_Token_MaxReplyMedium(token, lc_opt, flags, nargs);
         size_t size = MIN(most_payload, limit);
-        gasneti_prepare_reply_common(sd, token, client_buf, size, lc_opt, flags, nargs);
+        sd->_tofree = gasneti_prepare_reply_common(sd, token, client_buf, size, lc_opt, flags, nargs);
         gasneti_init_sd_poison(sd);
     }
 
@@ -580,7 +585,7 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestLong(
         #endif
         size_t limit = gex_AM_MaxRequestLong(tm, rank, lc_opt, flags, nargs);
         size_t size = MIN(most_payload, limit);
-        gasneti_prepare_request_common(sd, tm, rank, client_buf, size, lc_opt, flags, nargs);
+        sd->_tofree = gasneti_prepare_request_common(sd, tm, rank, client_buf, size, lc_opt, flags, nargs);
         sd->_dest_addr = dest_addr;
         gasneti_init_sd_poison(sd);
     }
@@ -615,7 +620,7 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
 
         size_t limit = gex_Token_MaxReplyLong(token, lc_opt, flags, nargs);
         size_t size = MIN(most_payload, limit);
-        gasneti_prepare_reply_common(sd, token, client_buf, size, lc_opt, flags, nargs);
+        sd->_tofree = gasneti_prepare_reply_common(sd, token, client_buf, size, lc_opt, flags, nargs);
         sd->_dest_addr = dest_addr;
         gasneti_init_sd_poison(sd);
     }
@@ -655,6 +660,11 @@ void gasnetc_AM_CommitRequestMediumM(
 
         int rc = gasneti_AMRequestMediumV(tm, rank, handler, src_addr, nbytes, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
+
+        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
+          gasneti_free(sd->_tofree);
+          sd->_tofree = NULL;
+        }
     }
     va_end(argptr);
 
@@ -690,6 +700,11 @@ void gasnetc_AM_CommitReplyMediumM(
 
         int rc = gasneti_AMReplyMediumV(token, handler, src_addr, nbytes, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
+
+        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
+          gasneti_free(sd->_tofree);
+          sd->_tofree = NULL;
+        }
     }
     va_end(argptr);
 
@@ -728,6 +743,11 @@ void gasnetc_AM_CommitRequestLongM(
 
         int rc = gasneti_AMRequestLongV(tm, rank, handler, src_addr, nbytes, dest_addr, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
+
+        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
+          gasneti_free(sd->_tofree);
+          sd->_tofree = NULL;
+        }
     }
     va_end(argptr);
 
@@ -764,6 +784,11 @@ void gasnetc_AM_CommitReplyLongM(
 
         int rc = gasneti_AMReplyLongV(token, handler, src_addr, nbytes, dest_addr, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
+
+        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
+          gasneti_free(sd->_tofree);
+          sd->_tofree = NULL;
+        }
     }
     va_end(argptr);
 

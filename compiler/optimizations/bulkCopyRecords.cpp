@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -37,7 +38,7 @@ static bool isAssignment(FnSymbol* fn)
 {
   if (! fn->hasFlag(FLAG_ASSIGNOP))
     return false;
-  if (fn->name != astrSequals)
+  if (fn->name != astrSassign)
     return false;
 
   return true;

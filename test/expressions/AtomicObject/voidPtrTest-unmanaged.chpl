@@ -1,7 +1,7 @@
 class Obj { var x : int; var y : int; var z : int;}
 
 proc fn(f : c_void_ptr) {
-	writeln(f : unmanaged Obj);
+	writeln(f : unmanaged Obj?);
 }
 
 

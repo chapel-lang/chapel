@@ -47,7 +47,6 @@ The Chapel implementation is composed of two categories of code:
      hwloc            portable NUMA compute node utilities         new BSD
      jemalloc         alternative memory allocator                 BSD-like
      llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
-     massivethreads   alternative lightweight tasking option       2-clause BSD
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
@@ -75,7 +74,6 @@ The Chapel implementation is composed of two categories of code:
      hwloc            only used when CHPL_HWLOC is 'hwloc'
      jemalloc         only used when CHPL_MEM is 'jemalloc'
      llvm             only used when CHPL_LLVM is 'llvm'
-     massivethreads   only used when CHPL_TASKS is 'massivethreads'
      qthread          only used when CHPL_TASKS is 'qthreads'
      re2              only used when CHPL_REGEXP is 're2'
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings

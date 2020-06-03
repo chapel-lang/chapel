@@ -1,4 +1,4 @@
 owned Foo(true)
 owned Foo(false)
-borrowed Foo(true)
-borrowed Foo(false)
+borrowed Foo(true)?
+borrowed Foo(false)?

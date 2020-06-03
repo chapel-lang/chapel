@@ -85,7 +85,7 @@
 
 /* Define to 1 if you have the declaration of `strcasecmp', and to 0 if you
    don't. */
-#define HAVE_DECL_STRCASECMP 0
+/* #undef HWLOC_HAVE_DECL_STRCASECMP */
 
 /* Define to 1 if you have the declaration of `snprintf', and to 0 if you
    don't. */
@@ -665,7 +665,7 @@
 
 
 /* Version number of package */
-#define HWLOC_VERSION "1.11.11"
+#define HWLOC_VERSION "1.11.13"
 #define VERSION HWLOC_VERSION
 
 /* Define to 1 if the X Window System is missing or not being used. */

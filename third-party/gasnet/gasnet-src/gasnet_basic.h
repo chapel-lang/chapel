@@ -113,6 +113,11 @@
   #define _GASNETI_HAS_CXX11_ATTRIBUTE(x) 0
 #endif
 
+#if PLATFORM_COMPILER_CLANG && PLATFORM_COMPILER_VERSION_LT(3,6,0)
+  // bug3801: old clangs report __has_attribute(__fallthrough__)=1, but incorrectly implement the attribute
+  // in a way that leads to empty statement warnings when used as per GNU instructions
+  #define GASNETT_USE_GCC_ATTRIBUTE_FALLTHROUGH 0
+#endif
 
 // token expansion: expands to configure-detected token GASNETI_<id>_<feature> for the current compiler
 //                  (which MUST NOT be #undef, although it can be #defined to blank)
@@ -151,14 +156,39 @@
   #define GASNETI_END_EXTERNC 
 #endif
 
-/* Some symbols need a tentative definition when building libgasnet_tools-*.a.
- * However we want an extern definition in libgasnet-*.a and all clients.
- * This includes C++ clients where tentative definitions are not supported.
+/* Tentative definition declaration specifier macros
+ *
+ * GASNETI_TENTATIVE_CLIENT - a symbol that is tentative in the client, 
+ *                            and is optionally defined in the library
+ * GASNETI_TENTATIVE_LIBRARY - a symbol that is tentative in the library,
+ *                            and is optionally defined in the client
+ *
+ * Where tentative these expand to a common-block annotation, if appropriate.
+ * Where not tentative, these expand to extern.
+ * C++ clients where tentative definitions are not supported always see these as extern.
+ *
+ * GASNETI_TENTATIVE_LIBRARY_DEFN exists as a workaround for a GCC LTO bug:
+ *   https://sourceware.org/bugzilla/show_bug.cgi?id=23350
+ *   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86490
+ * the trick is to have an extern declaration precede the tentative definition,
+ * which still places it in the common block but avoids the LTO bug.
  */
-#if defined(GASNETT_BUILDING_TOOLS)
-  #define GASNETI_TENTATIVE_EXTERN /*empty*/
-#else
-  #define GASNETI_TENTATIVE_EXTERN extern
+#if defined(__cplusplus)
+  #define GASNETI_TENTATIVE_CLIENT   extern
+  #define GASNETI_TENTATIVE_LIBRARY  extern
+#elif GASNETI_BUILDING_TOOLS || GASNETI_BUILDING_CONDUIT
+  #if !GASNETI_COMPILER_IS_CC
+  #error Attempted to build libgasnet with an unrecognized different compiler - please re-run configure.
+  #endif
+  #define GASNETI_TENTATIVE_CLIENT   extern
+  #define GASNETI_TENTATIVE_LIBRARY  extern
+  #define GASNETI_TENTATIVE_LIBRARY_DEFN  GASNETI_COMMON
+#elif GASNETI_COMPILER_HAS_ATTRIBUTE(COMMON,__common__)
+  #define GASNETI_TENTATIVE_CLIENT   __attribute__((__common__))
+  #define GASNETI_TENTATIVE_LIBRARY  extern
+#else // client C code with mismatched compiler and no attribute support
+  #define GASNETI_TENTATIVE_CLIENT   /* empty (be conservative) */
+  #define GASNETI_TENTATIVE_LIBRARY  extern
 #endif
 
 /* pick up restrict keyword (or empty) appropriate for compiler in use
@@ -346,7 +376,7 @@
 typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
 #if GASNET_DEBUG
   #define GASNETI_INIT_MAGIC(p,m)  ((void)((p)->_magic._u = (m)))
-  #define GASNETI_CHECK_MAGIC(p,m) gasneti_assert(!(p) || ((p)->_magic._u == (m)))
+  #define GASNETI_CHECK_MAGIC(p,m) do { if (p) gasneti_assert_uint((p)->_magic._u ,==, (m)); } while (0)
   #define GASNETI_IMPORT_MAGIC(p,type) do { \
       if ((p) && ((p)->_magic._u == GASNETI_##type##_BAD_MAGIC)) {              \
         gasneti_fatalerror("Likely use-after-free error for " #type " object"); \
@@ -675,7 +705,7 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
 #else
   #define GASNETI_HOT
 #endif
-#if GASNETT_USE_GCC_ATTRIBUTE_HOT
+#if GASNETT_USE_GCC_ATTRIBUTE_COLD
   #define GASNETI_COLD __attribute__((__cold__))
 #else
   #define GASNETI_COLD
@@ -731,8 +761,9 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
 #define _GASNETI_IDENT(identName, identText)                         \
   extern char volatile identName[];                                  \
   char volatile identName[] = identText;                             \
+  GASNETI_COLD                                                       \
   extern char *_##identName##_identfn(void) { return (char*)identName; } \
-  static int _dummy_##identName = sizeof(_dummy_##identName)
+  extern char *_##identName##_identfn(void) /* swallow semicolon */
 #if PLATFORM_COMPILER_CRAY && !PLATFORM_ARCH_X86_64 /* fouls up concatenation in ident string */
   #if PLATFORM_COMPILER_VERSION_LT(6,0,0)
     #define GASNETI_PRAGMA_SEMI ;

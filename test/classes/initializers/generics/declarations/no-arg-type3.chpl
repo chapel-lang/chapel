@@ -10,6 +10,6 @@ class Foo {
   }
 }
 
-var foo: borrowed Foo(int); // We can create an instantiation with t = int
+var foo: borrowed Foo(int)?; // We can create an instantiation with t = int
 foo = new borrowed Foo();// and we can initialize it
 writeln(foo.type:string);

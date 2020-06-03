@@ -65,7 +65,7 @@ record R {
 // The ``this`` method gives the record the ability to be accessed like an
 // array.  Here we use the the argument as an index to choose a tuple element.
 proc R.this(n: int) ref {
-  if n < 1 || n > size then
+  if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");
   return vals[n];
 }
@@ -77,8 +77,8 @@ proc R.this(n: int) ref {
 
 var r = new R();
 
-r[1] = 1;
-r(3) = 3;
+r[0] = 1;
+r(2) = 3;
 
 writeln(r.vals);
 
@@ -91,7 +91,7 @@ writeln(r.vals);
 // called when a record or class instance is used in the iterator position
 // of a ``for`` loop.
 iter R.these() ref {
-  for i in 1..size {
+  for i in vals.indices {
     yield vals[i];
   }
 }
@@ -114,14 +114,19 @@ writeln(r.vals);
 // channel. We'll write the ``vals`` tuple between asterisks. See section
 // :ref:`readThis-writeThis-readWriteThis` for more information  on the
 // ``writeThis``, ``readThis``, and ``readWriteThis`` methods.
-proc R.writeThis(ch: channel) {
+
+use IO; // required for file operations
+
+config const filename = "tempfile.txt";
+
+proc R.writeThis(ch: channel) throws {
   ch.write("*", vals, "*");
 }
 
 {
   // Open the file in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open("tempfile.txt", iomode.cw);
+  var f = open(filename, iomode.cw);
   var ch = f.writer();
   ch.writeln(r);
 }
@@ -129,7 +134,7 @@ proc R.writeThis(ch: channel) {
 // The ``readThis`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: channel) {
+proc R.readThis(ch: channel) throws {
   var star = new ioLiteral("*");
   ch.read(star);
   ch.read(vals);
@@ -137,7 +142,7 @@ proc R.readThis(ch: channel) {
 }
 
 {
-  var f = open("tempfile.txt", iomode.r);
+  var f = open(filename, iomode.r);
   var ch = f.reader();
   var r2 = new R();
   ch.readln(r2);
@@ -152,22 +157,29 @@ proc R.readThis(ch: channel) {
 // ``writeThis`` methods defined above have higher precedence
 // than ``readWriteThis``, so this function is not used because
 // they are defined.
-proc R.readWriteThis(ch: channel) {
+proc R.readWriteThis(ch: channel) throws {
   const stars = new ioLiteral("**");
   ch <~> stars <~> vals <~> stars;
 }
 
 {
-  var chW = openwriter("tempfile.txt");
+  var chW = openwriter(filename);
   chW.writeln(r);
   chW.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openreader("tempfile.txt");
+  var chR = openreader(filename);
   chR.readln(r2);
   assert(r == r2);
   
+}
+
+// Clean up the temporary file we created earlier.
+{
+  use FileSystem;
+  if exists(filename) then
+    remove(filename);
 }
 
 /*

@@ -1,0 +1,1 @@
+with-bool.chpl:3: error: cannot apply a forall or task intent to a type or a param, here 'bool'

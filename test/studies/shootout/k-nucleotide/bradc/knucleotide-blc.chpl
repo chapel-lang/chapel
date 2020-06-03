@@ -5,7 +5,7 @@
    derived from the GNU C++ version by Branimir Maksimovic
 */
 
-use Sort;
+use IO, Map, Sort;
 
 config param tableSize = 2**16,
              columns = 61;
@@ -14,7 +14,7 @@ config param tableSize = 2**16,
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const consoleIn = openfd(0),
-        fileLen = consoleIn.length(),
+        fileLen = consoleIn.size,
         stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
@@ -38,7 +38,7 @@ proc main(args: [] string) {
 
   // Make everything uppercase
   forall d in data do
-    d -= ("a".byte(1) - "A".byte(1));
+    d -= ("a".toByte() - "A".toByte());
 
   writeFreqs(data, 1);
   writeFreqs(data, 2);
@@ -53,22 +53,11 @@ proc main(args: [] string) {
 proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
-  // sort by frequencies
-  //
-  // TODO: Shouldn't this work?
-  //
-  //  var arr = [(k,v) in zip(freqs.domain, freqs)] (v,k);
-  var arr = for (k,v) in zip(freqs.domain, freqs) do (v,k);
+  // create an array of (frequency, sequence) tuples
+  var arr = for (k,v) in freqs.items() do (v,k);
 
-  //  var arr: [1..freqs.size] 2*int;
-  //  for (a, k, v) in zip(arr, freqs.domain, freqs) do
-  //    a = (v, k);
-
-  // arr.sorted() creates another (temporary) array
-  // ideally, would like "for (f,s) in
-  //   ( for (s,f) in zip(freqs.domain, freqs) do (f,s) ).sorted(...)"
-
-  for (f, s) in arr.sorted(comparator=reverseComparator) do
+  // print the array, sorted by decreasing frequency
+  for (f, s) in arr.sorted(reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -76,16 +65,16 @@ proc writeFreqs(data, param nclSize) {
 
 
 proc writeCount(data, param str) {
-  const freqs = calculate(data, str.length),
-        d = hash(str.toBytes(), 1, str.length);
+  const strBytes = str.bytes(),
+        freqs = calculate(data, str.numBytes),
+        d = hash(strBytes, strBytes.domain.low, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d, str.length));
+  writeln(freqs[d], "\t", decode(d, str.numBytes));
 }
 
 
 proc calculate(data, param nclSize) {
-  var freqDom: domain(int),
-      freqs: [freqDom] int;
+  var freqs = new map(int, int);
 
   //
   // TODO: Could we combine these local hash tables with a reduce
@@ -94,15 +83,14 @@ proc calculate(data, param nclSize) {
 
   var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
-  coforall tid in 1..numTasks {
-    var myDom: domain(int),
-        myArr: [myDom] int;
+  coforall tid in 1..numTasks with (ref freqs) {
+    var myFreqs = new map(int, int);
 
     for i in tid..(data.size-nclSize) by numTasks do
-      myArr[hash(data, i, nclSize)] += 1;
+      myFreqs[hash(data, i, nclSize)] += 1;
 
     lock$;        // acquire lock
-    for (k,v) in zip(myDom, myArr) do
+    for (k,v) in myFreqs.items() do
       freqs[k] += v;
     lock$ = true; // release lock
   }
@@ -118,9 +106,7 @@ const toChar: [0..3] string = ["A", "C", "T", "G"];
 var toNum: [0..127] int;
 
 forall i in toChar.domain do
-  toNum[toChar[i].byte(1)] = i;
-//
-// Too terse (?): toNum[toChar.byte(1)] = toChar.domain;
+  toNum[toChar[i].toByte()] = i;
 
 
 inline proc decode(in data, param nclSize) {
@@ -147,17 +133,9 @@ inline proc hash(str, beg, param size) {
 }
 
 
-proc string.toBytes() {
-  var bytes: [1..this.length] uint(8);
-  for (b, i) in zip(bytes, 1..) do
-    b = this.byte(i);
-  return bytes;
-}
-
-
 inline proc startsWithThree(data) {
-  return data[1] == ">".byte(1) &&
-         data[2] == "T".byte(1) &&
-         data[3] == "H".byte(1);
+  return data[1] == ">".toByte() &&
+         data[2] == "T".toByte() &&
+         data[3] == "H".toByte();
 }
 

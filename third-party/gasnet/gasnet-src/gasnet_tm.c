@@ -26,7 +26,7 @@ gex_Rank_t gasneti_tm_rev_lookup(gasneti_TM_t tm, gex_Rank_t jobrank) {
   gasnete_coll_team_t team = tm->_coll_team;
   gasneti_assert(team != GASNET_TEAM_ALL); // TM0 should not reach here
   gex_Rank_t size = tm->_size;
-  gasneti_assert(size == team->total_ranks);
+  gasneti_assert_uint(size ,==, team->total_ranks);
   for (gex_Rank_t rank = 0; rank < size; ++rank) {
     if (team->rel2act_map[rank] == jobrank) return rank;
   }
@@ -96,13 +96,13 @@ size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int ke
   if (!new_tm_p) {
     color = -1; // tell gasnete_coll_team_split() not to create a team for this caller
   } else {
-    gasneti_assert(color >= 0);
+    gasneti_assert_int(color ,>=, 0);
 #if !GASNET_SEGMENT_EVERYTHING
     gasneti_assert(ep->_segment);
-    gasneti_assert((uintptr_t)addr     >= (uintptr_t)ep->_segment->_addr);
-    gasneti_assert((uintptr_t)addr+len <= (uintptr_t)ep->_segment->_ub);
+    gasneti_assert_ptr(addr     ,>=, ep->_segment->_addr);
+    gasneti_assert_ptr((uint8_t*)addr+len ,<=, ep->_segment->_ub);
 #endif
-    gasneti_assert(len >= split_scratch_size(new_tm_p, i_parent, color, key,
+    gasneti_assert_uint(len ,>=, split_scratch_size(new_tm_p, i_parent, color, key,
                                              flags | GEX_FLAG_TM_SCRATCH_SIZE_MIN));
   }
 

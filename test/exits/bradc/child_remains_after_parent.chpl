@@ -1,4 +1,4 @@
-use Time;
+use Time, IO;
 
 config const numIters = 100000;
 var s$: sync bool;

@@ -1,4 +1,0 @@
-bug: range count operator throws away low bound when count is 0
-
-When the count is 0, the count operator always returns 1..0. It would be nice
-to instead use the given low bound.

@@ -1,6 +1,6 @@
 /* Test domain.shape method (called from array.shape) */
 
-use BlockDist;
+use BlockDist, IO;
 
 //
 // Regular Domains & Arrays
@@ -25,14 +25,6 @@ assertEqual(sparseDom.shape, (10, 10), msg='sparseDom:');
 // RectangularArray
 var sparseArray: [sparseDom] int;
 assertEqual(sparseArray.shape, (10, 10), msg='sparseArray:');
-
-// OpaqueDom
-var opaqueDom: domain(opaque);
-for 1..10 do opaqueDom.create();
-assertEqual(opaqueDom.shape, (10,), msg='opaqueDom:');
-
-var opaqueArray: [opaqueDom] int;
-assertEqual(opaqueArray.shape, (10,), msg='opaqueArray:');
 
 // AssociativeDom
 var associativeDom: domain(int);

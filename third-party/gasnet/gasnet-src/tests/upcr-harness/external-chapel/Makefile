@@ -41,7 +41,7 @@ CHAPEL_URL      ?= https://github.com/$(CHAPEL_GIT_REPO)/archive/$(CHAPEL_GIT_CO
 CHAPEL_ARCHIVE  ?= $(notdir $(CHAPEL_URL))
 chapel-download: force
 	rm -Rf $(CHAPEL_BLDDIR) $(CHAPEL_TMPDIR) && mkdir $(CHAPEL_TMPDIR)
-	cd $(CHAPEL_TMPDIR) && $(WGET) $(CHAPEL_URL) 2>&1
+	cd $(CHAPEL_TMPDIR) && $(WGET) $(CHAPEL_URL) 2>&1 || ( cat wget-log 2> /dev/null ; exit 3 ) || exit $$?
 	cd $(CHAPEL_TMPDIR) && cat wget-log 2> /dev/null ; rm -f wget-log ; exit 0
 	@CHAPEL_TESTDIR=`pwd` && \
 	 cd $(CHAPEL_TMPDIR) && CHAPEL_ARCHIVE=`/bin/ls` && CHAPEL_DOWNLOAD="$(strip $(CHAPEL_DOWNLOAD))" && \
@@ -74,23 +74,18 @@ chapel-unpack-tgz:   force
 ####
 .PHONY: chapel-download chapel-unpack-unzip chapel-unpack-p7zip chapel-unpack-tgz
 
-# Save time by building for a single conduit
-CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect --enable-$(CHAPEL_CONDUIT)
 ifneq ($(strip $(CHPL_COMM_DEBUG)),)
-CHPL_GASNET_CFG_OPTIONS += --enable-debug
+CHPL_GASNET_MORE_CFG_OPTIONS += --enable-debug
 endif
-CHAPEL_MAKE_ARGS += CHPL_GASNET_CFG_OPTIONS="$(CHPL_GASNET_CFG_OPTIONS)"
+CHAPEL_MAKE_ARGS += CHPL_GASNET_MORE_CFG_OPTIONS="$(CHPL_GASNET_MORE_CFG_OPTIONS)"
 
 # Define CHPL_LAUNCHER for some conduits without our desired defaults.
 # Note that these have not necessarily all been tested.
 chapel_launcher_opt = $(chapel_launcher_$(strip $(CHAPEL_CONDUIT)))
-chapel_launcher_pami = CHPL_LAUNCHER=gasnetrun_pami
 
 # Kludge some launchers that can be constructed as a simple delta from another:
 chapel-launcher: force
-	case $(CHAPEL_CONDUIT) in \
-	pami) $(MAKE) clone-launcher SRC_CONDUIT=mpi DST_CONDUIT=$(CHAPEL_CONDUIT) ;; \
-	esac
+	@true  # currently no special cases to deal with here
 clone-launcher: force
 	src=gasnetrun_$(SRC_CONDUIT); dst=gasnetrun_$(DST_CONDUIT); \
 	cd $(CHAPEL_BLDDIR)/runtime/src/launch && \
@@ -110,10 +105,18 @@ ifneq ($(strip $(CHPL_COMM_DEBUG)),)
 COMMON_ENV += CHPL_COMM_DEBUG=$(CHPL_COMM_DEBUG)
 endif
 
+# Apply upsteam or local patches, if any
+chapel_patches =
+chapel-patch: force
+	cd $(CHAPEL_BLDDIR) && \
+	for p in $(chapel_patches); do $(WGET) $$p && patch -p1 < `basename $$p`; done
+.PHONY: chapel-patch
+
 # Build and (optionally) install Chapel compiler and runtime
 _chapel: force
 	rm -f chapel-built
-	$(MAKE) chapel-download 2>&1 | tee $(LOGFILE)
+	$(call safe_tee_dance, $(MAKE) chapel-download)
+	$(call safe_tee_dance, $(MAKE) chapel-patch)
 	$(MAKE) chapel-launcher
 	cd $(CHAPEL_BLDDIR)/third-party/gasnet && mv gasnet-src gasnet-src.dist
 	cp -Rp $(TOP_SRCDIR)/gasnet $(CHAPEL_BLDDIR)/third-party/gasnet/gasnet-src
@@ -209,3 +212,7 @@ $(PROGRAMS): force; $(MAKE) one_test TEST_EXE=$@ TEST_DIR=examples/programs/$@
 force:
 
 .PHONY: force
+
+# Run a command, with output to both stdout and $(LOGFILE), preserving exit code of the command
+# Based on https://unix.stackexchange.com/questions/14270/get-exit-status-of-process-thats-piped-to-another/70675#70675
+safe_tee_dance = (((($1; echo $$? >&3) 2>&1 | tee -a $(LOGFILE) >&4) 3>&1) | (read rc; exit $$rc)) 4>&1

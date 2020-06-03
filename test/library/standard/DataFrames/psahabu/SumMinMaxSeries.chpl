@@ -18,22 +18,22 @@ writeln("moreNone:");
 writeln(moreNone);
 
 writeln();
-writeln("noNone.sum(): " + noNone.sum());
+writeln("noNone.sum(): ", noNone.sum());
 writeln();
-writeln("someNone.sum(): " + someNone.sum());
+writeln("someNone.sum(): ", someNone.sum());
 writeln();
-writeln("moreNone.sum(): " + moreNone.sum());
+writeln("moreNone.sum(): ", moreNone.sum());
 
 writeln();
-writeln("noNone.min(): " + noNone.min());
+writeln("noNone.min(): ", noNone.min());
 writeln();
-writeln("someNone.min(): " + someNone.min());
+writeln("someNone.min(): ", someNone.min());
 writeln();
-writeln("moreNone.min(): " + moreNone.min());
+writeln("moreNone.min(): ", moreNone.min());
 
 writeln();
-writeln("noNone.max(): " + noNone.max());
+writeln("noNone.max(): ", noNone.max());
 writeln();
-writeln("someNone.max(): " + someNone.max());
+writeln("someNone.max(): ", someNone.max());
 writeln();
-writeln("moreNone.max(): " + moreNone.max());
+writeln("moreNone.max(): ", moreNone.max());

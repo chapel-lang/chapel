@@ -5,7 +5,7 @@ config const nTrials = 100;
 config const maxDiff = 0.0001;
 
 proc arrayAccess(A: [] real, B: [] real, param nAdds) {
-  const n = A.numElements;
+  const n = A.size;
   for 1..nTrials {
     for i in 0..#n {
       for param adds in 1..nAdds {
@@ -16,7 +16,7 @@ proc arrayAccess(A: [] real, B: [] real, param nAdds) {
 }
 
 proc refAccess(A: [] real, B: [] real, param nAdds) {
-  const n = A.numElements;
+  const n = A.size;
   for 1..nTrials {
     for i in 0..#n {
       ref rA = A[i];

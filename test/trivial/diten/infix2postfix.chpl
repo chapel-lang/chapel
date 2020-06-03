@@ -11,10 +11,10 @@ config const infix = "3*((1+3-2)/4)+7";
 record Stack {
   class node {
     var element: string;
-    var next: unmanaged node;
+    var next: unmanaged node?;
   }
 
-  var head: unmanaged node;
+  var head: unmanaged node?;
   proc push(s: string) {
     if head == nil {
       head = new unmanaged node(s);
@@ -27,9 +27,9 @@ record Stack {
       return "";
     } else {
       var h = head;
-      var e = head.element;
+      var e = head!.element;
 
-      head = head.next;
+      head = head!.next;
 
       delete h;
 
@@ -40,7 +40,7 @@ record Stack {
     if head == nil then
       return "";
     else
-      return head.element;
+      return head!.element;
   }
 }
 
@@ -56,7 +56,7 @@ proc infix2postfix(str: string) {
   var post: string = "";
   var stack: Stack;
 
-  for i in 1..(str.length) {
+  for i in 0..<str.size {
     var ch: string;
     var s = str[i];
     select s {
@@ -98,7 +98,7 @@ proc infix2postfix(str: string) {
 
 proc postfixEval(str: string) {
   var stack: Stack;
-  for i in 1..(str.length) {
+  for i in 0..<str.size {
     var s: string = str[i];
     select s {
       when "0","1","2","3","4","5","6","7","8","9" {

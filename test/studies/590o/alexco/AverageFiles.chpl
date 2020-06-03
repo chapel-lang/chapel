@@ -1,6 +1,7 @@
 /*
 Copied from the sample apps
 */
+use IO;
 
 config var n = 9,                 // the problem size
            filename = "Arr.dat";  // the filename for writing/reading the array
@@ -15,7 +16,7 @@ proc main {
   
   for i in 1..10
   {
-	writeSquareArray(n,A*i,"Arr_" + i +".txt");
+        writeSquareArray(n,A*i,"Arr_" + i:string +".txt");
   }
   
   var (Avg,Std) = AverageImage("Arr",10);
@@ -88,13 +89,13 @@ proc SQR(const A)
 proc AverageImage(filename, n)
 {
 
-	var image = readArray( filename + "_" +1 +".txt" );  //image values ideal range = 0-1, single channel
+        var image = readArray( filename + "_" +1:string +".txt" );  //image values ideal range = 0-1, single channel
 	var sum = image;
 	var sumSq = SQR(image);
 	
 	for i in 2..n do
 	{
-		var image = readArray(filename + "_" +i +".txt");
+                var image = readArray(filename + "_" +i:string +".txt");
 		sum += image;
 		//writeln("image is:\n", image);
 		//writeln("Sum is:\n", sum);

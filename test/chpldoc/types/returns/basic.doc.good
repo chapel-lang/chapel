@@ -1,3 +1,4 @@
+basic.doc.chpl:54: warning: This file-scope code is outside of any explicit module declarations (e.g., module Other), so an implicit module named 'basic.doc' is being introduced to contain the file's contents.
 .. default-domain:: chpl
 
 .. module:: basic.doc
@@ -9,6 +10,13 @@ basic.doc
 .. code-block:: chapel
 
    use basic.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc;
 
 **Submodules**
 
@@ -71,6 +79,13 @@ Other
 .. code-block:: chapel
 
    use basic.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc.Other;
 
 .. function:: proc inside(): int
 

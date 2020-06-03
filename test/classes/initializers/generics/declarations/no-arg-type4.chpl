@@ -11,11 +11,11 @@ class Foo {
   }
 }
 
-var foo: borrowed Foo(int); // We can create an instantiation with t = int
-var foo2: borrowed Foo(int);
+var foo: borrowed Foo(int)?; // We can create an instantiation with t = int
+var foo2: borrowed Foo(int)?;
 var foo3 = new borrowed Foo();
 writeln(foo.type == foo2.type);
-writeln(foo.type == foo3.type);
+writeln((foo.type :class) == foo3.type);
 writeln(foo.type:string);
 writeln(foo2.type: string);
 writeln(foo3.type: string);

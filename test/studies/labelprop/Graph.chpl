@@ -31,7 +31,7 @@ module Graph {
       param nid = 1;
       param weight = 2;
 
-      proc numNeighbors()  return ndom.numIndices;
+      proc numNeighbors()  return ndom.size;
 /*
       var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
 
@@ -79,7 +79,7 @@ module Graph {
           var edgeCount = firstAvail$.readXX() - 1;
           RemoveDuplicates(1, edgeCount);
           // TODO: ideally if we don't save much memory, do not resize
-          if edgeCount != ndom.numIndices {
+          if edgeCount != ndom.size {
             // statistics: shrinkCount += 1;
             ndom = 1..edgeCount;
           }
@@ -127,7 +127,7 @@ module Graph {
        */
       iter Neighbors( v : index (vertices) ) {
         for nlElm in Row(v).neighborList do
-          yield nlElm(1); // todo -- use nid
+          yield nlElm(0); // todo -- use nid
       }
 
       /* iterate over all neighbor IDs
@@ -143,14 +143,14 @@ module Graph {
       iter Neighbors( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
         for nlElm in Row(v).neighborList.these(tag, followThis) do
-          yield nElm(1);
+          yield nElm(0);
       }
 
       /* iterate over all neighbor weights
        */
       iter edge_weight( v : index (vertices) ) {
         for nlElm in Row(v).neighborList do
-          yield nlElm(2); // todo -- use VertexData.weight
+          yield nlElm(1); // todo -- use VertexData.weight
       }
 
       /* iterate over all neighbor weights
@@ -166,7 +166,7 @@ module Graph {
       iter edge_weight( v : index (vertices), param tag: iterKind, followThis)
       where tag == iterKind.follower {
         for nlElm in Row(v).neighborList.these(tag, followThis) do
-          yield nlElm(2); // todo -- use VertexData.weight
+          yield nlElm(1); // todo -- use VertexData.weight
       }
 
       /* return the number of neighbors
@@ -232,18 +232,18 @@ module Graph {
         var w = trip.weight;
         // edge from u to v will be represented in both u and v's edge
         // lists
-        next$[u].add(1, memory_order_relaxed);
-        next$[v].add(1, memory_order_relaxed);
+        next$[u].add(1, memoryOrder.relaxed);
+        next$[v].add(1, memoryOrder.relaxed);
       }
       // resize the edge lists
       forall v in vertices {
         var min = G.initialFirstAvail;
-        var max = next$[v].read(memory_order_relaxed) - 1; 
+        var max = next$[v].read(memoryOrder.relaxed) - 1;
         G.Row[v].ndom = {min..max};
       }
       // reset all of the counters.
       forall x in next$ {
-        next$.write(G.initialFirstAvail, memory_order_relaxed);
+        next$.write(G.initialFirstAvail, memoryOrder.relaxed);
       }
       // Pass 2: populate.
       forall trip in triples {
@@ -252,8 +252,8 @@ module Graph {
         var w = trip.weight;
         // edge from u to v will be represented in both u and v's edge
         // lists
-        var uslot = next$[u].fetchAdd(1, memory_order_relaxed);
-        var vslot = next$[v].fetchAdd(1, memory_order_relaxed);
+        var uslot = next$[u].fetchAdd(1, memoryOrder.relaxed);
+        var vslot = next$[v].fetchAdd(1, memoryOrder.relaxed);
         G.Row[u].neighborList[uslot] = (v,);
         G.Row[v].neighborList[vslot] = (u,);
       }

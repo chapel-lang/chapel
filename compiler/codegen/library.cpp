@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,8 +40,6 @@ std::map<TypeSymbol*, std::pair<std::string, std::string> > pythonNames;
 std::map<TypeSymbol*, std::string> fortranKindNames;
 std::map<TypeSymbol*, std::string> fortranTypeNames;
 
-static bool isFunctionToSkip(FnSymbol* fn);
-
 //
 // Generates a .h file to complement the library file created using --library
 // This .h file will contain necessary #includes, any explicitly exported
@@ -74,13 +73,20 @@ void codegen_library_header(std::vector<FnSymbol*> functions) {
         }
       }
 
+      if (fMultiLocaleInterop) {
+        // If we've created a multilocale library, memory that is returned to
+        // the client code wasn't created by chpl_mem_alloc and friends, so
+        // shouldn't be freed using the normal strategies.  But, for
+        // convenience, allow the user to still call `chpl_free`.
+        fprintf(libhdrfile.fptr, "#define chpl_free(ptr) free(ptr)\n");
+      }
       // Maybe need something here to support LLVM extern blocks?
 
       // Print out the module initialization function headers and the exported
       // functions
       for_vector(FnSymbol, fn, functions) {
         if (fn->hasFlag(FLAG_EXPORT) &&
-            !isFunctionToSkip(fn)) {
+            isUserRoutine(fn)) {
           fn->codegenPrototype();
         }
       }
@@ -232,29 +238,27 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
           libname.c_str());
 
   //
-  // The ZMQ library has to be linked against the C++ stdlib. Rather than
-  // package libc++ up as part of our multi-locale library client when
-  // packaging it up, we'll let library-makefile do it for us.
+  // Multi-locale libraries require some extra libraries to be linked in order
+  // to function correctly. For static libraries in particular, rather than
+  // try to link these dependencies at compile time, we shunt responsibility
+  // off to the user via use of `--library-makefile`.
   //
   if (fMultiLocaleInterop) {
-    fprintf(makefile.fptr, " %s", "-lc++");
+    std::string deps = getCompilelineOption("multilocale-lib-deps");
+    removeTrailingNewlines(deps);
+    fprintf(makefile.fptr, " %s", deps.c_str());
   }
 
   if (requires != "") {
     fprintf(makefile.fptr, "%s", requires.c_str());
   }
 
-  if (!llvmCodegen) {
-    fprintf(makefile.fptr, " %s\n", libraries.c_str());
-  } else {
-    // LLVM requires a bit more work to make the GNU linker happy.
-    if (libraries.size() > 0 && *libraries.rbegin() == '\n') {
-      libraries.erase(libraries.end() -1);
-    }
-
-    // Append the Chapel library as the last linker argument.
-    fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
-  }
+  //
+  // Append the Chapel library as the last linker argument. We do this as a
+  // stopgap to make the GNU linker happy.
+  //
+  removeTrailingNewlines(libraries);
+  fprintf(makefile.fptr, " %s %s\n\n", libraries.c_str(), libname.c_str());
 }
 
 const char* getLibraryExtension() {
@@ -267,7 +271,13 @@ const char* getLibraryExtension() {
 
 void ensureLibDirExists() {
   if (libDir[0] == '\0') {
-    const char* dir = "lib";
+
+    //
+    // When compiling Python, the default name of the directory where
+    // generated library files are stored is as same as the Python
+    // module name.
+    //
+    const char* dir = fLibraryPython ? pythonModulename : "lib";
     INT_ASSERT(strlen(dir) < sizeof(libDir));
     strcpy(libDir, dir);
   }
@@ -295,8 +305,8 @@ void closeLibraryHelperFile(fileinfo* fi, bool beautifyIt) {
     beautify(fi);
 }
 
-// Populate the pythonNames map with the translation for bools, differently sized
-// integers, etc.
+// Populate the pythonNames map with the translation for bools, differently
+// sized integers, etc.
 static void setupPythonTypeMap() {
   pythonNames[dtInt[INT_SIZE_8]->symbol] = std::make_pair("", "numpy.int8");
   pythonNames[dtInt[INT_SIZE_16]->symbol] = std::make_pair("", "numpy.int16");
@@ -315,6 +325,14 @@ static void setupPythonTypeMap() {
   pythonNames[dtComplex[COMPLEX_SIZE_128]->symbol] =
               std::make_pair("double complex", "numpy.complex128");
 
+  if (dtBytes != NULL) {
+    pythonNames[dtBytes->symbol] = std::make_pair("", "object");
+  }
+
+  if (dtString != NULL) {
+    pythonNames[dtString->symbol] = std::make_pair("", "object");
+  }
+
   // TODO: Handle bigint (which should naturally match to Python's int)
 
 }
@@ -331,6 +349,10 @@ std::string getPythonTypeName(Type* type, PythonFileType pxd) {
     std::string res = tNames.second;
     if (strncmp(res.c_str(), "numpy", strlen("numpy")) == 0) {
       res += "_t";
+    } else if (strcmp(res.c_str(), "object") == 0) {
+      // Types like byte and string map to Python objects that have no 1-to-1
+      // representation in C.
+      return res;
     } else {
       res = getPythonTypeName(type, C_PXD);
     }
@@ -400,6 +422,7 @@ static void makeFortranModule(std::vector<FnSymbol*> functions);
 static void makePXDFile(std::vector<FnSymbol*> functions);
 static void makePYXFile(std::vector<FnSymbol*> functions);
 static void makePYFile();
+static void makePYInitFile();
 
 void codegen_library_python(std::vector<FnSymbol*> functions) {
   if (fLibraryCompile && fLibraryPython) {
@@ -411,6 +434,7 @@ void codegen_library_python(std::vector<FnSymbol*> functions) {
     makePXDFile(functions);
     makePYXFile(functions);
     makePYFile();
+    makePYInitFile();
   }
 }
 
@@ -439,7 +463,7 @@ void makeFortranModule(std::vector<FnSymbol*> functions) {
     indent += 2;
     // generate chpl_library_init and chpl_library_finalize here?
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         fn->codegenFortran(indent);
       }
     }
@@ -473,7 +497,7 @@ static void makePXDFile(std::vector<FnSymbol*> functions) {
     fprintf(pxd.fptr, "cdef extern from \"%s.h\":\n", libmodeHeadername);
 
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         fn->codegenPython(C_PXD);
       }
     }
@@ -506,8 +530,10 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     fprintf(pyx.fptr, "from chplrt cimport chpl_library_init, ");
     fprintf(pyx.fptr, "chpl_library_finalize, chpl_external_array, ");
     fprintf(pyx.fptr, "chpl_make_external_array, chpl_make_external_array_ptr");
-    fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array,");
-    fprintf(pyx.fptr, " cleanupOpaqueArray\n");
+    fprintf(pyx.fptr, ", chpl_free_external_array, chpl_opaque_array, ");
+    fprintf(pyx.fptr, "cleanupOpaqueArray, chpl_free, ");
+    fprintf(pyx.fptr, "chpl_byte_buffer, chpl_byte_buffer_free, ");
+    fprintf(pyx.fptr, "PyBytes_FromStringAndSize\n");
 
     std::vector<FnSymbol*> moduleInits;
     std::vector<FnSymbol*> exported;
@@ -516,7 +542,7 @@ static void makePYXFile(std::vector<FnSymbol*> functions) {
     bool first = true;
     // Make import statement at top of .pyx file for exported functions
     for_vector(FnSymbol, fn, functions) {
-      if (!isFunctionToSkip(fn)) {
+      if (isUserRoutine(fn)) {
         if (fn->hasFlag(FLAG_EXPORT)) {
           if (first) {
             first = false;
@@ -569,6 +595,15 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;
 
+  fprintf(outfile, "_chpl_cleanup_callback = None\n");
+  fprintf(outfile, "\n");
+
+  // Use to set hidden debug callback.
+  fprintf(outfile, "def chpl_set_cleanup_callback(callback):\n");
+  fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
+  fprintf(outfile, "\t_chpl_cleanup_callback = callback\n");
+  fprintf(outfile, "\n");
+
   // Initialize the runtime.  chpl_setup should get called prior to using
   // any of the exported functions
   if (fMultiLocaleInterop) {
@@ -587,6 +622,7 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
     fprintf(outfile, "\tchpl_library_init(3, args)\n");
 
   } else {
+    // Define `chpl_setup` for single locale Python modules.
     fprintf(outfile, "def chpl_setup():\n");
     fprintf(outfile, "\tcdef char** args = ['%s']\n", libmodeHeadername);
     fprintf(outfile, "\tchpl_library_init(1, args)\n");
@@ -601,6 +637,9 @@ static void makePYXSetupFunctions(std::vector<FnSymbol*> moduleInits) {
   // Shut down the runtime and libraries.  chpl_cleanup should get called when
   // the exported Chapel code is no longer needed
   fprintf(outfile, "def chpl_cleanup():\n");
+  fprintf(outfile, "\tglobal _chpl_cleanup_callback\n");
+  fprintf(outfile, "\tcallback = _chpl_cleanup_callback\n");
+  fprintf(outfile, "\tif not callback is None:\n\t\tcallback()\n");
   fprintf(outfile, "\tchpl_library_finalize()\n\n");
 }
 
@@ -664,6 +703,14 @@ static void makePYFile() {
       fprintf(py.fptr, "\"%s\"", libName);
     }
     std::string libraries = getCompilelineOption("libraries");
+
+    // Erase trailing newline and append multilocale-only dependencies.
+    if (fMultiLocaleInterop) {
+      libraries.erase(libraries.length() - 1);
+      libraries += " ";
+      libraries += getCompilelineOption("multilocale-lib-deps");
+    }
+
     char copyOfLib[libraries.length() + 1];
     libraries.copy(copyOfLib, libraries.length(), 0);
     copyOfLib[libraries.length()] = '\0';
@@ -682,6 +729,8 @@ static void makePYFile() {
       }
       curSection = strtok(NULL, " \n");
     }
+
+    // Fetch addition
     fprintf(py.fptr, "]\n");
 
     // Cythonize me, Captain!
@@ -690,13 +739,65 @@ static void makePYFile() {
     fprintf(py.fptr, "\t\tExtension(\"%s\",\n", pythonModulename);
     fprintf(py.fptr, "\t\t\tinclude_dirs=[numpy.get_include()],\n");
     fprintf(py.fptr, "\t\t\tsources=[\"%s.pyx\"],\n", pythonModulename);
-    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries)))\n",
-            libname.c_str());
+    fprintf(py.fptr, "\t\t\tlibraries=[\"%s\"] + chpl_libraries + "
+                     "[\"%s\"])))\n",
+                     libname.c_str(), libname.c_str());
 
     gGenInfo->cfile = save_cfile;
   }
   // Don't "beautify", it will remove the tabs
   closeLibraryHelperFile(&py, false);
+}
+
+static void makePYInitFile() {
+  fileinfo py = { NULL, NULL, NULL };
+
+  char* path = dirHasFile(libDir, "__init__.py");
+  if (path != NULL) {
+    free(path);
+    USR_WARN("Cannot generate %s/__init__.py because it would overwrite "
+             "existing file", libDir);
+    return;
+  }
+ 
+  openLibraryHelperFile(&py, "__init__", "py");
+
+  if (py.fptr != NULL) {
+    FILE* save_cfile = gGenInfo->cfile;
+    gGenInfo->cfile = py.fptr;
+
+    //
+    // Print the following form to the __init__.py file>
+    //
+    //    | """Generated by the Chapel compiler."""
+    //    |
+    //    | import atexit
+    //    |
+    //    | from <libraryDir>.<moduleName> import *
+    //    |
+    //    | # Register cleanup function to be called at program exit.
+    //    | atexit.register(<moduleName>.chpl_cleanup)
+    //    |
+    //
+    fprintf(py.fptr, "\"\"\"Generated by the Chapel compiler.\"\"\"\n");
+    fprintf(py.fptr, "\n");
+    fprintf(py.fptr, "import atexit\n");
+    fprintf(py.fptr, "\n");
+    fprintf(py.fptr, "from %s.%s import *\n", libDir, pythonModulename);
+    fprintf(py.fptr, "\n");
+    fprintf(py.fptr, "# Register cleanup function to be called at "
+                     "program exit.\n");
+    fprintf(py.fptr, "atexit.register(%s.chpl_cleanup)\n",
+            pythonModulename);
+
+    // Restore the previous file used for codegen.
+    gGenInfo->cfile = save_cfile;
+  }
+
+  // Don't "beautify", it will remove the tabs.
+  closeLibraryHelperFile(&py, false);
+
+  return;
 }
 
 // Once all the python files have been generated and the .a/.so has been made,
@@ -749,6 +850,15 @@ void codegen_make_python_module() {
   // Erase the trailing \n from getting the libraries
   libraries.erase(libraries.length() - 1);
 
+  // Snag extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = "$CHPL_HOME/util/config/compileline";
+    cmd += " --multilocale-lib-deps";
+    libraries += " ";
+    libraries += runCommand(cmd);
+    libraries.erase(libraries.length() - 1);
+  }
+
   std::string name = "-l";
   int libLength = strlen("lib");
   bool startsWithLib = strncmp(executableFilename, "lib", libLength) == 0;
@@ -771,10 +881,8 @@ void codegen_make_python_module() {
   fullCythonCall += "\" LDFLAGS=\"-L. " + name + requireLibraries;
   fullCythonCall += " " + libraries;
 
-  // We might be using the GNU linker, in which case we need to do this.
-  if (llvmCodegen) {
-    fullCythonCall += " " + name;
-  }
+  // Append library as last link argument to appease GNU linker.
+  fullCythonCall += " " + name;
 
   fullCythonCall +=  "\" " + cythonPortion;
 
@@ -787,7 +895,8 @@ void codegen_make_python_module() {
 
 // Skip this function if it is defined in an internal module, or if it is
 // the generated main function
-static bool isFunctionToSkip(FnSymbol* fn) {
-  return fn->getModule()->modTag == MOD_INTERNAL ||
-    fn->hasFlag(FLAG_GEN_MAIN_FUNC);
+bool isUserRoutine(FnSymbol* fn) {
+  return !(fn->getModule()->modTag == MOD_INTERNAL ||
+           fn->getModule()->modTag == MOD_STANDARD ||
+           fn->hasFlag(FLAG_GEN_MAIN_FUNC));
 }

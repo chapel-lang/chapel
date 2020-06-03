@@ -19,7 +19,8 @@
 
    This test case just calls the routines in testFFTW; see documentation there.
 */
-use FFTW_MT, FFTWlib;
+use FFTWlib;
+use FFTW;
 
 config var nthread = 2; // Number of threads
 

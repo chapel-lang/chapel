@@ -321,12 +321,11 @@ GASNETE_TM_DECLARE_REDUCE_ALG(TreePut)
   gasneti_assert(gex_AM_LUBRequestLong() >= nbytes);
 
   // Scratch space
-  gasnete_coll_scratch_req_t *scratch_req = gasneti_calloc(1,sizeof(gasnete_coll_scratch_req_t));
+  gasnete_coll_scratch_req_t *scratch_req = gasnete_coll_scratch_alloc_req(team);
   // fill out the tree information
   scratch_req->tree_type = geom->tree_type;
   scratch_req->tree_dir = GASNETE_COLL_UP_TREE;
   scratch_req->root = root;
-  scratch_req->team = team;
   scratch_req->op_type = GASNETE_COLL_TREE_OP;
   // fill out the peer information
   //  in: recv 'nbytes' from each child
@@ -335,14 +334,14 @@ GASNETE_TM_DECLARE_REDUCE_ALG(TreePut)
   scratch_req->num_in_peers = GASNETE_COLL_TREE_GEOM_CHILD_COUNT(geom);
   scratch_req->in_peers = GASNETE_COLL_TREE_GEOM_CHILDREN(geom);      
   if (team->myrank == root) {
-    gasneti_assert(scratch_req->num_out_peers == 0);
-    gasneti_assert(scratch_req->out_peers == NULL);      
-    gasneti_assert(scratch_req->out_sizes == NULL);
+    scratch_req->num_out_peers = 0;
+    scratch_req->out_peers = NULL;
+    scratch_req->out_sizes = NULL;
   } else {
     scratch_req->num_out_peers = 1;
-    scratch_req->out_peers = &(GASNETE_COLL_TREE_GEOM_PARENT(geom));
-    scratch_req->out_sizes = (uintptr_t*) gasneti_malloc(sizeof(uintptr_t)*1); // TODO: ICK!
+    gasnete_coll_scratch_alloc_out_sizes(scratch_req, 1);
     scratch_req->out_sizes[0] = nbytes * geom->num_siblings;
+    scratch_req->out_peers = &(GASNETE_COLL_TREE_GEOM_PARENT(geom));
   }
 
   const int options = GASNETE_COLL_GENERIC_OPT_P2P | GASNETE_COLL_USE_SCRATCH;
@@ -670,12 +669,11 @@ GASNETE_TM_DECLARE_REDUCE_ALG(TreePutSeg)
 
   // Scratch space
   const size_t chunk_len = pipe_seg_sz * dt_sz;
-  gasnete_coll_scratch_req_t *scratch_req = gasneti_calloc(1,sizeof(gasnete_coll_scratch_req_t));
+  gasnete_coll_scratch_req_t *scratch_req = gasnete_coll_scratch_alloc_req(team);
   // fill out the tree information
   scratch_req->tree_type = geom->tree_type;
   scratch_req->tree_dir = GASNETE_COLL_UP_TREE;
   scratch_req->root = root;
-  scratch_req->team = team;
   scratch_req->op_type = GASNETE_COLL_TREE_OP;
   // fill out the peer information
   //  in: recv 'chunk_len' from each child, PLUS a spare for send to parent (if any)
@@ -684,14 +682,14 @@ GASNETE_TM_DECLARE_REDUCE_ALG(TreePutSeg)
   scratch_req->num_in_peers = GASNETE_COLL_TREE_GEOM_CHILD_COUNT(geom);
   scratch_req->in_peers = GASNETE_COLL_TREE_GEOM_CHILDREN(geom);      
   if (team->myrank == root) {
-    gasneti_assert(scratch_req->num_out_peers == 0);
-    gasneti_assert(scratch_req->out_peers == NULL);      
-    gasneti_assert(scratch_req->out_sizes == NULL);
+    scratch_req->num_out_peers = 0;
+    scratch_req->out_peers = NULL;
+    scratch_req->out_sizes = NULL;
   } else {
     scratch_req->num_out_peers = 1;
-    scratch_req->out_peers = &(GASNETE_COLL_TREE_GEOM_PARENT(geom));
-    scratch_req->out_sizes = (uintptr_t*) gasneti_malloc(sizeof(uintptr_t)*1); // TODO: ICK!
+    gasnete_coll_scratch_alloc_out_sizes(scratch_req, 1);
     scratch_req->out_sizes[0] = chunk_len * (1 + geom->num_siblings);
+    scratch_req->out_peers = &(GASNETE_COLL_TREE_GEOM_PARENT(geom));
   }
 
   const int options = GASNETE_COLL_GENERIC_OPT_P2P | GASNETE_COLL_USE_SCRATCH;

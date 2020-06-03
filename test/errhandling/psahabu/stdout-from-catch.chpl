@@ -1,3 +1,5 @@
+use IO;
+
 proc f() {
   try {
     writeln("inside try");

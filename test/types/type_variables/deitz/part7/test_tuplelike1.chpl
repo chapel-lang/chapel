@@ -3,6 +3,14 @@ record TupleType {
   var f : t;
 }
 
+proc TupleType.init=(const ref other: TupleType) {
+  this.t = other.t;
+  this.f = other.f;
+}
+proc =(ref lhs: TupleType, const ref rhs: TupleType) {
+  lhs.f = rhs.f;
+}
+
 record AnonTuple {
   var f;
 }

@@ -91,7 +91,7 @@ What is GASNet?
 
 GASNet is a one-sided communication and active message library being
 developed by Lawrence Berkeley National Laboratory and UC Berkeley.  For
-details, refer to the `GASNet website <http://gasnet.lbl.gov/>`_.
+details, refer to the `GASNet website <https://gasnet.lbl.gov/>`_.
 
 .. _set-comm-conduit:
 
@@ -112,25 +112,15 @@ ibv
 udp
     UDP - portable conduit, works on any network with a TCP/IP stack
     (see :ref:`Using the Portable UDP Conduit <using-udp>`)
-gemini
-    Gemini for Cray XE and XK series
-    (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
 aries
     Aries for Cray XC series
     (see :ref:`Using Chapel on Cray Systems <readme-cray>`)
 mpi
     MPI - portable conduit, works on any network with MPI 1.1 or newer
-mxm
-    Mellanox MXM for InfiniBand
-    (mxm is deprecated -- the ibv substrate is recommended)
-pami
-    PAMI for IBM Power 775, BlueGene/Q and others
-portals4
-    Portals4 (BETA) for the Portals 4.x API
 smp
     Simulates multiple locales on a single shared-memory machine
 
-See the `GASNet website <http://gasnet.lbl.gov/>`_ for more
+See the `GASNet website <https://gasnet.lbl.gov/>`_ for more
 information on each of these conduits.
 
 Current defaults are:
@@ -140,8 +130,6 @@ CHPL_TARGET_PLATFORM  CHPL_COMM_SUBSTRATE
 ====================  ===================
 cray-cs                ibv
 cray-xc                aries
-cray-xe                gemini
-cray-xk                gemini
 pwr6                   ibv
 other                  udp
 ====================  ===================
@@ -181,9 +169,7 @@ Current defaults are:
 CHPL_COMM_SUBSTRATE  CHPL_GASNET_SEGMENT
 ===================  ====================
 aries                fast
-gemini               fast
 ibv                  large
-portals              fast
 smp                  fast
 other                everything
 ===================  ====================

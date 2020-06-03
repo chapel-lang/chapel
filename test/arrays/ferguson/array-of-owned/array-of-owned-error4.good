@@ -1,0 +1,2 @@
+array-of-owned-error4.chpl:3: In function 'main':
+array-of-owned-error4.chpl:6: error: cannot default-initialize the array b because it has a non-nilable element type 'owned C'

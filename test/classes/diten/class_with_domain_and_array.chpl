@@ -4,10 +4,10 @@ class FTree {
 }
 
 class Function1d {
-  var s = new unmanaged FTree();
+  var s = new FTree();
 }
 
 proc main() {
-  var f: unmanaged Function1d;
+  var f: unmanaged Function1d?;
   //var ff = new Function1d();
 }

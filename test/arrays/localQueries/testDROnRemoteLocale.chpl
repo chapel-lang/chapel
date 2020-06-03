@@ -6,11 +6,11 @@ var A: [D] real;
 testit("testing D from locale 0", D);
 testit("testing A from locale 0", A);
 on Locales[numLocales-1] {
-  testit("testing D from locale "+ (numLocales-1), D);
-  testit("testing A from locale "+ (numLocales-1), A);
+  testit("testing D from locale "+ (numLocales-1):string, D);
+  testit("testing A from locale "+ (numLocales-1):string, A);
 
   var B: [D] real;
-  testit("testing B from locale "+ (numLocales-1), B);
+  testit("testing B from locale "+ (numLocales-1):string, B);
 
   on Locales[0] {
     testit("testing B from locale 0", B);

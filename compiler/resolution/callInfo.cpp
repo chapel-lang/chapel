@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +24,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "iterator.h"
+#include "resolution.h"
 #include "stringutil.h"
 
 CallInfo::CallInfo() {
@@ -37,7 +39,11 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
   call = callExpr;
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
-    name = se->symbol()->name;
+    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+      name = se->typeInfo()->symbol->name;
+    } else {
+      name = se->symbol()->name;
+    }
 
   } else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(call->baseExpr)) {
     name = use->unresolved;
@@ -73,6 +79,12 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
       actualNames.add(NULL);
     }
 
+    if (isDefExpr(actual)) {
+      // This implies a '?t' style query expression, which we don't currently
+      // support if we got here
+      return false;
+    }
+
     SymExpr* se = toSymExpr(actual);
 
     INT_ASSERT(se);
@@ -85,9 +97,12 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
       // The _this actual to an initializer may be generic
-      bool isInit = strcmp(name, "init") == 0 ||
-                    strcmp(name, astrInitEquals) == 0;
+      bool isInit = name == astrInit || name == astrInitEquals;
       if (isInit && i == 2) {
+        actuals.add(sym);
+
+      } else if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        // type formals can be generic
         actuals.add(sym);
 
       } else {
@@ -110,6 +125,10 @@ void CallInfo::haltNotWellFormed() const {
       actual = named->actual;
     }
 
+    if (isDefExpr(actual)) {
+      USR_FATAL(actual, "Query expressions are not currently supported in this context");
+    }
+
     SymExpr* se = toSymExpr(actual);
     INT_ASSERT(se);
 
@@ -122,10 +141,14 @@ void CallInfo::haltNotWellFormed() const {
                 "type unknown",
                 sym->name);
 
-    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
-      INT_FATAL(call,
+    } else if (t->symbol->hasFlag(FLAG_GENERIC) == true &&
+               sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+      USR_FATAL_CONT(call,
                 "the type of the actual argument '%s' is generic",
                 sym->name);
+      USR_PRINT("generic actual arguments are not currently supported");
+      printUndecoratedClassTypeNote(call, t);
+      USR_STOP();
     }
   }
 }
@@ -160,11 +183,7 @@ const char* CallInfo::toString() {
     }
   }
 
-  if (developer                                   == false &&
-      strncmp("_type_construct_", name, 16) == 0) {
-    retval = astr(retval, name+16);
-
-  } else if (_this == false) {
+  if (_this == false) {
     retval = astr(retval, name);
   }
 

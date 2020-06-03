@@ -38,15 +38,15 @@ class List {
 
 class Node {
   var data: string;
-  var next: unmanaged Node;
+  var next: unmanaged Node?;
 }
 
 
-iter traverse( node: unmanaged Node ) : unmanaged Node
+iter traverse( node: unmanaged Node? ) : unmanaged Node
 {
   if node != nil {
-    yield node;
-    for child in traverse(node.next) do yield child;
+    yield node!;
+    for child in traverse(node!.next) do yield child;
   }
 }
 

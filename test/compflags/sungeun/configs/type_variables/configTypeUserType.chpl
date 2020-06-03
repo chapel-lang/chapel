@@ -11,7 +11,7 @@ class cPair {
 }
 
 config type myType = rPair;
-var p: myType;
+var p: toNilableIfClassType(myType);
 
 writeln("p = ", p);
 writeln("numBits(myIdxType) = ", numBits(myIdxType));

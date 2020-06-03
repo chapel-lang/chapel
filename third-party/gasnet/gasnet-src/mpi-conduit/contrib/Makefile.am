@@ -7,6 +7,7 @@
 AUTOMAKE_OPTIONS = foreign 1.4
 
 target = gasnetrun_mpi
+target_pl = $(target).pl
 
 # Need a bin_DATA rule, but automake disallows that.  So, fake it.
 dotpldir = $(bindir)
@@ -19,38 +20,23 @@ $(top_builddir)/other/mpirun_common: $(top_srcdir)/other/mpirun_common.in
 	@cd $(top_builddir)/other && $(MAKE) mpirun_common
 $(target): $(top_builddir)/other/perlstart $(top_builddir)/other/mpirun_common
 if USE_MPI
-all_targets = $(target).pl $(target)
+all_targets = $(target_pl) $(target)
 endif
 all-local: $(all_targets)
 
-# Files to copy from srcdir to builddir if they differ
-if BUILD_IS_SRC
-files_we_copy =
-else
-files_we_copy = $(target).pl
-$(files_we_copy): force
-	@srcfile="$(srcdir)/`basename $@`" ; \
-         if test ! -f "$@" -o "`find $$srcfile -newer '$@' 2>&1`" ; then \
-          echo cp -f "$$srcfile" . ;         \
-          cp -f "$$srcfile" . ;              \
-         fi
-endif
-DISTCLEANFILES = $(files_we_copy)
+$(target_pl): $(top_srcdir)/other/spawner/gasnetrun_mpi.pl
+	cp -f "$<" $@
 
-# Ensure the .pl is distributed, even if not installed
-EXTRA_DIST = $(target).pl
+DISTCLEANFILES = $(target_pl)
 
 # Conditionally install the .pl and its wrapper
 if USE_MPI_CONDUIT
 scripts = $(target)
-data = $(target).pl
+data = $(target_pl)
 else
 scripts =
 data =
 endif
 bin_SCRIPTS = $(scripts)
 dotpl_DATA = $(data)
-
-.PHONY: force
-force:
 

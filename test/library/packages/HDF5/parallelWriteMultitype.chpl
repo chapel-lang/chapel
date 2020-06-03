@@ -39,7 +39,7 @@ proc main {
   }
 
   var filenames: [1..nFiles] string;
-  for i in filenames.domain do filenames[i] = "datafile" + i + ".h5";
+  for i in filenames.domain do filenames[i] = "datafile" + i:string + ".h5";
 
   // write data to files
   {

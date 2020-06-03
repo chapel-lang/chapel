@@ -13,8 +13,7 @@ source $CWD/common-localnode-paratest.bash
 # common-llvm restricts us to extern/ferguson, but we want all the tests
 unset CHPL_NIGHTLY_TEST_DIRS
 
-# paratest with 8 nodes on localhost
-nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args 8) -asserts"
+nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args) -asserts"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="llvm"
 

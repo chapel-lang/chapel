@@ -304,22 +304,22 @@ isArray
 isArrayValue
 isArrayType
 
-_syncvar(int(64))
+sync int(64)
 isSync
 isSyncValue
 isSyncType
 
-_syncvar(real(64))
+sync real(64)
 isSync
 isSyncValue
 isSyncType
 
-_singlevar(int(64))
+single int(64)
 isSingle
 isSingleValue
 isSingleType
 
-_singlevar(real(64))
+single real(64)
 isSingle
 isSingleValue
 isSingleType

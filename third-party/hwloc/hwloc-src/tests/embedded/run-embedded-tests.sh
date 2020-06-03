@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 # Copyright © 2010 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2019 Inria.  All rights reserved.
 # See COPYING in top-level directory.
 #
 # Simple script to help test embedding:
@@ -74,7 +75,7 @@ do_build() {
 print Got tarball: $tarball
 
 # Get the version
-ver=`echo $tarball | sed -e 's/^.*hwloc-//' -e 's/\.tar\..*$//'`
+ver=`basename $tarball | sed -e 's/^hwloc-//' -e 's/\.tar\..*$//'`
 print Got version: $ver
 
 # Extract

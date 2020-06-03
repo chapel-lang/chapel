@@ -1,6 +1,7 @@
 use MatrixMarket;
 use IO;
 use Sort;
+use List;
 
 var A:[1..4, 1..3] real;
 A[1,1] = 1.0;
@@ -23,17 +24,17 @@ writeln(A);
 mmwrite("dense-4x3-write.mtx", A);
 
 var fd = open("dense-4x3-write.mtx", iomode.r);
-var lines:[1..0] string;
+var lines = new list(string);
 var i=1;
 for l in fd.lines() {
   // the first two lines are header, not for sorting
   if i <= 2 then
     write(l);
   else
-    lines.push_back(l);
+    lines.append(l);
   i += 1;
 }
-sort(lines);
+lines.sort();
 for l in lines {
   write(l);
 }

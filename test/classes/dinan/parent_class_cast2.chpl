@@ -8,15 +8,13 @@ class C: P {
 }
 
 class D {
-    var p: unmanaged P;
+    var p: unmanaged P?;
 }
 
-var d = new unmanaged D();
+var d = new D();
 
-// OK: d.p = new C(5):P;
 d.p = new unmanaged C(5);
 
-writeln(d.p.f());
+writeln(d.p!.f());
 
 delete d.p;
-delete d;

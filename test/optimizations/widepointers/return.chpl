@@ -24,12 +24,12 @@ proc main() {
     writeln(locRet);
     writeln("Local var was returned as wide pointer: ", __primitive("is wide pointer", locRet));
 
-    var remote : unmanaged Foo;
+    var remote : unmanaged Foo?;
 
     on Locales[numLocales-1] {
       remote = new unmanaged Foo(42);
     }
-    var remoteRet = reflect(remote);
+    var remoteRet = reflect(remote!);
     writeln(remoteRet);
     writeln("Remote var was returned as wide pointer: ", __primitive("is wide pointer", remoteRet));
   }
@@ -40,12 +40,13 @@ proc main() {
     writeln(locRet);
     writeln("Local var was returned as wide pointer: ", __primitive("is wide pointer", locRet));
 
-    var remote : unmanaged Foo;
+    var remote : unmanaged Foo?;
 
     on Locales[numLocales-1] {
       remote = new unmanaged Foo(42);
     }
-    var remoteRet = assignReflect(remote);
+    var remoteB = remote!;
+    var remoteRet = assignReflect(remoteB);
     writeln(remoteRet);
     writeln("Remote var was returned as wide pointer: ", __primitive("is wide pointer", remoteRet));
   }

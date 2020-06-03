@@ -1,8 +1,0 @@
-bug: compiler does not see a declaration because of textual order
-
-While resolving 'var c = new C()', the compiler resolves 'class C'.
-The latter contains a use of T, which is declared after 'var c'
-and so is not visible, despite being defined prior to 'class C'.
-
-At the very least the compiler should emit an intelligent error message,
-e.g. "error: 'T' is defined after its enclosing class is used here".

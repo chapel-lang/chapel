@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,14 +174,20 @@ const char* toString(Type* type, bool decorateAllClasses) {
         if (startsWith(borrowName, borrowed)) {
           borrowName = borrowName + strlen(borrowed);
         }
-        if (startsWith(vt->symbol->name, "_owned("))
-          retval = astr("owned ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_owned"))
-          retval = astr("owned");
-        else if (startsWith(vt->symbol->name, "_shared("))
-          retval = astr("shared ", borrowName);
-        else if (0 == strcmp(vt->symbol->name, "_shared"))
-          retval = astr("shared");
+        if (startsWith(vt->symbol->name, "_owned")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("owned");
+          } else {
+            retval = astr("owned ", borrowName);
+          }
+        }
+        else if (startsWith(vt->symbol->name, "_shared")) {
+          if (borrowType == dtUnknown) {
+            retval = astr("shared");
+          } else {
+            retval = astr("shared ", borrowName);
+          }
+        }
 
       } else if (isClassLike(at)) {
         if (isClass(at)) {
@@ -563,6 +570,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 //  well as internal types and other types used in the generated code
 void initPrimitiveTypes() {
   dtVoid                               = createInternalType("void", "void");
+  dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
   dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
@@ -570,13 +578,25 @@ void initPrimitiveTypes() {
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+
+  dtObject                             = new AggregateType(AGGREGATE_CLASS);
+  dtObject->symbol                     = new TypeSymbol("object", dtObject);
+
+  dtBytes                              = new AggregateType(AGGREGATE_RECORD);
+  dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
 
   dtString                             = new AggregateType(AGGREGATE_RECORD);
   dtString->symbol                     = new TypeSymbol("string", dtString);
-  dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
+
+  dtOwned                              = new AggregateType(AGGREGATE_RECORD);
+  dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
+
+  dtShared                             = new AggregateType(AGGREGATE_RECORD);
+  dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
@@ -603,13 +623,17 @@ void initPrimitiveTypes() {
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
 
   dtNil = createInternalType ("_nilType", "_nilType");
+  dtNil->symbol->addFlag(FLAG_NO_RENAME);
   CREATE_DEFAULT_SYMBOL (dtNil, gNil, "nil");
+  gNil->addFlag(FLAG_NO_RENAME);
 
   // dtStringC defaults to nil
   dtStringC->defaultValue = gNil;
 
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
+
+  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -618,7 +642,9 @@ void initPrimitiveTypes() {
   CREATE_DEFAULT_SYMBOL (dtVoid, gVoid, "_void");
   CREATE_DEFAULT_SYMBOL (dtNothing, gNone, "none");
 
-  dtValue = createInternalType("value", "_chpl_value");
+  // parses from record
+  dtAnyRecord = createInternalType("record", "_anyRecord");
+  dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
   gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
   gIteratorBreakToken->addFlag(FLAG_CONST);
@@ -707,7 +733,8 @@ void initPrimitiveTypes() {
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  // parses from enum
+  dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyImag = createInternalType("chpl_anyimag", "imag");
@@ -715,6 +742,9 @@ void initPrimitiveTypes() {
 
   dtAnyReal = createInternalType("chpl_anyreal", "real");
   dtAnyReal->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyPOD = createInternalType ("chpl_anyPOD", "POD");
+  dtAnyPOD->symbol->addFlag(FLAG_GENERIC);
 
   // could also be called dtAnyIntegral
   dtIntegral = createInternalType ("integral", "integral");
@@ -729,7 +759,7 @@ void initPrimitiveTypes() {
   dtIteratorClass = createInternalType("_iteratorClass", "_iteratorClass");
   dtIteratorClass->symbol->addFlag(FLAG_GENERIC);
 
-  dtBorrowed = createInternalType("_borrowed", "_borrowed");
+  dtBorrowed = createInternalType("borrowed", "borrowed");
   dtBorrowed->symbol->addFlag(FLAG_GENERIC);
 
   dtBorrowedNonNilable = createInternalType("_borrowedNonNilable", "_borrowedNonNilable");
@@ -738,7 +768,7 @@ void initPrimitiveTypes() {
   dtBorrowedNilable = createInternalType("_borrowedNilable", "_borrowedNilable");
   dtBorrowedNilable->symbol->addFlag(FLAG_GENERIC);
 
-  dtUnmanaged = createInternalType("_unmanaged", "_unmanaged");
+  dtUnmanaged = createInternalType("unmanaged", "unmanaged");
   dtUnmanaged->symbol->addFlag(FLAG_GENERIC);
 
   dtUnmanagedNonNilable = createInternalType("_unmanagedNonNilable", "_unmanagedNonNilable");
@@ -746,6 +776,17 @@ void initPrimitiveTypes() {
 
   dtUnmanagedNilable = createInternalType("_unmanagedNilable", "_unmanagedNilable");
   dtUnmanagedNilable->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyManagementAnyNilable = createInternalType("_anyManagementAnyNilable", "_anyManagementAnyNilable");
+  dtAnyManagementAnyNilable->symbol->addFlag(FLAG_GENERIC);
+
+  // parses from class
+  dtAnyManagementNonNilable = createInternalType("class", "_anyManagementNonNilable");
+  dtAnyManagementNonNilable->symbol->addFlag(FLAG_GENERIC);
+
+  dtAnyManagementNilable = createInternalType("_anyManagementNilable", "_anyManagementNilable");
+  dtAnyManagementNilable->symbol->addFlag(FLAG_GENERIC);
+
 
   dtMethodToken = createInternalType ("_MT", "_MT");
   dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
@@ -760,10 +801,17 @@ void initPrimitiveTypes() {
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
 
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+
+  dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
+
+  CREATE_DEFAULT_SYMBOL(dtUninstantiated, gUninstantiated, "?");
+  gUninstantiated->addFlag(FLAG_PARAM);
 }
 
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname) {
-  return createType(name, cname, false);
+  PrimitiveType* newType = createType(name, cname, false);
+  newType->symbol->addFlag(FLAG_NO_RENAME);
+  return newType;
 }
 
 static PrimitiveType* createInternalType(const char* name, const char* cname) {
@@ -801,7 +849,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
 *                                                                             *
 ************************************** | *************************************/
 
-void initChplProgram(DefExpr* objectDef) {
+void initChplProgram() {
   theProgram           = new ModuleSymbol("chpl__Program",
                                           MOD_INTERNAL,
                                           new BlockStmt());
@@ -809,8 +857,6 @@ void initChplProgram(DefExpr* objectDef) {
   theProgram->filename = astr("<internal>");
 
   theProgram->addFlag(FLAG_NO_CODEGEN);
-
-  theProgram->block->insertAtHead(objectDef);
 
   rootModule->block->insertAtTail(new DefExpr(theProgram));
 }
@@ -833,7 +879,7 @@ static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
 void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_CONST);
+  gBoundsChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
 
   gCastChecking = new VarSymbol("castChecking", dtBool);
@@ -844,9 +890,9 @@ void initCompilerGlobals() {
   gNilChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gNilChecking, !fNoNilChecks);
 
-  gLegacyNilClasses = new VarSymbol("chpl_legacyNilClasses", dtBool);
-  gLegacyNilClasses->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLegacyNilClasses, fLegacyNilableClasses);
+  gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
+  gOverloadSetsChecks->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
 
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
@@ -950,6 +996,7 @@ bool isLegalParamType(Type* t) {
           is_complex_type(t) ||
           is_enum_type(t) ||
           isString(t) ||
+          isBytes(t) ||
           t == dtStringC ||
           t == dtUnknown);
 }
@@ -1027,14 +1074,54 @@ bool isClassOrNil(Type* t) {
   return isClass(t);
 }
 
-bool isClassLike(Type* t) {
-  return isDecoratedClassType(t) ||
-         t == dtBorrowed ||
+bool isUnmanagedClass(Type* t) {
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (dt->isUnmanaged())
+      return true;
+  return false;
+}
+
+bool isBorrowedClass(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    return dt->isBorrowed();
+
+  return false;
+}
+
+// Todo: ideally this would be simply something like:
+//   isChapelManagedType(t) || isChapelBorrowedType(t)
+bool isOwnedOrSharedOrBorrowed(Type* t) {
+  if (isClass(t))
+    return true; // borrowed, non-nilable
+
+  if (DecoratedClassType* dt = toDecoratedClassType(t))
+    if (! dt->isUnmanaged())
+      return true; // anything not unmanaged
+
+  if (isManagedPtrType(t))
+    return true; // owned or shared
+
+  return false;
+}
+
+bool isBuiltinGenericClassType(Type* t) {
+  return t == dtBorrowed ||
          t == dtBorrowedNonNilable ||
          t == dtBorrowedNilable ||
          t == dtUnmanaged ||
          t == dtUnmanagedNilable ||
          t == dtUnmanagedNonNilable ||
+         t == dtAnyManagementAnyNilable ||
+         t == dtAnyManagementNonNilable ||
+         t == dtAnyManagementNilable;
+}
+
+bool isClassLike(Type* t) {
+  return isDecoratedClassType(t) ||
+         isBuiltinGenericClassType(t) ||
          (isClass(t) && !(t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                           t->symbol->hasFlag(FLAG_DATA_CLASS) ||
                           t->symbol->hasFlag(FLAG_REF)));
@@ -1046,7 +1133,10 @@ bool isClassLikeOrManaged(Type* t) {
 
 bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
-                            t->symbol->hasFlag(FLAG_DATA_CLASS));
+                            t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+                            t == dtCVoidPtr ||
+                            t == dtStringC ||
+                            t == dtCFnPtr);
 }
 
 bool isClassLikeOrNil(Type* t) {
@@ -1058,6 +1148,29 @@ bool isRecord(Type* t) {
   if (AggregateType* ct = toAggregateType(t))
     return ct->isRecord();
   return false;
+}
+
+bool isUserRecord(Type* t) {
+  if (!isRecord(t))
+    return false;
+
+  // Check for lots of exceptions - types that are implemented
+  // as records but that isn't the user view.
+  if (t == dtString ||
+      t == dtBytes ||
+      t->symbol->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DISTRIBUTION) ||
+      t->symbol->hasFlag(FLAG_DOMAIN) ||
+      t->symbol->hasFlag(FLAG_ARRAY) ||
+      t->symbol->hasFlag(FLAG_RANGE) ||
+      t->symbol->hasFlag(FLAG_TUPLE) ||
+      t->symbol->hasFlag(FLAG_SYNC) ||
+      t->symbol->hasFlag(FLAG_SINGLE) ||
+      t->symbol->hasFlag(FLAG_ATOMIC_TYPE) ||
+      t->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    return false;
+
+  return true;
 }
 
 bool isUnion(Type* t) {
@@ -1155,6 +1268,18 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
       borrowType = at->getDecoratedClass(decorator);
 
   return borrowType;
+}
+
+AggregateType* getManagedPtrManagerType(Type* managedPtrType) {
+  INT_ASSERT(isManagedPtrType(managedPtrType));
+
+  if (DecoratedClassType* dt = toDecoratedClassType(managedPtrType))
+    managedPtrType = dt->getCanonicalClass();
+
+  AggregateType* at = toAggregateType(managedPtrType);
+  at = at->getRootInstantiation();
+
+  return at;
 }
 
 bool isSyncType(const Type* t) {
@@ -1260,47 +1385,20 @@ bool isString(Type* type) {
   return type == dtString;
 }
 
-//
-// Noakes 2016/02/29
-//
-// To support the merge of the string-as-rec branch we defined a
-// function, isString(), which is only true of the record that was
-// defined in the new implementation of String.  This predicate was
-// applied in cullOverReferences and callDestructors to improve
-// memory management for that particular record type.
-//
-// We seek to apply those routines to a wider set of record types but
-// are not ready to apply them to range, tuple, and the reference-counted
-// records.
-//
-// This shorter-term predicate, which has a slightly inelegant name, allows
-// most record-like types to use the new business logic.
-//
-// In the longer term we plan to further broaden the cases that the new
-// logic can handle and reduce the exceptions that are filtered out here.
-//
-//
-//
-// MPF    2016/09/15
-// This function now includes tuples, distributions, domains, and arrays.
-//
-// Noakes 2017/03/02
-// This function now includes range and atomics
-//
-// MPF    2017/08/03
-// This function now includes iterator records
-//
-// TODO: rename this to isMemoryManagedRecord or something along
-//       those lines, since it now applies to some compiler-internal records.
-//
-bool isUserDefinedRecord(Type* type) {
+bool isBytes(Type* type) {
+  return type == dtBytes;
+}
+
+// Indicates record-like memory management
+bool typeNeedsCopyInitDeinit(Type* type) {
   bool retval = false;
 
   if (AggregateType* aggr = toAggregateType(type)) {
     Symbol*     sym  = aggr->symbol;
 
     // Must be a record type
-    if (aggr->aggregateTag != AGGREGATE_RECORD) {
+    if (aggr->aggregateTag != AGGREGATE_RECORD &&
+        aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;
 
     // Not a RUNTIME_type
@@ -1432,7 +1530,10 @@ bool isPrimitiveScalar(Type* type) {
       type == dtReal[FLOAT_SIZE_64]        ||
 
       type == dtImag[FLOAT_SIZE_32]        ||
-      type == dtImag[FLOAT_SIZE_64]) {
+      type == dtImag[FLOAT_SIZE_64]        ||
+
+      type == dtComplex[COMPLEX_SIZE_64]   ||
+      type == dtComplex[COMPLEX_SIZE_128]) {
 
     retval = true;
 
@@ -1578,11 +1679,11 @@ bool isGenericRecordWithInitializers(Type* type) {
   return retval;
 }
 
-bool isRecordWithInitializers(Type* type) {
+bool isRecordOrUnionWithInitializers(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (at->isRecord()                   == true  &&
+    if ((at->isRecord() || at->isUnion()) &&
         (at->hasUserDefinedInit == true ||
          at->wantsDefaultInitializer())) {
       retval = true;
@@ -1603,7 +1704,7 @@ bool needsGenericRecordInitializer(Type* type) {
   bool retval = false;
 
   if (AggregateType* at = toAggregateType(type)) {
-    if (isRecordWithInitializers(type)) {
+    if (isRecordOrUnionWithInitializers(type)) {
       if (at->isGeneric() == true ||
           at->symbol->hasFlag(FLAG_GENERIC) == true ||
           at->instantiatedFrom != NULL) {
@@ -1627,4 +1728,19 @@ Immediate getDefaultImmediate(Type* t) {
 
   Immediate ret = *defaultVar->immediate;
   return ret;
+}
+
+// Returns 'true' for types that are the type of numeric literals.
+// e.g. 1 is an 'int', so this function returns 'true' for 'int'.
+// e.g. 0.0 is a 'real', so this function returns 'true' for 'real'.
+bool isNumericParamDefaultType(Type* t)
+{
+  if (t == dtInt[INT_SIZE_DEFAULT] ||
+      t == dtReal[FLOAT_SIZE_DEFAULT] ||
+      t == dtImag[FLOAT_SIZE_DEFAULT] ||
+      t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
+      t == dtBools[BOOL_SIZE_DEFAULT])
+    return true;
+
+  return false;
 }

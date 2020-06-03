@@ -14,6 +14,14 @@ proc _cast(type t, ld: longdouble) where t == real(64) || t == real(32) ||
   return __primitive("cast", t, ld);
 }
 
+proc _cast(type t:longdouble, d:?tt) where tt == real(64) || tt == real(32) ||
+                                           tt == int(64)  || tt == uint(64) ||
+                                           tt == int(32)  || tt == uint(32) ||
+                                           tt == int(16)  || tt == uint(16) ||
+                                           tt == int(8)   || tt == uint(8) {
+  return __primitive("cast", t, d);
+}
+
 proc +(ld: longdouble, d: real): longdouble
   return __primitive("+", ld, d);
 proc -(ld: longdouble, d: real): longdouble

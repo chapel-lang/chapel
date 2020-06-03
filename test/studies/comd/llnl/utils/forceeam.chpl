@@ -6,6 +6,8 @@ use force;
 use BlockDist;
 use VisualDebug;
 
+private use IO;
+
 class InterpolationObject {
   var n : int;
   var x0 : real;
@@ -44,12 +46,12 @@ class InterpolationObject {
     r = r - floor(r);
 
     var v : 4*real;
-    for i in -1..2 do v(i+2) = values(ii+i);
+    for i in -1..2 do v(i+1) = values(ii+i);
 
-    const g1 : real = v(3) - v(1);
-    const g2 : real = v(4) - v(2);
+    const g1 : real = v(2) - v(0);
+    const g2 : real = v(3) - v(1);
 
-    f  = v(2) + 0.5*r*(g1 + r*(v(3) + v(1) - 2.0*v(2)));
+    f  = v(1) + 0.5*r*(g1 + r*(v(2) + v(0) - 2.0*v(1)));
     df = 0.5*(g1 + r*(g2-g1))*invDx;
 
 //    var g1 : real = values(ii+1) - values(ii-1);
@@ -92,8 +94,8 @@ class EAMPot {
 
 class ForceEAM : Force {
 
-  var eamPot : unmanaged EAMPot;
-  var phiIO, rhoIO, fIO : unmanaged InterpolationObject;
+  var eamPot : unmanaged EAMPot?;
+  var phiIO, rhoIO, fIO : unmanaged InterpolationObject?;
 
   proc init() {}
 
@@ -114,12 +116,11 @@ class ForceEAM : Force {
     this.eamPot = nil;
   }
 
-  proc epilogue() : void {
+  override proc epilogue() : void {
 if useChplVis then tagVdebug("setupEAMForce");
-    this.eamPot = new unmanaged EAMPot();
-    const boxSpace = {1..numBoxes(1), 1..numBoxes(2), 1..numBoxes(3)};
+    const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
     const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=locGrid);
-    ref eamDom = this.eamPot.eamDom;
+    var eamDom : [locDom] unmanaged EAMDomain?;
     coforall ijk in locDom {
       on locGrid[ijk] {
         const MyLocDom = distSpace.localSubdomain();
@@ -155,7 +156,7 @@ local {
           src = dest;
           var neighbor = ijk + nOff;
           var srcOff = (0,0,0);
-          for i in 1..3 {
+          for i in 0..2 {
             if(neighbor(i) < 0) {
               //neighbor(i) = locDom.high(i);
               //srcOff(i) = boxSpace.high(i);
@@ -176,6 +177,7 @@ local {
 }
       }
     }
+    this.eamPot = new unmanaged EAMPot(eamDom!);
 if useChplVis then pauseVdebug();
   }
 
@@ -237,12 +239,12 @@ if useChplVis then pauseVdebug();
 
     // line 4
     var species = r.readln(int, string);
-    if(species(1) != 1) then {
+    if(species(0) != 1) then {
       var errMsg : string = "This CoMD version does not support alloys and cannot read setfl files with multiple species. Fatal Error.";
       throwError(errMsg);
     }
 
-    this.name = species(2);
+    this.name = species(1);
 
     // line 5
     var nRho, nR : int;
@@ -314,7 +316,7 @@ if useChplVis then pauseVdebug();
   proc exchangeData() {
     // halo exchange
     tArray[timerEnum.EAMHALO].start();
-    const ref eamDom = this.eamPot.eamDom;
+    const ref eamDom = this.eamPot!.eamDom;
     for i in 1..6 by 2 {
       coforall ijk in locDom {
         on locGrid[ijk] {
@@ -330,8 +332,8 @@ if useChplVis then pauseVdebug();
     var r2 = dot(dr, dr);
     if( r2 > cutoff2 || r2 <= 0.0 ) then return;
     var r = sqrt(r2);
-    var phiTmp, dPhi:real; phiIO.interpolate(r, phiTmp, dPhi);
-    var rhoTmp, dRho:real; rhoIO.interpolate(r, rhoTmp, dRho);
+    var phiTmp, dPhi:real; phiIO!.interpolate(r, phiTmp, dPhi);
+    var rhoTmp, dRho:real; rhoIO!.interpolate(r, rhoTmp, dRho);
     fij += (dPhi/r)*dr;
     pij += phiTmp/2;
     rij += rhoTmp;
@@ -342,17 +344,17 @@ if useChplVis then pauseVdebug();
     var r2 = dot(dr, dr);
     if( r2 > cutoff2 || r2 <= 0.0 ) then return;
     var r = sqrt(r2);
-    var rhoTmp, dRho:real; rhoIO.interpolate(r, rhoTmp, dRho);
+    var rhoTmp, dRho:real; rhoIO!.interpolate(r, rhoTmp, dRho);
     fij += (dfEmbed*dRho/r)*dr;
   }
 
-  proc compute() : void {
+  override proc compute() : void {
     tArray[timerEnum.FORCE1].start();
 if useChplVis then tagVdebug("computeEAMForce");
-    const ref eamDom = this.eamPot.eamDom;
+    const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
         const neighs = {-1..1, -1..1, -1..1};
@@ -377,7 +379,7 @@ if useChplVis then tagVdebug("computeEAMForce");
           }
 
           for i in 1..box.count {
-            var fEmbedTmp, dfEmbedTmp:real; force.fIO.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
+            var fEmbedTmp, dfEmbedTmp:real; force.fIO!.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
             dfEmbed(i) = dfEmbedTmp;
             pe(i) += fEmbedTmp;
           }
@@ -393,7 +395,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeEAMForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
         const neighs = {-1..1, -1..1, -1..1};
@@ -416,13 +418,13 @@ if useChplVis then tagVdebug("computeEAMForce");
 if useChplVis then pauseVdebug();
   }
 
-  proc computeLocal() : void {
+  override proc computeLocal() : void {
     tArray[timerEnum.FORCE1].start();
 if useChplVis then tagVdebug("computeEAMForce");
-    const ref eamDom = this.eamPot.eamDom;
+    const ref eamDom = this.eamPot!.eamDom;
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
 local {
@@ -448,7 +450,7 @@ local {
           }
 
           for i in 1..box.count {
-            var fEmbedTmp, dfEmbedTmp:real; force.fIO.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
+            var fEmbedTmp, dfEmbedTmp:real; force.fIO!.interpolate(rhoBar(i), fEmbedTmp, dfEmbedTmp);
             dfEmbed(i) = dfEmbedTmp;
             pe(i) += fEmbedTmp;
           }
@@ -465,7 +467,7 @@ if useChplVis then pauseVdebug();
 if useChplVis then tagVdebug("computeEAMForce");
     coforall ijk in locDom {
       on locGrid[ijk] {
-        const MyDom = Grid[ijk];
+        const MyDom = Grid[ijk]!;
         const MyEAMDom = eamDom[ijk];
         const force = MyDom.force : ForceEAM;
 local {
@@ -490,7 +492,7 @@ local {
 if useChplVis then pauseVdebug();
   }
 
-  proc print() : void {
+  override proc print() : void {
     writeln("Potential Data:");
     writeln("   Potential type   : ", potName);
     writeln("   Species name     : ", name);
@@ -501,7 +503,7 @@ if useChplVis then pauseVdebug();
     writeln("   Cutoff           : ", cutoff, " Angstroms");
   }
 
-  proc replicate() : unmanaged ForceEAM {
+  override proc replicate() : unmanaged ForceEAM? {
     var temp = new unmanaged ForceEAM();
     temp.cutoff = this.cutoff;
     temp.mass = this.mass;
@@ -512,9 +514,9 @@ if useChplVis then pauseVdebug();
     temp.potName = this.potName;
     temp.cutoff2 = this.cutoff2;
     temp.eamPot = nil;
-    temp.phiIO = this.phiIO.replicate();
-    temp.rhoIO = this.rhoIO.replicate();
-    temp.fIO   = this.fIO.replicate();
+    temp.phiIO = this.phiIO!.replicate();
+    temp.rhoIO = this.rhoIO!.replicate();
+    temp.fIO   = this.fIO!.replicate();
     return temp;
   }
 

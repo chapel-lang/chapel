@@ -13,7 +13,7 @@ proc build_not_domain(type t) {
 }
 
 var watDom = build_not_domain(string);
-var x:borrowed CC;
+var x:borrowed CC?;
 
 class RR {
   var dom = build_not_domain(string);

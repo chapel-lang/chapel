@@ -1,7 +1,11 @@
+use IO;
+
 extern proc return_string_test():c_string;
 extern proc return_string_arg_test(ref c_string);
 
-writeln("returned string ",return_string_test():string); stdout.flush();
+writeln("returned string ",createStringWithNewBuffer(return_string_test()));
+stdout.flush();
+
 var s:string;
 on Locales(1) {
   var temp_cs: c_string;

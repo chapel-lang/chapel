@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -82,7 +83,7 @@ void addModuleInitBlocks() {
         initBlock->insertAtTail(new CallExpr(parent->initFn));
 
     // Call the initializer for each module I use.
-    forv_Vec(ModuleSymbol, usedMod, mod->modUseList) {
+    for_vector(ModuleSymbol, usedMod, mod->modUseList) {
       if (usedMod != standardModule) {
         initBlock->insertAtTail(new CallExpr(usedMod->initFn));
       }

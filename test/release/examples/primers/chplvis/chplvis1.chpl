@@ -18,7 +18,7 @@ startVdebug("E1");
 //  This is a simple loop that runs tasks on all locales
 
 coforall loc in Locales do
-  on loc do writeln("Hello from locale " + here.id + ".");
+  on loc do writeln("Hello from locale ", here.id, ".");
 
 //  This stops the VisualDebug system and close the data files.
 

@@ -21,3 +21,5 @@ sed '/^[ ]*$/d' $2.tmp > $2
 rm $2.tmp
 export PYTHONPATH=lib/
 python3 use_bar.py >> $2
+# Remove the __init__.py to prevent a warning.
+rm lib/__init__.py

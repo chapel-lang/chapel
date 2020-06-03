@@ -18,7 +18,7 @@
  * contribute any improvements (especially addition of new platforms) back to the 
  * canonical version, for the benefit of the community. 
  * Contributions and bug reports should be directed to:
- *   http://gasnet-bugs.lbl.gov or gasnet-staff@lbl.gov
+ *   https://gasnet-bugs.lbl.gov or gasnet-staff@lbl.gov
  */
 /* ------------------------------------------------------------------------------------ */
 /* Header versioning: DO NOT CHANGE ANYTHING IN THIS SECTION 
@@ -29,9 +29,9 @@
 /* Publish and enforce version number for the public interface to this header */
 /* YOU ARE NOT PERMITTED TO CHANGE THIS SECTION WITHOUT DIRECT APPROVAL FROM DAN BONACHEA */
 #if _PORTABLE_PLATFORM_H != PLATFORM_HEADER_VERSION \
-     || PLATFORM_HEADER_VERSION < 7
+     || PLATFORM_HEADER_VERSION < 11
 #undef  PLATFORM_HEADER_VERSION 
-#define PLATFORM_HEADER_VERSION 7
+#define PLATFORM_HEADER_VERSION 11
 #undef  _PORTABLE_PLATFORM_H
 #define _PORTABLE_PLATFORM_H PLATFORM_HEADER_VERSION
 /* End Header versioning handshake */
@@ -230,22 +230,43 @@
   #else
     #define PLATFORM_COMPILER_INTEL_C  1
   #endif
+  /* Intel compiler version "patch number"
+   * -------------------------------------
+   * Intel compiler versioning is unfortunately complicated by behavioral changes.
+   * Versions prior to Intel 14.0.0 (Sept 2013) lacked a preprocessor symbol to supply the "update" number.
+   * Version 14.0.0 and later supply a __INTEL_COMPILER_UPDATE symbol, but sadly several releases of Version 19 
+   * report the wrong value in this field (bug 3876).
+   * For now, the "patch" field of the PLATFORM_COMPILER_VERSION for Intel is the release package BUILD DATE,
+   * in the same decimal YYYYMMDD format as __INTEL_COMPILER_BUILD_DATE, as this is the only indicator that has
+   * remained reliably stable/correct across versions. 
+   * So for example to check for icc --version "19.0.1.144 20181018" or later, pass:
+   *   PLATFORM_COMPILER_VERSION_GE(19, 0, 20181018)
+   * NOTE 1: this build-date is unfortunately OS-DEPENDENT, sometimes differing by several days or weeks 
+   * between the Linux and OSX releases. For a complete mapping, see:
+   * https://software.intel.com/en-us/articles/intel-compiler-and-composer-update-version-numbers-to-compiler-version-number-mapping
+   * NOTE 2: some of the build-date entries in the table linked above have been observed to be incorrect,
+   * so when possible it's safest to verify the build-date from `icc --version` on both Linux and macOS.
+   */
   #undef  _PLATFORM_INTEL_COMPILER_BUILD_DATE
   #undef  _PLATFORM_COMPILER_INTEL_MIN_BUILDDATE
-  #define _PLATFORM_COMPILER_INTEL_MIN_BUILDDATE 19700000 /* year 1970: predates most intel products :) */
+  #define _PLATFORM_COMPILER_INTEL_MIN_BUILDDATE 19900000 /* year 1990: corresponds roughly to Intel v4.5 (1992) */
+  /* MIN_BUILDDATE is used to normalize build dates to a bit-saving range for the encoding
+   * Intel officially supports the current release and two prior (currently back to 2016)
+   * Our 1990 floor corresponds to Intel v4.x that only worked on MS-DOS and predates both Linux and BSD-based macOS
+   */
   #ifdef __INTEL_COMPILER_BUILD_DATE
     #define _PLATFORM_INTEL_COMPILER_BUILD_DATE __INTEL_COMPILER_BUILD_DATE
   #else
     #define _PLATFORM_INTEL_COMPILER_BUILD_DATE _PLATFORM_COMPILER_INTEL_MIN_BUILDDATE
   #endif
-  /* patch number is a decimal build date: YYYYMMDD */
+  /* Intel patch number is a decimal build date: YYYYMMDD - do NOT pass the "update number" */
   #define PLATFORM_COMPILER_VERSION_INT(maj,min,pat)         \
-        (((((maj) * 100) + (min)) << 20) |                    \
+        (((((maj) * 100) + (min)) << 19) |                    \
            ((pat) < _PLATFORM_COMPILER_INTEL_MIN_BUILDDATE ? \
-            _PLATFORM_COMPILER_INTEL_MIN_BUILDDATE : ((pat)-_PLATFORM_COMPILER_INTEL_MIN_BUILDDATE)))
+             0 : ((pat)-_PLATFORM_COMPILER_INTEL_MIN_BUILDDATE)))
   #undef _PLATFORM__INTEL_COMPILER
   #if __INTEL_COMPILER == 9999  /* Seen in 20110811 release of 12.1.0 - overflows VERSION_INT() */
-    #define _PLATFORM__INTEL_COMPILER 1210
+    #define _PLATFORM__INTEL_COMPILER 1201
   #else
     #define _PLATFORM__INTEL_COMPILER __INTEL_COMPILER
   #endif

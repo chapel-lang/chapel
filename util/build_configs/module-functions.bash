@@ -19,7 +19,7 @@ function ck_module_list() {
         log_error "module list=<empty>"
         exit 2
         ;;
-    ( *modules/[0-9]* )
+    ( "Currently Loaded Modulefiles:"*[a-zA-Z0-9] )
         ;;
     ( * )
         log_error "Unrecognized module list=$output"
@@ -178,8 +178,10 @@ function load_module_version() {
         bashDebugPop
         found=$( get_module_version $target_module )
     fi
-    if [ -z "$found" -o "$found" != $target_version ]; then
-        log_error "Failed: $bug_msg"
-        exit 2
+    if [ "$target_version" != "default" ] ; then
+        if [ -z "$found" -o "$found" != $target_version ]; then
+            log_error "Failed: $bug_msg"
+            exit 2
+        fi
     fi
 }

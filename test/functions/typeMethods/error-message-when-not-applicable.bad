@@ -1,3 +1,0 @@
-error-message-when-not-applicable.chpl:7: error: unresolved call 'type int(64).typeMethod()'
-error-message-when-not-applicable.chpl:2: note: this candidate did not match: C.type typeMethod()
-error-message-when-not-applicable.chpl:2: note: because where clause evaluated to false

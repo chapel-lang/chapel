@@ -6,7 +6,7 @@ module InIntentReturn {
   record R { }
 
   record D {
-    var field:shared C;
+    var field:shared C?;
   }
 
   proc R.doit(in dt: D): D {

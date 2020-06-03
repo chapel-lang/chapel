@@ -78,9 +78,9 @@ proc main {
      reading C program to ensure that it puts null-terminators on
      strings where necessary. */
   cdfError(nc_put_att_text(ncid, latVarId, units,
-                           degNorth.length, degNorth.c_str()));
+                           degNorth.numBytes, degNorth.c_str()));
   cdfError(nc_put_att_text(ncid, lonVarId, units,
-                           degEast.length, degEast.c_str()));
+                           degEast.numBytes, degEast.c_str()));
 
   /* Define the netCDF variables. The dimids array is used to pass
      the dimids of the dimensions of the variables. */
@@ -94,9 +94,9 @@ proc main {
 
   /* Define units attributes for vars. */
   cdfError(nc_put_att_text(ncid, presVarId, units.c_str(),
-                           presUnits.length:size_t, presUnits.c_str()));
+                           presUnits.numBytes:size_t, presUnits.c_str()));
   cdfError(nc_put_att_text(ncid, tempVarId, units.c_str(),
-                           tempUnits.length:size_t, tempUnits.c_str()));
+                           tempUnits.numBytes:size_t, tempUnits.c_str()));
 
   /* End define mode. */
   cdfError(nc_enddef(ncid));

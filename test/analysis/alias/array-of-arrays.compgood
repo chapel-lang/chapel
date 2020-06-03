@@ -1,4 +1,3 @@
 noAliasSets: no-aliases for function main:
 noAliasSets: no-aliases for function test:
-LICM: may-alias report for a loop in function main:
 LICM: may-alias report for a loop in function test:

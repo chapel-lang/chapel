@@ -19,7 +19,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">Hardware Locality (hwloc)
-   &#160;<span id="projectnumber">1.11.11</span>
+   &#160;<span id="projectnumber">1.11.13</span>
    </div>
   </td>
  </tr>
@@ -87,9 +87,9 @@ What are these Group objects in my topology?</h2>
 <p>hwloc comes with a set of predefined object types (Core, Package, NUMA node, Caches) that match the vast majority of hardware platforms. The <a class="el" href="a00151.html#ggacd37bb612667dc437d66bfb175a8dc55a5269ef95be72f88465559d35c9b7ad56" title="Group objects. Objects which do not fit in the above but are detected by hwloc and are useful to take...">HWLOC_OBJ_GROUP</a> type was designed for cases where this set is not sufficient. Groups may be used anywhere to add more structure information to the topology, for instance to show that 2 out of 4 NUMA nodes are actually closer than the others. When applicable, the <code>Type</code> info attribute describes why a Group was actually added (see also <a class="el" href="a00316.html#attributes_info">Custom string infos</a>).</p>
 <p>hwloc currently uses Groups for the following reasons: </p><ul>
 <li>
-AMD dual-core compute units (<code>Type=ComputeUnit</code>, in the x86 backend), but these objects are usually merged with the L2 caches. </li>
+AMD Bulldozer dual-core compute units (<code>Type=ComputeUnit</code>, in the x86 backend), but these objects are usually merged with the L2 caches. </li>
 <li>
-Intel x2APIC non-core and non-package levels (in the x86 backend). </li>
+Intel Dies on multi-die CPUs (Linux and x86 backends) and other Extended Topology Enumeration levels (in the x86 backend). </li>
 <li>
 Windows processor groups (unless they contain a single NUMA node, or a single Package, etc.). </li>
 <li>
@@ -192,7 +192,7 @@ Why is hwloc slow?</h2>
 <p>Additionally, lstopo enables most hwloc objects and discovery flags by default so that the output topology is as precise as possible (while hwloc disables many of them by default). This includes I/O device discovery through PCI libraries as well as external libraries such as NVML. To speed up lstopo, you may disable such features with command-line options such as <code>--no-io</code>.</p>
 <p>When NVIDIA GPU probing is enabled with CUDA or NVML, one should make sure that the <em>Persistent</em> mode is enabled (with <code>nvidia-smi -pm 1</code>) to avoid significant GPU initialization overhead.</p>
 <p>When AMD GPU discovery is enabled with OpenCL and hwloc is used remotely over ssh, some spurious round-trips on the network may significantly increase the discovery time. Forcing the <code>DISPLAY</code> environment variable to the remote X server display (usually <code>:0</code>) instead of only setting the <code>COMPUTE</code> variable may avoid this.</p>
-<p>Also remember that these components may be disabled at build-time with configure flags such as <code>--disable-opencl</code>, <code>--disable-cuda</code> or <code>--disable-nvml</code>, and at runtime with the environment variable <code>HWLOC_COMPONENTS=-opencl,cuda,nvml</code>.</p>
+<p>Also remember that these components may be disabled at build-time with configure flags such as <code>--disable-opencl</code>, <code>--disable-cuda</code> or <code>--disable-nvml</code>, and at runtime with the environment variable <code>HWLOC_COMPONENTS=-opencl,-cuda,-nvml</code>.</p>
 <h2><a class="anchor" id="faq_privileged"></a>
 Does hwloc require privileged access?</h2>
 <p>hwloc discovers the topology by querying the operating system. Some minor features may require privileged access to the operation system. For instance memory module discovery on Linux is reserved to root, and the entire PCI discovery on Solaris and BSDs requires access to some special files that are usually restricted to root (/dev/pci* or /devices/pci*).</p>
@@ -203,13 +203,15 @@ Does hwloc require privileged access?</h2>
 What should I do when hwloc reports "operating system" warnings?</h2>
 <p>When the operating system reports invalid locality information (because of either software or hardware bugs), hwloc may fail to insert some objects in the topology because they cannot fit in the already built tree of resources. If so, hwloc will report a warning like the following. The object causing this error is ignored, the discovery continues but the resulting topology will miss some objects and may be asymmetric (see also <a class="el" href="a00323.html#faq_asymmetric">What happens if my topology is asymmetric?</a>).</p>
 <pre class="fragment">****************************************************************************
-* hwloc has encountered what looks like an error from the operating system.
+* hwloc received invalid information from the operating system.
 *
 * L3 (cpuset 0x000003f0) intersects with NUMANode (P#0 cpuset 0x0000003f) without inclusion!
 * Error occurred in topology.c line 940
 *
 * Please report this error message to the hwloc user's mailing list,
 * along with the files generated by the hwloc-gather-topology script.
+*
+* hwloc will now ignore this invalid topology information and continue.
 ****************************************************************************
 </pre><p>These errors are common on large AMD platforms because of BIOS and/or Linux kernel bugs causing invalid L3 cache information. In the above example, the hardware reports a L3 cache that is shared by 2 cores in the first NUMA node and 4 cores in the second NUMA node. That's wrong, it should actually be shared by all 6 cores in a single NUMA node. The resulting topology will miss some L3 caches.</p>
 <p>If your application does not care about cache sharing, or if you do not plan to request cache-aware binding in your process launcher, you may likely ignore this error (and hide it by setting HWLOC_HIDE_ERRORS=1 in your environment).</p>
@@ -229,7 +231,7 @@ How do I handle ABI breaks and API upgrades?</h2>
 #if HWLOC_API_VERSION &gt;= 0x00010a00
 ...
 #endif
-</pre><p>To check for the API of release X.Y.Z at build time, you may compare <a class="el" href="a00149.html#ga8f4dfb8eef138af55dd1a0fa802e5476" title="Indicate at build time which hwloc API version is being used. ">HWLOC_API_VERSION</a> with <code>(X&gt;&gt;16)+(Y&gt;&gt;8)+Z</code>.</p>
+</pre><p>To check for the API of release X.Y.Z at build time, you may compare <a class="el" href="a00149.html#ga8f4dfb8eef138af55dd1a0fa802e5476" title="Indicate at build time which hwloc API version is being used. ">HWLOC_API_VERSION</a> with <code>(X&lt;&lt;16)+(Y&lt;&lt;8)+Z</code>.</p>
 <p>For supporting older releases that do not have <code>HWLOC_OBJ_NUMANODE</code> and <code>HWLOC_OBJ_PACKAGE</code> yet, you may use:</p>
 <pre class="fragment">#include &lt;hwloc.h&gt;
 #if HWLOC_API_VERSION &lt; 0x00010b00

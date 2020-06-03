@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,6 +81,7 @@
 #include "ForallStmt.h"
 
 #include "alist.h"
+#include "ImportStmt.h"
 #include "stmt.h"
 
 CollapseBlocks::CollapseBlocks()
@@ -357,6 +359,11 @@ void CollapseBlocks::exitLoopExpr(LoopExpr* node)
 }
 
 void CollapseBlocks::visitUseStmt(UseStmt* node)
+{
+
+}
+
+void CollapseBlocks::visitImportStmt(ImportStmt* node)
 {
 
 }

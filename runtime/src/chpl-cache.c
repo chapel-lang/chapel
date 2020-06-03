@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -267,7 +268,6 @@ use.
 //
 // See chapel-developers thread "migrating tasks" from 9/25/2013.
 // FIFO: never moves a task from one pthread to another
-// massivethreads: may move a task with sync/wait/yield/etc
 // Qthreads workaround: QT_NUM_WORKERS_PER_SHEPHERD=1
 //   (on 9/26/2013 Dylan mentioned perhaps adding 'pin to worker')
 
@@ -1737,7 +1737,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
                              (void*)(entry->raddr+start),
-                             got_len /*size*/, -1/*typei*/,
+                             got_len /*size*/,
                              CHPL_COMM_UNKNOWN_ID, -1, 0);
 
           // Save the handle in the list of pending requests.
@@ -2135,13 +2135,14 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     ok = 0;
     // Assuming we have a request for raddr..raddr+len-1,
     // can we prefetch prefetch_addr..prefetch_addr+prefetch_len-1 ?
-    // Checks to see if the prefetch would move out of registered memory
+    // Checks to see if guard pages are enabled (which makes guarded paged
+    // un-gettable) if the prefetch would move out of registered memory
     //  (if chpl_comm_get_segment returns segment information)
     //  or to a new page (if segment information is not available)
 
     // Can we prefetch len bytes starting at prefetch_raddr?
     // If not, compute the smaller amount that we can prefetch.
-    if( chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
+    if( !chpl_task_guardPagesInUse() && chpl_comm_addr_gettable(node, (void*)prefetch_start, len) ) {
       ok = 1;
     }
 
@@ -2216,10 +2217,10 @@ int should_readahead_extend(uint64_t* valid,
                             uintptr_t skip, uintptr_t len )
 {
   if(count_valid_before(valid, skip,
-        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 1)
+        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 2)
     return 1;
   if(count_valid_at_after(valid, skip+len,
-        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 1)
+        CACHE_LINES_PER_PAGE_BITMASK_WORDS) > 2)
     return -1;
   return 0;
 }
@@ -2476,7 +2477,7 @@ void cache_get(struct rdcache_s* cache,
     handle = 
       chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                        node, (void*) ra_line,
-                       ra_line_end - ra_line /*size*/, -1/*typei*/,
+                       ra_line_end - ra_line /*size*/,
                        commID, ln, fn);
 #ifdef TIME
     clock_gettime(CLOCK_REALTIME, &start_get2);
@@ -2587,7 +2588,6 @@ void cache_get(struct rdcache_s* cache,
 }
 
 
-#if 0
 static
 void cache_invalidate(struct rdcache_s* cache,
                        c_nodeid_t node, raddr_t raddr, size_t size)
@@ -2635,7 +2635,6 @@ void cache_invalidate(struct rdcache_s* cache,
     }
   }
 }
-#endif
 
 static
 void cache_clean_dirty(struct rdcache_s* cache)
@@ -2688,8 +2687,9 @@ struct rdcache_s* tls_cache_remote_data(void) {
 static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
-  chpl_task_prvData_t* task_local = chpl_task_getPrvData();
-  return &task_local->comm_data.cache_data;
+  chpl_task_infoRuntime_t* infoRuntime = chpl_task_getInfoRuntime();
+  assert(infoRuntime);
+  return &infoRuntime->comm_data.cache_data;
 }
 
 static
@@ -2726,20 +2726,6 @@ void chpl_cache_do_init(void)
 
 void chpl_cache_init(void) {
 
-  // Take default CHPL_CACHE_REMOTE value from the environment if it is set.
-  /*char* p;
-  if ((p = getenv("CHPL_CACHE_REMOTE")) != NULL) {
-    if( p[0] == 'y' || p[0] == 'Y' || p[0] == '1' ) CHPL_CACHE_REMOTE = 1;
-    else if( p[0] == 'n' || p[0] == 'N' || p[0] == '0' ) CHPL_CACHE_REMOTE = 0;
-    else chpl_warning("unknown setting for CHPL_CACHE_REMOTE, try 0 or 1", 0, NULL);
-  }
-
-  // Don't enable the cache for 1-locale runs.
-  if( chpl_numNodes <= 1 ) {
-    CHPL_CACHE_REMOTE = 0;
-  }*/
-
-  // Don't initialize TLS if the cache is not enabled.
   if( ! chpl_cache_enabled() ) {
     return;
   }
@@ -2788,18 +2774,30 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   // Do nothing if cache is not enabled.
 }
 
+// If a transfer is large enough we should directly initiate it to avoid
+// overheads of going through the cache
+static inline
+int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
+{
+  return size >= CACHEPAGE_SIZE;
+}
+
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t typeIndex,
-                         int32_t commID, int ln, int32_t fn)
+                         size_t size, int32_t commID, int ln, int32_t fn)
 {
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (size_merits_direct_comm(cache, size)) {
+    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+    return;
+  }
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2813,17 +2811,21 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
-                         size_t size, int32_t typeIndex,
-                         int32_t commID, int ln, int32_t fn)
+                         size_t size, int32_t commID, int ln, int32_t fn)
 {
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
+  if (size_merits_direct_comm(cache, size)) {
+    cache_invalidate(cache, node, (raddr_t)raddr, size);
+    chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+    return;
+  }
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -2837,13 +2839,12 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
-                              size_t size, int32_t typeIndex,
-                              int ln, int32_t fn)
+                              size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
-  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn);
+  chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,
@@ -2852,8 +2853,7 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t typeIndex, int32_t commID,
-                              int ln, int32_t fn) {
+                              int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2864,19 +2864,13 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
   // do the strided get.
-#ifdef CHPL_TASK_COMM_GET_STRD
-  chpl_task_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, commID, ln, fn);
-#else
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, commID, ln, fn);
-#endif
+                     elemSize, commID, ln, fn);
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
-                              int32_t typeIndex, int32_t commID,
-                              int ln, int32_t fn) {
+                              int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
   // do a full fence - so that:
   // 1) any pending writes are completed (in case they were to the
@@ -2887,13 +2881,46 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // system. This is just the current (possibly temporary) solution.
   chpl_cache_fence(1, 1, ln, fn);
   // do the strided put.
-#ifdef CHPL_TASK_COMM_PUT_STRD
-  chpl_task_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                          elemSize, typeIndex, commID, ln, fn);
-#else
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
-                     elemSize, typeIndex, commID, ln, fn);
-#endif
+                     elemSize, commID, ln, fn);
+}
+
+//
+// Directly initiate unordered comm, invalidate any pending updates to
+// overlapping regions beforehand.
+//
+void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
+
+}
+
+void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
+                                   size_t size, int32_t commID, int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_invalidate(cache, node, (raddr_t)raddr, size);
+  chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
+}
+
+
+void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
+                                      c_nodeid_t srcnode, void* srcaddr,
+                                      size_t size, int32_t commID,
+                                      int ln, int32_t fn)
+{
+    struct rdcache_s* cache = tls_cache_remote_data();
+    cache_invalidate(cache, srcnode, (raddr_t)srcaddr, size);
+    cache_invalidate(cache, dstnode, (raddr_t)dstaddr, size);
+    chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+}
+
+void chpl_cache_comm_getput_unordered_task_fence(void)
+{
+  chpl_comm_getput_unordered_task_fence();
 }
 
 // This is for debugging.
@@ -2938,4 +2965,3 @@ void chpl_cache_set_enabled(int enabled)
 
 #endif
 // end ifdef HAS_CHPL_CACHE_FNS
-

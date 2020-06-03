@@ -105,9 +105,7 @@ def validate_output(verify_keys, output_file):
         num = m.group(2)
         regex = m.group(3)
         if num:
-            num_real = int(num)
-            if num >= 1: # line numbers are 1-indexed
-                num_real -= 1
+            num_real = int(num) - 1
 
         regex_real = r"(\s|\S)*" + regex
         is_reject = type == "reject"

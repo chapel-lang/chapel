@@ -41,12 +41,12 @@ badEnumDispatch.chpl:15: note: candidates are: int8or32(x: int(32))
 badEnumDispatch.chpl:90: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:19: note: this candidate did not match: param64OrNot(param x: int(64))
 badEnumDispatch.chpl:90: note: because call actual argument #1 with type sizes
-badEnumDispatch.chpl:19: note: is passed to formal 'x: int(64)'
+badEnumDispatch.chpl:19: note: is passed to formal 'param x: int(64)'
 badEnumDispatch.chpl:23: note: candidates are: param64OrNot(x: int(64))
 badEnumDispatch.chpl:91: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:19: note: this candidate did not match: param64OrNot(param x: int(64))
 badEnumDispatch.chpl:91: note: because call actual argument #1 with type sizes
-badEnumDispatch.chpl:19: note: is passed to formal 'x: int(64)'
+badEnumDispatch.chpl:19: note: is passed to formal 'param x: int(64)'
 badEnumDispatch.chpl:23: note: candidates are: param64OrNot(x: int(64))
 badEnumDispatch.chpl:92: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:23: note: this candidate did not match: param64OrNot(x: int(64))
@@ -61,12 +61,12 @@ badEnumDispatch.chpl:19: note: candidates are: param64OrNot(param x: int(64))
 badEnumDispatch.chpl:97: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:27: note: this candidate did not match: param8OrNot(param x: int(8))
 badEnumDispatch.chpl:97: note: because call actual argument #1 with type sizes
-badEnumDispatch.chpl:27: note: is passed to formal 'x: int(8)'
+badEnumDispatch.chpl:27: note: is passed to formal 'param x: int(8)'
 badEnumDispatch.chpl:31: note: candidates are: param8OrNot(x: int(8))
 badEnumDispatch.chpl:98: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:27: note: this candidate did not match: param8OrNot(param x: int(8))
 badEnumDispatch.chpl:98: note: because call actual argument #1 with type sizes
-badEnumDispatch.chpl:27: note: is passed to formal 'x: int(8)'
+badEnumDispatch.chpl:27: note: is passed to formal 'param x: int(8)'
 badEnumDispatch.chpl:31: note: candidates are: param8OrNot(x: int(8))
 badEnumDispatch.chpl:99: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:31: note: this candidate did not match: param8OrNot(x: int(8))
@@ -81,14 +81,14 @@ badEnumDispatch.chpl:27: note: candidates are: param8OrNot(param x: int(8))
 badEnumDispatch.chpl:104: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:35: note: this candidate did not match: param8Or32OrNot(param x: int(8))
 badEnumDispatch.chpl:104: note: because call actual argument #1 with type sizes
-badEnumDispatch.chpl:35: note: is passed to formal 'x: int(8)'
+badEnumDispatch.chpl:35: note: is passed to formal 'param x: int(8)'
 badEnumDispatch.chpl:39: note: candidates are: param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:43: note:                 param8Or32OrNot(param x: int(32))
 note: and 1 other candidates, use --print-all-candidates to see them
 badEnumDispatch.chpl:105: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:35: note: this candidate did not match: param8Or32OrNot(param x: int(8))
 badEnumDispatch.chpl:105: note: because call actual argument #1 with type sizes
-badEnumDispatch.chpl:35: note: is passed to formal 'x: int(8)'
+badEnumDispatch.chpl:35: note: is passed to formal 'param x: int(8)'
 badEnumDispatch.chpl:39: note: candidates are: param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:43: note:                 param8Or32OrNot(param x: int(32))
 note: and 1 other candidates, use --print-all-candidates to see them

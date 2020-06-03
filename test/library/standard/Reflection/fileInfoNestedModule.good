@@ -1,0 +1,3 @@
+fileInfoNestedModule.chpl:8 Inner.main
+fileInfoNestedModule.chpl:3 Outer.foo
+fileInfoNestedModule.chpl:14 Inner.bar

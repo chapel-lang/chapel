@@ -5,6 +5,6 @@
 // when run outside the test harness.
 //
 extern proc getenv(const name: c_string): c_string;
-writeln("LANG=", getenv('LANG'):string);
-writeln("LC_ALL=", getenv('LC_ALL'):string);
-writeln("LC_COLLATE=", getenv('LC_COLLATE'):string);
+writeln("LANG=", createStringWithNewBuffer(getenv('LANG')));
+writeln("LC_ALL=", createStringWithNewBuffer(getenv('LC_ALL')));
+writeln("LC_COLLATE=", createStringWithNewBuffer(getenv('LC_COLLATE')));

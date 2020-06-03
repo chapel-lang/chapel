@@ -5,7 +5,7 @@ use VisualDebug;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use Norm, Random, Time;
+use LinearAlgebra, Random, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -79,8 +79,8 @@ proc main() {
   //
   const MatVectSpace: domain(2)
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize))
+                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
         MatrixSpace = MatVectSpace[.., ..n];
 
@@ -155,7 +155,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
     //
     // update trailing submatrix (if any)
     //
-    if br.numIndices > 0 then
+    if br.size > 0 then
       schurComplement(Ab, bl, tr, br);
   }
 }
@@ -204,8 +204,8 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
     // replication correct, so we'll want to assert that fact
     //
     //    local {
-      for a in Rest.dim(1)(row..#blkSize) do
-        for b in Rest.dim(2)(col..#blkSize) do
+      for a in Rest.dim(0)(row..#blkSize) do
+        for b in Rest.dim(1)(col..#blkSize) do
           for w in 1..blkSize do
             Ab[a,b] -= replA[a,w] * replB[w,b];
       //    }
@@ -218,13 +218,13 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged ReplicatedDim(gridRows),
-                              new unmanaged BlockCyclicDim(gridCols, lowIdx=1, blkSize));
+                              new ReplicatedDim(gridRows),
+                              new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
   coforall dest in targetLocales[.., 0] do
     on dest do
-      replB = Ab[BD.dim(1), 1..n+1];
+      replB = Ab[BD.dim(0), 1..n+1];
 
   return replB;
 }
@@ -235,13 +235,13 @@ proc replicateD1(Ab, BD) {
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
     dmapped DimensionalDist2D(targetLocales,
-                              new unmanaged BlockCyclicDim(gridRows, lowIdx=1, blkSize),
-                              new unmanaged ReplicatedDim(gridCols));
+                              new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
+                              new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
   coforall dest in targetLocales[0, ..] do
     on dest do
-      replA = Ab[1..n, AD.dim(2)];
+      replA = Ab[1..n, AD.dim(1)];
 
   return replA;
 }
@@ -255,11 +255,11 @@ proc panelSolve(Ab: [] elemType,
                panel: domain,
                piv: [] int) {
 
-  for k in panel.dim(2) {             // iterate through the columns
+  for k in panel.dim(1) {             // iterate through the columns
     const col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.numIndices == 0 then return;
+    if col.size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col);
@@ -297,9 +297,9 @@ proc updateBlockRow(Ab: [] elemType,
                    tl: domain,
                    tr: domain) {
 
-  for row in tr.dim(1) {
+  for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
-          prevRows = tr.dim(1).low..row-1;
+          prevRows = tr.dim(0).low..row-1;
 
     forall (i,j) in activeRow do
       for k in prevRows do
@@ -313,7 +313,7 @@ proc updateBlockRow(Ab: [] elemType,
 //
 proc backwardSub(n: int,
                  Ab: [] elemType) {
-  const bd = Ab.domain.dim(1);
+  const bd = Ab.domain.dim(0);
   var x: [bd] elemType;
 
   for i in bd by -1 do

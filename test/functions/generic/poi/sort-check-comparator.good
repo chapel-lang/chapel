@@ -1,0 +1,3 @@
+sort-check-comparator.chpl:26: In function 'quickSort':
+sort-check-comparator.chpl:27: error: success
+sort-check-comparator.chpl:15: Function 'quickSort' instantiated as: quickSort(Data: int(64))

@@ -1,3 +1,5 @@
+use IO;
+
 config const printTime = false;
 
 record Node {

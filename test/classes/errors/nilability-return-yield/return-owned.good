@@ -1,0 +1,2 @@
+return-owned.chpl:3: In function 'P':
+return-owned.chpl:3: error: cannot return 'owned C?' when the declared return type is 'owned C'

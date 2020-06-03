@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -132,10 +133,6 @@ class Hashed : BaseDist {
   const targetLocDom: domain(1);
   const targetLocales: [targetLocDom] locale;
 
-
-  // privatized object id
-  var pid: int = -1;
-
   // LINKAGE:
 
   //
@@ -152,7 +149,7 @@ class Hashed : BaseDist {
             mapper:?t = new DefaultMapper(),
             targetLocales: [] locale = Locales) {
     this.idxType = idxType;
-    this.mapper = mapper;
+    this.mapper = _to_unmanaged(mapper);
     //
     // 0-base the local capture of the targetLocDom for simplicity
     // later on
@@ -160,7 +157,7 @@ class Hashed : BaseDist {
     // TODO: Create a helper function to create a domain like this for
     // arbitrary dimensions (since the k-D case is a bit harder?)
     //
-    targetLocDom = {0..#targetLocales.numElements};
+    targetLocDom = {0..#targetLocales.size};
     this.targetLocales = targetLocales;
 
     // setting locDist commented out b/c not currently used
@@ -181,6 +178,19 @@ class Hashed : BaseDist {
     this.targetLocales = other.targetLocales;
     // commented out b/c locDist is not currently used
     //locDist = other.locDist;
+  }
+
+
+  override proc dsiSupportsPrivatization() param return true;
+  proc dsiGetPrivatizeData() return this.mapper;
+
+  proc dsiPrivatize(privatizeData) {
+    return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
+  }
+  proc dsiGetReprivatizeData() return 0;
+
+  proc dsiReprivatize(other, reprivatizeData) {
+    this.mapper = other.mapper;
   }
 
   proc dsiClone() {
@@ -223,7 +233,7 @@ class Hashed : BaseDist {
   //
   // print out the distribution
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x <~> "Hashed\n";
     x <~> "-------\n";
     x <~> "distributed using: " <~> mapper <~> "\n";
@@ -300,7 +310,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // SJD: note cannot do this anymore because constructor does not
   // setup (for privatization reasons)
   //
-  var locDoms: [dist.targetLocDom] unmanaged LocUserMapAssocDom(idxType, mapperType);
+  var locDoms: [dist.targetLocDom] unmanaged LocUserMapAssocDom(idxType, mapperType)?;
 
 
   // STATE:
@@ -309,29 +319,27 @@ class UserMapAssocDom: BaseAssociativeDom {
   // a domain describing the complete domain
   //
 
-  var pid: int = -1;
-
   // GLOBAL DOMAIN INTERFACE:
 
   override proc dsiMyDist() {
     return dist;
   }
 
-  proc dsiAdd(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).add(i);
+  proc dsiAdd(in i: idxType) {
+    return locDoms(dist.indexToLocaleIndex(i))!.add(i);
   }
 
   proc dsiRemove(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).remove(i);
+    return locDoms(dist.indexToLocaleIndex(i))!.remove(i);
   }
 
   proc dsiMember(i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i)).contains(i);
+    return locDoms(dist.indexToLocaleIndex(i))!.contains(i);
   }
 
   override proc dsiClear() {
     for locDom in locDoms do on locDom {
-      locDom.clear();
+      locDom!.clear();
     }
   }
 
@@ -344,10 +352,10 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   proc dsiRequestCapacity(numKeys:int) {
     // Multiplies by 2 to account for some expected load imbalance
-    var nLocales = min(1, locDoms.domain.numIndices);
+    var nLocales = min(1, locDoms.domain.size);
     const numKeysPer = 2 * numKeys / nLocales;
     for locDom in locDoms do on locDom {
-      locDom.capacity(numKeysPer);
+      locDom!.capacity(numKeysPer);
     }
   }
 
@@ -379,7 +387,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
     var idx = 0;
     for blk in locDoms {
-      for ind in blk {
+      for ind in blk! {
         tableCopy[idx] = ind;
         idx += 1;
       }
@@ -403,7 +411,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //on blk do
       // But can't currently have yields in on clauses:
       // invalid use of 'yield' within 'on' in serial iterator
-        for ind in blk do
+        for ind in blk! do
           yield ind;
   }
 
@@ -417,7 +425,7 @@ class UserMapAssocDom: BaseAssociativeDom {
         // redirect to the DefaultAssociative's leader
         // note that DefaultAssociative's leader returns (lo..hi, this)
         // ie. a range of table slots and then the DefaultAssociativeDom.
-        for follow in locDom.myInds.these(tag) do
+        for follow in locDom!.myInds.these(tag) do
           yield (follow, localeIndex);
         //  for followThis in tmpBlock.these(iterKind.leader, maxTasks,
         //                                   myIgnoreRunning, minSize,
@@ -431,7 +439,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
 
-    var locDom = locDoms[localeIndex];
+    var locDom = locDoms[localeIndex]!;
 
     for i in locDom.myInds.these(tag, locFollowThis) do
       yield i;
@@ -440,7 +448,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   iter these(param tag: iterKind) where tag == iterKind.standalone {
     coforall locDom in locDoms do on locDom {
       // Forward to associative domain standalone iterator
-      for i in locDom.myInds.these(tag) {
+      for i in locDom!.myInds.these(tag) {
         yield i;
       }
     }
@@ -470,9 +478,9 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // how to allocate a new array over this domain
   //
-  proc dsiBuildArray(type elemType) {
+  proc dsiBuildArray(type elemType, param initElts:bool) {
     var arr = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=elemType, dom=_to_unmanaged(this));
-    arr.setup();
+    arr.setup(initElts=initElts);
     return arr;
   }
 
@@ -480,7 +488,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // queries for the number of indices, low, and high bounds
   //
   proc dsiNumIndices {
-    return + reduce [loc in dist.targetLocDom] locDoms[loc].myInds.numIndices;
+    return + reduce [loc in dist.targetLocDom] locDoms[loc]!.myInds.size;
   }
 
   //
@@ -518,11 +526,11 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param return true;
+  proc dsiGetPrivatizeData() return dist.pid;
   proc dsiGetReprivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var privateDist = new unmanaged Hashed(idxType, dist.mapper, dist);
+    var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
@@ -625,7 +633,7 @@ class LocUserMapAssocDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     x.write(myInds);
   }
 
@@ -638,8 +646,8 @@ class LocUserMapAssocDom {
   // TODO: I believe these are only used by the random number generator
   // in stream -- will they always be required once that is rewritten?
   //
-  proc numIndices {
-    return myInds.numIndices;
+  proc size {
+    return myInds.size;
   }
 }
 
@@ -665,32 +673,49 @@ class UserMapAssocArr: AbsBaseArr {
 
   //
   // DOWN: an array of local array classes
-  var locArrs: [dom.dist.targetLocDom] unmanaged LocUserMapAssocArr(idxType, mapperType, eltType);
+  var locArrs: [dom.dist.targetLocDom] unmanaged LocUserMapAssocArr(idxType, mapperType, eltType)?;
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
-  var pid: int = -1; // privatized object id
-
   override proc dsiGetBaseDom() return dom;
 
-  proc setup() {
-    coforall localeIdx in dom.dist.targetLocDom do
-      on dom.dist.targetLocales(localeIdx) do
-        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx));
+  proc setup(param initElts: bool) {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType,
+                                                  mapperType, eltType,
+                                                  dom.locDoms(localeIdx)!,
+                                                  initElts=initElts);
+      }
+    }
     for localeIdx in dom.dist.targetLocDom {
-      var locDomImpl = dom.locDoms(localeIdx).myInds._value;
+      var locDomImpl = dom.locDoms(localeIdx)!.myInds._value;
       //locAssocDoms += locDomImpl;
       //locArrsByAssoc[locDomImpl] = locArrs(localeIdx);
     }
   }
 
-  override proc dsiDestroyArr() {
-    coforall localeIdx in dom.dist.targetLocDom do
-      on dom.dist.targetLocales(localeIdx) do
-        delete locArrs(localeIdx);
+  override proc dsiElementInitializationComplete() {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        var arr = locArrs(localeIdx);
+        arr!.myElems.dsiElementInitializationComplete();
+      }
+    }
   }
 
-  proc dsiSupportsPrivatization() param return true;
+  override proc dsiDestroyArr(param deinitElts:bool) {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        var arr = locArrs(localeIdx);
+        if deinitElts then
+          _deinitElements(arr!.myElems);
+        delete arr;
+      }
+    }
+  }
+
+  override proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
@@ -711,7 +736,7 @@ class UserMapAssocArr: AbsBaseArr {
   //
   proc dsiAccess(i: idxType) ref {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
       local {
         return locArr[i];
@@ -722,7 +747,7 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiAccess(i: idxType)
   where shouldReturnRvalueByValue(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
       local {
         return locArr[i];
@@ -733,7 +758,7 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiAccess(i: idxType) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
       local {
         return locArr[i];
@@ -744,21 +769,21 @@ class UserMapAssocArr: AbsBaseArr {
 
   inline proc dsiLocalAccess(i) ref {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     return locArr[i];
   }
 
   inline proc dsiLocalAccess(i)
   where shouldReturnRvalueByValue(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     return locArr[i];
   }
 
   inline proc dsiLocalAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
-    const locArr = locArrs[localeIndex];
+    const locArr = locArrs[localeIndex]!;
     return locArr[i];
   }
 
@@ -771,7 +796,7 @@ class UserMapAssocArr: AbsBaseArr {
   iter dsiLocalSubdomains(loc: locale) {
     for (idx,l) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
       if l == loc {
-        yield dom.locDoms[idx].myInds;
+        yield dom.locDoms[idx]!.myInds;
       }
     }
   }
@@ -784,7 +809,7 @@ class UserMapAssocArr: AbsBaseArr {
       // TODO: May want to do something like:
       // on this do
       // But can't currently have yields in on clauses
-      for elem in locArrs(loc) {
+      for elem in locArrs(loc)!.myElems {
         yield elem;
       }
     }
@@ -803,7 +828,7 @@ class UserMapAssocArr: AbsBaseArr {
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
 
-    var locArr = locArrs[localeIndex];
+    var locArr = locArrs[localeIndex]!;
 
     // forward to locArr
     for i in locArr.myElems.these(tag, locFollowThis) do
@@ -813,7 +838,7 @@ class UserMapAssocArr: AbsBaseArr {
   iter these(param tag: iterKind) ref where tag == iterKind.standalone {
     coforall locArr in locArrs do on locArr {
       // Forward to associative array standalone iterator
-      for i in locArr.myElems.these(tag) {
+      for i in locArr!.myElems.these(tag) {
         yield i;
       }
     }
@@ -824,10 +849,11 @@ class UserMapAssocArr: AbsBaseArr {
   // how to print out the whole array, sequentially
   //
   proc dsiSerialWrite(x) {
+    use IO;
 
     var first = true;
     for locArr in locArrs {
-      if locArr.numElements {
+      if locArr!.size {
         if first {
           first = false;
         } else {
@@ -887,8 +913,29 @@ class LocUserMapAssocArr {
   //
   // the block of local array data
   //
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myInds] eltType;
 
+
+  proc init(type idxType,
+            type mapperType,
+            type eltType,
+            const locDom: unmanaged LocUserMapAssocDom(idxType, mapperType),
+            param initElts: bool) {
+    this.idxType = idxType;
+    this.mapperType = mapperType;
+    this.eltType = eltType;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myInds.buildArray(eltType, initElts=initElts);
+  }
+
+  proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
+  }
 
   // LOCAL ARRAY INTERFACE:
 
@@ -935,7 +982,7 @@ class LocUserMapAssocArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) {
+  proc writeThis(x) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
@@ -945,8 +992,8 @@ class LocUserMapAssocArr {
   //
   // query for the number of local array elements
   //
-  proc numElements {
-    return myElems.numElements;
+  proc size {
+    return myElems.size;
   }
 
   // INTERNAL INTERFACE:

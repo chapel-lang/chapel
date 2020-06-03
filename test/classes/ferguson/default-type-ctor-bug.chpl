@@ -9,7 +9,7 @@ class MyClass {
 }
 
 proc test() {
-  var c:borrowed MyClass(int);
+  var c:borrowed MyClass(int)?;
 }
 
 test();

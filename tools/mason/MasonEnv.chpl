@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,13 +18,13 @@
  * limitations under the License.
  */
 
+private use List;
 use MasonUtils;
-use MasonHelp;
+public use MasonHelp;
 
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
   const default = getEnv('HOME') + "/.mason";
-
   const masonHome = if envHome != "" then envHome else default;
 
   return masonHome;
@@ -35,12 +36,26 @@ proc MASON_HOME : string {
 proc MASON_CACHED_REGISTRY {
   const masonRegistry = MASON_REGISTRY;
   const masonHome = MASON_HOME;
-  var cachedRegistry: [masonRegistry.domain] string;
-  for ((name, _), cached) in zip(masonRegistry, cachedRegistry) {
-    cached = MASON_HOME + "/" + name;
-  }
+  var cachedRegistry: list(string);
+  for (name, _) in masonRegistry do
+    cachedRegistry.append(MASON_HOME + "/" + name);
 
   return cachedRegistry;
+}
+
+/* Returns value of MASON_OFFLINE, environment variable that disales online access.
+ */
+proc MASON_OFFLINE {
+  const offlineEnv = getEnv('MASON_OFFLINE');
+  const default = false;
+  var offline = false;
+
+  if (offlineEnv == 'true') || (offlineEnv == 'True') || (offlineEnv == 'TRUE') || (offlineEnv == '1') {
+    offline = true;
+  }
+  else offline = default;
+
+  return offline;
 }
 
 /* Read the MASON_REGISTRY environment variable.  It should be a comma
@@ -54,10 +69,10 @@ proc MASON_REGISTRY {
   const env = getEnv("MASON_REGISTRY");
   const default = ("mason-registry",
                    "https://github.com/chapel-lang/mason-registry");
-  var registries: [1..0] 2*string;
+  var registries: list(2*string);
 
   if env == "" {
-    registries.push_back(default);
+    registries.append(default);
   } else {
     for str in env.split(',') {
       const regArr = str.split('|');
@@ -69,25 +84,25 @@ proc MASON_REGISTRY {
       } else {
         var regTup: 2*string;
 
-        if regArr.numElements == 1 {
+        if regArr.size == 1 {
           // get the name from the last part of the location
-          var name: string = getRegNameFromLoc(regArr[1]);
-          regTup = (name, regArr[1]);
+          var name: string = getRegNameFromLoc(regArr[0]);
+          regTup = (name, regArr[0]);
         } else {
           // found a 'name|location' pair
-          regTup = (regArr[1], regArr[2]);
+          regTup = (regArr[0], regArr[1]);
         }
-        registries.push_back(regTup);
+        registries.append(regTup);
       }
     }
 
     // Make sure all of the registry names are unique
-    for i in 1..registries.size {
-      for j in i+1..registries.size {
-        if registries(i)(1) == registries(j)(1) {
+    for i in registries.indices {
+      for j in i+1..<registries.size {
+        if registries(i)(0) == registries(j)(0) {
           stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
-          stderr.writeln(registries(i)(1), " - ", registries(i)(2));
-          stderr.writeln(registries(j)(1), " - ", registries(j)(2));
+          stderr.writeln(registries(i)(0), " - ", registries(i)(1));
+          stderr.writeln(registries(j)(0), " - ", registries(j)(1));
           exit(1);
         }
       }
@@ -111,7 +126,7 @@ proc masonEnv(args) {
     writeln(name, ": ", val);
   }
 
-  proc printVar(name : string, val : [] string) {
+  proc printVar(name : string, val : list(string)) {
     const star = if getEnv(name) != "" then " *" else "";
     var first = true;
     write(name, ": ");
@@ -125,7 +140,7 @@ proc masonEnv(args) {
     writeln(star);
   }
 
-  proc printVar(name : string, val : [] 2*string) {
+  proc printVar(name : string, val: list(2*string)) {
     const star = if getEnv(name) != "" then " *" else "";
     var first = true;
     write(name, ": ");
@@ -134,13 +149,18 @@ proc masonEnv(args) {
         write(",");
       }
       first = false;
-      write(v(1), "|", v(2));
+      write(v(0), "|", v(1));
     }
     writeln(star);
   }
-
+  var offlineString = 'false';
+  if MASON_OFFLINE {
+    offlineString = 'true';
+  }
   printVar("MASON_HOME", MASON_HOME);
   printVar("MASON_REGISTRY", MASON_REGISTRY);
+  printVar('MASON_OFFLINE', offlineString);
+  printVar("SPACK_ROOT", SPACK_ROOT);
 
   if debug {
     printVar("MASON_CACHED_REGISTRY", MASON_CACHED_REGISTRY);
@@ -150,13 +170,13 @@ proc masonEnv(args) {
 private proc getRegNameFromLoc(location: string): string {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
-  if lastSlashPos == 0 {
+  if lastSlashPos == -1 {
     stderr.writeln("location should be an absolute path or URL");
     exit(1);
   }
-  if strippedLoc.endsWith(".git") {
-    // TODO: this should use a method to get the byte length
-    var beforeGit = (strippedLoc.length-4):byteIndex;
+  const gitExtension = ".git";
+  if strippedLoc.endsWith(gitExtension) {
+    var beforeGit = (strippedLoc.numBytes-gitExtension.numBytes):byteIndex;
     return strippedLoc[lastSlashPos+1..beforeGit];
   } else {
     return strippedLoc[lastSlashPos+1..];

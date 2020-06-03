@@ -59,8 +59,8 @@ proc main() {
   var N: [D2] int;
   var O: [D2] real;
 
-  [i in D1] L(i) = i(1):real;
-  [i in D1] M(i) = i(2); 
+  [i in D1] L(i) = i(0):real;
+  [i in D1] M(i) = i(1); 
  
   N = 2;
   O = 3.0;

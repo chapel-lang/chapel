@@ -1,0 +1,1 @@
+init-var-nonnil-shared-from-oknil-shared.chpl:9: error: cannot create a non-nilable shared variable from a nilable class instance

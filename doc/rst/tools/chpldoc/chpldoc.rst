@@ -71,7 +71,7 @@ elsewhere, use the chpldoc command directory. For example::
 
 By default, documentation created by chpldoc will end up in a subdirectory of
 the current working directory named 'docs/'. You can specify a different
-directory name using the --docs-dir option.
+directory name using the ``--output-dir`` option.
 
 As an example, there is a primer on the chpldoc capability in
 ``$CHPL_HOME/examples/primers/`` that can be turned into documentation using::
@@ -268,8 +268,8 @@ primers (some of the text is copied verbatim).
 
 The authoritative `reStructuredText User Guide`_ is also helpful.
 
-.. _Sphinx reST Primer: http://www.sphinx-doc.org/en/stable/rest.html
-.. _Python reST Primer: https://docs.python.org/devguide/documenting.html#restructuredtext-primer
+.. _Sphinx reST Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+.. _Python reST Primer: https://devguide.python.org/documenting/#restructuredtext-primer
 .. _reStructuredText User Guide: http://docutils.sourceforge.net/rst.html
 
 
@@ -672,7 +672,7 @@ reStructuredText as HTML.
 
 .. _reStructuredText: http://docutils.sourceforge.net/rst.html
 .. _docutils: http://docutils.sourceforge.net/
-.. _Sphinx: http://www.sphinx-doc.org/en/stable/
+.. _Sphinx: https://www.sphinx-doc.org/en/master/
 
 
 .. _Future directions:

@@ -1,4 +1,6 @@
 /////////////////////////////////
+use IO;
+
 var pfx = "# ";
 var phase = 0;
 var no_pfx = false;
@@ -45,7 +47,7 @@ iter it(param tag: iterKind, followThis, N:int) where tag == iterKind.follower {
 //  writeln("it follower: ", followThis);
   if !(isTuple(followThis) && followThis.size == 1) then
     halt("it follower: argument is not a tuple or its size is not 1");
-  for i in followThis(1)+1 do yield i;
+  for i in followThis(0)+1 do yield i;
 }
 
 /////////////////////////////////

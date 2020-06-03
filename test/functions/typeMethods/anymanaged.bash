@@ -12,10 +12,15 @@ class C {
 
 proc type C.mA() {}
 proc type (C).mB() {}
+proc type (C?).mBn() {}
 proc type (owned C).mo() {}
+proc type (owned C?).mon() {}
 proc type (shared C).ms() {}
+proc type (shared C?).msn() {}
 proc type (borrowed C).mb() {}
+proc type (borrowed C?).mbn() {}
 proc type (unmanaged C).mu() {}
+proc type (unmanaged C?).mun() {}
 
 class D : C { }
 
@@ -30,7 +35,7 @@ proc sepp(type t)    { compilerWarning("========= ", t:string, " =========", 1);
 
 eom
 
-methods="mp mA mB mo ms mb mu"
+methods="mp mA mB mBn mo mon ms msn mb mbn mu mun"
 
 function sep() {  echo; echo "sep();"; echo; }
 function sepp() {  echo "sepp($*);";  }
@@ -45,11 +50,16 @@ function do1() {
 for N in C D E; do
   sepp $N; sep
   for m in $methods; do
-    for c in "           $N " \
-             "    (owned $N)" \
-             "   (shared $N)" \
-             " (borrowed $N)" \
-             "(unmanaged $N)" ; do
+    for c in "           $N  " \
+             "          ($N?)" \
+             "    (owned $N )" \
+             "    (owned $N?)" \
+             "   (shared $N )" \
+             "   (shared $N?)" \
+             " (borrowed $N )" \
+             " (borrowed $N?)" \
+             "(unmanaged $N )" \
+             "(unmanaged $N?)" ; do
       do1 "$c" "$m"
     done
     sep

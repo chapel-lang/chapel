@@ -1,2 +1,0 @@
-expand.chpl:4: In function 'my_expand':
-expand.chpl:5: error: expand not supported on associative domains

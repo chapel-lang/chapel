@@ -1,1 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:256: error: cannot assign to a record of the type RECTYPE using the default assignment operator because it has 'const' field(s)

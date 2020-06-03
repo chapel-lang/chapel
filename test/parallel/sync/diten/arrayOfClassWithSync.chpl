@@ -2,9 +2,7 @@ class C {
   var s: sync bool;
 }
 
-var a: [1..3] unmanaged C;
-
-[i in 1..3] a(i) = new unmanaged C();
+var a: [1..3] unmanaged C = [i in 1..3] new unmanaged C();
 
 a(2).s = true;
 a(2).s;

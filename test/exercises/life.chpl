@@ -25,7 +25,7 @@ var Grid:     [BigD] bool, // grid of life
     NextGrid: [D]    bool; // grid for next iteration
 
 // initialize grid
-var rs = makeRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
+var rs = createRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
 
 for i in D do
   Grid(i) = if rs.getNext() <= p:real / 100 then true else false;
@@ -61,9 +61,9 @@ for i in 1..k {
 // print a generation
 proc printGrid() {
   write("+"); for i in 1..n do write("-"); writeln("+");
-  for i in D.dim(1) {
+  for i in D.dim(0) {
     write("|");
-    for j in D.dim(2) {
+    for j in D.dim(1) {
       write(if Grid(i,j) then "o" else " ");
     }
     writeln("|");

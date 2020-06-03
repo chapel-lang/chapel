@@ -1,2 +1,1 @@
-no_use_BlockDist.chpl:3: error: unresolved call 'Block(boundingBox=domain(1,int(64),false))'
-no_use_BlockDist.chpl:3: note: because no functions named Block found in scope
+no_use_BlockDist.chpl:3: error: Attempt to 'new' a function or undefined symbol

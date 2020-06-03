@@ -1,3 +1,0 @@
-old-eigvals.chpl:14: warning: eigvals() will only return eigenvalues in future releases. Use eig() instead.
-old-eigvals.chpl:41: warning: eigvals() will only return eigenvalues in future releases. Use eig() instead.
-old-eigvals.chpl:69: warning: eigvals() will only return eigenvalues in future releases. Use eig() instead.

@@ -1,4 +1,0 @@
-# Get counts differ with segment=fast, so lets skip this case.
-CHPL_GASNET_SEGMENT==fast
-# non-flat is orthogonal to this test and changes comm counts, so skip
-CHPL_LOCALE_MODEL!=flat

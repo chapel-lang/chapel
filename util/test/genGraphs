@@ -298,6 +298,24 @@ def strip_series(csvFile, numseries):
     data_to_csv(data, csvFile)
 
 
+# Find the series to attach annotations to. If there were multiple
+# configurations, attach to a series in the default (first listed)
+# configuration. Else attach to first series
+def get_annotation_series(csvFile):
+    data = parse_csv(csvFile)
+    labels = [a[0] for a in data[0]]
+    labels = labels[1:]
+
+    annotation_series = labels[0]
+    if multiConf:
+        defaultConf = multiConf[0]
+        for label in labels:
+            if label.endswith('(' + defaultConf + ')'):
+                annotation_series = label
+                break
+
+    return annotation_series
+
 
 
 ############
@@ -408,17 +426,7 @@ class GraphStuff:
         else:
             self.firstGraph = False
 
-        # find the series to attach annotations to. If there were multiple
-        # configurations, attach to a series in the default (first listed)
-        # configuration. Else attach to first series
-        series = ''
-        if multiConf:
-            defaultConf = multiConf[0]
-            for graphkey in ginfo.graphkeys:
-                if graphkey.endswith('(' + defaultConf + ')'):
-                    series = graphkey
-        else:
-            series = ginfo.graphkeys[0]
+        series = ginfo.annotationSeries
 
         # generate the annotations for this graph
         if series and annotate and self.all_annotations and not numericX:
@@ -568,6 +576,7 @@ class GraphClass:
         self.numseries = -1
         self.sort = _sort
         self.annotations = []
+        self.annotationSeries = ""
 
     def __str__(self):
         l  = 'Graph: '+str(self.name)+' (id='+str(self.id)+')\n'
@@ -782,6 +791,8 @@ class GraphClass:
 
         if self.numseries > 0:
             strip_series(fname, self.numseries)
+
+        self.annotationSeries = get_annotation_series(fname)
 
         csv_to_json(fname, self)
 

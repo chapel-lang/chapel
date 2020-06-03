@@ -38,36 +38,36 @@ proc dobegin(param n) {
 
       const capture_i = i;
       x = i;
-      tup[1] = i;
-      tup[n] = i;
+      tup[0] = i;
+      tup[n-1] = i;
 
       begin {
         if debug then writeln("task 1 before wait");
         order$; // wait for order to be set below
         if debug then writeln("task 1 after wait");
         assert(x == capture_i);
-        assert(tup[1] == capture_i);
-        assert(tup[n] == capture_i);
+        assert(tup[0] == capture_i);
+        assert(tup[n-1] == capture_i);
       }
       
       x += 1;
-      tup[1] += 1;
-      tup[n] = x;
+      tup[0] += 1;
+      tup[n-1] = x;
 
       begin {
         if debug then writeln("task 2 before wait");
         order$; // wait for order to be set below
         if debug then writeln("task 2 after wait");
         assert(x == capture_i+1);
-        assert(tup[1] == capture_i+1);
-        assert(tup[n] == capture_i+1);
+        assert(tup[0] == capture_i+1);
+        assert(tup[n-1] == capture_i+1);
       }
 
       // Modifications to x and tup at this point
       // should not affect the tasks.
       x = 0;
-      tup[1] = 0;
-      tup[n] = 0;
+      tup[0] = 0;
+      tup[n-1] = 0;
 
       if debug then writeln("first write");
       // Run a begin
@@ -95,36 +95,36 @@ proc dobeginon(param n) {
 
       const capture_i = i;
       x = i;
-      tup[1] = i;
-      tup[n] = i;
+      tup[0] = i;
+      tup[n-1] = i;
 
       begin on Locales[numLocales-1] {
         if debug then writeln("task 1 before wait");
         order$; // wait for order to be set below
         if debug then writeln("task 1 after wait");
         assert(x == capture_i);
-        assert(tup[1] == capture_i);
-        assert(tup[n] == capture_i);
+        assert(tup[0] == capture_i);
+        assert(tup[n-1] == capture_i);
       }
       
       x += 1;
-      tup[1] += 1;
-      tup[n] = x;
+      tup[0] += 1;
+      tup[n-1] = x;
 
       begin on Locales[numLocales-1] {
         if debug then writeln("task 2 before wait");
         order$; // wait for order to be set below
         if debug then writeln("task 2 after wait");
         assert(x == capture_i+1);
-        assert(tup[1] == capture_i+1);
-        assert(tup[n] == capture_i+1);
+        assert(tup[0] == capture_i+1);
+        assert(tup[n-1] == capture_i+1);
       }
 
       // Modifications to x and tup at this point
       // should not affect the tasks.
       x = 0;
-      tup[1] = 0;
-      tup[n] = 0;
+      tup[0] = 0;
+      tup[n-1] = 0;
 
       if debug then writeln("first write");
       // Run a begin
@@ -150,23 +150,23 @@ proc doon(param n) {
 
     const capture_i = i;
     x = i;
-    tup[1] = i;
-    tup[n] = i;
+    tup[0] = i;
+    tup[n-1] = i;
     const tup_copy = tup; 
 
     on Locales[numLocales-1] {
       assert(x == capture_i);
-      assert(tup[1] == capture_i);
-      assert(tup[n] == capture_i);
-      assert(tup_copy[1] == capture_i);
-      assert(tup_copy[n] == capture_i);
+      assert(tup[0] == capture_i);
+      assert(tup[n-1] == capture_i);
+      assert(tup_copy[0] == capture_i);
+      assert(tup_copy[n-1] == capture_i);
     }
     
     // Modifications to x and tup at this point
     // should not affect the tasks.
     x = 0;
-    tup[1] = 0;
-    tup[n] = 0;
+    tup[0] = 0;
+    tup[n-1] = 0;
   }
   if debug then writeln("end of loop");
 }
@@ -184,21 +184,21 @@ proc dofaston(param n) {
 
     const capture_i = i;
     x = i;
-    tup[1] = i;
-    tup[n] = i;
+    tup[0] = i;
+    tup[n-1] = i;
     const tup_copy = tup; 
 
     on Locales[numLocales-1] {
       assert_match(x, capture_i);
-      assert_match(tup_copy[1], capture_i);
-      assert_match(tup_copy[n], capture_i);
+      assert_match(tup_copy[0], capture_i);
+      assert_match(tup_copy[n-1], capture_i);
     }
     
     // Modifications to x and tup at this point
     // should not affect the tasks.
     x = 0;
-    tup[1] = 0;
-    tup[n] = 0;
+    tup[0] = 0;
+    tup[n-1] = 0;
   }
   if debug then writeln("end of loop");
 }
@@ -215,21 +215,21 @@ proc defastbeginon(param n) {
 
     const capture_i = i;
     x = i;
-    tup[1] = i;
-    tup[n] = i;
+    tup[0] = i;
+    tup[n-1] = i;
     const tup_copy = tup; 
 
     begin on Locales[numLocales-1] {
       assert_match(x, capture_i);
-      assert_match(tup_copy[1], capture_i);
-      assert_match(tup_copy[n], capture_i);
+      assert_match(tup_copy[0], capture_i);
+      assert_match(tup_copy[n-1], capture_i);
     }
     
     // Modifications to x and tup at this point
     // should not affect the tasks.
     x = 0;
-    tup[1] = 0;
-    tup[n] = 0;
+    tup[0] = 0;
+    tup[n-1] = 0;
   }
   if debug then writeln("end of loop");
 }
@@ -243,8 +243,8 @@ iter modifyAndYield(num:int, i: int, ref x: int, ref tup: n*int)
   for j in 1..num {
     const tmp = 1000*i + j;
     x = tmp;
-    tup[1] = tmp;
-    tup[n] = tmp;
+    tup[0] = tmp;
+    tup[n-1] = tmp;
     if debug then writeln("Yielding ", j, " x=", x);
     yield j;
   }
@@ -269,8 +269,8 @@ proc docoforall(param n)
           writeln("Task i=", i, " j=", j, " got tmp ", tmp, " x=", x);
         }
         assert(x == tmp);
-        assert(tup[1] == tmp);
-        assert(tup[n] == tmp);
+        assert(tup[0] == tmp);
+        assert(tup[n-1] == tmp);
       }
     }
     if debug then writeln("end of loop");

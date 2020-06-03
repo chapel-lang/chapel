@@ -3,7 +3,7 @@
  * - retrieving the location where the current thread executes
  * - combining/modifying cpusets using the bitmap API
  *
- * Copyright © 2014-2017 Inria.  All rights reserved.
+ * Copyright © 2014-2018 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -11,7 +11,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 int main(void)
 {

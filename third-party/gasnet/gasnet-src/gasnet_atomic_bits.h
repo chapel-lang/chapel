@@ -175,7 +175,7 @@
          There are no surviving examples, however the SPARC7 and
          PA-RISC code (removed after GASNet-1.22.0) were good examples.
 
-   SEE ALSO: http://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
+   SEE ALSO: https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=1607
  */
 
 /* ------------------------------------------------------------------------------------ */
@@ -1664,7 +1664,7 @@
               "add      %0,%3,%1   \n\t" /* newval = oldval + op; */
               "casx     [%4],%0,%1 \n\t" /* if (*addr == oldval) SWAP(*addr,newval); else newval = *addr; */
               "cmp      %0, %1     \n\t" /* check if newval == oldval (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %1, %0     "     /* oldval = newval; (branch delay slot, annulled if not taken) */
               : "=&r"(_oldval), "=&r"(_newval), "=m"(_v->gasneti_ctr)
               : "rI"(_op), "r"(_addr), "m"(_v->gasneti_ctr) );
@@ -1683,7 +1683,7 @@
               "ldx      [%4],%0    \n\t" /* oldval = *addr; */
               "casx     [%4],%0,%1 \n\t" /* if (*addr == oldval) SWAP(*addr,tmp); else tmp = *addr; */
               "cmp      %0, %1     \n\t" /* check if tmp == oldval (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %3, %1     "     /* tmp = newval; (branch delay slot, annulled if not taken) */
               : "=&r"(_oldval), "=&r"(_tmp), "=m"(_v->gasneti_ctr)
               : "r"(_newval), "r"(_addr), "m"(_v->gasneti_ctr) );
@@ -1700,13 +1700,21 @@
           #define gasneti_atomic64_init(v)       { (v) }
           GASNETI_INLINE(_gasneti_atomic64_set)
           void _gasneti_atomic64_set(gasneti_atomic64_t *_p, uint64_t _v) {
+          #if PLATFORM_OS_SOLARIS // Bug 3797
+            __asm__ __volatile__ ( "std	%1, %0" : "=m"(_p->gasneti_ctr) : "U!f"(_v) );
+          #else
             __asm__ __volatile__ ( "std	%1, %0" : "=m"(_p->gasneti_ctr) : "U"(_v) );
+          #endif
 	  }
           #define _gasneti_atomic64_set _gasneti_atomic64_set
           GASNETI_INLINE(_gasneti_atomic64_read)
           uint64_t _gasneti_atomic64_read(gasneti_atomic64_t *_p) {
 	    GASNETI_ASM_REGISTER_KEYWORD uint64_t _retval;
+          #if PLATFORM_OS_SOLARIS // Bug 3797
+            __asm__ __volatile__ ( "ldd	%1, %0" : "=U!f"(_retval) : "m"(_p->gasneti_ctr) );
+          #else
             __asm__ __volatile__ ( "ldd	%1, %0" : "=U"(_retval) : "m"(_p->gasneti_ctr) );
+          #endif
 	    return _retval;
 	  }
           #define _gasneti_atomic64_read _gasneti_atomic64_read
@@ -1748,7 +1756,7 @@
               "ldx      [%6],%2    \n\t" /* tmp2 = *addr; */
               "casx     [%6],%2,%1 \n\t" /* if (*addr == tmp2) SWAP(*addr,tmp1); else tmp1 = *addr; */
               "cmp      %2,%1      \n\t" /* check if tmp1 == tmp2 (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %3,%1      \n\t" /* tmp1 = tmp3; (branch delay slot, annulled if not taken) */
               "srlx     %1,32,%H0  \n\t" /* HI(oldval) = tmp1 >> 32 */
               "srl      %1,0,%L0   "     /* LO(oldval) = (uint32_t)tmp1 */
@@ -1772,7 +1780,7 @@
               "add      %1,%2,%3   \n\t" /* tmp3 = tmp1 + tmp2 */
               "casx     [%6],%2,%3 \n\t" /* if (*addr == tmp2) SWAP(*addr,tmp3); else tmp3 = *addr; */
               "cmp      %2,%3      \n\t" /* check if tmp2 == tmp3 (swap succeeded) */
-              "bne,a,pn %%icc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
+              "bne,a,pn %%xcc, 0b  \n\t" /* otherwise, retry (,pn == predict not taken; ,a == annul) */
               "  mov    %3,%2      \n\t" /* tmp2 = tmp3; (branch delay slot, annulled if not taken) */
               "srlx     %3,32,%H0  \n\t" /* HI(oldval) = tmp3 >> 32 */
               "srl      %3,0,%L0   "     /* LO(oldval) = (uint32_t)tmp3 */
@@ -1859,7 +1867,7 @@
                      "ldx      [%i0], %g4               \n\t"                           \
                      "casx     [%i0], %g4, %g1          \n\t"                           \
                      "cmp      %g4, %g1                 \n\t"                           \
-                     "bne,a,pn %icc, .LGN001            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN001            \n\t"                           \
                      "  mov    %i1, %g1                 \n\t"                           \
                      "mov      %g4, %i0" )
           #define GASNETI_ATOMIC64_FETCHADD_BODY                                        \
@@ -1869,7 +1877,7 @@
                      "add      %g1, %i1, %g4            \n\t"                           \
                      "casx     [%i0], %g1, %g4          \n\t"                           \
                      "cmp      %g1, %g4                 \n\t"                           \
-                     "bne,a,pn %icc, .LGN002            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN002            \n\t"                           \
                      "  mov    %g4, %g1                 \n\t"                           \
                      "mov      %g4, %i0" )
           #define GASNETI_ATOMIC64_SPECIALS                                      \
@@ -1916,7 +1924,7 @@
                      "ldx      [%i0],%o7                \n\t"                           \
                      "casx     [%i0],%o7,%o5            \n\t"                           \
                      "cmp      %o7,%o5                  \n\t"                           \
-                     "bne,a,pn %icc, .LGN001            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN001            \n\t"                           \
                      "  mov    %g1,%o5                  \n\t"                           \
                      "srlx     %o5,32,%i0               \n\t"                           \
                      "srl      %o5,0,%i1" )
@@ -1930,7 +1938,7 @@
                      "add      %o5,%o7,%g1              \n\t"                           \
                      "casx     [%i0],%o7,%g1            \n\t"                           \
                      "cmp      %o7,%g1                  \n\t"                           \
-                     "bne,a,pn %icc, .LGN002            \n\t"                           \
+                     "bne,a,pn %xcc, .LGN002            \n\t"                           \
                      "  mov    %g1,%o7                  \n\t"                           \
                      "srlx     %g1,32,%i0               \n\t"                           \
                      "srl      %g1,0,%i1" )
@@ -1974,303 +1982,7 @@
       #endif
     #endif
 
-    #if GASNETI_HAVE_XLC_ASM
-      #define GASNETI_HAVE_ATOMIC32_T 1
-      typedef struct { volatile uint32_t gasneti_ctr; } gasneti_atomic32_t;
-      #define gasneti_atomic32_init(v)       { (v) }
-      #define _gasneti_atomic32_read(p)      ((p)->gasneti_ctr)
-      #define _gasneti_atomic32_set(p,v)     ((p)->gasneti_ctr = (v))
-
-      static int _gasneti_atomic32_swap(gasneti_atomic32_t *_v, uint32_t _newval);
-      #pragma mc_func _gasneti_atomic32_swap {\
-	/* ARGS: r3 = v, r4=newval   LOCAL: r0 = tmp */ \
-	"7c001828"	/* 0: lwarx   r0,0,r3	*/ \
-	"7c80192d"	/*    stwcx.  r4,0,r3	*/ \
-	"40a2fff8"	/*    bne-    0b	*/ \
-	"7c030378"	/*    mr      r3,r0	*/ \
-	/* RETURN in r3 = value before swap */ \
-      }
-      #pragma reg_killed_by _gasneti_atomic32_swap cr0, gr0
-      #define _gasneti_atomic32_swap _gasneti_atomic32_swap
-
-      /* XLC machine code functions are very rigid, thus we produce all
-       * three read-modify-write ops as distinct functions in order to
-       * get anything near to optimal code.
-       */
-      static void _gasneti_atomic32_increment(gasneti_atomic32_t *_v);
-      #pragma mc_func _gasneti_atomic32_increment {\
-	/* ARGS: r3 = v  LOCAL: r4 = tmp */ \
-	"7c801828"	/* 0: lwarx	r4,0,r3		*/ \
-	"38840001"	/*    addi	r4,r4,0x1	*/ \
-	"7c80192d"	/*    stwcx.	r4,0,r3		*/ \
-	"40a2fff4"	/*    bne-	0b		*/ \
-      }
-      #pragma reg_killed_by _gasneti_atomic32_increment cr0, gr4
-
-      static void _gasneti_atomic32_decrement(gasneti_atomic32_t *_v);
-      #pragma mc_func _gasneti_atomic32_decrement {\
-	/* ARGS: r3 = v  LOCAL: r4 = tmp */ \
-	"7c801828"	/* 0: lwarx	r4,0,r3		*/ \
-	"3884ffff"	/*    subi	r4,r4,0x1	*/ \
-	"7c80192d"	/*    stwcx.	r4,0,r3		*/ \
-	"40a2fff4"	/*    bne-	0b		*/ \
-      }
-      #pragma reg_killed_by _gasneti_atomic32_decrement cr0, gr4
-
-      static uint32_t gasneti_atomic32_decandfetch(gasneti_atomic32_t *_v);
-      #pragma mc_func gasneti_atomic32_decandfetch {\
-	/* ARGS: r3 = v  LOCAL: r4 = tmp */ \
-	"7c801828"	/* 0: lwarx	r4,0,r3		*/ \
-	"3884ffff"	/*    subi	r4,r4,0x1	*/ \
-	"7c80192d"	/*    stwcx.	r4,0,r3		*/ \
-	"40a2fff4"	/*    bne-	0b		*/ \
-	"7c832378"	/*    mr	r3,r4		*/ \
-	/* RETURN in r3 = result after dec */ \
-      }
-      #pragma reg_killed_by gasneti_atomic32_decandfetch cr0, gr4
-      #define _gasneti_atomic32_decrement_and_test(p) (gasneti_atomic32_decandfetch(p) == 0)
-
-      static int gasneti_atomic32_swap_not(gasneti_atomic32_t *_v, uint32_t _oldval, uint32_t _newval);
-      #pragma mc_func gasneti_atomic32_swap_not {\
-	/* ARGS: r3 = p, r4=oldval, r5=newval   LOCAL: r0 = tmp */ \
-	"7c001828"	/* 0: lwarx	r0,0,r3		*/ \
-	"7c002279"	/*    xor.	r0,r0,r4	*/ \
-	"40820010"	/*    bne	1f		*/ \
-	"7ca0192d"	/*    stwcx.	r5,0,r3		*/ \
-	"40a2fff0"	/*    bne-	0b		*/ \
-	"7c030378"	/* 1: mr	r3,r0		*/ \
-	/* RETURN in r3 = 0 iff swap took place */ \
-      }
-      #pragma reg_killed_by gasneti_atomic32_swap_not cr0, gr0
-      #define _gasneti_atomic32_compare_and_swap(p, oldval, newval) \
-	(gasneti_atomic32_swap_not((p),(oldval),(newval)) == 0)
-
-      static uint32_t _gasneti_atomic32_addfetch(gasneti_atomic32_t *_v, uint32_t _op);
-      #pragma mc_func _gasneti_atomic32_addfetch {\
-	/* ARGS: r3 = v  LOCAL: r4 = op, r5 = tmp */ \
-	"7ca01828"	/* 0: lwarx	r5,0,r3		*/ \
-	"7ca52214"	/*    add	r5,r5,r4	*/ \
-	"7ca0192d"	/*    stwcx.	r5,0,r3		*/ \
-	"40a2fff4"	/*    bne-	0b		*/ \
-	"7ca32b78"	/*    mr	r3,r5		*/ \
-	/* RETURN in r3 = result after addition */ \
-      }
-      #pragma reg_killed_by _gasneti_atomic32_addfetch cr0, gr4, gr5
-      #define _gasneti_atomic32_addfetch _gasneti_atomic32_addfetch
-
-      #if GASNETI_ATOMIC64_NOINLINE
-        // Using SLOW or GENERIC alternative
-      #elif PLATFORM_ARCH_64
-	#define GASNETI_HAVE_ATOMIC64_T 1
-        typedef struct { volatile uint64_t gasneti_ctr; } gasneti_atomic64_t;
-        #define gasneti_atomic64_init(_v)       { (_v) }
-        #define _gasneti_atomic64_set(_p,_v)	do { (_p)->gasneti_ctr = (_v); } while(0)
-        #define _gasneti_atomic64_read(_p)	((_p)->gasneti_ctr)
-
-        static uint64_t gasneti_atomic64_swap_not(gasneti_atomic64_t *_p, uint64_t _oldval, uint64_t _newval);
-        #pragma mc_func gasneti_atomic64_swap_not {\
-	  /* ARGS: r3 = p, r4=oldval, r5=newval   LOCAL: r0 = tmp */ \
-	  "7c0018a8"	/* 0: ldarx   r0,0,r3	*/ \
-	  "7c002279"	/*    xor.    r0,r0,r4	*/ \
-	  "4082000c"	/*    bne-    1f	*/ \
-	  "7ca019ad"	/*    stdcx.  r5,0,r3	*/ \
-	  "40a2fff0"	/*    bne-    0b	*/ \
-	  "7c030378"	/* 1: mr      r3,r0	*/ \
-	  /* RETURN in r3 = 0 iff swap took place */ \
-        }
-        #pragma reg_killed_by gasneti_atomic64_swap_not cr0, gr0
-        #define _gasneti_atomic64_compare_and_swap(p, oldval, newval) \
-					(gasneti_atomic64_swap_not(p, oldval, newval) == 0)
-
-        static uint64_t _gasneti_atomic64_swap(gasneti_atomic64_t *_v, uint64_t _newval);
-        #pragma mc_func _gasneti_atomic64_swap {\
-	  /* ARGS: r3 = v, r4=newval   LOCAL: r0 = tmp */ \
-          "7c0018a8"    /*    ldarx   r0,0,r3   */ \
-          "7c8019ad"    /*    stdcx.  r4,0,r3   */ \
-          "40c2fff8"    /*    bne-    0b        */ \
-          "7c030378"    /*    mr      r3,r0     */ \
-	  /* RETURN in r3 = value before swap */ \
-        }
-        #pragma reg_killed_by _gasneti_atomic64_swap cr0, gr0
-        #define _gasneti_atomic64_swap _gasneti_atomic64_swap
-
-        static uint64_t _gasneti_atomic64_addfetch(gasneti_atomic64_t *_v, uint64_t _op);
-        #pragma mc_func _gasneti_atomic64_addfetch {\
-	  /* ARGS: r3 = v, LOCAL: r4 = op, r5 = tmp */ \
-          "7ca018a8"    /* 0: ldarx   r5,0,r3   */ \
-          "7ca52214"    /*    add     r5,r5,r4  */ \
-          "7ca019ad"    /*    stdcx.  r5,0,r3   */ \
-          "40c2fff4"    /*    bne-    0b        */ \
-          "7ca32b78"    /*    mr      r3,r5     */ \
-	  /* RETURN in r3 = result after addition */ \
-        }
-       #pragma reg_killed_by _gasneti_atomic64_addfetch cr0, gr4, gr5
-       #define _gasneti_atomic64_addfetch _gasneti_atomic64_addfetch
-
-      #elif defined(GASNETI_PPC64_ILP32_NATIVE_ATOMICS) /* ILP32 on 64-bit CPU */
-	#define GASNETI_HAVE_ATOMIC64_T 1
-        typedef struct { volatile uint64_t gasneti_ctr; } gasneti_atomic64_t;
-        #define gasneti_atomic64_init(_v)       { (_v) }
-
-        static uint64_t _gasneti_atomic64_read(gasneti_atomic64_t *_p);
-        #define _gasneti_atomic64_read _gasneti_atomic64_read
-        static void _gasneti_atomic64_set(gasneti_atomic64_t *_p, uint64_t _val);
-        #define _gasneti_atomic64_set _gasneti_atomic64_set
-        static int _gasneti_atomic64_compare_and_swap(gasneti_atomic64_t *_p, uint64_t _oldval, uint64_t _newval);
-        #define _gasneti_atomic64_compare_and_swap _gasneti_atomic64_compare_and_swap
-        static uint64_t _gasneti_atomic64_swap(gasneti_atomic64_t *_p, uint64_t _newval);
-        #define _gasneti_atomic64_swap _gasneti_atomic64_swap
-        static uint64_t _gasneti_atomic64_fetchadd(gasneti_atomic64_t *_p, uint64_t _op);
-        #define _gasneti_atomic64_fetchadd _gasneti_atomic64_fetchadd
-
-        #pragma mc_func _gasneti_atomic64_read { \
-          /* ARGS: r3 = p  RESULT: r3 = hi32, r4 = lo32 */ \
-	  /* LOCAL: r0 = canary, r5 = tmp */ \
-	  "38007fff"  /* 0: li      r0,0x7fff */ \
-	  "780007c6"  /*    sldi    r0,r0,32  */ \
-	  "e8a30000"  /*    ld      r5,0(r3)  */ \
-	  "78a40020"  /*    clrldi  r4,r5,32  */ \
-	  "78a50022"  /*    srdi    r5,r5,32  */ \
-	  "78000022"  /*    srdi    r0,r0,32  */ \
-	  "2c207fff"  /*    cmpdi   r0,0x7fff */ \
-	  "40a2ffe4"  /*    bne-    0b        */ \
-	  "7ca32b78"  /*    mr      r3,r5     */ \
-        }
-        #pragma reg_killed_by _gasneti_atomic64_read cr0, gr0, gr5
-
-	#if PLATFORM_OS_LINUX /* ABI differs from Darwin and AIX */
-          #pragma mc_func _gasneti_atomic64_set { \
-            /* ARGS: r3 = p, r5 = hi32, r6 = lo32  LOCAL: r0 = tmp */ \
-	    "78c60020"  /*    clrldi  r6,r6,32 */ \
-	    "7c0018a8"  /* 0: ldarx   r0,r0,r3 */ \
-	    "78a007c6"  /*    sldi    r0,r5,32 */ \
-	    "7c003378"  /*    or      r0,r0,r6 */ \
-	    "7c0019ad"  /*    stdcx.  r0,r0,r3 */ \
-	    "40a2fff0"  /*    bne-    0b       */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_set cr0, gr0, gr6
-          #pragma mc_func _gasneti_atomic64_compare_and_swap {\
-	    /* ARGS: r3 = p, r5=oldhi32, r6=oldlo32, r7=newhi32, r8=newlo32 */ \
-	    /* LOCAL: r0 = tmp1, r4 = tmp2 */ \
-	    "78c60020"  /*    clrldi  r6,r6,32 */ \
-	    "79080020"  /*    clrldi  r8,r8,32 */ \
-	    "7c0018a8"  /* 0: ldarx   r0,r0,r3 */ \
-	    "78a407c6"  /*    sldi    r4,r5,32 */ \
-	    "7c843378"  /*    or      r4,r4,r6 */ \
-	    "7c240000"  /*    cmpd    r4,r0    */ \
-	    "38800000"  /*    li      r4,0     */ \
-	    "40820010"  /*    bne-    1f       */ \
-	    "38800001"  /*    li      r4,1     */ \
-	    "78e007c6"  /*    sldi    r0,r7,32 */ \
-	    "7c004378"  /*    or      r0,r0,r8 */ \
-	    "7c0019ad"  /* 1: stdcx.  r0,r0,r3 */ \
-	    "40a2ffd8"  /*    bne-    0b       */ \
-	    "7c832378"  /*    mr      r3,r4    */ \
-	    /* RETURN in r3 = 1 iff swap took place */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_compare_and_swap cr0, gr0, gr4, gr6, gr7
-          #pragma mc_func _gasneti_atomic64_swap {\
-            /* ARGS: r3 = p, r5=hi32, r6=lo32 */  \
-            /* RESULT: r3 = hi32, r4 = lo32 */    \
-	    /* LOCAL: r0, r7 = tmps */            \
-            "78c60020"  /*    clrldi  r6,r6,32 */ \
-            "7c0018a8"  /* 0: ldarx   r0,0,r3  */ \
-            "78a707c6"  /*    sldi    r7,r5,32 */ \
-            "7ce73378"  /*    or      r7,r7,r6 */ \
-            "78040020"  /*    clrldi  r4,r0,32 */ \
-            "78000022"  /*    srdi    r0,r0,32 */ \
-            "7ce019ad"  /*    stdcx.  r7,0,r3  */ \
-            "40a2ffe8"  /*    bne-    0b       */ \
-            "7c030378"  /*    mr      r3,r0    */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_swap cr0, gr0, gr6, gr7
-          #pragma mc_func _gasneti_atomic64_fetchadd {\
-            /* ARGS: r3 = p, r5=hi32, r6=lo32 */  \
-            /* RESULT: r3 = hi32, r4 = lo32 */    \
-	    /* LOCAL: r0, r7 = tmps */            \
-            "78c60020"  /*    clrldi  r6,r6,32 */ \
-            "7c0018a8"  /* 0: ldarx   r0,0,r3  */ \
-            "78a707c6"  /*    sldi    r7,r5,32 */ \
-            "7ce73378"  /*    or      r7,r7,r6 */ \
-            "7ce70214"  /*    add     r7,r7,r0 */ \
-            "78040020"  /*    clrldi  r4,r0,32 */ \
-            "78000022"  /*    srdi    r0,r0,32 */ \
-            "7ce019ad"  /*    stdcx.  r7,0,r3  */ \
-            "40a2ffe4"  /*    bne-    0b       */ \
-            "7c030378"  /*    mr      r3,r0    */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_fetchadd cr0, gr0, gr6, gr7
-        #else /* Darwin or AIX */
-          #pragma mc_func _gasneti_atomic64_set { \
-            /* ARGS: r3 = p, r4 = hi32, r5 = lo32  LOCAL: r0 = tmp */ \
-	    "78a50020"  /*    clrldi  r5,r5,32 */ \
-	    "7c0018a8"  /* 0: ldarx   r0,0,r3  */ \
-	    "788007c6"  /*    sldi    r0,r4,32 */ \
-	    "7c002b78"  /*    or      r0,r0,r5 */ \
-	    "7c0019ad"  /*    stdcx.  r0,0,r3  */ \
-	    "40a2fff0"  /*    bne-    0b       */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_set cr0, gr0, gr5
-          #pragma mc_func _gasneti_atomic64_compare_and_swap {\
-	    /* ARGS: r3 = p, r4=oldhi32, r5=oldlo32, r6=newhi32, r7=newlo32 */ \
-	    /* LOCAL: r0 = tmp1, r8 = tmp2 */ \
-	    "78a50020"  /*    clrldi  r5,r5,32 */ \
-	    "78e70020"  /*    clrldi  r7,r7,32 */ \
-	    "7c0018a8"  /* 0: ldarx   r0,0,r3  */ \
-	    "788807c6"  /*    srdi    r8,r4,32 */ \
-	    "7d082b78"  /*    or      r8,r8,r5 */ \
-	    "7c280000"  /*    cmpd    r8,r0    */ \
-	    "39000000"  /*    li      r8,0     */ \
-	    "40820010"  /*    bne-    1f       */ \
-	    "39000001"  /*    li      r8,1     */ \
-	    "78c007c6"  /*    srdi    r0,r6,32 */ \
-	    "7c003b78"  /*    or      r0,r0,r7 */ \
-	    "7c0019ad"  /* 1: stdcx.  r0,0,r3  */ \
-	    "40a2ffd8"  /*    bne-    0b       */ \
-	    "7d034378"  /*    mr      r3,r8    */ \
-	    /* RETURN in r3 = 1 iff swap took place */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_compare_and_swap cr0, gr0, gr5, gr7, gr8
-          #pragma mc_func _gasneti_atomic64_swap {\
-            /* ARGS: r3 = p, r4=hi32, r5=lo32 */  \
-            /* RESULT: r3 = hi32, r4 = lo32 */    \
-	    /* LOCAL: r0, r6, r7 = tmps */        \
-            "78a50020"  /*    clrldi  r5,r5,32 */ \
-            "7c0018a8"  /*    ldarx   r0,0,r3  */ \
-            "788707c6"  /*    sldi    r7,r4,32 */ \
-            "7ce72b78"  /*    or      r7,r7,r5 */ \
-            "78060020"  /*    clrldi  r6,r0,32 */ \
-            "78000022"  /*    srdi    r0,r0,32 */ \
-            "7ce019ad"  /*    stdcx.  r7,0,r3  */ \
-            "40a2ffe8"  /*    bne-    0b       */ \
-            "7cc43378"  /*    mr      r4,r6    */ \
-            "7c030378"  /*    mr      r3,r0    */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_swap cr0, gr0, gr5, gr6, gr7
-          #pragma mc_func _gasneti_atomic64_fetchadd {\
-            /* ARGS: r3 = p, r4=hi32, r5=lo32 */  \
-            /* RESULT: r3 = hi32, r4 = lo32 */    \
-	    /* LOCAL: r0, r6, r7 = tmps */        \
-            "78a50020"  /*    clrldi  r5,r5,32 */ \
-            "7c0018a8"  /*    ldarx   r0,0,r3  */ \
-            "788707c6"  /*    sldi    r7,r4,32 */ \
-            "7ce72b78"  /*    or      r7,r7,r5 */ \
-            "7ce70214"  /*    add     r7,r7,r0 */ \
-            "78060020"  /*    clrldi  r6,r0,32 */ \
-            "78000022"  /*    srdi    r0,r0,32 */ \
-            "7ce019ad"  /*    stdcx.  r7,0,r3  */ \
-            "40a2ffe4"  /*    bne-    0b       */ \
-            "7cc43378"  /*    mr      r4,r6    */ \
-            "7c030378"  /*    mr      r3,r0    */ \
-          }
-          #pragma reg_killed_by _gasneti_atomic64_fetchadd cr0, gr0, gr5, gr6, gr7
-	#endif
-      #else
-	/* 32-bit CPU - generics are the only option */
-      #endif
-
-      /* Using default fences as we have none in our asms */
-    #elif GASNETI_HAVE_GCC_ASM
+    #if GASNETI_HAVE_GCC_ASM
       #if GASNETI_PGI_ASM_TPR23291
         #define GASNETI_ASM_CR0 /*empty*/
       #else

@@ -52,6 +52,7 @@ config param distributed = false; // NOTE - could default to CHPL_COMM != none
 use FileSystem;
 use Spawn;
 use Time;
+use IO;
 use Graph;
 use Random;
 use HashedDist;
@@ -95,7 +96,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
   var t:Timer;
   t.start();
 
-  const FilesSpace = {1..todo.length};
+  const FilesSpace = {1..todo.size};
   const BlockSpace = if distributed then
                        FilesSpace dmapped Block(boundingBox=FilesSpace)
                      else
@@ -240,7 +241,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
   while true {
     var got = max_user_id.read();
     var id = if got > max_id then got else max_id;
-    var success = max_user_id.compareExchangeWeak(got, id);
+    var success = max_user_id.compareAndSwap(got, id);
     if success then break;
   }
 }
@@ -248,7 +249,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
 proc process_json(fname: string, ref Pairs)
 {
 
-  var last3chars = fname[fname.length-2..fname.length];
+  var last3chars = fname[fname.size-3..];
   if last3chars == ".gz" {
     var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
     process_json(sub.stdout, fname, Pairs);
@@ -395,7 +396,7 @@ proc create_and_analyze_graph(Pairs)
   forall (lab,i) in zip(labels,1:int(32)..) {
     // TODO -- elegance - use "atomic counter" that acts as normal var
     // or change the default for the atomic
-    labels[i].write(i, memory_order_relaxed);
+    labels[i].write(i, memoryOrder.relaxed);
   }
 
   // label propagation for community detection according to
@@ -437,11 +438,11 @@ proc create_and_analyze_graph(Pairs)
   // Or we could just do it in the normal order...
 
   var go: atomic bool;
-  go.write(true, memory_order_relaxed);
+  go.write(true, memoryOrder.relaxed);
 
   var i = 0;
 
-  while go.read(memory_order_relaxed) && i < maxiter {
+  while go.read(memoryOrder.relaxed) && i < maxiter {
     // TODO: brad recommends changing the above to a for
     // look and then adding a break. He suggests:
     /*
@@ -457,7 +458,7 @@ proc create_and_analyze_graph(Pairs)
     */
 
     // stop unless we determine we should continue
-    go.write(false, memory_order_relaxed);
+    go.write(false, memoryOrder.relaxed);
 
     // TODO:  -> forall, but handle races in vertex labels?
     // iterate over G.vertices in a random order
@@ -477,7 +478,7 @@ proc create_and_analyze_graph(Pairs)
 
         if printall then
           writeln("on neighbor ", nid);
-        var nlabel = labels[nid].read(memory_order_relaxed);
+        var nlabel = labels[nid].read(memoryOrder.relaxed);
         if printall then
           writeln("with label ", nlabel);
 
@@ -487,14 +488,14 @@ proc create_and_analyze_graph(Pairs)
         counts[nlabel] += 1;
       }
 
-      var mylabel = labels[vid].read(memory_order_relaxed);
+      var mylabel = labels[vid].read(memoryOrder.relaxed);
 
       // TODO: ties should be broken uniformly randomly
       var maxlabel:int(32) = 0;
       var maxcount = 0;
       // TODO -- performance -- this allocates memory.
       // There might not be a tie.
-      var tiebreaker = makeRandomStream(seed+vid, eltType=bool,
+      var tiebreaker = createRandomStream(seed+vid, eltType=bool,
                                         parSafe=false, algorithm=RNG.PCG);
       for (count,lab) in zip(counts, counts.domain) {
         if count > maxcount || (count == maxcount && tiebreaker.getNext()) {
@@ -508,12 +509,12 @@ proc create_and_analyze_graph(Pairs)
       // stop when every node has a label a maximum number of neighbors have
       // (e.g. there might be 2 labels each attaining the maximum)
       if foundLabels.contains[mylabel] && counts[mylabel] < maxlabel {
-        go.write(true, memory_order_relaxed);
+        go.write(true, memoryOrder.relaxed);
       }
 
       // set the current label to the maximum label.
       if mylabel != maxlabel then
-        labels[vid].write(maxlabel, memory_order_relaxed);
+        labels[vid].write(maxlabel, memoryOrder.relaxed);
     }
     i += 1;
   } }
@@ -529,7 +530,7 @@ proc create_and_analyze_graph(Pairs)
     for vid in G.vertices {
       writeln("twitter user ", nodeToId[vid],
               " is in group ",
-              nodeToId[labels[vid].read(memory_order_relaxed)]);
+              nodeToId[labels[vid].read(memoryOrder.relaxed)]);
     }
   }
 

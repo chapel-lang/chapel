@@ -10,13 +10,13 @@ module Order {
 }
 
 module Godsmoot {
-  use Order only durkon;
-  use Order except durkon;
+  public use Order only durkon;
+  public use Order except durkon;
 }
 
 module Future {
-  use Godsmoot only durkon;
-  use Godsmoot except durkon;
+  public use Godsmoot only durkon;
+  public use Godsmoot except durkon;
 
   proc main() {
     writeln("hail hail, the ", roy, haley, elan, durkon, vaar, belkar, " all here");

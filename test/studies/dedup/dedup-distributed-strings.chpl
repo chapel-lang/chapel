@@ -3,6 +3,7 @@ use Spawn;
 use Sort;
 use BlockDist;
 use VisualDebug;
+use List;
 
 config const verbose = false;
 config const vis = "vis_strings";
@@ -17,16 +18,16 @@ proc main(args:[] string)
   // Start out with a 0-length array
   // We'll append to it with push_back
   // This is only possible for arrays that do not share a domain.
-  var paths:[1..0] string;
+  var paths: list(string);
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.push_back(arg);
+      paths.append(arg);
     else if isDir(arg) then
       // use FileSystem.findfiles to easily enumerate files.
       // A parallel version is available.
       for path in findfiles(arg, recursive=true) do
-        paths.push_back(path);
+        paths.append(path);
   }
 
   // Create a distributed array of paths so that we can distribute the
@@ -34,7 +35,7 @@ proc main(args:[] string)
   var n:int = paths.size;
   var BlockN = {1..n} dmapped Block({1..n});
   var distributedPaths:[BlockN] string;
-  distributedPaths = paths;
+  distributedPaths = paths.toArray();
  
   // Create an array of hashes paths.
   // This array is not distributed in this version.

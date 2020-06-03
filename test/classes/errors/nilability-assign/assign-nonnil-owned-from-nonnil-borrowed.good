@@ -1,0 +1,1 @@
+assign-nonnil-owned-from-nonnil-borrowed.chpl:8: error: Cannot assign to owned MyClass from borrowed MyClass

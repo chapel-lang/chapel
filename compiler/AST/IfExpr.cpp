@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -122,5 +123,15 @@ GenRet IfExpr::codegen() {
   GenRet ret;
   INT_FATAL(this, "IfExpr::codegen not implemented");
   return ret;
+}
+
+bool isLoweredIfExprBlock(BlockStmt* block) {
+  if (CallExpr* call = toCallExpr(block->body.last()))
+    if (call->isPrimitive(PRIM_MOVE) || call->isPrimitive(PRIM_ASSIGN))
+      if (SymExpr* lhs = toSymExpr(call->get(1)))
+        if (lhs->symbol()->hasFlag(FLAG_IF_EXPR_RESULT))
+          return true;
+
+  return false;
 }
 

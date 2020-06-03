@@ -10,6 +10,13 @@ methodCall.doc
 
    use methodCall.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import methodCall.doc;
+
 .. function:: proc nada() type
 
    This proc specifies the type of the next function's argument 

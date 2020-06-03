@@ -11,7 +11,7 @@ class C {
 }
 
 class D {
-  var x: C;
+  var x: borrowed C;
 
   proc init() {
     this.x = new C(42);

@@ -10,7 +10,14 @@ arrayLiteral.doc
 
    use arrayLiteral.doc;
 
-.. data:: var x = [i in 1..10] i;
+
+or
+
+.. code-block:: chapel
+
+   import arrayLiteral.doc;
+
+.. data:: var x = [i in 1..10] i
 
    This is an array created using the forall loop initialization 
 

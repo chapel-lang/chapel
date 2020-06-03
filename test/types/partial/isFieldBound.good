@@ -1,0 +1,8 @@
+T.T: true
+T.x: false
+T.U: true
+T.y: false
+----- partial -----
+R(int(64),U=real(64)) is partial? true
+R is partial? true
+R(int(64),5,real(64),10.0) is partial? false

@@ -1,4 +1,4 @@
-use CSV;
+use CSV, IO;
 
 config const filename = "strings.csv";
 

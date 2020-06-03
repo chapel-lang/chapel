@@ -1,3 +1,4 @@
+use IO;
 
 var b = read(bool);
 var i = read(int);

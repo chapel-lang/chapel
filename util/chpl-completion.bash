@@ -35,10 +35,12 @@ _chpl ()
 --cast-checks \
 --cc-warnings \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--copy-elision \
 --copy-propagation \
 --copyright \
 --count-tokens \
@@ -51,6 +53,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--early-deinit \
 --explain-call \
 --explain-call-id \
 --explain-instantiation \
@@ -67,7 +70,6 @@ _chpl ()
 --help \
 --help-env \
 --help-settings \
---heterogeneous \
 --home \
 --html \
 --html-chpl-home \
@@ -79,6 +81,7 @@ _chpl ()
 --ignore-errors \
 --ignore-errors-for-pass \
 --ignore-local-classes \
+--ignore-nilability-errors \
 --ignore-user-errors \
 --incremental \
 --infer-const-refs \
@@ -90,7 +93,7 @@ _chpl ()
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
---legacy-nilable-classes \
+--legacy-classes \
 --lib-linkage \
 --lib-search-path \
 --library \
@@ -141,6 +144,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
 --no-cpp-lines \
@@ -150,6 +154,7 @@ _chpl ()
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
+--no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
 --no-force-vectorize \
@@ -161,6 +166,7 @@ _chpl ()
 --no-ignore-errors \
 --no-ignore-errors-for-pass \
 --no-ignore-local-classes \
+--no-ignore-nilability-errors \
 --no-ignore-user-errors \
 --no-incremental \
 --no-infer-const-refs \
@@ -168,7 +174,7 @@ _chpl ()
 --no-inline \
 --no-inline-iterators \
 --no-interprocedural-alias-analysis \
---no-legacy-nilable-classes \
+--no-legacy-classes \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -189,6 +195,7 @@ _chpl ()
 --no-optimize-loop-iterators \
 --no-optimize-on-clauses \
 --no-optimize-range-iteration \
+--no-overload-sets-checks \
 --no-override-checking \
 --no-parse-only \
 --no-permit-unhandled-module-errors \
@@ -215,6 +222,7 @@ _chpl ()
 --no-report-blocking \
 --no-scalar-replacement \
 --no-specialize \
+--no-split-initialization \
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
@@ -234,10 +242,13 @@ _chpl ()
 --optimize-on-clauses \
 --optimize-range-iteration \
 --output \
+--overload-sets-checks \
 --override-checking \
 --parse-only \
 --parser-debug \
 --permit-unhandled-module-errors \
+--prepend-internal-module-dir \
+--prepend-standard-module-dir \
 --preserve-inlined-line-numbers \
 --print-all-candidates \
 --print-callgraph \
@@ -283,6 +294,7 @@ _chpl ()
 --scalar-replacement \
 --set \
 --specialize \
+--split-initialization \
 --stack-checks \
 --static \
 --stop-after-pass \
@@ -324,6 +336,7 @@ _chpl ()
 --cache-remote \
 --cast-checks \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \

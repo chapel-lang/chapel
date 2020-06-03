@@ -3,7 +3,7 @@
 
 #
 # Copyright © 2009 CNRS
-# Copyright © 2009-2018 Inria.  All rights reserved.
+# Copyright © 2009-2019 Inria.  All rights reserved.
 # Copyright © 2009-2012 Université Bordeaux
 # See COPYING in top-level directory.
 #
@@ -230,7 +230,7 @@ echo "Topology files gathered in $dirname/$basename.tar.bz2 and kept in $destdir
 export HWLOC_THISSYSTEM=0
 "$lstopo" - -v > "$dirname/$basename.output"
 echo "Expected topology output stored in $dirname/$basename.output"
-"$lstopo" -.xml --whole-system > "$dirname/$basename.xml"
+"$lstopo" -.xml --whole-io --whole-system > "$dirname/$basename.xml"
 echo "XML topology stored in in $dirname/$basename.xml"
 
 echo

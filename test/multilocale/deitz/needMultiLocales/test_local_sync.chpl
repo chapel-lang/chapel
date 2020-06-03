@@ -7,13 +7,13 @@ proc main {
 
   on Locales(1) {
     var i = s;
-    printf("%s\n", (here.id + " " + i).c_str());
+    printf("%s\n", (here.id:string + " " + i:string).c_str());
   }
 
   s = 3;
 
   on Locales(1) {
     var i = s;
-    printf("%s\n", (here.id + " " + i).c_str());
+    printf("%s\n", (here.id:string + " " + i:string).c_str());
   }
 }

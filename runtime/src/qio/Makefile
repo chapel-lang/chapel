@@ -1,3 +1,4 @@
+# Copyright 2020 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -31,8 +32,6 @@ QIO_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
 SUBDIRS = regexp/$(CHPL_MAKE_REGEXP)
-SUBDIRS += auxFilesys/hdfs
-SUBDIRS += auxFilesys/curl
 TARGETS = $(QIO_OBJS)
 
 ifneq (,$(findstring lustre,$(CHPL_MAKE_AUXFS)))

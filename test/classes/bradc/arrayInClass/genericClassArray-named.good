@@ -4,12 +4,9 @@ x is: 1.1 2.2 3.3
 x.domain is: {one}
 x is: 1.1
 
-x.domain is: {{}}
-x is: 1.1
-
 x.domain is: {2}
 x is: 2.2
 
-x.domain is: {C, A, W, S, B}
-x is: 5.5 3.3 2.2 1.1 4.4
+x.domain is: {C, W, S, A, B}
+x is: 5.5 2.2 1.1 3.3 4.4
 

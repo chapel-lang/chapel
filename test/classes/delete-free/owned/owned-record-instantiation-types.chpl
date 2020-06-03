@@ -24,19 +24,20 @@ record GenericCollection {
 }
 
 {
-  var a:GenericCollection(owned MyClass);
+  var a:GenericCollection(owned MyClass?);
   a.field = new owned MyClass();
   writeln("a ", a.type:string, " has field ", a.field.type:string);
 }
 
 {
-  var b:GenericCollection(owned MyClass);
+  var b:GenericCollection(owned MyClass?);
   b.field = new owned MyClass();
   writeln("b ", b.type:string, " has field ", b.field.type:string);
 }
 
 {
-  var c:GenericCollection(borrowed MyClass);
-  c.field = new owned MyClass();
+  var c:GenericCollection(borrowed MyClass?);
+  var other = new owned MyClass();
+  c.field = other;
   writeln("(borrowed) c ", c.type:string, " has field ", c.field.type:string);
 }

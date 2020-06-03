@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -17,10 +18,6 @@
  * limitations under the License.
  */
 
-//
-// Tasking-related macros for the Chapel uGNI communication layer.
-//
-
 #ifndef _COMM_TASK_DECLS_H_
 #define _COMM_TASK_DECLS_H_
 
@@ -35,7 +32,7 @@
 
 typedef struct {
   chpl_cache_taskPrvData_t cache_data;
-  uint8_t num_fma;
+  uint8_t num_comm;
   void* amo_nf_buff;
   void* get_buff;
   void* put_buff;
@@ -45,36 +42,18 @@ typedef struct {
 // Comm layer private area within executeOn argument bundles
 // (bundle.comm)
 typedef struct {
+  chpl_bool fast;
   chpl_fn_int_t fid;
-  int caller;
+  c_nodeid_t caller;
+  c_sublocid_t subloc;
+  size_t size;
   void* rf_done; // where to indicate completion on caller
+#ifdef CHPL_COMM_DEBUG
+  uint_least64_t seq;
+#endif
 } chpl_comm_bundleData_t;
 
-//
-// Nonblocking GET support.  Handle is a unique handle for the GET.
-// This value is initially returned by chpl_com_get_nb(), and can then
-// be passed to chpl_comm_test_get_nb() while polling for the GET to
-// complete.  Once chpl_comm_test_get_nb() returns true, however, the
-// handle is expired and must not be passed to it again.
-//
-// Code external to the comm layer must not assume anything about or
-// change any of the contents of a nonblocking GET handle.  The only
-// supported interface is via the functions described below.
-//
-// chpl_comm_get_nb()
-//   Get 'size' bytes of remote data at 'raddr' on locale 'locale' to
-//   local data at 'addr', nonblocking.
-//
-// chpl_comm_test_get_nb()
-//   Return nonzero if the GET associated with the given handle has
-//   completed.
-//
+// The type of the communication handle.
 typedef void* chpl_comm_nb_handle_t;
-
-chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, int32_t locale, void* raddr,
-                                       size_t size, int32_t typeIndex,
-                                       int32_t commID, int ln, int32_t fn);
-chpl_bool chpl_comm_test_get_nb(chpl_comm_nb_handle_t handle,
-                                int ln, int32_t fn);
 
 #endif

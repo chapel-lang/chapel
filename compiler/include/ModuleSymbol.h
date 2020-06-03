@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -75,7 +76,7 @@ public:
   void                    addDefaultUses();
 
   void                    moduleUseAdd(ModuleSymbol* module);
-  void                    moduleUseRemove(ModuleSymbol* module);
+  void                    deadCodeModuleUseRemove(ModuleSymbol* module);
 
   void                    printDocs(std::ostream* file,
                                     unsigned int  tabs,
@@ -93,7 +94,7 @@ public:
   FnSymbol*               initFn;
   FnSymbol*               deinitFn;
 
-  Vec<ModuleSymbol*>      modUseList;
+  std::vector<ModuleSymbol*> modUseList;
 
   const char*             filename;
   const char*             doc;
@@ -123,6 +124,7 @@ extern ModuleSymbol*      baseModule;
 extern ModuleSymbol*      stringLiteralModule;
 extern ModuleSymbol*      standardModule;
 extern ModuleSymbol*      printModuleInitModule;
+extern ModuleSymbol*      ioModule;
 
 extern Vec<ModuleSymbol*> allModules;
 extern Vec<ModuleSymbol*> userModules;

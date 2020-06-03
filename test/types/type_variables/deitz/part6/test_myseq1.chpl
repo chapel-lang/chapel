@@ -1,15 +1,15 @@
 class myseq_node {
   type elementType;
   var element : elementType;
-  var next : unmanaged myseq_node(elementType);
+  var next : unmanaged myseq_node(elementType)?;
 }
 
 class myseq {
   type elementType;
 
   var  length : int;
-  var  first  : unmanaged myseq_node(elementType);
-  var  last   : unmanaged myseq_node(elementType);
+  var  first  : unmanaged myseq_node(elementType)?;
+  var  last   : unmanaged myseq_node(elementType)?;
 
   proc deinit() {
     if first != nil then delete first;
@@ -27,7 +27,7 @@ class myseq {
   }
 
   proc print() {
-    writeln("sequence contains ", first.element);
+    writeln("sequence contains ", first!.element);
   }
 }
 

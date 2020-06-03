@@ -27,7 +27,7 @@ class MyClass {
 }
 
 record RMyClass {
-  var c:borrowed MyClass;
+  var c:borrowed MyClass?;
   proc init() {
     this.c = nil;
   }
@@ -37,7 +37,7 @@ record RMyClass {
 }
 
 // Globals
-var globalMyClass:borrowed MyClass;
+var globalMyClass:borrowed MyClass?;
 var globalRMyClass:RMyClass;
 
 // Test initialization block
@@ -69,7 +69,7 @@ class MyClassA {
   var x:int;
 }
 record SubRA {
-  var c:borrowed MyClassA;
+  var c:borrowed MyClassA?;
 }
 record RA {
   var sub:SubRA;

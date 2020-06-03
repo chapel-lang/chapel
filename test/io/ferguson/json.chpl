@@ -1,4 +1,6 @@
 
+use IO;
+
 record MyRecord {
   var a: int;
   var b: int;

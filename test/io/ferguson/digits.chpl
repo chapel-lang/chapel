@@ -1,3 +1,5 @@
+use IO;
+
 config const test = 2;
 
 

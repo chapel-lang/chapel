@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -104,6 +105,9 @@ void deadBlockElimination();
 void flattenNestedFunction(FnSymbol* nestedFunction);
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions);
 
+// foralls.cpp
+void checkTypeParamTaskIntent(SymExpr* outerSE);
+
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
@@ -124,6 +128,7 @@ bool isVirtualIterator(FnSymbol* iterFn);
 void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
+void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);
@@ -132,6 +137,7 @@ CallExpr* findDownEndCount(FnSymbol* fn);
 
 // resolution
 Expr*     resolveExpr(Expr* expr);
+void      resolveBlockStmt(BlockStmt* blockStmt);
 
 // type.cpp
 void initForTaskIntents();

@@ -1,7 +1,7 @@
-writeln("Fred".length);
+writeln("Fred".size);
 
 proc bob(s:string) {
-  writeln(s.length);
+  writeln(s.size);
 }
 
 var a = "Bob";

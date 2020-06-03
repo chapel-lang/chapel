@@ -1,4 +1,5 @@
 /*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -188,8 +189,7 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   // Add the fields to the struct
   ct->addDeclarations(fields);
 
-  // Create the type constructor
-  ct->buildTypeConstructor();
+  ct->processGenericFields();
 
   return ret;
 }

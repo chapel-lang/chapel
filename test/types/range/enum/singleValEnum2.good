@@ -1,0 +1,1 @@
+singleValEnum2.chpl:2: error: ranges are not currently supported for enums with fewer than two values

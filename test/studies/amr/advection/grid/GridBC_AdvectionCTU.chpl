@@ -1,4 +1,4 @@
-use GridBC_def;
+public use GridBC_def;
 
 
 
@@ -10,10 +10,10 @@ class ZeroInflowAdvectionBC: GridBC {
   
   //---- This type of BC is homogeneous ----
   
-  proc apply ( q: unmanaged GridVariable, t: real ) { apply_Homogeneous(q); }
+  override proc apply ( q: unmanaged GridVariable, t: real ) { apply_Homogeneous(q); }
   
   
-  proc apply_Homogeneous(q: unmanaged GridVariable) {
+  override proc apply_Homogeneous(q: unmanaged GridVariable) {
 
     for ghost_domain in grid.ghost_domains {
       forall cell in ghost_domain do

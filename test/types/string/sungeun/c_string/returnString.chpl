@@ -1,8 +1,8 @@
 use checkType;
 
 proc rcs() {
-  var s:c_string = "hi";
-  var ss = s:string + s:string;
+  var s = c"hi";
+  var ss = createStringWithNewBuffer(s) + createStringWithNewBuffer(s);
   var cs = ss.c_str();
   return cs;
 }
@@ -10,10 +10,10 @@ proc rcs() {
 checkType(c_string, rcs().type);
 
 proc rcss():string {
-  var s:c_string = "hi";
-  var ss = s:string + s:string;
+  var s = c"hi";
+  var ss = createStringWithNewBuffer(s) + createStringWithNewBuffer(s);
   var cs = ss.c_str();
-  return cs;
+  return createStringWithNewBuffer(cs);
 }
 
 checkType(rcss().type);

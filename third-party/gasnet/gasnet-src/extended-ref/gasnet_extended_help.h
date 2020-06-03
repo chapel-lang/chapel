@@ -239,8 +239,10 @@ typedef union {
   } while(0)
 #else
 #define GASNETE_VALUE_RETURN(src, nbytes) do {                               \
-    gasneti_assert(nbytes > 0 && nbytes <= sizeof(gex_RMA_Value_t)); \
-    switch (nbytes) {                                                        \
+    size_t __gvr_nbytes = (nbytes);                                          \
+    gasneti_assert(__gvr_nbytes > 0);                                        \
+    gasneti_assert_uint(__gvr_nbytes ,<=, sizeof(gex_RMA_Value_t));          \
+    switch (__gvr_nbytes) {                                                  \
       case 1: return (gex_RMA_Value_t)GASNETE_ANYTYPE_LVAL(src,8);   \
     GASNETE_OMIT_WHEN_MISSING_16BIT(                                         \
       case 2: return (gex_RMA_Value_t)GASNETE_ANYTYPE_LVAL(src,16);  \
@@ -249,7 +251,7 @@ typedef union {
       case 8: return (gex_RMA_Value_t)GASNETE_ANYTYPE_LVAL(src,64);  \
       default: { /* no such native nbytes integral type */                   \
           gex_RMA_Value_t _result = 0;                                       \
-          memcpy(GASNETE_STARTOFBITS(&_result,nbytes), src, nbytes);         \
+          memcpy(GASNETE_STARTOFBITS(&_result,nbytes), src, __gvr_nbytes);   \
           return _result;                                                    \
       }                                                                      \
     }                                                                        \
@@ -322,12 +324,24 @@ typedef union {
       return 0;                                                                 \
     }} while(0)
   #define GASNETI_CHECKPSHM_GETVAL(tm,rank,src,nbytes) do {                     \
+    size_t const _nbytes = (nbytes);                                            \
+    gasneti_assume(_nbytes > 0); /* bug 3793 */                                 \
+    gasneti_assume(_nbytes <= sizeof(gex_RMA_Value_t));                         \
     if (gasneti_pshm_in_supernode(tm,rank)) {                                   \
-      GASNETE_VALUE_RETURN(gasneti_pshm_addr2local(tm,rank,src), nbytes);       \
+      GASNETE_VALUE_RETURN(gasneti_pshm_addr2local(tm,rank,src), _nbytes);       \
     }} while(0)
   #define GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes) do {              \
+    size_t const _nbytes = (nbytes);                                            \
+    gasneti_assume(_nbytes > 0); /* bug 3793 */                                 \
+    gasneti_assume(_nbytes <= sizeof(gex_RMA_Value_t));                         \
     if (gasneti_pshm_in_supernode(tm,rank)) {                                   \
-      GASNETE_VALUE_ASSIGN(gasneti_pshm_addr2local(tm,rank,dest), value, nbytes); \
+      GASNETE_VALUE_ASSIGN(gasneti_pshm_addr2local(tm,rank,dest), value, _nbytes); \
+      gasnete_loopbackput_memsync();                                            \
+      return 0;                                                                 \
+    }} while(0)
+  #define GASNETI_CHECKPSHM_MEMSET(tm,rank,dest,val,nbytes) do {                \
+    if (gasneti_pshm_in_supernode(tm,rank)) {                                   \
+      memset(gasneti_pshm_addr2local(tm,rank,dest), val, nbytes);               \
       gasnete_loopbackput_memsync();                                            \
       return 0;                                                                 \
     }} while(0)
@@ -337,6 +351,22 @@ typedef union {
   #define GASNETI_CHECKPSHM_PUT_NOLC(tm,rank,dest,src,nbytes) ((void)0)
   #define GASNETI_CHECKPSHM_GETVAL(tm,rank,src,nbytes)        ((void)0)
   #define GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes) ((void)0)
+  #define GASNETI_CHECKPSHM_MEMSET(tm,rank,dest,val,nbytes)   ((void)0)
+#endif
+
+#if GASNET_DEBUG
+  #define GASNETI_CHECK_PUT_LCOPT(lc_opt, isnbi) do {                                    \
+    gex_Event_t *_gcpl_lc_opt = (lc_opt);                                                \
+    /* GEX_EVENT_{NOW,DEFER} always permitted */                                         \
+    if_pf (_gcpl_lc_opt == NULL)                                                         \
+      gasneti_fatalerror("gex_RMA_Put*(lc_opt=NULL) is invalid");                        \
+    else if_pf (isnbi && gasneti_leaf_is_pointer(_gcpl_lc_opt))                          \
+      gasneti_fatalerror("gex_RMA_PutNBI(lc_opt=<pointer>) is invalid (NB only)");       \
+    else if_pf (!isnbi && _gcpl_lc_opt == GEX_EVENT_GROUP)                               \
+      gasneti_fatalerror("gex_RMA_PutNB(lc_opt=GEX_EVENT_GROUP) is invalid (NBI only)"); \
+  } while (0)
+#else
+  #define GASNETI_CHECK_PUT_LCOPT(lc_opt, isnbi) do { } while (0)
 #endif
 
 // GASNETI_NBRHD_* convenience macros (same semantics w/ and w/o PSHM)

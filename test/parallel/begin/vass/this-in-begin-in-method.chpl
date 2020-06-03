@@ -4,9 +4,12 @@ record RR {
   var xx: int;
   proc modify(ee: int) {
     begin {
-      this.xx = ee;
+      doModify(this, ee);
     }
   }
+}
+proc doModify(ref recv: RR, ee: int) {
+  recv.xx = ee;
 }
 
 var rr = new RR();

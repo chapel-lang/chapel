@@ -8,18 +8,10 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 #
 # Cray X* builds are cross-compilations.
 #
-ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
 else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
 CHPL_HWLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
-endif
-
-#
-# Something with ffsl is broken with cce >= 8.4.0 (and older
-# versions with -hgnu thrown.)
-#
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-CFLAGS += -DHWLOC_HAVE_BROKEN_FFS
 endif
 
 CHPL_HWLOC_CFG_OPTIONS += --enable-static \
@@ -30,6 +22,7 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cuda \
                           --disable-nvml \
                           --disable-opencl \
+                          --disable-gl \
                           --disable-pci
 
 # Libnuma requires dynamic linking, so for the flat locale model where

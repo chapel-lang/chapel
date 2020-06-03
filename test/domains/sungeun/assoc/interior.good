@@ -1,2 +1,0 @@
-interior.chpl:4: In function 'my_interior':
-interior.chpl:5: error: interior not supported on associative domains

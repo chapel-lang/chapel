@@ -1,0 +1,6 @@
+R(string,"hi")
+hi
+(x = hello)
+(x = 1234)
+initialized 'W' from 'string' resulting in 'W(string)'
+initialized 'W' from 'int(64)' resulting in 'W(int(64))'
