@@ -44,8 +44,8 @@ proc masonNew(args) throws {
       var show = false;
       var packageName = '';
       var dirName = '';
-      var version = "";
-      var chplVersion = "";
+      var version = '';
+      var chplVersion = '';
       var countArgs = args.domain.low + 2;
       for arg in args[args.domain.low+2..] {
         countArgs += 1;
@@ -65,9 +65,9 @@ proc masonNew(args) throws {
             show = true;
           }
           when '--interactive' {
-            var metadata = beginInteractiveSession(false,'');
+            var metadata = beginInteractiveSession('');
             packageName = metadata[0];
-            dirName = packageName; 
+            dirName = packageName;
             version = metadata[1];
             chplVersion = metadata[2];
           }
@@ -89,7 +89,7 @@ proc masonNew(args) throws {
         }
       }
 
-      if validatePackageName(dirName=packageName) { 
+      if validatePackageName(dirName=packageName) {
         if isDir(dirName) {
           throw new owned MasonError("A directory named '" + dirName + "' already exists");
         }
@@ -107,55 +107,61 @@ proc masonNew(args) throws {
   Starts an interactive session to create a
   new library project.
 */
-proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
-  writeln("This is an interactive session to walk you through creating a library ",
-   "project using Mason.\nThe following queries covers the common items required to ",
-   "create the project.\nSuggestions for defaults are also provided which will be ",
-   "considered if no input is given.\n");
+proc beginInteractiveSession(defaultPackageName: string) throws {
+  var isInit: bool = false;
+  if defaultPackageName != '' then isInit = true;
+  writeln("""This is an interactive session to walk you through creating a library
+project using Mason. The following queries covers the common items required to
+create the project. Suggestions for defaults are also provided which will be
+considered if no input is given.""");
+  writeln();
   writeln("Press ^C to quit interactive mode.");
   var packageName: string;
+  var defPackageName: string = defaultPackageName;
   var version: string;
+  var defaultVersion: string = "0.1.0";
   var chapelVersion: string;
+  var currChapelVersion = getChapelVersionStr();
   var gotCorrectPackageName = false;
   var gotCorrectPackageVersion = false;
   var gotCorrectChapelVersion = false;
   while(1){
     try {
-      if gotCorrectPackageName == false {
+      if !gotCorrectPackageName {
         write("Package name ");
-        if isInit == true then write("(" + defaultPackageName + ") ");
+        if isInit then write("(" + defPackageName + ") ");
         write(": ");
         IO.stdout.flush();
         IO.stdin.readline(packageName);
         packageName = packageName.strip();
-        if isInit == true && packageName == '' then
-          packageName = defaultPackageName; 
-        if validatePackageName(packageName) == true then
+        if isInit && packageName == '' then
+          packageName = defaultPackageName;
+        if validatePackageName(packageName) then
           gotCorrectPackageName = true;
       }
-      if gotCorrectPackageVersion == false {
-        write("Package version (0.1.0): ");
+      if !gotCorrectPackageVersion {
+        write("Package version (" + defaultVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(version);
         version = version.strip();
-        if version == "" then version = "0.1.0";
+        if version == "" then version = defaultVersion;
         checkVersion(version);
         gotCorrectPackageVersion = true;
       }
-      if gotCorrectChapelVersion == false {
-        var currChapelVersion = getChapelVersionStr();
+      if !gotCorrectChapelVersion {
+        
         write("Chapel version (" + currChapelVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(chapelVersion);
         chapelVersion = chapelVersion.strip();
         if chapelVersion == "" then chapelVersion = currChapelVersion;
         if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
-        else if validateChplVersion(chapelVersion) == true
+        else if validateChplVersion(chapelVersion)
         then gotCorrectChapelVersion = true;
       }
-      if gotCorrectPackageName == true &&
-         gotCorrectPackageVersion == true &&
-         gotCorrectChapelVersion == true  {
+      if gotCorrectPackageName &&
+         gotCorrectPackageVersion &&
+         gotCorrectChapelVersion {
           previewMasonFile(packageName, version, chapelVersion);
           writeln();
           write("Is this okay ? (Y/N): ");
@@ -164,7 +170,15 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
           IO.stdin.readline(option);
           option = option.strip();
           if option == "Y" then break;
-          if option == "N" then exit(1);
+          if option == "N" then {
+            gotCorrectChapelVersion = false;
+            gotCorrectPackageName = false;
+            gotCorrectPackageVersion = false;
+            defaultVersion = version;
+            currChapelVersion = chapelVersion;
+            defPackageName = packageName;
+            continue;
+          }
       }
     }
     catch e: MasonError {
@@ -177,13 +191,7 @@ proc beginInteractiveSession(isInit: bool, defaultPackageName: string) throws {
 
 /* Previews the Mason.toml file that is going to be created */
 proc previewMasonFile(packageName, version, chapelVersion) {
-  const baseToml = '[brick]\n' +
-                     'name = "' + packageName + '"\n' +
-                     'version = "' + version + '"\n' +
-                     'chplVersion = "' + chapelVersion + '"\n' +
-                     '\n' +
-                     '[dependencies]' +
-                     '\n';
+  const baseToml = getBaseTomlString(packageName, version, chapelVersion);
   writeln();
   writeln(baseToml);
 }
@@ -196,7 +204,7 @@ proc validateChplVersion(chapelVersion) throws {
   var ret = false;
   (low, hi) = checkChplVersion(chapelVersion, low, hi);
   ret = low <= current && current <= hi;
-  if ret == false then throw new owned MasonError("Warning: Your current " +
+  if !ret then throw new owned MasonError("Warning: Your current " +
     "Chapel version ( " + getChapelVersionStr() + " ) is not compatible with this chplVersion.");
   else return true;
 }
@@ -265,21 +273,27 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
+proc getBaseTomlString(packageName: string, version: string, chapelVersion: string) {
+  const baseToml = """[brick]
+name = "%s"
+version = "%s"
+chplVersion = "%s"
+
+[dependencies]
+
+""".format(packageName, version, chapelVersion);
+  return baseToml;
+}
+
 /* Creates the Mason.toml file */
 proc makeBasicToml(dirName: string, path: string, version: string, chplVersion: string) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();
-  if !version.isEmpty() 
+  if !version.isEmpty()
     then defaultVersion = version;
-  if !chplVersion.isEmpty()  
+  if !chplVersion.isEmpty()
     then defaultChplVersion = chplVersion;
-  const baseToml = '[brick]\n' +
-                     'name = "' + dirName + '"\n' +
-                     'version = "' + defaultVersion + '"\n' +
-                     'chplVersion = "' + defaultChplVersion + '"\n' +
-                     '\n' +
-                     '[dependencies]' +
-                     '\n';
+  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion);
   var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);

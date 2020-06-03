@@ -111,7 +111,7 @@ proc masonNewHelp() {
   writeln('        --show                   Increase verbosity');
   writeln('        --no-vcs                 Do not initialize a git repository');
   writeln('    --name <legalName>           Specify package name different from directory name');
-  writeln('    --interactive                Starts an interactive session to create a library project.');
+  writeln('    --interactive                Starts an interactive session to create a project.');
 
 }
 
@@ -125,7 +125,7 @@ proc masonInitHelp(){
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('    --name <legalName>           Specify package name different from directory name');
-  writeln('    --interactive                Starts an interactive session to initialize a library project.');
+  writeln('    --interactive                Starts an interactive session to initialize a project.');
 }
 
 proc masonSearchHelp() {

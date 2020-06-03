@@ -71,7 +71,7 @@ proc masonInit(args) throws {
               } else legalName = legalName + str;
             }
           } else legalName = name;
-          var metadata = beginInteractiveSession(true, legalName);
+          var metadata = beginInteractiveSession(legalName);
           packageName = metadata[0];
           version = metadata[1];
           chplVersion = metadata[2];
