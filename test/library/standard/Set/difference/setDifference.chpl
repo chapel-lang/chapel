@@ -39,6 +39,9 @@ proc doTest(type eltType) {
   assert(s1.size == testIters);
   assert(s2.size == (testIters * 2));
   assert(s3.size == testIters);
+
+  s2 -= s1;
+  assert(s2 == s3);
 }
 
 doTest(int);

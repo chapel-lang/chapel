@@ -41,6 +41,9 @@ proc doTest(type eltType) {
 
   assert(s4.size == s2.size);
 
+  s1 |= s3;
+  assert(s1 == s4);
+
   for x in s4 do
     assert(s2.contains(x));
 }
