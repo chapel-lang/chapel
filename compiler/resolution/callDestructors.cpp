@@ -1102,7 +1102,9 @@ static bool isCheckedModuleScopeVariable(VarSymbol* var) {
     if (mod && def->parentExpr == mod->block) {
       if (var->hasFlag(FLAG_TYPE_VARIABLE) == false &&
           var->hasFlag(FLAG_EXTERN) == false &&
-          var->type->symbol->hasFlag(FLAG_EXTERN) == false)
+          var->type->symbol->hasFlag(FLAG_EXTERN) == false &&
+          var->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) == false &&
+          var->isParameter() == false)
         return true;
     }
   }
