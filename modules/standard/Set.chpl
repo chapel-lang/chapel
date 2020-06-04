@@ -156,10 +156,6 @@ module Set {
       return true;
     }
 
-    // Get the number of full hashtable slots.
-    pragma "no doc"
-    inline proc _getSize return _htb.tableNumFullSlots;
-
     /*
       Initialize this set with a unique copy of each element contained in
       `iterable`. If an element from `iterable` is already contained in this
@@ -415,7 +411,7 @@ module Set {
         ch <~> "{";
 
         for x in this {
-          if count <= (_getSize() - 1) {
+          if count <= (_htb.tableNumFullSlots - 1) {
             count += 1;
             ch <~> x <~> ", ";
           } else {
@@ -438,7 +434,7 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        result = _getSize == 0;
+        result = _htb.tableNumFullSlots == 0;
       }
 
       return result;
@@ -452,7 +448,7 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        result = _getSize;
+        result = _htb.tableNumFullSlots;
       }
 
       return result;
@@ -467,7 +463,7 @@ module Set {
       :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
-      var result: [0..#_getSize] eltType;
+      var result: [0..#_htb.tableNumFullSlots] eltType;
 
       if !isCopyableType(eltType) then
         compilerError('Cannot create array because set element type ' +
@@ -476,9 +472,9 @@ module Set {
       on this {
         _enter(); defer _leave();
 
-        if _getSize != 0 {
+        if _htb.tableNumFullSlots != 0 {
           var count = 0;
-          var array: [0..#_getSize] eltType;
+          var array: [0..#_htb.tableNumFullSlots] eltType;
 
           for x in this {
             array[count] = x;
