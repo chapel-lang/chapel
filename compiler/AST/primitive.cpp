@@ -1095,6 +1095,7 @@ initPrimitive() {
   // 1) type variable representing static type of field in _RuntimeTypeInfo
   // 2) type variable that will become the _RuntimeTypeInfo
   // 3) param-string name of the field in the _RuntimeTypeInfo
+  // existence of an optional 4th argument indicates the result is a type
   prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 
   // Corresponds to LLVM's invariant start

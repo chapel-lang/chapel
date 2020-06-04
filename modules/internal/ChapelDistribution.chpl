@@ -255,16 +255,24 @@ module ChapelDistribution {
       }
     }
 
-    inline proc remove_containing_arr(x:unmanaged BaseArr): int {
+    // returns true if the domain should be removed
+    inline proc remove_containing_arr(x:unmanaged BaseArr) {
       var count = -1;
       on this {
+        var cnt = -1;
         _arrsLock.lock();
         _arrs_containing_dom -= 1;
-        count = _arrs.size;
-        count += _arrs_containing_dom;
+        cnt = _arrs.size;
+        cnt += _arrs_containing_dom;
+        // add one for the main domain record
+        if !_free_when_no_arrs then
+          cnt += 1;
         _arrsLock.unlock();
+
+        count = cnt;
       }
-      return count;
+
+      return (count==0);
     }
 
     inline proc add_containing_arr(x:unmanaged BaseArr) {
