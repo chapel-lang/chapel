@@ -38,7 +38,7 @@
 //    }
 //
 
-int chpl_comm_callback_counts[chpl_comm_cb_num_event_kinds];
+extern int chpl_comm_callback_counts[chpl_comm_cb_num_event_kinds];
 
 static inline
 int chpl_comm_have_callbacks(chpl_comm_cb_event_kind_t event_kind) {

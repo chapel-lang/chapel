@@ -569,8 +569,7 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   // will need to be stridable as well. For example:
   // {1..20 by 4} in {1..20} to {101..120} = {101..120 by 4}
   param needsStridable = targetDom.stridable || srcSlice.stridable;
-  var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable);
-  rngs = targetDom.dims();
+  var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable) = targetDom.dims();
 
   for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);

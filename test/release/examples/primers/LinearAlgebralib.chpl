@@ -7,7 +7,7 @@
   .. contents:: Table of Contents
 
 */
-use LinearAlgebra, Norm;
+use LinearAlgebra;
 
 /*
 

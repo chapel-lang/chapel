@@ -20,25 +20,51 @@ test8
 1
 testrDefault
 init (default)
+init (default)
+init (default)
 (x = 0, ptr = {xx = 0})
+deinit 0 0
+deinit 0 0
 deinit 0 0
 -
 globalA is (x = 1, ptr = {xx = 1})
 -
 testr0
+in makeA
+init (default)
+init (default)
+init (default)
 init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+leaving makeA
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testr1 (copy required)
+init (default)
+init (default)
 init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testr2
+in makeA
+init (default)
+init (default)
+init (default)
 init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+leaving makeA
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testr3
 in makeTuple
@@ -46,69 +72,123 @@ init 1 1
 init= 1 1
 deinit 1 1
 done makeTuple
+init (default)
+init (default)
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testr4
-init 1 1
-init= 1 1
-init= 1 1
-init= 1 1
-deinit 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
 (x = 1, ptr = {xx = 1})
-deinit 1 1
-deinit 1 1
 -
 testr5
+init (default)
+init (default)
 init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testr6 (copy required)
+init (default)
+init (default)
 init= 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testC1
+init (default)
+init (default)
 init 1 1
 {AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testC2
+init (default)
+init (default)
 init 1 1
 {AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testC3
+in makeA
+init (default)
+init (default)
+init (default)
 init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+leaving makeA
 {AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testC4
+in makeA
+init (default)
+init (default)
+init (default)
 init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+leaving makeA
 {AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testR1
+init (default)
+init (default)
 init 1 1
 (AA = (x = 1, ptr = {xx = 1}))
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testR2
+init (default)
+init (default)
 init 1 1
 (AA = (x = 1, ptr = {xx = 1}))
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testR3
+in makeA
+init (default)
+init (default)
+init (default)
 init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+leaving makeA
 (AA = (x = 1, ptr = {xx = 1}))
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -
 testR4
+in makeA
+init (default)
+init (default)
+init (default)
 init 1 1
+lhs(0 0) = rhs(1 1)
+deinit 1 1
+leaving makeA
 {AA = (x = 1, ptr = {xx = 1})}
 deinit 1 1
+deinit 0 0
+deinit 0 0
 -

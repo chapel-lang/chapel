@@ -21,6 +21,10 @@
 /*
   Matrix and Vector Norms
 
+.. warning::
+
+    This module has been deprecated - please use :mod:`LinearAlgebra` instead.
+
   The Norm module currently defines:
 
     * 1-norm, 2-norm, infinity norm and Frobenius norm for 1D arrays
@@ -33,6 +37,8 @@
   which case the default norm for that array rank will be used.
  */
 module Norm {
+
+compilerWarning("Norm module is deprecated - please use LinearAlgebra instead");
 
 /*
   Indicates the different types of norms supported by this module:

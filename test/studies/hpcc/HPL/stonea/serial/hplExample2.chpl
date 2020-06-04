@@ -2,7 +2,7 @@
 // ranges).
 
 use Random;
-use Norm;
+use LinearAlgebra;
 
 // calculate C = C - A * B.
 proc dgemm(

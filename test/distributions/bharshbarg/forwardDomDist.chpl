@@ -5,7 +5,7 @@ proc Block.printBB() {
 }
 
 proc DefaultAssociativeDom.printTableSize() {
-  writeln("tableSize = ", tableSize);
+  writeln("tableSize = ", table.tableSize);
 }
 
 proc main() {

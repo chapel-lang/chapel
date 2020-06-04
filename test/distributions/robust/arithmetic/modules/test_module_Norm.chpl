@@ -2,7 +2,7 @@
 
 use driver_real_arrays;
 use Random;
-use Norm;
+use LinearAlgebra;
 
 config const is2D2Norm = false;
 

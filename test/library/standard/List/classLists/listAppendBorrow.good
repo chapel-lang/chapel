@@ -1,5 +1,5 @@
 listAppendBorrow.chpl:16: In function 'error7':
 listAppendBorrow.chpl:17: error: Actual argument does not meet called function lifetime constraint
 listAppendBorrow.chpl:16: note: consider scope of arg
-$CHPL_HOME/modules/standard/List.chpl:626: note: called function list(borrowed foo?,false).append(x: borrowed foo?)
-$CHPL_HOME/modules/standard/List.chpl:626: note: includes lifetime constraint this < x
+$CHPL_HOME/modules/standard/List.chpl:nnnn: note: called function list(borrowed foo?,false).append(x: borrowed foo?)
+$CHPL_HOME/modules/standard/List.chpl:nnnn: note: includes lifetime constraint this < x

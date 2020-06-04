@@ -35,6 +35,8 @@
 
 typedef struct {
   chpl_cache_taskPrvData_t cache_data;
+  uint8_t nfaCount;     // nonfetching AMO AM count
+  void* nfaBitmap;      // nonfetching AMO AM target nodes
   void* amo_nf_buff;
   void* get_buff;
   void* put_buff;

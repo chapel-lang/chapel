@@ -1,14 +1,1 @@
-#!/usr/bin/env python
-
-"""
-mason requires CHPL_COMM=none (local)
-
-mason external does not yet work on linux32 due to a bug in spack
-"""
-
-from __future__ import print_function
-from os import environ
-
-print(environ['CHPL_COMM'] != 'none' or environ['CHPL_REGEXP'] != 're2' or environ['CHPL_LAUNCHER'] != 'none' or environ['CHPL_TARGET_PLATFORM'] == 'linux32')
-
-
+../SKIPIF

@@ -833,15 +833,12 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     foundSplitInit = findInitPoints(call, initAssigns, prevent, allowReturns);
 
     if (foundSplitInit) {
-      // Check that all of the assignments have a same-type RHS
-      for_vector(CallExpr, call, initAssigns) {
-        Type* rhsType = call->get(2)->getValType();
-        if (rhsType != sym->type) {
-          prevent = call;
-          foundSplitInit = false;
-        }
-      }
-      // Check that it's not an array init we converted int =
+      // If the assignment has a different type RHS we should
+      // still apply split-init because the language rules
+      // here are type-independent. In that case, the type should
+      // also have an init= function accepting the different RHS type.
+
+      // Check that it's not an array init we converted into =
       // (This is a workaround - the actual solution is to have something
       //  like init= for arrays)
       if (sym->hasFlag(FLAG_INITIALIZED_LATER))
@@ -2122,14 +2119,16 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      }
     }
 
-    fn->insertAtHead(new DefExpr(tmp));
+    if (formal->getValType() != dtNothing) {
+      fn->insertAtHead(new DefExpr(tmp));
 
-    // For inout or out intent, this assigns the modified value back to the
-    // formal at the end of the function body.
-    if (formal->intent == INTENT_INOUT) {
-      fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
-    } else if (formal->intent == INTENT_OUT) {
-      fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
+      // For inout or out intent, this assigns the modified value back to the
+      // formal at the end of the function body.
+      if (formal->intent == INTENT_INOUT) {
+        fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
+      } else if (formal->intent == INTENT_OUT) {
+        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
+      }
     }
   }
 }

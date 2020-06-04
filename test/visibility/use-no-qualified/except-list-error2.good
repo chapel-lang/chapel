@@ -1,0 +1,2 @@
+except-list-error2.chpl:10: In function 'main':
+except-list-error2.chpl:11: error: 'A' undeclared (first use this function)

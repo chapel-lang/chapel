@@ -3,8 +3,10 @@ use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, StencilDist;
 enum DistType { default, block, cyclic, blockcyclic, replicated, stencil };
 config param distType: DistType = DistType.block;
 
+config param makeAHidesInit = true;
+
 config var printInitDeinit = true;
-  
+
 class C {
   var xx: int = 0;
 }
@@ -114,7 +116,7 @@ proc test4() {
 }
 A = 0;
 test4();
-  
+
 proc test5() {
   writeln("test5");
   var B:[A.domain] int = [i in 1..1] i;
@@ -157,12 +159,24 @@ writeln("-");
 
 proc makeA() {
   var savePrint = printInitDeinit;
-  printInitDeinit = false;
+  if makeAHidesInit {
+    printInitDeinit = false;
+  } else if printInitDeinit {
+    writeln("in makeA");
+  }
+
   var ret: [A.domain] R;
-  ret[1] = new R(1);
-  printInitDeinit = savePrint;
-  if printInitDeinit then
-    writeln("init 1 1");
+  {
+    ret[1] = new R(1);
+    printInitDeinit = savePrint;
+  }
+  if printInitDeinit {
+    if makeAHidesInit {
+      writeln("init 1 1");
+    } else {
+      writeln("leaving makeA");
+    }
+  }
   return ret;
 }
 
@@ -216,8 +230,18 @@ writeln("-");
 
 proc testr4() {
   writeln("testr4");
-  var B:[A.domain] R = new R(1);
-  writeln(B);
+  // don't print init/deinit for this test because
+  // it varies depending on the number of tasks
+  // and the init/deinits can overlap
+  var savePrintInitDeinit = printInitDeinit;
+  printInitDeinit = false;
+
+  {
+    var B:[A.domain] R = new R(1);
+    writeln(B);
+  }
+
+  printInitDeinit = savePrintInitDeinit;
 }
 testr4();
 writeln("-");

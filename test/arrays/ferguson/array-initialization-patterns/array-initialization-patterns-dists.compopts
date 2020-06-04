@@ -1,6 +1,6 @@
 -sdistType=DistType.default # array-initialization-patterns-dists.default.good
 -sdistType=DistType.block   # array-initialization-patterns-dists.block.good
 -sdistType=DistType.cyclic  # array-initialization-patterns-dists.cyclic.good
--sdistType=DistType.blockcyclic # array-initialization-patterns-dists.blockcyclic.good
+-sdistType=DistType.blockcyclic -smakeAHidesInit=false # array-initialization-patterns-dists.blockcyclic.good
 -sdistType=DistType.replicated # array-initialization-patterns-dists.replicated.good
 -sdistType=DistType.stencil # array-initialization-patterns-dists.stencil.good
