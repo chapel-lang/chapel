@@ -147,10 +147,7 @@ considered if no input is given.""");
         write(": ");
         IO.stdout.flush();
         IO.stdin.readline(packageName);
-        if packageName == '' {
-          writeln();
-          exit(1);
-        }
+        exitOnEOF(packageName);
         packageName = packageName.strip();
         if isInit && packageName == '' then
           packageName = defaultPackageName;
@@ -172,10 +169,7 @@ considered if no input is given.""");
         write("Package version (" + defaultVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(version);
-        if version == '' {
-          writeln();
-          exit(1);
-        }
+        exitOnEOF(version);
         version = version.strip();
         if version == "" then version = defaultVersion;
         checkVersion(version);
@@ -185,10 +179,7 @@ considered if no input is given.""");
         write("Chapel version (" + currChapelVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(chapelVersion);
-        if chapelVersion == '' {
-          writeln();
-          exit(1);
-        }
+        exitOnEOF(chapelVersion);
         chapelVersion = chapelVersion.strip();
         if chapelVersion == "" then chapelVersion = currChapelVersion;
         if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
@@ -204,10 +195,7 @@ considered if no input is given.""");
           IO.stdout.flush();
           var option: string;
           IO.stdin.readline(option);
-          if option == '' {
-            writeln();
-            exit(1);
-          }
+          exitOnEOF(option);
           option = option.strip();
           option = option.toUpper();
           if option == "Y" then break;
@@ -229,6 +217,13 @@ considered if no input is given.""");
     }
   }
   return (packageName, version, chapelVersion);
+}
+
+proc exitOnEOF(parameter) {
+  if parameter == '' {
+    writeln();
+    exit(1);
+  }
 }
 
 /* Previews the Mason.toml file that is going to be created */
