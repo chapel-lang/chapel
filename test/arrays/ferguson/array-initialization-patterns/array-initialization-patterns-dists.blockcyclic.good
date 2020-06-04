@@ -80,21 +80,7 @@ deinit 0 0
 deinit 0 0
 -
 testr4
-init 1 1
-init (default)
-init (default)
-init= 1 1
-init= 1 1
-init= 1 1
-deinit 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
 (x = 1, ptr = {xx = 1})
-deinit 1 1
-deinit 0 0
-deinit 0 0
-deinit 1 1
 -
 testr5
 init (default)
