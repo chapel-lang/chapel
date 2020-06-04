@@ -47,6 +47,15 @@ proc masonNew(args) throws {
       var version = '';
       var chplVersion = '';
       var countArgs = args.domain.low + 2;
+      // --interactive and --name should not be used together
+      var hasName = false;
+      var hasInteractive = false;
+      for arg in args[args.domain.low+2..] {
+        if arg.startsWith('--name') then hasName = true;
+        if arg == '--interactive' then hasInteractive = true;
+      }
+      if hasName && hasInteractive then throw new owned MasonError("Arguments " +
+                            "--interactive and --name cannot be used together");
       for arg in args[args.domain.low+2..] {
         countArgs += 1;
         select (arg) {
@@ -110,6 +119,11 @@ proc masonNew(args) throws {
 proc beginInteractiveSession(defaultPackageName: string) throws {
   var isInit: bool = false;
   if defaultPackageName != '' then isInit = true;
+  if isInit && isFile('./Mason.toml') {
+    throw new owned MasonError("Unable to run mason init --interactive. Mason.toml" + 
+                               " file already exists.");
+    exit(1);
+  }
   writeln("""This is an interactive session to walk you through creating a library
 project using Mason. The following queries covers the common items required to
 create the project. Suggestions for defaults are also provided which will be
@@ -133,16 +147,35 @@ considered if no input is given.""");
         write(": ");
         IO.stdout.flush();
         IO.stdin.readline(packageName);
+        if packageName == '' {
+          writeln();
+          exit(1);
+        }
         packageName = packageName.strip();
         if isInit && packageName == '' then
           packageName = defaultPackageName;
-        if validatePackageName(packageName) then
-          gotCorrectPackageName = true;
+        var isIllegalName: bool = false;
+        if !isIdentifier(packageName) {
+          isIllegalName = true;
+          throw new owned MasonError("Bad package name '"+ packageName + "' - only Chapel" +
+             " identifiers are legal package names.");
+        }
+        if !isIllegalName {
+          if !isInit && isDir('./' + packageName) then
+            throw new owned MasonError("Bad package name. A package with the name '" 
+                              + packageName + "' already exists.");
+          if validatePackageName(packageName) then
+            gotCorrectPackageName = true; 
+        }
       }
       if !gotCorrectPackageVersion {
         write("Package version (" + defaultVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(version);
+        if version == '' {
+          writeln();
+          exit(1);
+        }
         version = version.strip();
         if version == "" then version = defaultVersion;
         checkVersion(version);
@@ -152,6 +185,10 @@ considered if no input is given.""");
         write("Chapel version (" + currChapelVersion + "): ");
         IO.stdout.flush();
         IO.stdin.readline(chapelVersion);
+        if chapelVersion == '' {
+          writeln();
+          exit(1);
+        }
         chapelVersion = chapelVersion.strip();
         if chapelVersion == "" then chapelVersion = currChapelVersion;
         if chapelVersion == currChapelVersion then gotCorrectChapelVersion = true;
@@ -167,10 +204,15 @@ considered if no input is given.""");
           IO.stdout.flush();
           var option: string;
           IO.stdin.readline(option);
+          if option == '' {
+            writeln();
+            exit(1);
+          }
           option = option.strip();
           option = option.toUpper();
           if option == "Y" then break;
           if option == "N" then {
+            isInit = true;
             gotCorrectChapelVersion = false;
             gotCorrectPackageName = false;
             gotCorrectPackageVersion = false;
@@ -204,7 +246,7 @@ proc validateChplVersion(chapelVersion) throws {
   var ret = false;
   (low, hi) = checkChplVersion(chapelVersion, low, hi);
   ret = low <= current && current <= hi;
-  if !ret then throw new owned MasonError("Warning: Your current " +
+  if !ret then throw new owned MasonError("Your current " +
     "Chapel version ( " + getChapelVersionStr() + " ) is not compatible with this chplVersion.");
   else return true;
 }

@@ -44,6 +44,15 @@ proc masonInit(args) throws {
     var version = '';
     var chplVersion = '';
     var countArgs = args.domain.low + 2;
+    // --interactive and --name should not be used together
+    var hasName = false;
+    var hasInteractive = false;
+    for arg in args[args.domain.low+2..] {
+      if arg.startsWith('--name') then hasName = true;
+      if arg == '--interactive' then hasInteractive = true; 
+    }
+    if hasName && hasInteractive then throw new owned MasonError("Arguments " +
+                      "--interactive and --name cannot be used together");
     for arg in args[args.domain.low+2..] {
       countArgs += 1;
       select (arg) {
