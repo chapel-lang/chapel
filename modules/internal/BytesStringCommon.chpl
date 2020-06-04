@@ -681,6 +681,7 @@ module BytesStringCommon {
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
+      getCodepoints(lhs, rhs);
     }
   }
 
@@ -846,5 +847,14 @@ module BytesStringCommon {
       hash = locHash;
     }
     return hash:uint;
+  }
+
+  inline proc getCodepoints(ref lhs: ?t1, rhs: ?t2) {
+    if t1 != string then return;
+    if(lhs.cachedNumCodepoints == -1 || rhs.cachedNumCodepoints == -1) {
+      lhs.cachedNumCodepoints = -1;
+    } else {
+      lhs.cachedNumCodepoints = lhs.cachedNumCodepoints + rhs.cachedNumCodepoints;
+    }
   }
 }

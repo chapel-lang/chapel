@@ -909,6 +909,7 @@ module String {
     proc ref reinitString(buff: bufferType, s_len: int, size: int,
                           needToCopy:bool = true, ownBuffer = false) {
       if this.isEmpty() && buff == nil then return;
+      this.cachedNumCodepoints = try! validateEncoding(buff, s_len);
 
       // If the this.buff is longer than buff, then reuse the buffer if we are
       // allowed to (this.isOwned == true)
