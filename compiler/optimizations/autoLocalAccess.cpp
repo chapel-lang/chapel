@@ -440,8 +440,128 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
   }
 }
 
-static void generateOptimizedLoops(ForallStmt *forall) {
+static void optimizeLoop(ForallStmt *forall,
+                         Expr *&staticCond, CallExpr *&dynamicCond,
+                         bool doStatic) {
 
+  std::vector<CallExpr *> candidates = doStatic ?
+      forall->optInfo.staticCandidates :
+      forall->optInfo.dynamicCandidates;
+
+  for_vector(CallExpr, candidate, candidates) {
+    Symbol *callBase = getCallBase(candidate);
+    Symbol *checkSym = generateStaticCheckForAccess(candidate,
+                                                    forall,
+                                                    staticCond);
+    if (!doStatic) {
+      generateDynamicCheckForAccess(candidate, forall, dynamicCond);
+    }
+
+    if (!doStatic) {
+      LOG("\tOptimizing dynamic candidate", candidate);
+    }
+    else {
+      LOG("\tOptimizing static candidate", candidate);
+    }
+
+    SET_LINENO(candidate);
+
+    CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
+    for (int i = 1 ; i <= candidate->argList.length ; i++) {
+      Symbol *argSym = toSymExpr(candidate->get(i))->symbol();
+      INT_ASSERT(argSym);
+
+      repl->insertAtTail(new SymExpr(argSym));
+    }
+    repl->insertAtTail(new SymExpr(checkSym));
+
+    // mark dynamically-determined access. Today, this is only used for more
+    // accurate logging
+
+    if (!doStatic) {
+      repl->insertAtTail(new SymExpr(gFalse));
+    }
+    else {
+      repl->insertAtTail(new SymExpr(gTrue));
+    }
+
+    candidate->replace(repl);
+  }
+}
+
+static ForallStmt *cloneLoop(ForallStmt *forall) {
+  SET_LINENO(forall);
+
+  ForallStmt *clone = forall->copy();
+  clone->optInfo.autoLocalAccessChecked = forall->optInfo.autoLocalAccessChecked;
+  return clone;
+}
+
+// expects `optimized` to be in the AST, `unoptimized` to be not
+//
+// turns
+//
+//   optimized
+//
+// into
+//
+//   if condExpr then
+//     optimized
+//   else
+//     unoptimized
+static void constructCondStmtFromLoops(Expr *condExpr,
+                                       ForallStmt *optimized,
+                                       ForallStmt *unoptimized) {
+
+  BlockStmt *thenBlock = new BlockStmt();
+  BlockStmt *elseBlock = new BlockStmt();
+  CondStmt *cond = new CondStmt(condExpr, thenBlock, elseBlock);
+
+  optimized->insertAfter(cond);
+  thenBlock->insertAtTail(optimized->remove());
+  elseBlock->insertAtTail(unoptimized);
+}
+
+// Takes a forall statement and generates the following structure:
+//
+// param staticCheck1 = staticCheck(arr1, loopDomain)
+// param staticCheck2 = staticCheck(arr2, loopDomain)
+// ...
+// param staticCheckN = staticCheck(arrN, loopDomain)
+//
+// if (staticCheck1 || statickCheck2 || ... || staticCheckN) {
+//   
+//   const dynamicCheck = (!staticCheck1 || dynamicCheck(arr1, loopDomain)) &&
+//                        (!staticCheck2 || dynamicCheck(arr2, loopDomain)) &&
+//                        ...
+//                        (!staticCheckN || dynamicCheck(arrN, loopDomain));
+//
+//   if dynamicCheck {
+//     loop2
+//   }
+//   else {
+//     loop1
+//   }
+// }
+// else {
+//   loop0
+// }
+//
+// loop0: This'll be the copy of the unoptimized forall loop
+// loop1: This'll contain optimizations that can be decided at the compile time
+//        only. If there is no such optimizations but there are some that can be
+//        determined at runtime, we still create this and it'll be identical to
+//        loop0. This'll be the "backup" loop for potential dynamic check
+//        failure
+// loop2: Optional. This is only created if there are some dynamic candidates
+//        and dynamic optimizations are enabled with the
+//        `--auto-local-access-dynamic` flag.
+// 
+// Note that the static checks are param flags and during resolution we'll
+// defintely lose either loop0 or the bigger branch. In other words, there can
+// be duplicate loops at the end of normalize, but after resolution we expect
+// them to go away.
+static void generateOptimizedLoops(ForallStmt *forall) {
   std::vector<CallExpr *> &sOptCandidates = forall->optInfo.staticCandidates;
   std::vector<CallExpr *> &dOptCandidates = forall->optInfo.dynamicCandidates;
 
@@ -453,93 +573,23 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   Expr *staticCond = NULL;
   CallExpr *dynamicCond = NULL;
 
-  SET_LINENO(forall);
-
-  noOpt = forall->copy();
-  noOpt->optInfo.autoLocalAccessChecked = true;
-
+  noOpt = cloneLoop(forall);
   if (sOptCandidates.size() > 0) {
-    for_vector(CallExpr, sOptCandidate, sOptCandidates) {
-      Symbol *checkSym = generateStaticCheckForAccess(sOptCandidate, forall,
-                                                      staticCond);
-
-      LOG("\tOptimizing static candidate", sOptCandidate);
-
-      SET_LINENO(sOptCandidate);
-      Symbol *baseSym = toSymExpr(sOptCandidate->baseExpr)->symbol();
-      INT_ASSERT(baseSym);
-
-      CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(baseSym));
-      for (int i = 1 ; i <= sOptCandidate->argList.length ; i++) {
-        Symbol *argSym = toSymExpr(sOptCandidate->get(i))->symbol();
-        INT_ASSERT(argSym);
-
-        repl->insertAtTail(new SymExpr(argSym));
-      }
-      repl->insertAtTail(new SymExpr(checkSym));
-
-      // mark statically-determined access. Today, this is only used for more
-      // accurate logging
-      repl->insertAtTail(new SymExpr(gTrue));
-
-      sOptCandidate->replace(repl);
-    }
+    optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ true);
   }
 
   if (fAutoLocalAccessDynamic && dOptCandidates.size() > 0) {
-    SET_LINENO(forall);
-
-    noDyn = forall->copy();
-    noDyn->optInfo.autoLocalAccessChecked = true;
-
-    // static Cond is already in the tree now
-    for_vector(CallExpr, dOptCandidate, dOptCandidates) {
-      Symbol *callBase = getCallBase(dOptCandidate);
-      Symbol *checkSym = generateStaticCheckForAccess(dOptCandidate,
-                                                      forall,
-                                                      staticCond);
-      generateDynamicCheckForAccess(dOptCandidate, forall, dynamicCond);
-
-      LOG("\tOptimizing dynamic candidate", dOptCandidate);
-
-      SET_LINENO(dOptCandidate);
-
-      CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
-      for (int i = 1 ; i <= dOptCandidate->argList.length ; i++) {
-        Symbol *argSym = toSymExpr(dOptCandidate->get(i))->symbol();
-        INT_ASSERT(argSym);
-
-        repl->insertAtTail(new SymExpr(argSym));
-      }
-      repl->insertAtTail(new SymExpr(checkSym));
-
-      // mark dynamically-determined access. Today, this is only used for more
-      // accurate logging
-      repl->insertAtTail(new SymExpr(gFalse));
-
-      dOptCandidate->replace(repl);
-    }
+    noDyn = cloneLoop(forall);
+    optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ false);
   }
   
   // here create the main structure
-  if (staticCond != NULL) {
-    BlockStmt *thenBlock = new BlockStmt();
-    BlockStmt *elseBlock = new BlockStmt();
-    CondStmt *staticCheck = new CondStmt(staticCond, thenBlock, elseBlock);
-
-    forall->insertAfter(staticCheck);
-    thenBlock->insertAtTail(forall->remove());
-    elseBlock->insertAtTail(noOpt);
+  if (staticCond != NULL) {  // this must be true at this point
+    constructCondStmtFromLoops(staticCond, forall, noOpt);
   }
   
   if (dynamicCond != NULL) {
-    BlockStmt *thenBlock = new BlockStmt();
-    BlockStmt *elseBlock = new BlockStmt();
-    CondStmt *dynamicCheck = new CondStmt(dynamicCond, thenBlock, elseBlock);
-
-    forall->insertAfter(dynamicCheck);
-    thenBlock->insertAtTail(forall->remove());
-    elseBlock->insertAtTail(noDyn);
+    constructCondStmtFromLoops(dynamicCond, forall, noDyn);
   }
 }
 
