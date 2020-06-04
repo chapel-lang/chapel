@@ -1,8 +1,0 @@
-$CHPL_HOME/modules/standard/Set.chpl:305: In function 'remove':
-$CHPL_HOME/modules/standard/Set.chpl:312: error: Cannot default-initialize a tuple component of the type shared T
-note: non-nil class types do not support default initialization
-note: Consider using the type shared T? instead
-$CHPL_HOME/modules/standard/Set.chpl:312: error: Cannot default-initialize a tuple component of the type shared T
-note: non-nil class types do not support default initialization
-note: Consider using the type shared T? instead
-./SetTest.chpl:11: Function 'remove' instantiated as: remove(this: set(2*shared T,false))

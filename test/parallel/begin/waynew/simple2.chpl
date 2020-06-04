@@ -1,4 +1,6 @@
 var go: sync bool;
+proc ensureDefaultInit(arg) { }
+ensureDefaultInit(go); // make sure go is default-initialized
 
 var a: sync int;
 
@@ -31,4 +33,3 @@ proc jam_records() {
 
 jam_records();
 go = true;
-
