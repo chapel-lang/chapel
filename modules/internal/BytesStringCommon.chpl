@@ -248,11 +248,13 @@ module BytesStringCommon {
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffLen = otherLen+1;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
         // if other is local just adjust my buff and _size
         x.buff = other.buff;
         x.buffSize = other.buffSize;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
     }
   }
@@ -279,6 +281,7 @@ module BytesStringCommon {
     x.buff = other;
     x.buffSize = size;
     x.buffLen = length;
+    if t == string then x.cachedNumCodepoints = x.numCodepoints;
   }
 
   proc initWithNewBuffer(ref x: ?t, other: t) {
@@ -295,6 +298,7 @@ module BytesStringCommon {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
         // if s is local create a copy of its buffer and own it
@@ -302,6 +306,7 @@ module BytesStringCommon {
         x.buff = buff;
         x.buff[x.buffLen] = 0;
         x.buffSize = allocSize;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
     }
   }
