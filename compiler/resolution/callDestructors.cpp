@@ -1457,16 +1457,17 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
     }
   }
 
+  CallExpr* checkCall = fCall ? fCall : call;
   // Then, check any called functions
-  if (checkIfCalledUsesInvalid(call, false)) {
+  if (checkIfCalledUsesInvalid(checkCall, false)) {
     for_vector (VarSymbol, var, errorGlobalVariables) {
-      USR_FATAL_CONT(call,
+      USR_FATAL_CONT(checkCall,
                      "module-scope variable '%s' may be used "
                      "before it is initialized",
                      var->name);
       printUseBeforeInitDetails(var);
     }
-    checkIfCalledUsesInvalid(call, true);
+    checkIfCalledUsesInvalid(checkCall, true);
   }
 
   // Then, note the variables initialized by the call
