@@ -390,7 +390,19 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
     } else if (isNilableClassType(at)) {
       ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-
+    } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+      Flag flag = FLAG_TYPE_DEFAULT_VALUE;
+      for_fields(field, at) {
+        if (field->isRef()) continue;
+        if (AggregateType* at = toAggregateType(field->getValType())) {
+          setRecordDefaultValueFlags(at);
+          if (at->symbol->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
+            flag = FLAG_TYPE_NO_DEFAULT_VALUE;
+            break;
+          }
+        }
+      }
+      ts->addFlag(flag);
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
         setRecordAssignableFlags(eltTypeAt);
