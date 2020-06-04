@@ -215,6 +215,7 @@ no9
 init
 init 9000
 = 0 9000
+test18
 TestClass18.init()
 init
 init= 0
@@ -228,3 +229,13 @@ init
 init field3 after this.complete()
 init 3
 = 0 3
+test19
+init
+(x = 0, ptr = {})
+init 19
+= 0 19
+test20
+init
+(x = 0, ptr = {})
+init 20
+= 0 20
