@@ -501,8 +501,9 @@ module String {
   // End index arithmetic support
 
   private proc validateEncoding(buf, len): int throws {
-    var numCodepoints: int;
     extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
+    
+    var numCodepoints: int;
     
     if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
@@ -578,14 +579,14 @@ module String {
   }
 
   pragma "no doc"
-  proc chpl_createStringWithLiteral(x: c_string, length:int, numCodepoints: int) {
+  proc chpl_createStringWithLiteral(x: c_string, length: int, numCodepoints: int) {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
     return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
                                                  length=length,
                                                  size=length+1,
-                                                 numCodepoints);
+                                                 numCodepoints=numCodepoints);
   }
 
   /*

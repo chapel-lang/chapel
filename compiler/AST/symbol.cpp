@@ -1494,7 +1494,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   std::string unescapedString = unescapeString(str, cstrMove);
 
   int numCodepoints = 0;
-  int ret = isValidString(unescapedString, &numCodepoints);
+  const bool ret = isValidString(unescapedString, &numCodepoints);
   if (!ret) {
     USR_FATAL_CONT(cstrMove, "Invalid string literal");
 
