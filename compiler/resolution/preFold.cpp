@@ -1878,7 +1878,7 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
     tmp->addFlag(FLAG_REF_VAR);
 
     // create the AST for 'tupleTemp = tuple.field'
-    // 
+    //
     VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
     noop->insertBefore(new DefExpr(tmp));
     noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
