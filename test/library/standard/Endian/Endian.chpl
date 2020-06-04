@@ -101,6 +101,22 @@ module Endian {
       compilerError("Invalid argument type: expected an uint, int or real type");
   }
 
+  private proc _hostToLittleEndian(x) where numBytes(x.type) == 1 {
+    return x;
+  }
+
+  private proc _littleEndianToHost(x) where numBytes(x.type) == 1 {
+    return x;
+  }
+
+  private proc _hostToBigEndian(x) where numBytes(x.type) == 1 {
+    return x;
+  }
+
+  private proc _bigEndianToHost(x) where numBytes(x.type) == 1 {
+    return x;
+  }
+
   private proc _hostToLittleEndian(x) where numBytes(x.type) == 2 {
     var a = x;
     var b: uint(16);

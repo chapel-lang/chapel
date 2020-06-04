@@ -36,6 +36,12 @@ test(test11);
 var test12: uint(16) = 65500;
 test(test12);
 
+// tests for 8-bit unsigned integer.
+var test13: uint(8) = 10;
+test(test13);
+var test14: uint(8) = 255;
+test(test14);
+
 /*
    The conditional statements are used to make the `.good` file
    pass for both little and big endian systems. If the host is little
