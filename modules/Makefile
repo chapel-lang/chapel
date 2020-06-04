@@ -38,8 +38,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 CHPL_MODULES_DIR=standard/gen/$(CHPL_MAKE_HOST_BIN_SUBDIR)
-VERSION_MODULE_DOC=standard/ChplVersion.chpl
-VERSION_MODULE=$(CHPL_MODULES_DIR)/ChplVersion.chpl
+VERSION_MODULE=$(CHPL_MODULES_DIR)/ChplVersionSHA.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC=${CHPL_MAKE_HOME}/doc/rst
@@ -71,10 +70,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 version-module: $(VERSION_MODULE)
 
-$(VERSION_MODULE_DOC): $(VERSION_MODULE)
-	mkdir -p $(@D)
-	cp -f $< $@
-
 $(VERSION_MODULE): $(CHPL)
 	mkdir -p $(@D)
 	$(CHPL) --make-version-module > $(VERSION_MODULE)
@@ -85,6 +80,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
+	standard/ChplVersion.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
@@ -109,7 +105,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	$(SYS_CTYPES_MODULE_DOC) \
-	$(VERSION_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
