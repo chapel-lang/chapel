@@ -45,6 +45,7 @@ module Set {
   import ChapelLocks;
   private use IO;
   private use Reflection;
+  
   private use ChapelHashtable;
 
   pragma "no doc"
@@ -97,23 +98,6 @@ module Set {
     }
   }
 
-  // TODO: May not need this for now? Only override these routines if we
-  // want to provide our own hashing callbacks?
-  pragma "no doc"
-  class rehashHelpers: ChapelHashtable.chpl__rehashHelpers {
-    override proc startRehash(newSize: int) {
-
-    }
-
-    override proc moveElementDuringRehash(oldSLot: int, newSlot: int) {
-
-    }
-
-    override proc finishRehash(oldSize: int) {
-
-    }
-  }
-
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -148,7 +132,7 @@ module Set {
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
     pragma "no doc"
-    var _htb = ChapelHashtable.chpl__hashtable(eltType, nothing);
+    var _htb: chpl__hashtable(eltType, nothing);
 
     /*
       Initializes an empty set containing elements of the given type.
@@ -162,15 +146,19 @@ module Set {
       this.parSafe = parSafe;
     }
 
+    // Returns true if the key was added to the hashtable.
     pragma "no doc"
-    proc _addElem(in elem: eltType) {
-      var (hasFoundSlot, idx) = _htb.findAvailableSlot(x);
+    proc _addElem(in elem: eltType): bool {
+      var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
 
-      if !hasFoundSlot then
-        halt('TODO: Set hashtable failed to find slot');
-
-      _htb.fillSlot(idx, x, none);
+      if isFullSlot then return false;
+      _htb.fillSlot(idx, elem, none);
+      return true;
     }
+
+    // Get the number of full hashtable slots.
+    pragma "no doc"
+    inline proc _getSize return _htb.tableNumFullSlots;
 
     /*
       Initialize this set with a unique copy of each element contained in
@@ -188,6 +176,11 @@ module Set {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
+
+      if !isCopyableType(eltType) then
+        compilerError('Cannot initialize ' + this.type:string + ' from ' +
+                      iterable.type:string + ' because element type ' +
+                      eltType:string + ' is not copyable');
 
       for elem in iterable do _addElem(elem);
     }
@@ -213,7 +206,7 @@ module Set {
     }
 
     pragma "no doc"
-    inline proc deinit() {
+    proc deinit() {
       clear();
     }
 
@@ -259,7 +252,7 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        var (hasFoundSlot, _) = findFullSlot(x);
+        var (hasFoundSlot, _) = _htb.findFullSlot(x);
         result = hasFoundSlot;
       }
 
@@ -278,26 +271,20 @@ module Set {
       var result = true;
 
       on this {
-        _enter();
+        _enter(); defer _leave();
 
         if !(size == 0 || other.size == 0) {
 
           //
-          // Right now, iterators do not acquire locks, and attempting to
-          // modify a container while it is being iterated over leads to
-          // undefined behavior. This means that when a container is being
-          // iterated over by at least one thread, it is considered to be in a
-          // "read only" state. This may only be a temporary assumption, but
-          // for now it means we only need to grab the lock on `this`.
+          // TODO: Other set is considered to be in read-only phase when
+          // iterating, should we acquire locks here?
           //
           for x in other do
-            if _dom.contains(x) {
+            if this.contains(x) {
               result = false;
               break;
             }
         }
-
-        _leave();
       }
 
       return result;
@@ -333,14 +320,19 @@ module Set {
       var result = false;
 
       on this {
-        _enter();
+        _enter(); defer _leave();
 
-        if _dom.contains(x) {
-          _dom.remove(x);
+        var (hasFoundSlot, idx) = _htb.findFullSlot(x);
+
+        if hasFoundSlot {
+          pragma "no init"
+          var key: eltType;
+          var val: nothing;
+
+          _htb.clearSlot(idx, key, val);
+          _htb.maybeShrinkAfterRemove();
           result = true;
         }
-
-        _leave();
       }
 
       return result;
@@ -356,10 +348,22 @@ module Set {
     */
     proc ref clear() {
       on this {
-        _enter();
-        _dom.clear();
-        _leave();
+        _enter(); defer _leave();
+        for idx in 0..#_htb.tableSize {
+          pragma "no init"
+          var key: eltType;
+          var val: nothing;
+
+          if _htb.isSlotFull(idx) then _htb.clearSlot(idx, key, val);
+        }
+
+        _htb.maybeShrinkAfterRemove();
       }
+    }
+
+    pragma "no doc"
+    proc _getSlotFromIdx(idx: int) ref {
+      return _htb.table[idx];
     }
 
     /*
@@ -374,26 +378,28 @@ module Set {
       :yields: A reference to one of the elements contained in this set.
     */
     iter these() {
-      for x in _dom.these() do
-        yield x;
+      for idx in 0..#_htb.tableSize do
+        if _htb.isSlotFull(idx) then yield _getSlotFromIdx(idx).key;
     }
 
     pragma "no doc"
     iter these(param tag) where tag == iterKind.standalone {
-      for x in _dom.these(tag) do
-        yield x;
+      // TODO: Does this need to be a forall?
+      var chunk = 0..#_htb.tableSize;
+      for idx in chunk.these(tag) do
+        if _htb.isSlotFull(idx) then yield _getSlotFromIdx(idx).key;
     }
 
     pragma "no doc"
     iter these(param tag) where tag == iterKind.leader {
-      for followThis in _dom.these(tag) do
-        yield followThis;
+      var chunk = 0..#_htb.tableSize;
+      for followThis in chunk.these(tag) do yield followThis;
     }
 
     pragma "no doc"
     iter these(param tag, followThis) where tag == iterKind.follower {
-      for x in _dom.these(tag, followThis) do
-        yield x;
+      for idx in followThis do
+        if _htb.isSlotFull(idx) then yield _getSlotFromIdx(idx).key;
     }
 
     /*
@@ -403,12 +409,13 @@ module Set {
     */
     proc const writeThis(ch: channel) throws {
       on this {
-        _enter();
+        _enter(); defer _leave();
+
         var count = 1;
         ch <~> "{";
 
-        for x in _dom {
-          if count <= (_dom.size - 1) {
+        for x in this {
+          if count <= (_getSize() - 1) {
             count += 1;
             ch <~> x <~> ", ";
           } else {
@@ -417,7 +424,6 @@ module Set {
         }
 
         ch <~> "}";
-        _leave();
       }
     }
 
@@ -431,9 +437,8 @@ module Set {
       var result = false;
 
       on this {
-        _enter();
-        result = _dom.isEmpty();
-        _leave();
+        _enter(); defer _leave();
+        result = _getSize == 0;
       }
 
       return result;
@@ -446,9 +451,8 @@ module Set {
       var result = 0;
 
       on this {
-        _enter();
-        result = _dom.size;
-        _leave();
+        _enter(); defer _leave();
+        result = _getSize;
       }
 
       return result;
@@ -463,21 +467,26 @@ module Set {
       :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
-      var result: [1.._dom.size] eltType;
+      var result: [0..#_getSize] eltType;
+
+      if !isCopyableType(eltType) then
+        compilerError('Cannot create array because set element type ' +
+                      eltType:string + ' is not copyable');
 
       on this {
-        _enter();
+        _enter(); defer _leave();
 
-        var count = 1;
-        var array: [1.._dom.size] eltType;
+        if _getSize != 0 {
+          var count = 0;
+          var array: [0..#_getSize] eltType;
 
-        for x in _dom {
-          array[count] = x;
-          count += 1;
+          for x in this {
+            array[count] = x;
+            count += 1;
+          }
+
+          result = array;
         }
-
-        result = array;
-        _leave();
       }
 
       return result;
