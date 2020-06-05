@@ -1104,6 +1104,7 @@ static bool isCheckedModuleScopeVariable(VarSymbol* var) {
           var->hasFlag(FLAG_EXTERN) == false &&
           var->type->symbol->hasFlag(FLAG_EXTERN) == false &&
           var->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) == false &&
+          var->hasFlag(FLAG_TEMP) == false && // for loop exprs->array types
           var->isParameter() == false)
         return true;
     }
