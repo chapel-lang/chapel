@@ -75,7 +75,6 @@ notcompiler: FORCE
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd compiler && $(MAKE)
-	-@cd modules && $(MAKE) version-module
 
 parser: FORCE
 	@echo "Making the parser..."

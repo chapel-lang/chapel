@@ -37,15 +37,12 @@ SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_ARCH)-$(CHPL_MAKE
 SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
-CHPL_MODULES_DIR=standard/gen/$(CHPL_MAKE_HOST_BIN_SUBDIR)
-VERSION_MODULE=$(CHPL_MODULES_DIR)/ChapelVersionSHA.chpl
-
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC=${CHPL_MAKE_HOME}/doc/rst
 
 default: all
 
-all: $(SYS_CTYPES_MODULE) version-module
+all: $(SYS_CTYPES_MODULE)
 	$(TAGS_COMMAND)
 
 clean: FORCE
@@ -67,12 +64,6 @@ $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
 	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
-
-version-module: $(VERSION_MODULE)
-
-$(VERSION_MODULE): $(CHPL)
-	mkdir -p $(@D)
-	$(CHPL) --make-version-module > $(VERSION_MODULE)
 
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
@@ -104,7 +95,7 @@ MODULES_TO_DOCUMENT = \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
-	$(SYS_CTYPES_MODULE_DOC) \
+	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
@@ -178,7 +169,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/SharedObject.chpl
 
 
-documentation: $(SYS_CTYPES_MODULE_DOC) $(VERSION_MODULE_DOC)
+documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
 	export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
 	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
@@ -197,7 +188,6 @@ documentation: $(SYS_CTYPES_MODULE_DOC) $(VERSION_MODULE_DOC)
 	rm -rf ./docs
 	rm -rf ${MODULE_SPHINX}
 	rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
-	rm -f $(VERSION_MODULE_DOC)
 
 clean-documentation:
 	rm -rf ./docs

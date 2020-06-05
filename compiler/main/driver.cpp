@@ -93,7 +93,6 @@ const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
 const char* CHPL_LIB_PIC = NULL;
 
-const char* CHPL_HOST_BIN_SUBDIR = NULL;
 const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
@@ -254,8 +253,6 @@ int breakOnCodegenID = 0;
 bool debugCCode = false;
 bool optimizeCCode = false;
 bool specializeCCode = false;
-
-bool fMakeVersionModule = false;
 
 bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
@@ -1098,7 +1095,6 @@ static ArgumentDescription arg_desc[] = {
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
- {"make-version-module", ' ', "", "Have the compiler print out the version module", "F", &fMakeVersionModule, "", makeVersionModule},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
  {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", NULL, NULL, addInternalModulePath},
@@ -1310,7 +1306,6 @@ static void setChapelEnvs() {
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
   CHPL_LIB_PIC         = envMap["CHPL_LIB_PIC"];
 
-  CHPL_HOST_BIN_SUBDIR = envMap["CHPL_HOST_BIN_SUBDIR"];
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];

@@ -72,18 +72,3 @@ get_clang_sysroot_args() {
   expandInstallationPaths(ret);
   return ret;
 }
-
-void makeVersionModule(const ArgumentDescription *arg, const char* str) {
-  printf("module ChplVersionSHA {\n");
-  printf("  proc chplGetSHA() param {\n");
-  printf("    return \"");
-  if (!officialRelease) {
-    printf("%s", BUILD_VERSION);
-  } else {
-    printf("N/A");
-  }
-  printf("\";\n");
-  printf("  }\n");
-  printf("}\n");
-  clean_exit(0);
-}

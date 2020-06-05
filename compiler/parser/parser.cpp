@@ -200,12 +200,6 @@ void setupModulePaths() {
                       "-",
                       CHPL_TARGET_COMPILER));
 
-  sStdModPath.add(astr(CHPL_HOME,
-                       "/",
-                       modulesRoot,
-                       "/standard/gen/",
-                       CHPL_HOST_BIN_SUBDIR));
-
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/packages"));
