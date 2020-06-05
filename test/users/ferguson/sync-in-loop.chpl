@@ -32,6 +32,9 @@ proc dobegin() {
       // Run another begin
       order$ = true;
       if debug then writeln("after writes");
+
+      // wait for order$ to be empty again
+      order$ = true;
     }
     if debug then writeln("end of loop");
   }
