@@ -34,28 +34,22 @@ use MasonEnv;
   mason new <projectName/directoryName>
 */
 proc masonNew(args) throws {
+  var vcs = true;
+  var show = false;
+  var packageName = '';
+  var dirName = '';
+  var version = '';
+  var chplVersion = '';
   try! {
     if args.size < 3 {
-      masonNewHelp();
-      exit();
-    } 
+      var metadata = beginInteractiveSession('');
+      packageName = metadata[0];
+      dirName = packageName;
+      version = metadata[1];
+      chplVersion = metadata[2];
+    }
     else {
-      var vcs = true;
-      var show = false;
-      var packageName = '';
-      var dirName = '';
-      var version = '';
-      var chplVersion = '';
       var countArgs = args.domain.low + 2;
-      // --interactive and --name should not be used together
-      var hasName = false;
-      var hasInteractive = false;
-      for arg in args[args.domain.low+2..] {
-        if arg.startsWith('--name') then hasName = true;
-        if arg == '--interactive' then hasInteractive = true;
-      }
-      if hasName && hasInteractive then throw new owned MasonError("Arguments " +
-                            "--interactive and --name cannot be used together");
       for arg in args[args.domain.low+2..] {
         countArgs += 1;
         select (arg) {
@@ -72,13 +66,6 @@ proc masonNew(args) throws {
           }
           when '--show' {
             show = true;
-          }
-          when '--interactive' {
-            var metadata = beginInteractiveSession('');
-            packageName = metadata[0];
-            dirName = packageName;
-            version = metadata[1];
-            chplVersion = metadata[2];
           }
           when '--name' {
               packageName = args[countArgs];
@@ -97,13 +84,12 @@ proc masonNew(args) throws {
           }
         }
       }
-
-      if validatePackageName(dirName=packageName) {
-        if isDir(dirName) {
-          throw new owned MasonError("A directory named '" + dirName + "' already exists");
-        }
-        InitProject(dirName, packageName, vcs, show, version, chplVersion);
+    }
+    if validatePackageName(dirName=packageName) {
+      if isDir(dirName) {
+        throw new owned MasonError("A directory named '" + dirName + "' already exists");
       }
+      InitProject(dirName, packageName, vcs, show, version, chplVersion);
     }
   }
   catch e: MasonError {
@@ -117,13 +103,6 @@ proc masonNew(args) throws {
   new library project.
 */
 proc beginInteractiveSession(defaultPackageName: string) throws {
-  var isInit: bool = false;
-  if defaultPackageName != '' then isInit = true;
-  if isInit && isFile('./Mason.toml') {
-    throw new owned MasonError("Unable to run mason init --interactive. Mason.toml" + 
-                               " file already exists.");
-    exit(1);
-  }
   writeln("""This is an interactive session to walk you through creating a library
 project using Mason. The following queries covers the common items required to
 create the project. Suggestions for defaults are also provided which will be
@@ -143,13 +122,13 @@ considered if no input is given.""");
     try {
       if !gotCorrectPackageName {
         write("Package name ");
-        if isInit then write("(" + defPackageName + ") ");
+        if defPackageName != '' then write("(" + defPackageName + ") ");
         write(": ");
         IO.stdout.flush();
         IO.stdin.readline(packageName);
         exitOnEOF(packageName);
         packageName = packageName.strip();
-        if isInit && packageName == '' then
+        if packageName == '' then
           packageName = defaultPackageName;
         var isIllegalName: bool = false;
         if !isIdentifier(packageName) {
@@ -158,7 +137,7 @@ considered if no input is given.""");
              " identifiers are legal package names.");
         }
         if !isIllegalName {
-          if !isInit && isDir('./' + packageName) then
+          if isDir('./' + packageName) then
             throw new owned MasonError("Bad package name. A package with the name '" 
                               + packageName + "' already exists.");
           if validatePackageName(packageName) then
@@ -200,7 +179,6 @@ considered if no input is given.""");
           option = option.toUpper();
           if option == "Y" then break;
           if option == "N" then {
-            isInit = true;
             gotCorrectChapelVersion = false;
             gotCorrectPackageName = false;
             gotCorrectPackageVersion = false;
@@ -219,6 +197,7 @@ considered if no input is given.""");
   return (packageName, version, chapelVersion);
 }
 
+/* Exit terminal when CTRL + D is pressed */
 proc exitOnEOF(parameter) {
   if parameter == '' {
     writeln();
