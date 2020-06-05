@@ -43,6 +43,8 @@ class ForallOptimizationInfo {
     // the dynamic check call added for symbol
     std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
 
+    std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
+
     bool autoLocalAccessChecked;
 };
 

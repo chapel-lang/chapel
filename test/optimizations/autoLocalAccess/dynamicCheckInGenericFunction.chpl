@@ -19,14 +19,3 @@ proc foo(A: arr.type, B) {
 }
 
 foo(arr, new MyClass());
-
-
-//{
-  //var A = arr;
-  //var B = new MyClass();
-
-  //forall i in A.domain {
-    //A[i] = B[i];
-  //}
-
-//}

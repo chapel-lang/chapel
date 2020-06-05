@@ -37,9 +37,3 @@ Regular domain symbol was not found for array
 Static check successful. Using localAccess
 	dynamicCheckInGenericFunction.chpl:17
 
-Static check failed. Reverting optimization
-	dynamicCheckInGenericFunction.chpl:17
-
-Static check successful. Using localAccess
-	dynamicCheckInGenericFunction.chpl:17
-

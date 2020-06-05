@@ -347,7 +347,7 @@ static Symbol *getCallBase(CallExpr *call) {
 // chpl_dynamicAutoLocalCheck(A, loopDomain)
 //
 // right before the `forall`. Multiple dynamic checks are &&'ed. `allChecks` is
-// that PRIM_AND call, or NULL if this was the first time we are adding a
+// that "&&" call, or NULL if this was the first time we are adding a
 // dynamic check
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
@@ -380,13 +380,13 @@ static void generateDynamicCheckForAccess(CallExpr *access,
 
   CallExpr *staticOverride = new CallExpr(PRIM_UNARY_LNOT, 
       new SymExpr(forall->optInfo.staticCheckSymForSymMap[baseSym]));
-  currentCheck = new CallExpr(PRIM_OR, staticOverride, currentCheck);
+  currentCheck = new CallExpr("||", staticOverride, currentCheck);
 
   if (allChecks == NULL) {
     allChecks = currentCheck;
   }
   else {
-    allChecks = new CallExpr(PRIM_AND, currentCheck, allChecks);
+    allChecks = new CallExpr("&&", currentCheck, allChecks);
   }
 }
 
@@ -428,7 +428,7 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
       allChecks = new SymExpr(checkSym);
     }
     else {
-      allChecks = new CallExpr(PRIM_OR, new SymExpr(checkSym), allChecks);
+      allChecks = new CallExpr("||", new SymExpr(checkSym), allChecks);
     }
 
     DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
@@ -454,6 +454,7 @@ static void optimizeLoop(ForallStmt *forall,
                                                     forall,
                                                     staticCond);
     if (!doStatic) {
+      forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
       generateDynamicCheckForAccess(candidate, forall, dynamicCond);
     }
 
@@ -487,6 +488,31 @@ static void optimizeLoop(ForallStmt *forall,
 
     candidate->replace(repl);
   }
+}
+
+static CallExpr *addStaticCheckSymsToDynamicCond(ForallStmt *forall,
+                                                 CallExpr *dynamicCond,
+                                                 std::vector<Symbol *> &staticCheckSyms) {
+  CallExpr *ret = dynamicCond;
+
+  if (staticCheckSyms.size() > 0) {
+    SET_LINENO(forall);
+
+    if (staticCheckSyms.size() == 1) {
+      ret = new CallExpr("&&", staticCheckSyms[0], dynamicCond);
+    }
+    else {
+      CallExpr *allChecks = new CallExpr("||", staticCheckSyms[0],
+                                               staticCheckSyms[1]);
+
+      for (ssize_t i = 2 ; i < staticCheckSyms.size() ; i++) {
+        allChecks = new CallExpr("||", staticCheckSyms[i], allChecks);
+      }
+      ret = new CallExpr("&&", allChecks, dynamicCond);
+    }
+  }
+
+  return ret;
 }
 
 static ForallStmt *cloneLoop(ForallStmt *forall) {
@@ -537,7 +563,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 //                        ...
 //                        (!staticCheckN || dynamicCheck(arrN, loopDomain));
 //
-//   if dynamicCheck {
+//   if (staticCheckX || .. || staticCheckZ) && dynamicCheck {
 //     loop2
 //   }
 //   else {
@@ -557,6 +583,10 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // loop2: Optional. This is only created if there are some dynamic candidates
 //        and dynamic optimizations are enabled with the
 //        `--auto-local-access-dynamic` flag.
+//
+// staticCheckX and staticCheckZ are static checks added for dynamic
+// candidates. OR'ed static checks in two `if`s are added so that we can fold
+// out unnecessary loops during resolution.
 // 
 // Note that the static checks are param flags and during resolution we'll
 // defintely lose either loop0 or the bigger branch. In other words, there can
@@ -574,17 +604,27 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   Expr *staticCond = NULL;
   CallExpr *dynamicCond = NULL;
 
+  // copy the forall to have: `noOpt` == loop0, `forall` == loop1
   noOpt = cloneLoop(forall);
+
   if (sOptCandidates.size() > 0) {
+    // change potential static accesses in loop1
     optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ true);
   }
 
   if (fAutoLocalAccessDynamic && dOptCandidates.size() > 0) {
+    // copy the forall to have: `noDyn` == loop1, `forall` == loop2
     noDyn = cloneLoop(forall);
+    
+    // change potential dynamic accesses in loop2
     optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ false);
   }
+
+  // add `(staticChecksX || .. || staticChecksZ)` part
+  dynamicCond = addStaticCheckSymsToDynamicCond(forall, dynamicCond,
+          forall->optInfo.staticCheckSymsForDynamicCandidates);
   
-  // here create the main structure
+  // we have all the parts needed, now build the structure
   if (staticCond != NULL) {  // this must be true at this point
     constructCondStmtFromLoops(staticCond, forall, noOpt);
   }
