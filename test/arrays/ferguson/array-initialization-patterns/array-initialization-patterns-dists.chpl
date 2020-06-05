@@ -230,8 +230,18 @@ writeln("-");
 
 proc testr4() {
   writeln("testr4");
-  var B:[A.domain] R = new R(1);
-  writeln(B);
+  // don't print init/deinit for this test because
+  // it varies depending on the number of tasks
+  // and the init/deinits can overlap
+  var savePrintInitDeinit = printInitDeinit;
+  printInitDeinit = false;
+
+  {
+    var B:[A.domain] R = new R(1);
+    writeln(B);
+  }
+
+  printInitDeinit = savePrintInitDeinit;
 }
 testr4();
 writeln("-");

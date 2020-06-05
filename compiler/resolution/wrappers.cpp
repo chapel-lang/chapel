@@ -1224,9 +1224,18 @@ static bool needToAddCoercion(Type*      actualType,
 
   // If we have an actual of ref(formalType) and
   // a REF or CONST REF argument intent, no coercion is necessary.
-  if (actualType == formalType->getRefType() &&
-      (getIntent(formal) & INTENT_FLAG_REF) != 0)
-    return false;
+  // Likewise, a value actual passed to a ref formal
+  // does not require coercion.
+  if (actualType->getRefType() == formalType ||
+      actualType == formalType->getRefType()) {
+    IntentTag formalIntent = getIntent(formal);
+    if ((formalIntent & INTENT_FLAG_REF) != 0 ||
+        // or these that always turn into ref
+        formalIntent == INTENT_OUT ||
+        formalIntent == INTENT_INOUT) {
+      return false;
+    }
+  }
 
   // New in-intents don't require coercion from ref to value
   // since it'll be handled by the initCopy call.

@@ -16,8 +16,23 @@ proc test1() {
 }
 test1();
 
+pragma "unsafe"
 proc makeOwnedTuple() {
-  return (new owned C(1), new owned C(2));
+  // it should just be
+  //  return (new owned C(1), new owned C(2));
+  // but that does not work today (see issue #14942)
+  // the below is a workaround so that this test
+  // can check split-init and out behavior.
+  pragma "no auto destroy"
+  var a = new owned C(1);
+  pragma "no auto destroy"
+  var b = new owned C(2);
+  pragma "no init"
+  pragma "no auto destroy"
+  var t: (owned C, owned C);
+  __primitive("=", t(0), a);
+  __primitive("=", t(1), b);
+  return t;
 }
 proc returnOwnedTupleOut(out arg) {
   arg = makeOwnedTuple();
