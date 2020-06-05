@@ -712,7 +712,17 @@ module DefaultAssociative {
 
     // internal helper
     proc _doDefaultInitSlot(slot: int, inAdd: bool) {
-      if !isDefaultInitializable(eltType) {
+
+      //
+      // TODO: Reduce this check to just 'isDefaultInitializable'.
+      // See some tests that fail when we do:
+      //
+      //  - arrays/ferguson/assoc-contain-rect.chpl
+      //  - domains/vass/arrays-of-domains.chpl
+      //  - users/shetag/assocDomOfRecord.chpl
+      //
+      if (isTuple(eltType) && !isDefaultInitializable(eltType)) ||
+         isNonNilableClass(eltType) {
         if inAdd {
           halt("Can't resize domains whose arrays' elements don't " +
                "have default values");
