@@ -512,6 +512,7 @@ static ForallStmt *cloneLoop(ForallStmt *forall) {
 static void constructCondStmtFromLoops(Expr *condExpr,
                                        ForallStmt *optimized,
                                        ForallStmt *unoptimized) {
+  SET_LINENO(optimized);
 
   BlockStmt *thenBlock = new BlockStmt();
   BlockStmt *elseBlock = new BlockStmt();
