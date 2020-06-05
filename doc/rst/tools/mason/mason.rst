@@ -35,7 +35,10 @@ Basic Usage
 Starting a New Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To initialize a new mason package, run the ``mason new [ package name ] [ options ]`` command, for example::
+To initialize a new mason package, run ``mason new``. This starts an interactive session which walks an user
+through the process of creating a project using Mason. This is highly recommended for new users.
+
+A more advanced user may use the ``mason new [ package name ] [ options ]`` command, for example::
 
     mason new MyPackage
 
@@ -44,8 +47,6 @@ This creates a git repository by default, unless ``--no-vcs`` is included.
 Mason packages can also be initialized using the ``mason init [options] [directory path]`` or 
 ``mason init [options]`` command outside or inside the project directory respectively. 
 
-There is also an interactive way to create Mason packages using ``mason new --interactive`` or
-``mason init --interactive``. The interactive session walks an user through creating a package in Mason.
 
 For example, for an existing directory named MyPackage, 
     

@@ -4,6 +4,6 @@ use MasonNew;
 use Spawn;
 
 proc main() {
-  const args = ['mason','new', '--interactive'];
+  const args = ['mason','new'];
   masonNew(args);
 }
