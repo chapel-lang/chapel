@@ -847,7 +847,7 @@ module BytesStringCommon {
     return hash:uint;
   }
 
-  private inline proc incrementCodepoints(ref lhs: string, rhs: string) {
+  private proc incrementCodepoints(ref lhs: string, rhs: string) {
     if(lhs.cachedNumCodepoints == -1 || rhs.cachedNumCodepoints == -1) {
       lhs.cachedNumCodepoints = -1;
     } else {
