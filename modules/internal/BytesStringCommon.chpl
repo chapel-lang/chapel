@@ -281,7 +281,6 @@ module BytesStringCommon {
     x.buff = other;
     x.buffSize = size;
     x.buffLen = length;
-    if t == string then x.cachedNumCodepoints = x.numCodepoints;
   }
 
   proc initWithNewBuffer(ref x: ?t, other: t) {
@@ -291,6 +290,7 @@ module BytesStringCommon {
     const otherLen = other.numBytes;
     x.isOwned = true;
     if t == string then x.hasEscapes = other.hasEscapes;
+    if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
 
     if otherLen > 0 {
       x.buffLen = otherLen;
@@ -298,15 +298,13 @@ module BytesStringCommon {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
-        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
-      }
+       }
       else {
         // if s is local create a copy of its buffer and own it
         const (buff, allocSize) = bufferCopyLocal(other.buff, otherLen);
         x.buff = buff;
         x.buff[x.buffLen] = 0;
         x.buffSize = allocSize;
-        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
     }
   }
@@ -681,7 +679,7 @@ module BytesStringCommon {
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
-      setCodepoints(lhs, rhs);
+      incrementCodepoints(lhs, rhs);
     }
   }
 
@@ -849,8 +847,7 @@ module BytesStringCommon {
     return hash:uint;
   }
 
-  inline proc setCodepoints(ref lhs: ?t1, rhs: ?t2) {
-    if t1 != string then return;
+  private inline proc incrementCodepoints(ref lhs: string, rhs: string) {
     if(lhs.cachedNumCodepoints == -1 || rhs.cachedNumCodepoints == -1) {
       lhs.cachedNumCodepoints = -1;
     } else {
