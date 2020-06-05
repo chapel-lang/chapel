@@ -43,16 +43,16 @@ Potential access
 Regular domain symbol was not found for array
 	dynamicChecks.chpl:22
 
-	Optimizing static candidate
+	Marking static candidate
 	dynamicChecks.chpl:29
 
-	Optimizing static candidate
+	Marking static candidate
 	dynamicChecks.chpl:29
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	dynamicChecks.chpl:30
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	dynamicChecks.chpl:32
 
 **** End forall ****

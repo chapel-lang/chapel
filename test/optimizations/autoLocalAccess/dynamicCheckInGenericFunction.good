@@ -25,10 +25,10 @@ Potential access
 Regular domain symbol was not found for array
 	dynamicCheckInGenericFunction.chpl:13
 
-	Optimizing static candidate
+	Marking static candidate
 	dynamicCheckInGenericFunction.chpl:17
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	dynamicCheckInGenericFunction.chpl:17
 
 **** End forall ****

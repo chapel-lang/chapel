@@ -34,13 +34,13 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration2D.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	regularDeclaration2D.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	regularDeclaration2D.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	regularDeclaration2D.chpl:15
 
 **** End forall ****
@@ -82,13 +82,13 @@ Potential access
 Access base's domain is the iterator
 	regularDeclaration2D.chpl:32
 
-	Optimizing static candidate
+	Marking static candidate
 	regularDeclaration2D.chpl:32
 
-	Optimizing static candidate
+	Marking static candidate
 	regularDeclaration2D.chpl:32
 
-	Optimizing static candidate
+	Marking static candidate
 	regularDeclaration2D.chpl:32
 
 **** End forall ****

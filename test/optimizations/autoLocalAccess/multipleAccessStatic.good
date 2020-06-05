@@ -25,10 +25,10 @@ Potential access
 Access base's domain is the iterator
 	multipleAccessStatic.chpl:10
 
-	Optimizing static candidate
+	Marking static candidate
 	multipleAccessStatic.chpl:10
 
-	Optimizing static candidate
+	Marking static candidate
 	multipleAccessStatic.chpl:10
 
 **** End forall ****

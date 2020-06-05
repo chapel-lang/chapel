@@ -31,13 +31,13 @@ Potential access
 Regular domain symbol was not found for array
 	copyInitDeclaration.chpl:8
 
-	Optimizing static candidate
+	Marking static candidate
 	copyInitDeclaration.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	copyInitDeclaration.chpl:15
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	copyInitDeclaration.chpl:15
 
 **** End forall ****

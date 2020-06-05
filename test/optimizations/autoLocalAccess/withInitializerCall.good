@@ -19,7 +19,7 @@ Potential access
 	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:14
 
-	Optimizing static candidate
+	Marking static candidate
 	withInitializerCall.chpl:14
 
 **** End forall ****
@@ -46,7 +46,7 @@ Potential access
 	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:21
 
-	Optimizing static candidate
+	Marking static candidate
 	withInitializerCall.chpl:21
 
 **** End forall ****
@@ -73,7 +73,7 @@ Potential access
 	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:28
 
-	Optimizing static candidate
+	Marking static candidate
 	withInitializerCall.chpl:28
 
 **** End forall ****
@@ -100,7 +100,7 @@ Potential access
 	Can optimize: Access base is the iterator's base
 	withInitializerCall.chpl:35
 
-	Optimizing static candidate
+	Marking static candidate
 	withInitializerCall.chpl:35
 
 **** End forall ****

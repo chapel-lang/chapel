@@ -19,10 +19,10 @@ Potential access
 Regular domain symbol was not found for array
 	nonDomainIter.chpl:15
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	nonDomainIter.chpl:20
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	nonDomainIter.chpl:20
 
 **** End forall ****

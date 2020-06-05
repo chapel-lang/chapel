@@ -19,10 +19,10 @@ Potential access
 Regular domain symbol was not found for array
 	oneStaticFailOtherDynamicSuccess.chpl:19
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	oneStaticFailOtherDynamicSuccess.chpl:24
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	oneStaticFailOtherDynamicSuccess.chpl:24
 
 **** End forall ****

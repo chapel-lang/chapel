@@ -34,13 +34,13 @@ Potential access
 Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:15
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:15
 
 **** End forall ****
@@ -82,13 +82,13 @@ Potential access
 	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:32
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:32
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:32
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:32
 
 **** End forall ****
@@ -130,13 +130,13 @@ Potential access
 	Can optimize: Access base has the same domain as iterator's base
 	dotDomDeclaration.chpl:49
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:49
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:49
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:49
 
 **** End forall ****
@@ -178,13 +178,13 @@ Potential access
 	Can optimize: Access base is the iterator's base
 	dotDomDeclaration.chpl:66
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:66
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:66
 
-	Optimizing static candidate
+	Marking static candidate
 	dotDomDeclaration.chpl:66
 
 **** End forall ****

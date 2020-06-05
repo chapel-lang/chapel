@@ -479,7 +479,7 @@ static void optimizeLoop(ForallStmt *forall,
                                                     forall,
                                                     staticCond);
     if (doStatic) {
-      LOG("\tOptimizing static candidate", candidate);
+      LOG("\tMarking static candidate", candidate);
     }
     else {
       forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
@@ -488,7 +488,7 @@ static void optimizeLoop(ForallStmt *forall,
                                     forall,
                                     dynamicCond);
 
-      LOG("\tOptimizing dynamic candidate", candidate);
+      LOG("\tMarking dynamic candidate", candidate);
     }
 
     replaceCandidate(candidate, checkSym, doStatic);

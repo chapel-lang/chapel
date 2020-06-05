@@ -25,10 +25,10 @@ Potential access
 Regular domain symbol was not found for array
 	staticSuccessDynamicFail.chpl:3
 
-	Optimizing static candidate
+	Marking static candidate
 	staticSuccessDynamicFail.chpl:7
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	staticSuccessDynamicFail.chpl:7
 
 **** End forall ****

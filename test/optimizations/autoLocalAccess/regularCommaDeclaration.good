@@ -28,13 +28,13 @@ Potential access
 Regular domain symbol was not found for array
 	regularCommaDeclaration.chpl:6
 
-	Optimizing static candidate
+	Marking static candidate
 	regularCommaDeclaration.chpl:13
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	regularCommaDeclaration.chpl:13
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	regularCommaDeclaration.chpl:13
 
 **** End forall ****
@@ -70,13 +70,13 @@ Potential access
 Regular domain symbol was not found for array
 	regularCommaDeclaration.chpl:21
 
-	Optimizing static candidate
+	Marking static candidate
 	regularCommaDeclaration.chpl:28
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	regularCommaDeclaration.chpl:28
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	regularCommaDeclaration.chpl:28
 
 **** End forall ****

@@ -31,13 +31,13 @@ Potential access
 Regular domain symbol was not found for array
 	multipleAccessDynamic.chpl:4
 
-	Optimizing static candidate
+	Marking static candidate
 	multipleAccessDynamic.chpl:9
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	multipleAccessDynamic.chpl:9
 
-	Optimizing dynamic candidate
+	Marking dynamic candidate
 	multipleAccessDynamic.chpl:9
 
 **** End forall ****
