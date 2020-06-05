@@ -1,0 +1,3 @@
+use ChapelVersion;
+
+writeln(chplVersion);

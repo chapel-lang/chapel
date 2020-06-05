@@ -1,0 +1,700 @@
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.1.0
+------------------
+== : true
+!= : false
+<  : false
+<= : true
+>  : false
+>= : true
+
+Comparing versions:
+chpl version 2.1.0 pre-release (aaa)
+chpl version 2.1.0 pre-release (aaa)
+------------------
+== : true
+!= : false
+<  : false
+<= : true
+>  : false
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.1.0 pre-release (aaa)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+
+Comparing versions:
+chpl version 2.1.0 pre-release (aaa)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.1.1 pre-release (bbb)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.1.1 pre-release (bbb)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.2.0 pre-release (ccc)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.0 pre-release (ccc)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.2.1 pre-release (ddd)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.1 pre-release (ddd)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 3.1.0 pre-release (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0 pre-release (eee)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0
+chpl version 3.1.1 pre-release (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1 pre-release (fff)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 2.2.0 pre-release (ccc)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.0 pre-release (ccc)
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 2.2.1 pre-release (ddd)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.1 pre-release (ddd)
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 3.1.0 pre-release (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0 pre-release (eee)
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.1
+chpl version 3.1.1 pre-release (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1 pre-release (fff)
+chpl version 2.1.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 2.2.1 pre-release (ddd)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.2.1 pre-release (ddd)
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 3.1.0 pre-release (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0 pre-release (eee)
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.0
+chpl version 3.1.1 pre-release (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1 pre-release (fff)
+chpl version 2.2.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 3.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 3.1.0 pre-release (eee)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.0 pre-release (eee)
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.2.1
+chpl version 3.1.1 pre-release (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1 pre-release (fff)
+chpl version 2.2.1
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 3.1.0
+chpl version 3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1
+chpl version 3.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 3.1.0
+chpl version 3.1.1 pre-release (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 3.1.1 pre-release (fff)
+chpl version 3.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+

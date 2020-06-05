@@ -1,0 +1,64 @@
+compareChplVersionErrors.chpl:15: In function 'compareVersions':
+compareChplVersionErrors.chpl:24: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:25: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:11: Function 'compareVersions' instantiated as: compareVersions(v1: versionInfo(2,1,0,\"\"), v2: versionInfo(2,1,0,\"aaa\"))
+compareChplVersionErrors.chpl:15: In function 'compareVersions':
+compareChplVersionErrors.chpl:22: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:23: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:12: Function 'compareVersions' instantiated as: compareVersions(v1: versionInfo(2,1,0,\"aaa\"), v2: versionInfo(2,1,0,\"\"))
+compareChplVersionErrors.chpl:15: In function 'compareVersions':
+compareChplVersionErrors.chpl:22: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:23: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:24: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:25: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:11: Function 'compareVersions' instantiated as: compareVersions(v1: versionInfo(2,1,0,\"aaa\"), v2: versionInfo(2,1,0,\"bbb\"))
+compareChplVersionErrors.chpl:15: In function 'compareVersions':
+compareChplVersionErrors.chpl:22: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:23: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:24: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:25: error: can't compare distinct SHAs
+compareChplVersionErrors.chpl:12: Function 'compareVersions' instantiated as: compareVersions(v1: versionInfo(2,1,0,\"bbb\"), v2: versionInfo(2,1,0,\"aaa\"))
+Comparing versions:
+chpl version 2.1.0
+chpl version 2.1.0 pre-release (aaa)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.1.0 pre-release (aaa)
+chpl version 2.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+chpl version 2.1.0 pre-release (aaa)
+chpl version 2.1.0 pre-release (bbb)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : false
+>= : false
+
+Comparing versions:
+chpl version 2.1.0 pre-release (bbb)
+chpl version 2.1.0 pre-release (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : false
+>= : false
+
