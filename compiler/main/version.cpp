@@ -32,15 +32,10 @@
 // this include sets CLANG_SETTINGS
 #include "clang_settings.h"
 
-// Flip this to 'true' when we're ready to roll out a release; then
-// back after branching
-//
-static bool official = false;
-
 void
 get_version(char *v) {
-  v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (!official) {
+  v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
+  if (!officialRelease) {
     sprintf(v, " pre-release (%s)", BUILD_VERSION);
   } else if (developer && strcmp(BUILD_VERSION, "0") != 0) {
     sprintf(v, ".%s", BUILD_VERSION);
@@ -49,7 +44,7 @@ get_version(char *v) {
 
 void
 get_major_minor_version(char *v) {
-  sprintf(v, "%d.%s", MAJOR_VERSION, MINOR_VERSION);
+  sprintf(v, "%d.%d", MAJOR_VERSION, MINOR_VERSION);
 }
 
 const char*
@@ -82,7 +77,7 @@ void makeVersionModule(const ArgumentDescription *arg, const char* str) {
   printf("module ChplVersionSHA {\n");
   printf("  proc chplGetSHA() param {\n");
   printf("    return \"");
-  if (!official) {
+  if (!officialRelease) {
     printf("%s", BUILD_VERSION);
   } else {
     printf("N/A");
