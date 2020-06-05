@@ -440,6 +440,31 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
   }
 }
 
+// replace a candidate CallExpr with the corresponding PRIM_MAYBE_LOCAL_THIS
+static void replaceCandidate(CallExpr *candidate,
+                             Symbol *staticCheckSym,
+                             bool doStatic) {
+  SET_LINENO(candidate);
+
+  Symbol *callBase = getCallBase(candidate);
+  CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
+  for (int i = 1 ; i <= candidate->argList.length ; i++) {
+    Symbol *argSym = toSymExpr(candidate->get(i))->symbol();
+    INT_ASSERT(argSym);
+
+    repl->insertAtTail(new SymExpr(argSym));
+  }
+  repl->insertAtTail(new SymExpr(staticCheckSym));
+
+  // mark if this access is a static candidate. Today, this is only used for
+  // accurate logging
+  repl->insertAtTail(new SymExpr(doStatic?gTrue:gFalse));
+
+  candidate->replace(repl);
+}
+
+// replace all the candidates in the loop with PRIM_MAYBE_LOCAL_THIS
+// while doing that, also builds up static and dynamic conditions
 static void optimizeLoop(ForallStmt *forall,
                          Expr *&staticCond, CallExpr *&dynamicCond,
                          bool doStatic) {
@@ -449,47 +474,28 @@ static void optimizeLoop(ForallStmt *forall,
       forall->optInfo.dynamicCandidates;
 
   for_vector(CallExpr, candidate, candidates) {
-    Symbol *callBase = getCallBase(candidate);
+
     Symbol *checkSym = generateStaticCheckForAccess(candidate,
                                                     forall,
                                                     staticCond);
-    if (!doStatic) {
-      forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
-      generateDynamicCheckForAccess(candidate, forall, dynamicCond);
-    }
-
-    if (!doStatic) {
-      LOG("\tOptimizing dynamic candidate", candidate);
-    }
-    else {
+    if (doStatic) {
       LOG("\tOptimizing static candidate", candidate);
     }
-
-    SET_LINENO(candidate);
-
-    CallExpr *repl = new CallExpr(PRIM_MAYBE_LOCAL_THIS, new SymExpr(callBase));
-    for (int i = 1 ; i <= candidate->argList.length ; i++) {
-      Symbol *argSym = toSymExpr(candidate->get(i))->symbol();
-      INT_ASSERT(argSym);
-
-      repl->insertAtTail(new SymExpr(argSym));
-    }
-    repl->insertAtTail(new SymExpr(checkSym));
-
-    // mark dynamically-determined access. Today, this is only used for more
-    // accurate logging
-
-    if (!doStatic) {
-      repl->insertAtTail(new SymExpr(gFalse));
-    }
     else {
-      repl->insertAtTail(new SymExpr(gTrue));
+      forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
+
+      generateDynamicCheckForAccess(candidate,
+                                    forall,
+                                    dynamicCond);
+
+      LOG("\tOptimizing dynamic candidate", candidate);
     }
 
-    candidate->replace(repl);
+    replaceCandidate(candidate, checkSym, doStatic);
   }
 }
 
+// add the param part of the dynamicCond
 static CallExpr *addStaticCheckSymsToDynamicCond(ForallStmt *forall,
                                                  CallExpr *dynamicCond,
                                                  std::vector<Symbol *> &staticCheckSyms) {
