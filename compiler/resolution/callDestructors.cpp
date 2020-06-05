@@ -1148,6 +1148,14 @@ bool GatherGlobalsReferredTo::enterFnSym(FnSymbol* fn) {
     // if the function symbol hasn't already been visited,
     // put it in the visited set and do the visiting.
     // do the analysis in the other visitors
+
+    // don't worry about 'halt' calling deinit functions
+    // or about functions opting out of this analysis.
+    // this helps with certain patters where globals are used in 'deinit'
+    if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM) ||
+        fn->hasFlag(FLAG_IGNORE_IN_GLOBAL_ANALYSIS))
+      return false;
+
     thisFunction = fn;
     calledThisFunction.clear();
     mentionedThisFunction.clear();
