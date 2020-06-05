@@ -1,18 +1,18 @@
 use ChapelVersion;
 
-const v2_1_0 = new versionInfo(2,1,0);
-const v2_1_1 = new versionInfo(2,1,1);
-const v2_2_0 = new versionInfo(2,2,0);
-const v2_2_1 = new versionInfo(2,2,1);
-const v3_1_0 = new versionInfo(3,1,0);
-const v3_1_1 = new versionInfo(3,1,1);
+const v2_1_0 = version(2,1);
+const v2_1_1 = version(2,1,1);
+const v2_2_0 = version(2,2,0);
+const v2_2_1 = version(2,2,1);
+const v3_1_0 = version(3,1);
+const v3_1_1 = version(3,1,1);
 
-const v2_1_0_p = new versionInfo(2,1,0,"aaa");
-const v2_1_1_p = new versionInfo(2,1,1,"bbb");
-const v2_2_0_p = new versionInfo(2,2,0,"ccc");
-const v2_2_1_p = new versionInfo(2,2,1,"ddd");
-const v3_1_0_p = new versionInfo(3,1,0,"eee");
-const v3_1_1_p = new versionInfo(3,1,1,"fff");
+const v2_1_0_p = version(2,1,0,"aaa");
+const v2_1_1_p = version(2,1,1,"bbb");
+const v2_2_0_p = version(2,2,sha="ccc");
+const v2_2_1_p = version(2,2,1,"ddd");
+const v3_1_0_p = version(3,1,0,"eee");
+const v3_1_1_p = version(3,1,1,"fff");
 
 compareVersions(v2_1_0, v2_1_0);
 compareVersions(v2_1_0_p, v2_1_0_p);

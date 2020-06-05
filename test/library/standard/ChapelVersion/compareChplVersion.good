@@ -26,8 +26,8 @@ chpl version 2.1.0 pre-release (aaa)
 ------------------
 == : false
 != : true
-<  : true
-<= : true
+<  : false
+<= : false
 
 Comparing versions:
 chpl version 2.1.0 pre-release (aaa)
@@ -35,8 +35,8 @@ chpl version 2.1.0
 ------------------
 == : false
 != : true
->  : true
->= : true
+>  : false
+>= : false
 
 Comparing versions:
 chpl version 2.1.0

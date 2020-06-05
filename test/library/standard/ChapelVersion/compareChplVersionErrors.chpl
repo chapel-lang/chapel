@@ -1,8 +1,8 @@
 use ChapelVersion;
 
-const v2_1_0 = new versionInfo(2,1,0);
-const v2_1_0_a = new versionInfo(2,1,0,"aaa");
-const v2_1_0_b = new versionInfo(2,1,0,"bbb");
+const v2_1_0 = version(2,1);
+const v2_1_0_a = version(2,1,0,"aaa");
+const v2_1_0_b = version(2,1,sha="bbb");
 
 compareBothVersions(v2_1_0, v2_1_0_a);
 compareBothVersions(v2_1_0_a, v2_1_0_b);
