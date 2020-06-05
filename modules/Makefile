@@ -38,7 +38,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 CHPL_MODULES_DIR=standard/gen/$(CHPL_MAKE_HOST_BIN_SUBDIR)
-VERSION_MODULE=$(CHPL_MODULES_DIR)/ChplVersionSHA.chpl
+VERSION_MODULE=$(CHPL_MODULES_DIR)/ChapelVersionSHA.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
 DOC=${CHPL_MAKE_HOME}/doc/rst
@@ -80,7 +80,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
-	standard/ChplVersion.chpl \
+	standard/ChapelVersion.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
