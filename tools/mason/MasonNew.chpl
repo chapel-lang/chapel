@@ -129,7 +129,7 @@ considered if no input is given.""");
         exitOnEOF(packageName);
         packageName = packageName.strip();
         if packageName == '' then
-          packageName = defaultPackageName;
+          packageName = defPackageName;
         var isIllegalName: bool = false;
         if !isIdentifier(packageName) {
           isIllegalName = true;
