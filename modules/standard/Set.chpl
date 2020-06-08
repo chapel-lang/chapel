@@ -349,11 +349,6 @@ module Set {
       }
     }
 
-    pragma "no doc"
-    proc _getSlotFromIdx(idx: int) ref {
-      return _htb.table[idx];
-    }
-
     /*
       Iterate over the elements of this set.
 
@@ -367,27 +362,27 @@ module Set {
     */
     iter these() {
       for idx in 0..#_htb.tableSize do
-        if _htb.isSlotFull(idx) then yield _getSlotFromIdx(idx).key;
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
     iter these(param tag) where tag == iterKind.standalone {
+      var space = 0..#_htb.tableSize;
       // TODO: Does this need to be a forall?
-      var chunk = 0..#_htb.tableSize;
-      for idx in chunk.these(tag) do
-        if _htb.isSlotFull(idx) then yield _getSlotFromIdx(idx).key;
+      for idx in space.these(tag) do
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
     iter these(param tag) where tag == iterKind.leader {
-      var chunk = 0..#_htb.tableSize;
+      var space = 0..#_htb.tableSize;
       for followThis in chunk.these(tag) do yield followThis;
     }
 
     pragma "no doc"
     iter these(param tag, followThis) where tag == iterKind.follower {
       for idx in followThis do
-        if _htb.isSlotFull(idx) then yield _getSlotFromIdx(idx).key;
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     /*
