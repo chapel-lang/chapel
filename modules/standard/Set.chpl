@@ -173,11 +173,6 @@ module Set {
       this.parSafe = parSafe;
       this.complete();
 
-      if !isCopyableType(eltType) then
-        compilerError('Cannot initialize ' + this.type:string + ' from ' +
-                      iterable.type:string + ' because element type ' +
-                      eltType:string + ' is not copyable');
-
       for elem in iterable do _addElem(elem);
     }
 
