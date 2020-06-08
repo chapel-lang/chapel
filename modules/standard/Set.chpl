@@ -197,11 +197,6 @@ module Set {
     }
 
     pragma "no doc"
-    proc deinit() {
-      clear();
-    }
-
-    pragma "no doc"
     inline proc _enter() {
       if parSafe then
         on this {
@@ -224,10 +219,10 @@ module Set {
       :arg x: The element to add to this set.
     */
     proc ref add(in x: eltType) lifetime this < x {
-      on this {
-        _enter(); defer _leave();
-        _addElem(x);
-      }
+      // TODO: Copy elision for in intents does not work across on clauses.
+      // Maybe by design?
+      _enter(); defer _leave();
+      _addElem(x);
     }
 
     /*
@@ -376,7 +371,7 @@ module Set {
     pragma "no doc"
     iter these(param tag) where tag == iterKind.leader {
       var space = 0..#_htb.tableSize;
-      for followThis in chunk.these(tag) do yield followThis;
+      for followThis in space.these(tag) do yield followThis;
     }
 
     pragma "no doc"

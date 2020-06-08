@@ -1,17 +1,28 @@
 import Set.set;
 
-var id = 0;
+var gid = 0;
+proc makeId() { var result = gid; gid += 1; return result; }
 
-record r { var id: int = 0; }
+record r { var _id: int = 0; }
+
 proc r.init() {
-  this.id = id;
+  this._id = makeId();
   this.complete();
-  id += 1;
-  writeln('init r: ', id);
+  writeln('init r: ', _id);
+}
+
+proc r.init=(other: r) {
+  this._id = makeId();
+  this.complete();
+  writeln('init r: ', _id, ' from r: ', other._id);
 }
 
 proc r.deinit() {
-  writeln('deinit r: ', id);
+  writeln('deinit r: ', _id);
+}
+
+proc =(ref lhs: r, const ref rhs: r) {
+  writeln('assigning r: ', lhs._id, ' from r: ', rhs._id);
 }
 
 proc test() {
