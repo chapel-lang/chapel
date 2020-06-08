@@ -266,10 +266,7 @@ module Set {
 
         if !(size == 0 || other.size == 0) {
 
-          //
-          // TODO: Other set is considered to be in read-only phase when
-          // iterating, should we acquire locks here?
-          //
+          // TODO: Take locks on other?
           for x in other do
             if this.contains(x) {
               result = false;
