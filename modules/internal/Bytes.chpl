@@ -43,7 +43,6 @@ Creating :mod:`Bytes`
 As :mod:`Bytes` can store arbitrary data, any :mod:`~String` can be
 cast to :mod:`Bytes`. In that event, the bytes will store UTF-8 encoded
 character data. However, a :mod:`Bytes` can contain non-UTF-8 bytes and needs
->>>>>>> master
 to be decoded to be converted to string.
 
 .. code-block:: chapel
