@@ -298,7 +298,7 @@ module BytesStringCommon {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
-       }
+      }
       else {
         // if s is local create a copy of its buffer and own it
         const (buff, allocSize) = bufferCopyLocal(other.buff, otherLen);
