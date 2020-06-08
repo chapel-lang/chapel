@@ -402,6 +402,11 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
         ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
       }
 
+    } else if (isRecordWrappedType(at)) {
+      // domain or distribution
+      // these have default values today
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+
     } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
       // Currently extern records aren't initialized at all by default.
       // But it's not necessarily reasonable to expect them to have
