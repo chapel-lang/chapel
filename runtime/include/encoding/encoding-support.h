@@ -205,7 +205,7 @@ int chpl_enc_decode_char_buf_wctype(int32_t* CHPL_ENC_RESTRICT chr,
  * :returns: 0 if valid, -1 if illegal byte sequence
  */
 static inline
-int chpl_enc_validate_buf(const char *buf, ssize_t buflen, int *num_cp) {
+int chpl_enc_validate_buf(const char *buf, ssize_t buflen, int64_t *num_cp) {
   int32_t cp;
   int nbytes;
 

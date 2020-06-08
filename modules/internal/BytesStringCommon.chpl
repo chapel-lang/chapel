@@ -679,7 +679,7 @@ module BytesStringCommon {
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
-      incrementCodepoints(lhs, rhs);
+      if t == string then incrementCodepoints(lhs, rhs);
     }
   }
 
