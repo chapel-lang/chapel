@@ -133,7 +133,7 @@ module ByteBufferHelpers {
 
   inline proc bufferMemcpyLocal(dst: bufferType, src, len: int,
                                 dst_off: int=0, src_off: int=0) {
-    c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len);
+    c_memcpy(dst:bufferType+dst_off, src:bufferType+src_off, len:uint(64));
   }
 
   inline proc bufferMemmoveLocal(dst: bufferType, src, len: int,
