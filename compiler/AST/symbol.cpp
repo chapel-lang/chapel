@@ -1456,7 +1456,7 @@ void createInitStringLiterals() {
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 }
 
-bool isValidString(std::string str, int* numCodepoints) {
+bool isValidString(std::string str, int64_t* numCodepoints) {
   return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
@@ -1493,7 +1493,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   std::string unescapedString = unescapeString(str, cstrMove);
 
-  int numCodepoints = 0;
+  int64_t numCodepoints = 0;
   const bool ret = isValidString(unescapedString, &numCodepoints);
   if (!ret) {
     USR_FATAL_CONT(cstrMove, "Invalid string literal");
