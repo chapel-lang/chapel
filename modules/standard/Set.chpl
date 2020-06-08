@@ -313,7 +313,6 @@ module Set {
         var (hasFoundSlot, idx) = _htb.findFullSlot(x);
 
         if hasFoundSlot {
-          pragma "no init"
           var key: eltType;
           var val: nothing;
 
@@ -337,12 +336,13 @@ module Set {
     proc ref clear() {
       on this {
         _enter(); defer _leave();
-        for idx in 0..#_htb.tableSize {
-          pragma "no init"
-          var key: eltType;
-          var val: nothing;
 
-          if _htb.isSlotFull(idx) then _htb.clearSlot(idx, key, val);
+        for idx in 0..#_htb.tableSize {
+          if _htb.isSlotFull(idx) {
+            var key: eltType;
+            var val: nothing;
+            _htb.clearSlot(idx, key, val);
+          }
         }
 
         _htb.maybeShrinkAfterRemove();
