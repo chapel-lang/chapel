@@ -450,6 +450,9 @@ module Set {
       :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
+      // May take locks non-locally...
+      _enter(); defer _leave();
+
       var result: [0..#_htb.tableNumFullSlots] eltType;
 
       if !isCopyableType(eltType) then
@@ -457,8 +460,6 @@ module Set {
                       eltType:string + ' is not copyable');
 
       on this {
-        _enter(); defer _leave();
-
         if _htb.tableNumFullSlots != 0 {
           var count = 0;
           var array: [0..#_htb.tableNumFullSlots] eltType;
