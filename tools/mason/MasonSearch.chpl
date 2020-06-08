@@ -89,18 +89,7 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
-  // Sort the results in a order such that results that startWith needle
-  // are displayed first 
-  use Sort;
-  record Comparator { }
-  proc Comparator.compare(a, b) {
-    if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
-    else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
-    else return -1;
-  }
-  var cmp : Comparator;
-  var res = results.toArray();
-  sort(res, comparator = cmp);
+  var res = rankResults(results, query);
   for r in res do writeln(r);
   
   // Handle --show flag
@@ -128,6 +117,23 @@ proc masonSearch(ref args: list(string)) {
   if results.size == 0 {
     exit(1);
   }
+}
+
+
+// Sort the results in a order such that results that startWith needle
+// are displayed first 
+proc rankResults(results, query) {
+  use Sort;
+  record Comparator { }
+  proc Comparator.compare(a, b) {
+    if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
+    else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
+    else return -1;
+  }
+  var cmp : Comparator;
+  var res = results.toArray();
+  sort(res, comparator = cmp);
+  return res;
 }
 
 proc isHidden(name : string) : bool {
