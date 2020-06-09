@@ -90,7 +90,7 @@ Non-Unicode Data and Chapel Strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For doing string operations on non-Unicode or arbitrary data, consider using
-:record:`~Bytes.bytes` instead of string. However, there may be cases where
+:mod:`Bytes` instead of string. However, there may be cases where
 :mod:`String` must be used with non-Unicode data. Examples of this are file
 system and path operations on systems where UTF-8 file names are not enforced.
 
@@ -1238,7 +1238,7 @@ module String {
   }
   
   /*
-    Returns a :record:`~Bytes.bytes` from the given :mod:`String`. If the
+    Returns a :mod:`Bytes` from the given :mod:`String`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
         
@@ -1246,7 +1246,7 @@ module String {
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
-    :returns: :record:`~Bytes.bytes`
+    :returns: :mod:`Bytes`
   */
   proc string.encode(policy=encodePolicy.pass): bytes {
     var localThis: string = this.localize();

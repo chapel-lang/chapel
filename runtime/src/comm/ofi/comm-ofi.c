@@ -2571,7 +2571,6 @@ void amRequestFree(c_nodeid_t node, void* p) {
 
 static inline
 void amRequestNop(c_nodeid_t node, chpl_bool blocking) {
-  assert(!isAmHandler);
   amRequest_t req = { .b = { .op = am_opNop,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
