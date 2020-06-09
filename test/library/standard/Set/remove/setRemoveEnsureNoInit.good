@@ -1,4 +1,0 @@
-init r: 0
-init r: 1
-deinit r: 1
-deinit r: 0
