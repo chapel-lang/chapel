@@ -120,8 +120,8 @@ proc masonSearch(ref args: list(string)) {
 }
 
 
-// Sort the results in a order such that results that startWith needle
-// are displayed first 
+/* Sort the results in a order such that results that startWith needle
+   are displayed first */
 proc rankResults(results, query) {
   use Sort;
   record Comparator { }
