@@ -45,7 +45,6 @@ module Set {
   import ChapelLocks;
   private use IO;
   private use Reflection;
-  
   private use ChapelHashtable;
 
   pragma "no doc"
@@ -219,8 +218,9 @@ module Set {
       :arg x: The element to add to this set.
     */
     proc ref add(in x: eltType) lifetime this < x {
-      // TODO: Copy elision for in intents does not work across on clauses.
-      // Maybe by design?
+
+      // Remove `on this` block because it prevents copy elision of `x` when
+      // passed to `_addElem`.
       _enter(); defer _leave();
       _addElem(x);
     }
