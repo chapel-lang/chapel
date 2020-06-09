@@ -95,7 +95,7 @@ module Endian {
       :type x: `int`, `uint`
   */
   proc bigEndianToHost(x) {
-    if isIntegralType(x.type) || isRealType(x.type) then
+    if isIntegralType(x.type) then
       return _bigEndianToHost(x);
     else
       compilerError("Invalid argument type: expected an uint or int type");
