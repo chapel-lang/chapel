@@ -56,49 +56,49 @@ module Endian {
   /* Returns the little endian order of the argument.
 
       :arg x: The value to convert.
-      :type x: `int`, `uint`, `real`
+      :type x: `int`, `uint`
   */
   proc hostToLittleEndian(x) {
-    if isIntegralType(x.type) || isRealType(x.type) then
+    if isIntegralType(x.type) then
       return _hostToLittleEndian(x);
     else
-      compilerError("Invalid argument type: expected an uint, int or real type");
+      compilerError("Invalid argument type: expected an uint or int type");
   }
 
   /* Returns the host byte order of the argument.
 
       :arg x: The value to convert.
-      :type x: `int`, `uint`, `real`
+      :type x: `int`, `uint`
   */
   proc littleEndianToHost(x) {
-    if isIntegralType(x.type) || isRealType(x.type) then
+    if isIntegralType(x.type) then
       return _littleEndianToHost(x);
     else
-      compilerError("Invalid argument type: expected an uint, int or real type");
+      compilerError("Invalid argument type: expected an uint or int type");
   }
 
   /* Returns the big endian order of the argument.
 
       :arg x: The value to convert.
-      :type x: `int`, `uint`, `real`
+      :type x: `int`, `uint`
   */
   proc hostToBigEndian(x) {
-    if isIntegralType(x.type) || isRealType(x.type) then
+    if isIntegralType(x.type) then
       return _hostToBigEndian(x);
     else
-      compilerError("Invalid argument type: expected an uint, int or real type");
+      compilerError("Invalid argument type: expected an uint or int type");
   }
 
   /* Returns the host byte order of the argument.
 
       :arg x: The value to convert.
-      :type x: `int`, `uint`, `real`
+      :type x: `int`, `uint`
   */
   proc bigEndianToHost(x) {
     if isIntegralType(x.type) || isRealType(x.type) then
       return _bigEndianToHost(x);
     else
-      compilerError("Invalid argument type: expected an uint, int or real type");
+      compilerError("Invalid argument type: expected an uint or int type");
   }
 
   private proc _hostToLittleEndian(x) where numBytes(x.type) == 1 {

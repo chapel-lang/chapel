@@ -12,35 +12,23 @@ test(test3);
 var test4: uint(64) = 9223372036854775800;
 test(test4);
 
-// tests for 32-bit real.
-var test5: real(32) = 10.4;
+// tests for signed integer.
+var test5: int = -100;
 test(test5);
-var test6: real(32) = 104567.2;
+var test6: int = -32487;
 test(test6);
 
-// tests for 64-bit real.
-var test7: real(64) = 10.4;
+// tests for 16-bit unsigned integer.
+var test7: uint(16) = 10;
 test(test7);
-var test8: real(64) = 92233720368545800.6;
+var test8: uint(16) = 65500;
 test(test8);
 
-// tests for signed integer.
-var test9: int = -100;
-test(test9);
-var test10: int = -32487;
-test(test10);
-
-// tests for 16-bit unsigned integer.
-var test11: uint(16) = 10;
-test(test11);
-var test12: uint(16) = 65500;
-test(test12);
-
 // tests for 8-bit unsigned integer.
-var test13: uint(8) = 10;
-test(test13);
-var test14: uint(8) = 255;
-test(test14);
+var test9: uint(8) = 10;
+test(test9);
+var test10: uint(8) = 255;
+test(test10);
 
 /*
    The conditional statements are used to make the `.good` file
