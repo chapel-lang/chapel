@@ -124,21 +124,21 @@ module ChapelVersion {
     }
   }
 
-  proc ==(v1: versionValue(?), v2: versionValue(?)) param {
+  proc ==(v1: versionValue(?), v2: versionValue(?)) param : bool {
     return (v1.major == v2.major &&
             v1.minor == v2.minor &&
             v1.update == v2.update &&
             v1.sha == v2.sha);
   }
 
-  proc !=(v1: versionValue(?), v2: versionValue(?)) param {
+  proc !=(v1: versionValue(?), v2: versionValue(?)) param : bool {
     return (v1.major != v2.major ||
             v1.minor != v2.minor ||
             v1.update != v2.update ||
             v1.sha != v2.sha);
   }
 
-  proc <(v1: versionValue(?), v2: versionValue(?)) param {
+  proc <(v1: versionValue(?), v2: versionValue(?)) param : bool {
     if v1.major != v2.major {
       return v1.major < v2.major;
     } else if v1.minor != v2.minor {
@@ -158,7 +158,7 @@ module ChapelVersion {
   }
 
 
-  proc <=(v1: versionValue(?), v2: versionValue(?)) param {
+  proc <=(v1: versionValue(?), v2: versionValue(?)) param : bool {
     if v1.major != v2.major {
       return v1.major <= v2.major;
     } else if v1.minor != v2.minor {
@@ -177,7 +177,7 @@ module ChapelVersion {
     }
   }
 
-  proc >(v1: versionValue(?), v2: versionValue(?)) param {
+  proc >(v1: versionValue(?), v2: versionValue(?)) param : bool {
     if v1.major != v2.major {
       return v1.major > v2.major;
     } else if v1.minor != v2.minor {
@@ -209,7 +209,7 @@ module ChapelVersion {
        and ``!=``; we make no attempt to order SHAs.
   */
 
-  proc >=(v1: versionValue(?), v2: versionValue(?)) param {
+  proc >=(v1: versionValue(?), v2: versionValue(?)) param : bool {
     if v1.major != v2.major {
       return v1.major >= v2.major;
     } else if v1.minor != v2.minor {
