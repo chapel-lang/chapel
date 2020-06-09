@@ -89,6 +89,12 @@ source $CHPL_HOME/util/cron/common.bash
 # Disable GMP and re2 to speed up build.
 export CHPL_GMP=none
 
+# mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
+COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
+if [ "$COMM" != "none" ]; then
+  CHPL_SMOKE_SKIP_MAKE_MASON=${CHPL_SMOKE_SKIP_MAKE_MASON:-true}
+fi
+
 if [ "${CHPL_SMOKE_SKIP_MAKE_MASON}" == "true" ] ; then
   export CHPL_REGEXP=none
 fi
@@ -117,12 +123,6 @@ num_procs=$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count)
 # If make check fails, store the log file in CHPL_HOME. Also, create a temp dir
 # in $CHPL_HOME where the hello*.chpl tests are copied and run.
 export CHPL_CHECK_INSTALL_DIR=$CHPL_HOME
-
-# mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
-COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
-if [ "$COMM" != "none" ]; then
-  CHPL_SMOKE_SKIP_MAKE_MASON=${CHPL_SMOKE_SKIP_MAKE_MASON:-true}
-fi
 
 if [ "${CHPL_SMOKE_SKIP_MAKE_CHECK}" != "true" ] ; then
     # Compile chapel and make sure `make check` works. Compile first with parallel
