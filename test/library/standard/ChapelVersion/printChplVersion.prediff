@@ -1,2 +1,0 @@
-#!/bin/bash
-$3 --version | head -n 1 > printChplVersion.good

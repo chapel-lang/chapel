@@ -1,18 +1,18 @@
-compareChplVersionErrors.chpl:15: In function 'compareVersions':
-compareChplVersionErrors.chpl:22: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:23: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:24: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:25: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:11: Function 'compareVersions' instantiated as: compareVersions(v1: versionValue(2,1,0,\"aaa\"), v2: versionValue(2,1,0,\"bbb\"))
-compareChplVersionErrors.chpl:15: In function 'compareVersions':
-compareChplVersionErrors.chpl:22: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:23: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:24: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:25: error: can't compare distinct SHAs
-compareChplVersionErrors.chpl:12: Function 'compareVersions' instantiated as: compareVersions(v1: versionValue(2,1,0,\"bbb\"), v2: versionValue(2,1,0,\"aaa\"))
+compareChplVersionErrors.chpl:25: In function 'compareVersions':
+compareChplVersionErrors.chpl:32: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:33: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:34: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:35: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:21: Function 'compareVersions' instantiated as: compareVersions(v1: gitVersion(semanticVersion(2,1,0),\"aaa\"), v2: gitVersion(semanticVersion(2,1,0),\"bbb\"))
+compareChplVersionErrors.chpl:25: In function 'compareVersions':
+compareChplVersionErrors.chpl:32: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:33: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:34: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:35: error: can't compare gitVersions that only differ by SHA
+compareChplVersionErrors.chpl:22: Function 'compareVersions' instantiated as: compareVersions(v1: gitVersion(semanticVersion(2,1,0),\"bbb\"), v2: gitVersion(semanticVersion(2,1,0),\"aaa\"))
 Comparing versions:
-chpl version 2.1.0
-chpl version 2.1.0 pre-release (aaa)
+version 2.1.0
+version 2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -22,8 +22,8 @@ chpl version 2.1.0 pre-release (aaa)
 >= : true
 
 Comparing versions:
-chpl version 2.1.0 pre-release (aaa)
-chpl version 2.1.0
+version 2.1.0 (aaa)
+version 2.1.0
 ------------------
 == : false
 != : true
@@ -33,8 +33,8 @@ chpl version 2.1.0
 >= : false
 
 Comparing versions:
-chpl version 2.1.0 pre-release (aaa)
-chpl version 2.1.0 pre-release (bbb)
+version 2.1.0 (aaa)
+version 2.1.0 (bbb)
 ------------------
 == : false
 != : true
@@ -44,8 +44,8 @@ chpl version 2.1.0 pre-release (bbb)
 >= : false
 
 Comparing versions:
-chpl version 2.1.0 pre-release (bbb)
-chpl version 2.1.0 pre-release (aaa)
+version 2.1.0 (bbb)
+version 2.1.0 (aaa)
 ------------------
 == : false
 != : true
@@ -53,4 +53,48 @@ chpl version 2.1.0 pre-release (aaa)
 <= : false
 >  : false
 >= : false
+
+Comparing versions:
+version 2.0.0 (aaa)
+version 2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0 (aaa)
+version 2.0.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.0.0 (aaa)
+version 2.1.0 (bbb)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0 (bbb)
+version 2.0.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
 

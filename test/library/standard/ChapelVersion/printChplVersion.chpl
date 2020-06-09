@@ -1,3 +1,0 @@
-use ChapelVersion;
-
-writeln(chplVersion);

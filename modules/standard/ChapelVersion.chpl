@@ -20,39 +20,53 @@
 
 /*
 
-This module contains features that support reasoning about Chapel
-version numbers at compile-time.  Chapel version numbers have major,
-minor, and update components as in semantic versioning, though for
-Chapel, version 2.0.0 corresponds to version 1.0.0 in traditional
-semantic versioning.  In addition, pre-release versions of Chapel
-(those built from the GitHub source tree) have a SHA component
-indicating a specific point in that version's development.
-
-This module features:
+This module contains features that support compile-time reasoning
+about version numbers in general, and Chapel version numbers
+specifically.  In more detail, it features:
 
 * :var:`chplVersion`: the version number of the copy of ``chpl`` used
   to compile the program.
 
+* two types that can be used to represent version numbers:
+  - :type:`semanticVersion` which represents a semantic version value
+  - :type:`gitVersion` which is a semantic version plus a SHA
+
 * :proc:`version`: a utility function for creating new version values
 
-* :type:`versionValue`: the record type used to represent version
-  values, supporting compile-time comparisons
+All version values are defined in terms of `param` values to support
+compile-time reasoning about versions to support code specialization.
+
+Both of the version types support:
+
+* being printed out or cast to a ``param`` string
+
+* compile-time comparisons between version values via ``==``, ``!=``,
+  ``<``, ``<=``, ``>``, and ``>``, including mixed types.  Generally
+  speaking, "less than" corresponds to "is an earlier version than."
 
 */
 
 module ChapelVersion {
   // Query the compiler to get its version number and cache those values
-  private param major = __primitive("version major");
-  private param minor = __primitive("version minor");
-  private param update = __primitive("version update");
-  private param SHA = __primitive("version sha");
+  private param chplMajor = __primitive("version major");
+  private param chplMinor = __primitive("version minor");
+  private param chplUpdate = __primitive("version update");
+  private param chplSHA = __primitive("version sha");
 
 
-  /* The version of ``chpl`` used to compile this program. */
-  const chplVersion: versionValue(?);
-  chplVersion = new versionValue(major, minor, update, SHA);
+  /*
+    The version of ``chpl`` used to compile this program.  For an
+    official Chapel release, this will have type ``semanticVersion``
+    while for a pre-release, it will have type ``gitVersion``.
 
-  
+    Note that Chapel ``1.x.y``/``2.x.y`` corresponds to version
+    ``0.x.y``/``2.x.y`` in traditional semantic versioning.
+  */
+
+  const chplVersion;
+  chplVersion = version(chplMajor, chplMinor, chplUpdate, chplSHA);
+
+
   /*
     A helper function that creates a new version value from its
     arguments.
@@ -69,23 +83,28 @@ module ChapelVersion {
     :arg sha: The optional SHA (defaults to "")
     :type major: `int`
 
-    :returns: A new version value
+    :returns: A new version value.  If SHA == "", this routine returns
+    a value of :type:`semanticVersion` otherwise it returns a value of
+    :type:`gitVersion`.
   */
-     
   proc version(param major: int, param minor: int,
-               param update: int = 0, param sha: string=""): versionValue(?) {
-    return new versionValue(major, minor, update, sha);
+               param update: int = 0, param sha: string = "") {
+    if (sha == "") then
+      return new semanticVersion(major, minor, update);
+    else
+      return new gitVersion(major, minor, update, sha);
+
   }
 
 
-  /* This record represents a Chapel version value.  It uses ``param``
-     fields to represent its components in order to support
-     compile-time comparison of version numbers which in turn permits
-     code to specialize to specific versions of Chapel.  Values of
-     :type:`versionValue` are printed out identically to `chpl
-     --version`.
+  /*
+    This record represents a semantic version value.  It uses
+    ``param`` values to represent its components in order to support
+    compile-time comparison of version numbers which in turn permits
+    code to specialize to specific versions of Chapel.  When printed
+    or converted to a string, it is represented as ``version x.y.z``.
   */
-  record versionValue {
+  record semanticVersion {
     /* The major version number.  For version ``2.0.1``, this would be
        ``2``. */
     param major: int;
@@ -98,133 +117,254 @@ module ChapelVersion {
        be ``1``. */
     param update: int;
 
-    /* For pre-releases of Chapel, the git SHA from which the compiler
-       was built.  For official releases, this will be the empty
-       string. */
+    pragma "no doc"
+    proc writeThis(s) throws {
+      s.write(this:string);
+    }
+  }
+
+
+  /*
+    This record represents a software version in a Git repository.  It
+    uses ``param`` values to represent its components in order to
+    support compile-time comparison of version numbers which in turn
+    permits code to specialize to specific versions of Chapel.  When
+    printed or converted to a string, it is represented as ``version
+    x.y.z (SHA)``.
+
+    Note that comparisons between two gitVersion values with identical
+    semantic versions are not supported due to the challenges involved
+    in ordering SHA values.  In addition, when a semanticVersion is
+    compared with a gitVersion with the identical semantic version,
+    the gitVersion value is considered "less than" the semanticVersion
+    using the model that it represents a pre-release of the official
+    release represented by the semantic version.
+  */
+  record gitVersion {
+    forwarding version only major, minor, update;
+
+    // TODO: Why does the following type declaration break compilation?
+    /* The semantic version portion of the version number. */
+    const version /*: semanticVersion(?,?,?) */;
+
+    /* The git SHA of the version */
     param sha: string;
 
-    /* Indicates whether or not this is a pre-release of Chapel.  This
-       is currently implemented as a method, but may become a field
-       in future versions of this module. */
-    proc preRelease param : bool {
-      return sha != "";
-    }
-
-    /* Indicates whether or not this is an official release of Chapel.
-       This is always the opposite of ``preRelease``. */
-    proc isOfficialRelease() param : bool {
-      return !preRelease;
+    proc init(param major: int, param minor: int, param update: int,
+              param sha: string) {
+      this.version = new semanticVersion(major, minor, update);
+      this.sha = sha;
+      if sha == "" then
+        compilerError("gitVersion values must have a SHA");
     }
 
     pragma "no doc"
     proc writeThis(s) throws {
-      s.write("chpl version ", major, ".", minor, ".", update);
-      if preRelease then
-        s.write(" pre-release (", sha, ")");
+      s.write(this:string);
     }
   }
 
-  proc ==(v1: versionValue(?), v2: versionValue(?)) param : bool {
-    return (v1.major == v2.major &&
-            v1.minor == v2.minor &&
-            v1.update == v2.update &&
+  
+  // helper functions for comparison operators
+
+  private proc spaceship(param x: int, param y: int) param : int {
+    if x < y then
+      return -1;
+    else if x == y then
+      return 0;
+    else
+      return 1;
+  }
+  
+  private proc spaceship(v1: semanticVersion(?),
+                         v2: semanticVersion(?)) param : int {
+    param majComp = spaceship(v1.major, v2.major);
+    if majComp != 0 then
+      return majComp;
+    param minComp = spaceship(v1.minor, v2.minor);
+    if minComp != 0 then
+      return minComp;
+    return spaceship(v1.update, v2.update);
+  }
+   
+
+  // Comparisons between semanticVersions
+
+  proc ==(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
+    return spaceship(v1,v2) == 0;
+  }
+
+  proc !=(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
+    return spaceship(v1,v2) != 0;
+  }
+
+  proc <(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
+    return spaceship(v1,v2) == -1;
+  }
+
+  proc <=(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
+    return spaceship(v1,v2) != 1;
+  }
+
+  proc >(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
+    return spaceship(v1,v2) == 1;
+  }
+
+  proc >=(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
+    return spaceship(v1,v2) != -1;
+  }
+
+
+  // Comparisons between gitVersions
+  
+  proc ==(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
+    return (v1.version == v2.version &&
             v1.sha == v2.sha);
   }
 
-  proc !=(v1: versionValue(?), v2: versionValue(?)) param : bool {
-    return (v1.major != v2.major ||
-            v1.minor != v2.minor ||
-            v1.update != v2.update ||
+  proc !=(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
+    return (v1.version != v2.version ||
             v1.sha != v2.sha);
   }
 
-  proc <(v1: versionValue(?), v2: versionValue(?)) param : bool {
-    if v1.major != v2.major {
-      return v1.major < v2.major;
-    } else if v1.minor != v2.minor {
-      return v1.minor < v2.minor;
-    } else if v1.update != v2.update {
-      return v1.update < v2.update;
+  proc <(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
+    param versionComp = spaceship(v1.version, v2.version);
+    if versionComp != 0 {
+      return versionComp == -1;
     } else if v1.sha == v2.sha {
       return false;
-    } else if v1.sha == "" {
-      return false;
-    } else if v2.sha == "" {
-      return true;
     } else {
-      compilerError("can't compare distinct SHAs");
+      compilerError("can't compare gitVersions that only differ by SHA");
       return false;
     }
   }
 
 
-  proc <=(v1: versionValue(?), v2: versionValue(?)) param : bool {
-    if v1.major != v2.major {
-      return v1.major <= v2.major;
-    } else if v1.minor != v2.minor {
-      return v1.minor <= v2.minor;
-    } else if v1.update != v2.update {
-      return v1.update <= v2.update;
+  proc <=(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
+    param versionComp = spaceship(v1.version, v2.version);
+    if versionComp != 0 {
+      return versionComp == -1;
     } else if v1.sha == v2.sha {
       return true;
-    } else if v1.sha == "" {
-      return false;
-    } else if v2.sha == "" {
-      return true;
     } else {
-      compilerError("can't compare distinct SHAs");
+      compilerError("can't compare gitVersions that only differ by SHA");
       return false;
     }
   }
 
-  proc >(v1: versionValue(?), v2: versionValue(?)) param : bool {
-    if v1.major != v2.major {
-      return v1.major > v2.major;
-    } else if v1.minor != v2.minor {
-      return v1.minor > v2.minor;
-    } else if v1.update != v2.update {
-      return v1.update > v2.update;
+  proc >(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
+    param versionComp = spaceship(v1.version, v2.version);
+    if versionComp != 0 {
+      return versionComp == 1;
     } else if v1.sha == v2.sha {
       return false;
-    } else if v1.sha == "" {
-      return true;
-    } else if v2.sha == "" {
-      return false;
     } else {
-      compilerError("can't compare distinct SHAs");
+      compilerError("can't compare gitVersions that only differ by SHA");
       return false;
     }
   }
 
-  /* These comparison operators compare two version values where "less
-     than"/"greater than" correspond to a version being older/newer,
-     chronologically speaking.  Note that a version number containing
-     a SHA:
-
-     - is less than an identical ``major.minor.update`` version
-       without a SHA since the presence of a SHA indicates a
-       pre-release version
-
-     - can only be compared to another version with a SHA using ``==``
-       and ``!=``; we make no attempt to order SHAs.
-  */
-
-  proc >=(v1: versionValue(?), v2: versionValue(?)) param : bool {
-    if v1.major != v2.major {
-      return v1.major >= v2.major;
-    } else if v1.minor != v2.minor {
-      return v1.minor >= v2.minor;
-    } else if v1.update != v2.update {
-      return v1.update >= v2.update;
+  proc >=(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
+    param versionComp = spaceship(v1.version, v2.version);
+    if versionComp != 0 {
+      return versionComp == 1;
     } else if v1.sha == v2.sha {
       return true;
-    } else if v1.sha == "" {
-      return true;
-    } else if v2.sha == "" {
-      return false;
     } else {
-      compilerError("can't compare distinct SHAs");
+      compilerError("can't compare gitVersions that only differ by SHA");
       return false;
     }
+  }
+
+  /* semanticVersion / gitVersion comparison ops */
+  
+  proc ==(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
+    return false;
+//    return v2.sha == "" && v1 == v2.version;
+  }
+
+  proc !=(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
+    return true;
+    //    return v2.sha != "" || v1 != v2.version;
+  }
+
+  proc <(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
+    return v1 < v2.version;
+    /*
+    param versionComp = spaceShip(v1, v2.version);
+    if versionComp == -1 then
+      return true;
+    else if versionComp == 0 then
+      return false;
+    else
+      return false;
+    */
+  }
+
+  proc <=(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
+    return v1 < v2.version;
+  }
+
+  proc >(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
+    return v1 >= v2.version;
+    /*
+    param versionComp = spaceShip(v1, v2.version);
+    if versionComp == -1 then
+      return false;
+    else if versionComp == 0 then
+      return true;
+    else
+      return true;
+    */
+  }
+
+  proc >=(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
+    return v1 >= v2.version;
+    /*
+    param versionComp = spaceShip(v1, v2.version);
+    if versionComp == -1 then
+      return false;
+    else if versionComp == 0 then
+      return true;
+    else
+      return true;
+    */
+  }
+
+
+  /* gitVersion / semanticVersion comparison ops */
+  
+  proc ==(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
+    return v2 == v1;
+  }
+
+  proc !=(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
+    return v2 != v1;
+  }
+
+  proc <(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
+    return v2 >= v1;
+  }
+
+  proc <=(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
+    return v2 > v1;
+  }
+
+  proc >(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
+    return v2 <= v1;
+  }
+
+  proc >=(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
+    return v2 < v1;
+  }
+
+  pragma "no doc"
+  proc _cast(type t: string, x: semanticVersion(?)) param : string {
+    return "version " + x.major:string + "." + x.minor:string + "." + x.update:string;
+  }
+
+  pragma "no doc"
+  proc _cast(type t: string, x: gitVersion(?)) {
+    return x.version:string + " (" + x.sha + ")";
   }
 }
