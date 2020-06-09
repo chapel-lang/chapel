@@ -3,16 +3,14 @@ import Set.set;
 var gid = 0;
 proc makeId() { var result = gid; gid += 1; return result; }
 
-record r { var _id: int = 0; }
+record r { var _id: int = makeId(); }
 
 proc r.init() {
-  this._id = makeId();
   this.complete();
   writeln('init r: ', _id);
 }
 
 proc r.init=(other: r) {
-  this._id = makeId();
   this.complete();
   writeln('init r: ', _id, ' from r: ', other._id);
 }
