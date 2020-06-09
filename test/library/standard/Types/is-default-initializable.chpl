@@ -98,3 +98,18 @@ proc testArrays() {
   }
 }
 testArrays();
+
+proc test11() {
+  var d = {1..10};
+  assert(isDefaultInitializable(d.type));
+  assert(isDefaultInitializable(d));
+  var dd: d.type;
+}
+test11();
+
+proc test12() {
+  assert(isDefaultInitializable(defaultDist.type));
+  assert(isDefaultInitializable(defaultDist));
+  var dd: defaultDist.type;
+}
+test11();
