@@ -1261,9 +1261,8 @@ module Random {
 
         _lock();
 
-        var j : array.domain.idxType;
         for i in low..high {
-          j = randlc_bounded(arr.domain.idxType,
+          var j = randlc_bounded(arr.domain.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
                                  low, i);
