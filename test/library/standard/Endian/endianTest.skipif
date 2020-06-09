@@ -1,0 +1,2 @@
+# Do not run this test for llvm compilation
+CHPL_LLVM != none
