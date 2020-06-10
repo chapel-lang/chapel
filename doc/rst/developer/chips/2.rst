@@ -90,7 +90,7 @@ template libraries have become infamous for this problem [1]).
 The Chapel compiler needs more information in order to determine whether the
 error is in the implementation of QuickSort or in the call to it.
 
-.. [1] R. Garcia, J. Järvi, A. Lumsdaine, J. G. Siek, and J. Willcock. An extended comparative study of language support for generic programming. Journal of Functional Programming, 17(2):145–205, March 2007.
+.. [1] R. Garcia, J. Järvi, A. Lumsdaine, J. G. Siek, and J. Willcock. An extended comparative study of language support for generic programming. Journal of Functional Programming, 17(2):145-205, March 2007.
 
 Reliability of Generic Libraries
 ++++++++++++++++++++++++++++++++
@@ -112,7 +112,7 @@ alternative, but this was not documented as a requirement of the
 ``replace_copy`` template. The fix is to change the conditional expression into
 an ``if`` statement, thereby removing the need for convertibility.
 
-.. [2] J. G. Siek and A. Lumsdaine. A language for generic programming in the large. Science of Computer Programming, 76:423–465, September 2011.
+.. [2] J. G. Siek and A. Lumsdaine. A language for generic programming in the large. Science of Computer Programming, 76:423-465, September 2011.
 
 Over the years, there were likely many users who tried to use ``replace_copy``
 with types that were not convertible and received an impenetrable error message
@@ -189,7 +189,7 @@ Interface definitions
   provide a mechanism for grouping and naming requirements on types.
 
 Implements statements
-  establish that a type implements the requirements of a interface.
+  establish that a type implements the requirements of an interface.
 
 Where clauses
   will be extended to express constraints on generic functions and generic
@@ -289,7 +289,7 @@ the element type implement the ``LessThanComparable`` interface.
   where Dom.rank == 1, Data.eltType implements LessThanComparable
   {
     ...
-    if (Data(mid) < Data(lo)) then Data(mid) <=> Data(lo);
+    if Data(mid) < Data(lo) then Data(mid) <=> Data(lo);
     ...
   }
 
@@ -333,8 +333,8 @@ Semigroup.
     proc identity_elt() : T;
   }
 
-Inside a interface, the T type parameter is a place-holder for a concrete type
-that will implement the interface.  Function declarations in a interface (the
+Inside an interface, the T type parameter is a place-holder for a concrete type
+that will implement the interface.  Function declarations in an interface (the
 def's) express requirements for certain function definitions. The refines
 clause provides a way of reusing interface definitions to define interfaces
 with more requirements. Note though that *refines* is not a subtype
@@ -344,46 +344,46 @@ is not necessarily the case that T1 is a subtype of T2.
 
 The syntax for interface definitions is listed below.
 
-interface–declaration–statement:
-  interface interface–name [( interface–formals )] [ : interface–inherit–list ] { interface–statement∗ }
+interface-declaration-statement:
+  interface interface-name [( interface-formals )] [ : interface-inherit-list ] { interface-statement∗ }
 
-interface–name:
+interface-name:
   identifier
 
-interface–formals:
+interface-formals:
   identifier
-  identifier, interface–formals
+  identifier, interface-formals
 
-interface–inherit–list:
-  implements–clause
-  implements–clause , interface–inherit–list
+interface-inherit-list:
+  implements-clause
+  implements-clause , interface-inherit-list
 
-interface–statement:
+interface-statement:
   type identifier
-  type–constraint ;
-  function–signature–statement
-  function–declaration–statement
+  type-constraint ;
+  function-signature-statement
+  function-declaration-statement
 
-implements–clause:
-  type–list implements interface–name
+implements-clause:
+  type-list implements interface-name
 
-type–constraint:
-  implements–clause
-  type–equality
+type-constraint:
+  implements-clause
+  type-equality
 
-type–equality:
-  type–specifier == type–specifier
+type-equality:
+  type-specifier == type-specifier
 
-where–clause:
-  where where–item–list
+where-clause:
+  where where-item-list
 
-where–item–list:
-  where–item
-  where–item , where–item–list
+where-item-list:
+  where-item
+  where-item , where-item-list
 
-where–item:
+where-item:
   expression
-  type–constraint
+  type-constraint
 
 An interface definition consists of a name for the interface, an optional list
 of type parameters enclosed in parentheses that serve as place holders for the
@@ -441,7 +441,7 @@ method, and the Self.these signature requires an iterator method.
   }
 
 Function definitions
-  A function definition statement in a interface provides a default
+  A function definition statement in an interface provides a default
   implementation. An implementation may provide an overriding definition of
   the function, but if not, the definition provided by the interface will be
   used.
@@ -464,7 +464,7 @@ Example 3
 
 Associated types
   Associated types are types that play an auxiliary role in the implementation
-  of a interface, such as the iterator of a container or the key type of a hash
+  of an interface, such as the iterator of a container or the key type of a hash
   table. The type statement adds the requirement for a type definition in any
   implementation of the interface. The itemType in the above Stack interface
   and the eltType in the Vector interface are examples of requiring an
@@ -512,10 +512,10 @@ an interface.
 The syntax for implements statements is as follows.
 
 implements-statement:
-  type implements interface–name [where–clause] ;
-  type implements interface–name [where–clause] { statement* }
-  implements interface–name(type-list) [where–clause] ;
-  implements interface–name(type-list) [where–clause] { statement* }
+  type implements interface-name [where-clause] ;
+  type implements interface-name [where-clause] { statement* }
+  implements interface-name(type-list) [where-clause] ;
+  implements interface-name(type-list) [where-clause] { statement* }
 
  
 In addition, the implements statement can be appended to a class or record
@@ -537,6 +537,7 @@ is equivalent to
   MyRecord implements SomeInterface;
 
 Here are a few more examples:
+
 .. code-block:: chapel
 
   // assert that a type implements multiple interfaces
@@ -599,10 +600,10 @@ Functions and Where Clauses
 +++++++++++++++++++++++++++
 
 function-signature-statement:
-  proc function–name [argument–list] [var–param–clause] [where–clause] ;
+  proc function-name [argument-list] [var-param-clause] [where-clause] ;
 
 function-declaration-statement:
-  proc function–name [argument–list] [var–param–clause] [where–clause] function–body
+  proc function-name [argument-list] [var-param-clause] [where-clause] function-body
 
 A function signature statement is a forward declaration of a function. It
 states the that the specified function will be provided later or in a separate
@@ -627,7 +628,7 @@ that is, some existing Chapel programs would become ill typed (e.g.
 proc(x:?t, y:t) ... ).
 
 
-The where–clause of a generic function may include type constraints on the type arguments of the function. The type constraints in the where clause of a function play an important role in the type checking of the function body. Functions and methods in the required interfaces are considered visible in the function body. Furthermore, the required type equalities as stated in the interfaces or directly in the where clause, as well as the congruence closure of those equalities, are assumed to be equal during the type checking of the function body. We discuss issues regarding type equality in detail in Section 5.2.
+The where-clause of a generic function may include type constraints on the type arguments of the function. The type constraints in the where clause of a function play an important role in the type checking of the function body. Functions and methods in the required interfaces are considered visible in the function body. Furthermore, the required type equalities as stated in the interfaces or directly in the where clause, as well as the congruence closure of those equalities, are assumed to be equal during the type checking of the function body. We discuss issues regarding type equality in detail in Section 5.2.
 
 Example
 +++++++
@@ -709,8 +710,8 @@ written as itemType == S2.itemType, it would be an error.
 As a short-hand for implements clauses in the where clause, an interface name
 may be used as the type for function parameter.
 
-type–specifier:
-  interface–name
+type-specifier:
+  interface-name
 
 Example
 +++++++
@@ -948,8 +949,8 @@ The Any Type
 
 We propose to support dynamic dispatch and dynamic polymorphism for interfaces using the any type feature. There are three forms for specifying an any type. We start with the simplest.
 
-type–specifier:
-  any interface–name
+type-specifier:
+  any interface-name
 
 Any type T may be implicitly cast to the type any I, if T implements I. The methods and functions in interface I are available for use on objects of type any I.
 
@@ -970,8 +971,8 @@ Example
 
 The next any form adds more expressiveness by including a where clause that includes one or more constraints on the any type. The type specifier is a pattern that specifies what the any type looks like.
 
-type–specifier:
-  any type–specifier where where–item–list
+type-specifier:
+  any type-specifier where where-item-list
 
 Example
 +++++++
