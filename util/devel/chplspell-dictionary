@@ -3698,6 +3698,7 @@ parenthesesless
 
 FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
 adaptative
+afee
 binarytrees
 chapcs
 chplgmp
@@ -5232,6 +5233,10 @@ nomultithread
 FILEID: f824f208-a3e4-11ea-8acb-843835579daa
 globalvars
 
+FILEID: 0ad18466-aac5-11ea-8acb-843835579daa
+inthash
+ttwang
+
 NATURAL:
 aarch
 abcd
@@ -6055,6 +6060,7 @@ firefox
 fishshell
 fixup
 fixups
+flavour
 flippity
 flowgraph
 fltk
@@ -6319,6 +6325,7 @@ initcopy
 initdone
 initequals
 initialise
+initialised
 initializable
 initializer
 initializers
@@ -6744,6 +6751,7 @@ miniapp
 minint
 minlen
 minloc
+minmax
 minnesota
 misassumption
 miscompiles
@@ -6920,6 +6928,7 @@ nonblocking
 nondeterminism
 nondeterministic
 nonfetch
+nonfetching
 nongnu
 nongreedy
 noninfringement
@@ -7489,6 +7498,7 @@ sigint
 sigkill
 sigmask
 signbit
+signedness
 signum
 sigpipe
 sigplan
