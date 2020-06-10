@@ -366,6 +366,9 @@
   "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
     "doc/rst/language/spec.rst"
   ],
+  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/language/spec/README"
+  ],
   "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/arrays.rst"
   ],
@@ -808,9 +811,6 @@
   ],
   "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Modules.tex"
-  ],
-  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/README"
   ],
   "e78c94ba-2953-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Ranges.tex"
