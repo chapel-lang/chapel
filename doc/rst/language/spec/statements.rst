@@ -741,20 +741,25 @@ matter how the block is exited.
 
 The syntax is:
 
-
-
 .. code-block:: syntax
 
    defer-statement:
      `defer' statement
 
-At a given place where control flow exits a block, the in-scope
-``defer`` statements that have executed and the local variables 
-will be handled in reverse declaration order. Executing a ``defer``
-consists of marking it to be handled while Handling a ``defer`` 
-statement consists of executing the contained clean-up action. 
-Handling a local variable consists of running its deinitializer 
-if it is of record type.
+At each place where control flow exits a block, the compiler will add
+cleanup actions for the in-scope ``defer`` statements that have executed and
+for the local variables that have been initialized in that block.
+
+The cleanup action for a ``defer`` statement is to run its body. The
+cleanup action for a variable is to run its deinitializer. See
+:ref:`Variable_Lifetimes`.
+
+When a block contains multiple defer statements, their cleanup actions
+will be run in reverse declaration order. Additionally, note that cleanup
+actions for defer statements may be interleaved among cleanup actions for
+variables. To understand the interleaving, imagine that the defer
+statement is declaring and initializing a local variable with a
+deinitializer that runs the body of the defer statement.
 
 When an iterator contains a ``defer`` statement at the top level, the
 associated clean-up action will be executed when the loop running the
@@ -892,10 +897,11 @@ body is exited early.
       {x = 2}
       defer action: deleting {x = 2}
 
-Lastly, this example shows that only `defer` statements that
-have been executed, are handled.
+Lastly, this example shows that `defer` statements that have not executed
+have no effect. Only a `defer` statement that has executed will have its
+cleanup action run.
 
-   *Example (defer3.chpl)*.
+   *Example (defer4.chpl)*.
 
    
 
