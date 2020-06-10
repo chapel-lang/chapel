@@ -9,7 +9,7 @@ const v3_1_1 = version(3,1,1);
 
 const v2_1_0_p = version(2,1,0,"aaa");
 const v2_1_1_p = version(2,1,1,"bbb");
-const v2_2_0_p = version(2,2,sha="ccc");
+const v2_2_0_p = version(2,2,commit="ccc");
 const v2_2_1_p = version(2,2,1,"ddd");
 const v3_1_0_p = version(3,1,0,"eee");
 const v3_1_1_p = version(3,1,1,"fff");

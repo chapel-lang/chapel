@@ -8,4 +8,4 @@ writeln(chplVersion);
 writeit(chplVersion.major);
 writeit(chplVersion.minor);
 writeit(chplVersion.update);
-writeit(chplVersion.sha);
+writeit(chplVersion.commit);

@@ -1,15 +1,15 @@
 compareChplVersionErrors.chpl:25: In function 'compareVersions':
-compareChplVersionErrors.chpl:32: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:33: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:34: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:35: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:21: Function 'compareVersions' instantiated as: compareVersions(v1: gitVersion(semanticVersion(2,1,0),\"aaa\"), v2: gitVersion(semanticVersion(2,1,0),\"bbb\"))
+compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:21: Function 'compareVersions' instantiated as: compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
 compareChplVersionErrors.chpl:25: In function 'compareVersions':
-compareChplVersionErrors.chpl:32: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:33: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:34: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:35: error: can't compare gitVersions that only differ by SHA
-compareChplVersionErrors.chpl:22: Function 'compareVersions' instantiated as: compareVersions(v1: gitVersion(semanticVersion(2,1,0),\"bbb\"), v2: gitVersion(semanticVersion(2,1,0),\"aaa\"))
+compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:22: Function 'compareVersions' instantiated as: compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"bbb\"), v2: sourceVersion(semanticVersion(2,1,0),\"aaa\"))
 Comparing versions:
 version 2.1.0
 version 2.1.0 (aaa)
