@@ -28,15 +28,17 @@ specifically.  In more detail, it features:
   to compile the program.
 
 * two types that can be used to represent version numbers:
-  - :type:`semanticVersion` which represents a semantic version value
-  - :type:`gitVersion` which is a semantic version plus a SHA
+
+  * :type:`semanticVersion` which represents a semantic version value
+
+  * :type:`gitVersion` which is a semantic version plus a SHA
 
 * :proc:`version`: a utility function for creating new version values
 
-All version values are defined in terms of `param` values to support
-compile-time reasoning about versions to support code specialization.
+Version types in this module are defined in terms of `param` values to
+support compile-time reasoning about versions and code specialization.
 
-Both of the version types support:
+The version types support:
 
 * being printed out or cast to a ``param`` string
 
@@ -78,14 +80,14 @@ module ChapelVersion {
     :type minor: `int`
 
     :arg update: The optional update version number (defaults to 0)
-    :type major: `int`
+    :type update: `int`
 
     :arg sha: The optional SHA (defaults to "")
-    :type major: `int`
+    :type sha: `string`
 
     :returns: A new version value.  If SHA == "", this routine returns
-    a value of :type:`semanticVersion` otherwise it returns a value of
-    :type:`gitVersion`.
+              a value of :type:`semanticVersion` otherwise it returns
+              a value of :type:`gitVersion`.
   */
   proc version(param major: int, param minor: int,
                param update: int = 0, param sha: string = "") {
@@ -144,12 +146,15 @@ module ChapelVersion {
     forwarding version only major, minor, update;
 
     // TODO: Why does the following type declaration break compilation?
+    //    const version /*: semanticVersion(?,?,?) */;
+
     /* The semantic version portion of the version number. */
-    const version /*: semanticVersion(?,?,?) */;
+    const version;
 
     /* The git SHA of the version */
     param sha: string;
 
+    pragma "no doc"
     proc init(param major: int, param minor: int, param update: int,
               param sha: string) {
       this.version = new semanticVersion(major, minor, update);
@@ -164,7 +169,7 @@ module ChapelVersion {
     }
   }
 
-  
+
   // helper functions for comparison operators
 
   private proc spaceship(param x: int, param y: int) param : int {
@@ -175,7 +180,7 @@ module ChapelVersion {
     else
       return 1;
   }
-  
+
   private proc spaceship(v1: semanticVersion(?),
                          v2: semanticVersion(?)) param : int {
     param majComp = spaceship(v1.major, v2.major);
@@ -186,7 +191,7 @@ module ChapelVersion {
       return minComp;
     return spaceship(v1.update, v2.update);
   }
-   
+
 
   // Comparisons between semanticVersions
 
@@ -216,7 +221,7 @@ module ChapelVersion {
 
 
   // Comparisons between gitVersions
-  
+
   proc ==(v1: gitVersion(?), v2: gitVersion(?)) param : bool {
     return (v1.version == v2.version &&
             v1.sha == v2.sha);
@@ -276,29 +281,18 @@ module ChapelVersion {
     }
   }
 
-  /* semanticVersion / gitVersion comparison ops */
-  
+  // semanticVersion / gitVersion comparison ops
+
   proc ==(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
     return false;
-//    return v2.sha == "" && v1 == v2.version;
   }
 
   proc !=(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
     return true;
-    //    return v2.sha != "" || v1 != v2.version;
   }
 
   proc <(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
     return v1 < v2.version;
-    /*
-    param versionComp = spaceShip(v1, v2.version);
-    if versionComp == -1 then
-      return true;
-    else if versionComp == 0 then
-      return false;
-    else
-      return false;
-    */
   }
 
   proc <=(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
@@ -307,33 +301,15 @@ module ChapelVersion {
 
   proc >(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
     return v1 >= v2.version;
-    /*
-    param versionComp = spaceShip(v1, v2.version);
-    if versionComp == -1 then
-      return false;
-    else if versionComp == 0 then
-      return true;
-    else
-      return true;
-    */
   }
 
   proc >=(v1: semanticVersion(?), v2: gitVersion(?)) param : bool {
     return v1 >= v2.version;
-    /*
-    param versionComp = spaceShip(v1, v2.version);
-    if versionComp == -1 then
-      return false;
-    else if versionComp == 0 then
-      return true;
-    else
-      return true;
-    */
   }
 
 
-  /* gitVersion / semanticVersion comparison ops */
-  
+  // gitVersion / semanticVersion comparison ops
+
   proc ==(v1: gitVersion(?), v2: semanticVersion(?)) param : bool {
     return v2 == v1;
   }
