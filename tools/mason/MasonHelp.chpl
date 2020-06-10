@@ -105,6 +105,7 @@ proc masonBuildHelp() {
 proc masonNewHelp() {
   writeln('Usage:');
   writeln('    mason new [options] <project name>');
+  writeln('    mason new                    Starts an interactive session');
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');

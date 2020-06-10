@@ -245,7 +245,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     checkVersion(version);
   }
   else {
-    makeBasicToml(name, path);
+    makeBasicToml(name, path, "0.1.0", getChapelVersionStr());
     if show then writeln("Created Mason.toml file.");
   }
 }
