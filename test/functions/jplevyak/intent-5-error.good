@@ -1,3 +1,3 @@
 intent-5-error.chpl:3: In function 'foo':
-intent-5-error.chpl:4: error: illegal lvalue in assignment
+intent-5-error.chpl:4: error: cannot assign to const variable
 intent-5-error.chpl:9: Function 'foo' instantiated as: foo(x: int(64))

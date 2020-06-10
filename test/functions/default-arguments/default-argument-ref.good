@@ -1,1 +1,1 @@
-default-argument-ref.chpl:2: error: non-lvalue actual is passed to 'ref' formal 'x' of foo()
+default-argument-ref.chpl:2: error: const actual is passed to 'ref' formal 'x' of foo()

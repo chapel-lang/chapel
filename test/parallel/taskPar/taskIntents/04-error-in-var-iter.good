@@ -1,16 +1,16 @@
-04-error-in-var-iter.chpl:6: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:6: error: cannot assign to const variable
 04-error-in-var-iter.chpl:5: note: The shadow variable 'aaaaa' is constant due to task intents in this begin statement
-04-error-in-var-iter.chpl:9: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:9: error: cannot assign to const variable
 04-error-in-var-iter.chpl:8: note: The shadow variable 'aaaaa' is constant due to task intents in this parallel statement
-04-error-in-var-iter.chpl:10: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:10: error: cannot assign to const variable
 04-error-in-var-iter.chpl:8: note: The shadow variable 'aaaaa' is constant due to task intents in this parallel statement
-04-error-in-var-iter.chpl:13: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:13: error: cannot assign to const variable
 04-error-in-var-iter.chpl:12: note: The shadow variable 'aaaaa' is constant due to task intents in this parallel statement
-04-error-in-var-iter.chpl:18: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:18: error: cannot assign to const variable
 04-error-in-var-iter.chpl:17: note: The shadow variable 'aaaaa' is constant due to task intents in this begin statement
-04-error-in-var-iter.chpl:21: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:21: error: cannot assign to const variable
 04-error-in-var-iter.chpl:20: note: The shadow variable 'aaaaa' is constant due to task intents in this parallel statement
-04-error-in-var-iter.chpl:22: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:22: error: cannot assign to const variable
 04-error-in-var-iter.chpl:20: note: The shadow variable 'aaaaa' is constant due to task intents in this parallel statement
-04-error-in-var-iter.chpl:25: error: illegal lvalue in assignment
+04-error-in-var-iter.chpl:25: error: cannot assign to const variable
 04-error-in-var-iter.chpl:24: note: The shadow variable 'aaaaa' is constant due to task intents in this parallel statement

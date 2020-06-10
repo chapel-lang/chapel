@@ -1,2 +1,2 @@
 owned-const-in-error.chpl:15: In function 'takeOwnership':
-owned-const-in-error.chpl:17: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+owned-const-in-error.chpl:17: error: const actual is passed to a 'ref' formal of chpl__initCopy()

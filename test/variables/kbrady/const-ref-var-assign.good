@@ -1,1 +1,1 @@
-const-ref-var-assign.chpl:8: error: illegal lvalue in assignment
+const-ref-var-assign.chpl:8: error: cannot assign to const variable
