@@ -313,6 +313,8 @@ static void getVisibleMethods(const char* name, CallExpr* call,
                               BlockStmt* block, std::set<BlockStmt*>& visited,
                               Vec<FnSymbol*>& visibleFns);
 
+static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call);
+
 
 static void getVisibleMethods(const char* name, CallExpr* call,
                               Vec<FnSymbol*>& visibleFns) {
@@ -410,29 +412,7 @@ static void getVisibleMethods(const char* name, CallExpr* call,
         // A use statement could be of an enum instead of a module, but only
         // modules can define functions.
         if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-          bool isVisible;
-
-          if (mod->hasFlag(FLAG_PRIVATE)) {
-            // Get potential scope pair.
-            std::pair<BlockStmt*, BlockStmt*> curPair =
-              std::make_pair(getVisibilityScope(call),
-                             mod->block);
-            // See if it's already in the map
-            std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
-              scopeIsVisForMethods.find(curPair);
-            // If not, determine and record the result, otherwise use the cached
-            // version.
-            if (it == scopeIsVisForMethods.end()) {
-              isVisible = mod->isVisible(call);
-              scopeIsVisForMethods[curPair] = isVisible;
-            } else {
-              isVisible = it->second;
-            }
-          } else {
-            isVisible = true;
-          }
-
-          if (isVisible) {
+          if (isScopeVisibleForMethods(mod, call)) {
             getVisibleMethods(name, call, mod->block, visited, visibleFns);
           }
         }
@@ -444,29 +424,7 @@ static void getVisibleMethods(const char* name, CallExpr* call,
         SymExpr* se = toSymExpr(expr);
         INT_ASSERT(se);
         if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
-          bool isVisible;
-
-          if (mod->hasFlag(FLAG_PRIVATE)) {
-            // Get potential scope pair.
-            std::pair<BlockStmt*, BlockStmt*> curPair =
-              std::make_pair(getVisibilityScope(call),
-                             mod->block);
-            // See if it's already in the map
-            std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
-              scopeIsVisForMethods.find(curPair);
-            // If not, determine and record the result, otherwise use the cached
-            // version.
-            if (it == scopeIsVisForMethods.end()) {
-              isVisible = mod->isVisible(call);
-              scopeIsVisForMethods[curPair] = isVisible;
-            } else {
-              isVisible = it->second;
-            }
-          } else {
-            isVisible = true;
-          }
-
-          if (isVisible) {
+          if (isScopeVisibleForMethods(mod, call)) {
             getVisibleMethods(name, call, mod->block, visited, visibleFns);
           }
         }
@@ -486,6 +444,30 @@ static void getVisibleMethods(const char* name, CallExpr* call,
     }
 
   }
+}
+
+static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call) {
+  bool isVisible;
+
+  if (mod->hasFlag(FLAG_PRIVATE)) {
+    // Get potential scope pair.
+    std::pair<BlockStmt*, BlockStmt*> curPair =
+      std::make_pair(getVisibilityScope(call), mod->block);
+    // See if it's already in the map
+    std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
+      scopeIsVisForMethods.find(curPair);
+    // If not, determine and record the result, otherwise use the cached
+    // version.
+    if (it == scopeIsVisForMethods.end()) {
+      isVisible = mod->isVisible(call);
+      scopeIsVisForMethods[curPair] = isVisible;
+    } else {
+      isVisible = it->second;
+    }
+  } else {
+    isVisible = true;
+  }
+  return isVisible;
 }
 
 
