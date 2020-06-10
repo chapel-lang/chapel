@@ -1,1 +1,1 @@
-assignConstError.chpl:2: error: illegal lvalue in assignment
+assignConstError.chpl:2: error: cannot assign to const variable

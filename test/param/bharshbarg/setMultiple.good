@@ -1,2 +1,2 @@
-setMultiple.chpl:2: error: illegal lvalue in assignment
+setMultiple.chpl:2: error: cannot assign to const variable
 setMultiple.chpl:2: error: parameter set multiple times

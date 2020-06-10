@@ -1,10 +1,10 @@
 fields-of-this-4-begin-cobegin.chpl:13: In function 'bgn':
-fields-of-this-4-begin-cobegin.chpl:15: error: illegal lvalue in assignment
+fields-of-this-4-begin-cobegin.chpl:15: error: cannot assign to const variable
 fields-of-this-4-begin-cobegin.chpl:24: In function 'cob':
-fields-of-this-4-begin-cobegin.chpl:26: error: illegal lvalue in assignment
-fields-of-this-4-begin-cobegin.chpl:27: error: illegal lvalue in assignment
+fields-of-this-4-begin-cobegin.chpl:26: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:27: error: cannot assign to const variable
 fields-of-this-4-begin-cobegin.chpl:42: In function 'bgn':
-fields-of-this-4-begin-cobegin.chpl:44: error: illegal lvalue in assignment
+fields-of-this-4-begin-cobegin.chpl:44: error: cannot assign to const variable
 fields-of-this-4-begin-cobegin.chpl:53: In function 'cob':
-fields-of-this-4-begin-cobegin.chpl:55: error: illegal lvalue in assignment
-fields-of-this-4-begin-cobegin.chpl:56: error: illegal lvalue in assignment
+fields-of-this-4-begin-cobegin.chpl:55: error: cannot assign to const variable
+fields-of-this-4-begin-cobegin.chpl:56: error: cannot assign to const variable

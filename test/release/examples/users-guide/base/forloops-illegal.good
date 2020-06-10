@@ -1,1 +1,1 @@
-forloops.chpl:15: error: illegal lvalue in assignment
+forloops.chpl:15: error: cannot assign to const variable

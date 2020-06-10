@@ -1,4 +1,4 @@
 fields-of-this-3-const-fields.chpl:14: In function 'w1':
-fields-of-this-3-const-fields.chpl:16: error: illegal lvalue in assignment
+fields-of-this-3-const-fields.chpl:16: error: cannot assign to const variable
 fields-of-this-3-const-fields.chpl:17: error: illegal lvalue in assignment
 fields-of-this-3-const-fields.chpl:18: error: non-lvalue actual is passed to 'ref' formal 'arg' of modify()

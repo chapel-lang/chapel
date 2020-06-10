@@ -1,3 +1,3 @@
 owned-record-instantiation-types-user-init-borrows-error.chpl:11: In initializer:
-owned-record-instantiation-types-user-init-borrows-error.chpl:12: error: non-lvalue actual is passed to a 'ref' formal of init=()
+owned-record-instantiation-types-user-init-borrows-error.chpl:12: error: const actual is passed to a 'ref' formal of init=()
 owned-record-instantiation-types-user-init-borrows-error.chpl:18: Initializer instantiated as: init(field: owned MyClass)

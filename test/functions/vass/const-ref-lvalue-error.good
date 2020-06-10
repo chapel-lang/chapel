@@ -1,7 +1,7 @@
 const-ref-lvalue-error.chpl:9: error: non-lvalue actual is passed to 'const ref' formal 'x_constref' of with_constref_arg()
-const-ref-lvalue-error.chpl:10: error: non-lvalue actual is passed to 'inout' formal 'x_inout' of with_inout_arg()
-const-ref-lvalue-error.chpl:11: error: non-lvalue actual is passed to 'inout' formal 'x_inout' of with_inout_arg()
-const-ref-lvalue-error.chpl:15: error: illegal lvalue in assignment
-const-ref-lvalue-error.chpl:16: error: non-lvalue actual is passed to a 'ref' formal of <=>
-const-ref-lvalue-error.chpl:17: error: non-lvalue actual is passed to a 'ref' formal of <=>
-const-ref-lvalue-error.chpl:20: error: non-lvalue actual is passed to a 'ref' formal of readIt()
+const-ref-lvalue-error.chpl:10: error: const actual is passed to 'inout' formal 'x_inout' of with_inout_arg()
+const-ref-lvalue-error.chpl:11: error: const actual is passed to 'inout' formal 'x_inout' of with_inout_arg()
+const-ref-lvalue-error.chpl:15: error: cannot assign to const variable
+const-ref-lvalue-error.chpl:16: error: const actual is passed to a 'ref' formal of <=>
+const-ref-lvalue-error.chpl:17: error: const actual is passed to a 'ref' formal of <=>
+const-ref-lvalue-error.chpl:20: error: const actual is passed to a 'ref' formal of readIt()

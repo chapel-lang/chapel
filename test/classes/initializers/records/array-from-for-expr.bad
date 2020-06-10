@@ -1,5 +1,5 @@
 array-from-for-expr.chpl:35: In function 'main':
-array-from-for-expr.chpl:36: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+array-from-for-expr.chpl:36: error: const actual is passed to a 'ref' formal of chpl__initCopy()
 array-from-for-expr.chpl:36: error: unresolved call 'RRR.init()'
 array-from-for-expr.chpl:19: note: this candidate did not match: RRR.init(idx: int)
 $CHPL_HOME/modules/internal/ChapelBase.chpl:948: note: because call does not supply enough arguments
