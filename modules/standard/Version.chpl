@@ -48,7 +48,7 @@ The version types support:
 
 */
 
-module ChapelVersion {
+module Version {
   // Query the compiler to get its version number and cache those values
   private param chplMajor = __primitive("version major");
   private param chplMinor = __primitive("version minor");

@@ -1,4 +1,4 @@
-use ChapelVersion;
+use Version;
 
 const v2_1_0 = version(2,1);
 const v2_1_1 = version(2,1,1);

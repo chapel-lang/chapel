@@ -1,4 +1,4 @@
-use ChapelVersion;
+use Version;
 
 proc writeit(param x) {
   writeln(x," : ", x.type:string);
