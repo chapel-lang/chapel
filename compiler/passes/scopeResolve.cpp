@@ -1188,6 +1188,19 @@ static void resolveModuleCall(CallExpr* call) {
         const char*   mbrName    = get_string(call->get(2));
 
         currModule->moduleUseAdd(mod);
+        BaseAST* callScope = getScope(call);
+        if (BlockStmt* callBlock = toBlockStmt(callScope)) {
+          callBlock->modRefsAdd(mod);
+        } else if (FnSymbol* fn = toFnSymbol(callScope)) {
+          BaseAST* fnScope = getScope(fn);
+          if (BlockStmt* blockWithFn = toBlockStmt(fnScope)) {
+            blockWithFn->modRefsAdd(mod);
+          } else {
+            INT_FATAL("Also probably valid but I'd like to see where it fails");
+          }
+        } else {
+          INT_FATAL("Also also probably valid");
+        }
 
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);

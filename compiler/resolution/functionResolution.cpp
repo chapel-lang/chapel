@@ -8663,6 +8663,7 @@ void resolve() {
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->useListClear();
+    stmt->modRefsClear();
   }
 
   resolved = true;

@@ -850,8 +850,11 @@ initPrimitive() {
   // Args are variable, field name.
   prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
-  // used modules in BlockStmt::modUses
+  // used modules in BlockStmt::useList
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
+  // modules named explicitly in BlockStmt::modRefs
+  prim_def(PRIM_REFERENCED_MODULES_LIST, "referenced modules list",
+           returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
 
   // Direct calls to the Chapel comm layer

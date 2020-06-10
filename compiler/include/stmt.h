@@ -168,12 +168,17 @@ public:
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 
+  void                modRefsAdd(ModuleSymbol* mod);
+  bool                modRefsRemove(ModuleSymbol* mod);
+  void                modRefsClear();
+
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
 
   BlockTag            blockTag;
   AList               body;
   CallExpr*           useList;       // module/enum uses for this block
+  CallExpr*           modRefs;       // modules referenced directly
   const char*         userLabel;
   CallExpr*           byrefVars;     // task intents - task constructs only
 

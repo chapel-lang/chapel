@@ -349,6 +349,19 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     mOffset = mOffset - 2;
   }
 
+  if (node->modRefs)
+  {
+    fprintf(mFP, "\n");
+
+    newline();
+
+    write(false, "ModRefs:", false);
+    mOffset = mOffset + 2;
+    newline();
+    node->modRefs->accept(this);
+    mOffset = mOffset - 2;
+  }
+
   if (node->byrefVars)
   {
     newline();
