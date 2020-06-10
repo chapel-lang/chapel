@@ -7,4 +7,4 @@ record Test {
 }
 
 writeln(c_offsetof(Test,"x"));
-writeln(c_offsetof(Test,"y")); // 32?  Because string is implemented as a record
+writeln(c_offsetof(Test,"y")); // 40?  Because string is implemented as a record

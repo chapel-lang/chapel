@@ -500,12 +500,16 @@ module String {
     return x != 0;
   // End index arithmetic support
 
-  private proc validateEncoding(buf, len) throws {
-    extern proc chpl_enc_validate_buf(buf, len) : c_int;
-
-    if chpl_enc_validate_buf(buf, len) != 0 {
+  private proc validateEncoding(buf, len): int throws {
+    extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
+    
+    var numCodepoints: int;
+    
+    if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
     }
+    
+    return numCodepoints;
   }
 
   private proc stringFactoryArgDepr() {
@@ -575,13 +579,14 @@ module String {
   }
 
   pragma "no doc"
-  proc chpl_createStringWithLiteral(x: c_string, length:int) {
+  proc chpl_createStringWithLiteral(x: c_string, length: int, numCodepoints: int) {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
     return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
                                                  length=length,
-                                                 size=length+1);
+                                                 size=length+1,
+                                                 numCodepoints=numCodepoints);
   }
 
   /*
@@ -606,7 +611,7 @@ module String {
   inline proc createStringWithBorrowedBuffer(x: bufferType,
                                              length: int, size: int) throws {
     var ret: string;
-    validateEncoding(x, length);
+    ret.cachedNumCodepoints = validateEncoding(x, length);
     initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
@@ -622,12 +627,14 @@ module String {
   pragma "no doc"
   private inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
                                                             length: int,
-                                                            size: int) {
+                                                            size: int,
+                                                            numCodepoints: int) {
     // NOTE: This is similar to chpl_createStringWithLiteral above, but only
     // used internally by the String module. These two functions cannot have the
     // same names, because "wellknown" implementation in the compiler does not
     // allow overloads.
     var ret: string;
+    ret.cachedNumCodepoints = numCodepoints;
     initWithBorrowedBuffer(ret, x, length,size);
     return ret;
   }
@@ -693,7 +700,7 @@ module String {
   inline proc createStringWithOwnedBuffer(x: bufferType,
                                           length: int, size: int) throws {
     var ret: string;
-    validateEncoding(x, length);
+    ret.cachedNumCodepoints = validateEncoding(x, length);
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
@@ -836,6 +843,7 @@ module String {
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
+    var cachedNumCodepoints: int = -1;
     var buff: bufferType = nil;
     var isOwned: bool = true;
     var hasEscapes: bool = false;
@@ -880,18 +888,18 @@ module String {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
-          return chpl_createStringWithNewBufferNV(
+          return try! createStringWithNewBuffer(
                       chpl__getInPlaceBufferData(data.shortData),
                       data.buffLen,
                       data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.buffLen);
-          return chpl_createStringWithOwnedBufferNV(localBuff,
+          return try! createStringWithOwnedBuffer(localBuff,
                                                     data.buffLen,
                                                     data.size);
         }
       } else {
-        return chpl_createStringWithBorrowedBufferNV(data.buff,
+        return try! createStringWithBorrowedBuffer(data.buff,
                                                      data.buffLen,
                                                      data.size);
       }
@@ -901,6 +909,7 @@ module String {
     proc ref reinitString(buff: bufferType, s_len: int, size: int,
                           needToCopy:bool = true, ownBuffer = false) {
       if this.isEmpty() && buff == nil then return;
+      this.cachedNumCodepoints = try! validateEncoding(buff, s_len);
 
       // If the this.buff is longer than buff, then reuse the buffer if we are
       // allowed to (this.isOwned == true)
@@ -1163,7 +1172,7 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc string.size return numCodepoints;
+  inline proc const string.size return numCodepoints;
 
   /*
     :returns: The indices that can be used to index into the string
@@ -1180,17 +1189,21 @@ module String {
     :returns: The number of codepoints in the string, assuming the
               string is correctly-encoded UTF-8.
   */
-  proc string.numCodepoints {
-    var localThis: string = this.localize();
-    var n = 0;
-    var i = 0;
-    while i < localThis.buffLen {
-      i += 1;
-      while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
+  proc const string.numCodepoints {
+    if(cachedNumCodepoints  == -1) {
+      var localThis: string = this.localize();
+      var n = 0;
+      var i = 0;
+      while i < localThis.buffLen {
         i += 1;
-      n += 1;
+        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
+          i += 1;
+        n += 1;
+      }
+      return n;
+    } else {
+      return cachedNumCodepoints;
     }
-    return n;
   }
   
   /*

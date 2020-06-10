@@ -105,6 +105,7 @@ module BytesStringCommon {
     ret.buffSize = allocSize;
     ret.isOwned = true;
     ret.hasEscapes = false;
+    ret.cachedNumCodepoints = 0;
 
     var expectedSize = ret.buffSize;
 
@@ -115,6 +116,8 @@ module BytesStringCommon {
                                                  thisIdx, 
                                                  allowEsc=false);
       var buffToDecode = (buff + thisIdx): c_string;
+
+      ret.cachedNumCodepoints += 1;
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
@@ -245,11 +248,13 @@ module BytesStringCommon {
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffLen = otherLen+1;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
         // if other is local just adjust my buff and _size
         x.buff = other.buff;
         x.buffSize = other.buffSize;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
     }
   }
@@ -285,6 +290,7 @@ module BytesStringCommon {
     const otherLen = other.numBytes;
     x.isOwned = true;
     if t == string then x.hasEscapes = other.hasEscapes;
+    if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
 
     if otherLen > 0 {
       x.buffLen = otherLen;
@@ -673,6 +679,7 @@ module BytesStringCommon {
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
+      if t == string then incrementCodepoints(lhs, rhs);
     }
   }
 
@@ -838,5 +845,13 @@ module BytesStringCommon {
       hash = locHash;
     }
     return hash:uint;
+  }
+
+  private proc incrementCodepoints(ref lhs: string, rhs: string) {
+    if(lhs.cachedNumCodepoints == -1 || rhs.cachedNumCodepoints == -1) {
+      lhs.cachedNumCodepoints = -1;
+    } else {
+      lhs.cachedNumCodepoints = lhs.cachedNumCodepoints + rhs.cachedNumCodepoints;
+    }
   }
 }
