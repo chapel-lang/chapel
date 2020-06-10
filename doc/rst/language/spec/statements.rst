@@ -749,10 +749,12 @@ The syntax is:
      `defer' statement
 
 At a given place where control flow exits a block, the in-scope
-``defer`` statements and the local variables will be handled in reverse
-declaration order. Handling a ``defer`` statement consists of executing
-the contained clean-up action. Handling a local variable consists of
-running its deinitializer if it is of record type.
+``defer`` statements that have executed and the local variables 
+will be handled in reverse declaration order. Executing a ``defer``
+consists of marking it to be handled while Handling a ``defer`` 
+statement consists of executing the contained clean-up action. 
+Handling a local variable consists of running its deinitializer 
+if it is of record type.
 
 When an iterator contains a ``defer`` statement at the top level, the
 associated clean-up action will be executed when the loop running the
@@ -842,7 +844,7 @@ is handled when exiting the block in which it is contained:
       defer action: deleting {x = 1}
       after inner block
 
-Lastly, this example shows that when ``defer`` is used in a loop, the
+The next example shows that when ``defer`` is used in a loop, the
 action will be executed for every loop iteration, whether or not loop
 body is exited early.
 
@@ -889,6 +891,45 @@ body is exited early.
       created {x = 2}
       {x = 2}
       defer action: deleting {x = 2}
+
+Lastly, this example shows that only `defer` statements that
+have been executed, are handled.
+
+   *Example (defer3.chpl)*.
+
+   
+
+   .. code-block:: chapel
+
+      proc deferControl(condition: bool) {
+        if condition {
+          defer {
+            writeln("Inside if");
+          }
+        }
+        return;
+        defer {
+          writeln("After return");
+        }
+      }
+      writeln("Condition: false");
+      deferControl(false);
+      writeln("Condition: true");
+      deferControl(true);
+
+   produces the output 
+
+   .. BLOCK-test-chapeloutput
+
+      Condition: false
+      Condition: true
+      Inside if
+
+   .. code-block:: bash
+
+      Condition: false
+      Condition: true
+      Inside if
 
 .. _The_Empty_Statement:
 
