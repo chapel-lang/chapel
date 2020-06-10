@@ -439,6 +439,40 @@ static void getVisibleMethods(const char* name, CallExpr* call,
       }
     }
 
+    if (block->modRefs != NULL) {
+      for_actuals(expr, block->modRefs) {
+        SymExpr* se = toSymExpr(expr);
+        INT_ASSERT(se);
+        if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+          bool isVisible;
+
+          if (mod->hasFlag(FLAG_PRIVATE)) {
+            // Get potential scope pair.
+            std::pair<BlockStmt*, BlockStmt*> curPair =
+              std::make_pair(getVisibilityScope(call),
+                             mod->block);
+            // See if it's already in the map
+            std::map<std::pair<BlockStmt*, BlockStmt*>, bool>::iterator it =
+              scopeIsVisForMethods.find(curPair);
+            // If not, determine and record the result, otherwise use the cached
+            // version.
+            if (it == scopeIsVisForMethods.end()) {
+              isVisible = mod->isVisible(call);
+              scopeIsVisForMethods[curPair] = isVisible;
+            } else {
+              isVisible = it->second;
+            }
+          } else {
+            isVisible = true;
+          }
+
+          if (isVisible) {
+            getVisibleMethods(name, call, mod->block, visited, visibleFns);
+          }
+        }
+      }
+    }
+
     if (block != rootModule->block) {
       BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
