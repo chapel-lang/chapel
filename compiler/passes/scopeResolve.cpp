@@ -1168,6 +1168,19 @@ static void setupShadowVars() {
 
 static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym);
 
+// Track modules that we name explicitly in the scope where we do so
+static void storeReferencedMod(ModuleSymbol* mod, BaseAST* cur) {
+  if (cur == NULL) {
+    return;
+  }
+  BaseAST* scope = getScope(cur);
+  if (BlockStmt* block = toBlockStmt(scope)) {
+    block->modRefsAdd(mod);
+  } else {
+    storeReferencedMod(mod, scope);
+  }
+}
+
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
     astlocT* renameLoc = NULL;
@@ -1188,19 +1201,9 @@ static void resolveModuleCall(CallExpr* call) {
         const char*   mbrName    = get_string(call->get(2));
 
         currModule->moduleUseAdd(mod);
-        BaseAST* callScope = getScope(call);
-        if (BlockStmt* callBlock = toBlockStmt(callScope)) {
-          callBlock->modRefsAdd(mod);
-        } else if (FnSymbol* fn = toFnSymbol(callScope)) {
-          BaseAST* fnScope = getScope(fn);
-          if (BlockStmt* blockWithFn = toBlockStmt(fnScope)) {
-            blockWithFn->modRefsAdd(mod);
-          } else {
-            INT_FATAL("Also probably valid but I'd like to see where it fails");
-          }
-        } else {
-          INT_FATAL("Also also probably valid");
-        }
+
+        // Track modules that we name explicitly in the scope where we do so
+        storeReferencedMod(mod, call);
 
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
