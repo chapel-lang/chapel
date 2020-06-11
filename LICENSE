@@ -46,6 +46,8 @@ The Chapel implementation is composed of two categories of code:
      gmp              optional multi-precision math library        L-GPL
      hwloc            portable NUMA compute node utilities         new BSD
      jemalloc         alternative memory allocator                 BSD-like
+     libfabric        portable networking layer                    FreeBSD
+                                                                   GPL 2
      llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
