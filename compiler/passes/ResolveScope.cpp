@@ -980,11 +980,11 @@ Symbol* ResolveScope::lookupPublicImports(const char* name) const {
   Symbol *retval = NULL;
 
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
-    if (ImportStmt *is = toImportStmt(visStmt)) {
-      if (!is->isPrivate) {
-        if (Symbol *importSym = visStmt->checkIfModuleNameMatches(name)) {
-          if (isModuleSymbol(importSym)) {
-            retval = importSym;
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        if (Symbol *sym = visStmt->checkIfModuleNameMatches(name)) {
+          if (isModuleSymbol(sym)) {
+            retval = sym;
             break;
           }
         }
