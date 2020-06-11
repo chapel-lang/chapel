@@ -220,7 +220,7 @@ module Set {
     proc ref add(in x: eltType) lifetime this < x {
 
       // Remove `on this` block because it prevents copy elision of `x` when
-      // passed to `_addElem`.
+      // passed to `_addElem`. See #15808.
       _enter(); defer _leave();
       _addElem(x);
     }
