@@ -41,6 +41,8 @@ struct PromotedPair {
 
 bool isArrayVecOrStruct(llvm::Type* t);
 llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
+
+// 0 means undefined alignment
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
 llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);

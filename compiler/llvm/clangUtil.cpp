@@ -41,6 +41,7 @@
 //   clang/Basic/CodeGenOptions.h
 
 #include "clang/Basic/Version.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ModuleBuilder.h"
@@ -60,6 +61,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
@@ -67,6 +69,10 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#if HAVE_LLVM_VER >= 90
+#include "llvm/Support/CodeGen.h"
+#endif
 
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
@@ -387,7 +393,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   }
 
   if( debugPrint ) {
-    std::string s = id->getName();
+    std::string s = std::string(id->getName());
     const char* kind = NULL;
     if( varRet ) kind = "var";
     if( cTypeRet ) kind = "cdecl type";
@@ -722,7 +728,7 @@ static void handleMacroToken(const MacroInfo* inMacro,
     }
     case tok::identifier: {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
-      std::string idName = tokId->getName();
+      std::string idName = std::string(tokId->getName());
       if( debugPrint) {
         printf("id = %s\n", idName.c_str());
       }
@@ -750,11 +756,11 @@ static void handleMacroToken(const MacroInfo* inMacro,
       if( debugPrint ) {
         if( varRet ) printf("found var %s\n", varRet->cname);
         if( cTypeRet ) {
-          std::string s = cTypeRet->getName();
+          std::string s = std::string(cTypeRet->getName());
           printf("found cdecl type %s\n", s.c_str());
         }
         if( cValueRet ) {
-          std::string s = cValueRet->getName();
+          std::string s = std::string(cValueRet->getName());
           printf("found cdecl value %s\n", s.c_str());
         }
       }
@@ -1144,11 +1150,19 @@ void setupClang(GenInfo* info, std::string mainFile)
   // get a Compilation?
   //CompilerInvocation* CI =
   //  createInvocationFromCommandLine(clangArgs, clangInfo->Diags);
+
+#if HAVE_LLVM_VER >= 90
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
-           // &clangArgs.front(), &clangArgs.back(),
+            j.getArguments(),
+            *Diags);
+#else
+  bool success = CompilerInvocation::CreateFromArgs(
+            Clang->getInvocation(),
             &j.getArguments().front(), (&j.getArguments().back())+1,
             *Diags);
+#endif
+
   CompilerInvocation* CI = &Clang->getInvocation();
 
   INT_ASSERT(success);
@@ -1178,7 +1192,7 @@ void setupClang(GenInfo* info, std::string mainFile)
       sys::path::append(P, "clang");
       sys::path::append(P, CLANG_VERSION_STRING);
     }
-    CI->getHeaderSearchOpts().ResourceDir = P.str();
+    CI->getHeaderSearchOpts().ResourceDir = std::string(P.str());
     sys::path::append(P, "include");
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false);
@@ -2019,7 +2033,7 @@ GenRet codegenCValue(const ValueDecl *vd)
   GenRet ret;
 
   if( info->cfile ) {
-    ret.c = vd->getName();
+    ret.c = std::string(vd->getName());
     return ret;
   }
 
@@ -2820,8 +2834,13 @@ void makeBinaryLLVM(void) {
     emitPM.add(createTargetTransformInfoWrapperPass(
                info->targetMachine->getTargetIRAnalysis()));
 
+#if HAVE_LLVM_VER >= 90
+    llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+#else
     llvm::TargetMachine::CodeGenFileType FileType =
       llvm::TargetMachine::CGFT_ObjectFile;
+#endif
+
     bool disableVerify = ! developer;
 #if HAVE_LLVM_VER > 60
     info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
