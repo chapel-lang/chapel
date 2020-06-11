@@ -712,20 +712,22 @@ module DefaultAssociative {
 
     // internal helper
     proc _doDefaultInitSlot(slot: int, inAdd: bool) {
-      if (isNonNilableClass(eltType)) {
+      if !isDefaultInitializable(eltType) {
         if inAdd {
-          halt("Can't resize domains whose arrays' elements don't have default values");
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
         } else {
-          halt("Can't default initialize associative arrays whose elements have no default value");
+          halt("Can't default initialize associative arrays whose " +
+               "elements have no default value");
         }
+      } else {
+        // default initialize an element and move it in to the
+        // uninitialized storage.
+        pragma "no auto destroy"
+        var initval: eltType; // default initialize
+        ref dst = data[slot];
+        __primitive("=", dst, initval);
       }
-
-      // default initialize an element and move it in to the
-      // uninitialized storage.
-      pragma "no auto destroy"
-      var initval: eltType; // default initialize
-      ref dst = data[slot];
-      __primitive("=", dst, initval);
     }
 
     override proc _defaultInitSlot(slot: int) {
