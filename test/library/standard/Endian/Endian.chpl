@@ -38,10 +38,10 @@ module Endian {
   private extern proc le32toh(x: c_uint): c_uint;
   private extern proc htobe32(x: c_uint): c_uint;
   private extern proc be32toh(x: c_uint): c_uint;
-  private extern proc htole64(x: c_ulong): c_ulong;
-  private extern proc le64toh(x: c_ulong): c_ulong;
-  private extern proc htobe64(x: c_ulong): c_ulong;
-  private extern proc be64toh(x: c_ulong): c_ulong;
+  private extern proc htole64(x: c_ulonglong): c_ulonglong;
+  private extern proc le64toh(x: c_ulonglong): c_ulonglong;
+  private extern proc htobe64(x: c_ulonglong): c_ulonglong;
+  private extern proc be64toh(x: c_ulonglong): c_ulonglong;
 
   /*
     Has value ``true`` if the host system is little-endian type.
