@@ -37,7 +37,7 @@ through compiler flags and/or environment variables.
 Some procedures have implementations both with `and` without dependencies. By
 default, the implementation with dependencies will be selected. Users can
 explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` dependent
-implementations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``none``.
+implementations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``off``.
 
 **Building programs with no dependencies**
 
@@ -123,22 +123,22 @@ compilation flags:
 
 
 To opt out of using the ``BLAS`` implementation, users can add the ``--set
-blasImpl=none`` flag, so that ``BLAS`` is no longer a dependency:
+blasImpl=off`` flag, so that ``BLAS`` is no longer a dependency:
 
 .. code-block:: bash
 
   # Building with BLAS dependency explicitly disabled
-  chpl --set blasImpl=none example3.chpl
+  chpl --set blasImpl=off example3.chpl
 
 Similarly, users can opt out of of ``LAPACK`` implementations with the ``--set
-lapackImpl=none`` flag. Setting both flags to ``none`` will always choose the
+lapackImpl=off`` flag. Setting both flags to ``off`` will always choose the
 Chapel implementation when available, and will emit a compiler error
 when no native implementation is available:
 
 .. code-block:: bash
 
   # Building with all dependencies explicitly disabled
-  chpl --set lapackImpl=none --set blasImpl=none example3.chpl
+  chpl --set lapackImpl=off --set blasImpl=off example3.chpl
 
 See the documentation of :mod:`BLAS` or :mod:`LAPACK` for
 more details on these flags.
@@ -555,7 +555,7 @@ proc _array.elementDiv(A: [?Adom]) where isDenseArr(A) && isDenseArr(this) {
 
       Dense matrix-matrix and matrix-vector multiplication will utilize the
       :mod:`BLAS` module for improved performance, if available. Compile with
-      ``--set blasImpl=none`` to opt out of the :mod:`BLAS` implementation.
+      ``--set blasImpl=off`` to opt out of the :mod:`BLAS` implementation.
 */
 proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDenseArr(B) {
   // vector-vector
@@ -572,7 +572,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
 
     Dense matrix-matrix and matrix-vector multiplication will utilize the
     :mod:`BLAS` module for improved performance, if available. Compile with
-    ``--set blasImpl=none`` to opt out of the :mod:`BLAS` implementation.
+    ``--set blasImpl=off`` to opt out of the :mod:`BLAS` implementation.
 
 */
 proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
@@ -780,7 +780,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   use SysCTypes;
@@ -813,7 +813,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   .. note::
 
     ``matPow`` will utilize the :mod:`BLAS` module for improved performance, if
-    available. Compile with ``--set blasImpl=none`` to opt out of the
+    available. Compile with ``--set blasImpl=off`` to opt out of the
     :mod:`BLAS` implementation.
 */
 proc matPow(A: [], b) where isNumeric(b) {
@@ -1420,7 +1420,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
  */
 proc cholesky(A: [] ?t, lower = true)
   where A.rank == 2 && isLAPACKType(t) && usingLAPACK
@@ -1463,7 +1463,7 @@ proc cholesky(A: [] ?t, lower = true)
    .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
 */
 proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
@@ -1491,7 +1491,7 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
    .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
 */
 proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
@@ -1533,7 +1533,7 @@ proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) 
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
 */
 proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
@@ -1561,7 +1561,7 @@ proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
  */
 proc eig(A: [] ?t, param left = false, param right = false)
@@ -1712,7 +1712,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   .. note::
 
     This procedure depends on the :mod:`LAPACK` module, and will generate a
-    compiler error if ``lapackImpl`` is ``none``.
+    compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
