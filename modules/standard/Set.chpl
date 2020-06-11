@@ -308,6 +308,7 @@ module Set {
         var (hasFoundSlot, idx) = _htb.findFullSlot(x);
 
         if hasFoundSlot {
+          // TODO: Return the removed element? #15819
           var key: eltType;
           var val: nothing;
 
