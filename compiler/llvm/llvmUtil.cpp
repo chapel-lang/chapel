@@ -47,9 +47,7 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   // stack overflow.
   llvm::Function *func = insertBefore->getParent()->getParent();
   llvm::BasicBlock* entryBlock = & func->getEntryBlock();
-#if HAVE_LLVM_VER >= 50
   const llvm::DataLayout &DL = func->getParent()->getDataLayout();
-#endif
 
   if( insertBefore->getParent() == entryBlock ) {
     // Add before specific instruction in entry block.

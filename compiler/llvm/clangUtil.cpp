@@ -128,16 +128,6 @@ using namespace llvm;
 #include "llvmAggregateGlobalOps.h"
 #include "llvmDumpIR.h"
 
-// These are headers internal to clang. Need to be able to:
-// 1. Get the LLVM type for a C typedef (say)
-//    (not needed after LLVM 5)
-// 2. Get the GEP offset for a field in a C record by name
-//    (not needed after LLVM 6)
-#if HAVE_LLVM_VER < 60
-#include "CodeGenModule.h"
-#include "CGRecordLayout.h"
-#endif
-
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
 static void setupModule();
@@ -359,11 +349,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   if( debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
 
   //Handling only simple string or integer defines
-#if HAVE_LLVM_VER >= 50
   if(macro->getNumParams() > 0)
-#else
-  if(macro->getNumArgs() > 0)
-#endif
   {
     if( debugPrint) {
       printf("the macro takes arguments\n");
@@ -1329,11 +1315,7 @@ static void setupModule()
   }
 
   // Choose the code model
-#if HAVE_LLVM_VER >= 60
   llvm::Optional<CodeModel::Model> codeModel = None;
-#else
-  llvm::CodeModel::Model codeModel = llvm::CodeModel::Default;
-#endif
 
   llvm::CodeGenOpt::Level optLevel =
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
@@ -1460,18 +1442,13 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 
   if (optLevel >= 1)
     PMBuilder.Inliner = createFunctionInliningPass(optLevel,
-                                                   opts.OptimizeSize
-#if HAVE_LLVM_VER >= 50
-                                                   ,/*DisableInlineHotCallsite*/
+                                                   opts.OptimizeSize,
+                                                   /*DisableInlineHotCallsite*/
                                                    false
-#endif
                                                   );
 
   PMBuilder.OptLevel = optLevel;
   PMBuilder.SizeLevel = opts.OptimizeSize;
-#if HAVE_LLVM_VER < 50
-  PMBuilder.BBVectorize = opts.VectorizeBB;
-#endif
   PMBuilder.SLPVectorize = opts.VectorizeSLP;
   PMBuilder.LoopVectorize = opts.VectorizeLoop;
 
@@ -1531,23 +1508,15 @@ void prepareCodegenLLVM()
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Enable all the optimization!
-#if HAVE_LLVM_VER < 60
-    FM.setUnsafeAlgebra();
-#else
     FM.setFast();
     INT_ASSERT(FM.allowContract());
-#endif
   } else if (ffloatOpt == 0) {
     // default
     // use a reasonable level of optimization
-#if HAVE_LLVM_VER >= 50
     FM.setAllowContract(true);
-#endif
   } else if (ffloatOpt == -1) {
     // --ieee-float
-#if HAVE_LLVM_VER >= 50
     FM.setAllowContract(true);
-#endif
   }
   info->irBuilder->setFastMathFlags(FM);
 
@@ -2013,11 +1982,7 @@ llvm::Type* codegenCType(const TypeDecl* td)
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
-#if HAVE_LLVM_VER >= 50
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
-#else
-  return cCodeGen->CGM().getTypes().ConvertTypeForMem(qType);
-#endif
 }
 
 // should support FunctionDecl,VarDecl,EnumConstantDecl
@@ -2052,11 +2017,7 @@ GenRet codegenCValue(const ValueDecl *vd)
     ret.isUnsigned = ! ed->getType()->hasSignedIntegerRepresentation();
 
     llvm::Type* type = NULL;
-#if HAVE_LLVM_VER >= 50
     type = clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), ed->getType());
-#else
-    type = cCodeGen->CGM().getTypes().ConvertTypeForMem(ed->getType());
-#endif
 
     ret.val = ConstantInt::get(type, v);
     ret.isLVPtr = GEN_VAL;
@@ -2378,11 +2339,7 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
 
   isCArrayField = field->getType()->isArrayType();
 
-#if HAVE_LLVM_VER >= 60
   ret = clang::CodeGen::getLLVMFieldNumber(cCodeGen->CGM(), rec, field);
-#else
-  ret = cCodeGen->CGM().getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
-#endif
 
   INT_ASSERT(ret >= 0);
 
@@ -2500,9 +2457,6 @@ void setupForGlobalToWide(void) {
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
                           dummy, retType, argType
-#if HAVE_LLVM_VER < 50
-                          , NULL
-#endif
 #if HAVE_LLVM_VER < 90
                           );
 #else
