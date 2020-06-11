@@ -42,6 +42,7 @@ proc masonInit(args) throws {
     var show = false;
     var packageName = '';
     var countArgs = args.domain.low + 2;
+    var defaultBehavior = false;
     for arg in args[args.domain.low+2..] {
       countArgs += 1;
       select (arg) {
@@ -55,6 +56,12 @@ proc masonInit(args) throws {
         }
         when '--show' {
           show = true;
+        }
+        when '-d' {
+          defaultBehavior = true;
+        }
+        when '--default' {
+          defaultBehavior = true;
         }
         when '--name' {
           packageName = args[countArgs];
@@ -72,16 +79,65 @@ proc masonInit(args) throws {
     }
 
     if dirName == '' {
-      const cwd = getEnv("PWD");
-      var name = basename(cwd);
-      const path = '.';
-      if packageName.size > 0 then name = packageName;
-      var resName = validatePackageNameChecks(path, name);
-      name = resName;
-      validateMasonFile(path, name, show);
-      var isInitialized = validateInit(path, name, true, show);
-      if isInitialized > 0 then
-      writeln("Initialized new library project: " + basename(cwd));
+      if defaultBehavior {
+        const cwd = getEnv("PWD");
+        var name = basename(cwd);
+        const path = '.';
+        if packageName.size > 0 then name = packageName;
+        var resName = validatePackageNameChecks(path, name);
+        name = resName;
+        validateMasonFile(path, name, show);
+        var isInitialized = validateInit(path, name, true, show);
+        if isInitialized > 0 then
+        writeln("Initialized new library project: " + basename(cwd));
+      } else {
+        // check if Mason.toml file and src/moduleFile is present
+        var isMasonTomlPresent = false;
+        var isSrcPresent = false;
+        var moduleName: string;
+        if isFile('./Mason.toml') then isMasonTomlPresent = true;
+        if isDir('./src') then isSrcPresent = true;
+        // parse values from TOML File && module file
+        var defaultPackageName: string;
+        var defaultVersion: string;
+        var defaultChplVersion: string;
+        if isMasonTomlPresent {
+          const toParse = open("./Mason.toml", iomode.r);
+          const tomlFile = owned.create(parseToml(toParse));
+          if tomlFile.pathExists("brick.name") then
+            defaultPackageName = tomlFile["brick"]!["name"]!.s;
+          if tomlFile.pathExists("brick.version") then
+            defaultVersion = tomlFile["brick"]!["version"]!.s;
+          if tomlFile.pathExists("brick.chplVersion") then
+            defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
+        }
+        if isSrcPresent {
+          var file: string = listdir("./src");
+          moduleName = file;
+        }
+       // begin interactive session and get values input by user
+        var newPackageName, newVersion, newChplVersion: string;
+        var result = beginInteractiveSession(defaultPackageName, defaultVersion, defaultChplVersion);
+        newPackageName = result[0];
+        newVersion = result[1];
+        newChplVersion = result[2];
+        // overwrite Toml File
+        validateMasonFile('.', newPackageName, show);
+        isMasonTomlPresent = true;
+        if isMasonTomlPresent {
+          if newPackageName != defaultPackageName then
+            overwriteTomlValue("name", newPackageName);
+          if newVersion != defaultVersion then
+            overwriteTomlValue("version", newVersion);
+          if newChplVersion != defaultChplVersion then
+            overwriteTomlValue("chplVersion", newChplVersion);
+        }
+        if newPackageName + '.chpl' != moduleName {
+          if isFile('./src/' + moduleName) then remove('src/' + moduleName);
+        }
+        validateInit('.', newPackageName, true, show);
+        writeln("Initialised new library project: " + newPackageName);
+      }
     }
     else {
       // if the target directory in path doesnt exist, throw error
@@ -109,6 +165,15 @@ proc masonInit(args) throws {
     writeln(e.message());
     exit(1);
   }
+}
+
+/* Overwrites specified value in Mason.toml file */
+proc overwriteTomlValue(key, value) {
+  const tomlPath = "./Mason.toml";
+  const toParse = open(tomlPath, iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  tomlFile["brick"]!.set(key, value);
+  generateToml(tomlFile, tomlPath);
 }
 
 /*
