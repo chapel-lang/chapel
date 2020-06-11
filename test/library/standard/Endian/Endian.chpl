@@ -30,18 +30,18 @@
 module Endian {
   use SysCTypes;
 
-  private extern proc htole16(x: c_uint): c_uint;
-  private extern proc le16toh(x: c_uint): c_uint;
-  private extern proc htobe16(x: c_uint): c_uint;
-  private extern proc be16toh(x: c_uint): c_uint;
-  private extern proc htole32(x: c_uint): c_uint;
-  private extern proc le32toh(x: c_uint): c_uint;
-  private extern proc htobe32(x: c_uint): c_uint;
-  private extern proc be32toh(x: c_uint): c_uint;
-  private extern proc htole64(x: c_ulong): c_ulong;
-  private extern proc le64toh(x: c_ulong): c_ulong;
-  private extern proc htobe64(x: c_ulong): c_ulong;
-  private extern proc be64toh(x: c_ulong): c_ulong;
+  private extern proc htole16(x: uint(16)): uint(16);
+  private extern proc le16toh(x: uint(16)): uint(16);
+  private extern proc htobe16(x: uint(16)): uint(16);
+  private extern proc be16toh(x: uint(16)): uint(16);
+  private extern proc htole32(x: uint(32)): uint(32);
+  private extern proc le32toh(x: uint(32)): uint(32);
+  private extern proc htobe32(x: uint(32)): uint(32);
+  private extern proc be32toh(x: uint(32)): uint(32);
+  private extern proc htole64(x: uint(64)): uint(64);
+  private extern proc le64toh(x: uint(64)): uint(64);
+  private extern proc htobe64(x: uint(64)): uint(64);
+  private extern proc be64toh(x: uint(64)): uint(64);
 
   /*
     Has value ``true`` if the host system is little-endian type.
