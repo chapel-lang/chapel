@@ -236,6 +236,7 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 
   blockTag      = initBlockTag;
   useList       = NULL;
+  modRefs       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
   blockInfo     = NULL;
@@ -254,6 +255,7 @@ BlockStmt::BlockStmt(BlockTag initBlockTag) :
 
   blockTag      = initBlockTag;
   useList       = NULL;
+  modRefs       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
   blockInfo     = NULL;
@@ -286,6 +288,10 @@ void BlockStmt::verify() {
     INT_FATAL(this, "BlockStmt::verify. Bad useList->parentExpr");
   }
 
+  if (modRefs   != NULL && modRefs->parentExpr   != this) {
+    INT_FATAL(this, "BlockStmt::verify. Bad modRefs->parentExpr");
+  }
+
   if (byrefVars) {
     if (byrefVars->parentExpr != this) {
       INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
@@ -303,6 +309,7 @@ void BlockStmt::verify() {
   }
 
   verifyNotOnList(useList);
+  verifyNotOnList(modRefs);
   verifyNotOnList(byrefVars);
   verifyNotOnList(blockInfo);
 }
@@ -315,6 +322,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->blockTag  = blockTag;
   _this->blockInfo = COPY_INT(blockInfo);
   _this->useList   = COPY_INT(useList);
+  _this->modRefs   = COPY_INT(modRefs);
   _this->byrefVars = COPY_INT(byrefVars);
 
   for_alist(expr, body) {
@@ -354,6 +362,9 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
 
   else if (oldExpr == useList)
     useList   = newExpr;
+
+  else if (oldExpr == modRefs)
+    modRefs   = newExpr;
 
   else if (oldExpr == byrefVars)
     byrefVars = newExpr;
@@ -678,6 +689,60 @@ BlockStmt::useListClear() {
 }
 
 void
+BlockStmt::modRefsAdd(ModuleSymbol* mod) {
+  if (modRefs == NULL) {
+    modRefs = new CallExpr(PRIM_REFERENCED_MODULES_LIST);
+
+    if (parentSymbol)
+      insert_help(modRefs, this, parentSymbol);
+  }
+
+  modRefs->insertAtTail(new SymExpr(mod));
+}
+
+
+// Remove a module from the list of modules referenced by the module this block
+// statement belongs to. The list of referenced modules is stored in modRefs
+bool
+BlockStmt::modRefsRemove(ModuleSymbol* mod) {
+  bool retval = false;
+
+  if (modRefs != NULL) {
+    for_alist(expr, modRefs->argList) {
+      if (SymExpr* symExpr = toSymExpr(expr)) {
+        if (ModuleSymbol* curMod = toModuleSymbol(symExpr->symbol())) {
+          if (curMod == mod) {
+            symExpr->remove();
+
+            retval = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+void
+BlockStmt::modRefsClear() {
+  if (modRefs != NULL) {
+
+    for_alist(expr, modRefs->argList) {
+      expr->remove();
+    }
+
+    // It's possible that this use definition is not alive
+    if (isAlive(modRefs)) {
+      modRefs->remove();
+    }
+
+    modRefs = NULL;
+  }
+}
+
+void
 BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body) {
@@ -690,6 +755,10 @@ BlockStmt::accept(AstVisitor* visitor) {
 
     if (useList) {
       useList->accept(visitor);
+    }
+
+    if (modRefs) {
+      modRefs->accept(visitor);
     }
 
     if (byrefVars) {
