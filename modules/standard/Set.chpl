@@ -364,7 +364,6 @@ module Set {
     pragma "no doc"
     iter these(param tag) where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
-      // TODO: Does this need to be a forall?
       for idx in space.these(tag) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
