@@ -1015,22 +1015,24 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   bool hasPublicImport = false;
   uint64_t numFuncs = 0;
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
-    if (ImportStmt *impStmt = toImportStmt(visStmt)) {
-      if (!impStmt->isPrivate) {
+    // Note: assumes that UseStmt and ImportStmt are the only subclasses of
+    // VisibilityStmt
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
         hasPublicImport = true;
-        if (!impStmt->skipSymbolSearch(name)) {
+        if (!visStmt->skipSymbolSearch(name)) {
           const char *nameToUse = name;
-          const bool isSymRenamed = impStmt->isARenamedSym(name);
+          const bool isSymRenamed = visStmt->isARenamedSym(name);
           if (isSymRenamed) {
-            nameToUse = impStmt->getRenamedSym(name);
+            nameToUse = visStmt->getRenamedSym(name);
           }
-          if (SymExpr *se = toSymExpr(impStmt->src)) {
+          if (SymExpr *se = toSymExpr(visStmt->src)) {
             if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
               if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
                 symbols.push_back(retval);
                 if (isSymRenamed) {
-                  renameLocs[retval] = &impStmt->astloc;
+                  renameLocs[retval] = &visStmt->astloc;
                   traversedRenames = true;
                 }
                 if (isFnSymbol(retval)) {
