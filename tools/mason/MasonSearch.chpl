@@ -133,7 +133,9 @@ proc rankResults(results, query) {
   var cmp : Comparator;
   var res = results.toArray();
   sort(res, comparator = cmp);
-  return res;
+  if query != ".*" then
+    return res;
+  else return res.sorted();
 }
 
 proc isHidden(name : string) : bool {
