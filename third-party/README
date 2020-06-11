@@ -74,9 +74,8 @@ libfabric/
            supports a variety of network architectures and interfaces.
            It is part of the Open Fabrics Interfaces (OFI) framework.
 
-  License: libfabric allows the user to choose between being licensed
-           under the 2-clause BSD (FreeBSD) license or the GPL 2 license
-           (see libfabric/libfabric-src/COPYING)
+  License: libfabric is released under the 2-clause BSD License (see
+           libfabric/libfabric-src/COPYING)
 
   Website: https://github.com/ofiwg/libfabric/
 
