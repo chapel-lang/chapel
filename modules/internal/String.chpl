@@ -223,11 +223,12 @@ module String {
 
   pragma "no doc"
   record __serializeHelper {
-    var buffLen       : int;
-    var buff      : bufferType;
-    var size      : int;
-    var locale_id : chpl_nodeID.type;
-    var shortData : chpl__inPlaceBuffer;
+    var buffLen: int;
+    var buff: bufferType;
+    var size: int;
+    var locale_id: chpl_nodeID.type;
+    var shortData: chpl__inPlaceBuffer;
+    var cachedNumCodepoints: int;
   }
 
   /*
@@ -716,8 +717,10 @@ module String {
   pragma "no doc"
   private inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
                                                          length: int,
-                                                         size: int) {
+                                                         size: int,
+                                                         numCodepoints: int) {
     var ret: string;
+    ret.cachedNumCodepoints = numCodepoints;
     initWithOwnedBuffer(ret, x, length,size);
     return ret;
   }
@@ -825,8 +828,10 @@ module String {
   pragma "no doc"
   private inline proc chpl_createStringWithNewBufferNV(s: bufferType,
                                                        length: int,
-                                                       size: int) {
+                                                       size: int,
+                                                       numCodepoints: int) {
     var ret: string;
+    ret.cachedNumCodepoints = numCodepoints;
     initWithNewBuffer(ret, s, length,size);
     return ret;
   }
@@ -882,26 +887,30 @@ module String {
       if buffLen <= CHPL_SHORT_STRING_SIZE {
         chpl_string_comm_get(chpl__getInPlaceBufferDataForWrite(data), locale_id, buff, buffLen);
       }
-      return new __serializeHelper(buffLen, buff, buffSize, locale_id, data);
+      return new __serializeHelper(buffLen, buff, buffSize, locale_id, data,
+                                   cachedNumCodepoints);
     }
     
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
-          return try! createStringWithNewBuffer(
+          return chpl_createStringWithNewBufferNV(
                       chpl__getInPlaceBufferData(data.shortData),
                       data.buffLen,
-                      data.size);
+                      data.size,
+                      data.cachedNumCodepoints);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.buffLen);
-          return try! createStringWithOwnedBuffer(localBuff,
+          return chpl_createStringWithOwnedBufferNV(localBuff,
                                                     data.buffLen,
-                                                    data.size);
+                                                    data.size,
+                                                    data.cachedNumCodepoints);
         }
       } else {
-        return try! createStringWithBorrowedBuffer(data.buff,
+        return chpl_createStringWithBorrowedBufferNV(data.buff,
                                                      data.buffLen,
-                                                     data.size);
+                                                     data.size,
+                                                     data.cachedNumCodepoints);
       }
     }
 
@@ -1333,7 +1342,7 @@ module String {
       var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
       newBuf[nBytes] = 0;
 
-      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize);
+      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
 
       i += nBytes;
     }
