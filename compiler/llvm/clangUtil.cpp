@@ -2638,7 +2638,7 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
-    TOOL_OUTPUT_FILE output (preOptFilename.c_str(),
+    ToolOutputFile output (preOptFilename.c_str(),
                              tmpErr, sys::fs::F_None);
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
@@ -2753,7 +2753,7 @@ void makeBinaryLLVM(void) {
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
       std::error_code tmpErr;
-      TOOL_OUTPUT_FILE output1 (opt1Filename.c_str(),
+      ToolOutputFile output1 (opt1Filename.c_str(),
                                tmpErr, sys::fs::F_None);
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
@@ -2790,7 +2790,7 @@ void makeBinaryLLVM(void) {
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
         std::error_code tmpErr;
-        TOOL_OUTPUT_FILE output2 (opt2Filename.c_str(),
+        ToolOutputFile output2 (opt2Filename.c_str(),
                                  tmpErr, sys::fs::F_None);
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());

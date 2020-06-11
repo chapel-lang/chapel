@@ -55,12 +55,6 @@ uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
 
-#if HAVE_LLVM_VER >= 60
-#define TOOL_OUTPUT_FILE ToolOutputFile
-#else
-#define TOOL_OUTPUT_FILE tool_output_file
-#endif
-
 #endif //HAVE_LLVM
 
 #endif //LLVMUTIL_H
