@@ -760,25 +760,39 @@ module BytesStringCommon {
     return ret;
   }
 
+  proc assertNumCodepoints(x: ?t) {
+    assertArgType(t, "assertNumCodepoints");
+    if t==string {
+      if x.cachedNumCodepoints == -1 {
+        halt("Encountered a string with corrupt metadata");
+      }
+    }
+  }
+
   proc doConcat(s0: ?t, s1: t): t {
+    assertArgType(t, "doConcat");
+    assertNumCodepoints(s0);
+    assertNumCodepoints(s1);
+
     // cache lengths locally
     const s0len = s0.buffLen;
     if s0len == 0 then return s1:t;
     const s1len = s1.buffLen;
     if s1len == 0 then return s0;
 
-    // TODO Engin: Implement a factory function for this case
-    var ret: t;
-    ret.buffLen = s0len + s1len;
-    var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
-    ret.buff = buff;
-    ret.buffSize = allocSize;
-    ret.isOwned = true;
+    const buffLen = s0len + s1len;
+    var (buff, buffSize) = bufferAlloc(buffLen+1);
 
-    bufferMemcpy(dst=ret.buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
-    bufferMemcpy(dst=ret.buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
+    bufferMemcpy(dst=buff, src_loc=s0.locale_id, src=s0.buff, len=s0len);
+    bufferMemcpy(dst=buff, src_loc=s1.locale_id, src=s1.buff, len=s1len,
                  dst_off=s0len);
-    ret.buff[ret.buffLen] = 0;
+    buff[buffLen] = 0;
+
+    var ret: t;
+    if t == string {
+      ret.cachedNumCodepoints = s0.cachedNumCodepoints + s1.cachedNumCodepoints;
+    }
+    initWithOwnedBuffer(ret, buff, buffLen, buffSize);
     return ret;
   }
 
