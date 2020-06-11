@@ -5,8 +5,7 @@ libfabric README for Chapel
 This copy of libfabric 1.10.1 is being released with Chapel for
 convenience and was obtained from:
 
-  https://github.com/ofiwg/libfabric/releases/tag/v1.10.1
-    (the libfabric-*.tar.bz2 release tarball, not the source snapshot)
+  https://github.com/ofiwg/libfabric
 
 Any Chapel issues that seem to be related to libfabric should be
 directed to the Chapel team at https://chapel-lang.org/bugs.html.
