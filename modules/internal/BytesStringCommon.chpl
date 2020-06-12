@@ -21,7 +21,6 @@
 module BytesStringCommon {
   private use ChapelStandard;
   private use SysCTypes;
-  private use Bytes;
   private use ByteBufferHelpers;
 
   /*
