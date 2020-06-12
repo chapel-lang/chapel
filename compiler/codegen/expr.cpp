@@ -2508,7 +2508,7 @@ static
 GenRet codegenArgForFormal(GenRet arg,
                            ArgSymbol* formal,
                            bool defaultToValues,
-                           bool isExtern)
+                           bool isExternOrExport)
 {
   // NOTE -- VMT call had add & if arg isRecord.
   if( formal ) {
@@ -2516,11 +2516,11 @@ GenRet codegenArgForFormal(GenRet arg,
     bool passWideRef = false;
 
     // We need to pass a reference in these cases
-    // Don't pass a reference to extern functions
+    // Don't pass a reference to extern/export functions
     // Do if requiresCPtr or the argument is of reference type
-    if (isExtern &&
+    if (isExternOrExport &&
         (!(formal->intent & INTENT_FLAG_REF) ||
-         formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
+           formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
       // Don't pass by reference to extern functions
     } else if (formal->requiresCPtr() ||
                formal->isRef() || formal->isWideRef()) {
@@ -2589,6 +2589,13 @@ GenRet codegenCallExpr(GenRet function,
   GenInfo* info = gGenInfo;
   GenRet ret;
 
+  bool isExternOrExport = false;
+  if (fSym) {
+    if (fSym->hasFlag(FLAG_EXTERN) ||
+        fSym->hasFlag(FLAG_EXPORT)) {
+      isExternOrExport = true;
+    }
+  }
 
   if( info->cfile ) {
     ret.c = function.c;
@@ -2598,17 +2605,14 @@ GenRet codegenCallExpr(GenRet function,
       {
         // Convert formals if we have fSym
         ArgSymbol* formal = NULL;
-        bool isExtern = true;
         if( fSym ) {
           Expr* e = fSym->formals.get(i + 1);
           DefExpr* de = toDefExpr(e);
           formal = toArgSymbol(de->sym);
           INT_ASSERT(formal);
-          if (!fSym->hasFlag(FLAG_EXTERN))
-            isExtern = false;
         }
-        args[i] =
-          codegenArgForFormal(args[i], formal, defaultToValues, isExtern);
+        args[i] = codegenArgForFormal(args[i], formal,
+                                      defaultToValues, isExternOrExport);
       }
 
       if (first_actual)
@@ -2620,6 +2624,16 @@ GenRet codegenCallExpr(GenRet function,
     ret.c += ')';
   } else {
 #ifdef HAVE_LLVM
+
+    const clang::CodeGen::CGFunctionInfo* CGI = NULL;
+
+    if (isExternOrExport) {
+      INT_ASSERT(fSym);
+      // Get the clang ABI info
+      CGI = &getClangABIInfo(fSym);
+      INT_ASSERT(CGI != NULL);
+    }
+
     INT_ASSERT(function.val);
     llvm::Value *val = function.val;
     // Maybe function is bit-cast to a pointer?
