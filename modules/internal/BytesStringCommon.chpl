@@ -22,6 +22,7 @@ module BytesStringCommon {
   private use ChapelStandard;
   private use SysCTypes;
   private use ByteBufferHelpers;
+  private use String.NVStringFactory;
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
@@ -98,15 +99,11 @@ module BytesStringCommon {
     // is in fact perfectly decodable. In the worst case, the user wants the
     // replacement policy and we grow the buffer couple of times.
     // The alternative is to allocate more space from the beginning.
-    var ret: string;
     var (newBuff, allocSize) = bufferAlloc(length+1);
-    ret.buff = newBuff;
-    ret.buffSize = allocSize;
-    ret.isOwned = true;
-    ret.hasEscapes = false;
-    ret.cachedNumCodepoints = 0;
+    var hasEscapes = false;
+    var numCodepoints = 0;
 
-    var expectedSize = ret.buffSize;
+    var expectedSize = allocSize;
 
     var thisIdx = 0;
     var decodedIdx = 0;
@@ -116,7 +113,7 @@ module BytesStringCommon {
                                                  allowEsc=false);
       var buffToDecode = (buff + thisIdx): c_string;
 
-      ret.cachedNumCodepoints += 1;
+      numCodepoints += 1;
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
@@ -141,22 +138,21 @@ module BytesStringCommon {
             // length is `nBytesRepl`, which is 3 bytes in UTF8. If it is used
             // in place of a single byte, we may overflow
             expectedSize += 3-nInvalidBytes;
-            (ret.buff, ret.buffSize) = bufferEnsureSize(ret.buff, ret.buffSize,
+            (newBuff, allocSize) = bufferEnsureSize(newBuff, allocSize,
                                                      expectedSize);
 
-            qio_encode_char_buf(ret.buff+decodedIdx, replChar);
+            qio_encode_char_buf(newBuff+decodedIdx, replChar);
 
             decodedIdx += 3;  // replacement character is 3 bytes in UTF8
           }
           else if policy == decodePolicy.escape {
 
-            ret.hasEscapes = true;
             // encoded escape sequence is 3 bytes. And this is per invalid byte
             expectedSize += 2*nInvalidBytes;
-            (ret.buff, ret.buffSize) = bufferEnsureSize(ret.buff, ret.buffSize,
+            (newBuff, allocSize) = bufferEnsureSize(newBuff, allocSize,
                                                      expectedSize);
             for i in 0..#nInvalidBytes {
-              qio_encode_char_buf(ret.buff+decodedIdx,
+              qio_encode_char_buf(newBuff+decodedIdx,
                                   0xdc00+buff[thisIdx-nInvalidBytes+i]);
               decodedIdx += 3;
             }
@@ -167,15 +163,19 @@ module BytesStringCommon {
       }
       else {  // we got valid characters
         // do a naive copy
-        bufferMemcpyLocal(dst=ret.buff, src=buffToDecode, len=nBytes,
+        bufferMemcpyLocal(dst=newBuff, src=buffToDecode, len=nBytes,
                           dst_off=decodedIdx);
         thisIdx += nBytes;
         decodedIdx += nBytes;
       }
     }
 
-    ret.buffLen = decodedIdx;
-    ret.buff[ret.buffLen] = 0;
+    newBuff[decodedIdx] = 0;
+    var ret = chpl_createStringWithOwnedBufferNV(x=newBuff,
+                                                 length=decodedIdx,
+                                                 size=allocSize,
+                                                 numCodepoints=numCodepoints);
+    ret.hasEscapes = hasEscapes;
     return ret;
   }
 
