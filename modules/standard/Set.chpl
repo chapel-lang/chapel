@@ -346,37 +346,41 @@ module Set {
     }
 
     /*
-      Iterate over the elements of this set.
+      Iterate over the elements of this set. Yields constant references
+      that cannot be modified.
 
       .. warning::
 
-        Set iterators are currently not threadsafe. Attempting to mutate the
-        state of a set while it is being iterated over is considered
-        undefined behavior.
-
-      :yields: A reference to one of the elements contained in this set.
+        Modifying this set while iterating over it may invalidate the
+        references returned by an iterator and is considered undefined
+        behavior.
+      
+      :yields: A constant reference to an element in this set.
     */
-    iter these() {
+    iter const these() const ref {
       for idx in 0..#_htb.tableSize do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
-    iter these(param tag) where tag == iterKind.standalone {
+    iter const these(param tag) const ref where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
       for idx in space.these(tag) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
-    iter these(param tag) where tag == iterKind.leader {
+    iter const these(param tag) where tag == iterKind.leader {
       var space = 0..#_htb.tableSize;
-      for followThis in space.these(tag) do yield followThis;
+      for followThis in space.these(tag) {
+        yield followThis;
+      }
     }
 
     pragma "no doc"
-    iter these(param tag, followThis) where tag == iterKind.follower {
-      for idx in followThis do
+    iter const these(param tag, followThis) const ref
+    where tag == iterKind.follower {
+      for idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
