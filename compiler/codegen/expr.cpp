@@ -2597,24 +2597,26 @@ GenRet codegenCallExpr(GenRet function,
     }
   }
 
+  // As a first step, adjust the formals to have the proper types
+  if (fSym) {
+    size_t i = 0;
+    for_formals(formal, fSym) {
+      args[i] = codegenArgForFormal(args[i], formal,
+                                    defaultToValues, isExternOrExport);
+      i++;
+    }
+  } else {
+    for (size_t i = 0; i < args.size(); i++) {
+      args[i] = codegenArgForFormal(args[i], NULL,
+                                    defaultToValues, isExternOrExport);
+    }
+  }
+
   if( info->cfile ) {
     ret.c = function.c;
     ret.c += '(';
     bool first_actual = true;
     for( size_t i = 0; i < args.size(); i++ ) {
-      {
-        // Convert formals if we have fSym
-        ArgSymbol* formal = NULL;
-        if( fSym ) {
-          Expr* e = fSym->formals.get(i + 1);
-          DefExpr* de = toDefExpr(e);
-          formal = toArgSymbol(de->sym);
-          INT_ASSERT(formal);
-        }
-        args[i] = codegenArgForFormal(args[i], formal,
-                                      defaultToValues, isExternOrExport);
-      }
-
       if (first_actual)
         first_actual = false;
       else
@@ -2647,46 +2649,20 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     std::vector<llvm::Value *> llArgs;
-    llvm::Value* sret = NULL;
 
-    // We might be doing 'structure return'
-    if( fnType->getReturnType()->isVoidTy() &&
+    if (CGI == NULL &&
+        fnType->getReturnType()->isVoidTy() &&
         fnType->getNumParams() >= 1 &&
-        func && func->hasStructRetAttr() ) {
-      // We must allocate a temporary to store the return value
-      llvm::PointerType* ptrToRetTy = llvm::cast<llvm::PointerType>(
-          fnType->getParamType(0));
-      llvm::Type* retTy = ptrToRetTy->getElementType();
-      sret = createVarLLVM(retTy);
-      llArgs.push_back(sret);
-    }
+        func && func->hasStructRetAttr())
+      INT_FATAL("structure return without ABI info not implemented");
 
-    for( size_t i = 0; i < args.size(); i++ ) {
-      // If we are passing byval, get the pointer to the
-      // argument
-      if( llArgs.size() < fnType->getNumParams() &&
+    for (size_t i = 0; i < args.size(); i++) {
+      if (CGI == NULL &&
+          llArgs.size() < fnType->getNumParams() &&
           func &&
           func->getAttributes().hasAttribute(llArgs.size()+1,
-                                             llvm::Attribute::ByVal) ){
-        args[i] = codegenAddrOf(codegenValuePtr(args[i]));
-        // TODO -- this is not working!
-      }
-
-      // Convert formals if we have fSym
-      {
-        ArgSymbol* formal = NULL;
-        bool isExtern = true;
-        if( fSym ) {
-          Expr* e = fSym->formals.get(i + 1);
-          DefExpr* de = toDefExpr(e);
-          formal = toArgSymbol(de->sym);
-          INT_ASSERT(formal);
-          if (!fSym->hasFlag(FLAG_EXTERN))
-            isExtern = false;
-        }
-        args[i] =
-          codegenArgForFormal(args[i], formal, defaultToValues, isExtern);
-      }
+                                             llvm::Attribute::ByVal))
+        INT_FATAL("byval without ABI info not implemented");
 
       // Handle structure expansion done by clang.
       convertArgumentForCall(fnType, args[i], llArgs);
@@ -2700,10 +2676,7 @@ GenRet codegenCallExpr(GenRet function,
 #else
       ret.val = info->irBuilder->CreateCall(val, llArgs);
 #endif
-    }
 
-    if( sret ) {
-      ret.val = codegenLoadLLVM(sret, fSym?(fSym->retType):(NULL));
     }
 #endif
   }
