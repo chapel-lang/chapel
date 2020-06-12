@@ -1,0 +1,3 @@
+allParamMultiInst.chpl:14: In initializer:
+allParamMultiInst.chpl:15: error: cannot assign expression of type R(4,5) to field 'r' of type R(1,2)
+allParamMultiInst.chpl:26: Initializer instantiated as: init(param x = 4, param y = 5, param z = 6)
