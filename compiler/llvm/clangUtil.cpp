@@ -1137,7 +1137,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   //CompilerInvocation* CI =
   //  createInvocationFromCommandLine(clangArgs, clangInfo->Diags);
 
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             j.getArguments(),
@@ -2788,7 +2788,7 @@ void makeBinaryLLVM(void) {
     emitPM.add(createTargetTransformInfoWrapperPass(
                info->targetMachine->getTargetIRAnalysis()));
 
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
     llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
 #else
     llvm::TargetMachine::CodeGenFileType FileType =

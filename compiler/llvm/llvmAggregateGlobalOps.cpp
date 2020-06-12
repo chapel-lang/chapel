@@ -202,7 +202,7 @@ Instruction* postponeDependentInstructions(
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
-#if HAVE_LLVM_VER < 90
+#if HAVE_LLVM_VER < 100
 
 static int64_t GetOffsetFromIndex(const GEPOperator *GEP,
                                   unsigned Idx,
@@ -534,7 +534,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextStore->isSimple()) break;
 
       // Check to see if this store is to a constant offset from the start ptr.
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
       Optional<int64_t> optOffset =
         isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
       if (!optOffset)
@@ -553,7 +553,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextLoad->isSimple()) break;
 
       // Check to see if this load is to a constant offset from the start ptr.
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
       Optional<int64_t> optOffset =
         isPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
       if (!optOffset)
@@ -690,7 +690,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         int64_t offset = 0;
 
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
         Optional<int64_t> optOffset =
           isPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
         assert(!!optOffset);
@@ -715,7 +715,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
         newStore->setAlignment(oldStore->getAlign());
 #else
         newStore->setAlignment(oldStore->getAlignment());
@@ -790,7 +790,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
         Optional<int64_t> optOffset =
           isPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
         assert(!!optOffset);
@@ -813,7 +813,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
         LoadInst* newLoad = irBuilder.CreateLoad(Src);
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
         newLoad->setAlignment(oldLoad->getAlign());
 #else
         newLoad->setAlignment(oldLoad->getAlignment());

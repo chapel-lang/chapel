@@ -669,7 +669,7 @@ namespace {
             // Now load from the alloc'd area.
             Instruction* loadedWide = new LoadInst(wLoadedTy, alloc, "",
                                        oldLoad->isVolatile(),
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
                                        oldLoad->getAlign(),
 #else
                                        oldLoad->getAlignment(),
@@ -709,7 +709,7 @@ namespace {
             // Now store to the alloc'd area
             Instruction* st = new StoreInst(wValueOp, alloc,
                                             oldStore->isVolatile(),
-#if HAVE_LLVM_VER >= 90
+#if HAVE_LLVM_VER >= 100
                                             oldStore->getAlign(),
 #else
                                             oldStore->getAlignment(),
