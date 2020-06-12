@@ -814,34 +814,49 @@ module String {
     inline proc chpl_createStringWithNewBufferNV(x: bufferType,
                                                          length: int,
                                                          size: int,
-                                                         numCodepoints: int) {
+                                                         numCodepoints=-1) {
       var ret: string;
-      ret.cachedNumCodepoints = numCodepoints;
       initWithNewBuffer(ret, x, length, size);
+      if numCodepoints < 0 {
+        ret.cachedNumCodepoints = ret.countNumCodepoints();
+      }
+      else {
+        ret.cachedNumCodepoints = numCodepoints;
+      }
       return ret;
     }
 
     inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
                                                               length: int,
                                                               size: int,
-                                                              numCodepoints: int) {
+                                                              numCodepoints=-1) {
       // NOTE: This is similar to chpl_createStringWithLiteral above, but only
       // used internally by the String module. These two functions cannot have the
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
-      ret.cachedNumCodepoints = numCodepoints;
       initWithBorrowedBuffer(ret, x, length, size);
+      if numCodepoints < 0 {
+        ret.cachedNumCodepoints = ret.countNumCodepoints();
+      }
+      else {
+        ret.cachedNumCodepoints = numCodepoints;
+      }
       return ret;
     }
 
     inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
                                                          length: int,
                                                          size: int,
-                                                         numCodepoints: int) {
+                                                         numCodepoints=-1) {
       var ret: string;
-      ret.cachedNumCodepoints = numCodepoints;
       initWithOwnedBuffer(ret, x, length, size);
+      if numCodepoints < 0 {
+        ret.cachedNumCodepoints = ret.countNumCodepoints();
+      }
+      else {
+        ret.cachedNumCodepoints = numCodepoints;
+      }
       return ret;
     }
   }
@@ -922,6 +937,19 @@ module String {
                                                      data.size,
                                                      data.cachedNumCodepoints);
       }
+    }
+
+    proc countNumCodepoints() {
+      var localThis: string = this.localize();
+      var n = 0;
+      var i = 0;
+      while i < localThis.buffLen {
+        i += 1;
+        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
+          i += 1;
+        n += 1;
+      }
+      return n;
     }
 
     // This is assumed to be called from this.locale
@@ -1209,15 +1237,7 @@ module String {
               string is correctly-encoded UTF-8.
   */
   proc const string.numCodepoints {
-    var localThis: string = this.localize();
-    var n = 0;
-    var i = 0;
-    while i < localThis.buffLen {
-      i += 1;
-      while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-        i += 1;
-      n += 1;
-    }
+    const n = this.countNumCodepoints();
     if n != cachedNumCodepoints {
       halt("Encountered corrupt string metadata");
     }
@@ -1481,23 +1501,17 @@ module String {
     if boundsChecking && (idx < 0 || idx >= this.buffLen)
       then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
 
-    var ret: string;
     var maxbytes = (this.buffLen - idx): ssize_t;
     if maxbytes < 0 || maxbytes > 4 then
       maxbytes = 4;
     var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
                                           len=maxbytes, loc=this.locale_id);
-    ret.buffSize = allocSize;
-    ret.buff = newBuff;
-    ret.isOwned = true;
 
-    const (decodeRet, cp, nBytes) = decodeHelp(buff=ret.buff,
+    const (decodeRet, cp, nBytes) = decodeHelp(buff=newBuff,
                                                buffLen=maxbytes,
                                                offset=0,
                                                allowEsc=true);
-    ret.buff[nBytes] = 0;
-    ret.buffLen = nBytes;
-    return ret;
+    return chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
   }
 
   /*
@@ -2461,15 +2475,12 @@ module String {
   // Cast from c_string to string
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {
-    var ret: string;
-    ret.buffLen = cs.size;
-    ret.buffSize = ret.buffLen+1;
-    ret.buff = if ret.buffLen > 0
-      then __primitive("string_copy", cs): bufferType
-      else nil;
-    ret.isOwned = true;
-
-    return ret;
+    try {
+      return createStringWithNewBuffer(cs);
+    }
+    catch {
+      halt("Casting a non-UTF-8 c_string to strign");
+    }
   }
 
   // Cast from byteIndex to int

@@ -25,6 +25,7 @@ module BytesStringCommon {
   private use String.NVStringFactory;
 
   config param doNumCodepointAssertion = true;
+  extern proc printf(s...);
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
@@ -158,6 +159,12 @@ module BytesStringCommon {
                                   0xdc00+buff[thisIdx-nInvalidBytes+i]);
               decodedIdx += 3;
             }
+
+            // adjust number of codepoints: for each invalid byte in this
+            // sequence we add one codepoint. However, we already incremented
+            // by one in the beginning of the loop:
+            numCodepoints += nInvalidBytes-1;
+
           }
           // if policy == decodePolicy.ignore, we don't do anything and skip over
           // the invalid sequence
@@ -351,7 +358,7 @@ module BytesStringCommon {
                x.numBytes, " bytes");
         }
       }
-      return (intR[x.byteIndices], x.size);
+      return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
     }
     else {  // string with codepoint indexing
       if r.stridable {
@@ -379,7 +386,7 @@ module BytesStringCommon {
                           else 0;
       const cpIdxHigh = if intR.hasHighBound()
                            then intR.alignedHigh:int
-                           else x.buffLen;
+                           else x.buffLen-1;
 
       var byteLow = x.buffLen;  // empty range if bounds outside string
       var byteHigh = x.buffLen - 1;
@@ -479,6 +486,7 @@ module BytesStringCommon {
       if idx == -1 then break;
 
       found += 1;
+
       result = result[..idx-1] + localReplacement +
                result[(idx + localNeedle.numBytes)..];
 
@@ -614,15 +622,12 @@ module BytesStringCommon {
       var joinedSize: int = x.buffLen * (S.size - 1);
       for s in S do joinedSize += s.numBytes;
 
+      var numCodepoints = 0;
+
       if joinedSize == 0 then
         return "":t;
 
-      var joined: t;
-      joined.buffLen = joinedSize;
-
-      var (newBuff, allocSize) = bufferAlloc(joined.buffLen+1);
-      joined.buffSize = allocSize;
-      joined.buff = newBuff;
+      var (newBuff, allocSize) = bufferAlloc(joinedSize+1);
 
       var first = true;
       var offset = 0;
@@ -633,20 +638,32 @@ module BytesStringCommon {
         if first {
           first = false;
         } else if x.buffLen != 0 {
-          bufferMemcpyLocal(dst=joined.buff, src=x.buff, len=x.buffLen,
+          bufferMemcpyLocal(dst=newBuff, src=x.buff, len=x.buffLen,
                             dst_off=offset);
           offset += x.buffLen;
+          if t == string then numCodepoints += x.numCodepoints;
         }
 
         // copy s's contents
         if sLen != 0 {
-          bufferMemcpy(dst=joined.buff, dst_off=offset,
+          bufferMemcpy(dst=newBuff, dst_off=offset,
                        src_loc=s.locale_id, src=s.buff,len=sLen);
           offset += sLen;
+          if t == string then numCodepoints += s.numCodepoints;
         }
       }
-      joined.buff[joined.buffLen] = 0;
-      return joined;
+      newBuff[joinedSize] = 0;
+      if t == string {
+        return chpl_createStringWithOwnedBufferNV(x=newBuff,
+                                                  length=joinedSize,
+                                                  size=allocSize,
+                                                  numCodepoints=numCodepoints);
+      }
+      else {
+        return createBytesWithOwnedBuffer(x=newBuff,
+                                          length=joinedSize,
+                                          size=allocSize);
+      }
     }
   }
 
@@ -716,12 +733,9 @@ module BytesStringCommon {
         if lhs.isOwned {
           bufferFree(lhs.buff);
         }
-        const len = rhs.buffLen; // cache the remote copy of len
-        var remote_buf:bufferType = nil;
-        if len != 0 then
-          remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
-        lhs.reinitString(remote_buf, len, len+1, needToCopy=false,
-                                                 ownBuffer=true);
+
+        lhs = if t==string then createStringWithNewBuffer(rhs)
+                           else createBytesWithNewBuffer(rhs);
       }
     }
 
@@ -754,32 +768,34 @@ module BytesStringCommon {
       compilerError("Unexpected type");
     }
 
-    // TODO Engin: Implement a factory function for this case
-    var ret: t;
     if !safeMul(sLen, n) then 
       halt("Buffer overflow allocating string copy data");
-    ret.buffLen = sLen * n;
-    var (buff, allocSize) = bufferAlloc(ret.buffLen+1);
-    ret.buff = buff;
-    ret.buffSize = allocSize;
-    ret.isOwned = true;
 
-    bufferMemcpy(dst=ret.buff, src_loc=x.locale_id, src=x.buff, len=x.buffLen);
+    const buffLen = sLen * n;
+    var (buff, allocSize) = bufferAlloc(buffLen+1);
 
+    bufferMemcpy(dst=buff, src_loc=x.locale_id, src=x.buff, len=x.buffLen);
     var offset = sLen;
     for i in 1..(n-1) {
-      bufferMemcpyLocal(dst=ret.buff, src=ret.buff, len=x.buffLen,
+      bufferMemcpyLocal(dst=buff, src=buff, len=x.buffLen,
                         dst_off=offset);
       offset += sLen;
     }
-    ret.buff[ret.buffLen] = 0;
-    return ret;
+    buff[buffLen] = 0;
+
+    if t==string {
+      return chpl_createStringWithOwnedBufferNV(buff, buffLen, allocSize,
+                                                x.cachedNumCodepoints*n);
+    }
+    else {
+      return createBytesWithOwnedBuffer(buff, buffLen, allocSize);
+    }
   }
 
   proc assertNumCodepoints(x: ?t) {
     assertArgType(t, "assertNumCodepoints");
     if doNumCodepointAssertion && t == string {
-      if x.cachedNumCodepoints < x.numBytes {
+      if x.cachedNumCodepoints != x.numCodepoints {
         halt("Encountered a string with corrupt metadata");
       }
     }
