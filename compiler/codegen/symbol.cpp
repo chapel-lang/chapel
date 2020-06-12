@@ -67,6 +67,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Target/TargetIntrinsicInfo.h"
+#include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
 /******************************** | *********************************
@@ -1683,6 +1684,101 @@ GenRet TypeSymbol::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+#ifdef HAVE_LLVM
+static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
+                                             llvm::AttributeList& attrs,
+                                             std::vector<const char*>& argNames) {
+
+  llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+
+  const clang::CodeGen::CGFunctionInfo* CGI = NULL;
+
+  if (fn->hasFlag(FLAG_EXPORT)) {
+    CGI = &getClangABIInfo(fn);
+  }
+
+  llvm::Type *returnType;
+  std::vector<llvm::Type *> argumentTypes;
+  std::vector<int> refArgs;
+
+  if (CGI) {
+    const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
+
+    switch (returnInfo.getKind()) {
+      case clang::CodeGen::ABIArgInfo::Kind::Direct:
+      case clang::CodeGen::ABIArgInfo::Kind::Ignore:
+        // no action now
+        break;
+      case clang::CodeGen::ABIArgInfo::Kind::Extend:
+      {
+        bool isSigned = is_signed(fn->retType);
+        if (!(is_int_type(fn->retType) ||
+              is_uint_type(fn->retType) ||
+              is_bool_type(fn->retType)))
+          INT_FATAL(fn, "extending something not int/uint");
+
+        llvm::AttrBuilder b;
+        if (isSigned)
+          b.addAttribute(llvm::Attribute::SExt);
+        else
+          b.addAttribute(llvm::Attribute::ZExt);
+
+        attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+        break;
+      }
+      case clang::CodeGen::ABIArgInfo::Kind::Indirect:
+      case clang::CodeGen::ABIArgInfo::Kind::InAlloca:
+      {
+        // pass the argument indirectly via a hidden pointer
+        llvm::AttrBuilder b;
+        b.addAttribute(llvm::Attribute::NoAlias);
+        b.addAttribute(llvm::Attribute::NoCapture);
+        b.addAttribute(llvm::Attribute::StructRet);
+
+        attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+
+        USR_FATAL("TODO");
+        break;
+      }
+      case clang::CodeGen::ABIArgInfo::Kind::Expand:
+      case clang::CodeGen::ABIArgInfo::Kind::CoerceAndExpand:
+      default:
+        INT_FATAL("unhandled case");
+    }
+  }
+
+  int count = 0;
+  for_formals(formal, fn) {
+    if (formal->hasFlag(FLAG_NO_CODEGEN))
+      continue; // do not print locale argument, end count, dummy class
+    argumentTypes.push_back(formal->codegenType().type);
+    argNames.push_back(formal->cname);
+    count++;
+    // LLVM Arguments indices in function API are 1-based not 0-based
+    // that's why we push numArgs after increment
+    if(formal->isRef())
+      refArgs.push_back(count);
+  }
+
+  //Void type handled here since LLVM complains about a
+  //void type defined in a module
+  if (fn->retType == dtVoid || fn->retType == dtNothing ||
+      (CGI && CGI->getReturnInfo().isIgnore())) {
+    returnType = llvm::Type::getVoidTy(ctx);
+  } else {
+    returnType = fn->retType->codegen().type;
+  }
+
+  llvm::FunctionType* fnType =
+    llvm::FunctionType::get(returnType,
+                            argumentTypes,
+                            /* is var arg */ false);
+
+  return fnType;
+}
+
+#endif
+
 // forHeader == true when generating the C header.
 GenRet FnSymbol::codegenFunctionType(bool forHeader) {
   GenInfo* info = gGenInfo;
@@ -1727,30 +1823,10 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     ret.c = str;
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type *returnType;
-    std::vector<llvm::Type *> argumentTypes;
-
-    int count = 0;
-    for_formals(formal, this) {
-      if (formal->hasFlag(FLAG_NO_CODEGEN))
-        continue; // do not print locale argument, end count, dummy class
-      argumentTypes.push_back(formal->codegenType().type);
-      count++;
-    }
-
-    //Void type handled here since LLVM complains about a
-    //void type defined in a module
-    if (retType == dtVoid || retType == dtNothing) {
-      returnType = llvm::Type::getVoidTy(info->module->getContext());
-    } else {
-      returnType = retType->codegen().type;
-    }
-    // now cast to correct function type
-    llvm::FunctionType* fnType =
-      llvm::FunctionType::get(returnType,
-                              argumentTypes,
-                              /* is var arg */ false);
-    ret.type = fnType;
+    llvm::AttributeList attrs;
+    std::vector<const char*> argNames;
+    llvm::FunctionType* fTy = codegenFunctionTypeLLVM(this, attrs, argNames);
+    ret.type = fTy;
 #endif
   }
   return ret;
@@ -1811,27 +1887,9 @@ void FnSymbol::codegenPrototype() {
     fprintf(info->cfile, ";\n");
   } else {
 #ifdef HAVE_LLVM
-    std::vector<llvm::Type *> argumentTypes;
-    std::vector<const char *> argumentNames;
-
-    int numArgs = 0;
-    std::vector<int> refArgs;
-    for_formals(arg, this) {
-      if (arg->hasFlag(FLAG_NO_CODEGEN))
-        continue; // do not print locale argument, end count, dummy class
-      argumentTypes.push_back(arg->codegenType().type);
-      argumentNames.push_back(arg->cname);
-
-      arg->codegenType();
-      numArgs++;
-      // LLVM Arguments indices in function API are 1-based not 0-based
-      // that's why we push numArgs after increment
-      if(arg->isRef())
-        refArgs.push_back(numArgs);
-    }
-
-    llvm::FunctionType *type = llvm::cast<llvm::FunctionType>(
-        this->codegenFunctionType(false).type);
+    std::vector<const char*> argNames;
+    llvm::AttributeList attrs;
+    llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this, attrs, argNames);
 
     llvm::Function *existing;
 
@@ -1846,35 +1904,35 @@ void FnSymbol::codegenPrototype() {
       if(!existing->empty()) {
         INT_FATAL(this, "Redefinition of a function");
       }
-      if((int)existing->arg_size() != numArgs) {
+      if(existing->arg_size() != argNames.size()) {
         INT_FATAL(this,
                   "Redefinition of a function with different number of args");
       }
-      if(type != existing->getFunctionType()) {
+      if(fTy != existing->getFunctionType()) {
         INT_FATAL(this, "Redefinition of a function with different arg types");
       }
 
       return;
     }
 
-    // No other function with the same name exists.
-    llvm::Function *func =
-      llvm::Function::Create(
-          type,
-          hasFlag(FLAG_EXPORT) ? llvm::Function::ExternalLinkage
-                               : llvm::Function::InternalLinkage,
-          cname,
-          info->module);
+    llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
+    if (hasFlag(FLAG_EXPORT))
+      linkage = llvm::Function::ExternalLinkage;
 
-    for(auto argNumber : refArgs)
-      func->addAttribute(argNumber, llvm::Attribute::NonNull);
+    // No other function with the same name exists.
+    llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
+                                                  info->module);
+
+    func->setAttributes(attrs);
 
     int argID = 0;
     for(llvm::Function::arg_iterator ai = func->arg_begin();
         ai != func->arg_end();
         ai++) {
-      ai->setName(argumentNames[argID++]);
+      ai->setName(argNames[argID]);
+      argID++;
     }
+
 #endif
   }
   return;

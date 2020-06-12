@@ -42,6 +42,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
+#include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -2656,6 +2657,12 @@ GenRet codegenCallExpr(GenRet function,
         func && func->hasStructRetAttr())
       INT_FATAL("structure return without ABI info not implemented");
 
+    if (CGI) {
+      // Handle return ABI stuff
+      const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
+      returnInfo.canHaveCoerceToType();
+    }
+
     for (size_t i = 0; i < args.size(); i++) {
       if (CGI == NULL &&
           llArgs.size() < fnType->getNumParams() &&
@@ -2666,6 +2673,12 @@ GenRet codegenCallExpr(GenRet function,
 
       // Handle structure expansion done by clang.
       convertArgumentForCall(fnType, args[i], llArgs);
+    }
+
+    if (CGI) {
+      // Handle return ABI stuff
+      const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
+      returnInfo.canHaveCoerceToType();
     }
 
     if (func) {
