@@ -2186,6 +2186,9 @@ module String {
      Copies the c_string `rhs_c` into the string `lhs`.
 
      Halts if `lhs` is a remote string.
+
+     .. warning:: This operator has been deprecated - please use
+                  createStringWith* functions instead.
   */
   proc =(ref lhs: string, rhs_c: c_string) {
     compilerWarning("Assignment from c_string to string is deprecated. ",
