@@ -431,6 +431,9 @@ all:
   05/28/20:
     - text: machine update (McAfee)
       config: chapcs
+  06/06/20:
+    - text: Don't GET domain's dimensions unless needed (#15777)
+      config: 16-node-xc, 16-node-cs, chapcs.comm-counts
 
 
 AllCompTime: &timecomp-base
@@ -574,6 +577,8 @@ blackscholes_promote:
 build-associative:
   07/14/17:
     - Extend parallel array initialization to POD arrays (#6675)
+  06/03/20:
+    - Factor hashtable used by DefaultAssociative out of it (#15739)
 
 cast-from-string:
   12/14/18:
@@ -1444,6 +1449,8 @@ prk-stencil.ml-perf:
     - Stop doing a task-yield while forking remote tasks under ugni (#7915)
   01/31/20:
     - Fix timeout identification for Cray-CS testing (#14838)
+  06/02/20:
+    - Address performance issues with stencil and block-cyclic array init (#15741)
 
 prk-stencil-time:
   05/11/17:
