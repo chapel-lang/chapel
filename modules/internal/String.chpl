@@ -858,7 +858,7 @@ module String {
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
-    var cachedNumCodepoints: int = -1;
+    var cachedNumCodepoints: int = 0;
     var buff: bufferType = nil;
     var isOwned: bool = true;
     var hasEscapes: bool = false;
@@ -1209,20 +1209,19 @@ module String {
               string is correctly-encoded UTF-8.
   */
   proc const string.numCodepoints {
-    if(cachedNumCodepoints  == -1) {
-      var localThis: string = this.localize();
-      var n = 0;
-      var i = 0;
-      while i < localThis.buffLen {
+    var localThis: string = this.localize();
+    var n = 0;
+    var i = 0;
+    while i < localThis.buffLen {
+      i += 1;
+      while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
         i += 1;
-        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-          i += 1;
-        n += 1;
-      }
-      return n;
-    } else {
-      return cachedNumCodepoints;
+      n += 1;
     }
+    if n != cachedNumCodepoints {
+      halt("Encountered corrupt string metadata");
+    }
+    return n;
   }
   
   /*
