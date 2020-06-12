@@ -17,3 +17,6 @@
 # limitations under the License.
 
 include $(CHPL_MAKE_HOME)/make/platform/Makefile.cray-x-series
+
+$(warning Cray XE/XK is no longer officially supported or tested. Please \
+  notify the Chapel team if this configuration is important to you.)
