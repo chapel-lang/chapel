@@ -1059,7 +1059,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const view = getView(this, region);
+        const (view, _) = getView(this, region);
         const thisLen = view.size;
 
         // Edge cases

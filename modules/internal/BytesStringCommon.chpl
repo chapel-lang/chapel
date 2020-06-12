@@ -350,7 +350,7 @@ module BytesStringCommon {
                x.numBytes, " bytes");
         }
       }
-      return intR[x.byteIndices];
+      return (intR[x.byteIndices], x.size);
     }
     else {  // string with codepoint indexing
       if r.stridable {
@@ -397,7 +397,7 @@ module BytesStringCommon {
           cpCount += 1;
         }
       }
-      return byteLow..byteHigh;
+      return (byteLow..byteHigh, cpIdxHigh-cpIdxLow+1);
     }
   }
 
@@ -405,41 +405,51 @@ module BytesStringCommon {
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
 
-    var ret: t;
-    if x.isEmpty() then return ret;
-
-    const r2 = getView(x, r);
-    if r2.size <= 0 {
-      // TODO: I can't just return "" (ret var gets freed for some reason)
-      ret = "";
-    } else {
-      // In case r1 is strided, we cannot just use r2.size for the copy
-      // length. For to be able to cover strided copies, we copy the range
-      // from low to high then do a strided operation to put the data in the
-      // buffer in the correct order.
-      const copyLen = r2.high-r2.low+1;
-      var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low,
-                                          len=copyLen, loc=x.locale_id);
-      if r2.stride == 1 {
-        // TODO Engin: I'd like to call init or something that constructs a
-        // new bytes/string object instead of doing the these all the time
-        ret.buff = copyBuf;
-        ret.buffSize = copySize;
-      }
-      else {
-        // the range is strided
-        var (newBuff, allocSize) = bufferAlloc(r2.size+1);
-        for (r2_i, i) in zip(r2, 0..) {
-          newBuff[i] = copyBuf[r2_i-r2.low];
-        }
-        ret.buff = newBuff;
-        ret.buffSize = allocSize;
-        bufferFree(copyBuf);
-      }
-      ret.buffLen = r2.size;
-      ret.buff[ret.buffLen] = 0;
+    if x.isEmpty() {
+      var ret: t;
+      return ret;
     }
-    return ret;
+
+    const (r2, numChars) = getView(x, r);
+    if r2.size <= 0 {
+      var ret: t;
+      return ret;
+    }
+
+    var buff: bufferType;
+    var buffSize: int;
+
+    // In case r1 is strided, we cannot just use r2.size for the copy
+    // length. For to be able to cover strided copies, we copy the range
+    // from low to high then do a strided operation to put the data in the
+    // buffer in the correct order.
+    const copyLen = r2.high-r2.low+1;
+    var (copyBuf, copySize) = bufferCopy(buf=x.buff, off=r2.low,
+                                        len=copyLen, loc=x.locale_id);
+    if r2.stride == 1 {
+      buff = copyBuf;
+      buffSize = copySize;
+    }
+    else {
+      // the range is strided
+      var (newBuff, allocSize) = bufferAlloc(r2.size+1);
+      for (r2_i, i) in zip(r2, 0..) {
+        newBuff[i] = copyBuf[r2_i-r2.low];
+      }
+      buff = newBuff;
+      buffSize = allocSize;
+      bufferFree(copyBuf);
+    }
+    const buffLen = r2.size;
+    buff[buffLen] = 0;
+
+    if t == string {
+      return chpl_createStringWithOwnedBufferNV(x=buff, length=buffLen,
+          size=buffSize, numCodepoints=numChars);
+    }
+    else {
+      return createBytesWithOwnedBuffer(x=buff, length=buffLen, size=buffSize);
+    }
   }
 
   proc getIndexType(type t) type {
