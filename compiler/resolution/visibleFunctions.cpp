@@ -133,8 +133,7 @@ void findVisibleFunctions(CallInfo&       info,
   } else {
     // Methods, fields, and type helper functions should ignore the privacy and
     // limitations on use statements.  All other symbols should respect them.
-    if (call->numActuals() >=2 && isSymExpr(call->get(1)) &&
-        toSymExpr(call->get(1))->symbol() == gMethodToken) {
+    if (call->numActuals() >=2 && call->get(1)->typeInfo() == dtMethodToken) {
 
       getVisibleMethods(info.name, call, visibleFns);
 
