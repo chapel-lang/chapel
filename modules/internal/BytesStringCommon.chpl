@@ -690,6 +690,11 @@ module BytesStringCommon {
       if _local || rhs.locale_id == chpl_nodeID {
         lhs.reinitString(rhs.buff, rhs.buffLen, rhs.buffSize, needToCopy=true);
       } else {
+
+        // deallocate local buffer no matter what, as we'll copy the remote one
+        if lhs.isOwned {
+          bufferFree(lhs.buff);
+        }
         const len = rhs.buffLen; // cache the remote copy of len
         var remote_buf:bufferType = nil;
         if len != 0 then
@@ -708,18 +713,6 @@ module BytesStringCommon {
         helpMe(lhs, rhs);
       }
     }
-  }
-
-  proc doAssign(ref lhs: ?t, rhs_c: c_string) {
-    assertArgType(t, "doAssign");
-
-    // Make this some sort of local check once we have local types/vars
-    if !_local && (lhs.locale_id != chpl_nodeID) then
-      halt("Cannot assign a c_string to a remote string.");
-
-    const len = rhs_c.size;
-    const buff:bufferType = rhs_c:bufferType;
-    lhs.reinitString(buff, len, len+1, needToCopy=true);
   }
 
   proc doMultiply(const ref x: ?t, n: integral) {

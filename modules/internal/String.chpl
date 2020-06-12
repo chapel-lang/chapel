@@ -180,6 +180,8 @@ module String {
   public use StringCasts;
   public use BytesStringCommon only encodePolicy;  // expose encodePolicy
 
+  private use NVStringFactory;
+
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
@@ -626,20 +628,6 @@ module String {
     return createStringWithBorrowedBuffer(x=s, length, size);
   }
 
-  pragma "no doc"
-  private inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
-                                                            length: int,
-                                                            size: int,
-                                                            numCodepoints: int) {
-    // NOTE: This is similar to chpl_createStringWithLiteral above, but only
-    // used internally by the String module. These two functions cannot have the
-    // same names, because "wellknown" implementation in the compiler does not
-    // allow overloads.
-    var ret: string;
-    ret.cachedNumCodepoints = numCodepoints;
-    initWithBorrowedBuffer(ret, x, length,size);
-    return ret;
-  }
 
   pragma "no doc"
   inline proc createStringWithOwnedBuffer(x: string) {
@@ -715,17 +703,6 @@ module String {
     return createStringWithOwnedBuffer(x=s, length, size);
   }
 
-  pragma "no doc"
-  private inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
-                                                         length: int,
-                                                         size: int,
-                                                         numCodepoints: int) {
-    var ret: string;
-    ret.cachedNumCodepoints = numCodepoints;
-    initWithOwnedBuffer(ret, x, length,size);
-    return ret;
-  }
-
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
@@ -737,7 +714,7 @@ module String {
   inline proc createStringWithNewBuffer(x: string) {
     // we don't validate here because `x` must have been validated already
     var ret: string;
-    ret.cachedNumCodepoints = x.cachedNumCodePoints;
+    ret.cachedNumCodepoints = x.cachedNumCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
   }
@@ -827,15 +804,46 @@ module String {
     return createStringWithNewBuffer(x=s, length, size, policy);
   }
 
+  // non-validating string factory functions are in this submodule. This
+  // submodule can be `private use`d from other String-supporting modules.
   pragma "no doc"
-  private inline proc chpl_createStringWithNewBufferNV(s: bufferType,
-                                                       length: int,
-                                                       size: int,
-                                                       numCodepoints: int) {
-    var ret: string;
-    ret.cachedNumCodepoints = numCodepoints;
-    initWithNewBuffer(ret, s, length,size);
-    return ret;
+  module NVStringFactory {
+    private use BytesStringCommon;
+    private use ByteBufferHelpers only bufferType;
+
+    inline proc chpl_createStringWithNewBufferNV(x: bufferType,
+                                                         length: int,
+                                                         size: int,
+                                                         numCodepoints: int) {
+      var ret: string;
+      ret.cachedNumCodepoints = numCodepoints;
+      initWithNewBuffer(ret, x, length, size);
+      return ret;
+    }
+
+    inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
+                                                              length: int,
+                                                              size: int,
+                                                              numCodepoints: int) {
+      // NOTE: This is similar to chpl_createStringWithLiteral above, but only
+      // used internally by the String module. These two functions cannot have the
+      // same names, because "wellknown" implementation in the compiler does not
+      // allow overloads.
+      var ret: string;
+      ret.cachedNumCodepoints = numCodepoints;
+      initWithBorrowedBuffer(ret, x, length, size);
+      return ret;
+    }
+
+    inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
+                                                         length: int,
+                                                         size: int,
+                                                         numCodepoints: int) {
+      var ret: string;
+      ret.cachedNumCodepoints = numCodepoints;
+      initWithOwnedBuffer(ret, x, length, size);
+      return ret;
+    }
   }
 
   //
@@ -2180,7 +2188,15 @@ module String {
      Halts if `lhs` is a remote string.
   */
   proc =(ref lhs: string, rhs_c: c_string) {
-    doAssign(lhs, rhs_c);
+    compilerWarning("Assignment from c_string to string is deprecated. ",
+                    "Use createStringWith* functions instead.");
+    // I want to use try! but got tripped over by #14465
+    try {
+      lhs = createStringWithNewBuffer(rhs_c);
+    }
+    catch {
+      halt("Assigning a c_string with non-UTF-8 data");
+    }
   }
 
   //
