@@ -993,7 +993,7 @@ module Bytes {
                 occurrences of characters in `chars` removed as appropriate.
     */
     proc bytes.strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
-      if this.isEmpty() then return "";
+      if this.isEmpty() then return b"";
       if chars.isEmpty() then return this;
 
       const localThis: bytes = this.localize();

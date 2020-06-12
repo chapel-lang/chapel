@@ -593,7 +593,7 @@ module BytesStringCommon {
     assertArgType(t, "doJoin");
 
     if S.size == 0 {
-      return '';
+      return "":t;
     } else if S.size == 1 {
       // TODO: ensures copy, clean up when no longer needed
       var ret: t;
@@ -608,7 +608,7 @@ module BytesStringCommon {
       for s in S do joinedSize += s.numBytes;
 
       if joinedSize == 0 then
-        return '';
+        return "":t;
 
       var joined: t;
       joined.buffLen = joinedSize;
