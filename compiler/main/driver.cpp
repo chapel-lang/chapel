@@ -1455,12 +1455,6 @@ static void checkUnsupportedConfigs(void) {
                  " important to you.");
     }
   }
-  // Check for Cray XE/XK 
-  if (!strcmp(CHPL_TARGET_PLATFORM, "cray-xe") || !strcmp(CHPL_TARGET_PLATFORM, "cray-xk")) {
-    USR_WARN("Cray XE/XK is no longer officially supported or tested. Please"
-             " notify the Chapel team if this configuration is important to"
-             " you.");
-  }
 }
 
 static void checkMLDebugAndLibmode(void) {
