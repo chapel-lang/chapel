@@ -2628,6 +2628,9 @@ GenRet codegenCallExpr(GenRet function,
   } else {
 #ifdef HAVE_LLVM
 
+    // See clang CodeGenFunction::EmitCall
+    // See Swift  ...
+
     const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 
     if (isExternOrExport) {

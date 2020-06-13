@@ -1687,11 +1687,33 @@ GenRet TypeSymbol::codegen() {
 ********************************* | ********************************/
 
 #ifdef HAVE_LLVM
+
+static void pushAllFieldTypesRecursively(const char* name,
+                                         Type* t,
+                                         std::vector<llvm::Type*>& argTys,
+                                         std::vector<const char*>& argNames) {
+  if (isRecord(t)) {
+    if (AggregateType* at = toAggregateType(t)) {
+      for_fields(field, at) {
+        pushAllFieldTypesRecursively(astr(name, "_", field->name),
+                                     field->type,
+                                     argTys,
+                                     argNames);
+      }
+    }
+  } else {
+    llvm::Type* ty = t->codegen().type;
+    argTys.push_back(ty);
+    argNames.push_back(name);
+  }
+}
+
 static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
                                              llvm::AttributeList& attrs,
                                              std::vector<const char*>& argNames) {
 
   llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+  const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
 
   const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 
@@ -1699,20 +1721,53 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     CGI = &getClangABIInfo(fn);
   }
 
-  llvm::Type *returnType;
-  std::vector<llvm::Type *> argumentTypes;
-  std::vector<int> refArgs;
+  if (fn->name == astr("chapel_struct_return"))
+    gdbShouldBreakHere();
+
+  unsigned int stackSpace = layout.getAllocaAddrSpace();
+
+  llvm::Type *returnTy;
+  std::vector<llvm::Type *> argTys;
+
+  // Void type handled here since LLVM complains about a
+  // void type defined in a module
+  if (fn->retType == dtVoid || fn->retType == dtNothing) {
+    returnTy = llvm::Type::getVoidTy(ctx);
+  } else {
+    returnTy = fn->retType->codegen().type;
+  }
+
+  // See Swift expandExternalSignatureTypes
+  //  irgen::emitForeignParameter
+  //  emitDirectForeignParameter
+  //  externalizeArguments
+  //
+  //  Swift emitDirectExternalArgument
+  //
+
+  // Insipred by clang's CodeGenTypes::GetFunctionType
+
+  int curCArg = 0;
 
   if (CGI) {
+
     const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
 
     switch (returnInfo.getKind()) {
-      case clang::CodeGen::ABIArgInfo::Kind::Direct:
+      case clang::CodeGen::ABIArgInfo::Kind::Indirect:
       case clang::CodeGen::ABIArgInfo::Kind::Ignore:
-        // no action now
+      {
+        returnTy = llvm::Type::getVoidTy(ctx);
         break;
+      }
+      case clang::CodeGen::ABIArgInfo::Kind::Direct:
+      {
+        returnTy = returnInfo.getCoerceToType();
+        break;
+      }
       case clang::CodeGen::ABIArgInfo::Kind::Extend:
       {
+        // Swift adds this attribute. Should we?
         bool isSigned = is_signed(fn->retType);
         if (!(is_int_type(fn->retType) ||
               is_uint_type(fn->retType) ||
@@ -1726,55 +1781,142 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           b.addAttribute(llvm::Attribute::ZExt);
 
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+
+        returnTy = returnInfo.getCoerceToType();
         break;
       }
-      case clang::CodeGen::ABIArgInfo::Kind::Indirect:
       case clang::CodeGen::ABIArgInfo::Kind::InAlloca:
       {
-        // pass the argument indirectly via a hidden pointer
-        llvm::AttrBuilder b;
-        b.addAttribute(llvm::Attribute::NoAlias);
-        b.addAttribute(llvm::Attribute::NoCapture);
-        b.addAttribute(llvm::Attribute::StructRet);
-
-        attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
-
-        USR_FATAL("TODO");
+        if (returnInfo.getInAllocaSRet()) {
+          returnTy = llvm::PointerType::get(returnTy, stackSpace);
+        } else {
+          returnTy = llvm::Type::getVoidTy(ctx);
+        }
+        break;
+      }
+      case clang::CodeGen::ABIArgInfo::Kind::CoerceAndExpand:
+      {
+        returnTy = returnInfo.getUnpaddedCoerceAndExpandType ();
         break;
       }
       case clang::CodeGen::ABIArgInfo::Kind::Expand:
-      case clang::CodeGen::ABIArgInfo::Kind::CoerceAndExpand:
-      default:
-        INT_FATAL("unhandled case");
+        INT_FATAL("Invalid ABI kind for return argument");
+        break;
+      // No default -> compiler warning if more added
+    }
+
+    // Add type for sret argument
+    if (returnInfo.isIndirect()) {
+      if (returnInfo.isSRetAfterThis()) {
+        INT_FATAL("not handled"); // replace existing sret argument?
+        curCArg++; // a guess
+      }
+      argTys.push_back(llvm::PointerType::get(returnTy, stackSpace));
+      argNames.push_back("indirect_return");
+    }
+    // Add type for inalloca argument
+    if (CGI->usesInAlloca()) {
+      auto argStruct = CGI->getArgStruct();
+      argTys.push_back(argStruct->getPointerTo());
+      argNames.push_back("inalloca_arg");
     }
   }
 
-  int count = 0;
   for_formals(formal, fn) {
+    const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+    if (CGI) {
+      llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
+      argInfo = &a[curCArg].info;
+    }
+
     if (formal->hasFlag(FLAG_NO_CODEGEN))
       continue; // do not print locale argument, end count, dummy class
-    argumentTypes.push_back(formal->codegenType().type);
-    argNames.push_back(formal->cname);
-    count++;
-    // LLVM Arguments indices in function API are 1-based not 0-based
-    // that's why we push numArgs after increment
-    if(formal->isRef())
-      refArgs.push_back(count);
-  }
 
-  //Void type handled here since LLVM complains about a
-  //void type defined in a module
-  if (fn->retType == dtVoid || fn->retType == dtNothing ||
-      (CGI && CGI->getReturnInfo().isIgnore())) {
-    returnType = llvm::Type::getVoidTy(ctx);
-  } else {
-    returnType = fn->retType->codegen().type;
+    if (argInfo) {
+      if (argInfo->isIgnore() || argInfo->isInAlloca())
+        continue; // ignore - inalloca handled separately
+    }
+
+    llvm::Type* argTy = formal->codegenType().type;
+
+    if (argInfo) {
+      // emit padding argument
+      if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
+        argTys.push_back(paddingTy);
+        argNames.push_back(astr(formal->cname, "_padding"));
+      }
+
+      switch (argInfo->getKind()) {
+        case clang::CodeGen::ABIArgInfo::Kind::Ignore:
+        case clang::CodeGen::ABIArgInfo::Kind::InAlloca:
+          break;
+
+        case clang::CodeGen::ABIArgInfo::Kind::Indirect:
+          argTys.push_back(llvm::PointerType::get(argTy, stackSpace));
+          argNames.push_back(astr(formal->cname, "_indirect"));
+          break;
+
+        case clang::CodeGen::ABIArgInfo::Kind::Extend:
+        case clang::CodeGen::ABIArgInfo::Kind::Direct:
+        {
+          // flatten out structs to scalars if possible
+          llvm::Type *toTy = argInfo->getCoerceToType();
+          llvm::StructType *sTy = llvm::dyn_cast<llvm::StructType>(toTy);
+          if (sTy && argInfo->isDirect() && argInfo->getCanBeFlattened()) {
+            int nElts = sTy->getNumElements();
+            for (int i = 0; i < nElts; i++) {
+              argTys.push_back(sTy->getElementType(i));
+              argNames.push_back(astr(formal->cname, istr(i)));
+            }
+          } else {
+            argTys.push_back(argTy);
+            argNames.push_back(formal->cname);
+            if(formal->isRef()) {
+              llvm::AttrBuilder b;
+              b.addAttribute(llvm::Attribute::NonNull);
+              attrs = attrs.addAttributes(ctx, argTys.size(), b);
+            }
+          }
+          break;
+        }
+
+        case clang::CodeGen::ABIArgInfo::Kind::CoerceAndExpand:
+        {
+          int i = 0;
+          for (auto ty : argInfo->getCoerceAndExpandTypeSequence()) {
+            argTys.push_back(ty);
+            argNames.push_back(astr(formal->cname, istr(i)));
+            i++;
+          }
+          break;
+        }
+        case clang::CodeGen::ABIArgInfo::Kind::Expand:
+        {
+          // TODO: check this for complex
+          // TODO: should this be applying to C types not Chapel ones?
+          pushAllFieldTypesRecursively(formal->name,
+                                       getArgSymbolCodegenType(formal),
+                                       argTys, argNames);
+          break;
+        }
+      }
+
+    } else {
+      argTys.push_back(argTy);
+      argNames.push_back(formal->cname);
+      if(formal->isRef()) {
+
+        llvm::AttrBuilder b;
+        b.addAttribute(llvm::Attribute::NonNull);
+        attrs = attrs.addAttributes(ctx, argTys.size(), b);
+      }
+    }
+
+    curCArg++;
   }
 
   llvm::FunctionType* fnType =
-    llvm::FunctionType::get(returnType,
-                            argumentTypes,
-                            /* is var arg */ false);
+    llvm::FunctionType::get(returnTy, argTys, /* is var arg */ false);
 
   return fnType;
 }
@@ -1828,6 +1970,7 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     llvm::AttributeList attrs;
     std::vector<const char*> argNames;
     llvm::FunctionType* fTy = codegenFunctionTypeLLVM(this, attrs, argNames);
+    INT_ASSERT(argNames.size() == fTy->getNumParams());
     ret.type = fTy;
 #endif
   }
@@ -2012,6 +2155,8 @@ void FnSymbol::codegenDef() {
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }
+
+    // TODO: handle ABI
 
     llvm::Function::arg_iterator ai = func->arg_begin();
     unsigned int ArgNo = 1; //start from 1 to cooperate with createLocalVariable
