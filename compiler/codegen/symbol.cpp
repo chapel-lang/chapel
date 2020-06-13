@@ -2361,7 +2361,7 @@ static void pythonRetByteBuffer(FnSymbol* fn, std::string& funcCall,
   // decode the Python bytes into a Python UTF-8 string.
   //
   if (origt == dtString) {
-    returnStmt += "\tret = ret.decode(\'utf-8\')\n";  
+    returnStmt += "\tret = ret.decode(\'utf-8\')\n";
   }
 }
 
@@ -2411,7 +2411,7 @@ static void pythonRetExternalArray(FnSymbol* fn, std::string& funcCall,
     res += "\t\trv = (<chpl_byte_buffer*>ret_arr.elts)[i]\n";
     res += "\t\tslot = PyBytes_FromStringAndSize(rv.data, rv.size)\n";
     res += "\t\tchpl_byte_buffer_free(rv)\n";
-    
+
     if (eltType == dtString) {
       res += "\t\tslot = slot.decode(\'utf-8\')\n";
     }
@@ -2435,7 +2435,7 @@ static void pythonRetOpaqueArray(FnSymbol* fn, std::string& funcCall,
   funcCall += "ret.setVal(";
 }
 
-                         
+
 // Supports the creation of a python module with --library-python
 GenRet FnSymbol::codegenPYXType() {
   GenRet ret;
@@ -2457,7 +2457,7 @@ GenRet FnSymbol::codegenPYXType() {
     if (retType == exportTypeChplByteBuffer) {
       pythonRetByteBuffer(this, funcCall, returnStmt);
     } else if (retType == dtExternalArray) {
-      pythonRetExternalArray(this, funcCall, returnStmt);  
+      pythonRetExternalArray(this, funcCall, returnStmt);
     } else if (retType == dtOpaqueArray) {
       pythonRetOpaqueArray(this, funcCall, returnStmt);
     } else {
