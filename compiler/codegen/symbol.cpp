@@ -821,6 +821,8 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
             cname);
       info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
 
+      gVar->setDSOLocal(true);
+
       if(debug_info){
         debug_info->get_global_variable(this);
       }
@@ -1922,6 +1924,8 @@ void FnSymbol::codegenPrototype() {
     // No other function with the same name exists.
     llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
                                                   info->module);
+
+    func->setDSOLocal(true);
 
     func->setAttributes(attrs);
 
