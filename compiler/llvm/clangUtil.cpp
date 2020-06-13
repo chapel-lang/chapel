@@ -1221,6 +1221,10 @@ void setupClang(GenInfo* info, std::string mainFile)
       printf("\n");
     }
 
+    // reset previously parsed options because we might run this multiple
+    // times when handling extern blocks
+    llvm::cl::ResetAllOptionOccurrences();
+    // parse the options
     llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
   }
 }
