@@ -1179,7 +1179,7 @@ module Random {
         var j = start + lArraySize;
         var n = start + totalSize;
 
-        var k : array.domain.idxType;
+        var k : arr.domain.idxType;
         while true {
           k = randlc_bounded(j.type,
                                  PCGRandomStreamPrivate_rngs,
