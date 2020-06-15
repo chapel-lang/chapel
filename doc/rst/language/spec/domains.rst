@@ -341,7 +341,7 @@ the indices does not match a compiler error will be issued.
 
       *Future*
       
-      Due to implementation of == over arrays it is currently not possible
+      Due to implementation of ``==`` over arrays it is currently not possible
       to use arrays as indices within an associative domain.
 
 ..
@@ -883,7 +883,7 @@ The methods in this subsection can be applied to any domain.
 
 Resets this domain’s index set to the empty set.
 
-   *Example (clearAssociativeDomain)*.
+*Example (clearAssociativeDomain)*.
 
    This function provides a way to produce an empty associative domain.
 
@@ -910,7 +910,7 @@ Resets this domain’s index set to the empty set.
 
 Returns the domain map that implements this domain
 
-   *Example (getDomainMap)*.
+*Example (getDomainMap)*.
 
    In the code 
 
@@ -937,47 +937,47 @@ Returns the domain map that implements this domain
 
 .. function:: proc domain.idxType type
 
-Returns the domain type’s ``idxType``.
+   Returns the domain type’s ``idxType``.
 
 
 
 .. function:: proc domain.indexOrder(i: index(domain)): idxType
 
-If ``i`` is a member of the domain, returns the ordinal value of ``i``
-using a total ordering of the domain’s indices using 0-based indexing.
-Otherwise, it returns ``(-1):idxType``. For rectangular domains, this
-ordering will be based on a row-major ordering of the indices; for other
-domains, the ordering may be implementation-defined and unstable as
-indices are added and removed from the domain.
+   If ``i`` is a member of the domain, returns the ordinal value of ``i``
+   using a total ordering of the domain’s indices using 0-based indexing.
+   Otherwise, it returns ``(-1):idxType``. For rectangular domains, this
+   ordering will be based on a row-major ordering of the indices; for other
+   domains, the ordering may be implementation-defined and unstable as
+   indices are added and removed from the domain.
 
 
 
 .. function:: proc isIrregularDom(d: domain) param
 
-Returns a param ``true`` if the given domain is irregular, false
-otherwise.
+   Returns a param ``true`` if the given domain is irregular, false
+   otherwise.
 
 
 
 .. function:: proc isRectangularDom(d: domain) param
 
-Returns a param ``true`` if the given domain is rectangular, false
-otherwise.
+   Returns a param ``true`` if the given domain is rectangular, false
+   otherwise.
 
 
 
 .. function:: proc isSparseDom(d: domain) param
 
-Returns a param ``true`` if the given domain is sparse, false otherwise.
+   Returns a param ``true`` if the given domain is sparse, false otherwise.
 
 
 
 .. function:: proc domain.member(i)
 
-Returns true if the given index ``i`` is a member of this domain’s index
-set, and false otherwise.
+   Returns true if the given index ``i`` is a member of this domain’s index
+   set, and false otherwise.
 
-   *Open issue*.
+*Open issue*.
 
    We would like to call the type of i above idxType, but it’s not true
    for rectangular domains. That observation provides some motivation to
@@ -996,28 +996,28 @@ domains only.
 
 .. function:: proc domain.dim(d: int): range
 
-Returns the range of indices described by dimension ``d`` of the domain,
-where ``d`` is a value from ``0`` to ``rank-1``.
+   Returns the range of indices described by dimension ``d`` of the domain,
+   where ``d`` is a value from ``0`` to ``rank-1``.
 
-   *Example*.
+*Example*.
 
-   The code:
+The code:
 
-   .. code-block:: chapel
+.. code-block:: chapel
 
-      for i in D.dim(0) do
-        for j in D.dim(1) do
-          writeln(A(i,j));
+   for i in D.dim(0) do
+      for j in D.dim(1) do
+         writeln(A(i,j));
 
-   iterates over the indices of a dense 2D domain ``D`` using two
-   nested loops, one per dimension.
+iterates over the indices of a dense 2D domain ``D`` using two
+nested loops, one per dimension.
 
 
 
 
 .. function:: proc domain.dims(): rank*range
 
-Returns a tuple of ranges describing the dimensions of the domain.
+   Returns a tuple of ranges describing the dimensions of the domain.
 
 
 
@@ -1067,27 +1067,27 @@ the dimension; if positive, compute the interior from the high bound.
 
 .. function:: proc domain.low: index(domain)
 
-Returns the low index of the domain as a value of the domain’s index
-type.
+   Returns the low index of the domain as a value of the domain’s index
+   type.
 
 
 
 .. function:: proc domain.rank param : int
 
-Returns the rank of the domain.
+   Returns the rank of the domain.
 
 
 
 .. function:: proc domain.size: capType
 
-Returns the number of indices in the domain as a value of the capacity
-type.
+   Returns the number of indices in the domain as a value of the capacity
+   type.
 
 
 
 .. function:: proc domain.stridable param : bool
 
-Returns whether or not the domain is stridable.
+   Returns whether or not the domain is stridable.
 
 
 
@@ -1129,27 +1129,27 @@ a member of that domain, it is ignored.
 
 .. function:: proc +(d1: domain, d2: domain)
 
-Merges the index sets of the two domain arguments.
+   Merges the index sets of the two domain arguments.
 
 
 
 .. function:: proc -(d: domain, i: index(d))
 
-Removes the given index from the given domain. It is an error if the
-domain does not contain the given index.
+   Removes the given index from the given domain. It is an error if the
+   domain does not contain the given index.
 
 
 
 .. function:: proc -(d1: domain, d2: domain)
 
-Removes the indices in domain ``d2`` from those in ``d1``. It is an
-error if ``d2`` contains indices which are not also in ``d1``.
+   Removes the indices in domain ``d2`` from those in ``d1``. It is an
+   error if ``d2`` contains indices which are not also in ``d1``.
 
 
 
 .. function:: proc requestCapacity(s: int)
 
-Resizes the domain internal storage to hold at least ``s`` indices.
+   Resizes the domain internal storage to hold at least ``s`` indices.
 
 .. [3]
    This is also known as row-major ordering.

@@ -1166,44 +1166,44 @@ Predefined Functions and Methods on Tuples
 
 .. function:: proc tuple.size param
 
-Returns the size of the tuple.
+   Returns the size of the tuple.
 
 
 .. function:: proc tuple.indices
 
-Returns the range ``1..this.size`` representing the indices that are
-legal for indexing into the tuple.
+   Returns the range ``1..this.size`` representing the indices that are
+   legal for indexing into the tuple.
 
 
 .. function:: proc isHomogeneousTuple(t: tuple) param
 
-Returns true if ``t`` is a homogeneous tuple; otherwise false.
+   Returns true if ``t`` is a homogeneous tuple; otherwise false.
 
 
 
 .. function:: proc isTuple(t: tuple) param
 
-Returns true if ``t`` is a tuple; otherwise false.
+   Returns true if ``t`` is a tuple; otherwise false.
 
 
 
 .. function:: proc isTupleType(type t) param
 
-Returns true if ``t`` is a tuple of types; otherwise false.
+   Returns true if ``t`` is a tuple of types; otherwise false.
 
 
 
 .. function:: proc max(type t) where isTupleType(t)
 
-Returns a tuple of type ``t`` with each component set to the maximum
-value that can be stored in its position.
+   Returns a tuple of type ``t`` with each component set to the maximum
+   value that can be stored in its position.
 
 
 
 .. function:: proc min(type t) where isTupleType(t)
 
-Returns a tuple of type ``t`` with each component set to the minimum
-value that can be stored in its position.
+   Returns a tuple of type ``t`` with each component set to the minimum
+   value that can be stored in its position.
 
 
 

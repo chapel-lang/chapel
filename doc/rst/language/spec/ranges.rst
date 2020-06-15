@@ -955,19 +955,19 @@ Range Type Parameters
 
 .. function:: proc range.boundedType : BoundedRangeType
 
-Returns the ``boundedType`` parameter of the range’s type.
+   Returns the ``boundedType`` parameter of the range’s type.
 
 
 
 .. function:: proc range.idxType : type
 
-Returns the ``idxType`` parameter of the range’s type.
+   Returns the ``idxType`` parameter of the range’s type.
 
 
 
 .. function:: proc range.stridable : bool
 
-Returns the ``stridable`` parameter of the range’s type.
+   Returns the ``stridable`` parameter of the range’s type.
 
 .. _Range_Properties:
 
@@ -988,16 +988,16 @@ can be examined, for example, by iterating over the range in a for loop
 
 .. function:: proc range.aligned : bool
 
-Reports whether the range’s alignment is unambiguous.
+   Reports whether the range’s alignment is unambiguous.
 
 
 
 .. function:: proc range.alignedHigh : idxType
 
-Returns the range’s aligned high bound. If the aligned high bound is
-undefined (does not exist), the behavior is undefined.
+   Returns the range’s aligned high bound. If the aligned high bound is
+   undefined (does not exist), the behavior is undefined.
 
-   *Example (alignedHigh.chpl)*.
+*Example (alignedHigh.chpl)*.
 
    The following code: 
 
@@ -1016,94 +1016,94 @@ undefined (does not exist), the behavior is undefined.
 
 .. function:: proc range.alignedLow : idxType
 
-Returns the range’s aligned low bound. If the aligned low bound is
-undefined (does not exist), the behavior is undefined.
+   Returns the range’s aligned low bound. If the aligned low bound is
+   undefined (does not exist), the behavior is undefined.
 
 
 
 .. function:: proc range.alignment : idxType
 
-Returns the range’s alignment. If the alignment is ambiguous, the
-behavior is undefined. See also ``aligned``.
+   Returns the range’s alignment. If the alignment is ambiguous, the
+   behavior is undefined. See also ``aligned``.
 
 
 
 .. function:: proc range.first : idxType
 
-Returns the range’s first index. If the range has no first index, the
-behavior is undefined. See also ``hasFirst``.
+   Returns the range’s first index. If the range has no first index, the
+   behavior is undefined. See also ``hasFirst``.
 
 
 
 .. function:: proc range.hasFirst(): bool
 
-Reports whether the range has the first index.
+   Reports whether the range has the first index.
 
 
 
 .. function:: proc range.hasHighBound() param: bool
 
-Reports whether the range’s high bound is *not* +\ :math:`\infty`.
+   Reports whether the range’s high bound is *not* +\ :math:`\infty`.
 
 
 
 .. function:: proc range.hasLast(): bool
 
-Reports whether the range has the last index.
+   Reports whether the range has the last index.
 
 
 
 .. function:: proc range.hasLowBound() param: bool
 
-Reports whether the range’s low bound is *not* -:math:`\infty`.
+   Reports whether the range’s low bound is *not* -:math:`\infty`.
 
 
 
 .. function:: proc range.high : idxType
 
-Returns the range’s high bound. If the high bound is +\ :math:`\infty`,
-the behavior is undefined. See also ``hasHighBound``.
+   Returns the range’s high bound. If the high bound is +\ :math:`\infty`,
+   the behavior is undefined. See also ``hasHighBound``.
 
 
 
 .. function:: proc range.isAmbiguous(): bool
 
-Reports whether the range is ambiguously aligned.
+   Reports whether the range is ambiguously aligned.
 
 
 
 .. function:: proc range.last : idxType
 
-Returns the range’s last index. If the range has no last index, the
-behavior is undefined. See also ``hasLast``.
+   Returns the range’s last index. If the range has no last index, the
+   behavior is undefined. See also ``hasLast``.
 
 
 
 .. function:: proc range.length : idxType
 
-Returns the number of indices in the range’s represented sequence. If
-the represented sequence is infinite or is undefined, an error is
-generated.
+   Returns the number of indices in the range’s represented sequence. If
+   the represented sequence is infinite or is undefined, an error is
+   generated.
 
 
 
 .. function:: proc range.low : idxType
 
-Returns the range’s low bound. If the low bound is -:math:`\infty`, the
-behavior is undefined. See also ``hasLowBound``.
+   Returns the range’s low bound. If the low bound is -:math:`\infty`, the
+   behavior is undefined. See also ``hasLowBound``.
 
 
 
 .. function:: proc range.size : idxType
 
-Same as :math:`range`.length.
+   Same as :math:`range`.length.
 
 
 
 .. function:: proc range.stride : int(numBits(idxType))
 
-Returns the range’s stride. This will never return 0. If the range is
-not stridable, this will always return 1.
+   Returns the range’s stride. This will never return 0. If the range is
+   not stridable, this will always return 1.
 
 .. _Range_Queries:
 
@@ -1114,29 +1114,29 @@ Other Queries
 
 .. function:: proc range.boundsCheck(r2: range(?)): bool
 
-Returns ``false`` if either range is ambiguously aligned. Returns
-``true`` if range ``r2`` lies entirely within this range and ``false``
-otherwise.
+   Returns ``false`` if either range is ambiguously aligned. Returns
+   ``true`` if range ``r2`` lies entirely within this range and ``false``
+   otherwise.
 
 
 
 .. function:: proc ident(r1: range(?), r2: range(?)): bool
 
-Returns ``true`` if the two ranges are the same in every respect: i.e.
-the two ranges have the same ``idxType``, ``boundedType``,
-``stridable``, ``low``, ``high``, ``stride`` and ``alignment`` values.
+   Returns ``true`` if the two ranges are the same in every respect: i.e.
+   the two ranges have the same ``idxType``, ``boundedType``,
+   ``stridable``, ``low``, ``high``, ``stride`` and ``alignment`` values.
 
 
 
 .. function:: proc range.indexOrder(i: idxType): idxType
 
-If ``i`` is a member of the range’s represented sequence, returns an
-integer giving the ordinal index of ``i`` within the sequence using
-0-based indexing. Otherwise, returns ``(-1):idxType``. It is an error to
-invoke ``indexOrder`` if the represented sequence is not defined or the
-range does not have the first index.
+   If ``i`` is a member of the range’s represented sequence, returns an
+   integer giving the ordinal index of ``i`` within the sequence using
+   0-based indexing. Otherwise, returns ``(-1):idxType``. It is an error to
+   invoke ``indexOrder`` if the represented sequence is not defined or the
+   range does not have the first index.
 
-   *Example*.
+*Example*.
 
    The following calls show the order of index 4 in each of the given
    ranges: 
@@ -1153,17 +1153,17 @@ range does not have the first index.
 
 .. function:: proc range.member(i: idxType): bool
 
-Returns ``true`` if the range’s represented sequence contains ``i``,
-``false`` otherwise. It is an error to invoke ``member`` if the
-represented sequence is not defined.
+   Returns ``true`` if the range’s represented sequence contains ``i``,
+   ``false`` otherwise. It is an error to invoke ``member`` if the
+   represented sequence is not defined.
 
 
 
 .. function:: proc range.member(other: range): bool
 
-Reports whether ``other`` is a subrange of the receiver. That is, if the
-represented sequences of the receiver and ``other`` are defined and the
-receiver’s sequence contains all members of the ``other``\ ’s sequence.
+   Reports whether ``other`` is a subrange of the receiver. That is, if the
+   represented sequences of the receiver and ``other`` are defined and the
+   receiver’s sequence contains all members of the ``other``\ ’s sequence.
 
 .. _Range_Transformations:
 
@@ -1174,80 +1174,80 @@ Range Transformations
 
 .. function:: proc range.alignHigh()
 
-Sets the high bound of this range to its aligned high bound, if it is
-defined. Generates an error otherwise.
+   Sets the high bound of this range to its aligned high bound, if it is
+   defined. Generates an error otherwise.
 
 
 
 .. function:: proc range.alignLow()
 
-Sets the low bound of this range to its aligned low bound, if it is
-defined. Generates an error otherwise.
+   Sets the low bound of this range to its aligned low bound, if it is
+   defined. Generates an error otherwise.
 
 
 
 .. function:: proc range.expand(i: idxType)
 
-Returns a new range whose bounds are extended by :math:`i` units on each
-end. If :math:`i <
-0` then the resulting range is contracted by its absolute value. In
-symbols, given that the operand range is represented by the tuple
-:math:`(l,h,s,a)`, the result is :math:`(l-i,h+i,s,a)`. The stride and
-alignment of the original range are preserved. If the operand range is
-ambiguously aligned, then so is the resulting range.
+   Returns a new range whose bounds are extended by :math:`i` units on each
+   end. If :math:`i <
+   0` then the resulting range is contracted by its absolute value. In
+   symbols, given that the operand range is represented by the tuple
+   :math:`(l,h,s,a)`, the result is :math:`(l-i,h+i,s,a)`. The stride and
+   alignment of the original range are preserved. If the operand range is
+   ambiguously aligned, then so is the resulting range.
 
 
 
 .. function:: proc range.exterior(i: idxType)
 
-Returns a new range containing the indices just outside the low or high
-bound of the range (low if :math:`i < 0` and high otherwise). The stride
-and alignment of the original range are preserved. Let the operand range
-be denoted by the tuple :math:`(l,h,s,a)`. Then:
+   Returns a new range containing the indices just outside the low or high
+   bound of the range (low if :math:`i < 0` and high otherwise). The stride
+   and alignment of the original range are preserved. Let the operand range
+   be denoted by the tuple :math:`(l,h,s,a)`. Then:
 
--  if :math:`i < 0`, the result is :math:`(l+i,l-1,s,a)`,
+   -  if :math:`i < 0`, the result is :math:`(l+i,l-1,s,a)`,
 
--  if :math:`i > 0`, the result is :math:`(h+1,h+i,s,a)`, and
+   -  if :math:`i > 0`, the result is :math:`(h+1,h+i,s,a)`, and
 
--  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
+   -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
 
-If the operand range is ambiguously aligned, then so is the resulting
-range.
+   If the operand range is ambiguously aligned, then so is the resulting
+   range.
 
 
 
 .. function:: proc range.interior(i: idxType)
 
-Returns a new range containing the indices just inside the low or high
-bound of the range (low if :math:`i < 0` and high otherwise). The stride
-and alignment of the original range are preserved. Let the operand range
-be denoted by the tuple :math:`(l,h,s,a)`. Then:
+   Returns a new range containing the indices just inside the low or high
+   bound of the range (low if :math:`i < 0` and high otherwise). The stride
+   and alignment of the original range are preserved. Let the operand range
+   be denoted by the tuple :math:`(l,h,s,a)`. Then:
 
--  if :math:`i < 0`, the result is :math:`(l,l-(i-1),s,a)`,
+   -  if :math:`i < 0`, the result is :math:`(l,l-(i-1),s,a)`,
 
--  if :math:`i > 0`, the result is :math:`(h-(i-1),h,s,a)`, and
+   -  if :math:`i > 0`, the result is :math:`(h-(i-1),h,s,a)`, and
 
--  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
+   -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
 
-This differs from the behavior of the count operator, in that
-``interior()`` preserves the alignment, and it uses the low and high
-bounds rather than ``first`` and ``last`` to establish the bounds of the
-resulting range. If the operand range is ambiguously aligned, then so is
-the resulting range.
+   This differs from the behavior of the count operator, in that
+   ``interior()`` preserves the alignment, and it uses the low and high
+   bounds rather than ``first`` and ``last`` to establish the bounds of the
+   resulting range. If the operand range is ambiguously aligned, then so is
+   the resulting range.
 
 
 .. _Range_Offset_Method:
 
 .. function:: proc range.offset(n: idxType)
 
-Returns a new range whose alignment is this range’s first index plus
-``n``. The new alignment, therefore, is not ambiguous. If the range has
-no first index, a run-time error is generated.
+   Returns a new range whose alignment is this range’s first index plus
+   ``n``. The new alignment, therefore, is not ambiguous. If the range has
+   no first index, a run-time error is generated.
 
 
 
 .. function:: proc range.translate(i: integral)
 
-Returns a new range with its ``low``, ``high`` and ``alignment`` values
-adjusted by :math:`i`. The ``stride`` value is preserved. If the range’s
-alignment is ambiguous, the behavior is undefined.
+   Returns a new range with its ``low``, ``high`` and ``alignment`` values
+   adjusted by :math:`i`. The ``stride`` value is preserved. If the range’s
+   alignment is ambiguous, the behavior is undefined.

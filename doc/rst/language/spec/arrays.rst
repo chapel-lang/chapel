@@ -984,8 +984,6 @@ There is an expectation that this list of predefined methods will grow.
 
 
 
-.. function k:: chapel
-
-   	 proc Array.size: this.domain.idxType
+.. function :: proc Array.size: this.domain.idxType
 
 Returns the number of elements in the array.
