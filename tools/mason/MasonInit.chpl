@@ -94,44 +94,25 @@ proc masonInit(args) throws {
         // check if Mason.toml file and src/moduleFile is present
         var isMasonTomlPresent = false;
         var isSrcPresent = false;
-        var moduleName: string;
         if isFile('./Mason.toml') then isMasonTomlPresent = true;
         if isDir('./src') then isSrcPresent = true;
         // parse values from TOML File && module file
-        var defaultPackageName: string;
-        var defaultVersion: string;
-        var defaultChplVersion: string;
-        if isMasonTomlPresent {
-          const toParse = open("./Mason.toml", iomode.r);
-          const tomlFile = owned.create(parseToml(toParse));
-          if tomlFile.pathExists("brick.name") then
-            defaultPackageName = tomlFile["brick"]!["name"]!.s;
-          if tomlFile.pathExists("brick.version") then
-            defaultVersion = tomlFile["brick"]!["version"]!.s;
-          if tomlFile.pathExists("brick.chplVersion") then
-            defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
-        }
-        if isSrcPresent {
-          var file: string = listdir("./src");
-          moduleName = file;
-        }
+        var defaultPackageName, defaultVersion, defaultChplVersion, moduleName: string;
+        if isMasonTomlPresent then
+          (defaultPackageName, defaultVersion, defaultChplVersion) = readPartialManifest();
+        if isSrcPresent then 
+          moduleName = readPartialSrc();
        // begin interactive session and get values input by user
-        var newPackageName, newVersion, newChplVersion: string;
         var result = beginInteractiveSession(defaultPackageName, defaultVersion, defaultChplVersion);
-        newPackageName = result[0];
-        newVersion = result[1];
-        newChplVersion = result[2];
-        // overwrite Toml File
+        const newPackageName = result[0],
+              newVersion = result[1],
+              newChplVersion = result[2];
+        // validate Mason.toml file 
         validateMasonFile('.', newPackageName, show);
         isMasonTomlPresent = true;
-        if isMasonTomlPresent {
-          if newPackageName != defaultPackageName then
-            overwriteTomlValue("name", newPackageName);
-          if newVersion != defaultVersion then
-            overwriteTomlValue("version", newVersion);
-          if newChplVersion != defaultChplVersion then
-            overwriteTomlValue("chplVersion", newChplVersion);
-        }
+        // overwrite to update existing values in Mason.toml
+        overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
+          newVersion, newChplVersion, defaultPackageName, defaultVersion, defaultChplVersion);
         if newPackageName + '.chpl' != moduleName {
           if isFile('./src/' + moduleName) then remove('src/' + moduleName);
         }
@@ -167,13 +148,41 @@ proc masonInit(args) throws {
   }
 }
 
-/* Overwrites specified value in Mason.toml file */
-proc overwriteTomlValue(key, value) {
+// Overwrites values of existing Mason.toml file
+proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion, 
+    newChplVersion, defaultPackageName, defaultVersion, defaultChplVersion) {
   const tomlPath = "./Mason.toml";
   const toParse = open(tomlPath, iomode.r);
   const tomlFile = owned.create(parseToml(toParse));
-  tomlFile["brick"]!.set(key, value);
+  if isMasonTomlPresent {
+    if newPackageName != defaultPackageName then
+      tomlFile["brick"]!.set("name", newPackageName);
+    if newVersion != defaultVersion then
+      tomlFile["brick"]!.set("version", newVersion);
+    if newChplVersion != defaultChplVersion then
+      tomlFile["brick"]!.set("chplVersion", newChplVersion); 
+  }
   generateToml(tomlFile, tomlPath);
+}
+
+// Returns the name of the moduleFile in src/
+proc readPartialSrc(){
+  const file: string = listdir("./src");
+  return file;
+}
+
+// Returns default values from existing Mason.toml file
+proc readPartialManifest() {
+  var defaultPackageName, defaultVersion, defaultChplVersion: string;
+  const toParse = open("./Mason.toml", iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  if tomlFile.pathExists("brick.name") then
+    defaultPackageName = tomlFile["brick"]!["name"]!.s;
+  if tomlFile.pathExists("brick.version") then
+    defaultVersion = tomlFile["brick"]!["version"]!.s;
+  if tomlFile.pathExists("brick.chplVersion") then
+    defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
+  return (defaultPackageName, defaultVersion, defaultChplVersion);
 }
 
 /*
