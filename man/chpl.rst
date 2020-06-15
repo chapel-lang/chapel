@@ -290,6 +290,17 @@ OPTIONS
     Enable [disable] analysis to infer local fields in classes and records
     (experimental)
 
+**--[no-]auto-local-access**
+
+    Enable [disable] analysis to use `localAccess` instead of regular array
+    access in forall loops. Controls both static and dynamic analysis, where the
+    latter may incur some compilation and runtime overheads.
+
+**--[no-]auto-local-access-dynamic**
+
+    Enable [disable] dynamic analysis to use `localAccess` instead of regular
+    array access in forall loops.
+
 *Run-time Semantic Check Options* 
 
 **--[no-]checks**
