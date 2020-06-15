@@ -511,7 +511,7 @@ static CallExpr *addStaticCheckSymsToDynamicCond(ForallStmt *forall,
       CallExpr *allChecks = new CallExpr("||", staticCheckSyms[0],
                                                staticCheckSyms[1]);
 
-      for (ssize_t i = 2 ; i < staticCheckSyms.size() ; i++) {
+      for (size_t i = 2 ; i < staticCheckSyms.size() ; i++) {
         allChecks = new CallExpr("||", staticCheckSyms[i], allChecks);
       }
       ret = new CallExpr("&&", allChecks, dynamicCond);
