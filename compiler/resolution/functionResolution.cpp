@@ -2645,6 +2645,11 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
+
+  // Find different insert point if ctx isn't in a list
+  if (ctx->list == NULL)
+    ctx = ctx->parentSymbol->defPoint;
+
   ctx->insertAfter(typeCall);
   resolveCall(typeCall);
   Type* ret = typeCall->typeInfo();
