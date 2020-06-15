@@ -30,6 +30,7 @@
 module Map {
   import ChapelLocks;
   private use HaltWrappers;
+  private use ChapelHashtable;
 
   // Lock code lifted from modules/standard/Lists.chpl.
   // Maybe they should be combined into a Locks module.
@@ -70,10 +71,7 @@ module Map {
     param parSafe = false;
 
     pragma "no doc"
-    var myKeys: domain(keyType, parSafe=parSafe);
-    pragma "no doc"
-    var vals: [myKeys] checkForNonNilableClass(valType);
-
+    var table: chpl__hashtable(keyType, valType);
 
     pragma "no doc"
     var _lock$ = if parSafe then new _LockWrapper() else none;
@@ -165,9 +163,9 @@ module Map {
 
       this.complete();
 
-      for key in other {
-        myKeys += key;
-        vals[key] = other.vals[key];
+      for key in other.keys() {
+        var (_, slot) = table.findAvailableSlot(key);
+        table.fillSlot(slot, key, other.table.table[slot].val);
       }
     }
 
@@ -180,18 +178,20 @@ module Map {
         references to the elements contained in this map.
     */
     proc clear() {
-      _enter();
-      myKeys.clear();
-      _leave();
+      _enter(); defer _leave();
+      for slot in table.allSlots() {
+        var key: keyType;
+        var val: valType;
+        table.clearSlot(slot, key, val);
+      }
     }
 
     /*
       The current number of keys contained in this map.
     */
     inline proc const size {
-      _enter();
-      var result = myKeys.size;
-      _leave();
+      _enter(); defer _leave();
+      var result = table.tableNumFullSlots;
       return result;
     }
 
@@ -216,9 +216,8 @@ module Map {
       :rtype: `bool`
     */
     proc const contains(const k: keyType): bool {
-      _enter();
-      var result = myKeys.contains(k);
-      _leave();
+      _enter(); defer _leave();
+      var (result, _) = table.findFullSlot(k);
       return result;
     }
 
@@ -230,13 +229,11 @@ module Map {
       :type m: map(keyType, valType)
     */
     proc update(const ref m: map(keyType, valType, parSafe)) {
-      _enter();
-      for key in m {
-        if !myKeys.contains(key) then
-          myKeys += key;
-        vals[key] = m.vals[key];
+      _enter(); defer _leave();
+      for key in m.keys() {
+        var (_, slot) = table.findAvailableSlot(key);
+        table.fillSlot(slot, key, m.table.table[slot].val);
       }
-      _leave();
     }
 
     /*
@@ -249,40 +246,36 @@ module Map {
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref where !isNonNilableClass(valType) {
-      _enter();
+      _enter(); defer _leave();
 
       // TODO: optimize this to avoid looking up the slot multiple times
-      if myKeys.contains(k) {
-        ref result = vals[k];
-        _leave();
-        return result;
-      } else {
-        myKeys += k; // default initialize the element
-        ref result = vals[k];
-        _leave();
-        return result;
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        var val: valType;
+        table.fillSlot(slot, k, val);
       }
+      return table.table[slot].val;
     }
 
     pragma "no doc"
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
         boundsCheckHalt("map index " + k:string + " out of bounds");
-      const result = vals[k];
-      _leave();
+      const result = table.table[slot].val;
       return result;
     }
 
     pragma "no doc"
     proc const this(k: keyType) const ref
     where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
         halt("map index ", k, " out of bounds");
-      const ref result = vals[k];
-      _leave();
+      const ref result = table.table[slot].val;
       return result;
     }
 
@@ -296,12 +289,12 @@ module Map {
     /* Get a borrowed reference to the element at position `k`.
      */
     proc getBorrowed(k: keyType) where isClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
         boundsCheckHalt("map index " + k:string + " out of bounds");
       try! {
-        var result = vals[k].borrow();
-        _leave();
+        var result = table.table[slot].val.borrow();
         if isNonNilableClass(valType) {
           return result!;
         } else {
@@ -315,24 +308,22 @@ module Map {
      */
     proc getReference(k: keyType) ref
     where !isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
         boundsCheckHalt("map index " + k:string + " out of bounds");
-      try! {
-        ref result = vals[k];
-        _leave();
-        return result;
-      }
+      ref result = table.table[slot].val;
+      return result;
     }
 
     proc getValue(k: keyType) const
     where isNonNilableClass(valType) {
-      _enter();
-      if !myKeys.contains(k) then
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
         boundsCheckHalt("map index " + k:string + " out of bounds");
       try! {
-        const result = vals[k]: valType;
-        _leave();
+        const result = table.table[slot].val: valType;
         return result;
       }
     }
@@ -340,13 +331,13 @@ module Map {
     /* Remove the element at position `k` from the map and return its value
      */
     proc getAndRemove(k: keyType) {
-      _enter();
-      if !myKeys.contains(k) then
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
         boundsCheckHalt("map index " + k:string + " out of bounds");
       try! {
-        const ref result = vals[k]: valType;
-        myKeys.remove(k);
-        _leave();
+        var result: valType, key: keyType;
+        table.clearSlot(slot, key, result);
         return result: valType;
       }
     }
@@ -368,8 +359,9 @@ module Map {
       :yields: A reference to one of the keys contained in this map.
     */
     iter keys() const ref {
-      for key in myKeys {
-        yield key;
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) then
+          yield table.table[slot].key;
       }
     }
 
@@ -380,16 +372,22 @@ module Map {
                this map.
     */
     iter items() const ref {
-      for key in myKeys {
-        yield (key, vals[key]);
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) {
+          ref tabEntry = table.table[slot];
+          yield (tabEntry.key, tabEntry.val);
+        }
       }
     }
 
     pragma "no doc"
     iter items() const ref where isNonNilableClass(valType) {
       try! {
-        for key in myKeys {
-          yield (key, vals[key]: valType);
+        for slot in table.allSlots() {
+          if table.isSlotFull(slot) {
+            ref tabEntry = table.table[slot];
+            yield (tabEntry.key, tabEntry.val: valType);
+          }
         }
       }
     }
@@ -401,16 +399,18 @@ module Map {
     */
     iter values() ref
     where !isNonNilableClass(valType) {
-      for val in vals {
-        yield val;
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) then
+          yield table.table[slot].val;
       }
     }
 
     pragma "no doc"
     iter values() const where isNonNilableClass(valType) {
       try! {
-        for val in vals {
-          yield val: valType;
+        for slot in table.allSlots() {
+          if table.isSlotFull(slot) then
+            yield table.table[slot].val: valType;
         }
       }
     }
@@ -425,21 +425,21 @@ module Map {
       :arg ch: A channel to write to.
     */
     proc readWriteThis(ch: channel) throws {
-      _enter();
+      _enter(); defer _leave();
       var first = true;
-      //try! {
-        ch <~> "{";
-        for key in myKeys {
+      ch <~> "{";
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) {
           if first {
             first = false;
           } else {
             ch <~> ", ";
           }
-          ch <~> key <~> ": " <~> vals[key];
+          ref tabEntry = table.table[slot];
+          ch <~> tabEntry.key <~> ": " <~> tabEntry.val;
         }
-        ch <~> "}";
-      //}
-      _leave();
+      }
+      ch <~> "}";
     }
 
     /*
@@ -457,16 +457,14 @@ module Map {
      :rtype: bool
     */
     proc add(in k: keyType, in v: valType): bool lifetime this < v {
-      _enter();
-      if myKeys.contains(k) {
-        _leave();
+      _enter(); defer _leave();
+      var (found, slot) = table.findAvailableSlot(k);
+      if found {
         return false;
       }
 
-      myKeys += k;
-      vals[k] = v;
+      table.fillSlot(slot, k, v);
 
-      _leave();
       return true;
     }
 
@@ -486,15 +484,14 @@ module Map {
      :rtype: bool
     */
     proc set(k: keyType, in v: valType): bool {
-      _enter();
-      if !myKeys.contains(k) {
-        _leave();
+      _enter(); defer _leave();
+      var (found, slot) = table.findAvailableSlot(k);
+      if !found {
         return false;
       }
 
-      vals[k] = v;
+      table.fillSlot(slot, k, v);
 
-      _leave();
       return true;
     }
 
@@ -503,30 +500,27 @@ module Map {
        `k`, update it to the value `v`.
      */
     proc addOrSet(in k: keyType, in v: valType) {
-      if myKeys.contains(k) {
-        this.set(k, v);
-      } else {
-        this.add(k, v);
-      }
+      _enter(); defer _leave();
+      var (found, slot) = findAvailableSlot(k);
+      table.fillSlot(slot, k, v);
     }
 
     /*
       Removes a key-value pair from the map, with the given key.
       
      :arg k: The key to remove from the map
-     :type k: keyType
 
      :returns: `false` if `k` was not in the map.  `true` if it was and removed.
      :rtype: bool
     */
     proc remove(k: keyType): bool {
-      _enter();
-      if !myKeys.contains(k) {
-        _leave();
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found {
         return false;
       }
-      myKeys -= k;
-      _leave();
+      var outKey: keyType, outVal: valType;
+      table.clearSlot(slot, outKey, outVal);
       return true;
     }
 
@@ -538,12 +532,13 @@ module Map {
       :rtype: [] (keyType, valType)
     */
     proc toArray(): [] (keyType, valType) {
-      _enter();
-      var A: [0..#myKeys.size] (keyType, valType);
-      for (a, key) in zip(A, myKeys) {
-        a = (key, vals[key]);
+      _enter(); defer _leave();
+      var A: [0..#size] (keyType, valType);
+
+      for (a, item) in zip(A, items()) {
+        a = item;
       }
-      _leave();
+
       return A;
     }
 
@@ -555,12 +550,11 @@ module Map {
       :rtype: [] keyType
     */
     proc keysToArray(): [] keyType {
-      _enter();
-      var A: [0..#myKeys.size] keyType;
-      for (a, k) in zip(A, myKeys) {
+      _enter(); defer _leave();
+      var A: [0..#size] keyType;
+      for (a, k) in zip(A, keys()) {
         a = k;
       }
-      _leave();
       return A;
     }
 
@@ -572,12 +566,11 @@ module Map {
       :rtype: [] valType
     */
     proc valuesToArray(): [] valType {
-      _enter();
-      var A: [0..#vals.size] valType;
-      for (a, v) in zip(A, vals) {
+      _enter(); defer _leave();
+      var A: [0..#size] valType;
+      for (a, v) in zip(A, values()) {
         a = v;
       }
-      _leave();
       return A;
     }
   } // end record map
@@ -595,9 +588,8 @@ module Map {
   */
   proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)){
     lhs.clear();
-
-    for key in rhs.myKeys {
-      lhs.add(key, rhs.vals[key]);
+    for key in rhs.keys() {
+      lhs.add(key, rhs[key]);
     }
   }
 
@@ -615,12 +607,12 @@ module Map {
     :rtype: `bool`
   */
   proc ==(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
-    for key in a {
-      if !b.contains(key) || a.vals[key] != b.vals[key] then
+    for key in a.keys() {
+      if !b.contains(key) || a[key] != b[key] then
         return false;
     }
-    for key in b {
-      if !a.contains(key) || a.vals[key] != b.vals[key] then
+    for key in b.keys() {
+      if !a.contains(key) || a[key] != b[key] then
         return false;
     }
     return true;
@@ -661,10 +653,9 @@ module Map {
   proc |(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.myKeys = a.myKeys | b.myKeys;
 
-    for k in b do newMap[k] = b.vals[k];
-    for k in a do newMap[k] = a.vals[k];
+    for k in a do newMap.add(k, a[k]);
+    for k in b do newMap.add(k, b[k]);
     return newMap;
   }
 
@@ -674,16 +665,20 @@ module Map {
   proc |=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
     // add keys/values from b to a if they weren't already in a
-    for k in b do a.add(k, b.vals[k]);
+    for k in b do a.add(k, b[k]);
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
   proc &(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.myKeys = a.myKeys & b.myKeys;
-
-    for k in newMap do newMap[k] = a.vals[k];
+    // TODO: This is a horrible way to do this. Fix it
+    for ak in a.keys() {
+      for bk in b.keys() {
+        if ak == bk then
+          newMap.add(ak, a[ak]);
+      }
+    }
     return newMap;
   }
 
@@ -700,9 +695,11 @@ module Map {
   proc -(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.myKeys = a.myKeys - b.myKeys;
 
-    for k in newMap do newMap[k] = a.vals[k];
+    for ak in a.keys() {
+      if !b.contains(ak) then
+        newMap[ak] = a[ak];
+    }
 
     return newMap;
   }
@@ -711,7 +708,7 @@ module Map {
      left-hand map, but not the right-hand map. */
   proc -=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
-    for k in a do
+    for k in a.keys() do
       if b.contains(k) then a.remove(k);
   }
 
@@ -720,12 +717,11 @@ module Map {
   proc ^(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
-    newMap.myKeys = a.myKeys ^ b.myKeys;
 
-    for k in a do
-      if !b.contains(k) then newMap[k] = a.vals[k];
+    for k in a.keys() do
+      if !b.contains(k) then newMap[k] = a[k];
     for k in b do
-      if !a.contains(k) then newMap[k] = b.vals[k];
+      if !a.contains(k) then newMap[k] = b[k];
     return newMap;
   }
 
@@ -733,9 +729,9 @@ module Map {
      left-hand map or the right-hand map, but not both. */
   proc ^=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
-    for k in b {
+    for k in b.keys() {
       if a.contains(k) then a.remove(k);
-      else a[k] = b.vals[k];
+      else a[k] = b[k];
     }
   }
 }
