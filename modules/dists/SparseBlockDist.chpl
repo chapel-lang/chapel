@@ -248,10 +248,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   // how to allocate a new array over this domain
   //
-  proc dsiBuildArray(type eltType) {
-    var arr = new unmanaged SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
-        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=_to_unmanaged(this));
-    arr.setup();
+  proc dsiBuildArray(type eltType, param initElts:bool) {
+    var arr = new unmanaged SparseBlockArr(eltType=eltType,
+                                           rank=rank,
+                                           idxType=idxType,
+                                           stridable=stridable,
+                                           sparseLayoutType=sparseLayoutType,
+                                           dom=_to_unmanaged(this));
+    arr.setup(initElts);
     return arr;
   }
 
@@ -325,6 +329,14 @@ class SparseBlockDom: BaseSparseDomImpl {
 
 }
 
+private proc getDefaultSparseDist(type sparseLayoutType) {
+  if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
+    return defaultDist;
+  } else {
+    return new dmap(new sparseLayoutType());
+  }
+}
+
 //
 // Local SparseBlock Domain Class
 //
@@ -339,8 +351,7 @@ class LocSparseBlockDom {
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) then defaultDist
-                   else new dmap(new sparseLayoutType()); //unresolved call workaround
+  var sparseDist = getDefaultSparseDist(sparseLayoutType);
   var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
   proc dsiAdd(ind: rank*idxType) {
@@ -396,26 +407,41 @@ class SparseBlockArr: BaseSparseArr {
     super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
     this.stridable = stridable;
     this.sparseLayoutType = sparseLayoutType;
-    locArrDom = dom.dist.targetLocDom;
+    this.locArrDom = dom.dist.targetLocDom;
   }
 
-  proc setup() {
+  proc setup(param initElts) {
     var thisid = this.locale.id;
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank, idxType,
-            stridable, sparseLayoutType, locDom);
+        locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank,
+                                                            idxType,
+                                                            stridable,
+                                                            sparseLayoutType,
+                                                            locDom,
+                                                            initElts=initElts);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
       }
     }
   }
 
-  override proc dsiDestroyArr() {
+  override proc dsiElementInitializationComplete() {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
-        delete locArr(localeIdx);
+        locArr(localeIdx)!.myElems.dsiElementInitializationComplete();
+      }
+    }
+  }
+
+  override proc dsiDestroyArr(param deinitElts:bool) {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on locArr(localeIdx) {
+        var arr = locArr(localeIdx);
+        if deinitElts then
+          _deinitElements(arr!.myElems);
+        delete arr;
       }
     }
   }
@@ -524,8 +550,33 @@ class LocSparseBlockArr {
   param stridable: bool;
   type sparseLayoutType;
   const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.mySparseBlock] eltType;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            type sparseLayoutType,
+            const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
+                                                      sparseLayoutType),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.sparseLayoutType = sparseLayoutType;
+    this.locDom = locDom;
+    this.myElems = locDom.mySparseBlock.buildArray(eltType, initElts=initElts);
+  }
+
+  proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
+  }
 
   proc dsiAccess(i) ref {
     return myElems[i];

@@ -28,6 +28,17 @@ forall (i,j) in D2 do
 writeln("A is: ", A);
 writeln("A2 is: ", A2);
 
+{
+  // check copy/move initialization of 2d array
+  var AA = A;
+  var AAA = AA;
+  assert(A.equals(AAA));
+
+  var AA2 = A2;
+  var AAA2 = AA2;
+  assert(A2.equals(AAA2));
+}
+
 forall ((i,j), a) in zip(D, A) do
   a = j + i/100.0;
 

@@ -1251,12 +1251,16 @@ static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
 // become a QUAL_VAL.
 //
 static void replaceRecordWrappedRefs() {
+
   std::vector<Symbol*> todo;
 
   // Changes reference fields with a record-wrapped type into value fields.
   // Note that this will modify arg bundle classes.
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
-    if (!aggType->symbol->hasFlag(FLAG_REF)) {
+
+    if (aggType->symbol->hasFlag(FLAG_REF)) {
+      // ignore the reference type itself
+    } else {
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();

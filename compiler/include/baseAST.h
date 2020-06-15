@@ -590,6 +590,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
       AST_CALL_LIST (_a, BlockStmt,    body,           call, __VA_ARGS__); \
       AST_CALL_CHILD(_a, BlockStmt,    blockInfoGet(), call, __VA_ARGS__); \
       AST_CALL_CHILD(_a, BlockStmt,    useList,        call, __VA_ARGS__); \
+      AST_CALL_CHILD(_a, BlockStmt,    modRefs,        call, __VA_ARGS__); \
       AST_CALL_CHILD(_a, BlockStmt,    byrefVars,      call, __VA_ARGS__); \
     }                                                                      \
     break;                                                                 \

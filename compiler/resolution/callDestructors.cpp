@@ -222,6 +222,10 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
 {
   ArgSymbol* formal = NULL;
 
+  // Do nothing if we already transformed this function
+  if (fn->hasFlag(FLAG_FN_RETARG))
+    return;
+
   if (fn->hasFlag(FLAG_TASK_FN_FROM_ITERATOR_FN) == false) {
     formal = addFormal(fn);
   }
@@ -238,6 +242,12 @@ void ReturnByRef::transformFunction(FnSymbol* fn)
     updateReturnStatement(fn);
     updateReturnType(fn);
   }
+
+  // Also transform coerceMove if we transform coerceCopy
+  // (since later in callDestructors we might replace coerceCopy with Move)
+  if (fn->name == astr_coerceCopy)
+    if (FnSymbol* coerceMove = getCoerceMoveFromCoerceCopy(fn))
+      transformFunction(coerceMove);
 }
 
 ArgSymbol* ReturnByRef::addFormal(FnSymbol* fn)
@@ -620,7 +630,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // Noakes 2017/03/04
   // Cannot use the qualified-type here.  The formal may be still a _ref(type)
   // and using a qualified-type generates yet another temp.
-  Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->type);
+  Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->getValType());
 
   FnSymbol* unaliasFn = NULL;
 
@@ -844,7 +854,7 @@ fixupDestructors() {
 
           INT_ASSERT(fct);
 
-          if (!isClass(fct)) {
+          if (!isClass(fct) && !field->hasFlag(FLAG_NO_AUTO_DESTROY)) {
             bool       useRefType = !isRecordWrappedType(fct);
             VarSymbol* tmp        = newTemp("_field_destructor_tmp_",
                                             useRefType ? fct->refType : fct);
@@ -1092,7 +1102,10 @@ static bool isCheckedModuleScopeVariable(VarSymbol* var) {
     if (mod && def->parentExpr == mod->block) {
       if (var->hasFlag(FLAG_TYPE_VARIABLE) == false &&
           var->hasFlag(FLAG_EXTERN) == false &&
-          var->type->symbol->hasFlag(FLAG_EXTERN) == false)
+          var->type->symbol->hasFlag(FLAG_EXTERN) == false &&
+          var->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) == false &&
+          var->hasFlag(FLAG_TEMP) == false && // for loop exprs->array types
+          var->isParameter() == false)
         return true;
     }
   }
@@ -1136,6 +1149,14 @@ bool GatherGlobalsReferredTo::enterFnSym(FnSymbol* fn) {
     // if the function symbol hasn't already been visited,
     // put it in the visited set and do the visiting.
     // do the analysis in the other visitors
+
+    // don't worry about 'halt' calling deinit functions
+    // or about functions opting out of this analysis.
+    // this helps with certain patters where globals are used in 'deinit'
+    if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM) ||
+        fn->hasFlag(FLAG_IGNORE_IN_GLOBAL_ANALYSIS))
+      return false;
+
     thisFunction = fn;
     calledThisFunction.clear();
     mentionedThisFunction.clear();
@@ -1445,16 +1466,17 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
     }
   }
 
+  CallExpr* checkCall = fCall ? fCall : call;
   // Then, check any called functions
-  if (checkIfCalledUsesInvalid(call, false)) {
+  if (checkIfCalledUsesInvalid(checkCall, false)) {
     for_vector (VarSymbol, var, errorGlobalVariables) {
-      USR_FATAL_CONT(call,
+      USR_FATAL_CONT(checkCall,
                      "module-scope variable '%s' may be used "
                      "before it is initialized",
                      var->name);
       printUseBeforeInitDetails(var);
     }
-    checkIfCalledUsesInvalid(call, true);
+    checkIfCalledUsesInvalid(checkCall, true);
   }
 
   // Then, note the variables initialized by the call
@@ -1562,6 +1584,7 @@ static void checkForErroneousInitCopies() {
             bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
                              callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
                              callInFn->hasFlag(FLAG_UNALIAS_FN) ||
+                             callInFn->hasFlag(FLAG_COERCE_FN) ||
                              (callInFn->hasFlag(FLAG_COPY_INIT) &&
                               callInFn->hasFlag(FLAG_COMPILER_GENERATED));
             if (inCopyIsh && !callInFn->hasFlag(FLAG_ERRONEOUS_COPY)) {
@@ -1586,26 +1609,27 @@ static void checkForErroneousInitCopies() {
           bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
                            callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
                            callInFn->hasFlag(FLAG_UNALIAS_FN) ||
+                           callInFn->hasFlag(FLAG_COERCE_FN) ||
                            (callInFn->hasFlag(FLAG_COPY_INIT) &&
                             callInFn->hasFlag(FLAG_COMPILER_GENERATED));
           if (inCopyIsh == false) {
 
-            if (callInFn->hasFlag(FLAG_INIT_COPY_FN)) {
-              USR_FATAL_CONT(se, "invalid copy-initialization");
-            } else {
-              USR_FATAL_CONT(se, "invalid implicit copy-initialization");
-            }
+            USR_FATAL_CONT(se, "invalid copy-initialization");
 
             if (errors.count(fn) != 0)
               USR_FATAL_CONT(se, "%s", errors[fn]);
 
             Type* t = fn->getFormal(1)->getValType();
-            astlocT typePoint = t->astloc;
-            if (t->symbol->userInstantiationPointLoc.filename != NULL)
-              typePoint = t->symbol->userInstantiationPointLoc;
+            if (fn->hasFlag(FLAG_COERCE_FN)) {
+              t = fn->getFormal(2)->getValType();
+            }
 
-            USR_PRINT(typePoint,
-                      "%s does not have a valid init=", toString(t));
+            if (printsUserLocation(t)) {
+              USR_PRINT(t, "%s does not have a valid init=", toString(t));
+            } else if (t->symbol->userInstantiationPointLoc.filename != NULL) {
+              USR_PRINT(t->symbol->userInstantiationPointLoc,
+                        "%s does not have a valid init=", toString(t));
+            }
           } else {
             // Should have been propagated above
             INT_ASSERT(callInFn->hasFlag(FLAG_ERRONEOUS_COPY));

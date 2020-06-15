@@ -4250,32 +4250,14 @@ proc channel.itemWriter(type ItemType, param kind:iokind=iokind.dynamic) {
 // And now, the toplevel items.
 
 /* standard input, otherwise known as file descriptor 0 */
-const stdin:channel(false, iokind.dynamic, true) = stdinInit();
+const stdin:channel(false, iokind.dynamic, true);
+stdin = try! openfd(0).reader();
 /* standard output, otherwise known as file descriptor 1 */
-const stdout:channel(true, iokind.dynamic, true) = stdoutInit();
+const stdout:channel(true, iokind.dynamic, true);
+stdout = try! openfp(chpl_cstdout()).writer();
 /* standard error, otherwise known as file descriptor 2 */
-const stderr:channel(true, iokind.dynamic, true) = stderrInit();
-
-pragma "no doc"
-proc stdinInit() {
-  try! {
-    return openfd(0).reader();
-  }
-}
-
-pragma "no doc"
-proc stdoutInit() {
-  try! {
-    return openfp(chpl_cstdout()).writer();
-  }
-}
-
-pragma "no doc"
-proc stderrInit() {
-  try! {
-    return openfp(chpl_cstderr()).writer();
-  }
-}
+const stderr:channel(true, iokind.dynamic, true);
+stderr = try! openfp(chpl_cstderr()).writer();
 
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {

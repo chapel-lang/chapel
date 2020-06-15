@@ -1,0 +1,13 @@
+if HAVE_PERF
+_perfhook_files = \
+	prov/hook/perf/src/hook_perf.c
+
+_perfhook_headers = \
+	prov/hook/perf/include/hook_perf.h
+
+
+src_libfabric_la_SOURCES  +=	$(_perfhook_files) \
+				$(_perfhook_headers)
+src_libfabric_la_CPPFLAGS +=	-I$(top_srcdir)/prov/hook/perf/include
+src_libfabric_la_LIBADD	  +=	$(perfhook_shm_LIBS)
+endif HAVE_PERF

@@ -10,11 +10,7 @@ hpm=$(module list --terse 2>&1 | grep craype-hugepages)
 if [[ -n "$hpm" ]] ; then module unload $hpm ; fi
 
 export CHPL_RT_CALL_STACK_SIZE=128K
-case $($CHPL_HOME/util/chplenv/chpl_platform.py --target) in
-cray-xe) module load craype-hugepages128K
-         export CHPL_RT_MAX_HEAP_SIZE=2049M;;
-cray-xc) module load craype-hugepages2M
-         export CHPL_RT_MAX_HEAP_SIZE=1025M;;
-esac
+module load craype-hugepages2M
+export CHPL_RT_MAX_HEAP_SIZE=1025M
 
 exec ./$(basename ${0})-2 $*

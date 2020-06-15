@@ -189,9 +189,9 @@ by the following syntax:
    single-type:
      `single' type-expression
 
-If a synchronization variable declaration has an initialization
-expression, then the variable is initially full, otherwise it is
-initially empty.
+A default-initialized synchronization variable will be empty. A
+synchronization variable initialized from another expression will be
+full and store the value from that expression.
 
    *Example (beginWithSyncVar.chpl)*.
 

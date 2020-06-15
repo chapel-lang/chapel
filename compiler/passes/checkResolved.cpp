@@ -512,6 +512,10 @@ checkBadAddrOf(CallExpr* call)
 
         bool rhsType = rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
         bool rhsParam = rhs->symbol()->isParameter();
+
+        bool rhsExprTemp = rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+                           !rhs->symbol()->type->symbol->hasFlag(FLAG_ARRAY);
+
         // Also detect runtime type variables
         if (rhs->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
           rhsType = true;
@@ -521,8 +525,7 @@ checkBadAddrOf(CallExpr* call)
         } else if (lhsRef && rhsParam) {
           USR_FATAL_CONT(call, "Cannot set a reference to a param variable.");
         } else if (lhsRef && !lhsConst) {
-          if (rhs->symbol()->hasFlag(FLAG_EXPR_TEMP) ||
-              rhs->symbol()->isConstant()) {
+          if (rhsExprTemp || rhs->symbol()->isConstant()) {
             USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
           }
         }

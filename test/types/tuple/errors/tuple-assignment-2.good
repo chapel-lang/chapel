@@ -1,3 +1,3 @@
 tuple-assignment-2.chpl:3: In function 'modify':
-tuple-assignment-2.chpl:4: error: illegal lvalue in assignment
+tuple-assignment-2.chpl:4: error: cannot assign to const variable
 tuple-assignment-2.chpl:9: Function 'modify' instantiated as: modify(A: [domain(1,int(64),false)] int(64))

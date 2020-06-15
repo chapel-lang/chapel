@@ -7,10 +7,13 @@ compiler:
 matrix:
   include:
     - name: "make check"
-      env: NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no HWLOC_HIDE_ERRORS=1 CHPL_SMOKE_SKIP_DOC=true TEST_COMMAND="./util/buildRelease/smokeTest"
+      env: NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no HWLOC_HIDE_ERRORS=1 CHPL_SMOKE_SKIP_MAKE_MASON=true CHPL_SMOKE_SKIP_DOC=true TEST_COMMAND="./util/buildRelease/smokeTest"
+
+    - name: "make mason"
+      env: NIGHTLY_TEST_SETTINGS=true QTHREAD_AFFINITY=no HWLOC_HIDE_ERRORS=1 CHPL_SKIP_MAKE_CHECK=true CHPL_SMOKE_SKIP_DOC=true TEST_COMMAND="./util/buildRelease/smokeTest"
 
     - name: "make check-chpldoc && make docs"
-      env: NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_MAKE_CHECK=true TEST_COMMAND="./util/buildRelease/smokeTest"
+      env: NIGHTLY_TEST_SETTINGS=true CHPL_SMOKE_SKIP_MAKE_CHECK=true CHPL_SMOKE_SKIP_MAKE_MASON=true TEST_COMMAND="./util/buildRelease/smokeTest"
 
     - name: "check annotations"
       env: TEST_COMMAND="make test-venv && CHPL_HOME=$PWD ./util/run-in-venv.bash ./util/test/check_annotations.py"

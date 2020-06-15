@@ -2681,7 +2681,11 @@ GenRet codegenCallExpr(GenRet function,
     if (func) {
       ret.val = info->irBuilder->CreateCall(func, llArgs);
     } else {
+#if HAVE_LLVM_VER >= 90
+      ret.val = info->irBuilder->CreateCall(fnType, val, llArgs);
+#else
       ret.val = info->irBuilder->CreateCall(val, llArgs);
+#endif
     }
 
     if( sret ) {

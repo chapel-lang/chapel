@@ -39,6 +39,9 @@ proc doTest(type eltType) {
 
   for x in s3 do
     assert(!s1.contains(x) && s2.contains(x));
+
+  s1 ^= s2;
+  assert(s1 == s3);
 }
 
 doTest(int);

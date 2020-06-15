@@ -37,7 +37,7 @@ through compiler flags and/or environment variables.
 Some procedures have implementations both with `and` without dependencies. By
 default, the implementation with dependencies will be selected. Users can
 explicitly opt out of using the :mod:`BLAS` and :mod:`LAPACK` dependent
-implementations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``none``.
+implementations by setting the ``blasImpl`` and ``lapackImpl`` flags to ``off``.
 
 **Building programs with no dependencies**
 
@@ -123,22 +123,22 @@ compilation flags:
 
 
 To opt out of using the ``BLAS`` implementation, users can add the ``--set
-blasImpl=none`` flag, so that ``BLAS`` is no longer a dependency:
+blasImpl=off`` flag, so that ``BLAS`` is no longer a dependency:
 
 .. code-block:: bash
 
   # Building with BLAS dependency explicitly disabled
-  chpl --set blasImpl=none example3.chpl
+  chpl --set blasImpl=off example3.chpl
 
 Similarly, users can opt out of of ``LAPACK`` implementations with the ``--set
-lapackImpl=none`` flag. Setting both flags to ``none`` will always choose the
+lapackImpl=off`` flag. Setting both flags to ``off`` will always choose the
 Chapel implementation when available, and will emit a compiler error
 when no native implementation is available:
 
 .. code-block:: bash
 
   # Building with all dependencies explicitly disabled
-  chpl --set lapackImpl=none --set blasImpl=none example3.chpl
+  chpl --set lapackImpl=off --set blasImpl=off example3.chpl
 
 See the documentation of :mod:`BLAS` or :mod:`LAPACK` for
 more details on these flags.
@@ -186,7 +186,6 @@ are supported through submodules, such ``LinearAlgebra.Sparse`` for the
 
 module LinearAlgebra {
 
-use Norm; // TODO -- merge Norm into LinearAlgebra
 import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
 
@@ -556,7 +555,7 @@ proc _array.elementDiv(A: [?Adom]) where isDenseArr(A) && isDenseArr(this) {
 
       Dense matrix-matrix and matrix-vector multiplication will utilize the
       :mod:`BLAS` module for improved performance, if available. Compile with
-      ``--set blasImpl=none`` to opt out of the :mod:`BLAS` implementation.
+      ``--set blasImpl=off`` to opt out of the :mod:`BLAS` implementation.
 */
 proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDenseArr(B) {
   // vector-vector
@@ -573,7 +572,7 @@ proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isDenseArr(A) && isDense
 
     Dense matrix-matrix and matrix-vector multiplication will utilize the
     :mod:`BLAS` module for improved performance, if available. Compile with
-    ``--set blasImpl=none`` to opt out of the :mod:`BLAS` implementation.
+    ``--set blasImpl=off`` to opt out of the :mod:`BLAS` implementation.
 
 */
 proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
@@ -781,7 +780,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   use SysCTypes;
@@ -814,7 +813,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   .. note::
 
     ``matPow`` will utilize the :mod:`BLAS` module for improved performance, if
-    available. Compile with ``--set blasImpl=none`` to opt out of the
+    available. Compile with ``--set blasImpl=off`` to opt out of the
     :mod:`BLAS` implementation.
 */
 proc matPow(A: [], b) where isNumeric(b) {
@@ -1153,10 +1152,10 @@ private proc _lu (in A: [?Adom] ?eltType) {
   var L, U, LU: [LUDom] eltType;
 
   var ipiv: [{1..n}] int = [i in {1..n}] i;
-  
+
   var numSwap: int = 0;
 
-  for i in 1..n { 
+  for i in 1..n {
 
     var max = A[i,i], swaprow = i;
     for row in (i+1)..n {
@@ -1183,7 +1182,7 @@ private proc _lu (in A: [?Adom] ?eltType) {
       var sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
-  } 
+  }
 
   LU = L + U;
   forall i in 1..n {
@@ -1194,16 +1193,15 @@ private proc _lu (in A: [?Adom] ?eltType) {
 }
 
 /*
-  Compute an LU factorization of square matrix `A` 
+  Compute an LU factorization of square matrix `A`
   using partial pivoting, such that `A = P * L * U` where P
   is a permutation matrix. Return a tuple of size 2 `(LU, ipiv)`.
-  
-  `L` and `U` are stored in the same matrix `LU` where 
+
+  `L` and `U` are stored in the same matrix `LU` where
   the unit diagonal elements of L are not stored.
-  
-  `ipiv` contains the pivot indices such that row i of `A` 
+
+  `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
-  
 */
 proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1216,13 +1214,13 @@ proc lu (A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
-/* Return a new array as the permuted form of `A` according to 
+/* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(0);
-  
+
   var B: [Adom] eltType;
-  
+
   if Adom.rank == 1 {
     if transpose {
       forall (i,pi) in zip(1..n, ipiv) {
@@ -1254,9 +1252,9 @@ private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
 
     .. note::
 
-      This procedure performs LU factorization to compute the 
+      This procedure performs LU factorization to compute the
       determinant. In certain cases, e.g. having a lower/upper
-      triangular matrix, it is more desirable to compute the 
+      triangular matrix, it is more desirable to compute the
       determinant manually.
 */
 
@@ -1270,54 +1268,135 @@ proc det (A: [?Adom] ?eltType) {
   var (LU,ipiv,numSwap) = _lu(A);
   const pdet = if numSwap % 2 == 0 then 1 else -1;
 
-  // L[i,i] always = 1, so we only need to take the 
+  // L[i,i] always = 1, so we only need to take the
   // diagonal product of U
 
   return (* reduce [i in Adom.dim(0)] LU[i,i]) * pdet;
 }
 
-/* Return the solution ``x`` to the linear system `` L * x = b `` 
+/*
+  Compute the default norm on `x`.
+
+  For a 1D array this is the 2-norm, for a 2D array, this is the Frobenius
+  norm.
+
+  :rtype: x.eltType
+*/
+proc norm(x: [], param p = normType.default) {
+  if x.rank > 2 {
+    compilerError("Norms not implemented for array ranks > 2D");
+  }
+
+  if p == normType.default {
+    param defaultType: normType = if x.rank == 1 then normType.norm2 else normType.normFrob;
+    return norm(x, defaultType);
+  } else {
+    return _norm(x, p);
+  }
+}
+
+/*
+  Indicates the different types of norms supported by :proc:`norm`:
+
+    * Default - depends on array dimensions. See :proc:`norm` for details.
+    * 1-norm
+    * 2-norm
+    * Infinity norm
+    * Frobenius norm
+ */
+enum normType {
+  default,
+  norm1,
+  norm2,
+  normInf,
+  normFrob
+};
+
+/*
+  Compute the norm indicated by `p` on the 1D array `x`.
+
+  :rtype: x.eltType
+ */
+private proc _norm(x: [], param p: normType) where x.rank == 1 {
+  select (p) {
+  when normType.norm1 do return + reduce abs(x);
+  when normType.norm2 do return sqrt(+ reduce (abs(x)*abs(x)));
+  when normType.normInf do return max reduce abs(x);
+  when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
+  otherwise halt("Unexpected norm type");
+  }
+}
+
+/*
+  Compute the norm indicated by `p` on the 2D array `x`.
+
+  `p` cannot be `normType.norm2`.
+
+  :rtype: x.eltType
+ */
+proc _norm(x: [?D], param p: normType) where x.rank == 2 {
+  select (p) {
+  when normType.norm1 do
+    return max reduce forall j in D.dim(1) do (+ reduce abs(x[D.dim(0), j..j]));
+
+  when normType.norm2 {
+    compilerError("2-norm for 2D arrays are not yet implemented");
+    // TODO: Add implementation:
+    //var (U, s, Vh) = svd(x);
+    //return max(s)
+  }
+
+  when normType.normInf do
+    return max reduce forall i in D.dim(0) do (+ reduce abs(x[i..i, D.dim(1)]));
+
+  when normType.normFrob do return sqrt(+ reduce (abs(x)*abs(x)));
+
+  otherwise halt("Unexpected norm type");
+  }
+}
+
+/* Return the solution ``x`` to the linear system `` L * x = b ``
     where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
-    will assume the diagonal elements as `1` and will not be referenced 
+    will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
 */
-proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType, 
+proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true) {
   const n = Ldom.shape(0);
   var y = b;
-  
+
   for i in 1..n {
     const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
-    
+
     if (i < n) {
       forall j in (i+1)..n {
         y(j) -= L(j,i) * sol;
       }
     }
   }
-  
+
   return y;
 }
 
-/* Return the solution ``x`` to the linear system `` U * x = b `` 
+/* Return the solution ``x`` to the linear system `` U * x = b ``
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   const n = Udom.shape(0);
   var y = b;
-  
+
   for i in 1..n by -1 {
     const sol = y(i) / U(i,i);
     y(i) = sol;
-    
+
     if (i > 1) {
       forall j in 1..(i-1) by -1 {
         y(j) -= U(j,i) * sol;
       }
     }
   }
-  
+
   return y;
 }
 
@@ -1341,7 +1420,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
  */
 proc cholesky(A: [] ?t, lower = true)
   where A.rank == 2 && isLAPACKType(t) && usingLAPACK
@@ -1384,7 +1463,7 @@ proc cholesky(A: [] ?t, lower = true)
    .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
 */
 proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
@@ -1412,7 +1491,7 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
    .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
 */
 proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
@@ -1454,7 +1533,7 @@ proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) 
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
 */
 proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
@@ -1482,7 +1561,7 @@ proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
     .. note::
 
       This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+      compiler error if ``lapackImpl`` is ``off``.
 
  */
 proc eig(A: [] ?t, param left = false, param right = false)
@@ -1633,7 +1712,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
   .. note::
 
     This procedure depends on the :mod:`LAPACK` module, and will generate a
-    compiler error if ``lapackImpl`` is ``none``.
+    compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
@@ -1678,19 +1757,19 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
-/* 
+/*
   Compute the approximate solution to ``A * x = b`` using the Jacobi method.
   iteration will stop when ``maxiter`` is reached or error is smaller than
   ``tol``, whichever comes first. Return the number of iterations performed.
-  
+
   .. note::
     ``X`` is passed as a reference, meaning the initial solution guess can be
-    stored in ``X`` before calling the procedure, and the approximate solution 
+    stored in ``X`` before calling the procedure, and the approximate solution
     will be stored in the same array.
-    
+
     Dense and CSR arrays are supported.
 */
-proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     halt("Wrong shape of input matrix or vector");
@@ -2390,13 +2469,13 @@ module Sparse {
 
     return B;
   }
-  
+
   pragma "no doc"
   proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                                && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
-    // TODO: sps should only contain non-zero entries in resulting array, 
+    // TODO: sps should only contain non-zero entries in resulting array,
     //       i.e. intersection of this.domain and Adom
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
@@ -2428,9 +2507,9 @@ module Sparse {
 
     return B;
   }
-  
+
   pragma "no doc"
-  proc _array.elementDiv(A: [?Adom] ?eltType) where 
+  proc _array.elementDiv(A: [?Adom] ?eltType) where
                                             isSparseArr(this) && !isCSArr(this)
                                             && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -2466,9 +2545,9 @@ module Sparse {
     }
     return A;
   }
-  
+
   pragma "no doc"
-  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType, 
+  proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
       halt("Wrong shape of input matrix or vector");
@@ -2476,11 +2555,11 @@ module Sparse {
       halt("Matrix A is not a square");
     if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatch shape between matrix side length and vector length");
-  
+
     var itern = 0, err: eltType = 1;
-  
+
     var t: [Xdom] eltType = 0;
-  
+
     while (itern < maxiter) {
       itern = itern + 1;
       forall i in Adom.dim(0) {

@@ -1,2 +1,2 @@
 errors-keyPart.chpl:9: In function 'main':
-errors-keyPart.chpl:17: error: The keyPart method in tIntReal must return a tuple with 2nd element int(?) or uint(?) when used with int(64) elements
+errors-keyPart.chpl:17: error: The keyPart method in tIntReal must return a tuple with element 1 of type  int(?) or uint(?) when used with int(64) elements

@@ -253,21 +253,6 @@ static bool recordContainsOwned(Type* t) {
 
   return false;
 }
-static bool recordContainsNonNilable(Type* t) {
-  if (isNonNilableClassType(t))
-    return true;
-
-  if (isRecord(t)) {
-    AggregateType* at = toAggregateType(t);
-
-    for_fields(field, at) {
-      if (recordContainsNonNilable(field->getValType()))
-        return true;
-    }
-  }
-
-  return false;
-}
 
 static bool isNonNilableOwned(Type* t) {
   return isManagedPtrType(t) &&
@@ -283,6 +268,20 @@ static void setRecordCopyableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordCopyableFlags(eltTypeAt);
+        if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test init= to set the flags
       const char* err = NULL;
@@ -321,6 +320,22 @@ static void setRecordAssignableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordAssignableFlags(eltTypeAt);
+
+        if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
@@ -350,37 +365,7 @@ static void setRecordAssignableFlags(AggregateType* at) {
   }
 }
 
-static void setRecordDefaultValueFlags(AggregateType* at) {
-  TypeSymbol* ts = at->symbol;
-
-  if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
-      !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
-
-    if (isNonNilableClassType(at)) {
-      ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-    } else if (isNilableClassType(at)) {
-      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-    } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
-      // Currently extern records aren't initialized at all by default.
-      // But it's not necessarily reasonable to expect them to have
-      // initializers. See issue #7992.
-      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-    } else {
-      // Try resolving a test init() to set the flags
-      FnSymbol* initZero = findZeroArgInitFn(at);
-      if (initZero == NULL) {
-        ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-      } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilable(at))
-          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-        else
-          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-      } else {
-        ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
-      }
-    }
-  }
-}
+static void setRecordDefaultValueFlags(AggregateType* at);
 
 static bool isDefaultInitializable(Type* t) {
   bool val = true;
@@ -399,6 +384,71 @@ static bool isDefaultInitializable(Type* t) {
 
   return val;
 }
+
+static void setRecordDefaultValueFlags(AggregateType* at) {
+  TypeSymbol* ts = at->symbol;
+
+  if (!ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE) &&
+      !ts->hasFlag(FLAG_TYPE_NO_DEFAULT_VALUE)) {
+
+    if (isNonNilableClassType(at)) {
+      ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+    } else if (isNilableClassType(at)) {
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (isDefaultInitializable(eltType)) {
+        ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      } else {
+        ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      }
+
+    } else if (isRecordWrappedType(at)) {
+      // domain or distribution
+      // these have default values today
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+    } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
+      // Currently extern records aren't initialized at all by default.
+      // But it's not necessarily reasonable to expect them to have
+      // initializers. See issue #7992.
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else {
+
+      if (at->hasUserDefinedInit == false ||
+          at->symbol->hasFlag(FLAG_TUPLE)) {
+        // For records with compiler-generated default init,
+        // or for tuples, first consider the fields.
+        // If any of the fields prohibit
+        // default initialization, return before trying
+        // to resolve the init() function.
+        bool failsDefaultInit = false;
+        for_fields(field, at) {
+          Type* fieldType = field->getValType(); // val type for tuples
+          if (isDefaultInitializable(fieldType) == false) {
+            // check for default value
+            if (field->defPoint->init == NULL) {
+              failsDefaultInit = true;
+              break;
+            }
+          }
+        }
+        if (failsDefaultInit) {
+          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+          return;
+        }
+      }
+
+      // Try resolving a test init() to set the flags
+      FnSymbol* initZero = findZeroArgInitFn(at);
+      if (initZero == NULL) {
+        ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      } else {
+        ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      }
+    }
+  }
+}
+
 
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
@@ -1538,17 +1588,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_DEFAULT_INIT_FIELD: {
-    SymExpr* initVal = toSymExpr(call->get(4)->remove());
-    SymExpr* toType = toSymExpr(call->get(3)->remove());
-    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
-
-    retval = new CallExpr("_createFieldDefault", toType, initVal);
-    call->replace(retval);
-
-    break;
-  }
-
   case PRIM_REDUCE_ASSIGN: {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 2);
@@ -1647,6 +1686,18 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_REDUCE: {
     // Need to do this ahead of resolveCall().
     retval = lowerPrimReduce(call);
+    break;
+  }
+
+  case PRIM_STEAL: {
+    SymExpr* se = toSymExpr(call->get(1));
+    if (Symbol* sym = se->symbol())
+      if (!sym->isRef())
+        sym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    retval = se->remove();
+    call->replace(retval);
+
     break;
   }
 
@@ -1821,7 +1872,7 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
     tmp->addFlag(FLAG_REF_VAR);
 
     // create the AST for 'tupleTemp = tuple.field'
-    // 
+    //
     VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
     noop->insertBefore(new DefExpr(tmp));
     noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
@@ -1926,8 +1977,8 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
     }
 
-  } else if (call->isNamed("chpl__initCopy") ||
-             call->isNamed("chpl__autoCopy")) {
+  } else if (call->isNamedAstr(astr_initCopy) ||
+             call->isNamedAstr(astr_autoCopy)) {
     if (call->numActuals() == 1) {
       if (SymExpr* symExpr = toSymExpr(call->get(1))) {
         if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {

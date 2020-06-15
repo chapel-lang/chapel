@@ -1,3 +1,3 @@
 arrayDomInClassRecord-illegal.chpl:30: In function 'baz':
-arrayDomInClassRecord-illegal.chpl:31: error: illegal lvalue in assignment
+arrayDomInClassRecord-illegal.chpl:31: error: cannot assign to const variable
 arrayDomInClassRecord-illegal.chpl:16: Function 'baz' instantiated as: baz(x: R, y: int(64))

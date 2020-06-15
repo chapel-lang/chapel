@@ -1,0 +1,17 @@
+This is an interactive session to walk you through creating a library
+project using Mason. The following queries covers the common items required to
+create the project. Suggestions for defaults are also provided which will be
+considered if no input is given.
+
+Press ^C to quit interactive mode.
+Package name : Package version (0.1.0): Chapel version (1.23.0): 
+[brick]
+name = "project"
+version = "1.2.3"
+chplVersion = "1.21.0"
+
+[dependencies]
+
+
+
+Is this okay ? (Y/N): Created new library project: project

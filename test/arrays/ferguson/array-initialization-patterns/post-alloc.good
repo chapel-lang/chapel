@@ -1,0 +1,57 @@
+alloc int test begins
+alloc int test1
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test2
+*** DR calling dealloc int(64)
+alloc int test2t
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test3
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test3t
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test4
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test5
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test6
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test6t
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR alloc int(64) 10
+*** DR calling dealloc int(64)
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+alloc int test7
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+*** DR calling dealloc int(64)
+alloc int test7t
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR alloc int(64) 10
+*** DR calling postalloc int(64) 10
+*** DR calling dealloc int(64)
+*** DR calling dealloc int(64)
+alloc int test7
+*** DR alloc int(64) 2
+*** DR calling postalloc int(64) 2
+*** DR calling dealloc int(64)
+alloc int test ends

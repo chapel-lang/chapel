@@ -1111,10 +1111,12 @@ module Random {
       { 
         var dom: domain(1,stridable=true);
 
-        if !isBoundedRange(x) then
+        if !isBoundedRange(x) {
           throw new owned IllegalArgumentError('input range must be bounded');
-        else
+          dom = {1..2}; // this is a workaround for issue #15691
+        } else {
           dom = {x};
+        }
         return _choice(this, dom, size=size, replace=replace, prob=prob);
       }
 

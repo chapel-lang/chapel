@@ -1,1 +1,1 @@
-init-field-dflt-nonnil-owned-from-oknil-unmanaged.chpl:8: error: cannot initialize field MyRecord.lhs of non-nilable type 'owned MyClass' from a nilable 'unmanaged MyClass?'
+init-field-dflt-nonnil-owned-from-oknil-unmanaged.chpl:8: error: Cannot initialize lhs of non-nilable type 'owned MyClass' from a nilable 'unmanaged MyClass?'

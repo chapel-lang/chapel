@@ -209,7 +209,8 @@ returnInfoCast(CallExpr* call) {
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   }
-  return QualifiedType(t1); // what should qual be here?
+  INT_ASSERT(!isReferenceType(t1));
+  return QualifiedType(t1, QUAL_VAL);
 }
 
 static QualifiedType
@@ -654,9 +655,6 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
-  // dst, aggregate name, field name, type to default-init, value to init from
-  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
-
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
 
@@ -852,8 +850,11 @@ initPrimitive() {
   // Args are variable, field name.
   prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
-  // used modules in BlockStmt::modUses
+  // used modules in BlockStmt::useList
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
+  // modules named explicitly in BlockStmt::modRefs
+  prim_def(PRIM_REFERENCED_MODULES_LIST, "referenced modules list",
+           returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
 
   // Direct calls to the Chapel comm layer
@@ -1081,6 +1082,10 @@ initPrimitive() {
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
 
+  // if the argument is a value, mark it with "no auto destroy"
+  // (no effect on a reference)
+  prim_def(PRIM_STEAL, "steal", returnInfoFirst, false, false);
+
   // Indicates the end of a statement. This is important for the
   // deinitialization location for some variables.
   // Any arguments are SymExprs to user variables that should be alive until
@@ -1093,6 +1098,7 @@ initPrimitive() {
   // 1) type variable representing static type of field in _RuntimeTypeInfo
   // 2) type variable that will become the _RuntimeTypeInfo
   // 3) param-string name of the field in the _RuntimeTypeInfo
+  // existence of an optional 4th argument indicates the result is a type
   prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 
   // Corresponds to LLVM's invariant start

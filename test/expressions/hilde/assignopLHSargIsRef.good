@@ -1,4 +1,4 @@
 assignopLHSargIsRef.chpl:12: In function '=':
-assignopLHSargIsRef.chpl:13: error: illegal lvalue in assignment
+assignopLHSargIsRef.chpl:13: error: cannot assign to const variable
 assignopLHSargIsRef.chpl:16: In function '*=':
-assignopLHSargIsRef.chpl:17: error: illegal lvalue in assignment
+assignopLHSargIsRef.chpl:17: error: cannot assign to const variable

@@ -1456,8 +1456,8 @@ void createInitStringLiterals() {
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 }
 
-bool isValidString(std::string str) {
-  return chpl_enc_validate_buf(str.c_str(), str.length()) == 0;
+bool isValidString(std::string str, int64_t* numCodepoints) {
+  return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
 // Note that string immediate values are stored
@@ -1493,7 +1493,9 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   std::string unescapedString = unescapeString(str, cstrMove);
 
-  if (!isValidString(unescapedString)) {
+  int64_t numCodepoints = 0;
+  const bool ret = isValidString(unescapedString, &numCodepoints);
+  if (!ret) {
     USR_FATAL_CONT(cstrMove, "Invalid string literal");
 
     // We want to keep the compilation going here so that we can catch other
@@ -1525,7 +1527,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr *initCall = new CallExpr(initFn,
                                     cstrTemp,
-                                    new_IntSymbol(strLength));
+                                    new_IntSymbol(strLength),
+                                    new_IntSymbol(numCodepoints));
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
@@ -1985,6 +1988,7 @@ const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
+const char* astrPostinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
 const char* astrSuper = NULL;
@@ -1999,6 +2003,10 @@ const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
 const char* astrBorrow = NULL;
 const char* astr_init_coerce_tmp = NULL;
+const char* astr_autoCopy = NULL;
+const char* astr_initCopy = NULL;
+const char* astr_coerceCopy = NULL;
+const char* astr_coerceMove = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2016,6 +2024,7 @@ void initAstrConsts() {
   astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
+  astrPostinit  = astr("postinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
   astrSuper   = astr("super");
@@ -2033,6 +2042,11 @@ void initAstrConsts() {
 
   astrBorrow = astr("borrow");
   astr_init_coerce_tmp = astr("init_coerce_tmp");
+
+  astr_autoCopy = astr("chpl__autoCopy");
+  astr_initCopy = astr("chpl__initCopy");
+  astr_coerceCopy = astr("chpl__coerceCopy");
+  astr_coerceMove = astr("chpl__coerceMove");
 }
 
 /************************************* | **************************************

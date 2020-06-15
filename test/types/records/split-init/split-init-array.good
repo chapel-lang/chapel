@@ -19,14 +19,8 @@ makeArr initing 1 1
 deinit 1
 deinit 1
 yes2a
-init (default)
-init (default)
 init 20
-= 0 20
-deinit 20
 init 20
-= 0 20
-deinit 20
 (x = 20, ptr = {}) (x = 20, ptr = {})
 deinit 20
 deinit 20
@@ -44,12 +38,6 @@ deinit 200
 deinit 200
 yes2c
 makeArr initing 2000 2000
-init (default)
-init (default)
-= 0 2000
-= 0 2000
-deinit 2000
-deinit 2000
 {0..1}
 (x = 2000, ptr = {}) (x = 2000, ptr = {})
 deinit 2000
@@ -61,47 +49,29 @@ deinit 3
 deinit 3
 yes4
 makeArr initing 4 4
-init (default)
-init (default)
-= 0 4
-= 0 4
 (x = 4, ptr = {}) (x = 4, ptr = {})
-deinit 4
-deinit 4
 deinit 4
 deinit 4
 yes5
 makeArr initing 5 5
-init (default)
-init (default)
-= 0 5
-= 0 5
 (x = 5, ptr = {}) (x = 5, ptr = {})
 deinit 5
 deinit 5
-deinit 5
-deinit 5
 yes6
-init (default)
-init (default)
-= 0 -1
-= 0 -1
+init= -1
+init= -1
 (x = -1, ptr = {}) (x = -1, ptr = {})
 deinit -1
 deinit -1
 yes7
-init (default)
-init (default)
-= 0 -1
-= 0 -1
+init= -1
+init= -1
 (x = -1, ptr = {}) (x = -1, ptr = {})
 deinit -1
 deinit -1
 yes8
-init (default)
-init (default)
-= 0 -1
-= 0 -1
+init= -1
+init= -1
 (x = -1, ptr = {}) (x = -1, ptr = {})
 deinit -1
 deinit -1

@@ -1,3 +1,3 @@
 ./AssocTest.chpl:1: In function 'testAssoc':
-./AssocTest.chpl:8: error: Cannot initialize associative array because element type borrowed T is a non-nilable class
+./AssocTest.chpl:8: error: Cannot default initialize associative array because element type borrowed T is a non-nilable class
 testBorrowed.chpl:9: Function 'testAssoc' instantiated as: testAssoc(type t = borrowed T)

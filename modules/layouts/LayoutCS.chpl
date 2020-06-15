@@ -177,8 +177,11 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiBuildArray(type eltType)
-    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
+  proc dsiBuildArray(type eltType, param initElts: bool) {
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType,
+                               dom=_to_unmanaged(this),
+                               initElts=initElts);
+  }
 
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
@@ -634,6 +637,16 @@ class CSDom: BaseSparseDomImpl {
 
 
 class CSArr: BaseSparseArrImpl {
+
+  proc init(type eltType,
+            param rank : int,
+            type idxType,
+            dom,
+            param initElts:bool) {
+    super.init(eltType, rank, idxType, dom, initElts);
+  }
+
+  // dsiDestroyArr is defined in BaseSparseArrImpl
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box

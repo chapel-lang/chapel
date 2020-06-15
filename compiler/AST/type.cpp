@@ -562,6 +562,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
   gSym->addFlag(FLAG_CONST);                            \
+  gSym->addFlag(FLAG_GLOBAL_VAR_BUILTIN);               \
   rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
@@ -646,10 +647,8 @@ void initPrimitiveTypes() {
   dtAnyRecord = createInternalType("record", "_anyRecord");
   dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
-  gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
-  gIteratorBreakToken->addFlag(FLAG_CONST);
+  gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
-  rootModule->block->insertAtTail(new DefExpr(gIteratorBreakToken));
 
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
@@ -837,6 +836,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
   VarSymbol* retval = new VarSymbol(name, primType);
 
   retval->addFlag(FLAG_CONST);
+  retval->addFlag(FLAG_GLOBAL_VAR_BUILTIN);
 
   rootModule->block->insertAtTail(new DefExpr(retval));
 
