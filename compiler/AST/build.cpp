@@ -233,6 +233,9 @@ Expr* buildSquareCallExpr(Expr* base, CallExpr* args) {
   return call;
 }
 
+Expr* buildLocalSliceExpr(Expr* base) {
+  return new CallExpr("chpl__buildLocalSlice", base);
+}
 
 Expr* buildNamedActual(const char* name, Expr* expr) {
   return new NamedExpr(name, expr);

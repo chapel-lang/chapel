@@ -47,6 +47,8 @@ CallExpr* buildTuple(CallExpr* call);
 
 Expr* buildSquareCallExpr(Expr* base, CallExpr* args);
 
+Expr* buildLocalSliceExpr(Expr* base);
+
 Expr* buildNamedActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
