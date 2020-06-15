@@ -69,6 +69,19 @@ jemalloc/
   See also: jemalloc/README and jemalloc/jemalloc-src/README
 
 
+libfabric/
+  Summary: Libfabric is a general network communication library that
+           supports a variety of network architectures and interfaces.
+           It is part of the Open Fabrics Interfaces (OFI) framework.
+
+  License: libfabric is released under the 2-clause BSD License (see
+           libfabric/libfabric-src/COPYING)
+
+  Website: https://github.com/ofiwg/libfabric/
+
+  See also: libfabric/README and libfabric/libfabric-src/README
+
+
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see

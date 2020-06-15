@@ -1,0 +1,170 @@
+# Makefile.am for gni provider
+
+if HAVE_GNI
+
+#
+# want to keep ccan in the include path seen in the
+# source code, so just add prov/gni to the include path
+# rather than prov/gni/ccan
+#
+AM_CPPFLAGS += -I$(top_srcdir)/prov/gni/include -I$(top_srcdir)/prov/gni
+
+_gni_files = \
+	prov/gni/src/gnix_atomic.c \
+	prov/gni/src/gnix_auth_key.c \
+	prov/gni/src/gnix_av.c \
+	prov/gni/src/gnix_bitmap.c \
+	prov/gni/src/gnix_buddy_allocator.c \
+	prov/gni/src/gnix_cm.c \
+	prov/gni/src/gnix_cm_nic.c \
+	prov/gni/src/gnix_cntr.c \
+	prov/gni/src/gnix_cq.c \
+	prov/gni/src/gnix_datagram.c \
+	prov/gni/src/gnix_dom.c \
+	prov/gni/src/gnix_ep.c \
+	prov/gni/src/gnix_eq.c \
+	prov/gni/src/gnix_fabric.c \
+	prov/gni/src/gnix_freelist.c \
+	prov/gni/src/gnix_hashtable.c \
+	prov/gni/src/gnix_init.c \
+	prov/gni/src/gnix_mbox_allocator.c \
+	prov/gni/src/gnix_mr.c \
+	prov/gni/src/gnix_mr_cache.c \
+	prov/gni/src/gnix_mr_notifier.c \
+	prov/gni/src/gnix_msg.c \
+	prov/gni/src/gnix_nameserver.c \
+	prov/gni/src/gnix_nic.c \
+	prov/gni/src/gnix_poll.c \
+	prov/gni/src/gnix_progress.c \
+	prov/gni/src/gnix_queue.c \
+	prov/gni/src/gnix_rma.c \
+	prov/gni/src/gnix_sep.c \
+	prov/gni/src/gnix_shmem.c \
+	prov/gni/src/gnix_smrn.c \
+	prov/gni/src/gnix_tags.c \
+	prov/gni/src/gnix_trigger.c \
+	prov/gni/src/gnix_util.c \
+	prov/gni/src/gnix_vc.c \
+	prov/gni/src/gnix_vector.c \
+	prov/gni/src/gnix_xpmem.c \
+	prov/gni/src/gnix_wait.c
+
+_gni_headers = \
+	prov/gni/include/fi_ext_gni.h \
+	prov/gni/include/gnix_atomic.h \
+	prov/gni/include/gnix_auth_key.h \
+	prov/gni/include/gnix_av.h \
+	prov/gni/include/gnix_bitmap.h \
+	prov/gni/include/gnix_buddy_allocator.h \
+	prov/gni/include/gnix_cm.h \
+	prov/gni/include/gnix_cm_nic.h \
+	prov/gni/include/gnix_cntr.h \
+	prov/gni/include/gnix_cq.h \
+	prov/gni/include/gnix_datagram.h \
+	prov/gni/include/gnix_ep.h \
+	prov/gni/include/gnix_eq.h \
+	prov/gni/include/gnix_freelist.h \
+	prov/gni/include/gnix.h \
+	prov/gni/include/gnix_hashtable.h \
+	prov/gni/include/gnix_mbox_allocator.h \
+	prov/gni/include/gnix_mr.h \
+	prov/gni/include/gnix_mr_cache.h \
+	prov/gni/include/gnix_mr_notifier.h \
+	prov/gni/include/gnix_msg.h \
+	prov/gni/include/gnix_nameserver.h \
+	prov/gni/include/gnix_nic.h \
+	prov/gni/include/gnix_poll.h \
+	prov/gni/include/gnix_progress.h \
+	prov/gni/include/gnix_priv.h \
+	prov/gni/include/gnix_queue.h \
+	prov/gni/include/gnix_rma.h \
+	prov/gni/include/gnix_shmem.h \
+	prov/gni/include/gnix_smrn.h \
+	prov/gni/include/gnix_tags.h \
+	prov/gni/include/gnix_trigger.h \
+	prov/gni/include/gnix_util.h \
+	prov/gni/include/gnix_vc.h \
+	prov/gni/include/gnix_vector.h \
+	prov/gni/include/gnix_xpmem.h \
+	prov/gni/include/gnix_wait.h
+
+
+if HAVE_CRITERION
+bin_PROGRAMS += prov/gni/test/gnitest
+bin_SCRIPTS += prov/gni/test/run_gnitest
+nodist_prov_gni_test_gnitest_SOURCES = \
+	prov/gni/test/allocator.c \
+	prov/gni/test/api.c \
+	prov/gni/test/api_cq.c \
+	prov/gni/test/api_cntr.c \
+	prov/gni/test/av.c \
+	prov/gni/test/auth_key.c \
+	prov/gni/test/bitmap.c \
+	prov/gni/test/buddy_allocator.c \
+	prov/gni/test/cancel.c \
+	prov/gni/test/cntr.c \
+	prov/gni/test/cm.c \
+	prov/gni/test/common.c \
+	prov/gni/test/cq.c \
+	prov/gni/test/datagram.c \
+	prov/gni/test/dlist-utils.c \
+	prov/gni/test/dom.c \
+	prov/gni/test/ep.c \
+	prov/gni/test/eq.c \
+	prov/gni/test/fabric.c \
+	prov/gni/test/fi_addr_str.c \
+	prov/gni/test/freelist.c \
+	prov/gni/test/hashtable.c \
+	prov/gni/test/mr.c \
+	prov/gni/test/mr_notifier.c \
+	prov/gni/test/nic.c \
+	prov/gni/test/pmi_utils.c \
+	prov/gni/test/queue.c \
+	prov/gni/test/rdm_atomic.c \
+	prov/gni/test/rdm_fi_pcd_trecv_msg.c \
+	prov/gni/test/rdm_dgram_rma.c \
+	prov/gni/test/rdm_dgram_stx.c \
+	prov/gni/test/rdm_rx_overrun.c \
+	prov/gni/test/rdm_sr.c \
+	prov/gni/test/rdm_addr_str_sr.c \
+	prov/gni/test/rdm_multi_recv.c \
+	prov/gni/test/rdm_tagged_sr.c \
+	prov/gni/test/sep.c \
+	prov/gni/test/shmem.c \
+	prov/gni/test/smrn.c \
+	prov/gni/test/tags.c \
+	prov/gni/test/utils.c \
+	prov/gni/test/vc.c \
+	prov/gni/test/vc_lookup.c \
+	prov/gni/test/vector.c \
+	prov/gni/test/wait.c
+
+prov_gni_test_gnitest_LDFLAGS = $(CRAY_PMI_LIBS) $(gnitest_LDFLAGS) -static
+prov_gni_test_gnitest_CPPFLAGS = $(AM_CPPFLAGS) $(CRAY_PMI_CFLAGS) $(CRAY_XPMEM_CFLAGS) $(gnitest_CPPFLAGS)
+prov_gni_test_gnitest_LDADD =  $(gnitest_LIBS) $(linkback)
+endif HAVE_CRITERION
+
+if HAVE_GNI_DL
+pkglib_LTLIBRARIES += libgnix-fi.la
+libgnix_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(gni_CPPFLAGS)
+libgnix_fi_la_SOURCES = $(_gni_files) $(_gni_headers) $(common_srcs)
+libgnix_fi_la_LDFLAGS = \
+	$(gni_LDFLAGS) \
+	-module -avoid-version -shared -export-dynamic
+libgnix_fi_la_LIBADD = $(linkback)
+libgnix_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_GNI_DL
+src_libfabric_la_SOURCES += $(_gni_files) $(_gni_headers)
+src_libfabric_la_CPPFLAGS += $(gni_CPPFLAGS)
+src_libfabric_la_LDFLAGS += $(gni_LDFLAGS)
+src_libfabric_la_LIBADD += $(gni_LIBS)
+endif !HAVE_GNI_DL
+
+rdmainclude_HEADERS += \
+	prov/gni/include/fi_ext_gni.h
+
+prov_install_man_pages += man/man7/fi_gni.7
+
+endif HAVE_GNI
+
+prov_dist_man_pages += man/man7/fi_gni.7

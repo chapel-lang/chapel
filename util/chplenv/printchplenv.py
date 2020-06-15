@@ -77,7 +77,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
-    ChapelEnv('  CHPL_LIBFABRIC', INTERNAL),
+    ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
@@ -208,8 +208,8 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_3p_libfabric_configs.get_uniq_cfg_path()
     if chpl_comm.get() == 'ofi':
-      compile_args_3p.extend(chpl_3p_libfabric_configs.get_compile_args(chpl_libfabric.get()))
-      link_args_3p.extend(chpl_3p_libfabric_configs.get_link_args(chpl_libfabric.get()))
+      compile_args_3p.extend(chpl_3p_libfabric_configs.get_compile_args())
+      link_args_3p.extend(chpl_3p_libfabric_configs.get_link_args())
 
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_3p_libunwind_configs.get_uniq_cfg_path()
     link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(chpl_unwind.get()))
@@ -259,6 +259,8 @@ def filter_tidy(chpl_env):
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
         return comm == 'gasnet'
+    elif chpl_env.name == '  CHPL_LIBFABRIC':
+        return comm == 'ofi'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
     return True

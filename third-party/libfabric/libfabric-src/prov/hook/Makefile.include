@@ -1,0 +1,2 @@
+src_libfabric_la_CPPFLAGS +=	-I$(top_srcdir)/prov/hook/include
+src_libfabric_la_SOURCES  +=    prov/hook/include/hook_prov.h

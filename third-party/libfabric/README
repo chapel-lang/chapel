@@ -1,0 +1,35 @@
+===========================
+libfabric README for Chapel
+===========================
+
+This copy of libfabric 1.10.1 is being released with Chapel for
+convenience and was obtained from:
+
+  https://github.com/ofiwg/libfabric
+
+Any Chapel issues that seem to be related to libfabric should be
+directed to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Upgrading libfabric versions
+============================
+
+The directory $CHPL_HOME/third-party/libfabric/libfabric-src contains the
+un-tarballed libfabric package contents. Version updates should be done as
+follows, assuming the CWD is $CHPL_HOME/third-party/libfabric/:
+
+1. download and untar the latest libfabric version: e.g. libfabric-1.10.1
+2. `rm -rf libfabric-src`
+3. `mv libfabric-1.10.1 libfabric-src`
+4. `git add --force libfabric-src` (--force to ignore our .gitignore)
+5. update the version number mentioned above
+6. verify any references to libfabric's man pages in the runtime shim are
+   accurate and update the version number referenced.
+7. make sure these instructions are up to date :)
+8. test (some CHPL_COMM=ofi configuration)
+9. commit, PR, merge, etc
+
+Note that these instructions are for simple API-compatible updates. If the
+libfabric API changes, or the references to the man pages in the runtime
+shim are no longer accurate, more care should be taken to see what
+changes have been made and if we need to change anything on our end.
