@@ -1,9 +1,4 @@
 #!/usr/bin/env python
 
 # Use the largest hugepages we can get, so we can cover any compute node.
-
-import os
-if os.getenv('CHPL_TARGET_PLATFORM', '') in ['cray-xe']:
-    print('HUGETLB_DEFAULT_PAGE_SIZE=64M')
-else:
-    print('HUGETLB_DEFAULT_PAGE_SIZE=512M')
+print('HUGETLB_DEFAULT_PAGE_SIZE=512M')

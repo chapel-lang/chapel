@@ -51,7 +51,7 @@ for f in $(find $CHPL_HOME/test                                               \
    # Get the base name by stripping off the extensions we're looking
    # for, and extensions the test system will automatically look for
    # ("no-local" and following (order matters)).
-   # linux32, cray-xc, cray-xe are the in-use sub_test:platform values
+   # linux32, cray-xc are the in-use sub_test:platform values
    f=$(basename $f)
    base=$f
    for ext in good bad future prediff precomp preexec compopts execopts      \
@@ -59,7 +59,7 @@ for f in $(find $CHPL_HOME/test                                               \
               timeout perfnumtrials perfcompopts perfexecopts                \
               no-local lm-flat lm-numa na-none na-ugni                       \
               comm-ugni comm-ofi comm-gasnet comm-none                       \
-              linux32 cray-xc cray-xe; do
+              linux32 cray-xc; do
        base=${base%.${ext}}
    done
 

@@ -6,7 +6,7 @@ one of the setenv scripts in this subdir, setenv-example-3 from the parent direc
 or a new setenv script derived from one of those. See `chapel_build.bash` for illustration.
 
 The Chapel RPM file produced by these scripts is intended to be fully compatible
-with current generation Cray-XC/XE supercomputers and system-management tools.
+with current generation Cray-XC supercomputers and system-management tools.
 As far as the packaging is concerned, these RPMs should be interchangeable with the
 officially released Chapel modules for Cray systems.
 
@@ -57,7 +57,6 @@ new subdir.
   are Cray-specific implementations of the general build_configs/setenv pattern:
   - setenv-xc-x86_64:  Chapel Cray-XC module for x86_64
   - setenv-xc-aarch64: Chapel Cray-XC module for aarch64 (ARM)
-  - setenv-xe-x86_64:  Chapel Cray-XE module for x86_64
 
 ### Users local Chapel projects:
 

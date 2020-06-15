@@ -21,11 +21,11 @@ def get(flag='host'):
         raise error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
-        # Check for cray platform. It is a cray platform if there is an CLEinfo
-        # config file and it has a known network value in it.
-        cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo')
+        # Check for cray platform. It is a cray platform if there is a
+        # cle-release/CLEinfo config file with a known network value in it.
+        cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release') # CLE >= 6
         if not os.path.exists(cle_info_file):
-            cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release')
+            cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo') # CLE <= 5
 
         if os.path.exists(cle_info_file):
             with open(cle_info_file, 'r') as fp:
@@ -34,9 +34,7 @@ def get(flag='host'):
             net_match = net_pattern.search(cle_info)
             if net_match is not None and len(net_match.groups()) == 1:
                 net = net_match.group('net')
-                if net.lower() == 'gem':
-                    platform_val = 'cray-xe'
-                elif net.lower() == 'ari':
+                if net.lower() == 'ari':
                     platform_val = 'cray-xc'
 
     if not platform_val:

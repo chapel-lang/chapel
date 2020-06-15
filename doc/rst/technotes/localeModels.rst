@@ -97,19 +97,9 @@ Performance Considerations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Performance when using the NUMA locale model is currently no better than
-when using the flat locale model, and often worse.  The *multi-ddata*
-feature introduced in the 1.15 Chapel release improved some cases for
-the NUMA locale model but slowed many others, sometimes by a lot.  In
-the end we disabled it because much of the performance loss was inherent
-in the implementation and could not be removed.  On Cray XE and XC
-systems with ``CHPL_COMM=ugni`` and NIC-registered memory, recent work
-to allocate arrays separately and register them dynamically has improved
-NUMA affinity and thus performance, but the benefits of that effort
-apply to the flat locale model as well as they do to the numa one.  For
-other configurations, with the multi-ddata feature disabled performance
-with the NUMA locale model has returned, for better or worse, to what it
-was before that was introduced.  At present most of our effort has to do
-with making better use of first-touch to achieve NUMA affinity.
+when using the flat locale model, and often worse. At present most of
+our effort has to do with making better use of first-touch to achieve
+NUMA affinity.
 
 --------------------------
 Qthreads thread scheduling

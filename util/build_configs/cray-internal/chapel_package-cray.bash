@@ -24,7 +24,7 @@ Usage $( basename "${BASH_SOURCE[0]}" )" '[options]
     -b release_type     : Build/release type (required)
                           == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
-                          ("cray-xc" or "cray-xe")
+                          ("cray-xc" or "cray-shasta")
                           Default: cray-xc
     -T version_tag      : If given, version_tag will become part of the Chapel
                             package version string to be generated in this script.

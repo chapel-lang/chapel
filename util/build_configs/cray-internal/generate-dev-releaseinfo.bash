@@ -89,11 +89,10 @@ Deliverables:
 
     The Chapel release packages contain the compiler executables,
     runtime libraries, example programs, and documentation for use on
-    the Cray XE(TM), Cray XK(TM), and Cray XC(TM) systems.  Chapel can
-    be built from source for the Cray CS(TM) system.  Additional
-    information on Chapel can be found at: https://chapel-lang.org, and
-    the open-source release can be found at:
-    https://github.com/chapel-lang/chapel/releases/tag/$src_version
+    Cray XC(TM) systems.  Chapel can be built from source for the Cray
+    CS(TM) system.  Additional information on Chapel can be found at:
+    https://chapel-lang.org, and the open-source release can be found
+    at: https://github.com/chapel-lang/chapel/releases/tag/$src_version
 
 
 Schedule:
@@ -117,7 +116,6 @@ Dependencies:
     Chapel $major.$minor is supported on the following Cray systems:
     * Cray Shasta systems with CLE based on SLES15 or later
     * Cray XC systems with CLE 5.2UP04 or later
-    * Cray XE and XK systems with CLE 5.2UP04 or later
     * Cray CS systems running Red Hat, CentOS, or SuSE Linux
 
     A back-end C compiler is required to generate an executable. Any
@@ -141,9 +139,6 @@ Installation instructions:
 
       #On Cray XC systems (aarch64):
       rpm -ivh chapel-$pkg_version-crayxc$rc_number.aarch64.rpm
-
-      #On Cray XK and XE systems:
-      rpm -ivh chapel-$pkg_version-crayxe$rc_number.x86_64.rpm
 
       #To make this the default version:
       /opt/cray/admin-pe/set_default_files/set_default_chapel_$pkg_version
