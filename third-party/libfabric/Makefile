@@ -49,6 +49,11 @@ configure-libfabric: FORCE
 # These first few lines touch some autoconf-oriented files in a
 # certain order to prevent autoconf from running again.
 #
+	cd $(LIBFABRIC_SUBDIR) && touch -c configure.ac
+	cd $(LIBFABRIC_SUBDIR) && find . -name "*.m4" | xargs touch 
+	sleep 1
+	cd $(LIBFABRIC_SUBDIR) && touch -c aclocal.m4
+	sleep 1
 	touch $(LIBFABRIC_SUBDIR)/configure
 	find $(LIBFABRIC_SUBDIR)/. -name Makefile.in | xargs touch
 #
