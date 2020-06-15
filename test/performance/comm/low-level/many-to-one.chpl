@@ -28,7 +28,7 @@ config const runSecs = 5.0;
 config const minOpsPerTimerCheck = if opNeedsTask then 10**2 else 10**3;
 
 config const printConfig = false;
-config const doWarmupPass = (CHPL_COMM == 'ofi');
+config const doWarmupPass = true;
 config const printWarmupTiming = false;
 config const printTimings = false;
 config const printCommDiags = false;
