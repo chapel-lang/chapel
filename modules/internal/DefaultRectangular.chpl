@@ -968,6 +968,7 @@ module DefaultRectangular {
     type idxType;
     param stridable: bool;
     var targetLocDom: domain(rank);
+    pragma "unsafe"
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
     var RADLocks: [targetLocDom] chpl_LocalSpinlock;
