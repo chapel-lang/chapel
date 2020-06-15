@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Full test suite with CHPL_LLVM=system and pass --llvm flag to
-# compiler on linux64 (Ubuntu VM with LLVM-4 pre-installed).
+# compiler on linux64.
+#
 # No paratest.
 
 CWD=$(cd $(dirname $0) ; pwd)

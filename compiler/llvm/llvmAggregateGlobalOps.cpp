@@ -42,6 +42,8 @@
 // to load/store to inline the memcpy for example, or the
 // code generator might have started with loads and stores.
 
+// This code was based upon the LLVM optimization MemCpyOptimizer.cpp
+
 #include "llvmAggregateGlobalOps.h"
 
 #ifdef HAVE_LLVM
@@ -55,13 +57,16 @@
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/InstIterator.h"
-#include "llvm/IR/CallSite.h"
 
+#if HAVE_LLVM_VER < 90
+#include "llvm/IR/CallSite.h"
+#endif
 
 #include "llvm/IR/Verifier.h"
 
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
+#include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
 #include "llvm/IR/GetElementPtrTypeIterator.h"
@@ -197,6 +202,8 @@ Instruction* postponeDependentInstructions(
 // The next several fns are stolen almost totally unmodified from MemCpyOptimizer.
 // modified code areas say CUSTOM.
 
+#if HAVE_LLVM_VER < 100
+
 static int64_t GetOffsetFromIndex(const GEPOperator *GEP,
                                   unsigned Idx,
                                   bool &VariableIdxFound,
@@ -282,6 +289,7 @@ static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
   return true;
 }
 
+#endif
 
 struct MemOpRange { // from MemsetRange in MemCpyOptimizer
   // Start/End - A semi range that describes the span that this range covers.
@@ -526,9 +534,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextStore->isSimple()) break;
 
       // Check to see if this store is to a constant offset from the start ptr.
+#if HAVE_LLVM_VER >= 100
+      Optional<int64_t> optOffset =
+        isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
+      if (!optOffset)
+        break;
+      int64_t Offset = *optOffset;
+#else
       int64_t Offset;
       if (!IsPointerOffset(StartPtr, NextStore->getPointerOperand(), Offset, *DL))
         break;
+#endif
 
       Ranges.addStore(Offset, NextStore);
       bbPos[NextStore] = pos;
@@ -537,9 +553,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextLoad->isSimple()) break;
 
       // Check to see if this load is to a constant offset from the start ptr.
+#if HAVE_LLVM_VER >= 100
+      Optional<int64_t> optOffset =
+        isPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
+      if (!optOffset)
+        break;
+      int64_t Offset = *optOffset;
+#else
       int64_t Offset;
       if (!IsPointerOffset(StartPtr, NextLoad->getPointerOperand(), Offset, *DL))
         break;
+#endif
 
       Ranges.addLoad(Offset, NextLoad);
       bbPos[NextLoad] = pos;
@@ -665,9 +689,18 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         StoreInst* oldStore = cast<StoreInst>(*SI);
 
         int64_t offset = 0;
+
+#if HAVE_LLVM_VER >= 100
+        Optional<int64_t> optOffset =
+          isPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
+        assert(!!optOffset);
+        offset = *optOffset;
+        assert(offset >= 0);
+#else
         bool ok = IsPointerOffset(StartPtr, oldStore->getPointerOperand(),
                                   offset, *DL);
         assert(ok && offset >= 0); // we used this before, didn't we?
+#endif
         assert(!(oldStore->isVolatile() || oldStore->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
@@ -682,7 +715,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
+#if HAVE_LLVM_VER >= 100
+        newStore->setAlignment(oldStore->getAlign());
+#else
         newStore->setAlignment(oldStore->getAlignment());
+#endif
         newStore->takeName(oldStore);
       }
     }
@@ -753,9 +790,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
+#if HAVE_LLVM_VER >= 100
+        Optional<int64_t> optOffset =
+          isPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
+        assert(!!optOffset);
+        offset = *optOffset;
+        assert(offset >= 0);
+#else
         bool ok = IsPointerOffset(StartPtr, oldLoad->getPointerOperand(),
                                   offset, *DL);
         assert(ok && offset >= 0); // we used this before, didn't we?
+#endif
         assert(!(oldLoad->isVolatile() || oldLoad->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
@@ -768,7 +813,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
         LoadInst* newLoad = irBuilder.CreateLoad(Src);
+#if HAVE_LLVM_VER >= 100
+        newLoad->setAlignment(oldLoad->getAlign());
+#else
         newLoad->setAlignment(oldLoad->getAlignment());
+#endif
         oldLoad->replaceAllUsesWith(newLoad);
         newLoad->takeName(oldLoad);
         lastAddedInsn = newLoad;
