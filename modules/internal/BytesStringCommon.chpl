@@ -142,13 +142,15 @@ module BytesStringCommon {
             // in place of a single byte, we may overflow
             expectedSize += 3-nInvalidBytes;
             (newBuff, allocSize) = bufferEnsureSize(newBuff, allocSize,
-                                                     expectedSize);
+                                                    expectedSize);
 
             qio_encode_char_buf(newBuff+decodedIdx, replChar);
 
             decodedIdx += 3;  // replacement character is 3 bytes in UTF8
           }
           else if policy == decodePolicy.escape {
+              
+            hasEscapes = true;
 
             // encoded escape sequence is 3 bytes. And this is per invalid byte
             expectedSize += 2*nInvalidBytes;
