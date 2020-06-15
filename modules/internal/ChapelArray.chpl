@@ -167,6 +167,7 @@ module ChapelArray {
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
+  use ArrayViewLocal;
   import Reflection;
   private use ChapelDebugPrint;
   private use SysCTypes;
@@ -506,6 +507,16 @@ module ChapelArray {
     }
 
     return A;
+  }
+
+  pragma "no doc"
+  pragma "fn returns aliasing array"
+  proc chpl__buildLocalSlice(base) {
+    if !isArray(base) {
+      compilerError("Local slices are only supported on arrays");
+    } else {
+      return base.chpl__makeArrayViewLocal();
+    }
   }
 
 
@@ -2793,6 +2804,28 @@ module ChapelArray {
       for param i in 0..args.size-1 do
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", args(i));
+    }
+
+    pragma "no doc"
+    pragma "reference to const when const this"
+    pragma "fn returns aliasing array"
+    proc chpl__makeArrayViewLocal() {
+      const ref d = this.domain;
+      const (arr, arrpid) = if isSubtype(_value.type, ArrayViewLocalArr)
+                              then (this._value.arr, this._value._ArrPid)
+                              else (this._value, this._pid);
+
+      var a = new unmanaged ArrayViewLocalArr(eltType=this.eltType,
+                                              _DomPid=d._pid,
+                                              dom=d._instance,
+                                              _ArrPid=arrpid,
+                                              _ArrInstance=arr);
+      // lock since we're referring to an existing domain; but don't
+      // add this array to the domain's list of arrays since resizing
+      // a slice's domain shouldn't generate a reallocate call for the
+      // underlying array
+      d._value.add_arr(a, locking=true, addToList=false);
+      return _newArray(a);
     }
 
     // Special cases of local slices for DefaultRectangularArrs because
