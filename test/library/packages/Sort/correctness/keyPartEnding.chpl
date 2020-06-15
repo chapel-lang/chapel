@@ -45,9 +45,9 @@ proc stringToTwoRepeated(arg:string) {
 record MyComparator {
   proc keyPart(arg:TwoRepeated, i:int) {
     var sum = arg.nFirst + arg.nSecond;
-    if i <= arg.nFirst then
+    if i < arg.nFirst then
       return (0, arg.first);
-    else if i <= sum then
+    else if i < sum then
       return (0, arg.second);
     else
       return (-1, 0);
@@ -70,7 +70,7 @@ proc testSort(arr) {
   // Then, sort the array as records
   var c = for s in arr do stringToTwoRepeated(s);
   var cc = new MyComparator();
-  cc.keyPart(c[1], 1);
+  cc.keyPart(c[0], 0);
   sort(c, new MyComparator());
   writeln(c);
   assert(isSorted(c, new MyComparator()));
