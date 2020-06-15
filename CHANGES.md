@@ -10,7 +10,7 @@ Update to twenty-fifth public release of Chapel, June 2020
 
 Portability
 -----------
-* addressed some coding issues that caused problems with gcc 10.x
+* fixed portability issues in our code w.r.t. gcc 10.x
 
 
 version 1.22.0
