@@ -1,6 +1,18 @@
 Release Changes List
 ====================
 
+
+version 1.22.1
+==============
+
+Update to twenty-fifth public release of Chapel, June 2020
+(see also changes below for 1.22.0)
+
+Portability
+-----------
+* fixed portability issues in our code w.r.t. gcc 10.x
+
+
 version 1.22.0
 ==============
 
@@ -79,6 +91,7 @@ Bug Fixes
 * fixed a bug in the mason spack spec parser and simplified its implementation
 * fixed a bug in `mason add --external` where some versions were not allowed
 * updated some stale code in the 'HDF5' module
+
 
 version 1.21.0
 ==============
