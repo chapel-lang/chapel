@@ -367,7 +367,7 @@ static void setRecordAssignableFlags(AggregateType* at) {
 
 static void setRecordDefaultValueFlags(AggregateType* at);
 
-static bool isDefaultInitializable(Type* t) {
+bool isDefaultInitializable(Type* t) {
   bool val = true;
   if (isRecord(t)) {
     AggregateType* at = toAggregateType(t);
