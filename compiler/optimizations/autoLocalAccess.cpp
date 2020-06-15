@@ -27,7 +27,7 @@
 #include "view.h"
 
 static void LOG(const char *msg, BaseAST *node) {
-  if (fAutoLocalAccessLog) {
+  if (fReportAutoLocalAccess) {
     const bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                           node->getModule()->modTag != MOD_STANDARD);
 

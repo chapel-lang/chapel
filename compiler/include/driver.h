@@ -58,7 +58,7 @@ extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
 extern bool fAutoLocalAccessDynamic;
-extern bool fAutoLocalAccessLog;
+extern bool fReportAutoLocalAccess;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
