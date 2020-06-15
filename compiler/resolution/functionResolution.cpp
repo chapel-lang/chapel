@@ -3647,11 +3647,8 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
 }
 
 // Is it OK to default-initialize an array with this element type?
-// Once #14854 is resolved, this should be simply
-//   isDefaultInitializable(eltType)
 static bool okForDefaultInitializedArray(Type* eltType) {
-  // Exclude locales. Remove this exception once #15149 is merged.
-  return eltType == dtLocale || ! isNonNilableClassType(eltType);
+  return isDefaultInitializable(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -10253,7 +10250,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
                                   Type* typeToCheck, Type* type,
                                   Expr* preventingSplitInit)
 {
-  if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
+  if (isDefaultInitializable(typeToCheck) || useLegacyNilability(call))
     return;
 
   // Work around current problems in array / assoc array types
@@ -10287,12 +10284,15 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
-  USR_PRINT("non-nil class types do not support default initialization");
 
-  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-  ClassTypeDecorator d = classTypeDecorator(type);
-  Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-  USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  if (isNonNilableClassType(typeToCheck)) {
+    USR_PRINT("non-nil class types do not support default initialization");
+
+    AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+    ClassTypeDecorator d = classTypeDecorator(type);
+    Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+    USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  }
 }
 
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
