@@ -881,7 +881,7 @@ The methods in this subsection can be applied to any domain.
 
 .. function:: proc domain.clear()
 
-Resets this domain’s index set to the empty set.
+   Resets this domain’s index set to the empty set.
 
 *Example (clearAssociativeDomain)*.
 
@@ -908,7 +908,7 @@ Resets this domain’s index set to the empty set.
 
 .. function:: proc domain.dist : dmap
 
-Returns the domain map that implements this domain
+	 Returns the domain map that implements this domain
 
 *Example (getDomainMap)*.
 
@@ -974,8 +974,8 @@ Returns the domain map that implements this domain
 
 .. function:: proc domain.member(i)
 
-   Returns true if the given index ``i`` is a member of this domain’s index
-   set, and false otherwise.
+      Returns true if the given index ``i`` is a member of this domain’s index
+      set, and false otherwise.
 
 *Open issue*.
 

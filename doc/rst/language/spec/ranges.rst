@@ -420,8 +420,8 @@ Ranges can be compared using equality and inequality.
 
 .. function:: proc ==(r1: range(?), r2: range(?)): bool
 
-Returns ``true`` if the two ranges have the same represented sequence or
-the same four primary properties, and ``false`` otherwise.
+   Returns ``true`` if the two ranges have the same represented sequence or
+   the same four primary properties, and ``false`` otherwise.
 
 .. _Iterating_over_Ranges:
 
