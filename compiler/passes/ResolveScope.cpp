@@ -1001,12 +1001,14 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   if (!this->canReexport) return NULL;
 
   std::map<Symbol *, astlocT *> renameLocs;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs);
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs,
+                                                true);
   return retval;
 }
 
 Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-         BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) {
+         BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs,
+                                                   bool followUses) {
   if (!this->canReexport) return NULL;
 
   std::vector<Symbol *> symbols;
@@ -1020,6 +1022,10 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     if (visStmt != NULL) {
       if (!visStmt->isPrivate) {
         hasPublicImport = true;
+        if (isUseStmt(visStmt) && !followUses) {
+          // Mark that we re-export, but don't always follow it
+          continue;
+        }
         if (!visStmt->skipSymbolSearch(name)) {
           const char *nameToUse = name;
           const bool isSymRenamed = visStmt->isARenamedSym(name);

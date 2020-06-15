@@ -88,8 +88,9 @@ public:
                                                      BaseAST *context);
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs);
+                                                     BaseAST *context,
+                                                     std::map<Symbol *, astlocT *>& renameLocs,
+                                                     bool followUses = false);
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
