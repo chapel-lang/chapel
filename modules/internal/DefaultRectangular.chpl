@@ -1405,12 +1405,7 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      // This should really be isDefaultInitializable(eltType), but that
-      // doesn't always work / give correct answers yet.  The following
-      // check won't catch cases such as records with non-nilable class
-      // fields that don't have default initializers (that initialize
-      // them).
-      if (isNonNilableClass(eltType)) {
+      if (!isDefaultInitializable(eltType)) {
         halt("Can't resize domains whose arrays' elements don't have default values");
       }
       if (this.locale != here) {

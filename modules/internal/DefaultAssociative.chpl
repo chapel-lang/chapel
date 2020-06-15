@@ -459,11 +459,18 @@ module DefaultAssociative {
       this.tmpData = nil;
       this.complete();
 
-      if initElts && isNonNilableClass(this.eltType) {
-        param msg = "Cannot default initialize associative array because"
-                  + " element type " + eltType:string
-                  + " is a non-nilable class";
-        compilerError(msg);
+      if initElts {
+        if isNonNilableClass(this.eltType) {
+          param msg = "Cannot default initialize associative array because"
+                    + " element type " + eltType:string
+                    + " is a non-nilable class";
+          compilerError(msg);
+        } else if !isDefaultInitializable(this.eltType) {
+          param msg = "Cannot default initialize associative array because"
+                    + " element type " + eltType:string
+                    + " cannot be default initialized";
+          compilerError(msg);
+        }
       }
 
       // Initialize array elements for any full slots
