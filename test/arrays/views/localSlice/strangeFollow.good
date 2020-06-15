@@ -1,0 +1,6 @@
+Testing LOCALE0...
+LOCALE0: SUCCESS
+Testing LOCALE1...
+strangeFollow.chpl:21: error: halt reached - array index out of bounds
+note: index was nnn but array bounds are nnn..nnn
+note: out of bounds

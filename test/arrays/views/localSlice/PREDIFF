@@ -1,0 +1,14 @@
+#!/bin/sh
+
+TESTNAME=$1
+OUTFILE=$2
+
+command='
+  s/index was .* but array bounds are .*$/index was nnn but array bounds are nnn..nnn/
+  s/out of bounds .*$/out of bounds/
+'
+
+TMPFILE="$OUTFILE.prediff.tmp"
+mv $OUTFILE $TMPFILE
+sed -e "$command" $TMPFILE > $OUTFILE
+rm $TMPFILE

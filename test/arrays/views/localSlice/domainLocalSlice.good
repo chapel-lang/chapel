@@ -1,0 +1,2 @@
+domainLocalSlice.chpl:2: In function 'main':
+domainLocalSlice.chpl:4: error: Local slices are only supported on arrays

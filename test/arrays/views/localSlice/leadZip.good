@@ -1,0 +1,2 @@
+leadZip.chpl:2: In function 'main':
+leadZip.chpl:7: error: local slices may not lead zippered iteration

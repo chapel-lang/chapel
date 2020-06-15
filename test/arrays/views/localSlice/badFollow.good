@@ -1,0 +1,2 @@
+badFollow.chpl:17: error: halt reached - array index out of bounds
+note: index '26' is not local

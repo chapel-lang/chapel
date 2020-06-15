@@ -1,0 +1,2 @@
+badFollow.chpl:17: error: halt reached - array index out of bounds
+note: index was nnn but array bounds are nnn..nnn
