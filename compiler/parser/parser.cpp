@@ -112,7 +112,6 @@ void parse() {
 *                            ./tasktable/on/ChapelTaskTable.chpl              *
 *                                                                             *
 *   LocaleModel              ./localeModels/flat/LocaleModel.chpl             *
-*                            ./localeModels/knl/LocaleModel.chpl              *
 *                            ./localeModels/numa/LocaleModel.chpl             *
 *                                                                             *
 *   NetworkAtomicTypes       ./comm/ugni/NetworkAtomicTypes.chpl              *

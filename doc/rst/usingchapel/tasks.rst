@@ -187,9 +187,7 @@ Hwloc
 When ``CHPL_TASKS=qthreads``, the default for ``CHPL_HWLOC`` becomes "hwloc",
 and the hwloc third-party package will be built.  Qthreads depends on
 this package to provide it with a description of the locale hardware, to
-support locality and affinity operations.  This is especially important
-when ``CHPL_LOCALE_MODEL=numa`` or ``CHPL_LOCALE_MODEL=knl``, and will
-become more so in the future.
+support locality and affinity operations.
 
 
 Further information
