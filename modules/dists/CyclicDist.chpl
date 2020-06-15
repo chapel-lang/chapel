@@ -919,6 +919,13 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
 proc CyclicArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
+inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref
+  return _to_nonnil(myLocArr).this(i);
+
+inline proc CyclicArr.dsiLocalAccess(i: idxType...rank) ref {
+  return dsiLocalAccess(i);
+}
+
 proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }

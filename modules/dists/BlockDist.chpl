@@ -1042,6 +1042,10 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
   return _to_nonnil(myLocArr).this(i);
 }
 
+inline proc BlockArr.dsiLocalAccess(i: idxType...rank) ref {
+  return dsiLocalAccess(i);
+}
+
 //
 // the global accessor for the array
 //
