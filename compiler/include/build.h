@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,6 +35,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ImportStmt;
 class ModuleSymbol;
 class Type;
 
@@ -69,10 +71,10 @@ BlockStmt* buildUseStmt(Expr* mod, const char* rename,
 BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
                         std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
-BlockStmt* buildImportStmt(Expr* mod, bool privateImport);
-BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport);
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                           bool privateImport);
+ImportStmt* buildImportStmt(Expr* mod);
+ImportStmt* buildImportStmt(Expr* mod, const char* rename);
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names);
+void setImportPrivacy(BlockStmt* list, bool isPrivate);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
@@ -88,6 +90,10 @@ ModuleSymbol* buildModule(const char* name,
                           bool        priv,
                           bool        prototype,
                           const char* docs);
+BlockStmt* buildIncludeModule(const char* name,
+                              bool priv,
+                              bool prototype,
+                              const char* docs);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -207,8 +208,8 @@ module Curl {
                 This function will call ``setopt`` on each pair in turn.
    */
   proc setopt(ch:channel, args ...?k) throws {
-    for param i in 1..k {
-      setopt(ch, args(i)(1), args(i)(2));
+    for param i in 0..k-1 {
+      setopt(ch, args(i)(0), args(i)(1));
     }
   }
 
@@ -395,6 +396,7 @@ module Curl {
     import Sys;
     import Time;
     private use IO;
+    use Curl;
 
     class CurlFile : QioPluginFile {
 

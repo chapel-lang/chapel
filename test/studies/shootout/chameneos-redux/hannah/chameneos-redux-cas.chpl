@@ -159,7 +159,7 @@ proc populate (size : int(32)) {
 
   if (size == 10) {
     for i in D {
-      population(i) = new owned Chameneos(i, colorsDefault10(i));
+      population(i) = new owned Chameneos(i, colorsDefault10(i-1));
     }
   } else {
     for i in D {
@@ -222,7 +222,7 @@ proc printInfo(population : [] owned Chameneos) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.size {
+  for i in 0..<s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

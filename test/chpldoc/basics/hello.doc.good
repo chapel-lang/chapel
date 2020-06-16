@@ -10,6 +10,13 @@ hello.doc
 
    use hello.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import hello.doc;
+
 .. function:: proc hello()
 
    This function prints out a greeting.

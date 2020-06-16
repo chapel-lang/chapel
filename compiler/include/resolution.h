@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -225,9 +226,11 @@ void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
 FnSymbol* getUnalias(Type* t);
+FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn);
 const char* getErroneousCopyError(FnSymbol* fn);
 void markCopyErroneous(FnSymbol* fn, const char* err);
 
+bool isDefaultInitializable(Type* t);
 
 bool isPOD(Type* t);
 bool recordContainingCopyMutatesField(Type* at);
@@ -327,4 +330,7 @@ void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
 
+
+// Return the array element type, or NULL if not an array
+Type* arrayElementType(Type* arrayType);
 #endif

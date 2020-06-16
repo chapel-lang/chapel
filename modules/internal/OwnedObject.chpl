@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -264,8 +265,9 @@ module OwnedObject {
 
        It is an error to directly delete the class instance
        after passing it to `owned.create()`. */
-    pragma "unsafe" // 'result' may have a non-nilable type
+    pragma "unsafe"
     inline proc type create(pragma "nil from arg" p : unmanaged) {
+      // 'result' may have a non-nilable type
       var result: (p.type : owned);
       result.retain(p);
       return result;

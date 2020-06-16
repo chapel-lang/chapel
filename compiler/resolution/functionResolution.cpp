@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -114,6 +115,7 @@ std::map<Type*,     Serializers>   serializeMap;
 
 Map<Type*,          FnSymbol*>     autoDestroyMap;
 Map<Type*,          FnSymbol*>     unaliasMap;
+Map<FnSymbol*,      FnSymbol*>     coerceMoveFromCopyMap;
 Map<Type*,          FnSymbol*>     valueToRuntimeTypeMap;
 Map<FnSymbol*,      FnSymbol*>     iteratorLeaderMap;
 Map<FnSymbol*,      FnSymbol*>     iteratorFollowerMap;
@@ -395,6 +397,10 @@ FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
 }
 
+FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn) {
+  return coerceMoveFromCopyMap.get(coerceCopyFn);
+}
+
 const char* getErroneousCopyError(FnSymbol* fn) {
   try_resolve_map_t::iterator it;
   it = tryResolveErrors.find(fn);
@@ -524,8 +530,12 @@ static bool fits_in_uint(int width, Immediate* imm) {
 
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
+//
+// If it returns false, actualConstOut will indicate if the actual was const.
 static bool
-isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
+                       bool &constnessErrorOut,
+                       bool &exprTmpErrorOut) {
   Symbol* calledFn = NULL;
   if (formal)
     calledFn = formal->defPoint->parentSymbol;
@@ -540,7 +550,8 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
         sym->isParameter())
       actualConst = true;
 
-    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
+    bool actualExprTmp = sym->hasFlag(FLAG_EXPR_TEMP) &&
+                         !sym->type->symbol->hasFlag(FLAG_ARRAY);
     TypeSymbol* formalTS = NULL;
     bool formalCopyMutates = false;
     if (formal) {
@@ -549,16 +560,27 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
     }
     bool isInitCoerceTmp = sym->name == astr_init_coerce_tmp;
 
-    if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
-        (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
-        se->symbol()->isParameter()) {
+    bool parameter = se->symbol()->isParameter();
+
+    bool constnessError =
+      (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
+      parameter;
+
+    bool exprTmpError =
+        (actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
+        parameter;
+
+    if (constnessError || exprTmpError) {
       // But ignore for now errors with this argument
       // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
       // These will be checked for later, along with ref-pairs.
       if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
-
+      {
+        constnessErrorOut = constnessError;
+        exprTmpErrorOut = exprTmpError;
         return false;
+      }
     }
   }
 
@@ -2466,6 +2488,7 @@ void resolveDestructor(AggregateType* at) {
 static bool resolveTypeComparisonCall(CallExpr* call);
 static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
+static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
@@ -2523,6 +2546,11 @@ void resolveCall(CallExpr* call) {
 
     if (resolveClassBorrowMethod(call))
       return;
+
+    if (call->isNamed("chpl__coerceCopy")) {
+      resolveCoerceCopyMove(call);
+      return;
+    }
 
     resolveNormalCall(call);
   }
@@ -2617,6 +2645,11 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
+
+  // Find different insert point if ctx isn't in a list
+  if (ctx->list == NULL)
+    ctx = ctx->parentSymbol->defPoint;
+
   ctx->insertAfter(typeCall);
   resolveCall(typeCall);
   Type* ret = typeCall->typeInfo();
@@ -2886,6 +2919,64 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
   return false;
 }
 
+// Save chpl__coerceMove with the same arguments as chpl__coerceCopy
+// in case copy elision decides to replace a chpl__coerceCopy with a coerceMove.
+//
+// compilerErrors reported in coerceMove are reported now, but errors in
+// coerceCopy will be put off until callDestructors.
+static void resolveCoerceCopyMove(CallExpr* call) {
+  // Try resolving the coerceCopy call
+  tryResolveCall(call, /* checkWithin */ false);
+
+  // Note the chpl__coerceCopy fn
+  FnSymbol* copyFn = call->resolvedFunction();
+
+  // Couldn't find a copy function - try again to give unresolved error
+  if (copyFn == NULL) {
+    resolveNormalCall(call);
+    return;
+  }
+
+  // Now try to find the corresponding chpl__coerceMove.
+  if (coerceMoveFromCopyMap.get(copyFn) != NULL) {
+    // already resolved and put into map; nothing more to do here.
+    return;
+  }
+
+  // Add a block in which we can temporarily resolve chpl__coerceMove
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+  call->getStmtExpr()->insertAfter(block);
+
+  // Add another call next to it to chpl__coerceMove
+  CallExpr* coerceMove = call->copy();
+  block->insertAtTail(coerceMove);
+  coerceMove->baseExpr->replace(new UnresolvedSymExpr(astr_coerceMove));
+  // Resolve the chpl__coerceMove call (and its body)
+  resolveCallAndCallee(coerceMove, false);
+  // Add it to the map
+  FnSymbol* moveFn = coerceMove->resolvedFunction();
+  coerceMoveFromCopyMap.put(copyFn, moveFn);
+  // Remove the chpl__coerceMove call and any temps added
+  block->remove();
+
+  // After the chpl__coerceMove body is resolved, resolve
+  // the body of chpl__coerceCopy. Doing it in this order allows
+  // compilerErrors in chpl__coerceMove to halt compilation.
+  // That prevents the compiler from trying to continue past severe
+  // errors, like rank mismatch, when compiling chpl__coerceCopy
+  // (since chpl__coerceCopy might save an error for later).
+  //
+  // A more robust solution would be preferred.
+  inTryResolve++;
+  tryResolveStates.push_back(CHECK_BODY_RESOLVES);
+  tryResolveFunctions.push_back(copyFn);
+
+  resolveFunction(copyFn);
+
+  tryResolveFunctions.pop_back();
+  tryResolveStates.pop_back();
+  inTryResolve--;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -3556,16 +3647,13 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
     arrayType = toAggregateType(eltType);
   } while
     (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
-    
+
   return eltType;
 }
 
 // Is it OK to default-initialize an array with this element type?
-// Once #14854 is resolved, this should be simply
-//   isDefaultInitializable(eltType)
 static bool okForDefaultInitializedArray(Type* eltType) {
-  // Exclude locales. Remove this exception once #15149 is merged.
-  return eltType == dtLocale || ! isNonNilableClassType(eltType);
+  return isDefaultInitializable(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -3625,9 +3713,9 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
         //
         // Acceptable handling of the default actual is this:
         //   def default_arg_xxx: _array(...)
-        //   move( default_arg_xxx call( fn _new_default_xxx ) ) 
-        //   call( fn = default_arg_xxx <whatever> ) 
-        //   move( new_temp call( fn _new default_arg_xxx ) ) 
+        //   move( default_arg_xxx call( fn _new_default_xxx ) )
+        //   call( fn = default_arg_xxx <whatever> )
+        //   move( new_temp call( fn _new default_arg_xxx ) )
         //
         // The call( fn = ... ) establishes the non-default value.
         // It is an error if that call is missing.
@@ -3769,6 +3857,7 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
+static bool defaultValueMismatch(CallInfo& info);
 
 void printResolutionErrorUnresolved(CallInfo&       info,
                                     Vec<FnSymbol*>& visibleFns) {
@@ -3823,6 +3912,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       }
 
     } else if (info.name == astrSassign) {
+
       if        (info.actuals.v[0]                              !=  NULL  &&
                  info.actuals.v[1]                              !=  NULL  &&
                  info.actuals.v[0]->hasFlag(FLAG_TYPE_VARIABLE) == false  &&
@@ -3837,9 +3927,14 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        "illegal assignment to type");
 
       } else if (info.actuals.v[1]->type == dtNil) {
-        USR_FATAL_CONT(call,
-                       "type mismatch in assignment from nil to %s",
-                       toString(info.actuals.v[0]->type));
+
+        bool handled = defaultValueMismatch(info);
+
+        if (!handled) {
+          USR_FATAL_CONT(call,
+                         "Cannot assign to %s from nil",
+                         toString(info.actuals.v[0]->type));
+        }
 
       } else if (info.actuals.v[0]->hasFlag(FLAG_RVV) ||
                  info.actuals.v[0]->hasFlag(FLAG_YVV)) {
@@ -3852,11 +3947,22 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        toString(info.actuals.v[0]->type));
 
       } else {
+        bool handled = defaultValueMismatch(info);
+
+        if (!handled) {
+          USR_FATAL_CONT(call,
+                         "Cannot assign to %s from %s",
+                         toString(info.actuals.v[0]->type),
+                         toString(info.actuals.v[1]->type));
+        }
+      }
+
+    } else if (info.name == astr_coerceCopy || info.name == astr_coerceMove) {
+
         USR_FATAL_CONT(call,
-                       "Cannot assign to %s from %s",
+                       "Cannot initialize %s from %s",
                        toString(info.actuals.v[0]->type),
                        toString(info.actuals.v[1]->type));
-      }
 
     } else if (info.name == astrThis) {
       Type* type = info.actuals.v[1]->getValType();
@@ -3915,6 +4021,51 @@ static void sortExampleCandidates(CallInfo& info,
   ExampleCandidateComparator cmp(info);
   // Try to sort them so that the more relevant candidates are first.
   std::stable_sort(&visibleFns.v[0], &visibleFns.v[visibleFns.n], cmp);
+}
+
+static bool defaultValueMismatch(CallInfo& info) {
+  bool handled = false;
+  CallExpr* call = info.call;
+
+  if (FnSymbol* inFn = call->getFunction()) {
+    if (inFn->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION)) {
+      // Look in the function for a FLAG_USER_VARIABLE_NAME variable
+      // for better error reporting
+      VarSymbol* userVariable = NULL;
+
+      for_alist(expr, inFn->body->body) {
+        if (DefExpr* def = toDefExpr(expr))
+          if (VarSymbol* definedVar = toVarSymbol(def->sym))
+            if (definedVar->hasFlag(FLAG_USER_VARIABLE_NAME))
+              if (definedVar->getValType() ==
+                  info.actuals.v[0]->getValType())
+                userVariable = definedVar;
+      }
+
+      if (userVariable != NULL) {
+        Type* formalType = userVariable->getValType();
+        Type* actualType = info.actuals.v[1]->getValType();
+
+        if (isNonNilableClassType(formalType) &&
+            actualType == dtNil) {
+          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from nil",
+                         userVariable->name,
+                         toString(formalType));
+        } else if (isNonNilableClassType(formalType) &&
+            isNilableClassType(actualType)) {
+          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from a nilable '%s'",
+                         userVariable->name,
+                         toString(formalType), toString(actualType));
+        } else {
+          USR_FATAL_CONT(call, "Cannot initialize '%s' of type %s from a '%s'",
+                         userVariable->name,
+                         toString(formalType), toString(actualType));
+        }
+        handled = true;
+      }
+    }
+  }
+  return handled;
 }
 
 void printResolutionErrorAmbiguous(CallInfo&                  info,
@@ -5532,7 +5683,10 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
 }
 
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
+  bool constnessError = false;
+  bool exprTmpError = false;
   bool errorMsg = false;
+
   switch (intent) {
    case INTENT_BLANK:
    case INTENT_CONST:
@@ -5547,15 +5701,20 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
     // generally, not checking them here
     // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
     if (formal && formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-      if (!isLegalLvalueActualArg(formal, actual))
+      if (!isLegalLvalueActualArg(formal, actual, constnessError, exprTmpError))
         errorMsg = true;
     break;
 
-   case INTENT_INOUT:
    case INTENT_OUT:
+   case INTENT_INOUT:
    case INTENT_REF:
-    if (!isLegalLvalueActualArg(formal, actual))
+    if (!isLegalLvalueActualArg(formal, actual, constnessError, exprTmpError)) {
       errorMsg = true;
+
+      // ignore const errors for out until we sort out split-init
+      if (exprTmpError == false && intent == INTENT_OUT)
+        errorMsg = false;
+    }
     break;
 
    case INTENT_CONST_REF:
@@ -5641,7 +5800,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
                        "'const' field(s)",
                        recordName);
       } else {
-        USR_FATAL_CONT(actual, "illegal lvalue in assignment");
+        if (constnessError)
+          USR_FATAL_CONT(actual, "cannot assign to const variable");
+        else
+          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
       }
 
     } else if (isInitParam == false) {
@@ -5649,11 +5811,15 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
       char          cn1          = calleeFn->name[0];
       const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
 
+      const char* kind = "non-lvalue actual";
+      if (constnessError)
+        kind = "const actual";
+
       // Should this be the same condition as in insertLineNumber() ?
       if (developer || mod->modTag == MOD_USER) {
         USR_FATAL_CONT(actual,
-                       "non-lvalue actual is passed to %s formal '%s' "
-                       "of %s%s",
+                       "%s is passed to %s formal '%s' of %s%s",
+                       kind,
                        formal->intentDescrString(),
                        formal->name,
                        calleeFn->name,
@@ -5661,8 +5827,8 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
       } else {
         USR_FATAL_CONT(actual,
-                       "non-lvalue actual is passed to a %s formal of "
-                       "%s%s",
+                       "%s is passed to a %s formal of %s%s",
+                       kind,
                        formal->intentDescrString(),
                        calleeFn->name,
                        calleeParens);
@@ -5719,7 +5885,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
 
 /************************************* | **************************************
 *                                                                             *
-*                                                                             *
+* This resolves the `(...myTuple)` style of expression form                   *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -5760,7 +5926,7 @@ static void resolveTupleExpand(CallExpr* call) {
 
   stmt->insertBefore(noop);
 
-  for (int i = 1; i <= size; i++) {
+  for (int i = 0; i < size; i++) {
     VarSymbol* tmp = newTemp(astr("_tuple_expand_tmp_", istr(i)));
     CallExpr*  e   = NULL;
 
@@ -6113,11 +6279,6 @@ static const char* describeLHS(CallExpr* call, const char* nonnilable) {
     }
   }
 
-  if (call->isPrimitive(PRIM_DEFAULT_INIT_FIELD)) {
-    return describeFieldInit(get_string(call->get(1)),
-                             get_string(call->get(2)), nonnilable);
-  }
-
   // Nothing clicked. Assume assignment.
   return astr("assign to a", nonnilable);
 }
@@ -6236,9 +6397,10 @@ void resolveInitVar(CallExpr* call) {
     if (moveIsAcceptable(call) == false)
       moveHaltMoveIsUnacceptable(call);
 
+    bool genericTgt = targetType->symbol->hasFlag(FLAG_GENERIC);
     // If the target type is generic, compute the appropriate instantiation
     // type.
-    if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+    if (genericTgt) {
       Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call);
 
       // Does not allow initializations of the form:
@@ -6257,7 +6419,7 @@ void resolveInitVar(CallExpr* call) {
     bool mismatch = targetType->getValType() != srcType->getValType();
     // Insert a coercion if the types are different. Some internal types use a
     // coercion because their initCopy returns a different type.
-    if (targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) ||
+    if ((targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) && !genericTgt) ||
         (targetType->symbol->hasFlag(FLAG_TUPLE) && mismatch) ||
         (isRecord(targetType->getValType()) == false && mismatch)) {
 
@@ -6265,7 +6427,6 @@ void resolveInitVar(CallExpr* call) {
         checkMoveIntoClass(call, targetType->getValType(), src->getValType());
 
       VarSymbol* tmp = newTemp(astr_init_coerce_tmp, targetType);
-      tmp->addFlag(FLAG_EXPR_TEMP);
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);
 
@@ -6327,10 +6488,10 @@ void resolveInitVar(CallExpr* call) {
     //
     // For example, even though domains can leverage 'init=' for basic
     // copy-initialization, the compiler only currently knows about calls to
-    // "chpl__initCopy" and how to turn them into something else when necessary
+    // 'chpl__initCopy' and how to turn them into something else when necessary
     // (e.g. chpl__unalias).
 
-    CallExpr* initCopy = new CallExpr("chpl__initCopy", srcExpr->remove());
+    CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove());
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -6446,7 +6607,7 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   CallExpr* call = NULL;
 
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr("chpl__initCopy", tmpAt);
+    call = new CallExpr(astr_initCopy, tmpAt);
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -6930,7 +7091,7 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
       lhsSym->type != dtUnknown &&
-      lhsSym->type != rhsSym->type) {
+      lhsSym->getValType() != rhsSym->getValType()) {
     USR_FATAL(call, "type alias split initialization uses different types");
   }
 
@@ -7186,8 +7347,6 @@ static SymExpr*       resolveNewFindTypeExpr(CallExpr* newExpr);
 
 static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager);
 
-static void handleUnstableNewError(CallExpr* newExpr, Type* newType);
-
 static bool isUndecoratedClassNew(CallExpr* newExpr, Type* newType);
 
 static void resolveNew(CallExpr* newExpr) {
@@ -7366,9 +7525,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             typeExpr->setSymbol(initType->symbol);
         }
       }
-      if (manager == NULL && fWarnUnstable)
-        // Generate an error on 'new MyClass' with fWarnUnstable
-        handleUnstableNewError(newExpr, type);
 
       if (manager == dtBorrowed && fWarnUnstable) {
         Type* ct = canonicalClassType(type);
@@ -7381,18 +7537,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
                            ct->symbol->name);
       }
     }
-  }
-}
-
-static void handleUnstableNewError(CallExpr* newExpr, Type* newType) {
-  if (isUndecoratedClassNew(newExpr, newType)) {
-    USR_WARN(newExpr, "new %s is unstable", newType->symbol->name);
-    USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                       "'new owned %s' or "
-                       "'new shared %s'",
-                       newType->symbol->name,
-                       newType->symbol->name,
-                       newType->symbol->name);
   }
 }
 
@@ -8200,7 +8344,6 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
   // a dynamic dispatch context to reduce potential user confusion.
   //
   if (call->isPrimitive(PRIM_ERROR)         == true          ||
-      call->getModule()->modTag             != MOD_INTERNAL  ||
       inDynamicDispatchResolution           == false         ||
       callStack.head()->getModule()->modTag != MOD_INTERNAL) {
 
@@ -8309,6 +8452,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
           bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
                            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
                            fn->hasFlag(FLAG_UNALIAS_FN) ||
+                           fn->hasFlag(FLAG_COERCE_FN) ||
                            fn->name == astrInitEquals;
           if (inCopyIsh) {
             fn->addFlag(FLAG_ERRONEOUS_COPY);
@@ -8551,6 +8695,7 @@ void resolve() {
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->useListClear();
+    stmt->modRefsClear();
   }
 
   resolved = true;
@@ -8993,7 +9138,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 // records shouldn't be defining chpl__initCopy or chpl__autoCopy
 // and certainly shouldn't rely on the differences between the two.
 static const char* autoCopyFnForType(AggregateType* at) {
-  const char* retval = "chpl__autoCopy";
+  const char* retval = astr_autoCopy;
 
   if (typeNeedsCopyInitDeinit(at)            == true  &&
       at->symbol->hasFlag(FLAG_TUPLE)        == false &&
@@ -9002,7 +9147,7 @@ static const char* autoCopyFnForType(AggregateType* at) {
       isSyncType(at)                         == false &&
       isSingleType(at)                       == false &&
       at->symbol->hasFlag(FLAG_COPY_MUTATES) == false) {
-    retval = "chpl__initCopy";
+    retval = astr_initCopy;
   }
 
   return retval;
@@ -10084,7 +10229,7 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 
 // Does 'val' feed into a tuple? Ex.:
 //   default init var( elt_x1 type owned Foo )
-//   .=( tup "x1" elt_x1 )
+//   .=( tup "x0" elt_x1 )
 static bool isTupleComponent(Symbol* val, CallExpr* call) {
   CallExpr* otherUse = NULL;
   for_SymbolSymExprs(se, val)
@@ -10110,7 +10255,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
                                   Type* typeToCheck, Type* type,
                                   Expr* preventingSplitInit)
 {
-  if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
+  if (isDefaultInitializable(typeToCheck) || useLegacyNilability(call))
     return;
 
   // Work around current problems in array / assoc array types
@@ -10144,12 +10289,15 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
-  USR_PRINT("non-nil class types do not support default initialization");
 
-  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-  ClassTypeDecorator d = classTypeDecorator(type);
-  Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-  USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  if (isNonNilableClassType(typeToCheck)) {
+    USR_PRINT("non-nil class types do not support default initialization");
+
+    AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+    ClassTypeDecorator d = classTypeDecorator(type);
+    Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+    USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  }
 }
 
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
@@ -10273,10 +10421,18 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     else
       call->convertToNoop(); // let the memory be uninitialized
 
-  // other types (sync, single, ..)
+  // other types (sync, single, tuple, ...)
   } else {
     errorInvalidParamInit(call, val, at);
 
+    // Handle tuple variables marked "no init". Convert to NOP and leave.
+    if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
+      if (val->hasFlag(FLAG_NO_INIT) &&
+          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+        call->convertToNoop();
+        return;
+      }
+    }
 
     // enum types should have a defaultValue
     INT_ASSERT(!isEnumType(type));

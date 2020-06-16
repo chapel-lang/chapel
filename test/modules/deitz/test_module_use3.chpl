@@ -3,6 +3,7 @@ module red {
 
   module green {
     proc bar() {
+      import red.x;
       writeln(x);
     }
   }

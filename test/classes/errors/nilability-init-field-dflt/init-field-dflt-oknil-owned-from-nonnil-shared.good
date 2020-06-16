@@ -1,1 +1,1 @@
-init-field-dflt-oknil-owned-from-nonnil-shared.chpl:8: error: cannot initialize field MyRecord.lhs of type 'owned MyClass?' from a 'shared MyClass'
+init-field-dflt-oknil-owned-from-nonnil-shared.chpl:8: error: Cannot initialize 'lhs' of type owned MyClass? from a 'shared MyClass'

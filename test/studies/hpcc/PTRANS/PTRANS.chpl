@@ -19,7 +19,7 @@ module HPCC_PTRANS {
 
   param zero = 0.0, one = 1.0, epsilon = 2.2E-16;
 
-  use Norm, 
+  use LinearAlgebra, 
       Time,
       BlockDist;
 
@@ -183,8 +183,8 @@ module HPCC_PTRANS {
     //  The extended transpose operation is realized as three separate cases.
     //  ---------------------------------------------------------------------
 
-    if ( ( A_domain.dim(1) != C_domain.dim(2)) ||
-	      ( A_domain.dim(2) != C_domain.dim(1))  ) then
+    if ( ( A_domain.dim(0) != C_domain.dim(1)) ||
+	      ( A_domain.dim(1) != C_domain.dim(0))  ) then
       return false;
     else
       {

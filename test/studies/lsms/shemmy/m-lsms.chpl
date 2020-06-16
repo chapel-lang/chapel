@@ -59,7 +59,7 @@ proc main() {
 	forall (a, liz) in zip(GridDist, lizDoms) {
 		for ac in GridDom do if a != ac {
 			local {
-				var dist = atomSpacing * sqrt( + reduce ([d in 1..3] circularDistance(a[d],ac[d],spanTuple[d])**2));
+				var dist = atomSpacing * sqrt( + reduce ([d in 0..2] circularDistance(a[d],ac[d],spanTuple[d])**2));
 				if dist <= lizRadius {
 					liz += ac;
 					caches[here.id].space += ac;
@@ -71,7 +71,7 @@ proc main() {
 
 	//initialize atom values
 	forall (i, atom) in zip(GridDist, atoms) {
-		local do for param e in 1..nExtent do atom[e] = GridDist.indexOrder(i);
+		local do for param e in 0..nExtent-1 do atom[e] = GridDist.indexOrder(i);
 	}
 	
 	t.start();
@@ -95,7 +95,7 @@ proc main() {
 					  try to find a way to loop through cache? or store the location */
 					total += caches[here.id].atoms[ac];
 				}
-				for param e in 1..nExtent {
+				for param e in 0..nExtent-1 {
 					atoms[a][e] += total[e] / reductionFactor;
 				}
 			}
@@ -120,7 +120,7 @@ proc checkExpected(itr: int, atoms: [?AtomDom] AtomMatrix) {
 		const tolerance = max(expected * 1e-9, 0.1);
 
 		var pass = true;
-		for param e in 1..nExtent {
+		for param e in 0..nExtent-1 {
 			if abs(atom[e] - expected) > tolerance then pass = false;
 		}
 		if debug then writef( "%11.9r ~=~ %11.9r\n", 

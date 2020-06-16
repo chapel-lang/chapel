@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +53,9 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fIterExprs.parent = this;
   fShadowVars.parent = this;
   INT_ASSERT(fLoopBody != NULL);
+
+
+  optInfo.autoLocalAccessChecked = false;
 
   gForallStmts.add(this);
 }
@@ -284,6 +288,14 @@ ForallStmt* isForallIterExpr(Expr* expr) {
 // Return a ForallStmt* if 'expr' is its loopBody.
 ForallStmt* isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return pfs;
+  return NULL;
+}
+
+// Return a const ForallStmt* if 'expr' is its loopBody.
+const ForallStmt* isConstForallLoopBody(const Expr* expr) {
+  if (const ForallStmt* pfs = toConstForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
       return pfs;
   return NULL;

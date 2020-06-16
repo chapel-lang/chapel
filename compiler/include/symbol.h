@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -386,7 +387,7 @@ public:
   virtual bool    isVisible(BaseAST* scope)                 const;
 
   bool            requiresCPtr();
-  const char*     intentDescrString();
+  const char*     intentDescrString() const;
 
   GenRet          codegenType();
 
@@ -604,7 +605,7 @@ public:
 ************************************** | *************************************/
 
 // Checks whether a string is valid in UTF8 encoding
-bool isValidString(std::string str);
+bool isValidString(std::string str, int64_t* numCodepoints);
 
 // Processes a char* to replace any escape sequences with the actual bytes
 std::string unescapeString(const char* const str, BaseAST* astForError);
@@ -693,6 +694,7 @@ extern const char* astrInit;
 extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
+extern const char* astrPostinit;
 extern const char* astrTag;
 extern const char* astrThis;
 extern const char* astrSuper;
@@ -707,6 +709,11 @@ extern const char* astr_loopexpr_iter;
 extern const char* astrPostfixBang;
 extern const char* astrBorrow;
 extern const char* astr_init_coerce_tmp;
+extern const char* astr_autoCopy;
+extern const char* astr_initCopy;
+extern const char* astr_coerceCopy;
+extern const char* astr_coerceCopy;
+extern const char* astr_coerceMove;
 
 void initAstrConsts();
 

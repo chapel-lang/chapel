@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -256,7 +257,7 @@ static void issueNilError(const char* message, Expr* ref,
   if (printsSameLocationAsLastError(ref))
     return;
 
-  USR_FATAL_CONT(ref, message);
+  USR_FATAL_CONT(ref, "%s", message);
 
   Symbol* v  = var;
   if (referent != NULL) {

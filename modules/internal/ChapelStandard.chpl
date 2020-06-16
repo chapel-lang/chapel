@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,8 +50,10 @@ module ChapelStandard {
   use LocalesArray;
   use ChapelArray;
   use ChapelDistribution;
+  use ChapelAutoLocalAccess;
   use ChapelIO;
   use LocaleTree;
+  use ChapelHashing;
   use DefaultAssociative;
   use DefaultSparse;
   use ChapelTaskID;
@@ -63,7 +66,7 @@ module ChapelStandard {
   use ExportWrappers;
 
   // Standard modules.
-  use Assert;
+  use Builtins;
   use Types;
   use Math;
 

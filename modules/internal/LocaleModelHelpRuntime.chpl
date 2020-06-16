@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -145,7 +146,7 @@ module LocaleModelHelpRuntime {
                              ref tlist: c_void_ptr, // task list
                              tlist_node_id: int     // task list owner node
                             ) {
-    var tls = chpl_task_getChapelData();
+    var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if isSerial {
       chpl_ftable_call(fn, args);
@@ -169,7 +170,7 @@ module LocaleModelHelpRuntime {
                               ref tlist: c_void_ptr, // task list
                               tlist_node_id: int     // task list owner node
                              ) {
-    var tls = chpl_task_getChapelData();
+    var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if isSerial {
       chpl_ftable_call(fn, args);

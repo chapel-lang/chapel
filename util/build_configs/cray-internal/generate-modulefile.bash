@@ -86,9 +86,7 @@ if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
 }
 
 setenv MPICH_GNI_DYNAMIC_CONN disabled
-if { [string match gemini $network] } {
-    set CHPL_HOST_PLATFORM cray-xe
-} elseif { [string match aries $network] } {
+if { [string match aries $network] } {
     set CHPL_HOST_PLATFORM cray-xc
 } elseif { [string match ofi $network] } {
     set CHPL_HOST_PLATFORM cray-shasta
@@ -102,7 +100,7 @@ if { ! [info exists CHPL_HOST_PLATFORM] } {
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
-    # Cray-XC/XE/Shasta
+    # Cray-XC/Shasta
 
     # Load/unload cray-mpich if not previously loaded
 

@@ -1,0 +1,3 @@
+forwarding-wrapper.chpl:24: In function 'fn':
+forwarding-wrapper.chpl:25: error: success
+forwarding-wrapper.chpl:15: Function 'fn' instantiated as: fn(param arg1 = 1)

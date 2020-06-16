@@ -36,10 +36,10 @@ proc main() {
 }
 
 proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
-  if (D.dim(1) != D.dim(2)) then
+  if (D.dim(0) != D.dim(1)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
-  var A1D = D.dim(1);
+  var A1D = D.dim(0);
   const zero = 0.0:A.eltType;
   const upper = (factor == "U");
 
@@ -152,14 +152,14 @@ proc writeCholFactor(A:[?D],fac:string) {
   var G:[D] A.eltType;
 
   if (fac == "U") {
-    for i in D.dim(1) {
+    for i in D.dim(0) {
       for j in i..D.high(1){
         G(i,j) = A(i,j);
       }
     }
   }
   else {
-    for j in D.dim(1) {
+    for j in D.dim(0) {
       for i in j..D.high(1) {
         G(i,j) = A(i,j);
       }

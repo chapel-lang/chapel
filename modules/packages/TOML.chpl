@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -122,7 +123,10 @@ module TomlParser {
 
   private use Regexp;
   use DateTime;
-
+  use Map, List;
+  import IO.channel;
+  import TOML.TomlReader.Source;
+  import TOML.TomlError;
 
   /* Prints a line by line output of parsing process */
   config const debugTomlParser = false;
@@ -165,8 +169,7 @@ module TomlParser {
         if !source.isEmpty() {
           while(readLine(source)) {
             var token = top(source);
-
-            if token == '#' {
+            if comment.match(token) {
               parseComment();
             }
             else if inBrackets.match(token) {
@@ -317,7 +320,7 @@ module TomlParser {
               skipNext(source);
             }
             else if comment.match(top(source)) {
-              skipLine(source);
+              skipNext(source);
             }
             else {
               var toParse = parseValue();
@@ -357,21 +360,21 @@ module TomlParser {
         // Date
         else if ld.match(val) {
           var raw = getToken(source).split("-");
-          var d = new date(raw[1]: int,
-                           raw[2]: int,
-                           raw[3]: int);
+          var d = new date(raw[0]: int,
+                           raw[1]: int,
+                           raw[2]: int);
           return new unmanaged Toml(d);
         }
         // Time
         else if ti.match(val) {
           var raw = getToken(source).split(":");
-          var sec = '%.6dr'.format(raw[3]: real).split('.');
+          var sec = '%.6dr'.format(raw[2]: real).split('.');
           var t: time;
 
-          t = new time(raw[1]: int,
-                       raw[2]: int,
-                       sec[1]: int,
-                       sec[2]: int);
+          t = new time(raw[0]: int,
+                       raw[1]: int,
+                       sec[0]: int,
+                       sec[1]: int);
 
           return new unmanaged Toml(t);
         }
@@ -613,7 +616,7 @@ used to recursively hold tables and respective values
     // Time
     proc init(ti: time) {
        this.ti = ti;
-       this.tag = fieldTime; 
+       this.tag = fieldTime;
     }
 
     // Datetime
@@ -1118,6 +1121,8 @@ pragma "no doc"
  Reader module for use in the Parser Class.
  */
 module TomlReader {
+ use List;
+ import TOML.TomlError;
 
  private use Regexp;
 
@@ -1128,7 +1133,7 @@ module TomlReader {
     if !source.nextLine() {
       throw new owned TomlError("Reached end of file unexpectedly");
     }
-    return source.currentLine![1];
+    return source.currentLine![0];
   }
 
   /* Returns a boolean or whether or not another line can be read
@@ -1186,7 +1191,7 @@ module TomlReader {
         splitLine(line);
       }
       if !this.isEmpty() {
-        currentLine = tokenlist[1];
+        currentLine = tokenlist[0];
       }
     }
 
@@ -1195,6 +1200,7 @@ module TomlReader {
     }
 
     proc splitLine(line) {
+      var idx = 0;
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
@@ -1205,26 +1211,42 @@ module TomlReader {
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =
-            curly = "(\\{)|(\\})";              // {}
+            curly = "(\\{)|(\\})",              // {}
+            dt = "^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}",
+            ld = "^\\d{4}-\\d{2}-\\d{2}",
+            ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
 
       const pattern = compile('|'.join(doubleQuotes,
                                        singleQuotes,
                                        bracketContents,
                                        brackets,
-                                       comments,
                                        commas,
                                        curly,
-                                       equals));
+                                       equals,
+                                       dt,
+                                       ti,
+                                       ld));
 
       for token in pattern.split(line) {
+        idx += 1;
         var strippedToken = token.strip(" \t");
         if strippedToken.size != 0 {
           if debugTomlReader {
             writeln('Tokenized: ', '(', strippedToken, ')');
           }
-
           nonEmptyChar = true;
-          linetokens.append(strippedToken);
+          // check for date/time in a line and avoid comment
+          const toke = strippedToken;
+          const isWhiteSpace = compile("\\s");
+          var dateTimeToken = isWhiteSpace.split(toke);
+          if strippedToken.match(compile('|'.join(dt,ti,ld))).matched then
+            strippedToken = dateTimeToken[0];
+          var isComment = strippedToken.match(compile(comments));
+          if isComment.matched && idx <= 1 {
+            linetokens.append(strippedToken);
+          } else if !isComment.matched {
+            linetokens.append(strippedToken);
+          }
         }
       }
 
@@ -1247,8 +1269,8 @@ module TomlReader {
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.pop(1);
-          currentLine = tokenlist[1];
+          tokenlist.pop(0);
+          currentLine = tokenlist[0];
           delete ptrhold;
           return true;
         }
@@ -1297,16 +1319,16 @@ module TomlReader {
     }
 
     proc skip() {
-      A.pop(1);
+      A.pop(0);
     }
 
     proc next() {
-      var toke = A.pop(1);
+      var toke = A.pop(0);
       return toke;
     }
 
     proc addToke(toke: string) {
-      A.insert(1, toke);
+      A.insert(0, toke);
     }
 
     proc isEmpty(): bool {

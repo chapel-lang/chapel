@@ -1,0 +1,3 @@
+canresolve-in-sort.chpl:46: In function 'canResolveMethod':
+canresolve-in-sort.chpl:47: error: success
+canresolve-in-sort.chpl:33: Function 'canResolveMethod' instantiated as: canResolveMethod(recv: DefaultComparator, name: string, a: int(64), b: int(64))

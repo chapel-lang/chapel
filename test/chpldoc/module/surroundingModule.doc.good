@@ -11,6 +11,13 @@ surroundingModule.doc
 
    use surroundingModule.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import surroundingModule.doc;
+
 **Submodules**
 
 .. toctree::
@@ -38,6 +45,13 @@ Middle
 .. code-block:: chapel
 
    use surroundingModule.doc.Middle;
+
+
+or
+
+.. code-block:: chapel
+
+   import surroundingModule.doc.Middle;
 
 .. function:: proc inside()
 

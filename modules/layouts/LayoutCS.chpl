@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +31,7 @@ config param LayoutCSDefaultToSorted = true;
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
-  proc key(idx: _tuple) { return (idx(2), idx(1));}
+  proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
 pragma "no doc"
@@ -120,7 +121,7 @@ class CSDom: BaseSparseDomImpl {
   var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
   /* (row|col) idx */
   pragma "local field"
-  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
+  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(0))
 
   /* Initializer */
   proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
@@ -136,8 +137,8 @@ class CSDom: BaseSparseDomImpl {
     this.stridable = stridable;
 
     this.dist = dist;
-    rowRange = parentDom.dim(1);
-    colRange = parentDom.dim(2);
+    rowRange = parentDom.dim(0);
+    colRange = parentDom.dim(1);
     startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
 
     this.complete();
@@ -176,8 +177,11 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiBuildArray(type eltType)
-    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
+  proc dsiBuildArray(type eltType, param initElts: bool) {
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType,
+                               dom=_to_unmanaged(this),
+                               initElts=initElts);
+  }
 
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
@@ -423,9 +427,9 @@ class CSDom: BaseSparseDomImpl {
       var current: idxType;
 
       if this.compressRows then
-        current = parentDom.dim(1).low;
+        current = parentDom.dim(0).low;
       else
-        current = parentDom.dim(2).low;
+        current = parentDom.dim(1).low;
 
       // Update startIdx && idx
       for (i,j) in inds {
@@ -493,9 +497,9 @@ class CSDom: BaseSparseDomImpl {
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new guy in
         if this.compressRows {
-          idx[i] = inds[newIndIdx][2];
-        } else {
           idx[i] = inds[newIndIdx][1];
+        } else {
+          idx[i] = inds[newIndIdx][0];
         }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
@@ -512,15 +516,15 @@ class CSDom: BaseSparseDomImpl {
     }
 
     // Aggregated row || col shift
-    var prevCursor = if this.compressRows then parentDom.dim(1).low else parentDom.dim(2).low;
+    var prevCursor = if this.compressRows then parentDom.dim(0).low else parentDom.dim(1).low;
     var cursor: int;
     var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
       if this.compressRows {
-        cursor = ind[1];
+        cursor = ind[0];
       } else {
-        cursor = ind[2];
+        cursor = ind[1];
       }
       if cursor == prevCursor then cursorCnt += 1;
       else {
@@ -594,10 +598,10 @@ class CSDom: BaseSparseDomImpl {
   }
 
   iter dimIter(param d, ind) {
-    if (d != 2 && this.compressRows) {
-      compilerError("dimIter(1, ..) not supported on CS(compressRows=true) domains");
-    } else if (d != 1 && !this.compressRows) {
-      compilerError("dimIter(2, ..) not supported on CS(compressRows=false) domains");
+    if (d != 1 && this.compressRows) {
+      compilerError("dimIter(0, ..) not supported on CS(compressRows=true) domains");
+    } else if (d != 0 && !this.compressRows) {
+      compilerError("dimIter(1, ..) not supported on CS(compressRows=false) domains");
     }
 
     for i in startIdx[ind]..stopIdx[ind] do
@@ -633,6 +637,16 @@ class CSDom: BaseSparseDomImpl {
 
 
 class CSArr: BaseSparseArrImpl {
+
+  proc init(type eltType,
+            param rank : int,
+            type idxType,
+            dom,
+            param initElts:bool) {
+    super.init(eltType, rank, idxType, dom, initElts);
+  }
+
+  // dsiDestroyArr is defined in BaseSparseArrImpl
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box

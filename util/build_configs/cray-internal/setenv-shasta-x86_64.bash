@@ -340,14 +340,15 @@ else
     fi
 
     # Please keep the gen versions in compiler_versions.bash the same as these!
-    #[TODO] gen_version_gcc=7.3.0
-    #[TODO] gen_version_intel=16.0.3.210
-    #[TODO] gen_version_cce=8.6.3
-    #[TODO] if [ "$CHPL_LOCALE_MODEL" == knl ]; then
-    #[TODO]     gen_version_cce=8.7.3
-    #[TODO] fi
+    #[TODO] gen_version_gcc=
+    #[TODO] gen_version_intel=
+    #[TODO] gen_version_cce=
 
-    target_cpu_module=craype-sandybridge
+    if [ "$CRAYPE_NETWORK_TARGET" == slingshot* ]; then
+        target_cpu_module=craype-x86-rome
+    else
+        target_cpu_module=craype-sandybridge
+    fi
 
     function load_prgenv_gnu() {
 
@@ -389,9 +390,6 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         #[TODO] load_module_version $target_compiler $target_version
-
-        # pin to an mpich version compatible with the gen compiler
-        #[TODO] load_module_version cray-mpich 7.7.7
     }
 
     function load_target_cpu() {

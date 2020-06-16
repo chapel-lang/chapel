@@ -1,3 +1,3 @@
 intents-int.chpl:42: In function 'hoo':
-intents-int.chpl:45: error: illegal lvalue in assignment
+intents-int.chpl:45: error: cannot assign to const variable
 intents-int.chpl:76: Function 'hoo' instantiated as: hoo(x: int(64))

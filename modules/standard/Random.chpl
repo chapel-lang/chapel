@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,6 +65,7 @@ module Random {
   public use NPBRandom;
   public use PCGRandom;
   import HaltWrappers;
+  import Set;
 
 
 
@@ -229,15 +231,15 @@ module Random {
 
   pragma "no doc"
   /* Actual implementation of choice() */
-  proc _choice(stream, arr: [], size:?sizeType, replace, prob:?probType)
+  proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
     throws
   {
 
-    if arr.rank != 1 {
-      compilerError('choice() array must be 1 dimensional');
+    if X.rank != 1 {
+      compilerError('choice() argument x must be 1 dimensional');
     }
-    if arr.size < 1 {
-      throw new owned IllegalArgumentError('choice() array.size must be greater than 0');
+    if X.size < 1 {
+      throw new owned IllegalArgumentError('choice() x.size must be greater than 0');
     }
 
     // Check types of optional void args
@@ -249,9 +251,8 @@ module Random {
       if prob.rank != 1 {
         compilerError('choice() prob array must be 1 dimensional');
       }
-
-      if prob.domain != arr.domain {
-        throw new owned IllegalArgumentError('choice() array arguments must have same domain');
+      if prob.size != X.size {
+        throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
       }
     }
 
@@ -259,35 +260,38 @@ module Random {
       if isIntegralType(sizeType) {
         if size <= 0 then
           throw new owned IllegalArgumentError('choice() size must be greater than 0');
-        if !replace && size > arr.size then
-          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+        if !replace && size > X.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else if isDomainType(sizeType) {
         if size.size <= 0 then
           throw new owned IllegalArgumentError('choice() size domain can not be empty');
-        if !replace && size.size > arr.size then
-          throw new owned IllegalArgumentError('choice() size must be smaller than array.size when replace=false');
+        if !replace && size.size > X.size then
+          throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else {
         compilerError('choice() size must be integral or domain');
       }
     }
 
     if isNothingType(probType) {
-      return _choiceUniform(stream, arr, size, replace);
+      return _choiceUniform(stream, X, size, replace);
     } else {
-      return _choiceProbabilities(stream, arr, size, replace, prob);
+      return _choiceProbabilities(stream, X, size, replace, prob);
     }
   }
 
   pragma "no doc"
   /* _choice branch for uniform distribution */
-  proc _choiceUniform(stream, arr:[], size:?sizeType, replace) throws
+  proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
-    ref A = arr.reindex(1..arr.size);
+
+    const low = X.alignedLow,
+          stride = abs(X.stride);
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randIdx = stream.getNext(resultType=int, 1, A.size);
-      return A[randIdx];
+      var randVal = stream.getNext(resultType=int, 0, X.size-1);
+      var randIdx = X.dim(0).orderToIndex(randVal);
+      return randIdx;
     } else {
       // Return numElements samples
 
@@ -300,18 +304,33 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] A.eltType;
+      var samples: [0..<numElements] int;
 
       if replace {
         for sample in samples {
-          var randIdx = stream.getNext(resultType=int, 1, A.size);
-          sample = A[randIdx];
+          var randVal = stream.getNext(resultType=int, 0, X.size-1);
+          var randIdx = X.dim(0).orderToIndex(randVal);
+          sample = randIdx;
         }
       } else {
-        var indices: [A.domain] int = A.domain;
-        shuffle(indices);
-        for i in samples.domain {
-          samples[i] = A[indices[i]];
+        if numElements < log2(X.size) {
+          var indices: Set.set(int);
+          var i: int = 0;
+          while i < numElements {
+            var randVal = stream.getNext(resultType=int, 0, X.size-1);
+            if !indices.contains(randVal) {
+              var randIdx = X.dim(0).orderToIndex(randVal);
+              samples[i] = randIdx;
+              indices.add(randVal);
+              i += 1;
+            }
+          }
+        } else {
+          var indices: [X] int = X;
+          shuffle(indices);
+          for i in samples.domain {
+            samples[i] = (indices[X.dim(0).orderToIndex(i)]);
+          }
         }
       }
       if isIntegralType(sizeType) {
@@ -324,20 +343,21 @@ module Random {
 
   pragma "no doc"
   /* _choice branch for distribution defined by probabilities array */
-  proc _choiceProbabilities(stream, arr:[], size:?sizeType, replace, prob:?probType) throws
+  proc _choiceProbabilities(stream, X:domain, size:?sizeType, replace, prob:?probType) throws
   {
     import Search;
     import Sort;
-
-    // If stride, offset, or size don't match, we're in trouble
-    if arr.domain != prob.domain then
-      throw new owned IllegalArgumentError('choice() arrays must have equal domains');
-
+    
+    if prob.size != X.size {
+      throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
+    }
+    
     if prob.size == 0 then
-      throw new owned IllegalArgumentError('choice() arrays cannot be empty');
+      throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
-    ref A = arr.reindex(1..arr.size);
-    ref P = prob.reindex(1..arr.size);
+    const low = X.alignedLow,
+          stride = abs(X.stride);
+    ref P = prob.reindex(0..<X.size);
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;
@@ -358,7 +378,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return A[idx];
+      return X.dim(0).orderToIndex(idx);
     } else {
       // Return numElements samples
 
@@ -371,17 +391,17 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [1..numElements] arr.eltType;
+      var samples: [0..<numElements] int;
 
       if replace {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = A[idx];
+          sample = X.dim(0).orderToIndex(idx);
         }
       } else {
         var indicesChosen: domain(int);
-        var i = 1;
+        var i = 0;
         while indicesChosen.size < samples.size {
 
           // Recalculate normalized cumulativeArr
@@ -398,7 +418,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = A[indexChosen];
+              samples[i] = X.dim(0).orderToIndex(indexChosen);;
               i += 1;
             }
             P[indexChosen] = 0;
@@ -487,13 +507,13 @@ module Random {
 
     /*
       Advances/rewinds the stream to the `n`-th value in the sequence.
-      The first value is with n=1.  n must be > 0, otherwise an
+      The first value corresponds to n=0.  n must be >= 0, otherwise an
       IllegalArgumentError is thrown.
 
-      :arg n: The position in the stream to skip to.  Must be > 0.
+      :arg n: The position in the stream to skip to.  Must be >= 0.
       :type n: `integral`
 
-      :throws IllegalArgumentError: When called with non-positive `n` value.
+      :throws IllegalArgumentError: When called with negative `n` value.
      */
     proc skipToNth(n: integral) throws {
       compilerError("RandomStreamInterface.skipToNth called");
@@ -501,15 +521,15 @@ module Random {
 
     /*
       Advance/rewind the stream to the `n`-th value and return it
-      (advancing the stream by one).  n must be > 0, otherwise an
+      (advancing the stream by one).  n must be >= 0, otherwise an
       IllegalArgumentError is thrown.  This is equivalent to
       :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-      :arg n: The position in the stream to skip to.  Must be > 0.
+      :arg n: The position in the stream to skip to.  Must be >= 0.
       :type n: `integral`
 
       :returns: The `n`-th value in the random stream as type :type:`eltType`.
-      :throws IllegalArgumentError: When called with non-positive `n` value.
+      :throws IllegalArgumentError: When called with negative `n` value.
      */
     proc getNth(n: integral): eltType throws {
       compilerError("RandomStreamInterface.getNth called");
@@ -534,11 +554,10 @@ module Random {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
-
     /*
-     Returns a random sample from a given 1-D array, ``arr``.
+     Returns a random sample from a given 1-D array, ``x``.
 
-     :arg arr: a 1-D array with values that will be sampled from.
+     :arg x: a 1-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -547,26 +566,94 @@ module Random {
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
      :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``arr``, otherwise elements will be chosen over
+                each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The domain must be equal to that of ``arr.domain``.
+                value. The size must be equal to that of ``x.domain``.
 
-     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
-              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``arr.size == 0``,
-                                   if ``arr`` contains a negative value,
-                                   if ``arr`` has no non-zero values.,
-                                   if ``arr.domain != prob.domain``,
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-    proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
-    {
-      compilerError("RandomStreamInterface.choice called");
-    }
+     proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none) throws
+     {
+       compilerError("RandomStreamInterface.choice called");
+     }
+
+    /*
+     Returns a random sample from a given bounded range, ``x``.
+
+     :arg x: a bounded range with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+                                   if ``isBoundedRange(x) == false``
+     */
+     proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
+     {
+       compilerError("RandomStreamInterface.choice called");
+     }
+
+    /*
+     Returns a random sample from a given 1-D domain, ``x``.
+
+     :arg x: a 1-D dom with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+     */
+     proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
+     {
+       compilerError("RandomStreamInterface.choice called");
+     }
+
 
     /*
 
@@ -810,8 +897,8 @@ module Random {
         this.seed = seed;
         this.parSafe = parSafe;
         this.complete();
-        for param i in 1..numGenerators(eltType) {
-          param inc = pcg_getvalid_inc(i);
+        for param i in 0..numGenerators(eltType)-1 {
+          param inc = pcg_getvalid_inc(i+1);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
         }
         PCGRandomStreamPrivate_count = 1;
@@ -836,8 +923,8 @@ module Random {
 
       pragma "no doc"
       proc PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
-        PCGRandomStreamPrivate_count = n;
-        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n);
+        PCGRandomStreamPrivate_count = n+1;
+        PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n+1);
       }
 
       /*
@@ -902,17 +989,17 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value is with n=1.  n must be > 0, otherwise an
+        The first value corresponds to n=0.  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc skipToNth(n: integral) throws {
-        if n <= 0 then
-          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
+        if n < 0 then
+          throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -920,19 +1007,19 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be > 0, otherwise an
+        (advancing the stream by one).  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc getNth(n: integral): eltType throws {
-        if (n <= 0) then
-          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
+        if (n < 0) then
+          throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with negative 'n' value " + n:string);
         _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
         const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
@@ -956,9 +1043,9 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given 1-D array, ``arr``.
+     Returns a random sample from a given 1-D array, ``x``.
 
-     :arg arr: a 1-D array with values that will be sampled from.
+     :arg x: a 1-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -967,26 +1054,104 @@ module Random {
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
      :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``arr``, otherwise elements will be chosen over
+                each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
-                value. The domain must be equal to that of ``arr.domain``.
+                value. The size must be equal to that of ``x.domain``.
 
-     :return: An element chosen from ``arr`` is ``size == 1``, or an array of
-              element chosen from ``arr`` if ``size > 1`` or ``size`` is a
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``arr.size == 0``,
-                                   if ``arr`` contains a negative value,
-                                   if ``arr`` has no non-zero values.,
-                                   if ``arr.domain != prob.domain``,
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > arr.size || size.size > arr.size``
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
      */
-      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        return _choice(this, arr, size=size, replace=replace, prob=prob);
+        var idx = _choice(this, dom, size=size, replace=replace, prob=prob);
+        return x[idx];
+      }
+
+      /*
+     Returns a random sample from a given bounded range, ``x``.
+
+     :arg x: a bounded range with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+                                   if ``isBoundedRange(x) == false``
+     */
+      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      { 
+        var dom: domain(1,stridable=true);
+
+        if !isBoundedRange(x) {
+          throw new owned IllegalArgumentError('input range must be bounded');
+          dom = {1..2}; // this is a workaround for issue #15691
+        } else {
+          dom = {x};
+        }
+        return _choice(this, dom, size=size, replace=replace, prob=prob);
+      }
+
+      /*
+     Returns a random sample from a given 1-D domain, ``x``.
+
+     :arg x: a 1-D dom with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1-D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+     */
+      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
@@ -1032,12 +1197,12 @@ module Random {
          exactly once, where low and high refer to the array's domain.
          */
       proc permutation(arr: [] eltType) {
-        var low = arr.domain.dim(1).low;
-        var high = arr.domain.dim(1).high;
+        var low = arr.domain.dim(0).low;
+        var high = arr.domain.dim(0).high;
 
         if arr.domain.rank != 1 then
           compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(1).stridable then
+        //if arr.domain.dim(0).stridable then
         //  compilerError("Permutation requires non-stridable 1-D array");
 
         _lock();
@@ -1083,7 +1248,7 @@ module Random {
         _lock();
         const start = PCGRandomStreamPrivate_count;
         PCGRandomStreamPrivate_count += D.size.safeCast(int(64));
-        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count);
+        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
         _unlock();
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
@@ -1183,11 +1348,11 @@ module Random {
     // These would form the RNG interface.
     private inline
     proc rand32_1(ref states):uint(32) {
-      return states[1].random(pcg_getvalid_inc(1));
+      return states[0].random(pcg_getvalid_inc(1));
     }
     private inline
     proc rand32_2(ref states):uint(32) {
-      return states[2].random(pcg_getvalid_inc(2));
+      return states[1].random(pcg_getvalid_inc(2));
     }
     // returns x with 0 <= x <= bound
     // count is 1-based
@@ -1196,7 +1361,7 @@ module Random {
                          bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_1(states);
-      else return states[1].bounded_random_vary_inc(
+      else return states[0].bounded_random_vary_inc(
           pcg_getvalid_inc(1), bound + 1,
           seed:uint(64), (count - 1):uint(64),
           101, 4);
@@ -1208,7 +1373,7 @@ module Random {
                          bound:uint(32)):uint(32) {
       // just get 32 random bits if bound+1 is not representable.
       if bound == max(uint(32)) then return rand32_2(states);
-      else return states[2].bounded_random_vary_inc(
+      else return states[1].bounded_random_vary_inc(
           pcg_getvalid_inc(2), bound + 1,
           seed:uint(64), (count - 1):uint(64),
           102, 4);
@@ -1217,17 +1382,17 @@ module Random {
     private inline
     proc rand64_1(ref states):uint(64) {
       var ret:uint(64) = 0;
-      ret |= states[1].random(pcg_getvalid_inc(1));
+      ret |= states[0].random(pcg_getvalid_inc(1));
       ret <<= 32;
-      ret |= states[2].random(pcg_getvalid_inc(2));
+      ret |= states[1].random(pcg_getvalid_inc(2));
       return ret;
     }
     private inline
     proc rand64_2(ref states):uint(64) {
       var ret:uint(64) = 0;
-      ret |= states[3].random(pcg_getvalid_inc(3));
+      ret |= states[2].random(pcg_getvalid_inc(3));
       ret <<= 32;
-      ret |= states[4].random(pcg_getvalid_inc(4));
+      ret |= states[3].random(pcg_getvalid_inc(4));
       return ret;
     }
 
@@ -1270,7 +1435,7 @@ module Random {
 
       // Step each RNG that is not involved in the output.
       for i in numGenForResultType+1..numGen {
-        states[i].random(pcg_getvalid_inc(i:uint));
+        states[i-1].random(pcg_getvalid_inc(i:uint));
       }
     }
 
@@ -1359,8 +1524,8 @@ module Random {
     private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
       var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
 
-      for param i in 1..states.size {
-        param inc = pcg_getvalid_inc(i);
+      for param i in 0..states.size-1 {
+        param inc = pcg_getvalid_inc(i+1);
         states[i].srandom(seed:uint(64), inc);
         states[i].advance(inc, (n - 1):uint(64));
       }
@@ -1370,11 +1535,11 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
+    private iter outer(ranges, param dim: int = 0) {
+      if dim + 2 == ranges.size {
         for i in ranges(dim) do
           yield (i,);
-      } else if dim + 1 < ranges.size {
+      } else if dim + 2 < ranges.size {
         for i in ranges(dim) do
           for j in outer(ranges, dim+1) do
             yield (i, (...j));
@@ -1408,7 +1573,7 @@ module Random {
           where tag == iterKind.follower {
       param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
+      const innerRange = followThis(ZD.rank-1);
       for outer in outer(followThis) {
         var myStart = start;
         if ZD.rank > 1 then
@@ -2381,6 +2546,7 @@ module Random {
 
       pragma "no doc"
       proc NPBRandomStreamPrivate_skipToNth_noLock(in n: integral) {
+        n += 1;
         if eltType == complex then n = n*2 - 1;
         NPBRandomStreamPrivate_count = n;
         NPBRandomStreamPrivate_cursor = randlc_skipto(seed, n);
@@ -2403,17 +2569,17 @@ module Random {
 
       /*
         Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value is with n=1.  n must be > 0, otherwise an
+        The first value corresponds to n=0.  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc skipToNth(n: integral) throws {
-        if n <= 0 then
-          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with non-positive 'n' value " + n:string);
+        if n < 0 then
+          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
         _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         _unlock();
@@ -2421,19 +2587,19 @@ module Random {
 
       /*
         Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be > 0, otherwise an
+        (advancing the stream by one).  n must be >= 0, otherwise an
         IllegalArgumentError is thrown.  This is equivalent to
         :proc:`skipToNth()` followed by :proc:`getNext()`.
 
-        :arg n: The position in the stream to skip to.  Must be > 0.
+        :arg n: The position in the stream to skip to.  Must be >= 0.
         :type n: `integral`
 
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with non-positive `n` value.
+        :throws IllegalArgumentError: When called with negative `n` value.
        */
       proc getNth(n: integral): eltType throws {
-        if (n <= 0) then
-          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with non-positive 'n' value " + n:string);
+        if (n < 0) then
+          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
         _lock(); 
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
@@ -2463,7 +2629,21 @@ module Random {
       }
 
       pragma "no doc"
-      proc choice(arr: [], size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        compilerError("NPBRandomStream.choice() is not supported.");
+      }
+
+      pragma "no doc"
+      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+        throws
+      {
+        compilerError("NPBRandomStream.choice() is not supported.");
+      }
+
+      pragma "no doc"
+      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
@@ -2489,7 +2669,7 @@ module Random {
         _lock();
         const start = NPBRandomStreamPrivate_count;
         NPBRandomStreamPrivate_count += D.size.safeCast(int(64));
-        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count);
+        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count-1);
         _unlock();
         return NPBRandomPrivate_iterate(resultType, D, seed, start);
       }
@@ -2620,11 +2800,11 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 1) {
-      if dim + 1 == ranges.size {
+    private iter outer(ranges, param dim: int = 0) {
+      if dim + 2 == ranges.size {
         for i in ranges(dim) do
           yield (i,);
-      } else if dim + 1 < ranges.size {
+      } else if dim + 2 < ranges.size {
         for i in ranges(dim) do
           for j in outer(ranges, dim+1) do
             yield (i, (...j));
@@ -2659,7 +2839,7 @@ module Random {
           where tag == iterKind.follower {
       param multiplier = if resultType == complex then 2 else 1;
       const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank);
+      const innerRange = followThis(ZD.rank-1);
       var cursor: real;
       for outer in outer(followThis) {
         var myStart = start;

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -85,6 +86,7 @@
   m(OS_LAYER_TMP_DATA,    "OS layer temporary data",                  true ), \
   m(GMP,                  "gmp data",                                 true ), \
   m(GETS_PUTS_STRIDES,    "put_strd/get_strd array of strides",       true ), \
+  m(MLI_DATA,             "multilocale interop data",                 true ), \
   m(NUM,                  "*** this must be the last entry ***",      true )
 
 

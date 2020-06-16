@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +23,30 @@
 
 #include "stmt.h"
 
+class ForallOptimizationInfo {
+  public:
+    Symbol *iterSym = NULL;
+    Expr *dotDomIterExpr = NULL;
+    Symbol *dotDomIterSym = NULL;
+    Symbol *dotDomIterSymDom = NULL;
+
+    // even if there are multiple indices we store them in a vector
+    std::vector<Symbol *> multiDIndices;
+
+    // calls in the loop that are candidates for optimization
+    std::vector<CallExpr *> staticCandidates;
+    std::vector<CallExpr *> dynamicCandidates;
+
+    // the static check control symbol added for symbol
+    std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
+    
+    // the dynamic check call added for symbol
+    std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
+
+    std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
+
+    bool autoLocalAccessChecked;
+};
 
 ///////////////////////////////////
     // forall loop statement //
@@ -32,7 +57,9 @@ class ForallStmt : public Stmt
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
   AList&     inductionVariables();   // DefExprs, one per iterated expr
+  const AList& constInductionVariables() const; // const counterpart
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
+  const AList& constIteratedExpressions() const;  // const counterpart
   AList&     shadowVariables();      // DefExprs of ShadowVarSymbols
   BlockStmt* loopBody()       const; // the body of the forall loop
   std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
@@ -86,6 +113,8 @@ public:
   // indicates a forall expression (vs a forall statement)
   bool isForallExpr() const;
 
+  ForallOptimizationInfo optInfo;
+
 private:
   AList          fIterVars;
   AList          fIterExprs;
@@ -134,7 +163,13 @@ Same idea as fFromForLoop.
 
 inline bool   ForallStmt::zippered()         const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
+inline const AList& ForallStmt::constInductionVariables() const {
+  return fIterVars;
+}
 inline AList& ForallStmt::iteratedExpressions()    { return fIterExprs;  }
+inline const AList& ForallStmt::constIteratedExpressions() const {
+  return fIterExprs;
+}
 inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
 inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
 
@@ -172,6 +207,7 @@ ForallStmt* isForallIterVarDef(Expr* expr);
 ForallStmt* isForallIterExpr(Expr* expr);
 ForallStmt* isForallRecIterHelper(Expr* expr);
 ForallStmt* isForallLoopBody(Expr* expr);
+const ForallStmt* isConstForallLoopBody(const Expr* expr);
 VarSymbol*  parIdxVar(ForallStmt* fs);
 
 QualifiedType fsIterYieldType(Expr* ref, FnSymbol* iterFn);

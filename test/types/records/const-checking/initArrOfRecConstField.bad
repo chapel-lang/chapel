@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:485: error: cannot assign to a record of the type R using the default assignment operator because it has 'const' field(s)
+initArrOfRecConstField.chpl:8: error: cannot assign to a record of the type R using the default assignment operator because it has 'const' field(s)

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -476,7 +477,7 @@ static bool canForallStmtThrow(ForallStmt* fs) {
       if (canBlockStmtThrow(DB))
         // Error handling for the deinit blocks may be unimplemented.
         USR_FATAL_CONT(DB, "the deinitializer of the task-private variable '%s'"
-                       " throws - this is currently not supported");
+                       " throws - this is currently not supported", svar->name);
     }
   }
 

@@ -17,3 +17,5 @@ sed '/^[ ]*$/d' $2 > $2.tmp
 # or just multiple copies of it)
 sed '/^ld: warning/d' $2.tmp > $2
 rm $2.tmp
+# Remove the __init__.py to prevent a warning.
+rm lib/__init__.py

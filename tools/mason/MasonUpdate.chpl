@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,12 +66,15 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
 
-
     updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
+    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+      if getSpackVersion != spackVersion then
+      throw new owned MasonError("Mason has been updated. " +
+                  "To install Spack, call: mason external --setup.");
+    }
     const lockFile = createDepTree(TomlFile);
-
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
@@ -80,10 +84,8 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
         stderr.writeln("  ", msg);
       exit(1);
     }
-
     // Generate Lock File
     genLock(lockFile, lockPath);
-
     // Close Memory
     openFile.close();
     delete TomlFile;
@@ -149,7 +151,6 @@ proc updateRegistry(tf: string, args: list(string)) {
     writeln('Skipping update due to MASON_OFFLINE=true');
     return;
   }
-
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
@@ -192,10 +193,26 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   const chplVersion = brick!["chplVersion"]!.s;
-  var low, hi : VersionInfo;
+  var low, high : VersionInfo;
 
   try {
-    const formatMessage = "\n\n" +
+    var res = checkChplVersion(chplVersion, low, high);
+    low = res[0];
+    high = res[1];
+  } catch e : Error {
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
+    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Details: ", e.message());
+    exit(1);
+  }
+
+  return (low, high);
+}
+
+proc checkChplVersion(chplVersion, low, high) throws {
+  use Regexp;
+  var lo, hi : VersionInfo;
+  const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +
     "A <version> must be in one of the following formats:\n" +
     "  x.x.x\n" +
@@ -208,7 +225,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
     // Expecting 1 or 2 version strings
     if versions.size > 2 || versions.size < 1 {
       throw new owned MasonError("Expecting 1 or 2 versions in chplVersion range." + formatMessage);
-    } else if versions.size == 2 && (versions[1] == "" || versions[2] == "") {
+    } else if versions.size == 2 && (versions[0] == "" || versions[1] == "") {
       throw new owned MasonError("Unbounded chplVersion ranges are not allowed." + formatMessage);
     }
 
@@ -222,36 +239,29 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
-      ret.major = nums[1];
-      ret.minor = nums[2];
-      if nums.size == 3 then ret.bug = nums[3];
+      ret.major = nums[0];
+      ret.minor = nums[1];
+      if nums.size == 3 then ret.bug = nums[2];
 
       return ret;
     }
 
-    low = parseString(versions[1]);
+    lo = parseString(versions[0]);
 
     if (versions.size == 1) {
       hi = new VersionInfo(max(int), max(int), max(int));
     } else {
-      hi = parseString(versions[2]);
+      hi = parseString(versions[1]);
     }
+     if (lo <= hi) == false then
+      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + lo.str() + " > " + hi.str());
 
-    if (low <= hi) == false then
-      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
-  } catch e : Error {
-    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    stderr.writeln("Details: ", e.message());
-    exit(1);
-  }
-
-  return (low, hi);
+      return (lo, hi);
 }
 
 proc verifyChapelVersion(brick:borrowed Toml) {
   const tupInfo = getChapelVersionInfo();
-  const current = new VersionInfo(tupInfo(1), tupInfo(2), tupInfo(3));
+  const current = new VersionInfo(tupInfo(0), tupInfo(1), tupInfo(2));
   var low, hi : VersionInfo;
 
   var ret = false;
@@ -273,9 +283,9 @@ proc prettyVersionRange(low, hi) {
 
 proc chplVersionError(brick:borrowed Toml) {
   const info = verifyChapelVersion(brick);
-  if info(1) == false {
-    const low  = info(2);
-    const hi   = info(3);
+  if info(0) == false {
+    const low  = info(1);
+    const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
     failedChapelVersion.append(msg);
@@ -346,7 +356,7 @@ private proc createDepTree(root: unmanaged Toml) {
 private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged Toml), name: string) : unmanaged Toml {
   var depList: list(unmanaged Toml?);
   while deps.size > 0 {
-    var dep = deps[1];
+    var dep = deps[0];
 
     var brick       = dep["brick"]!;
     var package     = brick["name"]!.s;
@@ -378,7 +388,7 @@ private proc createDepTrees(depTree: unmanaged Toml, ref deps: list(unmanaged To
       var dependency = createDepTrees(depTree, manifests, package);
     }
     delete dep;
-    deps.pop(1);
+    deps.pop(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then
@@ -415,25 +425,25 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 
   var vers1 = version1.split('.');
   var vers2 = version2.split('.');
-  var v1 = vers1(1): int;
-  var v2 = vers2(1): int;
-  if vers1(1) != vers2(1) {
+  var v1 = vers1(0): int;
+  var v2 = vers2(0): int;
+  if vers1(0) != vers2(0) {
     stderr.writeln("Dependency resolution error: package '", name, "' used by multiple packages expecting different major versions:");
     stderr.writeln("  v", version1);
     stderr.writeln("  v", version2);
     exit(1);
   }
-  else if vers1(2) != vers2(2) {
-    v1 = vers1(2): int;
-    v2 = vers2(2): int;
+  else if vers1(1) != vers2(1) {
+    v1 = vers1(1): int;
+    v2 = vers2(1): int;
     if v1 > v2 {
       return A;
     }
     else return B;
   }
   else {
-    v1 = vers1(3): int;
-    v2 = vers2(3): int;
+    v1 = vers1(2): int;
+    v2 = vers2(2): int;
     if v1 > v2 {
       return A;
     }
@@ -448,8 +458,8 @@ private proc IVRS(A: borrowed Toml, B: borrowed Toml) {
 private proc getManifests(deps: list((string, unmanaged Toml?))) {
   var manifests: list(unmanaged Toml);
   for dep in deps {
-    var name = dep(1);
-    var version: string = dep(2)!.s;
+    var name = dep(0);
+    var version: string = dep(1)!.s;
     var toAdd = retrieveDep(name, version);
     manifests.append(toAdd);
   }

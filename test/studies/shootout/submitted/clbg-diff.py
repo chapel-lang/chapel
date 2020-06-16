@@ -44,7 +44,7 @@ def main():
         c = clbgify_filename(s)
         if c in clbgbase:
             c_chapel = clbg[clbgbase.index(c)]
-            diff(s, c_chapel)
+            diff(c_chapel, s)
         else:
             '{0} not found'.format(s)
 
@@ -64,7 +64,7 @@ def main():
 
     submitted_missing = clbg_set.difference(submitted_set)
     if submitted_missing:
-        print('Missing shootouts')
+        print('\nMissing shootouts:')
         for s in submitted_missing:
             print(s)
 
@@ -88,10 +88,10 @@ def main():
     print('----')
     print()
 
-
 def git_checkout():
     """Grab git source tarball"""
-    url = 'https://salsa.debian.org/benchmarksgame-team/benchmarksgame/raw/master/public/download/'
+#    url = 'https://salsa.debian.org/benchmarksgame-team/benchmarksgame/raw/master/public/download/'
+    url = 'https://salsa.debian.org/benchmarksgame-team/benchmarksgame/-/raw/master/public/download/'
     zip_file = 'benchmarksgame-sourcecode.zip'
     destdir = 'benchmarksgame'
     stdout, stderr = run_command('rm -f ' + zip_file, True)

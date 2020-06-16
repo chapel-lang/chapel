@@ -506,7 +506,7 @@ language:
 ``+=`` ``-=`` ``*=`` ``/=`` ``**=`` ``%=`` ``&=`` ``|=`` ``^=`` ``&&=`` ``||=`` ``<<=`` ``>>=``     compound assignment
 ``<=>``                                                                                             swap
 ``<~>``                                                                                             I/O
-``..``                                                                                              range specifier
+``..`` ``..<``                                                                                      range specifier
 ``by``                                                                                              range/domain stride specifier
 ``#``                                                                                               range count operator
 ``...``                                                                                             variable argument lists

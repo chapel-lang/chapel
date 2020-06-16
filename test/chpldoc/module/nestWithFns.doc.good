@@ -11,6 +11,13 @@ OuterMod
 
    use OuterMod;
 
+
+or
+
+.. code-block:: chapel
+
+   import OuterMod;
+
 **Submodules**
 
 .. toctree::
@@ -38,6 +45,13 @@ Inner
 .. code-block:: chapel
 
    use OuterMod.Inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import OuterMod.Inner;
 
 .. function:: proc innerFn()
 

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,9 +60,9 @@ record TargetLocaleComparator {
   proc key(a: index(rank, idxType)) {
     if rank == 2 { // take special care for CSC/CSR
       if sparseLayoutType == unmanaged CS(compressRows=false) then
-        return (dist.targetLocsIdx(a), a[2], a[1]);
+        return (dist.targetLocsIdx(a), a[1], a[0]);
       else
-        return (dist.targetLocsIdx(a), a[1], a[2]);
+        return (dist.targetLocsIdx(a), a[0], a[1]);
     }
     else {
       return (dist.targetLocsIdx(a), a);
@@ -90,13 +91,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
                                             sparseLayoutType)?;
 
-  // TODO: move towards init and away from postinit
-  // and remove nilable types
-
-  proc postinit() {
-    setup();
-    //    writeln("Exiting initialize");
-  }
+  // TODO: move towards init and away from nilable types
 
   proc setup() {
     //    writeln("In setup");
@@ -253,10 +248,14 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   // how to allocate a new array over this domain
   //
-  proc dsiBuildArray(type eltType) {
-    var arr = new unmanaged SparseBlockArr(eltType=eltType, rank=rank, idxType=idxType,
-        stridable=stridable, sparseLayoutType=sparseLayoutType, dom=_to_unmanaged(this));
-    arr.setup();
+  proc dsiBuildArray(type eltType, param initElts:bool) {
+    var arr = new unmanaged SparseBlockArr(eltType=eltType,
+                                           rank=rank,
+                                           idxType=idxType,
+                                           stridable=stridable,
+                                           sparseLayoutType=sparseLayoutType,
+                                           dom=_to_unmanaged(this));
+    arr.setup(initElts);
     return arr;
   }
 
@@ -285,7 +284,7 @@ class SparseBlockDom: BaseSparseDomImpl {
 
   iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(1).these(tag, locFollowThis) do
+    for i in locFollowThis(0).these(tag, locFollowThis) do
       yield i;
   }
 
@@ -330,6 +329,14 @@ class SparseBlockDom: BaseSparseDomImpl {
 
 }
 
+private proc getDefaultSparseDist(type sparseLayoutType) {
+  if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) {
+    return defaultDist;
+  } else {
+    return new dmap(new sparseLayoutType());
+  }
+}
+
 //
 // Local SparseBlock Domain Class
 //
@@ -344,8 +351,7 @@ class LocSparseBlockDom {
   param stridable: bool;
   type sparseLayoutType;
   var parentDom: domain(rank, idxType, stridable);
-  var sparseDist = if isSubtype(_to_nonnil(sparseLayoutType), DefaultDist) then defaultDist
-                   else new dmap(new sparseLayoutType()); //unresolved call workaround
+  var sparseDist = getDefaultSparseDist(sparseLayoutType);
   var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
   proc dsiAdd(ind: rank*idxType) {
@@ -401,26 +407,41 @@ class SparseBlockArr: BaseSparseArr {
     super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
     this.stridable = stridable;
     this.sparseLayoutType = sparseLayoutType;
-    locArrDom = dom.dist.targetLocDom;
+    this.locArrDom = dom.dist.targetLocDom;
   }
 
-  proc setup() {
+  proc setup(param initElts) {
     var thisid = this.locale.id;
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         const locDom = dom.getLocDom(localeIdx);
-        locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank, idxType,
-            stridable, sparseLayoutType, locDom);
+        locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank,
+                                                            idxType,
+                                                            stridable,
+                                                            sparseLayoutType,
+                                                            locDom,
+                                                            initElts=initElts);
         if thisid == here.id then
           myLocArr = locArr(localeIdx);
       }
     }
   }
 
-  override proc dsiDestroyArr() {
+  override proc dsiElementInitializationComplete() {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
-        delete locArr(localeIdx);
+        locArr(localeIdx)!.myElems.dsiElementInitializationComplete();
+      }
+    }
+  }
+
+  override proc dsiDestroyArr(param deinitElts:bool) {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on locArr(localeIdx) {
+        var arr = locArr(localeIdx);
+        if deinitElts then
+          _deinitElements(arr!.myElems);
+        delete arr;
       }
     }
   }
@@ -446,7 +467,7 @@ class SparseBlockArr: BaseSparseArr {
 
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
-    for i in locFollowThis(1).these(tag, locFollowThis) {
+    for i in locFollowThis(0).these(tag, locFollowThis) {
       yield locArr[localeIndex]!.dsiAccess(i);
     }
   }
@@ -529,8 +550,33 @@ class LocSparseBlockArr {
   param stridable: bool;
   type sparseLayoutType;
   const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.mySparseBlock] eltType;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            type sparseLayoutType,
+            const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
+                                                      sparseLayoutType),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.sparseLayoutType = sparseLayoutType;
+    this.locDom = locDom;
+    this.myElems = locDom.mySparseBlock.buildArray(eltType, initElts=initElts);
+  }
+
+  proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
+  }
 
   proc dsiAccess(i) ref {
     return myElems[i];
@@ -758,7 +804,7 @@ override proc SparseBlockDom.dsiSupportsPrivatization() param return true;
 proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
   var c = new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                              sparseLayoutType=sparseLayoutType,
                              stridable=parentDom.stridable, dist=privdist,
@@ -769,7 +815,7 @@ proc SparseBlockDom.dsiPrivatize(privatizeData) {
     if c.locDoms(i).locale.id == here.id then
       c.myLocDom = c.locDoms(i);
   }
-  c.whole = {(...privatizeData(2))};
+  c.whole = {(...privatizeData(1))};
   return c;
 }
 
@@ -800,12 +846,12 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
 
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
-  if rid==(dist.targetLocDom.dim(rank).size - 1) then
-    bhi=whole.dim(rank).high;
+  if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
+    bhi=whole.dim(rank-1).high;
   else
-      bhi=dist.boundingBox.dim(rank).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank).high - dist.boundingBox.dim(rank).low +1)*(rid+1),
-                   dist.targetLocDom.dim(rank).size) - 1;
+      bhi=dist.boundingBox.dim(rank-1).low +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1),
+                   dist.targetLocDom.dim(rank-1).size) - 1;
 
   return(bhi - rlo + 1);
 }

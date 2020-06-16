@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -846,7 +847,6 @@ bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor)
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) ||
              call->isPrimitive(PRIM_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) ||
-             call->isPrimitive(PRIM_DEFAULT_INIT_FIELD) ||
              call->isPrimitive(PRIM_INIT_FIELD)) {
     lhsSe = toSymExpr(call->get(1));
     initOrCtor = NULL;

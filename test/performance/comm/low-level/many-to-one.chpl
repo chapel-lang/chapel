@@ -28,6 +28,8 @@ config const runSecs = 5.0;
 config const minOpsPerTimerCheck = if opNeedsTask then 10**2 else 10**3;
 
 config const printConfig = false;
+config const doWarmupPass = true;
+config const printWarmupTiming = false;
 config const printTimings = false;
 config const printCommDiags = false;
 
@@ -45,6 +47,35 @@ proc main() {
             'run for ', runSecs, ' seconds');
   }
 
+  if doWarmupPass {
+    //
+    // Warm up.  This avoids including overheads associated with the
+    // first communication transactions in the measured performance.
+    // It's particularly necessary for comm=ofi with providers that
+    // connect endpoints dynamically upon first communication, for
+    // example.
+    //
+    var tWarmup: Timer;
+    tWarmup.start();
+
+    coforall locIdx in 0..#numLocales {
+      on Locales(locIdx) {
+        coforall taskIdx in 1..numTasksPerNode {
+          if locIdx > 1 {
+            on Locales(1) do emptyFn();
+          }
+        }
+      }
+    }
+
+    if printWarmupTiming {
+      writeln('Warmup time: ', tWarmup.elapsed(), 's');
+    }
+  }
+
+  //
+  // Now do the measured operations.
+  //
   if printCommDiags {
     resetCommDiagnostics();
     startCommDiagnostics();

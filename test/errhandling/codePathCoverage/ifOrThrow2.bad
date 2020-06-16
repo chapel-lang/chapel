@@ -1,0 +1,3 @@
+ifOrThrow2.chpl:5: In function 'testit':
+ifOrThrow2.chpl:13: error: 'dom' is used before it is initialized
+ifOrThrow2.chpl:6: note: 'dom' declared here

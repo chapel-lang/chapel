@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -263,7 +264,7 @@ module ChapelRange {
   }
 
   private proc _isAnyNothing(args...) param : bool {
-    for param i in 1..args.size {
+    for param i in 0..args.size-1 {
       if isNothingType(args(i).type) then return true;
     }
     return false;
@@ -405,12 +406,94 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(param low, param high) param {
-    compilerError("Range bounds must be integers of compatible types");
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
   }
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(low, high) {
-    compilerError("param for loop must be defined over a bounded param range");
+    compilerError("param for-loops must be defined over a bounded param range");
+  }
+
+  proc chpl_compute_count_param_loop(param count: integral) param {
+    return count;
+  }
+
+  pragma "last resort"
+  proc chpl_compute_count_param_loop(count) {
+    compilerError("in a param for-loop, the count operator requires a param integral value");
+  }
+
+  proc chpl_low_bound_count_for_param_loop(param high: integral, param count: integral) param {
+    if count > 0 {
+      compilerError("count operators with positive count require the range to have a low bound");
+    }
+    else if count == 0 {
+      return high + 1;
+    }
+    else {
+      return high + count + 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_low_bound_count_for_param_loop(high, count) {
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
+  }
+
+  proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
+    if count < 0 {
+      compilerError("count operators with negative count require the range to have a high bound");
+    }
+    else if count == 0 {
+      return low - 1;
+    }
+    else {
+      return low + count - 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_high_bound_count_for_param_loop(low, count) {
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
+  }
+
+  proc chpl_bounded_count_for_param_loop_low(param low: integral, param high: integral, param count: integral) param {
+    param abs_count = if count < 0 then -count else count;
+    param size = high - low + 1;
+    if size < abs_count {
+      compilerError("Count of ", abs_count:string, " is too small for range of size ", size:string);
+    }
+    else if count == 0 {
+      return high + 1;
+    }
+    else if count < 0 {
+      return high + count + 1;
+    }
+    else {
+      return low;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_bounded_count_for_param_loop_low(low, high, count) {
+    compilerError("Range bounds and counts must be integers of compatible types in param for-loops");
+  }
+
+  proc chpl_bounded_count_for_param_loop_high(param low: integral, param high: integral, param count: integral) param {
+    if count == 0 {
+      return low - 1;
+    }
+    else if count < 0 {
+      return high;
+    }
+    else {
+      return low + count - 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_bounded_count_for_param_loop_high(low, high, count) {
+    compilerError("Range bounds and counts must be integers of compatible types in param for-loops");
   }
 
   //################################################################################
@@ -439,6 +522,10 @@ module ChapelRange {
   pragma "no doc"
   proc isBoundedRange(param B: BoundedRangeType) param
     return B == BoundedRangeType.bounded;
+
+  /* Return true if this range is bounded */
+  proc range.isBounded() param
+    return boundedType == BoundedRangeType.bounded;
 
   /* Return true if this range has a low bound, false otherwise */
   proc range.hasLowBound() param
@@ -522,10 +609,10 @@ module ChapelRange {
       return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
+  // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
      undefined, the behavior is undefined.
    */
-  // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
     return chpl_intToIdx(this.alignedHighAsInt);
   }
@@ -566,7 +653,7 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
-    // assumes alignedHigh/alignLow always work, even for an empty range
+    // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
     if al > ah then return 0: intIdxType;
@@ -2223,7 +2310,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
 
-    var myFollowThis = followThis(1);
+    var myFollowThis = followThis(0);
 
     if debugChapelRange then
       chpl_debug_writeln("Range = ", myFollowThis);
@@ -2485,17 +2572,17 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
     var U = (one, zero, u);
     var V = (zero, one, v);
 
-    while V(3) != 0 {
+    while V(2) != 0 {
       // This is a workaround for a bug.
       // The previous version was:
       //(U, V) = let q = U(3)/V(3) in (V, U - V * (q, q, q));
       var oldU = U;
-      var q = U(3)/V(3);
+      var q = U(2)/V(2);
       U = V;
       V = oldU - V * (q, q, q);
     }
 
-    return (U(3), U(1));
+    return (U(2), U(0));
   }
 
   inline proc chpl__extendedEuclid(u:int(32), v:int(32))

@@ -23,6 +23,8 @@ _chpl ()
       # developer options
       local devel_opts="\
 --atomics \
+--auto-local-access \
+--auto-local-access-dynamic \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -35,6 +37,7 @@ _chpl ()
 --cast-checks \
 --cc-warnings \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -136,6 +139,8 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-auto-local-access \
+--no-auto-local-access-dynamic \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -277,6 +282,7 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-auto-local-access \
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
@@ -329,12 +335,15 @@ _chpl ()
       # non-developer options
       local nodevel_opts="\
 --atomics \
+--auto-local-access \
+--auto-local-access-dynamic \
 --aux-filesys \
 --baseline \
 --bounds-checks \
 --cache-remote \
 --cast-checks \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -389,6 +398,8 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-auto-local-access \
+--no-auto-local-access-dynamic \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \

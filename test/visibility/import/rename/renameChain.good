@@ -1,0 +1,3 @@
+renameChain.chpl:5: warning: identifier 'bar' is repeated
+note: Did you mean to rename 'foo' to 'baz'?
+renameChain.chpl:5: error: Bad identifier in rename, no known 'bar' in 'M'

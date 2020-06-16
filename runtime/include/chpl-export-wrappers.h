@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +31,7 @@ typedef struct chpl_byte_buffer {
 } chpl_byte_buffer;
 
 void chpl_byte_buffer_free(chpl_byte_buffer cb);
+void chpl_byte_buffer_free_server(chpl_byte_buffer cb);
 
 chpl_byte_buffer chpl_byte_buffer_make(const char* data);
 chpl_byte_buffer chpl_byte_buffer_make_len(const char* data, uint64_t size);

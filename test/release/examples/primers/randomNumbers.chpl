@@ -27,7 +27,7 @@ fillRandom(rands);
 // To produce deterministic output, specify the starting seed to use when
 // filling the array.
 //
-var randsSeeded: [1..10] real;
+var randsSeeded: [0..9] real;
 var seed = 17;
 fillRandom(randsSeeded, seed);
 writeln("randsSeeded = ", randsSeeded); // Here the output is deterministic
@@ -62,8 +62,8 @@ randStream.fillRandom(randsFromStream);
 //
 // Or random numbers can be requested one at a a time.
 //
-var nextRand = randStreamSeeded.getNext();
-writeln(nextRand == randsSeeded[1]);
+var firstRand = randStreamSeeded.getNext();
+writeln(firstRand == randsSeeded[0]);
 
 // Note that since since we are using the same seed, the numbers generated will
 // match those generated earlier by ``fillRandom(randsSeeded, seed)``.
@@ -72,27 +72,27 @@ writeln(nextRand == randsSeeded[1]);
 // The next random number generated will follow the most
 // recent...
 //
-var secondRand = randStreamSeeded.getNext();
-writeln(secondRand == randsSeeded[2]);
+var nextRand = randStreamSeeded.getNext();
+writeln(nextRand == randsSeeded[1]);
 
 // ...unless the position to look at has been changed.
-randStreamSeeded.skipToNth(7);
-var seventhRand = randStreamSeeded.getNext();
-writeln(seventhRand == randsSeeded[7]);
+randStreamSeeded.skipToNth(6);
+var rand6 = randStreamSeeded.getNext();
+writeln(rand6 == randsSeeded[6]);
 
 //
 // A specific random number in the stream can be obtained by
 // specifying the position.  This argument must be greater
-// than ``0``.
+// than or equal to ``0``.
 //
-var secondRand2 = randStreamSeeded.getNth(2);
-writeln(secondRand2 == secondRand);
+var rand1 = randStreamSeeded.getNth(1);
+writeln(rand1 == nextRand);
 
 //
 // This position can be earlier or later than the most recent.
 //
-var fourthRand = randStreamSeeded.getNth(4);
-writeln(fourthRand == randsSeeded[4]);
+var rand3 = randStreamSeeded.getNth(3);
+writeln(rand3 == randsSeeded[3]);
 
 
 //

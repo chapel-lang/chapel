@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -170,7 +171,8 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
 
           // Or, if passing a 'const' thing into an 'in' formal,
           // that's OK
-          } else if (formal->intent == INTENT_IN &&
+          } else if ((formal->intent == INTENT_IN ||
+                      formal->originalIntent == INTENT_IN) &&
                      !formal->type->symbol->hasFlag(FLAG_COPY_MUTATES)) {
             // OK, not an error
           } else {

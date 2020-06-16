@@ -12,7 +12,15 @@ ifneq ("$(wildcard $(LLVM_POLLY_FILE))","")
 endif
 
 ifndef LLVM_LLVM_LIBS
+
+ifeq ($(LLVM_MAJOR_VERSION),10)
+  # frontendopenmp seems to be required to link clang in llvm 10
+  # but not in earlier or later versions
+  export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter frontendopenmp ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+else
   export LLVM_LLVM_LIBS=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+endif
+
 endif
 
 ifeq ($(LLVM_MAJOR_VERSION_9PLUS),9)

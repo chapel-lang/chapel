@@ -10,7 +10,7 @@ use DynamicIters;
 config const n = 7,           // the array size over which to compute perms
              nchunks = 720;   // the number of chunks of parallelism to use
 
-const fact = computeFact(n);  // memoize n! (n-factorial)
+const fact: [1..n] int = computeFact(n);  // memoize n! (n-factorial)
 
 
 proc main() {

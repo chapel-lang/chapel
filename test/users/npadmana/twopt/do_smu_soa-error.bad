@@ -1,3 +1,5 @@
 do_smu_soa-error.chpl:294: In function 'doPairs':
 do_smu_soa-error.chpl:299: error: Cannot transfer ownership from this non-nilable reference variable
-$CHPL_HOME/modules/internal/ChapelBase.chpl:1647: error: Cannot transfer ownership from this non-nilable reference variable
+do_smu_soa-error.chpl:301: In function 'initialPP12':
+do_smu_soa-error.chpl:303: error: Cannot transfer ownership from this non-nilable reference variable
+do_smu_soa-error.chpl:303: error: Cannot transfer ownership from this non-nilable reference variable

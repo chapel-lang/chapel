@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -205,7 +206,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
       // Otherwise, copy it
       element = new VarSymbol(astr("elt_", name), args[i]->type);
       ctor->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr("chpl__autoCopy", arg);
+      CallExpr* copy = new CallExpr(astr_autoCopy, arg);
       ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
 
@@ -310,7 +311,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     typeCtorArgs.push_back(sizeArg);
 
     for(size_t i = 0; i < args.size(); i++) {
-      const char* name = astr("x", istr(i+1));
+      const char* name = astr("x", istr(i));
       ArgSymbol* typeArg = new ArgSymbol(INTENT_TYPE, name, args[i]->type);
       typeArg->addFlag(FLAG_TYPE_VARIABLE);
       typeCtorArgs.push_back(typeArg);
@@ -455,7 +456,7 @@ instantiate_tuple_hash( FnSymbol* fn) {
 
   CallExpr* call = NULL;
   bool first = true;
-  for (int i=1; i<ct->fields.length; i++) {
+  for (int i=0; i<ct->fields.length-1; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
     if (first) {
       call =  new CallExpr( "chpl__defaultHash", field_access);
@@ -524,6 +525,7 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 
     // Ensure normalize doesn't try to auto destroy this
     elem->addFlag(FLAG_NO_AUTO_DESTROY);
+    elem->addFlag(FLAG_TEMP);
 
     fn->body->insertAtTail(new DefExpr(elem, NULL, type->symbol));
     fn->body->insertAtTail(new CallExpr(PRIM_SET_MEMBER, tup, symName, elem));
@@ -542,7 +544,8 @@ static void instantiate_tuple_init(FnSymbol* fn) {
 
 // Returns the variable storing the read tuple field
 static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
-                                         Expr* insertBefore)
+                                         Expr* insertBefore,
+                                         BlockStmt* insertAtTail)
 {
   VarSymbol* readF = NULL;
   const char* name  = fromField->name;
@@ -552,20 +555,32 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
   if (isReferenceType(fromField->type)) {
     // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
     readF = new VarSymbol(astr("read_", name), fromField->type);
-    insertBefore->insertBefore(new DefExpr(readF));
+    DefExpr* def = new DefExpr(readF);
+    if (insertBefore)
+      insertBefore->insertBefore(def);
+    else
+      insertAtTail->insertAtTail(def);
     get = new CallExpr(PRIM_GET_MEMBER_VALUE, fromSym, fromName);
   } else {
     // Otherwise, use PRIM_GET_MEMBER
     readF = new VarSymbol(astr("read_", name),
                           fromField->type->getRefType());
 
-    insertBefore->insertBefore(new DefExpr(readF));
+    DefExpr* def = new DefExpr(readF);
+    if (insertBefore)
+      insertBefore->insertBefore(def);
+    else
+      insertAtTail->insertAtTail(def);
 
     get   = new CallExpr(PRIM_GET_MEMBER, fromSym, fromName);
   }
 
   CallExpr* setReadF = new CallExpr(PRIM_MOVE, readF, get);
-  insertBefore->insertBefore(setReadF);
+  if (insertBefore)
+    insertBefore->insertBefore(setReadF);
+  else
+    insertAtTail->insertAtTail(setReadF);
+
   resolveCall(setReadF);
 
   return readF;
@@ -602,7 +617,7 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
       insertBefore->insertBefore(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
+      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
       insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
 
       resolveCallAndCallee(copy, true);
@@ -671,7 +686,7 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
     VarSymbol* element = NULL;
 
 
-    readF = generateReadTupleField(fromSym, fromField, insertBefore);
+    readF = generateReadTupleField(fromSym, fromField, insertBefore, NULL);
 
     element = generateCoerce(fromField, toField, readF, insertBefore);
 
@@ -707,33 +722,15 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   for (int i=2; i<=toT->fields.length; i++) {
     Symbol* fromField = toDefExpr(fromT->fields.get(i))->sym;
     Symbol*   toField = toDefExpr(  toT->fields.get(i))->sym;
-    Symbol*  fromName = new_CStringSymbol(fromField->name);
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
 
     VarSymbol* readF = NULL;
     VarSymbol* element = NULL;
 
-    CallExpr* get = NULL;
+    readF = generateReadTupleField(arg, fromField, NULL, block);
 
-    if (isReferenceType(fromField->type)) {
-      // Use PRIM_GET_MEMBER_VALUE if the element is already a reference
-      readF = new VarSymbol(astr("read_", name), fromField->type);
-      block->insertAtTail(new DefExpr(readF));
-      get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
-    } else {
-      // Otherwise, use PRIM_GET_MEMBER
-      readF = new VarSymbol(astr("read_", name),
-                            fromField->type->getRefType());
-
-      block->insertAtTail(new DefExpr(readF));
-
-      get   = new CallExpr(PRIM_GET_MEMBER, arg, fromName);
-    }
-
-    block->insertAtTail(new CallExpr(PRIM_MOVE, readF, get));
-
-    // now readF is some kind of reference
+    // now readF might be some kind of reference
     // the code below needs to handle the following 5 cases:
     //
     // fromField : t1     toField : t2       (value types differ)
@@ -770,7 +767,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr("chpl__autoCopy", readF);
+      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
     // Expecting insertCasts to fix any type mismatch in the last MOVE added
@@ -808,16 +805,11 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
   for (int i=2; i<=ct->fields.length; i++) {
     Symbol* fromField = toDefExpr(origCt->fields.get(i))->sym;
     Symbol*   toField = toDefExpr(ct->fields.get(i))->sym;
-    Symbol*  fromName = new_CStringSymbol(fromField->name);
     Symbol*    toName = new_CStringSymbol(  toField->name);
     const char* name  = toField->name;
 
-    VarSymbol* read = new VarSymbol(astr("read_", name), fromField->type);
-    block->insertAtTail(new DefExpr(read));
+    VarSymbol* read = generateReadTupleField(arg, fromField, NULL, block);
     VarSymbol* element = NULL;
-
-    CallExpr* get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
-    block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
 
     if (isReferenceType(fromField->type) && isReferenceType(toField->type)) {
       // If it is a reference, pass it through
@@ -828,6 +820,8 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       block->insertAtTail(new DefExpr(element));
       CallExpr* copy = new CallExpr(copy_fun, read);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
+      if (recordContainingCopyMutatesField(toField->type))
+        arg->intent = INTENT_REF;
     }
     block->insertAtTail(new CallExpr(PRIM_SET_MEMBER, retv, toName, element));
   }
@@ -841,7 +835,7 @@ static void
 instantiate_tuple_initCopy(FnSymbol* fn) {
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple",
-                                         "chpl__initCopy",
+                                         astr_initCopy,
                                          true);
 }
 
@@ -852,7 +846,7 @@ instantiate_tuple_autoCopy(FnSymbol* fn) {
   // with refs.
   instantiate_tuple_initCopy_or_autoCopy(fn,
                                          "_build_tuple_always_allow_ref",
-                                         "chpl__autoCopy",
+                                         astr_autoCopy,
                                          false);
 }
 
@@ -868,7 +862,7 @@ instantiate_tuple_unref(FnSymbol* fn)
   AggregateType* ct;
   getTupleArgAndType(fn, arg, origCt);
 
-  const char* useCopy = "chpl__initCopy";
+  const char* useCopy = astr_initCopy;
   ct = computeCopyTuple(origCt, true, useCopy, fn->body);
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
@@ -884,16 +878,11 @@ instantiate_tuple_unref(FnSymbol* fn)
     for (int i=2; i<=ct->fields.length; i++) {
       Symbol* fromField = toDefExpr(origCt->fields.get(i))->sym;
       Symbol*   toField = toDefExpr(    ct->fields.get(i))->sym;
-      Symbol*  fromName = new_CStringSymbol(fromField->name);
       Symbol*    toName = new_CStringSymbol(  toField->name);
       const char* name  = toField->name;
 
-      VarSymbol* read = new VarSymbol(astr("read_", name), fromField->type);
-      block->insertAtTail(new DefExpr(read));
+      VarSymbol* read = generateReadTupleField(arg, fromField, NULL, block);
       VarSymbol* element = NULL;
-
-      CallExpr* get = new CallExpr(PRIM_GET_MEMBER_VALUE, arg, fromName);
-      block->insertAtTail(new CallExpr(PRIM_MOVE, read, get));
 
       if (isReferenceType(fromField->type)) {
         // If it is a reference, copy construct it

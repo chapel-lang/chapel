@@ -10,6 +10,13 @@ ordering.doc
 
    use ordering.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import ordering.doc;
+
 .. function:: proc second()
 
    This is a proc... 

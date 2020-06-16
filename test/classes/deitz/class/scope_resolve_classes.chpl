@@ -6,6 +6,7 @@ module OuterModule {
   }
 
   module M {
+    import OuterModule.C;
     var y = 1;
     proc C.foo() {
       writeln(y, x);

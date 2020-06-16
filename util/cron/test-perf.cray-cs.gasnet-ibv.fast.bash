@@ -16,7 +16,7 @@ source $CWD/common-perf-cray-cs.bash
 
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX=83G
-export GASNET_ODP_VERBOSE=0
+export CHPL_GASNET_MORE_CFG_OPTIONS=--disable-ibv-odp
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-ibv-fast -numtrials 1"

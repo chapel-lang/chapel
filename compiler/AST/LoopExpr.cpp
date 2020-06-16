@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +52,7 @@ static void findLoopExprDefs(LoopExpr* fe, Expr* indices, AList& defIndices) {
     VarSymbol* idx = new VarSymbol(se->unresolved);
     idx->addFlag(FLAG_INDEX_VAR);
     idx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    idx->addFlag(FLAG_NO_DOC);
     DefExpr* def = new DefExpr(idx);
     defIndices.insertAtTail(def);
   }

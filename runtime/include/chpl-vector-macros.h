@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +23,7 @@
 
 #include "chpl-comp-detect-macros.h"
 
-// See commit history for why we don't support ivdep with the Cray compiler
+// Not sure what this is for clang-based cce
 #if RT_COMP_CC == RT_COMP_CRAY
 #define CHPL_PRAGMA_IVDEP
 

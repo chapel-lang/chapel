@@ -1,0 +1,1 @@
+paramForLoopWrongCountType.chpl:1: error: in a param for-loop, the count operator requires a param integral value

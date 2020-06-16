@@ -1,6 +1,6 @@
 class C {
   proc this(ii : int ...3) : int {
-    for i in 1..3 do
+    for i in 0..2 do
       writeln(ii(i));
     return 4;
   }

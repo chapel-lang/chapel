@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -150,12 +151,44 @@ class LocAccumStencilArr {
   param stridable: bool;
   const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field"
+
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myFluff] eltType;
+
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
 
   var recvM, recvP : [locDom.recvDom] eltType;
   var recvMFlag, recvPFlag : atomic bool;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
+
+    // Even if the array elements don't need to be initialized now,
+    // do initialize the fluff.
+    if initElts == false {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        forall i in this.locDom.myFluff {
+          if !this.locDom.contains(i) {
+            pragma "no auto destroy" pragma "unsafe"
+            var def: eltType;
+            __primitive("=", myElems[i], def);
+          }
+        }
+      }
+    }
+  }
 
   // These functions will always be called on this.locale, and so we do
   // not have an on statement around the while loop below (to avoid
@@ -166,6 +199,28 @@ class LocAccumStencilArr {
 
   inline proc unlockLocRAD() {
     locRADLock.clear();
+  }
+
+  proc deinit() {
+    // Even if the array elements don't need to be de-initialized now,
+    // do de-initialize the fluff.
+    param needsDestroy = __primitive("needs auto destroy", eltType);
+    if needsDestroy {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        forall i in this.locDom.myFluff {
+          if !this.locDom.contains(i) {
+            chpl__autoDestroy(myElems[i]);
+          }
+        }
+      }
+    }
+
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
+    _do_destroy_array(myElems, deinitElts=false);
+
+    if locRAD != nil then
+      delete locRAD;
   }
 }
 
@@ -377,7 +432,7 @@ proc AccumStencil.targetLocsIdx(ind: idxType) where rank == 1 {
 
 proc AccumStencil.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
-  for param i in 1..rank do
+  for param i in 0..rank-1 do
     result(i) = max(0, min((targetLocDom.dim(i).size-1):int,
                            (((ind(i) - boundingBox.dim(i).low) *
                              targetLocDom.dim(i).size:idxType) /
@@ -450,7 +505,7 @@ proc AccumStencil.dsiCreateReindexDist(newSpace, oldSpace) {
   }
 
   var myNewBbox = boundingBox.dims();
-  for param r in 1..rank {
+  for param r in 0..rank-1 {
     var oldLow = oldSpace(r).low;
     var newLow = newSpace(r).low;
     var oldHigh = oldSpace(r).high;
@@ -495,7 +550,7 @@ proc LocAccumStencil.init(param rank: int,
     myChunk = {blo..bhi};
   } else {
     var inds: rank*range(idxType);
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       const lo = boundingBox(i).low;
       const hi = boundingBox(i).high;
       const numelems = hi - lo + 1;
@@ -587,7 +642,7 @@ iter AccumStencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     type strType = chpl__signedType(idxType);
     const tmpAccumStencil = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 1..tmpAccumStencil.rank do
+    for param i in 0..tmpAccumStencil.rank-1 do
       locOffset(i) = tmpAccumStencil.dim(i).first/tmpAccumStencil.dim(i).stride:strType;
     // Forward to defaultRectangular
     for followThis in tmpAccumStencil.these(iterKind.leader, maxTasks,
@@ -610,8 +665,8 @@ iter AccumStencilDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 1) param
-      return if i == rangeTuple.size then rangeTuple(i).stridable
+  proc anyStridable(rangeTuple, param i: int = 0) param
+      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag then
@@ -619,7 +674,7 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
@@ -641,11 +696,13 @@ proc AccumStencilDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc AccumStencilDom.dsiBuildArray(type eltType) {
+proc AccumStencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD);
+  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                                     stridable, dummyLASD,
+                                                     false);
   var locArrTemp: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
   var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   
@@ -653,7 +710,9 @@ proc AccumStencilDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
-      const LASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, locDom);
+      const LASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                                    stridable, locDom,
+                                                    initElts=initElts);
       locArrTemp(localeIdx) = LASA;
       if here.id == creationLocale then
         myLocArrTemp = LASA;
@@ -686,7 +745,7 @@ proc AccumStencilDom.dsiSetIndices(x: domain) {
   whole = x;
   if whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * x.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
@@ -709,7 +768,7 @@ proc AccumStencilDom.dsiSetIndices(x) {
   whole.setIndices(x);
   if whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
@@ -739,8 +798,8 @@ proc AccumStencilDom.setup() {
     on dist.targetLocales(localeIdx) {
       const myLocDom = locDoms(localeIdx);
 
-      var abstr : rank*whole.dim(1).stride.type;
-      for param i in 1..rank {
+      var abstr : rank*whole.dim(0).stride.type;
+      for param i in 0..rank-1 {
         abstr(i) = abs(whole.dim(i).stride);
       }
 
@@ -754,13 +813,13 @@ proc AccumStencilDom.setup() {
 
       proc faceSize(dim) {
         var ret = 1;
-        for i in 1..rank do
+        for i in 0..rank-1 do
           if i != dim then ret *= myLocDom.myFluff.dim(i).size;
         return ret;
       }
 
       var maxBufSize = 0;
-      for i in 1..rank {
+      for i in 0..rank-1 {
         const fs = faceSize(i);
         // Multiplied by '2' for non-fluff elements to be received
         const len = fs * fluff(i) * 2;
@@ -825,11 +884,37 @@ proc AccumStencilArr.setupRADOpt() {
   }
 }
 
-override proc AccumStencilArr.dsiDestroyArr() {
+override proc AccumStencilArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      if !ignoreFluff then
-        delete locArr(localeIdx);
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc AccumStencilArr.dsiDestroyArr(param deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
+      if !ignoreFluff {
+        if deinitElts {
+          // only deinitialize non-fluff elements
+          // fluff is always deinited in the LocArr deinit
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if _deinitElementsIsParallel(eltType) {
+              forall i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            } else {
+              for i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            }
+          }
+        }
+        delete arr;
+      }
     }
   }
 }
@@ -942,6 +1027,9 @@ inline proc AccumStencilArr.dsiAccess(i: idxType...rank) const ref
 where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
+inline proc AccumStencilArr.dsiBoundsCheck(i: rank*idxType) {
+  return dom.wholeFluff.contains(i);
+}
 
 iter AccumStencilArr.these() ref {
   for i in dom do
@@ -968,8 +1056,8 @@ proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: domain)
   return lead._value == this.dom;
 
 iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 1) param
-      return if i == rangeTuple.size then rangeTuple(i).stridable
+  proc anyStridable(rangeTuple, param i: int = 0) param
+      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
   if chpl__testParFlag {
@@ -985,7 +1073,7 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     var stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
@@ -1039,7 +1127,7 @@ proc AccumStencilArr.dsiSerialWrite(f) {
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;
   var i : rank*idxType;
-  for dim in 1..rank do
+  for dim in 0..#rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
     f <~> dsiAccess(i);
@@ -1047,10 +1135,10 @@ proc AccumStencilArr.dsiSerialWrite(f) {
       if ! binary then f <~> " ";
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
-      for dim in 1..rank-1 by -1 {
+      for dim in 0..rank-2 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
-          for dim2 in dim+1..rank {
+          for dim2 in dim+1..rank-1 {
             f <~> "\n";
             i(dim2) = dom.dsiDim(dim2).low;
           }
@@ -1065,7 +1153,7 @@ proc AccumStencilArr.dsiSerialWrite(f) {
 pragma "no copy return"
 proc AccumStencilArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
-  for param i in 1..rank {
+  for param i in 0..rank-1 {
     low(i) = ranges(i).low;
   }
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -1073,9 +1161,9 @@ proc AccumStencilArr.dsiLocalSlice(ranges) {
 
 proc _extendTuple(type t, idx: _tuple, args) {
   var tup: args.size*t;
-  var j: int = 1;
+  var j: int = 0;
 
-  for param i in 1..args.size {
+  for param i in 0..args.size-1 {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
     else {
@@ -1089,9 +1177,9 @@ proc _extendTuple(type t, idx: _tuple, args) {
 proc _extendTuple(type t, idx, args) {
   var tup: args.size*t;
   var idxTup = (idx,);
-  var j: int = 1;
+  var j: int = 0;
 
-  for param i in 1..args.size {
+  for param i in 0..args.size-1 {
     if isCollapsedDimension(args(i)) then
       tup(i) = args(i);
     else {
@@ -1104,7 +1192,7 @@ proc _extendTuple(type t, idx, args) {
 
 private inline proc isZeroTuple(t) {
   if isTuple(t) {
-    for param i in 1..t.size do
+    for param i in 0..t.size-1 do
       if t(i) != 0 then return false;
   } else if isIntegral(t) {
     return t == 0;
@@ -1147,7 +1235,7 @@ iter AccumStencilArr.dsiBoundaries() {
       const low  = dom.dist.targetLocDom.low;
       const high = dom.dist.targetLocDom.high;
       var ret : neighIdx.type;
-      for param r in 1..rank {
+      for param r in 0..rank-1 {
         if neighIdx(r) < low(r) {
           ret(r) = -1;
         } else if neighIdx(r) > high(r) {
@@ -1158,8 +1246,8 @@ iter AccumStencilArr.dsiBoundaries() {
     }
 
     proc chunkSlice(LD, neighIdx) {
-      var r : rank*LD.myFluff.dim(1).type;
-      for i in 1..rank {
+      var r : rank*LD.myFluff.dim(0).type;
+      for i in 0..#rank {
         const F = LD.myFluff.dim(i);
         const B = LD.myBlock.dim(i);
 
@@ -1171,7 +1259,7 @@ iter AccumStencilArr.dsiBoundaries() {
     }
 
     var ndr : rank*range;
-    for i in 1..rank do ndr(i) = -1..1;
+    for i in 0..rank-1 do ndr(i) = -1..1;
     const ND = {(...ndr)};
 
     for Off in ND {
@@ -1200,7 +1288,7 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
       const low  = dom.dist.targetLocDom.low;
       const high = dom.dist.targetLocDom.high;
       var ret : neighIdx.type;
-      for param r in 1..rank {
+      for param r in 0..rank-1 {
         if neighIdx(r) < low(r) {
           ret(r) = -1;
         } else if neighIdx(r) > high(r) {
@@ -1211,8 +1299,8 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
     }
 
     proc chunkSlice(LD, neighIdx) {
-      var r : rank*LD.myFluff.dim(1).type;
-      for i in 1..rank {
+      var r : rank*LD.myFluff.dim(0).type;
+      for i in 0..#rank {
         const F = LD.myFluff.dim(i);
         const B = LD.myBlock.dim(i);
 
@@ -1224,7 +1312,7 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
     }
 
     var ndr : rank*range;
-    for i in 1..rank do ndr(i) = -1..1;
+    for i in 0..rank-1 do ndr(i) = -1..1;
     const ND = {(...ndr)};
 
     // TODO: There's probably a better way to utilize parallelism here...
@@ -1295,8 +1383,8 @@ proc AccumStencilArr._getNeighborIdx(curIdx, dim, direction) {
 
 proc AccumStencilArr._getSendDom(sourceArr, dim, direction) {
   var locDom = sourceArr.locDom;
-  var r : rank * locDom.myFluff.dim(1).type;
-  for i in 1..rank {
+  var r : rank * locDom.myFluff.dim(0).type;
+  for i in 0..rank-1 {
     const cd = locDom.myFluff.dim(i);
     if i == dim {
       const outerBound = if direction == -1 then cd.first else cd.last;
@@ -1317,9 +1405,9 @@ proc AccumStencilArr._getSendDom(sourceArr, dim, direction) {
 private proc chopDim(D:domain, dim) {
   compilerAssert(D.rank > 1, "Cannot call 'chopDim' on one-dimensional domain");
   param newRank = D.rank - 1;
-  var r : newRank * D.dim(1).type;
-  var cur = 1;
-  for i in 1..D.rank {
+  var r : newRank * D.dim(0).type;
+  var cur = 0;
+  for i in 0..D.rank-1 {
     if i != dim {
       r(cur) = D.dim(i);
       cur += 1;
@@ -1330,10 +1418,10 @@ private proc chopDim(D:domain, dim) {
 
 private proc denseTo1D(idx, dims) {
   var blk : dims.size * int;
-  blk(blk.size) = 1;
-  for i in 1..blk.size-1 by -1 do blk(i) = blk(i+1) * dims(i+1).size;
+  blk(blk.size-1) = 1;
+  for i in 0..blk.size-2 by -1 do blk(i) = blk(i+1) * dims(i+1).size;
   var sum = 0;
-  for i in 1..idx.size do sum += idx(i) * blk(i);
+  for i in 0..idx.size-1 do sum += idx(i) * blk(i);
   return sum;
 }
 
@@ -1343,8 +1431,8 @@ proc AccumStencilArr._sendElements(destBuf, sourceArr, dim, direction) {
   if rank == 1 {
     destBuf[1..sendDom.size] = sourceArr.myElems[sendDom];
   } else {
-    const chopped = chopDim(sendDom, rank);
-    const lastDim = sendDom.dim(rank);
+    const chopped = chopDim(sendDom, rank-1);
+    const lastDim = sendDom.dim(rank-1);
     const len = lastDim.size;
     forall (idx, dense) in zip(chopped, densify(chopped, chopped)) {
       const low = 1 + denseTo1D(chpl__tuplify(dense), sendDom.dims());
@@ -1363,8 +1451,8 @@ proc AccumStencilArr._unpackElements(srcBuf, destArr, dim, direction) {
       destArr.myElems[elIdx] += srcBuf[bufIdx];
     }
   } else {
-    const chopped = chopDim(destDom, rank);
-    const lastDim = destDom.dim(rank);
+    const chopped = chopDim(destDom, rank-1);
+    const lastDim = destDom.dim(rank-1);
     const len = lastDim.size;
     forall (idx, dense) in zip(chopped, densify(chopped, chopped)) {
       const low = 1 + denseTo1D(chpl__tuplify(dense), destDom.dims());
@@ -1415,7 +1503,7 @@ proc AccumStencilArr._exchangeHelper(curIdx, dim, direction) {
 proc AccumStencilArr.dsiUpdateFluff() {
   if isZeroTuple(dom.fluff) then return;
 
-  for dim in 1..rank {
+  for dim in 0..rank-1 {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         cobegin {
@@ -1468,15 +1556,15 @@ proc AccumStencil.init(other: unmanaged AccumStencil, privateData,
   this.rank = rank;
   this.idxType = idxType;
   this.ignoreFluff = ignoreFluff;
-  boundingBox = {(...privateData(1))};
-  fluff = privateData(6);
-  periodic = privateData(7);
-  targetLocDom = {(...privateData(2))};
+  boundingBox = {(...privateData(0))};
+  fluff = privateData(5);
+  periodic = privateData(6);
+  targetLocDom = {(...privateData(1))};
   targetLocales = other.targetLocales;  // todo use serial loop for these two?
   locDist = other.locDist;
-  dataParTasksPerLocale = privateData(3);
-  dataParIgnoreRunningTasks = privateData(4);
-  dataParMinGranularity = privateData(5);
+  dataParTasksPerLocale = privateData(2);
+  dataParIgnoreRunningTasks = privateData(3);
+  dataParMinGranularity = privateData(4);
 }
 
 override proc AccumStencil.dsiSupportsPrivatization() param return true;
@@ -1508,12 +1596,12 @@ override proc AccumStencilDom.dsiSupportsPrivatization() param return true;
 proc AccumStencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc AccumStencilDom.dsiPrivatize(privatizeData) {
-  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(1));
-  var c = new unmanaged AccumStencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff, locDoms=locDoms, whole={(...privatizeData(2))});
+  var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
+  var c = new unmanaged AccumStencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff, locDoms=locDoms, whole={(...privatizeData(1))});
 
   if c.whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * c.whole.dim(i).stride);
     }
     c.wholeFluff = c.whole.expand(absFluff);
@@ -1529,7 +1617,7 @@ proc AccumStencilDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
   if whole.size > 0 {
     var absFluff : fluff.type;
-    for param i in 1..rank {
+    for param i in 0..rank-1 {
       absFluff(i) = abs(fluff(i) * whole.dim(i).stride);
     }
     wholeFluff = whole.expand(absFluff);
@@ -1544,7 +1632,7 @@ proc AccumStencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
 
   const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD);
+  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD, initElts=false);
   var locArrTemp: [privdom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
   var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
   

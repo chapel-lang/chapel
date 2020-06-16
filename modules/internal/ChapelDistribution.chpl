@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -254,16 +255,24 @@ module ChapelDistribution {
       }
     }
 
-    inline proc remove_containing_arr(x:unmanaged BaseArr): int {
+    // returns true if the domain should be removed
+    inline proc remove_containing_arr(x:unmanaged BaseArr) {
       var count = -1;
       on this {
+        var cnt = -1;
         _arrsLock.lock();
         _arrs_containing_dom -= 1;
-        count = _arrs.size;
-        count += _arrs_containing_dom;
+        cnt = _arrs.size;
+        cnt += _arrs_containing_dom;
+        // add one for the main domain record
+        if !_free_when_no_arrs then
+          cnt += 1;
         _arrsLock.unlock();
+
+        count = cnt;
       }
-      return count;
+
+      return (count==0);
     }
 
     inline proc add_containing_arr(x:unmanaged BaseArr) {
@@ -272,23 +281,6 @@ module ChapelDistribution {
         _arrs_containing_dom += 1;
         _arrsLock.unlock();
       }
-    }
-
-    // used for associative domains/arrays
-    // MPF:  why do these need to be in BaseDom at all?
-    proc _backupArrays() {
-      for arr in _arrs do
-        arr._backupArray();
-    }
-
-    proc _removeArrayBackups() {
-      for arr in _arrs do
-        arr._removeArrayBackup();
-    }
-
-    proc _preserveArrayElements(oldslot, newslot) {
-      for arr in _arrs do
-        arr._preserveArrayElement(oldslot, newslot);
     }
 
     proc dsiSupportsPrivatization() param return false;
@@ -305,6 +297,10 @@ module ChapelDistribution {
     proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
+
+    proc dsiSupportsAutoLocalAccess() param {
+      return false;
+    }
 
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
@@ -353,7 +349,7 @@ module ChapelDistribution {
       // this is a bug workaround
     }
 
-    proc dsiAdd(x) {
+    proc dsiAdd(in x) {
       compilerError("Cannot add indices to a rectangular domain");
       return 0;
     }
@@ -636,7 +632,7 @@ module ChapelDistribution {
       halt("clear not implemented for this distribution");
     }
 
-    proc dsiAdd(idx) {
+    proc dsiAdd(in idx) {
       compilerError("Index addition is not supported by this domain");
       return 0;
     }
@@ -702,7 +698,13 @@ module ChapelDistribution {
       return (ret_arr, ret_dom);
     }
 
-    proc dsiDestroyArr() { }
+    proc dsiElementInitializationComplete() {
+      halt("dsiElementInitializationComplete must be defined");
+    }
+
+    proc dsiDestroyArr(param deinitElts:bool) {
+      halt("dsiDestroyArr must be defined");
+    }
 
     proc dsiReallocate(d: domain) {
       halt("reallocating not supported for this array type");
@@ -742,22 +744,28 @@ module ChapelDistribution {
       halt("sparseBulkShiftArray not supported for non-sparse arrays");
     }
 
+
     // methods for associative arrays
-    // MPF:  why do these need to be in BaseDom at all?
-    proc clearEntry(idx) {
-      halt("clearEntry() not supported for non-associative arrays");
+    // These are here because the _arrs field is generic over array
+    // (and in particular eltType). So we can't cast the elements of _arr
+    // to DefaultAssociativeArr (because we don't know the element type).
+    proc _defaultInitSlot(slot: int) {
+      halt("_defaultInitSlot() not supported for non-associative arrays");
+    }
+    proc _deinitSlot(slot: int) {
+      halt("_deinitSlot() not supported for non-associative arrays");
     }
 
-    proc _backupArray() {
-      halt("_backupArray() not supported for non-associative arrays");
+    proc _startRehash(newSize: int) {
+      halt("_startRehash() not supported for non-associative arrays");
     }
 
-    proc _removeArrayBackup() {
-      halt("_removeArrayBackup() not supported for non-associative arrays");
+    proc _finishRehash(oldSize: int) {
+      halt("_finishRehash() not supported for non-associative arrays");
     }
 
-    proc _preserveArrayElement(oldslot, newslot) {
-      halt("_preserveArrayElement() not supported for non-associative arrays");
+    proc _moveElementDuringRehash(oldslot: int, newslot: int) {
+      halt("_moveElementDuringRehash() not supported for non-associative arrays");
     }
 
     proc dsiSupportsAlignedFollower() param return false;
@@ -855,11 +863,6 @@ module ChapelDistribution {
 
     var dom; /* : DefaultSparseDom(?); */
 
-    // NOTE I tried to put `data` in `BaseSparseArrImpl`. However, it wasn't
-    // clear how to initialize this in that class.
-    pragma "local field"
-    var data: [dom.nnzDom] eltType;
-
     override proc dsiGetBaseDom() return dom;
 
     proc deinit() {
@@ -874,10 +877,35 @@ module ChapelDistribution {
   pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
-    proc deinit() {
-      // this is a bug workaround
+    pragma "local field" pragma "unsafe" pragma "no auto destroy"
+    // may be initialized separately
+    // always destroyed explicitly (to control deiniting elts)
+    var data: [dom.nnzDom] eltType;
+
+    proc init(type eltType,
+              param rank : int,
+              type idxType,
+              dom,
+              param initElts:bool) {
+      super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
+
+      this.data = this.dom.nnzDom.buildArray(eltType, initElts=initElts);
     }
 
+    proc deinit() {
+      // Elements in data are deinited in dsiDestroyArr if necessary.
+      // Here we need to clean up the rest of the array.
+      _do_destroy_array(data, deinitElts=false);
+    }
+
+    override proc dsiElementInitializationComplete() {
+      data.dsiElementInitializationComplete();
+    }
+
+    override proc dsiDestroyArr(param deinitElts:bool) {
+      if deinitElts then
+        _deinitElements(data);
+    }
 
     // currently there is no support implemented for setting IRV for
     // SparseBlockArr, therefore I moved IRV related stuff to this class, and
@@ -900,7 +928,7 @@ module ChapelDistribution {
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
 
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(1) by -1) {
+      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];
 
@@ -956,9 +984,10 @@ module ChapelDistribution {
     delete dom;
   }
 
-  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool) {
+  proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool,
+                   param deinitElts=true) {
     // array implementation can destroy data or other members
-    arr.dsiDestroyArr();
+    arr.dsiDestroyArr(deinitElts=deinitElts);
 
     // not necessary for aliases/slices because the original
     // array will take care of it.
@@ -1003,7 +1032,7 @@ module ChapelDistribution {
         var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
 
         // set tmp = inds with some error checking
-        for param i in 1..rank {
+        for param i in 0..rank-1 {
           var from = inds(i);
           tmp(i) =
             from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));

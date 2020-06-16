@@ -10,7 +10,8 @@ module A {
       import A.B;
 
       proc main() {
-        foo(); // Should work, foo is still in scope to main()
+        foo(); // Should not work; import does not name foo and C doesn't see
+               // B's symbols lexically.
       }
     }
   }

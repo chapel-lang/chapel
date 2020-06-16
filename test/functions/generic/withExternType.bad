@@ -1,0 +1,20 @@
+withExternType.chpl:27: warning: t1==t2 true
+withExternType.chpl:27: warning: t1==t3 false
+withExternType.chpl:27: warning: t1==t4 false
+withExternType.chpl:27: warning: t1==t5 false
+withExternType.chpl:27: warning: t1==t6 false
+withExternType.chpl:27: warning: t2==t3 false
+withExternType.chpl:27: warning: t2==t4 false
+withExternType.chpl:27: warning: t2==t5 false
+withExternType.chpl:27: warning: t2==t6 false
+withExternType.chpl:27: warning: t3==t4 false
+withExternType.chpl:27: warning: t3==t5 false
+withExternType.chpl:27: warning: t3==t6 false
+withExternType.chpl:27: warning: t4==t5 false
+withExternType.chpl:27: warning: t4==t6 false
+withExternType.chpl:27: warning: t5==t6 false
+withExternType.chpl:27: In function 'main':
+withExternType.chpl:52: error: unresolved call 'callAB(atomic_bool)'
+withExternType.chpl:19: note: this candidate did not match: callAB(arg: makeAB(int))
+withExternType.chpl:52: note: because call actual argument #1 with type atomic_bool
+withExternType.chpl:19: note: is passed to formal 'arg: atomic_bool'

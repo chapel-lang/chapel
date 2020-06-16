@@ -1,788 +1,788 @@
 03-error-in-fun.chpl:71: In function 'funBlank':
-03-error-in-fun.chpl:107: error: illegal lvalue in assignment
-03-error-in-fun.chpl:108: error: illegal lvalue in assignment
-03-error-in-fun.chpl:109: error: illegal lvalue in assignment
-03-error-in-fun.chpl:110: error: illegal lvalue in assignment
-03-error-in-fun.chpl:111: error: illegal lvalue in assignment
-03-error-in-fun.chpl:112: error: illegal lvalue in assignment
-03-error-in-fun.chpl:113: error: illegal lvalue in assignment
-03-error-in-fun.chpl:114: error: illegal lvalue in assignment
-03-error-in-fun.chpl:115: error: illegal lvalue in assignment
-03-error-in-fun.chpl:116: error: illegal lvalue in assignment
-03-error-in-fun.chpl:117: error: illegal lvalue in assignment
-03-error-in-fun.chpl:118: error: illegal lvalue in assignment
-03-error-in-fun.chpl:119: error: illegal lvalue in assignment
-03-error-in-fun.chpl:120: error: illegal lvalue in assignment
-03-error-in-fun.chpl:121: error: illegal lvalue in assignment
-03-error-in-fun.chpl:122: error: illegal lvalue in assignment
-03-error-in-fun.chpl:123: error: illegal lvalue in assignment
-03-error-in-fun.chpl:124: error: illegal lvalue in assignment
-03-error-in-fun.chpl:125: error: illegal lvalue in assignment
-03-error-in-fun.chpl:127: error: illegal lvalue in assignment
-03-error-in-fun.chpl:130: error: illegal lvalue in assignment
-03-error-in-fun.chpl:139: error: illegal lvalue in assignment
-03-error-in-fun.chpl:140: error: illegal lvalue in assignment
-03-error-in-fun.chpl:141: error: illegal lvalue in assignment
-03-error-in-fun.chpl:142: error: illegal lvalue in assignment
-03-error-in-fun.chpl:143: error: illegal lvalue in assignment
-03-error-in-fun.chpl:144: error: illegal lvalue in assignment
-03-error-in-fun.chpl:145: error: illegal lvalue in assignment
-03-error-in-fun.chpl:146: error: illegal lvalue in assignment
-03-error-in-fun.chpl:147: error: illegal lvalue in assignment
-03-error-in-fun.chpl:148: error: illegal lvalue in assignment
-03-error-in-fun.chpl:149: error: illegal lvalue in assignment
-03-error-in-fun.chpl:150: error: illegal lvalue in assignment
-03-error-in-fun.chpl:151: error: illegal lvalue in assignment
-03-error-in-fun.chpl:152: error: illegal lvalue in assignment
-03-error-in-fun.chpl:153: error: illegal lvalue in assignment
-03-error-in-fun.chpl:154: error: illegal lvalue in assignment
-03-error-in-fun.chpl:155: error: illegal lvalue in assignment
-03-error-in-fun.chpl:156: error: illegal lvalue in assignment
-03-error-in-fun.chpl:157: error: illegal lvalue in assignment
-03-error-in-fun.chpl:159: error: illegal lvalue in assignment
-03-error-in-fun.chpl:162: error: illegal lvalue in assignment
-03-error-in-fun.chpl:171: error: illegal lvalue in assignment
-03-error-in-fun.chpl:172: error: illegal lvalue in assignment
-03-error-in-fun.chpl:173: error: illegal lvalue in assignment
-03-error-in-fun.chpl:174: error: illegal lvalue in assignment
-03-error-in-fun.chpl:175: error: illegal lvalue in assignment
-03-error-in-fun.chpl:176: error: illegal lvalue in assignment
-03-error-in-fun.chpl:177: error: illegal lvalue in assignment
-03-error-in-fun.chpl:178: error: illegal lvalue in assignment
-03-error-in-fun.chpl:179: error: illegal lvalue in assignment
-03-error-in-fun.chpl:180: error: illegal lvalue in assignment
-03-error-in-fun.chpl:181: error: illegal lvalue in assignment
-03-error-in-fun.chpl:182: error: illegal lvalue in assignment
-03-error-in-fun.chpl:183: error: illegal lvalue in assignment
-03-error-in-fun.chpl:184: error: illegal lvalue in assignment
-03-error-in-fun.chpl:185: error: illegal lvalue in assignment
-03-error-in-fun.chpl:186: error: illegal lvalue in assignment
-03-error-in-fun.chpl:187: error: illegal lvalue in assignment
-03-error-in-fun.chpl:188: error: illegal lvalue in assignment
-03-error-in-fun.chpl:189: error: illegal lvalue in assignment
-03-error-in-fun.chpl:191: error: illegal lvalue in assignment
-03-error-in-fun.chpl:194: error: illegal lvalue in assignment
+03-error-in-fun.chpl:107: error: cannot assign to const variable
+03-error-in-fun.chpl:108: error: cannot assign to const variable
+03-error-in-fun.chpl:109: error: cannot assign to const variable
+03-error-in-fun.chpl:110: error: cannot assign to const variable
+03-error-in-fun.chpl:111: error: cannot assign to const variable
+03-error-in-fun.chpl:112: error: cannot assign to const variable
+03-error-in-fun.chpl:113: error: cannot assign to const variable
+03-error-in-fun.chpl:114: error: cannot assign to const variable
+03-error-in-fun.chpl:115: error: cannot assign to const variable
+03-error-in-fun.chpl:116: error: cannot assign to const variable
+03-error-in-fun.chpl:117: error: cannot assign to const variable
+03-error-in-fun.chpl:118: error: cannot assign to const variable
+03-error-in-fun.chpl:119: error: cannot assign to const variable
+03-error-in-fun.chpl:120: error: cannot assign to const variable
+03-error-in-fun.chpl:121: error: cannot assign to const variable
+03-error-in-fun.chpl:122: error: cannot assign to const variable
+03-error-in-fun.chpl:123: error: cannot assign to const variable
+03-error-in-fun.chpl:124: error: cannot assign to const variable
+03-error-in-fun.chpl:125: error: cannot assign to const variable
+03-error-in-fun.chpl:127: error: cannot assign to const variable
+03-error-in-fun.chpl:130: error: cannot assign to const variable
+03-error-in-fun.chpl:139: error: cannot assign to const variable
+03-error-in-fun.chpl:140: error: cannot assign to const variable
+03-error-in-fun.chpl:141: error: cannot assign to const variable
+03-error-in-fun.chpl:142: error: cannot assign to const variable
+03-error-in-fun.chpl:143: error: cannot assign to const variable
+03-error-in-fun.chpl:144: error: cannot assign to const variable
+03-error-in-fun.chpl:145: error: cannot assign to const variable
+03-error-in-fun.chpl:146: error: cannot assign to const variable
+03-error-in-fun.chpl:147: error: cannot assign to const variable
+03-error-in-fun.chpl:148: error: cannot assign to const variable
+03-error-in-fun.chpl:149: error: cannot assign to const variable
+03-error-in-fun.chpl:150: error: cannot assign to const variable
+03-error-in-fun.chpl:151: error: cannot assign to const variable
+03-error-in-fun.chpl:152: error: cannot assign to const variable
+03-error-in-fun.chpl:153: error: cannot assign to const variable
+03-error-in-fun.chpl:154: error: cannot assign to const variable
+03-error-in-fun.chpl:155: error: cannot assign to const variable
+03-error-in-fun.chpl:156: error: cannot assign to const variable
+03-error-in-fun.chpl:157: error: cannot assign to const variable
+03-error-in-fun.chpl:159: error: cannot assign to const variable
+03-error-in-fun.chpl:162: error: cannot assign to const variable
+03-error-in-fun.chpl:171: error: cannot assign to const variable
+03-error-in-fun.chpl:172: error: cannot assign to const variable
+03-error-in-fun.chpl:173: error: cannot assign to const variable
+03-error-in-fun.chpl:174: error: cannot assign to const variable
+03-error-in-fun.chpl:175: error: cannot assign to const variable
+03-error-in-fun.chpl:176: error: cannot assign to const variable
+03-error-in-fun.chpl:177: error: cannot assign to const variable
+03-error-in-fun.chpl:178: error: cannot assign to const variable
+03-error-in-fun.chpl:179: error: cannot assign to const variable
+03-error-in-fun.chpl:180: error: cannot assign to const variable
+03-error-in-fun.chpl:181: error: cannot assign to const variable
+03-error-in-fun.chpl:182: error: cannot assign to const variable
+03-error-in-fun.chpl:183: error: cannot assign to const variable
+03-error-in-fun.chpl:184: error: cannot assign to const variable
+03-error-in-fun.chpl:185: error: cannot assign to const variable
+03-error-in-fun.chpl:186: error: cannot assign to const variable
+03-error-in-fun.chpl:187: error: cannot assign to const variable
+03-error-in-fun.chpl:188: error: cannot assign to const variable
+03-error-in-fun.chpl:189: error: cannot assign to const variable
+03-error-in-fun.chpl:191: error: cannot assign to const variable
+03-error-in-fun.chpl:194: error: cannot assign to const variable
 03-error-in-fun.chpl:241: In function 'funConst':
-03-error-in-fun.chpl:277: error: illegal lvalue in assignment
-03-error-in-fun.chpl:278: error: illegal lvalue in assignment
-03-error-in-fun.chpl:279: error: illegal lvalue in assignment
-03-error-in-fun.chpl:280: error: illegal lvalue in assignment
-03-error-in-fun.chpl:281: error: illegal lvalue in assignment
-03-error-in-fun.chpl:282: error: illegal lvalue in assignment
-03-error-in-fun.chpl:283: error: illegal lvalue in assignment
-03-error-in-fun.chpl:284: error: illegal lvalue in assignment
-03-error-in-fun.chpl:285: error: illegal lvalue in assignment
-03-error-in-fun.chpl:286: error: illegal lvalue in assignment
-03-error-in-fun.chpl:287: error: illegal lvalue in assignment
-03-error-in-fun.chpl:288: error: illegal lvalue in assignment
-03-error-in-fun.chpl:289: error: illegal lvalue in assignment
-03-error-in-fun.chpl:290: error: illegal lvalue in assignment
-03-error-in-fun.chpl:291: error: illegal lvalue in assignment
-03-error-in-fun.chpl:292: error: illegal lvalue in assignment
-03-error-in-fun.chpl:293: error: illegal lvalue in assignment
-03-error-in-fun.chpl:294: error: illegal lvalue in assignment
-03-error-in-fun.chpl:295: error: illegal lvalue in assignment
-03-error-in-fun.chpl:297: error: illegal lvalue in assignment
-03-error-in-fun.chpl:300: error: illegal lvalue in assignment
-03-error-in-fun.chpl:309: error: illegal lvalue in assignment
-03-error-in-fun.chpl:310: error: illegal lvalue in assignment
-03-error-in-fun.chpl:311: error: illegal lvalue in assignment
-03-error-in-fun.chpl:312: error: illegal lvalue in assignment
-03-error-in-fun.chpl:313: error: illegal lvalue in assignment
-03-error-in-fun.chpl:314: error: illegal lvalue in assignment
-03-error-in-fun.chpl:315: error: illegal lvalue in assignment
-03-error-in-fun.chpl:316: error: illegal lvalue in assignment
-03-error-in-fun.chpl:317: error: illegal lvalue in assignment
-03-error-in-fun.chpl:318: error: illegal lvalue in assignment
-03-error-in-fun.chpl:319: error: illegal lvalue in assignment
-03-error-in-fun.chpl:320: error: illegal lvalue in assignment
-03-error-in-fun.chpl:321: error: illegal lvalue in assignment
-03-error-in-fun.chpl:322: error: illegal lvalue in assignment
-03-error-in-fun.chpl:323: error: illegal lvalue in assignment
-03-error-in-fun.chpl:324: error: illegal lvalue in assignment
-03-error-in-fun.chpl:325: error: illegal lvalue in assignment
-03-error-in-fun.chpl:326: error: illegal lvalue in assignment
-03-error-in-fun.chpl:327: error: illegal lvalue in assignment
-03-error-in-fun.chpl:329: error: illegal lvalue in assignment
-03-error-in-fun.chpl:332: error: illegal lvalue in assignment
-03-error-in-fun.chpl:341: error: illegal lvalue in assignment
-03-error-in-fun.chpl:342: error: illegal lvalue in assignment
-03-error-in-fun.chpl:343: error: illegal lvalue in assignment
-03-error-in-fun.chpl:344: error: illegal lvalue in assignment
-03-error-in-fun.chpl:345: error: illegal lvalue in assignment
-03-error-in-fun.chpl:346: error: illegal lvalue in assignment
-03-error-in-fun.chpl:347: error: illegal lvalue in assignment
-03-error-in-fun.chpl:348: error: illegal lvalue in assignment
-03-error-in-fun.chpl:349: error: illegal lvalue in assignment
-03-error-in-fun.chpl:350: error: illegal lvalue in assignment
-03-error-in-fun.chpl:351: error: illegal lvalue in assignment
-03-error-in-fun.chpl:352: error: illegal lvalue in assignment
-03-error-in-fun.chpl:353: error: illegal lvalue in assignment
-03-error-in-fun.chpl:354: error: illegal lvalue in assignment
-03-error-in-fun.chpl:355: error: illegal lvalue in assignment
-03-error-in-fun.chpl:356: error: illegal lvalue in assignment
-03-error-in-fun.chpl:357: error: illegal lvalue in assignment
-03-error-in-fun.chpl:358: error: illegal lvalue in assignment
-03-error-in-fun.chpl:359: error: illegal lvalue in assignment
-03-error-in-fun.chpl:361: error: illegal lvalue in assignment
-03-error-in-fun.chpl:364: error: illegal lvalue in assignment
+03-error-in-fun.chpl:277: error: cannot assign to const variable
+03-error-in-fun.chpl:278: error: cannot assign to const variable
+03-error-in-fun.chpl:279: error: cannot assign to const variable
+03-error-in-fun.chpl:280: error: cannot assign to const variable
+03-error-in-fun.chpl:281: error: cannot assign to const variable
+03-error-in-fun.chpl:282: error: cannot assign to const variable
+03-error-in-fun.chpl:283: error: cannot assign to const variable
+03-error-in-fun.chpl:284: error: cannot assign to const variable
+03-error-in-fun.chpl:285: error: cannot assign to const variable
+03-error-in-fun.chpl:286: error: cannot assign to const variable
+03-error-in-fun.chpl:287: error: cannot assign to const variable
+03-error-in-fun.chpl:288: error: cannot assign to const variable
+03-error-in-fun.chpl:289: error: cannot assign to const variable
+03-error-in-fun.chpl:290: error: cannot assign to const variable
+03-error-in-fun.chpl:291: error: cannot assign to const variable
+03-error-in-fun.chpl:292: error: cannot assign to const variable
+03-error-in-fun.chpl:293: error: cannot assign to const variable
+03-error-in-fun.chpl:294: error: cannot assign to const variable
+03-error-in-fun.chpl:295: error: cannot assign to const variable
+03-error-in-fun.chpl:297: error: cannot assign to const variable
+03-error-in-fun.chpl:300: error: cannot assign to const variable
+03-error-in-fun.chpl:309: error: cannot assign to const variable
+03-error-in-fun.chpl:310: error: cannot assign to const variable
+03-error-in-fun.chpl:311: error: cannot assign to const variable
+03-error-in-fun.chpl:312: error: cannot assign to const variable
+03-error-in-fun.chpl:313: error: cannot assign to const variable
+03-error-in-fun.chpl:314: error: cannot assign to const variable
+03-error-in-fun.chpl:315: error: cannot assign to const variable
+03-error-in-fun.chpl:316: error: cannot assign to const variable
+03-error-in-fun.chpl:317: error: cannot assign to const variable
+03-error-in-fun.chpl:318: error: cannot assign to const variable
+03-error-in-fun.chpl:319: error: cannot assign to const variable
+03-error-in-fun.chpl:320: error: cannot assign to const variable
+03-error-in-fun.chpl:321: error: cannot assign to const variable
+03-error-in-fun.chpl:322: error: cannot assign to const variable
+03-error-in-fun.chpl:323: error: cannot assign to const variable
+03-error-in-fun.chpl:324: error: cannot assign to const variable
+03-error-in-fun.chpl:325: error: cannot assign to const variable
+03-error-in-fun.chpl:326: error: cannot assign to const variable
+03-error-in-fun.chpl:327: error: cannot assign to const variable
+03-error-in-fun.chpl:329: error: cannot assign to const variable
+03-error-in-fun.chpl:332: error: cannot assign to const variable
+03-error-in-fun.chpl:341: error: cannot assign to const variable
+03-error-in-fun.chpl:342: error: cannot assign to const variable
+03-error-in-fun.chpl:343: error: cannot assign to const variable
+03-error-in-fun.chpl:344: error: cannot assign to const variable
+03-error-in-fun.chpl:345: error: cannot assign to const variable
+03-error-in-fun.chpl:346: error: cannot assign to const variable
+03-error-in-fun.chpl:347: error: cannot assign to const variable
+03-error-in-fun.chpl:348: error: cannot assign to const variable
+03-error-in-fun.chpl:349: error: cannot assign to const variable
+03-error-in-fun.chpl:350: error: cannot assign to const variable
+03-error-in-fun.chpl:351: error: cannot assign to const variable
+03-error-in-fun.chpl:352: error: cannot assign to const variable
+03-error-in-fun.chpl:353: error: cannot assign to const variable
+03-error-in-fun.chpl:354: error: cannot assign to const variable
+03-error-in-fun.chpl:355: error: cannot assign to const variable
+03-error-in-fun.chpl:356: error: cannot assign to const variable
+03-error-in-fun.chpl:357: error: cannot assign to const variable
+03-error-in-fun.chpl:358: error: cannot assign to const variable
+03-error-in-fun.chpl:359: error: cannot assign to const variable
+03-error-in-fun.chpl:361: error: cannot assign to const variable
+03-error-in-fun.chpl:364: error: cannot assign to const variable
 03-error-in-fun.chpl:411: In function 'funConstIn':
-03-error-in-fun.chpl:447: error: illegal lvalue in assignment
-03-error-in-fun.chpl:448: error: illegal lvalue in assignment
-03-error-in-fun.chpl:449: error: illegal lvalue in assignment
-03-error-in-fun.chpl:450: error: illegal lvalue in assignment
-03-error-in-fun.chpl:451: error: illegal lvalue in assignment
-03-error-in-fun.chpl:452: error: illegal lvalue in assignment
-03-error-in-fun.chpl:453: error: illegal lvalue in assignment
-03-error-in-fun.chpl:454: error: illegal lvalue in assignment
-03-error-in-fun.chpl:455: error: illegal lvalue in assignment
-03-error-in-fun.chpl:456: error: illegal lvalue in assignment
-03-error-in-fun.chpl:457: error: illegal lvalue in assignment
-03-error-in-fun.chpl:458: error: illegal lvalue in assignment
-03-error-in-fun.chpl:459: error: illegal lvalue in assignment
-03-error-in-fun.chpl:460: error: illegal lvalue in assignment
-03-error-in-fun.chpl:461: error: illegal lvalue in assignment
-03-error-in-fun.chpl:462: error: illegal lvalue in assignment
-03-error-in-fun.chpl:463: error: illegal lvalue in assignment
-03-error-in-fun.chpl:464: error: illegal lvalue in assignment
-03-error-in-fun.chpl:465: error: illegal lvalue in assignment
-03-error-in-fun.chpl:467: error: illegal lvalue in assignment
-03-error-in-fun.chpl:470: error: illegal lvalue in assignment
-03-error-in-fun.chpl:479: error: illegal lvalue in assignment
-03-error-in-fun.chpl:480: error: illegal lvalue in assignment
-03-error-in-fun.chpl:481: error: illegal lvalue in assignment
-03-error-in-fun.chpl:482: error: illegal lvalue in assignment
-03-error-in-fun.chpl:483: error: illegal lvalue in assignment
-03-error-in-fun.chpl:484: error: illegal lvalue in assignment
-03-error-in-fun.chpl:485: error: illegal lvalue in assignment
-03-error-in-fun.chpl:486: error: illegal lvalue in assignment
-03-error-in-fun.chpl:487: error: illegal lvalue in assignment
-03-error-in-fun.chpl:488: error: illegal lvalue in assignment
-03-error-in-fun.chpl:489: error: illegal lvalue in assignment
-03-error-in-fun.chpl:490: error: illegal lvalue in assignment
-03-error-in-fun.chpl:491: error: illegal lvalue in assignment
-03-error-in-fun.chpl:492: error: illegal lvalue in assignment
-03-error-in-fun.chpl:493: error: illegal lvalue in assignment
-03-error-in-fun.chpl:494: error: illegal lvalue in assignment
-03-error-in-fun.chpl:495: error: illegal lvalue in assignment
-03-error-in-fun.chpl:496: error: illegal lvalue in assignment
-03-error-in-fun.chpl:497: error: illegal lvalue in assignment
-03-error-in-fun.chpl:499: error: illegal lvalue in assignment
-03-error-in-fun.chpl:502: error: illegal lvalue in assignment
-03-error-in-fun.chpl:511: error: illegal lvalue in assignment
-03-error-in-fun.chpl:512: error: illegal lvalue in assignment
-03-error-in-fun.chpl:513: error: illegal lvalue in assignment
-03-error-in-fun.chpl:514: error: illegal lvalue in assignment
-03-error-in-fun.chpl:515: error: illegal lvalue in assignment
-03-error-in-fun.chpl:516: error: illegal lvalue in assignment
-03-error-in-fun.chpl:517: error: illegal lvalue in assignment
-03-error-in-fun.chpl:518: error: illegal lvalue in assignment
-03-error-in-fun.chpl:519: error: illegal lvalue in assignment
-03-error-in-fun.chpl:520: error: illegal lvalue in assignment
-03-error-in-fun.chpl:521: error: illegal lvalue in assignment
-03-error-in-fun.chpl:522: error: illegal lvalue in assignment
-03-error-in-fun.chpl:523: error: illegal lvalue in assignment
-03-error-in-fun.chpl:524: error: illegal lvalue in assignment
-03-error-in-fun.chpl:525: error: illegal lvalue in assignment
-03-error-in-fun.chpl:526: error: illegal lvalue in assignment
-03-error-in-fun.chpl:527: error: illegal lvalue in assignment
-03-error-in-fun.chpl:528: error: illegal lvalue in assignment
-03-error-in-fun.chpl:529: error: illegal lvalue in assignment
-03-error-in-fun.chpl:531: error: illegal lvalue in assignment
-03-error-in-fun.chpl:534: error: illegal lvalue in assignment
+03-error-in-fun.chpl:447: error: cannot assign to const variable
+03-error-in-fun.chpl:448: error: cannot assign to const variable
+03-error-in-fun.chpl:449: error: cannot assign to const variable
+03-error-in-fun.chpl:450: error: cannot assign to const variable
+03-error-in-fun.chpl:451: error: cannot assign to const variable
+03-error-in-fun.chpl:452: error: cannot assign to const variable
+03-error-in-fun.chpl:453: error: cannot assign to const variable
+03-error-in-fun.chpl:454: error: cannot assign to const variable
+03-error-in-fun.chpl:455: error: cannot assign to const variable
+03-error-in-fun.chpl:456: error: cannot assign to const variable
+03-error-in-fun.chpl:457: error: cannot assign to const variable
+03-error-in-fun.chpl:458: error: cannot assign to const variable
+03-error-in-fun.chpl:459: error: cannot assign to const variable
+03-error-in-fun.chpl:460: error: cannot assign to const variable
+03-error-in-fun.chpl:461: error: cannot assign to const variable
+03-error-in-fun.chpl:462: error: cannot assign to const variable
+03-error-in-fun.chpl:463: error: cannot assign to const variable
+03-error-in-fun.chpl:464: error: cannot assign to const variable
+03-error-in-fun.chpl:465: error: cannot assign to const variable
+03-error-in-fun.chpl:467: error: cannot assign to const variable
+03-error-in-fun.chpl:470: error: cannot assign to const variable
+03-error-in-fun.chpl:479: error: cannot assign to const variable
+03-error-in-fun.chpl:480: error: cannot assign to const variable
+03-error-in-fun.chpl:481: error: cannot assign to const variable
+03-error-in-fun.chpl:482: error: cannot assign to const variable
+03-error-in-fun.chpl:483: error: cannot assign to const variable
+03-error-in-fun.chpl:484: error: cannot assign to const variable
+03-error-in-fun.chpl:485: error: cannot assign to const variable
+03-error-in-fun.chpl:486: error: cannot assign to const variable
+03-error-in-fun.chpl:487: error: cannot assign to const variable
+03-error-in-fun.chpl:488: error: cannot assign to const variable
+03-error-in-fun.chpl:489: error: cannot assign to const variable
+03-error-in-fun.chpl:490: error: cannot assign to const variable
+03-error-in-fun.chpl:491: error: cannot assign to const variable
+03-error-in-fun.chpl:492: error: cannot assign to const variable
+03-error-in-fun.chpl:493: error: cannot assign to const variable
+03-error-in-fun.chpl:494: error: cannot assign to const variable
+03-error-in-fun.chpl:495: error: cannot assign to const variable
+03-error-in-fun.chpl:496: error: cannot assign to const variable
+03-error-in-fun.chpl:497: error: cannot assign to const variable
+03-error-in-fun.chpl:499: error: cannot assign to const variable
+03-error-in-fun.chpl:502: error: cannot assign to const variable
+03-error-in-fun.chpl:511: error: cannot assign to const variable
+03-error-in-fun.chpl:512: error: cannot assign to const variable
+03-error-in-fun.chpl:513: error: cannot assign to const variable
+03-error-in-fun.chpl:514: error: cannot assign to const variable
+03-error-in-fun.chpl:515: error: cannot assign to const variable
+03-error-in-fun.chpl:516: error: cannot assign to const variable
+03-error-in-fun.chpl:517: error: cannot assign to const variable
+03-error-in-fun.chpl:518: error: cannot assign to const variable
+03-error-in-fun.chpl:519: error: cannot assign to const variable
+03-error-in-fun.chpl:520: error: cannot assign to const variable
+03-error-in-fun.chpl:521: error: cannot assign to const variable
+03-error-in-fun.chpl:522: error: cannot assign to const variable
+03-error-in-fun.chpl:523: error: cannot assign to const variable
+03-error-in-fun.chpl:524: error: cannot assign to const variable
+03-error-in-fun.chpl:525: error: cannot assign to const variable
+03-error-in-fun.chpl:526: error: cannot assign to const variable
+03-error-in-fun.chpl:527: error: cannot assign to const variable
+03-error-in-fun.chpl:528: error: cannot assign to const variable
+03-error-in-fun.chpl:529: error: cannot assign to const variable
+03-error-in-fun.chpl:531: error: cannot assign to const variable
+03-error-in-fun.chpl:534: error: cannot assign to const variable
 03-error-in-fun.chpl:581: In function 'funIn':
-03-error-in-fun.chpl:617: error: illegal lvalue in assignment
+03-error-in-fun.chpl:617: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:618: error: illegal lvalue in assignment
+03-error-in-fun.chpl:618: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:619: error: illegal lvalue in assignment
+03-error-in-fun.chpl:619: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:620: error: illegal lvalue in assignment
+03-error-in-fun.chpl:620: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:621: error: illegal lvalue in assignment
+03-error-in-fun.chpl:621: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'b64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:622: error: illegal lvalue in assignment
+03-error-in-fun.chpl:622: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'u8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:623: error: illegal lvalue in assignment
+03-error-in-fun.chpl:623: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'u16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:624: error: illegal lvalue in assignment
+03-error-in-fun.chpl:624: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'u32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:625: error: illegal lvalue in assignment
+03-error-in-fun.chpl:625: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'u64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:626: error: illegal lvalue in assignment
+03-error-in-fun.chpl:626: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'i8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:627: error: illegal lvalue in assignment
+03-error-in-fun.chpl:627: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'i16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:628: error: illegal lvalue in assignment
+03-error-in-fun.chpl:628: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'i32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:629: error: illegal lvalue in assignment
+03-error-in-fun.chpl:629: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'i64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:630: error: illegal lvalue in assignment
+03-error-in-fun.chpl:630: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'r32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:631: error: illegal lvalue in assignment
+03-error-in-fun.chpl:631: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'r64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:632: error: illegal lvalue in assignment
+03-error-in-fun.chpl:632: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'm32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:633: error: illegal lvalue in assignment
+03-error-in-fun.chpl:633: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'm64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:634: error: illegal lvalue in assignment
+03-error-in-fun.chpl:634: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'z64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:635: error: illegal lvalue in assignment
+03-error-in-fun.chpl:635: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'z128' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:637: error: illegal lvalue in assignment
+03-error-in-fun.chpl:637: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'enm' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:640: error: illegal lvalue in assignment
+03-error-in-fun.chpl:640: error: cannot assign to const variable
 03-error-in-fun.chpl:615: note: The shadow variable 'cls' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:649: error: illegal lvalue in assignment
+03-error-in-fun.chpl:649: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:650: error: illegal lvalue in assignment
+03-error-in-fun.chpl:650: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:651: error: illegal lvalue in assignment
+03-error-in-fun.chpl:651: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:652: error: illegal lvalue in assignment
+03-error-in-fun.chpl:652: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:653: error: illegal lvalue in assignment
+03-error-in-fun.chpl:653: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:654: error: illegal lvalue in assignment
+03-error-in-fun.chpl:654: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:655: error: illegal lvalue in assignment
+03-error-in-fun.chpl:655: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:656: error: illegal lvalue in assignment
+03-error-in-fun.chpl:656: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:657: error: illegal lvalue in assignment
+03-error-in-fun.chpl:657: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:658: error: illegal lvalue in assignment
+03-error-in-fun.chpl:658: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:659: error: illegal lvalue in assignment
+03-error-in-fun.chpl:659: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:660: error: illegal lvalue in assignment
+03-error-in-fun.chpl:660: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:661: error: illegal lvalue in assignment
+03-error-in-fun.chpl:661: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:662: error: illegal lvalue in assignment
+03-error-in-fun.chpl:662: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:663: error: illegal lvalue in assignment
+03-error-in-fun.chpl:663: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:664: error: illegal lvalue in assignment
+03-error-in-fun.chpl:664: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:665: error: illegal lvalue in assignment
+03-error-in-fun.chpl:665: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:666: error: illegal lvalue in assignment
+03-error-in-fun.chpl:666: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:667: error: illegal lvalue in assignment
+03-error-in-fun.chpl:667: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:669: error: illegal lvalue in assignment
+03-error-in-fun.chpl:669: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:672: error: illegal lvalue in assignment
+03-error-in-fun.chpl:672: error: cannot assign to const variable
 03-error-in-fun.chpl:647: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:681: error: illegal lvalue in assignment
+03-error-in-fun.chpl:681: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:682: error: illegal lvalue in assignment
+03-error-in-fun.chpl:682: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:683: error: illegal lvalue in assignment
+03-error-in-fun.chpl:683: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:684: error: illegal lvalue in assignment
+03-error-in-fun.chpl:684: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:685: error: illegal lvalue in assignment
+03-error-in-fun.chpl:685: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:686: error: illegal lvalue in assignment
+03-error-in-fun.chpl:686: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:687: error: illegal lvalue in assignment
+03-error-in-fun.chpl:687: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:688: error: illegal lvalue in assignment
+03-error-in-fun.chpl:688: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:689: error: illegal lvalue in assignment
+03-error-in-fun.chpl:689: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:690: error: illegal lvalue in assignment
+03-error-in-fun.chpl:690: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:691: error: illegal lvalue in assignment
+03-error-in-fun.chpl:691: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:692: error: illegal lvalue in assignment
+03-error-in-fun.chpl:692: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:693: error: illegal lvalue in assignment
+03-error-in-fun.chpl:693: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:694: error: illegal lvalue in assignment
+03-error-in-fun.chpl:694: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:695: error: illegal lvalue in assignment
+03-error-in-fun.chpl:695: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:696: error: illegal lvalue in assignment
+03-error-in-fun.chpl:696: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:697: error: illegal lvalue in assignment
+03-error-in-fun.chpl:697: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:698: error: illegal lvalue in assignment
+03-error-in-fun.chpl:698: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:699: error: illegal lvalue in assignment
+03-error-in-fun.chpl:699: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:701: error: illegal lvalue in assignment
+03-error-in-fun.chpl:701: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:704: error: illegal lvalue in assignment
+03-error-in-fun.chpl:704: error: cannot assign to const variable
 03-error-in-fun.chpl:679: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:751: In function 'funInOut':
-03-error-in-fun.chpl:787: error: illegal lvalue in assignment
+03-error-in-fun.chpl:787: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:788: error: illegal lvalue in assignment
+03-error-in-fun.chpl:788: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:789: error: illegal lvalue in assignment
+03-error-in-fun.chpl:789: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:790: error: illegal lvalue in assignment
+03-error-in-fun.chpl:790: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:791: error: illegal lvalue in assignment
+03-error-in-fun.chpl:791: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'b64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:792: error: illegal lvalue in assignment
+03-error-in-fun.chpl:792: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'u8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:793: error: illegal lvalue in assignment
+03-error-in-fun.chpl:793: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'u16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:794: error: illegal lvalue in assignment
+03-error-in-fun.chpl:794: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'u32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:795: error: illegal lvalue in assignment
+03-error-in-fun.chpl:795: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'u64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:796: error: illegal lvalue in assignment
+03-error-in-fun.chpl:796: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'i8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:797: error: illegal lvalue in assignment
+03-error-in-fun.chpl:797: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'i16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:798: error: illegal lvalue in assignment
+03-error-in-fun.chpl:798: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'i32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:799: error: illegal lvalue in assignment
+03-error-in-fun.chpl:799: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'i64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:800: error: illegal lvalue in assignment
+03-error-in-fun.chpl:800: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'r32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:801: error: illegal lvalue in assignment
+03-error-in-fun.chpl:801: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'r64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:802: error: illegal lvalue in assignment
+03-error-in-fun.chpl:802: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'm32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:803: error: illegal lvalue in assignment
+03-error-in-fun.chpl:803: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'm64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:804: error: illegal lvalue in assignment
+03-error-in-fun.chpl:804: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'z64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:805: error: illegal lvalue in assignment
+03-error-in-fun.chpl:805: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'z128' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:807: error: illegal lvalue in assignment
+03-error-in-fun.chpl:807: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'enm' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:810: error: illegal lvalue in assignment
+03-error-in-fun.chpl:810: error: cannot assign to const variable
 03-error-in-fun.chpl:785: note: The shadow variable 'cls' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:819: error: illegal lvalue in assignment
+03-error-in-fun.chpl:819: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:820: error: illegal lvalue in assignment
+03-error-in-fun.chpl:820: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:821: error: illegal lvalue in assignment
+03-error-in-fun.chpl:821: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:822: error: illegal lvalue in assignment
+03-error-in-fun.chpl:822: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:823: error: illegal lvalue in assignment
+03-error-in-fun.chpl:823: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:824: error: illegal lvalue in assignment
+03-error-in-fun.chpl:824: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:825: error: illegal lvalue in assignment
+03-error-in-fun.chpl:825: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:826: error: illegal lvalue in assignment
+03-error-in-fun.chpl:826: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:827: error: illegal lvalue in assignment
+03-error-in-fun.chpl:827: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:828: error: illegal lvalue in assignment
+03-error-in-fun.chpl:828: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:829: error: illegal lvalue in assignment
+03-error-in-fun.chpl:829: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:830: error: illegal lvalue in assignment
+03-error-in-fun.chpl:830: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:831: error: illegal lvalue in assignment
+03-error-in-fun.chpl:831: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:832: error: illegal lvalue in assignment
+03-error-in-fun.chpl:832: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:833: error: illegal lvalue in assignment
+03-error-in-fun.chpl:833: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:834: error: illegal lvalue in assignment
+03-error-in-fun.chpl:834: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:835: error: illegal lvalue in assignment
+03-error-in-fun.chpl:835: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:836: error: illegal lvalue in assignment
+03-error-in-fun.chpl:836: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:837: error: illegal lvalue in assignment
+03-error-in-fun.chpl:837: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:839: error: illegal lvalue in assignment
+03-error-in-fun.chpl:839: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:842: error: illegal lvalue in assignment
+03-error-in-fun.chpl:842: error: cannot assign to const variable
 03-error-in-fun.chpl:817: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:851: error: illegal lvalue in assignment
+03-error-in-fun.chpl:851: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:852: error: illegal lvalue in assignment
+03-error-in-fun.chpl:852: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:853: error: illegal lvalue in assignment
+03-error-in-fun.chpl:853: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:854: error: illegal lvalue in assignment
+03-error-in-fun.chpl:854: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:855: error: illegal lvalue in assignment
+03-error-in-fun.chpl:855: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:856: error: illegal lvalue in assignment
+03-error-in-fun.chpl:856: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:857: error: illegal lvalue in assignment
+03-error-in-fun.chpl:857: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:858: error: illegal lvalue in assignment
+03-error-in-fun.chpl:858: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:859: error: illegal lvalue in assignment
+03-error-in-fun.chpl:859: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:860: error: illegal lvalue in assignment
+03-error-in-fun.chpl:860: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:861: error: illegal lvalue in assignment
+03-error-in-fun.chpl:861: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:862: error: illegal lvalue in assignment
+03-error-in-fun.chpl:862: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:863: error: illegal lvalue in assignment
+03-error-in-fun.chpl:863: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:864: error: illegal lvalue in assignment
+03-error-in-fun.chpl:864: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:865: error: illegal lvalue in assignment
+03-error-in-fun.chpl:865: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:866: error: illegal lvalue in assignment
+03-error-in-fun.chpl:866: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:867: error: illegal lvalue in assignment
+03-error-in-fun.chpl:867: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:868: error: illegal lvalue in assignment
+03-error-in-fun.chpl:868: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:869: error: illegal lvalue in assignment
+03-error-in-fun.chpl:869: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:871: error: illegal lvalue in assignment
+03-error-in-fun.chpl:871: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:874: error: illegal lvalue in assignment
+03-error-in-fun.chpl:874: error: cannot assign to const variable
 03-error-in-fun.chpl:849: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:921: In function 'funOut':
-03-error-in-fun.chpl:957: error: illegal lvalue in assignment
+03-error-in-fun.chpl:957: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:958: error: illegal lvalue in assignment
+03-error-in-fun.chpl:958: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:959: error: illegal lvalue in assignment
+03-error-in-fun.chpl:959: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:960: error: illegal lvalue in assignment
+03-error-in-fun.chpl:960: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:961: error: illegal lvalue in assignment
+03-error-in-fun.chpl:961: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'b64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:962: error: illegal lvalue in assignment
+03-error-in-fun.chpl:962: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'u8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:963: error: illegal lvalue in assignment
+03-error-in-fun.chpl:963: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'u16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:964: error: illegal lvalue in assignment
+03-error-in-fun.chpl:964: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'u32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:965: error: illegal lvalue in assignment
+03-error-in-fun.chpl:965: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'u64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:966: error: illegal lvalue in assignment
+03-error-in-fun.chpl:966: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'i8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:967: error: illegal lvalue in assignment
+03-error-in-fun.chpl:967: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'i16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:968: error: illegal lvalue in assignment
+03-error-in-fun.chpl:968: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'i32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:969: error: illegal lvalue in assignment
+03-error-in-fun.chpl:969: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'i64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:970: error: illegal lvalue in assignment
+03-error-in-fun.chpl:970: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'r32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:971: error: illegal lvalue in assignment
+03-error-in-fun.chpl:971: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'r64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:972: error: illegal lvalue in assignment
+03-error-in-fun.chpl:972: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'm32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:973: error: illegal lvalue in assignment
+03-error-in-fun.chpl:973: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'm64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:974: error: illegal lvalue in assignment
+03-error-in-fun.chpl:974: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'z64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:975: error: illegal lvalue in assignment
+03-error-in-fun.chpl:975: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'z128' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:977: error: illegal lvalue in assignment
+03-error-in-fun.chpl:977: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'enm' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:980: error: illegal lvalue in assignment
+03-error-in-fun.chpl:980: error: cannot assign to const variable
 03-error-in-fun.chpl:955: note: The shadow variable 'cls' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:989: error: illegal lvalue in assignment
+03-error-in-fun.chpl:989: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:990: error: illegal lvalue in assignment
+03-error-in-fun.chpl:990: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:991: error: illegal lvalue in assignment
+03-error-in-fun.chpl:991: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:992: error: illegal lvalue in assignment
+03-error-in-fun.chpl:992: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:993: error: illegal lvalue in assignment
+03-error-in-fun.chpl:993: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:994: error: illegal lvalue in assignment
+03-error-in-fun.chpl:994: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:995: error: illegal lvalue in assignment
+03-error-in-fun.chpl:995: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:996: error: illegal lvalue in assignment
+03-error-in-fun.chpl:996: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:997: error: illegal lvalue in assignment
+03-error-in-fun.chpl:997: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:998: error: illegal lvalue in assignment
+03-error-in-fun.chpl:998: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:999: error: illegal lvalue in assignment
+03-error-in-fun.chpl:999: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1000: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1000: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1001: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1001: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1002: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1002: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1003: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1003: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1004: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1004: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1005: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1005: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1006: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1006: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1007: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1007: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1009: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1009: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1012: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1012: error: cannot assign to const variable
 03-error-in-fun.chpl:987: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1021: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1021: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1022: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1022: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1023: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1023: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1024: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1024: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1025: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1025: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1026: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1026: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1027: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1027: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1028: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1028: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1029: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1029: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1030: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1030: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1031: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1031: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1032: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1032: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1033: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1033: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1034: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1034: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1035: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1035: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1036: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1036: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1037: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1037: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1038: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1038: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1039: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1039: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1041: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1041: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1044: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1044: error: cannot assign to const variable
 03-error-in-fun.chpl:1019: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1091: In function 'funRef':
-03-error-in-fun.chpl:1127: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1127: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'b0' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1128: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1128: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'b8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1129: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1129: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'b16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1130: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1130: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'b32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1131: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1131: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'b64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1132: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1132: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'u8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1133: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1133: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'u16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1134: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1134: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'u32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1135: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1135: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'u64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1136: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1136: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'i8' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1137: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1137: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'i16' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1138: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1138: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'i32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1139: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1139: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'i64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1140: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1140: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'r32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1141: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1141: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'r64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1142: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1142: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'm32' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1143: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1143: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'm64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1144: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1144: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'z64' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1145: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1145: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'z128' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1147: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1147: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'enm' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1150: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1150: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'cls' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1152: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1152: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'dom1' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1153: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1153: error: cannot assign to const variable
 03-error-in-fun.chpl:1125: note: The shadow variable 'dom2' is constant due to task intents in this begin statement
-03-error-in-fun.chpl:1159: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1159: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1160: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1160: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1161: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1161: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1162: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1162: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1163: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1163: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1164: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1164: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1165: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1165: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1166: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1166: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1167: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1167: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1168: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1168: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1169: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1169: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1170: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1170: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1171: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1171: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1172: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1172: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1173: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1173: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1174: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1174: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1175: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1175: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1176: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1176: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1177: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1177: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1179: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1179: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1182: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1182: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1184: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1184: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'dom1' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1185: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1185: error: cannot assign to const variable
 03-error-in-fun.chpl:1157: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1191: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1191: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'b0' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1192: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1192: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'b8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1193: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1193: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'b16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1194: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1194: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'b32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1195: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1195: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'b64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1196: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1196: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'u8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1197: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1197: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'u16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1198: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1198: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'u32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1199: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1199: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'u64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1200: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1200: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'i8' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1201: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1201: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'i16' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1202: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1202: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'i32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1203: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1203: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'i64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1204: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1204: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'r32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1205: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1205: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'r64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1206: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1206: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'm32' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1207: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1207: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'm64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1208: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1208: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'z64' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1209: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1209: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'z128' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1211: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1211: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'enm' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1214: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1214: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'cls' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1216: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1216: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'dom1' is constant due to task intents in this parallel statement
-03-error-in-fun.chpl:1217: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1217: error: cannot assign to const variable
 03-error-in-fun.chpl:1189: note: The shadow variable 'dom2' is constant due to task intents in this parallel statement
 03-error-in-fun.chpl:1261: In function 'funConstRef':
-03-error-in-fun.chpl:1297: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1298: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1299: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1300: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1301: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1302: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1303: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1304: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1305: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1306: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1307: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1308: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1309: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1310: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1311: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1312: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1313: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1314: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1315: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1317: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1320: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1322: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1323: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1324: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1325: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1329: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1330: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1331: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1332: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1333: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1334: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1335: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1336: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1337: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1338: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1339: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1340: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1341: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1342: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1343: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1344: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1345: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1346: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1347: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1349: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1352: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1354: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1355: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1356: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1357: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1361: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1362: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1363: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1364: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1365: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1366: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1367: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1368: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1369: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1370: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1371: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1372: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1373: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1374: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1375: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1376: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1377: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1378: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1379: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1381: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1384: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1386: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1387: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1388: error: illegal lvalue in assignment
-03-error-in-fun.chpl:1389: error: illegal lvalue in assignment
+03-error-in-fun.chpl:1297: error: cannot assign to const variable
+03-error-in-fun.chpl:1298: error: cannot assign to const variable
+03-error-in-fun.chpl:1299: error: cannot assign to const variable
+03-error-in-fun.chpl:1300: error: cannot assign to const variable
+03-error-in-fun.chpl:1301: error: cannot assign to const variable
+03-error-in-fun.chpl:1302: error: cannot assign to const variable
+03-error-in-fun.chpl:1303: error: cannot assign to const variable
+03-error-in-fun.chpl:1304: error: cannot assign to const variable
+03-error-in-fun.chpl:1305: error: cannot assign to const variable
+03-error-in-fun.chpl:1306: error: cannot assign to const variable
+03-error-in-fun.chpl:1307: error: cannot assign to const variable
+03-error-in-fun.chpl:1308: error: cannot assign to const variable
+03-error-in-fun.chpl:1309: error: cannot assign to const variable
+03-error-in-fun.chpl:1310: error: cannot assign to const variable
+03-error-in-fun.chpl:1311: error: cannot assign to const variable
+03-error-in-fun.chpl:1312: error: cannot assign to const variable
+03-error-in-fun.chpl:1313: error: cannot assign to const variable
+03-error-in-fun.chpl:1314: error: cannot assign to const variable
+03-error-in-fun.chpl:1315: error: cannot assign to const variable
+03-error-in-fun.chpl:1317: error: cannot assign to const variable
+03-error-in-fun.chpl:1320: error: cannot assign to const variable
+03-error-in-fun.chpl:1322: error: cannot assign to const variable
+03-error-in-fun.chpl:1323: error: cannot assign to const variable
+03-error-in-fun.chpl:1324: error: cannot assign to const variable
+03-error-in-fun.chpl:1325: error: cannot assign to const variable
+03-error-in-fun.chpl:1329: error: cannot assign to const variable
+03-error-in-fun.chpl:1330: error: cannot assign to const variable
+03-error-in-fun.chpl:1331: error: cannot assign to const variable
+03-error-in-fun.chpl:1332: error: cannot assign to const variable
+03-error-in-fun.chpl:1333: error: cannot assign to const variable
+03-error-in-fun.chpl:1334: error: cannot assign to const variable
+03-error-in-fun.chpl:1335: error: cannot assign to const variable
+03-error-in-fun.chpl:1336: error: cannot assign to const variable
+03-error-in-fun.chpl:1337: error: cannot assign to const variable
+03-error-in-fun.chpl:1338: error: cannot assign to const variable
+03-error-in-fun.chpl:1339: error: cannot assign to const variable
+03-error-in-fun.chpl:1340: error: cannot assign to const variable
+03-error-in-fun.chpl:1341: error: cannot assign to const variable
+03-error-in-fun.chpl:1342: error: cannot assign to const variable
+03-error-in-fun.chpl:1343: error: cannot assign to const variable
+03-error-in-fun.chpl:1344: error: cannot assign to const variable
+03-error-in-fun.chpl:1345: error: cannot assign to const variable
+03-error-in-fun.chpl:1346: error: cannot assign to const variable
+03-error-in-fun.chpl:1347: error: cannot assign to const variable
+03-error-in-fun.chpl:1349: error: cannot assign to const variable
+03-error-in-fun.chpl:1352: error: cannot assign to const variable
+03-error-in-fun.chpl:1354: error: cannot assign to const variable
+03-error-in-fun.chpl:1355: error: cannot assign to const variable
+03-error-in-fun.chpl:1356: error: cannot assign to const variable
+03-error-in-fun.chpl:1357: error: cannot assign to const variable
+03-error-in-fun.chpl:1361: error: cannot assign to const variable
+03-error-in-fun.chpl:1362: error: cannot assign to const variable
+03-error-in-fun.chpl:1363: error: cannot assign to const variable
+03-error-in-fun.chpl:1364: error: cannot assign to const variable
+03-error-in-fun.chpl:1365: error: cannot assign to const variable
+03-error-in-fun.chpl:1366: error: cannot assign to const variable
+03-error-in-fun.chpl:1367: error: cannot assign to const variable
+03-error-in-fun.chpl:1368: error: cannot assign to const variable
+03-error-in-fun.chpl:1369: error: cannot assign to const variable
+03-error-in-fun.chpl:1370: error: cannot assign to const variable
+03-error-in-fun.chpl:1371: error: cannot assign to const variable
+03-error-in-fun.chpl:1372: error: cannot assign to const variable
+03-error-in-fun.chpl:1373: error: cannot assign to const variable
+03-error-in-fun.chpl:1374: error: cannot assign to const variable
+03-error-in-fun.chpl:1375: error: cannot assign to const variable
+03-error-in-fun.chpl:1376: error: cannot assign to const variable
+03-error-in-fun.chpl:1377: error: cannot assign to const variable
+03-error-in-fun.chpl:1378: error: cannot assign to const variable
+03-error-in-fun.chpl:1379: error: cannot assign to const variable
+03-error-in-fun.chpl:1381: error: cannot assign to const variable
+03-error-in-fun.chpl:1384: error: cannot assign to const variable
+03-error-in-fun.chpl:1386: error: cannot assign to const variable
+03-error-in-fun.chpl:1387: error: cannot assign to const variable
+03-error-in-fun.chpl:1388: error: cannot assign to const variable
+03-error-in-fun.chpl:1389: error: cannot assign to const variable

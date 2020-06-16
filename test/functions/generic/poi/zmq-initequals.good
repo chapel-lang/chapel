@@ -1,0 +1,3 @@
+zmq-initequals.chpl:18: In function 'recv':
+zmq-initequals.chpl:20: error: success
+zmq-initequals.chpl:13: Function 'recv' instantiated as: recv(type T = Foo)

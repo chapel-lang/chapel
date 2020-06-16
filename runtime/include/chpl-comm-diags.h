@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -77,8 +78,8 @@ typedef struct _chpl_atomic_commDiagnostics {
 #undef _COMM_DIAGS_DECL_ATOMIC
 } chpl_atomic_commDiagnostics;
 
-chpl_atomic_commDiagnostics chpl_comm_diags_counters;
-atomic_int_least16_t chpl_comm_diags_disable_flag;
+extern chpl_atomic_commDiagnostics chpl_comm_diags_counters;
+extern atomic_int_least16_t chpl_comm_diags_disable_flag;
 
 static inline
 void chpl_comm_diags_init(void) {

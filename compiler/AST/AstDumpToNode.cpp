@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -345,6 +346,19 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     mOffset = mOffset + 2;
     newline();
     node->useList->accept(this);
+    mOffset = mOffset - 2;
+  }
+
+  if (node->modRefs)
+  {
+    fprintf(mFP, "\n");
+
+    newline();
+
+    write(false, "ModRefs:", false);
+    mOffset = mOffset + 2;
+    newline();
+    node->modRefs->accept(this);
     mOffset = mOffset - 2;
   }
 
@@ -1144,6 +1158,25 @@ void AstDumpToNode::visitImportStmt(ImportStmt* node)
 
   newline();
   node->src->accept(this);
+
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+
+    for_vector(const char, str, node->unqualified) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+
+    for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
+         it != node->renamed.end(); ++it) {
+      newline();
+      fprintf(mFP, "%s 'as' %s", it->second, it->first);
+    }
+  }
 
   mOffset = mOffset - 2;
   newline();

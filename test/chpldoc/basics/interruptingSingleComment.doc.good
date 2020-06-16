@@ -10,5 +10,12 @@ interruptingSingleComment.doc
 
    use interruptingSingleComment.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import interruptingSingleComment.doc;
+
 .. function:: proc foo()
 

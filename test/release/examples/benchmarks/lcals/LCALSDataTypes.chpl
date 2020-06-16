@@ -11,12 +11,10 @@ module LCALSDataTypes {
     var A: list(eltType);
 
     //
-    // Previously, this vector used an array with a domain that started at 0,
-    // but list indexes starting at 1. So we should add 1 to the index to
-    // prevent a logical error.
+    // This vector supports 0-based indexing.
     //
     proc this(i: int) ref {
-      return A[i + 1];
+      return A[i];
     }
     proc push_back(e: eltType) {
       A.append(e);
@@ -34,7 +32,7 @@ module LCALSDataTypes {
 
     const loop_kernel_dom = {LoopKernelID.REF_LOOP..LoopKernelID.FIND_FIRST_MIN};
     const loop_length_dom = {LoopLength.LONG..LoopLength.SHORT};
-    const loop_variant_dom = {LoopVariantID.RAW..LoopVariantID.FORALL_HYBRID_LAMBDA_TYPEFIX};
+    const loop_variants = LoopVariantID.RAW..LoopVariantID.FORALL_HYBRID_LAMBDA_TYPEFIX;
     const weight_group_dom = {WeightGroup.DATA_PARALLEL..WeightGroup.NUM_WEIGHT_GROUPS};;
 
     var loop_names: [loop_kernel_dom] string;
@@ -54,7 +52,7 @@ module LCALSDataTypes {
     var cache_flush_data: [cache_flush_data_dom] real;
     var cache_flush_data_sum: real;
 
-    var loop_test_stats = for loop_variant_dom.dim(1) do [loop_kernel_dom] new shared LoopStat();
+    var loop_test_stats = for loop_variants do [loop_kernel_dom] new shared LoopStat();
 
     proc getLoopStats(loop_variant: LoopVariantID) ref {
       return loop_test_stats[loop_variant];

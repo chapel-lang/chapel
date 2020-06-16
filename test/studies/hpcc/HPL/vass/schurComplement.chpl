@@ -110,8 +110,8 @@ proc schurComplement(blk) {
 //  const AD   = AbD[blk+blkSize.., blk..#blkSize];
 //  const BD   = AbD[blk..#blkSize, blk+blkSize..];
 
-  const AD_dim2 = MatVectSpace.dim(2)(blk..#blkSize);
-  const BD_dim1 = MatVectSpace.dim(1)(blk..#blkSize);
+  const AD_dim2 = MatVectSpace.dim(1)(blk..#blkSize);
+  const BD_dim1 = MatVectSpace.dim(0)(blk..#blkSize);
 
   const AbSlice1 = Ab[1..n, AD_dim2],
         AbSlice2 = Ab[BD_dim1, 1..n+1];
@@ -140,14 +140,14 @@ proc schurComplement(blk) {
   }
 
 // Referring to 'Rest' in dgdriver() seems faster than passing these constants.
-//  const RestD1cp = Rest.dim(1),
-//        RestD2cp = Rest.dim(2),
+//  const RestD1cp = Rest.dim(0),
+//        RestD2cp = Rest.dim(1),
 //        Rest1end = RestD1cp.last,
 //        Rest2end = RestD2cp.last,
 //        lastFullRow = Rest1end - blkSize + 1,
 //        lastFullCol = Rest2end - blkSize + 1;
 
-  reportBlocks((Rest.dim(1) by blkSize).size, (Rest.dim(2) by blkSize).size);
+  reportBlocks((Rest.dim(0) by blkSize).size, (Rest.dim(1) by blkSize).size);
 
   forall (row,col) in RestByBlkSize {
     // we have some additional stuff for debugging/tuning
@@ -156,7 +156,7 @@ proc schurComplement(blk) {
       writeln((row, col), " on ", here.id);
 
     if dummycomps_insteadof_dgemms then local {
-      const r1 = Rest.dim(1)(row..#blkSize), r2 = Rest.dim(2)(col..#blkSize);
+      const r1 = Rest.dim(0)(row..#blkSize), r2 = Rest.dim(1)(col..#blkSize);
     }
 
     if do_dgemms then
@@ -171,8 +171,8 @@ proc dgdriver(row, col) {
   local {
 
     const
-          rng1 = Rest.dim(1)(row..#blkSize),
-          rng2 = Rest.dim(2)(col..#blkSize);
+          rng1 = Rest.dim(0)(row..#blkSize),
+          rng2 = Rest.dim(1)(col..#blkSize);
 //          rng1 = if row <= lastFullRow then row..#blkSize else row..Rest1end,
 //          rng2 = if col <= lastFullCol then col..#blkSize else col..Rest2end;
 
@@ -194,19 +194,19 @@ proc dgemm(LreplA, LreplB, LAb) {
     // This is because these dimensions have the same user indices
     // and are handled by the same distribution 1-d descriptors.
     // So they generate the same (pair-wise) storage indices.
-    assert(LAb.domain.dim(1) == LreplA.domain.dim(1));
-    assert(LAb.domain.dim(2) == LreplB.domain.dim(2));
+    assert(LAb.domain.dim(0) == LreplA.domain.dim(0));
+    assert(LAb.domain.dim(1) == LreplB.domain.dim(1));
     // These dimensions are replicated and their user indices are 1..blkSize.
-    assert(LreplA.domain.dim(2) == (1..blkSize));
-    assert(LreplB.domain.dim(1) == (1..blkSize));
+    assert(LreplA.domain.dim(1) == (1..blkSize));
+    assert(LreplB.domain.dim(0) == (1..blkSize));
   }
 //  write("replA ", LreplA.domain, "  ");
 //  write("replB ", LreplB.domain, "  ");
 //  write("Ab    ", LAb.domain, "  ");
 //  writeln();
 
-  const r1 = LAb.domain.dim(1),
-        r2 = LAb.domain.dim(2),
+  const r1 = LAb.domain.dim(0),
+        r2 = LAb.domain.dim(1),
         rB = 1..blkSize;
 
   // interchange the j and k loops

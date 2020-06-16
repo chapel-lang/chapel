@@ -10,6 +10,13 @@ domains.doc
 
    use domains.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import domains.doc;
+
 .. function:: proc baseCase(): domain(1)
 
    This proc returns a one dimensional array 

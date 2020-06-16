@@ -56,7 +56,7 @@ proc infix2postfix(str: string) {
   var post: string = "";
   var stack: Stack;
 
-  for i in 1..(str.size) {
+  for i in 0..<str.size {
     var ch: string;
     var s = str[i];
     select s {
@@ -98,7 +98,7 @@ proc infix2postfix(str: string) {
 
 proc postfixEval(str: string) {
   var stack: Stack;
-  for i in 1..(str.size) {
+  for i in 0..<str.size {
     var s: string = str[i];
     select s {
       when "0","1","2","3","4","5","6","7","8","9" {

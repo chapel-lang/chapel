@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,6 +80,23 @@ const char* VisibilityStmt::getRename() const {
   return modRename;
 }
 
+bool VisibilityStmt::isARenamedSym(const char* name) const {
+  return renamed.count(name) == 1;
+}
+
+const char* VisibilityStmt::getRenamedSym(const char* name) const {
+  std::map<const char*, const char*>::const_iterator it;
+  const char*                                        retval = NULL;
+
+  it = renamed.find(name);
+
+  if (it != renamed.end()) {
+    retval = it->second;
+  }
+
+  return retval;
+}
+
 //
 // Returns the module symbol if the name provided matches the module imported or
 // used
@@ -128,6 +146,86 @@ void VisibilityStmt::updateEnclosingBlock(ResolveScope* scope, Symbol* sym) {
 
 /************************************* | **************************************
 *                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* refer to symbols that are visible from that module.                         *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::validateRenamed() {
+  std::map<const char*, const char*>::iterator it;
+
+  BaseAST*            scopeToUse = getSearchScope();
+  const ResolveScope* scope      = ResolveScope::getScopeFor(scopeToUse);
+
+  for (it = renamed.begin(); it != renamed.end(); ++it) {
+    std::vector<Symbol*> symbols;
+
+    scope->getFields(it->second, symbols);
+
+    if (symbols.size() == 0) {
+      SymExpr* se = toSymExpr(src);
+
+      USR_FATAL_CONT(this,
+                     "Bad identifier in rename, no known '%s' in '%s'",
+                     it->second,
+                     se->symbol()->name);
+
+    } else if (symbols.size() == 1) {
+      Symbol* sym = symbols[0];
+
+      if (sym->hasFlag(FLAG_PRIVATE) && !sym->isVisible(this)) {
+        USR_FATAL_CONT(this,
+                       "Bad identifier in rename, '%s' is private",
+                       it->second);
+      }
+
+    } else {
+      INT_ASSERT(false);
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Verifies that all the symbols to be renamed in an import or use statement   *
+* are not repeats                                                             *
+*                                                                             *
+************************************** | *************************************/
+void VisibilityStmt::noRepeatsInRenamed() const {
+  std::map<const char*, const char*>::const_iterator it2;
+
+  for (it2 = renamed.begin(); it2 != renamed.end(); ++it2) {
+    std::map<const char*, const char*>::const_iterator next = it2;
+
+    for (++next; next != renamed.end(); ++next) {
+      if (strcmp(it2->second, next->second) == 0) {
+        // Renamed this variable twice.  Probably a mistake on the user's part,
+        // but not a catastrophic one
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
+      }
+
+      if (strcmp(it2->second, next->first) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it2->second);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  next->second,
+                  it2->first);
+      }
+
+      if (strcmp(it2->first, next->second) == 0) {
+        // This name is the old_name in one rename and the new_name in another
+        // Did the user actually want to cut out the middle man?
+        USR_WARN(this, "identifier '%s' is repeated", it2->first);
+        USR_PRINT("Did you mean to rename '%s' to '%s'?",
+                  it2->second,
+                  next->first);
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -138,6 +236,7 @@ BlockStmt::BlockStmt(Expr* initBody, BlockTag initBlockTag) :
 
   blockTag      = initBlockTag;
   useList       = NULL;
+  modRefs       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
   blockInfo     = NULL;
@@ -156,6 +255,7 @@ BlockStmt::BlockStmt(BlockTag initBlockTag) :
 
   blockTag      = initBlockTag;
   useList       = NULL;
+  modRefs       = NULL;
   userLabel     = NULL;
   byrefVars     = NULL;
   blockInfo     = NULL;
@@ -188,6 +288,10 @@ void BlockStmt::verify() {
     INT_FATAL(this, "BlockStmt::verify. Bad useList->parentExpr");
   }
 
+  if (modRefs   != NULL && modRefs->parentExpr   != this) {
+    INT_FATAL(this, "BlockStmt::verify. Bad modRefs->parentExpr");
+  }
+
   if (byrefVars) {
     if (byrefVars->parentExpr != this) {
       INT_FATAL(this, "BlockStmt::verify. Bad byrefVars->parentExpr");
@@ -205,6 +309,7 @@ void BlockStmt::verify() {
   }
 
   verifyNotOnList(useList);
+  verifyNotOnList(modRefs);
   verifyNotOnList(byrefVars);
   verifyNotOnList(blockInfo);
 }
@@ -217,6 +322,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->blockTag  = blockTag;
   _this->blockInfo = COPY_INT(blockInfo);
   _this->useList   = COPY_INT(useList);
+  _this->modRefs   = COPY_INT(modRefs);
   _this->byrefVars = COPY_INT(byrefVars);
 
   for_alist(expr, body) {
@@ -256,6 +362,9 @@ void BlockStmt::replaceChild(Expr* oldAst, Expr* newAst) {
 
   else if (oldExpr == useList)
     useList   = newExpr;
+
+  else if (oldExpr == modRefs)
+    modRefs   = newExpr;
 
   else if (oldExpr == byrefVars)
     byrefVars = newExpr;
@@ -580,6 +689,60 @@ BlockStmt::useListClear() {
 }
 
 void
+BlockStmt::modRefsAdd(ModuleSymbol* mod) {
+  if (modRefs == NULL) {
+    modRefs = new CallExpr(PRIM_REFERENCED_MODULES_LIST);
+
+    if (parentSymbol)
+      insert_help(modRefs, this, parentSymbol);
+  }
+
+  modRefs->insertAtTail(new SymExpr(mod));
+}
+
+
+// Remove a module from the list of modules referenced by the module this block
+// statement belongs to. The list of referenced modules is stored in modRefs
+bool
+BlockStmt::modRefsRemove(ModuleSymbol* mod) {
+  bool retval = false;
+
+  if (modRefs != NULL) {
+    for_alist(expr, modRefs->argList) {
+      if (SymExpr* symExpr = toSymExpr(expr)) {
+        if (ModuleSymbol* curMod = toModuleSymbol(symExpr->symbol())) {
+          if (curMod == mod) {
+            symExpr->remove();
+
+            retval = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return retval;
+}
+
+void
+BlockStmt::modRefsClear() {
+  if (modRefs != NULL) {
+
+    for_alist(expr, modRefs->argList) {
+      expr->remove();
+    }
+
+    // It's possible that this use definition is not alive
+    if (isAlive(modRefs)) {
+      modRefs->remove();
+    }
+
+    modRefs = NULL;
+  }
+}
+
+void
 BlockStmt::accept(AstVisitor* visitor) {
   if (visitor->enterBlockStmt(this) == true) {
     for_alist(next_ast, body) {
@@ -592,6 +755,10 @@ BlockStmt::accept(AstVisitor* visitor) {
 
     if (useList) {
       useList->accept(visitor);
+    }
+
+    if (modRefs) {
+      modRefs->accept(visitor);
     }
 
     if (byrefVars) {

@@ -18,11 +18,6 @@ CHPL_JEMALLOC_CFG_OPTIONS += --prefix=$(JEMALLOC_INSTALL_DIR) \
 			     --with-jemalloc-prefix=$(CHPL_JEMALLOC_PREFIX) \
 			     --with-private-namespace=chpl_
 
-# Can't build under CCE with interprocedural analysis or we get runtime errors
-ifeq ($(CHPL_MAKE_TARGET_COMPILER),cray-prgenv-cray)
-CFLAGS += -hipa0
-endif
-
 
 # Unless the user explicitly asks for stats gathering, disable it since
 # there is some runtime overhead of this capability

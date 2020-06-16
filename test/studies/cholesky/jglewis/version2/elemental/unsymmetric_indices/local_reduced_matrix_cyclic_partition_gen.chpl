@@ -22,18 +22,18 @@ module local_reduced_matrix_cyclic_partition_gen {
     // -------------------------------------------------------------------
     
     for ( block_low_row, block_low_col ) in 
-      zip( A_domain.dim (1) by block_size,  A_domain.dim (2) by block_size ) do {
+      zip( A_domain.dim (0) by block_size,  A_domain.dim (1) by block_size ) do {
 
       var next_block_low_row = block_low_row + block_size,
 	  next_block_low_col = block_low_col + block_size;
 
       const A11_rows = block_low_row .. 
-	               min ( next_block_low_row - 1, A_domain.high(1) ),
+	               min ( next_block_low_row - 1, A_domain.high(0) ),
 	    A11_cols = block_low_col .. 
-	               min ( next_block_low_col - 1, A_domain.high(2) );
+	               min ( next_block_low_col - 1, A_domain.high(1) );
 	
-      const A22_rows = next_block_low_row .. A_domain.high (1),
-	    A22_cols = next_block_low_col .. A_domain.high (2);
+      const A22_rows = next_block_low_row .. A_domain.high (0),
+	    A22_cols = next_block_low_col .. A_domain.high (1);
 
       yield ( A11_rows, A11_cols, A22_rows, A22_cols );
     }

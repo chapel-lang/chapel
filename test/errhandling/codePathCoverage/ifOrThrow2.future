@@ -1,0 +1,8 @@
+bug: incorrect use-before-def error due to if-throw-else-don't pattern
+#15691
+
+This program demonstrates that when we have a conditional that throws
+along one branch and not the other, we sometimes get an incorrect
+use-before-def error.  If `return testit2(dom);` is changed to `return
+dom;` things work; as does adding a dummy assignment to the throwing
+branch of the conditional.

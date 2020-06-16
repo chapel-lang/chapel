@@ -20,6 +20,16 @@ writeln("Basic range r");
 const r = 1..10;
 writeRange(r);
 
+// Ranges can also be defined using an `open-interval` form using the
+// ``..<`` operator which causes the upper bound to be omitted.  For
+// example, the range ``3..<10`` is equivalent to ``3..9``.
+writeln("Open interval range rOpen");
+const rOpen = 3..<10;
+writeRange(rOpen);
+
+// This form can be convenient when iterating over a 0-based
+// data structure using ranges like ``lo..<data.size``.
+
 //
 // Ranges are a basic building block for iteration.  Here we use a
 // for-loop to iterate over the sequence represented by ``r`` and

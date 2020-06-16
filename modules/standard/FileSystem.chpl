@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +31,12 @@
    process's file system state, which are performed on a specified locale
    (:ref:`locale-state`).  The module also contains iterators for traversing the
    file system (:ref:`filerator`).
+
+   .. note::
+
+      Functions in this module can use and return :ref:`escaped strings
+      <string.nonunicode>` on systems where UTF-8 file names are not enforced.
+
 
    .. _file-manip:
 
@@ -861,12 +868,17 @@ proc getUID(out error: syserr, name: string): int {
 //
 private module GlobWrappers {
   extern type glob_t;
+  use SysCTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+    // want:
+    //  import FileSystem.unescape;
+    // but see issue #15308, so:
+    use FileSystem;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -976,7 +988,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
-  var r = followThis(1);
+  var r = followThis(0);
 
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
@@ -1205,7 +1217,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
         filename = createStringWithNewBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

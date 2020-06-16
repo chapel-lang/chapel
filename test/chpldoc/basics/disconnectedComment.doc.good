@@ -11,6 +11,13 @@ unattached
 
    use unattached;
 
+
+or
+
+.. code-block:: chapel
+
+   import unattached;
+
 This comment should be attached to unattached but not reallyCommentless, 
 even when before the defined module 
 

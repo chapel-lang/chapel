@@ -1,0 +1,2 @@
+dontLeakSymbols2-proc.chpl:19: In function 'main':
+dontLeakSymbols2-proc.chpl:20: error: Symbol 'foo' undeclared in module 'C'

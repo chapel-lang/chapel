@@ -1,0 +1,139 @@
+#
+# Copyright (C) 2016 by Argonne National Laboratory.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+
+testdir = @bindir@/test
+test_PROGRAMS =
+
+#bin_PROGRAMS += test_l2alloc_simple
+#test_l2alloc_simple_SOURCES = prov/bgq/src/test/l2alloc_simple.c \
+#		prov/bgq/src/l2atomic.c
+#test_l2alloc_simple_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_l2alloc_simple_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_l2alloc_single
+#test_l2alloc_single_SOURCES = prov/bgq/src/test/l2alloc_single.c \
+#		prov/bgq/src/l2atomic.c
+#test_l2alloc_single_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_l2alloc_single_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_l2alloc_func
+#test_l2alloc_func_SOURCES = prov/bgq/src/test/l2alloc_func.c \
+#		prov/bgq/src/l2atomic.c
+#test_l2alloc_func_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_l2alloc_func_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_l2lock_init
+#test_l2lock_init_SOURCES = prov/bgq/src/test/l2lock_init.c \
+#		prov/bgq/src/l2atomic.c
+#test_l2lock_init_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_l2lock_init_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_l2lock_func
+#test_l2lock_func_SOURCES = prov/bgq/src/test/l2lock_func.c \
+#		prov/bgq/src/l2atomic.c
+#test_l2lock_func_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_l2lock_func_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_l2barrier_func
+#test_l2barrier_func_SOURCES = prov/bgq/src/test/l2barrier_func.c \
+#		prov/bgq/src/l2atomic.c
+#test_l2barrier_func_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_l2barrier_func_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_cq_mfifo_init
+#test_cq_mfifo_init_SOURCES = prov/bgq/src/test/cq_mfifo_init.c \
+#		prov/bgq/src/l2atomic.c \
+#		prov/bgq/src/fi_bgq_memfifo.c
+#test_cq_mfifo_init_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_cq_mfifo_init_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_cq_mfifo_overflow
+#test_cq_mfifo_overflow_SOURCES = prov/bgq/src/test/cq_mfifo_overflow.c \
+#		prov/bgq/src/l2atomic.c \
+#		prov/bgq/src/fi_bgq_memfifo.c
+#test_cq_mfifo_overflow_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_cq_mfifo_overflow_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_cq_mfifo_multithreaded
+#test_cq_mfifo_multithreaded_SOURCES = prov/bgq/src/test/cq_mfifo_multithreaded.c \
+#		prov/bgq/src/l2atomic.c \
+#		prov/bgq/src/fi_bgq_memfifo.c
+#test_cq_mfifo_multithreaded_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_cq_mfifo_multithreaded_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+#bin_PROGRAMS += test_cq_mfifo_multithreaded_perf
+#test_cq_mfifo_multithreaded_perf_SOURCES = prov/bgq/src/test/cq_mfifo_multithreaded_perf.c \
+#		prov/bgq/src/l2atomic.c \
+#		prov/bgq/src/fi_bgq_memfifo.c
+#test_cq_mfifo_multithreaded_perf_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_cq_mfifo_multithreaded_perf_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+
+
+test_PROGRAMS += l2atomic_fifo_perf
+l2atomic_fifo_perf_SOURCES = prov/bgq/src/test/l2atomic_fifo_perf.c
+l2atomic_fifo_perf_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+l2atomic_fifo_perf_LDFLAGS = \
+		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+test_PROGRAMS += spi_pingpong
+spi_pp_files = prov/bgq/src/test/spi_pingpong.c \
+		prov/bgq/src/fi_bgq_spi.c
+spi_pp_files_nodist = prov/bgq/external/memory_impl.c
+
+spi_pingpong_SOURCES = $(spi_pp_files)
+nodist_spi_pingpong_SOURCES = $(spi_pp_files_nodist)
+spi_pingpong_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+spi_pingpong_LDFLAGS = \
+		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+
+
+#bin_PROGRAMS += test_cq_agent_init
+#test_cq_agent_init_SOURCES = prov/bgq/src/test/cq_agent_init.c \
+#		prov/bgq/src/l2atomic.c \
+#		prov/bgq/src/cq_agent_client.c \
+#		prov/bgq/src/agent/cq_agent.c \
+#		prov/bgq/src/fi_bgq_memfifo.c
+#test_cq_agent_init_CPPFLAGS = $(AM_CPPFLAGS) $(bgq_CPPFLAGS)
+#test_cq_agent_init_LDFLAGS = \
+#		-module -avoid-version -export-dynamic $(bgq_LDFLAGS)
+#test_cq_agent_init_LDADD = $(bgq_LIBS)

@@ -17,9 +17,9 @@ proc foo(x8n:[ElemDist] 8*real) {
 
 
   for eid in ElemDist {
-    for /*param*/ i in 1..4 {
-      var t = + reduce [j in 1..8] (x8n[eid][j] * gamma[i][j]);
-      for param j in 1..8 {
+    for /*param*/ i in 0..3 {
+      var t = + reduce [j in 0..7] (x8n[eid][j] * gamma[i][j]);
+      for param j in 0..7 {
         hourgam[j][i] = gamma[i][j];
       }
     }
@@ -38,9 +38,9 @@ proc foo_param (x8n:[ElemDist] 8*real) {
 
 
   for eid in ElemDist {
-    for param i in 1..4 {
-      var t = + reduce [j in 1..8] (x8n[eid][j] * gamma[i][j]);
-      for param j in 1..8 {
+    for param i in 0..3 {
+      var t = + reduce [j in 0..7] (x8n[eid][j] * gamma[i][j]);
+      for param j in 0..7 {
         hourgam[j][i] = gamma[i][j];
       }
     }

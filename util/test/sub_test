@@ -543,7 +543,7 @@ def translateOutput(output):
     xlates = (('slurmstepd: Munge decode failed: Expired credential',
                'Jira 18 -- Expired slurm credential for'),
               ('output file from job .* does not exist',
-               'Jira 17 -- Missing output file for'),
+               'private issue #906 -- Missing output file for'),
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
@@ -557,7 +557,9 @@ def translateOutput(output):
               ('Fatal MPP reservation error on create',
                'Jira 329 -- Fatal MPP reservation error for'),
               ('Text file busy',
-               'private issue #474 -- Text file busy for'))
+               'private issue #474 -- Text file busy for'),
+              ('Socket timed out on send/recv operation',
+               'private issue #579 -- Slurm socket timed out on send/recv'))
 
     known_error = ''
     was_timeout = False
@@ -573,6 +575,12 @@ def translateOutput(output):
             was_timeout = True
 
     return known_error, was_timeout
+
+# Remove innocuous warnings about clock skew from when we `make` the generated code
+def remove_clock_skew_warning(output):
+    output = re.sub(r'g?make.*: Warning: File .* has modification time .* s in the future *\n', '', output)
+    output = re.sub(r'g?make.*: warning:  Clock skew detected\.  Your build may be incomplete\. *\n', '', output)
+    return output
 
 def filter_compiler_errors(compiler_output):
     """Identify common errors that occur in compilation.
@@ -1589,6 +1597,8 @@ for testname in testsrc:
 
         print('[Elapsed compilation time for "{0}" - {1:.3f} '
             'seconds]'.format(test_name, elapsedCompTime))
+
+        output = remove_clock_skew_warning(output)
 
         # remove some_file: output from C compilers
         if is_c_test:

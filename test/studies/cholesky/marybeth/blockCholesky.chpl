@@ -62,10 +62,10 @@ proc main() {
 }
 
 proc blockChol(A:[?D],blk,factor:string) where (D.rank == 2) {
-  if (D.dim(1) != D.dim(2)) then
+  if (D.dim(0) != D.dim(1)) then
     halt("error:  blockChol requires a square matrix with same dimensions");
 
-  var A1D = D.dim(1);
+  var A1D = D.dim(0);
   const zero = 0.0:A.eltType;
   const upper = (factor == "U");
 
@@ -152,8 +152,8 @@ iter IterSyrk(D, upper) {
 //  other cases provided in ssyrk, but they
 //  aren't available here.
 
-  const rows = D.dim(1);
-  const cols = D.dim(2);
+  const rows = D.dim(0);
+  const cols = D.dim(1);
 
   if (upper) then
     for j in cols do
@@ -169,7 +169,7 @@ iter IterChol(D,upper) {
 // This iterator computes the indices and ranges for
 // the non-blocked cholesky factorization of the current 
 // diagonal block of A.
-  const rows = D.dim(1);
+  const rows = D.dim(0);
   for j in rows do
     if upper then
       yield((j,j), rows(..(j-1)), j..j, rows((j+1)..));
@@ -182,14 +182,14 @@ iter IterGemm(D1, D2, upper) {
 //  of A2 = G1*G2, with the correct transposes for either
 //  the lower or upper triangular case.
   if upper then
-    for i in D1.dim(2) do
-      for k in D1.dim(1) do
-        for j in D2.dim(2) do
+    for i in D1.dim(1) do
+      for k in D1.dim(0) do
+        for j in D2.dim(1) do
           yield ((i,j), (k,i), (k,j));
   else
-    for j in D1.dim(1) do
-      for k in D1.dim(2) do
-        for i in D2.dim(1) do
+    for j in D1.dim(0) do
+      for k in D1.dim(1) do
+        for i in D2.dim(0) do
           yield ((i,j), (j,k), (i,k));
 }  
 
@@ -199,8 +199,8 @@ iter IterTrsm(D, upper) {
 // trsm to consider.  The two that are included here are the
 // only two needed by the upper triangular and lower triangular
 // Cholesky factorizations.
-  const Drows = D.dim(1);
-  const Dcols = D.dim(2);
+  const Drows = D.dim(0);
+  const Dcols = D.dim(1);
 
   if upper then 
     for j in Dcols do
@@ -241,14 +241,14 @@ proc writeCholFactor(A:[?D],fac:string) {
   var G:[D] A.eltType;
 
   if (fac == "U") {
-    for i in D.dim(1) {
+    for i in D.dim(0) {
       for j in i..D.high(1) {
         G(i,j) = A(i,j);
       }
     }
   }
   else {
-    for j in D.dim(1) {
+    for j in D.dim(0) {
       for i in j..D.high(1) {
         G(i,j) = A(i,j);
       }

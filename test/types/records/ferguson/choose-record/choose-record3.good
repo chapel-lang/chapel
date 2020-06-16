@@ -1,3 +1,3 @@
 choose-record3.chpl:12: In function 'updateAndPrint':
-choose-record3.chpl:14: error: illegal lvalue in assignment
-choose-record3.chpl:15: error: illegal lvalue in assignment
+choose-record3.chpl:14: error: cannot assign to const variable
+choose-record3.chpl:15: error: cannot assign to const variable

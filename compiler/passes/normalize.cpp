@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -121,6 +123,9 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 void normalize() {
+
+  autoLocalAccess();
+
   insertModuleInit();
 
   transformLogicalShortCircuit();
@@ -635,6 +640,12 @@ void checkUseBeforeDefs(FnSymbol* fn) {
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
             isUseStmt(se->parentExpr)              == false &&
             isImportStmt(se->parentExpr)           == false) {
+
+          if (CallExpr* call = toCallExpr(se->parentExpr)) {
+            if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST)) {
+              continue;
+            }
+          }
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {
@@ -1204,8 +1215,6 @@ static void insertDestructureStatements(Expr*     S1,
   for_actuals(expr, lhs) {
     UnresolvedSymExpr* se = toUnresolvedSymExpr(expr->remove());
 
-    index = index + 1;
-
     if (se == NULL || strcmp(se->unresolved, "chpl__tuple_blank") != 0) {
       CallExpr* nextLHS = toCallExpr(expr);
       Expr*     nextRHS = new CallExpr(rhs->copy(), new_IntSymbol(index));
@@ -1225,6 +1234,7 @@ static void insertDestructureStatements(Expr*     S1,
         S2->insertBefore(new CallExpr("=", lhsTmp, nextRHS));
       }
     }
+    index = index + 1;
   }
 }
 
@@ -2184,7 +2194,7 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
     // as a sub-expression for a variable initialization.
     // This flag triggers autoCopy/autoDestroy behavior.
     if (parentCall == NULL ||
-        (parentCall->isNamed("chpl__initCopy")  == false &&
+        (parentCall->isNamedAstr(astr_initCopy)  == false &&
          parentCall->isPrimitive(PRIM_INIT_VAR) == false &&
          parentCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT) == false)) {
       tmp->addFlag(FLAG_EXPR_TEMP);
@@ -2268,7 +2278,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   //   The expansion of _build_tuple() creates temps that need to be
   //   autoDestroyed.  This is a short-cut to arrange for that to occur.
   //   A better long term solution would be preferred
-  if (call->isNamed("chpl__initCopy")     == true &&
+  if (call->isNamedAstr(astr_initCopy)     == true &&
       parentCall                          != NULL &&
       parentCall->isNamed("_build_tuple") == true) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
@@ -2746,8 +2756,6 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
   if (canDefaultInit == false) {
     const char* name = def->sym->name;
-    FnSymbol* initFn = def->getModule()->initFn;
-    bool global = (initFn && def->parentExpr == initFn->body);
 
     // Don't give errors for compiler generated functions at this time.
     FnSymbol* inFn = def->getFunction();
@@ -2787,9 +2795,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
       }
     }
 
-    if (global) {
-      USR_FATAL_CONT(def, "split initialization is not supported for globals");
-    } else if (cur) {
+    if (cur) {
       if (def->exprType == NULL || genericType != NULL) {
         USR_PRINT(cur,
                   "'%s' use here prevents split-init from establishing the type",
@@ -3046,6 +3052,8 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->symbol() != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
+          // MPF: this seems wrong since the result is a value not
+          // a type.
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }

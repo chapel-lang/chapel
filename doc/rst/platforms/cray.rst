@@ -5,12 +5,8 @@ Using Chapel on Cray Systems
 ============================
 
 The following information is assembled to help Chapel users get up and running
-on Cray\ |reg| systems including the Cray XC\ |trade|, XE\ |trade|,
-XK\ |trade|, CS\ |trade|, and Shasta\ |trade| series systems.
-
-Support has been added for the Cray XC50\ |trade| system with ARM
-processors. This works the same as other Cray XC\ |trade| systems in
-the instructions below, except that there is no Intel compiler.
+on Cray\ |reg| systems including the Cray XC\ |trade| and Shasta\ |trade|
+series systems.
 
 .. contents::
 
@@ -31,7 +27,7 @@ confirm it is correctly installed, do the following:
 
 2) Compile an example program using::
 
-     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+     chpl $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
 3) Execute the resulting executable (on four locales)::
@@ -80,12 +76,12 @@ installed, do the following:
 
 2) Compile an example program like this::
 
-     chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+     chpl $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
 
-3) Execute the resulting executable on 2 locales::
+3) Execute the resulting executable (on four locales)::
 
-     ./hello6-taskpar-dist -nl 2
+     ./hello6-taskpar-dist -nl 4
 
 
 Currently the number of Chapel configurations available on
@@ -134,8 +130,8 @@ built from source on Cray CS systems using the
 Building Chapel for a Cray System from Source
 ---------------------------------------------
 
-1) If using a XC, XE, or XK system, continue to step 2. If using a
-   CS series system, set ``CHPL_HOST_PLATFORM`` to ``cray-cs``.
+1) If using an XC system, continue to step 2. If using a CS series
+   system, set ``CHPL_HOST_PLATFORM`` to ``cray-cs``.
 
    For example:
 
@@ -145,16 +141,13 @@ Building Chapel for a Cray System from Source
 
    These are the supported systems and strings.  Note that these values
    are used by default when building on the given systems.  They can
-   also be set manually.  Also note that the ``cray-xe`` configuration
-   covers Cray XK systems as well as Cray XE systems.
+   also be set manually.
 
        =========  ==================
        System     CHPL_HOST_PLATFORM
        =========  ==================
        CS series  cray-cs
        XC series  cray-xc
-       XE series  cray-xe
-       XK series  cray-xe
        =========  ==================
 
 
@@ -165,7 +158,6 @@ Building Chapel for a Cray System from Source
       On a Cray CS system, to...                set CHPL_LAUNCHER to...
       ========================================  =========================
       ...run jobs interactively on your system  gasnetrun_ibv
-      ...queue jobs using PBSPro (qsub)         pbs-gasnetrun_ibv
       ...queue jobs using SLURM (sbatch)        slurm-gasnetrun_ibv
       ========================================  =========================
 
@@ -254,7 +246,7 @@ Using Chapel on a Cray System
 
    .. code-block:: sh
 
-      chpl -o hello6-taskpar-dist $CHPL_HOME/examples/hello6-taskpar-dist.chpl
+      chpl $CHPL_HOME/examples/hello6-taskpar-dist.chpl
 
    See :ref:`readme-compiling` or  ``man chpl`` for further details.
 
@@ -270,7 +262,7 @@ Using Chapel on a Cray System
    You can use the ``-v`` flag to see the commands used by the launcher
    binary to start your program.
 
-   If ``CHPL_LAUNCHER`` is ``pbs-aprun`` or ``pbs-gasnetrun_ibv``:
+   If ``CHPL_LAUNCHER`` is ``pbs-aprun``:
 
      a) You can optionally specify a queue name using the environment
         variable ``CHPL_LAUNCHER_QUEUE``.  For example:
@@ -378,7 +370,7 @@ system rather than the login node's.
 
 
 ----------------------------------------------------
-Special Notes for Cray XC, XE, and XK Series Systems
+Special Notes for Cray XC Series Systems
 ----------------------------------------------------
 
 .. _ugni-comm-on-cray:
@@ -391,8 +383,8 @@ layer implementations that can be used by Chapel programs.  In addition
 to the standard ones, Chapel supports a Cray-specific ``ugni``
 communication layer.  The ugni communication layer interacts with
 the system's network interface very closely through a lightweight
-interface called uGNI (user Generic Network Interface).  On Cray XC, XK,
-and XE systems the ugni communication layer is the default.
+interface called uGNI (user Generic Network Interface).  On Cray XC
+systems the ugni communication layer is the default.
 
 
 Using the ugni Communications Layer
@@ -434,25 +426,17 @@ To use ugni communications:
    will probably give you satisfactory results.
 
    The Cray network interface chips (NICs) can only address memory that
-   has been registered with them, and there are some caveats with respect
-   to this memory registration.  On Cray XE and XK systems, the Gemini(TM)
-   NIC can register no more than 16k (2**14) pages of memory.  There you
-   should use a hugepage module whose pages are large enough that 16k of
-   them will span your program's per-node memory requirement or, if that
-   is not known, the compute node memory size.  For example, to cover a 32
-   GiB Cray XE compute node, you will need at least the 2 MiB hugepages in
-   the ``craype-hugepages2M`` module.
-
-   In practical terms, the Aries(TM) NIC on Cray XC systems is not limited
-   as to how much memory it can register.  However, it does have an
-   on-board cache of 512 registered page table entries, and registering
-   more than this can cause reduced performance if the program's memory
-   reference pattern causes refills in this cache.  We have seen up to a
-   15% reduction from typical nightly XC-16 performance in an ra-rmo run
-   using hugepages small enough that every reference should have missed in
-   this cache.  Covering an entire 128 GiB XC compute node with only 512
-   hugepages will require at least the ``craype-hugepages256M`` module's
-   256 MiB hugepages.
+   has been registered with them. In practical terms, the Aries(TM) NIC
+   on Cray XC systems is not limited as to how much memory it can
+   register.  However, it does have an on-board cache of 512 registered
+   page table entries, and registering more than this can cause reduced
+   performance if the program's memory reference pattern causes refills
+   in this cache.  We have seen up to a 15% reduction from typical
+   nightly XC-16 performance in an ra-rmo run using hugepages small
+   enough that every reference should have missed in this cache.
+   Covering an entire 128 GiB XC compute node with only 512 hugepages
+   will require at least the ``craype-hugepages256M`` module's 256 MiB
+   hugepages.
 
    Offsetting this, using larger hugepages may reduce performance because
    it can result in poorer NUMA affinity.  With the ugni communication
@@ -473,10 +457,10 @@ To use ugni communications:
 Network Atomics
 _______________
 
-The Gemini and Aries networks on Cray XE, XK, and XC series systems
-support remote atomic memory operations (AMOs).  When the
-``CHPL_NETWORK_ATOMICS`` environment variable is set to ``ugni``, the
-following operations on remote atomics are done using the network::
+The Aries networks on Cray XC series systems support remote atomic
+memory operations (AMOs).  When the ``CHPL_NETWORK_ATOMICS`` environment
+variable is set to ``ugni``, the following operations on remote atomics
+are done using the network::
 
     32- and 64-bit signed and unsigned integer types:
     32- and 64-bit real types:
@@ -492,15 +476,9 @@ following operations on remote atomics are done using the network::
       and(), fetchAnd()
       xor(), fetchXor()
 
-Note that on XE and XK systems, which have Gemini networks, out of the
-above list only the 64-bit integer operations are done natively by the
-network hardware.  32-bit integer and all real operations are
-done using implicit ``on`` statements inside the ugni communication
-layer, accelerated by Gemini hardware capabilities.
-
-On XC systems, which have Aries networks, all of the operations shown
-above are done natively by the network hardware except 64-bit real add,
-which is disabled in hardware and thus done using ``on`` statements.
+All of the operations shown above are done natively by the network
+hardware except 64-bit real add, which is disabled in hardware and thus
+done using ``on`` statements.
 
 
 ugni Communication Layer and the Heap
@@ -508,7 +486,7 @@ _____________________________________
 
 The "heap" is an area of memory used for dynamic allocation of
 everything from user data to internal management data structures.
-When running on Cray XC/XE/XK systems using the default configuration
+When running on Cray XC systems using the default configuration
 with the ugni comm layer and a ``craype-hugepages`` module loaded, the
 heap is used for all dynamic allocations except data space for arrays
 larger than 2 hugepages.  (See `Using the ugni Communications Layer`_,
@@ -557,33 +535,17 @@ execute the program.  It may also be reduced, if some resource
 limitation prevents making the heap as large as requested.
 
 
-Communication Layer Concurrency
-_______________________________
-
-The ``CHPL_RT_COMM_CONCURRENCY`` environment variable tells the ugni
-communication layer how much program concurrency it should try to
-support.  Basically, this controls how much of the communication
-resources on the NIC will be used by the program.  The default value is
-the number of hardware processor cores the program will use for Chapel
-tasks.  Usually this is enough, but for highly parallel codes that do a
-lot of remote references, increasing it may improve performance.
-Useful values for ``CHPL_RT_COMM_CONCURRENCY`` are in the range 1 to 30
-on the Gemini-based Cray XE and XK systems, and 1 to 120 on the
-Aries-based Cray XC systems.  Values specified outside this range are
-silently increased or reduced so as to fall within it.
-
-
 ugni Communication Layer Registered Memory Regions
 __________________________________________________
 
 The ugni communication layer maintains information about every memory
-region it registers with the Gemini or Aries NIC.  Roughly speaking there
-are a few memory regions for each tasking layer thread, plus one for each
-array larger than 2 hugepages allocated and registered separately from the
-heap.  By default the comm layer can handle up to 16k (2**14) total memory
-regions on Cray XC systems or 2k on XE systems, which is plenty under
-normal circumstances.  In the event a program needs more than this, a
-message like the following will be printed:
+region it registers with Aries NIC.  Roughly speaking there are a few
+memory regions for each tasking layer thread, plus one for each array
+larger than 2 hugepages allocated and registered separately from the
+heap.  By default the comm layer can handle up to 16k (2**14) total
+memory regions, which is plenty under normal circumstances.  In the
+event a program needs more than this, a message like the following will
+be printed:
 
   .. code-block:: sh
 
@@ -640,12 +602,6 @@ ______________________________
     .. code-block:: sh
 
       export CHPL_JE_MALLOC_CONF=purge:decay,lg_chunk:24
-
-   As an alternative, you can also quiet these warnings by giving
-   ``--quiet`` or ``-q`` when you run.  However, you should be aware
-   that at least on Cray XE systems, not setting ``CHPL_JE_MALLOC_CONF``
-   in this configuration can result in internal errors and/or segfaults
-   under certain circumstances.
 
 
 gasnet Communication Layer
@@ -716,13 +672,6 @@ Known Constraints and Bugs
 * Redirecting stdin when executing a Chapel program under PBS/qsub
   may not work due to limitations of qsub.
 
-* GASNet targets multiple network *conduits* as the underlying
-  communication mechanism.  On certain platforms, the Chapel build
-  will use the ``mpi`` conduit as the default.  As a result of using the
-  mpi conduit, you may see a GASNet warning message at program start
-  up.  To squelch this message, you can set the environment variable
-  ``GASNET_QUIET=yes``.
-
 * For X-series systems, there is a known issue with the Cray MPI
   release that causes some programs to assert and then hang during
   exit.  A workaround is to set the environment variable,
@@ -745,25 +694,6 @@ Known Constraints and Bugs
   above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
 
      $CHPL_HOME/third-party/gasnet/gasnet-src/README
-
-
----------------
-NCCS user notes
----------------
-
-* NCCS Cray systems use a different qsub mechanism in order to
-  enforce their queuing policies.  We have attempted to make our
-  pbs-aprun launch code work with this version of qsub, but require a
-  ``CHPL_LAUNCHER_ACCOUNT`` environment variable to be set to specify your
-  NCCS account name.  For example:
-
-  .. code-block:: sh
-
-    export CHPL_LAUNCHER_ACCOUNT=MYACCOUNTID
-
-* NCCS users either need to specify ``debug`` as their queue or set an
-  explicit wall clock time limit using the mechanisms described above.
-
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

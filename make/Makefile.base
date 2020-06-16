@@ -1,4 +1,5 @@
-# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -178,6 +179,7 @@ include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
 include $(THIRD_PARTY_DIR)/fltk/Makefile.include
 include $(THIRD_PARTY_DIR)/libunwind/Makefile.include
+include $(THIRD_PARTY_DIR)/libfabric/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 

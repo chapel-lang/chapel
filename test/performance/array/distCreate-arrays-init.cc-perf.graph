@@ -1,5 +1,5 @@
-perfkeys: arrInit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:, arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:, arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:, arrDeinit-GETS:, arrDeinit-PUTS:, arrDeinit-ONS:
-graphkeys: blockArrInit-GETS:, blockArrDeinit-PUTS:, blockArrDeinit-ONS:, cyclicArrDeinit-GETS:, cyclicArrDeinit-PUTS:, cyclicArrDeinit-ONS:, blockCycArrDeinit-GETS:, blockCycArrDeinit-PUTS:, blockCycArrDeinit-ONS:, stencilArrDeinit-GETS:, stencilArrDeinit-PUTS:, stencilArrDeinit-ONS:
+perfkeys: arrInit-GETS:, arrInit-PUTS:, arrInit-ONS:, arrInit-GETS:, arrInit-PUTS:, arrInit-ONS:, arrInit-GETS:, arrInit-PUTS:, arrInit-ONS:, arrInit-GETS:, arrInit-PUTS:, arrInit-ONS:
+graphkeys: blockArrInit-GETS:, blockArrInit-PUTS:, blockArrInit-ONS:, cyclicArrInit-GETS:, cyclicArrInit-PUTS:, cyclicArrInit-ONS:, blockCycArrInit-GETS:, blockCycArrInit-PUTS:, blockCycArrInit-ONS:, stencilArrInit-GETS:, stencilArrInit-PUTS:, stencilArrInit-ONS:
 repeat-files: distCreate-cc-block.dat, distCreate-cc-cyclic.dat, distCreate-cc-blockCyc.dat, distCreate-cc-stencil.dat
 ylabel: Count
 graphtitle: Creating distributed arrays

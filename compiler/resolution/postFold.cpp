@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -163,7 +164,8 @@ static Expr* postFoldNormal(CallExpr* call) {
   if (fn->retTag == RET_TYPE) {
     Symbol* ret = fn->getReturnSymbol();
 
-    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    if (ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false ||
+        fn->hasFlag(FLAG_IGNORE_RUNTIME_TYPE)) {
       retval = new SymExpr(ret->type->symbol);
 
       call->replace(retval);
@@ -481,7 +483,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
         bool found_int = get_int(ie, &val);
         INT_ASSERT(found_int);
 
-        idx = static_cast<size_t>(val) - 1;
+        idx = static_cast<size_t>(val);
       }
 
       retval = new SymExpr(new_UIntSymbol((int)unescaped[idx], INT_SIZE_8));
@@ -821,8 +823,7 @@ static void updateFlagTypeVariable(CallExpr* call, Symbol* lhsSym) {
 static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
   if (isSymExpr(call->get(2)) == true) {
     if (isReferenceType(lhsSym->type)                          == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
@@ -834,8 +835,7 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
     }
 
     if (isReferenceType(lhsSym->type)                          == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true  ||
-        lhsSym->type->symbol->hasFlag(FLAG_ARRAY)              == true) {
+        lhsSym->type->symbol->hasFlag(FLAG_REF_ITERATOR_CLASS) == true) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
@@ -854,6 +854,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
         fn->hasFlag(FLAG_AUTO_II)                             == false &&
+        // the below exceptions should be considered workarounds
         fn->name != astrSassign                                        &&
         fn->name != astr_defaultOf) {
       retval = true;

@@ -1,3 +1,3 @@
-Error: In plan_dft_r2c(), the domain and array don't have same size in dimension 1 (domain = 53, array = 52)
+Error: In plan_dft_r2c(), the domain and array don't have same size in dimension 0 (domain = 53, array = 52)
 Error: In plan_dft_r2c(), the array's leading dimension is not the proper size (expected 104, got 102)
 planDFTmismatch.chpl:24: error: halt reached - Incorrect array sizes in plan_dft_r2c()

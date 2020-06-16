@@ -69,7 +69,7 @@ module analyze_torus_graphs {
     writeln ( " dimension  lower  upper" );
     writeln ( "            bound  bound" );
 
-    for d in 1 .. G.dimensions do
+    for d in 0 .. #G.dimensions do
       writef ("%{########}%{########}%{########}\n", 
               d, vertex_domain.dim(d).low, vertex_domain.dim(d).high);
     writeln ( "semi-implicit stencil representation");

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -249,7 +250,7 @@ void computeNonvirtualCallSites(FnSymbol* fn) {
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
         if (vFn == fn) {
-          INT_FATAL(call, "unexpected case calling %d", fn->name);
+          INT_FATAL(call, "unexpected case calling %s", fn->name);
         }
       }
     }
@@ -789,6 +790,12 @@ bool isTypeExpr(Expr* expr) {
         }
       }
 
+    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      // optional 4th argument in PRIM_GET_RUNTIME_TYPE_FIELD
+      // indicates it is returning a type.
+      if (call->numActuals() == 4)
+        retval = true;
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {
@@ -1063,9 +1070,9 @@ void prune2() { prune(); } // Synonym for prune.
 
 /*
  * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
- * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1)
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 0)
  * and what this function gets out is the symbol that is the first field
- * instead of just the number 1.
+ * instead of just the number 0.
  */
 Symbol* getSvecSymbol(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
@@ -1078,8 +1085,8 @@ Symbol* getSvecSymbol(CallExpr* call) {
   if (fieldSym) {
     int immediateVal = fieldSym->immediate->int_value();
 
-    INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
-    return tuple->getField(immediateVal);
+    INT_ASSERT(immediateVal >= 0 && immediateVal < tuple->fields.length);
+    return tuple->getField(immediateVal+1);
   } else {
     // GET_SVEC_MEMBER(p, i), where p is a star tuple
     return NULL;

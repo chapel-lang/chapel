@@ -1,3 +1,0 @@
-The set is currently implemented with an associative domain, which default
-initializes and fires destructors on _all_ of its backing store, regardless
-of whether or not it is being used.

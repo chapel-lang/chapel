@@ -1,0 +1,30 @@
+**** Start forall ****
+	nonDomainIter.chpl:19
+
+Iterated symbol
+	nonDomainIter.chpl:17
+
+Loop is suitable for further analysis
+	nonDomainIter.chpl:19
+
+Potential access
+	nonDomainIter.chpl:20
+
+Regular domain symbol was not found for array
+	nonDomainIter.chpl:14
+
+Potential access
+	nonDomainIter.chpl:20
+
+Regular domain symbol was not found for array
+	nonDomainIter.chpl:15
+
+	Marking dynamic candidate
+	nonDomainIter.chpl:20
+
+	Marking dynamic candidate
+	nonDomainIter.chpl:20
+
+**** End forall ****
+	nonDomainIter.chpl:19
+

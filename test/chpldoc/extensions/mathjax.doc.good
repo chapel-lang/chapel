@@ -10,6 +10,13 @@ mathjax.doc
 
    use mathjax.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import mathjax.doc;
+
 .. function:: proc pythagoras(a, b)
 
    

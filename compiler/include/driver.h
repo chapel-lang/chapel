@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,6 +55,10 @@ extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
+
+extern bool fAutoLocalAccess;
+extern bool fAutoLocalAccessDynamic;
+extern bool fReportAutoLocalAccess;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;

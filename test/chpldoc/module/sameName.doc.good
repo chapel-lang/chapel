@@ -11,6 +11,13 @@ sameName.doc
 
    use sameName.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import sameName.doc;
+
 **Submodules**
 
 .. toctree::
@@ -35,6 +42,13 @@ sameName
 .. code-block:: chapel
 
    use sameName.doc.sameName;
+
+
+or
+
+.. code-block:: chapel
+
+   import sameName.doc.sameName;
 
 This module has the same name as its file but doesn't
 contain all the code within the file 

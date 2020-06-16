@@ -413,14 +413,19 @@ The Out Intent
 ^^^^^^^^^^^^^^
 
 When ``out`` is specified as the intent, the actual argument is ignored
-when the call is made, but when the function returns, the formal
-argument is copied back to the actual argument. An implicit conversion
+when the call is made, but when the function returns, the actual argument
+is assigned to the value of the formal argument.  An implicit conversion
 occurs from the type of the formal to the type of the actual. The actual
-argument must be a valid lvalue. The formal argument is initialized to
-its default value if one is supplied, or to its type’s default value
-otherwise. The formal argument can be modified within the function.
+argument must be a valid lvalue. Within the function body, the formal
+argument is initialized to its default value if one is supplied, or to
+its type’s default value otherwise. The formal argument can be modified
+within the function.
 
-.. _The_Inout_Intent:
+The assignment implementing the ``out`` intent is a candidate for
+:ref:`Split_Initialization`. As a result, an actual argument might be
+initialized by a call passing the actual by ``out`` intent.
+
+_The_Inout_Intent:
 
 The Inout Intent
 ^^^^^^^^^^^^^^^^
@@ -629,8 +634,10 @@ expression contains an expression without a question mark, that
 expression must evaluate to an integer parameter value requiring the
 call site to pass that number of arguments to the function.
 
-Within the function, the formal argument that is marked with a variable
-argument expression is a tuple of the actual arguments.
+Within the function, the formal argument that is marked with a
+variable argument expression is a tuple of the actual arguments.  If
+the actual arguments all have the same type, the formal will be a
+homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    *Example (varargs.chpl)*.
 
@@ -638,9 +645,9 @@ argument expression is a tuple of the actual arguments.
 
    .. code-block:: chapel
 
-      proc mywriteln(x ...?k) {
-        for param i in 1..k do
-          writeln(x(i));
+      proc mywriteln(xs ...?k) {
+        for x in xs do
+          writeln(x);
       }
 
    
@@ -662,14 +669,11 @@ argument expression is a tuple of the actual arguments.
       4.0
 
    defines a generic procedure called ``mywriteln`` that takes a
-   variable number of arguments of any type and then writes them out on
-   separate lines. The parameter
-   for-loop (:ref:`Parameter_For_Loops`) is unrolled by the
-   compiler so that ``i`` is a parameter, rather than a variable. This
-   needs to be a parameter for-loop because the expression ``x(i)`` will
-   have a different type on each iteration. The type of ``x`` can be
-   specified in the formal argument list to ensure that the actuals all
-   have the same type.
+   variable number of arguments of any type and then writes them out
+   on separate lines.  The type of ``xs`` can also be constrained in
+   the formal argument list to require that the actuals all have the
+   same type.  For example ``xs: string...?k`` would accept a variable
+   number of string arguments.
 
 ..
 
@@ -681,7 +685,7 @@ argument expression is a tuple of the actual arguments.
 
    .. code-block:: chapel
 
-      proc sum(x: int...3) return x(1) + x(2) + x(3); 
+      proc sum(x: int...3) return x(0) + x(1) + x(2);
 
    
 
@@ -1131,6 +1135,8 @@ binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
 The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
 resolution.
+
+Assignment overloads are not supported for class types.
 
 .. _Function_Resolution:
 

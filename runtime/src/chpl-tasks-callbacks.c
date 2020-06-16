@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,7 +28,6 @@
 #include "chpl-tasks-callbacks.h"
 #include "chpl-tasks-callbacks-internal.h"
 
-
 //
 // Tasking callback support.
 //
@@ -37,6 +37,8 @@ static struct cb_info {
   chpl_task_cb_fn_t fns[MAX_CBS_PER_EVENT];
   chpl_task_cb_info_kind_t info_kinds[MAX_CBS_PER_EVENT];
 } cb_info[chpl_task_cb_num_event_kinds];
+
+int chpl_task_callback_counts[chpl_task_cb_num_event_kinds] = {0};
 
 
 //

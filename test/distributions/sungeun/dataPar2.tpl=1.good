@@ -2,7 +2,7 @@
 ### numTasksPerLoc = 1
 ### ignoreRunning = false
 ### minIndicesPerTask = 1
-### numChunks = 1 (parDim = 1)
+### numChunks = 1 (parDim = 0)
 ### nranges = (1..1, 1..6, 1..3, 1..3, 1..3, 1..3)
 ### END ###
 OK

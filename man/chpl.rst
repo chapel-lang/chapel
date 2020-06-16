@@ -290,11 +290,27 @@ OPTIONS
     Enable [disable] analysis to infer local fields in classes and records
     (experimental)
 
+**--[no-]auto-local-access**
+
+    Enable [disable] an optimization applied to forall loops over domains in
+    which accesses of the form of `A[i]` within the loop are transformed to use
+    local accesses if the array `A` is aligned with the domain and `i` is the
+    loop index variable. With this flag, the compiler does some static analysis
+    and adds calls that can further analyze alignment dynamically during
+    execution time.
+
+**--[no-]auto-local-access-dynamic**
+
+    Enable [disable] the dynamic portion of the analysis described in
+    `--[no-]auto-local-access`.  This dynamic analysis can result in loop
+    duplication that increases executable size and compilation time. There
+    may also be execution time overheads independent of loop domain size.
+
 *Run-time Semantic Check Options* 
 
-**--no-checks**
+**--[no-]checks**
 
-    Turns off all of the run-time checks in this section of the man page.
+    Enable [disable] all of the run-time checks in this section of the man page.
     Currently, it is typically necessary to use this flag (or **--fast**,
     which implies **--no-checks**) to achieve performance competitive with
     hand-coded C or Fortran.
@@ -784,4 +800,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+| Copyright 2020 Hewlett Packard Enterprise Development LP
+| Copyright 2004-2019 Cray Inc.

@@ -48,6 +48,10 @@ class Buckets {
   var heap = new owned MaxHeap(numLocs);
   var updateManager = new owned UpdateManager();
 
+  proc deinit() {
+    delete BucketArray;
+  }
+
   proc insertUpdate(ran: uint(64), loc: int) {
     local {
       var bucket = BucketArray(loc);

@@ -1,17 +1,17 @@
 const-in-intent-arrays-domains.chpl:6: In function 'testFormal':
-const-in-intent-arrays-domains.chpl:7: error: illegal lvalue in assignment
-const-in-intent-arrays-domains.chpl:8: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:7: error: cannot assign to const variable
+const-in-intent-arrays-domains.chpl:8: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:12: Function 'testFormal' instantiated as: testFormal(domArg: domain(1,int(64),false), arrArg: [domain(1,int(64),false)] int(64))
 const-in-intent-arrays-domains.chpl:11: In function 'main':
-const-in-intent-arrays-domains.chpl:15: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:15: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:14: note: The shadow variable 'DOM' is constant due to task intents in this begin statement
-const-in-intent-arrays-domains.chpl:16: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:16: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:14: note: The shadow variable 'ARR' is constant due to task intents in this begin statement
-const-in-intent-arrays-domains.chpl:20: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:20: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:19: note: The shadow variable 'DOM' is constant due to task intents in this parallel statement
-const-in-intent-arrays-domains.chpl:21: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:21: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:19: note: The shadow variable 'ARR' is constant due to task intents in this parallel statement
-const-in-intent-arrays-domains.chpl:25: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:25: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:24: note: The shadow variable 'DOM' is constant due to task intents in this parallel statement
-const-in-intent-arrays-domains.chpl:26: error: illegal lvalue in assignment
+const-in-intent-arrays-domains.chpl:26: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:24: note: The shadow variable 'ARR' is constant due to task intents in this parallel statement

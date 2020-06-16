@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,10 +90,47 @@ static void getLastStmts(BlockStmt* loop, std::vector<Expr*>& stmts) {
   helpGetLastStmts(last, stmts);
 }
 
+static Expr* skipIgnoredStmts(Expr* last) {
+
+  while (true) {
+    CallExpr* call = toCallExpr(last);
+    FnSymbol* calledFn = NULL;
+    if (call)
+      calledFn = call->resolvedFunction();
+
+    // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
+    // by the compiler. We will remove these if we optimize an atomic op.
+    if (calledFn && calledFn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE)) {
+      last = last->prev;
+
+    // Ignore calls to PRIM_END_OF_STATEMENT
+    } else if (call && call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      last = last->prev;
+
+    // Ignore PRIM_OPTIMIZATION_INFO and related DefExpr
+    // (move last before these if they are present)
+    } else if (call && call->isPrimitive(PRIM_OPTIMIZATION_INFO)) {
+      Symbol* optSym = toSymExpr(call->get(1))->symbol();
+      last = last->prev;
+      if (DefExpr* def = toDefExpr(last)) {
+        if (def->sym == optSym)
+          last = last->prev;
+      }
+
+    } else {
+      break; // stop looking
+    }
+  }
+
+  return last;
+}
+
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (last == NULL)
     return;
+
+  last = skipIgnoredStmts(last);
 
   if (CondStmt* cond = toCondStmt(last)) {
     helpGetLastStmts(cond->thenStmt->body.last(), stmts);
@@ -121,19 +159,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     }
   }
 
-  // Ignore calls to chpl_rmem_consist_maybe_acquire that were added
-  // by the compiler. We will remove these if we optimize an atomic op.
-  if (CallExpr* call = toCallExpr(last))
-    if (FnSymbol* fn = call->resolvedFunction())
-      if (fn->hasFlag(FLAG_COMPILER_ADDED_REMOTE_FENCE))
-        last = last->prev;
-
-  // Ignore calls to PRIM_END_OF_STATEMENT
-  if (CallExpr* call = toCallExpr(last))
-    if (call->isPrimitive(PRIM_END_OF_STATEMENT))
-      last = last->prev;
-
-  // Otherwise, add what we got.
+  last = skipIgnoredStmts(last);
   stmts.push_back(last);
 }
 
@@ -170,7 +196,12 @@ static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
-    if (call->isNamed("=")) {
+    if (call->isPrimitive(PRIM_ASSIGN)) {
+      Symbol* lhs = toSymExpr(call->get(1))->symbol();
+      Expr* rhs = call->get(2);
+      if (lhs->getValType() == rhs->getValType()) // same type
+        return true;
+    } else if (call->isNamed("=")) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Symbol* rhs = toSymExpr(call->get(2))->symbol();
       if (lhs->getValType() == rhs->getValType()) // same type
@@ -846,16 +877,17 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
 
 
 static void transformAssignStmt(Expr* stmt) {
+  SET_LINENO(stmt);
+
   CallExpr* call = toCallExpr(stmt);
 
   INT_ASSERT(call->isPrimitive(PRIM_ASSIGN));
 
   Symbol* lhs = toSymExpr(call->get(1))->symbol();
-  Symbol* rhs = toSymExpr(call->get(2))->symbol();
-
+  Expr* rhs = call->get(2);
   CallExpr* callToRemove = NULL;
 
-  if (rhs->isRef() == false) {
+  if (isSymExpr(rhs) && rhs->isRef() == false) {
     // Find a pattern like
     //
     // move rhs PRIM_DEREF rhsRef
@@ -866,13 +898,14 @@ static void transformAssignStmt(Expr* stmt) {
     //
     // PRIM_ASSIGN lhs rhsRef
     //
+    Symbol* rhsSym = toSymExpr(rhs)->symbol();
     Symbol* rhsRef = NULL;
     CallExpr* prevCall = toCallExpr(call->prev);
     if (prevCall != NULL) {
       if (prevCall->isPrimitive(PRIM_MOVE) ||
           prevCall->isPrimitive(PRIM_ASSIGN)) {
         Symbol* prevLhs = toSymExpr(prevCall->get(1))->symbol();
-        if (prevLhs == rhs) {
+        if (prevLhs == rhsSym) {
           if (CallExpr* rhsCall = toCallExpr(prevCall->get(2))) {
             if (rhsCall->isPrimitive(PRIM_DEREF))
               rhsRef = toSymExpr(rhsCall->get(1))->symbol();
@@ -886,12 +919,11 @@ static void transformAssignStmt(Expr* stmt) {
 
     if (rhsRef != NULL && prevCall != NULL) {
       callToRemove = prevCall;
-      rhs = rhsRef;
+      rhs = new SymExpr(rhsRef);
     }
   }
 
   if (lhs->isRef() && rhs->isRef()) {
-    SET_LINENO(call);
     // add the call to getput
     if (fReportOptimizeForallUnordered) {
       if (developer || printsUserLocation(call)) {
@@ -899,7 +931,7 @@ static void transformAssignStmt(Expr* stmt) {
       }
     }
 
-    call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs));
+    call->insertBefore(new CallExpr(PRIM_UNORDERED_ASSIGN, lhs, rhs->copy()));
     call->remove();
     if (callToRemove)
       callToRemove->remove();

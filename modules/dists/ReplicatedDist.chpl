@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,8 +25,8 @@
 //  Replicated     -- Global distribution descriptor
 //  ReplicatedDom      -- Global domain descriptor
 //  LocReplicatedDom   -- Local domain descriptor
-//  ReplicatedArray    -- Global array descriptor
-//  LocReplicatedArray -- Local array descriptor
+//  ReplicatedArr      -- Global array descriptor
+//  LocReplicatedArr   -- Local array descriptor
 //
 // Potential extensions:
 // - support other kinds of domains
@@ -316,7 +317,7 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 
 // Call 'setIndices' in order to leverage DefaultRectangular's handling of
 // assignments from unstrided domains to strided domains.
-proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(1)) {
+proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(0)) {
   if traceReplicatedDist then
     writeln("ReplicatedDom.dsiSetIndices on ", x.type:string, ": ", x);
   dsiSetIndices({(...x)});
@@ -469,8 +470,36 @@ class LocReplicatedArr {
   param stridable: bool;
 
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  // may be re-initialized separately
   var arrLocalRep: [myDom.domLocalRep] eltType;
+
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            myDom: unmanaged LocReplicatedDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.myDom = myDom;
+    // always initialize the elements because in an initialization
+    // context, we won't know which replicand is initialized,
+    // because the RHS could be an arbitrary forall or for expression.
+    this.arrLocalRep = this.myDom.domLocalRep.buildArray(eltType,
+                                                         initElts=true);
+
+    if initElts == false && !isPODType(eltType) {
+
+      compilerError("ReplicatedDist array initialization is not currently supported for element type " + eltType:string + " - please default-initialize the array");
+    }
+  }
+
+  proc deinit() {
+    _do_destroy_array(arrLocalRep, deinitElts=true);
+  }
 }
 
 
@@ -526,7 +555,7 @@ proc ReplicatedArr.dsiPrivatize(privatizeData) {
 
 
 // create a new array over this domain
-proc ReplicatedDom.dsiBuildArray(type eltType)
+proc ReplicatedDom.dsiBuildArray(type eltType, param initElts:bool)
   : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type))
 {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
@@ -535,7 +564,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType)
    in zip(dist.targetLocales, localDoms, result.localArrs) do
     on loc do
       locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType, stridable,
-                                    locDom!);
+                                              locDom!, initElts=initElts);
   return result;
 }
 
@@ -567,10 +596,14 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }
 
-override proc ReplicatedArr.dsiDestroyArr() {
+override proc ReplicatedArr.dsiElementInitializationComplete() {
+}
+
+override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
-    on loc do
+    on loc {
       delete locArr;
+    }
   }
 }
 
