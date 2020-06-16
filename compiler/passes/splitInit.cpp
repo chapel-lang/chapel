@@ -142,6 +142,19 @@ static bool allowSplitInit(Symbol* sym) {
   return true;
 }
 
+static bool isFunctionOrTypeDeclaration(Expr* cur) {
+  if (DefExpr* def = toDefExpr(cur)) {
+    if (isFnSymbol(def->sym)) {
+      return true;
+    }
+    if (isTypeSymbol(def->sym)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // When 'start' is a return/throw (or a block containing that, e.g),
 // decide whether the variable should be considered split-initialized
 // by a later applicable assignment statement.
@@ -394,6 +407,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
                                    ignoreFirstEndInBlock);
       }
 
+    } else if (isFunctionOrTypeDeclaration(cur)) {
+      // OK: mentions like `proc f() { ... x ... }` don't count
     } else {
       // Look for uses of 'x' before the first assignment
       if (SymExpr* se = findSymExprFor(cur, sym)) {
@@ -405,7 +420,7 @@ static found_init_t doFindInitPoints(Symbol* sym,
 
     if (fVerify) {
       // Redundantly check for uses
-      if (!isEndOfStatementMarker(cur))
+      if (!isEndOfStatementMarker(cur) && !isFunctionOrTypeDeclaration(cur))
         if (findSymExprFor(cur, sym) != NULL)
           INT_FATAL("use not found above");
     }
@@ -857,6 +872,8 @@ static bool doFindCopyElisionPoints(Expr* start,
         // no need to handle leftovers (e.g. ifIt not at end)
         // because we marked uses above.
       }
+    } else if (isFunctionOrTypeDeclaration(cur)) {
+      // OK: mentions like `proc f() { ... x ... }` don't count
     } else {
       // Look for uses of 'x'
       noteUses(cur, map);

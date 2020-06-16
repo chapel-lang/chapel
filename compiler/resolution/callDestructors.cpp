@@ -1102,7 +1102,10 @@ static bool isCheckedModuleScopeVariable(VarSymbol* var) {
     if (mod && def->parentExpr == mod->block) {
       if (var->hasFlag(FLAG_TYPE_VARIABLE) == false &&
           var->hasFlag(FLAG_EXTERN) == false &&
-          var->type->symbol->hasFlag(FLAG_EXTERN) == false)
+          var->type->symbol->hasFlag(FLAG_EXTERN) == false &&
+          var->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) == false &&
+          var->hasFlag(FLAG_TEMP) == false && // for loop exprs->array types
+          var->isParameter() == false)
         return true;
     }
   }
@@ -1146,6 +1149,14 @@ bool GatherGlobalsReferredTo::enterFnSym(FnSymbol* fn) {
     // if the function symbol hasn't already been visited,
     // put it in the visited set and do the visiting.
     // do the analysis in the other visitors
+
+    // don't worry about 'halt' calling deinit functions
+    // or about functions opting out of this analysis.
+    // this helps with certain patters where globals are used in 'deinit'
+    if (fn->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM) ||
+        fn->hasFlag(FLAG_IGNORE_IN_GLOBAL_ANALYSIS))
+      return false;
+
     thisFunction = fn;
     calledThisFunction.clear();
     mentionedThisFunction.clear();
@@ -1455,16 +1466,17 @@ bool FindInvalidGlobalUses::enterCallExpr(CallExpr* call) {
     }
   }
 
+  CallExpr* checkCall = fCall ? fCall : call;
   // Then, check any called functions
-  if (checkIfCalledUsesInvalid(call, false)) {
+  if (checkIfCalledUsesInvalid(checkCall, false)) {
     for_vector (VarSymbol, var, errorGlobalVariables) {
-      USR_FATAL_CONT(call,
+      USR_FATAL_CONT(checkCall,
                      "module-scope variable '%s' may be used "
                      "before it is initialized",
                      var->name);
       printUseBeforeInitDetails(var);
     }
-    checkIfCalledUsesInvalid(call, true);
+    checkIfCalledUsesInvalid(checkCall, true);
   }
 
   // Then, note the variables initialized by the call

@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-
-# Guard pages are expensive on high core-count systems. See issue #7533
-
-import os
-if os.getenv('CHPL_TARGET_CPU', '') in ['mic-knl']:
-    print('QT_GUARD_PAGES=false')

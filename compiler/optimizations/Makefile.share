@@ -17,6 +17,7 @@
 # limitations under the License.
 
 OPTIMIZATIONS_SRCS = \
+	autoLocalAccess.cpp \
 	bulkCopyRecords.cpp \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \

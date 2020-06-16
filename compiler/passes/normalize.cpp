@@ -26,6 +26,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -122,6 +123,9 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 void normalize() {
+
+  autoLocalAccess();
+
   insertModuleInit();
 
   transformLogicalShortCircuit();
@@ -636,6 +640,12 @@ void checkUseBeforeDefs(FnSymbol* fn) {
             isFnSymbol(fn->defPoint->parentSymbol) == false &&
             isUseStmt(se->parentExpr)              == false &&
             isImportStmt(se->parentExpr)           == false) {
+
+          if (CallExpr* call = toCallExpr(se->parentExpr)) {
+            if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST)) {
+              continue;
+            }
+          }
           SymExpr* prev = toSymExpr(se->prev);
 
           if (prev == NULL || prev->symbol() != gModuleToken) {

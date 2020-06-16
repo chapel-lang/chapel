@@ -26,7 +26,7 @@ module BytesStringCommon {
 
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
-     when decoding a :record:`bytes` into a UTF-8 :record:`~String.string`.
+     when decoding a :mod:`Bytes` into a UTF-8 :record:`~String.string`.
        
        - **strict**: default policy; raise error
        - **replace**: replace with UTF-8 replacement character
@@ -40,7 +40,7 @@ module BytesStringCommon {
   /*
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8
      bytes when encoding a :record:`~String.string` into a
-     :record:`~Bytes.bytes`.
+     :mod:`Bytes`.
        
        - **pass**: default policy; copy directly
        - **unescape**: recover the original data from the escaped data
@@ -105,6 +105,7 @@ module BytesStringCommon {
     ret.buffSize = allocSize;
     ret.isOwned = true;
     ret.hasEscapes = false;
+    ret.cachedNumCodepoints = 0;
 
     var expectedSize = ret.buffSize;
 
@@ -115,6 +116,8 @@ module BytesStringCommon {
                                                  thisIdx, 
                                                  allowEsc=false);
       var buffToDecode = (buff + thisIdx): c_string;
+
+      ret.cachedNumCodepoints += 1;
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
@@ -245,11 +248,13 @@ module BytesStringCommon {
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffLen = otherLen+1;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
         // if other is local just adjust my buff and _size
         x.buff = other.buff;
         x.buffSize = other.buffSize;
+        if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
     }
   }
@@ -285,6 +290,7 @@ module BytesStringCommon {
     const otherLen = other.numBytes;
     x.isOwned = true;
     if t == string then x.hasEscapes = other.hasEscapes;
+    if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
 
     if otherLen > 0 {
       x.buffLen = otherLen;
@@ -673,6 +679,7 @@ module BytesStringCommon {
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
+      if t == string then incrementCodepoints(lhs, rhs);
     }
   }
 
@@ -838,5 +845,13 @@ module BytesStringCommon {
       hash = locHash;
     }
     return hash:uint;
+  }
+
+  private proc incrementCodepoints(ref lhs: string, rhs: string) {
+    if(lhs.cachedNumCodepoints == -1 || rhs.cachedNumCodepoints == -1) {
+      lhs.cachedNumCodepoints = -1;
+    } else {
+      lhs.cachedNumCodepoints = lhs.cachedNumCodepoints + rhs.cachedNumCodepoints;
+    }
   }
 }

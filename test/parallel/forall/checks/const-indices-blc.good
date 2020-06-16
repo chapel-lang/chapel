@@ -1,2 +1,2 @@
-const-indices-blc.chpl:5: error: illegal lvalue in assignment
-const-indices-blc.chpl:11: error: illegal lvalue in assignment
+const-indices-blc.chpl:5: error: cannot assign to const variable
+const-indices-blc.chpl:11: error: cannot assign to const variable

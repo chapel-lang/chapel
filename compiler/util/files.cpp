@@ -204,7 +204,7 @@ static void ensureTmpDirExists() {
 }
 
 
-#if !defined(HAVE_LLVM) || HAVE_LLVM_VER < 50
+#if !defined(HAVE_LLVM)
 static
 void deleteDirSystem(const char* dirname) {
   const char* cmd = astr("rm -rf ", dirname);
@@ -215,7 +215,6 @@ void deleteDirSystem(const char* dirname) {
 #ifdef HAVE_LLVM
 static
 void deleteDirLLVM(const char* dirname) {
-#if HAVE_LLVM_VER >= 50
   // LLVM 5 added remove_directories
   std::error_code err = llvm::sys::fs::remove_directories(dirname, false);
   if (err) {
@@ -223,9 +222,6 @@ void deleteDirLLVM(const char* dirname) {
               dirname,
               err.message().c_str());
   }
-#else
-  deleteDirSystem(dirname);
-#endif
 }
 #endif
 

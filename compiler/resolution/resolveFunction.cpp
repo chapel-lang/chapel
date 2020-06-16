@@ -833,15 +833,12 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     foundSplitInit = findInitPoints(call, initAssigns, prevent, allowReturns);
 
     if (foundSplitInit) {
-      // Check that all of the assignments have a same-type RHS
-      for_vector(CallExpr, call, initAssigns) {
-        Type* rhsType = call->get(2)->getValType();
-        if (rhsType != sym->type) {
-          prevent = call;
-          foundSplitInit = false;
-        }
-      }
-      // Check that it's not an array init we converted int =
+      // If the assignment has a different type RHS we should
+      // still apply split-init because the language rules
+      // here are type-independent. In that case, the type should
+      // also have an init= function accepting the different RHS type.
+
+      // Check that it's not an array init we converted into =
       // (This is a workaround - the actual solution is to have something
       //  like init= for arrays)
       if (sym->hasFlag(FLAG_INITIALIZED_LATER))

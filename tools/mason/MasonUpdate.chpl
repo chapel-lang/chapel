@@ -193,10 +193,26 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   const chplVersion = brick!["chplVersion"]!.s;
-  var low, hi : VersionInfo;
+  var low, high : VersionInfo;
 
   try {
-    const formatMessage = "\n\n" +
+    var res = checkChplVersion(chplVersion, low, high);
+    low = res[0];
+    high = res[1];
+  } catch e : Error {
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
+    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Details: ", e.message());
+    exit(1);
+  }
+
+  return (low, high);
+}
+
+proc checkChplVersion(chplVersion, low, high) throws {
+  use Regexp;
+  var lo, hi : VersionInfo;
+  const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +
     "A <version> must be in one of the following formats:\n" +
     "  x.x.x\n" +
@@ -230,24 +246,17 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
       return ret;
     }
 
-    low = parseString(versions[0]);
+    lo = parseString(versions[0]);
 
     if (versions.size == 1) {
       hi = new VersionInfo(max(int), max(int), max(int));
     } else {
       hi = parseString(versions[1]);
     }
+     if (lo <= hi) == false then
+      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + lo.str() + " > " + hi.str());
 
-    if (low <= hi) == false then
-      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
-  } catch e : Error {
-    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    stderr.writeln("Details: ", e.message());
-    exit(1);
-  }
-
-  return (low, hi);
+      return (lo, hi);
 }
 
 proc verifyChapelVersion(brick:borrowed Toml) {

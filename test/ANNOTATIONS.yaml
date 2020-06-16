@@ -411,7 +411,7 @@ all:
   01/17/20:
     - Adjust point of deinitialization based on expiring value analysis (#14691)
   02/07/20:
-    - text: machine update
+    - text: machine update (McAfee)
       config: chapcs
   02/19/20:
     - text:  Serialize calls to gasnet_AMPoll for IBV/Aries (#14912)
@@ -428,6 +428,12 @@ all:
       config: chapcs.comm-counts
   05/26/20:
     - Adjust array copy initialization to avoid default-init/assign (#15239)
+  05/28/20:
+    - text: machine update (McAfee)
+      config: chapcs
+  06/06/20:
+    - text: Don't GET domain's dimensions unless needed (#15777)
+      config: 16-node-xc, 16-node-cs, chapcs.comm-counts
 
 
 AllCompTime: &timecomp-base
@@ -571,6 +577,8 @@ blackscholes_promote:
 build-associative:
   07/14/17:
     - Extend parallel array initialization to POD arrays (#6675)
+  06/03/20:
+    - Factor hashtable used by DefaultAssociative out of it (#15739)
 
 cast-from-string:
   12/14/18:
@@ -663,6 +671,8 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - Rewrite ddata_allocate() to avoid inadvertent widening of init_elts() (#15275)
   03/26/20:
     - Make locale-related comm improvements (#15288)
+  06/02/20:
+    - Address performance issues with stencil and block-cyclic array init (#15741)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
@@ -968,6 +978,8 @@ LCALS-parallel-long:
 listBenchmark1:
   05/04/20:
     - Change lists to use 0-based indexing (#14684)
+  06/03/20:
+    - List _collapse remove shift arg (#15693)
 
 lulesh:
   03/15/14:
@@ -1372,6 +1384,14 @@ no-op:
   02/24/17:
     - upgrade hwloc to 1.11.6 (#5411)
 
+one-locale-parallel-amos.ml-perf:
+  06/02/20:
+    - Improve MCM enforcement for AM-mediated nonfetching AMOs (#15712)
+
+one-locale-serial-amos.ml-perf:
+  06/02/20:
+    - Improve MCM enforcement for AM-mediated nonfetching AMOs (#15712)
+
 parOpEquals:
   09/06/13:
     - (no-local) chpl_localeID_t's ignore_subloc field minimized to 1 bit
@@ -1429,6 +1449,8 @@ prk-stencil.ml-perf:
     - Stop doing a task-yield while forking remote tasks under ugni (#7915)
   01/31/20:
     - Fix timeout identification for Cray-CS testing (#14838)
+  06/02/20:
+    - Address performance issues with stencil and block-cyclic array init (#15741)
 
 prk-stencil-time:
   05/11/17:

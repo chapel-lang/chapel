@@ -790,6 +790,12 @@ bool isTypeExpr(Expr* expr) {
         }
       }
 
+    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      // optional 4th argument in PRIM_GET_RUNTIME_TYPE_FIELD
+      // indicates it is returning a type.
+      if (call->numActuals() == 4)
+        retval = true;
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {

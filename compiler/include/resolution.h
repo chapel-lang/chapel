@@ -230,6 +230,7 @@ FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn);
 const char* getErroneousCopyError(FnSymbol* fn);
 void markCopyErroneous(FnSymbol* fn, const char* err);
 
+bool isDefaultInitializable(Type* t);
 
 bool isPOD(Type* t);
 bool recordContainingCopyMutatesField(Type* at);
@@ -332,5 +333,4 @@ void stopGenerousResolutionForErrors();
 
 // Return the array element type, or NULL if not an array
 Type* arrayElementType(Type* arrayType);
-
 #endif

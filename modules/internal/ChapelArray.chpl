@@ -535,10 +535,12 @@ module ChapelArray {
   proc chpl_incRefCountsForDomainsInArrayEltTypes(arr:unmanaged BaseArr, type eltType) {
     if isArrayType(eltType) {
       arr._decEltRefCounts = true;
-      // todo extract ev.domain._value and ev.eltType without allocating 'ev'
-      pragma "unsafe" var ev: eltType;
-      ev.domain._value.add_containing_arr(arr);
-      chpl_incRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
+
+      type arrayEltType = chpl__eltTypeFromArrayRuntimeType(eltType);
+      const ref dom = chpl__domainFromArrayRuntimeType(eltType);
+      const dv = dom._instance;
+      dv.add_containing_arr(arr);
+      chpl_incRefCountsForDomainsInArrayEltTypes(arr, arrayEltType);
     }
   }
 
@@ -547,12 +549,25 @@ module ChapelArray {
       if arr._decEltRefCounts == false then
         halt("Decrementing array's elements' ref counts without having incremented first!");
 
-      // todo extract ev.domain._value and ev.eltType without allocating 'ev'
-      pragma "unsafe" var ev: eltType;
-      const refcount = ev.domain._value.remove_containing_arr(arr);
-      if refcount == 0 then
-        _delete_dom(ev.domain._value, _isPrivatized(ev.domain._value));
-      chpl_decRefCountsForDomainsInArrayEltTypes(arr, ev.eltType);
+      type arrayEltType = chpl__eltTypeFromArrayRuntimeType(eltType);
+      const ref dom = chpl__domainFromArrayRuntimeType(eltType);
+
+      chpl_decRefCountsForDomainsInArrayEltTypes(arr, arrayEltType);
+      var removeDom = dom._instance.remove_containing_arr(arr);
+      if removeDom {
+        on dom._instance {
+          const inst = dom._instance;
+          var (domToFree, distToRemove) = inst.remove();
+          var distToFree:unmanaged BaseDist? = nil;
+          if distToRemove != nil {
+            distToFree = distToRemove!.remove();
+          }
+          if domToFree != nil then
+            _delete_dom(inst, _isPrivatized(inst));
+          if distToFree != nil then
+            _delete_dist(distToFree!, _isPrivatized(inst.dist));
+        }
+      }
     }
   }
 
@@ -799,15 +814,37 @@ module ChapelArray {
   }
 
   proc chpl__eltTypeFromArrayRuntimeType(type rtt) type {
-    pragma "unsafe"
-    var arr: rtt;
-    return arr.eltType;
+    pragma "ignore runtime type"
+    proc getArrEltType() type {
+      pragma "unsafe"
+      var arr : rtt;
+      return __primitive("static typeof", arr.eltType);
+    }
+
+    // does the element type have a runtime component?
+    if isSubtype(getArrEltType(), _array) ||
+       isSubtype(getArrEltType(), _domain) {
+
+      pragma "no copy"
+      pragma "no auto destroy"
+      type eltType = __primitive("get runtime type field",
+                                 getArrEltType(), rtt, "eltType", true);
+
+      return eltType;
+
+    } else {
+      return getArrEltType();
+    }
   }
 
+  pragma "ignore runtime type"
   proc chpl__instanceTypeFromArrayRuntimeType(type rtt) type {
+    // this function is compile-time only and should not be run
+    __primitive("chpl_warning",
+                "chpl__instanceTypeFromArrayRuntimeType should not be run");
     pragma "unsafe"
     var arr: rtt;
-    return arr._instance.type;
+    return __primitive("static typeof", arr._instance);
   }
 
   //
@@ -1466,11 +1503,12 @@ module ChapelArray {
         }
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
-      } else if isSparseDom(this) && isNonNilableClass(eltType) {
-        // TODO: The second half of this test should really be
-        // isDefaultInitializable, but we can't rely on that yet
-        // due to #14854.
-        compilerError("sparse arrays of non-nilable classes are not currently supported");
+      } else if isSparseDom(this) && !isDefaultInitializable(eltType) {
+        if isNonNilableClass(eltType) {
+          compilerError("sparse arrays of non-nilable classes are not currently supported");
+        } else {
+          compilerError("sparse arrays of non-default-initializable types are not currently supported");
+        }
       }
 
       if chpl_warnUnstable then
@@ -2126,6 +2164,10 @@ module ChapelArray {
       }
     }
 
+    proc supportsAutoLocalAccess() param {
+      return _value.dsiSupportsAutoLocalAccess();
+    }
+
   }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
@@ -2631,18 +2673,18 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "alias scope from this"
-    inline proc localAccess(i: _value.dom.idxType ...rank) ref
+    inline proc ref localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
 
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
-    inline proc localAccess(i: _value.dom.idxType ...rank)
+    inline proc const localAccess(i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType)
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
-    inline proc localAccess(i: _value.dom.idxType ...rank) const ref
+    inline proc const localAccess(i: _value.dom.idxType ...rank) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
       return localAccess(i);
 
@@ -3695,11 +3737,25 @@ module ChapelArray {
     // These types cannot be default initialized
     if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
       return false;
+    } else if isRecordType(t) || isTupleType(t) {
+      // TODO: The current implementations of isPODType and
+      //       supportedDataTypeForBulkTransfer do not completely align. I'm
+      //       leaving it as future work to enable bulk transfer for other
+      //       types that are POD. In the long run it seems like we should be
+      //       able to have only one method for supportedDataType that just
+      //       calls isPODType.
+
+      // We can bulk transfer any record or tuple that is 'Plain Old Data'
+      // ie. a bag of bits
+      return isPODType(t);
+    } else if (isUnionType(t)) {
+      return false;
     } else {
       pragma "unsafe" var x:t;
       return chpl__supportedDataTypeForBulkTransfer(x);
     }
   }
+
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
@@ -3709,19 +3765,6 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isRecordType(t) || isTupleType(t) {
-    // TODO: The current implementations of isPODType and
-    //       supportedDataTypeForBulkTransfer do not completely align. I'm
-    //       leaving it as future work to enable bulk transfer for other types
-    //       that are POD. In the long run it seems like we should be able to
-    //       have only one method for supportedDataType that just calls
-    //       isPODType.
-
-    // We can bulk transfer any record or tuple that is 'Plain Old Data' ie. a
-    // bag of bits
-    return isPODType(t);
-  }
-  proc chpl__supportedDataTypeForBulkTransfer(x: ?t) param where isUnionType(t) return false;
   // TODO -- why is the below line here?
   proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;

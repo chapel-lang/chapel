@@ -1,6 +1,6 @@
-standaloneConstChecking.chpl:7: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:8: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:17: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:22: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:28: error: illegal lvalue in assignment
-standaloneConstChecking.chpl:33: error: illegal lvalue in assignment
+standaloneConstChecking.chpl:7: error: cannot assign to const variable
+standaloneConstChecking.chpl:8: error: cannot assign to const variable
+standaloneConstChecking.chpl:17: error: cannot assign to const variable
+standaloneConstChecking.chpl:22: error: cannot assign to const variable
+standaloneConstChecking.chpl:28: error: cannot assign to const variable
+standaloneConstChecking.chpl:33: error: cannot assign to const variable

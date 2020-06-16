@@ -13,7 +13,7 @@
 #
 # CRAY_PLATFORM_FROM_JENKINS
 #
-# The default is cray-xc. cray-xe is the other valid option.
+# The default is cray-xc
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash

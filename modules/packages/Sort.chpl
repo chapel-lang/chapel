@@ -151,7 +151,7 @@ interface supports radix sorting for variable length data types, such as
 strings. It accepts two arguments:
 
  * ``a`` is the element being sorted
- * ``i`` is the part number of the key requested, starting from 1
+ * ``i`` is the part number of the key requested, starting from 0
 
 A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
@@ -185,7 +185,7 @@ This ``keyPart`` method supports sorting tuples of 2 integers:
 .. code-block:: chapel
 
   proc keyPart(x:2*int, i:int) {
-    if i > 2 then
+    if i > 1 then
       return (-1, 0);
 
     return (0, x(i));
@@ -198,8 +198,8 @@ Here is a ``keyPart`` to support sorting of strings:
 
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
     var len = x.numBytes;
-    var section = if i <= len then 0:int(8) else -1:int(8);
-    var part =    if i <= len then x.byte(i) else  0:uint(8);
+    var section = if i < len then 0:int(8)  else -1:int(8);
+    var part =    if i < len then x.byte(i) else  0:uint(8);
     return (section, part);
   }
 
@@ -274,7 +274,7 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 
 private inline
 proc compareByPart(a:?t, b:t, comparator:?rec) {
-  var curPart = 1;
+  var curPart = 0;
   while true {
     var (aSection, aPart) = comparator.keyPart(a, curPart);
     var (bSection, bPart) = comparator.keyPart(b, curPart);
@@ -326,7 +326,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a ,b);
-  } else if canResolveMethod(comparator, "keyPart", a, 1) {
+  } else if canResolveMethod(comparator, "keyPart", a, 0) {
     return compareByPart(a, b, comparator);
   } else {
     compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method");
@@ -365,7 +365,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
     if canResolveMethod(comparator, "compare", data, data) {
       compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
     }
-    if canResolveMethod(comparator, "keyPart", data, 1) {
+    if canResolveMethod(comparator, "keyPart", data, 0) {
       compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a keyPart method");
     }
   }
@@ -375,8 +375,8 @@ proc chpl_check_comparator(comparator, type eltType) param {
     if !(isNumericType(comparetype)) then
       compilerError(errorDepth=errorDepth, "The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
   }
-  else if canResolveMethod(comparator, "keyPart", data, 1) {
-    var idx: int = 1;
+  else if canResolveMethod(comparator, "keyPart", data, 0) {
+    var idx: int = 0;
     type partType = comparator.keyPart(data, idx).type;
     if !isTupleType(partType) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
@@ -384,9 +384,9 @@ proc chpl_check_comparator(comparator, type eltType) param {
     var expectInt = tmp(0);
     var expectIntUint = tmp(1);
     if !isInt(expectInt.type) then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 0 of type int(?) when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 2nd element int(?) or uint(?) when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type  int(?) or uint(?) when used with ", eltType:string, " elements");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
@@ -404,12 +404,12 @@ private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
   if !Dom.stridable {
     var tmp:Data[Dom.alignedLow].type;
-    if canResolveMethod(comparator, "keyPart", tmp, 1) {
+    if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
       var key:comparator.key(tmp).type;
       // Does the defaultComparator have a keyPart for this?
-      if canResolveMethod(defaultComparator, "keyPart", key, 1) then
+      if canResolveMethod(defaultComparator, "keyPart", key, 0) then
         return true;
     }
   }
@@ -1524,7 +1524,7 @@ module RadixSortHelp {
     const whichpart = startbit / bitsPerPart;
     const bitsinpart = startbit % bitsPerPart;
 
-    const (section, part) = criterion.keyPart(a, 1+whichpart);
+    const (section, part) = criterion.keyPart(a, whichpart);
     var ubits = part:uint(bitsPerPart);
     // If the number is signed, invert the top bit, so that
     // the negative numbers sort below the positive numbers
@@ -1549,7 +1549,7 @@ module RadixSortHelp {
   inline
   proc binForRecord(a, criterion, startbit:int)
   {
-    if canResolveMethod(criterion, "keyPart", a, 1) {
+    if canResolveMethod(criterion, "keyPart", a, 0) {
       return binForRecordKeyPart(a, criterion, startbit);
     } else if canResolveMethod(criterion, "key", a) {
       // Try to use the default comparator to get a keyPart.
@@ -3078,7 +3078,7 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: integral, i:int):(int(8), x.type) {
-    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
+    var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
     return (section, x);
   }
 
@@ -3096,7 +3096,7 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
-    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
+    var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
 
     param nbits = numBits(x.type);
     // Convert the real bits to a uint
@@ -3135,7 +3135,7 @@ record DefaultComparator {
    :arg i: the part number requested
 
    :returns: For `int` and `uint`, returns
-             ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise.
+             ``(0, x(i))`` if ``i < x.size``, or ``(-1, 0)`` otherwise.
              For `real` and `imag`, uses ``keyPart`` to find the `uint`
              to provide the sorting order.
    */
@@ -3144,8 +3144,8 @@ record DefaultComparator {
                                        (isInt(x(0)) || isUint(x(0)) ||
                                         isReal(x(0)) || isImag(x(0))) {
     // Re-use the keyPart for imag, real
-    const (_,part) = this.keyPart(x(i-1), 1);
-    if i > x.size then
+    const (_,part) = this.keyPart(x(i), 1);
+    if i >= x.size then
       return (-1, 0:part.type);
     else
       return (0, part);
@@ -3174,8 +3174,8 @@ record DefaultComparator {
 
     var ptr = x.c_str():c_ptr(uint(8));
     var len = x.numBytes;
-    var section = if i <= len then 0:int(8) else -1:int(8);
-    var part =    if i <= len then ptr[i-1] else  0:uint(8);
+    var section = if i < len then 0:int(8) else -1:int(8);
+    var part =    if i < len then ptr[i] else  0:uint(8);
     return (section, part);
   }
 
@@ -3192,7 +3192,7 @@ record DefaultComparator {
   inline
   proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
     var ptr = x:c_ptr(uint(8));
-    var byte = ptr[i-1];
+    var byte = ptr[i];
     var section = if byte != 0 then 0:int(8) else -1:int(8);
     var part = byte;
     return (section, part);
@@ -3268,14 +3268,14 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasKeyPart(a) param {
-    return canResolveMethod(this.comparator, "keyPart", a, 1);
+    return canResolveMethod(this.comparator, "keyPart", a, 0);
   }
   pragma "no doc"
   proc hasKeyPartFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
-      return canResolveMethod(defaultComparator, "keyPart", key, 1);
+      return canResolveMethod(defaultComparator, "keyPart", key, 0);
     }
     return false;
   }

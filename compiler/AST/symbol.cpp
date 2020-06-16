@@ -1456,8 +1456,8 @@ void createInitStringLiterals() {
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 }
 
-bool isValidString(std::string str) {
-  return chpl_enc_validate_buf(str.c_str(), str.length()) == 0;
+bool isValidString(std::string str, int64_t* numCodepoints) {
+  return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
 // Note that string immediate values are stored
@@ -1493,7 +1493,9 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   std::string unescapedString = unescapeString(str, cstrMove);
 
-  if (!isValidString(unescapedString)) {
+  int64_t numCodepoints = 0;
+  const bool ret = isValidString(unescapedString, &numCodepoints);
+  if (!ret) {
     USR_FATAL_CONT(cstrMove, "Invalid string literal");
 
     // We want to keep the compilation going here so that we can catch other
@@ -1525,7 +1527,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr *initCall = new CallExpr(initFn,
                                     cstrTemp,
-                                    new_IntSymbol(strLength));
+                                    new_IntSymbol(strLength),
+                                    new_IntSymbol(numCodepoints));
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 

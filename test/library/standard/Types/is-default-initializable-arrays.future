@@ -1,0 +1,2 @@
+bug: cannot create array of non-default-initializable record
+#15233

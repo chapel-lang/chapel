@@ -1,1 +1,1 @@
-intent-8-error.chpl:8: error: non-lvalue actual is passed to 'out' formal 'x' of foo()
+intent-8-error.chpl:8: error: const actual is passed to 'out' formal 'x' of foo()

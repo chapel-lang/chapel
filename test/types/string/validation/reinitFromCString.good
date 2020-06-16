@@ -1,0 +1,3 @@
+uncaught DecodeError: Invalid UTF-8 character encountered.
+  reinitFromCString.chpl:3: thrown here
+  reinitFromCString.chpl:3: uncaught here

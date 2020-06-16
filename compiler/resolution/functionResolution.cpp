@@ -530,8 +530,12 @@ static bool fits_in_uint(int width, Immediate* imm) {
 
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
+//
+// If it returns false, actualConstOut will indicate if the actual was const.
 static bool
-isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
+isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
+                       bool &constnessErrorOut,
+                       bool &exprTmpErrorOut) {
   Symbol* calledFn = NULL;
   if (formal)
     calledFn = formal->defPoint->parentSymbol;
@@ -556,16 +560,27 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual) {
     }
     bool isInitCoerceTmp = sym->name == astr_init_coerce_tmp;
 
-    if ((actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
-        (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
-        se->symbol()->isParameter()) {
+    bool parameter = se->symbol()->isParameter();
+
+    bool constnessError =
+      (actualConst && !(formal && formal->hasFlag(FLAG_ARG_THIS))) ||
+      parameter;
+
+    bool exprTmpError =
+        (actualExprTmp && !formalCopyMutates && !isInitCoerceTmp) ||
+        parameter;
+
+    if (constnessError || exprTmpError) {
       // But ignore for now errors with this argument
       // to functions marked with FLAG_REF_TO_CONST_WHEN_CONST_THIS.
       // These will be checked for later, along with ref-pairs.
       if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
-
+      {
+        constnessErrorOut = constnessError;
+        exprTmpErrorOut = exprTmpError;
         return false;
+      }
     }
   }
 
@@ -2630,6 +2645,11 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
+
+  // Find different insert point if ctx isn't in a list
+  if (ctx->list == NULL)
+    ctx = ctx->parentSymbol->defPoint;
+
   ctx->insertAfter(typeCall);
   resolveCall(typeCall);
   Type* ret = typeCall->typeInfo();
@@ -3627,16 +3647,13 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
     arrayType = toAggregateType(eltType);
   } while
     (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
-    
+
   return eltType;
 }
 
 // Is it OK to default-initialize an array with this element type?
-// Once #14854 is resolved, this should be simply
-//   isDefaultInitializable(eltType)
 static bool okForDefaultInitializedArray(Type* eltType) {
-  // Exclude locales. Remove this exception once #15149 is merged.
-  return eltType == dtLocale || ! isNonNilableClassType(eltType);
+  return isDefaultInitializable(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -3696,9 +3713,9 @@ static void checkDefaultNonnilableArrayArg(CallExpr* call, FnSymbol* fn) {
         //
         // Acceptable handling of the default actual is this:
         //   def default_arg_xxx: _array(...)
-        //   move( default_arg_xxx call( fn _new_default_xxx ) ) 
-        //   call( fn = default_arg_xxx <whatever> ) 
-        //   move( new_temp call( fn _new default_arg_xxx ) ) 
+        //   move( default_arg_xxx call( fn _new_default_xxx ) )
+        //   call( fn = default_arg_xxx <whatever> )
+        //   move( new_temp call( fn _new default_arg_xxx ) )
         //
         // The call( fn = ... ) establishes the non-default value.
         // It is an error if that call is missing.
@@ -5666,7 +5683,10 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
 }
 
 static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
+  bool constnessError = false;
+  bool exprTmpError = false;
   bool errorMsg = false;
+
   switch (intent) {
    case INTENT_BLANK:
    case INTENT_CONST:
@@ -5681,15 +5701,20 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
     // generally, not checking them here
     // but, FLAG_COPY_MUTATES makes INTENT_IN actually modify actual
     if (formal && formal->getValType()->symbol->hasFlag(FLAG_COPY_MUTATES))
-      if (!isLegalLvalueActualArg(formal, actual))
+      if (!isLegalLvalueActualArg(formal, actual, constnessError, exprTmpError))
         errorMsg = true;
     break;
 
-   case INTENT_INOUT:
    case INTENT_OUT:
+   case INTENT_INOUT:
    case INTENT_REF:
-    if (!isLegalLvalueActualArg(formal, actual))
+    if (!isLegalLvalueActualArg(formal, actual, constnessError, exprTmpError)) {
       errorMsg = true;
+
+      // ignore const errors for out until we sort out split-init
+      if (exprTmpError == false && intent == INTENT_OUT)
+        errorMsg = false;
+    }
     break;
 
    case INTENT_CONST_REF:
@@ -5775,7 +5800,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
                        "'const' field(s)",
                        recordName);
       } else {
-        USR_FATAL_CONT(actual, "illegal lvalue in assignment");
+        if (constnessError)
+          USR_FATAL_CONT(actual, "cannot assign to const variable");
+        else
+          USR_FATAL_CONT(actual, "illegal lvalue in assignment");
       }
 
     } else if (isInitParam == false) {
@@ -5783,11 +5811,15 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
       char          cn1          = calleeFn->name[0];
       const char*   calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
 
+      const char* kind = "non-lvalue actual";
+      if (constnessError)
+        kind = "const actual";
+
       // Should this be the same condition as in insertLineNumber() ?
       if (developer || mod->modTag == MOD_USER) {
         USR_FATAL_CONT(actual,
-                       "non-lvalue actual is passed to %s formal '%s' "
-                       "of %s%s",
+                       "%s is passed to %s formal '%s' of %s%s",
+                       kind,
                        formal->intentDescrString(),
                        formal->name,
                        calleeFn->name,
@@ -5795,8 +5827,8 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
       } else {
         USR_FATAL_CONT(actual,
-                       "non-lvalue actual is passed to a %s formal of "
-                       "%s%s",
+                       "%s is passed to a %s formal of %s%s",
+                       kind,
                        formal->intentDescrString(),
                        calleeFn->name,
                        calleeParens);
@@ -8663,6 +8695,7 @@ void resolve() {
 
   forv_Vec(BlockStmt, stmt, gBlockStmts) {
     stmt->useListClear();
+    stmt->modRefsClear();
   }
 
   resolved = true;
@@ -10222,7 +10255,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
                                   Type* typeToCheck, Type* type,
                                   Expr* preventingSplitInit)
 {
-  if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
+  if (isDefaultInitializable(typeToCheck) || useLegacyNilability(call))
     return;
 
   // Work around current problems in array / assoc array types
@@ -10256,12 +10289,15 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
-  USR_PRINT("non-nil class types do not support default initialization");
 
-  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-  ClassTypeDecorator d = classTypeDecorator(type);
-  Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-  USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  if (isNonNilableClassType(typeToCheck)) {
+    USR_PRINT("non-nil class types do not support default initialization");
+
+    AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+    ClassTypeDecorator d = classTypeDecorator(type);
+    Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+    USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  }
 }
 
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {
@@ -10397,7 +10433,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
         return;
       }
     }
-        
+
     // enum types should have a defaultValue
     INT_ASSERT(!isEnumType(type));
 

@@ -25,6 +25,8 @@
 
 #include "llvmUtil.h"
 
+#include "llvm/Pass.h"
+
 llvm::FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace);
 
 #endif

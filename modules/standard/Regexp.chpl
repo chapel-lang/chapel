@@ -63,7 +63,7 @@ Now you can use these methods on regular expressions: :proc:`regexp.search`,
 
 You can also use the string versions of these methods: :proc:`string.search`,
 :proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`. Methods
-with same prototypes exist for :record:`~Bytes.bytes` type, as well.
+with same prototypes exist for :mod:`Bytes` type, as well.
 
 Lastly, you can include regular expressions in the format string for
 :proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regexp>/``

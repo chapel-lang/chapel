@@ -164,9 +164,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_type(type->getValType()),//it should return the pointee's DIType
         layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
         0, /* alignment */
-#if HAVE_LLVM_VER >= 50
         llvm::None,
-#endif
         name);
 
       myTypeDescriptors[type] = N;
@@ -187,9 +185,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             pteIntDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
-#if HAVE_LLVM_VER >= 50
             llvm::None,
-#endif
             name);
 
           myTypeDescriptors[type] = N;
@@ -218,9 +214,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             pteStrDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
-#if HAVE_LLVM_VER >= 50
             llvm::None,
-#endif
             name);
 
           myTypeDescriptors[type] = N;
@@ -245,9 +239,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               get_type(vt),
               layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
               0,
-#if HAVE_LLVM_VER >= 50
               llvm::None,
-#endif
               name);
 
             myTypeDescriptors[type] = N;
@@ -515,16 +507,9 @@ llvm::DIFile* debug_data::get_file(const char *fpath)
 llvm::DINamespace* debug_data::construct_module_scope(ModuleSymbol* modSym)
 {
   const char* fname = modSym->fname();
-#if HAVE_LLVM_VER < 50
-  int line = modSym->linenum();
-#endif
   llvm::DIFile* file = get_file(fname);
   return this->dibuilder.createNameSpace(file, /* Scope */
                                          modSym->name, /* Name */
-#if HAVE_LLVM_VER < 50
-                                         file, /* File */
-                                         line, /* LineNo */
-#endif
                                          false /* ExportSymbols */
                                         );
 }

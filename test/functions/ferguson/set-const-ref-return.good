@@ -1,1 +1,1 @@
-set-const-ref-return.chpl:14: error: illegal lvalue in assignment
+set-const-ref-return.chpl:14: error: cannot assign to const variable

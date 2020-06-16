@@ -1,15 +1,24 @@
+import chpl_libfabric, chpl_comm_debug
 import chpl_launcher, overrides, third_party_utils
 from utils import error, memoize
 
 
 @memoize
 def get_uniq_cfg_path():
-    return third_party_utils.default_uniq_cfg_path()
+    base_uniq_cfg = third_party_utils.default_uniq_cfg_path()
+    if chpl_comm_debug.get() == 'debug':
+        suffix = '-debug'
+    else:
+        suffix = ''
+    return base_uniq_cfg + suffix
 
 @memoize
-def get_compile_args(libfabric):
+def get_compile_args(libfabric=chpl_libfabric.get()):
     flags = []
-    if libfabric == 'system':
+    if libfabric == 'libfabric':
+        flags = third_party_utils.default_get_compile_args('libfabric',
+                                                           ucp=get_uniq_cfg_path())
+    elif libfabric == 'system':
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
         libfab_dir_val = overrides.get('LIBFABRIC_DIR')
@@ -21,8 +30,6 @@ def get_compile_args(libfabric):
                                                                    system=True)
             for pcl in pcflags:
                 flags.append(pcl)
-    elif libfabric == 'libfabric':
-        error("CHPL_LIBFABRIC=libfabric is not yet supported", ValueError)
 
     launcher_val = chpl_launcher.get()
     ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
@@ -34,9 +41,14 @@ def get_compile_args(libfabric):
     return flags
 
 @memoize
-def get_link_args(libfabric):
+def get_link_args(libfabric=chpl_libfabric.get()):
     libs = []
-    if libfabric == 'system':
+    if libfabric == 'libfabric':
+        return third_party_utils.default_get_link_args('libfabric',
+                                                       ucp=get_uniq_cfg_path(),
+                                                       libs=['libfabric.la'],
+                                                       add_L_opt=True)
+    elif libfabric == 'system':
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
         libfab_dir_val = overrides.get('LIBFABRIC_DIR')
@@ -53,7 +65,5 @@ def get_link_args(libfabric):
                 libs.append(pcl)
                 if pcl.startswith('-L'):
                     libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
-    elif libfabric == 'libfabric':
-        error("CHPL_LIBFABRIC=libfabric is not yet supported", ValueError)
 
     return libs

@@ -39,6 +39,9 @@ int chpl_verbose_comm = 0;
 int chpl_comm_diagnostics = 0;
 int chpl_comm_diags_print_unstable = 0;
 
+atomic_int_least16_t chpl_comm_diags_disable_flag;
+chpl_atomic_commDiagnostics chpl_comm_diags_counters;
+
 static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
 

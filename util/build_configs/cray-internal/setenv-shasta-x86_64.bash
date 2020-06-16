@@ -344,7 +344,11 @@ else
     #[TODO] gen_version_intel=
     #[TODO] gen_version_cce=
 
-    target_cpu_module=craype-sandybridge
+    if [ "$CRAYPE_NETWORK_TARGET" == slingshot* ]; then
+        target_cpu_module=craype-x86-rome
+    else
+        target_cpu_module=craype-sandybridge
+    fi
 
     function load_prgenv_gnu() {
 
