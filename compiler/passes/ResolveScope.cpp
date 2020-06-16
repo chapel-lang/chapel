@@ -531,6 +531,20 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
   if (symbols.size() == 1) {
     return symbols[0];
   } else {
+    // Ensure we check the used module name as well, since those are also
+    // available to us
+    for (size_t i = 0; i < useImportList.size(); i++) {
+      if (UseStmt* use = toUseStmt(useImportList[i])) {
+        if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+          if (isRepeat(modSym, symbols) == false) {
+            symbols.push_back(modSym);
+          }
+        }
+      }
+    }
+    if (symbols.size() == 1) {
+      return symbols[0];
+    }
     return NULL;
   }
 }
