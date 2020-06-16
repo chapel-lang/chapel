@@ -571,6 +571,35 @@ CHPL_HWLOC
        all versions. For best results, we recommend using the bundled jemalloc
        if possible.
 
+..  (comment) CHPL_LIBFABRIC is not a user-facing feature
+
+   .. _readme-chplenv.CHPL_LIBFABRIC:
+
+   CHPL_LIBFABRIC
+   ~~~~~~~~~~~~~~
+      Optionally, the ``CHPL_LIBFABRIC`` environment variable can select
+      between no libfabric or using the libfabric distributed with Chapel in
+      third-party. This setting is intended to elaborate upon
+      ``CHPL_COMM=ofi``.
+
+          ========= ==============================================================
+          Value     Description
+          ========= ==============================================================
+          none      do not build or use libfabric
+          libfabric use the libfabric distribution bundled with Chapel in third-party
+          ========= ==============================================================
+
+      If unset, ``CHPL_LIBFABRIC`` defaults to ``libfabric`` if
+      :ref:`readme-chplenv.CHPL_COMM` is ``ofi``.  In all other cases it
+      defaults to ``none``.
+
+   .. (comment) CHPL_LIBFABRIC=system is also available but it is only
+       intended to support packaging.
+       Using CHPL_LIBFABRIC=system is not regularly tested and may not work
+       for you. Chapel depends on libfabric features that are not available in
+       all versions. For best results, we recommend using the bundled libfabric
+       if possible.
+
 .. _readme-chplenv.CHPL_REGEXP:
 
 CHPL_REGEXP
