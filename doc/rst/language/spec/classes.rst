@@ -2092,21 +2092,9 @@ behavior is undefined.
 
       --memLeaksByType
 
-   
-
    .. BLOCK-test-chapeloutput
 
       DONE
-
-      ====================
-      Leaked Memory Report
-      ==============================================================
-      Number of leaked allocations
-                 Total leaked memory (bytes)
-                            Description of allocation
-      ==============================================================
-      ==============================================================
-
 .. _Class_Deinitializer:
 
 Class Deinitializer

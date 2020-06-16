@@ -304,15 +304,6 @@ out of scope and before its memory is reclaimed.
 
       (c = {x = 0})
 
-      ====================
-      Leaked Memory Report
-      ==============================================================
-      Number of leaked allocations
-                 Total leaked memory (bytes)
-                            Description of allocation
-      ==============================================================
-      ==============================================================
-
    .. BLOCK-test-chapelexecopts
 
       --memLeaksByType
