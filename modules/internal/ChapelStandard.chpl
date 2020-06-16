@@ -50,6 +50,7 @@ module ChapelStandard {
   use LocalesArray;
   use ChapelArray;
   use ChapelDistribution;
+  use ChapelAutoLocalAccess;
   use ChapelIO;
   use LocaleTree;
   use ChapelHashing;

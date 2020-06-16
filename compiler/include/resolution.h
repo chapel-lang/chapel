@@ -333,5 +333,4 @@ void stopGenerousResolutionForErrors();
 
 // Return the array element type, or NULL if not an array
 Type* arrayElementType(Type* arrayType);
-
 #endif

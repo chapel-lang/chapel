@@ -1,0 +1,134 @@
+**** Start forall ****
+	regularDeclaration2D.chpl:14
+
+Iterated symbol
+	regularDeclaration2D.chpl:4
+
+Loop is suitable for further analysis
+	regularDeclaration2D.chpl:14
+
+Potential access
+	regularDeclaration2D.chpl:15
+
+	with domain defined at
+	regularDeclaration2D.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+Potential access
+	regularDeclaration2D.chpl:15
+
+	with domain defined at
+	regularDeclaration2D.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+Potential access
+	regularDeclaration2D.chpl:15
+
+	with domain defined at
+	regularDeclaration2D.chpl:4
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:15
+
+	Marking static candidate
+	regularDeclaration2D.chpl:15
+
+	Marking static candidate
+	regularDeclaration2D.chpl:15
+
+	Marking static candidate
+	regularDeclaration2D.chpl:15
+
+**** End forall ****
+	regularDeclaration2D.chpl:14
+
+**** Start forall ****
+	regularDeclaration2D.chpl:31
+
+Iterated symbol
+	regularDeclaration2D.chpl:21
+
+Loop is suitable for further analysis
+	regularDeclaration2D.chpl:31
+
+Potential access
+	regularDeclaration2D.chpl:32
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+Potential access
+	regularDeclaration2D.chpl:32
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+Potential access
+	regularDeclaration2D.chpl:32
+
+	with domain defined at
+	regularDeclaration2D.chpl:21
+
+Access base's domain is the iterator
+	regularDeclaration2D.chpl:32
+
+	Marking static candidate
+	regularDeclaration2D.chpl:32
+
+	Marking static candidate
+	regularDeclaration2D.chpl:32
+
+	Marking static candidate
+	regularDeclaration2D.chpl:32
+
+**** End forall ****
+	regularDeclaration2D.chpl:31
+
+Static check successful. Using localAccess
+	regularDeclaration2D.chpl:15
+
+Static check successful. Using localAccess
+	regularDeclaration2D.chpl:15
+
+Static check successful. Using localAccess
+	regularDeclaration2D.chpl:15
+
+Static check successful. Using localAccess
+	regularDeclaration2D.chpl:32
+
+Static check successful. Using localAccess
+	regularDeclaration2D.chpl:32
+
+Static check successful. Using localAccess
+	regularDeclaration2D.chpl:32
+
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

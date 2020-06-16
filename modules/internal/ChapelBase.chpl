@@ -54,7 +54,6 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
-
   //
   // assignment on primitive types
   //

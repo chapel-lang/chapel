@@ -2164,6 +2164,10 @@ module ChapelArray {
       }
     }
 
+    proc supportsAutoLocalAccess() param {
+      return _value.dsiSupportsAutoLocalAccess();
+    }
+
   }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
@@ -2669,18 +2673,18 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "alias scope from this"
-    inline proc localAccess(i: _value.dom.idxType ...rank) ref
+    inline proc ref localAccess(i: _value.dom.idxType ...rank) ref
       return localAccess(i);
 
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
-    inline proc localAccess(i: _value.dom.idxType ...rank)
+    inline proc const localAccess(i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType)
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
-    inline proc localAccess(i: _value.dom.idxType ...rank) const ref
+    inline proc const localAccess(i: _value.dom.idxType ...rank) const ref
     where shouldReturnRvalueByConstRef(_value.eltType)
       return localAccess(i);
 

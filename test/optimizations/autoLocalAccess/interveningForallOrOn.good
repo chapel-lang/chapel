@@ -1,0 +1,30 @@
+**** Start forall ****
+	interveningForallOrOn.chpl:12
+
+**** End forall ****
+	interveningForallOrOn.chpl:12
+
+**** Start forall ****
+	interveningForallOrOn.chpl:11
+
+Iterated symbol
+	interveningForallOrOn.chpl:5
+
+Loop is suitable for further analysis
+	interveningForallOrOn.chpl:11
+
+**** End forall ****
+	interveningForallOrOn.chpl:11
+
+**** Start forall ****
+	interveningForallOrOn.chpl:25
+
+Iterated symbol
+	interveningForallOrOn.chpl:19
+
+Loop is suitable for further analysis
+	interveningForallOrOn.chpl:25
+
+**** End forall ****
+	interveningForallOrOn.chpl:25
+

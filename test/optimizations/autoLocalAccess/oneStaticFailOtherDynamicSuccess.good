@@ -1,0 +1,47 @@
+**** Start forall ****
+	oneStaticFailOtherDynamicSuccess.chpl:23
+
+Iterated symbol
+	oneStaticFailOtherDynamicSuccess.chpl:16
+
+Loop is suitable for further analysis
+	oneStaticFailOtherDynamicSuccess.chpl:23
+
+Potential access
+	oneStaticFailOtherDynamicSuccess.chpl:24
+
+Regular domain symbol was not found for array
+	oneStaticFailOtherDynamicSuccess.chpl:18
+
+Potential access
+	oneStaticFailOtherDynamicSuccess.chpl:24
+
+Regular domain symbol was not found for array
+	oneStaticFailOtherDynamicSuccess.chpl:19
+
+	Marking dynamic candidate
+	oneStaticFailOtherDynamicSuccess.chpl:24
+
+	Marking dynamic candidate
+	oneStaticFailOtherDynamicSuccess.chpl:24
+
+**** End forall ****
+	oneStaticFailOtherDynamicSuccess.chpl:23
+
+Static check successful. Using localAccess with dynamic check
+	oneStaticFailOtherDynamicSuccess.chpl:24
+
+Static check failed. Reverting optimization
+	oneStaticFailOtherDynamicSuccess.chpl:24
+
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+1 2 3 4 5 6 7 8 9 10
