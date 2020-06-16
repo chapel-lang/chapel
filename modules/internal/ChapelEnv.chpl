@@ -73,6 +73,7 @@ module ChapelEnv {
   /* See :ref:`readme-multilocale` for more information. */
   param CHPL_GASNET_SEGMENT:string  = __primitive("get compiler variable", "CHPL_GASNET_SEGMENT");
 
+  pragma "no doc"
   /* See :ref:`readme-chplenv.CHPL_LIBFABRIC` for more information. */
   param CHPL_LIBFABRIC:string       = __primitive("get compiler variable", "CHPL_LIBFABRIC");
 
