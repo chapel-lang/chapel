@@ -678,6 +678,11 @@ def set_up_environment():
     else:
         args.execopts = ""
 
+    # memory leak
+    if args.mem_leaks:
+        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
+        args.execopts += " --memLeaks"
+
     # memory leak log
     if args.mem_leaks_log:
         os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
@@ -1299,10 +1304,13 @@ def parser_setup():
     # log_file
     parser.add_argument("-logfile", "--logfile", action="store",
             dest="log_file", help="set alternate log file")
+    # mem leaks
+    parser.add_argument("-memleaks", "-memleaks", "-memLeaks", "--memLeaks",
+            action="store_true", dest="mem_leaks", help="run with --memLeaks")
     # mem leaks log
-    parser.add_argument("-memleaks", "--memleaks", action="store",
-            dest="mem_leaks_log", help=("set location for memLeaks log, "
-                "and run with the --memLeaksLog flag"))
+    parser.add_argument("-memleakslog", "--memleakslog", "-memLeaksLog",
+            "--memLeaksLog", action="store", dest="mem_leaks_log", help=("set"
+            " location for memLeaks log, and run with --memLeaksLog"))
     # valgrind
     parser.add_argument("-valgrind", "--valgrind", action="store_true",
             dest="valgrind", help="run everything using valgrind")
