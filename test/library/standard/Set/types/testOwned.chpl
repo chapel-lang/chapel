@@ -1,20 +1,6 @@
 import Set.set;
 
-proc testSet(type t) where isTuple(t) {
-  var s = new set(t);
-
-  var x = (new t[0](1), new t[1](2));
-
-  s.add(x);
-  assert(s.size == 1);
-
-  s.remove(x);
-  assert(s.size == 0);
-
-  if isUnmanagedClass(t) {
-    delete x;
-  }
-}
+class C { var x: int = 0; }
 
 proc testSet(type t) {
   var s = new set(t);
@@ -25,3 +11,7 @@ proc testSet(type t) {
   s.add(x);
   assert(s.size == 1);
 }
+
+type T = owned C;
+testSet(T);
+
