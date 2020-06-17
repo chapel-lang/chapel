@@ -1226,7 +1226,7 @@ module String {
       var readIdx = 0;
       var writeIdx = 0;
       while readIdx < localThis.buffLen {
-        var multibytes = (localThis.buff + readIdx): c_string;
+        var multibytes = localThis.buff + readIdx;
         const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
                                                    buffLen=localThis.buffLen,
                                                    offset=readIdx,
