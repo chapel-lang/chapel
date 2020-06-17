@@ -372,7 +372,7 @@ module BytesStringCommon {
         compilerError("string slicing doesn't support stridable codepoint ranges");
       }
 
-      if r == x.indices then return (r, x.cachedNumCodepoints);
+      if r == x.indices then return (x.indices, x.cachedNumCodepoints);
 
       // cast the argument r to `int` to make sure that we are not dealing with
       // codepointIdx
@@ -457,8 +457,12 @@ module BytesStringCommon {
     buff[buffLen] = 0;
 
     if t == string {
+      var numCodepoints = numChars;
+      if numCodepoints == -1 {
+        numCodepoints = countNumCodepoints(buff, buffLen);
+      }
       return chpl_createStringWithOwnedBufferNV(x=buff, length=buffLen,
-          size=buffSize, numCodepoints=numChars);
+          size=buffSize, numCodepoints=numCodepoints);
     }
     else {
       return createBytesWithOwnedBuffer(x=buff, length=buffLen, size=buffSize);
@@ -720,7 +724,7 @@ module BytesStringCommon {
                    dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
-      if t == string then incrementCodepoints(lhs, rhs);
+      if t == string then lhs.cachedNumCodepoints += rhs.cachedNumCodepoints;
     }
   }
 
@@ -986,4 +990,27 @@ module BytesStringCommon {
       lhs.cachedNumCodepoints = lhs.cachedNumCodepoints + rhs.cachedNumCodepoints;
     }
   }
+
+  proc countNumCodepoints(buff: bufferType, buffLen: int) {
+    var n = 0;
+    var i = 0;
+    while i < buffLen {
+      i += 1;
+      while i < buffLen && !isInitialByte(buff[i]) do
+        i += 1;
+      n += 1;
+    }
+    return n;
+  }
+
+  /*
+    Returns true if the argument is a valid initial byte of a UTF-8
+    encoded multibyte character.
+  */
+  pragma "no doc"
+  inline proc isInitialByte(b: uint(8)) : bool {
+    return (b & 0xc0) != 0x80;
+  }
+
+
 }

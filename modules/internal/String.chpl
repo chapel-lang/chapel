@@ -924,19 +924,6 @@ module String {
       }
     }
 
-    proc countNumCodepoints() {
-      var localThis: string = this.localize();
-      var n = 0;
-      var i = 0;
-      while i < localThis.buffLen {
-        i += 1;
-        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-          i += 1;
-        n += 1;
-      }
-      return n;
-    }
-
     inline proc byteIndices return 0..<this.numBytes;
 
     inline proc param c_str() param : c_string {
@@ -1173,7 +1160,7 @@ module String {
   inline proc const string.numCodepoints {
     const n = this.cachedNumCodepoints;
     if boundsChecking {
-      if n != this.countNumCodepoints() {
+      if n != countNumCodepoints(this.buff, this.buffLen) {
         halt("Encountered corrupt string metadata");
       }
     }
