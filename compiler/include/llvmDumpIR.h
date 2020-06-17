@@ -26,6 +26,8 @@
 #include "llvmUtil.h"
 #include "symbol.h"
 
+#include "llvm/Pass.h"
+
 llvm::FunctionPass *createDumpIrPass(llvmStageNum_t stage);
 
 #endif

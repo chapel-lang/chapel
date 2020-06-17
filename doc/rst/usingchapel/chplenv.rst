@@ -87,7 +87,7 @@ CHPL_HOST_PLATFORM
         export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 
    For other platforms that appear very similar to a UNIX workstation from the
-   shell prompt (e.g., a Cray XK\ |trade|), the value may need to be set
+   shell prompt (e.g., a Cray CS\ |trade|), the value may need to be set
    explicitly.  The strings for our currently-supported host platforms are as
    follows:
 
@@ -105,8 +105,6 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
-        cray-xe      Cray XE\ |trade|
-        cray-xk      Cray XK\ |trade|
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -339,10 +337,6 @@ CHPL_LOCALE_MODEL
         flat     top-level locales are not further subdivided
         numa     top-level locales are further subdivided into
                  sublocales, each one a NUMA domain
-        knl      a processor-specific locale model for the
-                 self-hosted Xeon Phi (Knight's Landing) which
-                 includes NUMA support and access to the
-                 tightly-coupled high-bandwidth memory
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
@@ -401,8 +395,8 @@ CHPL_COMM
         ugni    Cray-specific native communication layer
         ======= ============================================
 
-   If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XE
-   and XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
+   If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray
+   XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
    to ``gasnet``.  See :ref:`readme-multilocale` for more information on
    executing Chapel programs using multiple locales.  See
    :ref:`readme-libfabric` for more information about the ofi communication

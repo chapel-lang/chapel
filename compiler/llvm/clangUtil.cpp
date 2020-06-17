@@ -41,6 +41,7 @@
 //   clang/Basic/CodeGenOptions.h
 
 #include "clang/Basic/Version.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ModuleBuilder.h"
@@ -60,6 +61,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
@@ -67,6 +69,10 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
+#if HAVE_LLVM_VER >= 90
+#include "llvm/Support/CodeGen.h"
+#endif
 
 #ifdef HAVE_LLVM_RV
 #include "rv/passes.h"
@@ -121,16 +127,6 @@ using namespace llvm;
 #include "llvmGlobalToWide.h"
 #include "llvmAggregateGlobalOps.h"
 #include "llvmDumpIR.h"
-
-// These are headers internal to clang. Need to be able to:
-// 1. Get the LLVM type for a C typedef (say)
-//    (not needed after LLVM 5)
-// 2. Get the GEP offset for a field in a C record by name
-//    (not needed after LLVM 6)
-#if HAVE_LLVM_VER < 60
-#include "CodeGenModule.h"
-#include "CGRecordLayout.h"
-#endif
 
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
@@ -353,11 +349,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   if( debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
 
   //Handling only simple string or integer defines
-#if HAVE_LLVM_VER >= 50
   if(macro->getNumParams() > 0)
-#else
-  if(macro->getNumArgs() > 0)
-#endif
   {
     if( debugPrint) {
       printf("the macro takes arguments\n");
@@ -387,7 +379,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   }
 
   if( debugPrint ) {
-    std::string s = id->getName();
+    std::string s = std::string(id->getName());
     const char* kind = NULL;
     if( varRet ) kind = "var";
     if( cTypeRet ) kind = "cdecl type";
@@ -722,7 +714,7 @@ static void handleMacroToken(const MacroInfo* inMacro,
     }
     case tok::identifier: {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
-      std::string idName = tokId->getName();
+      std::string idName = std::string(tokId->getName());
       if( debugPrint) {
         printf("id = %s\n", idName.c_str());
       }
@@ -750,11 +742,11 @@ static void handleMacroToken(const MacroInfo* inMacro,
       if( debugPrint ) {
         if( varRet ) printf("found var %s\n", varRet->cname);
         if( cTypeRet ) {
-          std::string s = cTypeRet->getName();
+          std::string s = std::string(cTypeRet->getName());
           printf("found cdecl type %s\n", s.c_str());
         }
         if( cValueRet ) {
-          std::string s = cValueRet->getName();
+          std::string s = std::string(cValueRet->getName());
           printf("found cdecl value %s\n", s.c_str());
         }
       }
@@ -1144,11 +1136,19 @@ void setupClang(GenInfo* info, std::string mainFile)
   // get a Compilation?
   //CompilerInvocation* CI =
   //  createInvocationFromCommandLine(clangArgs, clangInfo->Diags);
+
+#if HAVE_LLVM_VER >= 100
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
-           // &clangArgs.front(), &clangArgs.back(),
+            j.getArguments(),
+            *Diags);
+#else
+  bool success = CompilerInvocation::CreateFromArgs(
+            Clang->getInvocation(),
             &j.getArguments().front(), (&j.getArguments().back())+1,
             *Diags);
+#endif
+
   CompilerInvocation* CI = &Clang->getInvocation();
 
   INT_ASSERT(success);
@@ -1178,7 +1178,7 @@ void setupClang(GenInfo* info, std::string mainFile)
       sys::path::append(P, "clang");
       sys::path::append(P, CLANG_VERSION_STRING);
     }
-    CI->getHeaderSearchOpts().ResourceDir = P.str();
+    CI->getHeaderSearchOpts().ResourceDir = std::string(P.str());
     sys::path::append(P, "include");
     CI->getHeaderSearchOpts().AddPath(
         P.str(), frontend::System,false, false);
@@ -1315,11 +1315,7 @@ static void setupModule()
   }
 
   // Choose the code model
-#if HAVE_LLVM_VER >= 60
   llvm::Optional<CodeModel::Model> codeModel = None;
-#else
-  llvm::CodeModel::Model codeModel = llvm::CodeModel::Default;
-#endif
 
   llvm::CodeGenOpt::Level optLevel =
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
@@ -1446,18 +1442,13 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 
   if (optLevel >= 1)
     PMBuilder.Inliner = createFunctionInliningPass(optLevel,
-                                                   opts.OptimizeSize
-#if HAVE_LLVM_VER >= 50
-                                                   ,/*DisableInlineHotCallsite*/
+                                                   opts.OptimizeSize,
+                                                   /*DisableInlineHotCallsite*/
                                                    false
-#endif
                                                   );
 
   PMBuilder.OptLevel = optLevel;
   PMBuilder.SizeLevel = opts.OptimizeSize;
-#if HAVE_LLVM_VER < 50
-  PMBuilder.BBVectorize = opts.VectorizeBB;
-#endif
   PMBuilder.SLPVectorize = opts.VectorizeSLP;
   PMBuilder.LoopVectorize = opts.VectorizeLoop;
 
@@ -1517,23 +1508,15 @@ void prepareCodegenLLVM()
   if (ffloatOpt == 1) {
     // --no-ieee-float
     // Enable all the optimization!
-#if HAVE_LLVM_VER < 60
-    FM.setUnsafeAlgebra();
-#else
     FM.setFast();
     INT_ASSERT(FM.allowContract());
-#endif
   } else if (ffloatOpt == 0) {
     // default
     // use a reasonable level of optimization
-#if HAVE_LLVM_VER >= 50
     FM.setAllowContract(true);
-#endif
   } else if (ffloatOpt == -1) {
     // --ieee-float
-#if HAVE_LLVM_VER >= 50
     FM.setAllowContract(true);
-#endif
   }
   info->irBuilder->setFastMathFlags(FM);
 
@@ -1999,11 +1982,7 @@ llvm::Type* codegenCType(const TypeDecl* td)
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
-#if HAVE_LLVM_VER >= 50
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
-#else
-  return cCodeGen->CGM().getTypes().ConvertTypeForMem(qType);
-#endif
 }
 
 // should support FunctionDecl,VarDecl,EnumConstantDecl
@@ -2019,7 +1998,7 @@ GenRet codegenCValue(const ValueDecl *vd)
   GenRet ret;
 
   if( info->cfile ) {
-    ret.c = vd->getName();
+    ret.c = std::string(vd->getName());
     return ret;
   }
 
@@ -2038,11 +2017,7 @@ GenRet codegenCValue(const ValueDecl *vd)
     ret.isUnsigned = ! ed->getType()->hasSignedIntegerRepresentation();
 
     llvm::Type* type = NULL;
-#if HAVE_LLVM_VER >= 50
     type = clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), ed->getType());
-#else
-    type = cCodeGen->CGM().getTypes().ConvertTypeForMem(ed->getType());
-#endif
 
     ret.val = ConstantInt::get(type, v);
     ret.isLVPtr = GEN_VAL;
@@ -2364,11 +2339,7 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
 
   isCArrayField = field->getType()->isArrayType();
 
-#if HAVE_LLVM_VER >= 60
   ret = clang::CodeGen::getLLVMFieldNumber(cCodeGen->CGM(), rec, field);
-#else
-  ret = cCodeGen->CGM().getTypes().getCGRecordLayout(rec).getLLVMFieldNo(field);
-#endif
 
   INT_ASSERT(ret >= 0);
 
@@ -2486,9 +2457,6 @@ void setupForGlobalToWide(void) {
   llvm::Type* argType = llvm::Type::getInt64Ty(ginfo->module->getContext());
   llvm::Value* fval = ginfo->module->getOrInsertFunction(
                           dummy, retType, argType
-#if HAVE_LLVM_VER < 50
-                          , NULL
-#endif
 #if HAVE_LLVM_VER < 90
                           );
 #else
@@ -2624,7 +2592,7 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
-    TOOL_OUTPUT_FILE output (preOptFilename.c_str(),
+    ToolOutputFile output (preOptFilename.c_str(),
                              tmpErr, sys::fs::F_None);
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
@@ -2739,7 +2707,7 @@ void makeBinaryLLVM(void) {
     if( saveCDir[0] != '\0' ) {
       // Save the generated LLVM after first chunk of optimization
       std::error_code tmpErr;
-      TOOL_OUTPUT_FILE output1 (opt1Filename.c_str(),
+      ToolOutputFile output1 (opt1Filename.c_str(),
                                tmpErr, sys::fs::F_None);
       if (tmpErr)
         USR_FATAL("Could not open output file %s", opt1Filename.c_str());
@@ -2776,7 +2744,7 @@ void makeBinaryLLVM(void) {
       if( saveCDir[0] != '\0' ) {
         // Save the generated LLVM after second chunk of optimization
         std::error_code tmpErr;
-        TOOL_OUTPUT_FILE output2 (opt2Filename.c_str(),
+        ToolOutputFile output2 (opt2Filename.c_str(),
                                  tmpErr, sys::fs::F_None);
         if (tmpErr)
           USR_FATAL("Could not open output file %s", opt2Filename.c_str());
@@ -2820,8 +2788,13 @@ void makeBinaryLLVM(void) {
     emitPM.add(createTargetTransformInfoWrapperPass(
                info->targetMachine->getTargetIRAnalysis()));
 
+#if HAVE_LLVM_VER >= 100
+    llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+#else
     llvm::TargetMachine::CodeGenFileType FileType =
       llvm::TargetMachine::CGFT_ObjectFile;
+#endif
+
     bool disableVerify = ! developer;
 #if HAVE_LLVM_VER > 60
     info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,

@@ -21,6 +21,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -367,7 +368,7 @@ static void setRecordAssignableFlags(AggregateType* at) {
 
 static void setRecordDefaultValueFlags(AggregateType* at);
 
-static bool isDefaultInitializable(Type* t) {
+bool isDefaultInitializable(Type* t) {
   bool val = true;
   if (isRecord(t)) {
     AggregateType* at = toAggregateType(t);
@@ -567,6 +568,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call, "No test function with name '%s'",name);
     }
   }
+
+  case PRIM_MAYBE_LOCAL_THIS:
+    retval = preFoldMaybeLocalThis(call);
+    call->replace(retval);
+    break;
 
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:

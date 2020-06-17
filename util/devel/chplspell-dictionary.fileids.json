@@ -535,9 +535,6 @@
   "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/String.chpl"
   ],
-  "5cb0944a-0c15-11e7-980e-10ddb1d4c3d5": [
-    "modules/internal/localeModels/knl/LocaleModel.chpl"
-  ],
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
   ],

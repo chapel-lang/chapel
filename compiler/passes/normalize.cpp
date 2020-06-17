@@ -26,6 +26,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -122,6 +123,9 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 void normalize() {
+
+  autoLocalAccess();
+
   insertModuleInit();
 
   transformLogicalShortCircuit();

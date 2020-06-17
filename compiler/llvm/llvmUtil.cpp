@@ -47,9 +47,7 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
   // stack overflow.
   llvm::Function *func = insertBefore->getParent()->getParent();
   llvm::BasicBlock* entryBlock = & func->getEntryBlock();
-#if HAVE_LLVM_VER >= 50
   const llvm::DataLayout &DL = func->getParent()->getDataLayout();
-#endif
 
   if( insertBefore->getParent() == entryBlock ) {
     // Add before specific instruction in entry block.
@@ -67,17 +65,41 @@ llvm::AllocaInst* makeAlloca(llvm::Type* type,
     llvm::ConstantInt::get(llvm::Type::getInt32Ty(type->getContext()), n);
 
   if( insertBefore ) {
-    tempVar = new llvm::AllocaInst(type,
-#if HAVE_LLVM_VER >= 50
-                                   DL.getAllocaAddrSpace(),
+    if (align != 0) {
+#if HAVE_LLVM_VER >= 100
+      tempVar = new llvm::AllocaInst(type,
+                                     DL.getAllocaAddrSpace(),
+                                     size, llvm::Align(align),
+                                     name, insertBefore);
+#else
+      tempVar = new llvm::AllocaInst(type,
+                                     DL.getAllocaAddrSpace(),
+                                     size, align,
+                                     name, insertBefore);
 #endif
-                                   size, align, name, insertBefore);
+    } else {
+      tempVar = new llvm::AllocaInst(type,
+                                     DL.getAllocaAddrSpace(),
+                                     size, name, insertBefore);
+    }
   } else {
-    tempVar = new llvm::AllocaInst(type,
-#if HAVE_LLVM_VER >= 50
-                                   DL.getAllocaAddrSpace(),
+    if (align != 0) {
+#if HAVE_LLVM_VER >= 100
+      tempVar = new llvm::AllocaInst(type,
+                                     DL.getAllocaAddrSpace(),
+                                     size, llvm::Align(align),
+                                     name, entryBlock);
+#else
+      tempVar = new llvm::AllocaInst(type,
+                                     DL.getAllocaAddrSpace(),
+                                     size, align,
+                                     name, entryBlock);
 #endif
-                                   size, align, name, entryBlock);
+    } else {
+      tempVar = new llvm::AllocaInst(type,
+                                     DL.getAllocaAddrSpace(),
+                                     size, name, entryBlock);
+    }
   }
 
   return tempVar;
@@ -318,7 +340,6 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 static
 uint64_t doGetTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset, uint64_t parent_this_offset, uint64_t parent_next_offset)
 {
-  llvm::SequentialType* stype = NULL;
   llvm::StructType* struct_type = NULL;
   const llvm::StructLayout* struct_layout = NULL;
   llvm::Type* eltType = NULL;
@@ -337,8 +358,11 @@ uint64_t doGetTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint
   local_offset = offset - parent_this_offset;
 
   if( ty->isArrayTy() || ty->isVectorTy() ) {
-    stype = llvm::cast<llvm::SequentialType>(ty);
-    eltType = stype->getElementType();
+    if (auto* AT = llvm::dyn_cast<llvm::ArrayType>(ty)) {
+      eltType = AT->getElementType();
+    } else if (auto* VT = llvm::dyn_cast<llvm::VectorType>(ty)) {
+      eltType = VT->getElementType();
+    }
     // Not using getTypeSizeInBytes so that:
     // 1) we get an assertion error if the type is not sized
     // 2) we use uint64s for the type instead of int64s

@@ -10,8 +10,8 @@ def get():
     comm_val = overrides.get('CHPL_COMM')
     if not comm_val:
         platform_val = chpl_platform.get('target')
-        # Use ugni on cray-x* series
-        if platform_val.startswith('cray-x'):
+        # Use ugni on cray-xc series
+        if platform_val == 'cray-xc':
             comm_val = 'ugni'
         # Use ofi on cray-shasta
         elif platform_val == 'cray-shasta':

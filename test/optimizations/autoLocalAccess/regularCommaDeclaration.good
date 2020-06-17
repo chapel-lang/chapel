@@ -1,0 +1,110 @@
+**** Start forall ****
+	regularCommaDeclaration.chpl:12
+
+Iterated symbol
+	regularCommaDeclaration.chpl:4
+
+Loop is suitable for further analysis
+	regularCommaDeclaration.chpl:12
+
+Potential access
+	regularCommaDeclaration.chpl:13
+
+	with domain defined at
+	regularCommaDeclaration.chpl:4
+
+Access base's domain is the iterator
+	regularCommaDeclaration.chpl:13
+
+Potential access
+	regularCommaDeclaration.chpl:13
+
+Regular domain symbol was not found for array
+	regularCommaDeclaration.chpl:6
+
+Potential access
+	regularCommaDeclaration.chpl:13
+
+Regular domain symbol was not found for array
+	regularCommaDeclaration.chpl:6
+
+	Marking static candidate
+	regularCommaDeclaration.chpl:13
+
+	Marking dynamic candidate
+	regularCommaDeclaration.chpl:13
+
+	Marking dynamic candidate
+	regularCommaDeclaration.chpl:13
+
+**** End forall ****
+	regularCommaDeclaration.chpl:12
+
+**** Start forall ****
+	regularCommaDeclaration.chpl:27
+
+Iterated over the domain of
+	regularCommaDeclaration.chpl:21
+
+, which is
+	regularCommaDeclaration.chpl:19
+
+Loop is suitable for further analysis
+	regularCommaDeclaration.chpl:27
+
+Potential access
+	regularCommaDeclaration.chpl:28
+
+	Can optimize: Access base is the iterator's base
+	regularCommaDeclaration.chpl:28
+
+Potential access
+	regularCommaDeclaration.chpl:28
+
+Regular domain symbol was not found for array
+	regularCommaDeclaration.chpl:21
+
+Potential access
+	regularCommaDeclaration.chpl:28
+
+Regular domain symbol was not found for array
+	regularCommaDeclaration.chpl:21
+
+	Marking static candidate
+	regularCommaDeclaration.chpl:28
+
+	Marking dynamic candidate
+	regularCommaDeclaration.chpl:28
+
+	Marking dynamic candidate
+	regularCommaDeclaration.chpl:28
+
+**** End forall ****
+	regularCommaDeclaration.chpl:27
+
+Static check successful. Using localAccess
+	regularCommaDeclaration.chpl:13
+
+Static check successful. Using localAccess with dynamic check
+	regularCommaDeclaration.chpl:13
+
+Static check successful. Using localAccess with dynamic check
+	regularCommaDeclaration.chpl:13
+
+Static check successful. Using localAccess
+	regularCommaDeclaration.chpl:13
+
+Static check successful. Using localAccess
+	regularCommaDeclaration.chpl:28
+
+Static check successful. Using localAccess with dynamic check
+	regularCommaDeclaration.chpl:28
+
+Static check successful. Using localAccess with dynamic check
+	regularCommaDeclaration.chpl:28
+
+Static check successful. Using localAccess
+	regularCommaDeclaration.chpl:28
+
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
+10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0

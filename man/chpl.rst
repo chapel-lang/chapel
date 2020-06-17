@@ -290,6 +290,22 @@ OPTIONS
     Enable [disable] analysis to infer local fields in classes and records
     (experimental)
 
+**--[no-]auto-local-access**
+
+    Enable [disable] an optimization applied to forall loops over domains in
+    which accesses of the form of `A[i]` within the loop are transformed to use
+    local accesses if the array `A` is aligned with the domain and `i` is the
+    loop index variable. With this flag, the compiler does some static analysis
+    and adds calls that can further analyze alignment dynamically during
+    execution time.
+
+**--[no-]auto-local-access-dynamic**
+
+    Enable [disable] the dynamic portion of the analysis described in
+    `--[no-]auto-local-access`.  This dynamic analysis can result in loop
+    duplication that increases executable size and compilation time. There
+    may also be execution time overheads independent of loop domain size.
+
 *Run-time Semantic Check Options* 
 
 **--[no-]checks**

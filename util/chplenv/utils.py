@@ -46,13 +46,13 @@ def run_command(command, stdout=True, stderr=False, cmd_input=None):
     except OSError:
         error("command not found: {0}".format(command[0]), OSError)
 
-    byte_cmd_input = str.encode(cmd_input, encoding="utf-8") if cmd_input else None
+    byte_cmd_input = str.encode(cmd_input, "utf-8") if cmd_input else None
     output = process.communicate(input=byte_cmd_input)
     if process.returncode != 0:
         error("command failed: {0}\noutput was:\n{1}".format(
             command, output[1]), CommandError)
     else:
-        output = (output[0].decode(encoding="utf-8"), output[1].decode(encoding="utf-8"))
+        output = (output[0].decode("utf-8"), output[1].decode("utf-8"))
         if stdout and stderr:
             return output
         elif stdout:
@@ -72,8 +72,8 @@ def run_live_command(command):
     except OSError:
         error("command not found: {0}".format(command[0]), OSError)
 
-    for stdout_char in iter(lambda: process.stdout.read(1), str.encode("", encoding="utf-8")):
-        yield stdout_char.decode(encoding="utf-8")
+    for stdout_char in iter(lambda: process.stdout.read(1), str.encode("", "utf-8")):
+        yield stdout_char.decode("utf-8")
     process.stdout.close()
     returncode = process.wait()
 

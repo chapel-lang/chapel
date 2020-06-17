@@ -86,7 +86,7 @@ void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {
 
   std::error_code EC;
   // note: could output to a file if we replace "-" with a filename
-  TOOL_OUTPUT_FILE Out("-", EC, sys::fs::F_None);
+  ToolOutputFile Out("-", EC, sys::fs::F_None);
   if (EC) {    
     errs() << EC.message() << '\n';
     return;

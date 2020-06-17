@@ -46,6 +46,8 @@ module DefaultRectangular {
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
 
+  config param defaultRectangularSupportsAutoLocalAccess = false;
+
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
   // would like to move this into DefaultRectangularArr and
@@ -968,6 +970,7 @@ module DefaultRectangular {
     type idxType;
     param stridable: bool;
     var targetLocDom: domain(rank);
+    pragma "unsafe"
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
     var RADLocks: [targetLocDom] chpl_LocalSpinlock;
@@ -1405,12 +1408,7 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      // This should really be isDefaultInitializable(eltType), but that
-      // doesn't always work / give correct answers yet.  The following
-      // check won't catch cases such as records with non-nilable class
-      // fields that don't have default initializers (that initialize
-      // them).
-      if (isNonNilableClass(eltType)) {
+      if (!isDefaultInitializable(eltType)) {
         halt("Can't resize domains whose arrays' elements don't have default values");
       }
       if (this.locale != here) {
@@ -1619,6 +1617,10 @@ module DefaultRectangular {
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     chpl_serialReadWriteRectangular(f, this);
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsAutoLocalAccess() param {
+    return defaultRectangularSupportsAutoLocalAccess;
   }
 
   // Why can the following two functions not be collapsed into one

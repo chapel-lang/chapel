@@ -71,6 +71,11 @@ Optimization Control Options:
                                       (experimental)
       --[no-]vectorize                Enable [disable] generation of
                                       vectorization hints
+      --[no-]auto-local-access        Enable [disable] using local access
+                                      automatically
+      --[no-]auto-local-access-dynamic
+                                      Enable [disable] using local access
+                                      automatically (dynamic only)
 
 Run-time Semantic Check Options:
       --[no-]checks                   Enable [disable] all following run-time
