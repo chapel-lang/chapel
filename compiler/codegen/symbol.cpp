@@ -1779,7 +1779,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
         else
           b.addAttribute(llvm::Attribute::ZExt);
 
-        b.addAttribute(llvm::Attribute::InReg);
+        if (returnInfo.getInReg())
+          b.addAttribute(llvm::Attribute::InReg);
 
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
 
