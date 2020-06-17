@@ -1401,8 +1401,9 @@ bool typeNeedsCopyInitDeinit(Type* type) {
         aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;
 
-    // Not a RUNTIME_type
-    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+    // Not a RUNTIME_type or an extern type
+    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
+               sym->hasFlag(FLAG_EXTERN)) {
       retval = false;
 
     } else {
