@@ -2447,7 +2447,11 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 
     clang::CanQual<clang::FunctionProtoType> proto =
                FTy.getAs<clang::FunctionProtoType>();
+#if HAVE_LLVM_VER >= 90
     return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
+#else
+    return clang::CodeGen::arrangeFreeFunctionType(CGM, proto, FD);
+#endif
   }
 
   // Otherwise, we should call arrangeFreeFunctionCall
@@ -2477,6 +2481,7 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
                                  extInfo, clang::CodeGen::RequiredArgs::All);
 }
 
+#if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -2486,6 +2491,17 @@ llvm::MaybeAlign getPointerAlign(int addrSpace) {
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
   return llvm::MaybeAlign(align);
 }
+#else
+uint64_t getPointerAlign(int addrSpace) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
+  return align;
+}
+#endif
 
 bool isBuiltinExternCFunction(const char* cname)
 {

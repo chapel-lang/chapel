@@ -3796,7 +3796,7 @@ DEFINE_PRIM(PRIM_RETURN) {
             llvm::Value* sret = irBuilder->CreateStructGEP(
                 nullptr, arg, returnInfo->getInAllocaFieldIndex());
 
-            llvm::MaybeAlign align = getPointerAlign(0);
+            auto align = getPointerAlign(0);
             llvm::Value* v = irBuilder->CreateAlignedLoad(sret,
                                                           align,
                                                           "sret");

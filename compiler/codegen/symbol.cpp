@@ -1710,6 +1710,28 @@ static void pushAllFieldTypesRecursively(const char* name,
   }
 }
 
+static
+const clang::CodeGen::ABIArgInfo*
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
+{
+  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+#if HAVE_LLVM_VER >= 100
+  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
+  argInfo = &a[curCArg].info;
+#else
+  int i = 0; 
+  for (auto &ii : CGI->arguments()) { 
+    if (i == curCArg) {
+      argInfo = &ii.info;
+      break;
+    }
+    i++;
+  }
+#endif
+
+  return argInfo;
+}
+
 static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
                                              llvm::AttributeList& attrs,
                                              std::vector<const char*>& argNames)
@@ -1841,8 +1863,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
   for_formals(formal, fn) {
     const clang::CodeGen::ABIArgInfo* argInfo = NULL;
     if (CGI) {
-      llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
-      argInfo = &a[curCArg].info;
+      argInfo = getCGArgInfo(CGI, curCArg);
     }
 
     if (formal->hasFlag(FLAG_NO_CODEGEN))
@@ -1886,7 +1907,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
             b.addAttribute(llvm::Attribute::InReg);
           }
           if (argInfo->getIndirectByVal()) {
+#if HAVE_LLVM_VER >= 90
             b.addByValAttr(argTy);
+#else
+            b.addAttribute(llvm::Attribute::ByVal);
+#endif
           }
           clang::CharUnits align = argInfo->getIndirectAlign();
           if (argInfo->getIndirectByVal()) {
@@ -2255,8 +2280,7 @@ void FnSymbol::codegenDef() {
     for_formals(arg, this) {
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
       if (CGI) {
-        llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
-        argInfo = &a[curCArg].info;
+        argInfo = getCGArgInfo(CGI, curCArg);
       }
 
       if (arg->hasFlag(FLAG_NO_CODEGEN))
