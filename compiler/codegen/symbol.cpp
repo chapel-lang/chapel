@@ -1711,6 +1711,8 @@ static void pushAllFieldTypesRecursively(const char* name,
 static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
                                              llvm::AttributeList& attrs,
                                              std::vector<const char*>& argNames) {
+  // This function is inspired by clang's CodeGenTypes::GetFunctionType
+  // and CodeGenModule::ConstructAttributeList
 
   llvm::LLVMContext& ctx = gGenInfo->llvmContext;
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
@@ -1740,17 +1742,6 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     }
   }
 
-  // See Swift expandExternalSignatureTypes
-  //  irgen::emitForeignParameter
-  //  emitDirectForeignParameter
-  //  externalizeArguments
-  //
-  //  Swift emitDirectExternalArgument
-  //
-
-  // Inspired by clang's CodeGenTypes::GetFunctionType
-  // and CodeGenModule::ConstructAttributeList
-
   int curCArg = 0;
 
   if (CGI) {
@@ -1768,7 +1759,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       case clang::CodeGen::ABIArgInfo::Kind::Direct:
       {
         llvm::AttrBuilder b;
-        b.addAttribute(llvm::Attribute::InReg);
+        if (returnInfo.getInReg())
+          b.addAttribute(llvm::Attribute::InReg);
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
 
         returnTy = returnInfo.getCoerceToType();
@@ -1776,11 +1768,6 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       }
       case clang::CodeGen::ABIArgInfo::Kind::Extend:
       {
-        /*bool isSigned = is_signed(fn->retType);
-        if (!(is_int_type(fn->retType) ||
-              is_uint_type(fn->retType) ||
-              is_bool_type(fn->retType)))
-          INT_FATAL(fn, "extending something not int/uint");*/
         bool isSigned = returnInfo.isSignExt();
 
         llvm::AttrBuilder b;
