@@ -706,7 +706,7 @@ module String {
   inline proc createStringWithNewBuffer(x: string) {
     // we don't validate here because `x` must have been validated already
     var ret: string;
-    ret.cachedNumCodepoints = x.cachedNumCodepoints;
+    ret.cachedNumCodepoints = x.numCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
   }

@@ -24,9 +24,6 @@ module BytesStringCommon {
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
-  config param doNumCodepointAssertion = true;
-  extern proc printf(s...);
-
   /*
      ``decodePolicy`` specifies what happens when there is malformed characters
      when decoding a :mod:`Bytes` into a UTF-8 :record:`~String.string`.
