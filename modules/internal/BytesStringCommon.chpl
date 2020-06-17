@@ -290,7 +290,7 @@ module BytesStringCommon {
     x.buffLen = length;
   }
 
-  proc initWithNewBuffer(ref x: ?t, other: t) {
+  inline proc initWithNewBuffer(ref x: ?t, other: t) {
     assertArgType(t, "initWithNewBuffer");
 
     const otherRemote = other.locale_id != chpl_nodeID;
@@ -301,7 +301,7 @@ module BytesStringCommon {
 
     if otherLen > 0 {
       x.buffLen = otherLen;
-      if otherRemote {
+      if !_local && otherRemote {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
