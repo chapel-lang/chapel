@@ -1712,7 +1712,8 @@ static void pushAllFieldTypesRecursively(const char* name,
 
 static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
                                              llvm::AttributeList& attrs,
-                                             std::vector<const char*>& argNames) {
+                                             std::vector<const char*>& argNames)
+{
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
 
@@ -1919,11 +1920,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
             }
           } else {
             // Emit argument
-            argTys.push_back(argTy);
-            argNames.push_back(formal->cname);
+            argTys.push_back(toTy);
+            argNames.push_back(astr(formal->cname, ".coerce"));
             // Adjust attributes
             llvm::AttrBuilder b;
-            if (formal->isRef()) {
+            if (formal->isRef() && argTy == toTy) {
               b.addAttribute(llvm::Attribute::NonNull);
               llvm::Type* valType = formal->getValType()->codegen().type;
               int64_t sz = getTypeSizeInBytes(layout, valType);
