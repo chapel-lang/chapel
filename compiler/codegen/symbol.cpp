@@ -2212,6 +2212,10 @@ void FnSymbol::codegenDef() {
     if (this->hasFlag(FLAG_LLVM_READNONE))
       func->addFnAttr(llvm::Attribute::ReadNone);
 
+    if (this->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+      func->addFnAttr(llvm::Attribute::NoReturn);
+    }
+
     if (specializeCCode) {
       // Add target-cpu and target-features metadata
       // We could also get this from clang::CompilerInvocation getTargetOpts
