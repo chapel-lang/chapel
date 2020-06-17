@@ -369,7 +369,7 @@ module Bytes {
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
-    proc byteIndices return 0..<size;
+    inline proc byteIndices return 0..<size;
 
     inline proc param length param {
       compilerWarning("'bytes.length' is deprecated - " +

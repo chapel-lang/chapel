@@ -937,7 +937,7 @@ module String {
       return n;
     }
 
-    proc byteIndices return 0..<this.numBytes;
+    inline proc byteIndices return 0..<this.numBytes;
 
     inline proc param c_str() param : c_string {
       return this:c_string; // folded out in resolution
