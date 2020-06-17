@@ -228,49 +228,47 @@ static void gatherForallInfo(ForallStmt *forall) {
   AList &iterExprs = forall->iteratedExpressions();
   AList &indexVars = forall->inductionVariables();
 
-  if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
-    if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
-      if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
-        forall->optInfo.iterSym = iterSE->symbol();
+  if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
+    if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
+      forall->optInfo.iterSym = iterSE->symbol();
 
-        LOG("Iterated symbol", forall->optInfo.iterSym);
-      }
+      LOG("Iterated symbol", forall->optInfo.iterSym);
     }
-    // it might be in the form `A.domain` where A is used in the loop body
-    else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
-      forall->optInfo.dotDomIterExpr = iterExprs.head;
-      forall->optInfo.dotDomIterSym = dotDomBaseSym;
-      forall->optInfo.dotDomIterSymDom = getDomSym(forall->optInfo.dotDomIterSym);
+  }
+  // it might be in the form `A.domain` where A is used in the loop body
+  else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
+    forall->optInfo.dotDomIterExpr = iterExprs.head;
+    forall->optInfo.dotDomIterSym = dotDomBaseSym;
+    forall->optInfo.dotDomIterSymDom = getDomSym(forall->optInfo.dotDomIterSym);
 
-      LOG("Iterated over the domain of", forall->optInfo.dotDomIterSym);
-      if (forall->optInfo.dotDomIterSymDom != NULL) {
-        LOG(", which is", forall->optInfo.dotDomIterSymDom);
-      }
-      else {
-        LOG(", whose domain cannot be determined statically",
-                      forall->optInfo.dotDomIterSym);
-      }
+    LOG("Iterated over the domain of", forall->optInfo.dotDomIterSym);
+    if (forall->optInfo.dotDomIterSymDom != NULL) {
+      LOG(", which is", forall->optInfo.dotDomIterSymDom);
+    }
+    else {
+      LOG(", whose domain cannot be determined statically",
+                    forall->optInfo.dotDomIterSym);
+    }
+  }
+
+  if (forall->optInfo.iterSym != NULL || forall->optInfo.dotDomIterSym != NULL) {
+    // the iterator is something we can optimize
+    // now check the induction variables
+    if (SymExpr* se = toSymExpr(indexVars.head)) {
+      loopIdxSym = se->symbol();
+    }
+    else if (DefExpr* de = toDefExpr(indexVars.head)) {
+      loopIdxSym = de->sym;
+    }
+    else {
+      INT_FATAL("Loop index cannot be extracted");
     }
 
-    if (forall->optInfo.iterSym != NULL || forall->optInfo.dotDomIterSym != NULL) {
-      // the iterator is something we can optimize
-      // now check the induction variables
-      if (SymExpr* se = toSymExpr(indexVars.head)) {
-        loopIdxSym = se->symbol();
-      }
-      else if (DefExpr* de = toDefExpr(indexVars.head)) {
-        loopIdxSym = de->sym;
-      }
-      else {
-        INT_FATAL("Loop index cannot be extracted");
-      }
-
-      if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-        forall->optInfo.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
-      }
-      else {
-        forall->optInfo.multiDIndices.push_back(loopIdxSym);
-      }
+    if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+      forall->optInfo.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
+    }
+    else {
+      forall->optInfo.multiDIndices.push_back(loopIdxSym);
     }
   }
 }
