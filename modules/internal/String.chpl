@@ -812,51 +812,36 @@ module String {
     private use ByteBufferHelpers only bufferType;
 
     inline proc chpl_createStringWithNewBufferNV(x: bufferType,
-                                                         length: int,
-                                                         size: int,
-                                                         numCodepoints=-1) {
+                                                 length: int,
+                                                 size: int,
+                                                 numCodepoints: int) {
       var ret: string;
       initWithNewBuffer(ret, x, length, size);
-      /*if numCodepoints < 0 {*/
-        /*ret.cachedNumCodepoints = ret.countNumCodepoints();*/
-      /*}*/
-      /*else {*/
-        ret.cachedNumCodepoints = numCodepoints;
-      /*}*/
+      ret.cachedNumCodepoints = numCodepoints;
       return ret;
     }
 
     inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
-                                                              length: int,
-                                                              size: int,
-                                                              numCodepoints=-1) {
-      // NOTE: This is similar to chpl_createStringWithLiteral above, but only
-      // used internally by the String module. These two functions cannot have the
+                                                      length: int,
+                                                      size: int,
+                                                      numCodepoints: int) {
+      // NOTE: This is similar to chpl_createStringWithLiteral, but only used
+      // internally by the String module. These two functions cannot have the
       // same names, because "wellknown" implementation in the compiler does not
       // allow overloads.
       var ret: string;
       initWithBorrowedBuffer(ret, x, length, size);
-      /*if numCodepoints < 0 {*/
-        /*ret.cachedNumCodepoints = ret.countNumCodepoints();*/
-      /*}*/
-      /*else {*/
-        ret.cachedNumCodepoints = numCodepoints;
-      /*}*/
+      ret.cachedNumCodepoints = numCodepoints;
       return ret;
     }
 
     inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
-                                                         length: int,
-                                                         size: int,
-                                                         numCodepoints=-1) {
+                                                   length: int,
+                                                   size: int,
+                                                   numCodepoints: int) {
       var ret: string;
       initWithOwnedBuffer(ret, x, length, size);
-      /*if numCodepoints < 0 {*/
-        /*ret.cachedNumCodepoints = ret.countNumCodepoints();*/
-      /*}*/
-      /*else {*/
-        ret.cachedNumCodepoints = numCodepoints;
-      /*}*/
+      ret.cachedNumCodepoints = numCodepoints;
       return ret;
     }
   }

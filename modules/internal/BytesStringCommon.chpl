@@ -792,7 +792,6 @@ module BytesStringCommon {
 
     inline proc helpMe(ref lhs: t, rhs: t) {
       if _local || rhs.locale_id == chpl_nodeID {
-        //lhs.reinitString(rhs.buff, rhs.buffLen, rhs.buffSize, needToCopy=true);
         if t == string {
           reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize,
                               rhs.numCodepoints);
