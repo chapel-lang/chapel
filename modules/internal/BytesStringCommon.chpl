@@ -868,7 +868,7 @@ module BytesStringCommon {
 
   proc assertNumCodepoints(x: ?t) {
     assertArgType(t, "assertNumCodepoints");
-    if doNumCodepointAssertion && t == string {
+    if boundsChecking && doNumCodepointAssertion && t == string {
       if x.cachedNumCodepoints != x.numCodepoints {
         halt("Encountered a string with corrupt metadata");
       }

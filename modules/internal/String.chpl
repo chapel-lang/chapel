@@ -1238,7 +1238,7 @@ module String {
   */
   proc const string.numCodepoints {
     const n = this.countNumCodepoints();
-    if n != cachedNumCodepoints {
+    if boundsChecking && n != cachedNumCodepoints {
       halt("Encountered corrupt string metadata");
     }
     return n;
