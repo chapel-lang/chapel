@@ -92,9 +92,9 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
 static Symbol *getDomSym(Symbol *arrSym) {
   Symbol *ret = NULL;
   if(DefExpr *def = arrSym->defPoint) {
-    // check the most basic idiom `var A: [D] int`
     if (def->exprType != NULL) {
       if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
+        // check the most basic idiom `var A: [D] int`
         if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
           if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
             if (ceInner->isNamed("chpl__ensureDomainExpr")) {
@@ -106,6 +106,12 @@ static Symbol *getDomSym(Symbol *arrSym) {
                 ret = getDomSym(dotDomBaseSym); // recurse
               }
             }
+          }
+        }
+        // check for `B` in `var A, B: [D] int;`
+        else if (ceOuter->isPrimitive(PRIM_TYPEOF)) {
+          if (SymExpr *typeOfSymExpr = toSymExpr(ceOuter->get(1))) {
+            ret = getDomSym(typeOfSymExpr->symbol()); // recurse
           }
         }
       }
