@@ -1,1 +1,0 @@
-bug: qualified access to reexported functions with the same name doesn't work

@@ -13,7 +13,7 @@ module C {
   public use B;
 }
 module D {
-  use C;
+  import C;
 
   proc main() {
     C.foo(10);
