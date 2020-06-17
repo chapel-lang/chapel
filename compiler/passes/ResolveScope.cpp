@@ -976,7 +976,7 @@ Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicImports(const char* name) const {
+Symbol* ResolveScope::lookupPublicVisStmts(const char* name) const {
   Symbol *retval = NULL;
 
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
@@ -1006,22 +1006,25 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-         BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs,
-                                                   bool followUses) {
+Symbol*
+ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                           BaseAST *context,
+                                           std::map<Symbol*,
+                                             astlocT*>& renameLocs,
+                                           bool followUses) {
   if (!this->canReexport) return NULL;
 
   std::vector<Symbol *> symbols;
 
   bool traversedRenames = false;
-  bool hasPublicImport = false;
+  bool hasPublicVisStmt = false;
   uint64_t numFuncs = 0;
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
     // Note: assumes that UseStmt and ImportStmt are the only subclasses of
     // VisibilityStmt
     if (visStmt != NULL) {
       if (!visStmt->isPrivate) {
-        hasPublicImport = true;
+        hasPublicVisStmt = true;
         if (isUseStmt(visStmt) && !followUses) {
           // Mark that we re-export, but don't always follow it
           continue;
@@ -1052,7 +1055,7 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     }
   }
 
-  if (!hasPublicImport) {
+  if (!hasPublicVisStmt) {
     this->canReexport = false;
   }
 
