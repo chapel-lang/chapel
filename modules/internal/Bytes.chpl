@@ -1318,13 +1318,8 @@ module Bytes {
      Copies the c_string `rhs_c` into the bytes `lhs`.
 
      Halts if `lhs` is a remote bytes.
-
-     .. warning:: This operator has been deprecated - please use
-                  createBytesWith* functions instead.
   */
   proc =(ref lhs: bytes, rhs_c: c_string) {
-    compilerWarning("Assignment from c_string to bytes is deprecated. ",
-                    "Use createBytesWith* functions instead.");
     lhs = createBytesWithNewBuffer(rhs_c);
   }
 

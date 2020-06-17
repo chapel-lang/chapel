@@ -1,4 +1,0 @@
-cStringAssignment.chpl:4: warning: Assignment from c_string to string is deprecated. Use createStringWith* functions instead.
-cStringAssignment.chpl:5: warning: Assignment from c_string to bytes is deprecated. Use createBytesWith* functions instead.
-test
-test
