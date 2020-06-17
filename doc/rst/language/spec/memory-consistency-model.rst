@@ -521,8 +521,10 @@ Examples
         x.write(1);
       }
 
-   *Future*.
+   .. note::
 
-   Upon completion, Chapel’s atomic
-   statement (:ref:`Atomic_Statement`) will serve as an
-   additional means of correctly synchronizing between tasks.
+      *Future:*
+
+      Upon completion, Chapel’s atomic
+      statement (:ref:`Atomic_Statement`) will serve as an
+      additional means of correctly synchronizing between tasks.
