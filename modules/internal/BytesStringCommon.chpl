@@ -114,7 +114,7 @@ module BytesStringCommon {
       const (decodeRet, cp, nBytes) = decodeHelp(buff, length, 
                                                  thisIdx, 
                                                  allowEsc=false);
-      var buffToDecode = (buff + thisIdx): c_string;
+      var buffToDecode = buff + thisIdx;
 
       numCodepoints += 1;
 
