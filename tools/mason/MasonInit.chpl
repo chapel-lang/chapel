@@ -87,9 +87,9 @@ proc masonInit(args) throws {
         var resName = validatePackageNameChecks(path, name);
         name = resName;
         validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, name, true, show);
+        var isInitialized = validateInit(path, name, true, show, false);
         if isInitialized > 0 then
-        writeln("Initialized new library project: " + basename(cwd));
+        writeln("Initialized new library project: " + name);
       } else {
         // check if Mason.toml file and src/moduleFile is present
         var isMasonTomlPresent = false;
@@ -114,9 +114,9 @@ proc masonInit(args) throws {
         overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
           newVersion, newChplVersion, defaultPackageName, defaultVersion, defaultChplVersion);
         if newPackageName + '.chpl' != moduleName {
-          if isFile('./src/' + moduleName) then remove('src/' + moduleName);
+          if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
         }
-        validateInit('.', newPackageName, true, show);
+        var isInitialized = validateInit('.', newPackageName, true, show, true);
         writeln("Initialised new library project: " + newPackageName);
       }
     }
@@ -132,9 +132,9 @@ proc masonInit(args) throws {
         var resName = validatePackageNameChecks(path, name);
         name = resName;
         validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, name, true, show);
+        var isInitialized = validateInit(path, name, true, show, false);
         if isInitialized > 0 then
-        writeln("Initialized new library project in " + path + ": " + basename(path));
+        writeln("Initialized new library project in " + path + ": " + name);
       }
       else {
         throw new owned MasonError("Directory does not exist: " + path +
@@ -188,7 +188,7 @@ proc readPartialManifest() {
 /*
 Validates directories and files in project directory to avoid overwriting
 */
-proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) throws {
+proc validateInit(path: string, name: string, isNameDiff: bool, show: bool, interactive: bool) throws {
   var fileName = "";
   if path != '.' {
     fileName = basename(path);
@@ -222,7 +222,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
     }
   }
 
-  if toBeCreated.size == 0 {
+  if toBeCreated.size == 0 && !interactive {
       writeln("Library project has already been initialised.");
       return 0;
   }
