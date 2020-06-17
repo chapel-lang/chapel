@@ -915,15 +915,17 @@ void VarSymbol::codegenDef() {
 ********************************* | ********************************/
 
 bool argMustUseCPtr(Type* type) {
-  if (isUnion(type))
-    return true;
-  if (isRecord(type) &&
-      !type->symbol->hasFlag(FLAG_RANGE) &&
-      // TODO: why are ref types being created with AGGREGATE_RECORD?
-      !type->symbol->hasFlag(FLAG_REF) &&
-      !type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
-    return true;
-  return false;
+  // no additional c pointer indirection needed for ref/wide ref types
+  if (type->symbol->hasFlag(FLAG_REF) ||
+      type->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS))
+    return false;
+
+  bool recordNotRangeNotExtern = isRecord(type) &&
+                                 !type->symbol->hasFlag(FLAG_RANGE) &&
+                                 !type->symbol->hasFlag(FLAG_EXTERN);
+
+  return recordNotRangeNotExtern ||
+         isUnion(type);
 }
 
 bool ArgSymbol::requiresCPtr(void) {
