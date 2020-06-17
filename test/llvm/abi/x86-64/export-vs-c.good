@@ -1,0 +1,8 @@
+OUTPUT testing struct_..._c
+OUTPUT testing struct_..._c: arg.a 0 arg.b 1
+OUTPUT testing struct_..._chapel
+OUTPUT testing struct_..._chapel: arg.a 0 arg.b 1
+define weak dso_local i64 @struct_return_c()  
+define weak dso_local i64 @struct_return_chapel()  
+define weak dso_local void @struct_arg_c(i64 %arg.coerce)  
+define weak dso_local void @struct_arg_chapel(i64 %arg)  

@@ -1,0 +1,1 @@
+--llvm --llvm-print-ir struct_return_c,struct_arg_c,struct_return_chapel,struct_arg_chapel --llvm-print-ir-stage basic
