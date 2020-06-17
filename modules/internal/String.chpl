@@ -53,9 +53,9 @@ within strings.
 Casts from String to a Numeric Type
 -----------------------------------
 
-This module supports casts from :mod:`String` to numeric types. Such casts
-will convert the string to the numeric type and throw an error if the string
-is invalid. For example:
+This module supports casts from :mod:`string <String>` to numeric types. Such
+casts will convert the string to the numeric type and throw an error if the
+string is invalid. For example:
 
 .. code-block:: chapel
 
@@ -90,9 +90,10 @@ Non-Unicode Data and Chapel Strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For doing string operations on non-Unicode or arbitrary data, consider using
-:mod:`Bytes` instead of string. However, there may be cases where
-:mod:`String` must be used with non-Unicode data. Examples of this are file
-system and path operations on systems where UTF-8 file names are not enforced.
+:mod:`bytes <Bytes>` instead of string. However, there may be cases where
+:mod:`string <String>` must be used with non-Unicode data. Examples of this are
+file system and path operations on systems where UTF-8 file names are not
+enforced.
 
 
 In such scenarios, non-UTF-8 data can be escaped and stored in a string in a way
@@ -1159,10 +1160,10 @@ module String {
   }
   
   /*
-     Gets a version of the :mod:`String` that is on the currently
+     Gets a version of the :mod:`string <String>` that is on the currently
      executing locale.
 
-     :returns: A shallow copy if the :mod:`String` is already on the
+     :returns: A shallow copy if the :mod:`string <String>` is already on the
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
@@ -1175,11 +1176,11 @@ module String {
   }
 
   /*
-    Get a `c_string` from a :mod:`String`.
+    Get a `c_string` from a :mod:`string <String>`.
 
     .. warning::
 
-        This can only be called safely on a :mod:`String` whose home is
+        This can only be called safely on a :mod:`string <String>` whose home is
         the current locale.  This property can be enforced by calling
         :proc:`string.localize()` before :proc:`~string.c_str()`. If the
         string is remote, the program will halt.
@@ -1195,7 +1196,7 @@ module String {
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
-        :mod:`String`. The returned `c_string` is only valid when used
+        :mod:`string <String>`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
   inline proc string.c_str(): c_string {
@@ -1203,7 +1204,7 @@ module String {
   }
   
   /*
-    Returns a :mod:`Bytes` from the given :mod:`String`. If the
+    Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
         
@@ -1211,7 +1212,7 @@ module String {
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
-    :returns: :mod:`Bytes`
+    :returns: :mod:`bytes <Bytes>`
   */
   proc string.encode(policy=encodePolicy.pass): bytes {
     var localThis: string = this.localize();
