@@ -11,6 +11,7 @@ import IO;
 
 extern {
   #include <stdio.h>
+  #include <inttypes.h>
 
   struct c_pair {
     int a;
@@ -18,8 +19,20 @@ extern {
   };
 
   void print_output_prefix(void);
+
+  int32_t int32_return_c(void);
+  void int32_arg_c(int32_t i);
+
   struct c_pair struct_return_c(void);
   void struct_arg_c(struct c_pair arg);
+
+  int32_t int32_return_c(void) {
+    return 1;
+  }
+  void int32_arg_c(int32_t i) {
+    print_output_prefix();
+    printf("arg %i\n", (int) i);
+  }
 
   struct c_pair struct_return_c(void) {
     struct c_pair pair;
@@ -27,7 +40,6 @@ extern {
     pair.b = 1;
     return pair;
   }
-
   void struct_arg_c(struct c_pair arg) {
     print_output_prefix();
     printf("arg.a %i arg.b %i\n", arg.a, arg.b);
@@ -46,22 +58,40 @@ proc start_phase(name:string) {
   phase = name;
 }
 
+export proc int32_return_chapel(): int(32) {
+  return int32_return_c();
+}
+export proc int32_arg_chapel(i: int(32)) {
+  int32_arg_c(i);
+}
+
 export proc struct_return_chapel(): c_pair {
   var pair:c_pair;
   pair = struct_return_c();
   return pair;
 }
-
 export proc struct_arg_chapel(in arg: c_pair) {
   struct_arg_c(arg);
 }
 
 proc main() {
-  start_phase("testing struct_..._c");
-  var pair:c_pair;
-  pair = struct_return_c();
-  struct_arg_c(pair);
-  start_phase("testing struct_..._chapel");
-  pair = struct_return_chapel();
-  struct_arg_chapel(pair);
+  {
+    var i:int(32);
+    start_phase("testing int32_..._c");
+    i = int32_return_c();
+    int32_arg_c(i);
+    start_phase("testing int32_..._chapel");
+    i = int32_return_chapel();
+    int32_arg_chapel(i);
+  }
+
+  {
+    var pair:c_pair;
+    start_phase("testing struct_..._c");
+    pair = struct_return_c();
+    struct_arg_c(pair);
+    start_phase("testing struct_..._chapel");
+    pair = struct_return_chapel();
+    struct_arg_chapel(pair);
+  }
 }
