@@ -722,22 +722,94 @@ module BytesStringCommon {
     }
   }
 
+  proc reinitWithNewBuffer(ref lhs: ?t, buff: bufferType, buffLen: int,
+                           buffSize: int, numCodepoints: int = 0) {
+      if lhs.isEmpty() && buff == nil then return;
+
+      // If the lhs.buff is longer than buff, then reuse the buffer if we are
+      // allowed to (lhs.isOwned == true)
+      if buffLen != 0 {
+        if !lhs.isOwned || buffLen+1 > lhs.buffSize {
+          // If the new string is too big for our current buffer or we dont
+          // own our current buffer then we need a new one.
+          if lhs.isOwned && !lhs.isEmpty() then
+            bufferFree(lhs.buff);
+          // TODO: should I just allocate 'size' bytes?
+          const (buff, allocSize) = bufferAlloc(buffLen+1);
+          lhs.buff = buff;
+          lhs.buffSize = allocSize;
+          // We just allocated a buffer, make sure to free it later
+          lhs.isOwned = true;
+        }
+        bufferMemmoveLocal(lhs.buff, buff, buffLen);
+        lhs.buff[buffLen] = 0;
+      } else {
+        // If buffLen is 0, 'buf' may still have been allocated. Regardless, we
+        // need to free the old buffer if 'lhs' is isOwned.
+        if lhs.isOwned && !lhs.isEmpty() then bufferFree(lhs.buff);
+        lhs.buffSize = 0;
+
+        // If we need to copy, we can just set 'buff' to nil. Otherwise the
+        // implication is that the string takes ownership of the given buffer,
+        // so we need to store it and free it later.
+        lhs.buff = nil;
+      }
+
+      lhs.buffLen = buffLen;
+      if t==string then lhs.cachedNumCodepoints = numCodepoints;
+  }
+
+  proc reinitWithOwnedBuffer(ref lhs: ?t, buff: bufferType, buffLen: int,
+                             buffSize: int, numCodepoints: int) {
+
+      if lhs.isEmpty() && buff == nil then return;
+
+      // If the lhs.buff is longer than buff, then reuse the buffer if we are
+      // allowed to (lhs.isOwned == true)
+      if buffLen != 0 {
+        if lhs.isOwned && !lhs.isEmpty() then
+          bufferFree(lhs.buff);
+        lhs.buff = buff;
+        lhs.buffSize = buffSize;
+      } else {
+        // If buffLen is 0, 'buf' may still have been allocated. Regardless, we
+        // need to free the old buffer if 'lhs' is isOwned.
+        if lhs.isOwned && !lhs.isEmpty() then bufferFree(lhs.buff);
+        lhs.buff = buff;
+        lhs.buffSize = 0;
+      }
+
+      lhs.isOwned = true;
+      lhs.buffLen = buffLen;
+      if t==string then lhs.cachedNumCodepoints = numCodepoints;
+  }
+
   proc doAssign(ref lhs: ?t, rhs: t) {
     assertArgType(t, "doAssign");
     assertNumCodepoints(lhs);
 
     inline proc helpMe(ref lhs: t, rhs: t) {
       if _local || rhs.locale_id == chpl_nodeID {
-        lhs.reinitString(rhs.buff, rhs.buffLen, rhs.buffSize, needToCopy=true);
-      } else {
-
-        // deallocate local buffer no matter what, as we'll copy the remote one
-        if lhs.isOwned {
-          bufferFree(lhs.buff);
+        //lhs.reinitString(rhs.buff, rhs.buffLen, rhs.buffSize, needToCopy=true);
+        if t == string {
+          reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize,
+                              rhs.numCodepoints);
         }
-
-        lhs = if t==string then createStringWithNewBuffer(rhs)
-                           else createBytesWithNewBuffer(rhs);
+        else {
+          reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize);
+        }
+      } else {
+        const len = rhs.buffLen;
+        var remote_buf:bufferType = nil;
+        if len != 0 then
+          remote_buf = bufferCopyRemote(rhs.locale_id, rhs.buff, len);
+        if t==string {
+          reinitWithOwnedBuffer(lhs, remote_buf, len, len+1,
+                                rhs.cachedNumCodepoints);
+        }
+        else {
+          reinitWithOwnedBuffer(lhs, remote_buf, len, len+1);
+        }
       }
     }
 
