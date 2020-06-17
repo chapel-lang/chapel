@@ -1731,6 +1731,13 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     returnTy = llvm::Type::getVoidTy(ctx);
   } else {
     returnTy = fn->retType->codegen().type;
+
+    if (fn->hasFlag(FLAG_LLVM_RETURN_NOALIAS)) {
+      // Add NoAlias on return for allocator-like functions
+      llvm::AttrBuilder b;
+      b.addAttribute(llvm::Attribute::NoAlias);
+      attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+    }
   }
 
   // See Swift expandExternalSignatureTypes
