@@ -24,7 +24,7 @@ use LinearAlgebra;
 
   .. code-block:: bash
 
-    chpl --set blasImpl=none --set lapackImpl=none myProgram.chpl
+    chpl --set blasImpl=off --set lapackImpl=off myProgram.chpl
 
   This will result in a cleaner compiler error when using a procedure that is
   only available with :mod:`BLAS` or :mod:`LAPACK`.
