@@ -372,7 +372,7 @@ module BytesStringCommon {
         compilerError("string slicing doesn't support stridable codepoint ranges");
       }
 
-      if r == x.indices then return (x.indices, x.cachedNumCodepoints);
+      if r == x.indices then return (x.byteIndices, x.cachedNumCodepoints);
 
       // cast the argument r to `int` to make sure that we are not dealing with
       // codepointIdx
@@ -416,7 +416,6 @@ module BytesStringCommon {
   // TODO: I wasn't very good about caching variables locally in this one.
   proc getSlice(const ref x: ?t, r: range(?)) {
     assertArgType(t, "getSlice");
-    assertNumCodepoints(x);
 
     if x.isEmpty() {
       var ret: t;
@@ -480,7 +479,6 @@ module BytesStringCommon {
   proc doReplace(const ref x: ?t, needle: t, replacement: t,
                   count: int = -1): t {
     assertArgType(t, "doReplace");
-    assertNumCodepoints(x);
 
     type _idxt = getIndexType(t);
     var result: t = x;
@@ -506,7 +504,6 @@ module BytesStringCommon {
   iter doSplit(const ref x: ?t, sep: t, maxsplit: int = -1,
                 ignoreEmpty: bool = false): t {
     assertArgType(t, "doSplit");
-    assertNumCodepoints(x);
 
     type _idxt = getIndexType(t);
 
@@ -562,7 +559,6 @@ module BytesStringCommon {
                              where isHomogeneousTuple(needles) &&
                                    needles[0].type==t {
     assertArgType(t, "startsEndsWith");
-    assertNumCodepoints(x);
 
     var ret: bool = false;
     on __primitive("chpl_on_locale_num",
@@ -596,7 +592,6 @@ module BytesStringCommon {
 
   proc doJoinIterator(const ref x: ?t, ir: _iteratorRecord): t {
     assertArgType(t, "doJoinIterator");
-    assertNumCodepoints(x);
 
     var s: t;
     var first: bool = true;
@@ -613,7 +608,6 @@ module BytesStringCommon {
   proc doJoin(const ref x: ?t, const ref S): t
                where (isTuple(S) || isArray(S)) {
     assertArgType(t, "doJoin");
-    assertNumCodepoints(x);
 
     if S.size == 0 {
       return "":t;
@@ -680,7 +674,6 @@ module BytesStringCommon {
   // localizing in the calling function
   proc doPartition(const ref x: ?t, sep: t): 3*t {
     assertArgType(t, "doPartition");
-    assertNumCodepoints(x);
 
     const idx = x.find(sep);
     if idx != -1 {
@@ -692,8 +685,6 @@ module BytesStringCommon {
 
   proc doAppend(ref lhs: ?t, const ref rhs: t) {
     assertArgType(t, "doAppend");
-    assertNumCodepoints(lhs);
-    assertNumCodepoints(rhs);
 
     // if rhs is empty, nothing to do
     if rhs.buffLen == 0 then return;
@@ -792,7 +783,6 @@ module BytesStringCommon {
 
   proc doAssign(ref lhs: ?t, rhs: t) {
     assertArgType(t, "doAssign");
-    assertNumCodepoints(lhs);
 
     inline proc helpMe(ref lhs: t, rhs: t) {
       if _local || rhs.locale_id == chpl_nodeID {
@@ -831,8 +821,6 @@ module BytesStringCommon {
 
   proc doMultiply(const ref x: ?t, n: integral) {
     assertArgType(t, "doMultiply");
-    assertNumCodepoints(x);
-    assertNumCodepoints(x);
 
     const sLen = x.numBytes;
     if isBytesType(t) {
@@ -871,19 +859,8 @@ module BytesStringCommon {
     }
   }
 
-  proc assertNumCodepoints(x: ?t) {
-    assertArgType(t, "assertNumCodepoints");
-    if boundsChecking && doNumCodepointAssertion && t == string {
-      if x.cachedNumCodepoints != x.numCodepoints {
-        halt("Encountered a string with corrupt metadata");
-      }
-    }
-  }
-
   proc doConcat(s0: ?t, s1: t): t {
     assertArgType(t, "doConcat");
-    assertNumCodepoints(s0);
-    assertNumCodepoints(s1);
 
     // cache lengths locally
     const s0len = s0.buffLen;
@@ -910,8 +887,6 @@ module BytesStringCommon {
   inline proc doEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
-    assertNumCodepoints(a);
-    assertNumCodepoints(b);
 
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
@@ -933,8 +908,6 @@ module BytesStringCommon {
   inline proc doLessThan(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
-    assertNumCodepoints(a);
-    assertNumCodepoints(b);
 
     return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) < 0;
   }
@@ -942,8 +915,6 @@ module BytesStringCommon {
   inline proc doGreaterThan(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
-    assertNumCodepoints(a);
-    assertNumCodepoints(b);
 
     return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) > 0;
   }
@@ -951,8 +922,6 @@ module BytesStringCommon {
   inline proc doLessThanOrEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
-    assertNumCodepoints(a);
-    assertNumCodepoints(b);
 
     return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) <= 0;
   }
@@ -960,15 +929,12 @@ module BytesStringCommon {
   inline proc doGreaterThanOrEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
-    assertNumCodepoints(a);
-    assertNumCodepoints(b);
 
     return _strcmp(a.buff, a.buffLen, a.locale_id, b.buff, b.buffLen, b.locale_id) >= 0;
   }
 
   inline proc getHash(x: ?t) {
     assertArgType(t, "getHash");
-    assertNumCodepoints(x);
 
     var hash: int(64);
     on __primitive("chpl_on_locale_num",
@@ -989,6 +955,15 @@ module BytesStringCommon {
     } else {
       lhs.cachedNumCodepoints = lhs.cachedNumCodepoints + rhs.cachedNumCodepoints;
     }
+  }
+
+  proc countNumCodepoints(x: string) {
+    var ret: int;
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      ret = countNumCodepoints(x.buff, x.buffLen);
+    }
+    return ret;
   }
 
   proc countNumCodepoints(buff: bufferType, buffLen: int) {

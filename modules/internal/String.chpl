@@ -214,15 +214,6 @@ module String {
 
   private config param debugStrings = false;
 
-  /*
-    Returns true if the argument is a valid initial byte of a UTF-8
-    encoded multibyte character.
-  */
-  pragma "no doc"
-  private inline proc isInitialByte(b: uint(8)) : bool {
-    return (b & 0xc0) != 0x80;
-  }
-
   pragma "no doc"
   record __serializeHelper {
     var buffLen: int;
@@ -1160,7 +1151,7 @@ module String {
   inline proc const string.numCodepoints {
     const n = this.cachedNumCodepoints;
     if boundsChecking {
-      if n != countNumCodepoints(this.buff, this.buffLen) {
+      if n != countNumCodepoints(this) {
         halt("Encountered corrupt string metadata");
       }
     }
