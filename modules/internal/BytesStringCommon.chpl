@@ -281,7 +281,7 @@ module BytesStringCommon {
     x.buffLen = length;
   }
 
-  proc initWithOwnedBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
+  inline proc initWithOwnedBuffer(ref x: ?t, other: bufferType, length:int, size:int) {
     assertArgType(t, "initWithOwnedBuffer");
 
     x.isOwned = true;

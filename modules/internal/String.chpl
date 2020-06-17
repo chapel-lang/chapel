@@ -817,12 +817,12 @@ module String {
                                                          numCodepoints=-1) {
       var ret: string;
       initWithNewBuffer(ret, x, length, size);
-      if numCodepoints < 0 {
-        ret.cachedNumCodepoints = ret.countNumCodepoints();
-      }
-      else {
+      /*if numCodepoints < 0 {*/
+        /*ret.cachedNumCodepoints = ret.countNumCodepoints();*/
+      /*}*/
+      /*else {*/
         ret.cachedNumCodepoints = numCodepoints;
-      }
+      /*}*/
       return ret;
     }
 
@@ -836,12 +836,12 @@ module String {
       // allow overloads.
       var ret: string;
       initWithBorrowedBuffer(ret, x, length, size);
-      if numCodepoints < 0 {
-        ret.cachedNumCodepoints = ret.countNumCodepoints();
-      }
-      else {
+      /*if numCodepoints < 0 {*/
+        /*ret.cachedNumCodepoints = ret.countNumCodepoints();*/
+      /*}*/
+      /*else {*/
         ret.cachedNumCodepoints = numCodepoints;
-      }
+      /*}*/
       return ret;
     }
 
@@ -851,12 +851,12 @@ module String {
                                                          numCodepoints=-1) {
       var ret: string;
       initWithOwnedBuffer(ret, x, length, size);
-      if numCodepoints < 0 {
-        ret.cachedNumCodepoints = ret.countNumCodepoints();
-      }
-      else {
+      /*if numCodepoints < 0 {*/
+        /*ret.cachedNumCodepoints = ret.countNumCodepoints();*/
+      /*}*/
+      /*else {*/
         ret.cachedNumCodepoints = numCodepoints;
-      }
+      /*}*/
       return ret;
     }
   }
@@ -1237,9 +1237,11 @@ module String {
               string is correctly-encoded UTF-8.
   */
   proc const string.numCodepoints {
-    const n = this.countNumCodepoints();
-    if boundsChecking && n != cachedNumCodepoints {
-      halt("Encountered corrupt string metadata");
+    const n = this.cachedNumCodepoints;
+    if boundsChecking {
+      if n != this.countNumCodepoints() {
+        halt("Encountered corrupt string metadata");
+      }
     }
     return n;
   }
