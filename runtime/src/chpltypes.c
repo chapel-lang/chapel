@@ -55,11 +55,10 @@ object2int( _chpl_object o) {
   return (intptr_t) o;
 }
 
-/* This should be moved somewhere else, but where is the questions */
+/* This should be moved somewhere else, but where is the question */
 const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
 {
   if( i < 0 ) return NULL;
-  if( i > args->argc ) return NULL;
+  if( i >= args->argc ) return NULL;
   return args->argv[i];
 }
-
