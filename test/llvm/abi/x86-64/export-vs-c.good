@@ -1,8 +1,80 @@
+OUTPUT testing bool_..._c
+OUTPUT testing bool_..._c: arg 1
+OUTPUT testing bool_..._chapel
+OUTPUT testing bool_..._chapel: arg 1
+OUTPUT testing int16_..._c
+OUTPUT testing int16_..._c: arg -1
+OUTPUT testing int16_..._chapel
+OUTPUT testing int16_..._chapel: arg -1
+OUTPUT testing int32_..._c
+OUTPUT testing int32_..._c: arg -1
+OUTPUT testing int32_..._chapel
+OUTPUT testing int32_..._chapel: arg -1
+OUTPUT testing int64_..._c
+OUTPUT testing int64_..._c: arg -1
+OUTPUT testing int64_..._chapel
+OUTPUT testing int64_..._chapel: arg -1
+OUTPUT testing int8_..._c
+OUTPUT testing int8_..._c: arg -1
+OUTPUT testing int8_..._chapel
+OUTPUT testing int8_..._chapel: arg -1
 OUTPUT testing struct_..._c
 OUTPUT testing struct_..._c: arg.a 0 arg.b 1
 OUTPUT testing struct_..._chapel
 OUTPUT testing struct_..._chapel: arg.a 0 arg.b 1
+OUTPUT testing uint16_..._c
+OUTPUT testing uint16_..._c: arg 65535
+OUTPUT testing uint16_..._chapel
+OUTPUT testing uint16_..._chapel: arg 65535
+OUTPUT testing uint32_..._c
+OUTPUT testing uint32_..._c: arg 4294967295
+OUTPUT testing uint32_..._chapel
+OUTPUT testing uint32_..._chapel: arg 4294967295
+OUTPUT testing uint64_..._c
+OUTPUT testing uint64_..._c: arg 18446744073709551615
+OUTPUT testing uint64_..._chapel
+OUTPUT testing uint64_..._chapel: arg 18446744073709551615
+OUTPUT testing uint8_..._c
+OUTPUT testing uint8_..._c: arg 255
+OUTPUT testing uint8_..._chapel
+OUTPUT testing uint8_..._chapel: arg 255
+define weak dso_local i32 @int32_return_c()
+define weak dso_local i32 @int32_return_chapel()
+define weak dso_local i32 @uint32_return_c()
+define weak dso_local i32 @uint32_return_chapel()
+define weak dso_local i64 @int64_return_c()
+define weak dso_local i64 @int64_return_chapel()
 define weak dso_local i64 @struct_return_c()
 define weak dso_local i64 @struct_return_chapel()
+define weak dso_local i64 @uint64_return_c()
+define weak dso_local i64 @uint64_return_chapel()
+define weak dso_local signext i16 @int16_return_c()
+define weak dso_local signext i16 @int16_return_chapel()
+define weak dso_local signext i8 @int8_return_c()
+define weak dso_local signext i8 @int8_return_chapel()
+define weak dso_local void @bool_arg_c(i1 zeroext %i)
+define weak dso_local void @bool_arg_chapel(i1 zeroext %i.coerce)
+define weak dso_local void @int16_arg_c(i16 signext %i)
+define weak dso_local void @int16_arg_chapel(i16 signext %i)
+define weak dso_local void @int32_arg_c(i32 %i)
+define weak dso_local void @int32_arg_chapel(i32 %i)
+define weak dso_local void @int64_arg_c(i64 %i)
+define weak dso_local void @int64_arg_chapel(i64 %i)
+define weak dso_local void @int8_arg_c(i8 signext %i)
+define weak dso_local void @int8_arg_chapel(i8 signext %i)
 define weak dso_local void @struct_arg_c(i64 %arg.coerce)
 define weak dso_local void @struct_arg_chapel(i64 %arg.coerce)
+define weak dso_local void @uint16_arg_c(i16 zeroext %i)
+define weak dso_local void @uint16_arg_chapel(i16 zeroext %i)
+define weak dso_local void @uint32_arg_c(i32 %i)
+define weak dso_local void @uint32_arg_chapel(i32 %i)
+define weak dso_local void @uint64_arg_c(i64 %i)
+define weak dso_local void @uint64_arg_chapel(i64 %i)
+define weak dso_local void @uint8_arg_c(i8 zeroext %i)
+define weak dso_local void @uint8_arg_chapel(i8 zeroext %i)
+define weak dso_local zeroext i1 @bool_return_c()
+define weak dso_local zeroext i1 @bool_return_chapel()
+define weak dso_local zeroext i16 @uint16_return_c()
+define weak dso_local zeroext i16 @uint16_return_chapel()
+define weak dso_local zeroext i8 @uint8_return_c()
+define weak dso_local zeroext i8 @uint8_return_chapel()
