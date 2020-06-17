@@ -952,57 +952,6 @@ module String {
       return n;
     }
 
-    // This is assumed to be called from this.locale
-    proc ref reinitString(buff: bufferType, s_len: int, size: int,
-                          needToCopy:bool = true, ownBuffer = false) {
-      if this.isEmpty() && buff == nil then return;
-      this.cachedNumCodepoints = try! validateEncoding(buff, s_len);
-
-      // If the this.buff is longer than buff, then reuse the buffer if we are
-      // allowed to (this.isOwned == true)
-      if s_len != 0 {
-        if needToCopy {
-          if !this.isOwned || s_len+1 > this.buffSize {
-            // If the new string is too big for our current buffer or we dont
-            // own our current buffer then we need a new one.
-            if this.isOwned && !this.isEmpty() then
-              bufferFree(this.buff);
-            // TODO: should I just allocate 'size' bytes?
-            const (buff, allocSize) = bufferAlloc(s_len+1);
-            this.buff = buff;
-            this.buffSize = allocSize;
-            // We just allocated a buffer, make sure to free it later
-            this.isOwned = true;
-          }
-          bufferMemmoveLocal(this.buff, buff, s_len);
-          this.buff[s_len] = 0;
-        } else {
-          if this.isOwned && !this.isEmpty() then
-            bufferFree(this.buff);
-          this.buff = buff;
-          this.buffSize = size;
-        }
-      } else {
-        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'this' is isOwned.
-        if this.isOwned && !this.isEmpty() then bufferFree(this.buff);
-        this.buffSize = 0;
-
-        // If we need to copy, we can just set 'buff' to nil. Otherwise the
-        // implication is that the string takes ownership of the given buffer,
-        // so we need to store it and free it later.
-        if needToCopy {
-          this.buff = nil;
-        } else {
-          this.buff = buff;
-        }
-      }
-
-      if ownBuffer then this.isOwned = true;
-
-      this.buffLen = s_len;
-    }
-
     proc byteIndices return 0..<this.numBytes;
 
     inline proc param c_str() param : c_string {
