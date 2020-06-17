@@ -27,6 +27,7 @@
 #include "expr.h"
 #include "stmt.h"
 #include "stlUtil.h"
+#include "stringutil.h"
 #include "type.h"
 #include "TryStmt.h"
 #include "CatchStmt.h"
@@ -543,28 +544,100 @@ checkCalls()
 }
 
 
+static bool isExternType(Type* t) {
+  // narrow references are OK but not wide references
+  if (t->isWideRef())
+    return false;
+
+  TypeSymbol* ts = t->symbol;
+
+  return t->isRef() ||
+         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
+         ts->hasFlag(FLAG_DATA_CLASS) ||
+         ts->hasFlag(FLAG_C_PTR_CLASS) ||
+         ts->hasFlag(FLAG_C_ARRAY) ||
+         ts->hasFlag(FLAG_EXTERN) ||
+         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
+}
+
+static void externExportTypeError(FnSymbol* fn, Type* t) {
+  INT_ASSERT(fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_EXPORT));
+
+  bool isExtern = fn->hasFlag(FLAG_EXTERN);
+
+  if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
+    if (t == dtString) {
+      if (isExtern)
+        USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
+                           "type string, use c_string instead");
+      else
+        USR_FATAL_CONT(fn, "export procedures should not take arguments of "
+                           "type string, use c_string instead");
+    } else {
+      if (isExtern)
+        USR_FATAL_CONT(fn, "extern procedure argument types should be "
+                           "extern types - '%s' is not",
+                           t->symbol->name);
+      else
+        USR_FATAL_CONT(fn, "export procedure argument types should be "
+                           "extern types - '%s' is not",
+                           t->symbol->name);
+    }
+  } else {
+    // This is a generic instantiation of an extern proc that is using
+    // string, so we want to report the call sites causing this
+    if (t == dtString) {
+      if (isExtern)
+        USR_FATAL_CONT(fn, "extern procedure has arguments of type string");
+      else
+        USR_FATAL_CONT(fn, "export procedure has arguments of type string");
+    } else {
+      if (isExtern)
+        USR_FATAL_CONT(fn, "extern procedure argument types should be "
+                           "extern types - '%s' is not",
+                           t->symbol->name);
+      else
+        USR_FATAL_CONT(fn, "export procedure argument types should be "
+                           "export types - '%s' is not",
+                           t->symbol->name);
+    }
+
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      USR_PRINT(call, "when instantiated from here");
+    }
+
+    if (t == dtString)
+      USR_PRINT(fn, "use c_string instead");
+  }
+}
+
+
 static void checkExternProcs() {
+  const char* sizeof_ = astr("sizeof");
+  const char* alignof_ = astr("alignof");
+  const char* offsetof_ = astr("offsetof");
+  const char* c_pointer_return = astr("c_pointer_return");
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->hasFlag(FLAG_EXTERN))
       continue;
 
+    // Don't worry about passing Chapel types to sizeof etc.
+    if (fn->cname == sizeof_ ||
+        fn->cname == alignof_ ||
+        fn->cname == offsetof_ ||
+        fn->cname == c_pointer_return)
+      continue;
+
     for_formals(formal, fn) {
-      if (formal->typeInfo() == dtString &&
-          !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
-        if (!fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
-          USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
-                             "type string, use c_string instead");
-        } else {
-          // This is a generic instantiation of an extern proc that is using
-          // string, so we want to report the call sites causing this
-          USR_FATAL_CONT(fn, "extern procedure has arguments of type string");
-          forv_Vec(CallExpr, call, *fn->calledBy) {
-            USR_PRINT(call, "when instantiated from here");
-          }
-          USR_PRINT(fn, "use c_string instead");
-        }
+      if (!isExternType(formal->type)) {
+        externExportTypeError(fn, formal->type);
         break;
       }
+    }
+
+    if (!isExternType(fn->retType)) {
+      externExportTypeError(fn, fn->retType);
     }
 
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
@@ -578,8 +651,19 @@ static void checkExportedProcs() {
     if (!fn->hasFlag(FLAG_EXPORT))
       continue;
 
+    for_formals(formal, fn) {
+      if (!isExternType(formal->type)) {
+        externExportTypeError(fn, formal->type);
+        break;
+      }
+    }
+
+    if (!isExternType(fn->retType)) {
+      externExportTypeError(fn, fn->retType);
+    }
+
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
-      USR_FATAL_CONT(fn, "exported procedures should not return c_array");
+      USR_FATAL_CONT(fn, "export procedures should not return c_array");
     }
   }
 }
