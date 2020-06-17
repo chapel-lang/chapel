@@ -1225,7 +1225,7 @@ module String {
     :returns: The indices that can be used to index into the string
               (i.e., the range ``0..<this.size``)
   */
-  proc string.indices return 0..<size;
+  inline proc string.indices return 0..<size;
 
   /*
     :returns: The number of bytes in the string.
@@ -1236,7 +1236,7 @@ module String {
     :returns: The number of codepoints in the string, assuming the
               string is correctly-encoded UTF-8.
   */
-  proc const string.numCodepoints {
+  inline proc const string.numCodepoints {
     const n = this.cachedNumCodepoints;
     if boundsChecking {
       if n != this.countNumCodepoints() {

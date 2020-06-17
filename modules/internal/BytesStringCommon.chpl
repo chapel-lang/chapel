@@ -372,6 +372,8 @@ module BytesStringCommon {
         compilerError("string slicing doesn't support stridable codepoint ranges");
       }
 
+      if r == x.indices then return (r, x.cachedNumCodepoints);
+
       // cast the argument r to `int` to make sure that we are not dealing with
       // codepointIdx
       const intR = r:range(int, r.boundedType, r.stridable);
