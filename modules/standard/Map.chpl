@@ -155,6 +155,7 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
+    pragma "unsafe"
     proc init=(pragma "intent ref maybe const formal"
                other: map(?kt, ?vt, ?ps)) lifetime this < other {
       this.keyType = kt;
@@ -164,8 +165,9 @@ module Map {
       this.complete();
 
       for key in other.keys() {
-        var (_, slot) = table.findAvailableSlot(key);
-        table.fillSlot(slot, key, other.table.table[slot].val);
+        const (_, slot) = table.findAvailableSlot(key);
+        const (_, slot2) = other.table.findFullSlot(key);
+        table.fillSlot(slot, key, other.table.table[slot2].val);
       }
     }
 
@@ -180,9 +182,11 @@ module Map {
     proc clear() {
       _enter(); defer _leave();
       for slot in table.allSlots() {
-        var key: keyType;
-        var val: valType;
-        table.clearSlot(slot, key, val);
+        if table.isSlotFull(slot) {
+          var key: keyType;
+          var val: valType;
+          table.clearSlot(slot, key, val);
+        }
       }
     }
 
@@ -228,11 +232,13 @@ module Map {
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc update(const ref m: map(keyType, valType, parSafe)) {
+    proc update(pragma "intent ref maybe const formal"
+                m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
       for key in m.keys() {
         var (_, slot) = table.findAvailableSlot(key);
-        table.fillSlot(slot, key, m.table.table[slot].val);
+        var (_, slot2) = m.table.findAvailableSlot(key);
+        table.fillSlot(slot, key, m.table.table[slot2].val);
       }
     }
 
