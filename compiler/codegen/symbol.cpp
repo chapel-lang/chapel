@@ -1858,7 +1858,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
         // Emit padding argument
         argTys.push_back(paddingTy);
-        argNames.push_back(astr(formal->cname, "_padding"));
+        argNames.push_back(astr(formal->cname, ".padding"));
 
         // Adjust attributes for padding argument
         if (argInfo->getPaddingInReg()) {
@@ -1877,7 +1877,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
         {
           // Emit indirect argument
           argTys.push_back(llvm::PointerType::get(argTy, stackSpace));
-          argNames.push_back(astr(formal->cname, "_indirect"));
+          argNames.push_back(astr(formal->cname, ".indirect"));
 
           // Adjust attributes for indirect argument
           llvm::AttrBuilder b;
@@ -1906,7 +1906,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
             for (int i = 0; i < nElts; i++) {
               // Emit flattened argument
               argTys.push_back(sTy->getElementType(i));
-              argNames.push_back(astr(formal->cname, istr(i)));
+              argNames.push_back(astr(formal->cname, ".", istr(i)));
               // Adjust attributes
               llvm::AttrBuilder b;
               if (argInfo->isExtend()) {
@@ -1921,7 +1921,10 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           } else {
             // Emit argument
             argTys.push_back(toTy);
-            argNames.push_back(astr(formal->cname, ".coerce"));
+            const char* name = formal->cname;
+            if (argTy != toTy)
+              name = astr(name, ".coerce");
+            argNames.push_back(name);
             // Adjust attributes
             llvm::AttrBuilder b;
             if (formal->isRef() && argTy == toTy) {
