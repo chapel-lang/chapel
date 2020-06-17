@@ -1714,15 +1714,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
   llvm::LLVMContext& ctx = gGenInfo->llvmContext;
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
-
   const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 
   if (fn->hasFlag(FLAG_EXPORT)) {
     CGI = &getClangABIInfo(fn);
   }
-
-  if (fn->name == astr("chapel_struct_return"))
-    gdbShouldBreakHere();
 
   unsigned int stackSpace = layout.getAllocaAddrSpace();
 
@@ -1745,7 +1741,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
   //  Swift emitDirectExternalArgument
   //
 
-  // Insipred by clang's CodeGenTypes::GetFunctionType
+  // Inspired by clang's CodeGenTypes::GetFunctionType
+  // and CodeGenModule::ConstructAttributeList
 
   int curCArg = 0;
 
@@ -1760,25 +1757,32 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
         returnTy = llvm::Type::getVoidTy(ctx);
         break;
       }
+
       case clang::CodeGen::ABIArgInfo::Kind::Direct:
       {
+        llvm::AttrBuilder b;
+        b.addAttribute(llvm::Attribute::InReg);
+        attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
+
         returnTy = returnInfo.getCoerceToType();
         break;
       }
       case clang::CodeGen::ABIArgInfo::Kind::Extend:
       {
-        // Swift adds this attribute. Should we?
-        bool isSigned = is_signed(fn->retType);
+        /*bool isSigned = is_signed(fn->retType);
         if (!(is_int_type(fn->retType) ||
               is_uint_type(fn->retType) ||
               is_bool_type(fn->retType)))
-          INT_FATAL(fn, "extending something not int/uint");
+          INT_FATAL(fn, "extending something not int/uint");*/
+        bool isSigned = returnInfo.isSignExt();
 
         llvm::AttrBuilder b;
         if (isSigned)
           b.addAttribute(llvm::Attribute::SExt);
         else
           b.addAttribute(llvm::Attribute::ZExt);
+
+        b.addAttribute(llvm::Attribute::InReg);
 
         attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
 
@@ -1811,14 +1815,28 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
         INT_FATAL("not handled"); // replace existing sret argument?
         curCArg++; // a guess
       }
+
       argTys.push_back(llvm::PointerType::get(returnTy, stackSpace));
       argNames.push_back("indirect_return");
+
+      // Adjust attributes for sret argument
+      llvm::AttrBuilder b;
+      b.addAttribute(llvm::Attribute::StructRet);
+      if (returnInfo.getInReg())
+        b.addAttribute(llvm::Attribute::InReg);
+      b.addAlignmentAttr(returnInfo.getIndirectAlign().getQuantity());
+      attrs = attrs.addAttributes(ctx, argTys.size(), b);
     }
     // Add type for inalloca argument
     if (CGI->usesInAlloca()) {
       auto argStruct = CGI->getArgStruct();
       argTys.push_back(argStruct->getPointerTo());
       argNames.push_back("inalloca_arg");
+
+      // Adjust attributes for inalloca argument
+      llvm::AttrBuilder b;
+      b.addAttribute(llvm::Attribute::InAlloca);
+      attrs = attrs.addAttributes(ctx, argTys.size(), b);
     }
   }
 
@@ -1840,10 +1858,17 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
     llvm::Type* argTy = formal->codegenType().type;
 
     if (argInfo) {
-      // emit padding argument
       if (llvm::Type* paddingTy = argInfo->getPaddingType()) {
+        // Emit padding argument
         argTys.push_back(paddingTy);
         argNames.push_back(astr(formal->cname, "_padding"));
+
+        // Adjust attributes for padding argument
+        if (argInfo->getPaddingInReg()) {
+          llvm::AttrBuilder b;
+          b.addAttribute(llvm::Attribute::InReg);
+          attrs = attrs.addAttributes(ctx, argTys.size(), b);
+        }
       }
 
       switch (argInfo->getKind()) {
@@ -1852,9 +1877,26 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           break;
 
         case clang::CodeGen::ABIArgInfo::Kind::Indirect:
+        {
+          // Emit indirect argument
           argTys.push_back(llvm::PointerType::get(argTy, stackSpace));
           argNames.push_back(astr(formal->cname, "_indirect"));
+
+          // Adjust attributes for indirect argument
+          llvm::AttrBuilder b;
+          if (argInfo->getInReg()) {
+            b.addAttribute(llvm::Attribute::InReg);
+          }
+          if (argInfo->getIndirectByVal()) {
+            b.addByValAttr(argTy);
+          }
+          clang::CharUnits align = argInfo->getIndirectAlign();
+          if (argInfo->getIndirectByVal()) {
+            b.addAlignmentAttr(align.getQuantity());
+          }
+          attrs = attrs.addAttributes(ctx, argTys.size(), b);
           break;
+        }
 
         case clang::CodeGen::ABIArgInfo::Kind::Extend:
         case clang::CodeGen::ABIArgInfo::Kind::Direct:
@@ -1865,17 +1907,40 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
           if (sTy && argInfo->isDirect() && argInfo->getCanBeFlattened()) {
             int nElts = sTy->getNumElements();
             for (int i = 0; i < nElts; i++) {
+              // Emit flattened argument
               argTys.push_back(sTy->getElementType(i));
               argNames.push_back(astr(formal->cname, istr(i)));
-            }
-          } else {
-            argTys.push_back(argTy);
-            argNames.push_back(formal->cname);
-            if(formal->isRef()) {
+              // Adjust attributes
               llvm::AttrBuilder b;
-              b.addAttribute(llvm::Attribute::NonNull);
+              if (argInfo->isExtend()) {
+                if (argInfo->isSignExt()) b.addAttribute(llvm::Attribute::SExt);
+                else                      b.addAttribute(llvm::Attribute::ZExt);
+              }
+              if (argInfo->getInReg()) {
+                b.addAttribute(llvm::Attribute::InReg);
+              }
               attrs = attrs.addAttributes(ctx, argTys.size(), b);
             }
+          } else {
+            // Emit argument
+            argTys.push_back(argTy);
+            argNames.push_back(formal->cname);
+            // Adjust attributes
+            llvm::AttrBuilder b;
+            if (formal->isRef()) {
+              b.addAttribute(llvm::Attribute::NonNull);
+              llvm::Type* valType = formal->getValType()->codegen().type;
+              int64_t sz = getTypeSizeInBytes(layout, valType);
+              b.addDereferenceableAttr(sz);
+            }
+            if (argInfo->isExtend()) {
+              if (argInfo->isSignExt()) b.addAttribute(llvm::Attribute::SExt);
+              else                      b.addAttribute(llvm::Attribute::ZExt);
+            }
+            if (argInfo->getInReg()) {
+              b.addAttribute(llvm::Attribute::InReg);
+            }
+            attrs = attrs.addAttributes(ctx, argTys.size(), b);
           }
           break;
         }
@@ -1905,9 +1970,11 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       argTys.push_back(argTy);
       argNames.push_back(formal->cname);
       if(formal->isRef()) {
-
         llvm::AttrBuilder b;
         b.addAttribute(llvm::Attribute::NonNull);
+        llvm::Type* valType = formal->getValType()->codegen().type;
+        int64_t sz = getTypeSizeInBytes(layout, valType);
+        b.addDereferenceableAttr(sz);
         attrs = attrs.addAttributes(ctx, argTys.size(), b);
       }
     }
@@ -1967,9 +2034,11 @@ GenRet FnSymbol::codegenFunctionType(bool forHeader) {
     ret.c = str;
   } else {
 #ifdef HAVE_LLVM
-    llvm::AttributeList attrs;
+    llvm::AttributeList argAttrs; // and return attrs
     std::vector<const char*> argNames;
-    llvm::FunctionType* fTy = codegenFunctionTypeLLVM(this, attrs, argNames);
+    llvm::FunctionType* fTy = codegenFunctionTypeLLVM(this,
+                                                      argAttrs,
+                                                      argNames);
     INT_ASSERT(argNames.size() == fTy->getNumParams());
     ret.type = fTy;
 #endif
@@ -2033,8 +2102,10 @@ void FnSymbol::codegenPrototype() {
   } else {
 #ifdef HAVE_LLVM
     std::vector<const char*> argNames;
-    llvm::AttributeList attrs;
-    llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this, attrs, argNames);
+    llvm::AttributeList argAttrs;
+    llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this,
+                                                      argAttrs,
+                                                      argNames);
 
     llvm::Function *existing;
 
@@ -2070,7 +2141,7 @@ void FnSymbol::codegenPrototype() {
 
     func->setDSOLocal(true);
 
-    func->setAttributes(attrs);
+    func->setAttributes(argAttrs);
 
     int argID = 0;
     for(llvm::Function::arg_iterator ai = func->arg_begin();
@@ -2156,15 +2227,48 @@ void FnSymbol::codegenDef() {
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }
 
-    // TODO: handle ABI
+    const clang::CodeGen::CGFunctionInfo* CGI = NULL;
+    if (this->hasFlag(FLAG_EXPORT)) {
+      CGI = &getClangABIInfo(this);
+      info->currentFunctionABI = CGI;
+    }
+
+    if (CGI) {
+      const clang::CodeGen::ABIArgInfo &returnInfo = CGI->getReturnInfo();
+      // Adjust attributes based on return ABI info
+      if (returnInfo.isInAlloca() || returnInfo.isIndirect()) {
+        func->removeFnAttr(llvm::Attribute::ReadOnly);
+        func->removeFnAttr(llvm::Attribute::ReadNone);
+      }
+
+      // TODO: see
+      // CodeGenFunction::EmitFunctionProlog
+    }
 
     llvm::Function::arg_iterator ai = func->arg_begin();
-    unsigned int ArgNo = 1; //start from 1 to cooperate with createLocalVariable
+    int curCArg = 0;
     for_formals(arg, this) {
+      const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+      if (CGI) {
+        llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
+        argInfo = &a[curCArg].info;
+      }
+
       if (arg->hasFlag(FLAG_NO_CODEGEN))
         continue; // do not print locale argument, end count, dummy class
 
-      if (arg->requiresCPtr()){
+      if (argInfo) {
+        if (argInfo->isIgnore() || argInfo->isInAlloca())
+          continue; // ignore - inalloca handled separately
+      }
+
+      if (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca())) {
+        func->removeFnAttr(llvm::Attribute::ReadOnly);
+        func->removeFnAttr(llvm::Attribute::ReadNone);
+      }
+
+      if (arg->requiresCPtr() ||
+          (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca()))) {
         llvm::Argument& llArg = *ai;
         info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(type));
       } else {
@@ -2178,11 +2282,11 @@ void FnSymbol::codegenDef() {
                             tempVar.isLVPtr, !is_signed(type));
         // debug info for formal arguments
         if(debug_info){
-          debug_info->get_formal_arg(arg, ArgNo);
+          debug_info->get_formal_arg(arg, curCArg+1);
         }
       }
       ++ai;
-      ArgNo++;
+      curCArg++;
     }
 
     // if --gen-ids is enabled, add metadata mapping the
@@ -2218,6 +2322,7 @@ void FnSymbol::codegenDef() {
   flushStatements();
 #ifdef HAVE_LLVM
   info->currentStackVariables.clear();
+  info->currentFunctionABI = NULL;
 #endif
 
   if( outfile ) {

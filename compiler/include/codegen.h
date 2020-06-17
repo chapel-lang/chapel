@@ -39,6 +39,12 @@ namespace llvm {
   }
 }
 
+namespace clang {
+  namespace CodeGen {
+    class CGFunctionInfo;
+  }
+}
+
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/Target/TargetMachine.h"
@@ -105,6 +111,7 @@ struct GenInfo {
 
   std::stack<LoopData> loopStack;
   std::vector<std::pair<llvm::Value*, llvm::Type*> > currentStackVariables;
+  const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   llvm::LLVMContext llvmContext;
   llvm::MDNode* tbaaRootNode;

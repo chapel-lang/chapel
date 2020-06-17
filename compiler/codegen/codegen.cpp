@@ -2468,6 +2468,7 @@ GenInfo::GenInfo()
              ,
              lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
              loopStack(), currentStackVariables(),
+             currentFunctionABI(NULL),
              llvmContext(),
              tbaaRootNode(NULL),
              tbaaUnionsNode(NULL),

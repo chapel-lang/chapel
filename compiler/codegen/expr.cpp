@@ -3763,12 +3763,137 @@ DEFINE_PRIM(PRIM_RETURN) {
     }
   } else {
 #ifdef HAVE_LLVM
-    llvm::ReturnInst* returnInst = NULL;
-    if (returnVoid) {
-      returnInst = gGenInfo->irBuilder->CreateRetVoid();
+    GenInfo* info = gGenInfo;
+    llvm::IRBuilder<>* irBuilder = info->irBuilder;
+    llvm::Instruction* returnInst = NULL;
+    llvm::Function* curFn = irBuilder->GetInsertBlock()->getParent();
+    llvm::Type* returnType = ret.type;
+
+    const clang::CodeGen::ABIArgInfo* returnInfo = NULL;
+    if (gGenInfo->currentFunctionABI)
+      returnInfo = &info->currentFunctionABI->getReturnInfo();
+
+    if (call->parentSymbol->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+      returnInst = irBuilder->CreateUnreachable();
+    } else if (returnInfo) {
+      // See CodeGenFunction::EmitFunctionEpilog
+
+      switch (returnInfo->getKind()) {
+        case clang::CodeGen::ABIArgInfo::Kind::Ignore:
+          returnInst = irBuilder->CreateRetVoid();
+          break;
+
+        case clang::CodeGen::ABIArgInfo::Kind::InAlloca:
+        {
+          // TODO: where to store ret.val ?
+          INT_FATAL("TODO");
+
+          if (returnInfo->getInAllocaSRet()) {
+            // handle returning the sret value in a register
+            llvm::Function::arg_iterator ii = curFn->arg_end();
+            --ii;
+            llvm::Value* arg = &*ii;
+            llvm::Value* sret = irBuilder->CreateStructGEP(
+                nullptr, arg, returnInfo->getInAllocaFieldIndex());
+
+            llvm::MaybeAlign align = getPointerAlign(0);
+            llvm::Value* v = irBuilder->CreateAlignedLoad(sret,
+                                                          align,
+                                                          "sret");
+            returnInst = irBuilder->CreateRet(v);
+          }
+          break;
+        }
+
+        case clang::CodeGen::ABIArgInfo::Kind::Indirect:
+        {
+          auto ii = curFn->arg_begin();
+          if (returnInfo->isSRetAfterThis())
+            ++ii;
+
+          llvm::Value* arg = &*ii;
+          GenRet ptr;
+          ptr.val = arg;
+          ptr.isLVPtr = GEN_PTR;
+          ptr.chplType = call->typeInfo();
+
+          codegenStoreLLVM(ret, ptr);
+          break;
+        }
+
+        case clang::CodeGen::ABIArgInfo::Kind::Extend:
+        case clang::CodeGen::ABIArgInfo::Kind::Direct:
+        {
+          if (returnInfo->getCoerceToType() == returnType &&
+              returnInfo->getDirectOffset() == 0) {
+            returnInst = irBuilder->CreateRet(ret.val);
+          } else {
+            // offset might be nonzero... what does that mean?
+            if (returnInfo->getDirectOffset() != 0)
+              INT_FATAL("Not implemented yet");
+
+            llvm::Value* r = convertValueToType(ret.val,
+                                                returnInfo->getCoerceToType(),
+                                                !ret.isUnsigned,
+                                                /*force*/ true);
+            returnInst = irBuilder->CreateRet(r);
+          }
+          break;
+        }
+
+        case clang::CodeGen::ABIArgInfo::Kind::CoerceAndExpand:
+        {
+          llvm::StructType* toTy = returnInfo->getCoerceAndExpandType();
+          llvm::Value* r = convertValueToType(ret.val,
+                                              toTy,
+                                              !ret.isUnsigned,
+                                              /*force*/ true);
+
+          // gather the coerced elements that aren't padding
+          llvm::SmallVector<llvm::Value*, 4> results;
+          unsigned nElts = toTy->getNumElements();
+          for (unsigned i = 0; i < nElts; i++ ) {
+            auto eltTy = toTy->getElementType(i);
+            if (clang::CodeGen::ABIArgInfo::isPaddingForCoerceAndExpand(eltTy))
+              continue;
+
+            auto elt = irBuilder->CreateExtractValue(r, i);
+            results.push_back(elt);
+          }
+
+          // single result should be returned
+          if (results.size() == 1) {
+            returnInst = irBuilder->CreateRet(results[0]);
+
+          // Otherwise, form new aggregate without padding
+          } else {
+            llvm::Type *returnTy = returnInfo->getUnpaddedCoerceAndExpandType();
+
+            llvm::Value* rv = llvm::UndefValue::get(returnTy);
+            unsigned nResults = results.size();
+            for (unsigned i = 0; i < nResults; i++) {
+              rv = irBuilder->CreateInsertValue(rv, results[i], i);
+            }
+            returnInst = irBuilder->CreateRet(rv);
+          }
+
+          break;
+        }
+
+        case clang::CodeGen::ABIArgInfo::Kind::Expand:
+          INT_FATAL("not implemented yet");
+          break;
+
+        // No default -> compiler warning if more added
+      }
+
     } else {
-      ret = codegenCast(ret.chplType, ret);
-      returnInst = gGenInfo->irBuilder->CreateRet(ret.val);
+      if (returnVoid) {
+        returnInst = irBuilder->CreateRetVoid();
+      } else {
+        ret = codegenCast(ret.chplType, ret);
+        returnInst = irBuilder->CreateRet(ret.val);
+      }
     }
     ret.val = returnInst;
 

@@ -2477,6 +2477,16 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
                                  extInfo, clang::CodeGen::RequiredArgs::All);
 }
 
+llvm::MaybeAlign getPointerAlign(int addrSpace) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
+  return llvm::MaybeAlign(align);
+}
+
 bool isBuiltinExternCFunction(const char* cname)
 {
   if( 0 == strcmp(cname, "sizeof") ) return true;
