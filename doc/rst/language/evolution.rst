@@ -104,7 +104,7 @@ Index-neutral Features
 This experience also led to a number of new programming features in
 Chapel 1.21 designed to help write code in more of an index-neutral
 style.  Chief among these are new ``.indices`` queries on most of the
-relevent types as well as support for loops over heterogeneous tuples.
+relevant types as well as support for loops over heterogeneous tuples.
 We also introduced features that we found to be useful in updating
 code, such as support for open-interval ranges and ``.first`` and
 ``.last`` queries on enumerated types.  To this end, even though Chapel
