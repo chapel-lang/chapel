@@ -760,7 +760,7 @@ module BytesStringCommon {
   }
 
   proc reinitWithOwnedBuffer(ref lhs: ?t, buff: bufferType, buffLen: int,
-                             buffSize: int, numCodepoints: int) {
+                             buffSize: int, numCodepoints: int = 0) {
 
       if lhs.isEmpty() && buff == nil then return;
 
