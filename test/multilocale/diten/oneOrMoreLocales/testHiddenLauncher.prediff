@@ -15,6 +15,6 @@ if [[ -e ${basefile}_real ]] ; then
   mv ${basefile}_real hidefiles
 fi
 
-$basefile -nl1 > ${basefile}.comp.out.tmp 2>&1
+$basefile -nl1 >> ${basefile}.comp.out.tmp 2>&1
 
 rm -r hidefiles
