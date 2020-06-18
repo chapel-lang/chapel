@@ -1,0 +1,232 @@
+**** Start forall ****
+	dotDomDeclaration.chpl:14
+
+Iterated symbol
+	dotDomDeclaration.chpl:4
+
+Loop is suitable for further analysis
+	dotDomDeclaration.chpl:14
+
+Potential access
+	dotDomDeclaration.chpl:15
+
+	with domain defined at
+	dotDomDeclaration.chpl:4
+
+Access base's domain is the iterator
+	dotDomDeclaration.chpl:15
+
+Potential access
+	dotDomDeclaration.chpl:15
+
+	with domain defined at
+	dotDomDeclaration.chpl:4
+
+Access base's domain is the iterator
+	dotDomDeclaration.chpl:15
+
+Potential access
+	dotDomDeclaration.chpl:15
+
+	with domain defined at
+	dotDomDeclaration.chpl:4
+
+Access base's domain is the iterator
+	dotDomDeclaration.chpl:15
+
+	Marking static candidate
+	dotDomDeclaration.chpl:15
+
+	Marking static candidate
+	dotDomDeclaration.chpl:15
+
+	Marking static candidate
+	dotDomDeclaration.chpl:15
+
+**** End forall ****
+	dotDomDeclaration.chpl:14
+
+**** Start forall ****
+	dotDomDeclaration.chpl:31
+
+Iterated over the domain of
+	dotDomDeclaration.chpl:23
+
+, which is
+	dotDomDeclaration.chpl:21
+
+Loop is suitable for further analysis
+	dotDomDeclaration.chpl:31
+
+Potential access
+	dotDomDeclaration.chpl:32
+
+	Can optimize: Access base is the iterator's base
+	dotDomDeclaration.chpl:32
+
+Potential access
+	dotDomDeclaration.chpl:32
+
+	with domain defined at
+	dotDomDeclaration.chpl:21
+
+	Can optimize: Access base has the same domain as iterator's base
+	dotDomDeclaration.chpl:32
+
+Potential access
+	dotDomDeclaration.chpl:32
+
+	with domain defined at
+	dotDomDeclaration.chpl:21
+
+	Can optimize: Access base has the same domain as iterator's base
+	dotDomDeclaration.chpl:32
+
+	Marking static candidate
+	dotDomDeclaration.chpl:32
+
+	Marking static candidate
+	dotDomDeclaration.chpl:32
+
+	Marking static candidate
+	dotDomDeclaration.chpl:32
+
+**** End forall ****
+	dotDomDeclaration.chpl:31
+
+**** Start forall ****
+	dotDomDeclaration.chpl:48
+
+Iterated over the domain of
+	dotDomDeclaration.chpl:41
+
+, which is
+	dotDomDeclaration.chpl:38
+
+Loop is suitable for further analysis
+	dotDomDeclaration.chpl:48
+
+Potential access
+	dotDomDeclaration.chpl:49
+
+	with domain defined at
+	dotDomDeclaration.chpl:38
+
+	Can optimize: Access base has the same domain as iterator's base
+	dotDomDeclaration.chpl:49
+
+Potential access
+	dotDomDeclaration.chpl:49
+
+	Can optimize: Access base is the iterator's base
+	dotDomDeclaration.chpl:49
+
+Potential access
+	dotDomDeclaration.chpl:49
+
+	with domain defined at
+	dotDomDeclaration.chpl:38
+
+	Can optimize: Access base has the same domain as iterator's base
+	dotDomDeclaration.chpl:49
+
+	Marking static candidate
+	dotDomDeclaration.chpl:49
+
+	Marking static candidate
+	dotDomDeclaration.chpl:49
+
+	Marking static candidate
+	dotDomDeclaration.chpl:49
+
+**** End forall ****
+	dotDomDeclaration.chpl:48
+
+**** Start forall ****
+	dotDomDeclaration.chpl:65
+
+Iterated over the domain of
+	dotDomDeclaration.chpl:59
+
+, which is
+	dotDomDeclaration.chpl:55
+
+Loop is suitable for further analysis
+	dotDomDeclaration.chpl:65
+
+Potential access
+	dotDomDeclaration.chpl:66
+
+	with domain defined at
+	dotDomDeclaration.chpl:55
+
+	Can optimize: Access base has the same domain as iterator's base
+	dotDomDeclaration.chpl:66
+
+Potential access
+	dotDomDeclaration.chpl:66
+
+	with domain defined at
+	dotDomDeclaration.chpl:55
+
+	Can optimize: Access base has the same domain as iterator's base
+	dotDomDeclaration.chpl:66
+
+Potential access
+	dotDomDeclaration.chpl:66
+
+	Can optimize: Access base is the iterator's base
+	dotDomDeclaration.chpl:66
+
+	Marking static candidate
+	dotDomDeclaration.chpl:66
+
+	Marking static candidate
+	dotDomDeclaration.chpl:66
+
+	Marking static candidate
+	dotDomDeclaration.chpl:66
+
+**** End forall ****
+	dotDomDeclaration.chpl:65
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:15
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:15
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:15
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:32
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:32
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:32
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:49
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:49
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:49
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:66
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:66
+
+Static check successful. Using localAccess
+	dotDomDeclaration.chpl:66
+
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0

@@ -1,0 +1,79 @@
+**** Start forall ****
+	dynamicChecks.chpl:28
+
+Iterated symbol
+	dynamicChecks.chpl:16
+
+Loop is suitable for further analysis
+	dynamicChecks.chpl:28
+
+Potential access
+	dynamicChecks.chpl:29
+
+	with domain defined at
+	dynamicChecks.chpl:16
+
+Access base's domain is the iterator
+	dynamicChecks.chpl:29
+
+Potential access
+	dynamicChecks.chpl:29
+
+	with domain defined at
+	dynamicChecks.chpl:16
+
+Access base's domain is the iterator
+	dynamicChecks.chpl:29
+
+Potential access
+	dynamicChecks.chpl:30
+
+Regular domain symbol was not found for array
+	dynamicChecks.chpl:20
+
+Potential access
+	dynamicChecks.chpl:31
+
+	with domain defined at
+	dynamicChecks.chpl:15
+
+Potential access
+	dynamicChecks.chpl:32
+
+Regular domain symbol was not found for array
+	dynamicChecks.chpl:22
+
+	Marking static candidate
+	dynamicChecks.chpl:29
+
+	Marking static candidate
+	dynamicChecks.chpl:29
+
+	Marking dynamic candidate
+	dynamicChecks.chpl:30
+
+	Marking dynamic candidate
+	dynamicChecks.chpl:32
+
+**** End forall ****
+	dynamicChecks.chpl:28
+
+Static check successful. Using localAccess
+	dynamicChecks.chpl:29
+
+Static check successful. Using localAccess
+	dynamicChecks.chpl:29
+
+Static check successful. Using localAccess with dynamic check
+	dynamicChecks.chpl:30
+
+Static check failed. Reverting optimization
+	dynamicChecks.chpl:32
+
+Static check successful. Using localAccess
+	dynamicChecks.chpl:29
+
+Static check successful. Using localAccess
+	dynamicChecks.chpl:29
+
+6.0 13.0 24.0 39.0 58.0 81.0 108.0 139.0 174.0 213.0

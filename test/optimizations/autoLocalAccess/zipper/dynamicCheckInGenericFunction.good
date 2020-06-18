@@ -1,0 +1,39 @@
+**** Start forall ****
+	dynamicCheckInGenericFunction.chpl:16
+
+Regular domain symbol was not found for array
+	dynamicCheckInGenericFunction.chpl:13
+
+Iterated over the domain of
+	dynamicCheckInGenericFunction.chpl:13
+
+, whose domain cannot be determined statically
+	dynamicCheckInGenericFunction.chpl:13
+
+Loop is suitable for further analysis
+	dynamicCheckInGenericFunction.chpl:16
+
+Potential access
+	dynamicCheckInGenericFunction.chpl:17
+
+	Can optimize: Access base is the iterator's base
+	dynamicCheckInGenericFunction.chpl:17
+
+Potential access
+	dynamicCheckInGenericFunction.chpl:17
+
+Regular domain symbol was not found for array
+	dynamicCheckInGenericFunction.chpl:13
+
+	Marking static candidate
+	dynamicCheckInGenericFunction.chpl:17
+
+	Marking dynamic candidate
+	dynamicCheckInGenericFunction.chpl:17
+
+**** End forall ****
+	dynamicCheckInGenericFunction.chpl:16
+
+Static check successful. Using localAccess
+	dynamicCheckInGenericFunction.chpl:17
+
