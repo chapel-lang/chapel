@@ -9034,14 +9034,16 @@ static void resolveSerializers() {
 }
 
 static void resolveDestructors() {
+  std::set<Type*> wellknown = getWellKnownTypesSet();
+
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_REF)                     &&
         ! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
-        if (at->hasDestructor()   == false &&
-            at->hasInitializers() == true  &&
-            isUnusedClass(at)     == false) {
+        if (at->hasDestructor()          == false &&
+            at->hasInitializers()        == true  &&
+            isUnusedClass(at, wellknown) == false) {
           resolveDestructor(at);
         }
       }
