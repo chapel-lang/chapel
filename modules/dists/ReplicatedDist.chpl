@@ -627,6 +627,14 @@ iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterK
     yield a;
 }
 
+override proc ReplicatedArr.writeThis(f) throws {
+  halt("Not implemented");
+}
+
+override proc LocReplicatedArr.writeThis(f) throws {
+  halt("Not implemented");
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 // reallocation

@@ -171,12 +171,12 @@ module ChapelSyncvar {
 
     // Do not allow implicit reads of sync vars.
     proc readThis(x) throws {
-      compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
+      halt("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
     // Do not allow implicit writes of sync vars.
     proc writeThis(x) throws {
-      compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
+      halt("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
      }
   }
 
@@ -709,12 +709,12 @@ module ChapelSyncvar {
 
     // Do not allow implicit reads of single vars.
     proc readThis(x) throws {
-      compilerError("single variables cannot currently be read - use writeEF instead");
+      halt("single variables cannot currently be read - use writeEF instead");
     }
 
     // Do not allow implicit writes of single vars.
     proc writeThis(x) throws {
-      compilerError("single variables cannot currently be written - apply readFF() to those variables first");
+      halt("single variables cannot currently be written - apply readFF() to those variables first");
      }
   }
 

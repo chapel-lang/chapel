@@ -3100,7 +3100,7 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   return e;
 }
 
-private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
+private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
                                         loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
@@ -3149,13 +3149,21 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // (it shouldn't release anything since it's a local copy).
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
+  /*
+  if (isSync(x)) {
+    compilerError("sync variables cannot currently be read - use wrteEF/writeFF instead");
+  } else if (isSingle(x)) {
+    compilerError("single variables cannot currently be read - use writeEF instead");
+  }
+  */
+
   try x.readThis(reader);
 
   return ENOERR;
 }
 
 pragma "suppress lvalue error"
-private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
+private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
                                         loc:locale): syserr throws {
@@ -3194,6 +3202,12 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
       try x.writeThis(writer);
     }
   } else {
+    if (isSync(x)) {
+      compilerError("sync variables cannot currently be written - apply readFF() to those variables first");
+    } else if (isSingle(x)) {
+      compilerError("single variables cannot currently be written - apply readFF() to those variables first");
+    }
+
     try x.writeThis(writer);
   }
 

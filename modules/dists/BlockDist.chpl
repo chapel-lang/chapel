@@ -1638,6 +1638,10 @@ override proc BlockArr.doiCanBulkTransferRankChange() param return true;
 
 config param debugBlockScan = false;
 
+override proc BlockArr.writeThis(f) throws {
+  halt("Not implemented");
+}
+
 proc BlockArr.doiScan(op, dom) where (rank == 1) &&
                                      chpl__scanStateResTypesMatch(op) {
 
