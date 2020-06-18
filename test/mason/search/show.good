@@ -1,4 +1,4 @@
-WithCaps (0.1.0)
 capsize (0.1.0)
+WithCaps (0.1.0)
 "caps"  returned more than one package.
 --show requires the search to return one package.
