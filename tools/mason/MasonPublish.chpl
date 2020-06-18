@@ -463,7 +463,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     if exampleCheck(projectCheckHome) {
       writeln('   Found examples in the package, can be published to a registry. (PASSED)');
     } else {
-      writeln('   No examples found in package. (FAILED)');
+      writeln('   No examples found in package. (WARNING)');
       exampleTest = false;
     }
     writeln(spacer);
@@ -521,7 +521,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && registryTest {
+  if packageTest && remoteTest && moduleTest && registryTest && testTest {
     writeln('(PASSED) Your package is ready to publish');
   }
   else {
@@ -532,7 +532,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
       writeln('(FAILED) Your package has more than one main module');
     }
     if !exampleTest {
-      writeln('(FAILED) Your package does not have examples');
+      writeln('(WARNING) Your package does not have examples');
     }
     if !testTest {
       writeln('(FAILED) Your package does not have tests');
@@ -548,8 +548,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) && 
-    exampleCheck(projectCheckHome) && testCheck(projectCheckHome) {
+    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) {
       attemptToBuild();
       exit(0);
     }
