@@ -648,8 +648,7 @@ private proc moduleCheck(projectHome : string) throws {
 proc exampleCheck(projectHome: string) {
   if isDir(projectHome + '/example') {
     const examples = listdir(projectHome + '/example');
-    if examples.size > 0 then return true;
-    else return false;
+    return examples.size > 0;
   } else return false;
 }
 
@@ -657,8 +656,7 @@ proc exampleCheck(projectHome: string) {
 proc testCheck(projectHome: string) {
   if isDir(projectHome + '/test') {
     const tests = listdir(projectHome + '/test');
-    if tests.size > 0 then return true;
-    else return false;
+    return tests.size > 0;
   } else return false;
 }
 /* Returns the mason env
