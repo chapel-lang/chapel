@@ -364,7 +364,8 @@ static bool do_isUnusedClass(Type* t) {
   AggregateType* at = toAggregateType(t);
 
   // Special case for global types.
-  if (t->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL)) {
+  if (t->symbol->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
+      t == dtMainArgument) {
     retval = false;
 
   // Runtime types are assumed to be always used.
