@@ -155,9 +155,12 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :type parSafe: bool
     */
-    pragma "unsafe"
     proc init=(pragma "intent ref maybe const formal"
                other: map(?kt, ?vt, ?ps)) lifetime this < other {
+
+      if !isCopyableType(kt) || !isCopyableType(vt) then
+        compilerError("initializing map with non-copyable type");
+
       this.keyType = kt;
       this.valType = vt;
       this.parSafe = ps;
@@ -235,6 +238,10 @@ module Map {
     proc update(pragma "intent ref maybe const formal"
                 m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
+
+      if !isCopyableType(keyType) || !isCopyableType(valType) then
+        compilerError("updating map with non-copyable type");
+
       for key in m.keys() {
         var (_, slot) = table.findAvailableSlot(key);
         var (_, slot2) = m.table.findAvailableSlot(key);
@@ -251,10 +258,9 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref where !isNonNilableClass(valType) {
+    proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
       _enter(); defer _leave();
 
-      // TODO: optimize this to avoid looking up the slot multiple times
       var (_, slot) = table.findAvailableSlot(k);
       if !table.isSlotFull(slot) {
         var val: valType;
@@ -539,6 +545,10 @@ module Map {
     */
     proc toArray(): [] (keyType, valType) {
       _enter(); defer _leave();
+
+      if !isCopyableType(keyType) || !isCopyableType(valType) then
+        compilerError("toArray requires copyable key and value types");
+
       var A: [0..#size] (keyType, valType);
 
       for (a, item) in zip(A, items()) {
@@ -557,6 +567,10 @@ module Map {
     */
     proc keysToArray(): [] keyType {
       _enter(); defer _leave();
+
+      if !isCopyableType(keyType) then
+        compilerError("keysToArray requires a copyable key type");
+
       var A: [0..#size] keyType;
       for (a, k) in zip(A, keys()) {
         a = k;
@@ -573,6 +587,10 @@ module Map {
     */
     proc valuesToArray(): [] valType {
       _enter(); defer _leave();
+
+      if !isCopyableType(valType) then
+        compilerError("valuesToArray requires a copyable value type");
+
       var A: [0..#size] valType;
       for (a, v) in zip(A, values()) {
         a = v;
@@ -593,6 +611,10 @@ module Map {
     :arg rhs: The map to assign from. 
   */
   proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)){
+
+    if !isCopyableType(kt) || !isCopyableType(vt) then
+      compilerError("assigning map with non-copyable type");
+
     lhs.clear();
     for key in rhs.keys() {
       lhs.add(key, rhs[key]);
