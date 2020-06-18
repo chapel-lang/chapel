@@ -521,6 +521,30 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
         }
       }
 
+      if (import->skipSymbolSearch(name) == false) {
+        BaseAST* scopeToUse = import->getSearchScope();
+        const char* nameToUse  = name;
+
+        if (import->isARenamedSym(name) == true) {
+          nameToUse = import->getRenamedSym(name);
+        }
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
+              }
+            }
+          }
+        }
+      }
+
       // Found a NULL sentinel.  Break if there are results.
     } else {
       if (symbols.size() > 0) {
