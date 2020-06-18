@@ -33,6 +33,7 @@
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
+#include "whereami.c"
 
 // used in get_enviro_keys
 extern char** environ;
@@ -649,7 +650,8 @@ void chpl_compute_real_binary_name(const char* argv0) {
       real_suffix = launcher_real_suffix;
     }
 
-    length = strlen(argv0);
+    length = wai_getExecutablePath(NULL, 0, NULL);
+
     if (length + strlen(launcher_real_suffix) >= BIN_NAME_SIZE)
       chpl_internal_error("Real executable name is too long.");
 
@@ -660,7 +662,7 @@ void chpl_compute_real_binary_name(const char* argv0) {
       length -= exe_length;
 
     // Copy the filename sans exe suffix.
-    strncpy(cursor, argv0, length);
+    wai_getExecutablePath(cursor, length, NULL);
     cursor += length;
     strcpy(cursor, launcher_real_suffix);
   }
