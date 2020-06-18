@@ -144,3 +144,14 @@ libunwind/
   Website: https://www.nongnu.org/libunwind/
 
   See also: libunwind/README and libunwind/libunwind-<version>/README
+
+
+whereami/
+  Summary: whereami is a cross-platform interface for locating
+           the currently executing program in the filesystem
+
+  License: MIT (see whereami/LICENSE.MIT)
+
+  Website: https://github.com/gpakosz/whereami
+
+  See also: whereami/README
