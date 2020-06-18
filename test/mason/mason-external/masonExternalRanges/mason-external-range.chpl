@@ -5,7 +5,7 @@ use MasonInit;
 
 proc main() {
   // Initialise a library project
-  const initArgs = ['mason', 'init'];
+  const initArgs = ['mason', 'init', '-d'];
   masonInit(initArgs);
   // Adds external library to Mason.toml
   const args: [0..3] string;

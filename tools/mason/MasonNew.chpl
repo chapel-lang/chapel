@@ -42,7 +42,7 @@ proc masonNew(args) throws {
   var chplVersion = '';
   try! {
     if args.size < 3 {
-      var metadata = beginInteractiveSession('');
+      var metadata = beginInteractiveSession('','','');
       packageName = metadata[0];
       dirName = packageName;
       version = metadata[1];
@@ -102,7 +102,7 @@ proc masonNew(args) throws {
   Starts an interactive session to create a
   new library project.
 */
-proc beginInteractiveSession(defaultPackageName: string) throws {
+proc beginInteractiveSession(defaultPackageName: string, defVer: string, defChplVer: string) throws {
   writeln("""This is an interactive session to walk you through creating a library
 project using Mason. The following queries covers the common items required to
 create the project. Suggestions for defaults are also provided which will be
@@ -112,9 +112,9 @@ considered if no input is given.""");
   var packageName: string;
   var defPackageName: string = defaultPackageName;
   var version: string;
-  var defaultVersion: string = "0.1.0";
+  var defaultVersion = if defVer == '' then "0.1.0" else defVer;
   var chapelVersion: string;
-  var currChapelVersion = getChapelVersionStr();
+  var currChapelVersion = if defChplVer == '' then getChapelVersionStr() else defChplVer;
   var gotCorrectPackageName = false;
   var gotCorrectPackageVersion = false;
   var gotCorrectChapelVersion = false;
