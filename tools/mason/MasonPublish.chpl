@@ -433,6 +433,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   var packageTest = true;
   var moduleTest = true;
   var remoteTest = true;
+  var exampleTest = true;
+  var testTest = true;
   writeln('Mason Project Check:');
   if !package {
     writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
@@ -452,6 +454,28 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     else {
       writeln('   Packages with more than one modules cannot be published. (FAILED)');
       moduleTest = false; 
+    }
+    writeln(spacer);
+  }
+
+  if package {
+    writeln('Checking for examples:');
+    if exampleCheck(projectCheckHome) {
+      writeln('   Found examples in the package, can be published to a registry. (PASSED)');
+    } else {
+      writeln('   No examples found in package. (WARNING)');
+      exampleTest = false;
+    }
+    writeln(spacer);
+  }
+  
+  if package {
+    writeln('Checking for tests:');
+    if testCheck(projectCheckHome) {
+      writeln('   Found tests in the package, can be published to a registry. (PASSED)');
+    } else {
+      writeln('   No tests found in package. (FAILED)');
+      testTest = false;
     }
     writeln(spacer);
   }
@@ -497,7 +521,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && registryTest {
+  if packageTest && remoteTest && moduleTest && registryTest && testTest {
     writeln('(PASSED) Your package is ready to publish');
   }
   else {
@@ -506,6 +530,12 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     if !moduleTest {
       writeln('(FAILED) Your package has more than one main module');
+    }
+    if !exampleTest {
+      writeln('(WARNING) Your package does not have examples');
+    }
+    if !testTest {
+      writeln('(FAILED) Your package does not have tests');
     }
     if !registryTest {
       writeln('(FAILED) Your proposed registry is not a valid registry or path to a registry');
@@ -518,7 +548,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) {
+    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) {
       attemptToBuild();
       exit(0);
     }
@@ -614,6 +644,21 @@ private proc moduleCheck(projectHome : string) throws {
   else return true;
 }
 
+/* Checks package for examples */
+proc exampleCheck(projectHome: string) {
+  if isDir(projectHome + '/example') {
+    const examples = listdir(projectHome + '/example');
+    return examples.size > 0;
+  } else return false;
+}
+
+/* Checks package for tests */
+proc testCheck(projectHome: string) {
+  if isDir(projectHome + '/test') {
+    const tests = listdir(projectHome + '/test');
+    return tests.size > 0;
+  } else return false;
+}
 /* Returns the mason env
  */
 private proc returnMasonEnv() {
