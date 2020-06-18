@@ -500,6 +500,13 @@ class LocReplicatedArr {
   proc deinit() {
     _do_destroy_array(arrLocalRep, deinitElts=true);
   }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
+  }
 }
 
 
@@ -625,14 +632,6 @@ iter ReplicatedArr.these(param tag: iterKind, followThis) ref where tag == iterK
   // redirect to DefaultRectangular
   for a in chpl_myLocArr().arrLocalRep.these(tag, followThis) do
     yield a;
-}
-
-override proc ReplicatedArr.writeThis(f) throws {
-  halt("Not implemented");
-}
-
-override proc LocReplicatedArr.writeThis(f) throws {
-  halt("Not implemented");
 }
 
 
