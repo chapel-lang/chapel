@@ -9079,6 +9079,9 @@ static void resolveAutoCopies() {
 static void resolveAutoCopyEtc(AggregateType* at) {
   SET_LINENO(at->symbol);
 
+  if (typeNeedsCopyInitDeinit(at) == false)
+    return;
+
   // resolve autoCopy
   if (hasAutoCopyForType(at) == false) {
     FnSymbol* fn = autoMemoryFunction(at, autoCopyFnForType(at));
@@ -9232,10 +9235,15 @@ bool propagateNotPOD(Type* t) {
         retval = true;
 
       } else if (isClass(at) == true) {
-      // Most class types are POD (user classes, _ddata, c_ptr)
-      // Also, there is no need to check the fields of a class type
-      // since a variable of that type is a pointer to the instance.
-      // So, don't enumerate sub-fields or check for autoCopy etc.
+        // Most class types are POD (user classes, _ddata, c_ptr)
+        // Also, there is no need to check the fields of a class type
+        // since a variable of that type is a pointer to the instance.
+        // So, don't enumerate sub-fields or check for autoCopy etc.
+        retval = false;
+
+      } else if (typeNeedsCopyInitDeinit(at) == false) {
+        // some types aren't subject to copy init / deinit
+        retval = false;
 
       } else {
         // If any field in a record/tuple is not POD, the aggregate is not POD.
@@ -9243,21 +9251,22 @@ bool propagateNotPOD(Type* t) {
           retval = retval | propagateNotPOD(field->typeInfo());
         }
 
-       if (retval == false) {
-        // Make sure we have resolved auto copy/auto destroy.
-        // Except not for runtime types, because that causes
-        // some sort of fatal resolution error. This is a workaround.
-        if (at->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
-          resolveAutoCopyEtc(at);
-        }
+        if (retval == false) {
+          // Make sure we have resolved auto copy/auto destroy.
+          // Except not for runtime types, because that causes
+          // some sort of fatal resolution error. This is a workaround.
 
-        if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
-            isCompilerGenerated(autoCopyMap[at])         == false ||
-            isCompilerGenerated(autoDestroyMap.get(at))  == false ||
-            isCompilerGenerated(at->getDestructor())     == false) {
-          retval = true;
+          if (at->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+            resolveAutoCopyEtc(at);
+          }
+
+          if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
+              isCompilerGenerated(autoCopyMap[at])         == false ||
+              isCompilerGenerated(autoDestroyMap.get(at))  == false ||
+              isCompilerGenerated(at->getDestructor())     == false) {
+            retval = true;
+          }
         }
-       }
 
         // Since hasUserAssign tries to resolve =, we only
         // check it if we think we have a POD type.
