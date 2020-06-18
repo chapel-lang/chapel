@@ -23,6 +23,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "stmt.h"
@@ -549,9 +550,16 @@ static bool isExternType(Type* t) {
   if (t->isWideRef())
     return false;
 
+  ClassTypeDecorator d = CLASS_TYPE_UNMANAGED_NONNIL;
+  // unmanaged or borrowed classes are OK
+  if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
+    d = removeNilableFromDecorator(classTypeDecorator(t));
+
   TypeSymbol* ts = t->symbol;
 
   return t->isRef() ||
+         d == CLASS_TYPE_BORROWED ||
+         d == CLASS_TYPE_UNMANAGED ||
          ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
          ts->hasFlag(FLAG_DATA_CLASS) ||
          ts->hasFlag(FLAG_C_PTR_CLASS) ||
