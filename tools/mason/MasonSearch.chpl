@@ -122,7 +122,7 @@ proc masonSearch(ref args: list(string)) {
 
 /* Sort the results in a order such that results that startWith needle
    are displayed first */
-proc rankResults(results, query) {
+proc rankResults(results: list(string), query: string): [] string {
   use Sort;
   record Comparator { }
   proc Comparator.compare(a, b) {
@@ -132,10 +132,9 @@ proc rankResults(results, query) {
   }
   var cmp : Comparator;
   var res = results.toArray();
-  sort(res, comparator = cmp);
-  if query != ".*" then
-    return res;
-  else return res.sorted();
+  if query == ".*" then sort(res);
+  else sort(res, comparator=cmp);
+  return res;
 }
 
 proc isHidden(name : string) : bool {
