@@ -10,37 +10,37 @@
 extern record A_BCde {
 }
 extern proc return_A_BCde():A_BCde;
-extern proc print_A_BCde(r:A_BCde);
+extern proc print_A_BCde(in r:A_BCde);
 
 extern record iAbc {
 }
 extern proc return_iAbc():iAbc;
-extern proc print_iAbc(r:iAbc);
+extern proc print_iAbc(in r:iAbc);
 
 extern record iaBc {
 }
 extern proc return_iaBc():iaBc;
-extern proc print_iaBc(r:iaBc);
+extern proc print_iaBc(in r:iaBc);
 
 extern record iabC {
 }
 extern proc return_iabC():iabC;
-extern proc print_iabC(r:iabC);
+extern proc print_iabC(in r:iabC);
 
 extern record iABc {
 }
 extern proc return_iABc():iABc;
-extern proc print_iABc(r:iABc);
+extern proc print_iABc(in r:iABc);
 
 extern record iaBC {
 }
 extern proc return_iaBC():iaBC;
-extern proc print_iaBC(r:iaBC);
+extern proc print_iaBC(in r:iaBC);
 
 extern record iaBCd {
 }
 extern proc return_iaBCd():iaBCd;
-extern proc print_iaBCd(r:iaBCd);
+extern proc print_iaBCd(in r:iaBCd);
 
 { var r:A_BCde; r = return_A_BCde(); print_A_BCde(r); }
 { var r:iAbc; r = return_iAbc(); print_iAbc(r); }

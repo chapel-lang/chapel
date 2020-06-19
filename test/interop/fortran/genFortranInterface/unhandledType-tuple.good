@@ -1,1 +1,0 @@
-unhandledType-tuple.chpl:1: error: export procedure argument types should be exportable types - '2*int(64)' is not
