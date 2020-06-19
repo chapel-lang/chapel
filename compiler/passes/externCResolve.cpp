@@ -483,8 +483,14 @@ void convertDeclToChpl(ModuleSymbol* module,
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {
       clang::ParmVarDecl* parm = (*it);
       const char* parm_name = astr(parm->getNameAsString().c_str());
-      Expr* parm_type = convertToChplType(module, parm->getType().getTypePtr());
-      f = buildFunctionFormal(f, buildArgDefExpr(INTENT_BLANK, parm_name, parm_type, NULL, NULL));
+      const clang::Type* parmCType = parm->getType().getTypePtr();
+      Expr* parmChapelType = convertToChplType(module, parmCType);
+      IntentTag intent = INTENT_IN;
+      if (parmCType->isArrayType())
+        intent = INTENT_REF;
+      f = buildFunctionFormal(f,
+                              buildArgDefExpr(intent, parm_name,
+                                              parmChapelType, NULL, NULL));
     }
 
     //handle variadic function
