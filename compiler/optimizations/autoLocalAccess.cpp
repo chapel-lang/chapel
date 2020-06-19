@@ -146,15 +146,17 @@ static Symbol *getDomSym(Symbol *arrSym) {
     }
   }
 
-  // try to get the domain if the symbol was an argument
-  // e.g. `a: [d] int`, `a: [?d] int`, `a: [x.domain] int`
-  if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
-    if (BlockStmt *typeBlock = toBlockStmt(arrArgSym->typeExpr)) {
-      Expr *firstExpr = typeBlock->body.head;
-      Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
+  if (ret == NULL) {
+    // try to get the domain if the symbol was an argument
+    // e.g. `a: [d] int`, `a: [?d] int`, `a: [x.domain] int`
+    if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
+      if (BlockStmt *typeBlock = toBlockStmt(arrArgSym->typeExpr)) {
+        Expr *firstExpr = typeBlock->body.head;
+        Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
 
-      ret = getDomSymFromDomExpr(domExpr, /* allowQuery= */ true);
+        ret = getDomSymFromDomExpr(domExpr, /* allowQuery= */ true);
 
+      }
     }
   }
 
@@ -162,7 +164,7 @@ static Symbol *getDomSym(Symbol *arrSym) {
     LOG("Regular domain symbol was not found for array", arrSym);
   }
 
-  return NULL;
+  return ret;
 }
 
 // Return the closest parent of `ce` that can impact locality (forall or on)
