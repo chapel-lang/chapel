@@ -50,7 +50,7 @@ module ExternalArray {
   chpl_make_external_array_ptr_free(elts: c_void_ptr,
                                     num_elts: uint): chpl_external_array;
 
-  extern proc chpl_free_external_array(x: chpl_external_array);
+  extern proc chpl_free_external_array(in x: chpl_external_array);
   extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
 
   // Creates an instance of our new array type
