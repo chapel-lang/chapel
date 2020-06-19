@@ -195,32 +195,32 @@ def compute_internal_values():
     compile_args_3p = []
     link_args_3p = []
 
-    ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_3p_gasnet_configs.get_uniq_cfg_path()
+    ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_gasnet.get_uniq_cfg_path()
 
-    ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_3p_gmp_configs.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_3p_gmp_configs.get_link_args(chpl_gmp.get()))
+    ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_gmp.get_uniq_cfg_path()
+    link_args_3p.extend(chpl_gmp.get_link_args(chpl_gmp.get()))
 
-    ENV_VALS['  CHPL_HWLOC_UNIQ_CFG_PATH'] = chpl_3p_hwloc_configs.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_3p_hwloc_configs.get_link_args(chpl_hwloc.get()))
+    ENV_VALS['  CHPL_HWLOC_UNIQ_CFG_PATH'] = chpl_hwloc.get_uniq_cfg_path()
+    link_args_3p.extend(chpl_hwloc.get_link_args(chpl_hwloc.get()))
 
-    ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_3p_jemalloc_configs.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_3p_jemalloc_configs.get_link_args(chpl_jemalloc.get()))
+    ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path()
+    link_args_3p.extend(chpl_jemalloc.get_link_args(chpl_jemalloc.get()))
 
-    ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_3p_libfabric_configs.get_uniq_cfg_path()
+    ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     if chpl_comm.get() == 'ofi':
-      compile_args_3p.extend(chpl_3p_libfabric_configs.get_compile_args())
-      link_args_3p.extend(chpl_3p_libfabric_configs.get_link_args())
+      compile_args_3p.extend(chpl_libfabric.get_compile_args())
+      link_args_3p.extend(chpl_libfabric.get_link_args())
 
-    ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_3p_libunwind_configs.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_3p_libunwind_configs.get_link_args(chpl_unwind.get()))
+    ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
+    link_args_3p.extend(chpl_unwind.get_link_args(chpl_unwind.get()))
 
-    ENV_VALS['  CHPL_QTHREAD_UNIQ_CFG_PATH'] = chpl_3p_qthreads_configs.get_uniq_cfg_path()
+    ENV_VALS['  CHPL_QTHREAD_UNIQ_CFG_PATH'] = chpl_qthreads.get_uniq_cfg_path()
     if chpl_tasks.get() == 'qthreads':
-        link_args_3p.extend(chpl_3p_qthreads_configs.get_link_args())
+        link_args_3p.extend(chpl_qthreads.get_link_args())
 
-    ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_3p_re2_configs.get_uniq_cfg_path()
+    ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_regexp.get_uniq_cfg_path()
     if chpl_regexp.get() == 're2':
-        link_args_3p.extend(chpl_3p_re2_configs.get_link_args())
+        link_args_3p.extend(chpl_regexp.get_link_args())
 
     # Remove duplicates, keeping last occurrence and preserving order
     # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."
