@@ -56,6 +56,7 @@ use IO;
 use Graph;
 use Random;
 use HashedDist;
+use LinkedLists;
 use BlockDist;
 
 // packing twitter user IDs to numbers
