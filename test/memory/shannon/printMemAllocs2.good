@@ -1,9 +1,9 @@
 =================================================================================================================
 Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
 =================================================================================================================
-printMemAllocs2.chpl:4           32       8        256      array elements                   0xnnnnnnnn  
-printMemAllocs2.chpl:4           32       8        256      array elements                   0xnnnnnnnn  
-printMemAllocs2.chpl:4           32       8        256      array elements                   0xnnnnnnnn  
-printMemAllocs2.chpl:4           32       8        256      array elements                   0xnnnnnnnn  
+printMemAllocs2.chpl:4           320      8        2560     array elements                   0xnnnnnnnn  
+printMemAllocs2.chpl:4           320      8        2560     array elements                   0xnnnnnnnn  
+printMemAllocs2.chpl:4           320      8        2560     array elements                   0xnnnnnnnn  
+printMemAllocs2.chpl:4           320      8        2560     array elements                   0xnnnnnnnn  
 =================================================================================================================
 
