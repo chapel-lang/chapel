@@ -557,9 +557,13 @@ static bool isExternType(Type* t) {
 
   TypeSymbol* ts = t->symbol;
 
+  EnumType* et = toEnumType(t);
+
   return t->isRef() ||
          d == CLASS_TYPE_BORROWED ||
          d == CLASS_TYPE_UNMANAGED ||
+         (et && et->isConcrete()) ||
+         (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
          ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
          ts->hasFlag(FLAG_DATA_CLASS) ||
          ts->hasFlag(FLAG_C_PTR_CLASS) ||
