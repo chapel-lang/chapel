@@ -568,6 +568,18 @@ static bool isExternType(Type* t) {
          ts->hasFlag(FLAG_EXPORT); // these don't exist yet
 }
 
+static bool isExportableType(Type* t) {
+
+  if (t == dtString || t == dtBytes) {
+    // string/bytes are OK in export functions
+    // because they are converted to wrapper
+    // functions
+    return true;
+  }
+
+  return isExternType(t);
+}
+
 static void externExportTypeError(FnSymbol* fn, Type* t) {
   INT_ASSERT(fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_EXPORT));
 
@@ -585,11 +597,11 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
       if (isExtern)
         USR_FATAL_CONT(fn, "extern procedure argument types should be "
                            "extern types - '%s' is not",
-                           t->symbol->name);
+                           toString(t));
       else
         USR_FATAL_CONT(fn, "export procedure argument types should be "
-                           "extern types - '%s' is not",
-                           t->symbol->name);
+                           "exportable types - '%s' is not",
+                           toString(t));
     }
   } else {
     // This is a generic instantiation of an extern proc that is using
@@ -603,11 +615,11 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
       if (isExtern)
         USR_FATAL_CONT(fn, "extern procedure argument types should be "
                            "extern types - '%s' is not",
-                           t->symbol->name);
+                           toString(t));
       else
         USR_FATAL_CONT(fn, "export procedure argument types should be "
-                           "export types - '%s' is not",
-                           t->symbol->name);
+                           "exportable types - '%s' is not",
+                           toString(t));
     }
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
@@ -660,18 +672,18 @@ static void checkExportedProcs() {
       continue;
 
     for_formals(formal, fn) {
-      if (!isExternType(formal->type)) {
+      if (!isExportableType(formal->type)) {
         externExportTypeError(fn, formal->type);
         break;
       }
     }
 
-    if (!isExternType(fn->retType)) {
+    if (!isExportableType(fn->retType)) {
       externExportTypeError(fn, fn->retType);
     }
 
     if (fn->retType->symbol->hasFlag(FLAG_C_ARRAY)) {
-      USR_FATAL_CONT(fn, "export procedures should not return c_array");
+      USR_FATAL_CONT(fn, "exported procedures should not return c_array");
     }
   }
 }
