@@ -246,7 +246,7 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   //
   if (t == dtBytes || t == dtString || t == dtStringC
                    || t == dtExternalArray) {
-    IntentTag tag = as->intent;
+    IntentTag tag = as->originalIntent;
 
     bool multiloc = fMultiLocaleInterop || strcmp(CHPL_COMM, "none");
 
@@ -283,9 +283,8 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
       }
     } else if (t == dtString || t == dtBytes) {
       // TODO: After resolution, have abstract intents been normalized?
-      if (tag != INTENT_CONST &&
-          tag != INTENT_CONST_REF &&
-          tag != INTENT_BLANK) {
+      if (tag != INTENT_IN &&
+          tag != INTENT_CONST_IN) {
         SET_LINENO(fn);
         USR_FATAL_CONT(as,  "Formal \'%s\' of type \'%s\' in exported routine "
                        "\'%s\' may not have the %s",
