@@ -220,7 +220,7 @@ module ExternalArray {
 
   // Can't create an _array wrapper to call the cleanup function for us, so do
   // the next best thing.
-  export proc cleanupOpaqueArray(arr: chpl_opaque_array) {
+  export proc cleanupOpaqueArray(const ref arr: chpl_opaque_array) {
     var cleanup = arr._instance: unmanaged BaseArr?;
     if cleanup then
       _do_destroy_arr(arr._unowned, cleanup!);

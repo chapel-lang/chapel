@@ -690,7 +690,7 @@ static void buildChplEntryPoints() {
   // It invokes the user's code.
   //
 
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_arg", dtMainArgument);
 
   chpl_gen_main          = new FnSymbol("chpl_gen_main");
   chpl_gen_main->retType = dtInt[INT_SIZE_64];

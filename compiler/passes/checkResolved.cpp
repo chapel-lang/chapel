@@ -631,6 +631,27 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
   }
 }
 
+static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
+
+  return isRecord(formal->getValType()) &&
+         (formal->originalIntent == INTENT_BLANK ||
+          formal->originalIntent == INTENT_CONST);
+}
+
+
+
+static void externExportIntentError(FnSymbol* fn, ArgSymbol* arg) {
+  INT_ASSERT(fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_EXPORT));
+
+  bool isExtern = fn->hasFlag(FLAG_EXTERN);
+
+  USR_FATAL_CONT(arg, "a concrete intent is required for the "
+                      "%s function formal %s "
+                      "which has record type %s",
+                      isExtern ? "extern" : "exported",
+                      arg->name,
+                      toString(arg->getValType()));
+}
 
 static void checkExternProcs() {
   const char* sizeof_ = astr("sizeof");
@@ -654,6 +675,9 @@ static void checkExternProcs() {
         externExportTypeError(fn, formal->type);
         break;
       }
+      if (isErroneousExternExportArgIntent(formal)) {
+        externExportIntentError(fn, formal);
+      }
     }
 
     if (!isExternType(fn->retType)) {
@@ -675,6 +699,9 @@ static void checkExportedProcs() {
       if (!isExportableType(formal->type)) {
         externExportTypeError(fn, formal->type);
         break;
+      }
+      if (isErroneousExternExportArgIntent(formal)) {
+        externExportIntentError(fn, formal);
       }
     }
 

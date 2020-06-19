@@ -921,8 +921,8 @@ static GenRet codegenRnode(GenRet wide){
 
   if( !fLLVMWideOpt ) {
     ret = codegenCallExpr("chpl_nodeFromLocaleID",
-                          codegenAddrOf(codegenValuePtr(
-                              codegenWideThingField(wide, WIDE_GEP_LOC))),
+                          codegenValue(
+                              codegenWideThingField(wide, WIDE_GEP_LOC)),
                           /*ln*/codegenZero(), /*fn*/codegenZero32());
   } else {
 #ifdef HAVE_LLVM
@@ -5824,7 +5824,7 @@ void CallExpr::codegenInvokeOnFun() {
   argBundle  = codegenValue(get(2));
   bundleSize = codegenValue(get(3));
 
-  args[0] = codegenLocalAddrOf(localeId);
+  args[0] = codegenValue(localeId);
   args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_32);
   args[2] = codegenCast("chpl_comm_on_bundle_p", argBundle);
   args[3] = bundleSize;
