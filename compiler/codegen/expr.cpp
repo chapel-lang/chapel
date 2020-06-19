@@ -2487,6 +2487,7 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     std::vector<llvm::Value *> llArgs;
+    llvm::Value* sret = NULL;
 
     if (CGI == NULL &&
         fnType->getReturnType()->isVoidTy() &&
@@ -2498,6 +2499,20 @@ GenRet codegenCallExpr(GenRet function,
       // Handle return ABI stuff
       const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
       returnInfo.canHaveCoerceToType();
+
+      // We might be doing 'structure return'
+      // TODO: use CGI info
+      if( fnType->getReturnType()->isVoidTy() &&
+          fnType->getNumParams() >= 1 &&
+          func && func->hasStructRetAttr() ) {
+        // We must allocate a temporary to store the return value
+        llvm::PointerType* ptrToRetTy = llvm::cast<llvm::PointerType>(
+            fnType->getParamType(0));
+        llvm::Type* retTy = ptrToRetTy->getElementType();
+        sret = createVarLLVM(retTy);
+        llArgs.push_back(sret);
+      }
+
     }
 
     for (size_t i = 0; i < args.size(); i++) {
@@ -2526,8 +2541,12 @@ GenRet codegenCallExpr(GenRet function,
 #else
       ret.val = info->irBuilder->CreateCall(val, llArgs);
 #endif
-
     }
+
+    if( sret ) {
+      ret.val = codegenLoadLLVM(sret, fSym?(fSym->retType):(NULL));
+    }
+
 #endif
   }
   return ret;
