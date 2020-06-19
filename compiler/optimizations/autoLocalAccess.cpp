@@ -126,18 +126,20 @@ static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery) {
 // NULL if we can't find a domain symbol statically
 static Symbol *getDomSym(Symbol *arrSym) {
 
+  Symbol *ret = NULL;
+
   // try to get the domain of arrays that are defined in this scope
   if(DefExpr *def = arrSym->defPoint) {
     if (def->exprType != NULL) {
       // check for pattern `var A: [D] int;`
       if (Expr *arg = getDomExprFromTypeExprOrQuery(def->exprType)) {
-        return getDomSymFromDomExpr(arg, /* allowQuery= */ false);
+        ret = getDomSymFromDomExpr(arg, /* allowQuery= */ false);
       }
       // check for `B` in `var A, B: [D] int;`
       else if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
         if (ceOuter->isPrimitive(PRIM_TYPEOF)) {
           if (SymExpr *typeOfSymExpr = toSymExpr(ceOuter->get(1))) {
-            return getDomSym(typeOfSymExpr->symbol()); // recurse
+            ret = getDomSym(typeOfSymExpr->symbol()); // recurse
           }
         }
       }
@@ -147,13 +149,18 @@ static Symbol *getDomSym(Symbol *arrSym) {
   // try to get the domain if the symbol was an argument
   // e.g. `a: [d] int`, `a: [?d] int`, `a: [x.domain] int`
   if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
-    Expr *firstExpr = arrArgSym->typeExpr->body.head;
+    if (BlockStmt *typeBlock = toBlockStmt(arrArgSym->typeExpr)) {
+      Expr *firstExpr = typeBlock->body.head;
+      Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
 
-    Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
-    return getDomSymFromDomExpr(domExpr, /* allowQuery= */ true);
+      ret = getDomSymFromDomExpr(domExpr, /* allowQuery= */ true);
+
+    }
   }
 
-  LOG("Regular domain symbol was not found for array", arrSym);
+  if (ret == NULL) {
+    LOG("Regular domain symbol was not found for array", arrSym);
+  }
 
   return NULL;
 }
