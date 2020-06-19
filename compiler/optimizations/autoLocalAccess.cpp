@@ -87,6 +87,7 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
   return NULL;
 }
 
+// get the domain part of the expression from `[D] int` or `[?D] int`
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e) {
   if (CallExpr *ce = toCallExpr(e)) {
     if (ce->isNamed("chpl__buildArrayRuntimeType")) {
@@ -103,50 +104,58 @@ static Expr *getDomExprFromTypeExprOrQuery(Expr *e) {
   return NULL;
 }
 
+static Symbol *getDomSym(Symbol *arrSym);
+
+// get the domain symbol from `Dom`, `?Dom` (if allowQuery) or `arr.domain`
+static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery) {
+  if (SymExpr *domSE = toSymExpr(domExpr)) {
+    return domSE->symbol();
+  }
+  else if (allowQuery) {
+    if (DefExpr *domSE = toDefExpr(domExpr)) {
+      return domSE->sym;
+    }
+  }
+  else if (Symbol *dotDomBaseSym = getDotDomBaseSym(domExpr)) {
+    return getDomSym(dotDomBaseSym); // recurse
+  }
+  return NULL;
+}
+
 // If `arrSym` is an array symbol, try to return its domain's symbol. return
 // NULL if we can't find a domain symbol statically
 static Symbol *getDomSym(Symbol *arrSym) {
-  Symbol *ret = NULL;
+
+  // try to get the domain of arrays that are defined in this scope
   if(DefExpr *def = arrSym->defPoint) {
     if (def->exprType != NULL) {
       // check for pattern `var A: [D] int;`
       if (Expr *arg = getDomExprFromTypeExprOrQuery(def->exprType)) {
-        if (SymExpr *domSE = toSymExpr(arg)) {
-          ret = domSE->symbol();
-        }
-        else if(Symbol *dotDomBaseSym = getDotDomBaseSym(arg)) {
-          ret = getDomSym(dotDomBaseSym); // recurse
-        }
+        return getDomSymFromDomExpr(arg, /* allowQuery= */ false);
       }
       // check for `B` in `var A, B: [D] int;`
       else if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
         if (ceOuter->isPrimitive(PRIM_TYPEOF)) {
           if (SymExpr *typeOfSymExpr = toSymExpr(ceOuter->get(1))) {
-            ret = getDomSym(typeOfSymExpr->symbol()); // recurse
+            return getDomSym(typeOfSymExpr->symbol()); // recurse
           }
         }
       }
     }
-    else {
-      if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
-        Expr *firstExpr = arrArgSym->typeExpr->body.head;
+  }
 
-        Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
-        if (SymExpr *domSE = toSymExpr(domExpr)) {
-          ret = domSE->symbol();
-        }
-        else if (DefExpr *domSE = toDefExpr(domExpr)) {
-          ret = domSE->sym;
-        }
-        else {
-        }
-      }
-    }
+  // try to get the domain if the symbol was an argument
+  // e.g. `a: [d] int`, `a: [?d] int`, `a: [x.domain] int`
+  if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
+    Expr *firstExpr = arrArgSym->typeExpr->body.head;
+
+    Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
+    return getDomSymFromDomExpr(domExpr, /* allowQuery= */ true);
   }
-  if (ret == NULL) {
-    LOG("Regular domain symbol was not found for array", arrSym);
-  }
-  return ret;
+
+  LOG("Regular domain symbol was not found for array", arrSym);
+
+  return NULL;
 }
 
 // Return the closest parent of `ce` that can impact locality (forall or on)
