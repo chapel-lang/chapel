@@ -33,6 +33,7 @@
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
+#include "whereami.c"
 
 // used in get_enviro_keys
 extern char** environ;
@@ -618,12 +619,11 @@ void printAdditionalHelp(void) {
 extern const char launcher_real_suffix[];
 extern const char launcher_exe_suffix[];    // May be the empty string.
 
-#define BIN_NAME_SIZE 256
-static char chpl_real_binary_name[BIN_NAME_SIZE];
+static char* chpl_real_binary_name;
 
 void chpl_compute_real_binary_name(const char* argv0) {
 
-  char* cursor = chpl_real_binary_name;
+  char* cursor;// = chpl_real_binary_name;
   int exe_length = strlen(launcher_exe_suffix);
   int length;
   const char* real_suffix = getenv("CHPL_LAUNCHER_SUFFIX");
@@ -635,12 +635,10 @@ void chpl_compute_real_binary_name(const char* argv0) {
   if (launcher_is_mli) {
 
     length = strlen(launcher_mli_real_name);
+    chpl_real_binary_name = chpl_mem_alloc(length+1,
+                                           CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-    if (length >= BIN_NAME_SIZE) {
-      chpl_internal_error("Real executable name is too long.");
-    }
-
-    strncpy(chpl_real_binary_name, launcher_mli_real_name, BIN_NAME_SIZE);
+    strncpy(chpl_real_binary_name, launcher_mli_real_name, length);
     chpl_real_binary_name[length] = '\0';
 
   } else {
@@ -649,9 +647,7 @@ void chpl_compute_real_binary_name(const char* argv0) {
       real_suffix = launcher_real_suffix;
     }
 
-    length = strlen(argv0);
-    if (length + strlen(launcher_real_suffix) >= BIN_NAME_SIZE)
-      chpl_internal_error("Real executable name is too long.");
+    length = wai_getExecutablePath(NULL, 0, NULL);
 
     // See if the launcher name contains the exe_suffix
     if (exe_length > 0 &&
@@ -659,8 +655,13 @@ void chpl_compute_real_binary_name(const char* argv0) {
       // We matched the exe suffix, so remove it before adding the real suffix.
       length -= exe_length;
 
+    chpl_real_binary_name = chpl_mem_alloc(length +
+                                           strlen(launcher_real_suffix)+1,
+                                           CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    cursor = chpl_real_binary_name;
+
     // Copy the filename sans exe suffix.
-    strncpy(cursor, argv0, length);
+    wai_getExecutablePath(cursor, length, NULL);
     cursor += length;
     strcpy(cursor, launcher_real_suffix);
   }
@@ -747,5 +748,7 @@ int chpl_launcher_main(int argc, char* argv[]) {
   // Launch the program.
   // This may not return (e.g., if calling chpl_launch_using_exec()).
   //
-  return chpl_launch(argc, argv, execNumLocales);
+  int retval = chpl_launch(argc, argv, execNumLocales);
+  chpl_mem_free(chpl_real_binary_name, 0, 0);
+  return retval;
 }
