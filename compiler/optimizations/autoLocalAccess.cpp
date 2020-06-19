@@ -87,32 +87,58 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
   return NULL;
 }
 
+static Expr *getDomExprFromTypeExprOrQuery(Expr *e) {
+  if (CallExpr *ce = toCallExpr(e)) {
+    if (ce->isNamed("chpl__buildArrayRuntimeType")) {
+      if (CallExpr *ceInner = toCallExpr(ce->get(1))) {
+        if (ceInner->isNamed("chpl__ensureDomainExpr")) {
+          return ceInner->get(1);
+        }
+      }
+      else if (DefExpr *queryDef = toDefExpr(ce->get(1))) {
+        return queryDef;
+      }
+    }
+  }
+  return NULL;
+}
+
 // If `arrSym` is an array symbol, try to return its domain's symbol. return
 // NULL if we can't find a domain symbol statically
 static Symbol *getDomSym(Symbol *arrSym) {
   Symbol *ret = NULL;
   if(DefExpr *def = arrSym->defPoint) {
     if (def->exprType != NULL) {
-      if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
-        // check the most basic idiom `var A: [D] int`
-        if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
-          if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
-            if (ceInner->isNamed("chpl__ensureDomainExpr")) {
-              Expr *arg = ceInner->get(1);
-              if (SymExpr *domSE = toSymExpr(arg)) {
-                ret = domSE->symbol();
-              }
-              else if(Symbol *dotDomBaseSym = getDotDomBaseSym(arg)) {
-                ret = getDomSym(dotDomBaseSym); // recurse
-              }
-            }
-          }
+      // check for pattern `var A: [D] int;`
+      if (Expr *arg = getDomExprFromTypeExprOrQuery(def->exprType)) {
+        if (SymExpr *domSE = toSymExpr(arg)) {
+          ret = domSE->symbol();
         }
-        // check for `B` in `var A, B: [D] int;`
-        else if (ceOuter->isPrimitive(PRIM_TYPEOF)) {
+        else if(Symbol *dotDomBaseSym = getDotDomBaseSym(arg)) {
+          ret = getDomSym(dotDomBaseSym); // recurse
+        }
+      }
+      // check for `B` in `var A, B: [D] int;`
+      else if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
+        if (ceOuter->isPrimitive(PRIM_TYPEOF)) {
           if (SymExpr *typeOfSymExpr = toSymExpr(ceOuter->get(1))) {
             ret = getDomSym(typeOfSymExpr->symbol()); // recurse
           }
+        }
+      }
+    }
+    else {
+      if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
+        Expr *firstExpr = arrArgSym->typeExpr->body.head;
+
+        Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
+        if (SymExpr *domSE = toSymExpr(domExpr)) {
+          ret = domSE->symbol();
+        }
+        else if (DefExpr *domSE = toDefExpr(domExpr)) {
+          ret = domSE->sym;
+        }
+        else {
         }
       }
     }
