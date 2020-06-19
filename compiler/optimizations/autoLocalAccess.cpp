@@ -308,23 +308,8 @@ static void gatherForallInfo(ForallStmt *forall) {
   }
 }
 
-static bool hasReduceIntentShadowVars(ForallStmt *forall) {
-  // We never seem to use `temp`, why is it in the interface of this macro?
-  for_shadow_vars(svar, temp, forall) {
-    if (svar->isReduce()) {
-      return true;
-    }
-  }
-  return false;
-}
-
 static bool checkLoopSuitableForOpt(ForallStmt *forall) {
 
-  // reduce-intent variables expect some special AST form that this optimization
-  // somehow breaks
-  if (hasReduceIntentShadowVars(forall)) {
-    return false;
-  }
   if (forall->optInfo.multiDIndices.size() == 0) {
     return false;
   }
