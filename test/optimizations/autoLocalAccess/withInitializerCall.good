@@ -53,58 +53,58 @@ Potential access
 	withInitializerCall.chpl:20
 
 **** Start forall ****
-	withInitializerCall.chpl:27
+	withInitializerCall.chpl:29
 
 Regular domain symbol was not found for array
-	withInitializerCall.chpl:26
+	withInitializerCall.chpl:28
 
 Iterated over the domain of
-	withInitializerCall.chpl:26
+	withInitializerCall.chpl:28
 
 , whose domain cannot be determined statically
-	withInitializerCall.chpl:26
+	withInitializerCall.chpl:28
 
 Loop is suitable for further analysis
-	withInitializerCall.chpl:27
+	withInitializerCall.chpl:29
 
 Potential access
-	withInitializerCall.chpl:28
+	withInitializerCall.chpl:30
 
 	Can optimize: Access base is the iterator's base
-	withInitializerCall.chpl:28
+	withInitializerCall.chpl:30
 
 	Marking static candidate
-	withInitializerCall.chpl:28
+	withInitializerCall.chpl:30
 
 **** End forall ****
-	withInitializerCall.chpl:27
+	withInitializerCall.chpl:29
 
 **** Start forall ****
-	withInitializerCall.chpl:34
+	withInitializerCall.chpl:36
 
 Regular domain symbol was not found for array
-	withInitializerCall.chpl:33
+	withInitializerCall.chpl:35
 
 Iterated over the domain of
-	withInitializerCall.chpl:33
+	withInitializerCall.chpl:35
 
 , whose domain cannot be determined statically
-	withInitializerCall.chpl:33
+	withInitializerCall.chpl:35
 
 Loop is suitable for further analysis
-	withInitializerCall.chpl:34
+	withInitializerCall.chpl:36
 
 Potential access
-	withInitializerCall.chpl:35
+	withInitializerCall.chpl:37
 
 	Can optimize: Access base is the iterator's base
-	withInitializerCall.chpl:35
+	withInitializerCall.chpl:37
 
 	Marking static candidate
-	withInitializerCall.chpl:35
+	withInitializerCall.chpl:37
 
 **** End forall ****
-	withInitializerCall.chpl:34
+	withInitializerCall.chpl:36
 
 Static check successful. Using localAccess
 	withInitializerCall.chpl:14
@@ -113,8 +113,8 @@ Static check successful. Using localAccess
 	withInitializerCall.chpl:21
 
 Static check successful. Using localAccess
-	withInitializerCall.chpl:28
+	withInitializerCall.chpl:30
 
 Static check successful. Using localAccess
-	withInitializerCall.chpl:35
+	withInitializerCall.chpl:37
 
