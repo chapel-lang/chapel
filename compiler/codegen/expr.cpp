@@ -3820,6 +3820,8 @@ DEFINE_PRIM(PRIM_RETURN) {
                                                           align,
                                                           "sret");
             returnInst = irBuilder->CreateRet(v);
+          } else {
+            returnInst = irBuilder->CreateRetVoid();
           }
           break;
         }
@@ -3837,6 +3839,7 @@ DEFINE_PRIM(PRIM_RETURN) {
           ptr.chplType = call->typeInfo();
 
           codegenStoreLLVM(ret, ptr);
+          returnInst = irBuilder->CreateRetVoid();
           break;
         }
 

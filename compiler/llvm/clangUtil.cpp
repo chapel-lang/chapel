@@ -2360,9 +2360,18 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
 
   INT_ASSERT(!t->isWideRef());
 
-  if (t->isRef()) {
-    makeRef = true;
-    t = t->getValType();
+  if (makeRef || t->isRef()) {
+    ::Type* eltType = t->getValType();
+    clang::CanQualType cTy = getClangType(eltType, false);
+    cTy = Ctx->getPointerType(cTy);
+    return cTy;
+  }
+  TypeSymbol* ts = t->symbol;
+  if (ts->hasFlag(FLAG_C_PTR_CLASS) || ts->hasFlag(FLAG_DATA_CLASS)) {
+    ::Type* eltType = getDataClassType(ts)->type;
+    clang::CanQualType cTy = getClangType(eltType, false);
+    cTy = Ctx->getPointerType(cTy);
+    return cTy;
   }
 
   if (t == dtVoid || t == dtNothing)
@@ -2386,11 +2395,6 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   clang::QualType cQualType = Ctx->getTypeDeclType(cTypeDecl);
   //->getTypePtr();
   clang::CanQualType cTy = cQualType->getCanonicalTypeUnqualified();
-
-  if (makeRef) {
-    // Use a pointer to the type.
-    cTy = Ctx->getPointerType(cTy);
-  }
 
   return cTy;
 }

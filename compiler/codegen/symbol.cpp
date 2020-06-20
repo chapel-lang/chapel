@@ -1749,7 +1749,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
 
   unsigned int stackSpace = layout.getAllocaAddrSpace();
 
-  llvm::Type *returnTy;
+  llvm::Type* chapelReturnTy; // Chapel return type as an llvm type
+  llvm::Type* returnTy;
   std::vector<llvm::Type *> argTys;
 
   // Void type handled here since LLVM complains about a
@@ -1766,6 +1767,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       attrs = attrs.addAttributes(ctx, llvm::AttributeList::ReturnIndex, b);
     }
   }
+
+  chapelReturnTy = returnTy;
 
   int curCArg = 0;
 
@@ -1836,7 +1839,8 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
         curCArg++; // a guess
       }
 
-      argTys.push_back(llvm::PointerType::get(returnTy, stackSpace));
+      // returnTy is void, so use chapelReturnTy
+      argTys.push_back(llvm::PointerType::get(chapelReturnTy, stackSpace));
       argNames.push_back("indirect_return");
 
       // Adjust attributes for sret argument
