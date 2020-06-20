@@ -1,0 +1,2 @@
+proc int.deinit() {
+}

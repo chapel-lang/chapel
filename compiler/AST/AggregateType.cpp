@@ -2793,7 +2793,8 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
-      INT_FATAL(fn, "initializer on non-class type");
+      USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
+      return;
     }
 
     if (fn->hasFlag(FLAG_NO_PARENS)) {
