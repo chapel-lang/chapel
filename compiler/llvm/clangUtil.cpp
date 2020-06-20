@@ -2373,6 +2373,14 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
+  if (ts->hasFlag(FLAG_STAR_TUPLE)) {
+    AggregateType* at = toAggregateType(t);
+    Symbol* field = at->getField("x0");
+    ::Type* eltType = field->type;
+    clang::CanQualType cTy = getClangType(eltType, false);
+    cTy = Ctx->getPointerType(cTy);
+    return cTy;
+  }
 
   if (t == dtVoid || t == dtNothing)
     return Ctx->VoidTy;
