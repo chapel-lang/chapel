@@ -2523,6 +2523,16 @@ GenRet codegenCallExpr(GenRet function,
                                              llvm::Attribute::ByVal))
         INT_FATAL("byval without ABI info not implemented");
 
+      // If we are passing byval, get the pointer to the
+      // argument
+      if( llArgs.size() < fnType->getNumParams() &&
+          func &&
+          func->getAttributes().hasAttribute(llArgs.size()+1,
+                                             llvm::Attribute::ByVal) ){
+        args[i] = codegenAddrOf(codegenValuePtr(args[i]));
+        // TODO -- this is not working!
+      }
+
       // Handle structure expansion done by clang.
       convertArgumentForCall(fnType, args[i], llArgs);
     }
