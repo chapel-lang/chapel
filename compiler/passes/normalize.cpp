@@ -243,7 +243,7 @@ void normalize() {
         }
 
         if (ct == NULL)
-          USR_FATAL_CONT(fn, "deinit may not be defined for types other than record, union, or class ");
+          USR_FATAL_CONT(fn, "deinit may not be defined for types other than record, union, or class");
         else if (ct->symbol->hasFlag(FLAG_EXTERN))
           USR_FATAL_CONT(fn, "deinit may not be currently defined for extern types");
 
