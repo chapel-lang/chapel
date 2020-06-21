@@ -270,19 +270,19 @@ module ChapelHashtable {
     var tableSize: int;
     var table: _ddata(chpl_TableEntry(keyType, valType)); // 0..<tableSize
 
-    var rehashHelpers: owned chpl__rehashHelpers;
+    var rehashHelpers: owned chpl__rehashHelpers?;
 
     var postponeResize: bool;
 
     proc init(type keyType, type valType,
-              in rehashHelpers: owned chpl__rehashHelpers
-                        = new owned chpl__rehashHelpers()) {
+              in rehashHelpers: owned chpl__rehashHelpers? = nil,
+              tableSize = chpl__primes(0)) {
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
       this.tableNumDeletedSlots = 0;
       this.tableSizeNum = 0;
-      this.tableSize = chpl__primes(tableSizeNum);
+      this.tableSize = tableSize;
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.complete();
@@ -291,8 +291,9 @@ module ChapelHashtable {
       // All elements are memset to 0 (no initializer is run for the idxType)
       // This allows them to be empty, but the key and val
       // are considered uninitialized.
-      this.table = _allocateData(this.tableSize,
-                                 chpl_TableEntry(this.keyType, this.valType));
+      if tableSize then
+        this.table = _allocateData(this.tableSize,
+                                   chpl_TableEntry(this.keyType, this.valType));
     }
     proc deinit() {
       // Go through the full slots in the current table and run
@@ -557,7 +558,8 @@ module ChapelHashtable {
         tableSize = newSize;
         table = allocateTable(tableSize);
 
-        rehashHelpers.startRehash(tableSize);
+        if rehashHelpers != nil then
+          rehashHelpers!.startRehash(tableSize);
 
         // tableNumFullSlots stays the same during this operation
         // and all all deleleted slots are removed
@@ -589,11 +591,13 @@ module ChapelHashtable {
             _moveInit(dstSlot.val, _moveToReturn(oldEntry.val));
 
             // move array elements to the new location
-            rehashHelpers.moveElementDuringRehash(oldslot, newslot);
+            if rehashHelpers != nil then
+              rehashHelpers!.moveElementDuringRehash(oldslot, newslot);
           }
         }
 
-        rehashHelpers.finishRehash(oldSize);
+        if rehashHelpers != nil then
+          rehashHelpers!.finishRehash(oldSize);
 
         // delete the old allocation
         _ddata_free(oldTable, oldSize);
@@ -642,6 +646,11 @@ module ChapelHashtable {
   record chpl__simpleSet {
     type eltType;
     var table: chpl__hashtable(eltType, nothing);
+
+    proc init(type eltType) {
+      this.eltType = eltType;
+      this.table = new chpl__hashtable(eltType, nothing, tableSize=0);
+    }
 
     inline proc size {
       return table.tableNumFullSlots;
