@@ -108,15 +108,19 @@ static Symbol *getDomSym(Symbol *arrSym);
 
 // get the domain symbol from `Dom`, `?Dom` (if allowQuery) or `arr.domain`
 static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery) {
+  // we try the following cases one by one:
+  
   if (SymExpr *domSE = toSymExpr(domExpr)) {
     return domSE->symbol();
   }
-  else if (allowQuery) {
+
+  if (allowQuery) {
     if (DefExpr *domSE = toDefExpr(domExpr)) {
       return domSE->sym;
     }
   }
-  else if (Symbol *dotDomBaseSym = getDotDomBaseSym(domExpr)) {
+
+  if (Symbol *dotDomBaseSym = getDotDomBaseSym(domExpr)) {
     return getDomSym(dotDomBaseSym); // recurse
   }
   return NULL;
