@@ -191,6 +191,7 @@ module Map {
           table.clearSlot(slot, key, val);
         }
       }
+      table.maybeShrinkAfterRemove();
     }
 
     /*
@@ -350,6 +351,7 @@ module Map {
       try! {
         var result: valType, key: keyType;
         table.clearSlot(slot, key, result);
+        table.maybeShrinkAfterRemove();
         return result: valType;
       }
     }
@@ -533,6 +535,7 @@ module Map {
       }
       var outKey: keyType, outVal: valType;
       table.clearSlot(slot, outKey, outVal);
+      table.maybeShrinkAfterRemove();
       return true;
     }
 
