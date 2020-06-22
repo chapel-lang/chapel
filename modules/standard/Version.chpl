@@ -20,6 +20,8 @@
 
 /*
 
+.. highlight:: chapel
+
 This module contains features that support compile-time reasoning
 about version numbers in general, and Chapel version numbers
 specifically.  In more detail, it features:
@@ -35,7 +37,7 @@ specifically.  In more detail, it features:
 
 * :proc:`version`: a utility function for creating new version values
 
-Version types in this module are defined in terms of `param` values to
+Version types in this module are defined in terms of ``param`` values to
 support compile-time reasoning about versions and code specialization.
 
 The version types support:
@@ -43,8 +45,12 @@ The version types support:
 * being printed out or cast to a ``param`` string
 
 * compile-time comparisons between version values via ``==``, ``!=``,
-  ``<``, ``<=``, ``>``, and ``>``, including mixed types.  Generally
-  speaking, "less than" corresponds to "is an earlier version than."
+  ``<``, ``<=``, ``>``, and ``>``, including mixed version types.
+  Generally speaking, "less than" corresponds to "is an earlier
+  version than."  For example::
+
+    if chplVersion < version(2,0) then
+      compilerWarning("Using a not-yet-stable version of 'chpl'");
 
 */
 
@@ -58,8 +64,9 @@ module Version {
 
   /*
     The version of ``chpl`` used to compile this program.  For an
-    official Chapel release, this will have type ``semanticVersion``
-    while for a pre-release, it will have type ``sourceVersion``.
+    official Chapel release, this will have type
+    :type:`semanticVersion` while for a pre-release, it will have
+    type :type:`sourceVersion`.
 
     Note that Chapel ``1.x.y``/``2.x.y`` corresponds to version
     ``0.x.y``/``1.x.y`` in traditional semantic versioning.
@@ -85,9 +92,10 @@ module Version {
     :arg commit: The optional commit ID (defaults to "")
     :type commit: `string`
 
-    :returns: A new version value.  If commit == "", this routine
-              returns a value of :type:`semanticVersion` otherwise it
-              returns a value of :type:`sourceVersion`.
+    :returns: A new version value.  If ``commit == ""``, this routine
+              returns a value of type :type:`semanticVersion`
+              otherwise it returns a value of type
+              :type:`sourceVersion`.
   */
   proc version(param major: int, param minor: int,
                param update: int = 0, param commit: string = "") {
@@ -142,11 +150,12 @@ module Version {
     printed or converted to a string, it is represented as ``version
     major.minor.update (commit)``.
 
-    Note that comparisons between two sourceVersion values with identical
-    semantic versions are not supported due to the challenges involved
-    in ordering commit values.  In addition, when a semanticVersion is
-    compared with a sourceVersion with the identical semantic version,
-    the sourceVersion value is considered "less than" the semanticVersion
+    Note that ordered comparisons between two :type:`sourceVersion`
+    values with identical semantic versions are not supported due to
+    the challenges involved in ordering commit values.  Moreover, when
+    a :type:`semanticVersion` is compared with a :type:`sourceVersion`
+    that has the identical semantic version, the :type:`sourceVersion`
+    value is considered to be less than the :type:`semanticVersion`
     using the model that it represents a pre-release of the official
     release represented by the semantic version.
   */
@@ -210,24 +219,35 @@ module Version {
     return spaceship(v1,v2) == 0;
   }
 
+  /*
+    Equality/inequality operators between two values of type
+    :type:`semanticVersion` check whether or not the two values
+    have identical major, minor, and update values.
+  */
   proc !=(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
     return spaceship(v1,v2) != 0;
   }
 
   proc <(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
-    return spaceship(v1,v2) == -1;
+    return spaceship(v1,v2) < 0;
   }
 
   proc <=(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
-    return spaceship(v1,v2) != 1;
+    return spaceship(v1,v2) <= 0;
   }
 
   proc >(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
-    return spaceship(v1,v2) == 1;
+    return spaceship(v1,v2) > 0;
   }
 
+  /*
+    Ordered comparisons between two values of type
+    :type:`semanticVersion` are based on the lexical ordering of each
+    value's ``major.minor.update`` value, reflecting an "was released
+    before/after" relationship.
+  */
   proc >=(v1: semanticVersion(?), v2: semanticVersion(?)) param : bool {
-    return spaceship(v1,v2) != -1;
+    return spaceship(v1,v2) >= 0;
   }
 
 
@@ -238,6 +258,11 @@ module Version {
             v1.commit == v2.commit);
   }
 
+  /*
+    Equality/inequality operators between two values of type
+    :type:`sourceVersion` check whether or not the two values
+    have identical major, minor, update, and commit values.
+  */
   proc !=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
     return (v1.version != v2.version ||
             v1.commit != v2.commit);
@@ -246,7 +271,7 @@ module Version {
   proc <(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
     param versionComp = spaceship(v1.version, v2.version);
     if versionComp != 0 {
-      return versionComp == -1;
+      return versionComp < 0;
     } else if v1.commit == v2.commit {
       return false;
     } else {
@@ -258,7 +283,7 @@ module Version {
   proc <=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
     param versionComp = spaceship(v1.version, v2.version);
     if versionComp != 0 {
-      return versionComp == -1;
+      return versionComp < 0;
     } else if v1.commit == v2.commit {
       return true;
     } else {
@@ -270,7 +295,7 @@ module Version {
   proc >(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
     param versionComp = spaceship(v1.version, v2.version);
     if versionComp != 0 {
-      return versionComp == 1;
+      return versionComp > 0;
     } else if v1.commit == v2.commit {
       return false;
     } else {
@@ -279,10 +304,18 @@ module Version {
     }
   }
 
+  /*
+    Ordered comparisons between two values of type
+    :type:`sourceVersion` are based on the ordering of the semantic
+    versions of the two values.  If the two values have identical
+    semantic versions, any cases that rely on an ordering of the
+    commits will generate a compile-time error due to the challenge of
+    ordering commits at compile-time.
+  */
   proc >=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
     param versionComp = spaceship(v1.version, v2.version);
     if versionComp != 0 {
-      return versionComp == 1;
+      return versionComp > 1;
     } else if v1.commit == v2.commit {
       return true;
     } else {
@@ -291,7 +324,7 @@ module Version {
     }
   }
 
-  // semanticVersion / sourceVersion comparison ops
+  // semanticVersion / sourceVersion == and != ops
 
   proc ==(v1: semanticVersion(?), v2: sourceVersion(?)) param : bool {
     return false;
@@ -300,6 +333,22 @@ module Version {
   proc !=(v1: semanticVersion(?), v2: sourceVersion(?)) param : bool {
     return true;
   }
+
+  proc ==(v1: sourceVersion(?), v2: semanticVersion(?)) param : bool {
+    return false;
+  }
+
+  /*
+    Equality/inequality comparisons between mixed values of type
+    :type:`semanticVersion` and :type:`sourceVersion` always return
+    ``false`` for ``==`` and ``true`` for ``!=``.
+  */
+  proc !=(v1: sourceVersion(?), v2: semanticVersion(?)) param : bool {
+    return true;
+  }
+
+
+  // ordered comparison operators for semanticVersion and sourceVersion
 
   proc <(v1: semanticVersion(?), v2: sourceVersion(?)) param : bool {
     return v1 < v2.version;
@@ -317,17 +366,6 @@ module Version {
     return v1 >= v2.version;
   }
 
-
-  // sourceVersion / semanticVersion comparison ops
-
-  proc ==(v1: sourceVersion(?), v2: semanticVersion(?)) param : bool {
-    return v2 == v1;
-  }
-
-  proc !=(v1: sourceVersion(?), v2: semanticVersion(?)) param : bool {
-    return v2 != v1;
-  }
-
   proc <(v1: sourceVersion(?), v2: semanticVersion(?)) param : bool {
     return v2 >= v1;
   }
@@ -340,6 +378,14 @@ module Version {
     return v2 <= v1;
   }
 
+  /*
+    Ordered comparisons between mixed values of type
+    :type:`semanticVersion` and :type:`sourceVersion` are based on the
+    ordering of the semantic versions of the two values.  If the
+    two values have identical semantic versions, the
+    :type:`sourceVersion` value is considered less than the
+    :type:`semanticVersion` value.
+  */
   proc >=(v1: sourceVersion(?), v2: semanticVersion(?)) param : bool {
     return v2 < v1;
   }
