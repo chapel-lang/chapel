@@ -82,6 +82,18 @@ libfabric/
   See also: libfabric/README and libfabric/libfabric-src/README
 
 
+libunwind/
+  Summary: libunwind is a portable and efficient C programming
+           interface (API) to determine the call-chain of a program
+
+  License: MIT (see libunwind/libunwind-<version>/COPYING and
+           libunwind/libunwind-<version>/LICENSE)
+
+  Website: https://www.nongnu.org/libunwind/
+
+  See also: libunwind/README and libunwind/libunwind-<version>/README
+
+
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see
@@ -132,18 +144,6 @@ utf8-decoder/
   Website: http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 
   See also: utf8-decoder/README
-
-
-libunwind/
-  Summary: libunwind is a portable and efficient C programming
-           interface (API) to determine the call-chain of a program
-
-  License: MIT (see libunwind/libunwind-<version>/COPYING and
-           libunwind/libunwind-<version>/LICENSE)
-
-  Website: https://www.nongnu.org/libunwind/
-
-  See also: libunwind/README and libunwind/libunwind-<version>/README
 
 
 whereami/

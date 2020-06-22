@@ -47,11 +47,11 @@ The Chapel implementation is composed of two categories of code:
      hwloc            portable NUMA compute node utilities         new BSD
      jemalloc         alternative memory allocator                 BSD-like
      libfabric        portable networking library                  BSD
+     libunwind        used for runtime stack tracing               MIT
      llvm             CLANG C parsing/optional back-end compiler   U of I/NCSA
      qthread          alternative lightweight tasking option       new BSD
      re2              optional regular expression parsing library  new BSD
      utf8-decoder     used for runtime UTF-8 string decoding       MIT
-     libunwind        used for runtime stack tracing               MIT
      whereami         for locating the _real binary in launchers   MIT
 
    For a more complete introduction to these packages and their
@@ -76,11 +76,11 @@ The Chapel implementation is composed of two categories of code:
      hwloc            only used when CHPL_HWLOC is 'hwloc'
      jemalloc         only used when CHPL_MEM is 'jemalloc'
      libfabric        only used when CHPL_COMM is 'ofi'
+     libunwind        only used when CHPL_UNWIND is 'libunwind'
      llvm             only used when CHPL_LLVM is 'llvm'
      qthread          only used when CHPL_TASKS is 'qthreads'
      re2              only used when CHPL_REGEXP is 're2'
      utf8-decoder     bundled into the Chapel runtime to decode UTF-8 strings
-     libunwind        only used when CHPL_UNWIND is 'libunwind'
      whereami         used when starting a program with a launcher
 
    For packages that are used based on a CHPL_* setting, note that this
