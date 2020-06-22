@@ -43,7 +43,7 @@ module ChapelHashtable {
     }
   }
 
-  private proc chpl__primes return
+  private inline proc chpl__primes return
     (0, 23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
      196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
      50331599, 100663291, 201326557, 402653171, 805306357, 1610612711, 3221225461,
@@ -595,8 +595,7 @@ module ChapelHashtable {
             }
             if newslot < 0 {
               halt("couldn't add element during resize - got slot ", newslot,
-                   " for key ", oldEntry.key, " and old table size is ",
-                   oldSize, " and new table size is ", newSize);
+                   " for key");
             }
 
             // move the key and value from the old entry into the new one
@@ -674,11 +673,6 @@ module ChapelHashtable {
   record chpl__simpleSet {
     type eltType;
     var table: chpl__hashtable(eltType, nothing);
-
-    proc init(type eltType) {
-      this.eltType = eltType;
-      this.table = new chpl__hashtable(eltType, nothing);
-    }
 
     inline proc size {
       return table.tableNumFullSlots;
