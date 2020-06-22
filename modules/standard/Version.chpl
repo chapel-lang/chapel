@@ -49,8 +49,8 @@ The version types support:
   Generally speaking, "less than" corresponds to "is an earlier
   version than."  For example::
 
-    if chplVersion < version(2,0) then
-      compilerWarning("Using a not-yet-stable version of 'chpl'");
+    if chplVersion < version(1,23) then
+      compilerWarning("This package doesn't support 'chpl' prior to 1.23.0");
 
 */
 
