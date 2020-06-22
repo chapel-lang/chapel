@@ -153,11 +153,8 @@ module Version {
   record sourceVersion {
     forwarding version only major, minor, update;
 
-    // TODO: Why does the following type declaration break compilation?
-    //    const version /*: semanticVersion(?,?,?) */;
-
     /* The semantic version portion of the version number. */
-    const version;
+    const version: semanticVersion(?);
 
     /* The commit ID of the version (e.g., a git SHA) */
     param commit: string;
