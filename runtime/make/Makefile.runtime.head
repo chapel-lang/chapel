@@ -46,7 +46,8 @@ LAUNCHER_CFLAGS = $(RUNTIME_CFLAGS) -DLAUNCHER
 LAUNCHER_INCLS = \
         -I$(RUNTIME_ROOT)/include/comm/$(CHPL_MAKE_COMM) \
         -I$(RUNTIME_ROOT)/include/comm \
-        -I$(RUNTIME_ROOT)/include
+        -I$(RUNTIME_ROOT)/include \
+        -I$(THIRD_PARTY_DIR)/whereami/whereami-src
 
 ifeq ($(CHPL_MAKE_HWLOC),none)
   CHPL_MAKE_TOPO = none

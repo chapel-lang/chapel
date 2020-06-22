@@ -1062,6 +1062,13 @@ class LocCyclicArr {
     if locCyclicRAD != nil then
       delete locCyclicRAD;
   }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
+  }
 }
 
 proc LocCyclicArr.this(i) ref {

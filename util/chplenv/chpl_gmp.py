@@ -2,7 +2,7 @@
 import os
 import sys
 
-import chpl_3p_gmp_configs, chpl_compiler, chpl_platform, overrides
+import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize
 
@@ -19,7 +19,7 @@ def get():
 
             # Detect if gmp has been built for this configuration.
             third_party = get_chpl_third_party()
-            uniq_cfg_path = chpl_3p_gmp_configs.get_uniq_cfg_path()
+            uniq_cfg_path = get_uniq_cfg_path()
             gmp_subdir = os.path.join(third_party, 'gmp', 'install', uniq_cfg_path)
 
             if os.path.exists(os.path.join(gmp_subdir, 'include', 'gmp.h')):
@@ -31,6 +31,20 @@ def get():
             else:
                 gmp_val = 'none'
     return gmp_val
+
+
+@memoize
+def get_uniq_cfg_path():
+    return third_party_utils.default_uniq_cfg_path()
+
+
+@memoize
+def get_link_args(gmp):
+    if gmp == 'gmp':
+        return third_party_utils.default_get_link_args('gmp')
+    elif gmp == 'system':
+        return ['-lgmp']
+    return []
 
 
 def _main():

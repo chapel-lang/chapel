@@ -29,10 +29,10 @@ Initializing Modules:
            ShallowCopy
            InsertionSort
         ChapelDistribution
-         LinkedLists
+         ChapelHashtable
         ExternalArray
         RangeChunk
-        ChapelHashtable
+        ChapelHashing
        ChapelNumLocales
        Sys
       LocaleModelHelpRuntime

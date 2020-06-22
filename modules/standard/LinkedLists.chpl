@@ -109,7 +109,7 @@ record LinkedList {
   /*
     Append `e` to the list.
    */
-  proc ref append(e : eltType) {
+  proc append(e : eltType) {
     if _last {
       _last!.next = new unmanaged listNode(eltType, e);
       _last = _last!.next;
@@ -166,7 +166,7 @@ record LinkedList {
     Remove the first encountered instance of `x` from the list.
     Does nothing if `x` is not present in the list.
    */
-  proc ref remove(x: eltType) {
+  proc remove(x: eltType) {
     var tmp = _first,
         prev: _first.type = nil;
     while tmp != nil && tmp!.data != x {

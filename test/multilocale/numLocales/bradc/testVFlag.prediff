@@ -73,3 +73,9 @@ case $launcher in
                   $2 > $2.tmp &&
               mv $2.tmp $2;;
 esac
+
+sed -e "s;`pwd`;.;" $2 > $2.tmp
+cat $2.tmp
+echo ---
+cat $2
+mv $2.tmp $2

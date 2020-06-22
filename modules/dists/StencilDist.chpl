@@ -414,6 +414,13 @@ class LocStencilArr {
     if locRAD != nil then
       delete locRAD;
   }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocStencilArr.writeThis() is not implemented / should not be needed");
+  }
 }
 
 private proc makeZero(param rank : int, type idxType) {

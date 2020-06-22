@@ -124,6 +124,7 @@ proc masonInitHelp(){
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('    --name <legalName>           Specify package name different from directory name');
+  writeln('    -d, --default                Override interactive session and initialise project');
 }
 
 proc masonSearchHelp() {
