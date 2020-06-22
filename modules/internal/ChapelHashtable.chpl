@@ -86,6 +86,10 @@ module ChapelHashtable {
 
   // Leaves the elements 0 initialized
   private proc _allocateData(size:int, type tableEltType) {
+
+    if size == 0 then
+      halt("attempt to allocate hashtable with size 0");
+
     var callPostAlloc: bool;
     var ret = _ddata_allocate_noinit(tableEltType,
                                      size,
@@ -413,7 +417,7 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if ((tableNumFullSlots+1)*2 > tableSize) {
+      if (tableNumFullSlots+1)*2 > tableSize {
         resize(grow=true);
       }
 
@@ -533,24 +537,32 @@ module ChapelHashtable {
     }
 
     proc allocateData(size: int, type tableEltType) {
-      return _allocateData(size, tableEltType);
+      if size == 0 {
+        return nil;
+      } else {
+        return _allocateData(size, tableEltType);
+      }
     }
     proc allocateTable(size:int) {
-      return _allocateData(size, chpl_TableEntry(keyType, valType));
+      if size == 0 {
+        return nil;
+      } else {
+        return _allocateData(size, chpl_TableEntry(keyType, valType));
+      }
     }
 
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
     proc rehash(newSizeNum:int, newSize:int) {
+      // save the old table
+      // oldTable has elements 0..<oldSize
+      var oldSize = tableSize;
+      var oldTable = table;
+
       var entries = tableNumFullSlots;
       if entries > 0 {
         // There were entries, so carefully move them to the a new allocation
-
-        // save the old table
-        // oldTable has elements 0..<oldSize
-        var oldSize = tableSize;
-        var oldTable = table;
 
         if newSize == 0 {
           halt("attempt to resize to 0 a table that is not empty");
@@ -608,12 +620,18 @@ module ChapelHashtable {
       } else {
         // There were no entries, so just make a new allocation
 
+        tableSizeNum = newSizeNum;
+        tableSize = newSize;
+
+        if rehashHelpers != nil {
+          rehashHelpers!.startRehash(tableSize);
+          rehashHelpers!.finishRehash(oldSize);
+        }
+
         // delete the old allocation
         if table != nil then
           _ddata_free(table, tableSize);
 
-        tableSizeNum = newSizeNum;
-        tableSize = newSize;
         table = allocateTable(tableSize);
       }
     }
@@ -638,7 +656,7 @@ module ChapelHashtable {
 
       var newSize = chpl__primes(newSizeNum);
 
-      if grow==false && tableNumFullSlots > newSize {
+      if grow==false && 2*tableNumFullSlots > newSize {
         // don't shrink if the number of elements would not
         // fit into the new size.
         return;
