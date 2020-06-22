@@ -1647,25 +1647,6 @@ static bool inheritsFromError(Type* t) {
 }
 
 
-static bool inheritsFromAbsBaseArr(Type* t) {
-  bool retval = false;
-
-  if (t->symbol->hasFlag(FLAG_BASE_ARRAY)) {
-    retval = true;
-
-  } else if (AggregateType* at = toAggregateType(t)) {
-    forv_Vec(AggregateType, parent, at->dispatchParents) {
-      if (inheritsFromAbsBaseArr(parent) == true) {
-        retval = true;
-        break;
-      }
-    }
-  }
-
-  return retval;
-}
-
-
 // common code to create a writeThis() function without filling in the body
 FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
   FnSymbol* fn = new FnSymbol("writeThis");
@@ -1729,7 +1710,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
   // Similarly, Chapel arrays are written out using their own
   // dsiSerialRead/Write() routines, so don't create functions for them.
-  if (inheritsFromAbsBaseArr(ct))
+  if (isArrayImplType(ct))
     return;
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
