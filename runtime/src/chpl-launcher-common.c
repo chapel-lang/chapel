@@ -638,7 +638,7 @@ void chpl_compute_real_binary_name(const char* argv0) {
     chpl_real_binary_name = chpl_mem_alloc(length+1,
                                            CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-    strncpy(chpl_real_binary_name, launcher_mli_real_name, length);
+    strcpy(chpl_real_binary_name, launcher_mli_real_name);
     chpl_real_binary_name[length] = '\0';
 
   } else {
