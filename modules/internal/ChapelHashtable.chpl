@@ -44,7 +44,7 @@ module ChapelHashtable {
   }
 
   private proc chpl__primes return
-    (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
+    (0, 23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
      196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
      50331599, 100663291, 201326557, 402653171, 805306357, 1610612711, 3221225461,
      6442450939, 12884901877, 25769803751, 51539607551, 103079215087,
@@ -275,14 +275,13 @@ module ChapelHashtable {
     var postponeResize: bool;
 
     proc init(type keyType, type valType,
-              in rehashHelpers: owned chpl__rehashHelpers? = nil,
-              tableSize = chpl__primes(0)) {
+              in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
       this.tableNumDeletedSlots = 0;
       this.tableSizeNum = 0;
-      this.tableSize = tableSize;
+      this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.complete();
@@ -291,7 +290,7 @@ module ChapelHashtable {
       // All elements are memset to 0 (no initializer is run for the idxType)
       // This allows them to be empty, but the key and val
       // are considered uninitialized.
-      if tableSize then
+      if tableSize > 0 then
         this.table = _allocateData(this.tableSize,
                                    chpl_TableEntry(this.keyType, this.valType));
     }
@@ -318,7 +317,8 @@ module ChapelHashtable {
       }
 
       // Free the buffer
-      _ddata_free(table, tableSize);
+      if table != nil then
+        _ddata_free(table, tableSize);
     }
 
     // #### iteration helpers ####
@@ -390,16 +390,14 @@ module ChapelHashtable {
       return (false, -1);
     }
 
-    // NOTE: A copy of this routine is tested in
-    //    test/associative/ferguson/check-look-for-slots.chpl
-    // So, when updating this routine, either refactor so the test
-    // can use the below code - or update the test in a corresponding manner.
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(key):uint;
-      for probe in 0..numSlots/2 {
-        var uprobe = probe:uint;
-        var n = numSlots:uint;
-        yield ((baseSlot + uprobe**2)%n):int;
+      if numSlots > 0 {
+        for probe in 0..numSlots/2 {
+          var uprobe = probe:uint;
+          var n = numSlots:uint;
+          yield ((baseSlot + uprobe**2)%n):int;
+        }
       }
     }
 
@@ -554,6 +552,10 @@ module ChapelHashtable {
         var oldSize = tableSize;
         var oldTable = table;
 
+        if newSize == 0 {
+          halt("attempt to resize to 0 a table that is not empty");
+        }
+
         tableSizeNum = newSizeNum;
         tableSize = newSize;
         table = allocateTable(tableSize);
@@ -581,7 +583,8 @@ module ChapelHashtable {
             }
             if newslot < 0 {
               halt("couldn't add element during resize - got slot ", newslot,
-                   " for key");
+                   " for key ", oldEntry.key, " and old table size is ",
+                   oldSize, " and new table size is ", newSize);
             }
 
             // move the key and value from the old entry into the new one
@@ -606,7 +609,8 @@ module ChapelHashtable {
         // There were no entries, so just make a new allocation
 
         // delete the old allocation
-        _ddata_free(table, tableSize);
+        if table != nil then
+          _ddata_free(table, tableSize);
 
         tableSizeNum = newSizeNum;
         tableSize = newSize;
@@ -634,6 +638,12 @@ module ChapelHashtable {
 
       var newSize = chpl__primes(newSizeNum);
 
+      if grow==false && tableNumFullSlots > newSize {
+        // don't shrink if the number of elements would not
+        // fit into the new size.
+        return;
+      }
+
       rehash(newSizeNum, newSize);
     }
   }
@@ -649,7 +659,7 @@ module ChapelHashtable {
 
     proc init(type eltType) {
       this.eltType = eltType;
-      this.table = new chpl__hashtable(eltType, nothing, tableSize=0);
+      this.table = new chpl__hashtable(eltType, nothing);
     }
 
     inline proc size {
