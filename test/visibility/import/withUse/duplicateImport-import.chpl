@@ -1,5 +1,8 @@
 module A {
   var x: int;
+  proc foo() {
+    writeln("In A.foo");
+  }
 }
 module B {
   public import A;
@@ -15,5 +18,6 @@ module D {
 
   proc main() {
     writeln(A.x);
+    A.foo();
   }
 }
