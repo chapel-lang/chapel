@@ -315,7 +315,7 @@ module Version {
   proc >=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
     param versionComp = spaceship(v1.version, v2.version);
     if versionComp != 0 {
-      return versionComp > 1;
+      return versionComp > 0;
     } else if v1.commit == v2.commit {
       return true;
     } else {

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-version_line=$(chpl --version | grep "chpl version")
+version_line=$($3 --version | grep "chpl version")
 if [[ $version_line == *pre-release* ]]; then
     VERSION=$(echo $version_line | sed "s:chpl version \(.*\) pre-release .*:\1:")
     SHA=$(echo $version_line | sed "s:.* pre-release (\(.*\)):\1:")
