@@ -97,10 +97,6 @@ module ChapelHashtable {
 
     var initMethod = init_elts_method(size, tableEltType);
 
-    const numChunks = _computeNumChunks(size);
-    if numChunks == 1 then
-      initMethod = ArrayInit.serialInit;
-
     const sizeofElement = _ddata_sizeof_element(ret);
 
     // The memset call below needs to be able to set _array records.
