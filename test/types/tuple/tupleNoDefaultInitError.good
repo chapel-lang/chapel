@@ -1,0 +1,5 @@
+tupleNoDefaultInitError.chpl:3: In function 'test':
+tupleNoDefaultInitError.chpl:4: error: cannot default initialize the tuple c
+tupleNoDefaultInitError.chpl:4: error: element 0 of type owned C has no default value
+tupleNoDefaultInitError.chpl:4: note: because it is a non-nilable class
+tupleNoDefaultInitError.chpl:4: note: consider using owned C? instead
