@@ -684,9 +684,7 @@ static void checkExternProcs() {
     for_formals(formal, fn) {
       if (!isExternType(formal->type)) {
         externExportTypeError(fn, formal->type);
-        break;
-      }
-      if (isErroneousExternExportArgIntent(formal)) {
+      } else if (isErroneousExternExportArgIntent(formal)) {
         externExportIntentError(fn, formal);
       }
     }
@@ -709,9 +707,7 @@ static void checkExportedProcs() {
     for_formals(formal, fn) {
       if (!isExportableType(formal->type)) {
         externExportTypeError(fn, formal->type);
-        break;
-      }
-      if (isErroneousExternExportArgIntent(formal)) {
+      } else if (isErroneousExternExportArgIntent(formal)) {
         externExportIntentError(fn, formal);
       }
     }
