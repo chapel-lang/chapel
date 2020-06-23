@@ -1249,8 +1249,13 @@ module DefaultRectangular {
         }
 
         if initElts {
-          init_elts(data, size, eltType);
-          dsiElementInitializationComplete();
+          if !isDefaultInitializable(eltType) {
+            compilerError('Cannot initialize array because element type ' +
+                          eltType:string + ' has no default value');
+          } else {
+            init_elts(data, size, eltType);
+            dsiElementInitializationComplete();
+          }
         }
       }
 
