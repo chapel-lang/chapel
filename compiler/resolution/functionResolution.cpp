@@ -10432,10 +10432,9 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
       return;
     }
 
-    // Zero index and skip the first tuple field.
+    // Zero index and skip the first tuple field. TODO: Future-proof this?
     int idx = -1;
     bool hasErrored = false;
-    bool hasMentionedNilableClass = false;
 
     // Emit errors for any non-default-initializable tuple fields.
     for_fields(field, at) {
@@ -10447,25 +10446,18 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
                          val->name);
         }
 
-        USR_FATAL_CONT(call, "element %d of type %s has no default value",
-                       idx, toString(field->type));
+        USR_PRINT("element %d of type %s has no default value",
+                  idx, toString(field->type));
 
         if (isNonNilableClassType(field->type)) {
 
-          USR_PRINT(call, "because it is a non-nilable class");
+          Type* cdc = canonicalDecoratedClassType(field->type);
+          AggregateType* atc = toAggregateType(cdc);
+          ClassTypeDecorator d = classTypeDecorator(field->type);
+          Type* rec = atc->getDecoratedClass(addNilableToDecorator(d));
 
-          // Only suggest using a nilable class once to trim down output.
-          if (!hasMentionedNilableClass) {
-            hasMentionedNilableClass = true;
-
-            Type* cdc = canonicalDecoratedClassType(field->type);
-            AggregateType* atc = toAggregateType(cdc);
-            ClassTypeDecorator d = classTypeDecorator(field->type);
-            Type* rec = atc->getDecoratedClass(addNilableToDecorator(d));
-
-            USR_PRINT(call, "consider using %s instead",
-                      toString(rec));
-          }
+          USR_PRINT("because it is a non-nilable class - consider the "
+                    "type %s instead", toString(rec));
         }
       }
 
