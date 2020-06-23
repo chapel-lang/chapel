@@ -2426,16 +2426,24 @@ void FnSymbol::codegenDef() {
               val = convertValueToType(val, chapelArgTy,
                                        is_signed(argType), true);
 
-            info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+            GenRet gArg;
+            gArg.val = val;
+            gArg.chplType = arg->typeInfo();
+
+            GenRet tempVar = createTempVarWith(gArg);
+            info->lvt->addValue(arg->cname, tempVar.val,
+                                tempVar.isLVPtr, tempVar.isUnsigned);
           }
         }
 
       } else {
         // No ABI info is available
 
+        // consume the LLVM argument
+        llvm::Argument* llArg = &*ai++;
+
         GenRet gArg;
-        llvm::Argument& llArg = *ai;
-        gArg.val = &llArg;
+        gArg.val = llArg;
         gArg.chplType = arg->typeInfo();
         GenRet tempVar = createTempVarWith(gArg);
 
@@ -2445,7 +2453,6 @@ void FnSymbol::codegenDef() {
         if(debug_info){
           debug_info->get_formal_arg(arg, curCArg+1);
         }
-        ++ai;
       }
       curCArg++;
     }
