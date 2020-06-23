@@ -290,7 +290,8 @@ void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
 
-bool isUnusedClass(Type* t);
+std::set<Type*> getWellKnownTypesSet();
+bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 
 void pruneResolvedTree();
 

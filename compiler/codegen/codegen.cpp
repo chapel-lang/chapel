@@ -2101,23 +2101,28 @@ adjustArgSymbolTypesForIntent(void)
   }
 }
 
+
+static void convertSymbolToRefType(Symbol* sym) {
+  QualifiedType q = sym->qualType();
+  Type* type      = q.type();
+  if (q.isRef() && !q.isRefType()) {
+    type = getOrMakeRefTypeDuringCodegen(type);
+  } else if (q.isWideRef() && !q.isWideRefType()) {
+    type = getOrMakeRefTypeDuringCodegen(type);
+    type = getOrMakeWideTypeDuringCodegen(type);
+  }
+  sym->type = type;
+  if (type->symbol->hasFlag(FLAG_REF)) {
+    sym->qual = QUAL_REF;
+  } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+    sym->qual = QUAL_WIDE_REF;
+  }
+}
+
 static void convertToRefTypes() {
 #define updateSymbols(SymType) \
   forv_Vec(SymType, sym, g##SymType##s) { \
-    QualifiedType q = sym->qualType(); \
-    Type* type      = q.type(); \
-    if (q.isRef() && !q.isRefType()) { \
-      type = getOrMakeRefTypeDuringCodegen(type); \
-    } else if (q.isWideRef() && !q.isWideRefType()) { \
-      type = getOrMakeRefTypeDuringCodegen(type); \
-      type = getOrMakeWideTypeDuringCodegen(type); \
-    } \
-    sym->type = type; \
-    if (type->symbol->hasFlag(FLAG_REF)) { \
-      sym->qual = QUAL_REF; \
-    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) { \
-      sym->qual = QUAL_WIDE_REF; \
-    } \
+    convertSymbolToRefType(sym); \
   }
 
   updateSymbols(VarSymbol);
@@ -2468,6 +2473,7 @@ GenInfo::GenInfo()
              ,
              lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
              loopStack(), currentStackVariables(),
+             currentFunctionABI(NULL),
              llvmContext(),
              tbaaRootNode(NULL),
              tbaaUnionsNode(NULL),

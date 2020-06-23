@@ -1,1 +1,1 @@
-export proc anyElt(x: []) { }
+export proc anyElt(const ref x: []) { }

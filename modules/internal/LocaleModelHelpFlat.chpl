@@ -43,7 +43,7 @@ module LocaleModelHelpFlat {
   //         chpl_executeOn / chpl_executeOnFast
   //
   export
-  proc chpl_doDirectExecuteOn(loc: chpl_localeID_t // target locale
+  proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t // target locale
                              ):bool {
     const node = chpl_nodeFromLocaleID(loc);
     return (node == chpl_nodeID);
@@ -54,7 +54,7 @@ module LocaleModelHelpFlat {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOn(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
                       args_size: size_t     // args size
@@ -80,7 +80,7 @@ module LocaleModelHelpFlat {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
                           args_size: size_t     // args size
@@ -102,7 +102,7 @@ module LocaleModelHelpFlat {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args
                         args_size: size_t     // args size
