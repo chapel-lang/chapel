@@ -256,8 +256,10 @@ static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
 
     if ((multiloc || fLibraryPython) && isUserRoutine(fn)) {
       // TODO: After resolution, have abstract intents been normalized?
-      if (tag != INTENT_IN &&
-          tag != INTENT_CONST_IN) {
+      if ((t == dtExternalArray && as->intent == INTENT_CONST_REF) || // see #15917
+          tag == INTENT_IN || tag == INTENT_CONST_IN) {
+        // The intent is OK
+      } else {
         std::string libdesc;
         if (multiloc) {
           if (fLibraryPython) {

@@ -23,17 +23,17 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "CatchStmt.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
+#include "iterator.h"
 #include "stmt.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "type.h"
 #include "TryStmt.h"
-#include "CatchStmt.h"
-
-#include "iterator.h"
+#include "wellknown.h"
 
 #include <set>
 
@@ -644,7 +644,13 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
 
 static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
 
-  return isRecord(formal->getValType()) &&
+  Type* valType = formal->getValType();
+
+  // workaround for issue #15917
+  if (valType == dtExternalArray || valType == dtOpaqueArray)
+    return false;
+
+  return isRecord(valType) &&
          (formal->originalIntent == INTENT_BLANK ||
           formal->originalIntent == INTENT_CONST);
 }
