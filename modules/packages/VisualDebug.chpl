@@ -110,6 +110,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 }
 
 
+ private var Vdebugstarted: atomic bool = false;
 /*
   Start logging events for VisualDebug.  Open a new set of data
   files, one for each locale, for :ref:`chplvis`.  This routine should be
@@ -121,6 +122,14 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   :arg rootname:  Directory name and rootname for files.
 */
   proc startVdebug ( rootname : string ) {
+    // startVdebug() currently can't be called multiple times, so
+    // issue an error if it is (calling it multiple times causes all
+    // locales other than #0 to report no stats, and locale #0's
+    // results may be bogus too).
+    if Vdebugstarted.testAndSet() then
+      halt("Calling startVdebug() multiple times is not currently supported; "
+           + "try using the [pause/tag]Vdebug() routines instead");
+
     var now = chpl_now_time();
     if (VisualDebugOn) {
       tagno.write(0);
@@ -151,7 +160,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   }
 
 /*
-  Suspend collection of VisualDebug data.
+  Suspend collection of VisualDebug data.  Use :proc:`tagVdebug` to resume.
 */
   proc pauseVdebug () {
     if (VisualDebugOn) {
