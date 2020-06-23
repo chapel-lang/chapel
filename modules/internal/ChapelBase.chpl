@@ -929,6 +929,10 @@ module ChapelBase {
 
   proc init_elts(x, s, type t, lo=0:s.type) : void {
 
+    if !isDefaultInitializable(t) then
+      compilerError('Cannot initialize array because element type ' +
+                    t:string + ' has no default value');
+
     var initMethod = init_elts_method(s, t);
 
     // Q: why is the declaration of 'y' in the following loops?
