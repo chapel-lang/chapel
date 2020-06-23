@@ -1128,6 +1128,12 @@ initPrimitive() {
   prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
   prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
   prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
+
+  // version info for 'chpl'
+  prim_def(PRIM_VERSION_MAJOR, "version major", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_MINOR, "version minor", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_UPDATE, "version update", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
