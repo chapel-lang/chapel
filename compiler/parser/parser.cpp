@@ -414,19 +414,18 @@ static void ensureRequiredStandardModulesAreParsed() {
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
       if (oldModNameExpr == NULL) {
-        // Allow us to find symbols due to nested references
+        // Handle the case of `[use|import] Mod.symbol` by extracting `Mod`
+        // from the `Mod.symbol` expression
         if (CallExpr* call = toCallExpr(moduleExpr)) {
-          if (call->isNamedAstr(astrSdot) &&
-              isUnresolvedSymExpr(call->get(1))) {
-            oldModNameExpr = toUnresolvedSymExpr(call->get(1));
-          } else {
-            // Happens if we're in a call other than a nested reference
-            continue;
+          UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->get(1));
+          if (call->isNamedAstr(astrSdot) && urse) {
+            oldModNameExpr = urse;
           }
-        } else {
-          // Happens if we're not in a call or an UnresolvedSymExpr
-          continue;
         }
+      }
+
+      if (oldModNameExpr == NULL) {
+        continue;
       }
 
       const char* modName  = oldModNameExpr->unresolved;
