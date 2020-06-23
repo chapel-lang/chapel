@@ -2401,7 +2401,6 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
                    cname);
 
   clang::QualType cQualType = Ctx->getTypeDeclType(cTypeDecl);
-  //->getTypePtr();
   clang::CanQualType cTy = cQualType->getCanonicalTypeUnqualified();
 
   return cTy;

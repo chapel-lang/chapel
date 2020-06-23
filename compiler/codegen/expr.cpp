@@ -2355,7 +2355,7 @@ GenRet codegenArgForFormal(GenRet arg,
     // Do if requiresCPtr or the argument is of reference type
     if (isExternOrExport &&
         (!(formal->intent & INTENT_FLAG_REF) ||
-           formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
+         formal->type->getValType()->symbol->hasFlag(FLAG_TUPLE))) {
       // Don't pass by reference to extern functions
     } else if (formal->requiresCPtr() ||
                formal->isRef() || formal->isWideRef()) {
@@ -3809,8 +3809,10 @@ DEFINE_PRIM(PRIM_RETURN) {
 
       switch (returnInfo->getKind()) {
         case clang::CodeGen::ABIArgInfo::Kind::Ignore:
+        {
           returnInst = irBuilder->CreateRetVoid();
           break;
+        }
 
         case clang::CodeGen::ABIArgInfo::Kind::InAlloca:
         {

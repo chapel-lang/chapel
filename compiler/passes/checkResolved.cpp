@@ -584,6 +584,13 @@ static bool isExportableType(Type* t) {
   return isExternType(t);
 }
 
+// This function checks that the passed type is an acceptable
+// argument/return type for an extern/export function.
+//
+// Note that some export functions use wrappers (e.g. for string arguments)
+// that will have already been processed by this point in compilation.
+// In that event, this code serves to check that a case has not been
+// missed in the wrapper generation.
 static void externExportTypeError(FnSymbol* fn, Type* t) {
   INT_ASSERT(fn->hasFlag(FLAG_EXTERN) || fn->hasFlag(FLAG_EXPORT));
 
