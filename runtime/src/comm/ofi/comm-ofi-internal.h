@@ -197,7 +197,11 @@ int chpl_comm_ofi_abort_on_error;
 
 #define CHPL_CALLOC(p, n) CHPL_CALLOC_SZ(p, n, sizeof(*(p)))
 
-#define CHPL_FREE(p) chpl_mem_free((p), 0, 0)
+#define CHPL_FREE(p)                                                    \
+  do {                                                                  \
+    chpl_mem_free((p), 0, 0);                                           \
+    p = NULL;                                                           \
+  } while (0)
 
 
 //

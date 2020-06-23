@@ -1708,6 +1708,11 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (inheritsFromError(ct))
     return;
 
+  // Similarly, Chapel arrays are written out using their own
+  // dsiSerialRead/Write() routines, so don't create functions for them.
+  if (isArrayImplType(ct))
+    return;
+
   // If we have a readWriteThis, we'll call it from readThis/writeThis.
   if (functionExists("readWriteThis", dtMethodToken, ct, dtAny)) {
     hasReadWriteThis = true;

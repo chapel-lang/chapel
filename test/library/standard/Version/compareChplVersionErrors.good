@@ -1,0 +1,100 @@
+compareChplVersionErrors.chpl:25: In function 'compareVersions':
+compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:21: Function 'compareVersions' instantiated as: compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
+compareChplVersionErrors.chpl:25: In function 'compareVersions':
+compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
+compareChplVersionErrors.chpl:22: Function 'compareVersions' instantiated as: compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"bbb\"), v2: sourceVersion(semanticVersion(2,1,0),\"aaa\"))
+Comparing versions:
+version 2.1.0
+version 2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.1.0 (aaa)
+version 2.1.0
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0 (aaa)
+version 2.1.0 (bbb)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0 (bbb)
+version 2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : false
+>= : false
+
+Comparing versions:
+version 2.0.0 (aaa)
+version 2.1.0 (aaa)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0 (aaa)
+version 2.0.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+version 2.0.0 (aaa)
+version 2.1.0 (bbb)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+version 2.1.0 (bbb)
+version 2.0.0 (aaa)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+

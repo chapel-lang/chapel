@@ -1,2 +1,2 @@
-serial-virtual-par-iters.chpl:20: error: virtual parallel iterators are not yet supported (see issue #6998)
 serial-virtual-par-iters.chpl:21: error: virtual parallel iterators are not yet supported (see issue #6998)
+serial-virtual-par-iters.chpl:20: error: virtual parallel iterators are not yet supported (see issue #6998)

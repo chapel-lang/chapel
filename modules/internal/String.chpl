@@ -53,9 +53,9 @@ within strings.
 Casts from String to a Numeric Type
 -----------------------------------
 
-This module supports casts from :mod:`String` to numeric types. Such casts
-will convert the string to the numeric type and throw an error if the string
-is invalid. For example:
+This module supports casts from :mod:`string <String>` to numeric types. Such
+casts will convert the string to the numeric type and throw an error if the
+string is invalid. For example:
 
 .. code-block:: chapel
 
@@ -90,9 +90,10 @@ Non-Unicode Data and Chapel Strings
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For doing string operations on non-Unicode or arbitrary data, consider using
-:mod:`Bytes` instead of string. However, there may be cases where
-:mod:`String` must be used with non-Unicode data. Examples of this are file
-system and path operations on systems where UTF-8 file names are not enforced.
+:mod:`bytes <Bytes>` instead of string. However, there may be cases where
+:mod:`string <String>` must be used with non-Unicode data. Examples of this are
+file system and path operations on systems where UTF-8 file names are not
+enforced.
 
 
 In such scenarios, non-UTF-8 data can be escaped and stored in a string in a way
@@ -180,6 +181,8 @@ module String {
   public use StringCasts;
   public use BytesStringCommon only encodePolicy;  // expose encodePolicy
 
+  private use NVStringFactory;
+
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
@@ -212,22 +215,14 @@ module String {
 
   private config param debugStrings = false;
 
-  /*
-    Returns true if the argument is a valid initial byte of a UTF-8
-    encoded multibyte character.
-  */
-  pragma "no doc"
-  private inline proc isInitialByte(b: uint(8)) : bool {
-    return (b & 0xc0) != 0x80;
-  }
-
   pragma "no doc"
   record __serializeHelper {
-    var buffLen       : int;
-    var buff      : bufferType;
-    var size      : int;
-    var locale_id : chpl_nodeID.type;
-    var shortData : chpl__inPlaceBuffer;
+    var buffLen: int;
+    var buff: bufferType;
+    var size: int;
+    var locale_id: chpl_nodeID.type;
+    var shortData: chpl__inPlaceBuffer;
+    var cachedNumCodepoints: int;
   }
 
   /*
@@ -539,6 +534,7 @@ module String {
   inline proc createStringWithBorrowedBuffer(x: string) {
     // we don't validate here because `x` must have been validated already
     var ret: string;
+    ret.cachedNumCodepoints = x.cachedNumCodepoints;
     initWithBorrowedBuffer(ret, x);
     return ret;
   }
@@ -624,20 +620,6 @@ module String {
     return createStringWithBorrowedBuffer(x=s, length, size);
   }
 
-  pragma "no doc"
-  private inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
-                                                            length: int,
-                                                            size: int,
-                                                            numCodepoints: int) {
-    // NOTE: This is similar to chpl_createStringWithLiteral above, but only
-    // used internally by the String module. These two functions cannot have the
-    // same names, because "wellknown" implementation in the compiler does not
-    // allow overloads.
-    var ret: string;
-    ret.cachedNumCodepoints = numCodepoints;
-    initWithBorrowedBuffer(ret, x, length,size);
-    return ret;
-  }
 
   pragma "no doc"
   inline proc createStringWithOwnedBuffer(x: string) {
@@ -713,15 +695,6 @@ module String {
     return createStringWithOwnedBuffer(x=s, length, size);
   }
 
-  pragma "no doc"
-  private inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
-                                                         length: int,
-                                                         size: int) {
-    var ret: string;
-    initWithOwnedBuffer(ret, x, length,size);
-    return ret;
-  }
-
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
@@ -733,6 +706,7 @@ module String {
   inline proc createStringWithNewBuffer(x: string) {
     // we don't validate here because `x` must have been validated already
     var ret: string;
+    ret.cachedNumCodepoints = x.numCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
   }
@@ -822,13 +796,46 @@ module String {
     return createStringWithNewBuffer(x=s, length, size, policy);
   }
 
+  // non-validating string factory functions are in this submodule. This
+  // submodule can be `private use`d from other String-supporting modules.
   pragma "no doc"
-  private inline proc chpl_createStringWithNewBufferNV(s: bufferType,
-                                                       length: int,
-                                                       size: int) {
-    var ret: string;
-    initWithNewBuffer(ret, s, length,size);
-    return ret;
+  module NVStringFactory {
+    private use BytesStringCommon;
+    private use ByteBufferHelpers only bufferType;
+
+    inline proc chpl_createStringWithNewBufferNV(x: bufferType,
+                                                 length: int,
+                                                 size: int,
+                                                 numCodepoints: int) {
+      var ret: string;
+      initWithNewBuffer(ret, x, length, size);
+      ret.cachedNumCodepoints = numCodepoints;
+      return ret;
+    }
+
+    inline proc chpl_createStringWithBorrowedBufferNV(x: bufferType,
+                                                      length: int,
+                                                      size: int,
+                                                      numCodepoints: int) {
+      // NOTE: This is similar to chpl_createStringWithLiteral, but only used
+      // internally by the String module. These two functions cannot have the
+      // same names, because "wellknown" implementation in the compiler does not
+      // allow overloads.
+      var ret: string;
+      initWithBorrowedBuffer(ret, x, length, size);
+      ret.cachedNumCodepoints = numCodepoints;
+      return ret;
+    }
+
+    inline proc chpl_createStringWithOwnedBufferNV(x: bufferType,
+                                                   length: int,
+                                                   size: int,
+                                                   numCodepoints: int) {
+      var ret: string;
+      initWithOwnedBuffer(ret, x, length, size);
+      ret.cachedNumCodepoints = numCodepoints;
+      return ret;
+    }
   }
 
   //
@@ -843,7 +850,7 @@ module String {
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
-    var cachedNumCodepoints: int = -1;
+    var cachedNumCodepoints: int = 0;
     var buff: bufferType = nil;
     var isOwned: bool = true;
     var hasEscapes: bool = false;
@@ -882,81 +889,34 @@ module String {
       if buffLen <= CHPL_SHORT_STRING_SIZE {
         chpl_string_comm_get(chpl__getInPlaceBufferDataForWrite(data), locale_id, buff, buffLen);
       }
-      return new __serializeHelper(buffLen, buff, buffSize, locale_id, data);
+      return new __serializeHelper(buffLen, buff, buffSize, locale_id, data,
+                                   cachedNumCodepoints);
     }
     
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
-          return try! createStringWithNewBuffer(
+          return chpl_createStringWithNewBufferNV(
                       chpl__getInPlaceBufferData(data.shortData),
                       data.buffLen,
-                      data.size);
+                      data.size,
+                      data.cachedNumCodepoints);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff, data.buffLen);
-          return try! createStringWithOwnedBuffer(localBuff,
+          return chpl_createStringWithOwnedBufferNV(localBuff,
                                                     data.buffLen,
-                                                    data.size);
+                                                    data.size,
+                                                    data.cachedNumCodepoints);
         }
       } else {
-        return try! createStringWithBorrowedBuffer(data.buff,
+        return chpl_createStringWithBorrowedBufferNV(data.buff,
                                                      data.buffLen,
-                                                     data.size);
+                                                     data.size,
+                                                     data.cachedNumCodepoints);
       }
     }
 
-    // This is assumed to be called from this.locale
-    proc ref reinitString(buff: bufferType, s_len: int, size: int,
-                          needToCopy:bool = true, ownBuffer = false) {
-      if this.isEmpty() && buff == nil then return;
-      this.cachedNumCodepoints = try! validateEncoding(buff, s_len);
-
-      // If the this.buff is longer than buff, then reuse the buffer if we are
-      // allowed to (this.isOwned == true)
-      if s_len != 0 {
-        if needToCopy {
-          if !this.isOwned || s_len+1 > this.buffSize {
-            // If the new string is too big for our current buffer or we dont
-            // own our current buffer then we need a new one.
-            if this.isOwned && !this.isEmpty() then
-              bufferFree(this.buff);
-            // TODO: should I just allocate 'size' bytes?
-            const (buff, allocSize) = bufferAlloc(s_len+1);
-            this.buff = buff;
-            this.buffSize = allocSize;
-            // We just allocated a buffer, make sure to free it later
-            this.isOwned = true;
-          }
-          bufferMemmoveLocal(this.buff, buff, s_len);
-          this.buff[s_len] = 0;
-        } else {
-          if this.isOwned && !this.isEmpty() then
-            bufferFree(this.buff);
-          this.buff = buff;
-          this.buffSize = size;
-        }
-      } else {
-        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'this' is isOwned.
-        if this.isOwned && !this.isEmpty() then bufferFree(this.buff);
-        this.buffSize = 0;
-
-        // If we need to copy, we can just set 'buff' to nil. Otherwise the
-        // implication is that the string takes ownership of the given buffer,
-        // so we need to store it and free it later.
-        if needToCopy {
-          this.buff = nil;
-        } else {
-          this.buff = buff;
-        }
-      }
-
-      if ownBuffer then this.isOwned = true;
-
-      this.buffLen = s_len;
-    }
-
-    proc byteIndices return 0..<this.numBytes;
+    inline proc byteIndices return 0..<this.numBytes;
 
     inline proc param c_str() param : c_string {
       return this:c_string; // folded out in resolution
@@ -1040,7 +1000,7 @@ module String {
         // used because we cant break out of an on-clause early
         var localRet: int = -2;
         const nLen = needle.buffLen;
-        const view = getView(this, region);
+        const (view, _) = getView(this, region);
         const thisLen = view.size;
 
         // Edge cases
@@ -1178,7 +1138,7 @@ module String {
     :returns: The indices that can be used to index into the string
               (i.e., the range ``0..<this.size``)
   */
-  proc string.indices return 0..<size;
+  inline proc string.indices return 0..<size;
 
   /*
     :returns: The number of bytes in the string.
@@ -1189,28 +1149,21 @@ module String {
     :returns: The number of codepoints in the string, assuming the
               string is correctly-encoded UTF-8.
   */
-  proc const string.numCodepoints {
-    if(cachedNumCodepoints  == -1) {
-      var localThis: string = this.localize();
-      var n = 0;
-      var i = 0;
-      while i < localThis.buffLen {
-        i += 1;
-        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-          i += 1;
-        n += 1;
+  inline proc const string.numCodepoints {
+    const n = this.cachedNumCodepoints;
+    if boundsChecking {
+      if n != countNumCodepoints(this) {
+        halt("Encountered corrupt string metadata");
       }
-      return n;
-    } else {
-      return cachedNumCodepoints;
     }
+    return n;
   }
   
   /*
-     Gets a version of the :mod:`String` that is on the currently
+     Gets a version of the :mod:`string <String>` that is on the currently
      executing locale.
 
-     :returns: A shallow copy if the :mod:`String` is already on the
+     :returns: A shallow copy if the :mod:`string <String>` is already on the
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
@@ -1223,11 +1176,11 @@ module String {
   }
 
   /*
-    Get a `c_string` from a :mod:`String`.
+    Get a `c_string` from a :mod:`string <String>`.
 
     .. warning::
 
-        This can only be called safely on a :mod:`String` whose home is
+        This can only be called safely on a :mod:`string <String>` whose home is
         the current locale.  This property can be enforced by calling
         :proc:`string.localize()` before :proc:`~string.c_str()`. If the
         string is remote, the program will halt.
@@ -1243,7 +1196,7 @@ module String {
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
-        :mod:`String`. The returned `c_string` is only valid when used
+        :mod:`string <String>`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
   inline proc string.c_str(): c_string {
@@ -1251,7 +1204,7 @@ module String {
   }
   
   /*
-    Returns a :mod:`Bytes` from the given :mod:`String`. If the
+    Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
         
@@ -1259,7 +1212,7 @@ module String {
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
 
-    :returns: :mod:`Bytes`
+    :returns: :mod:`bytes <Bytes>`
   */
   proc string.encode(policy=encodePolicy.pass): bytes {
     var localThis: string = this.localize();
@@ -1273,7 +1226,7 @@ module String {
       var readIdx = 0;
       var writeIdx = 0;
       while readIdx < localThis.buffLen {
-        var multibytes = (localThis.buff + readIdx): c_string;
+        var multibytes = localThis.buff + readIdx;
         const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
                                                    buffLen=localThis.buffLen,
                                                    offset=readIdx,
@@ -1333,7 +1286,7 @@ module String {
       var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
       newBuf[nBytes] = 0;
 
-      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize);
+      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
 
       i += nBytes;
     }
@@ -1463,23 +1416,17 @@ module String {
     if boundsChecking && (idx < 0 || idx >= this.buffLen)
       then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
 
-    var ret: string;
     var maxbytes = (this.buffLen - idx): ssize_t;
     if maxbytes < 0 || maxbytes > 4 then
       maxbytes = 4;
     var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
                                           len=maxbytes, loc=this.locale_id);
-    ret.buffSize = allocSize;
-    ret.buff = newBuff;
-    ret.isOwned = true;
 
-    const (decodeRet, cp, nBytes) = decodeHelp(buff=ret.buff,
+    const (decodeRet, cp, nBytes) = decodeHelp(buff=newBuff,
                                                buffLen=maxbytes,
                                                offset=0,
                                                allowEsc=true);
-    ret.buff[nBytes] = 0;
-    ret.buffLen = nBytes;
-    return ret;
+    return chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
   }
 
   /*
@@ -2169,7 +2116,13 @@ module String {
      Halts if `lhs` is a remote string.
   */
   proc =(ref lhs: string, rhs_c: c_string) {
-    doAssign(lhs, rhs_c);
+    // I want to use try! but got tripped over by #14465
+    try {
+      lhs = createStringWithNewBuffer(rhs_c);
+    }
+    catch {
+      halt("Assigning a c_string with non-UTF-8 data");
+    }
   }
 
   //
@@ -2432,15 +2385,12 @@ module String {
   // Cast from c_string to string
   pragma "no doc"
   proc _cast(type t, cs: c_string) where t == string {
-    var ret: string;
-    ret.buffLen = cs.size;
-    ret.buffSize = ret.buffLen+1;
-    ret.buff = if ret.buffLen > 0
-      then __primitive("string_copy", cs): bufferType
-      else nil;
-    ret.isOwned = true;
-
-    return ret;
+    try {
+      return createStringWithNewBuffer(cs);
+    }
+    catch {
+      halt("Casting a non-UTF-8 c_string to strign");
+    }
   }
 
   // Cast from byteIndex to int

@@ -272,6 +272,21 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
       return true;
   }
 
+  // Partial generic expressions with '?'
+  if (CallExpr* call = toCallExpr(typeExpr)) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (se->symbol()->type->symbol->hasFlag(FLAG_GENERIC)) {
+        for_actuals(actual, call) {
+          if (SymExpr* act = toSymExpr(actual)) {
+            if (act->symbol() == gUninstantiated) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
     sym = lookup(urse->unresolved, urse);
   } else if (SymExpr* se = toSymExpr(typeExpr)) {
@@ -1748,14 +1763,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
     }
 
   } else {
-    Type* fieldType = field->defPoint->exprType->typeInfo();
-    if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      field->type = symType;
-    } else if (fieldType == symType) {
-      field->type = symType;
-    } else {
-      INT_FATAL("unexpected type for field instantiation");
-    }
+    field->type = symType;
   }
 
   forv_Vec(AggregateType, at, dispatchParents) {

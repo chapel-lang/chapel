@@ -1816,8 +1816,6 @@ void fini_ofi(void) {
 
   CHPL_FREE(memTabMap);
 
-  CHPL_FREE(memTabMap);
-
   CHPL_FREE(amLZs);
 
   CHPL_FREE(ofi_rxAddrs);
@@ -2203,10 +2201,12 @@ typedef enum {
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
 
+#ifdef CHPL_COMM_DEBUG
 static inline
 chpl_bool op_uses_on_bundle(amOp_t op) {
   return op == am_opExecOn || op == am_opExecOnLrg;
 }
+#endif
 
 //
 // Members are packed, potentially differently, in each AM request type

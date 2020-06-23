@@ -439,7 +439,7 @@ module ChapelHashtable {
           // This shouldn't be possible since we just garbage collected
           // the deleted entries & the table should only ever be half
           // full of non-deleted entries.
-          halt("couldn't add ", key, " -- ", tableNumFullSlots, " / ", tableSize, " taken");
+          halt("couldn't add key -- ", tableNumFullSlots, " / ", tableSize, " taken");
           return (false, -1);
         }
         return (foundSlot, slotNum);
@@ -575,12 +575,11 @@ module ChapelHashtable {
             // find a destination slot
             var (foundSlot, newslot) = _findSlot(oldEntry.key);
             if foundSlot {
-              halt("duplicate element found while resizing for key ",
-                   oldEntry.key);
+              halt("duplicate element found while resizing for key");
             }
             if newslot < 0 {
               halt("couldn't add element during resize - got slot ", newslot,
-                   " for key ", oldEntry.key);
+                   " for key");
             }
 
             // move the key and value from the old entry into the new one
@@ -634,4 +633,55 @@ module ChapelHashtable {
       rehash(newSizeNum, newSize);
     }
   }
+
+
+  // This is a simple set implementation for internal usage. It's a thin
+  // wrapper over chpl__hashtable. It is not parallel safe and is expected to
+  // be called on the node that owns it (so uses will likely wrap with
+  // locks/on-stmts).
+  record chpl__simpleSet {
+    type eltType;
+    var table: chpl__hashtable(eltType, nothing);
+
+    inline proc size {
+      return table.tableNumFullSlots;
+    }
+
+    proc add(elem) {
+      var (isFullSlot, idx) = table.findAvailableSlot(elem);
+      assert(!isFullSlot);
+      table.fillSlot(idx, elem, none);
+    }
+
+    proc remove(elem) {
+      var (hasFoundSlot, idx) = table.findFullSlot(elem);
+      // note that this is a noop if the element isn't in the set
+      if hasFoundSlot {
+        var key: eltType, val: nothing;
+        table.clearSlot(idx, key, val);
+        table.maybeShrinkAfterRemove();
+      }
+    }
+
+    iter these() {
+      for slot in table.allSlots() do
+        if table.isSlotFull(slot) then
+          yield table.table[slot].key;
+    }
+
+    proc writeThis(f) throws {
+      var count = 1;
+      f <~> "{";
+      for e in this {
+        if count <= (size - 1) {
+          count += 1;
+          f <~> e <~> ", ";
+        } else {
+          f <~> e;
+        }
+      }
+      f <~> "}";
+    }
+  }
+
 }

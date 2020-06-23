@@ -63,11 +63,12 @@ contains a variable or constant without a specified type and without an
 initialization expression, then it declares a generic class type.
 Generic classes are described in :ref:`Generic_Types`.
 
-   *Future*.
+   .. note::
+      *Future:*.
 
-   Privacy controls for classes and records are currently not specified,
-   as discussion is needed regarding its impact on inheritance, for
-   instance.
+      Privacy controls for classes and records are currently not specified,
+      as discussion is needed regarding its impact on inheritance, for
+      instance.
 
 .. _Class_Lifetime_and_Borrows:
 
@@ -148,11 +149,13 @@ a component called the lifetime checker. It identifies some cases where
 a borrowing variable can be accessed beyond the lifetime of an instance
 it refers to.
 
-   *Future*.
+  .. note::
+      
+      *Future:*
 
-   The details of lifetime checking are not yet finalized or specified.
-   Additional syntax to specify the lifetimes of function returns will
-   probably be needed.
+      The details of lifetime checking are not yet finalized or specified.
+      Additional syntax to specify the lifetimes of function returns will
+      probably be needed.
 
 .. _Class_Types:
 
@@ -436,11 +439,13 @@ within that class. Each class instance consists of one variable per each
 
 Field access is described in :ref:`Class_Field_Accesses`.
 
-   *Future*.
-
-   ``ref`` fields, which are fields corresponding to variable
-   declarations with ``ref`` or ``const ref`` keywords, are an area of
-   future work.
+  .. note::
+      
+      *Future:*
+      
+      ``ref`` fields, which are fields corresponding to variable
+      declarations with ``ref`` or ``const ref`` keywords, are an area of
+      future work.
 
 .. _Class_Methods:
 

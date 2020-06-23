@@ -223,9 +223,11 @@ Conversions (:ref:`Implicit_Class_Conversions`) applies, in
 addition to Implicit Conversions To Generic Types
 (:ref:`Implicit_Generic_Type_Conversions`).
 
-   *Future*.
+   .. note::
+      
+      *Future:*
 
-   The details are forthcoming.
+      The details are forthcoming.
 
 .. _Implicit_Statement_Bool_Conversions:
 
@@ -297,20 +299,22 @@ the same size, its binary representation is unchanged. When an ``int``
 or ``uint`` is converted to a smaller ``int`` or ``uint``, its value is
 truncated to fit the new representation.
 
-   *Future*.
+   .. note::
+   
+      *Future:*.
 
-   There are several kinds of integer conversion which can result in a
-   loss of precision. Currently, the conversions are performed as
-   specified, and no error is reported. In the future, we intend to
-   improve type checking, so the user can be informed of potential
-   precision loss at compile time, and actual precision loss at run
-   time. Such cases include: When an ``int`` is converted to a ``uint``
-   and the original value is negative; When a ``uint`` is converted to
-   an ``int`` and the sign bit of the result is true; When an ``int`` is
-   converted to a smaller ``int`` or ``uint`` and any of the truncated
-   bits differs from the original sign bit; When a ``uint`` is converted
-   to a smaller ``int`` or ``uint`` and any of the truncated bits is
-   true;
+      There are several kinds of integer conversion which can result in a
+      loss of precision. Currently, the conversions are performed as
+      specified, and no error is reported. In the future, we intend to
+      improve type checking, so the user can be informed of potential
+      precision loss at compile time, and actual precision loss at run
+      time. Such cases include: When an ``int`` is converted to a ``uint``
+      and the original value is negative; When a ``uint`` is converted to
+      an ``int`` and the sign bit of the result is true; When an ``int`` is
+      converted to a smaller ``int`` or ``uint`` and any of the truncated
+      bits differs from the original sign bit; When a ``uint`` is converted
+      to a smaller ``int`` or ``uint`` and any of the truncated bits is
+      true;
 
 ..
 

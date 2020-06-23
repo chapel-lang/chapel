@@ -1210,7 +1210,7 @@ static void resolveModuleCall(CallExpr* call) {
 
         // Then, try public import statements in the module
         if (!sym) {
-          sym = scope->lookupPublicImports(mbrName);
+          sym = scope->lookupPublicVisStmts(mbrName);
         }
 
         // Then, try public import statements that enables unqualified access

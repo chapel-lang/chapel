@@ -53,7 +53,6 @@ proc masonSearch(ref args: list(string)) {
 
   const show = hasOptions(args, "--show");
   const debug = hasOptions(args, "--debug");
-
   updateRegistry("", args);
 
   consumeArgs(args);
@@ -62,7 +61,6 @@ proc masonSearch(ref args: list(string)) {
   const query = if args.size > 0 then args[args.size-1].toLower()
                 else ".*";
   const pattern = compile(query, ignoreCase=true);
-
   var results: list(string);
   var packages: list(string);
   var versions: list(string);
@@ -73,7 +71,6 @@ proc masonSearch(ref args: list(string)) {
 
     for dir in listdir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
-
       if pattern.search(name) {
         if isHidden(name) {
           if debug {
@@ -92,8 +89,8 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
-
-  for r in results.toArray().sorted() do writeln(r);
+  var res = rankResults(results, query);
+  for r in res do writeln(r);
   
   // Handle --show flag
   if show {
@@ -120,6 +117,24 @@ proc masonSearch(ref args: list(string)) {
   if results.size == 0 {
     exit(1);
   }
+}
+
+
+/* Sort the results in a order such that results that startWith needle
+   are displayed first */
+proc rankResults(results: list(string), query: string): [] string {
+  use Sort;
+  record Comparator { }
+  proc Comparator.compare(a, b) {
+    if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
+    else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
+    else return 1;
+  }
+  var cmp : Comparator;
+  var res = results.toArray();
+  if query == ".*" then sort(res);
+  else sort(res, comparator=cmp);
+  return res;
 }
 
 proc isHidden(name : string) : bool {

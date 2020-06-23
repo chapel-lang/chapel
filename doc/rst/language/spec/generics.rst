@@ -868,7 +868,7 @@ The Compiler-Generated Initializer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If no user-defined initializers are supplied for a given generic class,
-the compiler generates one following in a manner similar to that for
+the compiler generates one in a manner similar to that for
 concrete classes (:ref:`The_Compiler_Generated_Initializer`).
 However, the compiler-generated initializer for a generic class or
 record (:ref:`The_Compiler_Generated_Initializer`) is generic

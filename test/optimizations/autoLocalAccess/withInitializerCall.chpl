@@ -20,6 +20,8 @@ class C {
   forall i in A.domain {
     A[i] = new unmanaged C[i];
   }
+
+  for a in A do delete a;
 }
 
 {
