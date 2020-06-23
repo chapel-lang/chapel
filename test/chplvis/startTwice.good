@@ -1,0 +1,1 @@
+startTwice.chpl:14: error: halt reached - Calling startVdebug() multiple times is not currently supported; try using the [pause/tag]Vdebug() routines instead
