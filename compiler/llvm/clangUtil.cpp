@@ -2778,8 +2778,6 @@ void makeBinaryLLVM(void) {
   if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
       llvmStageNum::EVERY == llvmPrintIrStageNum)) {
 
-    gdbShouldBreakHere();
-
     for (auto &F : info->module->functions()) {
       std::string str = F.getName().str();
       if (shouldLlvmPrintIrCName(str.c_str()))

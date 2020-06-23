@@ -17,131 +17,219 @@ extern {
   #include <stdbool.h>
   #include <inttypes.h>
 
-  struct c_pair {
+  struct c_pair_int {
     int a;
     int b;
   };
 
+  struct c_pair_long {
+    long a;
+    long b;
+  };
+
+  struct c_triple {
+    int64_t a;
+    int64_t b;
+    int64_t c;
+  };
+
+  struct c_twelve {
+    int64_t a;
+    int64_t b;
+    int64_t c;
+    int64_t d;
+    int64_t e;
+    int64_t f;
+    int64_t g;
+    int64_t h;
+    int64_t i;
+    int64_t j;
+    int64_t k;
+    int64_t l;
+  };
+
   void print_output_prefix(void);
 
-  int64_t int64_return_c(void);
-  void int64_arg_c(int64_t i);
+  int64_t int64_return_c_____(void);
+  void int64_arg_c_____(int64_t i);
 
-  int32_t int32_return_c(void);
-  void int32_arg_c(int32_t i);
+  int32_t int32_return_c_____(void);
+  void int32_arg_c_____(int32_t i);
 
-  int16_t int16_return_c(void);
-  void int16_arg_c(int16_t i);
+  int16_t int16_return_c_____(void);
+  void int16_arg_c_____(int16_t i);
 
-  int8_t int8_return_c(void);
-  void int8_arg_c(int8_t i);
-
-
-  uint64_t uint64_return_c(void);
-  void uint64_arg_c(uint64_t i);
-
-  uint32_t uint32_return_c(void);
-  void uint32_arg_c(uint32_t i);
-
-  uint16_t uint16_return_c(void);
-  void uint16_arg_c(uint16_t i);
-
-  uint8_t uint8_return_c(void);
-  void uint8_arg_c(uint8_t i);
+  int8_t int8_return_c_____(void);
+  void int8_arg_c_____(int8_t i);
 
 
-  bool bool_return_c(void);
-  void bool_arg_c(bool i);
+  uint64_t uint64_return_c_____(void);
+  void uint64_arg_c_____(uint64_t i);
+
+  uint32_t uint32_return_c_____(void);
+  void uint32_arg_c_____(uint32_t i);
+
+  uint16_t uint16_return_c_____(void);
+  void uint16_arg_c_____(uint16_t i);
+
+  uint8_t uint8_return_c_____(void);
+  void uint8_arg_c_____(uint8_t i);
 
 
-  struct c_pair struct_return_c(void);
-  void struct_arg_c(struct c_pair arg);
+  bool bool_return_c_____(void);
+  void bool_arg_c_____(bool i);
 
 
-  int64_t int64_return_c(void) {
+  struct c_pair_int struct_pair_int_return_c_____(void);
+  void struct_pair_int_arg_c_____(struct c_pair_int arg);
+
+  struct c_pair_long struct_pair_long_return_c_____(void);
+  void struct_pair_long_arg_c_____(struct c_pair_long arg);
+
+  struct c_triple struct_triple_return_c_____(void);
+  void struct_triple_arg_c_____(struct c_triple arg);
+
+  struct c_twelve struct_twelve_return_c_____(void);
+  void struct_twelve_arg_c_____(struct c_twelve arg);
+
+
+  int64_t int64_return_c_____(void) {
     return -1;
   }
-  void int64_arg_c(int64_t i) {
+  void int64_arg_c_____(int64_t i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
-  int32_t int32_return_c(void) {
+  int32_t int32_return_c_____(void) {
     return -1;
   }
-  void int32_arg_c(int32_t i) {
+  void int32_arg_c_____(int32_t i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
-  int16_t int16_return_c(void) {
+  int16_t int16_return_c_____(void) {
     return -1;
   }
-  void int16_arg_c(int16_t i) {
+  void int16_arg_c_____(int16_t i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
-  int8_t int8_return_c(void) {
+  int8_t int8_return_c_____(void) {
     return -1;
   }
-  void int8_arg_c(int8_t i) {
+  void int8_arg_c_____(int8_t i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
 
-  uint64_t uint64_return_c(void) {
+  uint64_t uint64_return_c_____(void) {
     return 0xffffffffffffffffull;
   }
-  void uint64_arg_c(uint64_t i) {
+  void uint64_arg_c_____(uint64_t i) {
     print_output_prefix();
     printf("arg %llu\n", (unsigned long long) i);
   }
 
-  uint32_t uint32_return_c(void) {
+  uint32_t uint32_return_c_____(void) {
     return 0xffffffff;
   }
-  void uint32_arg_c(uint32_t i) {
+  void uint32_arg_c_____(uint32_t i) {
     print_output_prefix();
     printf("arg %u\n", (unsigned int) i);
   }
 
-  uint16_t uint16_return_c(void) {
+  uint16_t uint16_return_c_____(void) {
     return 0xffff;
   }
-  void uint16_arg_c(uint16_t i) {
+  void uint16_arg_c_____(uint16_t i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
-  uint8_t uint8_return_c(void) {
+  uint8_t uint8_return_c_____(void) {
     return 0xff;
   }
-  void uint8_arg_c(uint8_t i) {
+  void uint8_arg_c_____(uint8_t i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
-  bool bool_return_c(void) {
+  bool bool_return_c_____(void) {
     return true;
   }
-  void bool_arg_c(bool i) {
+  void bool_arg_c_____(bool i) {
     print_output_prefix();
     printf("arg %i\n", (int) i);
   }
 
 
-  struct c_pair struct_return_c(void) {
-    struct c_pair pair;
+  struct c_pair_int struct_pair_int_return_c_____(void) {
+    struct c_pair_int pair;
     pair.a = 0;
     pair.b = 1;
     return pair;
   }
-  void struct_arg_c(struct c_pair arg) {
+  void struct_pair_int_arg_c_____(struct c_pair_int arg) {
     print_output_prefix();
     printf("arg.a %i arg.b %i\n", arg.a, arg.b);
   }
+
+  struct c_pair_long struct_pair_long_return_c_____(void) {
+    struct c_pair_long pair;
+    pair.a = 0;
+    pair.b = 1;
+    return pair;
+  }
+  void struct_pair_long_arg_c_____(struct c_pair_long arg) {
+    print_output_prefix();
+    printf("arg.a %li arg.b %li\n", arg.a, arg.b);
+  }
+
+  struct c_triple struct_triple_return_c_____(void) {
+    struct c_triple t;
+    t.a = 0;
+    t.b = 1;
+    t.c = 2;
+    return t;
+  }
+  void struct_triple_arg_c_____(struct c_triple arg) {
+    print_output_prefix();
+    printf("arg.a %li arg.b %li arg.c %li\n",
+           (long) arg.a, (long) arg.b, (long) arg.c);
+  }
+
+  struct c_twelve struct_twelve_return_c_____(void) {
+    struct c_twelve t;
+    t.a = 0;
+    t.b = 1;
+    t.c = 2;
+    t.d = 3;
+    t.e = 4;
+    t.f = 5;
+    t.g = 6;
+    t.h = 7;
+    t.i = 8;
+    t.j = 9;
+    t.k = 10;
+    t.l = 11;
+    return t;
+  }
+  void struct_twelve_arg_c_____(struct c_twelve arg) {
+    print_output_prefix();
+    printf("arg.a %li arg.b %li arg.c %li "
+           "arg.d %li arg.e %li arg.f %li "
+           "arg.g %li arg.h %li arg.i %li "
+           "arg.j %li arg.k %li arg.l %li\n",
+           (long) arg.a, (long) arg.b, (long) arg.c,
+           (long) arg.d, (long) arg.e, (long) arg.f,
+           (long) arg.g, (long) arg.h, (long) arg.i,
+           (long) arg.j, (long) arg.k, (long) arg.l);
+  }
+
 }
 
 var phase: string;
@@ -157,113 +245,142 @@ proc start_phase(name:string) {
 }
 
 export proc int64_return_chapel(): int(64) {
-  return int64_return_c();
+  return int64_return_c_____();
 }
 export proc int64_arg_chapel(i: int(64)) {
-  int64_arg_c(i);
+  int64_arg_c_____(i);
 }
 
 export proc int32_return_chapel(): int(32) {
-  return int32_return_c();
+  return int32_return_c_____();
 }
 export proc int32_arg_chapel(i: int(32)) {
-  int32_arg_c(i);
+  int32_arg_c_____(i);
 }
 
 export proc int16_return_chapel(): int(16) {
-  return int16_return_c();
+  return int16_return_c_____();
 }
 export proc int16_arg_chapel(i: int(16)) {
-  int16_arg_c(i);
+  int16_arg_c_____(i);
 }
 
 export proc int8_return_chapel(): int(8) {
-  return int8_return_c();
+  return int8_return_c_____();
 }
 export proc int8_arg_chapel(i: int(8)) {
-  int8_arg_c(i);
+  int8_arg_c_____(i);
 }
 
 
 export proc uint64_return_chapel(): uint(64) {
-  return uint64_return_c();
+  return uint64_return_c_____();
 }
 export proc uint64_arg_chapel(i: uint(64)) {
-  uint64_arg_c(i);
+  uint64_arg_c_____(i);
 }
 
 export proc uint32_return_chapel(): uint(32) {
-  return uint32_return_c();
+  return uint32_return_c_____();
 }
 export proc uint32_arg_chapel(i: uint(32)) {
-  uint32_arg_c(i);
+  uint32_arg_c_____(i);
 }
 
 export proc uint16_return_chapel(): uint(16) {
-  return uint16_return_c();
+  return uint16_return_c_____();
 }
 export proc uint16_arg_chapel(i: uint(16)) {
-  uint16_arg_c(i);
+  uint16_arg_c_____(i);
 }
 
 export proc uint8_return_chapel(): uint(8) {
-  return uint8_return_c();
+  return uint8_return_c_____();
 }
 export proc uint8_arg_chapel(i: uint(8)) {
-  uint8_arg_c(i);
+  uint8_arg_c_____(i);
 }
 
 
 export proc bool_return_chapel(): bool {
-  return bool_return_c();
+  return bool_return_c_____();
 }
 export proc bool_arg_chapel(i: bool) {
-  bool_arg_c(i);
+  bool_arg_c_____(i);
 }
 
 
-export proc struct_return_chapel(): c_pair {
-  var pair:c_pair;
-  pair = struct_return_c();
+export proc struct_pair_int_return_chapel(): c_pair_int {
+  var pair:c_pair_int;
+  pair = struct_pair_int_return_c_____();
   return pair;
 }
-export proc struct_arg_chapel(in arg: c_pair) {
-  struct_arg_c(arg);
+export proc struct_pair_int_arg_chapel(in arg: c_pair_int) {
+  struct_pair_int_arg_c_____(arg);
 }
+
+export proc struct_pair_long_return_chapel(): c_pair_long {
+  var pair:c_pair_long;
+  pair = struct_pair_long_return_c_____();
+  return pair;
+}
+export proc struct_pair_long_arg_chapel(in arg: c_pair_long) {
+  struct_pair_long_arg_c_____(arg);
+}
+
+export proc struct_triple_return_chapel(): c_triple {
+  var tt:c_triple;
+  tt = struct_triple_return_c_____();
+  return tt;
+}
+export proc struct_triple_arg_chapel(in arg: c_triple) {
+  struct_triple_arg_c_____(arg);
+}
+
+export proc struct_twelve_return_chapel(): c_twelve {
+  var tt:c_twelve;
+  tt = struct_twelve_return_c_____();
+  return tt;
+}
+export proc struct_twelve_arg_chapel(in arg: c_twelve) {
+  struct_twelve_arg_c_____(arg);
+}
+
+
 
 proc main() {
   {
     var i:int(64);
-    start_phase("testing int64_..._c");
-    i = int64_return_c();
-    int64_arg_c(i);
+    start_phase("testing int64_..._c_____");
+    i = int64_return_c_____();
+    int64_arg_c_____(i);
     start_phase("testing int64_..._chapel");
     i = int64_return_chapel();
     int64_arg_chapel(i);
   }
   {
     var i:int(32);
-    start_phase("testing int32_..._c");
-    i = int32_return_c();
-    int32_arg_c(i);
+    start_phase("testing int32_..._c_____");
+    i = int32_return_c_____();
+    int32_arg_c_____(i);
     start_phase("testing int32_..._chapel");
     i = int32_return_chapel();
     int32_arg_chapel(i);
   }
   {
     var i:int(16);
-    start_phase("testing int16_..._c");
-    i = int16_return_c();
-    int16_arg_c(i);
+    start_phase("testing int16_..._c_____");
+    i = int16_return_c_____();
+    int16_arg_c_____(i);
     start_phase("testing int16_..._chapel");
     i = int16_return_chapel();
     int16_arg_chapel(i);
   }
   {
     var i:int(8);
-    start_phase("testing int8_..._c");
-    i = int8_return_c();
-    int8_arg_c(i);
+    start_phase("testing int8_..._c_____");
+    i = int8_return_c_____();
+    int8_arg_c_____(i);
     start_phase("testing int8_..._chapel");
     i = int8_return_chapel();
     int8_arg_chapel(i);
@@ -271,36 +388,36 @@ proc main() {
 
   {
     var i:uint(64);
-    start_phase("testing uint64_..._c");
-    i = uint64_return_c();
-    uint64_arg_c(i);
+    start_phase("testing uint64_..._c_____");
+    i = uint64_return_c_____();
+    uint64_arg_c_____(i);
     start_phase("testing uint64_..._chapel");
     i = uint64_return_chapel();
     uint64_arg_chapel(i);
   }
   {
     var i:uint(32);
-    start_phase("testing uint32_..._c");
-    i = uint32_return_c();
-    uint32_arg_c(i);
+    start_phase("testing uint32_..._c_____");
+    i = uint32_return_c_____();
+    uint32_arg_c_____(i);
     start_phase("testing uint32_..._chapel");
     i = uint32_return_chapel();
     uint32_arg_chapel(i);
   }
   {
     var i:uint(16);
-    start_phase("testing uint16_..._c");
-    i = uint16_return_c();
-    uint16_arg_c(i);
+    start_phase("testing uint16_..._c_____");
+    i = uint16_return_c_____();
+    uint16_arg_c_____(i);
     start_phase("testing uint16_..._chapel");
     i = uint16_return_chapel();
     uint16_arg_chapel(i);
   }
   {
     var i:uint(8);
-    start_phase("testing uint8_..._c");
-    i = uint8_return_c();
-    uint8_arg_c(i);
+    start_phase("testing uint8_..._c_____");
+    i = uint8_return_c_____();
+    uint8_arg_c_____(i);
     start_phase("testing uint8_..._chapel");
     i = uint8_return_chapel();
     uint8_arg_chapel(i);
@@ -308,9 +425,9 @@ proc main() {
 
   {
     var i:bool;
-    start_phase("testing bool_..._c");
-    i = bool_return_c();
-    bool_arg_c(i);
+    start_phase("testing bool_..._c_____");
+    i = bool_return_c_____();
+    bool_arg_c_____(i);
     start_phase("testing bool_..._chapel");
     i = bool_return_chapel();
     bool_arg_chapel(i);
@@ -318,12 +435,44 @@ proc main() {
 
 
   {
-    var pair:c_pair;
-    start_phase("testing struct_..._c");
-    pair = struct_return_c();
-    struct_arg_c(pair);
-    start_phase("testing struct_..._chapel");
-    pair = struct_return_chapel();
-    struct_arg_chapel(pair);
+    var pair:c_pair_int;
+    start_phase("testing struct_pair_int..._c_____");
+    pair = struct_pair_int_return_c_____();
+    struct_pair_int_arg_c_____(pair);
+    start_phase("testing struct_pair_int..._chapel");
+    pair = struct_pair_int_return_chapel();
+    struct_pair_int_arg_chapel(pair);
   }
+
+  {
+    var pair:c_pair_long;
+    start_phase("testing struct_pair_long..._c_____");
+    pair = struct_pair_long_return_c_____();
+    struct_pair_long_arg_c_____(pair);
+    start_phase("testing struct_pair_long..._chapel");
+    pair = struct_pair_long_return_chapel();
+    struct_pair_long_arg_chapel(pair);
+  }
+
+  {
+    var ttt:c_triple;
+    start_phase("testing struct_triple_..._c_____");
+    ttt = struct_triple_return_c_____();
+    struct_triple_arg_c_____(ttt);
+    start_phase("testing struct_triple_..._chapel");
+    ttt = struct_triple_return_chapel();
+    struct_triple_arg_chapel(ttt);
+  }
+
+  {
+    var ttt:c_twelve;
+    start_phase("testing struct_twelve_..._c_____");
+    ttt = struct_twelve_return_c_____();
+    struct_twelve_arg_c_____(ttt);
+    start_phase("testing struct_twelve_..._chapel");
+    ttt = struct_twelve_return_chapel();
+    struct_twelve_arg_chapel(ttt);
+  }
+
+
 }

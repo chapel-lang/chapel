@@ -63,7 +63,6 @@ class FnSymbol;
 static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
-static GenRet createTempVar(Type* t);
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret);
 #define createTempRef(t) createTempVar(t)
 
@@ -251,9 +250,8 @@ llvm::Value* createVarLLVM(llvm::Type* type)
   return createVarLLVM(type, name);
 }
 
-static
 llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
-                                bool isSigned = false, bool force = false) {
+                                bool isSigned, bool force) {
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
   const llvm::DataLayout& layout = info->module->getDataLayout();
@@ -1311,7 +1309,6 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   return ret;
 }
 
-static
 GenRet createTempVar(const char* ctype)
 {
   GenInfo* info = gGenInfo;
@@ -1335,7 +1332,7 @@ GenRet createTempVar(const char* ctype)
 }
 
 // use this function for chplTypes
-static GenRet createTempVar(Type* t)
+GenRet createTempVar(Type* t)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;

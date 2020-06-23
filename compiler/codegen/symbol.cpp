@@ -1719,8 +1719,8 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
   llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
   argInfo = &a[curCArg].info;
 #else
-  int i = 0; 
-  for (auto &ii : CGI->arguments()) { 
+  int i = 0;
+  for (auto &ii : CGI->arguments()) {
     if (i == curCArg) {
       argInfo = &ii.info;
       break;
@@ -1846,6 +1846,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
       // Adjust attributes for sret argument
       llvm::AttrBuilder b;
       b.addAttribute(llvm::Attribute::StructRet);
+      b.addAttribute(llvm::Attribute::NoAlias);
       if (returnInfo.getInReg())
         b.addAttribute(llvm::Attribute::InReg);
       b.addAlignmentAttr(returnInfo.getIndirectAlign().getQuantity());
@@ -2220,6 +2221,12 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
+    llvm::IRBuilder<>* irBuilder = info->irBuilder;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    llvm::LLVMContext &ctx = info->llvmContext;
+
+    unsigned int stackSpace = layout.getAllocaAddrSpace();
+
     func = getFunctionLLVM(cname);
 
     // Mark functions to dump as no-inline so they actually exist
@@ -2261,6 +2268,9 @@ void FnSymbol::codegenDef() {
         llvm::DebugLoc::get(linenum(),0,dbgScope));
     }
 
+    // ABI support in this function is inspired by clang's
+    //   CodeGenFunction::EmitFunctionProlog
+
     const clang::CodeGen::CGFunctionInfo* CGI = NULL;
     if (this->hasFlag(FLAG_EXPORT)) {
       CGI = &getClangABIInfo(this);
@@ -2275,8 +2285,9 @@ void FnSymbol::codegenDef() {
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
 
-      // TODO: see
-      // CodeGenFunction::EmitFunctionProlog
+      if (returnInfo.isInAlloca())
+        INT_FATAL("TODO");
+
     }
 
     llvm::Function::arg_iterator ai = func->arg_begin();
@@ -2291,8 +2302,10 @@ void FnSymbol::codegenDef() {
         continue; // do not print locale argument, end count, dummy class
 
       if (argInfo) {
-        if (argInfo->isIgnore() || argInfo->isInAlloca())
+        if (argInfo->isIgnore())
           continue; // ignore - inalloca handled separately
+        if (argInfo->isInAlloca())
+          INT_FATAL("TODO");
       }
 
       if (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca())) {
@@ -2300,11 +2313,126 @@ void FnSymbol::codegenDef() {
         func->removeFnAttr(llvm::Attribute::ReadNone);
       }
 
-      if (arg->requiresCPtr() ||
-          (argInfo && (argInfo->isIndirect() || argInfo->isInAlloca()))) {
-        llvm::Argument& llArg = *ai;
-        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(type));
+      Type* argType = arg->typeInfo();
+      llvm::Type* chapelArgTy = argType->codegen().type;
+
+      if (arg->requiresCPtr() || (argInfo && argInfo->isIndirect())) {
+        // consume the next LLVM argument
+        llvm::Argument& llArg = *ai++;
+        info->lvt->addValue(arg->cname, &llArg,  GEN_PTR, !is_signed(argType));
+
+      } else if (argInfo) {
+
+        // handle a direct or extend argument
+
+        if (!llvm::isa<llvm::StructType>(argInfo->getCoerceToType()) &&
+            argInfo->getCoerceToType() == chapelArgTy &&
+            argInfo->getDirectOffset() == 0) {
+          // handle a simple direct argument
+
+          // consume the next LLVM argument
+          llvm::Value* val = &*ai++;
+          // make sure the argument has the correct type
+          if (val->getType() != argInfo->getCoerceToType())
+            val = convertValueToType(val, argInfo->getCoerceToType(),
+                                     is_signed(argType), true);
+
+          if (val->getType() != chapelArgTy)
+            val = convertValueToType(val, chapelArgTy,
+                                     is_signed(argType), true);
+
+          info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+        } else {
+          // handle a more complex direct argument
+          // (possibly in multiple registers)
+
+          llvm::StructType *sTy = llvm::dyn_cast<llvm::StructType>(argInfo->getCoerceToType());
+
+          if (argInfo->isDirect() && argInfo->getCanBeFlattened() && sTy &&
+              sTy->getNumElements() > 1) {
+
+            // handle a complex direct argument with multiple registers
+
+            // Create a temp variable to store into
+            GenRet tmp = createTempVar(arg->typeInfo());
+            llvm::Value* ptr = tmp.val;
+            llvm::Type* ptrEltTy = chapelArgTy;
+            llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
+            llvm::Type* coercePtrTy =
+              llvm::PointerType::get(argInfo->getCoerceToType(), stackSpace);
+
+            // handle offset
+            if (unsigned offset = argInfo->getDirectOffset()) {
+              ptr = irBuilder->CreatePointerCast(ptr, i8PtrTy);
+              ptr = irBuilder->CreateConstInBoundsGEP1_32(i8PtrTy, ptr, offset);
+              ptr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
+              ptrEltTy = argInfo->getCoerceToType();
+            }
+
+            // Store into the temp variable
+            uint64_t srcSize = layout.getTypeAllocSize(sTy);
+            llvm::Type* dstTy = ptrEltTy;
+            uint64_t dstSize = layout.getTypeAllocSize(dstTy);
+
+            llvm::Value* storeAdr = NULL;
+            if (srcSize <= dstSize) {
+              storeAdr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
+            } else {
+              storeAdr = makeAllocaAndLifetimeStart(irBuilder, layout, ctx,
+                                                    sTy, "coerce");
+            }
+
+            unsigned nElts = sTy->getNumElements();
+            for (unsigned i = 0; i < nElts; i++) {
+              // consume the next LLVM argument
+              llvm::Value* val = &*ai++;
+              // store it into the addr
+              llvm::Value* eltPtr = irBuilder->CreateStructGEP(storeAdr, i);
+              irBuilder->CreateStore(val, eltPtr);
+            }
+
+            // if we allocated a temporary, memcpy from it to the main var
+            //
+            if (srcSize > dstSize) {
+              irBuilder->CreateMemCpy(ptr,
+#if HAVE_LLVM_VER >= 100
+                                      llvm::MaybeAlign(),
+#else
+                                      0,
+#endif
+                                      storeAdr,
+#if HAVE_LLVM_VER >= 100
+                                      llvm::MaybeAlign(),
+#else
+                                      0,
+#endif
+                                      dstSize);
+            }
+
+            info->lvt->addValue(arg->cname, tmp.val,
+                                tmp.isLVPtr, tmp.isUnsigned);
+          } else {
+            // mainly just needing to convert the type
+
+            // consume the next LLVM argument
+            llvm::Value* val = &*ai++;
+
+            // make sure the argument has the correct type
+            if (val->getType() != argInfo->getCoerceToType())
+              val = convertValueToType(val, argInfo->getCoerceToType(),
+                                       is_signed(argType), true);
+
+            if (val->getType() != chapelArgTy)
+              val = convertValueToType(val, chapelArgTy,
+                                       is_signed(argType), true);
+
+            info->lvt->addValue(arg->cname, val,  GEN_VAL, !is_signed(argType));
+          }
+        }
+
       } else {
+        // No ABI info is available
+
         GenRet gArg;
         llvm::Argument& llArg = *ai;
         gArg.val = &llArg;
@@ -2312,13 +2440,13 @@ void FnSymbol::codegenDef() {
         GenRet tempVar = createTempVarWith(gArg);
 
         info->lvt->addValue(arg->cname, tempVar.val,
-                            tempVar.isLVPtr, !is_signed(type));
+                            tempVar.isLVPtr, tempVar.isUnsigned);
         // debug info for formal arguments
         if(debug_info){
           debug_info->get_formal_arg(arg, curCArg+1);
         }
+        ++ai;
       }
-      ++ai;
       curCArg++;
     }
 
