@@ -1816,8 +1816,6 @@ void fini_ofi(void) {
 
   CHPL_FREE(memTabMap);
 
-  CHPL_FREE(memTabMap);
-
   CHPL_FREE(amLZs);
 
   CHPL_FREE(ofi_rxAddrs);
