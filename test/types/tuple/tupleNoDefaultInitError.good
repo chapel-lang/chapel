@@ -1,5 +1,11 @@
-tupleNoDefaultInitError.chpl:3: In function 'test':
-tupleNoDefaultInitError.chpl:4: error: cannot default initialize the tuple c
-tupleNoDefaultInitError.chpl:4: error: element 0 of type owned C has no default value
-tupleNoDefaultInitError.chpl:4: note: because it is a non-nilable class
-tupleNoDefaultInitError.chpl:4: note: consider using owned C? instead
+tupleNoDefaultInitError.chpl:4: In function 'test':
+tupleNoDefaultInitError.chpl:5: error: cannot default initialize the tuple tup1
+tupleNoDefaultInitError.chpl:5: error: element 1 of type owned C has no default value
+tupleNoDefaultInitError.chpl:5: note: because it is a non-nilable class
+tupleNoDefaultInitError.chpl:5: note: consider using owned C? instead
+tupleNoDefaultInitError.chpl:6: error: cannot default initialize the tuple tup2
+tupleNoDefaultInitError.chpl:6: error: element 0 of type shared C has no default value
+tupleNoDefaultInitError.chpl:6: note: because it is a non-nilable class
+tupleNoDefaultInitError.chpl:6: note: consider using shared C? instead
+tupleNoDefaultInitError.chpl:6: error: element 1 of type owned D has no default value
+tupleNoDefaultInitError.chpl:6: note: because it is a non-nilable class
