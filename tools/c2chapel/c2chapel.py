@@ -216,16 +216,18 @@ def computeArgs(pl):
             (intent, typeName, ptrTypeName) = getIntentInfo(arg.type)
             argName = computeArgName(arg)
             if typeName != "":
-                if intent != "":
+                if intent == "":
+                    intent = "in "
+                else:
                     intent += " "
                 if argName == "":
                     argName = "arg" + str(i)
                 formals.append(intent + argName + " : " + typeName)
 
                 if ptrTypeName != "":
-                    ptrFormals.append(argName + " : " + ptrTypeName)
+                    ptrFormals.append("in " + argName + " : " + ptrTypeName)
                 else:
-                    ptrFormals.append(argName + " : " + typeName)
+                    ptrFormals.append("in " + argName + " : " + typeName)
     return (", ".join(formals), ", ".join(ptrFormals))
 
 def isPointerTo(ty, text):
