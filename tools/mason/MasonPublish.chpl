@@ -593,11 +593,7 @@ private proc checkLicense(projectHome: string) throws {
     var licenseList = listdir(MASON_HOME + "/spdx");
     for licenses in licenseList {
       const licenseName: string = licenses.strip('.txt', trailing=true);
-      if defaultLicense == 'None' {
-        foundValidLicense = true; 
-        break;
-      }
-      if licenseName == defaultLicense {
+      if licenseName == defaultLicense || defaultLicense == 'None' {
         foundValidLicense = true;
         break;
       }
