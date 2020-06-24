@@ -136,6 +136,12 @@ module ChapelHashtable {
     return ret;
   }
 
+  private proc _freeData(data, size:int) {
+    if data != nil {
+      _ddata_free(data, size);
+    }
+  }
+
   // #### deinit helpers ####
   private proc _typeNeedsDeinit(type t) param {
     return __primitive("needs auto destroy", t);
@@ -263,8 +269,6 @@ module ChapelHashtable {
     type valType;
 
     var tableNumFullSlots: int;
-    var tableNumDeletedSlots: int;
-    // Could also have e.g. tableNumDeletedSlots here
 
     var tableSizeNum: int;
     var tableSize: int;
@@ -279,7 +283,6 @@ module ChapelHashtable {
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
-      this.tableNumDeletedSlots = 0;
       this.tableSizeNum = 0;
       this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
@@ -290,9 +293,7 @@ module ChapelHashtable {
       // All elements are memset to 0 (no initializer is run for the idxType)
       // This allows them to be empty, but the key and val
       // are considered uninitialized.
-      if tableSize > 0 then
-        this.table = _allocateData(this.tableSize,
-                                   chpl_TableEntry(this.keyType, this.valType));
+      this.table = allocateTable(this.tableSize);
     }
     proc deinit() {
       // Go through the full slots in the current table and run
@@ -317,8 +318,7 @@ module ChapelHashtable {
       }
 
       // Free the buffer
-      if table != nil then
-        _ddata_free(table, tableSize);
+      _freeData(table, tableSize);
     }
 
     // #### iteration helpers ####
@@ -392,12 +392,11 @@ module ChapelHashtable {
 
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(key):uint;
-      if numSlots > 0 {
-        for probe in 0..numSlots/2 {
-          var uprobe = probe:uint;
-          var n = numSlots:uint;
-          yield ((baseSlot + uprobe**2)%n):int;
-        }
+      if numSlots == 0 then return;
+      for probe in 0..numSlots/2 {
+        var uprobe = probe:uint;
+        var n = numSlots:uint;
+        yield ((baseSlot + uprobe**2)%n):int;
       }
     }
 
@@ -496,7 +495,6 @@ module ChapelHashtable {
 
       // update the table counts
       tableNumFullSlots -= 1;
-      tableNumDeletedSlots += 1;
     }
     proc clearSlot(slotNum: int, out key: keyType, out val: valType) {
       // move the table entry into the key/val variables to be returned
@@ -552,9 +550,11 @@ module ChapelHashtable {
     // assumes the array is already locked
     proc rehash(newSizeNum:int, newSize:int) {
       // save the old table
-      // oldTable has elements 0..<oldSize
       var oldSize = tableSize;
       var oldTable = table;
+
+      tableSizeNum = newSizeNum;
+      tableSize = newSize;
 
       var entries = tableNumFullSlots;
       if entries > 0 {
@@ -564,16 +564,10 @@ module ChapelHashtable {
           halt("attempt to resize to 0 a table that is not empty");
         }
 
-        tableSizeNum = newSizeNum;
-        tableSize = newSize;
         table = allocateTable(tableSize);
 
         if rehashHelpers != nil then
           rehashHelpers!.startRehash(tableSize);
-
-        // tableNumFullSlots stays the same during this operation
-        // and all all deleleted slots are removed
-        tableNumDeletedSlots = 0;
 
         // Move old data into newly resized table
         //
@@ -610,13 +604,11 @@ module ChapelHashtable {
           rehashHelpers!.finishRehash(oldSize);
 
         // delete the old allocation
-        _ddata_free(oldTable, oldSize);
+        _freeData(oldTable, oldSize);
 
       } else {
         // There were no entries, so just make a new allocation
 
-        tableSizeNum = newSizeNum;
-        tableSize = newSize;
 
         if rehashHelpers != nil {
           rehashHelpers!.startRehash(tableSize);
@@ -624,8 +616,7 @@ module ChapelHashtable {
         }
 
         // delete the old allocation
-        if table != nil then
-          _ddata_free(table, tableSize);
+        _freeData(oldTable, oldSize);
 
         table = allocateTable(tableSize);
       }
