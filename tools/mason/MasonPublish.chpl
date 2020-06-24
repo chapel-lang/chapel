@@ -435,6 +435,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   var remoteTest = true;
   var exampleTest = true;
   var testTest = true;
+  var licenseTest = true;
   writeln('Mason Project Check:');
   if !package {
     writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
@@ -480,6 +481,17 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     writeln(spacer);
   }
 
+  if package {
+    writeln('Checking for license:');
+    if checkLicense(projectCheckHome) {
+      writeln('   Found valid license in manifest file. (PASSED)');
+    } else {
+      writeln('   Invalid license name. Please use a valid name from SPDX license list. (FAILED)');
+      licenseTest = false;
+    }
+    writeln(spacer);
+  }
+
   if package && !ci {
     writeln('Git Remote Check:');
     if doesGitOriginExist() {
@@ -521,7 +533,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && registryTest && testTest {
+  if packageTest && remoteTest && moduleTest && registryTest && testTest && licenseTest {
     writeln('(PASSED) Your package is ready to publish');
   }
   else {
@@ -530,6 +542,9 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     if !moduleTest {
       writeln('(FAILED) Your package has more than one main module');
+    }
+    if !licenseTest {
+      writeln('(FAILED) Your package does not have valid license name.');
     }
     if !exampleTest {
       writeln('(WARNING) Your package does not have examples');
@@ -548,8 +563,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) {
-      checkLicense(projectCheckHome);
+    if package && moduleCheck(projectCheckHome) 
+    && testCheck(projectCheckHome) && checkLicense(projectCheckHome) {
       attemptToBuild();
       exit(0);
     }
@@ -563,6 +578,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
 /* Validate license with that of SPDX list */
 private proc checkLicense(projectHome: string) throws {
+  var foundValidLicense = false;
   if exists(joinPath(projectHome, "Mason.toml")) {
     var defaultLicense = "None";
     const toParse = open(joinPath(projectHome, "Mason.toml"), iomode.r);
@@ -575,7 +591,6 @@ private proc checkLicense(projectHome: string) throws {
     const command = 'git clone https://github.com/spdx/license-list ' + dest;
     if !isDir(dest) then runCommand(command);
     var licenseList = listdir(MASON_HOME + "/spdx");
-    var foundValidLicense = false;
     for licenses in licenseList {
       const licenseName: string = licenses.strip('.txt', trailing=true);
       if defaultLicense == 'None' {
@@ -587,11 +602,9 @@ private proc checkLicense(projectHome: string) throws {
         break;
       }
     }
-    if !foundValidLicense then 
-      writeln('(FAILED) Invalid license name. Please use a valid name from SPDX license list.');
-    else 
-      writeln('(PASSED) Found valid license in manifest file');
   }
+  if foundValidLicense then return true;
+  else return false;
 }
 
 /* Attempts to build the package/
