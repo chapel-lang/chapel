@@ -549,6 +549,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   if ci {
     if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) {
+      checkLicense(projectCheckHome);
       attemptToBuild();
       exit(0);
     }
@@ -560,6 +561,38 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   exit(0);
 }
 
+/* Validate license with that of SPDX list */
+private proc checkLicense(projectHome: string) throws {
+  if exists(joinPath(projectHome, "Mason.toml")) {
+    var defaultLicense = "None";
+    const toParse = open(joinPath(projectHome, "Mason.toml"), iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if tomlFile.pathExists("brick.license") {
+      defaultLicense = tomlFile["brick"]!["license"]!.s;
+    }
+    // git clone the SPDX repo and validate license identifier
+    const dest = MASON_HOME + '/spdx';
+    const command = 'git clone https://github.com/spdx/license-list ' + dest;
+    if !isDir(dest) then runCommand(command);
+    var licenseList = listdir(MASON_HOME + "/spdx");
+    var foundValidLicense = false;
+    for licenses in licenseList {
+      const licenseName: string = licenses.strip('.txt', trailing=true);
+      if defaultLicense == 'None' {
+        foundValidLicense = true; 
+        break;
+      }
+      if licenseName == defaultLicense {
+        foundValidLicense = true;
+        break;
+      }
+    }
+    if !foundValidLicense then 
+      writeln('(FAILED) Invalid license name. Please use a valid name from SPDX license list.');
+    else 
+      writeln('(PASSED) Found valid license in manifest file');
+  }
+}
 
 /* Attempts to build the package/
  */
