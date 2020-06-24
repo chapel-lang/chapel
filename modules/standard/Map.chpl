@@ -71,7 +71,7 @@ module Map {
     param parSafe = false;
 
     pragma "no doc"
-    var table: chpl__hashtable(keyType, valType);
+    var table = new chpl__hashtable(keyType, valType);
 
     pragma "no doc"
     var _lock$ = if parSafe then new _LockWrapper() else none;
@@ -515,7 +515,7 @@ module Map {
      */
     proc addOrSet(in k: keyType, in v: valType) {
       _enter(); defer _leave();
-      var (found, slot) = findAvailableSlot(k);
+      var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
     }
 
