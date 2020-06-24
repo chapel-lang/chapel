@@ -2460,7 +2460,7 @@ GenRet codegenCallExpr(GenRet function,
 #ifdef HAVE_LLVM
 
     // See clang CodeGenFunction::EmitCall
-    // See Swift  ...
+    // See Swift irgen::emitForeignParameter
 
     const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 

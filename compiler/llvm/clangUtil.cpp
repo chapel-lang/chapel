@@ -2492,6 +2492,28 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
                                  extInfo, clang::CodeGen::RequiredArgs::All);
 }
 
+const clang::CodeGen::ABIArgInfo*
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
+{
+  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+#if HAVE_LLVM_VER >= 100
+  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
+  argInfo = &a[curCArg].info;
+#else
+  int i = 0;
+  for (auto &ii : CGI->arguments()) {
+    if (i == curCArg) {
+      argInfo = &ii.info;
+      break;
+    }
+    i++;
+  }
+#endif
+
+  return argInfo;
+}
+
+
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;

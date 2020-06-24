@@ -47,6 +47,7 @@ namespace clang {
   class ValueDecl;
 
   namespace CodeGen {
+    class ABIArgInfo;
     class CGFunctionInfo;
   }
 }
@@ -77,6 +78,9 @@ uint64_t getPointerAlign(int addrSpace);
 #endif
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
+
+const clang::CodeGen::ABIArgInfo*
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg);
 
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
