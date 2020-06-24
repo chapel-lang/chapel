@@ -373,14 +373,15 @@ module CommDiagnostics
 
 
   /*
-    Print the current communication counts in a text table showing
-    locales x operations.  By default, operations with a count of
-    zero will not be displayed in the table.
+    Print the current communication counts in a text table using a row
+    per locale and a column per operation.  By default, operations for
+    which all locales have a count of zero are not displayed in the
+    table.
 
-    :arg allOps: Print all operations regardless of count? (defaults to ``false``)
-    :type allOps: `bool`
+    :arg printEmptyColumns: Indicates whether empty columns should be printed (defaults to ``false``)
+    :type printEmptyColumns: `bool`
   */
-  proc printCommDiagnosticsTable(allOps=false) {
+  proc printCommDiagnosticsTable(printEmptyColumns=false) {
     use Reflection;
 
     // grab all comm diagnostics
@@ -397,7 +398,7 @@ module CommDiagnostics
       var found = false;
       for locID in LocaleSpace {
         const val = getField(CommDiags[locID], fieldID);
-        if allOps || val != 0 {
+        if printEmptyColumns || val != 0 {
           if (found == false) {
             found = true;
             fieldInUse[fieldID] = true;
