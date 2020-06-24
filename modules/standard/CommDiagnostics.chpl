@@ -411,9 +411,9 @@ module CommDiagnostics
     // print a row per locale showing the active fields
     for locID in LocaleSpace {
       writef("%7s", locID:string);
-      for fieldID in 0..<nFields {
+      for param fieldID in 0..<nFields {
         if fieldInUse[fieldID] {
-          writef("%16s", getField[CommDiags[locID], fieldID):string);
+          writef("%16s", getField(CommDiags[locID], fieldID):string);
         }
       }
       writeln();
