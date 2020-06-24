@@ -239,7 +239,7 @@ module CommDiagnostics
       var first = true;
       c <~> "(";
       for param i in 0..<numFields(chpl_commDiagnostics) {
-        param name = getFieldName(this.type, i);
+        param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
@@ -371,6 +371,54 @@ module CommDiagnostics
     return cd;
   }
 
+
+  /*
+    Print the current communication counts in a text table showing
+    locales x operations.  By default, operations with a count of
+    zero will not be displayed in the table.
+
+    :arg allOps: Print all operations regardless of count? (defaults to ``false``)
+    :type allOps: `bool`
+  */
+  proc printCommDiagnosticsTable(allOps=false) {
+    use Reflection;
+
+    // grab all comm diagnostics
+    var CommDiags = getCommDiagnostics();
+
+    // cache number of fields and store vector of whether field is active
+    param nFields = numFields(chpl_commDiagnostics);
+    var fieldInUse: [0..<nFields] bool;
+
+    // print column headers while determining which fields are active
+    writef("%7s", "locale");
+    for param fieldID in 0..<nFields {
+      param name = getFieldName(chpl_commDiagnostics, fieldID);
+      var found = false;
+      for locID in LocaleSpace {
+        const val = getField(CommDiags[locID], fieldID);
+        if allOps || val != 0 {
+          if (found == false) {
+            found = true;
+            fieldInUse[fieldID] = true;
+            writef("%16s", name);
+          }
+        }
+      }
+    }
+    writeln();
+
+    // print a row per locale showing the active fields
+    for locID in LocaleSpace {
+      writef("%7s", locID:string);
+      for fieldID in 0..<nFields {
+        if fieldInUse[fieldID] {
+          writef("%16s", getField[CommDiags[locID], fieldID):string);
+        }
+      }
+      writeln();
+    }
+  }
 
   /*
     If this is set, on-the-fly reporting of communication operations
