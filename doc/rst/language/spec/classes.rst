@@ -2092,9 +2092,12 @@ behavior is undefined.
 
       --memLeaksByType
 
+   
+
    .. BLOCK-test-chapeloutput
 
       DONE
+
 .. _Class_Deinitializer:
 
 Class Deinitializer
