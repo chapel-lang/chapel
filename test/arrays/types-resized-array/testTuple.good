@@ -1,3 +1,1 @@
-./ArrayTest.chpl:1: In function 'testArray':
-./ArrayTest.chpl:4: error: Cannot initialize array because element type 2*shared T has no default value
-testTuple.chpl:8: Function 'testArray' instantiated as: testArray(type t = 2*shared T)
+./ArrayTest.chpl:9: error: halt reached - Can't resize domains whose arrays' elements don't have default values
