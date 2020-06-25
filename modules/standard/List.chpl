@@ -325,7 +325,7 @@ module List {
     }
 
     pragma "no doc"
-    proc _commonInitFromIterable(iterable) {
+    proc _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
       for x in iterable do
         append(x);
