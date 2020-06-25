@@ -35,15 +35,15 @@ all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 depend:
 
 clean: clean.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 cleanall: cleanall.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*
