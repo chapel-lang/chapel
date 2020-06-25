@@ -300,7 +300,7 @@ module DefaultRectangular {
                 "), minIndicesPerTask=", minIndicesPerTask);
       }
       const (numChunks, parDim) = if __primitive("task_get_serial") then
-                                  (1, -1) else
+                                  (1, 0) else
                                   _computeChunkStuff(numTasks,
                                                      ignoreRunning,
                                                      minIndicesPerTask,
@@ -316,38 +316,32 @@ module DefaultRectangular {
                            "### numChunks = ", numChunks, " (parDim = ", parDim, ")\n",
                            "### nranges = ", ranges);
       }
-      if numChunks <= 1 {
-        for i in these_help(0) {
-          yield i;
-        }
-      } else {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** DI: ranges = ", ranges);
+      }
+      // TODO: The following is somewhat of an abuse of what
+      // _computeBlock() was designed for (dense ranges only; I
+      // multiplied by the stride as a white lie to make it work
+      // reasonably.  We should switch to using the RangeChunk
+      // library...
+      coforall chunk in 0..#numChunks {
+        var block = ranges;
+        const len = if (!ranges(parDim).stridable) then ranges(parDim).size
+            else ranges(parDim).size:uint * abs(ranges(parDim).stride):uint;
+        const (lo,hi) = _computeBlock(len,
+                                      numChunks, chunk,
+                                      ranges(parDim)._high,
+                                      ranges(parDim)._low,
+                                      ranges(parDim)._low);
+        if block(parDim).stridable then
+          block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
+        else
+          block(parDim) = lo..hi;
         if debugDefaultDist {
-          chpl_debug_writeln("*** DI: ranges = ", ranges);
+          chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
         }
-        // TODO: The following is somewhat of an abuse of what
-        // _computeBlock() was designed for (dense ranges only; I
-        // multiplied by the stride as a white lie to make it work
-        // reasonably.  We should switch to using the RangeChunk
-        // library...
-        coforall chunk in 0..#numChunks {
-          var block = ranges;
-          const len = if (!ranges(parDim).stridable) then ranges(parDim).size
-              else ranges(parDim).size:uint * abs(ranges(parDim).stride):uint;
-          const (lo,hi) = _computeBlock(len,
-                                        numChunks, chunk,
-                                        ranges(parDim)._high,
-                                        ranges(parDim)._low,
-                                        ranges(parDim)._low);
-          if block(parDim).stridable then
-            block(parDim) = lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment);
-          else
-            block(parDim) = lo..hi;
-          if debugDefaultDist {
-            chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
-          }
-          for i in these_help(0, block) {
-            yield i;
-          }
+        for i in these_help(0, block) {
+          yield i;
         }
       }
     }
@@ -373,7 +367,7 @@ module DefaultRectangular {
         const numSublocTasks = min(numSublocs, dptpl);
         // For serial tasks, we will only have a single chunk
         const (numChunks, parDim) = if __primitive("task_get_serial") then
-                                    (1, -1) else
+                                    (1, 0) else
                                     _computeChunkStuff(numSublocTasks,
                                                        ignoreRunning=true,
                                                        minIndicesPerTask,
@@ -387,59 +381,48 @@ module DefaultRectangular {
                   "### nranges = ", ranges);
         }
 
-        if numChunks == 1 {
-          if rank == 1 {
-            yield (offset(0)..#ranges(0).size,);
-          } else {
-            var block: rank*range(intIdxType);
+        coforall chunk in 0..#numChunks { // make sure coforall on can trigger
+          local do on here.getChild(chunk) {
+            if debugDataParNuma {
+              if chunk!=chpl_getSubloc() then
+                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ", chunk,
+                                   ", on ", chpl_getSubloc(), ") ***");
+            }
+            // Divide the locale's tasks approximately evenly
+            // among the sublocales
+            const numSublocTasks = (if chunk < dptpl % numChunks
+                                    then dptpl / numChunks + 1
+                                    else dptpl / numChunks);
+            var locBlock: rank*range(intIdxType);
             for param i in 0..rank-1 do
-              block(i) = offset(i)..#ranges(i).size;
-            yield block;
-          }
-        } else {
-          coforall chunk in 0..#numChunks { // make sure coforall on can trigger
-            local do on here.getChild(chunk) {
-              if debugDataParNuma {
-                if chunk!=chpl_getSubloc() then
-                  chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ", chunk,
-                                     ", on ", chpl_getSubloc(), ") ***");
-              }
-              // Divide the locale's tasks approximately evenly
-              // among the sublocales
-              const numSublocTasks = (if chunk < dptpl % numChunks
-                                      then dptpl / numChunks + 1
-                                      else dptpl / numChunks);
-              var locBlock: rank*range(intIdxType);
+              locBlock(i) = offset(i)..#(ranges(i).size);
+            var followMe: rank*range(intIdxType) = locBlock;
+            const (lo,hi) = _computeBlock(locBlock(parDim).size,
+                                          numChunks, chunk,
+                                          locBlock(parDim)._high,
+                                          locBlock(parDim)._low,
+                                          locBlock(parDim)._low);
+            followMe(parDim) = lo..hi;
+            const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
+                                                             ignoreRunning=true,
+                                                             minIndicesPerTask,
+                                                             followMe);
+            coforall chunk2 in 0..#numChunks2 {
+              var locBlock2: rank*range(intIdxType);
               for param i in 0..rank-1 do
-                locBlock(i) = offset(i)..#(ranges(i).size);
-              var followMe: rank*range(intIdxType) = locBlock;
-              const (lo,hi) = _computeBlock(locBlock(parDim).size,
-                                            numChunks, chunk,
-                                            locBlock(parDim)._high,
-                                            locBlock(parDim)._low,
-                                            locBlock(parDim)._low);
-              followMe(parDim) = lo..hi;
-              const (numChunks2, parDim2) = _computeChunkStuff(numSublocTasks,
-                                                               ignoreRunning=true,
-                                                               minIndicesPerTask,
-                                                               followMe);
-              coforall chunk2 in 0..#numChunks2 {
-                var locBlock2: rank*range(intIdxType);
-                for param i in 0..rank-1 do
-                  locBlock2(i) = followMe(i).low..followMe(i).high;
-                var followMe2: rank*range(intIdxType) = locBlock2;
-                const low  = locBlock2(parDim2)._low,
-                  high = locBlock2(parDim2)._high;
-                const (lo,hi) = _computeBlock(locBlock2(parDim2).size,
-                                              numChunks2, chunk2,
-                                              high, low, low);
-                followMe2(parDim2) = lo..hi;
-                if debugDataParNuma {
-                  chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  ",
-                          "followMe = ", followMe, "  followMe2 = ", followMe2);
-                }
-                yield followMe2;
+                locBlock2(i) = followMe(i).low..followMe(i).high;
+              var followMe2: rank*range(intIdxType) = locBlock2;
+              const low  = locBlock2(parDim2)._low,
+                high = locBlock2(parDim2)._high;
+              const (lo,hi) = _computeBlock(locBlock2(parDim2).size,
+                                            numChunks2, chunk2,
+                                            high, low, low);
+              followMe2(parDim2) = lo..hi;
+              if debugDataParNuma {
+                chpl_debug_writeln("### chunk = ", chunk, "  chunk2 = ", chunk2, "  ",
+                        "followMe = ", followMe, "  followMe2 = ", followMe2);
               }
+              yield followMe2;
             }
           }
         }
@@ -455,7 +438,7 @@ module DefaultRectangular {
                   "), minIndicesPerTask=", minIndicesPerTask);
 
         const (numChunks, parDim) = if __primitive("task_get_serial") then
-                                    (1, -1) else
+                                    (1, 0) else
                                     _computeChunkStuff(numTasks,
                                                        ignoreRunning,
                                                        minIndicesPerTask,
@@ -472,33 +455,22 @@ module DefaultRectangular {
                   "### nranges = ", ranges);
         }
 
-        if numChunks == 1 {
-          if rank == 1 {
-            yield (offset(0)..#ranges(0).size,);
-          } else {
-            var block: rank*range(intIdxType);
-            for param i in 0..rank-1 do
-              block(i) = offset(i)..#ranges(i).size;
-            yield block;
-          }
-        } else {
-          var locBlock: rank*range(intIdxType);
-          for param i in 0..rank-1 do
-            locBlock(i) = offset(i)..#(ranges(i).size);
+        var locBlock: rank*range(intIdxType);
+        for param i in 0..rank-1 do
+          locBlock(i) = offset(i)..#(ranges(i).size);
+        if debugDefaultDist then
+          chpl_debug_writeln("*** DI: locBlock = ", locBlock);
+        coforall chunk in 0..#numChunks {
+          var followMe: rank*range(intIdxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).size,
+                                        numChunks, chunk,
+                                        locBlock(parDim)._high,
+                                        locBlock(parDim)._low,
+                                        locBlock(parDim)._low);
+          followMe(parDim) = lo..hi;
           if debugDefaultDist then
-            chpl_debug_writeln("*** DI: locBlock = ", locBlock);
-          coforall chunk in 0..#numChunks {
-            var followMe: rank*range(intIdxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(parDim).size,
-                                          numChunks, chunk,
-                                          locBlock(parDim)._high,
-                                          locBlock(parDim)._low,
-                                          locBlock(parDim)._low);
-            followMe(parDim) = lo..hi;
-            if debugDefaultDist then
-              chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
-            yield followMe;
-          }
+            chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
+          yield followMe;
         }
       }
     }
@@ -2282,17 +2254,7 @@ module DefaultRectangular {
     var state: [rngs.indices] resType;
 
     // Take first pass over data doing per-chunk scans
-
-    // optimize for the single-task case
-    if numTasks == 1 {
-      preScanChunk(rngs.indices.low);
-    } else {
-      coforall tid in rngs.indices {
-        preScanChunk(tid);
-      }
-    }
-
-    proc preScanChunk(tid) {
+    coforall tid in rngs.indices {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {
@@ -2303,6 +2265,7 @@ module DefaultRectangular {
       state[tid] = res[rngs[tid].high];
       delete myop;
     }
+
     if debugDRScan {
       writeln("res = ", res);
       writeln("state = ", state);
@@ -2327,16 +2290,7 @@ module DefaultRectangular {
   // tasks.  This is broken out into a helper function in order to be
   // made use of by distributed array scans.
   proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
-    // optimize for the single-task case
-    if numTasks == 1 {
-      postScanChunk(rngs.indices.low);
-    } else {
-      coforall tid in rngs.indices {
-        postScanChunk(tid);
-      }
-    }
-
-    proc postScanChunk(tid) {
+    coforall tid in rngs.indices {
       const myadjust = state[tid];
       for i in rngs[tid] {
         op.accumulateOntoState(res[i], myadjust);
