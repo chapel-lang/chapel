@@ -16,6 +16,24 @@ extern {
   #include <stdio.h>
   #include <stdbool.h>
   #include <inttypes.h>
+  #include <complex.h>
+
+  struct c_one_int {
+    int a;
+  };
+
+  struct c_one_long {
+    long a;
+  };
+
+  struct c_one_float {
+    float a;
+  };
+
+  struct c_one_double {
+    double a;
+  };
+
 
   struct c_pair_int {
     int a;
@@ -25,6 +43,16 @@ extern {
   struct c_pair_long {
     long a;
     long b;
+  };
+
+  struct c_pair_float {
+    float a;
+    float b;
+  };
+
+  struct c_pair_double {
+    double a;
+    double b;
   };
 
   struct c_triple {
@@ -80,11 +108,44 @@ extern {
   void bool_arg_c_____(bool i);
 
 
+  float float_return_c_____(void);
+  void float_arg_c_____(float i);
+
+  double double_return_c_____(void);
+  void double_arg_c_____(double i);
+
+  float complex complexf_return_c_____(void);
+  void complexf_arg_c_____(float complex x);
+
+  double complex complexd_return_c_____(void);
+  void complexd_arg_c_____(double complex x);
+
+
+  struct c_one_int struct_one_int_return_c_____(void);
+  void struct_one_int_arg_c_____(struct c_one_int arg);
+
+  struct c_one_long struct_one_long_return_c_____(void);
+  void struct_one_long_arg_c_____(struct c_one_long arg);
+
+  struct c_one_float struct_one_float_return_c_____(void);
+  void struct_one_float_arg_c_____(struct c_one_float arg);
+
+  struct c_one_double struct_one_double_return_c_____(void);
+  void struct_one_double_arg_c_____(struct c_one_double arg);
+
+
   struct c_pair_int struct_pair_int_return_c_____(void);
   void struct_pair_int_arg_c_____(struct c_pair_int arg);
 
   struct c_pair_long struct_pair_long_return_c_____(void);
   void struct_pair_long_arg_c_____(struct c_pair_long arg);
+
+  struct c_pair_float struct_pair_float_return_c_____(void);
+  void struct_pair_float_arg_c_____(struct c_pair_float arg);
+
+  struct c_pair_double struct_pair_double_return_c_____(void);
+  void struct_pair_double_arg_c_____(struct c_pair_double arg);
+
 
   struct c_triple struct_triple_return_c_____(void);
   void struct_triple_arg_c_____(struct c_triple arg);
@@ -166,6 +227,79 @@ extern {
     printf("arg %i\n", (int) i);
   }
 
+  float float_return_c_____(void) {
+    return 0.125;
+  }
+  void float_arg_c_____(float i) {
+    print_output_prefix();
+    printf("arg %f\n", (double) i);
+  }
+
+  double double_return_c_____(void) {
+    return true;
+  }
+  void double_arg_c_____(double i) {
+    print_output_prefix();
+    printf("arg %f\n", i);
+  }
+
+  float complex complexf_return_c_____(void) {
+    return true;
+  }
+  void complexf_arg_c_____(float complex x) {
+    print_output_prefix();
+    printf("arg %f %f\n", (double) crealf(x), (double) cimagf(x));
+  }
+
+  double complex complexd_return_c_____(void) {
+    return true;
+  }
+  void complexd_arg_c_____(double complex x) {
+    print_output_prefix();
+    printf("arg %f %f\n", (double) creal(x), (double) cimag(x));
+  }
+
+
+  struct c_one_int struct_one_int_return_c_____(void) {
+    struct c_one_int one;
+    one.a = -2;
+    return one;
+  }
+  void struct_one_int_arg_c_____(struct c_one_int arg) {
+    print_output_prefix();
+    printf("arg.a %i\n", arg.a);
+  }
+
+  struct c_one_long struct_one_long_return_c_____(void) {
+    struct c_one_long one;
+    one.a = -8;
+    return one;
+  }
+  void struct_one_long_arg_c_____(struct c_one_long arg) {
+    print_output_prefix();
+    printf("arg.a %li\n", arg.a);
+  }
+
+  struct c_one_float struct_one_float_return_c_____(void) {
+    struct c_one_float one;
+    one.a = 12.0;
+    return one;
+  }
+  void struct_one_float_arg_c_____(struct c_one_float arg) {
+    print_output_prefix();
+    printf("arg.a %f\n", (double) arg.a);
+  }
+
+  struct c_one_double struct_one_double_return_c_____(void) {
+    struct c_one_double one;
+    one.a = 15.0;
+    return one;
+  }
+  void struct_one_double_arg_c_____(struct c_one_double arg) {
+    print_output_prefix();
+    printf("arg.a %f\n", (double) arg.a);
+  }
+
 
   struct c_pair_int struct_pair_int_return_c_____(void) {
     struct c_pair_int pair;
@@ -188,6 +322,29 @@ extern {
     print_output_prefix();
     printf("arg.a %li arg.b %li\n", arg.a, arg.b);
   }
+
+  struct c_pair_float struct_pair_float_return_c_____(void) {
+    struct c_pair_float pair;
+    pair.a = 0;
+    pair.b = 1;
+    return pair;
+  }
+  void struct_pair_float_arg_c_____(struct c_pair_float arg) {
+    print_output_prefix();
+    printf("arg.a %f arg.b %f\n", (double) arg.a, (double) arg.b);
+  }
+
+  struct c_pair_double struct_pair_double_return_c_____(void) {
+    struct c_pair_double pair;
+    pair.a = 0;
+    pair.b = 1;
+    return pair;
+  }
+  void struct_pair_double_arg_c_____(struct c_pair_double arg) {
+    print_output_prefix();
+    printf("arg.a %f arg.b %f\n", (double) arg.a, (double) arg.b);
+  }
+
 
   struct c_triple struct_triple_return_c_____(void) {
     struct c_triple t;
@@ -309,6 +466,71 @@ export proc bool_arg_chapel(i: bool) {
   bool_arg_c_____(i);
 }
 
+export proc float_return_chapel(): real(32) {
+  return float_return_c_____();
+}
+export proc float_arg_chapel(i: c_float) {
+  float_arg_c_____(i);
+}
+
+export proc double_return_chapel(): c_double {
+  return double_return_c_____();
+}
+export proc double_arg_chapel(i: real(64)) {
+  double_arg_c_____(i);
+}
+
+export proc complexf_return_chapel(): complex(64) {
+  return complexf_return_c_____();
+}
+export proc complexf_arg_chapel(i: complex(64)) {
+  complexf_arg_c_____(i);
+}
+
+export proc complexd_return_chapel(): complex(128) {
+  return complexd_return_c_____();
+}
+export proc complexd_arg_chapel(i: complex(128)) {
+  complexd_arg_c_____(i);
+}
+
+
+export proc struct_one_int_return_chapel(): c_one_int {
+  var one:c_one_int;
+  one = struct_one_int_return_c_____();
+  return one;
+}
+export proc struct_one_int_arg_chapel(in arg: c_one_int) {
+  struct_one_int_arg_c_____(arg);
+}
+
+export proc struct_one_long_return_chapel(): c_one_long {
+  var one:c_one_long;
+  one = struct_one_long_return_c_____();
+  return one;
+}
+export proc struct_one_long_arg_chapel(in arg: c_one_long) {
+  struct_one_long_arg_c_____(arg);
+}
+
+export proc struct_one_float_return_chapel(): c_one_float {
+  var one:c_one_float;
+  one = struct_one_float_return_c_____();
+  return one;
+}
+export proc struct_one_float_arg_chapel(in arg: c_one_float) {
+  struct_one_float_arg_c_____(arg);
+}
+
+export proc struct_one_double_return_chapel(): c_one_double {
+  var one:c_one_double;
+  one = struct_one_double_return_c_____();
+  return one;
+}
+export proc struct_one_double_arg_chapel(in arg: c_one_double) {
+  struct_one_double_arg_c_____(arg);
+}
+
 
 export proc struct_pair_int_return_chapel(): c_pair_int {
   var pair:c_pair_int;
@@ -327,6 +549,25 @@ export proc struct_pair_long_return_chapel(): c_pair_long {
 export proc struct_pair_long_arg_chapel(in arg: c_pair_long) {
   struct_pair_long_arg_c_____(arg);
 }
+
+export proc struct_pair_float_return_chapel(): c_pair_float {
+  var pair:c_pair_float;
+  pair = struct_pair_float_return_c_____();
+  return pair;
+}
+export proc struct_pair_float_arg_chapel(in arg: c_pair_float) {
+  struct_pair_float_arg_c_____(arg);
+}
+
+export proc struct_pair_double_return_chapel(): c_pair_double {
+  var pair:c_pair_double;
+  pair = struct_pair_double_return_c_____();
+  return pair;
+}
+export proc struct_pair_double_arg_chapel(in arg: c_pair_double) {
+  struct_pair_double_arg_c_____(arg);
+}
+
 
 export proc struct_triple_return_chapel(): c_triple {
   var tt:c_triple;
@@ -433,6 +674,86 @@ proc main() {
     bool_arg_chapel(i);
   }
 
+  {
+    var i:real(32);
+    start_phase("testing float_..._c_____");
+    i = float_return_c_____();
+    float_arg_c_____(i);
+    start_phase("testing float_..._chapel");
+    i = float_return_chapel();
+    float_arg_chapel(i);
+  }
+
+  {
+    var i:real(64);
+    start_phase("testing double_..._c_____");
+    i = double_return_c_____();
+    double_arg_c_____(i);
+    start_phase("testing double_..._chapel");
+    i = double_return_chapel();
+    double_arg_chapel(i);
+  }
+
+  {
+    var i:complex(64);
+    start_phase("testing complexf_..._c_____");
+    i = complexf_return_c_____();
+    complexf_arg_c_____(i);
+    start_phase("testing complexf_..._chapel");
+    i = complexf_return_chapel();
+    complexf_arg_chapel(i);
+  }
+
+  {
+    var i:complex(128);
+    start_phase("testing complexd_..._c_____");
+    i = complexd_return_c_____();
+    complexd_arg_c_____(i);
+    start_phase("testing complexd_..._chapel");
+    i = complexd_return_chapel();
+    complexd_arg_chapel(i);
+  }
+
+
+  {
+    var one:c_one_int;
+    start_phase("testing struct_one_int..._c_____");
+    one = struct_one_int_return_c_____();
+    struct_one_int_arg_c_____(one);
+    start_phase("testing struct_one_int..._chapel");
+    one = struct_one_int_return_chapel();
+    struct_one_int_arg_chapel(one);
+  }
+
+  {
+    var one:c_one_long;
+    start_phase("testing struct_one_long..._c_____");
+    one = struct_one_long_return_c_____();
+    struct_one_long_arg_c_____(one);
+    start_phase("testing struct_one_long..._chapel");
+    one = struct_one_long_return_chapel();
+    struct_one_long_arg_chapel(one);
+  }
+
+  {
+    var one:c_one_float;
+    start_phase("testing struct_one_float..._c_____");
+    one = struct_one_float_return_c_____();
+    struct_one_float_arg_c_____(one);
+    start_phase("testing struct_one_float..._chapel");
+    one = struct_one_float_return_chapel();
+    struct_one_float_arg_chapel(one);
+  }
+
+  {
+    var one:c_one_double;
+    start_phase("testing struct_one_double..._c_____");
+    one = struct_one_double_return_c_____();
+    struct_one_double_arg_c_____(one);
+    start_phase("testing struct_one_double..._chapel");
+    one = struct_one_double_return_chapel();
+    struct_one_double_arg_chapel(one);
+  }
 
   {
     var pair:c_pair_int;
@@ -453,6 +774,27 @@ proc main() {
     pair = struct_pair_long_return_chapel();
     struct_pair_long_arg_chapel(pair);
   }
+
+  {
+    var pair:c_pair_float;
+    start_phase("testing struct_pair_float..._c_____");
+    pair = struct_pair_float_return_c_____();
+    struct_pair_float_arg_c_____(pair);
+    start_phase("testing struct_pair_float..._chapel");
+    pair = struct_pair_float_return_chapel();
+    struct_pair_float_arg_chapel(pair);
+  }
+
+  {
+    var pair:c_pair_double;
+    start_phase("testing struct_pair_double..._c_____");
+    pair = struct_pair_double_return_c_____();
+    struct_pair_double_arg_c_____(pair);
+    start_phase("testing struct_pair_double..._chapel");
+    pair = struct_pair_double_return_chapel();
+    struct_pair_double_arg_chapel(pair);
+  }
+
 
   {
     var ttt:c_triple;
