@@ -36,8 +36,8 @@ when a user updates their repository.
 
 This means that we require that developers
 
-1) who work on the parser have *at least* Bison 2.5 installed.
-
+1) who work on the parser have at least Bison 2.5 installed
+  and at least Flex 2.6 installed.
 
 2) explicitly build the generated parser when they alter the parser
 sources.  One way to do this is to run "make parser" in this
