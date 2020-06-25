@@ -269,6 +269,7 @@ module ChapelHashtable {
     type valType;
 
     var tableNumFullSlots: int;
+    var tableNumDeletedSlots: int;
 
     var tableSizeNum: int;
     var tableSize: int;
@@ -283,6 +284,7 @@ module ChapelHashtable {
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
+      this.tableNumDeletedSlots = 0;
       this.tableSizeNum = 0;
       this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
@@ -412,7 +414,7 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if (tableNumFullSlots+1)*2 > tableSize {
+      if (tableNumFullSlots+tableNumDeletedSlots+1)*2 > tableSize {
         resize(grow=true);
       }
 
@@ -447,10 +449,14 @@ module ChapelHashtable {
     proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
-      if tableEntry.status == chpl__hash_status.full then
+      if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
-      else
+      } else {
+        if tableEntry.status == chpl__hash_status.deleted {
+          tableNumDeletedSlots -= 1;
+        }
         tableNumFullSlots += 1;
+      }
 
       tableEntry.status = chpl__hash_status.full;
       // move the key/val into the table
@@ -495,6 +501,7 @@ module ChapelHashtable {
 
       // update the table counts
       tableNumFullSlots -= 1;
+      tableNumDeletedSlots += 1;
     }
     proc clearSlot(slotNum: int, out key: keyType, out val: valType) {
       // move the table entry into the key/val variables to be returned
@@ -569,6 +576,10 @@ module ChapelHashtable {
         if rehashHelpers != nil then
           rehashHelpers!.startRehash(tableSize);
 
+        // tableNumFullSlots stays the same during this operation
+        // and all all deleleted slots are removed
+        tableNumDeletedSlots = 0;
+
         // Move old data into newly resized table
         //
         // It would be nice if this could be done in parallel
@@ -619,6 +630,7 @@ module ChapelHashtable {
         _freeData(oldTable, oldSize);
 
         table = allocateTable(tableSize);
+        tableNumDeletedSlots = 0;
       }
     }
 
