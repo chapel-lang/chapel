@@ -11,6 +11,9 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.arkouda"
 source $CWD/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
+# limit to 1 trial to limit memory fragmentation
+export CHPL_TEST_NUM_TRIALS=1
+
 # setup for CS perf (gasnet-large, gnu, 36-core Broadwell)
 source $CWD/common-cray-cs.bash
 source $CWD/common-perf-cray-cs.bash
