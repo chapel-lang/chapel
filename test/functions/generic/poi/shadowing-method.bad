@@ -1,0 +1,4 @@
+shadowing-method.chpl:21: In function 'genericMethod':
+shadowing-method.chpl:22: warning: in Library.MyRecord.method
+shadowing-method.chpl:10: Function 'genericMethod' instantiated as: genericMethod(type t = int(64))
+shadowing-method.chpl:9: error: in Main.main, done
