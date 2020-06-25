@@ -51,7 +51,7 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
 
-$(CHPL_ENV_HEADER):
+$(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/chplenv/*
 	@mkdir -p $(CHPL_ENV_HEADER_DIR)
 	@echo "Generating $(CHPL_ENV_HEADER)"
 	@cp $(CHPL_ENV_HEADER_TEMPLATE) $(CHPL_ENV_HEADER)
