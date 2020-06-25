@@ -2495,6 +2495,11 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
 const clang::CodeGen::ABIArgInfo*
 getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
 {
+
+  // Don't try to use the the calling convention code for variadic args.
+  if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
+    return NULL;
+
   const clang::CodeGen::ABIArgInfo* argInfo = NULL;
 #if HAVE_LLVM_VER >= 100
   llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();

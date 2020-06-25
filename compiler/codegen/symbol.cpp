@@ -2336,15 +2336,14 @@ void FnSymbol::codegenDef() {
             llvm::Value* ptr = tmp.val;
             llvm::Type* ptrEltTy = chapelArgTy;
             llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
-            llvm::Type* coercePtrTy =
-              llvm::PointerType::get(argInfo->getCoerceToType(), stackSpace);
+            llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
 
             // handle offset
             if (unsigned offset = argInfo->getDirectOffset()) {
               ptr = irBuilder->CreatePointerCast(ptr, i8PtrTy);
               ptr = irBuilder->CreateConstInBoundsGEP1_32(i8PtrTy, ptr, offset);
               ptr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
-              ptrEltTy = argInfo->getCoerceToType();
+              ptrEltTy = sTy;
             }
 
             // Store into the temp variable
