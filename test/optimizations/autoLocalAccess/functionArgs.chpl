@@ -1,4 +1,4 @@
-use BlockDist;
+use common;
 
 var D = newBlockDom({1..10});
 
