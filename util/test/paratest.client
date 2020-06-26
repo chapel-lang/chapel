@@ -53,7 +53,7 @@ sub main {
 
     if ($#ARGV < 6) {
         fatal("insufficient arguments: '@ARGV'\n" .
-	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks [compopts [execopts]]");
+	      "Usage:  paratest.client id chapeltestdir testdir chplenv futures-mode valgrind memleaks memleakslog [compopts [execopts]]");
     }
 
     $id = $ARGV[0];
@@ -66,11 +66,11 @@ sub main {
     $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
-    if ($#ARGV>=7) {
-        $compopts = "-compopts \"" . $ARGV[7] . "\"";
-    }
     if ($#ARGV>=8) {
-        $execopts = "-execopts \"" . $ARGV[8] . "\"";
+        $compopts = "-compopts \"" . $ARGV[8] . "\"";
+    }
+    if ($#ARGV>=9) {
+        $execopts = "-execopts \"" . $ARGV[9] . "\"";
     }
 
     $synchfile = "$synchdir/$node.$id";
@@ -97,7 +97,8 @@ sub main {
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
 
-    $memleaks = ($ARGV[6] == 1) ? "-memleaks $logdir/tmp.$dirfname.$node.memleaks" : "";
+    $memleaks = ($ARGV[6] == 1) ? "-memleaks" : "";
+    $memleakslog = ($ARGV[7] == 1) ? "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" : "";
 
     $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks";
     $testarg = "$testarg $testdir -norecurse";
