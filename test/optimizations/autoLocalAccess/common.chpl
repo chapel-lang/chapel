@@ -7,6 +7,10 @@ use StencilDist;
 config type distType = Block;
 
 proc createDom(space) {
+  if space.rank > 2 {
+    compilerError("Only 1 and 2 dimensional domains");
+  }
+
   if distType == Block {
     return newBlockDom(space);
   }
@@ -14,17 +18,19 @@ proc createDom(space) {
     return newCyclicDom(space);
   }
   else if distType == BlockCyclic {
-    return newBlockCycDom(space);
+    if space.rank == 1 {
+      return space dmapped BlockCyclic(startIdx=(space.low,), blocksize=(2,));
+    }
+    else {
+      return space dmapped BlockCyclic(startIdx=space.low, blocksize=(2,2));
+    }
   }
   else if distType == Stencil {
     if space.rank == 1 {
       return space dmapped Stencil(space, fluff=(1,));
     }
-    else if space.rank == 2 {
-      return space dmapped Stencil(space, fluff=(1,1));
-    }
     else {
-      compilerError("Only 1 and 2 dimensional domains");
+      return space dmapped Stencil(space, fluff=(1,1));
     }
   }
   else if distType == Hashed {
