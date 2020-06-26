@@ -1,2 +1,3 @@
 -sdistType=Block --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
 -sdistType=Stencil --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
+-sdistType=Hashed --report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess/
