@@ -510,7 +510,7 @@ Abstract Intents Table
 The following table summarizes what these abstract intents mean for each
 type:
 
-=================== ================ ======================= =====
+=================== ================ ======================= ====================================================
 \                   meaning of       meaning of             
 type                ``const`` intent default intent          notes
 ``bool``            ``const in``     ``const in``           
@@ -529,12 +529,12 @@ type                ``const`` intent default intent          notes
 ``sync``            ``const ref``    ``ref``                
 ``string``          ``const ref``    ``const ref``          
 ``bytes``           ``const ref``    ``const ref``          
-``record``          ``const ref``    ``const ref``           see
+``record``          ``const ref``    ``const ref``           see :ref:`Default_Intent_for_Arrays_and_Record_this`
 ``union``           ``const ref``    ``const ref``          
 ``dmap``            ``const ref``    ``const ref``          
 ``domain``          ``const ref``    ``const ref``          
-array               ``const ref``    ``ref`` / ``const ref`` see
-=================== ================ ======================= =====
+array               ``const ref``    ``ref`` / ``const ref`` see :ref:`Default_Intent_for_Arrays_and_Record_this`
+=================== ================ ======================= ====================================================
 
 .. _The_Const_Intent:
 
