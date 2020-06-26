@@ -13,6 +13,8 @@ export ARKOUDA_NUMLOCALES=16
 
 # limit to 1 trial to limit memory fragmentation
 export CHPL_TEST_NUM_TRIALS=1
+# increase timeout for setops tests
+export ARKOUDA_CLIENT_TIMEOUT=900
 
 # setup for CS perf (gasnet-large, gnu, 36-core Broadwell)
 source $CWD/common-cray-cs.bash
