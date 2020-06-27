@@ -1,0 +1,1 @@
+initeq-extern-record.chpl:4: error: init= may not currently be defined on extern types

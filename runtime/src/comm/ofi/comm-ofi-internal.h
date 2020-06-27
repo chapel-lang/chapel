@@ -59,6 +59,7 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_AM                  0x10000UL
 #define DBG_AMSEND              0x20000UL
 #define DBG_AMRECV              0x40000UL
+#define DBG_AMBUFFERS           0x80000UL
 #define DBG_RMA                0x100000UL
 #define DBG_RMAWRITE           0x200000UL
 #define DBG_RMAREAD            0x400000UL
@@ -83,7 +84,8 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 
 #define DBG_DO_PRINTF(fmt, ...)                                         \
   do {                                                                  \
-    fprintf(chpl_comm_ofi_dbg_file, fmt "\n", ## __VA_ARGS__);          \
+    fprintf(chpl_comm_ofi_dbg_file, "%s" fmt "\n",                      \
+            chpl_comm_ofi_dbg_prefix(), ## __VA_ARGS__);                \
   } while (0)
 
 #define DBG_TEST_MASK(mask) ((chpl_comm_ofi_dbg_level & (mask)) != 0)
@@ -91,8 +93,7 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #define DBG_PRINTF(mask, fmt, ...)                                      \
   do {                                                                  \
     if (DBG_TEST_MASK(mask)) {                                          \
-      DBG_DO_PRINTF("%s" fmt, chpl_comm_ofi_dbg_prefix(),               \
-                    ## __VA_ARGS__);                                    \
+      DBG_DO_PRINTF(fmt, ## __VA_ARGS__);                               \
     }                                                                   \
   } while (0)
 
@@ -196,7 +197,11 @@ int chpl_comm_ofi_abort_on_error;
 
 #define CHPL_CALLOC(p, n) CHPL_CALLOC_SZ(p, n, sizeof(*(p)))
 
-#define CHPL_FREE(p) chpl_mem_free((p), 0, 0)
+#define CHPL_FREE(p)                                                    \
+  do {                                                                  \
+    chpl_mem_free((p), 0, 0);                                           \
+    p = NULL;                                                           \
+  } while (0)
 
 
 //

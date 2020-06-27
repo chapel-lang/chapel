@@ -39,8 +39,8 @@ connecting to an HDFS name node.
 
   import HDFS;
 
-  fs = HDFS.connect(); // can pass a nameNode host and port here,
-                       // otherwise uses HDFS default settings.
+  var fs = HDFS.connect(); // can pass a nameNode host and port here,
+                           // otherwise uses HDFS default settings.
 
 The filesystem connection will be closed when `fs` and any files
 it refers to go out of scope.

@@ -71,11 +71,11 @@ module LocaleModelHelpRuntime {
 
   pragma "fn synchronization free"
   extern
-    proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
+    proc chpl_rt_nodeFromLocaleID(in loc: chpl_localeID_t): chpl_nodeID_t;
 
   pragma "fn synchronization free"
   extern
-    proc chpl_rt_sublocFromLocaleID(loc: chpl_localeID_t): chpl_sublocID_t;
+    proc chpl_rt_sublocFromLocaleID(in loc: chpl_localeID_t): chpl_sublocID_t;
 
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"
@@ -85,12 +85,12 @@ module LocaleModelHelpRuntime {
 
   pragma "insert line file info"
   export
-  proc chpl_nodeFromLocaleID(loc: chpl_localeID_t)
+  proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t)
     return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
   export
-  proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
+  proc chpl_sublocFromLocaleID(in loc: chpl_localeID_t)
     return chpl_rt_sublocFromLocaleID(loc);
 
   //////////////////////////////////////////

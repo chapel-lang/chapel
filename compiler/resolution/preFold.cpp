@@ -39,6 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+#include "../main/version_num.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -1704,6 +1705,32 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = se->remove();
     call->replace(retval);
 
+    break;
+  }
+
+  case PRIM_VERSION_MAJOR: {
+    retval = new SymExpr(new_IntSymbol(MAJOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_MINOR: {
+    retval = new SymExpr(new_IntSymbol(MINOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_UPDATE: {
+    retval = new SymExpr(new_IntSymbol(UPDATE_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_SHA: {
+    retval = (officialRelease ?
+              new SymExpr(new_StringSymbol("")) :
+              new SymExpr(new_StringSymbol(BUILD_VERSION)));
+    call->replace(retval);
     break;
   }
 

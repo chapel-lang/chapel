@@ -1,0 +1,2 @@
+# The test system expects the binary to be in the current directory,
+# not moved somewhere else in the $PATH.

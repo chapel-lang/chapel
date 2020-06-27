@@ -622,16 +622,22 @@ void chpl_reportMemInfo() {
     chpl_printMemAllocStats(0, 0);
   }
   if (memLeaksByType) {
-    fprintf(memLogFile, "\n");
-    printMemAllocsByType(true /* forLeaks */, 0, 0);
+    if (totalMem) {
+      fprintf(memLogFile, "\n");
+      printMemAllocsByType(true /* forLeaks */, 0, 0);
+    }
   }
   if (memLeaksByDesc && strcmp(memLeaksByDesc, "")) {
-    fprintf(memLogFile, "\n");
-    chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
+    if (totalMem) {
+      fprintf(memLogFile, "\n");
+      chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
+    }
   }
   if (memLeaks) {
-    fprintf(memLogFile, "\n");
-    printMemAllocs(-1, memThreshold, 0, 0);
+    if (totalMem) {
+      fprintf(memLogFile, "\n");
+      printMemAllocs(-1, memThreshold, 0, 0);
+    }
   }
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);

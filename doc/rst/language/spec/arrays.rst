@@ -167,18 +167,21 @@ A trailing comma is allowed.
       3
       4
       5
+   .. note::
 
-   *Future*.
-
-   Provide syntax which allows users to specify the domain for a
-   rectangular array literal.
+      *Future:*
+      
+      Provide syntax which allows users to specify the domain for a
+      rectangular array literal.
 
 ..
 
-   *Future*.
-
-   Determine the type of a rectangular array literal based on the most
-   promoted type, rather than the first element’s type.
+   .. note::
+      
+      *Future:*
+      
+      Determine the type of a rectangular array literal based on the most
+      promoted type, rather than the first element’s type.
 
    *Example (decl-with-anon-domain.chpl)*.
 
@@ -952,45 +955,35 @@ There is an expectation that this list of predefined methods will grow.
 
 
 
-.. code-block:: chapel
+.. function:: proc Array.eltType type
 
-   proc Array.eltType type
-
-Returns the element type of the array.
+     Returns the element type of the array.
 
 
 
-.. code-block:: chapel
+.. function:: proc Array.rank param
 
-   proc Array.rank param
-
-Returns the rank of the array.
+     Returns the rank of the array.
 
 
 
-.. code-block:: chapel
+.. function:: proc Array.domain: this.domain
 
-   proc Array.domain: this.domain
-
-Returns the domain of the given array. This domain is constant, implying
-that the domain cannot be resized by assigning to its domain field, only
-by modifying the domain directly.
+		 Returns the domain of the given array. This domain is constant, implying
+		 that the domain cannot be resized by assigning to its domain field, only
+		 by modifying the domain directly.
 
 
 
-.. code-block:: chapel
+.. function:: proc reshape(A: Array, D: Domain): Array
 
-   proc reshape(A: Array, D: Domain): Array
-
-Returns a copy of the array containing the same values but in the shape
-of the new domain. The number of indices in the domain must equal the
-number of elements in the array. The elements of the array are copied
-into the new array using the default iteration orders over both arrays.
+		 Returns a copy of the array containing the same values but in the shape
+		 of the new domain. The number of indices in the domain must equal the
+		 number of elements in the array. The elements of the array are copied
+		 into the new array using the default iteration orders over both arrays.
 
 
 
-.. code-block:: chapel
+.. function :: proc Array.size: this.domain.idxType
 
-   proc Array.size: this.domain.idxType
-
-Returns the number of elements in the array.
+   Returns the number of elements in the array.

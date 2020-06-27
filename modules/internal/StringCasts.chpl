@@ -21,6 +21,7 @@
 module StringCasts {
   private use ChapelStandard;
   private use SysCTypes;
+  private use String.NVStringFactory;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
@@ -74,12 +75,11 @@ module StringCasts {
       }
     }
 
-    var ret: string;
-    ret.buff = csc:c_ptr(uint(8));
-    ret.buffLen = strlen(csc).safeCast(int);
-    ret.buffSize = ret.buffLen+1;
-
-    return ret;
+    const len = strlen(csc).safeCast(int);
+    return chpl_createStringWithOwnedBufferNV(x=csc:c_ptr(uint(8)),
+                                              length=len,
+                                              size=len+1,
+                                              numCodepoints=len);
   }
 
   inline proc _cast(type t:integral, x: string) throws {
@@ -169,12 +169,11 @@ module StringCasts {
 
     var csc = real_to_c_string(x:real(64), isImag);
 
-    var ret: string;
-    ret.buff = csc:c_ptr(uint(8));
-    ret.buffLen = strlen(csc).safeCast(int);
-    ret.buffSize = ret.buffLen+1;
-
-    return ret;
+    const len = strlen(csc).safeCast(int);
+    return chpl_createStringWithOwnedBufferNV(x=csc:c_ptr(uint(8)),
+                                              length=len,
+                                              size=len+1,
+                                              numCodepoints=len);
   }
 
   proc _cast(type t:string, x:chpl_anyreal) {

@@ -1,1 +1,1 @@
-bug3.chpl:16: error: unresolved call 'LinkedList(int(64)).these(2)'
+bug3.chpl:18: error: unresolved call 'LinkedList(int(64)).these(2)'

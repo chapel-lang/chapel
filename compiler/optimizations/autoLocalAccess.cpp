@@ -87,33 +87,87 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
   return NULL;
 }
 
+// get the domain part of the expression from `[D] int` or `[?D] int`
+static Expr *getDomExprFromTypeExprOrQuery(Expr *e) {
+  if (CallExpr *ce = toCallExpr(e)) {
+    if (ce->isNamed("chpl__buildArrayRuntimeType")) {
+      if (CallExpr *ceInner = toCallExpr(ce->get(1))) {
+        if (ceInner->isNamed("chpl__ensureDomainExpr")) {
+          return ceInner->get(1);
+        }
+      }
+      else if (DefExpr *queryDef = toDefExpr(ce->get(1))) {
+        return queryDef;
+      }
+    }
+  }
+  return NULL;
+}
+
+static Symbol *getDomSym(Symbol *arrSym);
+
+// get the domain symbol from `Dom`, `?Dom` (if allowQuery) or `arr.domain`
+static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery) {
+  // we try the following cases one by one:
+  
+  if (SymExpr *domSE = toSymExpr(domExpr)) {
+    return domSE->symbol();
+  }
+
+  if (allowQuery) {
+    if (DefExpr *domSE = toDefExpr(domExpr)) {
+      return domSE->sym;
+    }
+  }
+
+  if (Symbol *dotDomBaseSym = getDotDomBaseSym(domExpr)) {
+    return getDomSym(dotDomBaseSym); // recurse
+  }
+  return NULL;
+}
+
 // If `arrSym` is an array symbol, try to return its domain's symbol. return
 // NULL if we can't find a domain symbol statically
 static Symbol *getDomSym(Symbol *arrSym) {
+
   Symbol *ret = NULL;
+
+  // try to get the domain of arrays that are defined in this scope
   if(DefExpr *def = arrSym->defPoint) {
-    // check the most basic idiom `var A: [D] int`
     if (def->exprType != NULL) {
-      if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
-        if (ceOuter->isNamed("chpl__buildArrayRuntimeType")) {
-          if (CallExpr *ceInner = toCallExpr(ceOuter->get(1))) {
-            if (ceInner->isNamed("chpl__ensureDomainExpr")) {
-              Expr *arg = ceInner->get(1);
-              if (SymExpr *domSE = toSymExpr(arg)) {
-                ret = domSE->symbol();
-              }
-              else if(Symbol *dotDomBaseSym = getDotDomBaseSym(arg)) {
-                ret = getDomSym(dotDomBaseSym); // recurse
-              }
-            }
+      // check for pattern `var A: [D] int;`
+      if (Expr *arg = getDomExprFromTypeExprOrQuery(def->exprType)) {
+        ret = getDomSymFromDomExpr(arg, /* allowQuery= */ false);
+      }
+      // check for `B` in `var A, B: [D] int;`
+      else if (CallExpr *ceOuter = toCallExpr(def->exprType)) {
+        if (ceOuter->isPrimitive(PRIM_TYPEOF)) {
+          if (SymExpr *typeOfSymExpr = toSymExpr(ceOuter->get(1))) {
+            ret = getDomSym(typeOfSymExpr->symbol()); // recurse
           }
         }
       }
     }
   }
+
+  if (ret == NULL) {
+    // try to get the domain if the symbol was an argument
+    // e.g. `a: [d] int`, `a: [?d] int`, `a: [x.domain] int`
+    if (ArgSymbol *arrArgSym = toArgSymbol(arrSym)) {
+      if (BlockStmt *typeBlock = toBlockStmt(arrArgSym->typeExpr)) {
+        Expr *firstExpr = typeBlock->body.head;
+        Expr *domExpr = getDomExprFromTypeExprOrQuery(firstExpr);
+
+        ret = getDomSymFromDomExpr(domExpr, /* allowQuery= */ true);
+
+      }
+    }
+  }
+
   if (ret == NULL) {
     LOG("Regular domain symbol was not found for array", arrSym);
   }
+
   return ret;
 }
 
@@ -222,70 +276,53 @@ static void gatherForallInfo(ForallStmt *forall) {
   AList &iterExprs = forall->iteratedExpressions();
   AList &indexVars = forall->inductionVariables();
 
-  if (iterExprs.length == 1 && indexVars.length == 1) {  // limit to 1 for now
-    if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
-      if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
-        forall->optInfo.iterSym = iterSE->symbol();
+  if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
+    if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
+      forall->optInfo.iterSym = iterSE->symbol();
 
-        LOG("Iterated symbol", forall->optInfo.iterSym);
-      }
-    }
-    // it might be in the form `A.domain` where A is used in the loop body
-    else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
-      forall->optInfo.dotDomIterExpr = iterExprs.head;
-      forall->optInfo.dotDomIterSym = dotDomBaseSym;
-      forall->optInfo.dotDomIterSymDom = getDomSym(forall->optInfo.dotDomIterSym);
-
-      LOG("Iterated over the domain of", forall->optInfo.dotDomIterSym);
-      if (forall->optInfo.dotDomIterSymDom != NULL) {
-        LOG(", which is", forall->optInfo.dotDomIterSymDom);
-      }
-      else {
-        LOG(", whose domain cannot be determined statically",
-                      forall->optInfo.dotDomIterSym);
-      }
-    }
-
-    if (forall->optInfo.iterSym != NULL || forall->optInfo.dotDomIterSym != NULL) {
-      // the iterator is something we can optimize
-      // now check the induction variables
-      if (SymExpr* se = toSymExpr(indexVars.head)) {
-        loopIdxSym = se->symbol();
-      }
-      else if (DefExpr* de = toDefExpr(indexVars.head)) {
-        loopIdxSym = de->sym;
-      }
-      else {
-        INT_FATAL("Loop index cannot be extracted");
-      }
-
-      if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
-        forall->optInfo.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
-      }
-      else {
-        forall->optInfo.multiDIndices.push_back(loopIdxSym);
-      }
+      LOG("Iterated symbol", forall->optInfo.iterSym);
     }
   }
-}
+  // it might be in the form `A.domain` where A is used in the loop body
+  else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExprs.head)) {
+    forall->optInfo.dotDomIterExpr = iterExprs.head;
+    forall->optInfo.dotDomIterSym = dotDomBaseSym;
+    forall->optInfo.dotDomIterSymDom = getDomSym(forall->optInfo.dotDomIterSym);
 
-static bool hasReduceIntentShadowVars(ForallStmt *forall) {
-  // We never seem to use `temp`, why is it in the interface of this macro?
-  for_shadow_vars(svar, temp, forall) {
-    if (svar->isReduce()) {
-      return true;
+    LOG("Iterated over the domain of", forall->optInfo.dotDomIterSym);
+    if (forall->optInfo.dotDomIterSymDom != NULL) {
+      LOG(", which is", forall->optInfo.dotDomIterSymDom);
+    }
+    else {
+      LOG(", whose domain cannot be determined statically",
+                    forall->optInfo.dotDomIterSym);
     }
   }
-  return false;
+
+  if (forall->optInfo.iterSym != NULL || forall->optInfo.dotDomIterSym != NULL) {
+    // the iterator is something we can optimize
+    // now check the induction variables
+    if (SymExpr* se = toSymExpr(indexVars.head)) {
+      loopIdxSym = se->symbol();
+    }
+    else if (DefExpr* de = toDefExpr(indexVars.head)) {
+      loopIdxSym = de->sym;
+    }
+    else {
+      INT_FATAL("Loop index cannot be extracted");
+    }
+
+    if (loopIdxSym->hasFlag(FLAG_INDEX_OF_INTEREST)) {
+      forall->optInfo.multiDIndices = getLoopIndexSymbols(forall, loopIdxSym);
+    }
+    else {
+      forall->optInfo.multiDIndices.push_back(loopIdxSym);
+    }
+  }
 }
 
 static bool checkLoopSuitableForOpt(ForallStmt *forall) {
 
-  // reduce-intent variables expect some special AST form that this optimization
-  // somehow breaks
-  if (hasReduceIntentShadowVars(forall)) {
-    return false;
-  }
   if (forall->optInfo.multiDIndices.size() == 0) {
     return false;
   }

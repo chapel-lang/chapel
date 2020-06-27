@@ -1,0 +1,3 @@
+unhandledTypeTuple.chpl:1: In function 'returnsTuple':
+unhandledTypeTuple.chpl:1: warning: Unknown Fortran KIND generating interface for C type: _ref__tuple_2_star_int64_t_chpl
+unhandledTypeTuple.chpl:1: warning: Unknown Fortran type generating interface for C type: _ref__tuple_2_star_int64_t_chpl

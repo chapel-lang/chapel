@@ -24,11 +24,15 @@
 #include <vector>
 
 class AggregateType;
+class Type;
 class FnSymbol;
 
 void gatherIteratorTags();
 void gatherWellKnownTypes();
 void gatherWellKnownFns();
+
+std::vector<Type*> getWellKnownTypes();
+void clearGenericWellKnownTypes();
 
 std::vector<FnSymbol*> getWellKnownFunctions();
 void clearGenericWellKnownFunctions();

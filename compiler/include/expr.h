@@ -392,11 +392,16 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 #ifdef HAVE_LLVM
 llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createVarLLVM(llvm::Type* type);
+
+llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
+                                bool isSigned = false, bool force = false);
 #endif
 
 GenRet codegenValue(GenRet r);
 GenRet codegenValuePtr(GenRet r);
 
+GenRet createTempVar(const char* ctype);
+GenRet createTempVar(Type* t);
 GenRet createTempVarWith(GenRet v);
 
 GenRet codegenDeref(GenRet toDeref);

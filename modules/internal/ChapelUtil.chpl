@@ -133,12 +133,6 @@ module ChapelUtil {
     var return_value: int(32);
   }
 
-  proc =(ref lhs:chpl_main_argument, rhs:chpl_main_argument) {
-    __primitive("=", lhs, rhs);
-  }
-
-  proc chpl__initCopy(x:chpl_main_argument) return x;
-
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
     pragma "fn synchronization free"

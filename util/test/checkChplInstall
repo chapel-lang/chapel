@@ -161,9 +161,6 @@ fi
 chpl_comm="$($CHPL_HOME/util/chplenv/chpl_comm.py)"
 chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
 
-# Necessary to suppress warnings when WARNINGS=1 (e.g. nightly build settings)
-COMP_FLAGS="--cc-warnings"
-
 backend="C"
 if [ ${CHPL_LLVM_CODEGEN:-0} -ne 0 ]; then
   backend="LLVM"

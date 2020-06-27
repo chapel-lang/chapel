@@ -1222,8 +1222,8 @@ static long licmFn(FnSymbol* fn) {
     std::vector<SymExpr*> loopInvariants;
     std::set<Symbol*> defsInLoop;
     std::map<Symbol*, std::set<Symbol*> > aliases;
-    bool tooManyAlises = computeAliases(fn, aliases);
-    if (tooManyAlises) {
+    bool tooManyAliases = computeAliases(fn, aliases);
+    if (tooManyAliases) {
       return 0;
     }
     computeLoopInvariants(loopInvariants, defsInLoop, curLoop, localDefMap, aliases);

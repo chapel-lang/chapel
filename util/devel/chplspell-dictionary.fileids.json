@@ -366,6 +366,9 @@
   "d667ed16-fd34-11e9-98b5-10ddb1d4c3d5": [
     "doc/rst/language/spec.rst"
   ],
+  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/language/spec/README"
+  ],
   "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/arrays.rst"
   ],
@@ -404,6 +407,9 @@
   ],
   "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/extern.rst"
+  ],
+  "f824f208-a3e4-11ea-8acb-843835579daa": [
+    "doc/rst/technotes/globalvars.rst"
   ],
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
@@ -504,6 +510,9 @@
   ],
   "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
     "modules/internal/ChapelError.chpl"
+  ],
+  "0ad18466-aac5-11ea-8acb-843835579daa": [
+    "modules/internal/ChapelHashing.chpl"
   ],
   "dc718a6c-ab57-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/ChapelIteratorSupport.chpl"
@@ -802,9 +811,6 @@
   ],
   "185b17ce-2954-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Modules.tex"
-  ],
-  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "spec/README"
   ],
   "e78c94ba-2953-11e6-a3a6-10ddb1d4c3d5": [
     "spec/Ranges.tex"

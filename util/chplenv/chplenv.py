@@ -9,6 +9,7 @@ import chpl_comm_debug
 import chpl_comm_segment
 import chpl_comm_substrate
 import chpl_compiler
+import chpl_gasnet
 import chpl_gmp
 import chpl_hwloc
 import chpl_jemalloc
@@ -18,20 +19,12 @@ import chpl_llvm
 import chpl_locale_model
 import chpl_arch
 import chpl_mem
+import chpl_qthreads
 import chpl_regexp
 import chpl_tasks
 import chpl_timers
 import chpl_unwind
 import chpl_lib_pic
-# third-party package configuration helpers
-import chpl_3p_gasnet_configs
-import chpl_3p_gmp_configs
-import chpl_3p_hwloc_configs
-import chpl_3p_jemalloc_configs
-import chpl_3p_libfabric_configs
-import chpl_3p_libunwind_configs
-import chpl_3p_qthreads_configs
-import chpl_3p_re2_configs
 # General purpose helpers
 import chpl_home_utils
 import chpl_python_version

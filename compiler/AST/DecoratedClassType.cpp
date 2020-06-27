@@ -392,6 +392,8 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
 
   if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+      t == dtStringC ||
+      t == dtCFnPtr ||
       t == dtCVoidPtr) {
     return CLASS_TYPE_UNMANAGED_NILABLE;
   }
