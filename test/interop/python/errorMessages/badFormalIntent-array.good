@@ -3,4 +3,3 @@ badFormalIntent-array.chpl:5: error: Formal 's' of type 'array' in exported rout
 badFormalIntent-array.chpl:7: error: Formal 's' of type 'array' in exported routine 'badFormalIntentOut' may not have the 'out' intent in python libraries
 badFormalIntent-array.chpl:9: error: Formal 's' of type 'array' in exported routine 'badFormalIntentInOut' may not have the 'inout' intent in python libraries
 badFormalIntent-array.chpl:11: error: Formal 's' of type 'array' in exported routine 'badFormalIntentRef' may not have the 'ref' intent in python libraries
-badFormalIntent-array.chpl:13: error: Formal 's' of type 'array' in exported routine 'badFormalIntentConstRef' may not have the 'const ref' intent in python libraries

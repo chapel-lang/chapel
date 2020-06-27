@@ -181,9 +181,13 @@ struct amRequest_execOnLrg_t {
 
 static int numAmHandlers = 1;
 
-static void* amLZs;
-static struct iovec ofi_iov_reqs;
-static struct fi_msg ofi_msg_reqs;
+//
+// AM request landing zones.
+//
+static void* amLZs[2];
+static struct iovec ofi_iov_reqs[2];
+static struct fi_msg ofi_msg_reqs[2];
+static int ofi_msg_i;
 
 
 ////////////////////////////////////////
@@ -930,7 +934,7 @@ void init_ofi(void) {
 
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
-             ofi_iov_reqs.iov_len / (1L << 20),
+             ofi_iov_reqs[ofi_msg_i].iov_len / (1L << 20),
              (ofi_amhPollSet == NULL) ? "explicit polling" : "poll+wait sets",
              (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
   if (useScalableTxEp) {
@@ -1623,18 +1627,24 @@ void init_ofiForAms(void) {
   // comm=ugni AM handler can handle just over 150k "fast" AM requests
   // in 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40
   // MiB buffer is enough to give us the desired 0.1 sec lifetime before
-  // it needs renewing.
+  // it needs renewing.  We actually then split this in half and create
+  // 2 half-sized buffers (see below), so reflect that here also.
   //
-  const size_t amLZSize = (size_t) 40 << 20;
+  const size_t amLZSize = ((size_t) 40 << 20) / 2;
 
   //
-  // Set the minimum multi-receive buffer space.  Some providers don't
-  // have fi_setopt() for some ep types, so allow this to fail in that
-  // case.  Note, however, that if it does fail and we get overruns,
-  // we'll die.
+  // Set the minimum multi-receive buffer space.  Make it big enough to
+  // hold a max-sized request from every potential sender, but no more
+  // than 10% of the buffer size.  Some providers don't have fi_setopt()
+  // for some ep types, so allow this to fail in that case.  But note
+  // that if it does fail and we get overruns we'll die or, worse yet,
+  // silently compute wrong results.
   //
   {
-    const size_t sz = chpl_numNodes * sizeof(struct amRequest_execOn_t);
+    size_t sz = chpl_numNodes * tciTabLen * sizeof(struct amRequest_execOn_t);
+    if (sz > amLZSize / 10) {
+        sz = amLZSize / 10;
+    }
     int ret;
     OFI_CHK_2(fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                         FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz)),
@@ -1642,22 +1652,36 @@ void init_ofiForAms(void) {
   }
 
   //
-  // Pre-post multi-receive buffer for inbound AM requests.
+  // Pre-post multi-receive buffer for inbound AM requests.  In reality
+  // set up two of these and swap back and forth between them, to hedge
+  // against receiving "buffer filled and released" events out of order
+  // with respect to the messages stored within them.
   //
-  CHPL_CALLOC_SZ(amLZs, 1, amLZSize);
+  CHPL_CALLOC_SZ(amLZs[0], 1, amLZSize);
+  CHPL_CALLOC_SZ(amLZs[1], 1, amLZSize);
 
-  ofi_iov_reqs.iov_base = amLZs;
-  ofi_iov_reqs.iov_len = amLZSize;
-  ofi_msg_reqs.msg_iov = &ofi_iov_reqs;
-  ofi_msg_reqs.desc = NULL;
-  ofi_msg_reqs.iov_count = 1;
-  ofi_msg_reqs.addr = FI_ADDR_UNSPEC;
-  ofi_msg_reqs.context = NULL;
-  ofi_msg_reqs.data = 0x0;
-  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+  ofi_iov_reqs[0] = (struct iovec) { .iov_base = amLZs[0],
+                                     .iov_len = amLZSize, };
+  ofi_iov_reqs[1] = (struct iovec) { .iov_base = amLZs[1],
+                                     .iov_len = amLZSize, };
+  ofi_msg_reqs[0] = (struct fi_msg) { .msg_iov = &ofi_iov_reqs[0],
+                                      .desc = NULL,
+                                      .iov_count = 1,
+                                      .addr = FI_ADDR_UNSPEC,
+                                      .context = NULL,
+                                      .data = 0x0, };
+  ofi_msg_reqs[1] = (struct fi_msg) { .msg_iov = &ofi_iov_reqs[1],
+                                      .desc = NULL,
+                                      .iov_count = 1,
+                                      .addr = FI_ADDR_UNSPEC,
+                                      .context = NULL,
+                                      .data = 0x0, };
+  ofi_msg_i = 0;
+  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
   DBG_PRINTF(DBG_AMBUFFERS,
-             "pre-post fi_recvmsg(AMLZs, len %#zx)",
-             ofi_msg_reqs.msg_iov->iov_len);
+             "pre-post fi_recvmsg(AMLZs %p, len %#zx)",
+             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base,
+             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
 
   init_amHandling();
 }
@@ -1816,9 +1840,8 @@ void fini_ofi(void) {
 
   CHPL_FREE(memTabMap);
 
-  CHPL_FREE(memTabMap);
-
-  CHPL_FREE(amLZs);
+  CHPL_FREE(amLZs[1]);
+  CHPL_FREE(amLZs[0]);
 
   CHPL_FREE(ofi_rxAddrs);
 
@@ -2203,10 +2226,12 @@ typedef enum {
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
 
+#ifdef CHPL_COMM_DEBUG
 static inline
 chpl_bool op_uses_on_bundle(amOp_t op) {
   return op == am_opExecOn || op == am_opExecOnLrg;
 }
+#endif
 
 //
 // Members are packed, potentially differently, in each AM request type
@@ -2895,7 +2920,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       amRequest_t* req = (amRequest_t*) cqes[i].buf;
       DBG_PRINTF(DBG_AMBUFFERS,
                  "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s",
-                 (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
+                 (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
                  cqes[i].len, am_seqIdStr(req));
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
@@ -2987,14 +3012,14 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
     if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
       //
-      // Multi-receive buffer filled; post another one.  This should
-      // not be seen except on the last received event!
+      // Multi-receive buffer filled; post the other one.
       //
-      CHK_TRUE(i == numEvents - 1);
-      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+      ofi_msg_i = 1 - ofi_msg_i;
+      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
       DBG_PRINTF(DBG_AMBUFFERS,
-                 "re-post fi_recvmsg(AMLZs, len %#zx)",
-                 ofi_msg_reqs.msg_iov->iov_len);
+                 "re-post fi_recvmsg(AMLZs %p, len %#zx)",
+                 ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base,
+                 ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
     }
 
     CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);

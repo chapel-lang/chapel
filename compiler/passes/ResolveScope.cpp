@@ -508,15 +508,41 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
         }
       }
     } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
-      if (SymExpr* se = toSymExpr(import->src)) {
-        // The import statement has been resolved
-        if (import->isARename() == true) {
-          if (name == import->getRename()) {
-            symbols.push_back(se->symbol());
+      if (import->providesQualifiedAccess()) {
+        if (SymExpr* se = toSymExpr(import->src)) {
+          // The import statement has been resolved
+          if (import->isARename() == true) {
+            if (name == import->getRename()) {
+              symbols.push_back(se->symbol());
+            }
+          } else {
+            if (name == se->symbol()->name) {
+              symbols.push_back(se->symbol());
+            }
           }
-        } else {
-          if (name == se->symbol()->name) {
-            symbols.push_back(se->symbol());
+        }
+      }
+
+      if (import->skipSymbolSearch(name) == false) {
+        BaseAST* scopeToUse = import->getSearchScope();
+        const char* nameToUse  = name;
+
+        if (import->isARenamedSym(name) == true) {
+          nameToUse = import->getRenamedSym(name);
+        }
+
+        if (ResolveScope* next = getScopeFor(scopeToUse)) {
+          if (Symbol* sym = next->lookupNameLocallyForImport(nameToUse)) {
+            if (isRepeat(sym, symbols) == false) {
+              if (FnSymbol* fn = toFnSymbol(sym)) {
+                if (fn->isMethod() == false) {
+                  symbols.push_back(fn);
+                }
+
+              } else {
+                symbols.push_back(sym);
+              }
+            }
           }
         }
       }
@@ -531,6 +557,20 @@ Symbol* ResolveScope::followImportUseChains(const char* name) const {
   if (symbols.size() == 1) {
     return symbols[0];
   } else {
+    // Ensure we check the used module name as well, since those are also
+    // available to us
+    for (size_t i = 0; i < useImportList.size(); i++) {
+      if (UseStmt* use = toUseStmt(useImportList[i])) {
+        if (Symbol* modSym = use->checkIfModuleNameMatches(name)) {
+          if (isRepeat(modSym, symbols) == false) {
+            symbols.push_back(modSym);
+          }
+        }
+      }
+    }
+    if (symbols.size() == 1) {
+      return symbols[0];
+    }
     return NULL;
   }
 }
@@ -976,15 +1016,15 @@ Symbol* ResolveScope::lookupNameLocally(const char* name, bool isUse) const {
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicImports(const char* name) const {
+Symbol* ResolveScope::lookupPublicVisStmts(const char* name) const {
   Symbol *retval = NULL;
 
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
-    if (ImportStmt *is = toImportStmt(visStmt)) {
-      if (!is->isPrivate) {
-        if (Symbol *importSym = visStmt->checkIfModuleNameMatches(name)) {
-          if (isModuleSymbol(importSym)) {
-            retval = importSym;
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        if (Symbol *sym = visStmt->checkIfModuleNameMatches(name)) {
+          if (isModuleSymbol(sym)) {
+            retval = sym;
             break;
           }
         }
@@ -1001,36 +1041,47 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   if (!this->canReexport) return NULL;
 
   std::map<Symbol *, astlocT *> renameLocs;
-  Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs);
+  Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs,
+                                                true);
   return retval;
 }
 
-Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-         BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs) {
+Symbol*
+ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
+                                           BaseAST *context,
+                                           std::map<Symbol*,
+                                             astlocT*>& renameLocs,
+                                           bool followUses) {
   if (!this->canReexport) return NULL;
 
   std::vector<Symbol *> symbols;
 
   bool traversedRenames = false;
-  bool hasPublicImport = false;
+  bool hasPublicVisStmt = false;
   uint64_t numFuncs = 0;
   for_vector_allowing_0s(VisibilityStmt, visStmt, mUseImportList) {
-    if (ImportStmt *impStmt = toImportStmt(visStmt)) {
-      if (!impStmt->isPrivate) {
-        hasPublicImport = true;
-        if (!impStmt->skipSymbolSearch(name)) {
+    // Note: assumes that UseStmt and ImportStmt are the only subclasses of
+    // VisibilityStmt
+    if (visStmt != NULL) {
+      if (!visStmt->isPrivate) {
+        hasPublicVisStmt = true;
+        if (isUseStmt(visStmt) && !followUses) {
+          // Mark that we re-export, but don't always follow it
+          continue;
+        }
+        if (!visStmt->skipSymbolSearch(name)) {
           const char *nameToUse = name;
-          const bool isSymRenamed = impStmt->isARenamedSym(name);
+          const bool isSymRenamed = visStmt->isARenamedSym(name);
           if (isSymRenamed) {
-            nameToUse = impStmt->getRenamedSym(name);
+            nameToUse = visStmt->getRenamedSym(name);
           }
-          if (SymExpr *se = toSymExpr(impStmt->src)) {
+          if (SymExpr *se = toSymExpr(visStmt->src)) {
             if (ModuleSymbol *ms = toModuleSymbol(se->symbol())) {
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
               if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
                 symbols.push_back(retval);
                 if (isSymRenamed) {
-                  renameLocs[retval] = &impStmt->astloc;
+                  renameLocs[retval] = &visStmt->astloc;
                   traversedRenames = true;
                 }
                 if (isFnSymbol(retval)) {
@@ -1044,7 +1095,7 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
     }
   }
 
-  if (!hasPublicImport) {
+  if (!hasPublicVisStmt) {
     this->canReexport = false;
   }
 

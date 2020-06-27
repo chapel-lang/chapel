@@ -434,6 +434,13 @@ class LocBlockArr {
     this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
   }
 
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocBlockArr.writeThis() is not implemented / should not be needed");
+  }
+
   proc deinit() {
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
     // Here we need to clean up the rest of the array.

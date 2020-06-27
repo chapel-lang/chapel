@@ -742,7 +742,7 @@ module DefaultAssociative {
     }
 
     override proc _deinitSlot(slot: int) {
-      // deinitalize the element at idx
+      // deinitialize the element at idx
       _deinitElement(data[slot]);
     }
 

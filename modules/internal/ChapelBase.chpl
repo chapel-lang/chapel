@@ -22,6 +22,11 @@
 //
 
 module ChapelBase {
+
+  pragma "no doc"
+  pragma "locale private"
+  var rootLocaleInitialized: bool = false;
+
   use ChapelStandard;
   private use ChapelEnv, SysCTypes;
 
@@ -1020,7 +1025,8 @@ module ChapelBase {
   //  after touching memory in usual order
   //
 
-  inline proc _ddata_allocate_noinit(type eltType, size: integral,
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit(type eltType, size: integral,
                                      out callPostAlloc: bool,
                                      subloc = c_sublocid_none) {
     pragma "fn synchronization free"

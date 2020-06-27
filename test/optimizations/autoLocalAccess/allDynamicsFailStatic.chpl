@@ -8,7 +8,7 @@ var A: [D] int;
 var B = newCyclicArr({1..10}, int);
 
 // A is a static candidate, and will pass the static check
-// B is a dynamic candidate that'll fail dynamic check, in that case, we want
+// B is a dynamic candidate that'll fail static check, in that case, we want
 // the dynamic-checked loop copy to be folded out. In other words,
 // post-resolution we should have only one instance of this loop
 

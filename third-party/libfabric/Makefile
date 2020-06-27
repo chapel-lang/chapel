@@ -55,7 +55,7 @@ configure-libfabric: FORCE
 	cd $(LIBFABRIC_SUBDIR) && touch -c aclocal.m4
 	sleep 1
 	touch $(LIBFABRIC_SUBDIR)/configure
-	find $(LIBFABRIC_SUBDIR)/. -name Makefile.in | xargs touch
+	find $(LIBFABRIC_SUBDIR)/. -name "*.in" | xargs touch
 #
 # Then configure
 #

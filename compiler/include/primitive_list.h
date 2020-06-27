@@ -30,7 +30,7 @@
 //                 and there will be a CallExpr::codegenPRIM_BLA method for it
 
 // individual primitives are not documented in this file
-// but rather in primitive.cpp
+// but rather in AST/primitive.cpp
 
   PRIMITIVE_G(PRIM_UNKNOWN)
 
@@ -317,3 +317,8 @@
   PRIMITIVE_R(PRIM_GATHER_TESTS)
   PRIMITIVE_R(PRIM_GET_TEST_BY_INDEX)
   PRIMITIVE_R(PRIM_GET_TEST_BY_NAME)
+
+  PRIMITIVE_R(PRIM_VERSION_MAJOR)
+  PRIMITIVE_R(PRIM_VERSION_MINOR)
+  PRIMITIVE_R(PRIM_VERSION_UPDATE)
+  PRIMITIVE_R(PRIM_VERSION_SHA)

@@ -366,15 +366,15 @@ available:
 
 .. function:: proc enum.size: param int
 
-     Returns the number of constants in the given enumerated type.
+   Returns the number of constants in the given enumerated type.
 
 .. function:: proc enum.first: enum
 
-     Returns the first constant in the enumerated type.
+   Returns the first constant in the enumerated type.
 
 .. function:: proc enum.last: enum
 
-     Returns the last constant in the enumerated type.
+   Returns the last constant in the enumerated type.
 
 .. _Structured_Types:
 

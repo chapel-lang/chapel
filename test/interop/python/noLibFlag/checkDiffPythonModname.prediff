@@ -1,23 +1,25 @@
 #!/bin/bash
 
 # Remove clang unused argument warning
-sed '/^clang: warning: argument unused/d' $2 > $2.tmp
+cat $2 | sed '/^clang: warning: argument unused/d' | \
 # Remove warning about the object file being made for a different OSX version
-sed '/^ld: warning: object file/d' $2.tmp > $2
+sed '/^ld: warning: object file/d' | \
 # Remove warning about .a's being built for a different architecture
-sed '/ignoring file/d' $2 > $2.tmp
+sed '/ignoring file/d' | \
 # Remove numpy version deprecation warning (Cython is responsible for this)
-sed '/arrayobject.h:[0-9]*/d' $2.tmp > $2
-sed '/ndarraytypes.h:[0-9]*/d' $2 > $2.tmp
-sed '/Using deprecated NumPy API/d' $2.tmp > $2
-sed '/^ *\^/d' $2 > $2.tmp
-sed '/^1 warning generated./d' $2.tmp > $2
-sed '/^$/d' $2 > $2.tmp
+sed '/arrayobject.h:[0-9]*/d' | \
+sed '/ndarraytypes.h:[0-9]*/d' | \
+sed '/Using deprecated NumPy API/d' | \
+sed '/^ *\^/d' | \
+sed '/^1 warning generated./d' | \
+sed '/^$/d' | \
+sed '/^ *|/d' | \
 # avoid sporadic ld: warning errors (I'm sometimes seeing just that on a line,
 # or just multiple copies of it)
-sed '/^ld: warning/d' $2.tmp > $2
-sed '/from bar.c:[0-9]*/d' $2 > $2.tmp
-sed '/^[ ]*$/d' $2.tmp > $2
+sed '/^ld: warning/d' | \
+sed '/from bar.c:[0-9]*/d' | \
+sed '/^[ ]*$/d' > $2.tmp
+cat $2.tmp > $2
 rm $2.tmp
 export PYTHONPATH=lib/
 python3 use_bar.py >> $2

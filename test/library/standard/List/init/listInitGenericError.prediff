@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+command='\|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/'
+command2='\|listInitGenericError.chpl|s/:[0-9:]*:/:nnnn:/'
+
+cp "$2" $2.tmp
+cat $2.tmp | sed "$command" | sed "$command2" > $2
+rm $2.tmp
+

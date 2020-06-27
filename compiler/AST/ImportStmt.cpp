@@ -402,7 +402,7 @@ void ImportStmt::validateUnqualified() {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ImportStmt::skipSymbolSearch(const char* name) {
+bool ImportStmt::skipSymbolSearch(const char* name) const {
   // We don't define any symbols for unqualified access, so we should skip this
   // import
   if (!providesUnqualifiedAccess()) {

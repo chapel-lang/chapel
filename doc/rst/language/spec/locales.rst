@@ -46,54 +46,44 @@ The locale type supports the following methods:
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.callStackSize: uint(64);
 
-   proc locale.callStackSize: uint(64);
-
-Returns the per-task call stack size used when creating tasks on the
-locale in question. A value of 0 indicates that the call stack size is
-determined by the system.
+   Returns the per-task call stack size used when creating tasks on the
+   locale in question. A value of 0 indicates that the call stack size is
+   determined by the system.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.id: int;
 
-   proc locale.id: int;
-
-Returns a unique integer for each locale, from 0 to the number of
-locales less one.
+   Returns a unique integer for each locale, from 0 to the number of
+   locales less one.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.maxTaskPar: int(32);
 
-   proc locale.maxTaskPar: int(32);
-
-Returns an estimate of the maximum parallelism available for tasks on a
-given locale.
+   Returns an estimate of the maximum parallelism available for tasks on a
+   given locale.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.name: string;
 
-   proc locale.name: string;
-
-Returns the name of the locale.
+   Returns the name of the locale.
 
 
 
-.. code-block:: chapel
+.. function:: proc locale.numPUs(logical: bool = false, accessible: bool = true);
 
-   proc locale.numPUs(logical: bool = false, accessible: bool = true);
-
-Returns the number of processing unit instances available on a given
-locale. Basically these are the things that execute instructions. If
-``logical`` is ``false`` then the count reflects physical instances,
-often referred to as *cores*. Otherwise it reflects logical instances,
-such as hardware threads on multithreaded CPU architectures. If
-``accessible`` is ``true`` then the count includes only those processors
-the OS has made available to the program. Otherwise it includes all
-processors that seem to be present.
+   Returns the number of processing unit instances available on a given
+   locale. Basically these are the things that execute instructions. If
+   ``logical`` is ``false`` then the count reflects physical instances,
+   often referred to as *cores*. Otherwise it reflects logical instances,
+   such as hardware threads on multithreaded CPU architectures. If
+   ``accessible`` is ``true`` then the count includes only those processors
+   the OS has made available to the program. Otherwise it includes all
+   processors that seem to be present.
 
 
 

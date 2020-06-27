@@ -1,0 +1,8 @@
+shadowing-field.chpl:18: In function 'genericMethod':
+shadowing-field.chpl:19: warning: in Main.MyRecord.field
+shadowing-field.chpl:10: Function 'genericMethod' instantiated as: genericMethod(type t = int(64))
+shadowing-field.chpl:9: In function 'main':
+shadowing-field.chpl:10: warning: in genericMethod()
+shadowing-field.chpl:9: warning: in Main.main
+shadowing-field.chpl:16: error: unresolved call 'MyRecord.field'
+shadowing-field.chpl:16: note: because no functions named field found in scope

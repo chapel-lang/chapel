@@ -475,8 +475,10 @@ iterator         0-based one-dimensional domain
 
 ..
 
-   *Future*.
-
+.. note::
+      
+   *Future*
+   
    We would like to allow the iterator author to specify the shape of
    the iterator, i.e. the domain of the array that would capture the
    result of the corresponding promoted expression, such as 
@@ -499,7 +501,7 @@ iterator         0-based one-dimensional domain
    and the function 
 
    .. code-block:: chapel
-
+   
       proc square(x: int) return x**2;
 
    then the call ``square(A)`` results in the promotion of the

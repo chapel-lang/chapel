@@ -82,14 +82,16 @@ public:
   Symbol*               lookupNameLocally(const char* name,
                                           bool isUse=false)              const;
 
-  Symbol*               lookupPublicImports(const char* name)            const;
+  Symbol*               lookupPublicVisStmts(const char* name)           const;
 
   Symbol*               lookupPublicUnqualAccessSyms(const char* name,
                                                      BaseAST *context);
 
-  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
-                          BaseAST *context,
-                          std::map<Symbol *, astlocT *>& renameLocs);
+  Symbol*
+  lookupPublicUnqualAccessSyms(const char* name,
+                               BaseAST *context,
+                               std::map<Symbol *, astlocT *>& renameLocs,
+                               bool followUses = false);
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields

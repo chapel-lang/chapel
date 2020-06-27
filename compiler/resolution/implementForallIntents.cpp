@@ -275,21 +275,19 @@ static void workaroundForReduceIntoDetupleDecl(ForallStmt* fs, Symbol* svar) {
 static void insertFinalGenerate(ForallStmt* fs,
                                 Symbol* fiVarSym, Symbol* globalOp)
 {
-  Expr* next = fs->next; // nicer ordering of the following insertions
-  INT_ASSERT(next);
   if (fs->needsInitialAccumulate()) {
     VarSymbol* genTemp = newTemp("chpl_gentemp");
-    next->insertBefore(new DefExpr(genTemp));
-    next->insertBefore("'move'(%S, generate(%S,%S))",
-                     genTemp, gMethodToken, globalOp);
-    next->insertBefore(new CallExpr("=", fiVarSym, genTemp));
+    fs->insertAfter(new CallExpr("=", fiVarSym, genTemp));
+    fs->insertAfter("'move'(%S, generate(%S,%S))",
+                    genTemp, gMethodToken, globalOp);
+    fs->insertAfter(new DefExpr(genTemp));
     // TODO: Should we try to free chpl_gentemp right after the assignment?
     genTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   } else {
     // Initialize, not assign. Do everything *after* 'fs'.
-    next->insertBefore(fiVarSym->defPoint->remove());
-    next->insertBefore("'move'(%S, generate(%S,%S))",
-                       fiVarSym, gMethodToken, globalOp);
+    fs->insertAfter("'move'(%S, generate(%S,%S))",
+                    fiVarSym, gMethodToken, globalOp);
+    fs->insertAfter(fiVarSym->defPoint->remove());
     fiVarSym->addFlag(FLAG_EXPR_TEMP);
     workaroundForReduceIntoDetupleDecl(fs, fiVarSym);
   }
