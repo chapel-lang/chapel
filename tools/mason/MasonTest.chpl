@@ -135,8 +135,8 @@ proc masonTest(args) throws {
             var testLoc = "";
             while(test!=subTestPath){
               var split = splitPath(test);
-              testLoc = if !testLoc.isEmpty() then joinPath(split[2], testLoc) else split[2];
-              test = split[1];
+              testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc) else split[1];
+              test = split[0];
             }
             testNames.append(testLoc);
           }
@@ -148,7 +148,7 @@ proc masonTest(args) throws {
       for subString in searchSubStrings {
         isSubString = false;
         for testName in testNames {
-          if testName.find(subString) != 0 {
+          if testName.find(subString) != -1 {
             isSubString = true;
             if(inProjectDir){
               files.append("".join('test/', testName));
@@ -185,7 +185,7 @@ proc masonTest(args) throws {
 
         for subString in searchSubStrings {
           for testName in testNames {
-            if testName.find(subString) != 0 {
+            if testName.find(subString) != -1 {
               files.append(testName);
             }
           }
