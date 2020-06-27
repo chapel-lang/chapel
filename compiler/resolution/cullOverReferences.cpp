@@ -678,7 +678,7 @@ void CullRefCtx::propagateConstnessToFieldAccesses(void) {
 
     // note, at might be NULL for unmanaged SomeClass
     if (at == NULL || at->isClass())
-      return;
+      continue;
 
     if (aggregateSe->symbol()->qualType().isConst())
       markSymbolConst(lhsSe->symbol());
@@ -817,7 +817,6 @@ bool CullRefCtx::isCallApplicableLoop(SymExpr* se, CallExpr* call,
 bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
                                           bool &revisit) {
   Symbol* sym = node.variable;
-  bool handled = false;
 
   for (size_t i = 0; i < info.detailsVector.size(); i++) {
     bool iteratorYieldsConstWhenConstThis = false;
@@ -865,13 +864,13 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
       GraphNode srcNode = makeNode(index, indexTupleElement);
       collectedSymbols.push_back(srcNode);
       addDependency(revisitGraph, srcNode, node);
-
       revisit = true;
-      handled = true;
+
+      return true;
     }
   }
 
-  return handled;
+  return false;
 }
 
 // Is the SymExpr passed to a `_build_tuple` call for a tuple that stores
@@ -1322,8 +1321,7 @@ void CullRefCtx::visitCollectedSymbol(GraphNode node) {
       if (checkSetRefTupleField(call, node, revisit))
         continue;
 
-      // Case: symbol is moved to a compiler temp. Example:
-      //    PRIM_MOVE tmp, PRIM_ADDR_OF sym
+      // Case: symbol is moved to a compiler temporary.
       if (checkCompilerRefTemporaries(call, node, revisit))
         continue;
     }
@@ -1375,9 +1373,9 @@ void CullRefCtx::visitCollectedSymbol(GraphNode node) {
 }
 
 // Handle the graph of revisits. Note this could be a cyclic graph when there
-// are recursive functions.
-// This algorithm could be naturally represented in terms of Strongly
-// Connected Components analysis, but for now it's just doing it manually.
+// are recursive functions. This algorithm could be naturally represented in
+// terms of Strongly Connected Components analysis, but for now it's just
+// doing it manually.
 void CullRefCtx::propagateNonConstnessThroughRevisitGraph(void) {
 
   // First, propagate non-const-ness through the graph.
