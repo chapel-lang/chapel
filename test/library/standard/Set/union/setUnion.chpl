@@ -38,8 +38,10 @@ proc doTest(type eltType) {
     assert(!s1.contains(x) && s2.contains(x));
 
   s4 = s1 | s3;
+  var s5 = s3 | s1;
 
   assert(s4.size == s2.size);
+  assert(s5 == s4);
 
   s1 |= s3;
   assert(s1 == s4);
@@ -50,4 +52,3 @@ proc doTest(type eltType) {
 
 doTest(int);
 doTest(testRecord);
-
