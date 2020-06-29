@@ -3491,8 +3491,8 @@ module ChapelArray {
      added to the LHS.
   */
   proc ^=(ref a :domain, b: domain) where (a.type == b.type) && isAssociativeDom(a) {
-    for e in a do
-      if b.contains(e) then
+    for e in b do
+      if a.contains(e) then
         a.remove(e);
       else
         a.add(e);
