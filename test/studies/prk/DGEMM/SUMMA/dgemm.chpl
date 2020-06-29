@@ -43,7 +43,7 @@ if !correctness {
   writeln("Chapel Dense matrix-matrix multiplication");
   writeln("Max parallelism      =   ", nTasksPerLocale);
   writeln("Matrix order         =   ", order);
-  writeln("Window size      =   ", if windowSize>0 then
+  writeln("Window size          =   ", if windowSize>0 then
       windowSize:string
       else "N/A");
   writeln("Number of iterations =   ", iterations);
