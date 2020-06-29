@@ -52,7 +52,7 @@ var t = new Timer();
 private inline iter block(indexes, window : int) {
   var lowVal = indexes.low;
   while (true) {
-    var highVal = lowVal + indexes.stride * window - 1;
+    var highVal = lowVal + window - 1;
     if (highVal >= indexes.high) {
       yield lowVal..indexes.high;
       break;
