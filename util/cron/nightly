@@ -204,8 +204,8 @@ if ($printusage == 1) {
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-llvm                          : run tests using --llvm\n";
     print "\t-mason                         : build mason before running tests\n";
-    print "\t-memleaks <log>                : run testes with --memLeaks\n";
-    print "\t-memleakslog <log>             : run memleakslog testing\n";
+    print "\t-memleaks <log>                : run tests with --memLeaks\n";
+    print "\t-memleakslog <log>             : run tests with --memLeaksLog\n";
     print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-no-futures                    : do not run future tests\n";
