@@ -49,7 +49,7 @@ const refChecksum = (iterations+1) *
 
 var t = new Timer();
 
-private inline iter block(indexes, window : int) {
+private iter block(indexes, window : int) {
   var lowVal = indexes.low;
   while (true) {
     var highVal = lowVal + window - 1;
