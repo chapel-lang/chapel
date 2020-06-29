@@ -1,0 +1,25 @@
+Testing c2chapel...\n
+No arguments: OK
+--help: OK
+File not found: OK
+arrayDecl: OK
+chapelKeywords: OK
+chapelVarargs: OK
+cstrvoid: OK
+dashEye: OK
+enum: OK
+enumVar: OK
+fileGlobals: OK
+fnPointers: OK
+fnints: OK
+intDefines: OK
+invalidC: OK
+miscTypedef: OK
+nestedStruct: OK
+opaqueStruct: OK
+simpleRecords: OK
+sysCTypes: OK
+.c file: OK
+
+SUCCESS
+OK
