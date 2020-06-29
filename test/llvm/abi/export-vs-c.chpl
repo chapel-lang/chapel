@@ -76,6 +76,17 @@ extern {
     int64_t l;
   };
 
+  // this example inspired by an example in
+  // System V Application Binary Interface AMD64 Architecture Processor Supplement (With LP64 and ILP32 Programming Models) Version 1.0
+  typedef struct {
+    int a, b;
+    double d;
+  } abistruct;
+  void abistructfunc_c_____(int e, int f,
+                            abistruct s, int g, int h,
+                            /*long*/ double ld, double m,
+                            double n, int i, int j, int k);
+
   void print_output_prefix(void);
 
   int64_t int64_return_c_____(void);
@@ -387,6 +398,22 @@ extern {
            (long) arg.j, (long) arg.k, (long) arg.l);
   }
 
+  void abistructfunc_c_____(int e, int f,
+                            abistruct s, int g, int h,
+                            /*long*/ double ld, double m,
+                            double n, int i, int j, int k) {
+    print_output_prefix();
+    printf("e %i f %i "
+           "s.a %i s.b %i s.d %f g %i h %i "
+           "ld %f m %f"
+           "n %f i %i j %i k %i\n",
+           e, f,
+           s.a, s.b, s.d, g, h,
+           ld, m,
+           n, i, j, k);
+  }
+
+
 }
 
 var phase: string;
@@ -587,7 +614,12 @@ export proc struct_twelve_arg_chapel(in arg: c_twelve) {
   struct_twelve_arg_c_____(arg);
 }
 
-
+export proc abistructfunc_chapel(e: c_int, f: c_int,
+                                 in s: abistruct, g: c_int, h: c_int,
+                                 ld: real(64), m: real(64),
+                                 n: real(64), i: c_int, j: c_int, k: c_int) {
+  abistructfunc_c_____(e, f, s, g, h, ld, m, n, i, j, k);
+}
 
 proc main() {
   {
@@ -817,4 +849,24 @@ proc main() {
   }
 
 
+  {
+    var e: c_int = 0;
+    var f: c_int = 1;
+    var s: abistruct;
+    s.a = 2;
+    s.b = 3;
+    s.d = 12.25;
+    var g: c_int = 4;
+    var h: c_int = -5;
+    var ld: real(64) = 66.0;
+    var m: real(64) = 1.125;
+    var n: real(64) = 10000;
+    var i: c_int = 7;
+    var j: c_int = 8;
+    var k: c_int = -1;
+    start_phase("testing abistructfunc_c_____");
+    abistructfunc_c_____(e, f, s, g, h, ld, m, n, i, j, k);
+    start_phase("testing abistructfunc_chapel");
+    abistructfunc_chapel(e, f, s, g, h, ld, m, n, i, j, k);
+  }
 }
