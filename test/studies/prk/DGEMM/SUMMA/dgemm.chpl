@@ -1,3 +1,9 @@
+/*
+   Chapel's distributed DGEMM implementation using SUMMA
+
+   Contributed by Rahul Ghangas (ANU)
+*/
+
 use Time;
 use BlockDist;
 use LinearAlgebra;
