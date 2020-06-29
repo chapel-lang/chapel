@@ -1,0 +1,1 @@
+init-on-int.chpl:1: error: initializers may currently only be defined on class, record, or union types

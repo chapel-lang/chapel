@@ -242,6 +242,11 @@ void normalize() {
           USR_FATAL_CONT(fn, "deinitializers must have parentheses");
         }
 
+        if (ct == NULL)
+          USR_FATAL_CONT(fn, "deinit may not be defined for types other than record, union, or class");
+        else if (ct->symbol->hasFlag(FLAG_EXTERN))
+          USR_FATAL_CONT(fn, "deinit may not be currently defined for extern types");
+
         fn->name = astrDeinit;
       }
 
@@ -3323,6 +3328,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
           formal->typeExpr->replace(
             new BlockStmt(new SymExpr(dtCFI_cdesc_t->symbol)));
           formal->intent = INTENT_REF;
+          formal->originalIntent = INTENT_REF;
         }
       } else {
         // Create a representation of the array argument that is accessible
@@ -4231,14 +4237,24 @@ static bool isConstructor(FnSymbol* fn) {
 }
 
 static void updateInitMethod(FnSymbol* fn) {
-  if (isAggregateType(fn->_this->type) == true) {
+  Type* thisType = fn->_this->type;
+
+  if (isAggregateType(thisType) == true) {
+
+    if (fn->name == astrInitEquals) {
+      if (isClass(thisType))
+        USR_FATAL_CONT(fn, "init= may not be defined on class types");
+      if (thisType->symbol->hasFlag(FLAG_EXTERN))
+        USR_FATAL_CONT(fn, "init= may not currently be defined on extern types");
+    }
+
     preNormalizeInitMethod(fn);
 
-  } else if (fn->_this->type == dtUnknown) {
+  } else if (thisType == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   } else {
-    INT_FATAL(fn, "initializer on non-class type");
+    USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }
 }
 

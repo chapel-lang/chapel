@@ -414,6 +414,17 @@ static void ensureRequiredStandardModulesAreParsed() {
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
 
       if (oldModNameExpr == NULL) {
+        // Handle the case of `[use|import] Mod.symbol` by extracting `Mod`
+        // from the `Mod.symbol` expression
+        if (CallExpr* call = toCallExpr(moduleExpr)) {
+          UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->get(1));
+          if (call->isNamedAstr(astrSdot) && urse) {
+            oldModNameExpr = urse;
+          }
+        }
+      }
+
+      if (oldModNameExpr == NULL) {
         continue;
       }
 

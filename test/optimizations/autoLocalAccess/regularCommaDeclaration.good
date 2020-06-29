@@ -19,22 +19,28 @@ Access base's domain is the iterator
 Potential access
 	regularCommaDeclaration.chpl:13
 
-Regular domain symbol was not found for array
-	regularCommaDeclaration.chpl:6
+	with domain defined at
+	regularCommaDeclaration.chpl:4
+
+Access base's domain is the iterator
+	regularCommaDeclaration.chpl:13
 
 Potential access
 	regularCommaDeclaration.chpl:13
 
-Regular domain symbol was not found for array
-	regularCommaDeclaration.chpl:6
+	with domain defined at
+	regularCommaDeclaration.chpl:4
+
+Access base's domain is the iterator
+	regularCommaDeclaration.chpl:13
 
 	Marking static candidate
 	regularCommaDeclaration.chpl:13
 
-	Marking dynamic candidate
+	Marking static candidate
 	regularCommaDeclaration.chpl:13
 
-	Marking dynamic candidate
+	Marking static candidate
 	regularCommaDeclaration.chpl:13
 
 **** End forall ****
@@ -61,22 +67,28 @@ Potential access
 Potential access
 	regularCommaDeclaration.chpl:28
 
-Regular domain symbol was not found for array
-	regularCommaDeclaration.chpl:21
+	with domain defined at
+	regularCommaDeclaration.chpl:19
+
+	Can optimize: Access base has the same domain as iterator's base
+	regularCommaDeclaration.chpl:28
 
 Potential access
 	regularCommaDeclaration.chpl:28
 
-Regular domain symbol was not found for array
-	regularCommaDeclaration.chpl:21
+	with domain defined at
+	regularCommaDeclaration.chpl:19
+
+	Can optimize: Access base has the same domain as iterator's base
+	regularCommaDeclaration.chpl:28
 
 	Marking static candidate
 	regularCommaDeclaration.chpl:28
 
-	Marking dynamic candidate
+	Marking static candidate
 	regularCommaDeclaration.chpl:28
 
-	Marking dynamic candidate
+	Marking static candidate
 	regularCommaDeclaration.chpl:28
 
 **** End forall ****
@@ -85,10 +97,7 @@ Regular domain symbol was not found for array
 Static check successful. Using localAccess
 	regularCommaDeclaration.chpl:13
 
-Static check successful. Using localAccess with dynamic check
-	regularCommaDeclaration.chpl:13
-
-Static check successful. Using localAccess with dynamic check
+Static check successful. Using localAccess
 	regularCommaDeclaration.chpl:13
 
 Static check successful. Using localAccess
@@ -97,10 +106,7 @@ Static check successful. Using localAccess
 Static check successful. Using localAccess
 	regularCommaDeclaration.chpl:28
 
-Static check successful. Using localAccess with dynamic check
-	regularCommaDeclaration.chpl:28
-
-Static check successful. Using localAccess with dynamic check
+Static check successful. Using localAccess
 	regularCommaDeclaration.chpl:28
 
 Static check successful. Using localAccess

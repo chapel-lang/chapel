@@ -1,0 +1,57 @@
+**** Start forall ****
+	multipleAccessDynamic.chpl:7
+
+Regular domain symbol was not found for array
+	multipleAccessDynamic.chpl:3
+
+Iterated over the domain of
+	multipleAccessDynamic.chpl:3
+
+, whose domain cannot be determined statically
+	multipleAccessDynamic.chpl:3
+
+Loop is suitable for further analysis
+	multipleAccessDynamic.chpl:7
+
+Potential access
+	multipleAccessDynamic.chpl:9
+
+	Can optimize: Access base is the iterator's base
+	multipleAccessDynamic.chpl:9
+
+Potential access
+	multipleAccessDynamic.chpl:9
+
+Regular domain symbol was not found for array
+	multipleAccessDynamic.chpl:4
+
+Potential access
+	multipleAccessDynamic.chpl:9
+
+Regular domain symbol was not found for array
+	multipleAccessDynamic.chpl:4
+
+	Marking static candidate
+	multipleAccessDynamic.chpl:9
+
+	Marking dynamic candidate
+	multipleAccessDynamic.chpl:9
+
+	Marking dynamic candidate
+	multipleAccessDynamic.chpl:9
+
+**** End forall ****
+	multipleAccessDynamic.chpl:7
+
+Static check successful. Using localAccess
+	multipleAccessDynamic.chpl:9
+
+Static check successful. Using localAccess with dynamic check
+	multipleAccessDynamic.chpl:9
+
+Static check successful. Using localAccess with dynamic check
+	multipleAccessDynamic.chpl:9
+
+Static check successful. Using localAccess
+	multipleAccessDynamic.chpl:9
+

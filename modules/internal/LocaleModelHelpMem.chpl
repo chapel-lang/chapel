@@ -58,6 +58,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
@@ -67,6 +68,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_aligned_alloc(alignment:integral, size:integral,
                                md:chpl_mem_descInt_t): c_void_ptr {
@@ -79,6 +81,7 @@ module LocaleModelHelpMem {
   }
 
   pragma "allocator"
+  pragma "llvm return noalias"
   pragma "always propagate line file info"
   proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"

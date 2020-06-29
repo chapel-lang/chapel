@@ -690,7 +690,7 @@ static void buildChplEntryPoints() {
   // It invokes the user's code.
   //
 
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_arg", dtMainArgument);
 
   chpl_gen_main          = new FnSymbol("chpl_gen_main");
   chpl_gen_main->retType = dtInt[INT_SIZE_64];
@@ -706,10 +706,9 @@ static void buildChplEntryPoints() {
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
 
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
-  VarSymbol* endCount = newTemp("_endCount");
+  VarSymbol* endCount = NULL;
 
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
-  chpl_gen_main->insertAtTail(new DefExpr(endCount));
 
   //
   // In --minimal-modules compilation mode, we won't have any
@@ -717,6 +716,8 @@ static void buildChplEntryPoints() {
   // support them).
   //
   if (fMinimalModules == false) {
+    endCount = newTemp("_endCount");
+    chpl_gen_main->insertAtTail(new DefExpr(endCount));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                              endCount,
                                              new CallExpr("_endCountAlloc",

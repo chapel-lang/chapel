@@ -43,8 +43,8 @@ module ChapelHashtable {
     }
   }
 
-  private proc chpl__primes return
-    (23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
+  private inline proc chpl__primes return
+    (0, 23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
      196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
      50331599, 100663291, 201326557, 402653171, 805306357, 1610612711, 3221225461,
      6442450939, 12884901877, 25769803751, 51539607551, 103079215087,
@@ -86,16 +86,16 @@ module ChapelHashtable {
 
   // Leaves the elements 0 initialized
   private proc _allocateData(size:int, type tableEltType) {
+
+    if size == 0 then
+      halt("attempt to allocate hashtable with size 0");
+
     var callPostAlloc: bool;
     var ret = _ddata_allocate_noinit(tableEltType,
                                      size,
                                      callPostAlloc);
 
     var initMethod = init_elts_method(size, tableEltType);
-
-    const numChunks = _computeNumChunks(size);
-    if numChunks == 1 then
-      initMethod = ArrayInit.serialInit;
 
     const sizeofElement = _ddata_sizeof_element(ret);
 
@@ -134,6 +134,12 @@ module ChapelHashtable {
     }
 
     return ret;
+  }
+
+  private proc _freeData(data, size:int) {
+    if data != nil {
+      _ddata_free(data, size);
+    }
   }
 
   // #### deinit helpers ####
@@ -263,24 +269,20 @@ module ChapelHashtable {
     type valType;
 
     var tableNumFullSlots: int;
-    var tableNumDeletedSlots: int;
-    // Could also have e.g. tableNumDeletedSlots here
 
     var tableSizeNum: int;
     var tableSize: int;
     var table: _ddata(chpl_TableEntry(keyType, valType)); // 0..<tableSize
 
-    var rehashHelpers: owned chpl__rehashHelpers;
+    var rehashHelpers: owned chpl__rehashHelpers?;
 
     var postponeResize: bool;
 
     proc init(type keyType, type valType,
-              in rehashHelpers: owned chpl__rehashHelpers
-                        = new owned chpl__rehashHelpers()) {
+              in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
-      this.tableNumDeletedSlots = 0;
       this.tableSizeNum = 0;
       this.tableSize = chpl__primes(tableSizeNum);
       this.rehashHelpers = rehashHelpers;
@@ -291,8 +293,7 @@ module ChapelHashtable {
       // All elements are memset to 0 (no initializer is run for the idxType)
       // This allows them to be empty, but the key and val
       // are considered uninitialized.
-      this.table = _allocateData(this.tableSize,
-                                 chpl_TableEntry(this.keyType, this.valType));
+      this.table = allocateTable(this.tableSize);
     }
     proc deinit() {
       // Go through the full slots in the current table and run
@@ -317,7 +318,7 @@ module ChapelHashtable {
       }
 
       // Free the buffer
-      _ddata_free(table, tableSize);
+      _freeData(table, tableSize);
     }
 
     // #### iteration helpers ####
@@ -389,12 +390,9 @@ module ChapelHashtable {
       return (false, -1);
     }
 
-    // NOTE: A copy of this routine is tested in
-    //    test/associative/ferguson/check-look-for-slots.chpl
-    // So, when updating this routine, either refactor so the test
-    // can use the below code - or update the test in a corresponding manner.
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(key):uint;
+      if numSlots == 0 then return;
       for probe in 0..numSlots/2 {
         var uprobe = probe:uint;
         var n = numSlots:uint;
@@ -414,7 +412,7 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if ((tableNumFullSlots+1)*2 > tableSize) {
+      if (tableNumFullSlots+1)*2 > tableSize {
         resize(grow=true);
       }
 
@@ -497,7 +495,6 @@ module ChapelHashtable {
 
       // update the table counts
       tableNumFullSlots -= 1;
-      tableNumDeletedSlots += 1;
     }
     proc clearSlot(slotNum: int, out key: keyType, out val: valType) {
       // move the table entry into the key/val variables to be returned
@@ -534,34 +531,43 @@ module ChapelHashtable {
     }
 
     proc allocateData(size: int, type tableEltType) {
-      return _allocateData(size, tableEltType);
+      if size == 0 {
+        return nil;
+      } else {
+        return _allocateData(size, tableEltType);
+      }
     }
     proc allocateTable(size:int) {
-      return _allocateData(size, chpl_TableEntry(keyType, valType));
+      if size == 0 {
+        return nil;
+      } else {
+        return _allocateData(size, chpl_TableEntry(keyType, valType));
+      }
     }
 
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
     proc rehash(newSizeNum:int, newSize:int) {
+      // save the old table
+      var oldSize = tableSize;
+      var oldTable = table;
+
+      tableSizeNum = newSizeNum;
+      tableSize = newSize;
+
       var entries = tableNumFullSlots;
       if entries > 0 {
         // There were entries, so carefully move them to the a new allocation
 
-        // save the old table
-        // oldTable has elements 0..<oldSize
-        var oldSize = tableSize;
-        var oldTable = table;
+        if newSize == 0 {
+          halt("attempt to resize to 0 a table that is not empty");
+        }
 
-        tableSizeNum = newSizeNum;
-        tableSize = newSize;
         table = allocateTable(tableSize);
 
-        rehashHelpers.startRehash(tableSize);
-
-        // tableNumFullSlots stays the same during this operation
-        // and all all deleleted slots are removed
-        tableNumDeletedSlots = 0;
+        if rehashHelpers != nil then
+          rehashHelpers!.startRehash(tableSize);
 
         // Move old data into newly resized table
         //
@@ -589,23 +595,29 @@ module ChapelHashtable {
             _moveInit(dstSlot.val, _moveToReturn(oldEntry.val));
 
             // move array elements to the new location
-            rehashHelpers.moveElementDuringRehash(oldslot, newslot);
+            if rehashHelpers != nil then
+              rehashHelpers!.moveElementDuringRehash(oldslot, newslot);
           }
         }
 
-        rehashHelpers.finishRehash(oldSize);
+        if rehashHelpers != nil then
+          rehashHelpers!.finishRehash(oldSize);
 
         // delete the old allocation
-        _ddata_free(oldTable, oldSize);
+        _freeData(oldTable, oldSize);
 
       } else {
         // There were no entries, so just make a new allocation
 
-        // delete the old allocation
-        _ddata_free(table, tableSize);
 
-        tableSizeNum = newSizeNum;
-        tableSize = newSize;
+        if rehashHelpers != nil {
+          rehashHelpers!.startRehash(tableSize);
+          rehashHelpers!.finishRehash(oldSize);
+        }
+
+        // delete the old allocation
+        _freeData(oldTable, oldSize);
+
         table = allocateTable(tableSize);
       }
     }
@@ -629,6 +641,12 @@ module ChapelHashtable {
         halt("associative array exceeds maximum size");
 
       var newSize = chpl__primes(newSizeNum);
+
+      if grow==false && 2*tableNumFullSlots > newSize {
+        // don't shrink if the number of elements would not
+        // fit into the new size.
+        return;
+      }
 
       rehash(newSizeNum, newSize);
     }

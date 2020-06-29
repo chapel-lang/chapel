@@ -65,7 +65,7 @@ module Random {
   public use NPBRandom;
   public use PCGRandom;
   import HaltWrappers;
-  import Set;
+  import Set.set;
 
 
 
@@ -314,7 +314,7 @@ module Random {
         }
       } else {
         if numElements < log2(X.size) {
-          var indices: Set.set(int);
+          var indices: set(int);
           var i: int = 0;
           while i < numElements {
             var randVal = stream.getNext(resultType=int, 0, X.size-1);

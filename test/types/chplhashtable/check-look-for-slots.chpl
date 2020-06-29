@@ -1,13 +1,8 @@
 config const verbose = false;
 
-iter lookForSlots(hash:int, numSlots:int) {
-  const baseSlot = hash:uint;
-  for probe in 0..numSlots/2 {
-    var uprobe = probe:uint;
-    var n = numSlots:uint;
-    yield ((baseSlot + uprobe**2)%n):int;
-  }
-}
+use ChapelHashtable;
+
+var ht: chpl__hashtable(int, nothing);
 
 // How many buckets can lookForSlots check?
 // Let's find out.
@@ -17,7 +12,7 @@ iter lookForSlots(hash:int, numSlots:int) {
 for hash in (max(int)-3, max(int)-2, max(int)-1, max(int), 0, 1, 2, 3) {
   for numSlots in (3, 7, 11, 19, 23, 31, 47, 83, 191, 383) {
     var hits:[0..#numSlots] int;
-    for i in lookForSlots(hash, numSlots) {
+    for i in ht._lookForSlots(hash, numSlots) {
       if verbose then
         writeln("lookForSlots(", hash, ",", numSlots, ") yielded ", i);
       assert( 0 <= i && i < numSlots );

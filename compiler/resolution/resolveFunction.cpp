@@ -1883,10 +1883,7 @@ bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
 // passing an argument of type 't'.
 //
 static bool backendRequiresCopyForIn(Type* t) {
-  return (isRecord(t) == true && !t->symbol->hasFlag(FLAG_RANGE)) ||
-         isUnion(t)                      == true ||
-         t->symbol->hasFlag(FLAG_ARRAY)  == true ||
-         t->symbol->hasFlag(FLAG_DOMAIN) == true;
+  return argMustUseCPtr(t);
 }
 
 

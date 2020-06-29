@@ -3,12 +3,12 @@ export proc noArgsRetBytes(): bytes {
   return result;
 }
 
-export proc bytesArgRetVoid(a: bytes, b: bytes) {
+export proc bytesArgRetVoid(in a: bytes, in b: bytes) {
   writeln(a);
   writeln(b);
 }
 
-export proc bytesArgsRetBytes(a: bytes, b: bytes): bytes {
+export proc bytesArgsRetBytes(in a: bytes, in b: bytes): bytes {
   var result = a + b;
   return result;
 }

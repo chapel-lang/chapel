@@ -134,6 +134,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+  fn->addFlag(FLAG_LLVM_RETURN_NOALIAS);
 
   if (initFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
