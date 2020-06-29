@@ -17,76 +17,9 @@ extern {
   #include <stdbool.h>
   #include <inttypes.h>
   #include <complex.h>
+  #include <string.h>
 
-  struct c_one_int {
-    int a;
-  };
-
-  struct c_one_long {
-    long a;
-  };
-
-  struct c_one_float {
-    float a;
-  };
-
-  struct c_one_double {
-    double a;
-  };
-
-
-  struct c_pair_int {
-    int a;
-    int b;
-  };
-
-  struct c_pair_long {
-    long a;
-    long b;
-  };
-
-  struct c_pair_float {
-    float a;
-    float b;
-  };
-
-  struct c_pair_double {
-    double a;
-    double b;
-  };
-
-  struct c_triple {
-    int64_t a;
-    int64_t b;
-    int64_t c;
-  };
-
-  struct c_twelve {
-    int64_t a;
-    int64_t b;
-    int64_t c;
-    int64_t d;
-    int64_t e;
-    int64_t f;
-    int64_t g;
-    int64_t h;
-    int64_t i;
-    int64_t j;
-    int64_t k;
-    int64_t l;
-  };
-
-  // this example inspired by an example in
-  // System V Application Binary Interface AMD64 Architecture Processor Supplement (With LP64 and ILP32 Programming Models) Version 1.0
-  typedef struct {
-    int a, b;
-    double d;
-  } abistruct;
-  void abistructfunc_c_____(int e, int f,
-                            abistruct s, int g, int h,
-                            /*long*/ double ld, double m,
-                            double n, int i, int j, int k);
-
+  // prototypes and type definitions
   void print_output_prefix(void);
 
   int64_t int64_return_c_____(void);
@@ -132,39 +65,105 @@ extern {
   void complexd_arg_c_____(double complex x);
 
 
+  struct c_one_int {
+    int a;
+  };
   struct c_one_int struct_one_int_return_c_____(void);
   void struct_one_int_arg_c_____(struct c_one_int arg);
 
+  struct c_one_long {
+    long a;
+  };
   struct c_one_long struct_one_long_return_c_____(void);
   void struct_one_long_arg_c_____(struct c_one_long arg);
 
+  struct c_one_float {
+    float a;
+  };
   struct c_one_float struct_one_float_return_c_____(void);
   void struct_one_float_arg_c_____(struct c_one_float arg);
 
+  struct c_one_double {
+    double a;
+  };
   struct c_one_double struct_one_double_return_c_____(void);
   void struct_one_double_arg_c_____(struct c_one_double arg);
 
 
+  struct c_pair_int {
+    int a;
+    int b;
+  };
   struct c_pair_int struct_pair_int_return_c_____(void);
   void struct_pair_int_arg_c_____(struct c_pair_int arg);
 
+  struct c_pair_long {
+    long a;
+    long b;
+  };
   struct c_pair_long struct_pair_long_return_c_____(void);
   void struct_pair_long_arg_c_____(struct c_pair_long arg);
 
+  struct c_pair_float {
+    float a;
+    float b;
+  };
   struct c_pair_float struct_pair_float_return_c_____(void);
   void struct_pair_float_arg_c_____(struct c_pair_float arg);
 
+  struct c_pair_double {
+    double a;
+    double b;
+  };
   struct c_pair_double struct_pair_double_return_c_____(void);
   void struct_pair_double_arg_c_____(struct c_pair_double arg);
 
-
+  struct c_triple {
+    int64_t a;
+    int64_t b;
+    int64_t c;
+  };
   struct c_triple struct_triple_return_c_____(void);
   void struct_triple_arg_c_____(struct c_triple arg);
 
+  struct c_twelve {
+    int64_t a;
+    int64_t b;
+    int64_t c;
+    int64_t d;
+    int64_t e;
+    int64_t f;
+    int64_t g;
+    int64_t h;
+    int64_t i;
+    int64_t j;
+    int64_t k;
+    int64_t l;
+  };
   struct c_twelve struct_twelve_return_c_____(void);
   void struct_twelve_arg_c_____(struct c_twelve arg);
 
+  // this example inspired by an example in
+  // System V Application Binary Interface AMD64 Architecture Processor Supplement (With LP64 and ILP32 Programming Models) Version 1.0
+  typedef struct {
+    int a, b;
+    double d;
+  } abistruct;
+  void abistructfunc_c_____(int e, int f,
+                            abistruct s, int g, int h,
+                            /*long*/ double ld, double m,
+                            double n, int i, int j, int k);
 
+  struct paddingtest {
+    unsigned char c1;
+    uint16_t h2;
+    int64_t d3;
+  };
+  struct paddingtest struct_paddingtest_return_c_____(void);
+  void struct_paddingtest_arg_c_____(struct paddingtest arg);
+
+
+  // function definitions
   int64_t int64_return_c_____(void) {
     return -1;
   }
@@ -413,7 +412,19 @@ extern {
            n, i, j, k);
   }
 
-
+  struct paddingtest struct_paddingtest_return_c_____(void) {
+    struct paddingtest t;
+    memset(&t, 0, sizeof(t));
+    t.c1 = 1;
+    t.h2 = 2;
+    t.d3 = 3;
+    return t;
+  }
+  void struct_paddingtest_arg_c_____(struct paddingtest arg) {
+    print_output_prefix();
+    printf("arg.c1 %i arg.h2 %i arg.d3 %li\n",
+           arg.c1, arg.h2, (long) arg.d3);
+  }
 }
 
 var phase: string;
@@ -620,6 +631,16 @@ export proc abistructfunc_chapel(e: c_int, f: c_int,
                                  n: real(64), i: c_int, j: c_int, k: c_int) {
   abistructfunc_c_____(e, f, s, g, h, ld, m, n, i, j, k);
 }
+
+export proc struct_paddingtest_return_chapel(): paddingtest {
+  var tt:paddingtest;
+  tt = struct_paddingtest_return_c_____();
+  return tt;
+}
+export proc struct_paddingtest_arg_chapel(in arg: paddingtest) {
+  struct_paddingtest_arg_c_____(arg);
+}
+
 
 proc main() {
   {
