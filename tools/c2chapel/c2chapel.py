@@ -181,6 +181,22 @@ def computeArgName(decl):
         decl.show()
         raise c_parser.ParseError("Unhandled Node type")
 
+def isStructType(ast):
+    inner = ast
+
+    if type(inner) == c_ast.TypeDecl:
+        inner = inner.type
+
+    if type(inner) == c_ast.IdentifierType:
+        name = " ".join(inner.names)
+        if name in typeDefs:
+            return isStructType(typeDefs[name].type)
+
+    if type(inner) == c_ast.Struct:
+        return True
+
+    return False
+
 def getIntentInfo(ty):
     refIntent = ""
     retType   = ""
@@ -217,7 +233,8 @@ def computeArgs(pl):
             argName = computeArgName(arg)
             if typeName != "":
                 if intent == "":
-                    intent = "in "
+                    if isStructType(arg.type):
+                        intent = "in "
                 else:
                     intent += " "
                 if argName == "":
@@ -225,9 +242,10 @@ def computeArgs(pl):
                 formals.append(intent + argName + " : " + typeName)
 
                 if ptrTypeName != "":
-                    ptrFormals.append("in " + argName + " : " + ptrTypeName)
+                    ptrFormals.append(argName + " : " + ptrTypeName)
                 else:
-                    ptrFormals.append("in " + argName + " : " + typeName)
+                    ptrFormals.append(intent + argName + " : " + typeName)
+
     return (", ".join(formals), ", ".join(ptrFormals))
 
 def isPointerTo(ty, text):
@@ -338,7 +356,7 @@ def genStruct(struct, name=""):
     if not struct.decls:
         print()
         return
-    
+
     members = ""
     warnKeyword = False
     for decl in struct.decls:
@@ -370,9 +388,9 @@ def genVar(decl):
 
 def genEnum(decl):
     if type(decl) == c_ast.Enum:
-        if decl.name: 
+        if decl.name:
             genComment("Enum: " + decl.name)
-        else: 
+        else:
             genComment("Enum: anonymous")
         for val in decl.values.enumerators:
             print("extern const " + val.name + " :c_int;")
