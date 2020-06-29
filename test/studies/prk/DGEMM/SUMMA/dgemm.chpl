@@ -37,7 +37,7 @@ if !correctness {
   writeln("Chapel Dense matrix-matrix multiplication");
   writeln("Max parallelism      =   ", nTasksPerLocale);
   writeln("Matrix order         =   ", order);
-  writeln("Window size      =   ", if windowSize>0 then 
+  writeln("Window size      =   ", if windowSize>0 then
       windowSize:string
       else "N/A");
   writeln("Number of iterations =   ", iterations);
@@ -86,11 +86,21 @@ else {
 
       for niter in 0..iterations {
         if here.id==0 && niter==1 then t.start();
-        for subArrayAChunk in block(A.domain.dim(1), windowSize) {
-          var subArrayA : [localDomainA.dim(0), subArrayAChunk] A.eltType 
-                        = A[localDomainA.dim(0), subArrayAChunk];
-          var subArrayB : [subArrayAChunk, localDomainB.dim(1)] B.eltType 
-                        = B[subArrayAChunk ,localDomainB.dim(1)];
+        for subArrayChunk in block(A.domain.dim(1), windowSize) {
+          var subArrayA : [localDomainA.dim(0), subArrayChunk] A.eltType;
+          var subArrayB : [subArrayChunk, localDomainB.dim(1)] B.eltType;
+
+          forall i in localDomainA.dim(0) {
+            forall j in subArrayChunk {
+              subArrayA[i, j] = A[i, j];
+            }
+          }
+          forall i in subArrayChunk {
+            forall j in localDomainB.dim(1) {
+              subArrayB[i, j] = B[i, j];
+            }
+          }
+          
           C[localDomainC] += dot(subArrayA, subArrayB);
         }
       }
