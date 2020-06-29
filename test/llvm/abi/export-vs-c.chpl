@@ -162,6 +162,14 @@ extern {
   struct paddingtest struct_paddingtest_return_c_____(void);
   void struct_paddingtest_arg_c_____(struct paddingtest arg);
 
+  struct aligned16test {
+    uint64_t x;
+    uint64_t a __attribute__((aligned (16)));
+  };
+  struct aligned16test struct_aligned16test_return_c_____(void);
+  void struct_aligned16test_arg_c_____(struct aligned16test arg);
+
+
 
   // function definitions
   int64_t int64_return_c_____(void) {
@@ -425,6 +433,18 @@ extern {
     printf("arg.c1 %i arg.h2 %i arg.d3 %li\n",
            arg.c1, arg.h2, (long) arg.d3);
   }
+
+  struct aligned16test struct_aligned16test_return_c_____(void) {
+    struct aligned16test t;
+    memset(&t, 0, sizeof(t));
+    t.x = 123456789;
+    t.a = 987654321;
+    return t;
+  }
+  void struct_aligned16test_arg_c_____(struct aligned16test arg) {
+    print_output_prefix();
+    printf("arg.x %li arg.a %li\n", arg.x, arg.a);
+  }
 }
 
 var phase: string;
@@ -639,6 +659,15 @@ export proc struct_paddingtest_return_chapel(): paddingtest {
 }
 export proc struct_paddingtest_arg_chapel(in arg: paddingtest) {
   struct_paddingtest_arg_c_____(arg);
+}
+
+export proc struct_aligned16test_return_chapel(): aligned16test {
+  var tt:aligned16test;
+  tt = struct_aligned16test_return_c_____();
+  return tt;
+}
+export proc struct_aligned16test_arg_chapel(in arg: aligned16test) {
+  struct_aligned16test_arg_c_____(arg);
 }
 
 
@@ -889,5 +918,25 @@ proc main() {
     abistructfunc_c_____(e, f, s, g, h, ld, m, n, i, j, k);
     start_phase("testing abistructfunc_chapel");
     abistructfunc_chapel(e, f, s, g, h, ld, m, n, i, j, k);
+  }
+
+  {
+    var ttt:paddingtest;
+    start_phase("testing struct_paddingtest_..._c_____");
+    ttt = struct_paddingtest_return_c_____();
+    struct_paddingtest_arg_c_____(ttt);
+    start_phase("testing struct_paddingtest_..._chapel");
+    ttt = struct_paddingtest_return_chapel();
+    struct_paddingtest_arg_chapel(ttt);
+  }
+
+  {
+    var ttt:aligned16test;
+    start_phase("testing struct_aligned16test_..._c_____");
+    ttt = struct_aligned16test_return_c_____();
+    struct_aligned16test_arg_c_____(ttt);
+    start_phase("testing struct_aligned16test_..._chapel");
+    ttt = struct_aligned16test_return_chapel();
+    struct_aligned16test_arg_chapel(ttt);
   }
 }

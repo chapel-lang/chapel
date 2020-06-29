@@ -38,6 +38,10 @@ OUTPUT testing int8_..._c_____
 OUTPUT testing int8_..._c_____: arg -1
 OUTPUT testing int8_..._chapel
 OUTPUT testing int8_..._chapel: arg -1
+OUTPUT testing struct_aligned16test_..._c_____
+OUTPUT testing struct_aligned16test_..._c_____: arg.x 123456789 arg.a 987654321
+OUTPUT testing struct_aligned16test_..._chapel
+OUTPUT testing struct_aligned16test_..._chapel: arg.x 123456789 arg.a 987654321
 OUTPUT testing struct_one_double..._c_____
 OUTPUT testing struct_one_double..._c_____: arg.a 15.000000
 OUTPUT testing struct_one_double..._chapel
@@ -54,6 +58,10 @@ OUTPUT testing struct_one_long..._c_____
 OUTPUT testing struct_one_long..._c_____: arg.a -8
 OUTPUT testing struct_one_long..._chapel
 OUTPUT testing struct_one_long..._chapel: arg.a -8
+OUTPUT testing struct_paddingtest_..._c_____
+OUTPUT testing struct_paddingtest_..._c_____: arg.c1 1 arg.h2 2 arg.d3 3
+OUTPUT testing struct_paddingtest_..._chapel
+OUTPUT testing struct_paddingtest_..._chapel: arg.c1 1 arg.h2 2 arg.d3 3
 OUTPUT testing struct_pair_double..._c_____
 OUTPUT testing struct_pair_double..._c_____: arg.a 0.000000 arg.b 1.000000
 OUTPUT testing struct_pair_double..._chapel
@@ -144,6 +152,10 @@ define weak dso_local void @int64_arg_c_____(i64)
 define weak dso_local void @int64_arg_chapel(i64)
 define weak dso_local void @int8_arg_c_____(i8 signext)
 define weak dso_local void @int8_arg_chapel(i8 signext)
+define weak dso_local void @struct_aligned16test_arg_c_____(%struct.aligned16test* byval align 16)
+define weak dso_local void @struct_aligned16test_arg_chapel(%struct.aligned16test* byval align 16)
+define weak dso_local void @struct_aligned16test_return_c_____(%struct.aligned16test* noalias sret)
+define weak dso_local void @struct_aligned16test_return_chapel(%struct.aligned16test* noalias sret align 16)
 define weak dso_local void @struct_one_double_arg_c_____(double)
 define weak dso_local void @struct_one_double_arg_chapel(double)
 define weak dso_local void @struct_one_float_arg_c_____(float)
