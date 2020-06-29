@@ -91,7 +91,11 @@ static GenRet codegenAddrOf(GenRet r);
  * the C backend will never actually emit the call, since it won't
  * be added to the list of statements.
  */
+#ifdef HAVE_LLVM
 static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, clang::FunctionDecl* FD, bool defaultToValues);
+#else
+static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, void* FD, bool defaultToValues);
+#endif
 static GenRet codegenCallExpr(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 // some codegenCallExpr are declared in codegen.h
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
@@ -2289,7 +2293,11 @@ static
 GenRet codegenCallExpr(GenRet function,
                        std::vector<GenRet> & args,
                        FnSymbol* fn,
+#ifdef HAVE_LLVM
                        clang::FunctionDecl* FD,
+#else
+                       void* FD,
+#endif
                        bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
@@ -2588,6 +2596,9 @@ GenRet codegenCallExpr(const char* fnName,
     return codegenCallExpr(fn, args, NULL, FD, defaultToValues);
 #endif
   }
+
+  INT_FATAL("should not be reached");
+  return fn;
 }
 
 static
