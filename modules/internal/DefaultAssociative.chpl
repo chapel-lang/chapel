@@ -291,6 +291,7 @@ module DefaultAssociative {
     }
 
     proc dsiMember(idx: idxType): bool {
+      lockTable(); defer { unlockTable(); }
       var (foundFullSlot, slotNum) = table.findFullSlot(idx);
       return foundFullSlot;
     }
