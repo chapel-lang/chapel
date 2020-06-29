@@ -98,7 +98,7 @@ else {
             }
           }
           
-          C[localDomainC] += dot(subArrayA, subArrayB);
+          C.localSlice(localDomainC) += dot(subArrayA, subArrayB);
         }
       }
     }
