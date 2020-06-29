@@ -652,12 +652,12 @@ module Set {
 
     if lhs.parSafe && rhs.parSafe {
       forall x in lhs do
-	if rhs.contains(x) then
-	  result.add(x);
+        if rhs.contains(x) then
+          result.add(x);
     } else {
       for x in lhs do
-	if rhs.contains(x) then
-	  result.add(x);
+        if rhs.contains(x) then
+          result.add(x);
     }
     lhs = result;
   }
