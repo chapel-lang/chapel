@@ -91,7 +91,7 @@ static GenRet codegenAddrOf(GenRet r);
  * the C backend will never actually emit the call, since it won't
  * be added to the list of statements.
  */
-static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fSym, bool defaultToValues);
+static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, clang::FunctionDecl* FD, bool defaultToValues);
 static GenRet codegenCallExpr(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 // some codegenCallExpr are declared in codegen.h
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
@@ -2281,31 +2281,32 @@ GenRet codegenArgForFormal(GenRet arg,
   return arg;
 }
 
-// if fSym is non-NULL, we use that to decide what to dereference.
+// if fn is non-NULL, we use that to decide what to dereference.
 // Otherwise, if defaultToValues=true, we will codegenValue() the arguments,
 //            and if it is false, they will pass by reference if they
 //            are references.
 static
 GenRet codegenCallExpr(GenRet function,
                        std::vector<GenRet> & args,
-                       FnSymbol* fSym,
+                       FnSymbol* fn,
+                       clang::FunctionDecl* FD,
                        bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
 
   bool isExternOrExport = false;
-  if (fSym) {
-    if (fSym->hasFlag(FLAG_EXTERN) ||
-        fSym->hasFlag(FLAG_EXPORT)) {
+  if (fn) {
+    if (fn->hasFlag(FLAG_EXTERN) ||
+        fn->hasFlag(FLAG_EXPORT)) {
       isExternOrExport = true;
     }
   }
 
   // As a first step, adjust the formals to have the proper types
-  if (fSym) {
+  if (fn) {
     size_t i = 0;
-    for_formals(formal, fSym) {
+    for_formals(formal, fn) {
       args[i] = codegenArgForFormal(args[i], formal,
                                     defaultToValues, isExternOrExport);
       i++;
@@ -2344,10 +2345,12 @@ GenRet codegenCallExpr(GenRet function,
     const clang::CodeGen::CGFunctionInfo* CGI = NULL;
 
     if (isExternOrExport) {
-      INT_ASSERT(fSym);
+      INT_ASSERT(fn);
       // Get the clang ABI info
-      CGI = &getClangABIInfo(fSym);
+      CGI = &getClangABIInfo(fn);
       INT_ASSERT(CGI != NULL);
+    } else if (FD != NULL) {
+      CGI = &getClangABIInfoFD(FD);
     }
 
     INT_ASSERT(function.val);
@@ -2381,15 +2384,15 @@ GenRet codegenCallExpr(GenRet function,
 
       if (returnInfo.isIndirect()) {
         // Create a temporary for holding the return value
-        llvm::Type* chapelRetTy = fSym->retType->codegen().type;
+        llvm::Type* chapelRetTy = fn->retType->codegen().type;
         sret = createVarLLVM(chapelRetTy);
         llArgs.push_back(sret);
       }
     }
 
     ArgSymbol* formal = NULL;
-    if (fSym && fSym->numFormals() > 0)
-      formal = fSym->getFormal(1);
+    if (fn && fn->numFormals() > 0)
+      formal = fn->getFormal(1);
 
     for (size_t i = 0; i < args.size(); i++) {
       const clang::CodeGen::ABIArgInfo* argInfo = NULL;
@@ -2423,7 +2426,10 @@ GenRet codegenCallExpr(GenRet function,
           case clang::CodeGen::ABIArgInfo::Kind::Extend:
           case clang::CodeGen::ABIArgInfo::Kind::Direct:
           {
-            llvm::Type* chapelArgTy = formal->type->codegen().type;
+            llvm::Type* chapelArgTy = args[i].val->getType();
+            if (chapelArgTy == NULL && formal != NULL)
+              chapelArgTy = formal->type->codegen().type;
+
             if (!llvm::isa<llvm::StructType>(argInfo->getCoerceToType()) &&
                 argInfo->getCoerceToType() == chapelArgTy &&
                 argInfo->getDirectOffset() == 0) {
@@ -2527,6 +2533,7 @@ GenRet codegenCallExpr(GenRet function,
           llvm::Type* targetType = NULL;
           targetType = fnType->getParamType(llArgs.size());
           val = convertValueToType(args[i].val, targetType, isSigned, false);
+          INT_ASSERT(val != NULL);
         } else {
           val = args[i].val;
         }
@@ -2555,7 +2562,7 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     if( sret ) {
-      ret.val = codegenLoadLLVM(sret, fSym?(fSym->retType):(NULL));
+      ret.val = codegenLoadLLVM(sret, fn?(fn->retType):(NULL));
     }
 
 #endif
@@ -2570,14 +2577,17 @@ GenRet codegenCallExpr(const char* fnName,
 {
   GenInfo* info = gGenInfo;
   GenRet fn;
-  if( info->cfile ) fn.c = fnName;
-  else {
+  if( info->cfile ) {
+    fn.c = fnName;
+    return codegenCallExpr(fn, args, NULL, NULL, defaultToValues);
+  } else {
 #ifdef HAVE_LLVM
+    clang::FunctionDecl* FD = getFunctionDeclClang(fnName);
     fn.val = getFunctionLLVM(fnName);
     INT_ASSERT(fn.val);
+    return codegenCallExpr(fn, args, NULL, FD, defaultToValues);
 #endif
   }
-  return codegenCallExpr(fn, args, NULL, defaultToValues);
 }
 
 static
@@ -3543,7 +3553,7 @@ GenRet CallExpr::codegen() {
     }
 
     if (gGenInfo->cfile != NULL) {
-      ret = codegenCallExpr(base, args, fn, true);
+      ret = codegenCallExpr(base, args, fn, NULL, true);
 
       if (getStmtExpr() && getStmtExpr() == this)
         gGenInfo->cStatements.push_back(ret.c + ";\n");
@@ -3563,7 +3573,7 @@ GenRet CallExpr::codegen() {
 #endif
       }
 
-      ret = codegenCallExpr(base, args, fn, true);
+      ret = codegenCallExpr(base, args, fn, NULL, true);
 
 #ifdef HAVE_LLVM
       // We might have to convert the return from the function
@@ -5184,7 +5194,7 @@ DEFINE_PRIM(PRIM_FTABLE_CALL) {
 
     args.push_back(arg);
 
-    ret = codegenCallExpr(fngen, args, NULL, true);
+    ret = codegenCallExpr(fngen, args, NULL, NULL, true);
 }
 DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
@@ -5234,7 +5244,7 @@ DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
       args.push_back(call->get(i++));
     }
 
-    ret = codegenCallExpr(fngen, args, fn, true);
+    ret = codegenCallExpr(fngen, args, fn, NULL, true);
 }
 
 DEFINE_PRIM(PRIM_LOOKUP_FILENAME) {
