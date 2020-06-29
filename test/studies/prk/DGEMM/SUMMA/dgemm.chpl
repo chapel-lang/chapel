@@ -75,17 +75,14 @@ if windowSize == 0 {
   t.stop();
 }
 else {
-
-  coforall loc in A.targetLocales() with (ref t) {
-    on loc {
-      var localDomainA = A.localSubdomain();
-      var localDomainB = B.localSubdomain();
-      var localDomainC = C.localSubdomain();
-
-      const commonDimension = A.domain.dim(1);
-
-      for niter in 0..iterations {
+  for niter in 0..iterations {
+    coforall loc in A.targetLocales() with (ref t) {
+      on loc {
         if here.id==0 && niter==1 then t.start();
+        var localDomainA = A.localSubdomain();
+        var localDomainB = B.localSubdomain();
+        var localDomainC = C.localSubdomain();
+        
         for subArrayChunk in block(A.domain.dim(1), windowSize) {
           var subArrayA : [localDomainA.dim(0), subArrayChunk] A.eltType;
           var subArrayB : [subArrayChunk, localDomainB.dim(1)] B.eltType;
