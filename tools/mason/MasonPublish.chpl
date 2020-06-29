@@ -483,10 +483,12 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   if package {
     writeln('Checking for license:');
-    if checkLicense(projectCheckHome) {
+    var validLicenseCheck = checkLicense(projectCheckHome);
+    if validLicenseCheck[0] {
       writeln('   Found valid license in manifest file. (PASSED)');
     } else {
-      writeln('   Invalid license name. Please use a valid name from SPDX license list. (FAILED)');
+      writeln('   Invalid license name: "' + validLicenseCheck[1] + '". Please use a valid name from ' +
+          'SPDX license list. (FAILED)');
       licenseTest = false;
     }
     writeln(spacer);
@@ -564,7 +566,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   if ci {
     if package && moduleCheck(projectCheckHome) 
-    && testCheck(projectCheckHome) && checkLicense(projectCheckHome) {
+    && testCheck(projectCheckHome) && checkLicense(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
     }
@@ -579,8 +581,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 /* Validate license with that of SPDX list */
 private proc checkLicense(projectHome: string) throws {
   var foundValidLicense = false;
+  var defaultLicense = "None";
   if exists(joinPath(projectHome, "Mason.toml")) {
-    var defaultLicense = "None";
     const toParse = open(joinPath(projectHome, "Mason.toml"), iomode.r);
     const tomlFile = owned.create(parseToml(toParse));
     if tomlFile.pathExists("brick.license") {
@@ -588,7 +590,10 @@ private proc checkLicense(projectHome: string) throws {
     }
     // git clone the SPDX repo and validate license identifier
     const dest = MASON_HOME + '/spdx';
-    const command = 'git clone https://github.com/spdx/license-list ' + dest;
+    const branch = '--branch master ';
+    const depth = '--depth 1 ';
+    const url = 'https://github.com/spdx/license-list.git ';
+    const command = 'git clone -q ' + branch + depth + url + dest;
     if !isDir(dest) then runCommand(command);
     var licenseList = listdir(MASON_HOME + "/spdx");
     for licenses in licenseList {
@@ -599,8 +604,8 @@ private proc checkLicense(projectHome: string) throws {
       }
     }
   }
-  if foundValidLicense then return true;
-  else return false;
+  if foundValidLicense then return (true, defaultLicense);
+  else return (false, defaultLicense);
 }
 
 /* Attempts to build the package/

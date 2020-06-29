@@ -972,7 +972,7 @@ later. For example, if you are using the 1.16 release, chplVersion will be
 ``1.16.0``.
 
 The ``license`` field indicates the software license under which the package is distributed.
-Any of the licenses available at the SPDX License List can be used for Mason packages.
+Any of the licenses available at the `SPDX License List <https://spdx.org/licenses/>`_ can be used for Mason packages.
 The license field defaults to ``None``.
 
 Environment Variables
