@@ -731,8 +731,8 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
     }
   }
   if (confirm) {
-    std::cout << "Confirming forall for static fast follower check\n";
-    std::cout << forall->stringLoc() << std::endl;
+    //std::cout << "Confirming forall for static fast follower check\n";
+    //std::cout << forall->stringLoc() << std::endl;
   }
   forall->optInfo.confirmedFastFollower = confirm;
 }
