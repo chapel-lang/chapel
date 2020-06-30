@@ -782,11 +782,11 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
         BB: [blockDom] eltType,
         CC: [blockDom] eltType;
 
-    for (kk,jj) in {myChunk by blockSize, 0..#Bdom.shape(1) by blockSize} {
-      const kMax = min(jj+blockSize-1, myChunk.high);
-      const jMax = min(kk+blockSize-1, Bdom.shape(1) - 1);
-      const jRange = 0..jMax-jj;
+    for (kk, jj) in {myChunk by blockSize, 0..#Bdom.shape(1) by blockSize} {
+      const kMax = min(kk+blockSize-1, myChunk.high);
+      const jMax = min(jj+blockSize-1, Bdom.shape(1) - 1);
       const kRange = 0..kMax-kk;
+      const jRange = 0..jMax-jj;
 
       for (jB, j) in zip(jj..jMax, 0..) do
         for (kB, k) in zip(kk..kMax, 0..) do
