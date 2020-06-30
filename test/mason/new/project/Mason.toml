@@ -2,6 +2,7 @@
 name = "project"
 version = "1.2.3"
 chplVersion = "1.21.0"
+license = "MIT"
 
 [dependencies]
 
