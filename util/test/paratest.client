@@ -11,7 +11,7 @@
 #  chplenv - Chapel environment variables
 #  futures-mode - include .futures (0=no, 1=all, 2=futures only, 3=futures with skipifs)
 #  valgrind - run valgrind (0=no, 1=both compiler and executable, 2=executable only)
-#  memleaks - check for memleaks (1=yes, else no)
+#  memleaks - check for memleaks (0=no, 1=use -memleaks, 2=use -memleakslog)
 #  compopts - optional Chapel compiler options
 #  execopts - optional test execution options
 #
@@ -60,10 +60,16 @@ sub main {
     $workingdir = $ARGV[1];
     $testdir = $ARGV[2];
     $chplenv = $ARGV[3];
+
     $futures_mode = "-futures-mode \"" . $ARGV[4] . "\"";
+
     $valgrind = "";
     $valgrind = "-valgrind" if ($ARGV[5] == 1);
     $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
+
+    $memleaks = "";
+    $memleaks = "-memleaks" if ($ARGV[6] == 1);
+    $memleaks = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[6] == 2);
 
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
     if ($#ARGV>=7) {
@@ -96,8 +102,6 @@ sub main {
     $dirfname =~ s/\//-/g;
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
-
-    $memleaks = ($ARGV[6] == 1) ? "-memleaks $logdir/tmp.$dirfname.$node.memleaks" : "";
 
     $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks";
     $testarg = "$testarg $testdir -norecurse";
