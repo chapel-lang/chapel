@@ -43,10 +43,12 @@ namespace llvm {
 }
 namespace clang {
   class Decl;
+  class FunctionDecl;
   class TypeDecl;
   class ValueDecl;
 
   namespace CodeGen {
+    class ABIArgInfo;
     class CGFunctionInfo;
   }
 }
@@ -67,6 +69,8 @@ llvm::Type* codegenCType(const clang::TypeDecl* td);
 GenRet codegenCValue(const clang::ValueDecl *vd);
 
 llvm::Function* getFunctionLLVM(const char* name);
+clang::FunctionDecl* getFunctionDeclClang(const char* name);
+
 llvm::Type* getTypeLLVM(const char* name);
 int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
 
@@ -76,7 +80,11 @@ llvm::MaybeAlign getPointerAlign(int addrSpace);
 uint64_t getPointerAlign(int addrSpace);
 #endif
 
+const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
+
+const clang::CodeGen::ABIArgInfo*
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg);
 
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
