@@ -49,7 +49,7 @@ proc primePerf(type tableType) {
     timer.start();
     for p in new Primes(tableType) { if p > LIMIT then break; count += 1; }
     timer.stop();
-    writef("%16s: %7.1dr s\n", tableType:string, timer.elapsed());
+    writef("%16s: %7.2dr s\n", tableType:string, timer.elapsed());
   }
 }
 
