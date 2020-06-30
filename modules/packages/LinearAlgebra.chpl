@@ -764,13 +764,58 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Ranks are not 2 and 2");
 
+  private use RangeChunk;
+
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
+  ref AMat = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
+  ref BMat = B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1));
+  ref CMat = C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1));
 
-  // naive algorithm
-  forall (i,j) in C.domain do
-    C[i,j] = + reduce (A[i,..]*B[..,j]);
+  const blockSize = 32;
+  const bVecRange = 0..#blockSize;
+  const blockDom = {bVecRange, bVecRange};
 
-  return C;
+  coforall tid in 0..#here.maxTaskPar {
+    const myChunk = chunk(0..#Adom.shape(1), here.maxTaskPar, tid);
+
+    var AA: [blockDom] eltType,
+        BB: [blockDom] eltType,
+        CC: [blockDom] eltType;
+
+    for (kk,jj) in {myChunk by blockSize, 0..#Bdom.shape(1) by blockSize} {
+      const kMax = min(jj+blockSize-1, myChunk.high);
+      const jMax = min(kk+blockSize-1, Bdom.shape(1) - 1);
+      const jRange = 0..jMax-jj;
+      const kRange = 0..kMax-kk;
+
+      for (jB, j) in zip(jj..jMax, 0..) do
+        for (kB, k) in zip(kk..kMax, 0..) do
+          BB[j,k] = BMat[kB,jB];
+
+      for ii in 0..#Adom.shape(0) by blockSize {
+        const iMax = min(ii+blockSize-1, Adom.shape(0) - 1);
+        const iRange = 0..iMax-ii;
+
+        for (iB, i) in zip(ii..iMax, 0..) do
+          for (kB, k) in zip(kk..kMax, 0..) do
+            AA[i,k] = AMat[iB, kB];
+
+        for cc in CC do
+          cc = 0 : eltType;
+
+        for (k,j,i) in {kRange, jRange, iRange} do
+          CC[i,j] += AA[i,k] * BB[j,k];
+
+        for (iB, i) in zip(ii..iMax, 0..) do
+          for (jB, j) in zip(jj..jMax, 0..) do
+            CMat[iB,jB] += CC[i,j];
+        
+      }
+    }
+  }
+
+  ref returnAsRef = C.reindex(Adom.dim(0), Bdom.dim(1));
+  return returnAsRef;
 }
 
 /*
