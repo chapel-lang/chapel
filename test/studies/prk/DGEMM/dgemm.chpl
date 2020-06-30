@@ -90,10 +90,10 @@ else {
           if here.id==0 && tid==0 && niter==1 then t.start();
 
           for (kk,jj) in {myChunk by blockSize, vecRange by blockSize} {
-            const kMax = min(jj+blockSize-1, myChunk.high);
-            const jMax = min(kk+blockSize-1, vecRange.high);
-            const jRange = 0..jMax-jj;
+            const kMax = min(kk+blockSize-1, myChunk.high);
+            const jMax = min(jj+blockSize-1, vecRange.high); 
             const kRange = 0..kMax-kk;
+            const jRange = 0..jMax-jj;
 
             // instead of unbounded ranges I was using 0..#blockSize in
             // perf tests, which was running fine with --fast, but
