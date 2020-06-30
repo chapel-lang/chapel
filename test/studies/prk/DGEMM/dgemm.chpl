@@ -89,7 +89,7 @@ else {
         for niter in 0..iterations {
           if here.id==0 && tid==0 && niter==1 then t.start();
 
-          for (kk,j) in {myChunk by blockSize, vecRange by blockSize} {
+          for (kk,jj) in {myChunk by blockSize, vecRange by blockSize} {
             const kMax = min(jj+blockSize-1, myChunk.high);
             const jMax = min(kk+blockSize-1, vecRange.high);
             const jRange = 0..jMax-jj;
