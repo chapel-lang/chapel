@@ -56,6 +56,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
 
 
   optInfo.autoLocalAccessChecked = false;
+  optInfo.confirmedFastFollower = false;
 
   gForallStmts.add(this);
 }

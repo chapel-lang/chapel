@@ -563,6 +563,7 @@ static ForallStmt *cloneLoop(ForallStmt *forall) {
 
   ForallStmt *clone = forall->copy();
   clone->optInfo.autoLocalAccessChecked = forall->optInfo.autoLocalAccessChecked;
+  clone->optInfo.confirmedFastFollower = forall->optInfo.confirmedFastFollower;
   return clone;
 }
 
@@ -677,9 +678,70 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   }
 }
 
+static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
+  AList &iterExprs = forall->iteratedExpressions();
+
+  if (iterExprs.length < 2) {
+    return;
+  }
+
+  Symbol *commonDomSym = NULL;
+  bool confirm = true;
+
+  for_alist(iterExpr, forall->iteratedExpressions()) {
+    Symbol *iterBaseSym = NULL;
+    Symbol *iterBaseDomSym = NULL;
+
+    // record it if it is a symbol
+    if (isUnresolvedSymExpr(iterExpr) || isSymExpr(iterExpr)) {
+      if (SymExpr *iterSE = toSymExpr(iterExpr)) {
+        iterBaseSym = iterSE->symbol();
+      }
+    }
+    // it might be in the form `A.domain`
+    else if (Symbol *dotDomBaseSym = getDotDomBaseSym(iterExpr)) {
+      iterBaseSym = dotDomBaseSym;
+    }
+
+    // break if we couldn't get a symbol that we can analyze further
+    if (iterBaseSym == NULL) {
+      confirm = false;
+      break;
+    }
+
+    if (Symbol *domainSymbol = getDomSym(iterBaseSym)) {
+      // found a symbol through a definition that I can recognize
+      iterBaseDomSym = domainSymbol;
+    }
+    else {
+      // for now, just roll the dice and hope that it was a domain
+      iterBaseDomSym = iterBaseSym;
+    }
+
+    if (commonDomSym == NULL) {
+      commonDomSym = iterBaseDomSym;
+    }
+    else {
+      // this iterator's symbol is different then what I assumed to be the
+      // common domain for all iterators. Not much I can do with this loop
+      if (commonDomSym != iterBaseDomSym) {
+        confirm = false;
+        break;
+      }
+    }
+  }
+  if (confirm) {
+    std::cout << "Confirming forall for static fast follower check\n";
+    std::cout << forall->stringLoc() << std::endl;
+  }
+  forall->optInfo.confirmedFastFollower = confirm;
+}
+
 void autoLocalAccess() {
   if (fAutoLocalAccess) {
     forv_Vec(ForallStmt, forall, gForallStmts) {
+      symbolicFastFollowerAnalysis(forall);
+
       if (forall->optInfo.autoLocalAccessChecked) {
         continue;
       }
