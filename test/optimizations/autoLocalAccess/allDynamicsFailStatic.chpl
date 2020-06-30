@@ -1,5 +1,5 @@
 use common;
-use CyclicDist;
+
 
 var D = createDom({1..10});
 
