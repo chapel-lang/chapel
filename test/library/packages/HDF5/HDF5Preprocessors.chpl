@@ -55,7 +55,6 @@ module HDF5Preprocessors {
           }
         }
 
-        f.close();
         remove(scriptName);
       }
     }
