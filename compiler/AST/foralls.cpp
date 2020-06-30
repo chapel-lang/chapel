@@ -964,10 +964,10 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
       leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
+
+      // override the dynamic check if the compiler can call it
       if (pfs->optInfo.confirmedFastFollower) {
-        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                            new_Expr("'move'(%S, %S)", T2, gTrue),
-                                            new_Expr("'move'(%S, %S)", T2, gFalse)));
+        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
       }
       else {
         leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
