@@ -10432,18 +10432,71 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     else
       call->convertToNoop(); // let the memory be uninitialized
 
-  // other types (sync, single, tuple, ...)
-  } else {
+  // tuples
+  } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
     errorInvalidParamInit(call, val, at);
 
     // Handle tuple variables marked "no init". Convert to NOP and leave.
-    if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
-      if (val->hasFlag(FLAG_NO_INIT) &&
-          call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
-        call->convertToNoop();
-        return;
-      }
+    if (val->hasFlag(FLAG_NO_INIT) &&
+        call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+      call->convertToNoop();
+      return;
     }
+
+    // Zero index and skip the first tuple field. TODO: Future-proof this?
+    int idx = -1;
+    bool hasErrored = false;
+
+    // Emit errors for any non-default-initializable tuple fields.
+    for_fields(field, at) {
+      if (!isDefaultInitializable(field->type)) {
+
+        if (!hasErrored) {
+          hasErrored = true;
+          USR_FATAL_CONT(call, "cannot default initialize the tuple %s",
+                         val->name);
+        }
+
+        USR_PRINT("element %d of type %s has no default value",
+                  idx, toString(field->type));
+
+        if (isNonNilableClassType(field->type)) {
+
+          Type* cdc = canonicalDecoratedClassType(field->type);
+          AggregateType* atc = toAggregateType(cdc);
+          ClassTypeDecorator d = classTypeDecorator(field->type);
+          Type* rec = atc->getDecoratedClass(addNilableToDecorator(d));
+
+          USR_PRINT("because it is a non-nilable class - consider the "
+                    "type %s instead", toString(rec));
+        }
+      }
+
+      idx++;
+    }
+
+    //
+    // Only insert a call to `_defaultOf` here if our tuple can be default
+    // initialized. This way avoid emitting confusing errors from within
+    // the `_defaultOf` and give other code a chance to emit errors as well.
+    //
+    // TODO: Prune/don't generate `_defaultOf` for tuples containing non-
+    // default-initializable elements?
+    //
+    if (!hasErrored) {
+      CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
+      CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
+
+      call->insertBefore(move);
+      call->convertToNoop();
+
+      resolveCallAndCallee(defaultCall);
+      resolveExpr(move);
+    }
+
+  // other types (sync, single, ...)
+  } else {
+    errorInvalidParamInit(call, val, at);
 
     // enum types should have a defaultValue
     INT_ASSERT(!isEnumType(type));
