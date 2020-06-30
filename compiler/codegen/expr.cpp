@@ -84,6 +84,13 @@ static GenRet codegenRnode(GenRet wide);
 
 static GenRet codegenAddrOf(GenRet r);
 
+// This typedef exists just to avoid needing ifdefs in fn prototypes
+#ifdef HAVE_LLVM
+typedef clang::FunctionDecl* ClangFunctionDeclPtr;
+#else
+typedef void* ClangFunctionDeclPtr;
+#endif
+
 /* Note well the difference between codegenCall and codegenCallExpr.
  * codegenCallExpr always returns the call as an expression in the
  * returned GenRet. But codegenCall instead adds the call to the
@@ -91,11 +98,9 @@ static GenRet codegenAddrOf(GenRet r);
  * the C backend will never actually emit the call, since it won't
  * be added to the list of statements.
  */
-#ifdef HAVE_LLVM
-static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, clang::FunctionDecl* FD, bool defaultToValues);
-#else
-static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, void* FD, bool defaultToValues);
-#endif
+
+static GenRet codegenCallExpr(GenRet function, std::vector<GenRet> & args, FnSymbol* fn, ClangFunctionDeclPtr FD, bool defaultToValues);
+
 static GenRet codegenCallExpr(const char* fnName, std::vector<GenRet> & args, bool defaultToValues = true);
 // some codegenCallExpr are declared in codegen.h
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
@@ -2293,11 +2298,7 @@ static
 GenRet codegenCallExpr(GenRet function,
                        std::vector<GenRet> & args,
                        FnSymbol* fn,
-#ifdef HAVE_LLVM
-                       clang::FunctionDecl* FD,
-#else
-                       void* FD,
-#endif
+                       ClangFunctionDeclPtr FD,
                        bool defaultToValues)
 {
   GenInfo* info = gGenInfo;
