@@ -767,6 +767,7 @@ module Random {
   module PCGRandom {
 
     use RandomSupport;
+    private use Random;
     public use PCGRandomLib;
     private use ChapelLocks;
 
