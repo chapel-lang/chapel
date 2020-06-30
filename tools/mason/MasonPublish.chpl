@@ -57,6 +57,7 @@ proc masonPublish(ref args: list(string)) throws {
     var ci = hasOptions(args, '--ci-check');
     var update = hasOptions(args, '--update');
     var noUpdate = hasOptions(args, '--no-update');
+    var createReg = hasOptions(args, '-c', '--create-registry');
 
     const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
     if args.size > 5 {
@@ -69,6 +70,10 @@ proc masonPublish(ref args: list(string)) throws {
         registryPath = potentialPath;
       }
       args.append(potentialPath);
+    }
+
+    if createReg {
+      writeln(args[args.size - 1]);
     }
 
     if registryPath.isEmpty() {
