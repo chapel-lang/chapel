@@ -494,7 +494,11 @@ void init_providerInUse(void) {
 
 static
 chpl_bool providerInUse(provider_t p) {
-  PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  if (ofi_info != NULL) {
+    // Early exit hedge: don't init "in use" info until we have one.
+    PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  }
+
   return providerSetTest(&providerInUseSet, p);
 }
 
