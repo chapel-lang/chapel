@@ -2310,7 +2310,7 @@ void codegen() {
     if(fIncrementalCompilation)
       USR_FATAL("Incremental compilation is not yet supported with LLVM");
 
-    if(printCppLineno || debugCCode)
+    if(debugCCode)
     {
       debug_info = new debug_data(*info->module);
     }

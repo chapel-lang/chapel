@@ -2554,21 +2554,28 @@ GenRet codegenCallExpr(GenRet function,
         formal = next_formal(formal);
     }
 
-    if (CGI) {
-      // Handle return ABI stuff
-      const clang::CodeGen::ABIArgInfo& returnInfo = CGI->getReturnInfo();
-      returnInfo.canHaveCoerceToType();
+    llvm::CallInst* c = NULL;
+
+    if (func) {
+      c = info->irBuilder->CreateCall(func, llArgs);
+    } else {
+#if HAVE_LLVM_VER >= 90
+      c = info->irBuilder->CreateCall(fnType, val, llArgs);
+#else
+      c = info->irBuilder->CreateCall(val, llArgs);
+#endif
     }
 
     if (func) {
-      ret.val = info->irBuilder->CreateCall(func, llArgs);
-    } else {
-#if HAVE_LLVM_VER >= 90
-      ret.val = info->irBuilder->CreateCall(fnType, val, llArgs);
-#else
-      ret.val = info->irBuilder->CreateCall(val, llArgs);
-#endif
+      // Add attributes to the call
+      llvm::AttributeList attrs = func->getAttributes();
+      // Here we would remove any attributes on the function
+      // that are not appropriate for the call.
+      c->setAttributes(attrs);
     }
+    // we might add attributes for the call site only, e.g. NoBuiltin, here.
+
+    ret.val = c;
 
     if( sret ) {
       ret.val = codegenLoadLLVM(sret, fn?(fn->retType):(NULL));
