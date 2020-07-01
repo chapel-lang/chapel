@@ -53,7 +53,8 @@ $verify = 0;
 $retaintree = 0;
 $dist = "";
 $llvm = 0;
-$memleaks = "";
+$memleaks = 0;
+$memleakslog = "";
 $multilocale = 0;
 $svnrevopt = "";
 $compopts = "";
@@ -120,7 +121,9 @@ while (@ARGV) {
     } elsif ($flag eq "-fast") {
         $fast = 1;
     } elsif ($flag eq "-memleaks") {
-        $memleaks = shift @ARGV;
+        $memleaks = 1;
+    } elsif ($flag eq "-memleakslog") {
+        $memleakslog = shift @ARGV;
     } elsif ($flag eq "-componly") {
         $componly = 1;
     } elsif ($flag eq "-futures") {
@@ -201,7 +204,8 @@ if ($printusage == 1) {
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-llvm                          : run tests using --llvm\n";
     print "\t-mason                         : build mason before running tests\n";
-    print "\t-memleaks <log>                : run memleaks tests\n";
+    print "\t-memleaks <log>                : run tests with --memLeaks\n";
+    print "\t-memleakslog <log>             : run tests with --memLeaksLog\n";
     print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-no-futures                    : do not run future tests\n";
@@ -327,7 +331,7 @@ if (! (-r $logdir and -w $logdir and -d $logdir)) {
 
 $memleaksdir = $ENV{'CHPL_NIGHTLY_MEMLEAKS_DIR'};
 
-if ($memleaks ne "") {
+if ($memleakslog ne "") {
     # Default to known file share.
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
@@ -339,7 +343,7 @@ if ($memleaks ne "") {
         mkpath $memleaksdir;
     }
 
-    # Check that memleaks dir is accessible.
+    # Check that memleakslog dir is accessible.
     if (! (-r $memleaksdir and -w $memleaksdir and -d $memleaksdir)) {
         print "Error: CHPL_NIGHTLY_MEMLEAKS_DIR ($memleaksdir) not accessible\n";
         exit 1;
@@ -672,8 +676,11 @@ if (!($dist eq "")) {
 if ($fast == 1) {
     $testflags = "$testflags -compopts --fast";
 }
-if (!($memleaks eq "")) {
-    $testflags = "$testflags -memleaks $basetmpdir/$memleaks";
+if ($memleak == 1) {
+    $testflags = "$testflags -memleaks";
+}
+if (!($memleakslog eq "")) {
+    $testflags = "$testflags -memleakslog $basetmpdir/$memleaks";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
@@ -844,8 +851,8 @@ if ($runtests == 0) {
 #
 # analyze memory leaks tests
 #
-    if (!($memleaks eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $memleaksdir/$memleaks", "analyzeMemLeaksLog", 1, 0, 0);
+    if (!($memleakslog eq "")) {
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleakslog > $memleaksdir/$memleakslog", "analyzeMemLeaksLog", 1, 0, 0);
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -862,7 +869,7 @@ if ($runtests == 0) {
             }
         }
 
-        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
+        mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
 
