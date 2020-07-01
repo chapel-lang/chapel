@@ -97,22 +97,25 @@ proc masonInit(args) throws {
         if isFile('./Mason.toml') then isMasonTomlPresent = true;
         if isDir('./src') then isSrcPresent = true;
         // parse values from TOML File && module file
-        var defaultPackageName, defaultVersion, defaultChplVersion, moduleName: string;
+        var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense, moduleName: string;
         if isMasonTomlPresent then
-          (defaultPackageName, defaultVersion, defaultChplVersion) = readPartialManifest();
+          (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense) = readPartialManifest();
         if isSrcPresent then 
           moduleName = readPartialSrc();
        // begin interactive session and get values input by user
-        var result = beginInteractiveSession(defaultPackageName, defaultVersion, defaultChplVersion);
+        var result = beginInteractiveSession(defaultPackageName, defaultVersion, 
+                                              defaultChplVersion, defaultLicense);
         const newPackageName = result[0],
               newVersion = result[1],
-              newChplVersion = result[2];
+              newChplVersion = result[2],
+              newLicense = result[3];
         // validate Mason.toml file 
         validateMasonFile('.', newPackageName, show);
         isMasonTomlPresent = true;
         // overwrite to update existing values in Mason.toml
         overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
-          newVersion, newChplVersion, defaultPackageName, defaultVersion, defaultChplVersion);
+          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+          defaultChplVersion, defaultLicense);
         if newPackageName + '.chpl' != moduleName {
           if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
         }
@@ -150,7 +153,8 @@ proc masonInit(args) throws {
 
 // Overwrites values of existing Mason.toml file
 proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion, 
-    newChplVersion, defaultPackageName, defaultVersion, defaultChplVersion) {
+    newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+    defaultChplVersion, defaultLicense) {
   const tomlPath = "./Mason.toml";
   const toParse = open(tomlPath, iomode.r);
   const tomlFile = owned.create(parseToml(toParse));
@@ -161,6 +165,8 @@ proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion,
       tomlFile["brick"]!.set("version", newVersion);
     if newChplVersion != defaultChplVersion then
       tomlFile["brick"]!.set("chplVersion", newChplVersion); 
+    if newLicense != defaultLicense then
+      tomlFile["brick"]!.set("license", newLicense);
   }
   generateToml(tomlFile, tomlPath);
 }
@@ -173,7 +179,7 @@ proc readPartialSrc(){
 
 // Returns default values from existing Mason.toml file
 proc readPartialManifest() {
-  var defaultPackageName, defaultVersion, defaultChplVersion: string;
+  var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense: string;
   const toParse = open("./Mason.toml", iomode.r);
   const tomlFile = owned.create(parseToml(toParse));
   if tomlFile.pathExists("brick.name") then
@@ -182,7 +188,9 @@ proc readPartialManifest() {
     defaultVersion = tomlFile["brick"]!["version"]!.s;
   if tomlFile.pathExists("brick.chplVersion") then
     defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
-  return (defaultPackageName, defaultVersion, defaultChplVersion);
+  if tomlFile.pathExists("brick.license") then 
+    defaultLicense = tomlFile["brick"]!["license"]!.s;
+  return (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense);
 }
 
 /*
@@ -278,13 +286,15 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     var projectName = "";
     var version = "";
     var chplVersion = "";
+    var license = "None";
     const toParse = open(path + "/Mason.toml", iomode.r);
     const tomlFile = owned.create(parseToml(toParse));
 
     if !tomlFile.pathExists("brick") {
       if tomlFile.pathExists("name") ||
          tomlFile.pathExists("version") ||
-         tomlFile.pathExists("chplVersion") {
+         tomlFile.pathExists("chplVersion") ||
+         tomlFile.pathExists("license") {
         throw new owned MasonError("The [brick] header is missing in Mason.toml");
       }
       else {
@@ -300,6 +310,15 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
       throw new owned MasonError("Mason could not find valid version in Mason.toml file");
     } else {
       version = tomlFile["brick"]!["version"]!.s;
+    }
+
+    if !tomlFile.pathExists("brick.license") {
+      tomlFile["brick"]!.set("license", license);
+      var tomlPath = path + "/Mason.toml";
+      generateToml(tomlFile, tomlPath);
+      if show then writeln("Added license to Mason.toml");
+    } else {
+      license = tomlFile["brick"]!["license"]!.s;
     }
 
     if tomlFile.pathExists("brick.name") {
@@ -319,7 +338,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     checkVersion(version);
   }
   else {
-    makeBasicToml(name, path, "0.1.0", getChapelVersionStr());
+    makeBasicToml(name, path, "0.1.0", getChapelVersionStr(), "None");
     if show then writeln("Created Mason.toml file.");
   }
 }
