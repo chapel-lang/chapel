@@ -955,6 +955,129 @@ void init_ofi(void) {
 }
 
 
+#ifdef CHPL_COMM_DEBUG
+static
+chpl_bool getCfgHint(const char* evName, struct cfgHint hintVals[],
+                     chpl_bool justOne, uint64_t* pVal) {
+  const char* ev = chpl_env_rt_get(evName, "");
+  if (strcmp(ev, "") == 0) {
+    return false;
+  }
+
+  *pVal = 0;
+
+  char evCopy[strlen(ev) + 1];
+  strcpy(evCopy, ev);
+  char* p = strtok(evCopy, "|");
+  while (p != NULL) {
+    int i;
+    for (i = 0; hintVals[i].str != NULL; i++) {
+      if (strcmp(p, hintVals[i].str) == 0) {
+        *pVal |= hintVals[i].val;
+        break;
+      }
+    }
+    if (hintVals[i].str == NULL) {
+      INTERNAL_ERROR_V("unknown config hint val in CHPL_RT_%s: \"%s\"",
+                       evName, p);
+    }
+    p = strtok(NULL, "|");
+    if (justOne && p != NULL) {
+      INTERNAL_ERROR_V("too many config hint vals in CHPL_RT_%s=\"%s\"",
+                       evName, ev);
+    }
+  }
+
+  return true;
+}
+#endif
+
+
+static
+void debugOverrideHints(struct fi_info* hints) {
+  if (DBG_TEST_MASK(DBG_CFGFAB)) {
+    uint64_t val;
+
+    {
+      struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
+                                    CFG_HINT(FI_COMPLETION),
+                                    CFG_HINT(FI_DELIVERY_COMPLETE),
+                                    CFG_HINT(FI_INJECT),
+                                    CFG_HINT(FI_INJECT_COMPLETE),
+                                    CFG_HINT(FI_TRANSMIT_COMPLETE),
+                                    CFG_HINT_NULL, };
+      if (getCfgHint("COMM_OFI_HINTS_TX_OP_FLAGS",
+                     hintVals, false /*justOne*/, &val)) {
+        hints->tx_attr->op_flags = val;
+      }
+    }
+
+    {
+      struct cfgHint hintVals[] = { CFG_HINT(FI_ORDER_ATOMIC_RAR),
+                                    CFG_HINT(FI_ORDER_ATOMIC_RAW),
+                                    CFG_HINT(FI_ORDER_ATOMIC_WAR),
+                                    CFG_HINT(FI_ORDER_ATOMIC_WAW),
+                                    CFG_HINT(FI_ORDER_NONE),
+                                    CFG_HINT(FI_ORDER_RAR),
+                                    CFG_HINT(FI_ORDER_RAS),
+                                    CFG_HINT(FI_ORDER_RAW),
+                                    CFG_HINT(FI_ORDER_RMA_RAR),
+                                    CFG_HINT(FI_ORDER_RMA_RAW),
+                                    CFG_HINT(FI_ORDER_RMA_WAR),
+                                    CFG_HINT(FI_ORDER_RMA_WAW),
+                                    CFG_HINT(FI_ORDER_SAR),
+                                    CFG_HINT(FI_ORDER_SAS),
+                                    CFG_HINT(FI_ORDER_SAW),
+                                    CFG_HINT(FI_ORDER_WAR),
+                                    CFG_HINT(FI_ORDER_WAS),
+                                    CFG_HINT(FI_ORDER_WAW),
+                                    CFG_HINT_NULL, };
+      if (getCfgHint("COMM_OFI_HINTS_MSG_ORDER",
+                     hintVals, false /*justOne*/, &val)) {
+        hints->tx_attr->msg_order = hints->rx_attr->msg_order = val;
+      }
+    }
+
+    {
+      struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
+                                    CFG_HINT(FI_COMPLETION),
+                                    CFG_HINT(FI_DELIVERY_COMPLETE),
+                                    CFG_HINT(FI_MULTI_RECV),
+                                    CFG_HINT_NULL, };
+      if (getCfgHint("COMM_OFI_HINTS_RX_OP_FLAGS",
+                     hintVals, false /*justOne*/, &val)) {
+        hints->rx_attr->op_flags = val;
+      }
+    }
+
+    {
+      struct cfgHint hintVals[] = { CFG_HINT(FI_PROGRESS_UNSPEC),
+                                    CFG_HINT(FI_PROGRESS_AUTO),
+                                    CFG_HINT(FI_PROGRESS_MANUAL),
+                                    CFG_HINT_NULL, };
+      if (getCfgHint("COMM_OFI_HINTS_PROGRESS",
+                     hintVals, true /*justOne*/, &val)) {
+        hints->domain_attr->data_progress = (enum fi_progress) val;
+      }
+    }
+
+    {
+      struct cfgHint hintVals[] = { CFG_HINT(FI_THREAD_UNSPEC),
+                                    CFG_HINT(FI_THREAD_SAFE),
+                                    CFG_HINT(FI_THREAD_FID),
+                                    CFG_HINT(FI_THREAD_DOMAIN),
+                                    CFG_HINT(FI_THREAD_COMPLETION),
+                                    CFG_HINT(FI_THREAD_ENDPOINT),
+                                    CFG_HINT_NULL, };
+      if (getCfgHint("COMM_OFI_HINTS_THREADING",
+                     hintVals, true /*justOne*/, &val)) {
+        hints->domain_attr->threading = (enum fi_threading) val;
+      }
+    }
+  }
+}
+
+
 static
 void init_ofiFabricDomain(void) {
   //
@@ -1018,28 +1141,14 @@ void init_ofiFabricDomain(void) {
                                | FI_ORDER_SAW);
 
   hints->rx_attr->op_flags = FI_COMPLETION;
-  hints->rx_attr->msg_order = (  FI_ORDER_RMA_RAW
-                               | FI_ORDER_SAS
-                               | FI_ORDER_SAW);
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
 
   hints->ep_attr->type = FI_EP_RDM;
 
   hints->domain_attr->threading = FI_THREAD_UNSPEC;
 
-  enum fi_progress prg = FI_PROGRESS_UNSPEC;
-  if (DBG_TEST_MASK(DBG_CFG)) {
-    const char* ev = chpl_env_rt_get("COMM_OFI_PROGRESS", "");
-    if (strcmp(ev, "") != 0) {
-      if (strcasecmp(ev, "auto") == 0)
-        prg = FI_PROGRESS_AUTO;
-      else if (strcasecmp(ev, "manual") == 0)
-        prg = FI_PROGRESS_MANUAL;
-      else
-        CHK_TRUE((strcasecmp(ev, "unspec") == 0));
-    }
-  }
-  hints->domain_attr->control_progress = FI_PROGRESS_UNSPEC; // don't need
-  hints->domain_attr->data_progress = prg;
+  hints->domain_attr->control_progress = FI_PROGRESS_UNSPEC;
+  hints->domain_attr->data_progress = FI_PROGRESS_UNSPEC;
 
   hints->domain_attr->av_type = FI_AV_TABLE;
 
@@ -1064,6 +1173,8 @@ void init_ofiFabricDomain(void) {
   hints->domain_attr->mr_mode = mr_mode;
 
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
+
+  debugOverrideHints(hints);
 
   //
   // Try to find a provider that can do what we want.  If more than one
