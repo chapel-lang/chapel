@@ -763,6 +763,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Ranks are not 2 and 2");
+  if Adom.shape(1) != Bdom.shape(0) then
+    halt("Mismatched shape in matrix-matrix multiplication");
 
   private use RangeChunk;
 
@@ -776,24 +778,24 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   const blockDom = {bVecRange, bVecRange};
 
   coforall tid in 0..#here.maxTaskPar {
-    const myChunk = chunk(0..#Adom.shape(1), here.maxTaskPar, tid);
+    const myChunk = chunk(0..#Bdom.shape(1), here.maxTaskPar, tid);
 
     var AA: [blockDom] eltType,
         BB: [blockDom] eltType,
         CC: [blockDom] eltType;
 
-    for (kk, jj) in {myChunk by blockSize, 0..#Bdom.shape(1) by blockSize} {
-      const kMax = min(kk+blockSize-1, myChunk.high);
-      const jMax = min(jj+blockSize-1, Bdom.shape(1) - 1);
-      const kRange = 0..kMax-kk;
+    for (jj,kk) in {myChunk by blockSize, 0..#Bdom.shape(0) by blockSize} {
+      const jMax = min(jj+blockSize-1, myChunk.high);
+      const kMax = min(kk+blockSize-1, Bdom.shape(0)-1);
       const jRange = 0..jMax-jj;
+      const kRange = 0..kMax-kk;
 
       for (jB, j) in zip(jj..jMax, 0..) do
         for (kB, k) in zip(kk..kMax, 0..) do
           BB[j,k] = BMat[kB,jB];
 
       for ii in 0..#Adom.shape(0) by blockSize {
-        const iMax = min(ii+blockSize-1, Adom.shape(0) - 1);
+        const iMax = min(ii+blockSize-1, Adom.shape(0)-1);
         const iRange = 0..iMax-ii;
 
         for (iB, i) in zip(ii..iMax, 0..) do
@@ -801,7 +803,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
             AA[i,k] = AMat[iB, kB];
 
         for cc in CC do
-          cc = 0 : eltType;
+          cc = 0;
 
         for (k,j,i) in {kRange, jRange, iRange} do
           CC[i,j] += AA[i,k] * BB[j,k];
@@ -814,8 +816,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
     }
   }
 
-  ref returnAsRef = C.reindex(Adom.dim(0), Bdom.dim(1));
-  return returnAsRef;
+  return C;
 }
 
 /*
