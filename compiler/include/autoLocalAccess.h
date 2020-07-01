@@ -25,7 +25,7 @@
 #include "symbol.h"
 
 // interface for normalize
-void autoLocalAccess();
+void doPreNormalizeOptimizations();
 
 // interface for resolution
 Expr *preFoldMaybeLocalThis(CallExpr *call);

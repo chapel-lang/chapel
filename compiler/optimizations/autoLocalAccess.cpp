@@ -26,6 +26,109 @@
 #include "stlUtil.h"
 #include "view.h"
 
+// This file contains analysis and transformation logic that need to happen
+// before normalization. There are two non-static functions:
+//
+//   - doPreNormalizeOptimizations
+//
+//     - Does an analysis on foralls to override dynamic checking for fast
+//       followers.
+//     - Does an analysis on foralls to check if regular array accesses can be
+//       replaced with localAccess
+//
+//   - preFoldMaybeLocalThis
+//
+//     - Replaces `PRIM_MAYBE_LOCAL_THIS` with a regular array access or
+//     localAccess during resolution
+
+
+static void LOG(const char *msg, BaseAST *node);
+static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
+static Symbol *getDotDomBaseSym(Expr *expr);
+static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
+static Symbol *getDomSym(Symbol *arrSym);
+static Symbol *getDomSymFromDomExpr(Expr *domExpr, bool allowQuery);
+static Stmt *getLocalityDominator(CallExpr* ce);
+static bool isSubIndexAssignment(Expr *expr,
+                                 Symbol *subIndex,
+                                 int indexIndex,
+                                 Symbol *indexBundle);
+static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
+                                                 Symbol *baseSym);
+static void gatherForallInfo(ForallStmt *forall);
+static bool checkLoopSuitableForOpt(ForallStmt *forall);
+static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall);
+static Symbol *getCallBase(CallExpr *call);
+static void generateDynamicCheckForAccess(CallExpr *access,
+                                          ForallStmt *forall,
+                                          CallExpr *&allChecks);
+static Symbol *generateStaticCheckForAccess(CallExpr *access,
+                                            ForallStmt *forall,
+                                            Expr *&allChecks);
+static void replaceCandidate(CallExpr *candidate,
+                             Symbol *staticCheckSym,
+                             bool doStatic);
+static void optimizeLoop(ForallStmt *forall,
+                         Expr *&staticCond, CallExpr *&dynamicCond,
+                         bool doStatic);
+static CallExpr *addStaticCheckSymsToDynamicCond(ForallStmt *forall,
+                                     CallExpr *dynamicCond,
+                                     std::vector<Symbol *> &staticCheckSyms);
+static ForallStmt *cloneLoop(ForallStmt *forall);
+static void constructCondStmtFromLoops(Expr *condExpr,
+                                       ForallStmt *optimized,
+                                       ForallStmt *unoptimized);
+
+static void generateOptimizedLoops(ForallStmt *forall);
+static void autoLocalAccess(ForallStmt *forall);
+static CallExpr *revertAccess(CallExpr *call);
+static CallExpr *confirmAccess(CallExpr *call);
+
+static void symbolicFastFollowerAnalysis(ForallStmt *forall);
+
+void doPreNormalizeOptimizations() {
+  const bool anyAnalysisNeeded = fAutoLocalAccess ||
+                                 !fNoFastFollowers;
+
+  if (anyAnalysisNeeded) {
+    forv_Vec(ForallStmt, forall, gForallStmts) {
+      if (!fNoFastFollowers) {
+        symbolicFastFollowerAnalysis(forall);
+      }
+
+      if (fAutoLocalAccess) {
+        autoLocalAccess(forall);
+      }
+    }
+  }
+}
+
+Expr *preFoldMaybeLocalThis(CallExpr *call) {
+  if (fAutoLocalAccess) {
+    // PRIM_MAYBE_LOCAL_THIS looks like
+    //
+    //  (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
+    //                              paramControlFlag, paramStaticallyDetermined)
+    //
+    // we need to check the second argument from last to determine whether we
+    // are confirming this to be a local access or not
+    if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
+      if (controlSE->symbol() == gTrue) {
+        return confirmAccess(call);
+      }
+      else {
+        return revertAccess(call);
+      }
+    }
+    else {
+      INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
+    }
+  }
+  return NULL;
+}
+
+
+// logging support for --report-auto-local-access
 static void LOG(const char *msg, BaseAST *node) {
   if (fReportAutoLocalAccess) {
     const bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
@@ -48,7 +151,7 @@ static void LOG(const char *msg, BaseAST *node) {
 }
 
 //
-// Normalize support
+// Normalize support for --auto-local-access
 //
 
 // Return true if `ce`'s arguments are exactly identical to `syms`
@@ -674,6 +777,128 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   }
 }
 
+static void autoLocalAccess(ForallStmt *forall) {
+
+  if (forall->optInfo.autoLocalAccessChecked) {
+    return;
+  }
+  forall->optInfo.autoLocalAccessChecked = true;
+
+  LOG("**** Start forall ****", forall);
+  gatherForallInfo(forall);
+
+  if (checkLoopSuitableForOpt(forall)) {
+    LOG("Loop is suitable for further analysis", forall);
+
+    std::vector<CallExpr *> allCallExprs;
+    collectCallExprs(forall->loopBody(), allCallExprs);
+
+    for_vector(CallExpr, call, allCallExprs) {
+      if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall)) {
+
+        LOG("Potential access", call);
+
+        bool canOptimize = false;
+        // check for different patterns
+        // forall i in A.domain do ... A[i] ...
+        if (forall->optInfo.dotDomIterSym != NULL &&
+            forall->optInfo.dotDomIterSym == accBaseSym) {
+          canOptimize = true;
+          LOG("\tCan optimize: Access base is the iterator's base",
+              call);
+        }
+
+        // if that didn't work...
+        if (!canOptimize) {
+          Symbol *domSym = getDomSym(accBaseSym);
+          if (domSym != NULL) {
+            LOG("\twith domain defined at", domSym);
+          }
+          else {
+            LOG("\tregular domain symbol was not found for array", accBaseSym);
+          }
+
+          if (domSym != NULL) {  //  I can find the domain of the array
+            // forall i in A.domain do ... B[i] ... where B and A share domain
+            if (forall->optInfo.dotDomIterSymDom != NULL &&
+                forall->optInfo.dotDomIterSymDom == domSym) {
+              canOptimize = true;
+              LOG("\tCan optimize: Access base has the same domain as iterator's base",
+                  call);
+            }
+            // forall i in D do ... A[i] ... where D is A's domain
+            else {
+              if (forall->optInfo.iterSym != NULL &&
+                  forall->optInfo.iterSym == domSym) {
+                canOptimize = true;
+                LOG("Access base's domain is the iterator", call);
+              }
+            }
+          }
+          else {
+            // I couldn't find a domain symbol for this array, but it can
+            // still be a candidate for optimization based on analysis at
+            // runtime
+            forall->optInfo.dynamicCandidates.push_back(call);
+          }
+        }
+
+        if (canOptimize) {
+          forall->optInfo.staticCandidates.push_back(call);
+        }
+      }
+    }
+
+    generateOptimizedLoops(forall);
+  }
+  LOG("**** End forall ****", forall);
+}
+
+
+
+//
+// Resolution support for auto-local-access
+//
+static CallExpr *revertAccess(CallExpr *call) {
+  LOG("Static check failed. Reverting optimization", call);
+
+  CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
+                                gMethodToken);
+
+  // Don't take the last two args; they are the static control symbol, and flag
+  // that tells whether this is a statically-determined access
+  for (int i = 1 ; i < call->argList.length-1 ; i++) {
+    Symbol *argSym = toSymExpr(call->get(i))->symbol();
+    repl->insertAtTail(new SymExpr(argSym));
+  }
+
+  return repl;
+}
+
+static CallExpr *confirmAccess(CallExpr *call) {
+  if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
+    LOG("Static check successful. Using localAccess", call);
+  }
+  else {
+    LOG("Static check successful. Using localAccess with dynamic check", call);
+  }
+
+  CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
+                                gMethodToken);
+
+  // Don't take the last two args; they are the static control symbol, and flag
+  // that tells whether this is a statically-determined access
+  for (int i = 1 ; i < call->argList.length-1 ; i++) {
+    Symbol *argSym = toSymExpr(call->get(i))->symbol();
+    repl->insertAtTail(new SymExpr(argSym));
+  }
+
+  return repl;
+}
+
+//
+// An analysis to enable overriding dynamic checks for fast followers
+//
 static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
   AList &iterExprs = forall->iteratedExpressions();
 
@@ -731,153 +956,5 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
     //std::cout << forall->stringLoc() << std::endl;
   }
   forall->optInfo.confirmedFastFollower = confirm;
-}
-
-void autoLocalAccess() {
-  if (fAutoLocalAccess) {
-    forv_Vec(ForallStmt, forall, gForallStmts) {
-      symbolicFastFollowerAnalysis(forall);
-
-      if (forall->optInfo.autoLocalAccessChecked) {
-        continue;
-      }
-      forall->optInfo.autoLocalAccessChecked = true;
-
-      LOG("**** Start forall ****", forall);
-      gatherForallInfo(forall);
-
-      if (checkLoopSuitableForOpt(forall)) {
-        LOG("Loop is suitable for further analysis", forall);
-
-        std::vector<CallExpr *> allCallExprs;
-        collectCallExprs(forall->loopBody(), allCallExprs);
-
-        for_vector(CallExpr, call, allCallExprs) {
-          if (Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall)) {
-                                                      
-            LOG("Potential access", call);
-
-            bool canOptimize = false;
-            // check for different patterns
-            // forall i in A.domain do ... A[i] ...
-            if (forall->optInfo.dotDomIterSym != NULL &&
-                forall->optInfo.dotDomIterSym == accBaseSym) {
-              canOptimize = true;
-              LOG("\tCan optimize: Access base is the iterator's base",
-                            call);
-            }
-
-            // if that didn't work...
-            if (!canOptimize) {
-              Symbol *domSym = getDomSym(accBaseSym);
-              if (domSym != NULL) {
-                LOG("\twith domain defined at", domSym);
-              }
-              else {
-                LOG("\tregular domain symbol was not found for array", accBaseSym);
-              }
-
-              if (domSym != NULL) {  //  I can find the domain of the array
-                // forall i in A.domain do ... B[i] ... where B and A share domain
-                if (forall->optInfo.dotDomIterSymDom != NULL &&
-                    forall->optInfo.dotDomIterSymDom == domSym) {
-                  canOptimize = true;
-                  LOG("\tCan optimize: Access base has the same domain as iterator's base",
-                                call);
-                }
-                // forall i in D do ... A[i] ... where D is A's domain
-                else {
-                  if (forall->optInfo.iterSym != NULL &&
-                      forall->optInfo.iterSym == domSym) {
-                    canOptimize = true;
-                    LOG("Access base's domain is the iterator", call);
-                  }
-                }
-              }
-              else {
-                // I couldn't find a domain symbol for this array, but it can
-                // still be a candidate for optimization based on analysis at
-                // runtime
-                forall->optInfo.dynamicCandidates.push_back(call);
-              }
-            }
-
-            if (canOptimize) {
-              forall->optInfo.staticCandidates.push_back(call);
-            }
-          }
-        }
-
-        generateOptimizedLoops(forall);
-      }
-      LOG("**** End forall ****", forall);
-    }
-  }
-}
-
-
-
-//
-// Resolution support
-//
-static CallExpr *revertAccess(CallExpr *call) {
-  LOG("Static check failed. Reverting optimization", call);
-
-  CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
-                                gMethodToken);
-
-  // Don't take the last two args; they are the static control symbol, and flag
-  // that tells whether this is a statically-determined access
-  for (int i = 1 ; i < call->argList.length-1 ; i++) {
-    Symbol *argSym = toSymExpr(call->get(i))->symbol();
-    repl->insertAtTail(new SymExpr(argSym));
-  }
-
-  return repl;
-}
-
-static CallExpr *confirmAccess(CallExpr *call) {
-  if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
-    LOG("Static check successful. Using localAccess", call);
-  }
-  else {
-    LOG("Static check successful. Using localAccess with dynamic check", call);
-  }
-
-  CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
-                                gMethodToken);
-
-  // Don't take the last two args; they are the static control symbol, and flag
-  // that tells whether this is a statically-determined access
-  for (int i = 1 ; i < call->argList.length-1 ; i++) {
-    Symbol *argSym = toSymExpr(call->get(i))->symbol();
-    repl->insertAtTail(new SymExpr(argSym));
-  }
-
-  return repl;
-}
-
-Expr *preFoldMaybeLocalThis(CallExpr *call) {
-  if (fAutoLocalAccess) {
-    // PRIM_MAYBE_LOCAL_THIS looks like
-    //
-    //  (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
-    //                              paramControlFlag, paramStaticallyDetermined)
-    //
-    // we need to check the second argument from last to determine whether we
-    // are confirming this to be a local access or not
-    if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
-      if (controlSE->symbol() == gTrue) {
-        return confirmAccess(call);
-      }
-      else {
-        return revertAccess(call);
-      }
-    }
-    else {
-      INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
-    }
-  }
-  return NULL;
 }
 
