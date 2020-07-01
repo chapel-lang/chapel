@@ -773,6 +773,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   ref BMat = B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1));
   ref CMat = C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1));
 
+  // TODO - Add logic to calculate blockSize 
+  // based to eltType and L1 cache size
   const blockSize = 32;
   const bVecRange = 0..#blockSize;
   const blockDom = {bVecRange, bVecRange};
