@@ -164,10 +164,6 @@ static Symbol *getDomSym(Symbol *arrSym) {
     }
   }
 
-  if (ret == NULL) {
-    LOG("Regular domain symbol was not found for array", arrSym);
-  }
-
   return ret;
 }
 
@@ -776,6 +772,9 @@ void autoLocalAccess() {
               Symbol *domSym = getDomSym(accBaseSym);
               if (domSym != NULL) {
                 LOG("\twith domain defined at", domSym);
+              }
+              else {
+                LOG("\tregular domain symbol was not found for array", accBaseSym);
               }
 
               if (domSym != NULL) {  //  I can find the domain of the array
