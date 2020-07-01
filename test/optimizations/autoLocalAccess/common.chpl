@@ -33,7 +33,6 @@ proc createDom(space) {
       return space dmapped Stencil(space, fluff=(1,1));
     }
   }
-  /*
   else if distType == Hashed {
     var D: domain(int) dmapped Hashed(idxType=int);
     for i in space {
@@ -41,7 +40,6 @@ proc createDom(space) {
     }
     return D;
   }
-   */
   else {
     compilerError("Unrecognized distribution type");
   }
