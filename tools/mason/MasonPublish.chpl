@@ -744,7 +744,7 @@ proc masonTomlFileCheck(projectHome: string) {
   if tomlFile.pathExists("brick.chplVersion") then chplVersion = true;
   if tomlFile.pathExists("brick.source") then source = true;
   if tomlFile.pathExists("brick.license") then license = true;
-  if tomlFile.pathExists("brick.author") then author = true;
+  if tomlFile.pathExists("brick.authors") then author = true;
   if name && version && chplVersion && source
     && author && license then return true;
   else return false;
