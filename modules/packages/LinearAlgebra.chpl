@@ -779,8 +779,9 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   const bVecRange = 0..#blockSize;
   const blockDom = {bVecRange, bVecRange};
 
-  coforall tid in 0..#here.maxTaskPar {
-    const myChunk = chunk(0..#Bdom.shape(1), here.maxTaskPar, tid);
+  const numTasks = min(here.maxTaskPar, Bdom.shape(1));
+  coforall tid in 0..#numTasks {
+    const myChunk = chunk(0..#Bdom.shape(1), numTasks, tid);
 
     var AA: [blockDom] eltType,
         BB: [blockDom] eltType,
