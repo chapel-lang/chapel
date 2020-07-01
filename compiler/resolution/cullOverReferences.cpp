@@ -841,7 +841,6 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
     // any iterator methods on array implementation classes.
     // The goal here is that iterating over an array
     // and modifying the index variable should make us...
-    // TODO: Make us what?
     if (iteratorFn->isMethod() &&
         (isArrayClass(iteratorFn->getFormal(1)->type) ||
          iteratorFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))) {
@@ -875,7 +874,6 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
 
 // Is the SymExpr passed to a `_build_tuple` call for a tuple that stores
 // the SymExpr in a ref field? If so, add the tuple as a dependency.
-// TODO: Or do I have it backwards and the sym is a dependency of the tup?
 bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
                                      GraphNode node, bool &revisit) {
 
