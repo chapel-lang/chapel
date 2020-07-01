@@ -549,7 +549,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
 pragma "no doc"
 module BubbleSort {
-  import Sort.defaultComparator;
+  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -587,7 +587,7 @@ module BubbleSort {
 
 pragma "no doc"
 module HeapSort {
-  import Sort.defaultComparator;
+  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -653,8 +653,7 @@ module HeapSort {
 
 pragma "no doc"
 module InsertionSort {
-  import Sort.defaultComparator;
-  import Sort.ShallowCopy;
+  private use Sort;
   /*
    Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
@@ -728,7 +727,7 @@ module InsertionSort {
 
 pragma "no doc"
 module BinaryInsertionSort {
-  import Sort.defaultComparator;
+  private use Sort;
   /*
     Sort the 1D array `Data` in-place using a sequential, stable binary
     insertion sort algorithm.
@@ -798,7 +797,7 @@ module BinaryInsertionSort {
 
 pragma "no doc"
 module MergeSort {
-  import Sort.defaultComparator;
+  private use Sort;
   /*
     Sort the 1D array `Data` using a parallel merge sort algorithm.
 
@@ -929,7 +928,7 @@ module MergeSort {
 
 pragma "no doc"
 module QuickSort {
-  import Sort.defaultComparator;
+  private use Sort;
   use Sort.ShallowCopy;
 
   /*
@@ -1165,7 +1164,7 @@ module QuickSort {
 
 pragma "no doc"
 module SelectionSort {
-  import Sort.defaultComparator;
+  private use Sort;
   /*
     Sort the 1D array `Data` in-place using a sequential selection sort
     algorithm.
@@ -1200,7 +1199,7 @@ module SelectionSort {
 
 pragma "no doc"
 module ShellSort {
-  import Sort.defaultComparator;
+  private use Sort;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
                  start=Dom.alignedLow, end=Dom.alignedHigh)
   {
@@ -1237,6 +1236,7 @@ module ShellSort {
 
 pragma "no doc"
 module SampleSortHelp {
+  private use Sort;
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
   const equalBucketThreshold = 5;
@@ -1483,7 +1483,7 @@ module SampleSortHelp {
 
 pragma "no doc"
 module RadixSortHelp {
-  import Sort.{defaultComparator, DefaultComparator};
+  private use Sort;
   import Reflection.canResolveMethod;
 
   // This is the number of bits to sort at a time in the radix sorter.
