@@ -509,7 +509,7 @@ module ChapelIteratorSupport {
     if x.size-1 == dim then
       return chpl__staticFastFollowCheckZip(x(dim), lead);
     else
-      return chpl__staticFastFollowCheckZip(x(dim), lead) || chpl__staticFastFollowCheckZip(x, lead, dim+1);
+      return chpl__staticFastFollowCheckZip(x(dim), lead) && chpl__staticFastFollowCheckZip(x, lead, dim+1);
   }
 
   //
