@@ -73,7 +73,33 @@ proc masonPublish(ref args: list(string)) throws {
     }
 
     if createReg {
-      writeln(args[args.size - 1]);
+      var pathReg = '';
+      if args[args.size-1] == '-c' || args[args.size-1] == '--create-registry' then
+        pathReg = args[args.size-2];
+      else if args[args.size-2] == '-c' || args[args.size-2] == '--create-registry' then
+        pathReg = args[args.size-1];
+      try! {
+        if isDir(pathReg) && isDir(pathReg + '/Bricks') then
+          throw new owned MasonError('Registry already exists at %s'.format(pathReg));
+        else {
+          mkdir(pathReg);
+          mkdir(pathReg + '/Bricks');
+          mkdir(pathReg + '/DummyProject');
+          runCommand('touch ' + pathReg + '/0.1.0.toml');
+          runCommand('touch ' + pathReg + '/README.md');
+          gitC(pathReg, 'git init -q');
+          gitC(pathReg, 'git add .');
+          commitSubProcess(pathReg, ['','git','commit','-m',' "initialised registry"']);
+          writeln("Initialised local registry at %s".format(pathReg));
+          writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path: ");
+          writeln("   export MASON_REGISTRY=${MASON_REGISTRY},%s".format(pathReg));
+          exit(0);
+        }
+      }
+      catch e: MasonError {
+        writeln(e.message());
+        exit(1);
+      }
     }
 
     if registryPath.isEmpty() {
