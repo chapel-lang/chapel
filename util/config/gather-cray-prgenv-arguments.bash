@@ -68,29 +68,24 @@ else
   LHUGETLBFS="-lhugetlbfs"
 fi
 
-COMMANDS=`cc -craype-verbose -### $LHUGETLBFS -lchpl_lib_token /dev/null 2>/dev/null`
 # LIBRARY_PATH is only output to stderr but sometimes includes paths
-# we need to include with -L so gather that as well
-COMMANDS2=`cc -craype-verbose -### $LHUGETLBFS -lchpl_lib_token /dev/null 2>&1 | grep LIBRARY_PATH`
-
-for word in $COMMANDS2
-do
-  if [[ $word == LIBRARY_PATH* && $LINK == 1 ]]
-  then
-    # remove LIBRARY_PATH=
-    word=${word#"LIBRARY_PATH="}
-    # convert : to spaces
-    word=${word//:/ }
-    for arg in $word
-    do
-      echo -L$arg
-    done
-  fi
-done
+# we need to include with -L so gather that as well.
+# The 2> >(command) is a process substitution.
+COMMANDS=`cc -craype-verbose -### $LHUGETLBFS -lchpl_lib_token /dev/null 2> >(grep LIBRARY_PATH)`
 
 for arg in $COMMANDS
 do
-  if [[ $arg == -I* && $COMPILE == 1 ]]
+  if [[ $arg == LIBRARY_PATH* && $LINK == 1 ]]
+  then
+    # remove LIBRARY_PATH=
+    arg=${arg#"LIBRARY_PATH="}
+    # convert : to spaces
+    arg=${arg//:/ }
+    for subarg in $arg
+    do
+      echo -L$subarg
+    done
+  elif [[ $arg == -I* && $COMPILE == 1 ]]
   then
     echo $arg
   elif [[ $arg == -D* && $COMPILE == 1 ]]
