@@ -15,7 +15,7 @@ config param useBlockDist = false;
 config const order = 10,
              epsilon = 1e-8,
              iterations = 100,
-             windowSize = 10,
+             windowSize = 0,
              debug = false,
              validate = true,
              correctness = false; // being run in start_test
@@ -118,11 +118,12 @@ if validate {
     halt("VALIDATION FAILED! Reference checksum = ", refChecksum,
                            " Checksum = ", checksum);
   else
-    writeln("Validation successful");
+    writeln("Validation Successful");
 }
 
 if !correctness {
   const nflops = 2.0*(order**3);
   const avgTime = t.elapsed()/iterations;
-  writeln("Rate(MFlop/s) = ", 1e-6*nflops/avgTime, " Time : ", avgTime);
+  writeln("Rate(MFlop/s) = ", 1e-6*nflops/avgTime);
+  writeln("Time: ", avgTime);
 }
