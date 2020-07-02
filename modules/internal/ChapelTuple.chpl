@@ -319,8 +319,12 @@ module ChapelTuple {
   }
 
   inline proc _cast(type t, x: (?,?)) where t == complex(128) {
-    extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
+    extern proc _chpl_complex128(re:real(64),im:real(64)) : complex(128);
     return _chpl_complex128(x(0):real(64),x(1):real(64));
+  }
+
+  inline proc _cast(type t, x: ?compType) where isComplexType(compType) {
+    return (x.re:t[0], x.im:t[1]);
   }
 
   //
