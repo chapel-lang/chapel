@@ -44,6 +44,7 @@ namespace llvm {
 namespace clang {
   class Decl;
   class FunctionDecl;
+  class QualType;
   class TypeDecl;
   class ValueDecl;
 
@@ -65,6 +66,7 @@ void cleanupExternC();
 #ifdef HAVE_LLVM
 // should support TypedefDecl,EnumDecl,RecordDecl
 llvm::Type* codegenCType(const clang::TypeDecl* td);
+llvm::Type* codegenCType(const clang::QualType& qType);
 // should support FunctionDecl,VarDecl,EnumConstantDecl
 GenRet codegenCValue(const clang::ValueDecl *vd);
 

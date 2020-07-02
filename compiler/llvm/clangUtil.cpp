@@ -2001,6 +2001,18 @@ llvm::Type* codegenCType(const TypeDecl* td)
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
 }
 
+llvm::Type* codegenCType(const clang::QualType& qType)
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(cCodeGen);
+
+  return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
+}
+
 // should support FunctionDecl,VarDecl,EnumConstantDecl
 GenRet codegenCValue(const ValueDecl *vd)
 {
