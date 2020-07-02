@@ -186,12 +186,19 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
+# Avoid false positives for allocation size
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-alloc-size-larger-than
+endif
+
+#
 # Avoid false positive warnings about class member access and string overflows.
 # The string overflow false positives occur in runtime code unlike gcc 7.
-# Also avoid false positives for allocation size, array bounds, and comments.
+# Also avoid false positives for array bounds and comments.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
+WARN_CXXFLAGS += -Wno-class-memaccess
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
