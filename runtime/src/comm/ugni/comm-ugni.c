@@ -1885,7 +1885,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   // disable if the user requested or if `--cache-remote` is enabled
   // (it currently breaks when tasks switch during a GET/PUT.)
   yield_during_comm = chpl_env_rt_get_bool("COMM_UGNI_YIELD_DURING_COMM",
-                                           true) && !chpl_cache_enabled();
+                                           true)/* && !chpl_cache_enabled()*/;
 
   //
   // We can reach 16k memory regions on Aries.
