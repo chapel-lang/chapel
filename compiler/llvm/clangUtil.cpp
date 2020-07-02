@@ -2663,14 +2663,25 @@ void setupForGlobalToWide(void) {
   info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
   assert(info->nodeIdType);
 
-  info->getFn = getFunctionLLVM("chpl_gen_comm_get_ctl");
-  INT_ASSERT(info->getFn);
-  info->putFn = getFunctionLLVM("chpl_gen_comm_put_ctl");
-  INT_ASSERT(info->putFn);
-  info->getPutFn = getFunctionLLVM("chpl_gen_comm_getput");
-  INT_ASSERT(info->getPutFn);
-  info->memsetFn = getFunctionLLVM("chpl_gen_comm_memset");
-  INT_ASSERT(info->memsetFn);
+  llvm::Function* getFn = getFunctionLLVM("chpl_gen_comm_get_ctl");
+  INT_ASSERT(getFn);
+  info->getFn = getFn;
+  info->getFnType = getFn->getFunctionType();
+
+  llvm::Function* putFn = getFunctionLLVM("chpl_gen_comm_put_ctl");
+  INT_ASSERT(putFn);
+  info->putFn = putFn;
+  info->putFnType = putFn->getFunctionType();
+
+  llvm::Function* getPutFn = getFunctionLLVM("chpl_gen_comm_getput");
+  INT_ASSERT(getPutFn);
+  info->getPutFn = getPutFn;
+  info->getPutFnType = getPutFn->getFunctionType();
+
+  llvm::Function* memsetFn = getFunctionLLVM("chpl_gen_comm_memset");
+  INT_ASSERT(memsetFn);
+  info->memsetFn = memsetFn;
+  info->memsetFnType = memsetFn->getFunctionType();
 
   // Call these functions in a dummy externally visible
   // function which GlobalToWide should remove. We need to do that
