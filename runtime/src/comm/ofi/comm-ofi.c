@@ -1400,7 +1400,7 @@ void init_ofiEp(void) {
   const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
                                    ? FI_WAIT_NONE
                                    : FI_WAIT_SET;
-  if (ofi_info->domain_attr->cntr_cnt == 0) {
+  if (true /*ofi_info->domain_attr->cntr_cnt == 0*/) { // disable tx counters
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
                .size = 100,
@@ -1445,7 +1445,7 @@ void init_ofiEp(void) {
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
-  if (ofi_info->domain_attr->cntr_cnt == 0) {
+  if (true /*ofi_info->domain_attr->cntr_cnt == 0*/) { // disable tx counters
     OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma,
                        &checkRxRmaCmplsFn));
     ofi_rxCmplFidRma = &ofi_rxCQRma->fid;
