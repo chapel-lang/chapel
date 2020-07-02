@@ -1,0 +1,4 @@
+#14902
+
+When a const tuple is passed to a function that takes a tuple by default
+intent, the constness of the argument appears to be ignored.
