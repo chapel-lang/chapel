@@ -108,9 +108,8 @@ static void codegenCall(const char* fnName, std::vector<GenRet> & args, bool def
 static void codegenCall(const char* fnName, GenRet a1);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-//static void codegenCallNotValues(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4);
-static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
+//static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4, GenRet a5, GenRet a6);
 
 static GenRet codegenZero();
@@ -401,7 +400,7 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       // NULL pointer since NULL is actually an i8*.
       llvm::Type* addrType = adr->getType()->getPointerElementType();
       llvm::Value* addrVal = raddr.val;
-      if (raddr.val->getType() != addrType){
+      if (raddr.val->getType() != addrType) {
         addrVal = convertValueToType(addrVal, addrType);
       }
       INT_ASSERT(addrVal);
@@ -652,17 +651,19 @@ GenRet codegenUseGlobal(const char* global)
 static
 GenRet codegenLocaleForNode(GenRet node)
 {
-  Type* localeType = LOCALE_ID_TYPE;
-  GenRet ret;
-
-  ret.chplType = localeType;
   node = codegenValue(node);
-
-  GenRet tmp = createTempVar(localeType);
   GenRet anySublocale = codegenUseGlobal("c_sublocid_any");
-  codegenCall("chpl_buildLocaleID", node, anySublocale, codegenAddrOf(tmp),
-              /*ln*/codegenZero(), /*fn*/ codegenZero32());
-  return tmp;
+
+  std::vector<GenRet> args;
+  args.push_back(codegenValue(node));
+  args.push_back(codegenUseGlobal("c_sublocid_any"));
+  args.push_back(codegenZero());
+  args.push_back(codegenZero32());
+
+  GenRet ret = codegenCallExpr(gChplBuildLocaleId->codegen(),
+                               args, gChplBuildLocaleId, NULL, true);
+  ret.chplType = LOCALE_ID_TYPE;
+  return ret;
 }
 
 
@@ -696,7 +697,7 @@ GenRet codegenGetLocaleID(void)
   GenInfo* info = gGenInfo;
   if (!info->cfile ) {
     // Make sure that the result of gen_getLocaleID is
-    // the right type (since clang likes to fold int32/int32 into int32).
+    // the right type (since clang likes to fold int32/int32 into int64).
     GenRet expectType = LOCALE_ID_TYPE;
     ret.val = convertValueToType(ret.val, expectType.type, false, true);
     assert(ret.val);
@@ -2347,7 +2348,7 @@ GenRet codegenCallExpr(GenRet function,
 
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    //llvm::LLVMContext &ctx = info->llvmContext;
+    llvm::LLVMContext &ctx = info->llvmContext;
 
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
@@ -2367,7 +2368,7 @@ GenRet codegenCallExpr(GenRet function,
     // Maybe function is bit-cast to a pointer?
     llvm::Function *func = llvm::dyn_cast<llvm::Function>(val);
     llvm::FunctionType *fnType;
-    if (func){
+    if (func) {
       fnType = func->getFunctionType();
     } else {
       fnType = llvm::cast<llvm::FunctionType>(
@@ -2376,6 +2377,25 @@ GenRet codegenCallExpr(GenRet function,
 
     std::vector<llvm::Value *> llArgs;
     llvm::Value* sret = NULL;
+    llvm::Type* chapelRetTy = NULL;
+    bool chplRetTySigned = false;
+    if (fn) {
+      if (fn->retType == dtNothing || fn->retType == dtVoid) {
+        chapelRetTy = llvm::Type::getVoidTy(ctx);
+      } else {
+        chapelRetTy = fn->retType->codegen().type;
+        chplRetTySigned = is_signed(fn->retType);
+      }
+    } else if(FD) {
+      INT_ASSERT(FD != NULL);
+      clang::QualType retTy = FD->getCallResultType();
+      if (retTy->isVoidType()) {
+        chapelRetTy = llvm::Type::getVoidTy(ctx);
+      } else {
+        chapelRetTy = codegenCType(retTy);
+        chplRetTySigned = retTy->hasSignedIntegerRepresentation();
+      }
+    }
 
     if (CGI == NULL &&
         fnType->getReturnType()->isVoidTy() &&
@@ -2393,7 +2413,6 @@ GenRet codegenCallExpr(GenRet function,
 
       if (returnInfo.isIndirect()) {
         // Create a temporary for holding the return value
-        llvm::Type* chapelRetTy = fn->retType->codegen().type;
         sret = createVarLLVM(chapelRetTy);
         llArgs.push_back(sret);
       }
@@ -2581,6 +2600,11 @@ GenRet codegenCallExpr(GenRet function,
       ret.val = codegenLoadLLVM(sret, fn?(fn->retType):(NULL));
     }
 
+    if (chapelRetTy && ret.val->getType() != chapelRetTy) {
+      ret.val = convertValueToType(ret.val, chapelRetTy,
+                                   chplRetTySigned, true);
+    }
+
 #endif
   }
   return ret;
@@ -2691,6 +2715,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4)
   args.push_back(a4);
   codegenCall(fnName, args);
 }
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5)
@@ -2703,7 +2728,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCall(fnName, args);
 }
-
+*/
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -3595,31 +3620,6 @@ GenRet CallExpr::codegen() {
       ret = codegenCallExpr(base, args, fn, NULL, true);
 
 #ifdef HAVE_LLVM
-      // We might have to convert the return from the function
-      // if clang did some structure-expanding.
-
-      bool returnedValueUsed = false;
-      if (CallExpr* parentCall = toCallExpr(this->parentExpr))
-        if (parentCall->isPrimitive(PRIM_MOVE))
-          returnedValueUsed = true;
-
-      if (returnedValueUsed && this->typeInfo() != dtNothing) {
-        GenRet ty = this->typeInfo();
-
-        INT_ASSERT(ty.type);
-
-        if (ty.type != ret.val->getType()) {
-          llvm::Value* converted = convertValueToType(ret.val,
-                                                      ty.type,
-                                                      false,
-                                                      true);
-
-          INT_ASSERT(converted);
-
-          ret.val = converted;
-        }
-      }
-
       // Handle setting LLVM invariant on const records after
       // they are initialized
       if (fn->isInitializer() || fn->isCopyInit()) {
