@@ -1388,15 +1388,7 @@ void init_ofiEp(void) {
   const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
                                    ? FI_WAIT_NONE
                                    : FI_WAIT_SET;
-  if (ofi_info->domain_attr->cntr_cnt > 0) {
-    cntrAttr = (struct fi_cntr_attr)
-               { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = waitObj,
-                 .wait_set = ofi_amhWaitSet, };
-    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
-    }
-  } else {
+  if (ofi_info->domain_attr->cntr_cnt == 0) {
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
                .size = 100,
@@ -1405,6 +1397,14 @@ void init_ofiEp(void) {
                .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
       init_ofiEpTxCtx(i, true /*isAMHandler*/, &cqAttr, NULL);
+    }
+  } else {
+    cntrAttr = (struct fi_cntr_attr)
+               { .events = FI_CNTR_EVENTS_COMP,
+                 .wait_obj = waitObj,
+                 .wait_set = ofi_amhWaitSet, };
+    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+      init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
     }
   }
 
@@ -1569,8 +1569,7 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
                          &tcip->checkTxCmplsFn));
     tcip->txCmplFid = &tcip->txCntr->fid;
     OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid,
-                       (isAMHandler ? FI_WRITE
-                                    : FI_SEND | FI_READ | FI_WRITE)));
+                       FI_SEND | FI_READ | FI_WRITE));
     tcip->checkTxCmplsFn = checkTxCmplsCntr;
   }
 
