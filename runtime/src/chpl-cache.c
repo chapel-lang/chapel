@@ -2816,8 +2816,8 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (size_merits_direct_comm(cache, size)) {
     cache_lock(cache);
     cache_invalidate(cache, node, (raddr_t)raddr, size);
-    chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
     cache_unlock(cache);
+    chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
     return;
   }
   cache_lock(cache);
@@ -2848,8 +2848,8 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   if (size_merits_direct_comm(cache, size)) {
     cache_lock(cache);
     cache_invalidate(cache, node, (raddr_t)raddr, size);
-    chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
     cache_unlock(cache);
+    chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
     return;
   }
   cache_lock(cache);
@@ -2933,7 +2933,6 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
   cache_invalidate(cache, node, (raddr_t)raddr, size);
   cache_unlock(cache);
   chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
-
 }
 
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
