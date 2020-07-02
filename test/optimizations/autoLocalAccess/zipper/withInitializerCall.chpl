@@ -20,6 +20,8 @@ class C {
   forall (i, loopIdx) in zip(A.domain, 1..) {
     A[i] = new unmanaged C[i*loopIdx];
   }
+
+  for a in A do delete a;
 }
 
 {
