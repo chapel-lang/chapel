@@ -960,6 +960,12 @@ void init_ofi(void) {
 
 
 #ifdef CHPL_COMM_DEBUG
+struct cfgHint {
+  const char* str;
+  unsigned long int val;
+};
+
+
 static
 chpl_bool getCfgHint(const char* evName, struct cfgHint hintVals[],
                      chpl_bool justOne, uint64_t* pVal) {
@@ -994,92 +1000,96 @@ chpl_bool getCfgHint(const char* evName, struct cfgHint hintVals[],
 
   return true;
 }
-#endif
 
 
 static
 void debugOverrideHints(struct fi_info* hints) {
-  if (DBG_TEST_MASK(DBG_CFGFAB)) {
-    uint64_t val;
+  #define CFG_HINT(s)    { #s, (uint64_t) (s) }
+  #define CFG_HINT_NULL  { NULL, 0ULL }
 
-    {
-      struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
-                                    CFG_HINT(FI_COMPLETION),
-                                    CFG_HINT(FI_DELIVERY_COMPLETE),
-                                    CFG_HINT(FI_INJECT),
-                                    CFG_HINT(FI_INJECT_COMPLETE),
-                                    CFG_HINT(FI_TRANSMIT_COMPLETE),
-                                    CFG_HINT_NULL, };
-      if (getCfgHint("COMM_OFI_HINTS_TX_OP_FLAGS",
-                     hintVals, false /*justOne*/, &val)) {
-        hints->tx_attr->op_flags = val;
-      }
-    }
+  uint64_t val;
 
-    {
-      struct cfgHint hintVals[] = { CFG_HINT(FI_ORDER_ATOMIC_RAR),
-                                    CFG_HINT(FI_ORDER_ATOMIC_RAW),
-                                    CFG_HINT(FI_ORDER_ATOMIC_WAR),
-                                    CFG_HINT(FI_ORDER_ATOMIC_WAW),
-                                    CFG_HINT(FI_ORDER_NONE),
-                                    CFG_HINT(FI_ORDER_RAR),
-                                    CFG_HINT(FI_ORDER_RAS),
-                                    CFG_HINT(FI_ORDER_RAW),
-                                    CFG_HINT(FI_ORDER_RMA_RAR),
-                                    CFG_HINT(FI_ORDER_RMA_RAW),
-                                    CFG_HINT(FI_ORDER_RMA_WAR),
-                                    CFG_HINT(FI_ORDER_RMA_WAW),
-                                    CFG_HINT(FI_ORDER_SAR),
-                                    CFG_HINT(FI_ORDER_SAS),
-                                    CFG_HINT(FI_ORDER_SAW),
-                                    CFG_HINT(FI_ORDER_WAR),
-                                    CFG_HINT(FI_ORDER_WAS),
-                                    CFG_HINT(FI_ORDER_WAW),
-                                    CFG_HINT_NULL, };
-      if (getCfgHint("COMM_OFI_HINTS_MSG_ORDER",
-                     hintVals, false /*justOne*/, &val)) {
-        hints->tx_attr->msg_order = hints->rx_attr->msg_order = val;
-      }
-    }
-
-    {
-      struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
-                                    CFG_HINT(FI_COMPLETION),
-                                    CFG_HINT(FI_DELIVERY_COMPLETE),
-                                    CFG_HINT(FI_MULTI_RECV),
-                                    CFG_HINT_NULL, };
-      if (getCfgHint("COMM_OFI_HINTS_RX_OP_FLAGS",
-                     hintVals, false /*justOne*/, &val)) {
-        hints->rx_attr->op_flags = val;
-      }
-    }
-
-    {
-      struct cfgHint hintVals[] = { CFG_HINT(FI_PROGRESS_UNSPEC),
-                                    CFG_HINT(FI_PROGRESS_AUTO),
-                                    CFG_HINT(FI_PROGRESS_MANUAL),
-                                    CFG_HINT_NULL, };
-      if (getCfgHint("COMM_OFI_HINTS_PROGRESS",
-                     hintVals, true /*justOne*/, &val)) {
-        hints->domain_attr->data_progress = (enum fi_progress) val;
-      }
-    }
-
-    {
-      struct cfgHint hintVals[] = { CFG_HINT(FI_THREAD_UNSPEC),
-                                    CFG_HINT(FI_THREAD_SAFE),
-                                    CFG_HINT(FI_THREAD_FID),
-                                    CFG_HINT(FI_THREAD_DOMAIN),
-                                    CFG_HINT(FI_THREAD_COMPLETION),
-                                    CFG_HINT(FI_THREAD_ENDPOINT),
-                                    CFG_HINT_NULL, };
-      if (getCfgHint("COMM_OFI_HINTS_THREADING",
-                     hintVals, true /*justOne*/, &val)) {
-        hints->domain_attr->threading = (enum fi_threading) val;
-      }
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
+                                  CFG_HINT(FI_COMPLETION),
+                                  CFG_HINT(FI_DELIVERY_COMPLETE),
+                                  CFG_HINT(FI_INJECT),
+                                  CFG_HINT(FI_INJECT_COMPLETE),
+                                  CFG_HINT(FI_TRANSMIT_COMPLETE),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_TX_OP_FLAGS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->tx_attr->op_flags = val;
     }
   }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_ORDER_ATOMIC_RAR),
+                                  CFG_HINT(FI_ORDER_ATOMIC_RAW),
+                                  CFG_HINT(FI_ORDER_ATOMIC_WAR),
+                                  CFG_HINT(FI_ORDER_ATOMIC_WAW),
+                                  CFG_HINT(FI_ORDER_NONE),
+                                  CFG_HINT(FI_ORDER_RAR),
+                                  CFG_HINT(FI_ORDER_RAS),
+                                  CFG_HINT(FI_ORDER_RAW),
+                                  CFG_HINT(FI_ORDER_RMA_RAR),
+                                  CFG_HINT(FI_ORDER_RMA_RAW),
+                                  CFG_HINT(FI_ORDER_RMA_WAR),
+                                  CFG_HINT(FI_ORDER_RMA_WAW),
+                                  CFG_HINT(FI_ORDER_SAR),
+                                  CFG_HINT(FI_ORDER_SAS),
+                                  CFG_HINT(FI_ORDER_SAW),
+                                  CFG_HINT(FI_ORDER_WAR),
+                                  CFG_HINT(FI_ORDER_WAS),
+                                  CFG_HINT(FI_ORDER_WAW),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_MSG_ORDER",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->tx_attr->msg_order = hints->rx_attr->msg_order = val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
+                                  CFG_HINT(FI_COMPLETION),
+                                  CFG_HINT(FI_DELIVERY_COMPLETE),
+                                  CFG_HINT(FI_MULTI_RECV),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_RX_OP_FLAGS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->rx_attr->op_flags = val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_PROGRESS_UNSPEC),
+                                  CFG_HINT(FI_PROGRESS_AUTO),
+                                  CFG_HINT(FI_PROGRESS_MANUAL),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_PROGRESS",
+                   hintVals, true /*justOne*/, &val)) {
+      hints->domain_attr->data_progress = (enum fi_progress) val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_THREAD_UNSPEC),
+                                  CFG_HINT(FI_THREAD_SAFE),
+                                  CFG_HINT(FI_THREAD_FID),
+                                  CFG_HINT(FI_THREAD_DOMAIN),
+                                  CFG_HINT(FI_THREAD_COMPLETION),
+                                  CFG_HINT(FI_THREAD_ENDPOINT),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_THREADING",
+                   hintVals, true /*justOne*/, &val)) {
+      hints->domain_attr->threading = (enum fi_threading) val;
+    }
+  }
+
+  #undef CFG_HINT
+  #undef CFG_HINT_NULL
 }
+#endif
 
 
 static
@@ -1178,7 +1188,9 @@ void init_ofiFabricDomain(void) {
 
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
+#ifdef CHPL_COMM_DEBUG
   debugOverrideHints(hints);
+#endif
 
   //
   // Try to find a provider that can do what we want.  If more than one

@@ -104,14 +104,6 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #include <libiberty.h>
 #endif
 
-struct cfgHint {
-  const char* str;
-  unsigned long int val;
-};
-
-#define CFG_HINT(s)    { #s, (uint64_t) (s) }
-#define CFG_HINT_NULL  { NULL, 0ULL }
-
 #else // CHPL_COMM_DEBUG
 
 #define DBG_INIT()
