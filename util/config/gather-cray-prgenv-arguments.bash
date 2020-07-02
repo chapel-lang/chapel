@@ -61,11 +61,9 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 #
 # -lchpl_lib_token allows the Chapel compiler to know
 # where to put additional arguments (they replace that argument).
-LHUGETLBFS=""
+LHUGETLBFS="-lhugetlbfs"
 if [[ "$2" == "cray-shasta" ]] ; then
   LHUGETLBFS=""
-else
-  LHUGETLBFS="-lhugetlbfs"
 fi
 
 # LIBRARY_PATH is only output to stderr but sometimes includes paths
@@ -78,7 +76,7 @@ do
   if [[ $arg == LIBRARY_PATH* && $LINK == 1 ]]
   then
     # remove LIBRARY_PATH=
-    arg=${arg#"LIBRARY_PATH="}
+    arg=${arg#LIBRARY_PATH=}
     # convert : to spaces
     arg=${arg//:/ }
     for subarg in $arg
