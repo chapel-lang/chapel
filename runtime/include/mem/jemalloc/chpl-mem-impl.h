@@ -43,15 +43,15 @@
 
 
 #define MALLOCX_NO_FLAGS 0
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern unsigned get_num_arenas(void);
-extern unsigned set_arena(unsigned);
-#ifdef __cplusplus
+// Determine which arena to use. For large allocations (32 MiB) use a dedicated
+// arena to reduce fragmentation
+extern unsigned CHPL_JE_LG_ARENA;
+static inline int CHPL_JE_MALLOCX_ARENA_FLAG(size_t size) {
+  if (size >= ((size_t) 32 << 20)) {
+    return MALLOCX_ARENA(CHPL_JE_LG_ARENA);
+  }
+  return MALLOCX_NO_FLAGS;
 }
-#endif
 
 
 // jemalloc extended API requires non-0 sized allocations and non-NULL frees.
@@ -71,16 +71,7 @@ static inline void* chpl_calloc(size_t n, size_t size) {
 
 static inline void* chpl_malloc(size_t size) {
   size = minSize(size);
-  void* ret;
-  // To limit fragmentation for large allocations use a dedicated arena
-  if (size >= (32*1024*1024)) {
-    unsigned old_arena = set_arena(get_num_arenas()-1);
-    ret = CHPL_JE_MALLOCX(size, MALLOCX_NO_FLAGS);
-    set_arena(old_arena);
-  } else {
-    ret = CHPL_JE_MALLOCX(size, MALLOCX_NO_FLAGS);
-  }
-  return ret;
+  return CHPL_JE_MALLOCX(size, CHPL_JE_MALLOCX_ARENA_FLAG(size));
 }
 
 static inline void* chpl_memalign(size_t boundary, size_t size) {
