@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h> // for ptrdiff_t
+#include <string.h>
 #include <sys/time.h> // for struct timeval
 #ifndef __cplusplus
 #include <complex.h>
@@ -205,8 +206,17 @@ typedef int64_t             _symbol;
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-int64_t real2int( _real64 f);       // return the raw bytes of the float
-int64_t object2int( _chpl_object o);  // return the ptr
+// return the raw bytes of the float
+static inline int64_t real2int(_real64 f) {
+  int64_t ret;
+  memcpy(&ret, &f, sizeof(ret));
+  return ret;
+}
+
+// return the raw bytes of the pointer
+static inline int64_t object2int(_chpl_object o) {
+  return (intptr_t) o;
+}
 
 typedef int32_t chpl__class_id;
 
@@ -273,7 +283,11 @@ static inline _complex64 complexUnaryMinus64(_complex64 c1) {
 #endif
 
 /* This should be moved somewhere else, but where is the question */
-const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
+static inline const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
+{
+  if (i < 0 || i >= args->argc) return NULL;
+  return args->argv[i];
+}
 
 #include "chpl-string-support.h"
 
