@@ -1,2 +1,0 @@
--s blasImpl=off -s lapackImpl=off   # dgemmNative.perfkeys
-                                    # dgemmBLAS.perfkeys
