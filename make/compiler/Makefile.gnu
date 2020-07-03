@@ -186,10 +186,10 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
-# Avoid false positives for allocation size
+# Avoid false positives for allocation size and memcpy
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
-SQUASH_WARN_GEN_CFLAGS += -Wno-alloc-size-larger-than
+SQUASH_WARN_GEN_CFLAGS += -Wno-alloc-size-larger-than -Wno-restrict
 endif
 
 #
