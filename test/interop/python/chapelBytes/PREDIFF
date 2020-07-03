@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Remove clang unused argument warning
+# Remove clang/gcc unused argument warning
 sed '/^clang: warning: argument unused/d' $2 > $2.tmp
+sed '/warning: unrecognized command line option/d' | \
 # Remove warning about the object file being made for a different OSX version
 sed '/^ld: warning: object file/d' $2.tmp > $2
 # Remove warning about .a's being built for a different architecture
