@@ -1,2 +1,2 @@
--s blasImpl=off -s lapackImpl=off   # dgemmNative.ml-keys
--s blasImpl=blas                    # dgemmBLAS.ml-keys
+-s useBlockDist=true -s blasImpl=off -s lapackImpl=off   # dgemmNative.ml-keys
+-s useBlockDist=true -s blasImpl=blas                    # dgemmBLAS.ml-keys
