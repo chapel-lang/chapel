@@ -131,6 +131,7 @@ performance/comm/low-level/remote-amos.ml-perf.graph
 performance/comm/low-level/remote-unordered-amos.ml-perf.graph
 performance/comm/low-level/remote-ons.ml-perf.graph
 performance/comm/low-level/remote-fastOns.ml-perf.graph
+performance/comm/low-level/remote-warmup.ml-perf.graph
 performance/comm/low-level/array-gets.ml-perf.graph
 performance/comm/low-level/array-puts.ml-perf.graph
 runtime/configMatters/comm/unordered/many-to-many-gets.ml-perf.graph

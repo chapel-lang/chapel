@@ -372,13 +372,13 @@ Current Status
 
 Single-ddata with separate arrays is currently implemented in cases
 where ``CHPL_COMM=ugni``, ``CHPL_MEM=jemalloc``, and hugepages are
-present.  This includes the default configurations on Cray XE and XC
-systems.  In these configurations memory needs to be registered with the
-Gemini or Aries NIC.  Only arrays that occupy at least 2 hugepages worth
-of memory are allocated separately.  The array memory is not registered
-until after it has been initialized, so it has appropriate NUMA locality
-via first touch.  This is independent of the locale model, so the
-``flat`` locale model gains as much from it as ``numa`` does.
+present.  This includes the default configurations on Cray XC systems,
+where memory needs to be registered with the Aries NIC.  Only arrays
+that occupy at least 2 hugepages worth of memory are allocated
+separately.  The array memory is not registered until after it has been
+initialized, so it has appropriate NUMA locality via first touch.  This
+is independent of the locale model, so the ``flat`` locale model gains
+as much from it as ``numa`` does.
 
 Arrays smaller than 2 hugepages in this configuration, and all arrays in
 all other configurations, still come out of the general heap.
@@ -819,11 +819,11 @@ circumstances, or even all desired ones.
 Currently Chapel uses single-ddata with separate arrays in
 configurations where ``CHPL_COMM=ugni``, ``CHPL_MEM=jemalloc`` and
 hugepages are in use (thus memory is registered), which includes the
-default configurations on Cray XE and XC systems.  It uses plain
-single-ddata in all other cases.  (More details are available in the
-`Single-ddata with Separate Arrays`_ Current Status subsection, above.)
-The current implementation produces good affinity on NUMA compute
-architectures for both the flat and numa locale models.
+default configurations on Cray XC systems.  It uses plain single-ddata
+in all other cases.  (More details are available in the `Single-ddata
+with Separate Arrays`_ Current Status subsection, above.) The current
+implementation produces good affinity on NUMA compute architectures for
+both the flat and numa locale models.
 
 Whether it makes sense to have a ``numa`` locale model if ``flat`` can
 achieve ideal performance on NUMA architectures is a question we have

@@ -358,7 +358,7 @@ static void removeUnusedModuleVariables() {
 }
 
 
-static bool do_isUnusedClass(Type* t) {
+static bool do_isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   bool retval = true;
 
   AggregateType* at = toAggregateType(t);
@@ -389,23 +389,37 @@ static bool do_isUnusedClass(Type* t) {
   } else if (at && at->initializerResolved) {
     retval = false;
 
+  } else if (wellknown.count(at) != 0) {
+    retval = false;
+
   } else if (at) {
     forv_Vec(AggregateType, childClass, at->dispatchChildren) {
-      if (childClass && isUnusedClass(childClass) == false) {
+      if (childClass && isUnusedClass(childClass, wellknown) == false) {
         retval = false;
         break;
       }
     }
-
   }
 
   return retval;
 }
 
-bool isUnusedClass(Type* t) {
+std::set<Type*> getWellKnownTypesSet() {
+  std::set<Type*> concreteWellKnownTypesSet;
+  std::vector<Type*> wellKnownTypes= getWellKnownTypes();
+
+  for_vector(Type, type, wellKnownTypes) {
+    AggregateType* at = toAggregateType(type);
+    if (at == NULL || at->isGeneric() == false)
+      concreteWellKnownTypesSet.insert(type);
+  }
+  return concreteWellKnownTypesSet;
+}
+
+bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   bool retval = true;
 
-  retval = do_isUnusedClass(t);
+  retval = do_isUnusedClass(t, wellknown);
 
   // check other variant
   //  borrow/class types can have unmanaged class type used
@@ -415,27 +429,31 @@ bool isUnusedClass(Type* t) {
       for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
         ClassTypeDecorator decorator = (ClassTypeDecorator)i;
         if (Type* dt = at->getDecoratedClass(decorator))
-          retval &= do_isUnusedClass(dt);
+          retval &= do_isUnusedClass(dt, wellknown);
       }
     }
   } else if (DecoratedClassType* dt = toDecoratedClassType(t)) {
-    retval &= do_isUnusedClass(dt->getCanonicalClass());
+    retval &= do_isUnusedClass(dt->getCanonicalClass(), wellknown);
   }
 
   return retval;
 }
 
 static void removeUnusedTypes() {
+
+  clearGenericWellKnownTypes();
+  std::set<Type*> wellknown = getWellKnownTypesSet();
+
   // Remove unused aggregate types.
   for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
     if (! type->hasFlag(FLAG_REF)                &&
         ! type->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
       if (AggregateType* at = toAggregateType(type->type)) {
-        if (isUnusedClass(at) == true) {
+        if (isUnusedClass(at, wellknown)) {
           at->symbol->defPoint->remove();
         }
       } else if(DecoratedClassType* dt = toDecoratedClassType(type->type)) {
-        if (isUnusedClass(dt->getCanonicalClass()) == true) {
+        if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
           dt->symbol->defPoint->remove();
         }
       }
@@ -445,18 +463,18 @@ static void removeUnusedTypes() {
   // Remove unused ref types.
   for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
     if (type->hasFlag(FLAG_REF)) {
-        // Get the value type of the ref type.
-        if (AggregateType* at1 = toAggregateType(type->getValType())) {
-          if (isUnusedClass(at1) == true) {
-            // If the value type is unused, its ref type can also be removed.
-            type->defPoint->remove();
-          }
-        } else if(DecoratedClassType* dt =
-                  toDecoratedClassType(type->getValType())) {
-          if (isUnusedClass(dt->getCanonicalClass())) {
-            type->defPoint->remove();
-          }
+      // Get the value type of the ref type.
+      if (AggregateType* at1 = toAggregateType(type->getValType())) {
+        if (isUnusedClass(at1, wellknown)) {
+          // If the value type is unused, its ref type can also be removed.
+          type->defPoint->remove();
         }
+      } else if(DecoratedClassType* dt =
+                toDecoratedClassType(type->getValType())) {
+        if (isUnusedClass(dt->getCanonicalClass(), wellknown)) {
+          type->defPoint->remove();
+        }
+      }
     }
   }
 }

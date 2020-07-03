@@ -27,6 +27,7 @@
 namespace llvm {
   class Type;
   class Function;
+  class FunctionType;
   class ModulePass;
 }
 
@@ -141,16 +142,21 @@ struct GlobalToWideInfo {
 
   // args:  dst local address, src nodeid, src address, num bytes, atomicness
   runtime_fn_t getFn;
+  llvm::FunctionType* getFnType;
+
   // args:  dst nodeid, dst address, local address, num bytes, atomicness
   runtime_fn_t putFn;
+  llvm::FunctionType* putFnType;
 
   // args:  dst nodeid, dst address
   //        src nodeid, src address
   //        num bytes
   runtime_fn_t getPutFn;
+  llvm::FunctionType* getPutFnType;
 
   // args:  dst nodeid, dst addr, c (byte), num bytes
   runtime_fn_t memsetFn;
+  llvm::FunctionType* memsetFnType;
 
   // Dummy function storing the runtime dependencies
   // so that they are not removed by the inliner.

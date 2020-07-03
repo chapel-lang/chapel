@@ -214,7 +214,7 @@ static uint64_t debug_stats_flag = 0;
 #endif
 
 
-// not generally true, but should be for XE/XC
+// not generally true, but should be for XC
 #define CACHE_LINE_SIZE 64
 #define CACHE_LINE_ALIGN __attribute__((aligned(CACHE_LINE_SIZE)))
 
@@ -1131,49 +1131,8 @@ static chpl_bool32** fork_reqs_free_map = NULL;
 
 //
 // Tables of NIC AMO opcodes indexed by our own network atomic codes
-// (fork_amo_cmd_t) for Gemini and Aries, non-fetching and fetching.
+// (fork_amo_cmd_t) for Aries, non-fetching and fetching.
 //
-static gni_fma_cmd_type_t nic_amos_gem_fetch[]  // Gemini, fetching
-           = { -1,                       // put_32
-               -1,                       // put_64
-               -1,                       // get_32
-               -1,                       // get_64
-               -1,                       // swap_32
-               -1,                       // swap_64 (special-cased in code)
-               -1,                       // cswap_32
-               GNI_FMA_ATOMIC_CSWAP,     // cswap_64
-               -1,                       // and_i32
-               GNI_FMA_ATOMIC_FAND,      // and_i64
-               -1,                       // or_i32
-               GNI_FMA_ATOMIC_FOR,       // or_i64
-               -1,                       // xor_i32
-               GNI_FMA_ATOMIC_FXOR,      // xor_i64
-               -1,                       // add_i32
-               GNI_FMA_ATOMIC_FADD,      // add_i64
-               -1,                       // add_r32
-               -1                        // add_r64
-             };
-
-static gni_fma_cmd_type_t nic_amos_gem[]        // Gemini, non-fetching
-           = { -1,                       // put_32
-               -1,                       // put_64
-               -1,                       // get_32
-               -1,                       // get_64
-               -1,                       // swap_32
-               -1,                       // swap_64
-               -1,                       // cswap_32
-               -1,                       // cswap_64
-               -1,                       // and_i32
-               GNI_FMA_ATOMIC_AND,       // and_i64
-               -1,                       // or_i32
-               GNI_FMA_ATOMIC_OR,        // or_i64
-               -1,                       // xor_i32
-               GNI_FMA_ATOMIC_XOR,       // xor_i64
-               -1,                       // add_i32
-               GNI_FMA_ATOMIC_ADD,       // add_i64
-               -1,                       // add_r32
-               -1                        // add_r64
-             };
 
 static gni_fma_cmd_type_t nic_amos_ari_fetch[]  // Aries, fetching
            = { -1,                       // put_32
@@ -1900,8 +1859,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
 
   {
     GNI_CHECK(GNI_GetDeviceType(&nic_type));
-    if (nic_type != GNI_DEVICE_GEMINI
-        && nic_type != GNI_DEVICE_ARIES)
+    if (nic_type != GNI_DEVICE_ARIES)
       CHPL_INTERNAL_ERROR("unexpected GNI device type");
   }
 
@@ -1930,16 +1888,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
                                            true) && !chpl_cache_enabled();
 
   //
-  // We can easily reach 16k memory regions on Aries.  We can reach a
-  // bit more than 3500 memory regions on Gemini but getting there is
-  // tricky because we start bumping up against a number of limits
-  // all at once (node memory sizes, limits on number of registered
-  // pages, available page sizes).  Reflecting that, on Gemini dial
-  // back the default max number of registered memory regions to 2k.
-  //
-  max_mem_regions =
-    chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS",
-                        (nic_type == GNI_DEVICE_GEMINI) ? 2048 : 16384);
+  // We can reach 16k memory regions on Aries.
+  max_mem_regions = chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS", 16384);
 
   //
   // We have to create the local memory region table before the first
@@ -2262,11 +2212,10 @@ static void compute_comm_dom_cnt(void)
   comm_dom_cnt++;  // count the polling task's dedicated comm domain
 
   //
-  // Limit us to 30 communication domains on Gemini (architectural
-  // limit = 32) and 120 on Aries (architectural limit = 128).
+  // Limit us to 120 on Aries (architectural limit = 128).
   //
   {
-    int max_comm_dom_cnt = (nic_type == GNI_DEVICE_GEMINI) ? 30 : 120;
+    int max_comm_dom_cnt = 120;
     if (comm_dom_cnt > max_comm_dom_cnt)
       comm_dom_cnt = max_comm_dom_cnt;
   }
@@ -3061,18 +3010,10 @@ void make_registered_heap(void)
   //
   // Considering the data size we'll register, compute the maximum
   // heap size that will allow all registrations to fit in the NIC
-  // TLB.  Except on Gemini only, aim for only 95% of what will fit
-  // because there we'll get an error if we go over.
-  //
-  if (nic_type == GNI_DEVICE_GEMINI) {
-    const size_t nic_max_pages = (size_t) 1 << 14; // not publicly defined
-    nic_max_mem = nic_max_pages * page_size;
-    nic_mem_map_limit = ALIGN_DN((size_t) (0.95 * nic_max_mem), page_size);
-  } else {
-    const size_t nic_TLB_cache_pages = 512; // not publicly defined
-    nic_max_mem = nic_TLB_cache_pages * page_size;
-    nic_mem_map_limit = nic_max_mem;
-  }
+  // TLB.
+  const size_t nic_TLB_cache_pages = 512; // not publicly defined
+  nic_max_mem = nic_TLB_cache_pages * page_size;
+  nic_mem_map_limit = nic_max_mem;
 
   {
     uint64_t  addr;
@@ -3102,29 +3043,6 @@ void make_registered_heap(void)
     size = size_phys;
 
   //
-  // On Gemini-based systems, if necessary reduce the heap size until
-  // we can fit all the registered pages in the NIC TLB.  Otherwise,
-  // we'll get GNI_RC_ERROR_RESOURCE when we try to register memory.
-  // Warn about doing this.
-  //
-  if (nic_type == GNI_DEVICE_GEMINI && size > max_heap_size) {
-    if (chpl_nodeID == 0) {
-      char buf1[20], buf2[20], buf3[20], msg[200];
-      chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
-      chpl_snprintf_KMG_z(buf2, sizeof(buf2), page_size);
-      chpl_snprintf_KMG_f(buf3, sizeof(buf3), max_heap_size);
-      (void) snprintf(msg, sizeof(msg),
-                      "Gemini TLB can cover %s with %s pages; heap "
-                      "reduced to %s to fit",
-                      buf1, buf2, buf3);
-      chpl_warning(msg, 0, 0);
-    }
-
-    if (nic_type == GNI_DEVICE_GEMINI)
-      size = max_heap_size;
-  }
-
-  //
   // Work our way down from the starting size in (roughly) 5% steps
   // until we can actually get that much from the system.
   //
@@ -3150,11 +3068,11 @@ void make_registered_heap(void)
            start, size);
 
   //
-  // On Aries-based systems, warn if the size is larger than what will
-  // fit in the TLB cache.  But since that may reduce performance but
-  // won't affect function, don't reduce the size to fit.
+  // Warn if the size is larger than what will fit in the TLB cache.
+  // But since that may reduce performance but won't affect function,
+  // don't reduce the size to fit.
   //
-  if (nic_type == GNI_DEVICE_ARIES && size > max_heap_size) {
+  if (size > max_heap_size) {
     if (chpl_nodeID == 0) {
       char buf1[20], buf2[20], buf3[20], msg[200];
       chpl_snprintf_KMG_z(buf1, sizeof(buf1), nic_max_mem);
@@ -5942,7 +5860,7 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   //
   // If the local address isn't in a memory region known to the NIC, the
-  // address is unaligned, or the size is unaligned or too short, do the
+  // src address is unaligned, or the size is unaligned, perform the
   // GET into a trampoline buffer instead.  We will copy the result
   // where it needs to go once it arrives.  The variables involved are
   // as follows:
@@ -5970,12 +5888,11 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
 
   local_mr = mreg_for_local_addr(tgt_addr_xmit);
   if (local_mr != NULL
-      && IS_ALIGNED_32((size_t) (intptr_t) tgt_addr)
       && src_addr_xmit == src_addr
       && xmit_size == size) {
     //
-    // The remote and local addresses are both registered and aligned,
-    // and the length is aligned, so we can do a direct transfer.
+    // The src and dst addresses are registered, the src address is
+    // aligned, and the length is aligned, so we can do a direct GET.
     //
     do_nic_get(tgt_addr, locale, remote_mr, src_addr, size, local_mr);
     return;
@@ -6010,14 +5927,8 @@ void do_remote_get(void* tgt_addr, c_nodeid_t locale, void* src_addr,
     xmit_size -= gbp_max_size;
 
     // Peeling off the remote source misalignment allows us to do a single GET
-    // for the middle chunk on Aries, and if the local target had the same
-    // misalignment we can do this on Gemini too. PostFMA/PostDMA docs:
-    //   "On Gemini systems, GETs require 4-byte alignment for local address,
-    //   remote address, and the length. Aries systems differ in that GETs do
-    //   not require a 4-byte aligned local address."
-    if (local_mr != NULL &&
-       (IS_ALIGNED_32((size_t) (intptr_t) tgt_addr) || nic_type == GNI_DEVICE_ARIES) &&
-        xmit_size > gbp_max_size) {
+    // for the middle chunk.
+    if (local_mr != NULL && xmit_size > gbp_max_size) {
       size_t large_xmit_size = ALIGN_32_DN(xmit_size);
       do_nic_get(tgt_addr, locale, remote_mr, src_addr_xmit, large_xmit_size, local_mr);
       tgt_addr = (char*) tgt_addr + large_xmit_size;
@@ -6237,7 +6148,7 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 
 
 //
-// Atomic operations done by Gemini or Aries are not coherent with
+// Atomic operations done by Aries are not coherent with
 // respect to operations done by the processor.  This includes not
 // only atomics done by the processor but also non-atomic equivalents
 // to the atomic operations and indeed even loads and stores.  Thus
@@ -6253,56 +6164,9 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 // coherence with other network AMOs that might operate on the same
 // datum.
 //
-// On Gemini, we only have 64-bit integer AMOs.  Those are all done
-// by the NIC.  We don't have a 64-bit exchange, but we emulate that
-// with FAX (Fetch and And-Xor).  We also don't have FP AMOs, so FP
-// add is emulated using compare-exchange.  32-bit AMOs are all done
-// by the CPU, via remote fork.
-//
 // The Aries 64-bit FP add AMO is broken in hardware and disabled in
 // ugni.  It is emulated using compare-exchange on the NIC.
 //
-// Note that since the Gemini implementation is split, with 32-bit
-// AMOs done by the CPU and 64-bit ones done by the NIC, one cannot
-// safely do 32-bit integer operations on the halves of 64-bit
-// objects, or 64-bit integer operations on pairs of 32-bit objects.
-// None of these seem like likely desires, however.
-//
-// As historical information, at first the 32-bit remote atomics were
-// done using 64-bit operations on the qword memory locations that
-// contained the dword objects.  The bitwise integer operations were
-// done directly, with identity values in the "other" (non-target)
-// dwords of the qword containers.  The rest were done via remote fork
-// on the target locale, with the actual operation computed on the
-// processor, and a 64-bit NIC CSWAP being used to replace the old
-// value of the target dword with the new value while leaving the
-// other dword unchanged.  This was cute but broken. The problem had
-// to do with the other dword.  The NIC/processor incoherence issue
-// for AMOs required that if that other dword were the residence of a
-// regular variable then it had to be picked up and restored with
-// processor loads and stores, and if it were the residence of an
-// atomic variable then it had to be picked up and restored with NIC
-// GETs and PUTs.  But there was no way to tell which kind of variable
-// it was, and thus no safe way to manipulate it.  One way to work
-// around this problem would have been to pad all 32-bit atomic
-// objects to 64 bits, but the technique we're now using performs
-// nearly as well while not wasting memory.
-//
-// TODO: When the operation or type is not supported natively by the
-//       NIC but the target datum is local, we should do the operation
-//       directly instead of initiating a remote fork to do it.  There
-//       is no functional issue here, just a performance improvement.
-//
-
-//
-// Is this a 32-bit AMO on a Gemini NIC?
-//
-// Note that the first clause can be evaluated at compile time, so the
-// whole expression turns into a check against the NIC type for 32-bit
-// AMOs and disappears entirely for 64-bit ones.
-//
-#define IS_32_BIT_AMO_ON_GEMINI(_t) \
-        (sizeof(_t) == sizeof(int32_t) && nic_type == GNI_DEVICE_GEMINI)
 
 //
 // Do an AMO on the CPU (locally or by means of an AM to a remote locale.)
@@ -6360,23 +6224,9 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
                                                                         \
           chpl_comm_diags_verbose_amo("amo write", loc, ln, fn);        \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, NULL, val, NULL, loc);      \
-          }                                                             \
-          else if (nic_type == GNI_DEVICE_GEMINI) {                     \
-            /*                                                          \
-            ** Gemini PUT and AMO are not coherent (Bug 760752) when    \
-            ** the memory segment has GNI_MEM_RELAXED_PI_ORDERING, as   \
-            ** ours does.  Therefore, emulate the PUT using a FAX AMO.  \
-            ** We don't actually need the result and indeed ignore it,  \
-            ** but the corresponding non-fetching AX is broken in       \
-            ** hardware and disabled in ugni.                           \
-            */                                                          \
-            int64_t res;                                                \
-            int64_t mask = 0;                                           \
-            do_nic_amo(&mask, val, loc, obj, sizeof(_t),                \
-                       GNI_FMA_ATOMIC_FAX, &res, remote_mr);            \
           }                                                             \
           else {                                                        \
             do_remote_put(val, loc, obj, sizeof(_t), remote_mr,         \
@@ -6418,7 +6268,7 @@ DEFINE_CHPL_COMM_ATOMIC_WRITE(real64, put_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo read", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, res, NULL, NULL, loc);      \
           }                                                             \
@@ -6465,18 +6315,9 @@ DEFINE_CHPL_COMM_ATOMIC_READ(real64, get_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo xchg", loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, res, xchgval, NULL, loc);   \
-          }                                                             \
-          else if (nic_type == GNI_DEVICE_GEMINI) {                     \
-            /*                                                          \
-            ** Gemini doesn't have XCHG as such, but FAX (Fetch and     \
-            ** And-Xor) can do the same thing with the right mask.      \
-            */                                                          \
-            int64_t mask = 0;                                           \
-            do_nic_amo(&mask, xchgval, loc, obj, sizeof(_t),            \
-                       GNI_FMA_ATOMIC_FAX, res, remote_mr);             \
           }                                                             \
           else {                                                        \
             do_nic_amo(xchgval, NULL, loc, obj, sizeof(_t),             \
@@ -6524,7 +6365,7 @@ DEFINE_CHPL_COMM_ATOMIC_XCHG(real64, swap_64, int_least64_t)
           _t old_value;                                                 \
           _t old_expected;                                              \
           memcpy(&old_expected, cmpval, sizeof(_t));                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, &old_value, &old_expected,  \
                                        xchgval, loc);                   \
@@ -6572,7 +6413,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo " #_o, loc, ln, fn);         \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
@@ -6596,7 +6437,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo unord_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, NULL, opnd, NULL, loc);     \
           }                                                             \
@@ -6622,7 +6463,7 @@ DEFINE_CHPL_COMM_ATOMIC_CMPXCHG(real64, cswap_64, int_least64_t)
                                                                         \
           chpl_comm_diags_verbose_amo("amo fetch_" #_o, loc, ln, fn);   \
           chpl_comm_diags_incr(amo);                                    \
-          if (chpl_numNodes == 1 || IS_32_BIT_AMO_ON_GEMINI(_t)         \
+          if (chpl_numNodes == 1                                        \
               || (remote_mr = mreg_for_remote_addr(obj, loc)) == NULL) {\
             do_non_nic_amo_##_c##_##_f(obj, res, opnd, NULL, loc);      \
           }                                                             \
@@ -6661,10 +6502,8 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
 //   _c: network AMO command
 //   _t: AMO type
 //
-// Note: FP AMOs aren't supported on Gemini, and 64-bit FP add is
-//       broken in Aries hardware and disabled in uGNI, so the only
-//       thing we actually use the NIC for here is 32-bit FP add on
-//       Aries.
+// Note: 64-bit FP add is broken in Aries hardware and disabled in uGNI,
+// so the only thing we actually use the NIC for here is 32-bit FP add.
 //
 #define DEFINE_CHPL_COMM_ATOMIC_REAL_OP(_f, _c, _t)                     \
         DEFINE_DO_NON_NIC_AMO(_f, _c, _t)                               \
@@ -6685,7 +6524,6 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
           chpl_comm_diags_verbose_amo("amo add", loc, ln, fn);          \
           chpl_comm_diags_incr(amo);                                    \
           if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
-              && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo_nf(opnd, loc, obj, sizeof(_t),                   \
                           amo_cmd_2_nic_op(_c, 0), remote_mr);          \
@@ -6710,7 +6548,6 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
           chpl_comm_diags_verbose_amo("amo unord_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
           if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
-              && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo_nf_buff(opnd, loc, obj, sizeof(_t),              \
                                amo_cmd_2_nic_op(_c, 0), remote_mr);     \
@@ -6737,7 +6574,6 @@ DEFINE_CHPL_COMM_ATOMIC_INT_OP(uint64, add, add_i64, uint_least64_t)
           chpl_comm_diags_verbose_amo("amo fetch_add", loc, ln, fn);    \
           chpl_comm_diags_incr(amo);                                    \
           if (chpl_numNodes > 1 && sizeof(_t) == sizeof(int_least32_t)  \
-              && nic_type == GNI_DEVICE_ARIES                           \
               && (remote_mr = mreg_for_remote_addr(obj, loc)) != NULL) {\
             do_nic_amo(opnd, NULL, loc, obj, sizeof(_t),                \
                        amo_cmd_2_nic_op(_c, 1), res, remote_mr);        \
@@ -6840,9 +6676,7 @@ int amo_cmd_2_nic_op(fork_amo_cmd_t cmd, int fetching)
   // Select a NIC AMO command based on our internal one, the kind of
   // NIC we're working with, and whether or not a result is desired.
   //
-  table = (  (nic_type == GNI_DEVICE_GEMINI)
-           ? (fetching ? nic_amos_gem_fetch : nic_amos_gem)
-           : (fetching ? nic_amos_ari_fetch : nic_amos_ari));
+  table = (fetching ? nic_amos_ari_fetch : nic_amos_ari);
 
   nic_cmd = ((int)cmd >= 0 && cmd < num_fork_amo_cmds) ? table[cmd] : -1;
   if ((int) nic_cmd < 0)

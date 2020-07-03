@@ -35,6 +35,7 @@ proc CS.dsiPartialReduceInto(ref resArr, const perElemOp,
   {
     const resIdx = fullIdxToReducedIdx(resDims, srcDims, srcIdx);
     resArr reduce= (resIdx, fExpr(srcIdx));
+    //writeln(fExpr(srcIdx));
   }
 
   delete resReduceOp;

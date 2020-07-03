@@ -502,8 +502,6 @@ def get_module_lcd_cpu(platform_val, cpu):
                 return "x86-rome"       # We're building on a Shasta system!
             else:
                 return "sandybridge"    # We're still building on an XC.
-    elif platform_val == "cray-xe" or platform_val == "cray-xk":
-        return "barcelona"
     elif platform_val == "aarch64":
         return "arm-thunderx"
     else:

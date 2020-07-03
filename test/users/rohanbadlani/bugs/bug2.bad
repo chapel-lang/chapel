@@ -1,1 +1,1 @@
-bug2.chpl:8: error: unresolved access of 'LinkedList(int(64))' by '(2)'
+bug2.chpl:10: error: unresolved access of 'LinkedList(int(64))' by '(2)'

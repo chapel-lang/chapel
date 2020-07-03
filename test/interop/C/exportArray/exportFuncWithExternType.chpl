@@ -1,4 +1,4 @@
-export proc foo(x: [] int, otherVal: chpl_external_array) {
+export proc foo(ref x: [] int, const ref otherVal: chpl_external_array) {
   // Note: this assumes the type otherVal stores
   var explicitlyWrapped = makeArrayFromExternArray(otherVal, int);
   writeln(x); // Note: this assumes x will have initial contents

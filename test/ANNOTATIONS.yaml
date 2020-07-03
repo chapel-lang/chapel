@@ -474,6 +474,21 @@ AllCompTime: &timecomp-base
     - Improve handling for tryResolve and errors to handle a bad init= (#14887)
   03/03/20:
     - Remove calls to getUserInstantiationPoint (#15051)
+  06/11/20:
+    - Fix split init of const variables and update lvalue errors (#15800)
+  06/16/20:
+    - text: Support third-party CHPL_LIBFABRIC=libfabric (#15729)
+      config: 16-node-cs
+    - text: Warm up the comm layer, in the many-to-one test (#15798)
+      config: 16-node-cs
+  06/21/20:
+    - Switch the domain's list of arrays to a hashtable (#15895)
+  06/25/20:
+    - Avoid allocating memory for empty hashtables (#15918)
+
+allocate:
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 
 arguments:
   09/20/17:
@@ -507,6 +522,8 @@ array-of-strings-read:
     - Rework the helper for string/bytes slicing (#15615)
   05/20/20:
     - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 
 arr-forall:
   03/24/15:
@@ -1281,6 +1298,10 @@ memleaksfull:
     - Close some multilocale test leaks (#15406)
   04/19/20:
     - no new leaks, multiple tests used to be registered as one
+  06/16/20:
+    - Use `localAccess` automatically (#15713)
+  06/18/20:
+    - Close a trivial test leak (#15871)
 
 meteor:
   12/18/13:
@@ -1518,6 +1539,8 @@ regexdna: &regexdna-base
     - Add UTF8 validation for strings (#14384)
   01/23/20:
     - Add support for escaping non-UTF8 sequences in strings (#14743)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1583,6 +1606,10 @@ revcomp: &revcomp-base
 revcomp-submitted:
   <<: *revcomp-base
 
+ri-a2-AoA:
+  06/05/20:
+    - Remove unnecessary array temporaries for arrays-of-arrays (#15767)
+
 sad:
   05/03/16:
     - inconclusive due to noise
@@ -1626,6 +1653,8 @@ spectral-norm-specify-step:
 split-whitespace-perf:
   11/02/16:
     - fix bugs when reading null bytes (#4806)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 
 SSCA2_main:
   06/12/13:
@@ -1691,6 +1720,8 @@ substring:
     - Rework the helper for string/bytes slicing (#15615)
   05/20/20:
     - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 
 taskSpawn:
   07/24/16:
@@ -1715,6 +1746,8 @@ temporary-copies:
     - Rework the helper for string/bytes slicing (#15615)
   05/20/20:
     - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 
 twopt-paircount:
   06/22/17:
@@ -1868,8 +1901,7 @@ arkouda: &arkouda-base
   04/22/20:
     - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
   04/28/20:
-    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
-      config: chapcs
+    - Improve comm=none build and execution speed (mhmerrill/arkouda#358)
   04/28/20:
     - text: Move XC testing from login to elogin node
       config: 16-node-xc

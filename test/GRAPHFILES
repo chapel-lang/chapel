@@ -70,6 +70,7 @@ arrays/diten/time_array_vs_ddata.graph
 arrays/ferguson/return-array-40000000.graph
 arrays/lydia/time_access.graph
 domains/ferguson/build-associative.graph
+domains/elliot/primes.graph
 types/atomic/ferguson/atomictest.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/assign.1024.graph

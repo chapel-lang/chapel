@@ -202,85 +202,91 @@ static void buildVisibleFunctionMap() {
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
+static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
+                             CallExpr* call, std::vector<FnSymbol*>* vec);
+
 static void buildReexportVec(BlockStmt* scope, const char* name, CallExpr* call,
                              std::vector<FnSymbol*>* vec) {
   if (scope->useList != NULL) {
     for_actuals(expr, scope->useList) {
       if (ImportStmt* import = toImportStmt(expr)) {
-        if (!import->isPrivate) {
-          // Only public import statements re-export, no need to search
-          // otherwise
-          if (!import->skipSymbolSearch(name)) {
-            SymExpr* se = toSymExpr(import->src);
+        buildReexportVec(import, name, call, vec);
+      } else if (UseStmt* use = toUseStmt(expr)) {
+        buildReexportVec(use, name, call, vec);
+      } else {
+        INT_FATAL("unhandled case");
+      }
+    }
+  }
+}
 
-            INT_ASSERT(se);
+static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
+                             CallExpr* call, std::vector<FnSymbol*>* vec) {
+  if (!visStmt->isPrivate) {
+    // Only public visStmt statements re-export, no need to search
+    // otherwise
+    if (!visStmt->skipSymbolSearch(name)) {
+      SymExpr* se = toSymExpr(visStmt->src);
 
-            ModuleSymbol* mod = toModuleSymbol(se->symbol());
-            INT_ASSERT(mod);
+      INT_ASSERT(se);
 
-            if (mod->isVisible(call) == true) {
-              const char *nameToUse = name;
-              const bool isSymRenamed = import->isARenamedSym(name);
-              if (isSymRenamed) {
-                nameToUse = import->getRenamedSym(name);
-              }
+      ModuleSymbol* mod = toModuleSymbol(se->symbol());
+      INT_ASSERT(mod);
 
-              if (VisibleFunctionBlock* vfb =
-                  visibleFunctionMap.get(mod->block)) {
-                // Does the imported module define functions with this name?
-                if (Vec<FnSymbol*>* fns =
-                    vfb->visibleFunctions.get(nameToUse)) {
-                  // Optimization: only check visibility of one private function
-                  // per scope searched.  The same answer should hold for all
-                  // private symbols in the same scope.
-                  bool privacyChecked = false;
-                  bool privateOkay = false;
+      if (mod->isVisible(call) == true) {
+        const char *nameToUse = name;
+        const bool isSymRenamed = visStmt->isARenamedSym(name);
+        if (isSymRenamed) {
+          nameToUse = visStmt->getRenamedSym(name);
+        }
 
-                  forv_Vec(FnSymbol, fn, *fns) {
-                    if (fn->hasFlag(FLAG_PRIVATE)) {
-                      // Ensure that private functions are not used outside of
-                      // their proper scope
-                      if (!privacyChecked) {
-                        // We haven't checked the privacy of a function in this
-                        // scope yet.  Do so now, and remember the result
-                        privacyChecked = true;
-                        if (fn->isVisible(call) == true) {
-                          // We've determined that this function, even though it
-                          // is private, can be used
-                          vec->push_back(fn);
-                          privateOkay = true;
-                        }
-                      } else if (privateOkay) {
-                        // We've already checked that private symbols are
-                        // accessible in this pass and they are, so it's okay to
-                        // add this function to the visible functions list
-                        vec->push_back(fn);
-                      }
-                    } else {
-                      // This was a public function, so always include it.
-                      vec->push_back(fn);
-                    }
+        if (VisibleFunctionBlock* vfb =
+            visibleFunctionMap.get(mod->block)) {
+          // Does the visStmted module define functions with this name?
+          if (Vec<FnSymbol*>* fns =
+              vfb->visibleFunctions.get(nameToUse)) {
+            // Optimization: only check visibility of one private function
+            // per scope searched.  The same answer should hold for all
+            // private symbols in the same scope.
+            bool privacyChecked = false;
+            bool privateOkay = false;
+
+            forv_Vec(FnSymbol, fn, *fns) {
+              if (fn->hasFlag(FLAG_PRIVATE)) {
+                // Ensure that private functions are not used outside of
+                // their proper scope
+                if (!privacyChecked) {
+                  // We haven't checked the privacy of a function in this
+                  // scope yet.  Do so now, and remember the result
+                  privacyChecked = true;
+                  if (fn->isVisible(call) == true) {
+                    // We've determined that this function, even though it
+                    // is private, can be used
+                    vec->push_back(fn);
+                    privateOkay = true;
                   }
-                }
-
-                updateReexportEntry(vfb, nameToUse, mod->block, call);
-                for_vector(FnSymbol, fn, *vfb->reexports[nameToUse].second) {
+                } else if (privateOkay) {
+                  // We've already checked that private symbols are
+                  // accessible in this pass and they are, so it's okay to
+                  // add this function to the visible functions list
                   vec->push_back(fn);
                 }
               } else {
-                // No visible function map, so don't worry about it and just
-                // follow the public import statements
-                buildReexportVec(mod->block, nameToUse, call, vec);
+                // This was a public function, so always include it.
+                vec->push_back(fn);
               }
             }
           }
-        }
-      } else if (isUseStmt(expr)) {
-        // UseStmts can't re-export just yet
-        continue;
 
-      } else {
-        INT_FATAL("unhandled case");
+          updateReexportEntry(vfb, nameToUse, mod->block, call);
+          for_vector(FnSymbol, fn, *vfb->reexports[nameToUse].second) {
+            vec->push_back(fn);
+          }
+        } else {
+          // No visible function map, so don't worry about it and just
+          // follow the public visStmt statements
+          buildReexportVec(mod->block, nameToUse, call, vec);
+        }
       }
     }
   }

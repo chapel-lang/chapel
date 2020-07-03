@@ -1,6 +1,0 @@
-bug: second instantiation of a generic record results in type mismatch
-
-This future shows that the second instantiation of a generic record
-results in a type mismatch as though the field is already hard-coded
-to be of the first instantiation type.  It seems something must be
-going wrong in the compiler.

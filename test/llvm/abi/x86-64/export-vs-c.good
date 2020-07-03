@@ -1,0 +1,104 @@
+OUTPUT testing bool_..._c_____
+OUTPUT testing bool_..._c_____: arg 1
+OUTPUT testing bool_..._chapel
+OUTPUT testing bool_..._chapel: arg 1
+OUTPUT testing int16_..._c_____
+OUTPUT testing int16_..._c_____: arg -1
+OUTPUT testing int16_..._chapel
+OUTPUT testing int16_..._chapel: arg -1
+OUTPUT testing int32_..._c_____
+OUTPUT testing int32_..._c_____: arg -1
+OUTPUT testing int32_..._chapel
+OUTPUT testing int32_..._chapel: arg -1
+OUTPUT testing int64_..._c_____
+OUTPUT testing int64_..._c_____: arg -1
+OUTPUT testing int64_..._chapel
+OUTPUT testing int64_..._chapel: arg -1
+OUTPUT testing int8_..._c_____
+OUTPUT testing int8_..._c_____: arg -1
+OUTPUT testing int8_..._chapel
+OUTPUT testing int8_..._chapel: arg -1
+OUTPUT testing struct_pair_int..._c_____
+OUTPUT testing struct_pair_int..._c_____: arg.a 0 arg.b 1
+OUTPUT testing struct_pair_int..._chapel
+OUTPUT testing struct_pair_int..._chapel: arg.a 0 arg.b 1
+OUTPUT testing struct_pair_long..._c_____
+OUTPUT testing struct_pair_long..._c_____: arg.a 0 arg.b 1
+OUTPUT testing struct_pair_long..._chapel
+OUTPUT testing struct_pair_long..._chapel: arg.a 0 arg.b 1
+OUTPUT testing struct_triple_..._c_____
+OUTPUT testing struct_triple_..._c_____: arg.a 0 arg.b 1 arg.c 2
+OUTPUT testing struct_triple_..._chapel
+OUTPUT testing struct_triple_..._chapel: arg.a 0 arg.b 1 arg.c 2
+OUTPUT testing struct_twelve_..._c_____
+OUTPUT testing struct_twelve_..._c_____: arg.a 0 arg.b 1 arg.c 2 arg.d 3 arg.e 4 arg.f 5 arg.g 6 arg.h 7 arg.i 8 arg.j 9 arg.k 10 arg.l 11
+OUTPUT testing struct_twelve_..._chapel
+OUTPUT testing struct_twelve_..._chapel: arg.a 0 arg.b 1 arg.c 2 arg.d 3 arg.e 4 arg.f 5 arg.g 6 arg.h 7 arg.i 8 arg.j 9 arg.k 10 arg.l 11
+OUTPUT testing uint16_..._c_____
+OUTPUT testing uint16_..._c_____: arg 65535
+OUTPUT testing uint16_..._chapel
+OUTPUT testing uint16_..._chapel: arg 65535
+OUTPUT testing uint32_..._c_____
+OUTPUT testing uint32_..._c_____: arg 4294967295
+OUTPUT testing uint32_..._chapel
+OUTPUT testing uint32_..._chapel: arg 4294967295
+OUTPUT testing uint64_..._c_____
+OUTPUT testing uint64_..._c_____: arg 18446744073709551615
+OUTPUT testing uint64_..._chapel
+OUTPUT testing uint64_..._chapel: arg 18446744073709551615
+OUTPUT testing uint8_..._c_____
+OUTPUT testing uint8_..._c_____: arg 255
+OUTPUT testing uint8_..._chapel
+OUTPUT testing uint8_..._chapel: arg 255
+define weak dso_local i32 @int32_return_c_____()
+define weak dso_local i32 @int32_return_chapel()
+define weak dso_local i32 @uint32_return_c_____()
+define weak dso_local i32 @uint32_return_chapel()
+define weak dso_local i64 @int64_return_c_____()
+define weak dso_local i64 @int64_return_chapel()
+define weak dso_local i64 @struct_pair_int_return_c_____()
+define weak dso_local i64 @struct_pair_int_return_chapel()
+define weak dso_local i64 @uint64_return_c_____()
+define weak dso_local i64 @uint64_return_chapel()
+define weak dso_local signext i16 @int16_return_c_____()
+define weak dso_local signext i16 @int16_return_chapel()
+define weak dso_local signext i8 @int8_return_c_____()
+define weak dso_local signext i8 @int8_return_chapel()
+define weak dso_local void @bool_arg_c_____(i1 zeroext)
+define weak dso_local void @bool_arg_chapel(i1 zeroext)
+define weak dso_local void @int16_arg_c_____(i16 signext)
+define weak dso_local void @int16_arg_chapel(i16 signext)
+define weak dso_local void @int32_arg_c_____(i32)
+define weak dso_local void @int32_arg_chapel(i32)
+define weak dso_local void @int64_arg_c_____(i64)
+define weak dso_local void @int64_arg_chapel(i64)
+define weak dso_local void @int8_arg_c_____(i8 signext)
+define weak dso_local void @int8_arg_chapel(i8 signext)
+define weak dso_local void @struct_pair_int_arg_c_____(i64)
+define weak dso_local void @struct_pair_int_arg_chapel(i64)
+define weak dso_local void @struct_pair_long_arg_c_____(i64, i64)
+define weak dso_local void @struct_pair_long_arg_chapel(i64, i64)
+define weak dso_local void @struct_triple_arg_c_____(%struct.c_triple* byval align 8)
+define weak dso_local void @struct_triple_arg_chapel(%struct.c_triple* byval align 8)
+define weak dso_local void @struct_triple_return_c_____(%struct.c_triple* noalias sret)
+define weak dso_local void @struct_triple_return_chapel(%struct.c_triple* noalias sret align 8)
+define weak dso_local void @struct_twelve_arg_c_____(%struct.c_twelve* byval align 8)
+define weak dso_local void @struct_twelve_arg_chapel(%struct.c_twelve* byval align 8)
+define weak dso_local void @struct_twelve_return_c_____(%struct.c_twelve* noalias sret)
+define weak dso_local void @struct_twelve_return_chapel(%struct.c_twelve* noalias sret align 8)
+define weak dso_local void @uint16_arg_c_____(i16 zeroext)
+define weak dso_local void @uint16_arg_chapel(i16 zeroext)
+define weak dso_local void @uint32_arg_c_____(i32)
+define weak dso_local void @uint32_arg_chapel(i32)
+define weak dso_local void @uint64_arg_c_____(i64)
+define weak dso_local void @uint64_arg_chapel(i64)
+define weak dso_local void @uint8_arg_c_____(i8 zeroext)
+define weak dso_local void @uint8_arg_chapel(i8 zeroext)
+define weak dso_local zeroext i1 @bool_return_c_____()
+define weak dso_local zeroext i1 @bool_return_chapel()
+define weak dso_local zeroext i16 @uint16_return_c_____()
+define weak dso_local zeroext i16 @uint16_return_chapel()
+define weak dso_local zeroext i8 @uint8_return_c_____()
+define weak dso_local zeroext i8 @uint8_return_chapel()
+define weak dso_local { i64, i64 } @struct_pair_long_return_c_____()
+define weak dso_local { i64, i64 } @struct_pair_long_return_chapel()

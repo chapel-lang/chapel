@@ -21,12 +21,12 @@ ifneq ($(MAKE_LAUNCHER), 1)
 include $(GASNET_SETUP_MAKEFILE)
 
 #
-# On the XE/XC, we often build GASNet using a different compiler than the
-# one the end user will use, so we override GASNet's CC and LD (which
+# On XC, we often build GASNet using a different compiler than the one
+# the end user will use, so we override GASNet's CC and LD (which
 # contain a full path) to simply be the default cc as specified by the
 # current PrgEnv.
 #
-ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xe cray-xc cray-xk))
+ifneq (, $(filter $(CHPL_MAKE_TARGET_PLATFORM),cray-xc))
 # On Crays, don't set CC -- it'll be set in our Makefiles and GASNet tends
 # to hard-code them to a point that our modules aren't portable across
 # systems or PE versions.  Set LD to the C++ compiler, as we would in

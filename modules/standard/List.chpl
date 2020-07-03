@@ -102,6 +102,7 @@ module List {
   }
 
   /* Check that element type is supported by list */
+  pragma "no doc"
   proc _checkType(type eltType) {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
@@ -324,14 +325,10 @@ module List {
     }
 
     pragma "no doc"
-    proc _commonInitFromIterable(iterable) {
+    proc _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
-
-      for x in iterable do {
-        pragma "no auto destroy"
-        var cpy = x;
-        _appendByRef(cpy);
-      }
+      for x in iterable do
+        append(x);
     }
 
     pragma "no doc"

@@ -2645,6 +2645,11 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
+
+  // Find different insert point if ctx isn't in a list
+  if (ctx->list == NULL)
+    ctx = ctx->parentSymbol->defPoint;
+
   ctx->insertAfter(typeCall);
   resolveCall(typeCall);
   Type* ret = typeCall->typeInfo();
@@ -3647,11 +3652,8 @@ static Type* finalArrayElementType(AggregateType* arrayType) {
 }
 
 // Is it OK to default-initialize an array with this element type?
-// Once #14854 is resolved, this should be simply
-//   isDefaultInitializable(eltType)
 static bool okForDefaultInitializedArray(Type* eltType) {
-  // Exclude locales. Remove this exception once #15149 is merged.
-  return eltType == dtLocale || ! isNonNilableClassType(eltType);
+  return isDefaultInitializable(eltType);
 }
 
 // Is 'actualSym' passed to an assignment (a 'proc =') ?
@@ -9032,14 +9034,16 @@ static void resolveSerializers() {
 }
 
 static void resolveDestructors() {
+  std::set<Type*> wellknown = getWellKnownTypesSet();
+
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_REF)                     &&
         ! ts->hasFlag(FLAG_GENERIC)                 &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
       if (AggregateType* at = toAggregateType(ts->type)) {
-        if (at->hasDestructor()   == false &&
-            at->hasInitializers() == true  &&
-            isUnusedClass(at)     == false) {
+        if (at->hasDestructor()          == false &&
+            at->hasInitializers()        == true  &&
+            isUnusedClass(at, wellknown) == false) {
           resolveDestructor(at);
         }
       }
@@ -9076,6 +9080,9 @@ static void resolveAutoCopies() {
 
 static void resolveAutoCopyEtc(AggregateType* at) {
   SET_LINENO(at->symbol);
+
+  if (typeNeedsCopyInitDeinit(at) == false)
+    return;
 
   // resolve autoCopy
   if (hasAutoCopyForType(at) == false) {
@@ -9230,10 +9237,15 @@ bool propagateNotPOD(Type* t) {
         retval = true;
 
       } else if (isClass(at) == true) {
-      // Most class types are POD (user classes, _ddata, c_ptr)
-      // Also, there is no need to check the fields of a class type
-      // since a variable of that type is a pointer to the instance.
-      // So, don't enumerate sub-fields or check for autoCopy etc.
+        // Most class types are POD (user classes, _ddata, c_ptr)
+        // Also, there is no need to check the fields of a class type
+        // since a variable of that type is a pointer to the instance.
+        // So, don't enumerate sub-fields or check for autoCopy etc.
+        retval = false;
+
+      } else if (typeNeedsCopyInitDeinit(at) == false) {
+        // some types aren't subject to copy init / deinit
+        retval = false;
 
       } else {
         // If any field in a record/tuple is not POD, the aggregate is not POD.
@@ -9241,21 +9253,22 @@ bool propagateNotPOD(Type* t) {
           retval = retval | propagateNotPOD(field->typeInfo());
         }
 
-       if (retval == false) {
-        // Make sure we have resolved auto copy/auto destroy.
-        // Except not for runtime types, because that causes
-        // some sort of fatal resolution error. This is a workaround.
-        if (at->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
-          resolveAutoCopyEtc(at);
-        }
+        if (retval == false) {
+          // Make sure we have resolved auto copy/auto destroy.
+          // Except not for runtime types, because that causes
+          // some sort of fatal resolution error. This is a workaround.
 
-        if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
-            isCompilerGenerated(autoCopyMap[at])         == false ||
-            isCompilerGenerated(autoDestroyMap.get(at))  == false ||
-            isCompilerGenerated(at->getDestructor())     == false) {
-          retval = true;
+          if (at->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false) {
+            resolveAutoCopyEtc(at);
+          }
+
+          if (at->symbol->hasFlag(FLAG_IGNORE_NOINIT)      == true  ||
+              isCompilerGenerated(autoCopyMap[at])         == false ||
+              isCompilerGenerated(autoDestroyMap.get(at))  == false ||
+              isCompilerGenerated(at->getDestructor())     == false) {
+            retval = true;
+          }
         }
-       }
 
         // Since hasUserAssign tries to resolve =, we only
         // check it if we think we have a POD type.
@@ -10253,7 +10266,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
                                   Type* typeToCheck, Type* type,
                                   Expr* preventingSplitInit)
 {
-  if (!isNonNilableClassType(typeToCheck) || useLegacyNilability(call))
+  if (isDefaultInitializable(typeToCheck) || useLegacyNilability(call))
     return;
 
   // Work around current problems in array / assoc array types
@@ -10287,12 +10300,15 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
-  USR_PRINT("non-nil class types do not support default initialization");
 
-  AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-  ClassTypeDecorator d = classTypeDecorator(type);
-  Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
-  USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  if (isNonNilableClassType(typeToCheck)) {
+    USR_PRINT("non-nil class types do not support default initialization");
+
+    AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
+    ClassTypeDecorator d = classTypeDecorator(type);
+    Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
+    USR_PRINT("Consider using the type %s instead", toString(suggestedType));
+  }
 }
 
 static void errorInvalidParamInit(CallExpr* call, Symbol* val, Type* type) {

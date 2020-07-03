@@ -31,6 +31,10 @@
 #include "LayeredValueTable.h"
 #include "llvmUtil.h"
 
+#if HAVE_LLVM_VER >= 100
+#include "llvm/Support/Alignment.h"
+#endif
+
 // forward declare some llvm and clang things
 namespace llvm {
   class Function;
@@ -41,6 +45,10 @@ namespace clang {
   class Decl;
   class TypeDecl;
   class ValueDecl;
+
+  namespace CodeGen {
+    class CGFunctionInfo;
+  }
 }
 
 #endif
@@ -61,6 +69,15 @@ GenRet codegenCValue(const clang::ValueDecl *vd);
 llvm::Function* getFunctionLLVM(const char* name);
 llvm::Type* getTypeLLVM(const char* name);
 int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCArrayField);
+
+#if HAVE_LLVM_VER >= 100
+llvm::MaybeAlign getPointerAlign(int addrSpace);
+#else
+uint64_t getPointerAlign(int addrSpace);
+#endif
+
+const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
+
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();

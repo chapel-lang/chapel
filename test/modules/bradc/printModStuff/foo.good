@@ -34,7 +34,6 @@ Parsing module files:
   $CHPL_HOME/modules/standard/SysError.chpl
   $CHPL_HOME/modules/packages/RangeChunk.chpl
   $CHPL_HOME/modules/packages/Sort.chpl
-  $CHPL_HOME/modules/standard/LinkedLists.chpl
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Sys.chpl
   $CHPL_HOME/modules/standard/Regexp.chpl

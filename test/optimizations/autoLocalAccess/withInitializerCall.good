@@ -1,0 +1,120 @@
+**** Start forall ****
+	withInitializerCall.chpl:13
+
+Regular domain symbol was not found for array
+	withInitializerCall.chpl:12
+
+Iterated over the domain of
+	withInitializerCall.chpl:12
+
+, whose domain cannot be determined statically
+	withInitializerCall.chpl:12
+
+Loop is suitable for further analysis
+	withInitializerCall.chpl:13
+
+Potential access
+	withInitializerCall.chpl:14
+
+	Can optimize: Access base is the iterator's base
+	withInitializerCall.chpl:14
+
+	Marking static candidate
+	withInitializerCall.chpl:14
+
+**** End forall ****
+	withInitializerCall.chpl:13
+
+**** Start forall ****
+	withInitializerCall.chpl:20
+
+Regular domain symbol was not found for array
+	withInitializerCall.chpl:19
+
+Iterated over the domain of
+	withInitializerCall.chpl:19
+
+, whose domain cannot be determined statically
+	withInitializerCall.chpl:19
+
+Loop is suitable for further analysis
+	withInitializerCall.chpl:20
+
+Potential access
+	withInitializerCall.chpl:21
+
+	Can optimize: Access base is the iterator's base
+	withInitializerCall.chpl:21
+
+	Marking static candidate
+	withInitializerCall.chpl:21
+
+**** End forall ****
+	withInitializerCall.chpl:20
+
+**** Start forall ****
+	withInitializerCall.chpl:29
+
+Regular domain symbol was not found for array
+	withInitializerCall.chpl:28
+
+Iterated over the domain of
+	withInitializerCall.chpl:28
+
+, whose domain cannot be determined statically
+	withInitializerCall.chpl:28
+
+Loop is suitable for further analysis
+	withInitializerCall.chpl:29
+
+Potential access
+	withInitializerCall.chpl:30
+
+	Can optimize: Access base is the iterator's base
+	withInitializerCall.chpl:30
+
+	Marking static candidate
+	withInitializerCall.chpl:30
+
+**** End forall ****
+	withInitializerCall.chpl:29
+
+**** Start forall ****
+	withInitializerCall.chpl:36
+
+Regular domain symbol was not found for array
+	withInitializerCall.chpl:35
+
+Iterated over the domain of
+	withInitializerCall.chpl:35
+
+, whose domain cannot be determined statically
+	withInitializerCall.chpl:35
+
+Loop is suitable for further analysis
+	withInitializerCall.chpl:36
+
+Potential access
+	withInitializerCall.chpl:37
+
+	Can optimize: Access base is the iterator's base
+	withInitializerCall.chpl:37
+
+	Marking static candidate
+	withInitializerCall.chpl:37
+
+**** End forall ****
+	withInitializerCall.chpl:36
+
+Static check successful. Using localAccess
+	withInitializerCall.chpl:14
+
+Static check successful. Using localAccess
+	withInitializerCall.chpl:21
+
+Static check successful. Using localAccess
+	withInitializerCall.chpl:30
+
+Static check successful. Using localAccess
+	withInitializerCall.chpl:37
+

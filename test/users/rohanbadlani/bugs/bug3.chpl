@@ -1,3 +1,5 @@
+use LinkedLists;
+
 var mylist:LinkedList(int);
 
 mylist.append(10);
