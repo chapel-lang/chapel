@@ -120,7 +120,7 @@ module Heap {
       :arg parSafe: If `true`, this heap will use parallel safe operations.
       :type parSafe: `param bool`
     */
-    proc init(type eltType, comparator: record = defaultComparator, param parSafe=false) {
+    proc init(type eltType, comparator: record = defaultComparator, param parSafe = false) {
       _checkType(eltType);
       this.eltType = eltType;
       this.comparator = comparator;
@@ -203,7 +203,7 @@ module Heap {
       :return: The size of the heap
       :rtype: int
     */
-    proc size:int {
+    proc size: int {
       _enter();
       var result = _data.size;
       _leave();
@@ -216,7 +216,7 @@ module Heap {
       :return: `true` if this heap is empty.
       :rtype: `bool`
     */
-    proc isEmpty():bool {
+    proc isEmpty(): bool {
       _enter();
       var result = _data.isEmpty();
       _leave();
@@ -253,7 +253,7 @@ module Heap {
       Wrapper of comparing elements
     */
     pragma "no doc"
-    proc _greater(x:eltType, y:eltType) {
+    proc _greater(x: eltType, y: eltType) {
       return chpl_compare(x, y, comparator) > 0;
     }
 
@@ -261,7 +261,7 @@ module Heap {
       helper procs to maintain the heap
     */
     pragma "no doc"
-    proc _heapify_up(in pos:int) {
+    proc _heapify_up(in pos: int) {
       while (pos) {
         var parent = pos / 2;
         if (_greater(_data[pos],_data[parent])) {
@@ -273,7 +273,7 @@ module Heap {
     }
 
     pragma "no doc"
-    proc _heapify_down(in pos:int) {
+    proc _heapify_down(in pos: int) {
       while (pos < _data.size) {
         // find the child node with greater value
         var greaterChild = pos*2;
@@ -300,7 +300,7 @@ module Heap {
       :arg element: The element that will be pushed
       :type element: `eltType`
     */
-    proc push(in element:eltType)
+    proc push(in element: eltType)
     lifetime this < element {
       _enter();
       _data.append(element);
@@ -408,7 +408,7 @@ module Heap {
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(x:list(?t), comparator = defaultComparator) {
+  proc createHeap(x: list(?t), comparator = defaultComparator) {
     var h = new heap(t, comparator);
     h._commonInitFromIterable(x);
     return h;
@@ -423,29 +423,9 @@ module Heap {
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(x:[?d] ?t, comparator = defaultComparator) {
+  proc createHeap(x: [?d] ?t, comparator = defaultComparator) {
     var h = new heap(t, comparator);
     h._commonInitFromIterable(x);
     return h;
   }
-
-  /*
-    Pop elements into a list.
-
-    :arg h: The heap to pop
-    :type h: `ref heap(t)`
-
-    :return: A list containing all elements in the heap
-    :rtype: `list(t)`
-  */
-  //FIXME: No need for this as we have toArray and consume
-  /*
-  proc popHeap(ref h:heap(?t)) {
-    var l = new list(t);
-    while (!h.isEmpty()) {
-      l.append(h.pop());
-    }
-    return l;
-  }
-  */
 }
