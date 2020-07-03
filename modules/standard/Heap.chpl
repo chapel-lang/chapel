@@ -67,9 +67,8 @@ module Heap {
 
   proc _checkType(type eltType) {
     /*
-    if isNilableClass(eltType) then
-      compilerError("Cannot create heap with nilable type");
-      */
+      Keep this in case we want to check types in the future
+    */
   }
     
   record heap {
