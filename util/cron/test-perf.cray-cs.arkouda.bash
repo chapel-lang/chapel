@@ -19,6 +19,9 @@ export GASNET_ODP_VERBOSE=0
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 
+# Skip setops for master testing (fragmentation causes timeout/oom)
+export CHPL_TEST_ARKOUDA_BENCHMARKS='stream argsort coargsort gather scatter reduce scan noop'
 test_release
+unset CHPL_TEST_ARKOUDA_BENCHMARKS
 test_master
 sync_graphs
