@@ -350,11 +350,11 @@ static void useUpMemNotInHeap(void) {
     size_t alloc_size;
     alloc_size = classes[class];
     do {
-      if ((p = CHPL_JE_MALLOC(alloc_size)) == NULL) {
+      if ((p = CHPL_JE_MALLOCX(alloc_size, MALLOCX_NO_FLAGS)) == NULL) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInHeap(p));
-    CHPL_JE_FREE(p);
+    CHPL_JE_DALLOCX(p, MALLOCX_NO_FLAGS);
   }
 }
 
@@ -401,10 +401,10 @@ void chpl_mem_layerInit(void) {
   } else {
     void* p;
     heap.type = NONE;
-    if ((p = CHPL_JE_MALLOC(1)) == NULL) {
+    if ((p = CHPL_JE_MALLOCX(1, MALLOCX_NO_FLAGS)) == NULL) {
       chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
-    CHPL_JE_FREE(p);
+    CHPL_JE_DALLOCX(p, MALLOCX_NO_FLAGS);
   }
 }
 
