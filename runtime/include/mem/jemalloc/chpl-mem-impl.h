@@ -66,7 +66,7 @@ static inline size_t minSize(size_t size) {
 
 static inline void* chpl_calloc(size_t n, size_t size) {
   size_t nSize = minSize(n*size);
-  return CHPL_JE_MALLOCX(nSize, MALLOCX_ZERO);
+  return CHPL_JE_MALLOCX(nSize, MALLOCX_ZERO | CHPL_JE_MALLOCX_ARENA_FLAG(nSize));
 }
 
 static inline void* chpl_malloc(size_t size) {
@@ -76,19 +76,19 @@ static inline void* chpl_malloc(size_t size) {
 
 static inline void* chpl_memalign(size_t boundary, size_t size) {
   size = minSize(size);
-  return CHPL_JE_MALLOCX(size, MALLOCX_ALIGN(boundary));
+  return CHPL_JE_MALLOCX(size, MALLOCX_ALIGN(boundary) | CHPL_JE_MALLOCX_ARENA_FLAG(size));
 }
 
 static inline void* chpl_realloc(void* ptr, size_t size) {
   if (ptr == NULL) {
     size = minSize(size);
-    return CHPL_JE_MALLOCX(size, MALLOCX_NO_FLAGS);
+    return CHPL_JE_MALLOCX(size, CHPL_JE_MALLOCX_ARENA_FLAG(size));
   }
   if (size == 0) {
     CHPL_JE_DALLOCX(ptr, MALLOCX_NO_FLAGS);
     return NULL;
   }
-  return CHPL_JE_RALLOCX(ptr, size, MALLOCX_NO_FLAGS);
+  return CHPL_JE_RALLOCX(ptr, size, CHPL_JE_MALLOCX_ARENA_FLAG(size));
 }
 
 static inline void chpl_free(void* ptr) {
