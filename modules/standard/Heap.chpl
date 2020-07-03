@@ -398,6 +398,7 @@ module Heap {
       _leave();
     }
   }
+
   /*
     Make a heap from a list.
 
@@ -413,6 +414,7 @@ module Heap {
     h._commonInitFromIterable(x);
     return h;
   }
+
   /*
     Make a heap from a array.
 
