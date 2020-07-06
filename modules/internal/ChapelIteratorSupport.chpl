@@ -518,6 +518,15 @@ module ChapelIteratorSupport {
     return !isArray(x);
   }
 
+  proc chpl__hasAnIterandWithFastFollowers(x: _tuple, param dim=0) param {
+    if x.size-1 == dim then
+      return chpl__canHaveFastFollowers(x(dim));
+    else
+      return chpl__canHaveFastFollowers(x(dim)) ||
+             chpl__hasAnIterandWithFastFollowers(x, dim+1);
+
+  }
+
   //
   // return true if any iterator supports fast followers
   //
@@ -541,11 +550,16 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
-    pragma "no copy" const lead = x(0);
-    if chpl__canLeadFastFollowers(lead) then
-      return chpl__staticFastFollowCheckZip(x, lead);
-    else
+    if !chpl__hasAnIterandWithFastFollowers(x) {
       return false;
+    }
+    else {
+      pragma "no copy" const lead = x(0);
+      if chpl__canLeadFastFollowers(lead) then
+        return chpl__staticFastFollowCheckZip(x, lead);
+      else
+        return false;
+    }
   }
 
   proc chpl__staticFastFollowCheckZip(x, lead) param {
