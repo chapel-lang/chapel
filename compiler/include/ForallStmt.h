@@ -30,6 +30,8 @@ class ForallOptimizationInfo {
     Symbol *dotDomIterSym = NULL;
     Symbol *dotDomIterSymDom = NULL;
 
+    CallExpr *iterCall = NULL;
+
     // even if there are multiple indices we store them in a vector
     std::vector<Symbol *> multiDIndices;
 
