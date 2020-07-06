@@ -1,7 +1,7 @@
-use BlockDist;
+use common;
 
 {
-  var D = newBlockDom({1..10, 1..10});
+  var D = createDom({1..10, 1..10});
 
   var A: [D] real;
   var B: [D] real;
@@ -18,7 +18,7 @@ use BlockDist;
 }
 
 {
-  var D = newBlockDom({1..10, 1..10});
+  var D = createDom({1..10, 1..10});
 
   var A: [D] real;
   var B: [D] real;
