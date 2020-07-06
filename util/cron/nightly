@@ -680,7 +680,7 @@ if ($memleak == 1) {
     $testflags = "$testflags -memleaks";
 }
 if (!($memleakslog eq "")) {
-    $testflags = "$testflags -memleakslog $basetmpdir/$memleaks";
+    $testflags = "$testflags -memleakslog $basetmpdir/$memleakslog";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
