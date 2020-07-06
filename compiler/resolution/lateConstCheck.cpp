@@ -116,6 +116,22 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
   return fn;
 }
 
+// Are a tuple's field qualifiers ref when they should be const? If so, then
+// some code somewhere set a tuple element when it shouldn't have.
+// TODO: Should this check for whole-tuple assignment as well? Add a test
+// case for that.
+static
+bool checkTupleFormal(ArgSymbol* formal, int formalIdx) {
+  return false;
+}
+
+static
+bool checkTupleFormalToActual(ArgSymbol* formal, int formalIdx, Expr* actual,
+                              CallExpr* call) {
+  return false;
+}
+
+
 /* Since const-checking can depend on ref-pair determination
    or upon the determination of whether an array formal with
    blank intent is passed by ref or by value, do final const checking here.
@@ -194,11 +210,19 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
           }
         }
 
+        //
+        // TODO: Handle tuples containing tuples properly.
+        //
 
-        // TODO: check tuple const-ness:
-        //   make analysis above more complete
-        //   work with toSymExpr(actual)->symbol()->fieldQualifiers
-        //   handle tuples containing tuples properly
+        // Case: forward flow constness check for tuple formals.
+        if (checkTupleFormal(formal, formalIdx))
+          continue;
+
+        // Case: const tuple/element is passed to ref tuple formal.
+        // Case: const tuple/element is passed to formal with blank intent,
+        // and element is ref from ref-if-modified.
+        if (checkTupleFormalToActual(formal, formalIdx, actual, call))
+          continue;
 
         FnSymbol* inFn = call->parentSymbol->getFunction();
 
