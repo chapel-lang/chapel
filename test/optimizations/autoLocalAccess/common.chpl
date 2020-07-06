@@ -1,8 +1,8 @@
-use BlockDist;
-use CyclicDist;
-use BlockCycDist;
-use HashedDist;
-use StencilDist;
+public use BlockDist;
+public use CyclicDist;
+public use BlockCycDist;
+public use HashedDist;
+public use StencilDist;
 
 config type distType = Block;
 
