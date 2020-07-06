@@ -26,6 +26,7 @@
 #include "expr.h"
 
 IntentTag blankIntentForType(Type* t);
+IntentTag constIntentForType(Type* t);
 IntentTag concreteIntent(IntentTag existingIntent, Type* t);
 IntentTag concreteIntentForArg(ArgSymbol* arg);
 void resolveArgIntent(ArgSymbol* arg);

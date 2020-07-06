@@ -35,6 +35,32 @@
    overloads will be used.
  */
 
+// Map pointing to first occurring use for a symbol.
+typedef std::map<BaseAST*, BaseAST*> UseMap;
+
+// Used for debugging this pass.
+static const int breakOnId1 = 0;
+static const int breakOnId2 = 0;
+static const int breakOnId3 = 0;
+
+#define DEBUG_SYMBOL(sym__) \
+  do { \
+    if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
+        sym__->id == breakOnId3) { \
+      gdbShouldBreakHere(); \
+    } \
+  while (0)
+
+static const int trace_all = 0;
+static const int trace_usr = 0;
+
+static bool shouldTrace(Symbol* sym) {
+  bool isUserSymbol = sym->defPoint->getModule()->modTag == MOD_USER;
+  if (trace_all || (trace_usr && isUserSymbol))
+    return true;
+  return false;
+}
+
 static bool isTupleOfTuples(Type* t)
 {
   AggregateType* at = toAggregateType(t->getValType());
@@ -121,13 +147,93 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 // TODO: Should this check for whole-tuple assignment as well? Add a test
 // case for that.
 static
-bool checkTupleFormal(ArgSymbol* formal, int formalIdx) {
-  return false;
+bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
+  AggregateType* at = toAggregateType(formal->type);
+
+  // Leave if formal is not a tuple.
+  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
+    return false;
+
+  bool isFormalBlank = formal->originalIntent == INTENT_BLANK;
+  bool isFormalConst = formal->originalIntent & INTENT_CONST;
+  bool result = false;
+
+  // Leave if the tuple is marked ref.
+  if (!isFormalBlank && !isFormalConst)
+    return false;
+
+  int fieldIdx = 0;
+  for_fields(field, at) {
+    fieldIdx++;
+
+    Qualifier q = formal->fieldQualifiers[fieldIdx];
+
+    // Skip non-ref tuple elements.
+    if (!field->isRef() || q == QUAL_UNKNOWN)
+      continue;
+
+    // TODO: Do not skip tuple elements! Make this routine recursive?
+    bool isFieldTuple = field->hasFlag(FLAG_TUPLE);
+    if (isFieldTuple)
+      continue;
+
+    bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
+
+    // Skip ref tuple elements if they are never set.
+    if (isFieldMarkedConst)
+      continue;
+
+    Type* ft = field->type;
+    IntentTag intent;
+
+    // Get the intent tag for the tuple element.
+    if (isFormalConst) {
+      intent = constIntentForType(ft);
+    } else {
+      intent = blankIntentForType(ft);
+      INT_ASSERT(isFormalBlank);
+    }
+
+    // Validate ref-if-modified tuple fields by checking call sites.
+    if (intent == INTENT_REF_MAYBE_CONST)
+      continue;
+
+    // The tuple field is marked const but it is used somewhere...
+    if (intent & INTENT_CONST && !isFieldMarkedConst) {
+      int zeroIdx = formalIdx - 1;
+      BaseAST* use = NULL;
+
+      // TODO: Cannot indicate which field was set with the current UseMap.
+      // We need to adjust the key type (maybe to GraphNode) to store the
+      // field index before we can use this functionality.
+      if (um.contains(formal)) {
+        use = um.at(formal);
+        use = NULL;
+      }
+
+      USR_FATAL_CONST(formal, "Element %d of tuple %s is const and cannot "
+                              "be modified",
+                              zeroIdx,
+                              field->name);
+
+      // TODO: Print location where element is set.
+      // TODO: If the element is a tuple, we recursively point to setters
+      // until a non-tuple element is set.
+      if (use != NULL) {}
+
+      result = true;
+    } else {
+      // TODO: Should non-const elements even be able to make it here?
+      INT_FATAL(formal, "Should not reach here");
+    }
+  }
+
+  return result;
 }
 
 static
-bool checkTupleFormalToActual(ArgSymbol* formal, int formalIdx, Expr* actual,
-                              CallExpr* call) {
+bool checkTupleFormalToActual(ArgSymbol* formal, int idx, Expr* actual,
+                              CallExpr* call, UseMap* um) {
   return false;
 }
 
@@ -220,7 +326,7 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
 
         // Case: const tuple/element is passed to ref tuple formal.
         // Case: const tuple/element is passed to formal with blank intent,
-        // and element is ref from ref-if-modified.
+        // and element is ref via ref-if-modified.
         if (checkTupleFormalToActual(formal, formalIdx, actual, call))
           continue;
 

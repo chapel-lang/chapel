@@ -25,7 +25,7 @@
 
 bool intentsResolved = false;
 
-static IntentTag constIntentForType(Type* t) {
+IntentTag constIntentForType(Type* t) {
   if (is_bool_type(t) ||
       is_int_type(t) ||
       is_uint_type(t) ||
