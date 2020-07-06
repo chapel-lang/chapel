@@ -180,6 +180,12 @@ ResolveScope::ResolveScope(BaseAST*            ast,
         importUseCount++;
       }
     }
+
+    if (CallExpr* call = toCallExpr(block->useList)) {
+      INT_ASSERT(call->isPrimitive(PRIM_USED_MODULES_LIST));
+      progress = IUP_NOT_STARTED;
+      importUseCount += call->numActuals();
+    }
   }
 
   canReexport = true;
