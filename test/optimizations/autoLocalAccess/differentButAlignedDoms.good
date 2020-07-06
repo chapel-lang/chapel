@@ -1,0 +1,218 @@
+HERE
+HERE
+**** Start forall ****
+	differentButAlignedDoms.chpl:21
+
+Iterated symbol
+	differentButAlignedDoms.chpl:20
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:21
+
+Potential access
+	differentButAlignedDoms.chpl:22
+
+	with domain defined at
+	differentButAlignedDoms.chpl:3
+
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:22
+
+**** End forall ****
+	differentButAlignedDoms.chpl:21
+
+**** Start forall ****
+	differentButAlignedDoms.chpl:31
+
+Loop iterand is a call. Will attempt dynamic optimization.
+	differentButAlignedDoms.chpl:31
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:31
+
+Potential access
+	differentButAlignedDoms.chpl:32
+
+HERE
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:32
+
+**** End forall ****
+	differentButAlignedDoms.chpl:31
+
+**** Start forall ****
+	differentButAlignedDoms.chpl:45
+
+Iterated symbol
+	differentButAlignedDoms.chpl:43
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:45
+
+Potential access
+	differentButAlignedDoms.chpl:46
+
+	with domain defined at
+	differentButAlignedDoms.chpl:3
+
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:46
+
+**** End forall ****
+	differentButAlignedDoms.chpl:45
+
+**** Start forall ****
+	differentButAlignedDoms.chpl:50
+
+Iterated symbol
+	differentButAlignedDoms.chpl:49
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:50
+
+Potential access
+	differentButAlignedDoms.chpl:51
+
+	with domain defined at
+	differentButAlignedDoms.chpl:3
+
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:51
+
+**** End forall ****
+	differentButAlignedDoms.chpl:50
+
+**** Start forall ****
+	differentButAlignedDoms.chpl:45
+
+Iterated symbol
+	differentButAlignedDoms.chpl:43
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:45
+
+Potential access
+	differentButAlignedDoms.chpl:46
+
+	with domain defined at
+	differentButAlignedDoms.chpl:3
+
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:46
+
+**** End forall ****
+	differentButAlignedDoms.chpl:45
+
+**** Start forall ****
+	differentButAlignedDoms.chpl:50
+
+Iterated symbol
+	differentButAlignedDoms.chpl:49
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:50
+
+Potential access
+	differentButAlignedDoms.chpl:51
+
+	with domain defined at
+	differentButAlignedDoms.chpl:3
+
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:51
+
+**** End forall ****
+	differentButAlignedDoms.chpl:50
+
+**** Start forall ****
+	differentButAlignedDoms.chpl:64
+
+Iterated symbol
+	differentButAlignedDoms.chpl:62
+
+Loop is suitable for further analysis
+	differentButAlignedDoms.chpl:64
+
+Potential access
+	differentButAlignedDoms.chpl:65
+
+	with domain defined at
+	differentButAlignedDoms.chpl:3
+
+	Marking dynamic candidate
+	differentButAlignedDoms.chpl:65
+
+**** End forall ****
+	differentButAlignedDoms.chpl:64
+
+HERE
+Static check successful. Using localAccess with dynamic check
+	differentButAlignedDoms.chpl:22
+
+Static check successful. Using localAccess with dynamic check
+	differentButAlignedDoms.chpl:32
+
+Static check successful. Using localAccess with dynamic check
+	differentButAlignedDoms.chpl:46
+
+Static check successful. Using localAccess with dynamic check
+	differentButAlignedDoms.chpl:51
+
+Static check successful. Using localAccess with dynamic check
+	differentButAlignedDoms.chpl:65
+
+Iterand is a different symbol
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+0 2 3 4 5 6 7 8 9 0
+
+Iterand is a call
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+0 2 3 4 5 6 7 8 9 0
+
+Local subdomain patterns
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+1 4 6 8 10 12 14 16 18 10
+
+Count based domain slices
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+1 2 3 4 5 6 7 8 9 10
+
