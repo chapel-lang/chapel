@@ -8,7 +8,7 @@ record A
 }
 
 // CHECK: @f_chpl
-// CHECK: call void @init_chpl{{.*}}(%A_chpl* [[NEW_TEMP:%.*]],
+// CHECK: call void @init_chpl{{.*}}(%A_chpl* {{[^%]*}}[[NEW_TEMP:%.*]],
 // CHECK: [[TMP1:%.*]] = load %A_chpl, %A_chpl* [[NEW_TEMP]]
 // CHECK: store %A_chpl [[TMP1]], %A_chpl* [[TMP2:%.*]]
 // CHECK: [[TMP3:%.*]] = load %A_chpl, %A_chpl* [[TMP2]]
