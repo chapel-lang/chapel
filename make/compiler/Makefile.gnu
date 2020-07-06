@@ -186,10 +186,13 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
-# Avoid false positives for allocation size and memcpy
+# Avoid false positives for allocation size and memcpy. Note that we use
+# -Walloc-size-larger-than=SIZE_MAX instead of `-Wno-alloc-size-larger-than`
+# since that did not exist in gcc 8.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
-SQUASH_WARN_GEN_CFLAGS += -Wno-alloc-size-larger-than -Wno-restrict
+WARN_CXXFLAGS += -Walloc-size-larger-than=18446744073709551615
+SQUASH_WARN_GEN_CFLAGS += -Walloc-size-larger-than=18446744073709551615 -Wno-restrict
 endif
 
 #
