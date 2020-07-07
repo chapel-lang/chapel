@@ -409,10 +409,10 @@ module CommDiagnostics
     }
     writeln("|");
 
-    writef("| ------ ");
+    writef("| -----: ");
     for param fieldID in 0..<nFields {
       if fieldInUse[fieldID] {
-        writef("| --------------- ");
+        writef("| --------------: ");
       }
     }
     writeln("|");
