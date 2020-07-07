@@ -8,5 +8,4 @@ source $CWD/common-memleaks.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="memleaks.examples"
 
-$CWD/nightly -cron -memleaks $(memleaks_log examples) -examples
-save_memleaks_log examples
+$CWD/nightly -cron -memleaks -examples

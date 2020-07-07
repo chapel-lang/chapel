@@ -4,11 +4,12 @@ create the project. Suggestions for defaults are also provided which will be
 considered if no input is given.
 
 Press ^C to quit interactive mode.
-Package name : Package version (0.1.0): Chapel version (1.23.0): 
+Package name : Package version (0.1.0): Chapel version (1.23.0): License (None): 
 [brick]
 name = "project"
 version = "1.2.3"
 chplVersion = "1.21.0"
+license = "MIT"
 
 [dependencies]
 

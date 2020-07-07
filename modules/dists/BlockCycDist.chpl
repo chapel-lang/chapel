@@ -905,6 +905,8 @@ override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
   }
 }
 
+override proc BlockCyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
+
 proc BlockCyclicArr.chpl__serialize() {
   return pid;
 }
@@ -934,6 +936,10 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
+inline proc BlockCyclicArr.dsiLocalAccess(i: idxType) ref {
+  return _to_nonnil(myLocArr).this(i);
+}
+
 //
 // the global accessor for the array
 //
@@ -949,6 +955,13 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
   return locArr(dom.dist.idxToLocaleInd(i))(i);
+}
+
+inline proc BlockCyclicArr.dsiLocalAccess(i: rank*idxType) ref {
+  if rank == 1 then
+    return _to_nonnil(myLocArr).this(i[0]);
+  else
+    return _to_nonnil(myLocArr).this(i);
 }
 
 proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {

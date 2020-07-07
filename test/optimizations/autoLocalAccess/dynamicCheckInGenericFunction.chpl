@@ -1,6 +1,6 @@
-use BlockDist;
+use common;
 
-var dom = newBlockDom({1..10});
+var dom = createDom({1..10});
 
 var arr: [dom] real;
 

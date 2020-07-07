@@ -434,7 +434,10 @@ all:
   06/06/20:
     - text: Don't GET domain's dimensions unless needed (#15777)
       config: 16-node-xc, 16-node-cs, chapcs.comm-counts
-
+  06/21/20:
+    - Switch the domain's list of arrays to a hashtable (#15895)
+  06/25/20:
+    - Avoid allocating memory for empty hashtables (#15918)
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -481,10 +484,6 @@ AllCompTime: &timecomp-base
       config: 16-node-cs
     - text: Warm up the comm layer, in the many-to-one test (#15798)
       config: 16-node-cs
-  06/21/20:
-    - Switch the domain's list of arrays to a hashtable (#15895)
-  06/25/20:
-    - Avoid allocating memory for empty hashtables (#15918)
 
 allocate:
   06/11/20:
@@ -1434,6 +1433,10 @@ pidigits: &pidigits-base
     - Fix build issue where GCC's GMP was used instead of Chapel's
 pidigits-submitted:
   <<: *pidigits-base
+
+primes:
+  07/01/20:
+    - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
 
 prk-stencil:
   02/14/16:

@@ -1957,6 +1957,7 @@ A common usage of this interface might look like this:
 module Sparse {
 
   public use LayoutCS;
+  private use LinearAlgebra;
 
   /* Return an empty CSR domain over parent domain:
      ``{1..rows, 1..rows}``

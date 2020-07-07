@@ -23,9 +23,9 @@ extern record composition {
   var i : c_ptr(allInts);
 }
 
-extern proc structArgs(a : misc, b : misc) : void;
+extern proc structArgs(in a : misc, in b : misc) : void;
 
-extern proc retStruct(a : misc) : allInts;
+extern proc retStruct(in a : misc) : allInts;
 
 extern proc structPointer(ref a : misc) : void;
 

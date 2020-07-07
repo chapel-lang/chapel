@@ -61,29 +61,43 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 #
 # -lchpl_lib_token allows the Chapel compiler to know
 # where to put additional arguments (they replace that argument).
+LHUGETLBFS="-lhugetlbfs"
 if [[ "$2" == "cray-shasta" ]] ; then
-  COMMANDS=`cc -craype-verbose -### -lchpl_lib_token /dev/null 2>/dev/null`
-else
-  COMMANDS=`cc -craype-verbose -### -lhugetlbfs -lchpl_lib_token /dev/null 2>/dev/null`
+  LHUGETLBFS=""
 fi
 
-  for arg in $COMMANDS
-  do
-    if [[ $arg == -I* && $COMPILE == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -D* && $COMPILE == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -Wl* && $LINK == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -L* && $LINK == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -l* && $LINK == 1 ]]
-    then
-      echo $arg
-    fi
-  done
+# LIBRARY_PATH is only output to stderr but sometimes includes paths
+# we need to include with -L so gather that as well.
+# The 2> >(command) is a process substitution.
+COMMANDS=`cc -craype-verbose -### $LHUGETLBFS -lchpl_lib_token /dev/null 2> >(grep LIBRARY_PATH)`
+
+for arg in $COMMANDS
+do
+  if [[ $arg == LIBRARY_PATH* && $LINK == 1 ]]
+  then
+    # remove LIBRARY_PATH=
+    arg=${arg#LIBRARY_PATH=}
+    # convert : to spaces
+    arg=${arg//:/ }
+    for subarg in $arg
+    do
+      echo -L$subarg
+    done
+  elif [[ $arg == -I* && $COMPILE == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -D* && $COMPILE == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -Wl* && $LINK == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -L* && $LINK == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -l* && $LINK == 1 ]]
+  then
+    echo $arg
+  fi
+done
 

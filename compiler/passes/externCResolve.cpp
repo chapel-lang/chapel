@@ -239,6 +239,22 @@ static Expr* convertToChplType(ModuleSymbol* module,
     // This should be handled in the pointer-to-function case above
     USR_FATAL("C function types (vs pointers to them) not yet supported");
 
+  // complex
+  } else if (type->isComplexType()) {
+    const clang::ComplexType* ct = llvm::dyn_cast<clang::ComplexType>(type);
+
+    clang::QualType eltTypeQ = ct->getElementType();
+    const clang::Type* eltType = eltTypeQ.getTypePtr();
+
+    Type* chapelType = NULL;
+    if (eltType->isSpecificBuiltinType(clang::BuiltinType::Float))
+      chapelType = dtComplex[COMPLEX_SIZE_64];
+    else if (eltType->isSpecificBuiltinType(clang::BuiltinType::Double))
+      chapelType = dtComplex[COMPLEX_SIZE_128];
+    else
+      USR_FATAL("Unsupported complex type in extern \"C\" block.");
+
+    return new SymExpr(chapelType->symbol);
   } else {
     // Check for enum types, which are really some sort of integer type
     if (type->isEnumeralType()) {

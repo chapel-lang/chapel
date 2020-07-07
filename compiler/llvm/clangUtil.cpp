@@ -1942,6 +1942,18 @@ llvm::Function* getFunctionLLVM(const char* name)
   return NULL;
 }
 
+clang::FunctionDecl* getFunctionDeclClang(const char* name)
+{
+  GenInfo* info = gGenInfo;
+
+  clang::TypeDecl* cType = NULL;
+  clang::ValueDecl* cValue = NULL;
+
+  info->lvt->getCDecl(name, &cType, &cValue);
+  clang::FunctionDecl* FD = llvm::dyn_cast_or_null<clang::FunctionDecl>(cValue);
+  return FD;
+}
+
 llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
@@ -1986,6 +1998,18 @@ llvm::Type* codegenCType(const TypeDecl* td)
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
+  return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
+}
+
+llvm::Type* codegenCType(const clang::QualType& qType)
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(cCodeGen);
+
   return clang::CodeGen::convertTypeForMemory(cCodeGen->CGM(), qType);
 }
 
@@ -2419,6 +2443,33 @@ static clang::CanQualType getClangFormalType(ArgSymbol* formal) {
   return getClangType(t, ref);
 }
 
+const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD)
+{
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
+  INT_ASSERT(cCodeGen);
+  clang::CodeGen::CodeGenModule& CGM = cCodeGen->CGM();
+
+  clang::CanQualType FTy = FD->getType()->getCanonicalTypeUnqualified();
+  assert(llvm::isa<clang::FunctionType>(FTy));
+
+  if (clang::CanQual<clang::FunctionNoProtoType> noProto =
+      FTy.getAs<clang::FunctionNoProtoType>()) {
+    return clang::CodeGen::arrangeFreeFunctionType(CGM, noProto);
+  }
+
+  clang::CanQual<clang::FunctionProtoType> proto =
+             FTy.getAs<clang::FunctionProtoType>();
+#if HAVE_LLVM_VER >= 90
+  return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
+#else
+  return clang::CodeGen::arrangeFreeFunctionType(CGM, proto, FD);
+#endif
+}
+
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   GenInfo* info = gGenInfo;
@@ -2446,23 +2497,7 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
     if (cCastedToType)
       INT_FATAL(fn, "Cannot call casted macro for %s", fn->cname);
 
-    // It would be nice if we could call clang's arrangeFunctionDeclaration
-    // here but since it is not public we do the best we can.
-    clang::CanQualType FTy = FD->getType()->getCanonicalTypeUnqualified();
-    assert(llvm::isa<clang::FunctionType>(FTy));
-
-    if (clang::CanQual<clang::FunctionNoProtoType> noProto =
-        FTy.getAs<clang::FunctionNoProtoType>()) {
-      return clang::CodeGen::arrangeFreeFunctionType(CGM, noProto);
-    }
-
-    clang::CanQual<clang::FunctionProtoType> proto =
-               FTy.getAs<clang::FunctionProtoType>();
-#if HAVE_LLVM_VER >= 90
-    return clang::CodeGen::arrangeFreeFunctionType(CGM, proto);
-#else
-    return clang::CodeGen::arrangeFreeFunctionType(CGM, proto, FD);
-#endif
+    return getClangABIInfoFD(FD);
   }
 
   // Otherwise, we should call arrangeFreeFunctionCall
@@ -2491,6 +2526,33 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn) {
   return clang::CodeGen::arrangeFreeFunctionCall(CGM, retTyC, argTypesC,
                                  extInfo, clang::CodeGen::RequiredArgs::All);
 }
+
+const clang::CodeGen::ABIArgInfo*
+getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
+{
+
+  // Don't try to use the the calling convention code for variadic args.
+  if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
+    return NULL;
+
+  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
+#if HAVE_LLVM_VER >= 100
+  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
+  argInfo = &a[curCArg].info;
+#else
+  int i = 0;
+  for (auto &ii : CGI->arguments()) {
+    if (i == curCArg) {
+      argInfo = &ii.info;
+      break;
+    }
+    i++;
+  }
+#endif
+
+  return argInfo;
+}
+
 
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
@@ -2601,14 +2663,25 @@ void setupForGlobalToWide(void) {
   info->nodeIdType = ginfo->lvt->getType("c_nodeid_t");
   assert(info->nodeIdType);
 
-  info->getFn = getFunctionLLVM("chpl_gen_comm_get_ctl");
-  INT_ASSERT(info->getFn);
-  info->putFn = getFunctionLLVM("chpl_gen_comm_put_ctl");
-  INT_ASSERT(info->putFn);
-  info->getPutFn = getFunctionLLVM("chpl_gen_comm_getput");
-  INT_ASSERT(info->getPutFn);
-  info->memsetFn = getFunctionLLVM("chpl_gen_comm_memset");
-  INT_ASSERT(info->memsetFn);
+  llvm::Function* getFn = getFunctionLLVM("chpl_gen_comm_get_ctl");
+  INT_ASSERT(getFn);
+  info->getFn = getFn;
+  info->getFnType = getFn->getFunctionType();
+
+  llvm::Function* putFn = getFunctionLLVM("chpl_gen_comm_put_ctl");
+  INT_ASSERT(putFn);
+  info->putFn = putFn;
+  info->putFnType = putFn->getFunctionType();
+
+  llvm::Function* getPutFn = getFunctionLLVM("chpl_gen_comm_getput");
+  INT_ASSERT(getPutFn);
+  info->getPutFn = getPutFn;
+  info->getPutFnType = getPutFn->getFunctionType();
+
+  llvm::Function* memsetFn = getFunctionLLVM("chpl_gen_comm_memset");
+  INT_ASSERT(memsetFn);
+  info->memsetFn = memsetFn;
+  info->memsetFnType = memsetFn->getFunctionType();
 
   // Call these functions in a dummy externally visible
   // function which GlobalToWide should remove. We need to do that

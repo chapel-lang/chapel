@@ -286,6 +286,7 @@ module DefaultAssociative {
           table.table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
+        table.maybeShrinkAfterRemove();
         unlockTable();
       }
     }
@@ -376,6 +377,7 @@ module DefaultAssociative {
         } else {
           retval = 0;
         }
+        table.maybeShrinkAfterRemove();
       }
       return retval;
     }

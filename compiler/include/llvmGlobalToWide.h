@@ -168,7 +168,11 @@ struct GlobalToWideInfo {
   GlobalToWideInfo()
     : globalSpace(0), wideSpace(0), globalPtrBits(0),
       localeIdType(NULL), nodeIdType(NULL), gTypes(), specialFunctions(),
-      hasPreservingFn(false) { }
+      getFn(NULL), getFnType(NULL),
+      putFn(NULL), putFnType(NULL),
+      getPutFn(NULL), getPutFnType(NULL),
+      memsetFn(NULL), memsetFnType(NULL),
+      hasPreservingFn(false), preservingFn(NULL) { }
 };
 
 llvm::ModulePass *createGlobalToWide(GlobalToWideInfo* info,
