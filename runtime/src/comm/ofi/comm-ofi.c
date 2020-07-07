@@ -389,6 +389,7 @@ chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
 // provider type
 //
 typedef enum {
+  provType_efa,
   provType_gni,
   provType_verbs,
   provType_rxd,
@@ -442,7 +443,9 @@ void init_providerAvail(void) {
       DBG_PRINTF(DBG_CFGFABSALL, "----------");
     }
     const char* pn = info->fabric_attr->prov_name;
-    if (isInThisProviderName("gni", pn)) {
+    if (isInThisProviderName("efa", pn)) {
+      providerSetSet(&providerAvailSet, provType_efa);
+    } else if (isInThisProviderName("gni", pn)) {
       providerSetSet(&providerAvailSet, provType_gni);
     } else if (isInThisProviderName("verbs", pn)) {
       providerSetSet(&providerAvailSet, provType_verbs);
@@ -476,7 +479,9 @@ void init_providerInUse(void) {
   // We can be using only one primary provider.
   //
   const char* pn = ofi_info->fabric_attr->prov_name;
-  if (isInThisProviderName("gni", pn)) {
+  if (isInThisProviderName("efa", pn)) {
+    providerSetSet(&providerInUseSet, provType_efa);
+  } else if (isInThisProviderName("gni", pn)) {
     providerSetSet(&providerInUseSet, provType_gni);
   } else if (isInThisProviderName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
