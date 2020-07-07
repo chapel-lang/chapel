@@ -10,6 +10,8 @@ for i in 0..#size {
   m2.add(i, i:real);
 }
 
+m1 = m2;
+
 var opTime = new Timer();
 var totTime = new Timer();
 totTime.start();
