@@ -172,7 +172,6 @@ private:
   const ResolveScope*   mParent;
   Bindings              mBindings;
   UseImportList         mUseImportList;
-  uint64_t importUseCount = 0;
 };
 
 extern ResolveScope* rootScope;

@@ -140,23 +140,7 @@ ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
   sScopeMap[modSymbol->block] = this;
 
   // Give the import progress bar a default state.
-  progress = IUP_COMPLETED;
-
-  // Update it if we have evidence to the contrary.
-  for_alist(expr, modSymbol->block->body) {
-    if (isImportStmt(expr) || isUseStmt(expr)) {
-      progress = IUP_NOT_STARTED;
-      importUseCount++;
-    }
-  }
-
-  if (modSymbol->block->useList != NULL) {
-    CallExpr* call = toCallExpr(modSymbol->block->useList);
-    INT_ASSERT(call);
-    INT_ASSERT(call->isPrimitive(PRIM_USED_MODULES_LIST));
-    progress = IUP_NOT_STARTED;
-    importUseCount += call->numActuals();
-  }
+  progress = IUP_NOT_STARTED;
 
   canReexport = true;
 }
@@ -170,23 +154,7 @@ ResolveScope::ResolveScope(BaseAST*            ast,
   sScopeMap[ast] = this;
 
   // Give the import progress bar a default state.
-  progress = IUP_COMPLETED;
-
-  // Update it if we have evidence to the contrary.
-  if (BlockStmt* block = toBlockStmt(mAstRef)) {
-    for_alist(expr, block->body) {
-      if (isImportStmt(expr) || isUseStmt(expr)) {
-        progress = IUP_NOT_STARTED;
-        importUseCount++;
-      }
-    }
-
-    if (CallExpr* call = toCallExpr(block->useList)) {
-      INT_ASSERT(call->isPrimitive(PRIM_USED_MODULES_LIST));
-      progress = IUP_NOT_STARTED;
-      importUseCount += call->numActuals();
-    }
-  }
+  progress = IUP_NOT_STARTED;
 
   canReexport = true;
 }
@@ -467,15 +435,8 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
 bool ResolveScope::extend(VisibilityStmt* stmt) {
   mUseImportList.push_back(stmt);
 
-  uint64_t size = mUseImportList.size();
-  if (size < importUseCount) {
-    if (progress == IUP_NOT_STARTED) {
-      progress = IUP_IN_PROGRESS;
-    }
-  } else if (size == importUseCount) {
-    progress = IUP_COMPLETED;
-  } else {
-    INT_ASSERT(false);
+  if (progress == IUP_NOT_STARTED) {
+    progress = IUP_IN_PROGRESS;
   }
 
   return true;

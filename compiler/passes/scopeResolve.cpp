@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <stack>
 
 /************************************* | **************************************
 *                                                                             *
@@ -540,18 +541,44 @@ static void processImportExprs() {
       // Collect *all* asts within this top-level module in text order
       collect_asts(topLevelModule, asts);
 
+      std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {
-        if (UseStmt* useStmt = toUseStmt(item)) {
-          BaseAST*      astScope = getScope(useStmt);
+        Expr* exprItem = toExpr(item);
+        if (exprItem != NULL && exprItem->parentExpr != NULL) {
+          BaseAST*      astScope = getScope(item);
           ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
-          useStmt->scopeResolve(scope);
-        } else if (ImportStmt* importStmt = toImportStmt(item)) {
-          BaseAST*      astScope = getScope(importStmt);
-          ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
-
-          importStmt->scopeResolve(scope);
+          if (UseStmt* useStmt = toUseStmt(item)) {
+            useStmt->scopeResolve(scope);
+          } else if (ImportStmt* importStmt = toImportStmt(item)) {
+            importStmt->scopeResolve(scope);
+          }
+          if (scope != NULL) {
+            if (scopes.empty()) {
+              scopes.push(scope);
+            }
+            if (scope != scopes.top()) {
+              ResolveScope* last = scopes.top();
+              BlockStmt* lastAst = last->asBlockStmt();
+              BlockStmt* curBlock = scope->asBlockStmt();
+              if (curBlock != NULL) {
+                if (lastAst->contains(curBlock)) {
+                  scopes.push(scope);
+                } else {
+                  while (!lastAst->contains(curBlock) && !scopes.empty()) {
+                    scopes.pop();
+                    last->progress = IUP_COMPLETED;
+                  }
+                }
+              }
+            }
+          }
         }
+      }
+      while (!scopes.empty()) {
+        ResolveScope* last = scopes.top();
+        scopes.pop();
+        last->progress = IUP_COMPLETED;
       }
     }
   }
