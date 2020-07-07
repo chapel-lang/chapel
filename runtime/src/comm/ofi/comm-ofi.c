@@ -1091,6 +1091,26 @@ void debugOverrideHints(struct fi_info* hints) {
     }
   }
 
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_MR_UNSPEC),
+                                  CFG_HINT(FI_MR_BASIC),
+                                  CFG_HINT(FI_MR_SCALABLE),
+                                  CFG_HINT(FI_MR_LOCAL),
+                                  CFG_HINT(FI_MR_RAW),
+                                  CFG_HINT(FI_MR_VIRT_ADDR),
+                                  CFG_HINT(FI_MR_ALLOCATED),
+                                  CFG_HINT(FI_MR_PROV_KEY),
+                                  CFG_HINT(FI_MR_MMU_NOTIFY),
+                                  CFG_HINT(FI_MR_RMA_EVENT),
+                                  CFG_HINT(FI_MR_ENDPOINT),
+                                  CFG_HINT(FI_MR_HMEM),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_MR_MODE",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->domain_attr->mr_mode = (int) val;
+    }
+  }
+
   #undef CFG_HINT
   #undef CFG_HINT_NULL
 }
@@ -1179,17 +1199,13 @@ void init_ofiFabricDomain(void) {
   // PROV_KEY is marked TODO only because if the provider doesn't assert
   // that mode we may be able to avoid broadcasting keys around the job.
   //
-  int mr_mode;
-  if ((mr_mode = chpl_env_rt_get_int("COMM_MR_MODE", -1)) == -1) {
-    mr_mode = FI_MR_LOCAL
-              | FI_MR_VIRT_ADDR
-              | FI_MR_PROV_KEY /*TODO*/
-              | FI_MR_ENDPOINT;
-    if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
-      mr_mode |= FI_MR_ALLOCATED;
-    }
+  hints->domain_attr->mr_mode = (  FI_MR_LOCAL
+                                 | FI_MR_VIRT_ADDR
+                                 | FI_MR_PROV_KEY /*TODO*/
+                                 | FI_MR_ENDPOINT);
+  if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
+    hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
-  hints->domain_attr->mr_mode = mr_mode;
 
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
