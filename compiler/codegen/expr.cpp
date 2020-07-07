@@ -2386,8 +2386,7 @@ GenRet codegenCallExpr(GenRet function,
         chapelRetTy = fn->retType->codegen().type;
         chplRetTySigned = is_signed(fn->retType);
       }
-    } else if(FD) {
-      INT_ASSERT(FD != NULL);
+    } else if (FD) {
       clang::QualType retTy = FD->getCallResultType();
       if (retTy->isVoidType()) {
         chapelRetTy = llvm::Type::getVoidTy(ctx);
