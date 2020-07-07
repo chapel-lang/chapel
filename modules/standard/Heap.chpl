@@ -365,10 +365,12 @@ module Heap {
         compilerError("toArray() method is not avaliable on a 'heap'",
                       " with elements of a type that can't be copied, here: ",
                       eltType: string);
+      _enter();
       var l: [0..#size] eltType;
       for i in 0..#size {
         l[i] = _data[i];
       }
+      _leave();
       return l;
     }
 
@@ -379,10 +381,12 @@ module Heap {
       :return: A new DefaultRectangular array.
     */
     proc consume(): [] eltType {
+      _enter();
       var l: [0..#size] eltType;
       for i in 0..#size {
         l[i] = pop();
       }
+      _leave();
       return l;
     }
 
