@@ -45,6 +45,9 @@ static const int breakOnId1 = 0;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
+// TODO: Remove.
+static const bool skipTupleChecks = 1;
+
 #define DEBUG_SYMBOL(sym__) \
   do { \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
@@ -150,6 +153,10 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 // case for that.
 static
 bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
+  // TODO: Remove.
+  if (skipTupleChecks)
+    return false;
+
   AggregateType* at = toAggregateType(formal->type);
 
   // Leave if formal is not a tuple.
