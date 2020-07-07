@@ -42,8 +42,8 @@ module Heap {
   // 
   // We can change the lock type later. Use a spinlock for now, even if it
   // is suboptimal in cases where long critical sections have high
-  // contention (IE, lots of tasks trying to insert into the middle of this
-  // list, or any operation that is O(n)).
+  // contention (IE, lots of tasks trying to call toArray on the heap
+  // or any operation that is O(n)).
   //
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
