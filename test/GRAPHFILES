@@ -313,6 +313,7 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+library/standard/Map/timeMapMinusEqual.graph
 # suite: - Chapel versus C Comparisons
 patterns/primality/prime.graph
 statements/lydia/forCompare.graph
