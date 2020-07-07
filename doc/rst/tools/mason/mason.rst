@@ -904,6 +904,7 @@ Create a local registry:
    git add README.md /Bricks/DummyPackage/0.1.0.toml
    git commit -m 'First Commit'
 
+Alternately, you may automatically create a local registry by running ``mason publish -c|--create-registry path/to/local/registry``.
 Now ``MASON_REGISTRY`` can be set to point at both the local registry and the
 default registry.
 
