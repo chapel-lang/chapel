@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.22 - to be updated each release */
-const spackVersion = '0.14.2';
+const spackVersion = '0.15.0';
 const v = spackVersion.split('.');
 const major = v[0];
 const minor = v[1];
