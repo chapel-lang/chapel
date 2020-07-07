@@ -27,7 +27,6 @@
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "symbol.h"
-#include "view.h"
 
 /* This file implements late (after cull over references)
    const checking.
@@ -45,9 +44,6 @@ static const int breakOnId1 = 0;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
-// TODO: Remove.
-static const bool skipTupleChecks = 1;
-
 #define DEBUG_SYMBOL(sym__) \
   do { \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
@@ -55,16 +51,6 @@ static const bool skipTupleChecks = 1;
       gdbShouldBreakHere(); \
     } \
   } while (0)
-
-static const int trace_all = 0;
-static const int trace_usr = 0;
-
-static bool shouldTrace(Symbol* sym) {
-  bool isUserSymbol = sym->defPoint->getModule()->modTag == MOD_USER;
-  if (trace_all || (trace_usr && isUserSymbol))
-    return true;
-  return false;
-}
 
 static bool isTupleOfTuples(Type* t)
 {
@@ -149,22 +135,12 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 
 // Are a tuple's field qualifiers ref when they should be const? If so, then
 // some code somewhere set a tuple element when it shouldn't have.
-// TODO: Should this check for whole-tuple assignment as well? Add a test
-// case for that.
 static
 bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
-  // TODO: Remove.
-  if (skipTupleChecks)
-    return false;
-
   AggregateType* at = toAggregateType(formal->type);
 
   // Leave if formal is not a tuple.
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
-    return false;
-
-  // Leave if formal is method receiver.
-  if (formal->hasFlag(FLAG_ARG_THIS))
     return false;
 
   bool isFormalBlank = formal->originalIntent == INTENT_BLANK;
@@ -177,40 +153,37 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
 
   DEBUG_SYMBOL(formal);
 
-  // TODO: Placeholder to prevent compiler warnings about shouldTrace.
-  if (shouldTrace(formal)) {}
-
   int fieldIdx = 0;
   for_fields(field, at) {
     fieldIdx++;
 
     Qualifier q = QUAL_UNKNOWN;
 
-    // TODO: Skip specific cases and turn this into an assert?
-    // Only fetch field qualifiers if they are set.
+    // Only fetch field qualifiers if they exist (for some tuples they may
+    // not, e.g. temporaries returned by _build_tuple calls).
     if (formal ->fieldQualifiers != NULL) {
       q = formal->fieldQualifiers[fieldIdx];
     }
 
-    // Skip non-ref tuple elements.
+    // Skip non-ref tuple fields.
     if (!field->isRef() || q == QUAL_UNKNOWN)
       continue;
 
-    // TODO: Do not skip tuple elements! Make this routine recursive?
+    // TODO: Handle tuples containing tuples.
     bool isFieldTuple = field->hasFlag(FLAG_TUPLE);
     if (isFieldTuple)
       continue;
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
-    // Skip ref tuple elements if they are never set.
+    // Skip ref tuple fields if they are never set.
     if (isFieldMarkedConst)
       continue;
 
     Type* ft = field->type;
     IntentTag intent;
 
-    // Get the intent tag for the tuple element.
+    // Get the intent tag for the tuple field.
     if (isFormalConst) {
       intent = constIntentForType(ft);
     } else {
@@ -232,34 +205,21 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
       // field index before we can use this functionality.
-      if (um->count(formal) != 0) {
-        use = um->at(formal);
-      }
+      if (um->count(formal) != 0) { use = um->at(formal); }
 
       USR_FATAL_CONT(formal, "Element %d of tuple %s is const and cannot "
                              "be modified",
                              zeroIdx,
                              formal->name);
 
-      // TODO: Print location where element is set.
-      // TODO: If the element is a tuple, we recursively point to setters
-      // until a non-tuple element is set?
       if (use != NULL) {
+        // TODO: Fix me when our map key type is more precise.
         USR_PRINT(use, "Possibly set here");
-
-        // TODO: Just debugging stuff.
-        printf("Formal is:\n");
-        nprint_view(formal);
-        printf("---------\n");
-        nprint_view(use);
-        FnSymbol* fn = use->getFunction();
-        nprint_view(fn);
-        gdbShouldBreakHere();
       }
 
       result = true;
     } else {
-      // TODO: Should non-const elements even be able to make it here?
+      // We should have issued a continue for such cases above.
       INT_FATAL(formal, "Should not reach here");
     }
   }

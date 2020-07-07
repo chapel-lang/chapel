@@ -705,7 +705,7 @@ void CullRefCtx::collectTuplesAndRefMaybeConstArgs(void) {
     if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
         containsReferenceFields(argAt)) {
 
-      AggregateType* tupleType  = toAggregateType(arg->type);
+      AggregateType* tupleType  = argAt; 
       int            fieldIndex = 1;
 
       // Collect reference or tuple fields for later.
