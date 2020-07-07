@@ -146,42 +146,6 @@ module Heap {
     }
 
     /*
-      Initializes a heap containing elements that are copy initialized from
-      the elements contained in another list.
-
-      :arg other: The list to initialize from.
-    */
-    proc init=(other: list(this.type.eltType, ?p)) {
-      _checkType(this.type.eltType);
-      if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy list with element type that cannot be copied");
-
-      this.eltType = this.type.eltType;
-      this.comparator = new this.type.comparator();
-      this.parSafe = this.type.parSafe;
-      this.complete();
-      _commonInitFromIterable(other);
-    }
-
-    /*
-      Initializes a heap containing elements that are copy initialized from
-      the elements contained in an array.
-
-      :arg other: The array to initialize from.
-    */
-    proc init=(other: [?d] this.type.eltType) {
-      _checkType(this.type.eltType);
-      if !isCopyableType(this.type.eltType) then
-        compilerError("Cannot copy heap from array with element type that cannot be copied");
-
-      this.eltType = this.type.eltType;
-      this.comparator = new this.type.comparator();
-      this.parSafe = this.type.parSafe;
-      this.complete();
-      _commonInitFromIterable(other);
-    }
-
-    /*
       Locks operations
     */
     pragma "no doc"
