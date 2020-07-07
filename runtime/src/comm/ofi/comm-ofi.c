@@ -1305,12 +1305,19 @@ void init_ofiEp(void) {
   // is needed.  It uses poll and wait sets to manage this, if it can.
   // Note: we'll either have both a poll and a wait set, or neither.
   //
+  // We don't use poll and waits sets with the efa provider because that
+  // doesn't support wait objects.  I tried just setting the cq_attr
+  // wait object to FI_WAIT_UNSPEC for all providers, since we don't
+  // reference the wait object explicitly anyway, but then saw hangs
+  // with (at least) the tcp;ofi_rxm provider.
+  //
   // We don't use poll and wait sets with the gni provider because (1)
   // it returns -ENOSYS for fi_poll_open() and (2) although a wait set
   // seems to work properly during execution, we haven't found a way to
   // avoid getting -FI_EBUSY when we try to close it.
   //
-  if (!providerInUse(provType_gni)) {
+  if (!providerInUse(provType_efa)
+      && !providerInUse(provType_gni)) {
     int ret;
     struct fi_poll_attr pollSetAttr = (struct fi_poll_attr)
                                       { .flags = 0, };
