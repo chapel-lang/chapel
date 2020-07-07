@@ -25,7 +25,9 @@
 #include "expr.h"
 #include "iterator.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "symbol.h"
+#include "view.h"
 
 /* This file implements late (after cull over references)
    const checking.
@@ -49,7 +51,7 @@ static const int breakOnId3 = 0;
         sym__->id == breakOnId3) { \
       gdbShouldBreakHere(); \
     } \
-  while (0)
+  } while (0)
 
 static const int trace_all = 0;
 static const int trace_usr = 0;
@@ -154,6 +156,10 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
     return false;
 
+  // Leave if formal is method receiver.
+  if (formal->hasFlag(FLAG_ARG_THIS))
+    return false;
+
   bool isFormalBlank = formal->originalIntent == INTENT_BLANK;
   bool isFormalConst = formal->originalIntent & INTENT_CONST;
   bool result = false;
@@ -162,11 +168,22 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
   if (!isFormalBlank && !isFormalConst)
     return false;
 
+  DEBUG_SYMBOL(formal);
+
+  // TODO: Placeholder to prevent compiler warnings about shouldTrace.
+  if (shouldTrace(formal)) {}
+
   int fieldIdx = 0;
   for_fields(field, at) {
     fieldIdx++;
 
-    Qualifier q = formal->fieldQualifiers[fieldIdx];
+    Qualifier q = QUAL_UNKNOWN;
+
+    // TODO: Skip specific cases and turn this into an assert?
+    // Only fetch field qualifiers if they are set.
+    if (formal ->fieldQualifiers != NULL) {
+      q = formal->fieldQualifiers[fieldIdx];
+    }
 
     // Skip non-ref tuple elements.
     if (!field->isRef() || q == QUAL_UNKNOWN)
@@ -200,26 +217,38 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
 
     // The tuple field is marked const but it is used somewhere...
     if (intent & INTENT_CONST && !isFieldMarkedConst) {
-      int zeroIdx = formalIdx - 1;
+      int zeroIdx = fieldIdx - 1;
       BaseAST* use = NULL;
+
+      DEBUG_SYMBOL(formal);
 
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
       // field index before we can use this functionality.
-      if (um.contains(formal)) {
-        use = um.at(formal);
-        use = NULL;
+      if (um->count(formal) != 0) {
+        use = um->at(formal);
       }
 
-      USR_FATAL_CONST(formal, "Element %d of tuple %s is const and cannot "
-                              "be modified",
-                              zeroIdx,
-                              field->name);
+      USR_FATAL_CONT(formal, "Element %d of tuple %s is const and cannot "
+                             "be modified",
+                             zeroIdx,
+                             formal->name);
 
       // TODO: Print location where element is set.
       // TODO: If the element is a tuple, we recursively point to setters
-      // until a non-tuple element is set.
-      if (use != NULL) {}
+      // until a non-tuple element is set?
+      if (use != NULL) {
+        USR_PRINT(use, "Possibly set here");
+
+        // TODO: Just debugging stuff.
+        printf("Formal is:\n");
+        nprint_view(formal);
+        printf("---------\n");
+        nprint_view(use);
+        FnSymbol* fn = use->getFunction();
+        nprint_view(fn);
+        gdbShouldBreakHere();
+      }
 
       result = true;
     } else {
@@ -321,14 +350,16 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         //
 
         // Case: forward flow constness check for tuple formals.
-        if (checkTupleFormal(formal, formalIdx))
+        if (checkTupleFormal(formal, formalIdx, reasonNotConst))
           continue;
 
         // Case: const tuple/element is passed to ref tuple formal.
         // Case: const tuple/element is passed to formal with blank intent,
         // and element is ref via ref-if-modified.
-        if (checkTupleFormalToActual(formal, formalIdx, actual, call))
+        if (checkTupleFormalToActual(formal, formalIdx, actual, call,
+                                     reasonNotConst)) {
           continue;
+        }
 
         FnSymbol* inFn = call->parentSymbol->getFunction();
 
