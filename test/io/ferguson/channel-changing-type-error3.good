@@ -1,0 +1,2 @@
+channel-changing-type-error3.chpl:3: In function 'main':
+channel-changing-type-error3.chpl:8: error: cannot assign reading channel to writing channel
