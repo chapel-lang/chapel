@@ -1881,9 +1881,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   PERFSTATS_DO_ALL(_PSV_INIT);
 #undef _PSTAT_INIT
 
-  // Yield during comm by default to allow comm/compute overlap, but
-  // disable if the user requested or if `--cache-remote` is enabled
-  // (it currently breaks when tasks switch during a GET/PUT.)
+  // Yield during comm by default to allow comm/compute overlap.
   yield_during_comm = chpl_env_rt_get_bool("COMM_UGNI_YIELD_DURING_COMM",
                                            true);
 

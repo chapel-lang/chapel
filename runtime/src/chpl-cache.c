@@ -2693,6 +2693,10 @@ struct rdcache_s* tls_cache_remote_data(void) {
   return cache;
 }
 
+// cache_lock and cache_unlock implement a "lock"
+// it's not a traditional lock because it only handles
+// the case of multiple tasks being multiplexed on one thread
+// (vs hadling separate threads accessing the same data structure).
 static
 void cache_lock(struct rdcache_s* cache) {
   while (cache->cacheInUse != 0) {
