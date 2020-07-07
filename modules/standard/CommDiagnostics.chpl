@@ -392,7 +392,7 @@ module CommDiagnostics
     var fieldInUse: [0..<nFields] bool;
 
     // print column headers while determining which fields are active
-    writef("| %7s ", "locale");
+    writef("| %6s ", "locale");
     for param fieldID in 0..<nFields {
       param name = getFieldName(chpl_commDiagnostics, fieldID);
       var found = false;
@@ -402,27 +402,27 @@ module CommDiagnostics
           if (found == false) {
             found = true;
             fieldInUse[fieldID] = true;
-            writef("| %16s ", name);
+            writef("| %15s ", name);
           }
         }
       }
     }
     writeln("|");
 
-    writef("| ------- ");
+    writef("| ------ ");
     for param fieldID in 0..<nFields {
       if fieldInUse[fieldID] {
-        writef("| ---------------- ");
+        writef("| --------------- ");
       }
     }
     writeln("|");
 
     // print a row per locale showing the active fields
     for locID in LocaleSpace {
-      writef("| %7s ", locID:string);
+      writef("| %6s ", locID:string);
       for param fieldID in 0..<nFields {
         if fieldInUse[fieldID] {
-          writef("| %16s ", getField(CommDiags[locID], fieldID):string);
+          writef("| %15s ", getField(CommDiags[locID], fieldID):string);
         }
       }
       writeln("|");
