@@ -383,13 +383,14 @@ module CommDiagnostics
   */
   proc printCommDiagnosticsTable(printEmptyColumns=false) {
     use Reflection;
+    param unstable = "unstable";
 
     // grab all comm diagnostics
     var CommDiags = getCommDiagnostics();
 
     // cache number of fields and store vector of whether field is active
     param nFields = numFields(chpl_commDiagnostics);
-    var fieldInUse: [0..<nFields] bool;
+    var fieldWidth: [0..<nFields] int;
 
     // print column headers while determining which fields are active
     writef("| %6s ", "locale");
@@ -401,8 +402,11 @@ module CommDiagnostics
         if printEmptyColumns || val != 0 {
           if (found == false) {
             found = true;
-            fieldInUse[fieldID] = true;
-            writef("| %15s ", name);
+            const width = if commDiagsPrintUnstable && name == "amo" then -unstable.size
+                                                                     else 15;
+            fieldWidth[fieldID] = width;
+
+            writef("| %*s ", abs(width), name);
           }
         }
       }
@@ -411,8 +415,9 @@ module CommDiagnostics
 
     writef("| -----: ");
     for param fieldID in 0..<nFields {
-      if fieldInUse[fieldID] {
-        writef("| --------------: ");
+      const width = abs(fieldWidth[fieldID]);
+      if width != 0 {
+        writef("| %.*s: ", width-1, "------------------");
       }
     }
     writeln("|");
@@ -421,9 +426,12 @@ module CommDiagnostics
     for locID in LocaleSpace {
       writef("| %6s ", locID:string);
       for param fieldID in 0..<nFields {
-        if fieldInUse[fieldID] {
-          writef("| %15s ", getField(CommDiags[locID], fieldID):string);
-        }
+        var width = fieldWidth[fieldID];
+        const count = if width < 0 then unstable
+                                   else getField(CommDiags[locID],
+                                                 fieldID):string;
+        if width != 0 then
+          writef("| %*s ", abs(width), count);
       }
       writeln("|");
     }
