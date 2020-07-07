@@ -141,6 +141,10 @@ endif
 ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(JEMALLOC_INSTALL_DIR)
 endif
+# Qthreads uses our memory allocator, trigger rebuilds if our interface changes
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(CHPL_MAKE_HOME)/runtime/include/chpl-mem.h
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_TARGET_MEM)/chpl-mem-impl.h
+
 qthread: $(QTHREAD_INSTALL_DIR)
 
 $(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(QTHREAD_OTHER_INSTALL_DIR_DEPS)
