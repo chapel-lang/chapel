@@ -556,7 +556,9 @@ static void processImportExprs() {
           }
 
           // As we finish with this statement, check to see if we've exited one
-          // or more scopes and update its/their statuses.
+          // or more scopes and update its/their statuses to reflect that we
+          // have finished resolving all the use or import statements within
+          // them.
           if (scope != NULL) {
             if (scopes.empty()) {
               scopes.push(scope);
