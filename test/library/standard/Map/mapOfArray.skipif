@@ -1,0 +1,7 @@
+#!/bin/bash
+
+if [[ "$CHPL_COMM" == "gasnet" ]]; then
+  echo True
+else
+  echo False
+fi
