@@ -1071,7 +1071,11 @@ void debugOverrideHints(struct fi_info* hints) {
                                   CFG_HINT(FI_PROGRESS_AUTO),
                                   CFG_HINT(FI_PROGRESS_MANUAL),
                                   CFG_HINT_NULL, };
-    if (getCfgHint("COMM_OFI_HINTS_PROGRESS",
+    if (getCfgHint("COMM_OFI_HINTS_CONTROL_PROGRESS",
+                   hintVals, true /*justOne*/, &val)) {
+      hints->domain_attr->control_progress = (enum fi_progress) val;
+    }
+    if (getCfgHint("COMM_OFI_HINTS_DATA_PROGRESS",
                    hintVals, true /*justOne*/, &val)) {
       hints->domain_attr->data_progress = (enum fi_progress) val;
     }
