@@ -161,7 +161,7 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
 
     // Only fetch field qualifiers if they exist (for some tuples they may
     // not, e.g. temporaries returned by _build_tuple calls).
-    if (formal ->fieldQualifiers != NULL) {
+    if (formal->fieldQualifiers != NULL) {
       q = formal->fieldQualifiers[fieldIdx];
     }
 
@@ -226,13 +226,6 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
 
   return result;
 }
-
-static
-bool checkTupleFormalToActual(ArgSymbol* formal, int idx, Expr* actual,
-                              CallExpr* call, UseMap* um) {
-  return false;
-}
-
 
 /* Since const-checking can depend on ref-pair determination
    or upon the determination of whether an array formal with
@@ -319,14 +312,6 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         // Case: forward flow constness check for tuple formals.
         if (checkTupleFormal(formal, formalIdx, reasonNotConst))
           continue;
-
-        // Case: const tuple/element is passed to ref tuple formal.
-        // Case: const tuple/element is passed to formal with blank intent,
-        // and element is ref via ref-if-modified.
-        if (checkTupleFormalToActual(formal, formalIdx, actual, call,
-                                     reasonNotConst)) {
-          continue;
-        }
 
         FnSymbol* inFn = call->parentSymbol->getFunction();
 
