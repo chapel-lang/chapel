@@ -373,10 +373,11 @@ module CommDiagnostics
 
 
   /*
-    Print the current communication counts in a text table using a row
-    per locale and a column per operation.  By default, operations for
-    which all locales have a count of zero are not displayed in the
-    table.
+    Print the current communication counts in a markdown table using a
+    row per locale and a column per operation.  By default, operations
+    for which all locales have a count of zero are not displayed in
+    the table, though an argument can be used to reverse that
+    behavior.
 
     :arg printEmptyColumns: Indicates whether empty columns should be printed (defaults to ``false``)
     :type printEmptyColumns: `bool`
@@ -400,7 +401,13 @@ module CommDiagnostics
     writef("| %6s ", "locale");
     for param fieldID in 0..<nFields {
       param name = getFieldName(chpl_commDiagnostics, fieldID);
+      // We should be able to write this as follows:
+      //
       //      const maxval = max reduce [locID in LocaleSpace] getField(CommDiags[locID], fieldID);
+      //
+      // except that it doesn't work due to #16042.  So I'm using this
+      // annoying workaround instead:
+
       var maxval = 0;
       for locID in LocaleSpace do
         maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
@@ -410,8 +417,6 @@ module CommDiagnostics
                         then -unstable.size
                         else max(name.size, ceil(log10(maxval+1)):int);
         fieldWidth[fieldID] = width;
-        //        writeln("For field ", name, ", maxval is ", maxval, ", with a width of ", width);
-
 
         writef("| %*s ", abs(width), name);
       }
