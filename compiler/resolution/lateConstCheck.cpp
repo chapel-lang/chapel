@@ -200,8 +200,6 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
       int zeroIdx = fieldIdx - 1;
       BaseAST* use = NULL;
 
-      DEBUG_SYMBOL(formal);
-
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
       // field index before we can use this functionality.
