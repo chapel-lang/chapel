@@ -413,7 +413,7 @@ module CommDiagnostics
         maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
 
       if printEmptyColumns || maxval != 0 {
-        const width = if commDiagsPrintUnstable && name == "amo"
+        const width = if commDiagsPrintUnstable == false && name == "amo"
                         then -unstable.size
                         else max(name.size, ceil(log10(maxval+1)):int);
         fieldWidth[fieldID] = width;
