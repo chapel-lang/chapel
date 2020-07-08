@@ -1129,9 +1129,8 @@ void init_ofiFabricDomain(void) {
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
 
-  hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
-                | FI_RMA | FI_READ | FI_WRITE
-                | FI_REMOTE_READ | FI_REMOTE_WRITE;
+  hints->caps = (FI_MSG | FI_MULTI_RECV
+                 | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
   if (providerAvail(provType_gni)) {
     hints->caps |= FI_ATOMICS; // we don't get this without asking
   }
