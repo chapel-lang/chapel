@@ -1,2 +1,0 @@
-tupleBlankFormalConstArg.chpl:9: error: element 1 of tuple tup is const and cannot be modified
-tupleBlankFormalConstArg.chpl:10: note: possibly set here
