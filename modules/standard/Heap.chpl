@@ -76,14 +76,14 @@ module Heap {
     /* The type of the elements contained in this heap. */
     type eltType;
 
+    /* If `true`, this heap will perform parallel safe operations. */
+    param parSafe = false;
+
     /*
       Comparator record that defines how the
       data is compared. The greatest element will be on the top.
     */
     var comparator: record;
-
-    /* If `true`, this heap will perform parallel safe operations. */
-    param parSafe = false;
 
     pragma "no doc"
     var _lock$ = if parSafe then new _LockWrapper() else none;
@@ -119,11 +119,11 @@ module Heap {
       :arg parSafe: If `true`, this heap will use parallel safe operations.
       :type parSafe: `param bool`
     */
-    proc init(type eltType, comparator: record = defaultComparator, param parSafe = false) {
+    proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
       _checkType(eltType);
       this.eltType = eltType;
-      this.comparator = comparator;
       this.parSafe = parSafe;
+      this.comparator = comparator;
       this._data = new list(eltType);
     }
 
@@ -139,8 +139,8 @@ module Heap {
         compilerError("Cannot copy heap with element type that cannot be copied");
 
       this.eltType = this.type.eltType;
-      this.comparator = other.comparator;
       this.parSafe = this.type.parSafe;
+      this.comparator = other.comparator;
       this.complete();
       _commonInitFromIterable(other._data);
     }
