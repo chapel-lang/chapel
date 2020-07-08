@@ -1,7 +1,7 @@
 use CommDiagnostics;
 
 
-proc runtrial(numtrials) {
+proc runtrial(numtrials, printEmpty) {
   var x: int;
   resetCommDiagnostics();
   startCommDiagnostics();
@@ -10,13 +10,14 @@ proc runtrial(numtrials) {
       on loc do
         x = 1;
   stopCommDiagnostics();
-  printCommDiagnosticsTable();
+  printCommDiagnosticsTable(printEmpty);
   writeln();
 }
 
-runtrial(1);
-runtrial(999);
-runtrial(1000);
-runtrial(1001);
-runtrial(10000);
-
+for printEmpty in false..true {
+  runtrial(1, printEmpty);
+  runtrial(999, printEmpty);
+  runtrial(1000, printEmpty);
+  runtrial(1001, printEmpty);
+  runtrial(10000, printEmpty);
+}
