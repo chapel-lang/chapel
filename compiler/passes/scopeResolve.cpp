@@ -548,11 +548,15 @@ static void processImportExprs() {
           BaseAST*      astScope = getScope(item);
           ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
+          // Resolve any uses or imports we find
           if (UseStmt* useStmt = toUseStmt(item)) {
             useStmt->scopeResolve(scope);
           } else if (ImportStmt* importStmt = toImportStmt(item)) {
             importStmt->scopeResolve(scope);
           }
+
+          // As we finish with this statement, check to see if we've exited one
+          // or more scopes and update its/their statuses.
           if (scope != NULL) {
             if (scopes.empty()) {
               scopes.push(scope);
@@ -575,6 +579,8 @@ static void processImportExprs() {
           }
         }
       }
+
+      // Once we've finished traversing, close any remaining unclosed scopes.
       while (!scopes.empty()) {
         ResolveScope* last = scopes.top();
         scopes.pop();
