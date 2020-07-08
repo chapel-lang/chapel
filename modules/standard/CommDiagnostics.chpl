@@ -408,8 +408,10 @@ module CommDiagnostics
       if printEmptyColumns || maxval != 0 {
         const width = if commDiagsPrintUnstable && name == "amo"
                         then -unstable.size
-                        else max(name.size, ceil(log10(maxval)):int);
+                        else max(name.size, ceil(log10(maxval+1)):int);
         fieldWidth[fieldID] = width;
+        //        writeln("For field ", name, ", maxval is ", maxval, ", with a width of ", width);
+
 
         writef("| %*s ", abs(width), name);
       }
