@@ -165,7 +165,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
     if (SymExpr* se = toSymExpr(src)) {
       // Alternatively, we could have needed to resolve the use and import
       // statements in this scope sooner than it would have been reached by
-      // processImportExpres
+      // processImportExprs
       INT_ASSERT(se->symbol() == rootModule ||
                  scope->progress != IUP_NOT_STARTED);
 
