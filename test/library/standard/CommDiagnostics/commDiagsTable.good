@@ -1,6 +1,6 @@
-| locale |             put |      amo |   execute_on_nb |
-| -----: | --------------: | -------: | --------------: |
-|      0 |               0 | unstable |               3 |
-|      1 |               1 | unstable |               0 |
-|      2 |               1 | unstable |               0 |
-|      3 |               1 | unstable |               0 |
+| locale | put |      amo | execute_on_nb |
+| -----: | --: | -------: | ------------: |
+|      0 |   0 | unstable |             3 |
+|      1 |   1 | unstable |             0 |
+|      2 |   1 | unstable |             0 |
+|      3 |   1 | unstable |             0 |

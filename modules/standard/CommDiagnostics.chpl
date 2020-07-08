@@ -390,25 +390,28 @@ module CommDiagnostics
 
     // cache number of fields and store vector of whether field is active
     param nFields = numFields(chpl_commDiagnostics);
+
+    // How wide should the column be for this field?  A negative value
+    // indicates an unstable field.  0 indicates that the field should
+    // be skipped in the table.
     var fieldWidth: [0..<nFields] int;
 
     // print column headers while determining which fields are active
     writef("| %6s ", "locale");
     for param fieldID in 0..<nFields {
       param name = getFieldName(chpl_commDiagnostics, fieldID);
-      var found = false;
-      for locID in LocaleSpace {
-        const val = getField(CommDiags[locID], fieldID);
-        if printEmptyColumns || val != 0 {
-          if (found == false) {
-            found = true;
-            const width = if commDiagsPrintUnstable && name == "amo" then -unstable.size
-                                                                     else 15;
-            fieldWidth[fieldID] = width;
+      //      const maxval = max reduce [locID in LocaleSpace] getField(CommDiags[locID], fieldID);
+      var maxval = 0;
+      for locID in LocaleSpace do
+        maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
 
-            writef("| %*s ", abs(width), name);
-          }
-        }
+      if printEmptyColumns || maxval != 0 {
+        const width = if commDiagsPrintUnstable && name == "amo"
+                        then -unstable.size
+                        else max(name.size, ceil(log10(maxval)):int);
+        fieldWidth[fieldID] = width;
+
+        writef("| %*s ", abs(width), name);
       }
     }
     writeln("|");
