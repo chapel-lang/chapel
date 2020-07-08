@@ -205,22 +205,22 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
       // field index before we can use this functionality.
-      if (um->count(formal) != 0) { use = um->at(formal); }
+      if (um->count(formal)) { use = um->at(formal); }
 
-      USR_FATAL_CONT(formal, "Element %d of tuple %s is const and cannot "
+      USR_FATAL_CONT(formal, "element %d of tuple %s is const and cannot "
                              "be modified",
                              zeroIdx,
                              formal->name);
 
       if (use != NULL) {
         // TODO: Fix me when our map key type is more precise.
-        USR_PRINT(use, "Possibly set here");
+        USR_PRINT(use, "possibly set here");
       }
 
       result = true;
     } else {
       // We should have issued a continue for such cases above.
-      INT_FATAL(formal, "Should not reach here");
+      INT_FATAL(formal, "unhandled formal");
     }
   }
 

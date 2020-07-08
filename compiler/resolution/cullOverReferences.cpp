@@ -619,6 +619,7 @@ public:
   void propagateNonConstnessThroughRevisitGraph(void);
   void markRemainingSymsWithUnknownConstnessConst(void);
   void lowerRemainingContextCallExprs(void);
+  void markRefMaybeConstTupleFormals(void);
   void performLateConstCheck(void);
 
 private:
@@ -1443,6 +1444,56 @@ void CullRefCtx::lowerRemainingContextCallExprs(void) {
   }
 }
 
+// At this point tuple formals may still have the INTENT_REF_MAYBE_CONST
+// intent. Go ahead and lower those now.
+void CullRefCtx::markRefMaybeConstTupleFormals(void) {
+  forv_Vec(ArgSymbol, formal, gArgSymbols) {
+    AggregateType* at = toAggregateType(formal->getValType());
+
+    // Not a tuple, so skip it.
+    if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
+      continue;
+
+    // Ok, already set...
+    if (!(formal->intent == INTENT_REF_MAYBE_CONST))
+      continue;
+
+    // All tuples should be passed by reference at this point.
+    INT_ASSERT(formal->isRef());
+
+    // If field qualifiers were never created, set as ref and move on.
+    if (formal->fieldQualifiers == NULL) {
+      formal->intent = INTENT_REF;
+      continue;
+    }
+
+    // If the total qualifier is not ref, mark as const ref and continue.
+    if (formal->fieldQualifiers[0] != QUAL_REF) {
+      formal->intent = INTENT_CONST_REF;
+      continue;
+    }
+
+    // Can we mark this formal const? Depends on the fields...
+    bool hasAllConstFields = true;
+    int fieldIdx = 0;
+
+    for_fields(field, at) {
+      fieldIdx++;
+      Qualifier q = formal->fieldQualifiers[fieldIdx];
+      if (q != QUAL_UNKNOWN && !QualifiedType::qualifierIsConst(q)) {
+        hasAllConstFields = false;
+        break;
+      }
+    }
+
+    if (hasAllConstFields) {
+      formal->intent = INTENT_CONST_REF;
+    } else {
+      formal->intent = INTENT_REF;
+    }
+  }
+}
+
 // We already changed INTENT_REF_MAYBE_CONST in markConst / markNotConst so
 // there is nothing else to do here for ArgSymbols.
 void CullRefCtx::performLateConstCheck(void) {
@@ -1533,6 +1584,9 @@ void cullOverReferences() {
 
   // We have enough information to lower all ContextCallExprs now.
   ctx.lowerRemainingContextCallExprs();
+
+  // Go ahead and lower INTENT_REF_MAYBE_CONST tuple formals now.
+  ctx.markRefMaybeConstTupleFormals();
 
   // Pass off to `resolution/lateConstCheck`.
   ctx.performLateConstCheck();
