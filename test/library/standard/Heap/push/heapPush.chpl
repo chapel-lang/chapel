@@ -5,7 +5,7 @@ config const testParam:int = 10;
 
 
 proc rangeTest(comparator) {
-  var myHeap = new heap(int, comparator);
+  var myHeap = new heap(int, false, comparator);
 
   for i in 1..testParam {
     myHeap.push(i);
