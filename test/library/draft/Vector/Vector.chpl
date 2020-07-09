@@ -341,7 +341,7 @@ module Vector {
     }
 
     /*
-      The the capacity of this vector.
+      The capacity of this vector.
     */
     inline proc const capacity {
       var result = 0;
