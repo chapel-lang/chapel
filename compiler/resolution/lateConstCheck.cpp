@@ -333,8 +333,11 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         if (!skip) {
 
           // Skip chpl__unref for tuples because it's triggering weird
-          // constness violations.
+          // constness violations. TODO: Remove when the below can pass
+          // without the check:
+          //    release/examples/spec/Tuples/tuple-return-behavior.chpl
           if (!calledFn->hasFlag(FLAG_UNREF_FN)) {
+
             // Case: forward flow constness check for tuple formals.
             if (checkTupleFormalUses(formal, formalIdx, reasonNotConst))
               continue;

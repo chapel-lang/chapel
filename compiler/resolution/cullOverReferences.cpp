@@ -62,8 +62,8 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
-static const int breakOnId2 = 0;
+static const int breakOnId1 = 1478553;
+static const int breakOnId2 = 1478449;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
@@ -1014,12 +1014,20 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
       Symbol*  lhsSymbol = lhs->symbol();
 
       if (lhsSymbol->isRef() && lhsSymbol != sym) {
-        GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
-        collectedSymbols.push_back(srcNode);
-        addDependency(revisitGraph, srcNode, node);
-        revisit = true;
 
-        return true;
+        // Don't worry about tracking the destination if it's constant or
+        // marked with the flag FLAG_REF_TO_CONST.
+        if (lhsSymbol->hasFlag(FLAG_REF_TO_CONST) ||
+            lhsSymbol->isConstant()) {
+          return false;
+        } else {
+          GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+          collectedSymbols.push_back(srcNode);
+          addDependency(revisitGraph, srcNode, node);
+          revisit = true;
+
+          return true;
+        }
       }
     }
   }
