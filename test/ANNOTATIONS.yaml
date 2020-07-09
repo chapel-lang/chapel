@@ -675,6 +675,8 @@ cs-resize:
 dist-performance.cc:
   04/29/20:
     - Use workaround to enable lifetime checking for lists of borrowed classes (#15575)
+  06/27/20:
+    - Revert changes to `list._commonInitFromIterable` (#15943)
 
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
@@ -1904,12 +1906,17 @@ arkouda: &arkouda-base
   04/22/20:
     - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
   04/28/20:
-    - Improve comm=none build and execution speed (mhmerrill/arkouda#358)
-  04/28/20:
+    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+      config: chapcs
     - text: Move XC testing from login to elogin node
       config: 16-node-xc
   05/20/20:
     - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
+  07/01/20:
+    - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
+  07/02/20:
+    - Reduce fragmentation for large allocations (#15992)
+
 
 arkouda-comp:
   <<: *arkouda-base
