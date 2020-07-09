@@ -122,7 +122,9 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 // Are a tuple's field qualifiers ref when they should be const? If so, then
 // some code somewhere set a tuple element when it shouldn't have.
 static bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
-  AggregateType* at = toAggregateType(formal->type);
+  AggregateType* at = toAggregateType(formal->getValType());
+
+  gdbShouldBreakHere();
 
   // Leave if formal is not a tuple.
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
