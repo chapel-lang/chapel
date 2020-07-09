@@ -1012,6 +1012,7 @@ bool FixPrimInitsVisitor::enterFnSym(FnSymbol* node) {
 
 bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
       call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
     Expr* prevent = NULL;
     SymExpr* se = toSymExpr(call->get(1));

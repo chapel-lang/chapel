@@ -1029,6 +1029,7 @@ module DefaultRectangular {
     // should the comms post-alloc be called after initialization?
     var callPostAlloc: bool = true;
 
+    var deinitElts: bool = true;
     //var numelm: int = -1; // for correctness checking
 
     // fields end here
@@ -1050,6 +1051,7 @@ module DefaultRectangular {
       this.externArr = externArr;
       this._borrowed = _borrowed;
       this.callPostAlloc = false;
+      this.deinitElts = initElts;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
@@ -1099,7 +1101,7 @@ module DefaultRectangular {
       } else {
         var numInd = dom.dsiNumIndices;
         var numElts:intIdxType = numInd;
-        if deinitElts && numInd > 0 {
+        if deinitElts && this.deinitElts && numInd > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
 

@@ -740,6 +740,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
           call->isPrimitive(PRIM_INIT_VAR)  ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
           call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         if (call->get(1) == se) {
           retval = se->symbol();
@@ -2572,7 +2573,7 @@ static Symbol* varModuleName(VarSymbol* var) {
 ************************************** | *************************************/
 
 static void           normVarTypeInference(DefExpr* expr);
-static void           normVarTypeWoutInit(DefExpr* expr);
+static void           normVarTypeWoutInit(DefExpr* expr, bool noinit);
 static void           normVarTypeWithInit(DefExpr* expr);
 static void           normVarNoinit(DefExpr* defExpr);
 
@@ -2615,7 +2616,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       normVarTypeInference(defExpr);
 
     } else if (type != NULL && init == NULL) {
-      normVarTypeWoutInit(defExpr);
+      normVarTypeWoutInit(defExpr, false);
 
     } else if (type != NULL && init != NULL) {
       if (init->isNoInitExpr() == true) {
@@ -2911,11 +2912,12 @@ static void normVarTypeInference(DefExpr* defExpr) {
 // The type is explicit and the initial value is implied by the type
 //
 
-static void normVarTypeWoutInit(DefExpr* defExpr) {
+static void normVarTypeWoutInit(DefExpr* defExpr, bool noinit) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
 
-  CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, var, typeExpr);
+  PrimitiveTag prim = noinit?PRIM_NOINIT_INIT_VAR:PRIM_DEFAULT_INIT_VAR;
+  CallExpr* init = new CallExpr(prim, var, typeExpr);
 
   if (var->hasFlag(FLAG_EXTERN)) {
     // Put initialization for extern vars in a type block since
@@ -2946,9 +2948,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 }
 
 static void normVarNoinit(DefExpr* defExpr) {
-  USR_WARN(defExpr, "noinit is currently ignored");
-  defExpr->init->remove();
-  normVarTypeWoutInit(defExpr);
+  normVarTypeWoutInit(defExpr, true);
 }
 
 //

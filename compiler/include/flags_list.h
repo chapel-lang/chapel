@@ -273,7 +273,11 @@ symbolFlag( FLAG_NO_COPY_RETURN, ypr, "no copy return", ncm)
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )
 symbolFlag( FLAG_NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol" )
 symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not require autoCopy/autoDestroy" )
+
+// This flag disables initialization entirely. In contrast, `= noinit`
+// will possibly run a `proc noinit` initializer.
 symbolFlag( FLAG_NO_INIT , ypr, "no init", "Do not initialize this variable" )
+
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)

@@ -397,24 +397,24 @@ module ChapelArray {
     return new _domain(dist, parentDom);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution, param rank: int,
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       param rank: int,
                                        type idxType = int,
-                                       param stridable: bool) {
+                                       param stridable: bool,
+                                       param isNoInit: bool) {
     return new _domain(dist, rank, idxType, stridable);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
-                                       param parSafe: bool) {
+                                       param parSafe: bool,
+                                       param isNoInit: bool) {
     return new _domain(dist, idxType, parSafe);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution, parentDom: domain) {
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       parentDom: domain,
+                                       param isNoInit: bool) {
     return new _domain(dist, parentDom);
-  }
-
-  proc chpl__convertRuntimeTypeToValue(type t: domain) {
-    compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, or BaseSparseDom", 0);
-    return 0; // dummy
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -446,9 +446,10 @@ module ChapelArray {
     return dom.buildArray(eltType, true);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dom: domain, type eltType) {
-    // TODO: add initElts argument
-    return dom.buildArray(eltType, true);
+  proc chpl__convertRuntimeTypeToValue(dom: domain,
+                                       type eltType,
+                                       param isNoInit: bool) {
+    return dom.buildArray(eltType, !isNoInit);
   }
 
   proc chpl__convertValueToRuntimeType(arr: []) type {

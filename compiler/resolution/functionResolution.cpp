@@ -2502,6 +2502,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_DEFAULT_INIT_VAR:
+    case PRIM_NOINIT_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
@@ -9889,7 +9890,10 @@ static void replaceReturnedTypesWithRuntimeTypes()
   }
 }
 
-static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
+static void lowerRuntimeTypeInit(CallExpr* call,
+                                 Symbol* var,
+                                 AggregateType* at,
+                                 bool noinit)
 {
   INT_ASSERT(at->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
 
@@ -9947,7 +9951,7 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
   //
   // (var _rtt_1)
   // ('move' _rtt_1 ('.v' foo "field1"))
-  // (var _rtt_2)
+  // (var _rtt_2)lowerRuntimeTypeInit
   // ('move' _rtt_2 ('.v' foo "field2"))
   // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
   SET_LINENO(call);
@@ -9969,6 +9973,10 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
+
+  // Add the argument indicating if this is a noinit
+  Symbol* isNoInit = noinit ? gTrue : gFalse;
+  runtimeTypeToValueCall->insertAtTail(isNoInit);
 
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
@@ -10046,6 +10054,7 @@ static void resolvePrimInit(CallExpr* call) {
   Expr* typeExpr = NULL;
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+             call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
   valExpr = call->get(1);
@@ -10053,7 +10062,8 @@ static void resolvePrimInit(CallExpr* call) {
   if (call->numActuals() >= 2)
     typeExpr = call->get(2);
 
-  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_NOINIT_INIT_VAR))
     INT_ASSERT(valExpr && typeExpr);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) && typeExpr == NULL)
@@ -10100,7 +10110,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   SET_LINENO(call);
 
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+        call->isPrimitive(PRIM_NOINIT_INIT_VAR)) {
       // handled in lowerPrimInit
       errorInvalidParamInit(call, val, at);
     }
@@ -10362,10 +10373,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
   SET_LINENO(call);
 
+  // Mark variables initialized with PRIM_NOINIT_INIT_VAR
+  // as not to be destroyed.
+  //if (call->isPrimitive(PRIM_NOINIT_INIT_VAR))
+  //  val->addFlag(FLAG_NO_AUTO_DESTROY);
+
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+        call->isPrimitive(PRIM_NOINIT_INIT_VAR)) {
       errorInvalidParamInit(call, val, at);
-      lowerRuntimeTypeInit(call, val, at);
+      lowerRuntimeTypeInit(call, val, at,
+                           call->isPrimitive(PRIM_NOINIT_INIT_VAR));
     }
 
   // Shouldn't be default-initializing iterator records here
@@ -10430,7 +10448,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (at                                           != NULL &&
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
-
 
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&
@@ -10548,7 +10565,9 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
   // This code not intended to handle _array etc (but these are generic, right?)
   INT_ASSERT(isRecordWrappedType(at->getValType()) == false);
 
-  CallExpr* callInit = new CallExpr("init", gMethodToken, val);
+  bool isNoinit = call->isPrimitive(PRIM_NOINIT_INIT_VAR);
+  const char* name = isNoinit?"noinit":"init";
+  CallExpr* callInit = new CallExpr(name, gMethodToken, val);
 
   // This juggling is required by use of
   // for_exprs_postorder() in resolveBlockStmt
@@ -10559,7 +10578,7 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 
   resolveCallAndCallee(callInit);
 
-  if (isRecord(at) && at->hasPostInitializer()) {
+  if (isNoinit == false && isRecord(at) && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
     call->insertBefore(postinit);
     resolveCallAndCallee(postinit);

@@ -659,6 +659,8 @@ initPrimitive() {
 
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
+  // dst, type to noinit-init
+  prim_def(PRIM_NOINIT_INIT_VAR, "noinit init var", returnInfoVoid);
 
   // fn->_this, the name of the field, value/type, optional declared type
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
