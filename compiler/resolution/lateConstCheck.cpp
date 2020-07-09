@@ -121,8 +121,7 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 
 // Are a tuple's field qualifiers ref when they should be const? If so, then
 // some code somewhere set a tuple element when it shouldn't have.
-static
-bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
+static bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
   AggregateType* at = toAggregateType(formal->type);
 
   // Leave if formal is not a tuple.
@@ -145,8 +144,7 @@ bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
 
     Qualifier q = QUAL_UNKNOWN;
 
-    // Only fetch field qualifiers if they exist (for some tuples they may
-    // not, e.g. temporaries returned by _build_tuple calls).
+    // Only fetch field qualifiers if they exist.
     if (formal->fieldQualifiers != NULL) {
       q = formal->fieldQualifiers[fieldIdx];
     }
@@ -211,7 +209,7 @@ bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
   return result;
 }
 
-bool isCallToSkip(ArgSymbol* formal, Expr* actual, CallExpr* call) {
+static bool isCallToSkip(ArgSymbol* formal, Expr* actual, CallExpr* call) {
   FnSymbol* calledFn = call->resolvedFunction();
   FnSymbol* inFn = call->parentSymbol->getFunction();
   bool result = false;
