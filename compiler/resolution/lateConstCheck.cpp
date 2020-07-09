@@ -52,20 +52,6 @@ static const int breakOnId3 = 0;
     } \
   } while (0)
 
-static bool isTupleOfTuples(Type* t)
-{
-  AggregateType* at = toAggregateType(t->getValType());
-
-  if (at && at->symbol->hasFlag(FLAG_TUPLE)) {
-    for_fields(field, at) {
-      if (field->getValType()->symbol->hasFlag(FLAG_TUPLE))
-        return true;
-    }
-  }
-
-  return false;
-}
-
 static void printReason(BaseAST* reason, BaseAST** lastPrintedReason)
 {
   // First, figure out the module and function it's in
@@ -136,7 +122,7 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 // Are a tuple's field qualifiers ref when they should be const? If so, then
 // some code somewhere set a tuple element when it shouldn't have.
 static
-bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
+bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
   AggregateType* at = toAggregateType(formal->type);
 
   // Leave if formal is not a tuple.
@@ -225,6 +211,44 @@ bool checkTupleFormal(ArgSymbol* formal, int idx, UseMap* um) {
   return result;
 }
 
+bool isCallToSkip(ArgSymbol* formal, Expr* actual, CallExpr* call) {
+  FnSymbol* calledFn = call->resolvedFunction();
+  FnSymbol* inFn = call->parentSymbol->getFunction();
+  bool result = false;
+
+  // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
+  if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+    result = true;
+  }
+
+  // A 'const' record should be able to be initialized.
+  if (calledFn->isInitializer() || calledFn->isCopyInit()) {
+    result = true;
+  }
+
+  // A 'const' record should be able to be destroyed.
+  if (calledFn->name == astrDeinit ||
+      calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
+      calledFn->hasFlag(FLAG_DESTRUCTOR)) {
+    result = true;
+  }
+
+  // For now, ignore errors with tuple construction/build_tuple.
+  if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
+      calledFn->hasFlag(FLAG_INIT_TUPLE)) {
+    result = true;
+  }
+
+  // For now, ignore errors with calls to promoted functions.
+  // To turn this off, get this example working:
+  //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
+  if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    result = true;
+  }
+
+  return result;
+}
+
 /* Since const-checking can depend on ref-pair determination
    or upon the determination of whether an array formal with
    blank intent is passed by ref or by value, do final const checking here.
@@ -303,55 +327,26 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
           }
         }
 
-        //
-        // TODO: Handle tuples containing tuples properly.
-        //
+        // Is this call a case error reporting should ignore?
+        bool skip = isCallToSkip(formal, actual, call);
 
-        // Case: forward flow constness check for tuple formals.
-        if (checkTupleFormal(formal, formalIdx, reasonNotConst))
-          continue;
+        // New school cases for tuples will emit their own errors and
+        // continue instead of using the error handler below.
+        if (!skip) {
 
-        FnSymbol* inFn = call->parentSymbol->getFunction();
+          // Skip chpl__unref for tuples because it's triggering weird
+          // constness violations.
+          if (!calledFn->hasFlag(FLAG_UNREF_FN)) {
+            // Case: forward flow constness check for tuple formals.
+            if (checkTupleFormalUses(formal, formalIdx, reasonNotConst))
+              continue;
+          }
+        } 
 
-        // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
-        if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-          error = false;
-        }
-
-        // A 'const' record should be able to be initialized
-        if (calledFn->isInitializer() || calledFn->isCopyInit()) {
-          error = false;
-        }
-
-        // A 'const' record should be able to be destroyed
-        if (calledFn->name == astrDeinit ||
-            calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
-            calledFn->hasFlag(FLAG_DESTRUCTOR)) {
-          error = false;
-        }
-
-        // For now, ignore errors with tuple construction/build_tuple
-        if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
-            calledFn->hasFlag(FLAG_INIT_TUPLE)) {
-          error = false;
-        }
-
-        // For now, ignore errors with tuples-of-tuples.
-        // Otherwise errors with e.g.
-        //   const tup = (("a", 1), ("b", 2));
-        //   for x in tup { writeln(x); }
-        if (isTupleOfTuples(formal->type)) {
-          error = false;
-        }
-
-        // For now, ignore errors with calls to promoted functions.
-        // To turn this off, get this example working:
-        //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
-        if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-          error = false;
-        }
-
-        if (error) {
+        // TODO: We really ought to incorporate the tuple error messages
+        // and this pass together in some fashion, or restructure this
+        // pass altogether?
+        if (!skip && error) {
           const char* calledName = calledFn->name;
 
           if (calledFn->hasFlag(FLAG_AUTO_COPY_FN)) {
