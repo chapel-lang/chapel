@@ -47,9 +47,6 @@ _mason(){
   then
     local cur=${COMP_WORDS[COMP_CWORD]}
     local prev=${COMP_WORDS[COMP_CWORD-1]}
-    echo ""
-    echo $cur "curr" 
-    echo $prev "prev"
     case $prev in 
       'new')
         _complete_mason_new $cur
