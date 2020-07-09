@@ -166,7 +166,7 @@ static bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
     if (isFieldMarkedConst)
       continue;
 
-    Type* ft = field->type;
+    Type* ft = field->getValType();
     IntentTag intent;
 
     // Get the intent tag for the tuple field.
