@@ -103,7 +103,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements contained in a list.
 
       Used in new expressions.
@@ -126,7 +126,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements contained in another list.
 
       Used in new expressions.
@@ -149,7 +149,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements contained in another vector.
 
       :arg other: The vector to initialize from.
@@ -168,7 +168,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements contained in an array.
 
       Used in new expressions.
@@ -192,7 +192,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements yielded by a range.
 
       Used in new expressions.
@@ -224,7 +224,7 @@ module Vector {
       _commonInitFromIterable(other);
     }
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements contained in another list.
 
       :arg other: The list to initialize from.
@@ -244,7 +244,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements contained in an array.
 
       :arg other: The array to initialize from.
@@ -263,7 +263,7 @@ module Vector {
     }
 
     /*
-      Initializes a vector containing elements that are copy initialized from
+      Initializes a vector containing elements that are copied from
       the elements yielded by a range.
 
       .. note::
