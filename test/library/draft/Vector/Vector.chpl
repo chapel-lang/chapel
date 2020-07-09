@@ -463,11 +463,29 @@ module Vector {
     }
 
     /*
-      Insert an element at a given position
+      Insert an element at a given position in this vector, shifting all elements
+      currently at and following that index one to the right. The call
+      ``a.insert(0, x)`` inserts an element at the front of the vector `a`, and
+      ``a.insert((a.size), x)`` is equivalent to ``a.append(x)``.
 
-      :returns: if succeed
+      If the insertion is successful, this method returns `true`. If the given
+      index is out of bounds, this method does nothing and returns `false`.
+
+      .. warning::
+      
+        Inserting an element into this vector may invalidate existing references
+        to the elements contained in this vector.
+
+      :arg idx: The index into this vector at which to insert.
+      :type idx: `int`
+
+      :arg x: The element to insert.
+      :type x: `eltType`
+
+      :return: `true` if `x` was inserted, `false` otherwise.
+      :rtype: `bool`
     */
-    proc ref insert(idx: int, x:eltType): bool {
+    proc ref insert(idx: int, x: eltType): bool {
       var result = false;
       on this {
         _enter();
