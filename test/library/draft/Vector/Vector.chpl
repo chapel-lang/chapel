@@ -925,9 +925,11 @@ module Vector {
       on this {
         _enter();
 
+        if _size > 1 {
           _domain = {0..#_size};
           Sort.sort(_data, comparator);
-          _domain = {0..#capacity};
+          _domain = {0..#_capacity};
+        }
         
         _leave();
       }
