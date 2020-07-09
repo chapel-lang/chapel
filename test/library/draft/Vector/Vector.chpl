@@ -925,7 +925,9 @@ module Vector {
       on this {
         _enter();
 
+          _domain = {0..#_size};
           Sort.sort(_data, comparator);
+          _domain = {0..#capacity};
         
         _leave();
       }
