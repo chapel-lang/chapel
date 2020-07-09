@@ -121,26 +121,41 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 
 // Are a tuple's field qualifiers ref when they should be const? If so, then
 // some code somewhere set a tuple element when it shouldn't have.
-static bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
-  AggregateType* at = toAggregateType(formal->getValType());
+static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
+                                 UseMap* um) {
+  FnSymbol* calledFn = call->resolvedFunction();
+  INT_ASSERT(calledFn != NULL);
 
-  gdbShouldBreakHere();
+  // Skip chpl__unref for tuples because it's triggering weird constness
+  // violations. TODO: Remove when the below can pass without the check:
+  //    release/examples/spec/Tuples/tuple-return-behavior.chpl
+  if (calledFn->hasFlag(FLAG_UNREF_FN))
+    return false;
+
+  // Skip chpl__initCopy because it modifies formal intents in weird ways
+  // when the formal requires FLAG_COPY_MUTATE (e.g. owned or tuples of
+  // owned).
+  if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
+    return false;
+ 
+  AggregateType* at = toAggregateType(formal->getValType());
 
   // Leave if formal is not a tuple.
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
     return false;
 
   bool isFormalBlank = formal->originalIntent == INTENT_BLANK;
-  bool isFormalConst = formal->originalIntent & INTENT_CONST;
-  bool result = false;
+  bool isFormalConst = formal->qualType().isConst();
 
-  // Leave if the tuple is marked ref.
+  // Nothing to do if the tuple formal is ref.
   if (!isFormalBlank && !isFormalConst)
     return false;
 
   DEBUG_SYMBOL(formal);
 
+  bool result = false;
   int fieldIdx = 0;
+
   for_fields(field, at) {
     fieldIdx++;
 
@@ -155,33 +170,31 @@ static bool checkTupleFormalUses(ArgSymbol* formal, int idx, UseMap* um) {
     if (!field->isRef() || q == QUAL_UNKNOWN)
       continue;
 
-    // TODO: Handle tuples containing tuples.
-    bool isFieldTuple = field->hasFlag(FLAG_TUPLE);
-    if (isFieldTuple)
-      continue;
-
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
     // Skip ref tuple fields if they are never set.
     if (isFieldMarkedConst)
       continue;
 
-    Type* ft = field->getValType();
-    IntentTag intent;
+    // Only aggregates (or managed class wrappers!) will be ref fields.
+    // TODO: Handle managed class wrappers.
+    AggregateType* ft = toAggregateType(field->getValType());
+    INT_ASSERT(ft != NULL);
 
-    // Get the intent tag for the tuple field.
-    if (isFormalConst) {
-      intent = constIntentForType(ft);
-    } else {
-      intent = blankIntentForType(ft);
-      INT_ASSERT(isFormalBlank);
-    }
+    // TODO: Handle tuples containing tuples. Future work should recall
+    // that a tuple's concrete blank intent can be "ref-if-modified"
+    // if the tuple contains such an element.
+    if (ft->symbol->hasFlag(FLAG_TUPLE))
+      return false;
 
-    // Validate ref-if-modified tuple fields by checking call sites.
+    IntentTag intent = isFormalBlank ? blankIntentForType(ft)
+                                     : constIntentForType(ft);
+
+    // We validate ref-if-modified fields elsewhere by checking actuals.
     if (intent == INTENT_REF_MAYBE_CONST)
       continue;
 
-    // The tuple field is marked const but it is used somewhere...
+    // The tuple field is marked const, but it is used somewhere...
     if (intent & INTENT_CONST && !isFieldMarkedConst) {
       int zeroIdx = fieldIdx - 1;
       BaseAST* use = NULL;
@@ -330,25 +343,17 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         // Is this call a case error reporting should ignore?
         bool skip = isCallToSkip(formal, actual, call);
 
-        // New school cases for tuples will emit their own errors and
-        // continue instead of using the error handler below.
-        if (!skip) {
+        // TODO: Should checks for tuple elements run if whole-formal checks
+        // have emitted an error?
+        if (!skip && !error) {
 
-          // Skip chpl__unref for tuples because it's triggering weird
-          // constness violations. TODO: Remove when the below can pass
-          // without the check:
-          //    release/examples/spec/Tuples/tuple-return-behavior.chpl
-          if (!calledFn->hasFlag(FLAG_UNREF_FN)) {
-
-            // Case: forward flow constness check for tuple formals.
-            if (checkTupleFormalUses(formal, formalIdx, reasonNotConst))
-              continue;
-          }
+          // Case: forward flow constness check for tuple elements.
+          if (checkTupleFormalUses(formal, call, reasonNotConst))
+            continue;
         } 
 
         // TODO: We really ought to incorporate the tuple error messages
-        // and this pass together in some fashion, or restructure this
-        // pass altogether?
+        // and this block together in some fashion.
         if (!skip && error) {
           const char* calledName = calledFn->name;
 
