@@ -959,6 +959,7 @@ module Vector {
       _capacity /= 2; 
       _domain = {0..#_capacity};
     }
+
     /*
       Request a change in capacity
     */
@@ -1128,6 +1129,7 @@ module Vector {
 
       return _data[i];
     }
+
     proc const ref this(i: int) const ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid vector index: " + i:string;
