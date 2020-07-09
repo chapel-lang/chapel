@@ -368,7 +368,7 @@ const char* getProviderName(void) {
 //
 
 static inline
-chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
+chpl_bool isInProvName(const char* s, const char* prov_name) {
   char pn[strlen(prov_name) + 1];
   strcpy(pn, prov_name);
 
@@ -434,20 +434,20 @@ void init_providerInUse(void) {
   // We can be using only one primary provider.
   //
   const char* pn = ofi_info->fabric_attr->prov_name;
-  if (isInThisProviderName("efa", pn)) {
+  if (isInProvName("efa", pn)) {
     providerSetSet(&providerInUseSet, provType_efa);
-  } else if (isInThisProviderName("gni", pn)) {
+  } else if (isInProvName("gni", pn)) {
     providerSetSet(&providerInUseSet, provType_gni);
-  } else if (isInThisProviderName("verbs", pn)) {
+  } else if (isInProvName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
   }
   //
   // We can be using any number of utility providers.
   //
-  if (isInThisProviderName("ofi_rxd", pn)) {
+  if (isInProvName("ofi_rxd", pn)) {
     providerSetSet(&providerInUseSet, provType_rxd);
   }
-  if (isInThisProviderName("ofi_rxm", pn)) {
+  if (isInProvName("ofi_rxm", pn)) {
     providerSetSet(&providerInUseSet, provType_rxm);
   }
 }
@@ -1079,149 +1079,183 @@ void debugOverrideHints(struct fi_info* hints) {
 static
 void init_ofiFabricDomain(void) {
   //
-  // Build hints describing what we want from the provider.
+  // Build hints describing our fundamental requirements and get a list
+  // of the providers that can satisfy those:
+  // - capabilities:
+  //   - messaging (send/receive), including multi-receive
+  //   - RMA
+  //   - transactions directed at both self and remote nodes
+  //   - on Cray XC, atomics (gni provider doesn't volunteer this)
+  // - tx endpoints:
+  //   - default completion level
+  //   - send-after-send ordering
+  // - rx endpoints same as tx
+  // - RDM endpoints
+  // - table-style address vectors
+  // - resource management, to improve the odds we hear about exhaustion
+  // - in addition, include the memory registration modes we can support
   //
+  const char* prov_name = getProviderName();
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
-#if 0
-  //
-  // We'll want to do something like this in the upcoming rewrite, but
-  // for now we're getting rid of providerAvail().
-  //
-  if (providerAvail(provType_gni)) {
-    hints->caps |= FI_ATOMICS; // we don't get this without asking
+  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
+      && (prov_name == NULL || isInProvName("gni", prov_name))) {
+    hints->caps |= FI_ATOMIC;
   }
-#endif
-
-  hints->addr_format = FI_FORMAT_UNSPEC;
-
-  //
-  // We don't specify a default completion level.  The fi_cq(3) man page
-  // says "For operations that return data to the initiator, such as RMA
-  // read or atomic-fetch, the source endpoint is also considered a
-  // destination endpoint. [FI_DELIVERY_COMPLETE] is the default
-  // completion mode for such operations."  So for such operations,
-  // we'll get a completion event after the result memory is updated,
-  // which is what we want.  For RMA write and non-fetching atomics we
-  // use the provider's default completion level and apply other methods
-  // such as forcing operation orderings with FI_ORDER_x flags to ensure
-  // that target memory is updated as the Chapel MCM requires.  AM sends
-  // use the default completion level as well, because either they are
-  // nonblocking or we'll wait for a 'done' indicator.
-  //
-  // We require the following transaction orderings:
-  // RMA_RAW:    RMA reads are ordered after RMA writes.
-  //             This achieves the same-address clause of the Chapel
-  //             MCM: a regular read after a regular write to the same
-  //             address must read the value that was written.  But it
-  //             also orders reads after writes to differing addresses,
-  //             which isn't needed and adds overhead.  This will be
-  //             fixed in the future.  (TODO)
-  // SAS:        Message sends are ordered after message sends.
-  //             This orders AMOs done using AMs.  It also orders all
-  //             other AMs as well, which is wasteful because those are
-  //             already as ordered we need them to be by various other
-  //             means.  But the alternative is for nonfetching AMO AM
-  //             initiators to wait for 'amDone' indicators back from
-  //             their targets, and performance testing indicates that
-  //             is more costly overall.
-  // SAW:        Message sends are ordered after RMA writes.
-  //             This ensures that any PUT (write) that precedes an
-  //             executeOn to the same node will be seen as having
-  //             completed when the body of that executeOn runs.  We
-  //             need this because on-stmts are serial events within a
-  //             single task and the MCM says that a task sees its own
-  //             regular reads and writes occur in program order.  Some
-  //             of the "internal" (not on-stmt) AM types need the same
-  //             assurance as well.
-  //
   hints->tx_attr->op_flags = FI_COMPLETION;
-  hints->tx_attr->msg_order = (  FI_ORDER_RMA_RAW
-                               | FI_ORDER_SAS
-                               | FI_ORDER_SAW);
-
-  hints->rx_attr->op_flags = FI_COMPLETION;
+  hints->tx_attr->msg_order = FI_ORDER_SAS;
+  hints->rx_attr->op_flags = hints->tx_attr->op_flags;
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
-
   hints->ep_attr->type = FI_EP_RDM;
-
-  hints->domain_attr->threading = FI_THREAD_UNSPEC;
-
-  hints->domain_attr->control_progress = FI_PROGRESS_UNSPEC;
-  hints->domain_attr->data_progress = FI_PROGRESS_UNSPEC;
-
   hints->domain_attr->av_type = FI_AV_TABLE;
+  hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
-  //
-  // We can support all of the MR modes shown here, but we should only
-  // throw ALLOCATED if indeed the pages are known to exist, and that's
-  // only true with a fixed heap.
-  //
-  // PROV_KEY is marked TODO only because if the provider doesn't assert
-  // that mode we may be able to avoid broadcasting keys around the job.
-  //
   hints->domain_attr->mr_mode = (  FI_MR_LOCAL
                                  | FI_MR_VIRT_ADDR
-                                 | FI_MR_PROV_KEY /*TODO*/
+                                 | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
   if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
-  hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
-
 #ifdef CHPL_COMM_DEBUG
   debugOverrideHints(hints);
 #endif
 
-  //
-  // Try to find a provider that can do what we want.  If more than one
-  // is found, presume that ones earlier in the list perform better (as
-  // documented in 'man fi_getinfo').  We just do error reporting on
-  // node 0; the other nodes should all have the same result and there's
-  // no point in repeating everything numNodes times.
-  //
-  if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
-    DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
-    DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+  if (chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFABHINTS,
+               "====================\n"
+               "initial hints");
+    DBG_PRINTF(DBG_CFGFABHINTS,
+               "%s", fi_tostr(hints, FI_TYPE_INFO));
   }
+
+  //
+  // To enable adhering to the Chapel MCM we need the following (within
+  // each task, not across tasks):
+  // - A PUT followed by a GET from the same address must return the
+  //   PUT data.  For this we need read-after-write ordering or else
+  //   delivery-complete.  Also, keep in mind that the RxM provider
+  //   advertises delivery-complete but doesn't actually do it.
+  // - When a PUT is following by an on-stmt, the on-stmt body must see
+  //   the PUT data.  For this we need either send-after-write ordering
+  //   or delivery-complete.
+  // - Atomics have to be ordered if either is a write, whether they're
+  //   done directly or via internal AMs.
+  //
+
+  //
+  // TODO: First try specifying op_flags==FI_DELIVERY_COMPLETE.  If that
+  //       succeeds then replace it with FI_COMPLETION before creating
+  //       endpoints, then specify FI_DELIVERY_COMPLETE explicitly on a
+  //       per-transaction basis later, using e.g. fi_writemsg().  This
+  //       would let us simply wait for all PUTs to complete before
+  //       doing later GETs or AMOs or AMs.  See the fi_ep() and fi_cq()
+  //       man pages for more.
+  //
+
+  //
+  // Try to get the appropriate read-after-write orderigs.
+  //
+  uint64_t msg_order_more = (((hints->caps & FI_ATOMIC) == 0)
+                             ? (FI_ORDER_RMA_RAW | FI_ORDER_SAW)
+                             : (FI_ORDER_RAW
+                                | FI_ORDER_ATOMIC_WAR
+                                | FI_ORDER_ATOMIC_WAW
+                                | FI_ORDER_SAW));
+  hints->tx_attr->msg_order |= msg_order_more;
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
 
   int ret;
   OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
             ret, -FI_ENODATA);
 
-  if (chpl_nodeID == 0) {
-    if (ret == -FI_ENODATA) {
-      const char* provider = getProviderName();
-      INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
-                       (provider == NULL) ? "<any>" : provider);
+  if (ret == -FI_ENODATA) {
+    //
+    // We didn't find a provider with the message orderings asserted.
+    // Drop those and try to get FI_DELIVERY_COMPLETE.  But only accept
+    // it for providers other than RxM, which advertises it but can't
+    // actually do it.
+    //
+    if (chpl_nodeID == 0) {
+      DBG_PRINTF(DBG_CFGFABHINTS,
+                 "====================\n"
+                 "with ordering assertions, no providers matched");
+    }
+    hints->tx_attr->msg_order &= ~msg_order_more;
+    hints->rx_attr->msg_order = hints->tx_attr->msg_order;
+
+    hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+    hints->rx_attr->op_flags = hints->tx_attr->op_flags;
+    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
+              ret, -FI_ENODATA);
+    if (ret == FI_SUCCESS) {
+      struct fi_info* info;
+      for (info = ofi_info;
+           info != NULL
+             && isInProvName("ofi_rxm", info->fabric_attr->prov_name);
+           info = info->next)
+        ;
+      if (info == NULL) {
+        ret = -FI_ENODATA;
+        fi_freeinfo(ofi_info);
+      } else {
+        struct fi_info* new_info = fi_dupinfo(info);
+        fi_freeinfo(ofi_info);
+        ofi_info = new_info;
+      }
     }
 
-    if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
-      DBG_PRINTF(DBG_CFGFABSALL, "====================\n"
-                 "fi_getinfo() matched fabric(s):");
-      struct fi_info* info;
-      for (info = ofi_info; info != NULL; info = info->next) {
-        DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_CFGFABSALL, "----------");
-      }
-    } else {
-      DBG_PRINTF(DBG_CFGFAB, "====================\n"
-                 "fi_getinfo() matched fabric:");
-      DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-      DBG_PRINTF(DBG_CFGFAB, "----------");
-    }
-  } else {
-    //
-    // Node 0 will take care of producing the error message.
-    //
     if (ret == -FI_ENODATA) {
+      if (chpl_nodeID == 0) {
+        DBG_PRINTF(DBG_CFGFABHINTS,
+                   "====================\n"
+                   "with FI_DELIVERY_COMPLETE, no providers matched");
+      }
+    }
+  }
+
+  if (ret == -FI_ENODATA) {
+    //
+    // We didn't get any provider at all.  Give up.
+    //
+#if 1
+    INTERNAL_ERROR_V("No libfabric provider for prov_name \"%s\"",
+                     (prov_name == NULL) ? "<any>" : prov_name);
+#else
+    if (chpl_nodeID == 0) {
+      INTERNAL_ERROR_V("No libfabric provider for prov_name \"%s\"",
+                       (prov_name == NULL) ? "<any>" : prov_name);
+    } else {
       chpl_comm_ofi_oob_fini();
       chpl_exit_any(0);
     }
+#endif
+  }
+
+  if (chpl_nodeID == 0) {
+    if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+      DBG_PRINTF(DBG_CFGFABSALL,
+                 "====================\n"
+                 "matched fabric(s):");
+      struct fi_info* info;
+      for (info = ofi_info; info != NULL; info = info->next) {
+        DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+      }
+    } else {
+      DBG_PRINTF(DBG_CFGFAB,
+                 "====================\n"
+                 "matched fabric:");
+      DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
+    }
+  }
+
+  if (chpl_nodeID == 0) {
+    DBG_PRINTF(DBG_CFGFAB | DBG_CFGFABSALL,
+               "====================");
   }
 
   fi_freeinfo(hints);

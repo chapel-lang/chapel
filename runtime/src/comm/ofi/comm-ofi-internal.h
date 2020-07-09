@@ -50,7 +50,8 @@ FILE* chpl_comm_ofi_dbg_file;
 #define DBG_STATSPROGRESS              0x8UL
 #define DBG_CFG                       0x10UL
 #define DBG_CFGFAB                   0x100UL
-#define DBG_CFGFABSALL               0x200UL
+#define DBG_CFGFABHINTS              0x200UL
+#define DBG_CFGFABSALL               0x400UL
 #define DBG_CFGAV                   0x1000UL
 #define DBG_THREADS                0x10000UL
 #define DBG_THREADDETAILS          0x20000UL
