@@ -263,6 +263,7 @@ bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
 void adjustRuntimeTypeInitFn(FnSymbol* fn);
+Type* getPrimGetRuntimeTypeFieldReturnType(CallExpr* call, bool& isType);
 
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);

@@ -563,7 +563,9 @@ returnInfoToNonNilable(CallExpr* call) {
 
 static QualifiedType
 returnInfoRuntimeTypeField(CallExpr* call) {
-  return call->get(1)->qualType();
+  bool isType = false;
+  Type* t = getPrimGetRuntimeTypeFieldReturnType(call, isType);
+  return QualifiedType(t, QUAL_VAL);
 }
 
 
@@ -1096,11 +1098,9 @@ initPrimitive() {
 
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
-  // Accepts 3 arguments:
-  // 1) type variable representing static type of field in _RuntimeTypeInfo
-  // 2) type variable that will become the _RuntimeTypeInfo
-  // 3) param-string name of the field in the _RuntimeTypeInfo
-  // existence of an optional 4th argument indicates the result is a type
+  // Accepts 2 arguments:
+  // 1) type variable that will become the _RuntimeTypeInfo
+  // 2) field symbol or param-string name of the field in the _RuntimeTypeInfo
   prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 
   // Corresponds to LLVM's invariant start

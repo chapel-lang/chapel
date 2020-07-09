@@ -9729,6 +9729,47 @@ void adjustRuntimeTypeInitFn(FnSymbol* fn) {
   runtimeTypeMap.put(fn->retType, runtimeType);
 }
 
+static Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
+  INT_ASSERT(call->numActuals()==2);
+
+  SymExpr* rt = toSymExpr(call->get(1));
+  SymExpr* f = toSymExpr(call->get(2));
+  INT_ASSERT(rt && f);
+
+  AggregateType* rtt = toAggregateType(rt->typeInfo());
+  if (rtt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+    rtt = toAggregateType(runtimeTypeMap.get(rtt));
+
+  if (rtt == NULL)
+    return NULL;
+
+  INT_ASSERT(rtt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE));
+
+  VarSymbol* fieldName = toVarSymbol(f->symbol());
+  Symbol* field = NULL;
+  if (Immediate* imm = fieldName->immediate) {
+    INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+    const char* name = imm->v_string;
+    field = rtt->getField(name);
+  } else {
+    field = fieldName;
+  }
+
+  return field;
+}
+
+Type* getPrimGetRuntimeTypeFieldReturnType(CallExpr* call, bool& isType)
+{
+  Symbol* field = getPrimGetRuntimeTypeField_Field(call);
+  if (field) {
+    isType = field->hasFlag(FLAG_TYPE_VARIABLE);
+    return field->type;
+  } else {
+    isType = false;
+    return dtUnknown;
+  }
+}
+
 //
 // For each such flagged function:
 //
@@ -9862,7 +9903,6 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
       call->getStmtExpr()->insertBefore(
           new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_RUNTIME_TYPE_FIELD,
-                                                    field->type->symbol,
                                                     typeSe->symbol(),
                                                     field)));
       if (field->hasFlag(FLAG_TYPE_VARIABLE))
@@ -9879,18 +9919,11 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
 }
 
 static void replaceRuntimeTypeGetField(CallExpr* call) {
-  SymExpr* rt = toSymExpr(call->get(2));
+  SymExpr* rt = toSymExpr(call->get(1));
   if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+    Symbol* field = getPrimGetRuntimeTypeField_Field(call);
+    INT_ASSERT(field);
     SET_LINENO(call);
-    VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(3))->symbol());
-    Symbol* field = NULL;
-    if (Immediate* imm = fieldName->immediate) {
-      INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-      const char* name = imm->v_string;
-      field = toAggregateType(rt->typeInfo())->getField(name);
-    } else {
-      field = fieldName;
-    }
     call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, rt->remove(), field));
   }
 }

@@ -798,7 +798,7 @@ module ChapelArray {
 
     pragma "no copy"
     pragma "no auto destroy"
-    var parentDom = __primitive("get runtime type field", getParentDomType(),
+    var parentDom = __primitive("get runtime type field", /*getParentDomType(),*/
                                                           domainType,
                                                           "dom");
 
@@ -834,7 +834,7 @@ module ChapelArray {
     pragma "no copy"
     pragma "no auto destroy"
     var dist = __primitive("get runtime type field",
-                           getDomDistType(), rtt, "d");
+                           /*getDomDistType(),*/ rtt, "d");
 
     return _getDistribution(dist._value);
   }
@@ -851,7 +851,7 @@ module ChapelArray {
     pragma "no copy"
     pragma "no auto destroy"
     var dom = __primitive("get runtime type field",
-                          getArrDomType(), rtt, "dom");
+                          /*getArrDomType(),*/ rtt, "dom");
 
     return _getDomain(dom._value);
   }
@@ -871,7 +871,7 @@ module ChapelArray {
       pragma "no copy"
       pragma "no auto destroy"
       type eltType = __primitive("get runtime type field",
-                                 getArrEltType(), rtt, "eltType", true);
+                                 /*getArrEltType(),*/ rtt, "eltType"/*, true*/);
 
       return eltType;
 
