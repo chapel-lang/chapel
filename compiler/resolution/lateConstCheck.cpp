@@ -154,17 +154,14 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
   DEBUG_SYMBOL(formal);
 
   bool result = false;
-  int fieldIdx = 0;
 
+  int fieldIdx = 0;
   for_fields(field, at) {
     fieldIdx++;
 
-    Qualifier q = QUAL_UNKNOWN;
-
     // Only fetch field qualifiers if they exist.
-    if (formal->fieldQualifiers != NULL) {
-      q = formal->fieldQualifiers[fieldIdx];
-    }
+    Qualifier q = formal->fieldQualifiers == NULL ? QUAL_UNKNOWN
+                      : formal->fieldQualifiers[fieldIdx];
 
     // Skip non-ref tuple fields.
     if (!field->isRef() || q == QUAL_UNKNOWN)
@@ -188,7 +185,7 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
       return false;
 
     IntentTag intent = isFormalBlank ? blankIntentForType(ft)
-                                     : constIntentForType(ft);
+                          : constIntentForType(ft);
 
     // We validate ref-if-modified fields elsewhere by checking actuals.
     if (intent == INTENT_REF_MAYBE_CONST)

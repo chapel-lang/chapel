@@ -1482,22 +1482,16 @@ void CullRefCtx::markRefMaybeConstTupleFormals(void) {
     }
 
     // Can we mark this formal const? Depends on the fields...
-    bool hasAllConstFields = true;
-    int fieldIdx = 0;
+    formal->intent = INTENT_CONST_REF;
 
+    int fieldIdx = 0;
     for_fields(field, at) {
       fieldIdx++;
       Qualifier q = formal->fieldQualifiers[fieldIdx];
       if (q != QUAL_UNKNOWN && !QualifiedType::qualifierIsConst(q)) {
-        hasAllConstFields = false;
+        formal->intent = INTENT_REF;
         break;
       }
-    }
-
-    if (hasAllConstFields) {
-      formal->intent = INTENT_CONST_REF;
-    } else {
-      formal->intent = INTENT_REF;
     }
   }
 }
