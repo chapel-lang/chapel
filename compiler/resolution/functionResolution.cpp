@@ -9736,20 +9736,20 @@ void adjustRuntimeTypeInitFn(FnSymbol* fn) {
 //     that returns the dynamic runtime type info
 static void buildRuntimeTypeInitFns() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
-      // Look only at functions flagged as "runtime type init fn".
-      if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)) {
+    // Look only at functions flagged as "runtime type init fn".
+    if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)) {
 
-        // Look only at resolved instances.
-        if (! fn->isResolved())
-          continue;
+      // Look only at resolved instances.
+      if (! fn->isResolved())
+        continue;
 
-        INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
-        SET_LINENO(fn);
+      INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
+      SET_LINENO(fn);
 
-        Type* runtimeType = runtimeTypeMap.get(fn->retType);
-        INT_ASSERT(runtimeType);
-        buildRuntimeTypeInitFn(fn, runtimeType);
-      }
+      Type* runtimeType = runtimeTypeMap.get(fn->retType);
+      INT_ASSERT(runtimeType);
+      buildRuntimeTypeInitFn(fn, runtimeType);
+    }
   }
 }
 
@@ -9828,67 +9828,54 @@ static void replaceReturnedValuesWithRuntimeTypes()
   }
 }
 
-static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
-  SymExpr* varSe = toSymExpr(call->get(1));
-  Symbol* var = varSe->symbol();
-  SymExpr* typeSe = toSymExpr(call->get(2));
-  Type*    rt = typeSe->symbol()->type;
+static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
+{
+  INT_ASSERT(at->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
 
-  if (rt->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-    if (var->hasFlag(FLAG_NO_INIT)) {
-      call->convertToNoop();
-      return;
-    }
-
-    AggregateType* rtt = toAggregateType(rt);
-    INT_ASSERT(rtt);
-
-    // ('init' x foo), where typeof(foo) has flag "runtime type value"
-    //
-    // ==>
-    //
-    // (var _rtt_1)
-    // ('move' _rtt_1 ('.v' foo "field1"))
-    // (var _rtt_2)
-    // ('move' _rtt_2 ('.v' foo "field2"))
-    // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
-    SET_LINENO(call);
-    CallExpr* runtimeTypeToValueCall =
-      new CallExpr("chpl__convertRuntimeTypeToValue");
-    for_fields(field, rtt) {
-      if (Symbol* sub = rtt->substitutions.get(field)) {
-        runtimeTypeToValueCall->insertAtTail(sub);
-      } else {
-        VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
-        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-        call->getStmtExpr()->insertBefore(
-            new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                      typeSe->symbol(), field)));
-        if (field->hasFlag(FLAG_TYPE_VARIABLE))
-          tmp->addFlag(FLAG_TYPE_VARIABLE);
-        runtimeTypeToValueCall->insertAtTail(tmp);
-      }
-    }
-
-    call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
-
-    resolveCallAndCallee(runtimeTypeToValueCall);
-
-  } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-    //
-    // This is probably related to a comment that used to handle
-    // this case elsewhere:
-    //
-    // special handling of tuple constructor to avoid
-    // initialization of array based on an array type symbol
-    // rather than a runtime array type
-    //
-    // this code added during the introduction of the new
-    // keyword; it should be removed when possible
-    //
-    call->getStmtExpr()->remove();
-
+  if (var->hasFlag(FLAG_NO_INIT)) {
+    call->convertToNoop();
+    return;
   }
+
+  SymExpr* typeSe = toSymExpr(call->get(2));
+
+  // Get the runtime type
+  AggregateType* runtimeType = toAggregateType(runtimeTypeMap.get(at));
+  INT_ASSERT(runtimeType);
+
+  // ('init' x foo), where typeof(foo) has flag "runtime type value"
+  //
+  // ==>
+  //
+  // (var _rtt_1)
+  // ('move' _rtt_1 ('.v' foo "field1"))
+  // (var _rtt_2)
+  // ('move' _rtt_2 ('.v' foo "field2"))
+  // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
+  SET_LINENO(call);
+  CallExpr* runtimeTypeToValueCall =
+    new CallExpr("chpl__convertRuntimeTypeToValue");
+  for_fields(field, runtimeType) {
+    Symbol* sub = runtimeType->substitutions.get(field);
+    if (sub == NULL || sub->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+      VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
+      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+      call->getStmtExpr()->insertBefore(
+          new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_RUNTIME_TYPE_FIELD,
+                                                    field->type->symbol,
+                                                    typeSe->symbol(),
+                                                    field)));
+      if (field->hasFlag(FLAG_TYPE_VARIABLE))
+        tmp->addFlag(FLAG_TYPE_VARIABLE);
+      runtimeTypeToValueCall->insertAtTail(tmp);
+    } else {
+      runtimeTypeToValueCall->insertAtTail(sub);
+    }
+  }
+
+  call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
+
+  resolveCallAndCallee(runtimeTypeToValueCall);
 }
 
 static void replaceRuntimeTypeGetField(CallExpr* call) {
@@ -9896,11 +9883,14 @@ static void replaceRuntimeTypeGetField(CallExpr* call) {
   if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
     SET_LINENO(call);
     VarSymbol* fieldName = toVarSymbol(toSymExpr(call->get(3))->symbol());
-    Immediate* imm = fieldName->immediate;
-    INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-    const char* name = imm->v_string;
-
-    Symbol* field = toAggregateType(rt->typeInfo())->getField(name);
+    Symbol* field = NULL;
+    if (Immediate* imm = fieldName->immediate) {
+      INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
+      const char* name = imm->v_string;
+      field = toAggregateType(rt->typeInfo())->getField(name);
+    } else {
+      field = fieldName;
+    }
     call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, rt->remove(), field));
   }
 }
@@ -9914,9 +9904,7 @@ static void replaceRuntimeTypePrims(void) {
       continue;
     }
 
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
-      replaceRuntimeTypeDefaultInit(call);
-    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+    if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
       replaceRuntimeTypeGetField(call);
     }
   }
@@ -10046,10 +10034,11 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   SET_LINENO(call);
 
-  // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+      // handled in lowerPrimInit
       errorInvalidParamInit(call, val, at);
+    }
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
@@ -10308,10 +10297,11 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
   SET_LINENO(call);
 
-  // These are handled in replaceRuntimeTypePrims().
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
       errorInvalidParamInit(call, val, at);
+      lowerRuntimeTypeInit(call, val, at);
+    }
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
