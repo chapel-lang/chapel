@@ -119,8 +119,10 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
   return fn;
 }
 
-// Are a tuple's field qualifiers ref when they should be const? If so, then
-// some code somewhere set a tuple element when it shouldn't have.
+// Are a tuple's field qualifiers ref instead of const? If so, then some
+// code somewhere set a const tuple element...
+// TODO: We could probably move this call to live with the forward flow
+// constness checks that occur in an earlier pass.
 static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
                                  UseMap* um) {
   FnSymbol* calledFn = call->resolvedFunction();
@@ -140,7 +142,6 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
  
   AggregateType* at = toAggregateType(formal->getValType());
 
-  // Leave if formal is not a tuple.
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
     return false;
 
@@ -159,7 +160,6 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
   for_fields(field, at) {
     fieldIdx++;
 
-    // Only fetch field qualifiers if they exist.
     Qualifier q = formal->fieldQualifiers == NULL ? QUAL_UNKNOWN
                       : formal->fieldQualifiers[fieldIdx];
 
@@ -169,12 +169,11 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
-    // Skip ref tuple fields if they are never set.
+    // Skip ref tuple fields that are never set.
     if (isFieldMarkedConst)
       continue;
 
-    // Only aggregates (or managed class wrappers!) will be ref fields.
-    // TODO: Handle managed class wrappers.
+    // TODO: Handle managed class wrappers?
     AggregateType* ft = toAggregateType(field->getValType());
     INT_ASSERT(ft != NULL);
 
@@ -213,8 +212,7 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
 
       result = true;
     } else {
-      // We should have issued a continue for such cases above.
-      INT_FATAL(formal, "unhandled formal");
+      INT_FATAL(formal, "unhandled non-const formal");
     }
   }
 
