@@ -190,7 +190,6 @@ extern bool fLibraryPython;
 extern bool fMultiLocaleInterop;
 extern bool fMultiLocaleLibraryDebug;
 
-extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;
