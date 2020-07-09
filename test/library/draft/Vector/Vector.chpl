@@ -61,7 +61,8 @@ module Vector {
 
   proc _checkType(type t) {
     if (!isDefaultInitializable(t)) {
-      compilerError("Vector does not support class that can't be default initialized");
+      compilerError("Vector does not support an eltType that can't be default initialized, ", 
+                    "here: ", t:string);
     }
   }
   record vector {
