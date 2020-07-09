@@ -418,51 +418,6 @@ int providerSetTest(providerSet_t* s, provider_t p) {
 
 
 //
-// providers available
-//
-
-static pthread_once_t providerAvailOnce = PTHREAD_ONCE_INIT;
-static providerSet_t providerAvailSet;
-
-static
-void init_providerAvail(void) {
-  struct fi_info* hints;
-  CHK_TRUE((hints = fi_allocinfo()) != NULL);
-  hints->ep_attr->type = FI_EP_RDM;
-  struct fi_info* info = NULL;
-  OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &info));
-  if (chpl_nodeID == 0) {
-    DBG_PRINTF(DBG_CFGFABSALL,
-               "==================== fabrics available with %s %s:",
-               ofi_provNameEnv,
-               (getProviderName() == NULL) ? "<unset>" : getProviderName());
-  }
-  for ( ; info != NULL; info = info->next) {
-    if (chpl_nodeID == 0) {
-      DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
-      DBG_PRINTF(DBG_CFGFABSALL, "----------");
-    }
-    const char* pn = info->fabric_attr->prov_name;
-    if (isInThisProviderName("efa", pn)) {
-      providerSetSet(&providerAvailSet, provType_efa);
-    } else if (isInThisProviderName("gni", pn)) {
-      providerSetSet(&providerAvailSet, provType_gni);
-    } else if (isInThisProviderName("verbs", pn)) {
-      providerSetSet(&providerAvailSet, provType_verbs);
-    }
-  }
-  fi_freeinfo(info);
-  fi_freeinfo(hints);
-}
-
-static
-chpl_bool providerAvail(provider_t p) {
-  PTHREAD_CHK(pthread_once(&providerAvailOnce, init_providerAvail));
-  return providerSetTest(&providerAvailSet, p);
-}
-
-
-//
 // providers in use
 //
 
@@ -1131,9 +1086,15 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
+#if 0
+  //
+  // We'll want to do something like this in the upcoming rewrite, but
+  // for now we're getting rid of providerAvail().
+  //
   if (providerAvail(provType_gni)) {
     hints->caps |= FI_ATOMICS; // we don't get this without asking
   }
+#endif
 
   hints->addr_format = FI_FORMAT_UNSPEC;
 
@@ -2072,7 +2033,7 @@ void init_fixedHeap(void) {
   //
   size_t size = chpl_comm_getenvMaxHeapSize();
   if ( ! (chpl_numNodes > 1
-          && (providerAvail(provType_gni) || size != 0))) {
+          && (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0 || size > 0))) {
     return;
   }
 
