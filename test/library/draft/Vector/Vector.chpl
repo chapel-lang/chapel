@@ -925,27 +925,7 @@ module Vector {
       on this {
         _enter();
 
-        //
-        // TODO: This is not ideal, but the Sort API needs to be adjusted
-        // before we can sort over vectors directly.
-        //
-        if _size > 1 {
-
-          // Copy current vector contents into an array.
-          var arr: [0..#_size] eltType;
-          for i in 0..#_size do
-            arr[i] = this[i];
-
-          Sort.sort(arr, comparator);
-
-          // This is equivalent to the clear routine.
-          _size = 0;
-          _capacity = _initialCapacity;
-
-          _requestCapacity(arr.size);
-          _extendGeneric(arr);
-          _maybeDecreaseCapacity();
-        }
+          Sort.sort(_data, comparator);
         
         _leave();
       }
