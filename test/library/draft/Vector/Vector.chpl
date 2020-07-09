@@ -103,7 +103,7 @@ module Vector {
 
     /*
       Initializes a vector containing elements that are copy initialized from
-      the elements contained in another list.
+      the elements contained in a list.
 
       Used in new expressions.
 
