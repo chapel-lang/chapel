@@ -127,8 +127,6 @@ static ModuleSymbol*               explainCallModule;
 
 static Map<Type*,     Type*>       runtimeTypeMap;
 
-static Map<Type*,     FnSymbol*>   runtimeTypeToValueMap;
-
 static std::map<FnSymbol*, const char*> innerCompilerWarningMap;
 static std::map<FnSymbol*, const char*> outerCompilerWarningMap;
 
@@ -187,7 +185,7 @@ static void resolveUses(ModuleSymbol* mod);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
-static void insertRuntimeTypeTemps();
+static void populateRuntimeTypeMap();
 static void resolveAutoCopies();
 static void resolveSerializers();
 static void resolveDestructors();
@@ -8632,7 +8630,7 @@ void resolve() {
 
   resolveEnumTypes();
 
-  insertRuntimeTypeTemps();
+  populateRuntimeTypeMap();
 
   resolveAutoCopies();
 
@@ -8656,11 +8654,11 @@ void resolve() {
 
   insertDynamicDispatchCalls();
 
+  handleRuntimeTypes();
+
   // Resolve the string literal constructors after everything else since new
   // ones may be created during postFold
   ensureAndResolveInitStringLiterals();
-
-  handleRuntimeTypes();
 
   if (fPrintCallGraph) {
     // This needs to go after resolution is complete, but before
@@ -8859,14 +8857,17 @@ static void resolveEnumTypes() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertRuntimeTypeTemps() {
+static void populateRuntimeTypeMap() {
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_HAS_RUNTIME_TYPE) &&
         !ts->hasFlag(FLAG_GENERIC)) {
-      SET_LINENO(ts);
       AggregateType* at = toAggregateType(ts->type);
       INT_ASSERT(at);
 
+      if (valueToRuntimeTypeMap.get(at))
+        continue;
+
+      SET_LINENO(ts);
       VarSymbol* tmp = newTemp("_runtime_type_tmp_", at);
       at->symbol->defPoint->insertBefore(new DefExpr(tmp));
       CallExpr* call = new CallExpr("chpl__convertValueToRuntimeType", tmp);
@@ -9351,14 +9352,19 @@ buildRuntimeTypeInfo(FnSymbol* fn) {
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
   for_formals(formal, fn) {
-    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-      continue;
-
     VarSymbol* field = new VarSymbol(formal->name, formal->type);
     ct->fields.insertAtTail(new DefExpr(field));
 
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
+    if (formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       field->addFlag(FLAG_TYPE_VARIABLE);
+      Symbol* sub = formal->type->symbol;
+      ct->substitutions.put(field, sub);
+    }
+    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+      field->addFlag(FLAG_PARAM);
+      Symbol* sub = paramMap.get(formal);
+      ct->substitutions.put(field, sub);
+    }
   }
   theProgram->block->insertAtTail(new DefExpr(ts));
   ct->symbol->addFlag(FLAG_RUNTIME_TYPE_VALUE);
@@ -9495,14 +9501,14 @@ static void ensureAndResolveInitStringLiterals() {
 
 static void handleRuntimeTypes()
 {
-  // insertRuntimeTypeTemps is also called earlier in resolve().  That call
+  // populateRuntimeTypeMap is also called earlier in resolve().  That call
   // can insert variables that need autoCopies and inserting autoCopies can
   // insert things that need runtime type temps.  These need to be fixed up
-  // by insertRuntimeTypeTemps before buildRuntimeTypeInitFns is called to
+  // by populateRuntimeTypeMap before buildRuntimeTypeInitFns is called to
   // update the type -> runtimeType mapping.  Without this, there is an
   // actual/formal type mismatch (with --verify) for the code:
   // record R { var A: [1..1][1..1] real; }
-  insertRuntimeTypeTemps();
+  populateRuntimeTypeMap();
   buildRuntimeTypeInitFns();
   replaceValuesWithRuntimeTypes();
   replaceReturnedValuesWithRuntimeTypes();
@@ -9685,12 +9691,6 @@ void removeCopyFns(Type* t) {
 *                                                                             *
 ************************************** | *************************************/
 
-//
-// buildRuntimeTypeInitFns: Build a 'chpl__convertRuntimeTypeToValue'
-// (value) function for all functions tagged as runtime type
-// initialization functions.  Also, build a function to return the
-// runtime type for all runtime type initialization functions.
-//
 // Functions flagged with the "runtime type init fn" pragma
 // (FLAG_RUNTIME_TYPE_INIT_FN during compilation) are designed to
 // specify to the compiler how to create a new value of a given type
@@ -9701,34 +9701,37 @@ void removeCopyFns(Type* t) {
 // (record) by the compiler and passed around to represent the type at
 // execution time.
 //
-// The actual type specified is fully-resolved during function resolution.  So
-// the "runtime type" mechanism is a way to create a parameterized type, but up
-// to a point handle it uniformly in the compiler.
-// Perhaps a more complete implementation of generic types with inheritance
-// would get rid of the need for this specialized machinery.
+// The actual type specified is fully-resolved during function resolution.
 //
 // In practice, we currently use these to create
 // runtime types for domains and arrays (via procedures named
 // 'chpl__buildDomainRuntimeType' and 'chpl__buildArrayRuntimeType',
 // respectively).
 //
-// For each such flagged function:
-//
-//   - Clone the function, naming it 'chpl__convertRuntimeTypeToValue'
-//     and change it to a value function
-//
-//   - Replace the body of the original function with a new function
-//     that returns the dynamic runtime type info
-//
-// Subsequently, the functions as written in the modules are now
-// called 'chpl__convertRuntimeTypeToValue' and used to initialize
-// variables with runtime types later in insertRuntimeInitTemps().
-//
 // Notice also that the original functions had been marked as type
 // functions during parsing even though they were not written as such
 // (see addPragmaFlags() in build.cpp for more info).  Now they are
 // actually type functions.
+
+void adjustRuntimeTypeInitFn(FnSymbol* fn) {
+  // Look only at functions flagged as "runtime type init fn".
+  INT_ASSERT(fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN));
+  // Look only at resolved instances.
+  INT_ASSERT(fn->isResolved());
+
+  INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
+  SET_LINENO(fn);
+
+  // Build a new runtime type for this function
+  Type* runtimeType = buildRuntimeTypeInfo(fn);
+  runtimeTypeMap.put(fn->retType, runtimeType);
+}
+
 //
+// For each such flagged function:
+//
+//   - Replace the body of the original function with a new function
+//     that returns the dynamic runtime type info
 static void buildRuntimeTypeInitFns() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       // Look only at functions flagged as "runtime type init fn".
@@ -9741,11 +9744,8 @@ static void buildRuntimeTypeInitFns() {
         INT_ASSERT(fn->retType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
         SET_LINENO(fn);
 
-        // Build a new runtime type for this function
-        Type* runtimeType = buildRuntimeTypeInfo(fn);
-        runtimeTypeMap.put(fn->retType, runtimeType);
-
-        // Build chpl__convertRuntimeTypeToValue() instance.
+        Type* runtimeType = runtimeTypeMap.get(fn->retType);
+        INT_ASSERT(runtimeType);
         buildRuntimeTypeInitFn(fn, runtimeType);
       }
   }
@@ -9755,37 +9755,6 @@ static void buildRuntimeTypeInitFns() {
 // the original function.
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
 {
-  // Clone the original function and call the clone chpl__convertRuntimeTypeToValue.
-  FnSymbol* runtimeTypeToValueFn = fn->copy();
-  INT_ASSERT(runtimeTypeToValueFn->hasFlag(FLAG_RESOLVED));
-  runtimeTypeToValueFn->name = astr("chpl__convertRuntimeTypeToValue");
-  runtimeTypeToValueFn->cname = runtimeTypeToValueFn->name;
-
-  // Remove this flag from the clone.
-  runtimeTypeToValueFn->removeFlag(FLAG_RUNTIME_TYPE_INIT_FN);
-
-  // Make the clone a value function.
-  runtimeTypeToValueFn->getReturnSymbol()->removeFlag(FLAG_TYPE_VARIABLE);
-  runtimeTypeToValueFn->retTag = RET_VALUE;
-  fn->defPoint->insertBefore(new DefExpr(runtimeTypeToValueFn));
-
-  // Remove static arguments from the RTTV function.
-  for_formals(formal, runtimeTypeToValueFn)
-  {
-    if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
-      formal->defPoint->remove();
-
-    if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-    {
-      Symbol* field = runtimeType->getField(formal->name);
-      if (! field->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-        formal->defPoint->remove();
-    }
-  }
-
-  // Insert the clone (convertRuntimeTypeToValue) into the runtimeTypeToValueMap.
-  runtimeTypeToValueMap.put(runtimeType, runtimeTypeToValueFn);
-
   // Change the return type of the original function.
   fn->retType = runtimeType;
   fn->getReturnSymbol()->type = runtimeType;
@@ -9869,6 +9838,9 @@ static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
       return;
     }
 
+    AggregateType* rtt = toAggregateType(rt);
+    INT_ASSERT(rtt);
+
     // ('init' x foo), where typeof(foo) has flag "runtime type value"
     //
     // ==>
@@ -9879,23 +9851,26 @@ static void replaceRuntimeTypeDefaultInit(CallExpr* call) {
     // ('move' _rtt_2 ('.v' foo "field2"))
     // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
     SET_LINENO(call);
-    FnSymbol* runtimeTypeToValueFn = runtimeTypeToValueMap.get(rt);
-    INT_ASSERT(runtimeTypeToValueFn);
-    CallExpr* runtimeTypeToValueCall = new CallExpr(runtimeTypeToValueFn);
-    for_formals(formal, runtimeTypeToValueFn) {
-      Symbol* field = rt->getField(formal->name);
-      INT_ASSERT(field);
-      VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
-      call->getStmtExpr()->insertBefore(new DefExpr(tmp));
-      call->getStmtExpr()->insertBefore(
-          new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
-                                                    typeSe->symbol(), field)));
-      if (formal->hasFlag(FLAG_TYPE_VARIABLE))
-        tmp->addFlag(FLAG_TYPE_VARIABLE);
-      runtimeTypeToValueCall->insertAtTail(tmp);
+    CallExpr* runtimeTypeToValueCall =
+      new CallExpr("chpl__convertRuntimeTypeToValue");
+    for_fields(field, rtt) {
+      if (Symbol* sub = rtt->substitutions.get(field)) {
+        runtimeTypeToValueCall->insertAtTail(sub);
+      } else {
+        VarSymbol* tmp = newTemp("_runtime_type_tmp_", field->type);
+        call->getStmtExpr()->insertBefore(new DefExpr(tmp));
+        call->getStmtExpr()->insertBefore(
+            new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER_VALUE,
+                                                      typeSe->symbol(), field)));
+        if (field->hasFlag(FLAG_TYPE_VARIABLE))
+          tmp->addFlag(FLAG_TYPE_VARIABLE);
+        runtimeTypeToValueCall->insertAtTail(tmp);
+      }
     }
 
     call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
+
+    resolveCallAndCallee(runtimeTypeToValueCall);
 
   } else if (rt->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
     //

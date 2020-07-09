@@ -370,41 +370,71 @@ module ChapelArray {
   //
   // NOTE: the bodies of functions marked with runtime type init fn such as
   // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
-  // by the compiler to just create a record storing the arguments. The body
-  // is moved by the compiler to chpl__convertRuntimeTypeToValue.
+  // by the compiler to just create a record storing the arguments.
   // The return type of chpl__build...RuntimeType is what tells the
   // compiler which runtime type it is creating.
+  // These functions are considered type functions early in compilation.
 
   //
   // Support for domain types
   //
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
-                                   type idxType = int,
-                                   param stridable: bool = false)
+                                    type idxType = int,
+                                    param stridable: bool = false) {
     return new _domain(d, rank, idxType, stridable);
+  }
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
-                                    param parSafe: bool = true)
+                                    param parSafe: bool = true) {
     return new _domain(d, idxType, parSafe);
+  }
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain)
+  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) {
     return new _domain(d, dom);
+  }
+
+  proc chpl__domInstType(type rtt: domain) {
+    return __primitive("static field type", rtt, "_instance");
+  }
+
+  proc chpl__convertRuntimeTypeToValue(d: _distribution, param rank: int,
+                                       type idxType = int,
+                                       param stridable: bool) {
+    return new _domain(d, rank, idxType, stridable);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(d: _distribution, type idxType,
+                                       param parSafe: bool) {
+    return new _domain(d, idxType, parSafe);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(d: _distribution, dom: domain) {
+    return new _domain(d, dom);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(type t: domain) {
+    compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, or BaseSparseDom", 0);
+    return 0; // dummy
+  }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(dom._value.type, BaseRectangularDom)
+   where isSubtype(dom._value.type, BaseRectangularDom) {
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
                               dom._value.idxType, dom._value.stridable);
+  }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(dom._value.type, BaseAssociativeDom)
+   where isSubtype(dom._value.type, BaseAssociativeDom) {
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+  }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
-   where isSubtype(_to_borrowed(dom._value.type), BaseSparseDom)
+   where isSubtype(dom._value.type, BaseSparseDom) {
     return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
+  }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
     compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, or BaseSparseDom", 0);
@@ -415,8 +445,19 @@ module ChapelArray {
   // Support for array types
   //
   pragma "runtime type init fn"
-  proc chpl__buildArrayRuntimeType(dom: domain, type eltType)
+  proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
     return dom.buildArray(eltType, true);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(dom: domain, type eltType) {
+    // TODO: add initElts argument
+    return dom.buildArray(eltType, true);
+  }
+
+  proc chpl__convertValueToRuntimeType(arr: []) type {
+    return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
+  }
+
 
   proc _getLiteralType(type t) type {
     if t != c_string then return t;
@@ -507,10 +548,6 @@ module ChapelArray {
 
     return A;
   }
-
-
-  proc chpl__convertValueToRuntimeType(arr: []) type
-    return chpl__buildArrayRuntimeType(arr.domain, arr.eltType);
 
   //
   // These routines increment and decrement the reference count
@@ -752,6 +789,22 @@ module ChapelArray {
     return isSparseDom(dom);
   }
 
+  proc chpl__parentDomainFromDomainRuntimeType(type domainType) {
+    pragma "ignore runtime type"
+    proc getParentDomType() type {
+      var dom : domainType;
+      return __primitive("static typeof", dom._value.parentDom.type);
+    }
+
+    pragma "no copy"
+    pragma "no auto destroy"
+    var parentDom = __primitive("get runtime type field", getParentDomType(),
+                                                          domainType,
+                                                          "dom");
+
+    return _getDomain(parentDom._value);
+  }
+
   proc chpl__distributed(d: _distribution, type domainType) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
@@ -761,17 +814,7 @@ module ChapelArray {
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
                                           dom._value.stridable);
     } else if chpl__isSparseDomType(domainType) {
-      proc getParentDomType() type {
-        var dom : domainType;
-        return __primitive("static typeof", dom._value.parentDom.type);
-      }
-
-      pragma "no copy"
-      pragma "no auto destroy"
-      var parentDom = __primitive("get runtime type field", getParentDomType(),
-                                                            domainType,
-                                                            "dom");
-
+      const ref parentDom = chpl__parentDomainFromDomainRuntimeType(domainType);
       return chpl__buildSparseDomainRuntimeType(d, parentDom);
     } else {
       var dom: domainType;
