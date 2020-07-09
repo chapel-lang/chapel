@@ -198,7 +198,8 @@ static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
 static void replaceValuesWithRuntimeTypes();
 static void replaceReturnedValuesWithRuntimeTypes();
-static void insertRuntimeInitTemps();
+static void replaceRuntimeTypeVariableTypes();
+static void replaceRuntimeTypePrims();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
@@ -9512,7 +9513,8 @@ static void handleRuntimeTypes()
   buildRuntimeTypeInitFns();
   replaceValuesWithRuntimeTypes();
   replaceReturnedValuesWithRuntimeTypes();
-  insertRuntimeInitTemps();
+  replaceRuntimeTypeVariableTypes();
+  replaceRuntimeTypePrims();
 }
 
 
@@ -9903,21 +9905,19 @@ static void replaceRuntimeTypeGetField(CallExpr* call) {
   }
 }
 
-static void replaceRuntimeTypePrims(std::vector<BaseAST*>& asts) {
-  for_vector(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      FnSymbol* parent = isAlive(call) ? call->getFunction() : NULL;
+static void replaceRuntimeTypePrims(void) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    FnSymbol* parent = call->getFunction();
 
-      // Call must be in the tree and lie in a resolved function.
-      if (! parent || ! parent->isResolved()) {
-        continue;
-      }
+    // Call must be in the tree and lie in a resolved function.
+    if (! parent || ! parent->isResolved()) {
+      continue;
+    }
 
-      if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
-        replaceRuntimeTypeDefaultInit(call);
-      } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
-        replaceRuntimeTypeGetField(call);
-      }
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+      replaceRuntimeTypeDefaultInit(call);
+    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      replaceRuntimeTypeGetField(call);
     }
   }
 }
@@ -10696,42 +10696,24 @@ void stopGenerousResolutionForErrors() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertRuntimeInitTemps() {
-  std::vector<BaseAST*> asts;
-  collect_asts_postorder(rootModule, asts);
-
-  // Collect asts which are definitions of VarSymbols that are type variables
+static void replaceRuntimeTypeVariableTypes() {
+  // Visit asts which are definitions of VarSymbols that are type variables
   // and are flagged as runtime types.
-  for_vector(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (isVarSymbol(def->sym) &&
-          def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
-          def->sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+  for_alive_in_Vec(DefExpr, def, gDefExprs) {
+    if (isVarSymbol(def->sym) &&
+        def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+        def->sym->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
 
-        // Collapse these through the runtimeTypeMap ...
-        Type* rt = runtimeTypeMap.get(def->sym->type);
-        // This assert might fail for code that is no longer traversed
-        // after it is resolved, ex. in where-clauses.
-        INT_ASSERT(rt);
-        def->sym->type = rt;
+      // Collapse these through the runtimeTypeMap ...
+      Type* rt = runtimeTypeMap.get(def->sym->type);
+      // This assert might fail for code that is no longer traversed
+      // after it is resolved, ex. in where-clauses.
+      INT_ASSERT(rt);
+      def->sym->type = rt;
 
-        // ... and remove the type variable flag
-        // (Make these declarations look like normal vars.)
-        def->sym->removeFlag(FLAG_TYPE_VARIABLE);
-      }
-    }
-  }
-
-  replaceRuntimeTypePrims(asts);
-
-  for_vector(BaseAST, ast1, asts) {
-    if (SymExpr* se = toSymExpr(ast1)) {
-
-      // remove dead type expressions
-      if (se->getStmtExpr() == se)
-        if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
-          se->remove();
-
+      // ... and remove the type variable flag
+      // (Make these declarations look like normal vars.)
+      def->sym->removeFlag(FLAG_TYPE_VARIABLE);
     }
   }
 }
