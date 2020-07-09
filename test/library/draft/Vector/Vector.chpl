@@ -1099,11 +1099,6 @@ module Vector {
 
     pragma "no doc"
     iter these(param tag, followThis) ref where tag == iterKind.follower {
-
-      //
-      // TODO: A faster scheme would access the _ddata directly to avoid
-      // the penalty of logarithmic indexing over and over again.
-      //
       for i in followThis(0) do
         yield this[i];
     }
