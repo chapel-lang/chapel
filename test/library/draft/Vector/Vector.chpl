@@ -722,6 +722,7 @@ module Vector {
 
         if (removed) {
           _size = _size - removed;
+          _maybeDecreaseCapacity();
         }
 
         _leave();
