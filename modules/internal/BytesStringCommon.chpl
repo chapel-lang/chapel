@@ -117,6 +117,7 @@ module BytesStringCommon {
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
+          bufferFree(newBuff);
           throw new owned DecodeError();
         }
         else {
