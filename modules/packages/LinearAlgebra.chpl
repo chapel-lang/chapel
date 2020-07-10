@@ -769,10 +769,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   private use RangeChunk;
 
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
-  if Adom.low == (0,0) && Bdom.low == (0,0) && 
-                          (if Adom.stridable && Bdom.stridable
-                           then Adom.stride == 1 && Bdom.stride == 1 
-                           else false)
+  if hasDefaultIndices(Adom, Bdom)
   {
     _matmatMultHelper(A, B, C);
   } else {
@@ -832,6 +829,14 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
       }
     }
   }
+}
+
+pragma "no doc"
+inline proc hasDefaultIndices(Adom : domain(2), Bdom : domain(2)) {
+  return Adom.low == (0,0) && Bdom.low == (0,0) && 
+                          (if Adom.stridable && Bdom.stridable
+                           then Adom.stride == 1 && Bdom.stride == 1 
+                           else false);
 }
 
 /*
