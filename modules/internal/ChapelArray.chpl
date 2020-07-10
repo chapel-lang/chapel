@@ -790,18 +790,12 @@ module ChapelArray {
     return isSparseDom(dom);
   }
 
+  pragma "return not owned"
   proc chpl__parentDomainFromDomainRuntimeType(type domainType) {
-    pragma "ignore runtime type"
-    proc getParentDomType() type {
-      var dom : domainType;
-      return __primitive("static typeof", dom._value.parentDom.type);
-    }
-
     pragma "no copy"
     pragma "no auto destroy"
-    var parentDom = __primitive("get runtime type field", /*getParentDomType(),*/
-                                                          domainType,
-                                                          "parentDom");
+    var parentDom = __primitive("get runtime type field",
+                                domainType, "parentDom");
 
     return _getDomain(parentDom._value);
   }
@@ -825,60 +819,28 @@ module ChapelArray {
 
   pragma "return not owned"
   proc chpl__distributionFromDomainRuntimeType(type rtt) {
-    pragma "ignore runtime type"
-    proc getDomDistType() type {
-      pragma "unsafe"
-      var arr : rtt;
-      return __primitive("static typeof", arr.dist);
-    }
-
     pragma "no copy"
     pragma "no auto destroy"
-    var dist = __primitive("get runtime type field",
-                           /*getDomDistType(),*/ rtt, "dist");
+    var dist = __primitive("get runtime type field", rtt, "dist");
 
     return _getDistribution(dist._value);
   }
 
   pragma "return not owned"
   proc chpl__domainFromArrayRuntimeType(type rtt) {
-    pragma "ignore runtime type"
-    proc getArrDomType() type {
-      pragma "unsafe"
-      var arr : rtt;
-      return __primitive("static typeof", arr.domain);
-    }
-
     pragma "no copy"
     pragma "no auto destroy"
-    var dom = __primitive("get runtime type field",
-                          /*getArrDomType(),*/ rtt, "dom");
+    var dom = __primitive("get runtime type field", rtt, "dom");
 
     return _getDomain(dom._value);
   }
 
   proc chpl__eltTypeFromArrayRuntimeType(type rtt) type {
-    pragma "ignore runtime type"
-    proc getArrEltType() type {
-      pragma "unsafe"
-      var arr : rtt;
-      return __primitive("static typeof", arr.eltType);
-    }
+    pragma "no copy"
+    pragma "no auto destroy"
+    type eltType = __primitive("get runtime type field", rtt, "eltType");
 
-    // does the element type have a runtime component?
-    if isSubtype(getArrEltType(), _array) ||
-       isSubtype(getArrEltType(), _domain) {
-
-      pragma "no copy"
-      pragma "no auto destroy"
-      type eltType = __primitive("get runtime type field",
-                                 /*getArrEltType(),*/ rtt, "eltType"/*, true*/);
-
-      return eltType;
-
-    } else {
-      return getArrEltType();
-    }
+    return eltType;
   }
 
   pragma "ignore runtime type"
