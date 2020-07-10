@@ -771,7 +771,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
   if Adom.low == (0,0) && Bdom.low == (0,0) && 
                           (if Adom.stridable && Bdom.stridable
-                           then Adom.stride == 1 == Bdom.stride 
+                           then Adom.stride == 1 && Bdom.stride == 1 
                            else false)
   {
     _matmatMultHelper(A, B, C);
