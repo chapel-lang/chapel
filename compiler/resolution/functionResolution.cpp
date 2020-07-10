@@ -196,8 +196,8 @@ static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
-static void replaceValuesWithRuntimeTypes();
-static void replaceReturnedValuesWithRuntimeTypes();
+static void replaceTypeFormalsWithRuntimeTypes();
+static void replaceReturnedTypesWithRuntimeTypes();
 static void replaceRuntimeTypeVariableTypes();
 static void replaceRuntimeTypePrims();
 static FnSymbol* findGenMainFn();
@@ -9511,8 +9511,8 @@ static void handleRuntimeTypes()
   // record R { var A: [1..1][1..1] real; }
   populateRuntimeTypeMap();
   buildRuntimeTypeInitFns();
-  replaceValuesWithRuntimeTypes();
-  replaceReturnedValuesWithRuntimeTypes();
+  replaceTypeFormalsWithRuntimeTypes();
+  replaceReturnedTypesWithRuntimeTypes();
   replaceRuntimeTypeVariableTypes();
   replaceRuntimeTypePrims();
 }
@@ -9829,7 +9829,7 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   fn->replaceBodyStmtsWithStmts(block);
 }
 
-static void replaceValuesWithRuntimeTypes()
+static void replaceTypeFormalsWithRuntimeTypes()
 {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
@@ -9847,7 +9847,7 @@ static void replaceValuesWithRuntimeTypes()
   }
 }
 
-static void replaceReturnedValuesWithRuntimeTypes()
+static void replaceReturnedTypesWithRuntimeTypes()
 {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->retTag == RET_TYPE) {
