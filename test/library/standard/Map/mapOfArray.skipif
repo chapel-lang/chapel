@@ -1,7 +1,3 @@
-#!/bin/bash
-
-if [[ "$CHPL_COMM" == "gasnet" ]]; then
-  echo True
-else
-  echo False
-fi
+# This .future is sometimes passing for multilocale/no-local
+CHPL_COMM!=none
+COMPOPTS <= --no-local
