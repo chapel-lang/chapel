@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _AUTO_LOCAL_ACCESS_H_
-#define _AUTO_LOCAL_ACCESS_H_
+#ifndef _PRE_NORMALIZE_OPTIMIZATIONS_H_
+#define _PRE_NORMALIZE_OPTIMIZATIONS_H_
 
 #include "CallExpr.h"
 #include "symbol.h"

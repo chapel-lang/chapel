@@ -19,9 +19,9 @@
  */
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "ForallStmt.h"
 #include "LoopStmt.h"
+#include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "view.h"
