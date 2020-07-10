@@ -631,6 +631,7 @@ private:
 };
 
 // Forward-flow constness for `FLAG_REF_TO_CONST_WHEN_CONST_THIS`.
+// TODO: Does this case hit iterators?
 void CullRefCtx::propagateConstnessToMethodReceivers(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
 
@@ -641,6 +642,8 @@ void CullRefCtx::propagateConstnessToMethodReceivers(void) {
       if (CallExpr* call = toCallExpr(se->parentExpr)) {
         if (fn != call->resolvedFunction())
           continue;
+
+        DEBUG_SYMBOL(call);
 
         SymExpr* thisActual   = toSymExpr(call->get(1));
         Symbol*  actualSymbol = thisActual->symbol();
@@ -1018,13 +1021,16 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
         // Don't worry about tracking the destination if it's constant or
         // marked with the flag FLAG_REF_TO_CONST.
         if (lhsSymbol->hasFlag(FLAG_REF_TO_CONST) ||
-            lhsSymbol->isConstant()) {
+            lhsSymbol->isConstant() ||
+            QualifiedType::qualifierIsConst(lhsSymbol->qual)) {
           return false;
         } else {
           GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
           collectedSymbols.push_back(srcNode);
           addDependency(revisitGraph, srcNode, node);
           revisit = true;
+
+          DEBUG_SYMBOL(call);
 
           return true;
         }
@@ -1040,6 +1046,7 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
 // function.
 bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
                                           GraphNode node, bool &revisit) {
+  Symbol* sym = node.variable;
 
   if (FnSymbol* calledFn = call->resolvedFunction()) {
     if (calledFn->hasFlag(FLAG_BUILD_TUPLE))
@@ -1051,6 +1058,25 @@ bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
     if (formal->intent != INTENT_REF_MAYBE_CONST)
       return false;
 
+    // @dlongnecke-cray:
+    //
+    // If formal is receiver marked INTENT_REF_MAYBE_CONST (e.g. array or
+    // tuple containing array), and the function to be called is marked
+    // FLAG_REF_TO_CONST_WHEN_CONST_THIS, go ahead and leave if the actual
+    // is constant. Otherwise we can create a situation where the actual
+    // receiver depends on the formal when being marked const. If the
+    // function returns a "non-const" access of the formal (e.g. via a
+    // this call), the compiler views that as an escaping reference and
+    // will transitively mark the actual receiver as non-const (when we
+    // know that it _is_ const). Things get even weirder when the function
+    // being called is an iterator.
+    if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+        formal->hasFlag(FLAG_ARG_THIS)) {
+      if (se->qualType().isConst()) {
+        return false;
+      }
+    }
+
     // No need to add formal to `collectedSymbols` because we already did
     // so in `collectRefMaybeConstArgs`.
 
@@ -1060,6 +1086,9 @@ bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
     GraphNode srcNode = makeNode(formal, node.fieldIndex);
     addDependency(revisitGraph, srcNode, node);
     revisit = true;
+
+    DEBUG_SYMBOL(formal);
+    DEBUG_SYMBOL(sym);
 
     return true;
   }
@@ -1453,23 +1482,34 @@ void CullRefCtx::lowerRemainingContextCallExprs(void) {
 }
 
 // At this point tuple formals may still have the INTENT_REF_MAYBE_CONST
-// intent. Go ahead and lower those now.
+// intent. Go ahead and lower those now. TODO: Should we bother checking
+// non-tuple actuals at some point, just to be sure?
 void CullRefCtx::markRefMaybeConstTupleFormals(void) {
   forv_Vec(ArgSymbol, formal, gArgSymbols) {
+
+    // Ok, already set...
+    if (!(formal->intent == INTENT_REF_MAYBE_CONST))
+      continue;
+
+    FnSymbol* fn = toFnSymbol(formal->defPoint->parentSymbol);
+    INT_ASSERT(fn != NULL);
+
+    // Receivers of functions marked FLAG_REF_TO_CONST_WHEN_CONST_THIS
+    // cannot be lowered because their constness may vary by actual.
+    if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+        formal->hasFlag(FLAG_ARG_THIS))
+      continue;
+
     AggregateType* at = toAggregateType(formal->getValType());
 
     // Not a tuple, so skip it.
     if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
       continue;
 
-    // Ok, already set...
-    if (!(formal->intent == INTENT_REF_MAYBE_CONST))
-      continue;
-
     // All tuples should be passed by reference at this point.
     INT_ASSERT(formal->isRef());
 
-    // If field qualifiers were never created, set as ref and move on.
+    // If field qualifiers were never created, set as ref and continue.
     if (formal->fieldQualifiers == NULL) {
       formal->intent = INTENT_REF;
       continue;

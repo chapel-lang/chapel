@@ -27,6 +27,7 @@
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "symbol.h"
+#include "view.h"
 
 /* This file implements late (after cull over references)
    const checking.
@@ -322,7 +323,6 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         }
 
         // check for a build_tuple call containing e.g. Owned
-
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) &&
             !calledFn->hasFlag(FLAG_ALLOW_REF)) {
           if (actual->qualType().isConst() &&
@@ -347,8 +347,8 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
             continue;
         } 
 
-        // TODO: We really ought to incorporate the tuple error messages
-        // and this block together in some fashion.
+        // TODO: Really ought to incorporate tuple error messages into this
+        // code, or refactor error printing in some fashion.
         if (!skip && error) {
           const char* calledName = calledFn->name;
 
