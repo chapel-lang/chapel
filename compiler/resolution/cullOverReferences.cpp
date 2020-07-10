@@ -619,7 +619,6 @@ public:
   void propagateNonConstnessThroughRevisitGraph(void);
   void markRemainingSymsWithUnknownConstnessConst(void);
   void lowerRemainingContextCallExprs(void);
-  void markRefMaybeConstTupleFormals(void);
   void performLateConstCheck(void);
 
 private:
@@ -631,7 +630,6 @@ private:
 };
 
 // Forward-flow constness for `FLAG_REF_TO_CONST_WHEN_CONST_THIS`.
-// TODO: Does this case hit iterators?
 void CullRefCtx::propagateConstnessToMethodReceivers(void) {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
 
@@ -1481,61 +1479,6 @@ void CullRefCtx::lowerRemainingContextCallExprs(void) {
   }
 }
 
-// At this point tuple formals may still have the INTENT_REF_MAYBE_CONST
-// intent. Go ahead and lower those now. TODO: Should we bother checking
-// non-tuple actuals at some point, just to be sure?
-void CullRefCtx::markRefMaybeConstTupleFormals(void) {
-  forv_Vec(ArgSymbol, formal, gArgSymbols) {
-
-    // Ok, already set...
-    if (!(formal->intent == INTENT_REF_MAYBE_CONST))
-      continue;
-
-    FnSymbol* fn = toFnSymbol(formal->defPoint->parentSymbol);
-    INT_ASSERT(fn != NULL);
-
-    // Receivers of functions marked FLAG_REF_TO_CONST_WHEN_CONST_THIS
-    // cannot be lowered because their constness may vary by actual.
-    if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
-        formal->hasFlag(FLAG_ARG_THIS))
-      continue;
-
-    AggregateType* at = toAggregateType(formal->getValType());
-
-    // Not a tuple, so skip it.
-    if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
-      continue;
-
-    // All tuples should be passed by reference at this point.
-    INT_ASSERT(formal->isRef());
-
-    // If field qualifiers were never created, set as ref and continue.
-    if (formal->fieldQualifiers == NULL) {
-      formal->intent = INTENT_REF;
-      continue;
-    }
-
-    // If the total qualifier is not ref, mark as const ref and continue.
-    if (formal->fieldQualifiers[0] != QUAL_REF) {
-      formal->intent = INTENT_CONST_REF;
-      continue;
-    }
-
-    // Can we mark this formal const? Depends on the fields...
-    formal->intent = INTENT_CONST_REF;
-
-    int fieldIdx = 0;
-    for_fields(field, at) {
-      fieldIdx++;
-      Qualifier q = formal->fieldQualifiers[fieldIdx];
-      if (q != QUAL_UNKNOWN && !QualifiedType::qualifierIsConst(q)) {
-        formal->intent = INTENT_REF;
-        break;
-      }
-    }
-  }
-}
-
 // We already changed INTENT_REF_MAYBE_CONST in markConst / markNotConst so
 // there is nothing else to do here for ArgSymbols.
 void CullRefCtx::performLateConstCheck(void) {
@@ -1626,9 +1569,6 @@ void cullOverReferences() {
 
   // We have enough information to lower all ContextCallExprs now.
   ctx.lowerRemainingContextCallExprs();
-
-  // Go ahead and lower INTENT_REF_MAYBE_CONST tuple formals now.
-  ctx.markRefMaybeConstTupleFormals();
 
   // Pass off to `resolution/lateConstCheck`.
   ctx.performLateConstCheck();
