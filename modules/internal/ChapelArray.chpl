@@ -397,10 +397,6 @@ module ChapelArray {
     return new _domain(dist, parentDom);
   }
 
-  proc chpl__domInstType(type rtt: domain) {
-    return __primitive("static field type", rtt, "_instance");
-  }
-
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, param rank: int,
                                        type idxType = int,
                                        param stridable: bool) {
@@ -848,9 +844,7 @@ module ChapelArray {
     // this function is compile-time only and should not be run
     __primitive("chpl_warning",
                 "chpl__instanceTypeFromArrayRuntimeType should not be run");
-    pragma "unsafe"
-    var arr: rtt;
-    return __primitive("static typeof", arr._instance);
+    return __primitive("static field type", rtt, "_instance");
   }
 
   //
@@ -4233,9 +4227,8 @@ module ChapelArray {
   }
 
   private proc desyncEltType(type t:_array) type {
-    pragma "unsafe"
-    var tmp: t;
-    return _desync(tmp.eltType);
+    type eltType = chpl__eltTypeFromArrayRuntimeType(t);
+    return _desync(eltType);
   }
 
   proc =(ref a: [], b: _desync(a.eltType)) {
