@@ -379,40 +379,41 @@ module ChapelArray {
   // Support for domain types
   //
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(d: _distribution, param rank: int,
+  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
                                     type idxType = int,
                                     param stridable: bool = false) {
-    return new _domain(d, rank, idxType, stridable);
+    return new _domain(dist, rank, idxType, stridable);
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(d: _distribution, type idxType,
+  proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
                                     param parSafe: bool = true) {
-    return new _domain(d, idxType, parSafe);
+    return new _domain(dist, idxType, parSafe);
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(d: _distribution, parentDom: domain) {
-    return new _domain(d, parentDom);
+  proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
+                                          parentDom: domain) {
+    return new _domain(dist, parentDom);
   }
 
   proc chpl__domInstType(type rtt: domain) {
     return __primitive("static field type", rtt, "_instance");
   }
 
-  proc chpl__convertRuntimeTypeToValue(d: _distribution, param rank: int,
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution, param rank: int,
                                        type idxType = int,
                                        param stridable: bool) {
-    return new _domain(d, rank, idxType, stridable);
+    return new _domain(dist, rank, idxType, stridable);
   }
 
-  proc chpl__convertRuntimeTypeToValue(d: _distribution, type idxType,
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
                                        param parSafe: bool) {
-    return new _domain(d, idxType, parSafe);
+    return new _domain(dist, idxType, parSafe);
   }
 
-  proc chpl__convertRuntimeTypeToValue(d: _distribution, parentDom: domain) {
-    return new _domain(d, parentDom);
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution, parentDom: domain) {
+    return new _domain(dist, parentDom);
   }
 
   proc chpl__convertRuntimeTypeToValue(type t: domain) {
@@ -834,7 +835,7 @@ module ChapelArray {
     pragma "no copy"
     pragma "no auto destroy"
     var dist = __primitive("get runtime type field",
-                           /*getDomDistType(),*/ rtt, "d");
+                           /*getDomDistType(),*/ rtt, "dist");
 
     return _getDistribution(dist._value);
   }
