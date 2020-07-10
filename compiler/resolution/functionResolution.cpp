@@ -199,7 +199,6 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
 static void replaceTypeFormalsWithRuntimeTypes();
 static void replaceReturnedTypesWithRuntimeTypes();
 static void replaceRuntimeTypeVariableTypes();
-static void replaceRuntimeTypePrims();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
                            int indent = 0,
@@ -9514,7 +9513,6 @@ static void handleRuntimeTypes()
   replaceTypeFormalsWithRuntimeTypes();
   replaceReturnedTypesWithRuntimeTypes();
   replaceRuntimeTypeVariableTypes();
-  replaceRuntimeTypePrims();
 }
 
 
@@ -9729,7 +9727,7 @@ void adjustRuntimeTypeInitFn(FnSymbol* fn) {
   runtimeTypeMap.put(fn->retType, runtimeType);
 }
 
-static Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
+Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
   INT_ASSERT(call->numActuals()==2);
 
   SymExpr* rt = toSymExpr(call->get(1));
@@ -9916,31 +9914,6 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
   resolveCallAndCallee(runtimeTypeToValueCall);
-}
-
-static void replaceRuntimeTypeGetField(CallExpr* call) {
-  SymExpr* rt = toSymExpr(call->get(1));
-  if (rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-    Symbol* field = getPrimGetRuntimeTypeField_Field(call);
-    INT_ASSERT(field);
-    SET_LINENO(call);
-    call->replace(new CallExpr(PRIM_GET_MEMBER_VALUE, rt->remove(), field));
-  }
-}
-
-static void replaceRuntimeTypePrims(void) {
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    FnSymbol* parent = call->getFunction();
-
-    // Call must be in the tree and lie in a resolved function.
-    if (! parent || ! parent->isResolved()) {
-      continue;
-    }
-
-    if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
-      replaceRuntimeTypeGetField(call);
-    }
-  }
 }
 
 /************************************* | **************************************
