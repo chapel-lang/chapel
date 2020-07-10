@@ -392,8 +392,8 @@ module ChapelArray {
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(d: _distribution, dom: domain) {
-    return new _domain(d, dom);
+  proc chpl__buildSparseDomainRuntimeType(d: _distribution, parentDom: domain) {
+    return new _domain(d, parentDom);
   }
 
   proc chpl__domInstType(type rtt: domain) {
@@ -411,8 +411,8 @@ module ChapelArray {
     return new _domain(d, idxType, parSafe);
   }
 
-  proc chpl__convertRuntimeTypeToValue(d: _distribution, dom: domain) {
-    return new _domain(d, dom);
+  proc chpl__convertRuntimeTypeToValue(d: _distribution, parentDom: domain) {
+    return new _domain(d, parentDom);
   }
 
   proc chpl__convertRuntimeTypeToValue(type t: domain) {
@@ -800,7 +800,7 @@ module ChapelArray {
     pragma "no auto destroy"
     var parentDom = __primitive("get runtime type field", /*getParentDomType(),*/
                                                           domainType,
-                                                          "dom");
+                                                          "parentDom");
 
     return _getDomain(parentDom._value);
   }
