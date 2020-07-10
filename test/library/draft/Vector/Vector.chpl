@@ -342,7 +342,7 @@ module Vector {
     }
 
     /*
-      The capacity of this vector.
+      The capacity of this vector, which represents how much space is allocated.
     */
     inline proc const capacity {
       var result = 0;
