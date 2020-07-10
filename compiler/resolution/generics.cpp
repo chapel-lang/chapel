@@ -379,15 +379,10 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
     determineAllSubs(fn, root, subs, allSubs);
 
     // use cached instantiation if possible
-    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
-      if (cached != (FnSymbol*) gVoid) {
-        checkInfiniteWhereInstantiation(cached);
-
-        return cached;
-      } else {
-        INT_FATAL("cache returned gVoid");
-        return NULL;
-      }
+    FnSymbol*& cached1 = lookupCache(genericsCache, root, &allSubs);
+    if (cached1) {
+      checkInfiniteWhereInstantiation(cached1);
+      return cached1;
 
     } else {
       SET_LINENO(fn);
@@ -403,36 +398,32 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       newFn = instantiateFunction(fn, root, allSubs, call, subs, map,
                                   hasGenericDefaultExpr,
                                   allSubsBeforeDefaultExprs);
+      // store it in the cache
+      cached1 = newFn;
+
       if (hasGenericDefaultExpr) {
         // If we computed some substitutions based upon generic
         // arguments with defaults, also check the cache entry
         // with the complete list of substitutions.
-        if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
-          if (cached != (FnSymbol*) gVoid) {
-            checkInfiniteWhereInstantiation(cached);
+        FnSymbol*& cached2 = lookupCache(genericsCache, root, &allSubs);
+        if (cached2) {
+            checkInfiniteWhereInstantiation(cached2);
 
             // If we have a cached function here, also store it in the
             // cache for the case in which the arguments with defaults
             // were not provided.
-            addCache(genericsCache, root, cached, &allSubsBeforeDefaultExprs);
+            cached1 = cached2;
 
             // Remove the new function
             newFn->defPoint->remove();
 
-            return cached;
-          } else {
-            INT_FATAL("cache returned gVoid");
-            return NULL;
-          }
+            return cached2;
         }
-      }
 
-      // We could not find any cached version. So, add the just-created
-      // instantiation to the cache.
-      addCache(genericsCache, root, newFn, &allSubs);
-      // And the version without defaultExprs
-      if (hasGenericDefaultExpr)
-        addCache(genericsCache, root, newFn, &allSubsBeforeDefaultExprs);
+        // NOTE in this case the second call to checkCacheLoc() inserted a new
+        // element, so the cached1 element may have been relocated (right?).
+        cached2 = newFn;
+      }
 
       // Apply fixups to the function
       if (fixupTupleFunctions(fn, newFn, call) == false) {

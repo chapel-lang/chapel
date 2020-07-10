@@ -1545,6 +1545,7 @@ int main(int argc, char* argv[]) {
 
     initFlags();
     initAstrConsts();
+    initTypeHelperNames();
     initRootModule();
     initPrimitive();
     initPrimitiveTypes();

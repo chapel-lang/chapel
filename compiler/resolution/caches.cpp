@@ -19,181 +19,63 @@
  */
 
 #include "caches.h"
-
-#include "astutil.h"
 #include "stmt.h"
-#include "stringutil.h"
-
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
+#include <algorithm>
 
 SymbolMapCache genericsCache;
 SymbolMapCache promotionsCache;
 
-static bool isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2);
+typedef std::pair<int,int> IntPair;
+typedef std::vector<IntPair> PairVec;
 
-SymbolMapCacheEntry::SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap) :
-  fn(ifn), map(*imap) { }
-
-
-void
-addCache(SymbolMapCache& cache,
-         FnSymbol*       oldFn,
-         FnSymbol*       fn,
-         SymbolMap*      map) {
-  Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn);
-  SymbolMapCacheEntry*       entry   = new SymbolMapCacheEntry(fn, map);
-
-  if (entries) {
-    entries->add(entry);
-
-  } else {
-    entries = new Vec<SymbolMapCacheEntry*>();
-    entries->add(entry);
-    cache.put(oldFn, entries);
-  }
+static bool PairCompare(IntPair p1, IntPair p2) {
+  return p1.first < p2.first;
 }
 
+FnSymbol*& lookupCache(SymbolMapCache& cache, FnSymbol* fn, SymbolMap* map) {
+/*
+First, build the key, which is the pair (fn, map). It is represented
+as a sequence of node IDs for the following nodes
 
-FnSymbol*
-checkCache(SymbolMapCache& cache, FnSymbol* oldFn, SymbolMap* map) {
-  if (Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn)) {
-    forv_Vec(SymbolMapCacheEntry, entry, *entries) {
-      if (isCacheEntryMatch(map, &entry->map))
-        return entry->fn;
+key[0] fn
+key[1] the 1st key in the map
+key[2] the 1st value in the map
+...
+key[2*n-1] the last key in the map
+key[2*n]   the last value in the map
+
+The (key,value) pairs are ordered in the order of key's ID.
+*/
+  int mapN = map->n; // this count includes null slots in 'map'
+  int mapC = 0;      // this will count the filled slots
+
+  // Convert 'map to a vector of (key id, value id) pairs, for sorting.
+  PairVec toSort(mapN);
+  // iterate over all (key, value) pairs
+  for (int i = 0; i < mapN; i++) {
+    SymbolMapElem& elem = map->v[i];
+    if (elem.key) {
+      toSort[mapC].first = elem.key->id;
+      toSort[mapC].second = elem.value->id;
+      mapC++;
     }
   }
-  return NULL;
+  if (mapC > 1)
+    std::sort(toSort.begin(), toSort.begin() + mapC, PairCompare);
+
+  // Copy the sorted vector into the key.
+  SymbolMapCacheKey cacheKey(1 + 2*mapC);
+  cacheKey[0] = fn->id;
+  for (int i = 0; i < mapC; i++)
+    cacheKey[2*i + 1] = toSort[i].first,
+    cacheKey[2*i + 2] = toSort[i].second;
+
+  // Look up the key.
+  return cache[cacheKey];
 }
-
-
-void
-replaceCache(SymbolMapCache& cache,
-             FnSymbol*       oldFn,
-             FnSymbol*       fn,
-             SymbolMap*      map) {
-  if (Vec<SymbolMapCacheEntry*>* entries = cache.get(oldFn)) {
-    forv_Vec(SymbolMapCacheEntry, entry, *entries) {
-      if (isCacheEntryMatch(map, &entry->map)) {
-        entry->fn = fn;
-        return;
-      }
-    }
-  }
-
-  INT_FATAL(oldFn, "unable to replace cache entry; entry does not exist");
-}
-
 
 void
 freeCache(SymbolMapCache& cache) {
-  form_Map(SymbolMapCacheElem, elem, cache) {
-    forv_Vec(SymbolMapCacheEntry, entry, *elem->value) {
-      delete entry;
-    }
-    delete elem->value;
-  }
+  // todo: do we want to keep our caches after resolution?
   cache.clear();
 }
-
-static bool isCacheEntryMatch(SymbolMap* s1, SymbolMap* s2) {
-  form_Map(SymbolMapElem, e, *s1) {
-    if (s2->get(e->key) != e->value) {
-      return false;
-    }
-  }
-
-  form_Map(SymbolMapElem, e, *s2) {
-    if (s1->get(e->key) != e->value) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool isCacheEntryMatch(Vec<Symbol*>* vec1, Vec<Symbol*>* vec2);
-
-SymbolVecCache defaultsCache;
-
-SymbolVecCacheEntry::SymbolVecCacheEntry(FnSymbol* ifn, Vec<Symbol*>* ivec) :
-  fn(ifn), vec(*ivec) { }
-
-
-void
-addCache(SymbolVecCache& cache,
-         FnSymbol*       oldFn,
-         FnSymbol*       fn,
-         Vec<Symbol*>* vec) {
-  Vec<SymbolVecCacheEntry*>* entries = cache.get(oldFn);
-  SymbolVecCacheEntry*       entry   = new SymbolVecCacheEntry(fn, vec);
-
-  if (entries) {
-    entries->add(entry);
-
-  } else {
-    entries = new Vec<SymbolVecCacheEntry*>();
-
-    entries->add(entry);
-
-    cache.put(oldFn, entries);
-  }
-}
-
-FnSymbol*
-checkCache(SymbolVecCache& cache, FnSymbol* fn, Vec<Symbol*>* vec) {
-  if (Vec<SymbolVecCacheEntry*>* entries = cache.get(fn)) {
-    forv_Vec(SymbolVecCacheEntry, entry, *entries) {
-      if (isCacheEntryMatch(vec, &entry->vec)) {
-        return entry->fn;
-      }
-    }
-  }
-
-  return NULL;
-}
-
-
-void
-freeCache(SymbolVecCache& cache) {
-  form_Map(SymbolVecCacheElem, elem, cache) {
-    forv_Vec(SymbolVecCacheEntry, entry, *elem->value) {
-      delete entry;
-    }
-
-    delete elem->value;
-  }
-
-  cache.clear();
-}
-
-
-static bool isCacheEntryMatch(Vec<Symbol*>* vec1, Vec<Symbol*>* vec2) {
-  forv_Vec(Symbol, d, *vec1) {
-    if (!vec2->in(d)) {
-      return false;
-    }
-  }
-
-  forv_Vec(Symbol, d, *vec2) {
-    if (!vec1->in(d)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-

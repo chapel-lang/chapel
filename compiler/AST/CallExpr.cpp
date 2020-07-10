@@ -350,55 +350,6 @@ void CallExpr::setUnresolvedFunction(const char* name) {
   }
 }
 
-bool CallExpr::isResolved() const {
-  return (resolvedFunction() != NULL) ? true : false;
-}
-
-FnSymbol* CallExpr::resolvedFunction() const {
-  FnSymbol* retval = NULL;
-
-  // A PRIM-OP
-  if (primitive != NULL) {
-    INT_ASSERT(baseExpr  == NULL);
-
-  // A Chapel call
-  } else if (baseExpr != NULL) {
-    if (isUnresolvedSymExpr(baseExpr) == true) {
-
-    } else if (SymExpr* base = toSymExpr(baseExpr)) {
-      if (FnSymbol* fn = toFnSymbol(base->symbol())) {
-        retval = fn;
-
-      // Probably an array index
-      } else if (isArgSymbol(base->symbol())  == true ||
-                 isVarSymbol(base->symbol())  == true) {
-
-      // A type specifier
-      } else if (isTypeSymbol(base->symbol()) == true) {
-
-      } else {
-        INT_ASSERT(false);
-      }
-
-    } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
-      // Confirm that this is a partial call, but only if the call is not
-      // within a DefExpr (indicated by not having a stmt-expr)
-      if (subCall->getStmtExpr() != NULL) {
-        INT_ASSERT(subCall->partialTag == true);
-      }
-
-    } else {
-      INT_ASSERT(false);
-    }
-
-  // The CallExpr has been purged during resolve
-  } else {
-    INT_ASSERT(false);
-  }
-
-  return retval;
-}
-
 void CallExpr::setResolvedFunction(FnSymbol* fn) {
   // Currently a PRIM_OP
   if (primitive != NULL) {
@@ -435,16 +386,6 @@ FnSymbol* CallExpr::resolvedOrVirtualFunction() const {
 
      retval = toFnSymbol(arg1->symbol());
     }
-  }
-
-  return retval;
-}
-
-FnSymbol* CallExpr::theFnSymbol() const {
-  FnSymbol* retval = NULL;
-
-  if (SymExpr* base = toSymExpr(baseExpr)) {
-    retval = toFnSymbol(base->symbol());
   }
 
   return retval;

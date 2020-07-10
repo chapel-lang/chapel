@@ -2001,7 +2001,8 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
   PromotionInfo promotion(fn, info, actualIdxToFormal);
 
-  retval = checkCache(promotionsCache, promotion.fn, &promotion.subs);
+  FnSymbol*& cached = lookupCache(promotionsCache, promotion.fn, &promotion.subs);
+  retval = cached;
 
   if (retval == NULL) {
     SET_LINENO(info.call);
@@ -2013,7 +2014,7 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
 
     resolveSignature(retval);
 
-    addCache(promotionsCache, promotion.fn, promotion.wrapperFn, &promotion.subs);
+    cached = retval;  // store it in the cache
   }
 
   addSetIteratorShape(promotion, info.call);
