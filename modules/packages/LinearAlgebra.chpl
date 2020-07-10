@@ -769,10 +769,22 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   private use RangeChunk;
 
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
-  ref AMat = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
-  ref BMat = B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1));
-  ref CMat = C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1));
+  if Adom.low == Bdom.low && (if Adom.stridable && Bdom.stridable 
+                             then Adom.stride == Bdom.stride else false) 
+  {
+    _matmatMultHelper(A, B, C);
+  } else {
+    _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)), 
+                      B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)), 
+                      C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+  }
+  return C;
+}
 
+proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
+                       ref BMat : [?Bdom] eltType,
+                       ref CMat : [] eltType) 
+{
   // TODO - Add logic to calculate blockSize 
   // based to eltType and L1 cache size
   const blockSize = 32;
@@ -818,8 +830,6 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       }
     }
   }
-
-  return C;
 }
 
 /*
