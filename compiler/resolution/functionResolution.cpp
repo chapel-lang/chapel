@@ -9877,6 +9877,30 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
   }
 
   SymExpr* typeSe = toSymExpr(call->get(2));
+  INT_ASSERT(typeSe);
+  Symbol* typeSym = typeSe->symbol();
+
+  if (isTypeSymbol(typeSym)) {
+    // This is a work-around for tuple _defaultOf when applied
+    // to a tuple type with an element that is an array type.
+
+    // This is resolved in some tests and not used, so
+    // the error here is runtime, for now.
+
+    Expr* stmt = call->getStmtExpr();
+
+    const char* msg = "default initialization of tuple containing "
+                      "array or domain type not yet implemented";
+    stmt->insertBefore(new CallExpr(PRIM_RT_ERROR, new_CStringSymbol(msg)));
+
+    // Create a local type variable that will be uninitialized
+    // so compilation can continue.
+    VarSymbol* tmp = newTemp(typeSym->type);
+    tmp->addFlag(FLAG_TYPE_VARIABLE);
+    stmt->insertBefore(new DefExpr(tmp));
+
+    typeSym = tmp;
+  }
 
   // Get the runtime type
   AggregateType* runtimeType = toAggregateType(runtimeTypeMap.get(at));
@@ -9901,7 +9925,7 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
       call->getStmtExpr()->insertBefore(
           new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_RUNTIME_TYPE_FIELD,
-                                                    typeSe->symbol(),
+                                                    typeSym,
                                                     field)));
       if (field->hasFlag(FLAG_TYPE_VARIABLE))
         tmp->addFlag(FLAG_TYPE_VARIABLE);
