@@ -4124,6 +4124,26 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   USR_STOP();
 }
 
+static bool isMethodPreResolve(CallExpr* call) {
+  bool result = false;
+
+  if (call->numActuals() >= 2)
+    if (SymExpr* se = toSymExpr(call->get(1)))
+      result = se->symbol() == gMethodToken;
+
+  return result;
+}
+
+static bool isInitEqualsPreResolve(CallExpr* call) {
+  bool result = false;
+
+  if (isMethodPreResolve(call))
+    if (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals))
+      result = true;
+
+  return result;
+}
+
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
@@ -4146,6 +4166,26 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
                    "unresolved enumerated type symbol or call '%s'",
                    str);
 
+  // TODO:
+  //    - Call is a method on a record.
+  //    - Call is to init=.
+  //    - The init= has one formal (don't know if this is invariant).
+  //
+  } else if (isInitEqualsPreResolve(call)) {
+    INT_ASSERT(info.actuals.v[0]->getValType() == dtMethodToken);
+    INT_ASSERT(info.actuals.n == 3);
+
+    Type* receiverType = info.actuals.v[1]->getValType();
+    Type* exprType = info.actuals.v[2]->getValType();
+    
+    USR_FATAL_CONT(call, "could not find initializer for type '%s' "
+                         "accepting expression of type '%s'",
+                         receiverType->symbol->name,
+                         exprType->symbol->name);
+    USR_PRINT("you can define an '%s' method for %s that accepts %s",
+              astrInitEquals,
+              receiverType->symbol->name,
+              exprType->symbol->name);
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
@@ -4226,20 +4266,15 @@ static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates);
 
-
 void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
-  bool isMethod = false;
-  if (call->numActuals() >= 2) {
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      isMethod = se->symbol() == gMethodToken;
-    }
-  }
+  bool isMethod = isMethodPreResolve(call);
 
-  bool isInit   = isMethod && (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals));
+  bool isInit   = isMethod && (call->isNamedAstr(astrInit) ||
+                  call->isNamedAstr(astrInitEquals));
   bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
   bool isDeinit = isMethod && call->isNamedAstr(astrDeinit);
 
