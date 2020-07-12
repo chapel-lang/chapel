@@ -697,6 +697,7 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
+                                       initElts=false,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
