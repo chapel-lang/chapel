@@ -1109,7 +1109,7 @@ override proc DimensionalArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc DimensionalArr.dsiDestroyArr(param deinitElts:bool) {
+override proc DimensionalArr.dsiDestroyArr(deinitElts:bool) {
   coforall desc in localAdescs {
     on desc {
       if deinitElts then

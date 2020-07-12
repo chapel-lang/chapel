@@ -798,7 +798,7 @@ module DefaultAssociative {
       //  iteration).
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts {
         if _elementNeedsDeinit() {
           if _deinitElementsIsParallel(eltType) {

@@ -1141,7 +1141,7 @@ override proc StencilArr.dsiElementInitializationComplete() {
 }
 
 
-override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
+override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       var arr = locArr(localeIdx);

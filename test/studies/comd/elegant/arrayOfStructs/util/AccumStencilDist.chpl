@@ -892,7 +892,7 @@ override proc AccumStencilArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc AccumStencilArr.dsiDestroyArr(param deinitElts:bool) {
+override proc AccumStencilArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       var arr = locArr(localeIdx);

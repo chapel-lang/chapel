@@ -1534,6 +1534,7 @@ module ChapelArray {
       return _newArray(x);
     }
 
+    // assumes that data is already initialized
     pragma "no doc"
     pragma "no copy return"
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -3251,8 +3252,7 @@ module ChapelArray {
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy_arr(_unowned: bool, _instance,
-                              param deinitElts=true) {
+  inline proc _do_destroy_arr(_unowned: bool, _instance, deinitElts=true) {
     if ! _unowned {
       on _instance {
         param arrIsInList = !_instance.isSliceArrayView();
@@ -3294,7 +3294,7 @@ module ChapelArray {
       }
     }
   }
-  inline proc _do_destroy_array(array: _array, param deinitElts=true) {
+  inline proc _do_destroy_array(array: _array, deinitElts=true) {
     _do_destroy_arr(array._unowned, array._instance, deinitElts);
   }
 

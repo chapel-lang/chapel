@@ -1082,9 +1082,11 @@ module DefaultRectangular {
         _ddata_allocate_postalloc(data, size);
         callPostAlloc = false;
       }
+
+      deinitElts = true;
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
       }

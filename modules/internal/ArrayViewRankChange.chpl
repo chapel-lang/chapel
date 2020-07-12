@@ -778,7 +778,7 @@ module ArrayViewRankChange {
       // no elements allocated here, so no action necessary
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

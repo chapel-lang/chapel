@@ -706,7 +706,7 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc dsiDestroyArr(param deinitElts:bool) {
+  override proc dsiDestroyArr(deinitElts:bool) {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {
         var arr = locArrs(localeIdx);

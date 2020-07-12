@@ -435,7 +435,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  override proc dsiDestroyArr(param deinitElts:bool) {
+  override proc dsiDestroyArr(deinitElts:bool) {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
         var arr = locArr(localeIdx);

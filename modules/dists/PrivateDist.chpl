@@ -209,7 +209,7 @@ override proc PrivateArr.dsiElementInitializationComplete() {
   // no action necessary
 }
 
-override proc PrivateArr.dsiDestroyArr(param deinitElts:bool) {
+override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
   if deinitElts {
     param needsDestroy = __primitive("needs auto destroy", eltType);
 

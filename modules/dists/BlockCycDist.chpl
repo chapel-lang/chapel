@@ -882,7 +882,7 @@ override proc BlockCyclicArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
+override proc BlockCyclicArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       var arr = locArr(localeIdx);

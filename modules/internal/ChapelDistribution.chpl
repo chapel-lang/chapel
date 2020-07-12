@@ -702,7 +702,7 @@ module ChapelDistribution {
       halt("dsiElementInitializationComplete must be defined");
     }
 
-    proc dsiDestroyArr(param deinitElts:bool) {
+    proc dsiDestroyArr(deinitElts:bool) {
       halt("dsiDestroyArr must be defined");
     }
 
@@ -902,7 +902,7 @@ module ChapelDistribution {
       data.dsiElementInitializationComplete();
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts then
         _deinitElements(data);
     }
@@ -985,7 +985,7 @@ module ChapelDistribution {
   }
 
   proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool,
-                   param deinitElts=true) {
+                   deinitElts=true) {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(deinitElts=deinitElts);
 
