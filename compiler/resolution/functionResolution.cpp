@@ -4165,12 +4165,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     USR_FATAL_CONT(call,
                    "unresolved enumerated type symbol or call '%s'",
                    str);
-
-  // TODO:
-  //    - Call is a method on a record.
-  //    - Call is to init=.
-  //    - The init= has one formal (don't know if this is invariant).
-  //
   } else if (isInitEqualsPreResolve(call)) {
     INT_ASSERT(info.actuals.v[0]->getValType() == dtMethodToken);
     INT_ASSERT(info.actuals.n == 3);
@@ -4182,10 +4176,16 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
                          "accepting expression of type '%s'",
                          receiverType->symbol->name,
                          exprType->symbol->name);
-    USR_PRINT("you can define an '%s' method for %s that accepts %s",
-              astrInitEquals,
-              receiverType->symbol->name,
-              exprType->symbol->name);
+
+    // TODO: Should we restrict the expression location as well?
+    if (isRecord(receiverType) || isClass(receiverType)) {
+      if (receiverType->getModule()->modTag == MOD_USER) {
+        USR_PRINT("you can define an '%s' method for %s that accepts %s",
+                  astrInitEquals,
+                  receiverType->symbol->name,
+                  exprType->symbol->name);
+      }
+    }
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
@@ -4273,8 +4273,7 @@ void trimVisibleCandidates(CallInfo&       info,
 
   bool isMethod = isMethodPreResolve(call);
 
-  bool isInit   = isMethod && (call->isNamedAstr(astrInit) ||
-                  call->isNamedAstr(astrInitEquals));
+  bool isInit   = isMethod && (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals));
   bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
   bool isDeinit = isMethod && call->isNamedAstr(astrDeinit);
 
