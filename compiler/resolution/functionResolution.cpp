@@ -189,7 +189,7 @@ static void populateRuntimeTypeMap();
 static void resolveAutoCopies();
 static void resolveSerializers();
 static void resolveDestructors();
-static Type* buildRuntimeTypeInfo(FnSymbol* fn);
+static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
 static void ensureAndResolveInitStringLiterals();
@@ -9346,8 +9346,7 @@ static void handleStatementLevelIteratorCall(DefExpr* def, VarSymbol* tmp)
 }
 
 
-static Type*
-buildRuntimeTypeInfo(FnSymbol* fn) {
+static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn) {
   SET_LINENO(fn);
   AggregateType* ct = new AggregateType(AGGREGATE_RECORD);
   TypeSymbol* ts = new TypeSymbol(astr("_RuntimeTypeInfo"), ct);
