@@ -798,6 +798,12 @@ module DefaultAssociative {
       //  iteration).
     }
 
+    override proc dsiElementDeinitializationComplete() {
+      // no action necessary because associative array
+      // never deinits elements in the deinit function
+      // (because it uses the low level ChapelHashtable).
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts {
         if _elementNeedsDeinit() {

@@ -1089,6 +1089,10 @@ module DefaultRectangular {
       deinitElts = true;
     }
 
+    override proc dsiElementDeinitializationComplete() {
+      deinitElts = false;
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);

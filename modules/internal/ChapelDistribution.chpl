@@ -702,6 +702,10 @@ module ChapelDistribution {
       halt("dsiElementInitializationComplete must be defined");
     }
 
+    proc dsiElementDeinitializationComplete() {
+      halt("dsiElementDeinitializationComplete must be defined");
+    }
+
     proc dsiDestroyArr(deinitElts:bool) {
       halt("dsiDestroyArr must be defined");
     }
@@ -877,7 +881,7 @@ module ChapelDistribution {
   pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
-    pragma "local field" pragma "unsafe" pragma "no auto destroy"
+    pragma "local field" pragma "unsafe"
     // may be initialized separately
     // always destroyed explicitly (to control deiniting elts)
     var data: [dom.nnzDom] eltType;
@@ -894,12 +898,14 @@ module ChapelDistribution {
 
     proc deinit() {
       // Elements in data are deinited in dsiDestroyArr if necessary.
-      // Here we need to clean up the rest of the array.
-      _do_destroy_array(data, deinitElts=false);
     }
 
     override proc dsiElementInitializationComplete() {
       data.dsiElementInitializationComplete();
+    }
+
+    override proc dsiElementDeinitializationComplete() {
+      data.dsiElementDeinitializationComplete();
     }
 
     override proc dsiDestroyArr(deinitElts:bool) {
