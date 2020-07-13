@@ -465,10 +465,13 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   if package {
     writeln('Checking for fields in manifest file:');
-    if masonTomlFileCheck(projectCheckHome) {
+    if masonTomlFileCheck(projectCheckHome)[0] {
       writeln('   All fields present in manifest file, can be published to a registry. (PASSED)');
     } else {
       writeln('   Missing fields in manifest file (Mason.toml). (FAILED)');
+      writeln('   The missing fields are as follows: ');
+      const missingFields = masonTomlFileCheck(projectCheckHome)[1];
+      for field in missingFields do writeln('   %s'.format(field));
       masonFieldsTest = false;
     }
     writeln(spacer);
@@ -498,10 +501,13 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   if package {
     writeln('Checking git tag version formatting:');
-    if gitTagVersionCheck(projectCheckHome) {
+    if gitTagVersionCheck(projectCheckHome)[0] {
       writeln('   Valid git tag version formatting, can be published to a registry. (PASSED)');
     } else {
       writeln('   Invalid git tag version formatting. (FAILED)');
+      writeln('   Tags found: ');
+      const listTags = gitTagVersionCheck(projectCheckHome)[1];
+      for tag in listTags do writeln('   %s'.format(tag));
       gitTagTest = false;
     }
     writeln(spacer);
@@ -599,8 +605,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
 
   if ci {
     if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) 
-    && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome) 
-    && gitTagVersionCheck(projectCheckHome) {
+    && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome)[0]
+    && gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
     }
@@ -766,10 +772,10 @@ proc gitTagVersionCheck(projectHome: string) throws {
   var version = "v" + tomlFile["brick"]!["version"]!.s;
   for tag in allTags {
     if tag == version {
-      return true;
+      return (true, allTags);
     }
   }
-  return false;
+  return (false, allTags);
 }
 
 /* make sure directory created is same as that of package 
@@ -787,14 +793,15 @@ proc namespaceCollisionCheck(projectHome: string) throws {
 proc masonTomlFileCheck(projectHome: string) {
   const toParse = open(projectHome + "/Mason.toml", iomode.r);
   const tomlFile = owned.create(parseToml(toParse));
+  var missingFields : list(string);
   var name, chplVersion, version, source, author, license = false;
-  if tomlFile.pathExists("brick.name") then name = true;
-  if tomlFile.pathExists("brick.version") then version = true;
-  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true;
-  if tomlFile.pathExists("brick.source") then source = true;
-  if tomlFile.pathExists("brick.license") then license = true;
-  if tomlFile.pathExists("brick.authors") then author = true;
+  if tomlFile.pathExists("brick.name") then name = true; else missingFields.append('name');
+  if tomlFile.pathExists("brick.version") then version = true; else missingFields.append('version');
+  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.append('chplVersion');
+  if tomlFile.pathExists("brick.source") then source = true; else missingFields.append('source');
+  if tomlFile.pathExists("brick.license") then license = true; else missingFields.append('license');
+  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.append('authors');
   if name && version && chplVersion && source
-    && author && license then return true;
-  else return false;
+    && author && license then return (true, missingFields);
+  else return (false, missingFields);
 }
