@@ -210,7 +210,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
-static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
+static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call, bool noinit);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -3182,7 +3182,9 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if ((ures->unresolved == astrInit || ures->unresolved == astrInitEquals) &&
+    if ((ures->unresolved == astrInit ||
+         ures->unresolved == astr("noinit") ||
+         ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();
@@ -6701,7 +6703,7 @@ FnSymbol* findZeroArgInitFn(AggregateType* at) {
     DefExpr* def = new DefExpr(tmpAt);
     tmpBlock->insertAtTail(def);
 
-    call = createGenericRecordVarDefaultInitCall(tmpAt, at, def);
+    call = createGenericRecordVarDefaultInitCall(tmpAt, at, def, false);
 
     tmpBlock->remove();
 
@@ -10589,13 +10591,15 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 // code will be added before this.
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                                                        AggregateType* at,
-                                                       Expr* call) {
+                                                       Expr* call,
+                                                       bool noinit) {
 
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
 
-  CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
+  const char* name = noinit ? "noinit" : "init";
+  CallExpr* initCall = new CallExpr(name, gMethodToken, new NamedExpr("this", new SymExpr(val)));
   form_Map(SymbolMapElem, e, at->substitutions) {
     Symbol* field = root->getField(e->key->name);
     bool hasDefault = false;
@@ -10658,7 +10662,9 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
 
   val->type = root;
 
-  CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
+  bool noinit = call->isPrimitive(PRIM_NOINIT_INIT_VAR);
+  CallExpr* initCall =
+    createGenericRecordVarDefaultInitCall(val, at, call, noinit);
 
   call->insertBefore(initCall);
   resolveCallAndCallee(initCall);
