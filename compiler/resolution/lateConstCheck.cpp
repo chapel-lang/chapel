@@ -158,6 +158,10 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
                       intentDescrString(formal->intent));
   }
 
+  // Leave if we have no info about this formal's constness.
+  if (formal->fieldQualifiers == NULL)
+    return false;
+
   DEBUG_SYMBOL(formal);
 
   // True if errors were emitted for any tuple field.
@@ -167,14 +171,11 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
   for_fields(field, at) {
     fieldIdx++;
 
-    Qualifier q = formal->fieldQualifiers == NULL ? QUAL_UNKNOWN
-                    : formal->fieldQualifiers[fieldIdx];
+    Qualifier q = formal->fieldQualifiers[fieldIdx];
 
-    // Skip non-ref tuple fields.
-    if (q == QUAL_UNKNOWN) {
-      INT_ASSERT(!field->isRef());
+    // Skip non-ref fields or fields we have no info about.
+    if (q == QUAL_UNKNOWN)
       continue;
-    }
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
