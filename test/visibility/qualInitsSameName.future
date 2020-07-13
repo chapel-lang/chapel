@@ -1,0 +1,4 @@
+bug: qualified access to function matching variable name causes error
+
+I believe this should work.  Interestingly, if 'M.y' is a variable
+rather than a function, it does.

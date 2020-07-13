@@ -112,8 +112,24 @@ static void removeUnusedFunctions() {
   }
 }
 
+static CallExpr* replaceRuntimeTypeGetField(CallExpr* call) {
+  SymExpr* rt = toSymExpr(call->get(1));
+
+  INT_ASSERT(rt->typeInfo()->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE));
+
+  Symbol* field = getPrimGetRuntimeTypeField_Field(call);
+  INT_ASSERT(field);
+  SET_LINENO(call);
+  CallExpr* ret = new CallExpr(PRIM_GET_MEMBER_VALUE, rt->remove(), field);
+  call->replace(ret);
+  return ret;
+}
 
 static void removeRandomPrimitive(CallExpr* call) {
+
+  if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD))
+    call = replaceRuntimeTypeGetField(call);
+
   switch (call->primitive->tag)
   {
     default: /* do nothing */ break;

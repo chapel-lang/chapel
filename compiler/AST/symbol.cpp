@@ -1584,7 +1584,14 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(bytesLitDef);
 
-  CallExpr *initCall = new CallExpr(astr("createBytesWithBorrowedBuffer"),
+  Expr* initFn = NULL;
+  if (gChplCreateBytesWithLiteral != NULL)
+    initFn = new SymExpr(gChplCreateBytesWithLiteral);
+  else
+    initFn = new UnresolvedSymExpr("chpl_createBytesWithLiteral");
+
+
+  CallExpr *initCall = new CallExpr(initFn,
                                     bytesTemp,
                                     new_IntSymbol(bytesLength));
 

@@ -95,6 +95,8 @@ module BytesStringCommon {
     pragma "fn synchronization free"
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 
+    if length == 0 then return "";
+
     // allocate buffer the same size as this buffer assuming that the string
     // is in fact perfectly decodable. In the worst case, the user wants the
     // replacement policy and we grow the buffer couple of times.
@@ -117,6 +119,7 @@ module BytesStringCommon {
 
       if decodeRet != 0 {  //decoder returns error
         if policy == decodePolicy.strict {
+          bufferFree(newBuff);
           throw new owned DecodeError();
         }
         else {
