@@ -27,7 +27,6 @@
 #include "resolution.h"
 #include "resolveIntents.h"
 #include "symbol.h"
-#include "view.h"
 
 /* This file implements late (after cull over references)
    const checking.
@@ -173,9 +172,11 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
 
     Qualifier q = formal->fieldQualifiers[fieldIdx];
 
-    // Skip non-ref fields or fields we have no info about.
-    if (q == QUAL_UNKNOWN)
+    // Skip non-ref fields.
+    if (!field->isRef()) {
+      INT_ASSERT(q == QUAL_UNKNOWN);
       continue;
+    }
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
