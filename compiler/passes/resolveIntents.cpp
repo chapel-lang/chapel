@@ -85,6 +85,31 @@ bool isTupleContainingRefMaybeConst(Type* t)
   return false;
 }
 
+static bool isTupleContainingTypeWithFlag(Type* t, Flag f) {
+  AggregateType* at = toAggregateType(t->getValType());
+
+  if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      Type* ft = field->type->getValType();
+      if (ft->symbol->hasFlag(f))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isTupleContainingSyncType(Type* t) {
+  return isTupleContainingTypeWithFlag(t, FLAG_SYNC);
+}
+
+static bool isTupleContainingSingleType(Type* t) {
+  return isTupleContainingTypeWithFlag(t, FLAG_SINGLE);
+}
+
+static bool isTupleContainingAtomicType(Type* t) {
+  return isTupleContainingTypeWithFlag(t, FLAG_ATOMIC_TYPE);
+}
 
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
@@ -93,8 +118,14 @@ IntentTag blankIntentForType(Type* t) {
       t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
 
+    // Blank intent for sync/single/atomic types is ref, but we can't mark
+    // the entire tuple as INTENT_REF because that has a special meaning.
+    // So go ahead and mark the tuple as INTENT_REF_MAYBE_CONST instead.
   } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
-            || isTupleContainingRefMaybeConst(t)) {
+            || isTupleContainingRefMaybeConst(t)
+            || isTupleContainingSyncType(t)
+            || isTupleContainingSingleType(t)
+            || isTupleContainingAtomicType(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 
   } else if (isManagedPtrType(t)) {

@@ -122,10 +122,9 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 
 // Are a tuple's field qualifiers ref instead of const? If so, then some
 // code somewhere set a const tuple element...
-// TODO: We could probably move this call to live with the forward flow
-// constness checks that occur in an earlier pass.
 static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
                                  UseMap* um) {
+
   FnSymbol* calledFn = call->resolvedFunction();
   INT_ASSERT(calledFn != NULL);
 
@@ -146,15 +145,22 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
     return false;
 
-  bool isFormalBlank = formal->originalIntent == INTENT_BLANK;
-  bool isFormalConst = formal->qualType().isConst();
+  bool isFormalIntentMaybeConst = formal->intent == INTENT_REF_MAYBE_CONST;
+  bool isFormalIntentConst = formal->intent & INTENT_CONST;
+  bool isFormalIntentRef = formal->intent & INTENT_REF;
 
   // Nothing to do if the tuple formal is ref.
-  if (!isFormalBlank && !isFormalConst)
+  if (isFormalIntentRef)
     return false;
+
+  if (isFormalIntentConst && !formal->qualType().isConst()) {
+    INT_FATAL(formal, "has const intent %s but not a const qualtype",
+                      intentDescrString(formal->intent));
+  }
 
   DEBUG_SYMBOL(formal);
 
+  // True if errors were emitted for any tuple field.
   bool result = false;
 
   int fieldIdx = 0;
@@ -162,11 +168,13 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
     fieldIdx++;
 
     Qualifier q = formal->fieldQualifiers == NULL ? QUAL_UNKNOWN
-                      : formal->fieldQualifiers[fieldIdx];
+                    : formal->fieldQualifiers[fieldIdx];
 
     // Skip non-ref tuple fields.
-    if (!field->isRef() || q == QUAL_UNKNOWN)
+    if (q == QUAL_UNKNOWN) {
+      INT_ASSERT(!field->isRef());
       continue;
+    }
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
@@ -174,46 +182,55 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
     if (isFieldMarkedConst)
       continue;
 
-    // TODO: Handle managed class wrappers?
+    // TODO: Special handling for managed class wrappers?
     AggregateType* ft = toAggregateType(field->getValType());
     INT_ASSERT(ft != NULL);
 
-    // TODO: Handle tuples containing tuples. Future work should recall
-    // that a tuple's concrete blank intent can be "ref-if-modified"
-    // if the tuple contains such an element.
+    // TODO: Handle tuples containing tuples.
     if (ft->symbol->hasFlag(FLAG_TUPLE))
-      return false;
-
-    IntentTag intent = isFormalBlank ? blankIntentForType(ft)
-                          : constIntentForType(ft);
-
-    // We validate ref-if-modified fields elsewhere by checking actuals.
-    if (intent == INTENT_REF_MAYBE_CONST)
       continue;
 
-    // The tuple field is marked const, but it is used somewhere...
-    if (intent & INTENT_CONST && !isFieldMarkedConst) {
-      int zeroIdx = fieldIdx - 1;
-      BaseAST* use = NULL;
+    // Select the "field intent" based on the formal intent.
+    IntentTag fieldIntent = INTENT_BLANK;
+    if (isFormalIntentMaybeConst) {
+      fieldIntent = blankIntentForType(ft);
+    } else if (isFormalIntentConst) {
+      fieldIntent = constIntentForType(ft);
+    } else {
+      INT_FATAL(formal, "unhandled intent %s for formal, field %d",
+                        intentDescrString(formal->intent),
+                        fieldIdx);
+    }
+    
+    // TODO: Validate ref-if-modified fields by checking actuals.
+    if (fieldIntent == INTENT_REF_MAYBE_CONST) {
+      INT_ASSERT(!isFormalIntentConst);
+      continue;
+    }
+
+    // TODO: Ditto for ref fields (sync/single/atomic).
+    if (fieldIntent == INTENT_REF) {
+      INT_ASSERT(!isFormalIntentConst);
+      continue;
+    }
+
+    // The tuple intent is const, but it is used somewhere...
+    if (fieldIntent & INTENT_CONST && !isFieldMarkedConst) {
+      BaseAST* use = um->count(formal) ? um->at(formal) : NULL;
+
+      USR_FATAL_CONT(formal, "element %d of tuple formal %s is const and "
+                             "cannot be modified",
+                             (fieldIdx-1),
+                             formal->name);
 
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
       // field index before we can use this functionality.
-      if (um->count(formal)) { use = um->at(formal); }
-
-      USR_FATAL_CONT(formal, "element %d of tuple %s is const and cannot "
-                             "be modified",
-                             zeroIdx,
-                             formal->name);
-
       if (use != NULL) {
-        // TODO: Fix me when our map key type is more precise.
         USR_PRINT(use, "possibly set here");
       }
 
       result = true;
-    } else {
-      INT_FATAL(formal, "unhandled non-const formal");
     }
   }
 
