@@ -74,6 +74,7 @@ extern FnSymbol *gChplForallError;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
 extern FnSymbol *gChplCreateStringWithLiteral;
+extern FnSymbol *gChplCreateBytesWithLiteral;
 extern FnSymbol *gChplBuildLocaleId;
 
 #endif

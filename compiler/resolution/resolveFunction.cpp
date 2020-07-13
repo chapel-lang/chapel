@@ -515,6 +515,9 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
         resolveAlsoParallelIterators(fn, forCall);
       }
 
+      if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN))
+        adjustRuntimeTypeInitFn(fn);
+
       markTypesWithDefaultInitEqOrAssign(fn);
     }
     popInstantiationLimit(fn);
