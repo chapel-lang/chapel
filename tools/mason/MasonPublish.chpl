@@ -507,9 +507,10 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
       writeln('   Valid git tag version formatting, can be published to a registry. (PASSED)');
     } else {
       writeln('   Invalid git tag version formatting. (FAILED)');
-      writeln('   Tags found: ');
       const listTags = tagResults[1];
       const foundVersion = tagResults[2];
+      writeln('   Expected tag version: %s'.format(foundVersion));
+      writeln('   Tags found: ');
       for tag in listTags do writeln('   %s'.format(tag));
       gitTagTest = false;
     }
