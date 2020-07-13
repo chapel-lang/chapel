@@ -85,8 +85,8 @@ proc masonPublish(ref args: list(string)) throws {
           mkdir(pathReg);
           mkdir(pathReg + '/Bricks');
           mkdir(pathReg + '/DummyProject');
-          runCommand('touch ' + pathReg + '/0.1.0.toml');
-          runCommand('touch ' + pathReg + '/README.md');
+          touch(pathReg + '/0.1.0.toml');
+          touch(pathReg + '/README.md');
           gitC(pathReg, 'git init -q');
           gitC(pathReg, 'git add .');
           commitSubProcess(pathReg, ['','git','commit','-m',' "initialised registry"']);
@@ -144,6 +144,11 @@ proc masonPublish(ref args: list(string)) throws {
     writeln(e.message());
     exit(1);
   }
+}
+
+/* creates a file at a given path */
+proc touch(pathToFile: string) throws {
+  const openFile = open(pathToFile, iomode.cw);
 }
 
 /* Uses the existence of a colon to see if a passed registryPath is a local or remote registryPath
@@ -466,7 +471,6 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   var remoteTest = true;
   var exampleTest = true;
   var testTest = true;
-  var licenseTest = true;
   writeln('Mason Project Check:');
   if !package {
     writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
@@ -512,19 +516,6 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     writeln(spacer);
   }
 
-  if package {
-    writeln('Checking for license:');
-    var validLicenseCheck = checkLicense(projectCheckHome);
-    if validLicenseCheck[0] {
-      writeln('   Found valid license in manifest file. (PASSED)');
-    } else {
-      writeln('   Invalid license name: "' + validLicenseCheck[1] + '". Please use a valid name from ' +
-          'SPDX license list. (FAILED)');
-      licenseTest = false;
-    }
-    writeln(spacer);
-  }
-
   if package && !ci {
     writeln('Git Remote Check:');
     if doesGitOriginExist() {
@@ -566,7 +557,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && registryTest && testTest && licenseTest {
+  if packageTest && remoteTest && moduleTest && registryTest && testTest {
     writeln('(PASSED) Your package is ready to publish');
   }
   else {
@@ -575,9 +566,6 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     if !moduleTest {
       writeln('(FAILED) Your package has more than one main module');
-    }
-    if !licenseTest {
-      writeln('(FAILED) Your package does not have valid license name.');
     }
     if !exampleTest {
       writeln('(WARNING) Your package does not have examples');
@@ -596,8 +584,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) 
-    && testCheck(projectCheckHome) && checkLicense(projectCheckHome)[0] {
+    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) {
       attemptToBuild();
       exit(0);
     }
@@ -609,35 +596,6 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   exit(0);
 }
 
-/* Validate license with that of SPDX list */
-private proc checkLicense(projectHome: string) throws {
-  var foundValidLicense = false;
-  var defaultLicense = "None";
-  if exists(joinPath(projectHome, "Mason.toml")) {
-    const toParse = open(joinPath(projectHome, "Mason.toml"), iomode.r);
-    const tomlFile = owned.create(parseToml(toParse));
-    if tomlFile.pathExists("brick.license") {
-      defaultLicense = tomlFile["brick"]!["license"]!.s;
-    }
-    // git clone the SPDX repo and validate license identifier
-    const dest = MASON_HOME + '/spdx';
-    const branch = '--branch master ';
-    const depth = '--depth 1 ';
-    const url = 'https://github.com/spdx/license-list.git ';
-    const command = 'git clone -q ' + branch + depth + url + dest;
-    if !isDir(dest) then runCommand(command);
-    var licenseList = listdir(MASON_HOME + "/spdx");
-    for licenses in licenseList {
-      const licenseName: string = licenses.strip('.txt', trailing=true);
-      if licenseName == defaultLicense || defaultLicense == 'None' {
-        foundValidLicense = true;
-        break;
-      }
-    }
-  }
-  if foundValidLicense then return (true, defaultLicense);
-  else return (false, defaultLicense);
-}
 
 /* Attempts to build the package/
  */
