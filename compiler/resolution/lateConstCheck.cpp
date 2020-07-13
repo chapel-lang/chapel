@@ -149,7 +149,7 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
   bool isFormalIntentRef = formal->intent & INTENT_REF;
 
   // Nothing to do if the tuple formal is ref.
-  if (isFormalIntentRef)
+  if (isFormalIntentRef && !isFormalIntentConst)
     return false;
 
   if (isFormalIntentConst && !formal->qualType().isConst()) {

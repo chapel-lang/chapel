@@ -1,2 +1,2 @@
-tupleModifyConstArgElement.chpl:5: error: element 1 of tuple tup is const and cannot be modified
+tupleModifyConstArgElement.chpl:5: error: element 1 of tuple formal tup is const and cannot be modified
 tupleModifyConstArgElement.chpl:6: note: possibly set here
