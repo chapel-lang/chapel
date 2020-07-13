@@ -41,7 +41,7 @@ cd ..
 else
 
 echo Checking out LLVM monorepo $BRANCH
-git clone https://github.com/llvm/llvm-project.git llvm-project
+git clone $CLONEARGS https://github.com/llvm/llvm-project.git llvm-project
 
 if [ "$ENABLE_RV" -ne 0 ]
 then
