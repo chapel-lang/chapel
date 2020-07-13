@@ -5,7 +5,7 @@ module M {
   module N {
     module P {
       proc foo() {
-	writeln("foo");
+        writeln("foo");
       }
     }
   }

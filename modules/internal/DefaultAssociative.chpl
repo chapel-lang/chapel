@@ -286,11 +286,13 @@ module DefaultAssociative {
           table.table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
+        table.maybeShrinkAfterRemove();
         unlockTable();
       }
     }
 
     proc dsiMember(idx: idxType): bool {
+      lockTable(); defer { unlockTable(); }
       var (foundFullSlot, slotNum) = table.findFullSlot(idx);
       return foundFullSlot;
     }
@@ -375,6 +377,7 @@ module DefaultAssociative {
         } else {
           retval = 0;
         }
+        table.maybeShrinkAfterRemove();
       }
       return retval;
     }
@@ -742,7 +745,7 @@ module DefaultAssociative {
     }
 
     override proc _deinitSlot(slot: int) {
-      // deinitalize the element at idx
+      // deinitialize the element at idx
       _deinitElement(data[slot]);
     }
 

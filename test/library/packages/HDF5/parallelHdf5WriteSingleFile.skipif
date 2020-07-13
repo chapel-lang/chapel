@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if h5cc -showconfig 2>/dev/null | grep -q -i "parallel hdf5: yes"; then
+    echo "False"
+else
+    echo "True"
+fi

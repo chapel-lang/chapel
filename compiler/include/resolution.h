@@ -262,6 +262,10 @@ bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 void printTaskOrForallConstErrorNote(Symbol* aVar);
 
+void adjustRuntimeTypeInitFn(FnSymbol* fn);
+Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call);
+Type* getPrimGetRuntimeTypeFieldReturnType(CallExpr* call, bool& isType);
+
 // tuples
 FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 
@@ -290,7 +294,8 @@ void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
 
-bool isUnusedClass(Type* t);
+std::set<Type*> getWellKnownTypesSet();
+bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 
 void pruneResolvedTree();
 
@@ -333,5 +338,4 @@ void stopGenerousResolutionForErrors();
 
 // Return the array element type, or NULL if not an array
 Type* arrayElementType(Type* arrayType);
-
 #endif

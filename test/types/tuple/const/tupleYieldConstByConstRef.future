@@ -1,0 +1,4 @@
+#14902
+
+When iterators yield a tuple const by `const ref`, elements in the tuple can
+be mutated after yield (e.g., within a forall).

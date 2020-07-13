@@ -70,6 +70,7 @@ arrays/diten/time_array_vs_ddata.graph
 arrays/ferguson/return-array-40000000.graph
 arrays/lydia/time_access.graph
 domains/ferguson/build-associative.graph
+domains/elliot/primes.graph
 types/atomic/ferguson/atomictest.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/assign.1024.graph
@@ -312,6 +313,7 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+library/standard/Map/timeMapMinusEqual.graph
 # suite: - Chapel versus C Comparisons
 patterns/primality/prime.graph
 statements/lydia/forCompare.graph

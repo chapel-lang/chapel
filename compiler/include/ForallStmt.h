@@ -23,6 +23,30 @@
 
 #include "stmt.h"
 
+class ForallOptimizationInfo {
+  public:
+    Symbol *iterSym = NULL;
+    Expr *dotDomIterExpr = NULL;
+    Symbol *dotDomIterSym = NULL;
+    Symbol *dotDomIterSymDom = NULL;
+
+    // even if there are multiple indices we store them in a vector
+    std::vector<Symbol *> multiDIndices;
+
+    // calls in the loop that are candidates for optimization
+    std::vector<CallExpr *> staticCandidates;
+    std::vector<CallExpr *> dynamicCandidates;
+
+    // the static check control symbol added for symbol
+    std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
+    
+    // the dynamic check call added for symbol
+    std::map<Symbol *, CallExpr *> dynamicCheckForSymMap;
+
+    std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
+
+    bool autoLocalAccessChecked;
+};
 
 ///////////////////////////////////
     // forall loop statement //
@@ -88,6 +112,8 @@ public:
 
   // indicates a forall expression (vs a forall statement)
   bool isForallExpr() const;
+
+  ForallOptimizationInfo optInfo;
 
 private:
   AList          fIterVars;

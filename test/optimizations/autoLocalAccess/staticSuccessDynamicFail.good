@@ -1,0 +1,46 @@
+**** Start forall ****
+	staticSuccessDynamicFail.chpl:6
+
+Regular domain symbol was not found for array
+	staticSuccessDynamicFail.chpl:4
+
+Iterated over the domain of
+	staticSuccessDynamicFail.chpl:4
+
+, whose domain cannot be determined statically
+	staticSuccessDynamicFail.chpl:4
+
+Loop is suitable for further analysis
+	staticSuccessDynamicFail.chpl:6
+
+Potential access
+	staticSuccessDynamicFail.chpl:7
+
+	Can optimize: Access base is the iterator's base
+	staticSuccessDynamicFail.chpl:7
+
+Potential access
+	staticSuccessDynamicFail.chpl:7
+
+Regular domain symbol was not found for array
+	staticSuccessDynamicFail.chpl:3
+
+	Marking static candidate
+	staticSuccessDynamicFail.chpl:7
+
+	Marking dynamic candidate
+	staticSuccessDynamicFail.chpl:7
+
+**** End forall ****
+	staticSuccessDynamicFail.chpl:6
+
+Static check successful. Using localAccess
+	staticSuccessDynamicFail.chpl:7
+
+Static check successful. Using localAccess with dynamic check
+	staticSuccessDynamicFail.chpl:7
+
+Static check successful. Using localAccess
+	staticSuccessDynamicFail.chpl:7
+
+0 0 0 0 0 0 0 0 0

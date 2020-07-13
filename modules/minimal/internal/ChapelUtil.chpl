@@ -28,11 +28,6 @@ module ChapelUtil {
   extern record chpl_main_argument {
   }
 
-  // required by resolveAutoCopies()
-  proc chpl__initCopy(arg: chpl_main_argument) return arg;
-  proc chpl__autoDestroy(arg: chpl_main_argument) {}
-  
-
   //
   // These two are called from the emitted chpl_gen_main(), and
   // defined in the runtime.

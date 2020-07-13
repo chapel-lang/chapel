@@ -91,6 +91,9 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   if [[ -n $CHPL_TEST_PERF_CONFIGS ]]; then
     benchmark_opts="${benchmark_opts} --configs $CHPL_TEST_PERF_CONFIGS"
   fi
+  if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS ]]; then
+    benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS"
+  fi
 
   test_start "benchmarks"
   if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then

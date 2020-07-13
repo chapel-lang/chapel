@@ -21,6 +21,7 @@
 #include "preFold.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -38,6 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+#include "../main/version_num.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -567,6 +569,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call, "No test function with name '%s'",name);
     }
   }
+
+  case PRIM_MAYBE_LOCAL_THIS:
+    retval = preFoldMaybeLocalThis(call);
+    call->replace(retval);
+    break;
 
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:
@@ -1698,6 +1705,32 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = se->remove();
     call->replace(retval);
 
+    break;
+  }
+
+  case PRIM_VERSION_MAJOR: {
+    retval = new SymExpr(new_IntSymbol(MAJOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_MINOR: {
+    retval = new SymExpr(new_IntSymbol(MINOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_UPDATE: {
+    retval = new SymExpr(new_IntSymbol(UPDATE_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_SHA: {
+    retval = (officialRelease ?
+              new SymExpr(new_StringSymbol("")) :
+              new SymExpr(new_StringSymbol(BUILD_VERSION)));
+    call->replace(retval);
     break;
   }
 

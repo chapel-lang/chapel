@@ -22,14 +22,14 @@ module ChapelDistribution {
 
   private use ChapelArray, ChapelRange;
   public use ChapelLocks; // maybe make private when fields can be private?
-  public use LinkedLists; // maybe make private when fields can be private?
+  public use ChapelHashtable; // maybe make private when fields can be private?
 
   //
   // Abstract distribution class
   //
   pragma "base dist"
   class BaseDist {
-    var _doms: LinkedList(unmanaged BaseDom); // domains declared over this distribution
+    var _doms: chpl__simpleSet(unmanaged BaseDom); // domains declared over this distribution
     var _domsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
@@ -102,7 +102,7 @@ module ChapelDistribution {
     inline proc add_dom(x:unmanaged BaseDom) {
       on this {
         _domsLock.lock();
-        _doms.append(x);
+        _doms.add(x);
         _domsLock.unlock();
       }
     }
@@ -148,7 +148,7 @@ module ChapelDistribution {
   //
   pragma "base domain"
   class BaseDom {
-    var _arrs: LinkedList(unmanaged BaseArr); // arrays declared over this domain
+    var _arrs: chpl__simpleSet(unmanaged BaseArr); // arrays declared over this domain
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
@@ -247,7 +247,7 @@ module ChapelDistribution {
         if locking then
           _arrsLock.lock();
         if addToList then
-          _arrs.append(x);
+          _arrs.add(x);
         else
           _arrs_containing_dom += 1;
         if locking then
@@ -297,6 +297,10 @@ module ChapelDistribution {
     proc dsiDestroyDom() { }
 
     proc dsiDisplayRepresentation() { writeln("<no way to display representation>"); }
+
+    proc dsiSupportsAutoLocalAccess() param {
+      return false;
+    }
 
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;

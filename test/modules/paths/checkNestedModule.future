@@ -1,2 +1,0 @@
-bug: compiler doesn't parse library files if only outside use is to a submodule
-#15347

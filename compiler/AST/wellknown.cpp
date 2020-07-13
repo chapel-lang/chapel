@@ -62,6 +62,8 @@ FnSymbol *gChplForallError;
 FnSymbol *gAtomicFenceFn;
 FnSymbol *gChplAfterForallFence;
 FnSymbol *gChplCreateStringWithLiteral;
+FnSymbol *gChplCreateBytesWithLiteral;
+FnSymbol *gChplBuildLocaleId;
 
 /************************************* | **************************************
 *                                                                             *
@@ -191,6 +193,32 @@ void gatherWellKnownTypes() {
     removeIfUndefinedGlobalType(dtLocale);
     removeIfUndefinedGlobalType(dtOwned);
     removeIfUndefinedGlobalType(dtShared);
+  }
+}
+
+std::vector<Type*> getWellKnownTypes()
+{
+  std::vector<Type*> types;
+
+  int nEntries = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
+
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownType& wkt = sWellKnownTypes[i];
+    if (*wkt.type_ != NULL)
+      types.push_back(*wkt.type_);
+  }
+
+  return types;
+}
+
+void clearGenericWellKnownTypes()
+{
+  int nEntries = sizeof(sWellKnownTypes) / sizeof(sWellKnownTypes[0]);
+
+  for (int i = 0; i < nEntries; ++i) {
+    WellKnownType& wkt = sWellKnownTypes[i];
+    if (*wkt.type_ != NULL && (*wkt.type_)->isGeneric())
+      *wkt.type_ = NULL;
   }
 }
 
@@ -327,6 +355,17 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "chpl_createBytesWithLiteral",
+    &gChplCreateBytesWithLiteral,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_buildLocaleID",
+    &gChplBuildLocaleId,
+    FLAG_UNKNOWN
+  },
 };
 
 void gatherWellKnownFns() {

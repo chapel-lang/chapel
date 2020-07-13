@@ -114,7 +114,7 @@ private proc getBuildInfo(projectHome: string) {
 
   // Get system, and external compopts
   const compopts = getTomlCompopts(lockFile.borrow(), emptyCompopts);
-  const perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
+  var perExampleOptions = getExampleOptions(tomlFile.borrow(), exampleNames);
 
   // Close lock and toml
   lock.close();

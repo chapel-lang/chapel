@@ -24,11 +24,15 @@
 #include <vector>
 
 class AggregateType;
+class Type;
 class FnSymbol;
 
 void gatherIteratorTags();
 void gatherWellKnownTypes();
 void gatherWellKnownFns();
+
+std::vector<Type*> getWellKnownTypes();
+void clearGenericWellKnownTypes();
 
 std::vector<FnSymbol*> getWellKnownFunctions();
 void clearGenericWellKnownFunctions();
@@ -70,5 +74,7 @@ extern FnSymbol *gChplForallError;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
 extern FnSymbol *gChplCreateStringWithLiteral;
+extern FnSymbol *gChplCreateBytesWithLiteral;
+extern FnSymbol *gChplBuildLocaleId;
 
 #endif

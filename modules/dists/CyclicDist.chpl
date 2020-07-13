@@ -310,6 +310,8 @@ override proc Cyclic.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
+override proc CyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
+
 proc Cyclic.init(other: Cyclic, privateData,
                  param rank = other.rank,
                  type idxType = other.idxType) {
@@ -862,6 +864,10 @@ inline proc _remoteAccessData.getDataIndex(
   return sum;
 }
 
+inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref {
+  return _to_nonnil(myLocArr).this(i);
+}
+
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
     if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(i) then
@@ -1061,6 +1067,13 @@ class LocCyclicArr {
       delete locRAD;
     if locCyclicRAD != nil then
       delete locCyclicRAD;
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
   }
 }
 

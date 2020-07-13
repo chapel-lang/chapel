@@ -27,6 +27,7 @@ match_output = re.compile(r"\s*.. BLOCK-test-chapeloutput\s*|" +
 match_compopts = re.compile(r"\s*.. BLOCK-test-chapelcompopts\s*")
 match_execopts = re.compile(r"\s*.. BLOCK-test-chapelexecopts\s*")
 match_prediff = re.compile(r"\s*.. BLOCK-test-chapelprediff\s*")
+match_function = re.compile(r"\s*.. function::\s*")
 total_tests = 0
 
 def get_arguments():
@@ -162,6 +163,14 @@ def extract_tests(rstfile, outdir):
                 #     *Example (enum.chpl)*.
                 if re.match(capture_testname, line):
                     # stop this loop if another example is encountered
+                    #print ("Breaking for Example match on line ", i)
+                    i -= 1
+                    break
+
+                # Find lines like
+                #     *.. function:: proc foo int
+                if re.match(match_function, line):
+                    # stop this loop if a function block is encounterred
                     #print ("Breaking for Example match on line ", i)
                     i -= 1
                     break

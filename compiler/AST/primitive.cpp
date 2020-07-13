@@ -563,7 +563,9 @@ returnInfoToNonNilable(CallExpr* call) {
 
 static QualifiedType
 returnInfoRuntimeTypeField(CallExpr* call) {
-  return call->get(1)->qualType();
+  bool isType = false;
+  Type* t = getPrimGetRuntimeTypeFieldReturnType(call, isType);
+  return QualifiedType(t, QUAL_VAL);
 }
 
 
@@ -884,6 +886,8 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
+  prim_def(PRIM_MAYBE_LOCAL_THIS, "may be local access", returnInfoUnknown);
+
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
   prim_def(PRIM_WHEN, "when case expressions", returnInfoVoid);
@@ -1094,11 +1098,9 @@ initPrimitive() {
 
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
-  // Accepts 3 arguments:
-  // 1) type variable representing static type of field in _RuntimeTypeInfo
-  // 2) type variable that will become the _RuntimeTypeInfo
-  // 3) param-string name of the field in the _RuntimeTypeInfo
-  // existence of an optional 4th argument indicates the result is a type
+  // Accepts 2 arguments:
+  // 1) type variable that will become the _RuntimeTypeInfo
+  // 2) field symbol or param-string name of the field in the _RuntimeTypeInfo
   prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 
   // Corresponds to LLVM's invariant start
@@ -1126,6 +1128,12 @@ initPrimitive() {
   prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
   prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
   prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
+
+  // version info for 'chpl'
+  prim_def(PRIM_VERSION_MAJOR, "version major", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_MINOR, "version minor", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_UPDATE, "version update", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

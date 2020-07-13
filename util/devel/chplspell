@@ -59,7 +59,7 @@ NORMALGLOBS=("-name" "*.chpl"  "-o"
 LATEXGLOBS=("-name" "*.tex")
 
 DEFAULTDIRS=(
-	     compiler doc man modules runtime spec
+	     compiler doc man modules runtime
 	     test/release
 	     .github
 )

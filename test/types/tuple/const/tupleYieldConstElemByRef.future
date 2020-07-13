@@ -1,0 +1,5 @@
+#14902
+
+Iterator yield checks are all screwed up (we currently can't yield
+referential tuples (?), so why is it working? And why is this
+test outputting 0/256 instead of 256/512? Questions...

@@ -26,6 +26,7 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -122,6 +123,9 @@ static bool        firstConstructorWarning = true;
 ************************************** | *************************************/
 
 void normalize() {
+
+  autoLocalAccess();
+
   insertModuleInit();
 
   transformLogicalShortCircuit();
@@ -237,6 +241,11 @@ void normalize() {
         if (!notDeinit && fn->hasFlag(FLAG_NO_PARENS)) {
           USR_FATAL_CONT(fn, "deinitializers must have parentheses");
         }
+
+        if (ct == NULL)
+          USR_FATAL_CONT(fn, "deinit may not be defined for types other than record, union, or class");
+        else if (ct->symbol->hasFlag(FLAG_EXTERN))
+          USR_FATAL_CONT(fn, "deinit may not be currently defined for extern types");
 
         fn->name = astrDeinit;
       }
@@ -3289,6 +3298,13 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
                   " must specify its type", formal->name, fn->name);
         continue;
       }
+      if (formal->intent == INTENT_OUT) {
+        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
+                  " uses out intent - out intent not yet supported"
+                  " for arrays in export procs",
+                  formal->name, fn->name);
+        continue;
+      }
 
       // Save the element type we shuffle away, so that it can be referenced at
       // codegen.  We may want to move these operations after type resolution to
@@ -3319,6 +3335,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
           formal->typeExpr->replace(
             new BlockStmt(new SymExpr(dtCFI_cdesc_t->symbol)));
           formal->intent = INTENT_REF;
+          formal->originalIntent = INTENT_REF;
         }
       } else {
         // Create a representation of the array argument that is accessible
@@ -4227,14 +4244,24 @@ static bool isConstructor(FnSymbol* fn) {
 }
 
 static void updateInitMethod(FnSymbol* fn) {
-  if (isAggregateType(fn->_this->type) == true) {
+  Type* thisType = fn->_this->type;
+
+  if (isAggregateType(thisType) == true) {
+
+    if (fn->name == astrInitEquals) {
+      if (isClass(thisType))
+        USR_FATAL_CONT(fn, "init= may not be defined on class types");
+      if (thisType->symbol->hasFlag(FLAG_EXTERN))
+        USR_FATAL_CONT(fn, "init= may not currently be defined on extern types");
+    }
+
     preNormalizeInitMethod(fn);
 
-  } else if (fn->_this->type == dtUnknown) {
+  } else if (thisType == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   } else {
-    INT_FATAL(fn, "initializer on non-class type");
+    USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }
 }
 

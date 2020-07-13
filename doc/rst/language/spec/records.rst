@@ -73,11 +73,12 @@ See the chapter on interoperability
 (:ref:`Chapter-Interoperability`) for more information on
 external records.
 
-   *Future*.
+   .. note::
+    *Future:*
 
-   Privacy controls for classes and records are currently not specified,
-   as discussion is needed regarding its impact on inheritance, for
-   instance.
+    Privacy controls for classes and records are currently not specified,
+    as discussion is needed regarding its impact on inheritance, for
+    instance.
 
 .. _Record_Types:
 
@@ -302,15 +303,6 @@ out of scope and before its memory is reclaimed.
    .. BLOCK-test-chapeloutput
 
       (c = {x = 0})
-
-      ====================
-      Leaked Memory Report
-      ==============================================================
-      Number of leaked allocations
-                 Total leaked memory (bytes)
-                            Description of allocation
-      ==============================================================
-      ==============================================================
 
    .. BLOCK-test-chapelexecopts
 

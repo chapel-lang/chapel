@@ -500,6 +500,13 @@ class LocReplicatedArr {
   proc deinit() {
     _do_destroy_array(arrLocalRep, deinitElts=true);
   }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
+  }
 }
 
 

@@ -86,6 +86,55 @@ module RangeChunk {
   }
 
   /*
+    Iterates through a range ``r``, which is blocked up in repeating ```nTasks```
+    blocks of size ```blockSize```. Blocks are indexed from 0..nTasks-1 and the  
+    iterator emits all blocks with index ```tid``` in a cyclic manner.
+  */
+  //  Eg : 
+  //  1. For a range 1..15 and 4 blocks of size 2
+  //  2. The block indexes range : 0-2
+  //  3. The range is blocked up as following block indexes :
+  //      1,2, 3,4, 5,6, 7,8, 9,10, 11,12, 13,14, 15
+  //       0    1    2    3    0      1      2     3 
+  //  4. For a desired tid 2, the following chunks are emitted
+  //      (5,6) (13,14)
+  iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded,
+                         ?strided), blockSize: integral, tid: integral, 
+                         nTasks: integral) {
+    if (tid >= nTasks) then
+      halt("Parameter tid must be < nTasks " +
+           "because blocks are indexed from 0..nTasks-1");
+
+    if (blockSize <= 0) then
+      halt("blockSize must a positive number");
+
+    if (nTasks <= 0) then
+      halt("nTasks must be a positive number");
+
+    var rangeStride = r.stride;
+    var blockStride = blockSize * rangeStride;
+    var low = r.low;
+    var high = r.high;
+    var firstBlockStart = (if rangeStride > 0 then r.low  else r.high) +
+                            blockStride * tid;
+    if firstBlockStart > r.high || firstBlockStart < r.low then return;
+
+    var strideToNextBlock = blockStride * nTasks;
+  
+    if rangeStride > 0 {
+      for blockStart in firstBlockStart..high by strideToNextBlock {
+        var blockEnd = min(high, blockStart + blockStride - 1);
+        yield blockStart..blockEnd by rangeStride;
+      }
+    } else {
+      for blockEnd in low..firstBlockStart by strideToNextBlock {
+        var blockStart = max(low, blockEnd + blockStride + 1);
+        yield blockStart..blockEnd by rangeStride;
+      }
+    }
+  }
+
+  /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */

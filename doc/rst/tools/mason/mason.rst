@@ -35,8 +35,16 @@ Basic Usage
 Starting a New Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To initialize a new mason package, run ``mason new``. This starts an interactive session which walks an user
-through the process of creating a project using Mason. This is highly recommended for new users.
+To initialize a new mason package, run ``mason new``. The same can also be done using ``mason init`` as follows: 
+
+  .. code-block:: sh
+
+    mkdir newPackage
+    cd newPackage
+    mason init
+
+
+This starts an interactive session which walks an user through the process of creating a project using Mason. This is highly recommended for new users.
 
 A more advanced user may use the ``mason new [ options ] <project name>`` command, for example::
 
@@ -44,8 +52,8 @@ A more advanced user may use the ``mason new [ options ] <project name>`` comman
 
 This creates a git repository by default, unless ``--no-vcs`` is included.
 
-Mason packages can also be initialized using the ``mason init [options] [directory path]`` or 
-``mason init [options]`` command outside or inside the project directory respectively. 
+Mason packages can also be initialized using the ``mason init [options] [directory path]``.
+To avoid the interactive session while initializing the project, run ``mason init -d | --default``. 
 
 
 For example, for an existing directory named MyPackage, 
@@ -57,7 +65,7 @@ For example, for an existing directory named MyPackage,
     # OR 
 
     cd MyPackage
-    mason init  
+    mason init -d  
 
 
 The package will have the following hierarchy::
@@ -330,6 +338,7 @@ Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
    name = "myPackage"
    version = "0.1.0"
    chplVersion = "1.18.0"
+   license = "None"
    tests = ["test1.chpl",
             "test2.chpl",
             "test3.chpl"]
@@ -405,6 +414,7 @@ in their ``Mason.toml`` as follows:
    name = "myPackage"
    version = "0.1.0"
    chplVersion = "1.18.0"
+   license = "None"
 
    [dependencies]
 
@@ -446,6 +456,7 @@ file of the package as follows:
    name = "myPackage"
    version = "0.1.0"
    chplVersion = "1.18.0"
+   license = "None"
 
    [dependencies]
    MatrixMarket = 0.1.0
@@ -524,6 +535,7 @@ The ``Mason.toml`` now looks like:
    name = "myPackage"
    version = "0.1.0"
    chplVersion = "1.18.0"
+   license = "None"
 
    [system]
    openSSL = "0.9.8zh"
@@ -742,6 +754,7 @@ The ``Mason.toml`` now looks like:
    name = "myPackage"
    version = "0.1.0"
    chplVersion = "1.18.0"
+   license = "None"
 
    [external]
    openSSL = "1.0.2k"
@@ -800,6 +813,7 @@ Continuing the example from before, the 'registry' ``0.1.0.toml`` would include 
      name = "MyPackage"
      version = "0.1.0"
      chplVersion = "1.16.0"
+     license = "None"
      authors = ["Sam Partee <Sam@Partee.com>"]
      source = "https://github.com/Spartee/MyPackage"
 
@@ -938,6 +952,7 @@ For example, ``Mason.toml``:
     name = "MyPackage"
     version = "0.1.0"
     chplVersion = "1.16.0"
+    license = "None"
     authors = ["Sam Partee <Sam@Partee.com>"]
 
     [dependencies]
@@ -956,6 +971,9 @@ By default, ``chplVersion`` is set to represent the current Chapel release or
 later. For example, if you are using the 1.16 release, chplVersion will be
 ``1.16.0``.
 
+The ``license`` field indicates the software license under which the package is distributed.
+Any of the licenses available at the `SPDX License List <https://spdx.org/licenses/>`_ can be used for Mason packages.
+The license field defaults to ``None``.
 
 Environment Variables
 =====================
@@ -1063,6 +1081,7 @@ a lock file is written below as if generated from the earlier example of a ``Mas
      name = 'curl'
      version = '1.0.0'
      chplVersion = "1.16.0..1.16.0"
+     license = "None"
      source = 'https://github.com/username/curl'
 
 
@@ -1070,6 +1089,7 @@ a lock file is written below as if generated from the earlier example of a ``Mas
      name = "MyPackage"
      version = "0.1.0"
      chplVersion = "1.16.0..1.16.0"
+     license = "None"
      authors = ["Sam Partee <Sam@Partee.com>"]
      source = "https://github.com/Spartee/MyPackage"
      dependencies = ['curl 1.0.0 https://github.com/username/curl']

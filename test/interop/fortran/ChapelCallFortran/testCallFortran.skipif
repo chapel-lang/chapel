@@ -11,7 +11,7 @@ llvm=$?
 command -v gfortran 2>&1 >/dev/null
 gfortranFound=$?
 
-if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && $CHPL_TARGET_PLATFORM != "cray-xc" ]] ; then
+if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && $CHPL_TARGET_PLATFORM != "cray-xc" && $CHPL_SANITIZE_EXE == "none" ]] ; then
   echo False
 else
   echo True
