@@ -1,2 +1,2 @@
-usedWithString.chpl:1: warning: noinit is currently ignored
-Hello, world
+usedWithString.chpl:1: error: unresolved call 'string.noinit()'
+usedWithString.chpl:1: note: because no functions named noinit found in scope

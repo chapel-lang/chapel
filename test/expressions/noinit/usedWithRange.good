@@ -1,2 +1,2 @@
-usedWithRange.chpl:1: warning: noinit is currently ignored
-1..5
+usedWithRange.chpl:1: error: the type of the actual argument 'r' is generic
+note: generic actual arguments are not currently supported

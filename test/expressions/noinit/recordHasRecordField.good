@@ -1,2 +1,2 @@
-recordHasRecordField.chpl:8: warning: noinit is currently ignored
-(t = (namingIsHard = false))
+recordHasRecordField.chpl:8: error: unresolved call 'foo.noinit()'
+recordHasRecordField.chpl:8: note: because no functions named noinit found in scope

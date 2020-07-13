@@ -1,2 +1,2 @@
-recordHasComplicatedRecordField.chpl:10: warning: noinit is currently ignored
-(baz = (namingIsHard = 0))
+recordHasComplicatedRecordField.chpl:10: error: the type of the actual argument 'bar' is generic
+note: generic actual arguments are not currently supported
