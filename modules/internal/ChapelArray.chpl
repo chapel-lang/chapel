@@ -3318,6 +3318,7 @@ module ChapelArray {
         }
       }
     }
+    array._instance.dsiElementDeinitializationComplete();
   }
 
   //
