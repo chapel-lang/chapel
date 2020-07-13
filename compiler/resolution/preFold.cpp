@@ -2238,6 +2238,45 @@ static Expr* preFoldNamed(CallExpr* call) {
 
       retval = unrollHetTupleLoop(call, tupExpr, iterType);
     }
+
+  } else if (call->numActuals() == 1) {
+    // Implement the common case of a boolean argument here,
+    // to avoid full-blown call resolution.
+    if (SymExpr* argSE = toSymExpr(call->get(1))) {
+      Symbol* argSym = argSE->symbol();
+      Type* argType = argSym->type;
+
+      if (call->isNamed("_cond_test") || call->isNamed("isTrue")) {
+        if (argType == dtBool) {
+          // use the argument directly
+          retval = argSE->remove();
+
+        } else if (argType == dtBool->refType) {
+          // dereference it so later passes get a value
+          Expr* stmt = call->getStmtExpr();
+          VarSymbol* repl = newTempConst(dtBool);
+          stmt->insertBefore(new DefExpr(repl));
+          stmt->insertBefore("'move'(%S,'deref'(%E))", repl, argSE->remove());
+          retval = new SymExpr(repl);
+
+        } // otherwise resolve the call normally
+
+      } else if (call->isNamed("_cond_invalid")) {
+        if (argType == dtBool || argType == dtBool->refType)
+          retval = new SymExpr(gFalse);
+
+      } else if (call->isNamed("chpl_statementLevelSymbol")) {
+        // Would be nice to eliminate other chpl_statementLevelSymbol calls.
+        // However, they are used in the code to avoid split-init.
+        if (givesType(argSym) || argSym->isImmediate()) {
+          // replace with the argument
+          retval = argSE->remove();
+        }
+      }
+
+      if (retval != NULL)
+        call->replace(retval);
+    }
   }
 
   return retval;

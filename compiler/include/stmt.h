@@ -350,6 +350,7 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 
 const char*  gotoTagToString(GotoTag gotoTag);
 CondStmt*    isConditionalInCondStmt(Expr* expr);
+Expr*        skip_cond_test(Expr* expr);
 
 // Probably belongs in Expr; doesn't really mean Stmt, but rather
 // statement-level expression.
