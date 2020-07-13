@@ -209,8 +209,18 @@ DECLARE_GET_MALLCTL_VALUE(unsigned);
 
 
 // get the number of arenas
-static unsigned get_num_arenas(void) {
+unsigned get_num_arenas(void) {
   return get_unsigned_mallctl_value("opt.narenas");
+}
+
+// set the current arena, returning the old value
+unsigned set_arena(unsigned new_arena) {
+  unsigned old_arena;
+  size_t old_size = sizeof(old_arena);
+  if (CHPL_JE_MALLCTL("thread.arena", &old_arena, &old_size, &new_arena, sizeof(new_arena)) != 0) {
+    chpl_internal_error("could not change current thread's arena");
+  }
+  return old_arena;
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
@@ -226,16 +236,11 @@ static void initialize_arenas(void) {
   //   calling this interface."
   narenas = get_num_arenas();
   for (arena=1; arena<narenas; arena++) {
-    if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
-      chpl_internal_error("could not change current thread's arena");
-    }
+    set_arena(arena);
   }
 
   // then set the current thread back to using arena 0
-  arena = 0;
-  if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
-      chpl_internal_error("could not change current thread's arena back to 0");
-  }
+  set_arena(0);
 }
 
 

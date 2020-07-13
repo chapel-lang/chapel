@@ -634,6 +634,12 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
             extra_msg = '(possible private issue #398) '
             break
 
+    err_strings = ['=* Memory Leaks =*']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None):
+            extra_msg = '(memory leak) '
+            break
+
     return extra_msg
 
 

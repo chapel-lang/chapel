@@ -1,4 +1,4 @@
-use BlockDist;
+use common;
 
 proc F(i) {
   return i*2;
@@ -13,11 +13,11 @@ class MyClass {
 {
 
   const space = {1..10};
-  var dom = newBlockDom(space);
+  var dom = createDom(space);
 
   var A: [dom] real;
   var B: [dom] real;
-  var C = newBlockArr(space, real);
+  var C = createArr(space, real);
   var D: [space] real;
   var E = new MyClass();
 

@@ -12,4 +12,4 @@ unset CHPL_TEST_LIMIT_RUNNING_EXECUTABLES
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="valgrind"
 
-$CWD/nightly -cron ${nightly_args} $(get_nightly_paratest_args 16)
+$CWD/nightly -cron ${nightly_args} $(get_nightly_paratest_args 20)

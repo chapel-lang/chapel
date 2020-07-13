@@ -741,8 +741,10 @@ static Symbol* returnLifetimeFromClause(Expr* expr) {
 }
 
 
-static Symbol* returnLifetimeFromClause(FnSymbol* fn) {
-  INT_ASSERT(fn->lifetimeConstraints);
+static Symbol* returnLifetimeFromFnClause(FnSymbol* fn) {
+  if (fn->lifetimeConstraints == NULL)
+    return NULL;
+
   Expr* last = fn->lifetimeConstraints->body.last();
   return returnLifetimeFromClause(last);
 }
@@ -1253,8 +1255,7 @@ LifetimePair LifetimeState::inferredLifetimeForCall(CallExpr* call) {
   returnsBorrow = isSubjectToBorrowLifetimeAnalysis(returnType);
 
   ArgSymbol* theOnlyOneThatMatters = NULL;
-  if (calledFn->lifetimeConstraints) {
-    Symbol* sym = returnLifetimeFromClause(calledFn);
+  if (Symbol* sym = returnLifetimeFromFnClause(calledFn)) {
     // lifetime = outer/global variable -> infinite lifetime
     if (sym->defPoint->getFunction() != calledFn)
       return infiniteLifetimePair();

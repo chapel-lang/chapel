@@ -1,4 +1,4 @@
-use BlockDist;
+use common;
 
 class C {
   var i = 10;
@@ -19,8 +19,8 @@ class C {
     }
 }
 
-var A = newBlockArr({1..10}, int);
-var B = newBlockArr({1..10}, int);
+var A = createArr({1..10}, int);
+var B = createArr({1..10}, int);
 
 var c = new C();
 

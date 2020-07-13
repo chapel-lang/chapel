@@ -1,3 +1,0 @@
-$CHPL_HOME/modules/standard/Map.chpl:100: In initializer:
-$CHPL_HOME/modules/standard/Map.chpl:75: error: Cannot default initialize associative array because element type 2*shared T cannot be default initialized
-./MapTest.chpl:5: Initializer instantiated as: init(type keyType = int(64), type valType = 2*shared T, param parSafe = 0)

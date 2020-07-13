@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import os
+
+comm = os.getenv('CHPL_COMM')
+comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
+ugni = comm == 'ugni'
+gn_aries = comm == 'gasnet' and comm_sub == 'aries'
+
+size = 20000
+if gn_aries:
+    size = 2000000
+elif ugni:
+    size = 20000000
+
+print('--sizePerLocale={0}'.format(size))

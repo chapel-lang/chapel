@@ -44,7 +44,8 @@ $filedist = 0;
 $dirs = "";
 $node_para = 1;                        # the number of tasks to run on each node
 $valgrind = 0;
-$memleaks = "/dev/null";
+$memleaks = 0;
+$memleakslog = "/dev/null";
 $memleaksflag = 0;
 $show_all_errors = 0;
 $junit_xml = 0;
@@ -354,9 +355,9 @@ sub feed_nodes {
 
       $endtime = `date`; chomp $endtime;
       print "\n";
-      if ($memleaksflag) {
-          print "Collecting memleaks logs to $memleaks\n";
-          systemd("cat $logdir/tmp.*.memleaks > $memleaks");
+      if ($memleaksflag == 2) {
+          print "Collecting memleaks logs to $memleakslog\n";
+          systemd("cat $logdir/tmp.*.memleaks > $memleakslog");
           # Keep the individual logs upon failure.
           !$? or die "Could not collect memleaks logs: $?\n";
           systemd("rm -f $logdir/tmp.*.memleaks");
@@ -509,7 +510,7 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks f] [-multilocale-only] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks] [-memleakslog f] [-multilocale-only] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
@@ -519,7 +520,8 @@ sub print_help {
     print "    -futures   : include .future tests (default is none).\n";
     print "    -futures-only : only run .future tests, not regular ones.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
-    print "    -memleaks f: pass -memleaks to start_test; aggregate all output.\n";
+    print "    -memleaks  : pass -memleaks to start_test. \n";
+    print "    -memleakslog f: pass -memleakslog to start_test; aggregate all output.\n";
     print "    -multilocale-only: pass -multilocale-only to start_test if comm!=none\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
     print "    -nodepara m: Run m paratest.client tasks on each node.\n";
@@ -632,12 +634,14 @@ sub main {
                 exit(8);
             }
         } elsif (/^-memleaks$/) {
+            $memleaksflag = 1;
+        } elsif (/^-memleakslog$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
-                $memleaks = $ARGV[0];
-                $memleaksflag = 1;
+                $memleakslog = $ARGV[0];
+                $memleaksflag = 2;
             } else {
-                print "missing -memleaks arg\n";
+                print "missing -memleakslog arg\n";
                 exit (8);
             }
         } elsif (/^-multilocale-only$/) {

@@ -613,7 +613,7 @@ module Map {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from. 
   */
-  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)){
+  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
@@ -737,8 +737,15 @@ module Map {
      left-hand map, but not the right-hand map. */
   proc -=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
-    for k in b.keys() do
-      a.remove(k);
+    a._enter(); defer a._leave();
+    for k in b.keys() {
+      var (found, slot) = a.table.findFullSlot(k);
+      if found {
+        var outKey: keyType, outVal: valueType;
+        a.table.clearSlot(slot, outKey, outVal);
+      }
+    }
+    a.table.maybeShrinkAfterRemove();
   }
 
   /* Returns a new map containing the keys that are in either a or b, but

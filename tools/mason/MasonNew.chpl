@@ -40,13 +40,15 @@ proc masonNew(args) throws {
   var dirName = '';
   var version = '';
   var chplVersion = '';
+  var license = 'None';
   try! {
     if args.size < 3 {
-      var metadata = beginInteractiveSession('','','');
+      var metadata = beginInteractiveSession('','','','');
       packageName = metadata[0];
       dirName = packageName;
       version = metadata[1];
       chplVersion = metadata[2];
+      license = metadata[3];
     }
     else {
       var countArgs = args.domain.low + 2;
@@ -89,7 +91,7 @@ proc masonNew(args) throws {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
       }
-      InitProject(dirName, packageName, vcs, show, version, chplVersion);
+      InitProject(dirName, packageName, vcs, show, version, chplVersion, license);
     }
   }
   catch e: MasonError {
@@ -102,7 +104,8 @@ proc masonNew(args) throws {
   Starts an interactive session to create a
   new library project.
 */
-proc beginInteractiveSession(defaultPackageName: string, defVer: string, defChplVer: string) throws {
+proc beginInteractiveSession(defaultPackageName: string, defVer: string, 
+            defChplVer: string, license: string) throws {
   writeln("""This is an interactive session to walk you through creating a library
 project using Mason. The following queries covers the common items required to
 create the project. Suggestions for defaults are also provided which will be
@@ -115,9 +118,12 @@ considered if no input is given.""");
   var defaultVersion = if defVer == '' then "0.1.0" else defVer;
   var chapelVersion: string;
   var currChapelVersion = if defChplVer == '' then getChapelVersionStr() else defChplVer;
+  var defaultLicense = if license == '' then "None" else license;
+  var currLicense: string;
   var gotCorrectPackageName = false;
   var gotCorrectPackageVersion = false;
   var gotCorrectChapelVersion = false;
+  var gotCorrectLicense = false;
   while(1){
     try {
       if !gotCorrectPackageName {
@@ -165,10 +171,20 @@ considered if no input is given.""");
         else if validateChplVersion(chapelVersion)
         then gotCorrectChapelVersion = true;
       }
+      if !gotCorrectLicense {
+        write("License (" + defaultLicense + "): ");
+        IO.stdout.flush();
+        IO.stdin.readline(currLicense);
+        exitOnEOF(currLicense);
+        currLicense = currLicense.strip();
+        if currLicense == "" then currLicense = defaultLicense;
+        gotCorrectLicense = true;
+      }
       if gotCorrectPackageName &&
          gotCorrectPackageVersion &&
-         gotCorrectChapelVersion {
-          previewMasonFile(packageName, version, chapelVersion);
+         gotCorrectChapelVersion &&
+         gotCorrectLicense {
+          previewMasonFile(packageName, version, chapelVersion, currLicense);
           writeln();
           write("Is this okay ? (Y/N): ");
           IO.stdout.flush();
@@ -182,9 +198,11 @@ considered if no input is given.""");
             gotCorrectChapelVersion = false;
             gotCorrectPackageName = false;
             gotCorrectPackageVersion = false;
+            gotCorrectLicense = false;
             defaultVersion = version;
             currChapelVersion = chapelVersion;
             defPackageName = packageName;
+            defaultLicense = currLicense;
             continue;
           }
       }
@@ -194,7 +212,7 @@ considered if no input is given.""");
       continue;
     }
   }
-  return (packageName, version, chapelVersion);
+  return (packageName, version, chapelVersion, currLicense);
 }
 
 /* Exit terminal when CTRL + D is pressed */
@@ -206,8 +224,8 @@ proc exitOnEOF(parameter) {
 }
 
 /* Previews the Mason.toml file that is going to be created */
-proc previewMasonFile(packageName, version, chapelVersion) {
-  const baseToml = getBaseTomlString(packageName, version, chapelVersion);
+proc previewMasonFile(packageName, version, chapelVersion, license) {
+  const baseToml = getBaseTomlString(packageName, version, chapelVersion, license);
   writeln();
   writeln(baseToml);
 }
@@ -251,7 +269,7 @@ proc validatePackageName(dirName) throws {
   directories such as .git, src, example, test
 */
 proc InitProject(dirName, packageName, vcs, show,
-                  version: string, chplVersion: string) throws {
+                  version: string, chplVersion: string, license: string) throws {
   if vcs {
     gitInit(dirName, show);
     addGitIgnore(dirName);
@@ -261,7 +279,7 @@ proc InitProject(dirName, packageName, vcs, show,
   }
   // Confirm git init before creating files
   if isDir(dirName) {
-    makeBasicToml(dirName=packageName, path=dirName, version, chplVersion);
+    makeBasicToml(dirName=packageName, path=dirName, version, chplVersion, license);
     makeSrcDir(dirName);
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
@@ -289,27 +307,32 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
-proc getBaseTomlString(packageName: string, version: string, chapelVersion: string) {
+proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
   const baseToml = """[brick]
 name = "%s"
 version = "%s"
 chplVersion = "%s"
+license = "%s"
 
 [dependencies]
 
-""".format(packageName, version, chapelVersion);
+""".format(packageName, version, chapelVersion, license);
   return baseToml;
 }
 
 /* Creates the Mason.toml file */
-proc makeBasicToml(dirName: string, path: string, version: string, chplVersion: string) {
+proc makeBasicToml(dirName: string, path: string, version: string, 
+            chplVersion: string, license: string) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();
+  var defaultLicense: string = "None";
   if !version.isEmpty()
     then defaultVersion = version;
   if !chplVersion.isEmpty()
     then defaultChplVersion = chplVersion;
-  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion);
+  if !license.isEmpty()
+    then defaultLicense = license;
+  const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion, defaultLicense);
   var tomlFile = open(path+"/Mason.toml", iomode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);

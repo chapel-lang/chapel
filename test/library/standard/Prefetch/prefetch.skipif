@@ -6,3 +6,4 @@
 # is set before testing begins...
 # For now though, we just skip this test on 32-bit systems.
 CHPL_TARGET_PLATFORM <= 32
+CHPL_SANITIZE_EXE != none

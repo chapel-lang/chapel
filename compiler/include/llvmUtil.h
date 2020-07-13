@@ -67,7 +67,6 @@ llvm::Value* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
 
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);
-uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset);
 
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);

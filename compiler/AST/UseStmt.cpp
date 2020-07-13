@@ -163,7 +163,11 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
   if (isValid(src) == true) {
     // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
     if (SymExpr* se = toSymExpr(src)) {
-      INT_ASSERT(se->symbol() == rootModule);
+      // Alternatively, we could have needed to resolve the use and import
+      // statements in this scope sooner than it would have been reached by
+      // processImportExprs
+      INT_ASSERT(se->symbol() == rootModule ||
+                 scope->progress != IUP_NOT_STARTED);
 
     } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true)) {
       SET_LINENO(this);

@@ -1,4 +1,4 @@
-use BlockDist;
+use common;
 
 class MyClass { proc this(i) { return i; } }
 
@@ -13,9 +13,9 @@ inline proc _array.localAccess(i: int) ref {
   return this._value.dsiLocalAccess((i:int,));
 }
 
-var D = newBlockDom({1..10});
+var D = createDom({1..10});
 
-var A = newBlockArr({1..10}, int); // dynamic candidate, static check is true
+var A = createArr({1..10}, int); // dynamic candidate, static check is true
 var B = new MyClass(); // dynamic candidate, static check is false
 
 // we want the access to A still be through localAccess (i.e. not affected by
