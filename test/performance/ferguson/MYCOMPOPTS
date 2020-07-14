@@ -12,9 +12,8 @@ perftest = ''
 if suffix != "compopts":
   perftest = base
 
-do_llvm = True
-if os.getenv('CHPL_LLVM', 'none') == 'none':
-    do_llvm = False
+do_llvm = os.getenv('CHPL_LLVM', 'none') != 'none'
+do_cache = os.getenv('CHPL_SANITIZE_EXE') == 'none'
 
 basecompopts='--fast '
 
@@ -33,7 +32,8 @@ checkMaxAttained=' -scheckMaxAttained=true'
 f('--no-llvm --no-cache-remote ' + checkMaxAttained, 'c')
 
 # C backend, cache remote
-f('--no-llvm --cache-remote', 'c-cache')
+if do_cache:
+  f('--no-llvm --cache-remote', 'c-cache')
 
 if do_llvm:
   # LLVM backend, no cache remote
@@ -43,4 +43,5 @@ if do_llvm:
   # LLVM backend, llvm wide opts, no cache remote
   f('--llvm --llvm-wide-opt --no-cache-remote', 'llvm-wide-opt')
   # LLVM backend, llvm wide opts, cache remote
-  f('--llvm --llvm-wide-opt --cache-remote', 'llvm-wide-opt-cache')
+  if do_cache:
+    f('--llvm --llvm-wide-opt --cache-remote', 'llvm-wide-opt-cache')
