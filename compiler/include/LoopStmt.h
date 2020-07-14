@@ -44,10 +44,18 @@ public:
   bool                   isOrderIndependent()                            const;
   void                   orderIndependentSet(bool b);
 
+  // for RV rv.loop.vectorize.enable
   bool                   hasVectorizationHazard()                        const;
   void                   setHasVectorizationHazard(bool v);
 
+  // for llvm.loop.parallel_accesses (and C pragmas)
+  bool                   hasParallelAccessVectorizationHazard()          const;
+  void                   setHasParallelAccessVectorizationHazard(bool v);
+
+  // for RV rv.loop.vectorize.enable
   bool                   isVectorizable()                               const;
+  // for llvm.loop.parallel_accesses (and C pragmas)
+  bool                   isParallelAccessVectorizable()                 const;
 protected:
                          LoopStmt(BlockStmt* initBody);
   virtual               ~LoopStmt();
@@ -56,6 +64,8 @@ protected:
   LabelSymbol*           mContinueLabel;
   bool                   mOrderIndependent;
   bool                   mVectorizationHazard;
+  bool                   mParallelAccessVectorizationHazard;
+
   void                   codegenVectorHint();
   void                   fixVectorizable();
 

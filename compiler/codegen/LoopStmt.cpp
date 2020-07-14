@@ -23,6 +23,135 @@
 #include "codegen.h"
 #include "driver.h"
 
+static void markVectorizationHazards(LoopStmt* loop) {
+  bool parallelLoopAccessHazard = false;
+  bool vectorizationHazard = false;
+
+  bool report = false;
+  if (fReportVectorizedLoops) {
+    ModuleSymbol *mod = toModuleSymbol(loop->getModule());
+    INT_ASSERT(mod);
+
+    report = (developer || mod->modTag == MOD_USER);
+  }
+
+  if (loop->id == 1851472)
+    gdbShouldBreakHere();
+
+  std::vector<DefExpr*> defExprs;
+  collectDefExprs(loop, defExprs);
+
+  for_vector(DefExpr, def, defExprs) {
+    Symbol* sym = def->sym;
+
+    // Decide if it could be a register
+    // (Note, these rules are accurate for LLVM but
+    //  serve as a reasonable guess for a C compiler)
+    bool addressTaken = false;
+    bool needsGets = false;
+    int ndefs = 0;
+
+    // Decide if it is used outside of the loop
+    // (allocas only used within the loop are OK for RV)
+    bool defVarUsedOutsideOfLoop = false;
+
+    for_SymbolSymExprs(se, sym) {
+      if (!loop->contains(se)) {
+        defVarUsedOutsideOfLoop = true;
+      }
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        // was the address taken?
+        if (call->isPrimitive(PRIM_ADDR_OF) ||
+            call->isPrimitive(PRIM_SET_REFERENCE) ||
+            call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+            call->isPrimitive(PRIM_GET_MEMBER)) {
+          addressTaken = true;
+        } else if (call->isPrimitive(PRIM_SET_MEMBER) ||
+                   call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
+          // These don't technically necessarily use a ref
+          // but they probably do and they could potentially do a GET
+          addressTaken = true;
+          needsGets = true;
+        } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+          // Ignore method name and id arguments
+          if (se != call->get(1) && se != call->get(2)) {
+            ArgSymbol* formal = actual_to_formal(se);
+            if ((formal->intent & FLAG_REF))
+              addressTaken = true;
+          }
+        } else if (call->resolvedFunction()) {
+          ArgSymbol* formal = actual_to_formal(se);
+          if ((formal->intent & FLAG_REF))
+            addressTaken = true;
+        }
+
+        // was the symbol set?
+        // Also, would setting the symbol require us to generate a GET?
+        if (call->isPrimitive(PRIM_MOVE) &&
+            call->get(1) == se) {
+          ndefs++;
+        }
+        // Assigning to a ref doesn't change the ref itself
+        if (call->isPrimitive(PRIM_ASSIGN) &&
+            !se->isRef() &&
+            call->get(1) == se) {
+          ndefs++;
+          if (call->get(2)->isWideRef())
+            needsGets = true;
+        }
+
+        // Would setting the symbol require a GET?
+        if (call->isPrimitive(PRIM_MOVE) && call->isPrimitive(PRIM_ASSIGN)) {
+          if (CallExpr* rhsCall = toCallExpr(call->get(2)))
+            if (rhsCall->isPrimitive(PRIM_DEREF) ||
+                rhsCall->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE))
+              if (rhsCall->get(1)->isWideRef())
+                needsGets = true;
+        }
+      }
+    }
+
+    // with --llvm-wide-opt, GETs are just regular loads, so there are
+    // no concerns about needing a temporary for a GET.
+    if (fLLVMWideOpt)
+      needsGets = false;
+
+    if (parallelLoopAccessHazard == false) {
+      if (addressTaken || needsGets || ndefs > 1) {
+        parallelLoopAccessHazard = true;
+
+        if (report) {
+          if (addressTaken)
+            USR_PRINT(sym, "parallel access disabled -- address taken");
+          else if (ndefs > 1)
+            USR_PRINT(sym, "parallel access disabled -- multiple defs");
+          else if (needsGets)
+            USR_PRINT(sym, "parallel access disabled -- could GET");
+        }
+      }
+    }
+
+    if (vectorizationHazard == false) {
+      if (defVarUsedOutsideOfLoop) {
+        vectorizationHazard = true;
+        parallelLoopAccessHazard = true;
+
+        if (report) {
+          USR_PRINT(sym, "vectorization disabled -- def used outside loop");
+        }
+      }
+    }
+  }
+
+  // save vectorization hazard info in the loop
+  if (parallelLoopAccessHazard)
+    loop->setHasParallelAccessVectorizationHazard(true);
+
+  if (vectorizationHazard)
+    loop->setHasVectorizationHazard(true);
+}
+
 void LoopStmt::fixVectorizable()
 {
   if (!this->isVectorizable())
@@ -31,135 +160,40 @@ void LoopStmt::fixVectorizable()
   // Note: this routine could also return early if fNoVectorize==true.
   // However letting it run in that case gives better testing coverage.
 
-  bool report = false;
-  if (fReportVectorizedLoops) {
-    ModuleSymbol *mod = toModuleSymbol(this->getModule());
-    INT_ASSERT(mod);
-
-    report = (developer || mod->modTag == MOD_USER);
-  }
-
   // Check for DefExprs in the loop body that would present challenges
   // for vectorization.
-
-  // DefExprs for values that we expect to be represented as registers
-  // are OK.
-
-  // Alternatively we could clone these allocations per vector
-  // lane. We're not quite ready to do that yet though, and ones
-  // that don't need to be cloned should be in registers anyway.
 
   // This runs late in the compiler because we want to do this check
   // after inlining and other late simplifications have occurred.
 
-  bool hazard = false;
-
   // Look for hazards if we're not told to ignore them.
   if (fForceVectorize == false) {
-
-    for_alist(expr, body) {
-      if (DefExpr* def = toDefExpr(expr)) {
-        Symbol* sym = def->sym;
-
-        // Decide if it could be a register
-        // (Note, these rules are accurate for LLVM but
-        //  serve as a reasonable guess for a C compiler)
-        bool addressTaken = false;
-        bool needsGets = false;
-        int ndefs = 0;
-
-        for_SymbolSymExprs(se, sym) {
-          if (CallExpr* call = toCallExpr(se->parentExpr)) {
-            // was the address taken?
-            if (call->isPrimitive(PRIM_ADDR_OF) ||
-                call->isPrimitive(PRIM_SET_REFERENCE) ||
-                call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-                call->isPrimitive(PRIM_GET_MEMBER)) {
-              addressTaken = true;
-            } else if (call->isPrimitive(PRIM_SET_MEMBER) ||
-                       call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
-              // These don't technically necessarily use a ref
-              // but they probably do and they could potentially do a GET
-              addressTaken = true;
-              needsGets = true;
-            } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
-              // Ignore method name and id arguments
-              if (se != call->get(1) && se != call->get(2)) {
-                ArgSymbol* formal = actual_to_formal(se);
-                if ((formal->intent & FLAG_REF))
-                  addressTaken = true;
-              }
-            } else if (call->resolvedFunction()) {
-              ArgSymbol* formal = actual_to_formal(se);
-              if ((formal->intent & FLAG_REF))
-                addressTaken = true;
-            }
-
-            // was the symbol set?
-            // Also, would setting the symbol require us to generate a GET?
-            if (call->isPrimitive(PRIM_MOVE) &&
-                call->get(1) == se) {
-              ndefs++;
-            }
-            // Assigning to a ref doesn't change the ref itself
-            if (call->isPrimitive(PRIM_ASSIGN) &&
-                !se->isRef() &&
-                call->get(1) == se) {
-              ndefs++;
-              if (call->get(2)->isWideRef())
-                needsGets = true;
-            }
-
-            // Would setting the symbol require a GET?
-            if (call->isPrimitive(PRIM_MOVE) && call->isPrimitive(PRIM_ASSIGN)) {
-              if (CallExpr* rhsCall = toCallExpr(call->get(2)))
-                if (rhsCall->isPrimitive(PRIM_DEREF) ||
-                    rhsCall->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
-                    rhsCall->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE))
-                  if (rhsCall->get(1)->isWideRef())
-                    needsGets = true;
-            }
-          }
-        }
-
-        // with --llvm-wide-opt, GETs are just regular loads, so there are
-        // no concerns about needing a temporary for a GET.
-        if (fLLVMWideOpt)
-          needsGets = false;
-
-        if (hazard == false) {
-          if (addressTaken || needsGets || ndefs > 1) {
-            hazard = true;
-
-            if (report) {
-              if (addressTaken)
-                USR_PRINT(sym, "Vectorization disabled -- address taken");
-              else if (ndefs > 1)
-                USR_PRINT(sym, "Vectorization disabled -- multiple defs");
-              else if (needsGets)
-                USR_PRINT(sym, "Vectorization disabled -- could GET");
-            }
-          }
-        }
-      }
-    }
+    markVectorizationHazards(this);
   }
 
-  if (hazard) {
-    // Turn off vectorization for this loop, we can't handle it yet
-    this->setHasVectorizationHazard(true);
-  } else {
-    if (fReportVectorizedLoops) {
-      ModuleSymbol *mod = toModuleSymbol(this->getModule());
-      INT_ASSERT(mod);
+  if (fReportVectorizedLoops) {
+    ModuleSymbol *mod = toModuleSymbol(this->getModule());
+    INT_ASSERT(mod);
 
-      if (developer || mod->modTag == MOD_USER)
-      {
+    if (developer || mod->modTag == MOD_USER)
+    {
+      if (this->isVectorizable()) {
+        const char* kind = NULL;
+
+        // if there is a vectorization hazard, we shouldn't
+        // have considered it vectorizable at all.
+        INT_ASSERT(!this->hasVectorizationHazard());
+
+        if (this->hasParallelAccessVectorizationHazard())
+          kind = "loop vectorization (no parallel access)";
+        else
+          kind = "loop vectorization (with parallel access)";
+
         if (developer)
-          USR_PRINT(this, "Vectorization hinted for %s [%i]",
+          USR_PRINT(this, "%s hinted for %s [%i]", kind,
                     this->astTagAsString(), this->id);
         else
-          USR_PRINT(this, "Vectorization hinted for %s",
+          USR_PRINT(this, "%s hinted for %s", kind,
                     this->astTagAsString());
       }
     }
@@ -172,7 +206,7 @@ void LoopStmt::fixVectorizable()
 // loop is not marked for vectorization.
 void LoopStmt::codegenVectorHint()
 {
-  if (fNoVectorize == false && isVectorizable())
+  if (fNoVectorize == false && isParallelAccessVectorizable())
   {
     GenInfo* info = gGenInfo;
 

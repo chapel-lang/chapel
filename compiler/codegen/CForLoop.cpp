@@ -48,22 +48,20 @@ static llvm::MDNode* generateLoopMetadata()
 
   // llvm.loop.vectorize.enable metadata is only used by LoopVectorizer to:
   // 1) Explicitly disable vectorization of particular loop
-  // 2) Print warning when vectorization is enabled (using metadata) and vectorization didn't occur
-  // It is however required for the Region Vectorizer
+  // 2) Print warning when vectorization is enabled (using metadata) and
+  //    vectorization didn't occur
+  // here we do not emit that metadata; instead emitting parallel
+  // llvm.loop.parallel_accesses.
+
+  // When using the Region Vectorizer, emit rv.loop.vectorize.enable metadata
   if(fRegionVectorizer)
   {
     llvm::Metadata *loopVectorizeEnable[] = { llvm::MDString::get(ctx, "rv.loop.vectorize.enable"),
                                               llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), true))};
     args.push_back(llvm::MDNode::get(ctx, loopVectorizeEnable));
 
-    /* Region Vectorizer no longer needs loop width
-    if (fRegionVectorizer) {
-      // Region Vectorizer needs loop width to be specified
-      llvm::Metadata *loopVectorWidth[] = { llvm::MDString::get(ctx, "llvm.loop.vectorize.width"),
-                                            llvm::ConstantAsMetadata::get(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 8))};
-      args.push_back(llvm::MDNode::get(ctx, loopVectorWidth));
-    }*/
-
+    // Note that the Region Vectorizer once required
+    // llvm.loop.vectorize.width but no longer does.
   }
 
   llvm::MDNode *loopMetadata = llvm::MDNode::get(ctx, args);
@@ -200,7 +198,7 @@ GenRet CForLoop::codegen()
     llvm::MDNode* loopMetadata = nullptr;
     if(fNoVectorize == false && isVectorizable()) {
       loopMetadata = generateLoopMetadata();
-      info->loopStack.emplace(loopMetadata, true);
+      info->loopStack.emplace(loopMetadata, isParallelAccessVectorizable());
     }
 
     body.codegen("");
