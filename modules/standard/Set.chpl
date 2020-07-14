@@ -86,10 +86,6 @@ module Set {
 
   pragma "no doc"
   proc _checkElementType(type t) {
-    // Associative domains need to support owned classes first.
-    if isOwnedClass(t) then
-        compilerError('Sets do not support this class type', 2);
-
     // In the future we might support it if the set is not default-inited.
     if isGenericType(t) {
       compilerWarning('creating a set with element type ' + t:string, 2);
