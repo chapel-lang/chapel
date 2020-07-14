@@ -907,7 +907,7 @@ override proc AccumStencilArr.dsiDestroyArr(deinitElts:bool) {
           // fluff is always deinited in the LocArr deinit
           param needsDestroy = __primitive("needs auto destroy", eltType);
           if needsDestroy {
-            if _deinitElementsIsParallel(eltType) {
+            if _deinitElementsIsParallel(eltType, arr.locDom.myBlock.size) {
               forall i in arr.locDom.myBlock {
                 chpl__autoDestroy(arr.myElems[i]);
               }

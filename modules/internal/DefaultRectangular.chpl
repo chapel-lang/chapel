@@ -1122,7 +1122,7 @@ module DefaultRectangular {
                                            __primitive("deref", data[0]));
 
           if needsDestroy {
-            if _deinitElementsIsParallel(eltType) {
+            if _deinitElementsIsParallel(eltType, numElts) {
               forall i in 0..#numElts {
                 chpl__autoDestroy(data[i]);
               }
@@ -1506,7 +1506,7 @@ module DefaultRectangular {
           param needsDestroy = __primitive("needs auto destroy", eltType);
           if needsDestroy {
             if reallocD.size < dom.dsiNumIndices {
-              if _deinitElementsIsParallel(eltType) {
+              if _deinitElementsIsParallel(eltType, dom.dsiNumIndices) {
                 forall i in dom {
                   if !keep.contains(i) {
                     chpl__autoDestroy(dsiAccess(i));
