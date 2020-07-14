@@ -322,7 +322,7 @@ module Heap {
       Iterate over the elements of this heap
 
         .. note::
-          Elements in the heap is not sorted
+          Elements are not yielded in order
 
     */
     iter these() ref {
