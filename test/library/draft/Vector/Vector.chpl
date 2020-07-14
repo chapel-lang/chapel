@@ -96,9 +96,9 @@ module Vector {
     /*
       Initializes an empty list.
 
-      :arg eltType: The type of the elements of this list.
+      :arg eltType: The type of the elements of this vector.
 
-      :arg parSafe: If `true`, this list will use parallel safe operations.
+      :arg parSafe: If `true`, this vector will use parallel safe operations.
       :type parSafe: `param bool`
     */
     proc init(type eltType, param parSafe=false) {
@@ -210,7 +210,7 @@ module Vector {
 
       :arg other: The range to initialize from.
 
-      :arg parSafe: If `true`, this list will use parallel safe operations.
+      :arg parSafe: If `true`, this vector will use parallel safe operations.
       :type parSafe: `param bool`
     */
     proc init(other: range(?t), param parSafe=false) {
@@ -231,7 +231,7 @@ module Vector {
     }
     /*
       Initializes a vector containing elements that are copied from
-      the elements contained in another list.
+      the elements contained in the list.
 
       :arg other: The list to initialize from.
     */
@@ -989,7 +989,7 @@ module Vector {
 
     /*
       Extend this vector by appending a copy of each element contained in
-      another list.
+      the list.
 
       :arg other: A list containing elements of the same type as those
         contained in this vector.
