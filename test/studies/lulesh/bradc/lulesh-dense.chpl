@@ -878,12 +878,12 @@ inline proc CalcTimeConstraintsForElems() {
 
 
 inline proc computeDTF(indx) {
-  const myvdov = vdov[indx];
+  const myvdov = vdov.localAccess[indx];
 
   if myvdov == 0.0 then
     return max(real);
 
-  const myarealg = arealg[indx];
+  const myarealg = arealg.localAccess[indx];
   var dtf = ss[indx]**2;
   if myvdov < 0.0 then
     dtf += qqc2 * myarealg**2 * myvdov**2;
