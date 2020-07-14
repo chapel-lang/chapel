@@ -207,7 +207,7 @@ module Heap {
     proc top() {
       if (isOwnedClass(eltType)) {
         compilerError("top() method is not avaliable on a 'heap'",
-                      " with elements of a owned type, here: ",
+                      " with elements of an owned type, here: ",
                       eltType: string);
       }
       _enter();
