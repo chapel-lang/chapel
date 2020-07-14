@@ -337,10 +337,7 @@ module Heap {
                       " with elements of a type that can't be copied, here: ",
                       eltType: string);
       _enter();
-      var l: [0..#size] eltType;
-      for i in 0..#size {
-        l[i] = _data[i];
-      }
+      var l = _data.toArray();
       _leave();
       return l;
     }
