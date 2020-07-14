@@ -50,7 +50,7 @@ module Heap {
 
   //
   // Use a wrapper class to let heap methods have a const ref receiver even
-  // when `parSafe` is `true` and the list lock is used.
+  // when `parSafe` is `true` and the heap lock is used.
   //
   pragma "no doc"
   class _LockWrapper {
