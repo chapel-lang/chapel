@@ -138,6 +138,10 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
   // owned).
   if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
     return false;
+
+  // Don't delve into chpl__autoCopy.
+  if (calledFn->hasFlag(FLAG_AUTO_COPY_FN))
+    return false;
  
   AggregateType* at = toAggregateType(formal->getValType());
 
