@@ -72,9 +72,15 @@ module Vector {
     param parSafe = false;
 
 
+    /*
+      The number of valid elements in this vector.
+    */
     pragma "no doc"
     var _size = 0;
 
+    /*
+      The capacity of this vector, which represents how much space is allocated.
+    */
     pragma "no doc"
     var _capacity = 0;
 
