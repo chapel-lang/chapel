@@ -229,6 +229,7 @@ module Vector {
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
+
     /*
       Initializes a vector containing elements that are copied from
       the elements contained in the list.
