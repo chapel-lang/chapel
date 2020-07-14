@@ -66,9 +66,16 @@ module Heap {
   }
 
   proc _checkType(type eltType) {
-    /*
-      Keep this in case we want to check types in the future
-    */
+    //NOTE: This is borrowed from List.chpl
+    if isGenericType(eltType) {
+      compilerWarning("creating a list with element type " +
+                      eltType:string);
+      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+        compilerWarning("which now means class type with generic management");
+      }
+      compilerError("list element type cannot currently be generic");
+      // In the future we might support it if the list is not default-inited
+    }
   }
     
   record heap {
