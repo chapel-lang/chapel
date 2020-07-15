@@ -435,7 +435,11 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   var remoteTest = true;
   var exampleTest = true;
   var testTest = true;
+
+  var gitTagTest = true;
+  var masonFieldsTest = true;
   var licenseTest = true;
+
   writeln('Mason Project Check:');
   if !package {
     writeln('   Could not find your configuration file (Mason.toml) (FAILED)');
@@ -455,6 +459,21 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     else {
       writeln('   Packages with more than one modules cannot be published. (FAILED)');
       moduleTest = false; 
+    }
+    writeln(spacer);
+  }
+
+  if package {
+    writeln('Checking for fields in manifest file:');
+    const manifestResults = masonTomlFileCheck(projectCheckHome);
+    if manifestResults[0] {
+      writeln('   All fields present in manifest file, can be published to a registry. (PASSED)');
+    } else {
+      writeln('   Missing fields in manifest file (Mason.toml). (FAILED)');
+      writeln('   The missing fields are as follows: ');
+      const missingFields = manifestResults[1];
+      for field in missingFields do writeln('   %s'.format(field));
+      masonFieldsTest = false;
     }
     writeln(spacer);
   }
@@ -481,6 +500,23 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     writeln(spacer);
   }
 
+  if package {
+    writeln('Checking git tag version formatting:');
+    const tagResults = gitTagVersionCheck(projectCheckHome);
+    if tagResults[0] {
+      writeln('   Valid git tag version formatting, can be published to a registry. (PASSED)');
+    } else {
+      writeln('   Invalid git tag version formatting. (FAILED)');
+      const listTags = tagResults[1];
+      const foundVersion = tagResults[2];
+      writeln('   Expected tag version: %s'.format(foundVersion));
+      writeln('   Tags found: ');
+      for tag in listTags do writeln('   %s'.format(tag));
+      gitTagTest = false;
+    }
+    writeln(spacer);
+  }
+  
   if package {
     writeln('Checking for license:');
     var validLicenseCheck = checkLicense(projectCheckHome);
@@ -535,7 +571,8 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && registryTest && testTest && licenseTest {
+  if packageTest && remoteTest && moduleTest && registryTest && testTest 
+    && licenseTest && gitTagTest && masonFieldsTest {
     writeln('(PASSED) Your package is ready to publish');
   }
   else {
@@ -544,6 +581,9 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     if !moduleTest {
       writeln('(FAILED) Your package has more than one main module');
+    }
+    if !masonFieldsTest {
+      writeln('(FAILED) Your package has missing fields in manifest file (Mason.toml)');
     }
     if !licenseTest {
       writeln('(FAILED) Your package does not have valid license name.');
@@ -560,13 +600,17 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     if !remoteTest {
       writeln('(FAILED) Your package has no remote origin and cannot be published');
     }
+    if !gitTagTest {
+      writeln('(FAILED) Your package has invalid git tag version formatting');
+    }
   }
 
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) 
-    && testCheck(projectCheckHome) && checkLicense(projectCheckHome)[0] {
+    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) 
+    && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome)[0]
+    && gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
       exit(0);
     }
@@ -721,4 +765,47 @@ private proc falseIfRemotePath() {
     }
   }
   return true;
+}
+
+/* git tag version formatting */
+proc gitTagVersionCheck(projectHome: string) throws {
+  var tags = runCommand("git tag -l", true);
+  var allTags = tags.split("\n");
+  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  var version = "v" + tomlFile["brick"]!["version"]!.s;
+  for tag in allTags {
+    if tag == version {
+      return (true, allTags, version);
+    }
+  }
+  return (false, allTags, version);
+}
+
+/* make sure directory created is same as that of package 
+   name in manifest file */
+proc namespaceCollisionCheck(projectHome: string) throws {
+  var directoryName = basename(projectHome);
+  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  var packageName = tomlFile["brick"]!["name"]!.s;
+  if packageName == directoryName then return true;
+  else return false;
+}
+
+/* Mason toml file formatting */
+proc masonTomlFileCheck(projectHome: string) {
+  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  var missingFields : list(string);
+  var name, chplVersion, version, source, author, license = false;
+  if tomlFile.pathExists("brick.name") then name = true; else missingFields.append('name');
+  if tomlFile.pathExists("brick.version") then version = true; else missingFields.append('version');
+  if tomlFile.pathExists("brick.chplVersion") then chplVersion = true; else missingFields.append('chplVersion');
+  if tomlFile.pathExists("brick.source") then source = true; else missingFields.append('source');
+  if tomlFile.pathExists("brick.license") then license = true; else missingFields.append('license');
+  if tomlFile.pathExists("brick.authors") then author = true; else missingFields.append('authors');
+  if name && version && chplVersion && source
+    && author && license then return (true, missingFields);
+  else return (false, missingFields);
 }
