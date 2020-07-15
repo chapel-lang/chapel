@@ -107,7 +107,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
 	  echo ; \
-        else \
+	else \
 	  echo Error: LLVM requires cmake 3.4.3 or later to build; \
 	  exit 1; \
 	fi
