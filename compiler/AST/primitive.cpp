@@ -871,13 +871,12 @@ initPrimitive() {
 
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true);
 
-  // PRIM_ARRAY_GET{_VALUE} arguments
+  // PRIM_ARRAY_GET arguments
   //  base pointer
   //  index
   //  no alias set
   // This is similar to A[i] in C
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
-  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   // PRIM_ARRAY_SET / PRIM_ARRAY_SET_FIRST have these arguments
   //   base pointer
