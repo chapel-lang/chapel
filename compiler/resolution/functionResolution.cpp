@@ -9888,8 +9888,21 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
 
     Expr* stmt = call->getStmtExpr();
 
-    const char* msg = "default initialization of tuple containing "
-                      "array or domain type not yet implemented";
+    const char* msg = NULL;
+
+    bool tupleDefaultOf = false;
+    if (FnSymbol* fn = call->getFunction())
+      if (fn->name == astr_defaultOf)
+        if (fn->retType->symbol->hasFlag(FLAG_TUPLE))
+          tupleDefaultOf = true;
+
+    if (tupleDefaultOf) {
+      msg = "default initialization of tuple containing "
+            "array or domain type not yet implemented";
+    } else {
+      msg = "default initialization of type containing "
+            "array or domain type not yet implemented";
+    }
     stmt->insertBefore(new CallExpr(PRIM_RT_ERROR, new_CStringSymbol(msg)));
 
     // Create a local type variable that will be uninitialized
