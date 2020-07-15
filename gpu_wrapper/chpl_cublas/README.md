@@ -1,4 +1,4 @@
-###Compile
+### Compile
 
 #### chpl + cuBLAS
 compile `c_cublas.c`:
@@ -14,7 +14,7 @@ compile `chpl_cublas_time.chpl`:
 compile 'c_cublas_time.c`:
 ```nvcc -o c_cublas_time c_cublas_time.c -lcublas```
 
-###Run
+### Run
 
 `chpl_cublas_time.chpl` performs cublas saxpy (y = a*x + y) on N values with chpl calling a cuBLAS wrapper. Run `chpl_cublas_time.chpl` with:
 
@@ -29,7 +29,7 @@ where N is the problem size.
 where N is the problem size.
 
 
-#Performance comparison between c+cuBLAS and chpl+cuBLAS
+### Performance comparison between c+cuBLAS and chpl+cuBLAS
 
 #### chpl + cuBLAS
 create a log file `chpl_cublas_times.log` to record timings.
