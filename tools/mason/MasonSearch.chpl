@@ -65,7 +65,7 @@ proc masonSearch(ref args: list(string)) {
   var packages: list(string);
   var versions: list(string);
   var registries: list(string);
-
+  const numOfReg = MASON_REGISTRY.size;
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
@@ -89,7 +89,12 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
-  var res = rankResults(results, query);
+  var res: list(string);
+  if numOfReg > 1 then res = rankResults(results, query);  
+  else {
+    res = rankOnScores(results, query);
+    //res = rankResults(res, query);
+  }
   for r in res do writeln(r);
   
   // Handle --show flag
@@ -119,6 +124,38 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
+/* Sort based on scores from cache file */
+proc rankOnScores(res: list(string), query: string) {
+  use Map;
+  const parse = open(MASON_HOME + '/mason-registry/cache.toml', iomode.r);
+  const cacheFile = owned.create(parseToml(parse));
+  var packageScores: map(string, int);
+  for r in res {
+    r = r.replace('(', '');
+    r = r.replace(')', '');
+    r = r.replace(' ', '');
+    const packageName: string = r;
+    const defaultScore = 5;
+    var packageScore : int; 
+    if cacheFile.pathExists(packageName){ 
+      packageScore = cacheFile[r]!['score']!.s : int;
+      packageScores.add(packageName, packageScore);
+    } else packageScores.add(packageName, defaultScore);
+  }
+  //for r in res do writeln(r,' ', packageScores[r]);
+  //writeln();
+  use Sort;
+  record Comparator { }
+  proc Comparator.compare(a, b) {
+    //writeln(a,"->",packageScores[a], ' ',b,"->",packageScores[b]);
+    if packageScores[a] > packageScores[b] then return -1;
+    else return 1;
+  }
+  var cmp : Comparator;
+  var result = res.toArray();
+  sort(result, comparator=cmp);
+  return result;
+}
 
 /* Sort the results in a order such that results that startWith needle
    are displayed first */
@@ -128,6 +165,7 @@ proc rankResults(results: list(string), query: string): [] string {
   proc Comparator.compare(a, b) {
     if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
     else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
+    else if a.toLower().size < b.toLower().size then return -1;
     else return 1;
   }
   var cmp : Comparator;
