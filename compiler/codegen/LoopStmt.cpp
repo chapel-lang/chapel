@@ -35,9 +35,6 @@ static void markVectorizationHazards(LoopStmt* loop) {
     report = (developer || mod->modTag == MOD_USER);
   }
 
-  if (loop->id == 1851472)
-    gdbShouldBreakHere();
-
   std::vector<DefExpr*> defExprs;
   collectDefExprs(loop, defExprs);
 
@@ -56,10 +53,17 @@ static void markVectorizationHazards(LoopStmt* loop) {
     bool defVarUsedOutsideOfLoop = false;
 
     for_SymbolSymExprs(se, sym) {
+      // Ignore PRIM_NO_ALIAS_SET and PRIM_COPIES_NO_ALIAS_SET
+      CallExpr* call = toCallExpr(se->parentExpr);
+      if (call && (call->isPrimitive(PRIM_NO_ALIAS_SET) ||
+                   call->isPrimitive(PRIM_COPIES_NO_ALIAS_SET)))
+        continue;
+
       if (!loop->contains(se)) {
         defVarUsedOutsideOfLoop = true;
       }
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+
+      if (call != NULL) {
         // was the address taken?
         if (call->isPrimitive(PRIM_ADDR_OF) ||
             call->isPrimitive(PRIM_SET_REFERENCE) ||
@@ -122,12 +126,20 @@ static void markVectorizationHazards(LoopStmt* loop) {
         parallelLoopAccessHazard = true;
 
         if (report) {
+          const char* msg = NULL;
           if (addressTaken)
-            USR_PRINT(sym, "parallel access disabled -- address taken");
+            msg = "parallel access disabled -- address taken";
           else if (ndefs > 1)
-            USR_PRINT(sym, "parallel access disabled -- multiple defs");
+            msg = "parallel access disabled -- multiple defs";
           else if (needsGets)
-            USR_PRINT(sym, "parallel access disabled -- could GET");
+            msg = "parallel access disabled -- could GET";
+
+          if (msg != NULL) {
+            if (developer)
+              USR_PRINT(sym, "%s [%i]", msg, sym->id);
+            else
+              USR_PRINT(sym, "%s", msg);
+          }
         }
       }
     }
@@ -138,7 +150,11 @@ static void markVectorizationHazards(LoopStmt* loop) {
         parallelLoopAccessHazard = true;
 
         if (report) {
-          USR_PRINT(sym, "vectorization disabled -- def used outside loop");
+          const char* msg = "vectorization disabled -- def used outside loop";
+          if (developer)
+            USR_PRINT(sym, "%s [%i]", msg, sym->id);
+          else
+            USR_PRINT(sym, "%s", msg);
         }
       }
     }
