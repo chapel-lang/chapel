@@ -964,9 +964,16 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
       leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
-      leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
-                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
+
+      // override the dynamic check if the compiler can prove it's safe
+      if (pfs->optInfo.confirmedFastFollower) {
+        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
+      }
+      else {
+        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+                                            new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
+                                            new_Expr("'move'(%S, %S)", T2, gFalse)));
+      }
     }
 
     SymbolMap map;

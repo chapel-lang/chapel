@@ -10,7 +10,7 @@ Loop is suitable for further analysis
 Potential access
 	elemAsIndex.chpl:20
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	elemAsIndex.chpl:15
 
 	Marking dynamic candidate

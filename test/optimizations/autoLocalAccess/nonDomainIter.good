@@ -10,13 +10,13 @@ Loop is suitable for further analysis
 Potential access
 	nonDomainIter.chpl:20
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	nonDomainIter.chpl:14
 
 Potential access
 	nonDomainIter.chpl:20
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	nonDomainIter.chpl:15
 
 	Marking dynamic candidate

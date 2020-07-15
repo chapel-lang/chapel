@@ -26,7 +26,6 @@
 #include "passes.h"
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -36,6 +35,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
+#include "preNormalizeOptimizations.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
@@ -124,7 +124,7 @@ static bool        firstConstructorWarning = true;
 
 void normalize() {
 
-  autoLocalAccess();
+  doPreNormalizeArrayOptimizations();
 
   insertModuleInit();
 
