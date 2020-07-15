@@ -5674,6 +5674,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       } else {
         ret = codegenFieldPtr(obj, se);
       }
+      if (isHeapType(call->get(1)->getValType()))
+        ret.mustPointToNonStack = true;
+      else
+        ret.mustPointToNonStack = obj.mustPointToNonStack;
 
       retval = true;
       break;

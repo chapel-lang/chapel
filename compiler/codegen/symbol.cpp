@@ -2225,9 +2225,12 @@ bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
   }
 
   if (CallExpr* call = toCallExpr(e)) {
+    FnSymbol* fn = call->resolvedOrVirtualFunction();
     if (call->isPrimitive(PRIM_GET_MEMBER) ||
         call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
-        call->isPrimitive(PRIM_ARRAY_GET)) {
+        call->isPrimitive(PRIM_ARRAY_GET) ||
+        call->isPrimitive(PRIM_SET_REFERENCE) ||
+        (fn && fn->hasFlag(FLAG_STAR_TUPLE_ACCESSOR))) {
       if (isHeapType(call->get(1)->getValType()))
         return true;
       else
@@ -2245,11 +2248,13 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
       Symbol* lhs = lhsSe->symbol();
       Type* lhsType = lhs->typeInfo();
       TypeSymbol* ts = lhsType->symbol;
-      bool isRef = lhs->isRefOrWideRef();
+      bool isRef = lhs->isRefOrWideRef() && call->isPrimitive(PRIM_MOVE);
       bool isPtr = ts->hasFlag(FLAG_C_PTR_CLASS) ||
                    ts->hasFlag(FLAG_DATA_CLASS);
       if (isRef || isPtr)
         if (isVarSymbol(lhs))
+          // Only variables within a vectorized-loop are relevant
+          // for llvm.loop.parallel_accesses
           if (outerMostOrderIndependentLoop &&
               outerMostOrderIndependentLoop->contains(lhs->defPoint))
             if (exprPointsToNonStack(call->get(2)))
