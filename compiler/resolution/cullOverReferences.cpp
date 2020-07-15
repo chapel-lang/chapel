@@ -62,7 +62,7 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
+static const int breakOnId1 = 1374151;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
@@ -878,6 +878,7 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
 // the SymExpr in a ref field? If so, add the tuple as a dependency.
 bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
                                      GraphNode node, bool &revisit) {
+  Symbol* sym = se->symbol();
 
   if (FnSymbol* calledFn = call->resolvedFunction()) {
     if (!calledFn->hasFlag(FLAG_BUILD_TUPLE))
@@ -914,6 +915,8 @@ bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
 
       // If it is a ref field, collect it for later.
       if (tupleField->isRef()) {
+
+        DEBUG_SYMBOL(sym);
         DEBUG_SYMBOL(lhsSymbol);
 
         GraphNode srcNode = makeNode(lhsSymbol, j);
@@ -969,6 +972,7 @@ bool CullRefCtx::checkContextCallExpr(CallExpr* call, GraphNode node,
 // consider it const if the result of the tuple cast is const.
 bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
                                     GraphNode node, bool &revisit) {
+  Symbol* sym = se->symbol();
 
   if (FnSymbol* calledFn = call->resolvedFunction()) {
     if (!calledFn->hasFlag(FLAG_TUPLE_CAST_FN))
@@ -976,16 +980,31 @@ bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
 
     CallExpr* move = toCallExpr(call->parentExpr);
 
-    if (move && move->isPrimitive(PRIM_MOVE)) {
+    if (move != NULL && move->isPrimitive(PRIM_MOVE)) {
       SymExpr*  lhs       = toSymExpr(move->get(1));
       Symbol*   lhsSymbol = lhs->symbol();
-      GraphNode srcNode   = makeNode(lhsSymbol, node.fieldIndex);
 
-      collectedSymbols.push_back(srcNode);
-      addDependency(revisitGraph, srcNode, node);
-      revisit = true;
+      AggregateType* lhsAt = toAggregateType(lhsSymbol->type);
 
-      return true;
+      // AFAIK, only internal (tuple -> tuple) casts that adjust tuple ref
+      // levels will be labeled with the flag FLAG_TUPLE_CAST_FN.
+      INT_ASSERT(lhsAt != NULL);
+      INT_ASSERT(lhsAt->symbol->hasFlag(FLAG_TUPLE));
+
+      // Only add the LHS as a dependency if it contains reference fields.
+      // If not, then it's a cast to a value tuple and we don't care
+      // about it.
+      if (containsReferenceFields(lhsAt)) {
+        DEBUG_SYMBOL(sym);
+        DEBUG_SYMBOL(lhsSymbol);
+
+        GraphNode srcNode   = makeNode(lhsSymbol, node.fieldIndex);
+        collectedSymbols.push_back(srcNode);
+        addDependency(revisitGraph, srcNode, node);
+        revisit = true;
+
+        return true;
+      }
     }
   }
 
