@@ -40,3 +40,6 @@ run chpl+cuBLAS on problem sizes 2 to 2^30 with:
 #### c + cuBLAS
 run c+cuBLAS on problem sizes 2 to 2^30 with:
 ```bash run_c_cublas_time.sh```
+
+figure of chpl+cuBLAS and c+cuBLAS across problem sizes from 2 to 2^30:
+![Alt text](c_chpl_cublas_timing.jpeg?raw=true)
