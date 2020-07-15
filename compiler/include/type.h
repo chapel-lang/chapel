@@ -450,6 +450,7 @@ int  get_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
+bool isHeapType(Type* t); // includes ddata, classes, wide classes
 bool isClassOrNil(Type* t);
 bool isUnmanagedClass(Type* t);
 bool isBorrowedClass(Type* t);

@@ -342,6 +342,7 @@ symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
 symbolFlag( FLAG_POD , ypr, "plain old data" , "data can be bit copied")
 
 
+symbolFlag( FLAG_POINTS_NON_STACK , npr, "points non stack" , "points to non stack memory")
 symbolFlag( FLAG_PRIMITIVE_TYPE , ypr, "primitive type" , "attached to primitive types to keep them from being deleted" )
 symbolFlag( FLAG_PRINT_MODULE_INIT_FN , ypr, "print module init fn" , ncm )
 symbolFlag( FLAG_PRINT_MODULE_INIT_INDENT_LEVEL , ypr, "print module init indent level" , ncm )

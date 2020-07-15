@@ -123,6 +123,12 @@ public:
   // is the only store to that memory
   bool alreadyStored;
 
+  // Used for generating LLVM parallel_loop_accesses metadata.
+  // Loads/stores to/from stack variables should not be considered for this,
+  // so this variable tracks if a pointer must point to something other
+  // than a local variable (e.g. an array element, a class field).
+  bool mustPointToNonStack;
+
   // always set if available
   // note that the chplType of a GenRet corresponds to the Chapel
   // type of the result of codegenValue on it - that is, chplType
@@ -148,6 +154,7 @@ public:
              fieldOffset(0), fieldTbaaTypeDescriptor(NULL),
              aliasScope(NULL), noalias(NULL),
              canBeMarkedAsConstAfterStore(false), alreadyStored(false),
+             mustPointToNonStack(false),
              chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
 
   // Allow implicit conversion from AST elements.
