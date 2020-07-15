@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+system=$($CHPL_HOME/util/printchplenv | grep 'CHPL_TARGET_PLATFORM' | cut -d\  -f2)
+
+if [ "$system" = "cray-cs" ] || [ "$system" = "cray-xc" ]
+then 
+    echo "-s blasImpl=blas" > dot-perf.perfcompopts
+else
+    echo "-s blasImpl=off" > dot-perf.perfcompopts
+fi
