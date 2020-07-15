@@ -28,7 +28,7 @@ Access base's domain is the iterator
 Potential access
 	dynamicChecks.chpl:30
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	dynamicChecks.chpl:20
 
 Potential access
@@ -40,7 +40,7 @@ Potential access
 Potential access
 	dynamicChecks.chpl:32
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	dynamicChecks.chpl:22
 
 	Marking static candidate
