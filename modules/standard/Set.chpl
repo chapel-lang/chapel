@@ -642,31 +642,20 @@ module Set {
     :arg rhs: A set to take the intersection of.
   */
   proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    /* Iterate over the smaller set.  But we can't remove things from
-       lhs while iterating over it.  So use a temporary if lhs is
-       significantly smaller than rhs; otherwise just iterate over rhs. */
-    if lhs.size < 2 * rhs.size {
-      var result: set(t, (lhs.parSafe || rhs.parSafe));
+    /* We can't remove things from lhs while iterating over it, so
+     * use a temporary. */
+    var result: set(t, (lhs.parSafe || rhs.parSafe));
 
-      if lhs.parSafe && rhs.parSafe {
-        forall x in lhs do
-          if rhs.contains(x) then
-            result.add(x);
-      } else {
-        for x in lhs do
-          if rhs.contains(x) then
-            result.add(x);
-      }
-      lhs = result;
+    if lhs.parSafe && rhs.parSafe {
+      forall x in lhs do
+        if rhs.contains(x) then
+          result.add(x);
     } else {
-      if lhs.parSafe && rhs.parSafe {
-        forall x in rhs do
-          lhs.remove(x);
-      } else {
-        for x in rhs do
-          lhs.remove(x);
-      }
+      for x in lhs do
+        if rhs.contains(x) then
+          result.add(x);
     }
+    lhs = result;
   }
 
   /*
