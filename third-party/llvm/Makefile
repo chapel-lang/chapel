@@ -28,7 +28,7 @@ ifeq ($(CHPL_LLVM_ASSERTS),1)
 endif
 
 ifdef CHPL_RV
-CHPL_RV_CMAKE = -DRV_ENABLE_CRT=on -DLLVM_ENABLE_CXX1Y=on -DLLVM_CXX_STD:STRING=c++14
+CHPL_RV_CMAKE = -DLLVM_EXTERNAL_PROJECTS="rv" -DLLVM_EXTERNAL_RV_SOURCE_DIR=$(LLVM_SRC_DIR)/../rv -DRV_ENABLE_CRT=on
 endif
 
 ifneq ($(LLVM_SUBDIR),llvm-src)
@@ -106,7 +106,13 @@ clobber: FORCE
 $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
-	  cd $(LLVM_BUILD_DIR) && cmake \
+	  echo ; \
+	else \
+	  echo Error: LLVM requires cmake 3.4.3 or later to build; \
+	  exit 1; \
+	fi
+
+	cd $(LLVM_BUILD_DIR) && cmake \
 	    -DCMAKE_INSTALL_PREFIX=$(LLVM_INSTALL_DIR) \
 	    -DCMAKE_C_COMPILER='$(CC)' \
 	    -DCMAKE_CXX_COMPILER='$(CXX)' \
@@ -117,6 +123,7 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
 	    -DCLANG_ENABLE_ARCMT=0 \
+	    -DCLANG_ANALYZER_ENABLE_Z3_SOLVER=0 \
 	    -DCLANG_ENABLE_STATIC_ANALYZER=0 \
 	    -DLLVM_TARGETS_TO_BUILD="host;X86;AArch64" \
 	    -DLLVM_INSTALL_UTILS=ON \
@@ -126,10 +133,6 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    $(CHPL_RV_CMAKE) \
 	    -Wno-dev \
 	    $(LLVM_SRC_DIR) ; \
-	else \
-	  echo Error: LLVM requires cmake 3.4.3 or later to build; \
-	  exit 1; \
-	fi
 
 
 $(LLVM_HEADER_FILE):
