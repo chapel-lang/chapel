@@ -1740,6 +1740,8 @@ inline proc LocStencilArr.this(i) ref {
   return myElems(i);
 }
 
+override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
+
 //
 // Privatization
 //

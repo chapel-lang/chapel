@@ -1,7 +1,7 @@
-use BlockDist;
-use CyclicDist;
+use common;
 
-var D = newBlockDom({1..10});
+
+var D = createDom({1..10});
 
 
 var A: [D] int;

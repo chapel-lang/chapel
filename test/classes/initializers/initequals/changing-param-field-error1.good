@@ -1,0 +1,2 @@
+changing-param-field-error1.chpl:30: In function 'main':
+changing-param-field-error1.chpl:34: error: cannot change fixed field in initialization

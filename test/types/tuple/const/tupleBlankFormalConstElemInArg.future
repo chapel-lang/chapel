@@ -1,0 +1,4 @@
+#14902
+
+Tuple expressions do not appear to propagate constness when capturing const
+elements (these are `referential tuples` in the spec).

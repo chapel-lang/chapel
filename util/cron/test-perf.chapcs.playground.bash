@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of getting arrays to use copy init
-GITHUB_USER=mppf
-GITHUB_BRANCH=array-coerce
-SHORT_NAME=array-coerce
-START_DATE=05/18/20
+# Test performance of doing parallel init for all array types
+GITHUB_USER=ronawho
+GITHUB_BRANCH=parallel-array-init-deinit
+SHORT_NAME=par-init
+START_DATE=07/10/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.22 - to be updated each release */
-const spackVersion = '0.14.2';
+const spackVersion = '0.15.0';
 const v = spackVersion.split('.');
 const major = v[0];
 const minor = v[1];
@@ -66,7 +66,7 @@ proc masonExternal(args: [] string) {
       if !isDir(MASON_HOME+'/spack-registry') {
         writeln("Installing Spack Registry ...");
         const dest = MASON_HOME + '/spack-registry';
-        const branch = ' --branch master ';
+        const branch = ' --branch releases/latest ';
         const status = cloneSpackRepository(branch, dest);
         if status != 0 then throw new owned MasonError("Spack registry installation failed.");
       }
@@ -140,7 +140,7 @@ proc setupSpack() throws {
   const destCLI = MASON_HOME + "/spack/";
   const spackLatestBranch = ' --branch v' + spackVersion + ' ';
   const destPackages = MASON_HOME + "/spack-registry";
-  const spackMasterBranch = ' --branch master ';
+  const spackMasterBranch = ' --branch releases/latest ';
   const statusCLI = cloneSpackRepository(spackLatestBranch, destCLI);
   const statusPackages = cloneSpackRepository(spackMasterBranch, destPackages);
   generateYAML();

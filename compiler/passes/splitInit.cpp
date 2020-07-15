@@ -408,7 +408,21 @@ static found_init_t doFindInitPoints(Symbol* sym,
       }
 
     } else if (isFunctionOrTypeDeclaration(cur)) {
-      // OK: mentions like `proc f() { ... x ... }` don't count
+      // OK: mentions like `proc f() { ... x ... }` don't change
+      // split init behavior.
+
+      // but do check for uses within outlined task functions
+      if (DefExpr* def = toDefExpr(cur)) {
+        if (FnSymbol* fn = toFnSymbol(def->sym)) {
+          if (isTaskFun(fn)) {
+            // check for uses within the task function
+            if (SymExpr* se = findSymExprFor(cur, sym)) {
+              usePreventingSplitInit = se;
+              return FOUND_USE;
+            }
+          }
+        }
+      }
     } else {
       // Look for uses of 'x' before the first assignment
       if (SymExpr* se = findSymExprFor(cur, sym)) {
@@ -419,10 +433,11 @@ static found_init_t doFindInitPoints(Symbol* sym,
     }
 
     if (fVerify) {
-      // Redundantly check for uses
+      // Redundantly check for uses, but ignore inner functions
       if (!isEndOfStatementMarker(cur) && !isFunctionOrTypeDeclaration(cur))
-        if (findSymExprFor(cur, sym) != NULL)
-          INT_FATAL("use not found above");
+        if (SymExpr* se = findSymExprFor(cur, sym))
+          if (se->parentSymbol == cur->parentSymbol)
+            INT_FATAL("use not found above");
     }
   }
 

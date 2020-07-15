@@ -83,9 +83,9 @@ writef("MFLOPS : %10.4dr\n",mflops);
 
 proc evolve() {
   forall ijk in DomT {
-    const elt = V.localAccess[ijk]*Twiddle.localAccess[ijk];
-    V.localAccess[ijk] = elt;
-    Wt.localAccess[ijk] = elt;
+    const elt = V[ijk]*Twiddle[ijk];
+    V[ijk] = elt;
+    Wt[ijk] = elt;
   }
   doFFT_Transposed(FFTtype.DFT, Wt, W, FFTW_BACKWARD); // This is unnormalized
 
@@ -126,7 +126,7 @@ proc initialize_twiddle() {
       const x1 = if idx >= N/2 then idx-N else idx;
       e += x1**2;
     }
-    Twiddle.localAccess[xyz] = exp(-fac*e);
+    Twiddle[xyz] = exp(-fac*e);
   }
 }
 

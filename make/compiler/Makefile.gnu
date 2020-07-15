@@ -44,6 +44,13 @@ CFLAGS += -fprofile-arcs -ftest-coverage
 LDFLAGS += -fprofile-arcs
 endif
 
+include $(CHPL_MAKE_HOME)/make/compiler/Makefile.sanitizers
+CFLAGS += $(SANITIZER_CFLAGS)
+CXXFLAGS += $(SANITIZER_CFLAGS)
+LDFLAGS += $(SANITIZER_LDFLAGS)
+GEN_LFLAGS += $(SANITIZER_LDFLAGS)
+OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
+
 #
 # Flags for compiler, runtime, and generated code
 #
@@ -186,12 +193,22 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
+# Avoid false positives for allocation size and memcpy. Note that we use
+# -Walloc-size-larger-than=SIZE_MAX instead of `-Wno-alloc-size-larger-than`
+# since that did not exist in gcc 8.
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 7; echo "$$?"),0)
+WARN_CXXFLAGS += -Walloc-size-larger-than=18446744073709551615
+SQUASH_WARN_GEN_CFLAGS += -Walloc-size-larger-than=18446744073709551615 -Wno-restrict
+endif
+
+#
 # Avoid false positive warnings about class member access and string overflows.
 # The string overflow false positives occur in runtime code unlike gcc 7.
-# Also avoid false positives for allocation size, array bounds, and comments.
+# Also avoid false positives for array bounds and comments.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CXXFLAGS += -Wno-class-memaccess -Walloc-size-larger-than=18446744073709551615
+WARN_CXXFLAGS += -Wno-class-memaccess
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif

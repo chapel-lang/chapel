@@ -310,6 +310,8 @@ override proc Cyclic.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
+override proc CyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
+
 proc Cyclic.init(other: Cyclic, privateData,
                  param rank = other.rank,
                  type idxType = other.idxType) {
@@ -860,6 +862,10 @@ inline proc _remoteAccessData.getDataIndex(
     }
   }
   return sum;
+}
+
+inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref {
+  return _to_nonnil(myLocArr).this(i);
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {

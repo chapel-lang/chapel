@@ -1,0 +1,2 @@
+Array of tuple emits default initialization errors instead of halting
+at domain resize
