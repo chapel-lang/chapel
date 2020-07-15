@@ -89,12 +89,15 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
+  writeln("Packages");
+  for r in results do writeln(r);
+  writeln();
   var res: list(string);
   if numOfReg > 1 then res = rankResults(results, query);  
   else {
-    res = rankOnScores(results, query);
-    //res = rankResults(res, query);
+    res = rankResults(results, query);
   }
+  writeln("Post sorting: ");
   for r in res do writeln(r);
   
   // Handle --show flag
@@ -124,43 +127,53 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
-/* Sort based on scores from cache file */
-proc rankOnScores(res: list(string), query: string) {
+/* Returns a map of packages found in cache along with their scores */
+proc getPackageScores(res: list(string)) {
   use Map;
   const parse = open(MASON_HOME + '/mason-registry/cache.toml', iomode.r);
   const cacheFile = owned.create(parseToml(parse));
   var packageScores: map(string, int);
+  var packageName: string;
+  const defaultScore = 5;
+  var packageScore : int; 
   for r in res {
     r = r.replace('(', '');
     r = r.replace(')', '');
     r = r.replace(' ', '');
-    const packageName: string = r;
-    const defaultScore = 5;
-    var packageScore : int; 
+    packageName = r;
     if cacheFile.pathExists(packageName){ 
       packageScore = cacheFile[r]!['score']!.s : int;
       packageScores.add(packageName, packageScore);
     } else packageScores.add(packageName, defaultScore);
   }
-  //for r in res do writeln(r,' ', packageScores[r]);
-  //writeln();
+  return packageScores; 
+}
+
+/* Sort based on scores from cache file */
+proc rankOnScores(results: list(string)) {
   use Sort;
+  var packageScores = getPackageScores(results);
   record Comparator { }
   proc Comparator.compare(a, b) {
-    //writeln(a,"->",packageScores[a], ' ',b,"->",packageScores[b]);
+    writeln(a,"->",packageScores[a], ' ',b,"->",packageScores[b]);
     if packageScores[a] > packageScores[b] then return -1;
     else return 1;
   }
-  var cmp : Comparator;
-  var result = res.toArray();
-  sort(result, comparator=cmp);
-  return result;
+  var rankCmp : Comparator;
+  var res = results.toArray();
+  sort(res, comparator=rankCmp);
+  return res;
 }
 
 /* Sort the results in a order such that results that startWith needle
    are displayed first */
 proc rankResults(results: list(string), query: string): [] string {
   use Sort;
+  var res = rankOnScores(results);
+  writeln();
+  writeln("Post ranking on Scores ");
+  for r in res do writeln(r);
+  writeln();
   record Comparator { }
   proc Comparator.compare(a, b) {
     if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
@@ -169,9 +182,7 @@ proc rankResults(results: list(string), query: string): [] string {
     else return 1;
   }
   var cmp : Comparator;
-  var res = results.toArray();
-  if query == ".*" then sort(res);
-  else sort(res, comparator=cmp);
+  if query != ".*" then sort(res, comparator=cmp);
   return res;
 }
 
