@@ -27,6 +27,7 @@ use MasonUtils;
 use MasonEnv;
 use MasonSystem;
 use MasonExternal;
+use MasonHelp;
 
 
 /*
@@ -60,7 +61,10 @@ proc UpdateLock(args: [?d] string, tf="Mason.toml", lf="Mason.lock") {
 proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
 
   try! {
-
+    if args.count('-h') == 1 || args.count('--help') == 1 {
+      masonUpdateHelp();
+      exit(0);
+    }
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
