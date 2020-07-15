@@ -965,7 +965,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
     } else {
       leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
 
-      // override the dynamic check if the compiler can call it
+      // override the dynamic check if the compiler can prove it's safe
       if (pfs->optInfo.confirmedFastFollower) {
         leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
       }

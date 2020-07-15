@@ -124,7 +124,7 @@ static bool        firstConstructorWarning = true;
 
 void normalize() {
 
-  doPreNormalizeOptimizations();
+  doPreNormalizeArrayOptimizations();
 
   insertModuleInit();
 

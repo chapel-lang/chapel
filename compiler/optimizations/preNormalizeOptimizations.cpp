@@ -86,7 +86,7 @@ static CallExpr *confirmAccess(CallExpr *call);
 
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 
-void doPreNormalizeOptimizations() {
+void doPreNormalizeArrayOptimizations() {
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
                                  !fNoFastFollowers;
 
