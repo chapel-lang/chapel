@@ -11,7 +11,7 @@ compile `chpl_cublas_time.chpl`:
 ```chpl chpl_cublas_time.chpl -L/usr/local/cuda-10.2/lib64 -lcudart -lcublas```
 
 #### c + cuBLAS
-compile 'c_cublas_time.c`:
+compile `c_cublas_time.c`:
 ```nvcc -o c_cublas_time c_cublas_time.c -lcublas```
 
 ### Run
