@@ -267,6 +267,7 @@ types/string/psahabu/split-whitespace-perf.graph
 types/string/psahabu/perf/allocate.graph
 types/string/psahabu/perf/arguments.graph
 types/string/psahabu/perf/search.graph
+types/string/psahabu/perf/search-throughput.graph
 types/string/psahabu/perf/substring.graph
 # suite: Standard Library
 library/packages/Sort/performance/sorts-linearithmic.graph
