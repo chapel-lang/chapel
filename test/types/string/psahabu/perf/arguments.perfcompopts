@@ -1,0 +1,3 @@
+-stestType=types.asciiString  # arguments
+-stestType=types.utf8String  # arguments-utf8
+-stestType=types.byteString  # arguments-bytes
