@@ -1556,6 +1556,7 @@ module Random {
     // PCGRandomStream iterator implementation
     //
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
@@ -1572,6 +1573,7 @@ module Random {
     }
 
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
@@ -2824,6 +2826,7 @@ module Random {
     // RandomStream iterator implementation
     //
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
@@ -2841,6 +2844,7 @@ module Random {
     }
 
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {

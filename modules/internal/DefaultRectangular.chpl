@@ -202,7 +202,6 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank-1 {
         for i in ranges(d) do
@@ -235,7 +234,6 @@ module DefaultRectangular {
     }
 */
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size-1 {
         for i in block(d) do
@@ -269,7 +267,6 @@ module DefaultRectangular {
     }
 */
 
-    pragma "order independent yielding loops"
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
@@ -1144,7 +1141,6 @@ module DefaultRectangular {
     //
     // Simple-ddata iterators (locale models without sublocales)
     //
-    pragma "order independent yielding loops"
     iter these(tasksPerLocale:int = dataParTasksPerLocale,
                ignoreRunning:bool = dataParIgnoreRunningTasks,
                minIndicesPerTask:int = dataParMinGranularity) ref {
@@ -1184,7 +1180,6 @@ module DefaultRectangular {
         yield followThis;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,

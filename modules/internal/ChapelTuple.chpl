@@ -234,6 +234,7 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these() ref
   {
 
@@ -284,6 +285,7 @@ module ChapelTuple {
 
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {

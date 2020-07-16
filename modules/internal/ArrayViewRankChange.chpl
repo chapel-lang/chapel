@@ -228,7 +228,6 @@ module ArrayViewRankChange {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && chpl__isDROrDRView(downDom)
@@ -544,7 +543,6 @@ module ArrayViewRankChange {
     // standard iterators
     //
 
-    pragma "order independent yielding loops"
     iter these() ref {
       for elem in chpl__serialViewIter(this, privDom) do
         yield elem;

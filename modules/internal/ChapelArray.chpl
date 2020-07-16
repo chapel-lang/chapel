@@ -1366,7 +1366,6 @@ module ChapelArray {
       }
     }
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind)
       where tag == iterKind.standalone &&
             __primitive("method call resolves", _value, "these", tag=tag) {
@@ -1383,7 +1382,6 @@ module ChapelArray {
         yield followThis;
     }
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis, param fast: bool = false)
       where tag == iterKind.follower {
 
@@ -1520,7 +1518,6 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter dimIter(param d, ind) {
       for i in _value.dimIter(d, ind) do yield i;
     }
@@ -2923,7 +2920,6 @@ module ChapelArray {
 
     pragma "no doc"
     pragma "reference to const when const this"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
             __primitive("method call resolves", _value, "these", tag=tag) {
@@ -2938,7 +2934,6 @@ module ChapelArray {
     }
     pragma "no doc"
     pragma "reference to const when const this"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
 
@@ -3195,7 +3190,6 @@ module ChapelArray {
                  place (defaults to `here`)
        :type loc: locale
     */
-    pragma "order independent yielding loops"
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);

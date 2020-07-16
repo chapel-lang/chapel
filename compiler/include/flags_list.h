@@ -290,6 +290,9 @@ symbolFlag( FLAG_NO_RENAME, npr, "no rename", ncm)
 symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
 
+// See FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS below
+symbolFlag( FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent" )
+
 // See FLAG_POD below
 symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
 

@@ -1261,6 +1261,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
           // Bug note: computing 'myDims(dd)' instead of passing 'myDim'
           // would trip an assertion in the compiler.
+          pragma "order independent yielding loops"
           iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
             for myPiece in iter1d(dd, dom1d, loc1d) {
 
@@ -1388,6 +1389,7 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
 }
 
 // factor our some common code
+pragma "not order independent yielding loops"
 iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;

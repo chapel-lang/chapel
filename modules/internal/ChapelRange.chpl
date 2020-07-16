@@ -1799,7 +1799,6 @@ proc _cast(type t: range(?), r: range(?)) {
   // cases for when stride is a non-param int (don't want to deal with finding
   // chpl__diffMod and the likes, just create a non-anonymous range to iterate
   // over.)
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -1828,7 +1827,6 @@ proc _cast(type t: range(?), r: range(?)) {
 
   // cases for when stride is a param int (underlying iter can figure out sign
   // of stride.) Not needed, but allows us to us "<, <=, >, >=" instead of "!="
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), param stride : int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
@@ -1908,12 +1906,10 @@ proc _cast(type t: range(?), r: range(?)) {
   // Direct range iterators for low bounded counted ranges (low..#count)
   //
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: int(?w), count: int(w)) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: int(?w), count: uint(w)) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
@@ -1966,7 +1962,6 @@ proc _cast(type t: range(?), r: range(?)) {
   // range into the bounds of a fully bounded non-strided range. `low..#count`
   // becomes `low..(low + (count - 1))`. Needs to check for negative counts,
   // and for zero counts iterates over a degenerate `1..0`.
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter_helper(low, count) {
     if boundsChecking && isIntType(count.type) && count < 0 then
       HaltWrappers.boundsCheckHalt("With a negative count, the range must have a last index.");
@@ -2320,7 +2315,6 @@ proc _cast(type t: range(?), r: range(?)) {
   }
 
   pragma "no doc"
-  pragma "order independent yielding loops"
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
     if boundsChecking && this.isAmbiguous() then

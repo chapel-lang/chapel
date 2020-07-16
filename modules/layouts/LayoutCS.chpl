@@ -183,6 +183,7 @@ class CSDom: BaseSparseDomImpl {
                                initElts=initElts);
   }
 
+  pragma "not order independent yielding loops"
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
     for i in 1.._nnz by -1 {
@@ -197,6 +198,7 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
+  pragma "not order independent yielding loops"
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
     var cursor = if this.compressRows then rowRange.low else colRange.low;
@@ -230,6 +232,7 @@ class CSDom: BaseSparseDomImpl {
     // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
+  pragma "not order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
     if boundsChecking then

@@ -170,13 +170,11 @@ module ArrayViewSlice {
     // standard iterators
     //
 
-    pragma "order independent yielding loops"
     iter these() ref {
       for elem in chpl__serialViewIter(this, privDom) do
         yield elem;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {

@@ -239,7 +239,6 @@ module ArrayViewReindex {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
       for i in updom.these(tag, followThis) do
@@ -445,7 +444,6 @@ module ArrayViewReindex {
     // standard iterators
     //
 
-    pragma "order independent yielding loops"
     iter these() ref {
       for elem in chpl__serialViewIter(this, privDom) do
         yield elem;

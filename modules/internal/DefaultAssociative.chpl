@@ -186,7 +186,6 @@ module DefaultAssociative {
       return numEntries.read();
     }
 
-    pragma "order independent yielding loops"
     iter dsiIndsIterSafeForRemoving() {
       table.postponeResize = true;
       for i in this.these() do
