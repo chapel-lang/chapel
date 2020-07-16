@@ -123,8 +123,8 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
 
 // Are a tuple's field qualifiers ref instead of const? If so, then some
 // code somewhere set a const tuple element...
-static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
-                                 UseMap* um) {
+static bool checkTupleFormalUses(ArgSymbol* formal, Expr* actual,
+                                 CallExpr* call, UseMap* um) {
 
   FnSymbol* calledFn = call->resolvedFunction();
   INT_ASSERT(calledFn != NULL);
@@ -378,12 +378,10 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
         // Is this call a case error reporting should ignore?
         bool skip = isCallToSkip(formal, actual, call);
 
-        // TODO: Should checks for tuple elements run if whole-formal checks
-        // have emitted an error?
         if (!skip && !error) {
 
-          // Case: forward flow constness check for tuple elements.
-          if (checkTupleFormalUses(formal, call, reasonNotConst))
+          // Case: constness check for tuple elements.
+          if (checkTupleFormalUses(formal, actual, call, reasonNotConst))
             continue;
         } 
 
