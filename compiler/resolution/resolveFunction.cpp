@@ -558,8 +558,8 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isFollowerIterator(FnSymbol* fn);
-static bool isVecIterator(FnSymbol* fn);
+//static bool isFollowerIterator(FnSymbol* fn);
+//static bool isVecIterator(FnSymbol* fn);
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 
 static void markIterator(FnSymbol* fn) {
@@ -574,9 +574,10 @@ static void markIterator(FnSymbol* fn) {
   // invoked the iterator. Note that for nested loops with a single yield,
   // only the inner most loop is marked.
   //
-  if (isFollowerIterator(fn)   == true ||
-      isStandaloneIterator(fn) == true ||
-      isVecIterator(fn)        == true) {
+  if (fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
+      fn->hasFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS)) {
+    /*isFollowerIterator(fn)   == true ||
+      isStandaloneIterator(fn) == true ||*/
     std::vector<CallExpr*> callExprs;
 
     collectCallExprs(fn->body, callExprs);
@@ -608,7 +609,7 @@ bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
 }
 
-static bool isFollowerIterator(FnSymbol* fn) {
+/*static bool isFollowerIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gFollowerTag);
 }
 
@@ -621,6 +622,7 @@ static bool isVecIterator(FnSymbol* fn) {
 
   return retval;
 }
+*/
 
 // Simple wrappers to check if a function is a specific type of iterator
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {

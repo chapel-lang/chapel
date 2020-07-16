@@ -1480,27 +1480,47 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             TaskFnCopyMap& taskFnCopies,
                             bool&          addErrorArgToCall);
 
-static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody) {
-  bool isOrderIndependent = forLoop->isOrderIndependent();
-  bool hasVectorHazard = forLoop->hasVectorizationHazard();
+static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
+                               bool forVectorize) {
+  bool forIsOrderIndep = forLoop->isOrderIndependent();
+  bool forHasHazard = forLoop->hasVectorizationHazard();
+
+  if (forVectorize) {
+    forLoop->orderIndependentSet(true);
+    forIsOrderIndep = true;
+  }
+
+  // testiter
+  //   ibody is some range iterator code
+  //   forLoop has the testiter cursor loop
+
+  // If forLoop is not marked order independent, then
+  // the yielding loops in the body should also not be marked
+  // order independent.
 
   // if the loop being expanded was order independent, all of the yielding
   // loops in the body are also order independent. Note that this must occur
   // after the ibody replaces the forLoop since findEnclosingLoop() requires
   // that its argument be in the AST. It must occur before yields are
   // replaced in the functions below though.
-  if (isOrderIndependent || hasVectorHazard) {
-    std::vector<CallExpr*> callExprs;
+  std::vector<CallExpr*> callExprs;
 
-    collectCallExprs(ibody, callExprs);
+  collectCallExprs(ibody, callExprs);
 
-    for_vector(CallExpr, call, callExprs) {
-      if (call->isPrimitive(PRIM_YIELD)) {
-        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
-          if (loop->isCoforallLoop() == false) {
-            loop->orderIndependentSet(isOrderIndependent);
-            loop->setHasVectorizationHazard(hasVectorHazard);
-          }
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+        if (loop->isCoforallLoop() == false) {
+          // If the for loop is not order independent, neither
+          // should be the one we are replacing it with.
+          bool orderIndep = loop->isOrderIndependent();
+          orderIndep = orderIndep && forIsOrderIndep;
+          loop->orderIndependentSet(orderIndep);
+          // If the for loop had a vectorization hazard, so too
+          // does the one we are replacing it with.
+          bool hazard = loop->hasVectorizationHazard();
+          hazard = hazard || forHasHazard;
+          loop->setHasVectorizationHazard(hazard);
         }
       }
     }
@@ -1558,13 +1578,17 @@ expandIteratorInline(ForLoop* forLoop) {
     Symbol*       index = forLoop->indexGet()->symbol();
     BlockStmt*    ibody = iterator->body->copy();
 
+    if (forLoop->id == 207784 || forLoop->id == 1877648)
+      gdbShouldBreakHere();
+
     if (! preserveInlinedLineNumbers)
       reset_ast_loc(ibody, forLoop);
 
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
 
-    markLoopProperties(forLoop, ibody);
+    markLoopProperties(forLoop, ibody,
+                       iterator->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS));
 
     // Replace yield statements in the inlined iterator body with copies
     // of the body of the For Loop that invoked the iterator, substituting
@@ -2475,6 +2499,9 @@ expandForLoop(ForLoop* forLoop) {
       Vec<BaseAST*> asts;
       collect_asts_postorder(iterFn, asts);
 
+      if (forLoop->id == 1885107)
+        gdbShouldBreakHere();
+
       // If the iterator cannot be inlined a re-entrant advance function will
       // be built. This function maintains state and must be called in order.
       // If inlined, the iterator's loop will be order independent if it was
@@ -2482,7 +2509,7 @@ expandForLoop(ForLoop* forLoop) {
       bool curOrderIndependent = false;
       if (CallExpr* singleLoopYield = isSingleLoopIterator(iterFn, asts)) {
         if (LoopStmt* loop = LoopStmt::findEnclosingLoop(singleLoopYield)) {
-          curOrderIndependent = loop->isOrderIndependent() || forLoop->isOrderIndependent();
+          curOrderIndependent = loop->isOrderIndependent();
         }
       }
       allOrderIndependent = allOrderIndependent && curOrderIndependent;
