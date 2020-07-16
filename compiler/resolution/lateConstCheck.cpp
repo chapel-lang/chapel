@@ -44,6 +44,8 @@ static const int breakOnId1 = 0;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
+static const bool verboseDebugInfo = 0;
+
 #define DEBUG_SYMBOL(sym__) \
   do { \
     if (sym__->id == breakOnId1 || sym__->id == breakOnId2 || \
@@ -234,6 +236,21 @@ static bool checkTupleFormalUses(ArgSymbol* formal, CallExpr* call,
       // field index before we can use this functionality.
       if (use != NULL) {
         USR_PRINT(use, "possibly set here");
+      }
+
+      if (verboseDebugInfo) {
+        printf("Printing use chain for formal %s [%d]\n",
+                formal->name,
+                formal->id);
+
+        BaseAST* tmp = use;
+        int count = 0;
+
+        while (tmp != NULL) {
+          printf("%d: %d\n", count, tmp->id);
+          count++;
+          tmp = um->count(tmp) ? um->at(tmp) : NULL;
+        }
       }
 
       result = true;
