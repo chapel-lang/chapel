@@ -323,6 +323,24 @@ symbolFlag( FLAG_OVERRIDE , npr, "method overrides" , ncm )
 // variables added by flatten functions
 symbolFlag( FLAG_OUTER_VARIABLE , npr, "outer variable" , ncm )
 
+// This means that the yielding loops themselves within an iterator
+// are order independent. It does not mean that all uses of the iterator
+// are order independent. And, it does not assert that iterators invoked
+// by this iterator are also order independent.
+//
+//  for x in myIter()  // still not order independent
+//
+// if myIter contains
+//    for i in otherIterator()
+//
+// then the resulting for loop is only order independent if otherIterator
+// is as well.
+//
+// So this applies only to code within this specific iterator.
+// It should generally be set on serial, standalone, and follower iterators.
+// Not setting it implies that the loop has a vectorization hazard.
+symbolFlag( FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "order independent yielding loops", "yielding loops in iterator itself are order independent" )
+
 symbolFlag( FLAG_OWNED , ypr, "owned", "owned class instance for lifetime checking" )
 
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )

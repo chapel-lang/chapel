@@ -217,6 +217,7 @@ module ArrayViewRankChange {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downDom) {
         for i in upDom do
@@ -227,6 +228,7 @@ module ArrayViewRankChange {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && chpl__isDROrDRView(downDom)
@@ -236,6 +238,7 @@ module ArrayViewRankChange {
         yield i;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !localeModelHasSublocales
       && !chpl__isDROrDRView(downDom)
@@ -257,6 +260,7 @@ module ArrayViewRankChange {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
       if chpl__isDROrDRView(downDom) {
@@ -540,6 +544,7 @@ module ArrayViewRankChange {
     // standard iterators
     //
 
+    pragma "order independent yielding loops"
     iter these() ref {
       for elem in chpl__serialViewIter(this, privDom) do
         yield elem;
@@ -547,6 +552,7 @@ module ArrayViewRankChange {
 
     // TODO: We seem to run into compile-time bugs when using multiple yields.
     // For now, work around them by using an if-expr
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
@@ -563,6 +569,7 @@ module ArrayViewRankChange {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {

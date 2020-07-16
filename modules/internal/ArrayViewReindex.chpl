@@ -199,6 +199,7 @@ module ArrayViewReindex {
       ownsDownDomInst = true;
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       if chpl__isDROrDRView(downdom) {
         for i in updom do
@@ -209,6 +210,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && chpl__isDROrDRView(downdom)
       && __primitive("method call resolves", updom, "these", tag)
@@ -217,6 +219,7 @@ module ArrayViewReindex {
           yield i;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone
       && !chpl__isDROrDRView(downdom)
       && __primitive("method call resolves", downdom, "these", tag)
@@ -236,6 +239,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis)
       where tag == iterKind.follower {
       for i in updom.these(tag, followThis) do
@@ -441,11 +445,13 @@ module ArrayViewReindex {
     // standard iterators
     //
 
+    pragma "order independent yielding loops"
     iter these() ref {
       for elem in chpl__serialViewIter(this, privDom) do
         yield elem;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone && !localeModelHasSublocales &&
            __primitive("method call resolves", privDom, "these", tag) {
@@ -465,6 +471,7 @@ module ArrayViewReindex {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       for i in privDom.these(tag, followThis) {

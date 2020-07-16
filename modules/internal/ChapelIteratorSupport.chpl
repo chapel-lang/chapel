@@ -838,18 +838,21 @@ module ChapelIteratorSupport {
   // standalone versions
   //
   pragma "no doc"
+  pragma "vectorize yielding loops"
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.standalone && singleValIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
   pragma "no doc"
+  pragma "vectorize yielding loops"
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.standalone && singleRefIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
   pragma "no doc"
+  pragma "vectorize yielding loops"
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.standalone && numiterables > 1  {
     for i in zip((...iterables)) do yield i;
@@ -882,18 +885,21 @@ module ChapelIteratorSupport {
   // follower versions
   //
   pragma "no doc"
+  pragma "vectorize yielding loops"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...)
     where tag == iterKind.follower && singleValIter(iterables) {
       for i in iterables(0) do yield i;
   }
 
   pragma "no doc"
+  pragma "vectorize yielding loops"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...) ref
     where tag == iterKind.follower && singleRefIter(iterables) {
       for i in iterables(0) do yield i;
   }
 
   pragma "no doc"
+  pragma "vectorize yielding loops"
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...?numiterables)
     where tag == iterKind.follower && numiterables > 1 {
     for i in zip((...iterables)) do yield i;
