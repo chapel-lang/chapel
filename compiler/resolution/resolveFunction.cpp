@@ -591,7 +591,14 @@ static void markIterator(FnSymbol* fn) {
         }
       }
     }
-  }
+  } /*else if (!isLeaderIterator(fn)) {
+    if (fReportVectorizedLoops) {
+      ModuleSymbol *mod = toModuleSymbol(fn->getModule());
+      if (developer || mod->modTag == MOD_USER)
+        USR_WARN(fn, "should iterator %s be marked order independent?",
+                 fn->name);
+    }
+  }*/
 
   //
   // Mark parallel iterators for inlining.
