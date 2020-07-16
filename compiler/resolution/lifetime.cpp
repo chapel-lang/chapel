@@ -1322,7 +1322,6 @@ LifetimePair LifetimeState::inferredLifetimeForPrimitive(CallExpr* call) {
       call->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
       call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
       call->isPrimitive(PRIM_GET_SVEC_MEMBER_VALUE) ||
-      call->isPrimitive(PRIM_ARRAY_GET_VALUE) ||
       call->isPrimitive(PRIM_ARRAY_GET)) {
     // Lifetime of a field is the lifetime of the aggregate.
     // Don't get confused by the VarSymbol representing the field

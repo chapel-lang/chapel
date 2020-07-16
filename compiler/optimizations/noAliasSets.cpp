@@ -144,8 +144,7 @@ static
 bool isUsedInArrayGet(Symbol* sym) {
   for_SymbolSymExprs(se, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr))
-      if (call->isPrimitive(PRIM_ARRAY_GET) ||
-          call->isPrimitive(PRIM_ARRAY_GET_VALUE))
+      if (call->isPrimitive(PRIM_ARRAY_GET))
         if (se == call->get(1))
           return true;
   }
