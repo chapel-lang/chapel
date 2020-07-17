@@ -1221,7 +1221,7 @@ module String {
   proc string.encode(policy=encodePolicy.pass): bytes {
     var localThis: string = this.localize();
 
-    if policy == encodePolicy.pass {  // just copy
+    if policy == encodePolicy.pass || this.isASCII() {  // just copy
       return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
     }
     else {  // see if there is escaped data in the string
