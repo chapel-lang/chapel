@@ -916,6 +916,10 @@ module String {
       }
     }
 
+    inline proc isASCII() {
+      return this.numCodepoints==this.numBytes;
+    }
+
     inline proc byteIndices return 0..<this.numBytes;
 
     inline proc param c_str() param : c_string {
