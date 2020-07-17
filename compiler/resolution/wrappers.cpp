@@ -1826,7 +1826,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call) {
       CallExpr* assign = new CallExpr("=", actualSym, tmp);
       anchorAfter->insertAfter(assign);
       anchorAfter = assign;
-      resolveCall(assign);
 
       currActual->replace(new SymExpr(tmp));
     }
