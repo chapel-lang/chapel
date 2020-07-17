@@ -35,13 +35,13 @@ CallExpr::CallExpr(BaseAST* base,
                    BaseAST* arg3,
                    BaseAST* arg4,
                    BaseAST* arg5) : Expr(E_CallExpr) {
-  primitive  = NULL;
-  baseExpr   = NULL;
-  partialTag = false;
-  methodTag  = false;
-  square     = false;
+  primitive     = NULL;
+  baseExpr      = NULL;
+  partialTag    = false;
+  methodTag     = false;
+  square        = false;
   forwarderCall = NULL;
-  tryTag     = TRY_TAG_NONE;
+  tryTag        = TRY_TAG_NONE;
 
   if (Symbol* b = toSymbol(base)) {
     baseExpr = new SymExpr(b);
@@ -69,13 +69,13 @@ CallExpr::CallExpr(PrimitiveOp* prim,
                    BaseAST*     arg3,
                    BaseAST*     arg4,
                    BaseAST*     arg5) : Expr(E_CallExpr) {
-  primitive  = prim;
-  baseExpr   = NULL;
-  partialTag = false;
-  methodTag  = false;
-  square     = false;
+  primitive     = prim;
+  baseExpr      = NULL;
+  partialTag    = false;
+  methodTag     = false;
+  square        = false;
   forwarderCall = NULL;
-  tryTag     = TRY_TAG_NONE;
+  tryTag        = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -94,13 +94,13 @@ CallExpr::CallExpr(PrimitiveTag prim,
                    BaseAST*     arg3,
                    BaseAST*     arg4,
                    BaseAST*     arg5) : Expr(E_CallExpr) {
-  primitive  = primitives[prim];
-  baseExpr   = NULL;
-  partialTag = false;
-  methodTag  = false;
-  square     = false;
+  primitive     = primitives[prim];
+  baseExpr      = NULL;
+  partialTag    = false;
+  methodTag     = false;
+  square        = false;
   forwarderCall = NULL;
-  tryTag     = TRY_TAG_NONE;
+  tryTag        = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
@@ -119,13 +119,13 @@ CallExpr::CallExpr(const char* name,
                    BaseAST*    arg3,
                    BaseAST*    arg4,
                    BaseAST*    arg5) : Expr(E_CallExpr) {
-  primitive  = NULL;
-  baseExpr   = new UnresolvedSymExpr(name);
-  partialTag = false;
-  methodTag  = false;
-  square     = false;
+  primitive     = NULL;
+  baseExpr      = new UnresolvedSymExpr(name);
+  partialTag    = false;
+  methodTag     = false;
+  square        = false;
   forwarderCall = NULL;
-  tryTag     = TRY_TAG_NONE;
+  tryTag        = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
   callExprHelper(this, arg2);
