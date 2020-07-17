@@ -1529,7 +1529,10 @@ module String {
   inline proc string.find(needle: string,
                    region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     // TODO: better name than region?
-    return _search_helper(needle, region, count=false): byteIndex;
+    if this.isASCII() then
+      return doSearch(this, needle, region, count=false): byteIndex;
+    else
+      return _search_helper(needle, region, count=false): byteIndex;
   }
 
   /*
@@ -1543,7 +1546,10 @@ module String {
    */
   inline proc string.rfind(needle: string,
                     region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
+    if this.isASCII() then
+      return doSearch(this, needle, region, count=false, fromLeft=false): byteIndex;
+    else
+      return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
   }
 
   /*
@@ -1555,7 +1561,10 @@ module String {
     :returns: the number of times `needle` occurs in the string
    */
   inline proc string.count(needle: string, region: range(?) = this.indices) : int {
-    return _search_helper(needle, region, count=true);
+    if this.isASCII() then
+      return doSearch(this, needle, region, count=true);
+    else
+      return _search_helper(needle, region, count=true);
   }
 
   /*

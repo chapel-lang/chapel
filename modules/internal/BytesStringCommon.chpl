@@ -550,6 +550,77 @@ module BytesStringCommon {
     }
   }
 
+  // Helper function that uses a param bool to toggle between count and find
+  //TODO: this could be a much better string search
+  //      (Boyer-Moore-Horspool|any thing other than brute force)
+  proc doSearch(const ref x: ?t, needle: t, region: range(?),
+                param count: bool, param fromLeft: bool = true) {
+    assertArgType(t, "doSearch");
+
+    // needle.buffLen is <= than x.buffLen, so go to the home locale
+    var ret: int = -1;
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      // any value >= 0 means we have a solution
+      // used because we cant break out of an on-clause early
+      var localRet: int = -2;
+      const nLen = needle.buffLen;
+      const (view, _) = getView(x, region);
+      const xLen = view.size;
+
+      // Edge cases
+      if count {
+        if nLen == 0 { // Empty needle
+          localRet = view.size;
+        }
+      } else { // find
+        if nLen == 0 { // Empty needle
+          if fromLeft {
+            localRet = -1;
+          } else {
+            localRet = if xLen == 0
+              then -1
+              else xLen;
+          }
+        }
+      }
+
+      if nLen > xLen {
+        localRet = -1;
+      }
+
+      if localRet == -2 {
+        localRet = -1;
+        const localNeedle = needle.localize();
+        const needleLen = localNeedle.buffLen;
+
+        // i *is not* an index into anything, it is the order of the element
+        // of view we are searching from.
+        const numPossible = xLen - nLen + 1;
+        const searchSpace = if fromLeft
+            then 0..#(numPossible)
+            else 0..#(numPossible) by -1;
+        for i in searchSpace {
+          const bufIdx = view.orderToIndex(i);
+          const found = bufferEqualsLocal(buf1=x.buff, off1=bufIdx,
+                                          buf2=localNeedle.buff, off2=0,
+                                          len=needleLen);
+          if found {
+            if count {
+              localRet += 1;
+            } else { // find
+              localRet = view.orderToIndex(i);
+            }
+          }
+          if !count && localRet != -1 then break;
+        }
+      }
+      if count then localRet += 1;
+      ret = localRet;
+    }
+    return ret;
+  }
+
   // TODO: could use a multi-pattern search or some variant when there are
   // multiple needles. Probably wouldn't be worth the overhead for small
   // needles though
