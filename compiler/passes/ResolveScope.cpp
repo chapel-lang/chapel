@@ -671,7 +671,11 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
     ModuleSymbol* badCloserModule = NULL;
+    ModuleSymbol* thisMod = enclosingModule();
     for (ptr = start; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+      ModuleSymbol* ptrMod = ptr->enclosingModule();
+      if (thisMod != ptrMod && relativeScope == NULL && ptrMod != theProgram)
+        continue;
       // Check if the module is defined in this scope
       Symbol* sym = ptr->lookupNameLocallyForImport(name);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
