@@ -1345,14 +1345,19 @@ module String {
   iter string.codepoints(): int(32) {
     var localThis: string = this.localize();
 
-    var i = 0;
-    while i < localThis.buffLen {
-      const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                 buffLen=localThis.buffLen,
-                                                 offset=i,
-                                                 allowEsc=true);
-      yield cp;
-      i += nBytes;
+    if this.isASCII() {
+      for b in this.chpl_bytes() do yield b;
+    }
+    else {
+      var i = 0;
+      while i < localThis.buffLen {
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
+        yield cp;
+        i += nBytes;
+      }
     }
   }
 
@@ -1381,18 +1386,25 @@ module String {
     // TODO: Engin: at least we can check whether the length is less than 4
     // bytes before localizing?
     var localThis: string = this.localize();
-
     if localThis.isEmpty() then
       halt("string.toCodepoint() only accepts single-codepoint strings");
 
-    const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                               buffLen=localThis.buffLen,
-                                               offset=0,
-                                               allowEsc=true);
-    if localThis.buffLen != nBytes:int then
-      halt("string.toCodepoint() only accepts single-codepoint strings");
+    if this.isASCII() {
+      if localThis.numBytes > 1 then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+      return this.toByte();
+    }
+    else {
 
-    return cp;
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                 buffLen=localThis.buffLen,
+                                                 offset=0,
+                                                 allowEsc=true);
+      if localThis.buffLen != nBytes:int then
+        halt("string.toCodepoint() only accepts single-codepoint strings");
+
+      return cp;
+    }
   }
 
   /*
@@ -1404,16 +1416,24 @@ module String {
     if boundsChecking && idx < 0 then
       halt("index ", idx, " out of bounds for string");
 
-    var j = 0;
-    for cp in this.codepoints() {
-      if j == idx then
-        return cp;
-      j += 1;
+    if this.isASCII() {
+      if boundsChecking && idx >= this.numBytes then
+        halt("index ", idx, " out of bounds for string with length ", this.size);
+
+      return this.byte(i);
     }
-    // We have reached the end of the string without finding our index.
-    if boundsChecking then
-      halt("index ", idx, " out of bounds for string with length ", this.size);
-    return 0: int(32);
+    else {
+      var j = 0;
+      for cp in this.codepoints() {
+        if j == idx then
+          return cp;
+        j += 1;
+      }
+      // We have reached the end of the string without finding our index.
+      if boundsChecking then
+        halt("index ", idx, " out of bounds for string with length ", this.size);
+      return 0: int(32);
+    }
   }
 
   /*
