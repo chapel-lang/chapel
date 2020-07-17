@@ -116,6 +116,8 @@ public:
   Expr*           get(int index)                                         const;
   FnSymbol*       findFnSymbol();
 
+  CallExpr*       forwarderCall;
+
   void            convertToNoop();
 
   static void     registerPrimitivesForCodegen();

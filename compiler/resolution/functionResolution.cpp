@@ -4449,6 +4449,9 @@ static const char* getForwardedMethodName(const char* calledName,
 
 static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName) {
 
+      if (strcmp(call->fname(), "/Users/ekayraklio/code/chapel/versions/f01/chapel/rapizForwardingTest.chpl") == 0) {
+        gdbShouldBreakHere();
+      }
   FnSymbol* ret = NULL;
   const char* fnGetTgt   = delegate->fnReturningForwarding;
   Expr* receiver = call->get(2);
@@ -4587,6 +4590,7 @@ static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState) 
     // Create a block to store temporaries etc.
     // Store it just before the call being resolved.
     CallExpr* forwardedCall = call->copy();
+    forwardedCall->forwarderCall = call;
     BlockStmt* block = new BlockStmt(forwardedCall, BLOCK_SCOPELESS);
     call->getStmtExpr()->insertBefore(block);
 

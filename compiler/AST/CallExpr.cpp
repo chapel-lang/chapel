@@ -40,6 +40,7 @@ CallExpr::CallExpr(BaseAST* base,
   partialTag = false;
   methodTag  = false;
   square     = false;
+  forwarderCall = NULL;
   tryTag     = TRY_TAG_NONE;
 
   if (Symbol* b = toSymbol(base)) {
@@ -73,6 +74,7 @@ CallExpr::CallExpr(PrimitiveOp* prim,
   partialTag = false;
   methodTag  = false;
   square     = false;
+  forwarderCall = NULL;
   tryTag     = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
@@ -97,6 +99,7 @@ CallExpr::CallExpr(PrimitiveTag prim,
   partialTag = false;
   methodTag  = false;
   square     = false;
+  forwarderCall = NULL;
   tryTag     = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);
@@ -121,6 +124,7 @@ CallExpr::CallExpr(const char* name,
   partialTag = false;
   methodTag  = false;
   square     = false;
+  forwarderCall = NULL;
   tryTag     = TRY_TAG_NONE;
 
   callExprHelper(this, arg1);

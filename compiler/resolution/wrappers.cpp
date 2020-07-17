@@ -61,6 +61,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 #include "visibleFunctions.h"
 
 #include <map>
@@ -1771,6 +1772,11 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call) {
 
   Expr* anchor = call->getStmtExpr();
   Expr* anchorAfter = call->getStmtExpr();
+  if (CallExpr *anchorCE = toCallExpr(anchorAfter)) {
+    if (anchorCE->forwarderCall) {
+      anchorAfter = anchorCE->forwarderCall;
+    }
+  }
 
   Expr* currActual = call->get(1);
   Expr* nextActual = NULL;
@@ -1820,7 +1826,15 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call) {
 
       CallExpr* assign = new CallExpr("=", actualSym, tmp);
       anchorAfter->insertAfter(assign);
+      anchor->insertAfter(assign->copy());
+      if (strcmp(anchor->fname(), "/Users/ekayraklio/code/chapel/versions/f01/chapel/rapizForwardingTest.chpl") == 0) {
+        gdbShouldBreakHere();
+        nprint_view(assign);
+        std::cout << " was inserted after" << std::endl;
+        nprint_view(anchorAfter);
+      }
       anchorAfter = assign;
+      resolveCall(assign);
 
       currActual->replace(new SymExpr(tmp));
     }
