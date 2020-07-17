@@ -1217,6 +1217,13 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     type EVP_MD_CTX_PTR = c_ptr(EVP_MD_CTX);
     type ENGINE_PTR = c_ptr(ENGINE);
 
+    extern type EVP_CIPHER;
+    extern type EVP_CIPHER_CTX;
+    extern type CHPL_EVP_CIPHER_CTX;
+
+    type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
+    type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
+
     extern proc EVP_CIPHER_iv_length(e: CONST_EVP_CIPHER_PTR): c_int;
     extern proc EVP_PKEY_size(pkey: EVP_PKEY_PTR): c_int;
     extern proc EVP_PKEY_CTX_new_id(id: c_int, e: ENGINE_PTR): EVP_PKEY_CTX_PTR;
@@ -1247,13 +1254,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
     extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: size_t): c_int;
     extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
-
-    extern type EVP_CIPHER;
-    extern type EVP_CIPHER_CTX;
-    extern type CHPL_EVP_CIPHER_CTX;
-
-    extern type EVP_CIPHER_PTR = c_ptr(EVP_CIPHER);
-    extern type EVP_CIPHER_CTX_PTR = c_ptr(EVP_CIPHER_CTX);
 
     extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
 
