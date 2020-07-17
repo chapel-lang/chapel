@@ -1,5 +1,8 @@
 /*
    Chapel's distributed DGEMM implementation using SUMMA
+   
+   Note - Currently does not perform pipelined communication, 
+   which is inherent to SUMMA
 
    Contributed by Rahul Ghangas (ANU)
 */
