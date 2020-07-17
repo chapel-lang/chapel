@@ -814,46 +814,7 @@ module Bytes {
                 occurrences of characters in `chars` removed as appropriate.
     */
     proc bytes.strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
-      if this.isEmpty() then return b"";
-      if chars.isEmpty() then return this;
-
-      const localThis: bytes = this.localize();
-      const localChars: bytes = chars.localize();
-
-      var start: idxType = 0;
-      var end: idxType = localThis.buffLen-1;
-
-      if leading {
-        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
-          for removeChar in localChars.bytes() {
-            if thisChar == removeChar {
-              start = i + 1;
-              continue outer;
-            }
-          }
-          break;
-        }
-      }
-
-      if trailing {
-        // Because we are working with codepoints whose starting byte index
-        // is not initially known, it is faster to work forward, assuming we
-        // are already past the end of the string, and then update the end
-        // point as we are proven wrong.
-        end = 0;
-        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
-          for removeChar in localChars.bytes() {
-            if thisChar == removeChar {
-              continue outer;
-            }
-          }
-          // This was not a character to be removed, so update tentative end.
-          end = i;
-        }
-      }
-
-      return localThis[start..end];
-
+      return doStripNoEnc(this, chars, leading, trailing);
     }
 
     /*

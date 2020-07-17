@@ -1735,45 +1735,50 @@ module String {
                 characters in `chars` removed as appropriate.
     */
     proc string.strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
-      if this.isEmpty() then return "";
-      if chars.isEmpty() then return this;
-
-      const localThis: string = this.localize();
-      const localChars: string = chars.localize();
-
-      var start: byteIndex = 0;
-      var end: byteIndex = localThis.buffLen-1;
-
-      if leading {
-        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
-          for removeChar in localChars.codepoints() {
-            if thisChar == removeChar {
-              start = i + nBytes;
-              continue outer;
-            }
-          }
-          break;
-        }
+      if this.isASCII() {
+        return doStripNoEnc(this, chars, leading, trailing);
       }
+      else {
+        if this.isEmpty() then return "";
+        if chars.isEmpty() then return this;
 
-      if trailing {
-        // Because we are working with codepoints whose starting byte index
-        // is not initially known, it is faster to work forward, assuming we
-        // are already past the end of the string, and then update the end
-        // point as we are proven wrong.
-        end = -1;
-        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
-          for removeChar in localChars.codepoints() {
-            if thisChar == removeChar {
-              continue outer;
+        const localThis: string = this.localize();
+        const localChars: string = chars.localize();
+
+        var start: byteIndex = 0;
+        var end: byteIndex = localThis.buffLen-1;
+
+        if leading {
+          label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
+            for removeChar in localChars.codepoints() {
+              if thisChar == removeChar {
+                start = i + nBytes;
+                continue outer;
+              }
             }
+            break;
           }
-          // This was not a character to be removed, so update tentative end.
-          end = i + nBytes-1;
         }
-      }
 
-      return localThis[start..end];
+        if trailing {
+          // Because we are working with codepoints whose starting byte index
+          // is not initially known, it is faster to work forward, assuming we
+          // are already past the end of the string, and then update the end
+          // point as we are proven wrong.
+          end = -1;
+          label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
+            for removeChar in localChars.codepoints() {
+              if thisChar == removeChar {
+                continue outer;
+              }
+            }
+            // This was not a character to be removed, so update tentative end.
+            end = i + nBytes-1;
+          }
+        }
+
+        return localThis[start..end];
+      }
     }
 
     /*

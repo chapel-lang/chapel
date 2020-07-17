@@ -1027,6 +1027,49 @@ module BytesStringCommon {
     return ret;
   }
 
+  proc doStripNoEnc(const ref x: ?t, chars: t, leading:bool, trailing:bool) : t {
+    if x.isEmpty() then return if t==string then "" else b"";
+
+    if chars.isEmpty() then return x;
+
+    const localX: t = x.localize();
+    const localChars: t = chars.localize();
+
+    var start: idxType = 0;
+    var end: idxType = localX.buffLen-1;
+
+    if leading {
+      label outer for (i, xChar) in zip(x.indices, localX.bytes()) {
+        for removeChar in localChars.bytes() {
+          if xChar == removeChar {
+            start = i + 1;
+            continue outer;
+          }
+        }
+        break;
+      }
+    }
+
+    if trailing {
+      // Because we are working with codepoints whose starting byte index
+      // is not initially known, it is faster to work forward, assuming we
+      // are already past the end of the string, and then update the end
+      // point as we are proven wrong.
+      end = -1;
+      label outer for (i, xChar) in zip(x.indices, localX.bytes()) {
+        for removeChar in localChars.bytes() {
+          if xChar == removeChar {
+            continue outer;
+          }
+        }
+        // This was not a character to be removed, so update tentative end.
+        end = i;
+      }
+    }
+
+    return localX[start..end];
+  }
+
   inline proc doEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
