@@ -938,7 +938,7 @@ proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
-
+pragma "order independent yielding loops"
 iter CyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);

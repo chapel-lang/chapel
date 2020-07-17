@@ -202,6 +202,7 @@ class RecordReader {
   }
 
   /* Yield the records read */
+  pragma "not order independent yielding loops"
   iter stream() {
     try! { // TODO -- should be throws, once that is working for iterators
       do {

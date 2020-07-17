@@ -1539,6 +1539,7 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
+    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
         for i in ranges(dim) do
@@ -2809,6 +2810,7 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
+    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
         for i in ranges(dim) do

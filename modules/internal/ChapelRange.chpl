@@ -1804,20 +1804,17 @@ proc _cast(type t: range(?), r: range(?)) {
     for i in r do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: int(w)) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: enum, high: enum,
                               stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: bool, high: bool, stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -1831,12 +1828,10 @@ proc _cast(type t: range(?), r: range(?)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), param stride: int(w)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: enum, high: enum,
                               param stride: integral) {
     if (stride == 1) {
@@ -1854,7 +1849,6 @@ proc _cast(type t: range(?), r: range(?)) {
     }
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: bool, high: bool, param stride: integral) {
     if (stride == 1) {
         // Optimize for the stride == 1 case because I anticipate it'll be
@@ -1873,11 +1867,9 @@ proc _cast(type t: range(?), r: range(?)) {
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: int(?w), high: int(w), stride: uint(w)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
-  pragma "order independent yielding loops"
   iter chpl_direct_range_iter(low: uint(?w), high: uint(w), stride: uint(w)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
@@ -1914,35 +1906,29 @@ proc _cast(type t: range(?), r: range(?)) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: uint(?w), count: int(w)) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: uint(?w), count: uint(w)) {
     for i in chpl_direct_counted_range_iter_helper(low, count) do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: enum, count:int(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: enum, count:uint(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: bool, count: int(?w)) {
     const r = low..;
     for i in r#count do yield i;
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_counted_range_iter(low: bool, count: uint(?w)) {
     const r = low..;
     for i in r#count do yield i;
@@ -1979,7 +1965,6 @@ proc _cast(type t: range(?), r: range(?)) {
   // any checks on the arguments, and rely on the above functions/expert user
   // to check/coerce types (i.e. they assume args are of legal types, low/high
   // are the same same type, stride is valid, etc.)
-  pragma "order independent yielding loops"
   iter chpl_direct_pos_stride_range_iter(low: ?t, high, stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);
@@ -1999,7 +1984,6 @@ proc _cast(type t: range(?), r: range(?)) {
     }
   }
 
-  pragma "order independent yielding loops"
   iter chpl_direct_param_stride_range_iter(low: ?t, high, param stride) {
     if (useOptimizedRangeIterators) {
       chpl_range_check_stride(stride, t);

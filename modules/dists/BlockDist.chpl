@@ -1117,6 +1117,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
 proc BlockArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
+pragma "order independent yielding loops"
 iter BlockArr.these() ref {
   for i in dom do
     yield dsiAccess(i);

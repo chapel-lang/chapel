@@ -555,6 +555,7 @@ module BytesStringCommon {
     return chunk;
   }
 
+  pragma "not order independent yielding loops"
   iter doSplit(const ref x: ?t, sep: t, maxsplit: int = -1,
                ignoreEmpty: bool = false): t {
     assertArgType(t, "doSplit");

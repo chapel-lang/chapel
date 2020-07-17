@@ -202,6 +202,7 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
+    pragma "order independent yielding loops"
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank-1 {
         for i in ranges(d) do
@@ -234,6 +235,7 @@ module DefaultRectangular {
     }
 */
 
+    pragma "order independent yielding loops"
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size-1 {
         for i in block(d) do
@@ -280,7 +282,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1180,6 +1181,7 @@ module DefaultRectangular {
         yield followThis;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1611,7 +1613,6 @@ module DefaultRectangular {
     }
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIter(arr, viewDom) ref {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }

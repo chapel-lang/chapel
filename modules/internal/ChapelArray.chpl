@@ -1359,7 +1359,6 @@ module ChapelArray {
     }
 
     /* Yield the domain indices */
-    pragma "order independent yielding loops"
     iter these() {
       for i in _value.these() {
         yield i;
@@ -2125,7 +2124,6 @@ module ChapelArray {
 
     // associative array interface
     /* Yield the domain indices in sorted order */
-    pragma "order independent yielding loops"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       for i in _value.dsiSorted(comparator) {
         yield i;
@@ -2911,7 +2909,6 @@ module ChapelArray {
 
     /* Yield the array elements */
     pragma "reference to const when const this"
-    pragma "order independent yielding loops"
     iter these() ref {
       for i in _value.these() {
         yield i;
@@ -3130,7 +3127,6 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    pragma "order independent yielding loops"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -4429,7 +4425,6 @@ module ChapelArray {
   }
 
   pragma "no doc"
-  pragma "order independent yielding loops"
   iter linearize(Xs) {
     for x in Xs do yield x;
   }

@@ -1028,6 +1028,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
+  pragma "order independent yielding loops"
   iter iHelp(param d) {
     if this.isAlias {
        // Go to the original array and invoke the follower iterator on it,
@@ -1246,6 +1247,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           // produce, collectively, all the indices in this dimension.
           // For 'parDim' - only the 'taskid'-th share of all indices.
           //
+          pragma "order independent yielding loops"
           iter iter1d(param dd, dom1d, loc1d) {
             const dummy: followT;
             type resultT = dummy(dd).type;
@@ -1314,6 +1316,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
+pragma "order independent yielding loops"
 iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");

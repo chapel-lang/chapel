@@ -827,6 +827,7 @@ record regexp {
      :arg maxsplit: if nonzero, the maximum number of splits to do
      :yields: each split portion, one at a time
    */
+  pragma "not order independent yielding loops"
   iter split(text: exprType, maxsplit: int = 0)
   {
     var matches:_ddata(qio_regexp_string_piece_t);

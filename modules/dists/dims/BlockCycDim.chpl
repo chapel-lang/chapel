@@ -801,6 +801,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   yield spec(locOff, lastLocOff);
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
  if BlockCyclicDim_enableArrayIterWarning then
@@ -811,6 +812,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out

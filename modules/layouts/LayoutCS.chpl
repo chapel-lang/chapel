@@ -601,6 +601,7 @@ class CSDom: BaseSparseDomImpl {
     startIdx = 1;
   }
 
+  pragma "order independent yielding loops"
   iter dimIter(param d, ind) {
     if (d != 1 && this.compressRows) {
       compilerError("dimIter(0, ..) not supported on CS(compressRows=true) domains");
@@ -692,6 +693,7 @@ class CSArr: BaseSparseArrImpl {
 
 
 
+  pragma "order independent yielding loops"
   iter these() ref {
     for i in 1..dom._nnz do yield data[i];
   }
@@ -704,6 +706,7 @@ class CSArr: BaseSparseArrImpl {
       yield followThis;
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) ref where tag == iterKind.follower {
     // simpler than CSDom's follower - no need to deal with rows (or columns)
     var (followThisDom, startIx, endIx) = followThis;

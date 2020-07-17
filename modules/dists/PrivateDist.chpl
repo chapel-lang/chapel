@@ -265,6 +265,7 @@ proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
   return 0 <= idx && idx < numLocales;
 }
 
+pragma "order independent yielding loops"
 iter PrivateArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -278,6 +279,7 @@ iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   }
 }
 
+pragma "order independent yielding loops"
 iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   for i in followThis(0) do
     yield dsiAccess(i);

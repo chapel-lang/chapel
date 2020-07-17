@@ -455,6 +455,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
+  pragma "order independent yielding loops"
   iter these() ref {
     for locI in dom.dist.targetLocDom {
       // TODO Would want to do something like:
@@ -474,6 +475,7 @@ class SparseBlockArr: BaseSparseArr {
       yield followThis;
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
     for i in locFollowThis(0).these(tag, locFollowThis) {
@@ -481,6 +483,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.

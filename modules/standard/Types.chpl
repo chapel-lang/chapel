@@ -752,6 +752,7 @@ proc max(type t) where isComplexType(t) {
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter chpl_enumerate(type t: enum) {
   const enumTuple = chpl_enum_enumerate(t);
   for i in 0..enumTuple.size-1 do

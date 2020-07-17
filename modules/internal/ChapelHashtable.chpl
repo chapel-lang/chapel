@@ -192,14 +192,12 @@ module ChapelHashtable {
   // _allSlots yields all slot numbers, empty or full,
   // but does so in the preferred iteration order across tasks.
 
-  pragma "order independent yielding loops"
   iter _allSlots(size: int) {
     for slot in 0..#size {
       yield slot;
     }
   }
 
-  pragma "order independent yielding loops"
   private iter _allSlots(size: int, param tag: iterKind)
     where tag == iterKind.standalone {
 
@@ -332,14 +330,12 @@ module ChapelHashtable {
       return table[slot].status == chpl__hash_status.full;
     }
 
-    pragma "order independent yielding loops"
     iter allSlots() {
       for slot in _allSlots(tableSize) {
         yield slot;
       }
     }
 
-    pragma "order independent yielding loops"
     iter allSlots(param tag: iterKind)
       where tag == iterKind.standalone {
 
@@ -356,7 +352,6 @@ module ChapelHashtable {
       }
     }
 
-    pragma "order independent yielding loops"
     iter allSlots(followThis, param tag: iterKind)
       where tag == iterKind.follower {
 

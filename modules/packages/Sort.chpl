@@ -1362,6 +1362,7 @@ module SampleSortHelp {
       return bk - (if equalBuckets then 2*numBuckets else numBuckets);
     }
     // yields (index, bucket index) for A[start_n..end_n]
+    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       const paramEqualBuckets = equalBuckets;
       const paramLogBuckets = logBuckets;
@@ -1673,6 +1674,7 @@ module RadixSortHelp {
     }
 
     // yields (index, bucket index) for A[start_n..end_n]
+    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       var cur = start_n;
       while cur <= end_n-(classifyUnrollFactor-1) {

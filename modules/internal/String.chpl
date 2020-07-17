@@ -1331,6 +1331,7 @@ module String {
       c
       d
    */
+  pragma "not order independent yielding loops"
   iter string.items() : string {
     var localThis: string = this.localize();
 
@@ -1384,6 +1385,7 @@ module String {
   /*
     Iterates over the string byte by byte.
   */
+  pragma "order independent yielding loops"
   iter string.chpl_bytes(): byteType {
     var localThis: string = this.localize();
 
