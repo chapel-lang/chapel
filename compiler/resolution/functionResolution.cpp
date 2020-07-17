@@ -4449,9 +4449,6 @@ static const char* getForwardedMethodName(const char* calledName,
 
 static FnSymbol* adjustAndResolveForwardedCall(CallExpr* call, ForwardingStmt* delegate, const char* methodName) {
 
-      if (strcmp(call->fname(), "/Users/ekayraklio/code/chapel/versions/f01/chapel/rapizForwardingTest.chpl") == 0) {
-        gdbShouldBreakHere();
-      }
   FnSymbol* ret = NULL;
   const char* fnGetTgt   = delegate->fnReturningForwarding;
   Expr* receiver = call->get(2);
