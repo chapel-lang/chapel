@@ -1,3 +1,4 @@
+use SysCTypes;
 extern var ComplexVar:c_int;
 
 proc main() {
