@@ -994,8 +994,8 @@ module String {
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
     //
-    inline proc _search_helper(needle: string, region: range(?),
-                               param count: bool, param fromLeft: bool = true) {
+    inline proc doSearchUTF8(needle: string, region: range(?),
+                             param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
@@ -1532,7 +1532,7 @@ module String {
     if this.isASCII() then
       return doSearch(this, needle, region, count=false): byteIndex;
     else
-      return _search_helper(needle, region, count=false): byteIndex;
+      return doSearchUTF8(needle, region, count=false): byteIndex;
   }
 
   /*
@@ -1550,8 +1550,8 @@ module String {
       return doSearch(this, needle, region,
                       count=false, fromLeft=false): byteIndex;
     else
-      return _search_helper(needle, region,
-                            count=false, fromLeft=false): byteIndex;
+      return doSearchUTF8(needle, region,
+                          count=false, fromLeft=false): byteIndex;
   }
 
   /*
@@ -1567,7 +1567,7 @@ module String {
     if this.isASCII() then
       return doSearch(this, needle, region, count=true);
     else
-      return _search_helper(needle, region, count=true);
+      return doSearchUTF8(needle, region, count=true);
   }
 
   /*
@@ -1596,8 +1596,8 @@ module String {
                       * When `false` -- Empty strings will be yielded when
                                         `sep` occurs multiple times in a row.
    */
-    iter string.split(sep: string, maxsplit: int = -1,
-                      ignoreEmpty: bool = false) /* : string */ {
+  iter string.split(sep: string, maxsplit: int = -1,
+                    ignoreEmpty: bool = false) /* : string */ {
     // TODO: specifying return type leads to un-inited string?
     for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
   }
