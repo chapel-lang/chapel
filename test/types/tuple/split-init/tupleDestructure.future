@@ -1,0 +1,5 @@
+bug: tuple destructuring split initialization gives questionable error message
+
+     issue:
+
+Design decision about whether or not this should be valid syntax is needed here. Whether or not this is decided to be acceptable, either way the error 'tmp' undeclared when there is no 'tmp' in the user code should be changed.

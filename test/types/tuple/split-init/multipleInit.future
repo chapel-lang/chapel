@@ -1,0 +1,5 @@
+bug: tuple destructuring split initialization gives questionable error message
+
+     issue:
+
+Design decision about whether or not this should be valid syntax is needed here. Not sure exactly what the error message should be in this case, but I would expect this case to be allowed.

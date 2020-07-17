@@ -1,0 +1,4 @@
+multipleInit.chpl:1: error: variable 'a' is not initialized and has no type
+multipleInit.chpl:2: note: 'a' use here prevents split-init from establishing the type
+multipleInit.chpl:1: error: variable 'b' is not initialized and has no type
+multipleInit.chpl:2: note: 'b' use here prevents split-init from establishing the type
