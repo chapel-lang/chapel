@@ -1280,19 +1280,26 @@ module String {
   iter string.items() : string {
     var localThis: string = this.localize();
 
-    var i = 0;
-    while i < localThis.buffLen {
-      const curPos = localThis.buff+i;
-      const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
-                                                   offset=i,
-                                                   allowEsc=true);
-      var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
-      newBuf[nBytes] = 0;
+    if localThis.isASCII() {
+      for i in this.byteIndices {
+        yield this.item(i);
+      }
+    }
+    else {
+      var i = 0;
+      while i < localThis.buffLen {
+        const curPos = localThis.buff+i;
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                     buffLen=localThis.buffLen,
+                                                     offset=i,
+                                                     allowEsc=true);
+        var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
+        newBuf[nBytes] = 0;
 
-      yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
+        yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
 
-      i += nBytes;
+        i += nBytes;
+      }
     }
   }
 
@@ -1461,8 +1468,15 @@ module String {
    */
   proc string.item(i: codepointIndex) : string {
     if this.isEmpty() then return "";
-    const idx = i: int;
-    return codepointToString(this.codepoint(idx));
+    if this.isASCII() {
+      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
+                                            len=1, loc=this.locale_id);
+      return chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+    }
+    else {
+      const idx = i: int;
+      return codepointToString(this.codepoint(idx));
+    }
   }
 
   /*
