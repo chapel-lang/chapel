@@ -1609,72 +1609,77 @@ module String {
                    indicate no limit.
    */
   iter string.split(maxsplit: int = -1) /* : string */ {
-    // note: to improve performance, this code collapses several cases into a
-    //       single yield statement, which makes it confusing to read
-    // TODO: specifying return type leads to un-inited string?
-    if !this.isEmpty() {
-      const localThis: string = this.localize();
-      var done : bool = false;
-      var yieldChunk : bool = false;
-      var chunk : string;
+    if this.isASCII() {
+      for s in doSplitWSNoEnc(this, maxsplit) do yield s;
+    }
+    else {
+      // note: to improve performance, this code collapses several cases into a
+      //       single yield statement, which makes it confusing to read
+      // TODO: specifying return type leads to un-inited string?
+      if !this.isEmpty() {
+        const localThis: string = this.localize();
+        var done : bool = false;
+        var yieldChunk : bool = false;
+        var chunk : string;
 
-      const noSplits : bool = maxsplit == 0;
-      const limitSplits : bool = maxsplit > 0;
-      var splitCount: int = 0;
-      const iEnd: byteIndex = localThis.buffLen - 2;
+        const noSplits : bool = maxsplit == 0;
+        const limitSplits : bool = maxsplit > 0;
+        var splitCount: int = 0;
+        const iEnd: byteIndex = localThis.buffLen - 2;
 
-      var inChunk : bool = false;
-      var chunkStart : byteIndex;
+        var inChunk : bool = false;
+        var chunkStart : byteIndex;
 
-      for (c, i, nBytes) in localThis._cpIndexLen() {
-        // emit whole string, unless all whitespace
-        if noSplits {
-          done = true;
-          if !localThis.isSpace() then {
-            chunk = localThis;
-            yieldChunk = true;
-          }
-        } else {
-          var cSpace = codepoint_isWhitespace(c);
-          // first char of a chunk
-          if !(inChunk || cSpace) {
-            chunkStart = i;
-            inChunk = true;
-            if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+        for (c, i, nBytes) in localThis._cpIndexLen() {
+          // emit whole string, unless all whitespace
+          if noSplits {
+            done = true;
+            if !localThis.isSpace() then {
+              chunk = localThis;
               yieldChunk = true;
-              done = true;
             }
-          } else if inChunk {
-            // first char out of a chunk
-            if cSpace {
-              splitCount += 1;
-              // last split under limit
-              if limitSplits && splitCount > maxsplit {
+          } else {
+            var cSpace = codepoint_isWhitespace(c);
+            // first char of a chunk
+            if !(inChunk || cSpace) {
+              chunkStart = i;
+              inChunk = true;
+              if i - 1 + nBytes > iEnd {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
-              // no limit
-              } else {
-                chunk = localThis[chunkStart..i-1];
-                yieldChunk = true;
-                inChunk = false;
               }
-            // out of chars
-            } else if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
-              yieldChunk = true;
-              done = true;
+            } else if inChunk {
+              // first char out of a chunk
+              if cSpace {
+                splitCount += 1;
+                // last split under limit
+                if limitSplits && splitCount > maxsplit {
+                  chunk = localThis[chunkStart..];
+                  yieldChunk = true;
+                  done = true;
+                // no limit
+                } else {
+                  chunk = localThis[chunkStart..i-1];
+                  yieldChunk = true;
+                  inChunk = false;
+                }
+              // out of chars
+              } else if i - 1 + nBytes > iEnd {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              }
             }
           }
-        }
 
-        if yieldChunk {
-          yield chunk;
-          yieldChunk = false;
+          if yieldChunk {
+            yield chunk;
+            yieldChunk = false;
+          }
+          if done then
+            break;
         }
-        if done then
-          break;
       }
     }
   }

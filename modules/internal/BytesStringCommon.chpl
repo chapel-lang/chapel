@@ -550,6 +550,78 @@ module BytesStringCommon {
     }
   }
 
+  // split iterator over whitespace
+  iter doSplitWSNoEnc(const ref x: ?t, maxsplit: int = -1): t {
+    assertArgType(t, "doSplitWSNoEnc");
+
+    if !x.isEmpty() {
+      const localx: t = x.localize();
+      var done : bool = false;
+      var yieldChunk : bool = false;
+      var chunk : t;
+
+      const noSplits : bool = maxsplit == 0;
+      const limitSplits : bool = maxsplit > 0;
+      var splitCount: int = 0;
+      const iEnd: idxType = localx.buffLen - 2;
+
+      var inChunk : bool = false;
+      var chunkStart : idxType;
+
+      for (i,c) in zip(x.indices, localx.bytes()) {
+        // emit whole string, unless all whitespace
+        // TODO Engin: Why is x inside the loop?
+        if noSplits {
+          done = true;
+          if !localx.isSpace() then {
+            chunk = localx;
+            yieldChunk = true;
+          }
+        } else {
+          var cSpace = byte_isWhitespace(c);
+          // first char of a chunk
+          if !(inChunk || cSpace) {
+            chunkStart = i;
+            inChunk = true;
+            if i > iEnd {
+              chunk = localx[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            }
+          } else if inChunk {
+            // first char out of a chunk
+            if cSpace {
+              splitCount += 1;
+              // last split under limit
+              if limitSplits && splitCount > maxsplit {
+                chunk = localx[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              // no limit
+              } else {
+                chunk = localx[chunkStart..i-1];
+                yieldChunk = true;
+                inChunk = false;
+              }
+            // out of chars
+            } else if i > iEnd {
+              chunk = localx[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            }
+          }
+        }
+
+        if yieldChunk {
+          yield chunk;
+          yieldChunk = false;
+        }
+        if done then
+          break;
+      }
+    }
+  }
+
   // Helper function that uses a param bool to toggle between count and find
   //TODO: this could be a much better string search
   //      (Boyer-Moore-Horspool|any thing other than brute force)
@@ -1058,5 +1130,67 @@ module BytesStringCommon {
     return (b & 0xc0) != 0x80;
   }
 
+  // character-wise operation helpers
 
+  require "ctype.h";
+
+  inline proc byte_isAscii(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isascii(c: c_int): c_int;
+    return isascii(c: c_int) != 0;
+  }
+
+  inline proc byte_isWhitespace(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isspace(c: c_int): c_int;
+    return isspace(c: c_int) != 0;
+  }
+
+  inline proc byte_isPrintable(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isprint(c: c_int): c_int;
+    return isprint(c: c_int) != 0;
+  }
+
+  inline proc byte_isAlpha(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isalpha(c: c_int): c_int;
+    return isalpha(c: c_int) != 0;
+  }
+
+  inline proc byte_isUpper(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isupper(c: c_int): c_int;
+    return isupper(c: c_int) != 0;
+  }
+
+  inline proc byte_isLower(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc islower(c: c_int): c_int;
+    return islower(c: c_int) != 0;
+  }
+
+  inline proc byte_isDigit(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isdigit(c: c_int): c_int;
+    return isdigit(c: c_int) != 0;
+  }
+
+  inline proc byte_isAlnum(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isalnum(c: c_int): c_int;
+    return isalnum(c: c_int) != 0;
+  }
+
+  inline proc byte_toUpper(c: byteType): byteType {
+    pragma "fn synchronization free"
+    extern proc toupper(c: c_int): c_int;
+    return toupper(c: c_int):byteType;
+  }
+
+  inline proc byte_toLower(c: byteType): byteType {
+    pragma "fn synchronization free"
+    extern proc tolower(c: c_int): c_int;
+    return tolower(c: c_int):byteType;
+  }
 }
