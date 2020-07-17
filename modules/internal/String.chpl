@@ -1527,7 +1527,7 @@ module String {
               string, or -1 if the `needle` is not in the string.
    */
   inline proc string.find(needle: string,
-                   region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                          region: range(?) = this.byteIndices) : byteIndex {
     // TODO: better name than region?
     if this.isASCII() then
       return doSearch(this, needle, region, count=false): byteIndex;
@@ -1545,11 +1545,13 @@ module String {
               within a string, or -1 if the `needle` is not in the string.
    */
   inline proc string.rfind(needle: string,
-                    region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                           region: range(?) = this.byteIndices) : byteIndex {
     if this.isASCII() then
-      return doSearch(this, needle, region, count=false, fromLeft=false): byteIndex;
+      return doSearch(this, needle, region,
+                      count=false, fromLeft=false): byteIndex;
     else
-      return _search_helper(needle, region, count=false, fromLeft=false): byteIndex;
+      return _search_helper(needle, region,
+                            count=false, fromLeft=false): byteIndex;
   }
 
   /*
@@ -1560,7 +1562,8 @@ module String {
 
     :returns: the number of times `needle` occurs in the string
    */
-  inline proc string.count(needle: string, region: range(?) = this.indices) : int {
+  inline proc string.count(needle: string,
+                           region: range(?) = this.indices) : int {
     if this.isASCII() then
       return doSearch(this, needle, region, count=true);
     else
@@ -1576,7 +1579,8 @@ module String {
     :returns: a copy of the string where `replacement` replaces `needle` up
               to `count` times
    */
-  inline proc string.replace(needle: string, replacement: string, count: int = -1) : string {
+  inline proc string.replace(needle: string, replacement: string,
+                             count: int = -1) : string {
     return doReplace(this, needle, replacement, count);
   }
 
@@ -1592,7 +1596,8 @@ module String {
                       * When `false` -- Empty strings will be yielded when
                                         `sep` occurs multiple times in a row.
    */
-    iter string.split(sep: string, maxsplit: int = -1, ignoreEmpty: bool = false) /* : string */ {
+    iter string.split(sep: string, maxsplit: int = -1,
+                      ignoreEmpty: bool = false) /* : string */ {
     // TODO: specifying return type leads to un-inited string?
     for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
   }
