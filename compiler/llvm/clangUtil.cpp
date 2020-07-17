@@ -596,9 +596,20 @@ static void handleMacroTokens(const MacroInfo* inMacro,
   if (_unsigned == 0 && _signed == 0 &&
       _long == 0 && _short == 0 &&
       _int == 0 && _char == 0 && _float == 0 && _double == 0) {
+
     Token tok = *start; // the main token
+    ++start;
+
+    // Give up if there are any tokens beyond the main token
+    if (start != end)
+      return;
+
     handleMacroToken(inMacro, negate, tok, varRet, cTypeRet, cValueRet);
   } else {
+    // Give up if we didn't handle all the tokens in the above loop
+    if (start != end)
+      return;
+
     const char* nType = NULL;
     if (_double > 0) nType = "c_double";
     else if (_float > 0) nType = "c_float";
