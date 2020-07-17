@@ -1530,7 +1530,7 @@ module String {
                           region: range(?) = this.byteIndices) : byteIndex {
     // TODO: better name than region?
     if this.isASCII() then
-      return doSearch(this, needle, region, count=false): byteIndex;
+      return doSearchNoEnc(this, needle, region, count=false): byteIndex;
     else
       return doSearchUTF8(needle, region, count=false): byteIndex;
   }
@@ -1547,7 +1547,7 @@ module String {
   inline proc string.rfind(needle: string,
                            region: range(?) = this.byteIndices) : byteIndex {
     if this.isASCII() then
-      return doSearch(this, needle, region,
+      return doSearchNoEnc(this, needle, region,
                       count=false, fromLeft=false): byteIndex;
     else
       return doSearchUTF8(needle, region,
@@ -1565,7 +1565,7 @@ module String {
   inline proc string.count(needle: string,
                            region: range(?) = this.indices) : int {
     if this.isASCII() then
-      return doSearch(this, needle, region, count=true);
+      return doSearchNoEnc(this, needle, region, count=true);
     else
       return doSearchUTF8(needle, region, count=true);
   }

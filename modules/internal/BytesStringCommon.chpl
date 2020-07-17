@@ -553,8 +553,8 @@ module BytesStringCommon {
   // Helper function that uses a param bool to toggle between count and find
   //TODO: this could be a much better string search
   //      (Boyer-Moore-Horspool|any thing other than brute force)
-  proc doSearch(const ref x: ?t, needle: t, region: range(?),
-                param count: bool, param fromLeft: bool = true) {
+  proc doSearchNoEnc(const ref x: ?t, needle: t, region: range(?),
+                     param count: bool, param fromLeft: bool = true) {
     assertArgType(t, "doSearch");
 
     // needle.buffLen is <= than x.buffLen, so go to the home locale

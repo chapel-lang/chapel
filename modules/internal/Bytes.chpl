@@ -675,7 +675,7 @@ module Bytes {
               :mod:`bytes <Bytes>`.
    */
   inline proc bytes.find(needle: bytes, region: range(?) = this.indices) : idxType {
-    return doSearch(this, needle, region, count=false): idxType;
+    return doSearchNoEnc(this, needle, region, count=false): idxType;
   }
 
   /*
@@ -692,7 +692,8 @@ module Bytes {
               :mod:`bytes <Bytes>`.
    */
   inline proc bytes.rfind(needle: bytes, region: range(?) = this.indices) : idxType {
-    return doSearch(this, needle, region, count=false, fromLeft=false): idxType;
+    return doSearchNoEnc(this, needle, region, count=false,
+                         fromLeft=false): idxType;
   }
 
   /*
@@ -707,7 +708,7 @@ module Bytes {
     :returns: the number of times `needle` occurs in the :mod:`bytes <Bytes>`
    */
   inline proc bytes.count(needle: bytes, region: range(?) = this.indices) : int {
-    return doSearch(this, needle, region, count=true);
+    return doSearchNoEnc(this, needle, region, count=true);
   }
 
   /*
