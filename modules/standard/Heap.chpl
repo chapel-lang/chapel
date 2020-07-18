@@ -331,6 +331,19 @@ module Heap {
       }
     }
 
+    /*
+      Iterate over the elements of this heap
+      
+        .. note::
+        Elements are yield in order
+    */
+    iter consume() {
+      var h = this;
+      while !h.isEmpty() {
+        yield h.pop();
+      }
+    }
+
     proc const toArray(): [] eltType {
       if !isCopyableType(eltType) then
         compilerError("toArray() method is not avaliable on a 'heap'",
@@ -338,22 +351,6 @@ module Heap {
                       eltType: string);
       _enter();
       var l = _data.toArray();
-      _leave();
-      return l;
-    }
-
-    /*
-      Returns a new DefaultRectangular array containing the
-      elements contained in this heap. The heap will be empty.
-
-      :return: A new DefaultRectangular array.
-    */
-    proc consume(): [] eltType {
-      _enter();
-      var l: [0..#size] eltType;
-      for i in 0..#size {
-        l[i] = pop();
-      }
       _leave();
       return l;
     }
