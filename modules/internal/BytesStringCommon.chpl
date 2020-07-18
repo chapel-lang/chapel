@@ -356,8 +356,8 @@ module BytesStringCommon {
       const intR = r:range(int, r.boundedType, r.stridable);
       if boundsChecking {
         if !x.byteIndices.boundsCheck(intR) {
-          halt("range ", r, " out of bounds for " + t:string + " with ",
-               x.numBytes, " bytes");
+          halt("range ", r, " out of bounds for " + t:string + " with length ",
+               x.numBytes);
         }
       }
       return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
