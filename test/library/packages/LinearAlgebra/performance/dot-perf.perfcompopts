@@ -3,8 +3,8 @@ system=$($CHPL_HOME/util/printchplenv | grep 'CHPL_TARGET_PLATFORM' | cut -d\  -
 
 if [ "$system" = "cray-cs" ] || [ "$system" = "cray-xc" ]
 then 
-    echo "-s blasImpl=off"
-    echo "-s blasImpl=blas"
+    echo "-s blasImpl=off # dot-perf-native.perfkeys"
+    echo "-s blasImpl=blas # dot-perf-BLAS.perfkeys"
 else
-    echo "-s blasImpl=off"
+    echo "-s blasImpl=off # dot-perf-native.perfkeys"
 fi
