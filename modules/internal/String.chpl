@@ -1503,15 +1503,30 @@ module String {
               specified codepoint index from ``1..string.numCodepoints``
    */
   proc string.item(i: codepointIndex) : string {
+    if boundsChecking && i < 0 then
+      halt("index ", i, " out of bounds for string");
+
     if this.isEmpty() then return "";
     if this.isASCII() {
+      if boundsChecking && i >= this.numBytes then
+        halt("index ", i, " out of bounds for string with length ", this.size);
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
                                             len=1, loc=this.locale_id);
       return chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
     }
     else {
-      const idx = i: int;
-      return codepointToString(this.codepoint(idx));
+      var charCount = 0;
+      for (cp, i, nBytes) in _cpIndexLen() {
+        if charCount == i {
+          var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
+                                                len=nBytes, loc=this.locale_id);
+          return chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
+        }
+        charCount += 1;
+      }
+      if boundsChecking then
+        halt("index ", i, " out of bounds for string with length ", this.size);
+      return "";
     }
   }
 
