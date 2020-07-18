@@ -350,7 +350,7 @@ module BytesStringCommon {
       compilerError("codepointIndex ranges cannot be used with bytes in getView");
     }
 
-    if t == bytes || r.idxType == byteIndex {
+    proc simpleCaseHelper() {
       // cast the argument r to `int` to make sure that we are not dealing with
       // byteIndex
       const intR = r:range(int, r.boundedType, r.stridable);
@@ -361,6 +361,13 @@ module BytesStringCommon {
         }
       }
       return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
+    }
+
+    if t == bytes || r.idxType == byteIndex {
+      return simpleCaseHelper();
+    }
+    else if t == string && x.isASCII() {
+      return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
       if r.stridable {
