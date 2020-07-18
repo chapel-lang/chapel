@@ -264,6 +264,12 @@ module Heap {
       }
     }
 
+    pragma "no doc"
+    proc _push(in element: eltType)
+    lifetime this < element {
+      _data.append(element);
+      _heapify_up(_data.size-1);
+    }
     /*
       Push an element into the heap
 
@@ -273,8 +279,7 @@ module Heap {
     proc push(in element: eltType)
     lifetime this < element {
       _enter();
-      _data.append(element);
-      _heapify_up(_data.size-1);
+      _push(element);
       _leave();
     }
 
@@ -285,8 +290,10 @@ module Heap {
       :type x: `list(eltType)`
     */
     proc push(ref x: list(eltType)) {
+      _enter();
       for e in x do
-        push(e);
+        _push(x);
+      _leave();
     }
 
     /*
@@ -296,8 +303,10 @@ module Heap {
       :type x: `[?d] eltType`
     */
     proc push(ref x:[?d] eltType) {
+      _enter();
       for e in x do
-        push(e);
+        _push(e);
+      _leave();
     }
 
     /*
