@@ -680,15 +680,17 @@ module BytesStringCommon {
             then 0..#(numPossible)
             else 0..#(numPossible) by -1;
         for i in searchSpace {
-          const bufIdx = view.orderToIndex(i);
-          const found = bufferEqualsLocal(buf1=x.buff, off1=bufIdx,
-                                          buf2=localNeedle.buff, off2=0,
-                                          len=needleLen);
-          if found {
-            if count {
-              localRet += 1;
-            } else { // find
-              localRet = view.orderToIndex(i);
+          // j *is* the index into the localNeedle's buffer
+          for j in 0..#nLen {
+            const idx = view.orderToIndex(i+j); // 0s based idx
+            if x.buff[idx] != localNeedle.buff[j] then break;
+
+            if j == nLen-1 {
+              if count {
+                localRet += 1;
+              } else { // find
+                localRet = view.orderToIndex(i);
+              }
             }
           }
           if !count && localRet != -1 then break;
