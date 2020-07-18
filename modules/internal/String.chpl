@@ -1395,6 +1395,7 @@ module String {
     // TODO: Engin: at least we can check whether the length is less than 4
     // bytes before localizing?
     var localThis: string = this.localize();
+
     if localThis.isEmpty() then
       halt("string.toCodepoint() only accepts single-codepoint strings");
 
