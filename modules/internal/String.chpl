@@ -1516,9 +1516,9 @@ module String {
     }
     else {
       var charCount = 0;
-      for (cp, i, nBytes) in _cpIndexLen() {
+      for (cp, byteIdx, nBytes) in _cpIndexLen() {
         if charCount == i {
-          var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
+          var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=byteIdx:int,
                                                 len=nBytes, loc=this.locale_id);
           return chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
         }
