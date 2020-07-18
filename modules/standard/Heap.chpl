@@ -194,12 +194,13 @@ module Heap {
     }
 
     /*
-      Return the maximal element in the heap.
+      Return the top element in the heap.
 
-      :return: The maximal element in the heap
+      :return: The top element in the heap
       :rtype: `eltType`
 
       .. note::
+        The default behaviour is to return the maximal element.
         *Maximal* is defined by ``comparator``. If a ``reverseComparator`` is passed to ``init``,
         the heap will return the minimal element.
 
