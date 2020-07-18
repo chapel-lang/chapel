@@ -2,4 +2,4 @@ perfkeys: Time:, Time:
 files: dot-perf-Native.dat, dot-perf-BLAS.dat
 graphkeys: Native, BLAS
 ylabel: Time (seconds)
-graphtitle: LinearAlgebra.dot() performance (1024*1024 matrix)
+graphtitle: LinearAlgebra.dot() performance (2048*2048 matrix)
