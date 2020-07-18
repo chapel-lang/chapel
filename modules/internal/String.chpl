@@ -1282,7 +1282,9 @@ module String {
 
     if localThis.isASCII() {
       for i in this.byteIndices {
-        yield this.item(i);
+      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
+                                            len=1, loc=this.locale_id);
+      yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       }
     }
     else {
@@ -1447,17 +1449,24 @@ module String {
     if boundsChecking && (idx < 0 || idx >= this.buffLen)
       then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
 
-    var maxbytes = (this.buffLen - idx): ssize_t;
-    if maxbytes < 0 || maxbytes > 4 then
-      maxbytes = 4;
-    var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
-                                          len=maxbytes, loc=this.locale_id);
+    if this.isASCII() {
+      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
+                                            len=1, loc=this.locale_id);
+      return chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+    }
+    else {
+      var maxbytes = (this.buffLen - idx): ssize_t;
+      if maxbytes < 0 || maxbytes > 4 then
+        maxbytes = 4;
+      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=idx,
+                                            len=maxbytes, loc=this.locale_id);
 
-    const (decodeRet, cp, nBytes) = decodeHelp(buff=newBuff,
-                                               buffLen=maxbytes,
-                                               offset=0,
-                                               allowEsc=true);
-    return chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
+      const (decodeRet, cp, nBytes) = decodeHelp(buff=newBuff,
+                                                 buffLen=maxbytes,
+                                                 offset=0,
+                                                 allowEsc=true);
+      return chpl_createStringWithOwnedBufferNV(newBuff, nBytes, allocSize, 1);
+    }
   }
 
   /*
