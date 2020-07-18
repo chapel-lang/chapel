@@ -2053,19 +2053,13 @@ module String {
       var result: string = this;
       if result.isEmpty() then return result;
 
-      var i = 0;
-      while i < result.buffLen {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
-                                                   buffLen=result.buffLen,
-                                                   offset=i,
-                                                   allowEsc=false);
+      for (cp, i, nBytes) in this._cpIndexLen() {
         var lowCodepoint = codepoint_toLower(cp);
         if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
           // Use the MacOS approach everywhere:  only change the case if
           // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, lowCodepoint);
         }
-        i += nBytes;
       }
       return result;
     }
@@ -2083,19 +2077,13 @@ module String {
       var result: string = this;
       if result.isEmpty() then return result;
 
-      var i = 0;
-      while i < result.buffLen {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
-                                                   buffLen=result.buffLen,
-                                                   offset=i,
-                                                   allowEsc=false);
+      for (cp, i, nBytes) in this._cpIndexLen() {
         var upCodepoint = codepoint_toUpper(cp);
         if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
           // Use the MacOS approach everywhere:  only change the case if
           // the result does not change the number of encoded bytes.
           qio_encode_char_buf(result.buff + i, upCodepoint);
         }
-        i += nBytes;
       }
       return result;
     }
@@ -2116,12 +2104,7 @@ module String {
 
     param UN = 0, LETTER = 1;
     var last = UN;
-    var i = 0;
-    while i < result.buffLen {
-      const (decodeRet, cp, nBytes) = decodeHelp(buff=result.buff,
-                                                 buffLen=result.buffLen,
-                                                 offset=i,
-                                                 allowEsc=false);
+    for (cp, i, nBytes) in this._cpIndexLen() {
       if codepoint_isAlpha(cp) {
         if last == UN {
           last = LETTER;
@@ -2143,7 +2126,6 @@ module String {
         // Uncased elements
         last = UN;
       }
-      i += nBytes;
     }
     return result;
   }
