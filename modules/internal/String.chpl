@@ -936,17 +936,24 @@ module String {
     iter _cpIndexLen(start = 0:byteIndex) {
       var localThis: string = this.localize();
 
-      var i = start:int;
-      if i > 0 then
-        while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-          i += 1; // in case `start` is in the middle of a multibyte character
-      while i < localThis.buffLen {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
-                                                   offset=i,
-                                                   allowEsc=true);
-        yield (cp:int(32), i:byteIndex, nBytes:int);
-        i += nBytes;
+      if localThis.isASCII() {
+        for (i,b) in zip(this.byteIndices, this.chpl_bytes()) {
+          yield(b:int(32), i:byteIndex, 1:int);
+        }
+      }
+      else {
+        var i = start:int;
+        if i > 0 then
+          while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
+            i += 1; // in case `start` is in the middle of a multibyte character
+        while i < localThis.buffLen {
+          const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                     buffLen=localThis.buffLen,
+                                                     offset=i,
+                                                     allowEsc=true);
+          yield (cp:int(32), i:byteIndex, nBytes:int);
+          i += nBytes;
+        }
       }
     }
 
