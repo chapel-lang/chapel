@@ -1,0 +1,1 @@
+complex-macro5.chpl:3: error: Could not find C type ADD_CONSTANT - perhaps it is a complex macro?

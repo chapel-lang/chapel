@@ -1,0 +1,1 @@
+complex-macro6.chpl:3: error: Could not find C type SHIFT_CONSTANT - perhaps it is a complex macro?
