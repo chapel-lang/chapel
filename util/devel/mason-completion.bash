@@ -1,23 +1,90 @@
 #!/usr/bin/env bash
 
-_complete_mason_init(){
-  local optional 
+_options(){
+  local optional
   local optional_abbr
-  local arg
-  local cur
-  cur=${COMP_WORDS[COMP_CWORD]}
-  arg=$(mason init --help | grep -v '^[A-Za-z]' | grep -v '^.*--'  | \
-     grep -v '<command>' | grep -v '\[options\]'  | sed 's/^[ \t]*//' | \
-     cut -d" " -f1 | xargs echo)
-  optional=$(mason init --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+  optional=$(mason "$1" --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
             sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;-[A-Za-z],;   ;' | \
             xargs echo)
-  optional_abbr=$(mason init --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
+  optional_abbr=$(mason "$1" --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
           sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
           xargs echo)
+  COMPREPLY=($(compgen -W "$optional $optional_abbr" -- "${COMP_WORDS[COMP_CWORD]}" ))
+}
+
+_complete_mason_publish(){
+  local cur
+  cur=${COMP_WORDS[COMP_CWORD]}
   case "$cur" in
     -*)
-      COMPREPLY=($(compgen -W "$optional $optional_abbr" -- "$1"))
+      _options publish
+      ;;
+    *)
+      COMPREPLY=($(compgen -d -S / -- "$cur"))
+      ;;
+  esac
+}
+
+_complete_mason_test(){
+  local cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in
+    -*)
+      _options test 
+      ;;
+    *)
+      COMPREPLY=($(compgen -d -S / -- "$cur"))
+      ;;
+  esac
+}
+
+_complete_mason_doc(){
+  COMPREPLY=($(compgen -W "--help -h" -- "$1" ))
+}
+
+_complete_mason_clean(){
+  COMPREPLY=($(compgen -W "--help -h" -- "$1" ))
+}
+
+_complete_mason_env(){
+  COMPREPLY=($(compgen -W "--help -h" -- "$1" ))
+}
+
+_complete_mason_search(){
+  _options search
+}
+
+_complete_mason_update(){
+  _options update
+}
+
+_complete_mason_run(){
+  local cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in
+    -*)
+      _options run 
+      ;;
+    *)
+      COMPREPLY=($(compgen -d -S / -- "$cur"))
+      ;;
+  esac
+}
+
+_complete_mason_build(){
+  _options build
+}
+
+_complete_mason_add(){
+  _options add
+}
+
+_complete_mason_init(){
+  local cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in
+    -*)
+      _options init 
       ;;
     *)
       COMPREPLY=($(compgen -d -S / -- "$cur"))
@@ -26,16 +93,7 @@ _complete_mason_init(){
 }
 
 _complete_mason_new(){
-  local optional
-  local optional_abbr
-  optional=$(mason new --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
-            sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;-[A-Za-z],;   ;' | \
-            xargs echo)
-  optional_abbr=$(mason new --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
-          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
-          xargs echo)
-  COMPREPLY=($(compgen -W "$optional $optional_abbr" -- "$1"))
-
+  _options new
 }
 _complete_mason_option(){
   local optional
@@ -104,6 +162,46 @@ _mason(){
         ;;
       'init')
         _complete_mason_init "$cur"
+        ;;
+      'add')
+        _complete_mason_add "$cur"
+        ;;
+      'rm')
+        _complete_mason_add "$cur"
+        ;;
+      'run')
+        _complete_mason_run "$cur"
+        ;;
+      'build')
+        _complete_mason_build "$cur"
+        ;;
+      'update')
+        _complete_mason_update "$cur"
+        ;;
+      'search')
+        _complete_mason_search "$cur"
+        ;;
+      'env')
+        _complete_mason_env "$cur"
+        ;;
+      'clean')
+        _complete_mason_clean "$cur"
+        ;;
+      'doc')
+        _complete_mason_doc "$cur"
+        ;;
+      'test')
+        _complete_mason_test "$cur"
+        ;;
+      'publish')
+        _complete_mason_publish "$cur"
+        ;;
+      'external')
+
+        ;;
+      'system')
+
+        ;;
     esac
   fi
 }
