@@ -14,7 +14,7 @@ module OuterModule {
   // modules being used
 
   module M1 {
-    public use M11;
+    public use super.M11;
   }
 
   module M11 {
@@ -24,12 +24,12 @@ module OuterModule {
   }
 
   module M2 {
-    public use M22;
+    public use super.M22;
     var y: int;
   }
 
   module M22 {
-    public use M222;
+    public use super.M222;
     var z: int;
   }
 
