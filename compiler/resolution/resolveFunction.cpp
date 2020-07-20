@@ -600,7 +600,8 @@ static void markIterator(FnSymbol* fn) {
     ModuleSymbol *mod = toModuleSymbol(fn->getModule());
     if (mod->modTag != MOD_USER) {
       if (markOrderIndep && allYieldingLoopsJustYield && anyMarked &&
-          !fn->hasFlag(FLAG_INSTANTIATED_GENERIC)) {
+          !fn->hasFlag(FLAG_INSTANTIATED_GENERIC) &&
+          !fn->hasFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING)) {
         // can't do this check for instantiated generics because
         // other instantiations of the generic might have a different
         // outcome.
