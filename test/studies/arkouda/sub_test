@@ -57,10 +57,9 @@ test_start "make check"
 if make check ; then
   log_success "make check output"
 else
-  test_end "make check"
   log_fatal_error "running make check"
 fi
-test_end "make check"
+test_end
 
 # Run Python unit tests
 test_start "make test-python"
@@ -69,7 +68,7 @@ if make test-python ; then
 else
   log_error "running make test-python"
 fi
-test_end "make test-python"
+test_end
 
 # Run benchmarks
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
@@ -101,7 +100,7 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   else
     log_error "running benchmarks"
   fi
-  test_end "benchmarks"
+  test_end
 fi
 
 subtest_end
