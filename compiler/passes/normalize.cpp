@@ -26,7 +26,6 @@
 #include "passes.h"
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -36,6 +35,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
+#include "preNormalizeOptimizations.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
@@ -124,7 +124,7 @@ static bool        firstConstructorWarning = true;
 
 void normalize() {
 
-  autoLocalAccess();
+  doPreNormalizeArrayOptimizations();
 
   insertModuleInit();
 
@@ -3296,6 +3296,13 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
       if (eltExpr == NULL) {
         USR_FATAL(formal, "array argument '%s' in exported function '%s'"
                   " must specify its type", formal->name, fn->name);
+        continue;
+      }
+      if (formal->intent == INTENT_OUT) {
+        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
+                  " uses out intent - out intent not yet supported"
+                  " for arrays in export procs",
+                  formal->name, fn->name);
         continue;
       }
 

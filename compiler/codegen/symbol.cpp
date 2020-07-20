@@ -688,7 +688,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
 #endif
   }
 
-  USR_FATAL("Could not find C type %s - "
+  USR_FATAL(this->defPoint, "Could not find C type %s - "
             "perhaps it is a complex macro?", cname);
   return ret;
 }
@@ -2539,7 +2539,8 @@ GenRet FnSymbol::codegen() {
           if( isBuiltinExternCFunction(cname) ) {
             // it's OK.
           } else {
-            USR_FATAL("Could not find C function for %s; "
+            USR_FATAL(this->defPoint,
+                      "Could not find C function for %s; "
                       " perhaps it is missing or is a macro?", cname);
           }
         } else {

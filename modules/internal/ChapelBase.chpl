@@ -883,50 +883,33 @@ module ChapelBase {
   proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
 
-    // no need to init an array of zeros
-    // for uints, check that s > 0, so the `s-1` below doesn't overflow
-    if isIntegral(s) && s == 0 {
+    if s == 0 {
+      // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
+      // code doesn't overflow.
       initMethod = ArrayInit.noInit;
+    } else if  !rootLocaleInitialized {
+      // The parallel range iter uses 'here`/rootLocale, so fallback to serial
+      // initialization if the root locale hasn't been setup. Only used early
+      // in module initialization
+      initMethod = ArrayInit.serialInit;
     } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
-      // current heuristic really just checks that we have a POD array that's
-      // at least 2MB. This value was chosen experimentally: Any smaller and the
+      // current heuristic really just checks that we have an array that's at
+      // least 2MB. This value was chosen experimentally: Any smaller and the
       // cost of a forall (mostly the task creation) outweighs the benefit of
       // using multiple tasks. This was tested on a 2 core laptop, 8 core
       // workstation, and 24 core XC40.
-      //
-      // Ideally we want to be able to do parallel initialization for all types,
-      // but we're currently blocked by an issue with arrays of arrays and thus
-      // arrays of aggregate types where at one field is an array. The issue is
-      // basically that an array's domain stores a linked list of all its arrays
-      // and removal becomes expensive when addition and removal occur in
-      // different orders.
-      //
-      // Long term we probably want to store the domain's arrays as an
-      // associative domain or some data structure with < log(n) find/add/remove
-      // times. Currently we can't do that because the domain's arrays are part
-      // of the base domain, so we have a circular reference.
-      if !isPODType(t) {
-        initMethod = ArrayInit.serialInit;
+      const elemsizeInBytes = if isNumericType(t) then numBytes(t)
+                              else c_sizeof(t).safeCast(int);
+      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+      param heuristicThresh = 2 * 1024 * 1024;
+      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+      if heuristicWantsPar {
+        initMethod = ArrayInit.parallelInit;
       } else {
-        const elemsizeInBytes = if isNumericType(t) then numBytes(t)
-                                else c_sizeof(t).safeCast(int);
-        const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-        param heuristicThresh = 2 * 1024 * 1024;
-        const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
-
-        if heuristicWantsPar {
-          initMethod = ArrayInit.parallelInit;
-        } else {
-          initMethod = ArrayInit.serialInit;
-        }
+        initMethod = ArrayInit.serialInit;
       }
-    }
-
-    // The parallel range iter uses 'here`/rootLocale, so fallback to serial
-    // initialization if the root locale hasn't been setup
-    if initMethod == ArrayInit.parallelInit && !rootLocaleInitialized {
-      initMethod = ArrayInit.serialInit;
     }
 
     return initMethod;

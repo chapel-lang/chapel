@@ -329,8 +329,18 @@ module Map {
       return result;
     }
 
-    proc getValue(k: keyType) const
-    where isNonNilableClass(valType) {
+    /* Get a copy of the element stored at position `k`. This method is only
+       available when a map's `valType` is a non-nilable class.
+     */
+    proc getValue(k: keyType) const {
+      if !isNonNilableClass(valType) then
+        compilerError('getValue can only be called when a map value type ',
+                      'is a non-nilable class');
+
+      if isOwnedClass(valType) then
+        compilerError('getValue cannot be called when a map value type ',
+                      'is an owned class, use getBorrowed instead');
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then

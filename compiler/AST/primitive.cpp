@@ -563,7 +563,9 @@ returnInfoToNonNilable(CallExpr* call) {
 
 static QualifiedType
 returnInfoRuntimeTypeField(CallExpr* call) {
-  return call->get(1)->qualType();
+  bool isType = false;
+  Type* t = getPrimGetRuntimeTypeFieldReturnType(call, isType);
+  return QualifiedType(t, QUAL_VAL);
 }
 
 
@@ -869,13 +871,12 @@ initPrimitive() {
 
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true);
 
-  // PRIM_ARRAY_GET{_VALUE} arguments
+  // PRIM_ARRAY_GET arguments
   //  base pointer
   //  index
   //  no alias set
   // This is similar to A[i] in C
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
-  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   // PRIM_ARRAY_SET / PRIM_ARRAY_SET_FIRST have these arguments
   //   base pointer
@@ -1096,11 +1097,9 @@ initPrimitive() {
 
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
-  // Accepts 3 arguments:
-  // 1) type variable representing static type of field in _RuntimeTypeInfo
-  // 2) type variable that will become the _RuntimeTypeInfo
-  // 3) param-string name of the field in the _RuntimeTypeInfo
-  // existence of an optional 4th argument indicates the result is a type
+  // Accepts 2 arguments:
+  // 1) type variable that will become the _RuntimeTypeInfo
+  // 2) field symbol or param-string name of the field in the _RuntimeTypeInfo
   prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 
   // Corresponds to LLVM's invariant start
