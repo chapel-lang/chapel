@@ -1,5 +1,5 @@
-perfkeys: concat:, append:, copy:, iterate:
-repeat-files: allocate.dat
-graphkeys: concatenation, appending, copying, char iteration
+perfkeys: concat:, append:, copy:, iterate:, concat:, append:, copy:, iterate:, concat:, append:, copy:, iterate:
+repeat-files: allocate.dat, allocate-utf8.dat, allocate-bytes.dat
+graphkeys: concatenation (ASCII), appending (ASCII), copying (ASCII), char iteration (ASCII) , concatenation (UTF8), appending (UTF8), copying (UTF8), char iteration (UTF8) , concatenation (bytes), appending (bytes), copying (bytes), char iteration (bytes)
 ylabel: Time (seconds)
 graphtitle: Allocating string operations
