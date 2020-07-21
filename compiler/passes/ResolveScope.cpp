@@ -674,8 +674,6 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     ModuleSymbol* thisMod = enclosingModule();
     for (ptr = start; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
       ModuleSymbol* ptrMod = ptr->enclosingModule();
-      if (thisMod != ptrMod && relativeScope == NULL && ptrMod != theProgram)
-        continue;
       // Check if the module is defined in this scope
       Symbol* sym = ptr->lookupNameLocallyForImport(name);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
@@ -686,6 +684,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
           // if we're not in the root module scope or using relative import,
           // this is an improper match
           badCloserModule = mod;
+          if (thisMod != ptrMod) {
+            continue;
+          }
           if (isUse) { // TODO: remove this to disable relative use
             retval = sym;
             break;
