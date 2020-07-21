@@ -52,6 +52,7 @@ proc masonTest(args) throws {
   var update = true;
   if MASON_OFFLINE then update = false;
   var compopts: list(string);
+  var searchSubStrings: list(string);
   var countArgs = 0;
   for arg in args {
     countArgs += 1;
@@ -95,24 +96,102 @@ proc masonTest(args) throws {
           else if isDir(arg) {
             dirs.append(arg);
           }
-          else {
+          else if arg.startsWith('-') {
             compopts.append(arg);
+          }
+          else {
+            searchSubStrings.append(arg);
           }
         }
       }
     }
   }
+
   getRuntimeComm();
   var uargs: list(string);
   if !update then uargs.append('--no-update');
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
+
+    if(!searchSubStrings.isEmpty())
+    {
+      var testNames: list(string);
+      const testPath = joinPath(projectHome, "test");
+      var subTestPath = testPath: string;
+
+      var inProjectDir = cwd==projectHome;
+      if !inProjectDir{
+        subTestPath = cwd;
+      }
+
+      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      for test in tests{
+        if test.endsWith(".chpl"){
+          if(inProjectDir){
+            testNames.append(getTestPath(test));
+          }
+          else{
+            var testLoc = "";
+            while(test!=subTestPath){
+              var split = splitPath(test);
+              testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc) else split[1];
+              test = split[0];
+            }
+            testNames.append(testLoc);
+          }
+        }
+      }
+
+      var isSubString: bool;
+
+      for subString in searchSubStrings {
+        isSubString = false;
+        for testName in testNames {
+          if testName.find(subString) != -1 {
+            isSubString = true;
+            if(inProjectDir){
+              files.append("".join('test/', testName));
+            }
+            else{
+              files.append(testName);
+            }
+          }
+        }
+
+        if !isSubString {
+          compopts.append(subString);
+        }
+      }
+    }
+
     UpdateLock(uargs);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }
   catch e: MasonError {
+    try! {
+      if !searchSubStrings.isEmpty(){
+        var testNames: list(string);
+
+        if isDir('.'){
+          var tests = findfiles(startdir='.', recursive=subdir);
+          for test in tests {
+            if test.endsWith(".chpl") {
+              testNames.append(test);
+            }
+          }
+        }
+
+        for subString in searchSubStrings {
+          for testName in testNames {
+            if testName.find(subString) != -1 {
+              files.append(testName);
+            }
+          }
+        }
+      }
+    }
     runUnitTest(compopts, show);
   }
 }
