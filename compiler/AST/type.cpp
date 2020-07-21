@@ -822,7 +822,7 @@ createType(const char* name, const char* cname, bool internalType) {
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol*    ts = new TypeSymbol(name, pt);
 
-  ts->cname = cname;
+  ts->cname = astr(cname);
 
   // This prevents cleanAST() from sweeping these
   ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
