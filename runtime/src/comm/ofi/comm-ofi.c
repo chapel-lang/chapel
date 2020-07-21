@@ -1149,7 +1149,6 @@ void init_ofiFabricDomain(void) {
   }
   hints->tx_attr->op_flags = FI_COMPLETION;
   hints->tx_attr->msg_order = FI_ORDER_SAS;
-  hints->rx_attr->op_flags = hints->tx_attr->op_flags;
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
   hints->ep_attr->type = FI_EP_RDM;
   hints->domain_attr->av_type = FI_AV_TABLE;
@@ -1169,8 +1168,7 @@ void init_ofiFabricDomain(void) {
   debugOverrideHints(hints);
   ord_cmplt_forced =
     hints->tx_attr->op_flags != hintsOrig->tx_attr->op_flags
-    || hints->tx_attr->msg_order != hintsOrig->tx_attr->msg_order
-    || hints->rx_attr->op_flags != hintsOrig->rx_attr->op_flags;
+    || hints->tx_attr->msg_order != hintsOrig->tx_attr->msg_order;
   fi_freeinfo(hintsOrig);
 #endif
 
@@ -1278,7 +1276,6 @@ void init_ofiFabricDomain(void) {
   // doesn't actually do it.
   //
   hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
-  hints->rx_attr->op_flags = hints->tx_attr->op_flags;
 
   struct fi_info* infoCmplt = NULL;
   OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
@@ -1311,7 +1308,7 @@ void init_ofiFabricDomain(void) {
   hints->tx_attr->op_flags = FI_COMPLETION;
 
   //
-  // We couldn't get FI_DELIVERY_COMPLETE  in a desirable provider
+  // We couldn't get FI_DELIVERY_COMPLETE in a desirable provider
   // either.  Just use anything that matched.
   //
   if (infoTxOrd != NULL) {
