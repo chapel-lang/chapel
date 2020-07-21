@@ -60,7 +60,9 @@ for i in 1..n {
   totalNumBytes += word.numBytes;
 }
 
-writeln("Read ", totalNumBytes, " bytes");
+if timing {
+  writeln("Read ", totalNumBytes, " bytes");
+}
 
 // startsWith
 var tStartsWith: Timer;
