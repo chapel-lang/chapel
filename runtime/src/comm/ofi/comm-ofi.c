@@ -369,6 +369,10 @@ const char* getProviderName(void) {
 
 static inline
 chpl_bool isInProvName(const char* s, const char* prov_name) {
+  if (prov_name == NULL) {
+    return false;
+  }
+
   char pn[strlen(prov_name) + 1];
   strcpy(pn, prov_name);
 
@@ -381,6 +385,7 @@ chpl_bool isInProvName(const char* s, const char* prov_name) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -1077,7 +1082,43 @@ void debugOverrideHints(struct fi_info* hints) {
 
 
 static
+chpl_bool isGoodCoreProvider(struct fi_info* info) {
+  if (!isInProvName("sockets", info->fabric_attr->prov_name)
+      && !isInProvName("tcp", info->fabric_attr->prov_name)) {
+    return true;
+  }
+
+  return false;
+}
+
+
+static
 void init_ofiFabricDomain(void) {
+  //
+  // Just within this function, it's useful during setup to be able to
+  // produce error messages only from node 0, for problems we expect
+  // all nodes to encounter identically.
+  //
+#  define INTERNAL_ERROR_V_NODE0(fmt, ...)                              \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        INTERNAL_ERROR_V(fmt, ## __VA_ARGS__);                          \
+      } else {                                                          \
+        chpl_comm_ofi_oob_fini();                                       \
+        chpl_exit_any(0);                                               \
+      }                                                                 \
+    } while (0)
+
+  //
+  // It's also useful to be able to print debug info only from node 0.
+  //
+#  define DBG_PRINTF_NODE0(mask, fmt, ...)                              \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        DBG_PRINTF(mask, fmt, ## __VA_ARGS__);                          \
+      }                                                                 \
+    } while (0)
+
   //
   // Build hints describing our fundamental requirements and get a list
   // of the providers that can satisfy those:
@@ -1096,6 +1137,7 @@ void init_ofiFabricDomain(void) {
   // - in addition, include the memory registration modes we can support
   //
   const char* prov_name = getProviderName();
+
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
 
@@ -1121,44 +1163,84 @@ void init_ofiFabricDomain(void) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
+  chpl_bool ord_cmplt_forced = false;
 #ifdef CHPL_COMM_DEBUG
+  struct fi_info* hintsOrig = fi_dupinfo(hints);
   debugOverrideHints(hints);
+  ord_cmplt_forced =
+    hints->tx_attr->op_flags != hintsOrig->tx_attr->op_flags
+    || hints->tx_attr->msg_order != hintsOrig->tx_attr->msg_order
+    || hints->rx_attr->op_flags != hintsOrig->rx_attr->op_flags;
+  fi_freeinfo(hintsOrig);
 #endif
 
-  if (chpl_nodeID == 0) {
-    DBG_PRINTF(DBG_CFGFABHINTS,
-               "====================\n"
-               "initial hints");
-    DBG_PRINTF(DBG_CFGFABHINTS,
-               "%s", fi_tostr(hints, FI_TYPE_INFO));
-  }
+  DBG_PRINTF_NODE0(DBG_CFGFABHINTS,
+                   "====================\n"
+                   "initial hints");
+  DBG_PRINTF_NODE0(DBG_CFGFABHINTS,
+                   "%s", fi_tostr(hints, FI_TYPE_INFO));
 
   //
   // To enable adhering to the Chapel MCM we need the following (within
   // each task, not across tasks):
   // - A PUT followed by a GET from the same address must return the
   //   PUT data.  For this we need read-after-write ordering or else
-  //   delivery-complete.  Also, keep in mind that the RxM provider
-  //   advertises delivery-complete but doesn't actually do it.
+  //   delivery-complete.  Note that the RxM provider advertises
+  //   delivery-complete but doesn't actually do it.
   // - When a PUT is following by an on-stmt, the on-stmt body must see
   //   the PUT data.  For this we need either send-after-write ordering
   //   or delivery-complete.
   // - Atomics have to be ordered if either is a write, whether they're
   //   done directly or via internal AMs.
   //
+  // What we're hunting for is either a provider that can do all of the
+  // above transaction orderings, or one that can do delivery-complete.
+  // But we can't just get all the providers that match our fundamental
+  // needs and then look through the list to find the first one that can
+  // do either our transaction orderings or delivery-complete, because
+  // if those weren't in our original hints they might not be expressed
+  // by any of the returned providers.  Providers will not typically
+  // "volunteer" capabilities that aren't asked for, especially if those
+  // capabilities have performance costs.  So here, first see if we get
+  // a "good" core provider when we hint the transaction orderings, and
+  // iff that fails see if we get a "good" core provider when we hint
+  // delivery-complete.  "Good" here means "not tcp or sockets".  There
+  // are some wrinkles:
+  // - Setting either the transaction orderings or the delivery types in
+  //   manually overridden hints causes those hints to be used as-is,
+  //   turning off both the good-provider check and any attempt to find
+  //   something sufficient for the MCM.
+  // - Setting the FI_PROVIDER environment variable to manually specify
+  //   a provider turns off the good-provider checks.
+  // - We can't accept the RxM utility provider with any core provider
+  //   for delivery-complete, because although RxM will match that it
+  //   cannot actually do it, and programs will fail.  This is a known
+  //   bug that can't be fixed without breaking other things:
+  //     https://github.com/ofiwg/libfabric/issues/5601
+  //   Explicitly including ofi_rxm in FI_PROVIDER overrides this.
+  //
+
+  int ret;
 
   //
-  // TODO: First try specifying op_flags==FI_DELIVERY_COMPLETE.  If that
-  //       succeeds then replace it with FI_COMPLETION before creating
-  //       endpoints, then specify FI_DELIVERY_COMPLETE explicitly on a
-  //       per-transaction basis later, using e.g. fi_writemsg().  This
-  //       would let us simply wait for all PUTs to complete before
-  //       doing later GETs or AMOs or AMs.  See the fi_ep() and fi_cq()
-  //       man pages for more.
+  // Take manually overridden hints as forcing provider selection if
+  // they adjust either the transaction orderings or completion type.
+  // Otherwise, just flow those overrides into the selection process
+  // below.
   //
+  if (ord_cmplt_forced) {
+    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
+              ret, -FI_ENODATA);
+    if (ret != FI_SUCCESS) {
+      INTERNAL_ERROR_V_NODE0("No (forced) provider for prov_name \"%s\"",
+                             (prov_name == NULL) ? "<any>" : prov_name);
+    }
+    goto haveProvider;
+  }
 
   //
-  // Try to get the appropriate read-after-write orderigs.
+  // Try to get a good provider that can do the transaction orderings
+  // we want.
   //
   uint64_t msg_order_more = (((hints->caps & FI_ATOMIC) == 0)
                              ? (FI_ORDER_RMA_RAW | FI_ORDER_SAW)
@@ -1169,75 +1251,103 @@ void init_ofiFabricDomain(void) {
   hints->tx_attr->msg_order |= msg_order_more;
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
 
-  int ret;
-  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
+  struct fi_info* infoTxOrd = NULL;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoTxOrd),
             ret, -FI_ENODATA);
+  if (ret == FI_SUCCESS
+      && (isGoodCoreProvider(infoTxOrd) || prov_name != NULL)) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "====================\n"
+                     "with transaction orderings, found desirable provider");
+    ofi_info = infoTxOrd;
+    goto haveProvider;
+  }
 
-  if (ret == -FI_ENODATA) {
-    //
-    // We didn't find a provider with the message orderings asserted.
-    // Drop those and try to get FI_DELIVERY_COMPLETE.  But only accept
-    // it for providers other than RxM, which advertises it but can't
-    // actually do it.
-    //
-    if (chpl_nodeID == 0) {
-      DBG_PRINTF(DBG_CFGFABHINTS,
-                 "====================\n"
-                 "with ordering assertions, no providers matched");
-    }
-    hints->tx_attr->msg_order &= ~msg_order_more;
-    hints->rx_attr->msg_order = hints->tx_attr->msg_order;
-
-    hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
-    hints->rx_attr->op_flags = hints->tx_attr->op_flags;
-    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
-              ret, -FI_ENODATA);
-    if (ret == FI_SUCCESS) {
-      struct fi_info* info;
-      for (info = ofi_info;
-           info != NULL
-             && isInProvName("ofi_rxm", info->fabric_attr->prov_name);
-           info = info->next)
-        ;
-      if (info == NULL) {
-        ret = -FI_ENODATA;
-        fi_freeinfo(ofi_info);
-      } else {
-        struct fi_info* new_info = fi_dupinfo(info);
-        fi_freeinfo(ofi_info);
-        ofi_info = new_info;
-      }
-    }
-
-    if (ret == -FI_ENODATA) {
-      if (chpl_nodeID == 0) {
-        DBG_PRINTF(DBG_CFGFABHINTS,
+  DBG_PRINTF_NODE0(DBG_CFGFAB,
                    "====================\n"
-                   "with FI_DELIVERY_COMPLETE, no providers matched");
+                   "with transaction orderings, no desirable provider");
+
+  hints->tx_attr->msg_order &= ~msg_order_more;
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
+
+  //
+  // We couldn't get the desired transaction orderings, so instead try
+  // to get FI_DELIVERY_COMPLETE.  Unless an environment setting forces
+  // use of the RxM utility provider, only accept providers that don't
+  // include RxM, because though it advertises delivery-complete it
+  // doesn't actually do it.
+  //
+  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+  hints->rx_attr->op_flags = hints->tx_attr->op_flags;
+
+  struct fi_info* infoCmplt = NULL;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
+            ret, -FI_ENODATA);
+  if (ret == FI_SUCCESS) {
+    struct fi_info* info = infoCmplt;
+    if (!isInProvName("ofi_rxm", prov_name)) { // find non-RxM, unless forced
+      for ( ; info != NULL; info = info->next) {
+        if ((isGoodCoreProvider(info) || prov_name != NULL)
+            && !isInProvName("ofi_rxm", info->fabric_attr->prov_name)) {
+          break;
+        }
       }
     }
-  }
 
-  if (ret == -FI_ENODATA) {
-    //
-    // We didn't get any provider at all.  Give up.
-    //
-#if 1
-    INTERNAL_ERROR_V("No libfabric provider for prov_name \"%s\"",
-                     (prov_name == NULL) ? "<any>" : prov_name);
-#else
-    if (chpl_nodeID == 0) {
-      INTERNAL_ERROR_V("No libfabric provider for prov_name \"%s\"",
-                       (prov_name == NULL) ? "<any>" : prov_name);
-    } else {
-      chpl_comm_ofi_oob_fini();
-      chpl_exit_any(0);
+    if (info != NULL) {
+      DBG_PRINTF_NODE0(DBG_CFGFAB,
+                       "====================\n"
+                       "with delivery-complete, found desirable provider");
+      ofi_info = fi_dupinfo(info);
+      fi_freeinfo(infoCmplt);
+      goto haveProvider;
     }
-#endif
   }
 
-  if (chpl_nodeID == 0) {
-    if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+  DBG_PRINTF_NODE0(DBG_CFGFAB,
+                   "====================\n"
+                   "with delivery-complete, no desirable provider");
+
+  hints->tx_attr->op_flags = FI_COMPLETION;
+
+  //
+  // We couldn't get FI_DELIVERY_COMPLETE  in a desirable provider
+  // either.  Just use anything that matched.
+  //
+  if (infoTxOrd != NULL) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "====================\n"
+                     "with transaction orderings, "
+                     "found a less desirable provider");
+    ofi_info = infoTxOrd;
+    if (infoCmplt != NULL) {
+      fi_freeinfo(infoCmplt);
+    }
+    goto haveProvider;
+  }
+
+  if (infoCmplt != NULL) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "====================\n"
+                     "with delivery-complete, "
+                     "found a less desirable provider");
+    ofi_info = infoCmplt;
+    goto haveProvider;
+  }
+
+  //
+  // We didn't find any provider at all.
+  // NOTE: execution ends here.
+  //
+  INTERNAL_ERROR_V_NODE0("No libfabric provider for prov_name \"%s\"",
+                         (prov_name == NULL) ? "<any>" : prov_name);
+
+haveProvider:
+  //
+  // If we get here, we have a provider.
+  //
+  if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+    if (chpl_nodeID == 0) {
       DBG_PRINTF(DBG_CFGFABSALL,
                  "====================\n"
                  "matched fabric(s):");
@@ -1245,18 +1355,16 @@ void init_ofiFabricDomain(void) {
       for (info = ofi_info; info != NULL; info = info->next) {
         DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
       }
-    } else {
-      DBG_PRINTF(DBG_CFGFAB,
-                 "====================\n"
-                 "matched fabric:");
-      DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
     }
+  } else {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "====================\n"
+                     "matched fabric:");
+    DBG_PRINTF_NODE0(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
   }
 
-  if (chpl_nodeID == 0) {
-    DBG_PRINTF(DBG_CFGFAB | DBG_CFGFABSALL,
-               "====================");
-  }
+  DBG_PRINTF_NODE0(DBG_CFGFAB | DBG_CFGFABSALL,
+                   "====================");
 
   fi_freeinfo(hints);
 
@@ -1272,6 +1380,9 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
+
+#  undef DBG_PRINTF_NODE0
+#  undef INTERNAL_ERROR_V_NODE0
 }
 
 
