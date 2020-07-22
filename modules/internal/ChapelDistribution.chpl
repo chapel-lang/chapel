@@ -443,7 +443,7 @@ module ChapelDistribution {
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
     proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
-      use Sort;
+      private use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
 
       //verify sorted and no duplicates if not --fast
