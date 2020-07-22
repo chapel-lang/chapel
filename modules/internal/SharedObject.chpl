@@ -87,7 +87,7 @@ The default intent for :record:`shared` types is ``const ref``.
 module SharedObject {
 
   private use ChapelError, Atomics, ChapelBase;
-  use OwnedObject;
+  private use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
   // intrusive ref-counting and this one isn't, there's no fundamental
@@ -575,7 +575,7 @@ module SharedObject {
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(x:_shared) {
-    import HaltWrappers;
+    private import HaltWrappers;
     // Check only if --nil-checks is enabled or user requested
     if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for nilable types only.

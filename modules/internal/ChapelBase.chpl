@@ -27,7 +27,7 @@ module ChapelBase {
   pragma "locale private"
   var rootLocaleInitialized: bool = false;
 
-  use ChapelStandard;
+  public use ChapelStandard;
   private use ChapelEnv, SysCTypes;
 
   config param enablePostfixBangChecks = false;
@@ -592,7 +592,7 @@ module ChapelBase {
   //
 
   inline proc bitshiftChecks(a, b: integral) {
-    use HaltWrappers;
+    private use HaltWrappers;
 
     if b < 0 {
       var msg = "Cannot bitshift " + a:string + " by " + b:string +
@@ -663,7 +663,7 @@ module ChapelBase {
 
   pragma "always propagate line file info"
   private inline proc checkNotNil(x:borrowed class?) {
-    import HaltWrappers;
+    private import HaltWrappers;
     // Check only if --nil-checks is enabled or user requested
     if chpl_checkNilDereferences || enablePostfixBangChecks {
       // Add check for nilable types only.
