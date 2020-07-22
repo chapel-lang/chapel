@@ -822,7 +822,6 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 */
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
-
   if isDistributed(A) && A.rank == 2 then
     compilerError("matPow does not support distributed matrices");
   if !isIntegral(b) then
@@ -1430,8 +1429,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
       compiler error if ``lapackImpl`` is ``off``.
  */
 proc cholesky(A: [] ?t, lower = true)
-  where A.rank == 2 && isLAPACKType(t) && usingLAPACK
-{
+  where A.rank == 2 && isLAPACKType(t) && usingLAPACK {
   if isDistributed(A) then
     compilerError("cholesky does not support distributed vectors/matrices");
   if !isSquare(A) then
