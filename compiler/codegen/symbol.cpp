@@ -688,7 +688,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
 #endif
   }
 
-  USR_FATAL(this->defPoint, "Could not find C type %s - "
+  USR_FATAL(this->defPoint, "Could not find C variable %s - "
             "perhaps it is a complex macro?", cname);
   return ret;
 }

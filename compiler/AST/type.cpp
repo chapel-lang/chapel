@@ -1414,16 +1414,6 @@ bool typeNeedsCopyInitDeinit(Type* type) {
   return retval;
 }
 
-Type* getNamedType(std::string name) {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if(name == ts->name || name == ts->cname) {
-      return ts->type;
-    }
-  }
-
-  return NULL;
-}
-
 // Do variables of the type 't' need capture for tasks?
 bool needsCapture(Type* t) {
   INT_ASSERT(!isReferenceType(t)); // responsibility of the caller
