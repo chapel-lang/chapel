@@ -113,6 +113,7 @@ Curl Support Types and Functions
  */
 module Curl {
   public use IO, SysCTypes;
+  private use Sys;
 
   require "curl/curl.h";
   require "-lcurl";
@@ -397,6 +398,7 @@ module Curl {
     import Time;
     private use IO;
     use Curl;
+    use Sys;
 
     class CurlFile : QioPluginFile {
 

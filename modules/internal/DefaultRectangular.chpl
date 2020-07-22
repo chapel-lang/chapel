@@ -33,7 +33,7 @@ module DefaultRectangular {
   private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
   private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   private use DefaultSparse, DefaultAssociative;
-  private use ExternalArray;
+  public use ExternalArray; // currently expected to be available by default...
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;

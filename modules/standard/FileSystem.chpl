@@ -868,7 +868,7 @@ proc getUID(out error: syserr, name: string): int {
 //
 private module GlobWrappers {
   extern type glob_t;
-  use SysCTypes;
+  use SysCTypes, HaltWrappers;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
