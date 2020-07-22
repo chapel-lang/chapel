@@ -1,1 +1,12 @@
-CHPL_TARGET_PLATFORM==cray-cs
+#!/usr/bin/env python
+
+# Skip this test if
+# - running on cs 
+# - gasnet+mpi performance testing.
+import os
+
+print(os.getenv('CHPL_TARGET_PLATFORM') == 'cray-cs' or
+      (os.getenv('CHPL_TEST_PERF_LABEL') == 'ml-' and
+       os.getenv('CHPL_TEST_PERF') == 'on' and
+       os.getenv('CHPL_COMM_SUBSTRATE') == 'mpi'))
+
