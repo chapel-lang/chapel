@@ -770,6 +770,7 @@ module Random {
     private use Random;
     public use PCGRandomLib;
     private use ChapelLocks;
+    private import HaltWrappers;
 
     // How many generators do we need for this type?
     private
@@ -2450,6 +2451,7 @@ module Random {
   module NPBRandom {
 
     use super.RandomSupport;
+    private import HaltWrappers;
     private use ChapelLocks;
 
     /*
