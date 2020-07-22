@@ -773,6 +773,74 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
+
+pragma "no doc"
+/* Iterator for blocking up dimension wrt window */
+private iter block(indexes, window : int) {
+  var lowVal = indexes.low;
+  while (true) {
+    var highVal = lowVal + window - 1;
+    if (highVal >= indexes.high) {
+      yield lowVal..indexes.high;
+      break;
+    } else {
+      yield lowVal..highVal;
+    }
+    lowVal = highVal + 1;
+  }
+}
+
+
+pragma "no doc"
+/* Distributed matrix-matrix multiplication */
+proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, window : int = 500) 
+  where isDistributed(A) || isDistributed(B){
+  ref targetLocalesA = A.targetLocales();
+  ref targetLocalesB = B.targetLocales();
+
+  if (A.shape(1) != B.shape(0)) {
+    halt("Array dimensions don't match.\n Trying to multiply arrays of dimensions ", 
+         A.shape, " ", B.shape);
+  }
+
+  const targetLocales = reshape(targetLocalesA, 
+                                {0..#targetLocalesA.shape(0), 
+                                 0..#targetLocalesB.shape(1)});
+
+  var domainC : domain(2) dmapped Block(boundingBox = {Adom.dim(0), Bdom.dim(1)},
+                                        targetLocales = targetLocales) 
+                                        = {Adom.dim(0), Bdom.dim(1)};
+  var C : [domainC] eltType;
+
+  coforall loc in Locales {
+    on loc {
+      const localDomainA = A.localSubdomain();
+      const localDomainB = B.localSubdomain();
+      const localDomainC = C.localSubdomain();
+      const AcolDim = Adom.dim(1);
+      const BrowDim = Bdom.dim(0);
+
+      for subArrayChunk in block(AcolDim, windowSize) {
+        var subArrayA : [localDomainA.dim(0), AcolDim] A.eltType;
+        var subArrayB : [BrowDim, localDomainB.dim(1)] B.eltType;
+        forall i in localDomainA.dim(0) {
+          forall j in subArrayChunk {
+            subArrayA[i, j] = A[i, j];
+          }
+        }
+        forall i in subArrayChunk {
+          forall j in localDomainB.dim(1) {
+            subArrayB[i, j] = B[i, j];
+          }
+        }
+        C.localSlice(localDomainC) = dot(subArrayA, subArrayB);
+      }
+    }
+  }
+
+  return C;
+}
+
 /*
   Returns the inverse of ``A`` square matrix A.
 
