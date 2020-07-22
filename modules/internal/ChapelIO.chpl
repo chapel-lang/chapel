@@ -198,10 +198,10 @@ appropriately before the elements can be read.
 
  */
 module ChapelIO {
-  use ChapelBase; // for uint().
-  use ChapelLocale;
-  use SysBasic;
-  use SysError;
+  private use ChapelBase; // for uint().
+  private use ChapelLocale;
+  public use SysBasic;
+  public use SysError;
 
   // TODO -- this should probably be private
   pragma "no doc"
