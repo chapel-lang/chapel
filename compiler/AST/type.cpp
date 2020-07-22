@@ -705,7 +705,7 @@ void initPrimitiveTypes() {
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
 
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
-  gOpaque->cname = "NULL";
+  gOpaque->cname = astr("NULL");
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
@@ -716,12 +716,12 @@ void initPrimitiveTypes() {
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
 
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
-  gSyncVarAuxFields->cname = "NULL";
+  gSyncVarAuxFields->cname = astr("NULL");
 
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
 
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
-  gSingleVarAuxFields->cname = "NULL";
+  gSingleVarAuxFields->cname = astr("NULL");
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
