@@ -28,7 +28,7 @@
 module CPtr {
   private use ChapelStandard;
   private use SysBasic, SysError, SysCTypes;
-  import HaltWrappers;
+  private import HaltWrappers;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
