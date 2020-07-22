@@ -284,6 +284,9 @@ static void parseInternalModules() {
                             parseMod("ISO_Fortran_binding", true);
     }
 
+    // parse SysCTypes right away to provide well-known types.
+    parseMod("SysCTypes", false);
+
     parseDependentModules(true);
 
     gatherIteratorTags();

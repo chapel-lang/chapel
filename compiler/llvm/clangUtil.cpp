@@ -91,6 +91,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "version.h"
+#include "wellknown.h"
 
 #include "codegen.h"
 
@@ -646,7 +647,7 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
       } else {
         // TODO: make e.g. ((unsigned long) 1 << 1) work
         // To do so, make c_long etc. well-known types.
-        ::Type* t = getNamedTypeDuringCodegen(tmpType->getName().str().c_str());
+        ::Type* t = getWellKnownTypeWithName(tmpType->getName().str().c_str());
         if (t == NULL)
           return false;
 
@@ -766,7 +767,7 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
       }
       INT_ASSERT(ty != NULL);
 
-      ::Type* t = getNamedTypeDuringCodegen(ty);
+      ::Type* t = getWellKnownTypeWithName(ty);
       if        (t == dtInt[INT_SIZE_64] || t == dtUInt[INT_SIZE_64]) {
         size = INT_SIZE_64;
       } else if (t == dtInt[INT_SIZE_32] || t == dtUInt[INT_SIZE_32]) {
@@ -2091,18 +2092,11 @@ void saveExternBlock(ModuleSymbol* module, const char* extern_code)
 
 
 void readExternC(void) {
-  bool foundExternBlock = false;
   // Handle extern C blocks.
   forv_Vec(ExternBlockStmt, eb, gExternBlockStmts) {
     // Figure out the parent module symbol.
     ModuleSymbol* module = eb->getModule();
     saveExternBlock(module, eb->c_code);
-    foundExternBlock = true;
-  }
-
-  if (foundExternBlock) {
-    // update map used in macro processing
-    gatherTypesForCodegen();
   }
 
   // Close extern_c_file.
