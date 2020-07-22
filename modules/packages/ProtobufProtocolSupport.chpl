@@ -19,15 +19,27 @@
  */
 
 
-/* Documentation for ProtobufProtocolSupport */
+ /*
+    Support for protocol buffers binary wire format.
+
+    This module provides a Chapel implementation for protocol buffers binary
+    `wire format <https://developers.google.com/protocol-buffers/docs/encoding/>`_
+    enoding algorithms. It has functions to support serialization and deserialization
+    of protocol buffer messages.
+ */
 module ProtobufProtocolSupport {
 
   public use WireEncoding;
   public use Fields;
   public use RepeatedFields;
 
-  /* Documentation for WireEncoding */
+  pragma "no doc"
   module WireEncoding {
+    /*
+      This module have implementation of encoding/decoding algorithms
+      for basic proto types. The other module functions are written over
+      these implementations.
+    */
 
     use IO;
 
@@ -276,8 +288,13 @@ module ProtobufProtocolSupport {
 
   }
   
-  /* Documentation for Fields */
+  pragma "no doc"
   module Fields {
+    /*
+      This module have functions for encoding/decoding simple non-repetitive protobuf
+      fields. A tag (generated using fieldNumber and wireType) is appended to the encoded
+      value of the field.
+    */
 
     use IO;
     use WireEncoding;
@@ -461,9 +478,13 @@ module ProtobufProtocolSupport {
 
   }
   
-  /* Documentation for RepeatedFields */
+  pragma "no doc"
   module RepeatedFields {
-    
+    /*
+      This module have functions for encoding/decoding repetitive protobuf
+      fields.
+    */
+
     use WireEncoding;
     use List;
     use IO;
