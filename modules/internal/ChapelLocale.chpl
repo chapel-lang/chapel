@@ -68,8 +68,8 @@
  */
 module ChapelLocale {
 
-  use LocaleModel;
-  import HaltWrappers;
+  public use LocaleModel;
+  private import HaltWrappers;
   private use SysCTypes;
 
   //
