@@ -1,5 +1,5 @@
-use RepeatedFields;
-use WireEncoding;
+use ProtobufProtocolSupport.RepeatedFields;
+use ProtobufProtocolSupport.WireEncoding;
 use IO;
 use List;
 

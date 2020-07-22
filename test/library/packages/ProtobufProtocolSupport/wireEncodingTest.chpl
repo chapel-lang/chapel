@@ -1,4 +1,4 @@
-use WireEncoding;
+use ProtobufProtocolSupport.WireEncoding;
 use IO;
 
 var f = openmem();

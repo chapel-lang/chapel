@@ -1,5 +1,5 @@
-use Fields;
-use WireEncoding;
+use ProtobufProtocolSupport.Fields;
+use ProtobufProtocolSupport.WireEncoding;
 use IO;
 
 var f = openmem();

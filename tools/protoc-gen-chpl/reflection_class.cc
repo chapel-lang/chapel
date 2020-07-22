@@ -21,9 +21,7 @@ namespace chapel {
     printer->Indent();
 
     printer->Print(
-      "use Fields;\n"
-      "use RepeatedFields;\n"
-      "use WireEncoding;\n"
+      "use ProtobufProtocolSupport;\n"
       "use List;\n");
     printer->Print("\n");
     
