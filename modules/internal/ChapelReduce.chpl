@@ -39,7 +39,7 @@ module ChapelReduce {
   }
 
   proc chpl__scanIterator(op, data) {
-    use Reflection;
+    private use Reflection;
     param supportsPar = isArray(data) && canResolveMethod(data, "_scan", op);
     if (supportsPar) {
       return data._scan(op);
@@ -120,7 +120,7 @@ module ChapelReduce {
       else
         return [x.domain] xST;
     } else {
-      use Reflection;
+      private use Reflection;
       if ! canResolve("+", x, x) then
         // Issue a user-friendly error.
         compilerError("+ reduce cannot be used on values of the type ",
