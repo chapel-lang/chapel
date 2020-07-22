@@ -23,7 +23,7 @@
 pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
-  use DSIUtil;
+  private use DSIUtil;
   private use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
   private use ChapelBase, ChapelLocks, IO;
   private use ChapelHashing, ChapelHashtable;
@@ -399,7 +399,7 @@ module DefaultAssociative {
     }
 
     iter dsiSorted(comparator) {
-      use Sort;
+      private use Sort;
 
       var tableCopy: [0..#numEntries.read()] idxType =
         for slot in _fullSlots() do table.table[slot].key;
@@ -701,7 +701,7 @@ module DefaultAssociative {
     //
 
     iter dsiSorted(comparator) {
-      use Sort;
+      private use Sort;
 
       var tableCopy: [0..#dom.dsiNumIndices] eltType =
         for slot in dom._fullSlots() do data(slot);

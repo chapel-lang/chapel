@@ -117,7 +117,7 @@ module ChapelHashing {
   // contains a range in some way (e.g. tuple of ranges).
   //
   inline proc chpl__defaultHash(r : range): uint {
-    use Reflection;
+    private use Reflection;
     var ret : uint;
     for param i in 1..numImplementationFields(r.type) {
       if isParam(getImplementationField(r, i)) == false &&
