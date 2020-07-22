@@ -784,9 +784,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 
-  if isDistributed(A) {
+  if isDistributed(A) then
     compilerError("inv does not support distributed vectors/matrices");
-  }
 
   use SysCTypes;
   if Adom.rank != 2 then
@@ -824,9 +823,8 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
 
-  if isDistributed(A) && A.rank == 2 {
+  if isDistributed(A) && A.rank == 2 then
     compilerError("matPow does not support distributed matrices");
-  } 
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
     compilerError("matPow only support powers of integers");
