@@ -64,6 +64,11 @@ proc masonExample(args) {
     else if arg == '--update' {
       update = true;
     }
+    else if arg.startsWith('--example=') {
+      var exampleProgram = arg.split("=");
+      examples.append(exampleProgram[1]);
+      continue;
+    }
     else if arg == '--example' {
       continue;
     }
