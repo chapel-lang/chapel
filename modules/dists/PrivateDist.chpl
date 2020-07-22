@@ -153,7 +153,7 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
 
-  pragma "no init" pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "no init" pragma "unsafe" pragma "no auto destroy"
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
   var data: eltType;
