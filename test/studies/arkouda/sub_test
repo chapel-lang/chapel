@@ -35,6 +35,7 @@ else
   if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
     log_fatal_error "installing dependencies"
   fi
+  export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
 fi
 
 # Compile Arkouda
