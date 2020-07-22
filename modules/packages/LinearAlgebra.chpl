@@ -785,7 +785,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 
   if isDistributed(A) {
-    compilerError("inv does not support distributed vector/matrices");
+    compilerError("inv does not support distributed vectors/matrices");
   }
 
   use SysCTypes;
