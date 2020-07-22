@@ -607,8 +607,8 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
 
   // Check for a cast like '(unsigned int) 12'
   {
-    MacroInfo::tokens_iterator castStart;
-    MacroInfo::tokens_iterator castEnd;
+    MacroInfo::tokens_iterator castStart = start;
+    MacroInfo::tokens_iterator castEnd = start;
 
     if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
       const char* castTo = NULL;
