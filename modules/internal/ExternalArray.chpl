@@ -119,7 +119,7 @@ module ExternalArray {
   proc convertToExternalArray(in arr: []): chpl_external_array
     where (getExternalArrayType(arr) == chpl_external_array) {
     if (!isExternArrEltType(arr.eltType)) {
-      use HaltWrappers;
+      private use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
                         arr.eltType: string);
     }

@@ -29,8 +29,8 @@
 //
 module LocaleModel {
 
-  use LocaleModelHelpFlat;
-  use LocaleModelHelpMem;
+  public use LocaleModelHelpFlat;
+  public use LocaleModelHelpMem;
 
   private use IO;
 

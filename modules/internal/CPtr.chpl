@@ -513,7 +513,7 @@ module CPtr {
       * Behavior given a Chapel class type field is not well-defined
    */
   proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
-    use Reflection;
+    private use Reflection;
     pragma "no auto destroy"
     pragma "no init"
     var x: t;

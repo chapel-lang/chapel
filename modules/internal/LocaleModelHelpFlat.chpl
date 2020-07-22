@@ -22,8 +22,8 @@ module LocaleModelHelpFlat {
 
   param localeModelHasSublocales = false;
 
-  use LocaleModelHelpSetup;
-  use LocaleModelHelpRuntime;
+  public use LocaleModelHelpSetup;
+  public use LocaleModelHelpRuntime;
   private use SysCTypes;
 
   //////////////////////////////////////////
