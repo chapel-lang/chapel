@@ -783,6 +783,11 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       compiler error if ``lapackImpl`` is ``off``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+
+  if isDistributed(A) {
+    compilerError("inv does not support distributed vector/matrices");
+  }
+
   use SysCTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
@@ -818,6 +823,10 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 */
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
+
+  if isDistributed(A) && A.rank == 2 {
+    compilerError("matPow does not support distributed matrices");
+  } 
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
     compilerError("matPow only support powers of integers");
@@ -1425,6 +1434,8 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
 proc cholesky(A: [] ?t, lower = true)
   where A.rank == 2 && isLAPACKType(t) && usingLAPACK
 {
+  if isDistributed(A) then
+    compilerError("cholesky does not support distributed vectors/matrices");
   if !isSquare(A) then
     halt("Matrix passed to cholesky must be square");
 
@@ -1467,6 +1478,8 @@ proc cholesky(A: [] ?t, lower = true)
 
 */
 proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+  if isDistributed(A) then
+    compilerError("eigvalsh does not support distributed vectors/matrices");
   return eigh(A, lower=lower, overwrite=overwrite, eigvalsOnly=true);
 }
 
@@ -1495,6 +1508,9 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
 
 */
 proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+  if isDistributed(A) then
+    compilerError("eigh does not support distributed vectors/matrices");
+
   const (n,m) = A.shape;
   if n != m then throw new LinearAlgebraError("Non-square matrix passed to eigh");
   param nbits = numBits(t);
@@ -1537,6 +1553,8 @@ proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) 
 
 */
 proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
+  if isDistributed(A) then
+    compilerError("eigvals does not support distributed vectors/matrices");
   return eig(A, left=false, right=false);
 }
 
@@ -1566,6 +1584,8 @@ proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
  */
 proc eig(A: [] ?t, param left = false, param right = false)
   where A.domain.rank == 2 && usingLAPACK {
+  if isDistributed(A) then
+    compilerError("eig does not support distributed vectors/matrices");
 
   proc convertToCplx(wr: [] t, wi: [] t) {
     const n = wi.size;
@@ -1717,6 +1737,8 @@ proc eig(A: [] ?t, param left = false, param right = false)
 proc svd(A: [?Adom] ?t) throws
   where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
 {
+  if isDistributed(A) then
+    compilerError("svd does not support distributed vectors/matrices");
 
   const (m, n) = A.shape;
   var minDim = min(m, n);
