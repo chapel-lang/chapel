@@ -64,7 +64,6 @@ module Random {
   public use RandomSupport;
   public use NPBRandom;
   public use PCGRandom;
-  import HaltWrappers;
   import Set.set;
 
 
@@ -964,6 +963,8 @@ module Random {
 
        */
       proc getNext(min: eltType, max:eltType): eltType {
+        use HaltWrappers;
+
         _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
@@ -978,6 +979,8 @@ module Random {
        */
       proc getNext(type resultType,
                    min: resultType, max:resultType): resultType {
+        use HaltWrappers;
+
         _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string + "]");
@@ -2504,6 +2507,8 @@ module Random {
       proc init(type eltType = real(64),
                 seed: int(64) = SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
+        use HaltWrappers;
+
         this.eltType = eltType;
 
         // The mod operation is written in these steps in order
