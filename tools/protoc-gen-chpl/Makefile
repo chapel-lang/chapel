@@ -29,8 +29,8 @@ bdir=$(CHPL_BIN_DIR)
 link=../../tools/protoc-gen-chpl/protoc-gen-chpl
 linkFile=$(bdir)/protoc-gen-chpl
 
-SOURCES=$(wildcard *.cc)
-OBJ=$(SOURCES:.cc=.o)
+SOURCES=$(wildcard *.cpp)
+OBJ=$(SOURCES:.cpp=.o)
 LDFLAGS = -lprotobuf -lprotoc
 CPPFLAGS = -I.
 
