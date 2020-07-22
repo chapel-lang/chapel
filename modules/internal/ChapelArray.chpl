@@ -164,9 +164,12 @@ module ChapelArray {
   public use ChapelBase; // For opaque type.
   private use ChapelTuple;
   private use ChapelLocale;
-  private use ArrayViewSlice;
-  private use ArrayViewRankChange;
-  private use ArrayViewReindex;
+
+  // These are public so that any uses of arrays also get slicing, reindexing
+  public use ArrayViewSlice;
+  public use ArrayViewRankChange;
+  public use ArrayViewReindex;
+  
   private import Reflection;
   private use ChapelDebugPrint;
   private use SysCTypes;
