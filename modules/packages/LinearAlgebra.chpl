@@ -783,7 +783,6 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       compiler error if ``lapackImpl`` is ``off``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
-
   if isDistributed(A) then
     compilerError("inv does not support distributed vectors/matrices");
 
