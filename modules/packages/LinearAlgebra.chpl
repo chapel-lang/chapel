@@ -1730,8 +1730,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
     compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
-  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
-{
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2 {
   if isDistributed(A) then
     compilerError("svd does not support distributed vectors/matrices");
 
