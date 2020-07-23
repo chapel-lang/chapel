@@ -35,13 +35,15 @@ proc main() {
     writeln();
   }
 
-  var result = dot(BA, BA);
-
   t.start();
-  for 1..iters {
-    dot(BA, BA);
-  }
+  var result = dot(BA, BA);
   t.stop();
+
+  for 1..<iters {
+    t.start();  
+    result = dot(BA, BA);
+    t.stop();
+  }
 
   if correctness {
     var reference : [dom] real = 0;
