@@ -98,7 +98,7 @@ module Bytes {
   private use BytesStringCommon;
   private use SysCTypes;
 
-  public use BytesCasts;
+  public use BytesCasts;  // hmm...
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
 
   pragma "no doc"

@@ -21,8 +21,8 @@
 module ChapelDistribution {
 
   private use ChapelArray, ChapelRange;
-  public use ChapelLocks; // maybe make private when fields can be private?
-  public use ChapelHashtable; // maybe make private when fields can be private?
+  private use ChapelLocks;
+  private use ChapelHashtable;
 
   //
   // Abstract distribution class

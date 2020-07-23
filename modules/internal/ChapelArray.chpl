@@ -161,7 +161,7 @@
  */
 module ChapelArray {
 
-  public use ChapelBase; // For opaque type.
+  public use ChapelBase; // Danger... this is hard to make private
   private use ChapelTuple;
   private use ChapelLocale;
   private use ArrayViewSlice;

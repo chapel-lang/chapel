@@ -30,10 +30,10 @@
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpSetup {
 
-  public use ChapelLocale;
-  public use DefaultRectangular;
-  public use ChapelNumLocales;
-  public use ChapelEnv;
+  private use ChapelLocale;
+  public use DefaultRectangular; // danger
+  public use ChapelNumLocales;  // hmm...
+  private use ChapelEnv;
   private use Sys;
   private use SysCTypes;
 

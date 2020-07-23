@@ -177,8 +177,8 @@ module String {
   private use BytesStringCommon;
   private use SysBasic;
 
-  public use CString;
-  public use StringCasts;
+  private use CString;
+  public use StringCasts;  // hmm...
   public use BytesStringCommon only encodePolicy;  // expose encodePolicy
 
   private use NVStringFactory;
