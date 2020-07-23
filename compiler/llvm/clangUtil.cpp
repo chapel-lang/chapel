@@ -173,6 +173,13 @@ struct ClangInfo {
   // before running optimization.
   std::string asmTargetLayoutStr;
 
+  int intSizeInBits;
+  int longSizeInBits;
+  int longLongSizeInBits;
+  int charSizeInBits;
+  int shortSizeInBits;
+  int ptrSizeInBits;
+
   ClangInfo(
     std::string clangCcIn,
     std::string clangCxxIn,
@@ -199,7 +206,13 @@ ClangInfo::ClangInfo(
          Clang(NULL),
          Ctx(NULL),
          cCodeGen(NULL), cCodeGenAction(NULL),
-         asmTargetLayoutStr()
+         asmTargetLayoutStr(),
+         intSizeInBits(0),
+         longSizeInBits(0),
+         longLongSizeInBits(0),
+         charSizeInBits(0),
+         shortSizeInBits(0),
+         ptrSizeInBits(0)
 {
 }
 
@@ -281,6 +294,35 @@ void addMinMax(ASTContext* Ctx, const char* prefix, clang::CanQualType qt)
 }
 
 static
+::Type* getIntWithBits(int nbits, bool unsigned_) {
+
+  switch (nbits) {
+    case 64:
+      return unsigned_ ? dtUInt[INT_SIZE_64] : dtInt[INT_SIZE_64];
+    case 32:
+      return unsigned_ ? dtUInt[INT_SIZE_32] : dtInt[INT_SIZE_32];
+    case 16:
+      return unsigned_ ? dtUInt[INT_SIZE_16] : dtInt[INT_SIZE_16];
+    case 8:
+      return unsigned_ ? dtUInt[INT_SIZE_8] : dtInt[INT_SIZE_8];
+    default:
+      INT_FATAL("case not handled");
+  }
+
+  return NULL;
+}
+
+static
+void setupCIntType(::Type*& type, int nbits, bool unsigned_) {
+  if (type != NULL) {
+    INT_ASSERT(get_width(type) == nbits);
+    INT_ASSERT(is_signed(type) == !unsigned_);
+  } else {
+    type = getIntWithBits(nbits, unsigned_);
+  }
+}
+
+static
 void setupClangContext(GenInfo* info, ASTContext* Ctx)
 {
   ClangInfo* clangInfo = info->clangInfo;
@@ -290,6 +332,30 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 
   // Set up some constants that depend on the Clang context.
   {
+    clangInfo->intSizeInBits = Ctx->getTypeSize(Ctx->IntTy.getTypePtr());
+    clangInfo->longSizeInBits = Ctx->getTypeSize(Ctx->LongTy.getTypePtr());
+    clangInfo->longLongSizeInBits = Ctx->getTypeSize(Ctx->LongLongTy.getTypePtr());
+    clangInfo->charSizeInBits = Ctx->getTypeSize(Ctx->CharTy.getTypePtr());
+    clangInfo->shortSizeInBits = Ctx->getTypeSize(Ctx->ShortTy.getTypePtr());
+    clangInfo->ptrSizeInBits = Ctx->getTypeSize(Ctx->VoidPtrTy.getTypePtr());
+
+    setupCIntType(dt_c_int, clangInfo->intSizeInBits, false);
+    setupCIntType(dt_c_uint, clangInfo->intSizeInBits, true);
+    setupCIntType(dt_c_long, clangInfo->longSizeInBits, false);
+    setupCIntType(dt_c_ulong, clangInfo->longSizeInBits, true);
+    setupCIntType(dt_c_longlong, clangInfo->longLongSizeInBits, false);
+    setupCIntType(dt_c_ulonglong, clangInfo->longLongSizeInBits, true);
+    setupCIntType(dt_c_char, clangInfo->charSizeInBits,
+                  !Ctx->CharTy.getTypePtr()->isSignedIntegerType());
+    setupCIntType(dt_c_schar, clangInfo->charSizeInBits, false);
+    setupCIntType(dt_c_uchar, clangInfo->charSizeInBits, true);
+    setupCIntType(dt_c_short, clangInfo->shortSizeInBits, false);
+    setupCIntType(dt_c_ushort, clangInfo->shortSizeInBits, true);
+    setupCIntType(dt_c_intptr, clangInfo->ptrSizeInBits, false);
+    setupCIntType(dt_c_uintptr, clangInfo->ptrSizeInBits, true);
+    setupCIntType(dt_ssize_t, clangInfo->ptrSizeInBits, false);
+    setupCIntType(dt_size_t, clangInfo->ptrSizeInBits, true);
+
     addMinMax(Ctx, "CHAR", Ctx->CharTy);
     addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);
     addMinMax(Ctx, "UCHAR", Ctx->UnsignedCharTy);
@@ -593,6 +659,12 @@ static const char* handleStringExpr(const MacroInfo* inMacro,
   return NULL;
 }
 
+static ::Type* getTypeForMacro(const char* name) {
+  // Look for the saved types in dt_c_int etc.
+  ::Type* t = getWellKnownTypeWithName(name);
+  return t;
+}
+
 static bool handleNumericExpr(const MacroInfo* inMacro,
                               MacroInfo::tokens_iterator start,
                               MacroInfo::tokens_iterator end,
@@ -647,7 +719,7 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
       } else {
         // TODO: make e.g. ((unsigned long) 1 << 1) work
         // To do so, make c_long etc. well-known types.
-        ::Type* t = getWellKnownTypeWithName(tmpType->getName().str().c_str());
+        ::Type* t = getTypeForMacro(tmpType->getName().str().c_str());
         if (t == NULL)
           return false;
 
@@ -754,20 +826,19 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
         }
       }
 
-      const char* ty = NULL;
+      ::Type* t = NULL;
       if (_unsigned > 1 || _long > 2) return false;
       if (_unsigned > 0) {
-        if (_long == 2)      ty = "c_ulonglong";
-        else if (_long == 1) ty = "c_ulong";
-        else                 ty = "c_uint";
+        if (_long == 2)      t = dt_c_ulonglong;
+        else if (_long == 1) t = dt_c_ulong;
+        else                 t = dt_c_uint;
       } else {
-        if (_long == 2)      ty = "c_longlong";
-        else if (_long == 1) ty = "c_long";
-        else                 ty = "c_int";
+        if (_long == 2)      t = dt_c_longlong;
+        else if (_long == 1) t = dt_c_long;
+        else                 t = dt_c_int;
       }
-      INT_ASSERT(ty != NULL);
+      INT_ASSERT(t != NULL);
 
-      ::Type* t = getWellKnownTypeWithName(ty);
       if        (t == dtInt[INT_SIZE_64] || t == dtUInt[INT_SIZE_64]) {
         size = INT_SIZE_64;
       } else if (t == dtInt[INT_SIZE_32] || t == dtUInt[INT_SIZE_32]) {
