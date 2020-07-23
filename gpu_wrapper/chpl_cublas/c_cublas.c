@@ -37,3 +37,11 @@ int cublas_saxpy(cublasHandle_t *handle, int N, float alpha, float *x, int incX,
     return 0;
 
 }
+
+int cublas_sgemm(cublasHandle_t *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc){
+
+    cublasSgemm(*handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
