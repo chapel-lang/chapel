@@ -89,11 +89,20 @@ _complete_mason_update(){
 }
 
 _complete_mason_run(){
+  local optional
+  local optional_abbr
+  optional=$(mason run --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+            sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;-[A-Za-z],;   ;' | \
+             sed -e 's/.*=//g' |\
+             xargs echo)
+  optional_abbr=$(mason run --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
+          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
+          xargs echo)
   local cur
   cur=${COMP_WORDS[COMP_CWORD]}
   case "$cur" in
     -*)
-      _options run 
+      COMPREPLY=($(compgen -W "$optional $optional_abbr" -- "${COMP_WORDS[COMP_CWORD]}" ))
       ;;
     *)
       COMPREPLY=($(compgen -d -S / -- "$cur"))
@@ -102,7 +111,25 @@ _complete_mason_run(){
 }
 
 _complete_mason_build(){
-  _options build
+  local optional
+  local optional_abbr
+  optional=$(mason build --help | grep -v '^[A-Za-z]' | grep '^.*--' |      \
+            sed -e 's;^\(.*--[^ ]*\).*$;\1;' | sed -e 's;-[A-Za-z],;   ;' | \
+             sed -e 's/.*=//g' | sed -e 's/[][]//g'|  \
+             xargs echo)
+  optional_abbr=$(mason build --help | grep -v '^[A-Za-z]' | grep '^.*--' |        \
+          sed -e 's;^\(.*--[^ ]*\).*$;\1;' | grep ',' | sed -e 's;,.*$;;' | \
+          xargs echo)
+  local cur
+  local update_tag="--update"
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in 
+    -*) 
+      COMPREPLY=($(compgen -W "$optional $optional_abbr $update_tag" -- "${COMP_WORDS[COMP_CWORD]}" ))
+      ;;
+     *)
+      ;;
+  esac
 }
 
 _complete_mason_add(){
