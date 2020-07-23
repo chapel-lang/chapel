@@ -717,8 +717,6 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
       if (rhsCastToTy == NULL) {
         retImm = rhsImm;
       } else {
-        // TODO: make e.g. ((unsigned long) 1 << 1) work
-        // To do so, make c_long etc. well-known types.
         ::Type* t = getTypeForMacro(tmpType->getName().str().c_str());
         if (t == NULL)
           return false;
@@ -734,13 +732,14 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
       // Put it off if the type isn't known yet (e.g. a typedef)
       ::Type* doCastToType = NULL;
       if (cCastToTypeRet != NULL) {
-        doCastToType = getNamedTypeDuringCodegen(cCastToTypeRet);
+        doCastToType = getTypeForMacro(cCastToTypeRet);
       }
 
       if (doCastToType != NULL) {
         Immediate dstImm = getDefaultImmediate(doCastToType);
         coerce_immediate(&retImm, &dstImm);
         *imm = dstImm;
+        cCastToTypeRet = NULL; // cast already handled
       } else {
         *imm = retImm;
       }
