@@ -44,7 +44,7 @@ static const int breakOnId1 = 0;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
-static const bool verboseDebugInfo = 0;
+static const bool doPrintDebugInfo = 0;
 
 #define DEBUG_SYMBOL(sym__) \
   do { \
@@ -121,30 +121,54 @@ static FnSymbol* getSerialIterator(FnSymbol* fn) {
   return fn;
 }
 
-// Are a tuple's field qualifiers ref instead of const? If so, then some
-// code somewhere set a const tuple element...
-static bool checkTupleFormalUses(ArgSymbol* formal, Expr* actual,
-                                 CallExpr* call, UseMap* um) {
-
-  FnSymbol* calledFn = call->resolvedFunction();
-  INT_ASSERT(calledFn != NULL);
+static bool isTupleFunctionToSkip(FnSymbol* calledFn) {
 
   // Skip chpl__unref for tuples because it's triggering weird constness
   // violations. TODO: Remove when the below can pass without the check:
   //    release/examples/spec/Tuples/tuple-return-behavior.chpl
   if (calledFn->hasFlag(FLAG_UNREF_FN))
-    return false;
+    return true;
 
   // Skip chpl__initCopy because it modifies formal intents in weird ways
   // when the formal requires FLAG_COPY_MUTATE (e.g. owned or tuples of
   // owned).
   if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
-    return false;
+    return true;
 
   // Don't delve into chpl__autoCopy.
   if (calledFn->hasFlag(FLAG_AUTO_COPY_FN))
+    return true;
+
+  return false;
+}
+
+// Print use chains when debugging.
+static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
+  if (um == NULL)
+    return;
+
+  printf("Printing use chain for formal %s [%d]\n",
+         formal->name,
+         formal->id);
+
+  BaseAST* tmp = formal;
+  int count = 0;
+
+  while (tmp != NULL) {
+    printf("%d: %d\n", count, tmp->id);
+    tmp = um->count(tmp) ? um->at(tmp) : NULL;
+    count++;
+  }
+}
+
+// Are a tuple's field qualifiers ref instead of const? If so, then some
+// code somewhere set a const tuple element...
+static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
+                                 UseMap* um) {
+
+  if (isTupleFunctionToSkip(calledFn))
     return false;
- 
+
   AggregateType* at = toAggregateType(formal->getValType());
 
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
@@ -210,13 +234,13 @@ static bool checkTupleFormalUses(ArgSymbol* formal, Expr* actual,
                         fieldIdx);
     }
     
-    // TODO: Validate ref-if-modified fields by checking actuals.
+    // Check ref-if-modified fields in "checkTupleFormalToActual".
     if (fieldIntent == INTENT_REF_MAYBE_CONST) {
       INT_ASSERT(!isFormalIntentConst);
       continue;
     }
 
-    // TODO: Ditto for ref fields (sync/single/atomic).
+    // Ditto for ref fields (sync/single/atomic).
     if (fieldIntent == INTENT_REF) {
       INT_ASSERT(!isFormalIntentConst);
       continue;
@@ -224,12 +248,23 @@ static bool checkTupleFormalUses(ArgSymbol* formal, Expr* actual,
 
     // The tuple intent is const, but it is used somewhere...
     if (fieldIntent & INTENT_CONST && !isFieldMarkedConst) {
-      BaseAST* use = um->count(formal) ? um->at(formal) : NULL;
+      BaseAST* use = NULL;
 
-      USR_FATAL_CONT(formal, "element %d of tuple formal %s is const and "
-                             "cannot be modified",
-                             (fieldIdx-1),
-                             formal->name);
+      // Only fetch the closest use if it's safe to do so.
+      if (um != NULL && um->count(formal)) {
+        use = um->at(formal);
+      }
+
+      // Use the DefExpr only once to print the containing function.
+      BaseAST* pin = !result ? (BaseAST*) formal->defPoint : formal;
+
+      USR_FATAL_CONT(pin, "element %d of formal '%s' is const and "
+                          "cannot be modified",
+                          (fieldIdx-1),
+                          formal->name);
+
+      // TODO: Pin on type when it is a user type.
+      USR_PRINT("tuple element of type %s", ft->symbol->name);
 
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
@@ -238,19 +273,8 @@ static bool checkTupleFormalUses(ArgSymbol* formal, Expr* actual,
         USR_PRINT(use, "possibly set here");
       }
 
-      if (verboseDebugInfo) {
-        printf("Printing use chain for formal %s [%d]\n",
-                formal->name,
-                formal->id);
-
-        BaseAST* tmp = use;
-        int count = 0;
-
-        while (tmp != NULL) {
-          printf("%d: %d\n", count, tmp->id);
-          count++;
-          tmp = um->count(tmp) ? um->at(tmp) : NULL;
-        }
+      if (doPrintDebugInfo) {
+        printFormalUseChain(formal, um);
       }
 
       result = true;
@@ -260,42 +284,162 @@ static bool checkTupleFormalUses(ArgSymbol* formal, Expr* actual,
   return result;
 }
 
-static bool isCallToSkip(ArgSymbol* formal, Expr* actual, CallExpr* call) {
+// Check REF (e.g. atomic) and REF_IF_MODIFIED (e.g. array) tuple elements
+// and compare formals to actuals. If the formal is const and the actual
+// is not, then emit an error. Skip if the tuple formal intent is not
+// REF_IF_MODIFIED.
+static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
+                                     CallExpr* call, UseMap* um) {
+
   FnSymbol* calledFn = call->resolvedFunction();
-  FnSymbol* inFn = call->parentSymbol->getFunction();
+  INT_ASSERT(calledFn != NULL);
+
+  if (isTupleFunctionToSkip(calledFn))
+    return false;
+ 
+  AggregateType* at = toAggregateType(formal->getValType());
+
+  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
+    return false;
+
+  bool isFormalIntentMaybeConst = formal->intent == INTENT_REF_MAYBE_CONST;
+
+  // Nothing to do if the tuple formal is not REF_MAYBE_CONST.
+  if (!isFormalIntentMaybeConst)
+    return false;
+
+  // Leave if we have no info about this formal's constness.
+  if (formal->fieldQualifiers == NULL)
+    return false;
+
+  DEBUG_SYMBOL(formal);
+
+  // True if errors were emitted for any tuple field.
   bool result = false;
 
-  // Ignore errors in functions marked with FLAG_SUPPRESS_LVALUE_ERRORS.
-  if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
-    result = true;
+  int fieldIdx = 0;
+  for_fields(field, at) {
+    fieldIdx++;
+
+    Qualifier q = formal->fieldQualifiers[fieldIdx];
+
+    // Skip non-ref fields.
+    if (!field->isRef()) {
+      INT_ASSERT(q == QUAL_UNKNOWN);
+      continue;
+    }
+
+    bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
+
+    AggregateType* ft = toAggregateType(field->getValType());
+    INT_ASSERT(ft != NULL);
+
+    // TODO: Handle tuples containing tuples.
+    if (ft->symbol->hasFlag(FLAG_TUPLE))
+      continue;
+
+    IntentTag fieldIntent = blankIntentForType(ft);
+
+    // Only worry about REF and REF_IF_MODIFIED formals.
+    if (fieldIntent != INTENT_REF_MAYBE_CONST &&
+        fieldIntent != INTENT_REF)
+      continue;
+
+    // If a ref-if-modified field is never set then it's const.
+    if (fieldIntent == INTENT_REF_MAYBE_CONST && isFieldMarkedConst)
+      continue;
+
+    bool isActualFieldConst = false;
+
+    // Determine if the actual field is const or not.
+    if (SymExpr* se = toSymExpr(actual)) {
+      Symbol* sym = se->symbol();
+      INT_ASSERT(sym != NULL);
+
+      // Make sure formal and actual tuples have the same type.
+      INT_ASSERT(toAggregateType(sym->getValType()) == at);
+
+      if (sym->id == 1487861 || sym->id == 700109) gdbShouldBreakHere();
+
+      // Only fetch field qualifier if it exists.
+      if (sym->fieldQualifiers != NULL) {
+        Qualifier q = sym->fieldQualifiers[fieldIdx];
+        INT_ASSERT(q != QUAL_UNKNOWN);
+        isActualFieldConst = QualifiedType::qualifierIsConst(q);
+      }
+    } else {
+      INT_FATAL(actual, "unhandled actual");
+    }
+
+    if (isActualFieldConst && !isFieldMarkedConst) {
+      BaseAST* use = NULL;
+
+      // Only fetch the closest use if it is safe to do so.
+      if (um != NULL && um->count(formal)) {
+        use = um->at(formal);
+      }
+
+      // Use the DefExpr only once to print the containing function.
+      BaseAST* pin = !result ? (BaseAST*) formal->defPoint : formal;
+
+      USR_FATAL_CONT(pin, "const actual element is passed to %s element "
+                          "%d of tuple formal '%s'",
+                          intentDescrString(fieldIntent),
+                          (fieldIdx-1),
+                          formal->name);
+
+      // TODO: Pin if the element is a user type.
+      USR_PRINT("tuple element of type %s", ft->symbol->name);
+
+      if (fieldIntent == INTENT_REF_MAYBE_CONST) {                            
+        USR_PRINT("because element is modified in the body of '%s'",
+                  calledFn->name);
+
+        // TODO: More accurate error reporting.
+        if (use != NULL) {
+          USR_PRINT(use, "possibly set here");
+        }
+      }
+
+      if (doPrintDebugInfo) {
+        printFormalUseChain(formal, um);
+      }
+
+      result = true;
+    }
   }
+
+  return result;
+}
+
+static bool isFunctionToSkip(FnSymbol* calledFn) {
 
   // A 'const' record should be able to be initialized.
   if (calledFn->isInitializer() || calledFn->isCopyInit()) {
-    result = true;
+    return true;
   }
 
   // A 'const' record should be able to be destroyed.
   if (calledFn->name == astrDeinit ||
       calledFn->hasFlag(FLAG_AUTO_DESTROY_FN) ||
       calledFn->hasFlag(FLAG_DESTRUCTOR)) {
-    result = true;
+    return true;
   }
 
   // For now, ignore errors with tuple construction/build_tuple.
   if (calledFn->hasFlag(FLAG_BUILD_TUPLE) ||
       calledFn->hasFlag(FLAG_INIT_TUPLE)) {
-    result = true;
+    return true;
   }
 
   // For now, ignore errors with calls to promoted functions.
   // To turn this off, get this example working:
   //   test/functions/ferguson/ref-pair/plus-reduce-field-in-const.chpl
   if (calledFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-    result = true;
+    return true;
   }
 
-  return result;
+  return false;
 }
 
 /* Since const-checking can depend on ref-pair determination
@@ -304,14 +448,27 @@ static bool isCallToSkip(ArgSymbol* formal, Expr* actual, CallExpr* call) {
 
    TODO: decide if we also need const checking in functionResolution.cpp.
  */
-void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
-{
+void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
+
+  // Check const ref elements of tuple formals. TODO: Is there a better
+  // place to move this? At the very least, restructure the loop over
+  // calls so that this can fit inline instead of as a separate pass over
+  // formals.
+  forv_Vec(ArgSymbol, formal, gArgSymbols) {
+    FnSymbol* fn = toFnSymbol(formal->defPoint->parentSymbol);
+    INT_ASSERT(fn != NULL);
+
+    bool skip = isFunctionToSkip(fn);
+    if (!skip) {
+      checkTupleFormalUses(fn, formal, reasonNotConst);
+    } 
+  }
+
   forv_Vec(CallExpr, call, gCallExprs) {
 
     // Ignore calls removed earlier by this pass.
-    if (call->parentExpr == NULL) {
+    if (call->parentExpr == NULL)
       continue;
-    }
 
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       char        cn1          = calledFn->name[0];
@@ -375,18 +532,20 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst)
           }
         }
 
-        // Is this call a case error reporting should ignore?
-        bool skip = isCallToSkip(formal, actual, call);
+        // Is the called function a case error reporting should ignore?
+        bool skip = isFunctionToSkip(calledFn);
 
-        if (!skip && !error) {
+        // Skip if in function marked with FLAG_SUPPRESS_LVALUE_ERRORS.
+        FnSymbol* inFn = call->parentSymbol->getFunction();
+        if (inFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
+          skip = true;
+        }
 
-          // Case: constness check for tuple elements.
-          if (checkTupleFormalUses(formal, actual, call, reasonNotConst))
-            continue;
-        } 
+        if (!skip) {
+          checkTupleFormalToActual(formal, actual, call, reasonNotConst);
+        }
 
-        // TODO: Really ought to incorporate tuple error messages into this
-        // code, or refactor error printing in some fashion.
+        // TODO: Really ought to incorporate tuple error messages into this.
         if (!skip && error) {
           const char* calledName = calledFn->name;
 

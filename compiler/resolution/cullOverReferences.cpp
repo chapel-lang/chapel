@@ -62,8 +62,8 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
-static const int breakOnId2 = 0;
+static const int breakOnId1 = 1487861;
+static const int breakOnId2 = 700109;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
