@@ -137,7 +137,7 @@ The default intent for :record:`owned` is ``const ref``.
 
  */
 module OwnedObject {
-  private use ChapelStandard;
+  use ChapelStandard;
 
   /*
      :record:`owned` manages the deletion of a class instance assuming
@@ -366,7 +366,7 @@ module OwnedObject {
          ref rhs: _owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
-    private import HaltWrappers;
+    import HaltWrappers;
     // Work around issues in associative arrays of owned
     // TODO: remove this workaround
     if lhs.chpl_p == nil && rhs.chpl_p == nil then
@@ -542,7 +542,7 @@ module OwnedObject {
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(const ref x:_owned) {
-    private import HaltWrappers;
+    import HaltWrappers;
     // Check only if --nil-checks is enabled
     if chpl_checkNilDereferences {
       // Add check for nilable types only.

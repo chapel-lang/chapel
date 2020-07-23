@@ -28,7 +28,7 @@
 module CPtr {
   private use ChapelStandard;
   private use SysBasic, SysError, SysCTypes;
-  private import HaltWrappers;
+  import HaltWrappers;
 
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
@@ -513,7 +513,7 @@ module CPtr {
       * Behavior given a Chapel class type field is not well-defined
    */
   proc c_offsetof(type t, param fieldname : string): size_t where isRecordType(t) {
-    private use Reflection;
+    use Reflection;
     pragma "no auto destroy"
     pragma "no init"
     var x: t;

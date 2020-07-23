@@ -162,14 +162,14 @@
 module ChapelArray {
 
   public use ChapelBase; // Danger... this is hard to make private
-  private use ChapelTuple;
-  private use ChapelLocale;
-  private use ArrayViewSlice;
-  private use ArrayViewRankChange;
-  private use ArrayViewReindex;
-  private import Reflection;
-  private use ChapelDebugPrint;
-  private use SysCTypes;
+  use ChapelTuple;
+  use ChapelLocale;
+  use ArrayViewSlice;
+  use ArrayViewRankChange;
+  use ArrayViewReindex;
+  import Reflection;
+  use ChapelDebugPrint;
+  use SysCTypes;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -910,7 +910,7 @@ module ChapelArray {
   // return type when the declared return type specifies a particular domain
   // but not the element type.
   proc chpl__checkDomainsMatch(a: [], b) {
-    private import HaltWrappers;
+    import HaltWrappers;
     if (boundsChecking) {
       if (a.domain != b) {
         HaltWrappers.boundsCheckHalt("domain mismatch on return");
@@ -919,7 +919,7 @@ module ChapelArray {
   }
 
   proc chpl__checkDomainsMatch(a: _iteratorRecord, b) {
-    private import HaltWrappers;
+    import HaltWrappers;
     if (boundsChecking) {
       // Should use iterator.shape here to avoid copy
       var tmp = a;
@@ -1107,7 +1107,7 @@ module ChapelArray {
   // This alternative declaration of Sort.defaultComparator
   // prevents transitive use of module Sort.
   proc chpl_defaultComparator() {
-    private use  Sort;
+    use Sort;
     return defaultComparator;
   }
 
@@ -1447,7 +1447,7 @@ module ChapelArray {
        domain in a particular dimension.
      */
     proc dim(d : int) {
-      private use  HaltWrappers;
+      use HaltWrappers;
       if boundsChecking then
         if (d < 0 || d >= rank) then
           HaltWrappers.boundsCheckHalt("dim(" + d:string + ") is out-of-bounds; must be 0.." + (rank-1):string);
@@ -2205,7 +2205,7 @@ module ChapelArray {
   }
 
   proc _cast(type t:string, x: _domain) {
-    private use  IO;
+    use IO;
     return stringify(x);
   }
 
@@ -3078,7 +3078,7 @@ module ChapelArray {
       } else if Reflection.canResolveMethod(_value, "dsiSorted") {
         compilerError(_value.type:string + " does not support dsiSorted(comparator)");
       } else {
-        private use  Sort;
+        use Sort;
         var copy = this;
         sort(copy, comparator=comparator);
         for ind in copy do
@@ -3377,7 +3377,7 @@ module ChapelArray {
   // How to cast arrays to strings
   pragma "no doc"
   proc _cast(type t:string, x: []) {
-    private use  IO;
+    use IO;
     return stringify(x);
   }
 

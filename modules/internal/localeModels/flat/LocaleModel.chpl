@@ -32,7 +32,7 @@ module LocaleModel {
   public use LocaleModelHelpFlat;  // Danger
   public use LocaleModelHelpMem;  // hmm...
 
-  private use IO;
+  use IO;
 
   //
   // The task layer calls these to convert between full sublocales and

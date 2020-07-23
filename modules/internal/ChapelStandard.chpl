@@ -4,7 +4,7 @@
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
- * Version 2.0 (the "License"); you may not public use this file except
+ * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  *
  * You may obtain a copy of the License at
@@ -22,7 +22,7 @@
 //
 pragma "export init"
 module ChapelStandard {
-  private use startInitCommDiags;
+  use startInitCommDiags;
   // Internal, but uses standard/CommDiagnostics
 
   // Internal modules.
@@ -70,5 +70,5 @@ module ChapelStandard {
   public use Types;
   public use Math;
 
-  private use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
+  use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }

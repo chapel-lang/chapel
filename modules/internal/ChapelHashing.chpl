@@ -23,7 +23,7 @@
 // chpl__defaultHash and related functions
 module ChapelHashing {
 
-  private use ChapelBase;
+  use ChapelBase;
 
   proc chpl__defaultHashWrapper(x): int {
     const hash = chpl__defaultHash(x);
@@ -117,7 +117,7 @@ module ChapelHashing {
   // contains a range in some way (e.g. tuple of ranges).
   //
   inline proc chpl__defaultHash(r : range): uint {
-    private use Reflection;
+    use Reflection;
     var ret : uint;
     for param i in 1..numImplementationFields(r.type) {
       if isParam(getImplementationField(r, i)) == false &&

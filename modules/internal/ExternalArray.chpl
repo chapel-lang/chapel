@@ -24,7 +24,7 @@
 // arrays obtained from external code to Chapel (and thus that we do not own).
 //
 module ExternalArray {
-  private use ChapelStandard;
+  use ChapelStandard;
 
   extern record chpl_opaque_array {
     var _pid: int;
@@ -119,7 +119,7 @@ module ExternalArray {
   proc convertToExternalArray(in arr: []): chpl_external_array
     where (getExternalArrayType(arr) == chpl_external_array) {
     if (!isExternArrEltType(arr.eltType)) {
-      private use HaltWrappers;
+      use HaltWrappers;
       safeCastCheckHalt("Cannot build an external array that stores " +
                         arr.eltType: string);
     }

@@ -28,11 +28,11 @@ module DefaultRectangular {
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
-  private use DSIUtil;
+  use DSIUtil;
   public use ChapelArray;  // erg...
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
-  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
+  use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
+  use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by default...
 
   config param debugDefaultDist = false;
@@ -2200,7 +2200,7 @@ module DefaultRectangular {
   /* This computes a 1D scan in parallel on the array, for 1D arrays only */
   proc DefaultRectangularArr.doiScan(op, dom) where (rank == 1) &&
                                                 chpl__scanStateResTypesMatch(op) {
-    private use RangeChunk;
+    use RangeChunk;
 
     type resType = op.generate().type;
     var res: [dom] resType;
@@ -2222,7 +2222,7 @@ module DefaultRectangular {
   // broken out into a helper function in order to be made use of by
   // distributed array scans.
   proc DefaultRectangularArr.chpl__preScan(op, res: [] ?resType, dom) {
-    private import RangeChunk;
+    import RangeChunk;
     // Compute who owns what
     const rng = dom.dim(0);
     const numTasks = if __primitive("task_get_serial") then

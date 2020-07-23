@@ -198,8 +198,8 @@ appropriately before the elements can be read.
 
  */
 module ChapelIO {
-  private use ChapelBase; // for uint().
-  private use ChapelLocale;
+  use ChapelBase; // for uint().
+  use ChapelLocale;
   public use SysBasic;   // erg
   public use SysError;  // hmmm
 
@@ -211,7 +211,7 @@ module ChapelIO {
     return helper(val);
   }
 
-  private use IO;
+  use IO;
 
     private
     proc isIoField(x, param i) param {

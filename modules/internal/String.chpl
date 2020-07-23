@@ -171,17 +171,17 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
  */
 module String {
-  private use ChapelStandard;
-  private use SysCTypes;
-  private use ByteBufferHelpers;
-  private use BytesStringCommon;
-  private use SysBasic;
+  use ChapelStandard;
+  use SysCTypes;
+  use ByteBufferHelpers;
+  use BytesStringCommon;
+  use SysBasic;
 
-  private use CString;
+  use CString;
   public use StringCasts;  // hmm...
   public use BytesStringCommon only encodePolicy;  // expose encodePolicy
 
-  private use NVStringFactory;
+  use NVStringFactory;
 
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32),
@@ -800,8 +800,8 @@ module String {
   // submodule can be `private use`d from other String-supporting modules.
   pragma "no doc"
   module NVStringFactory {
-    private use BytesStringCommon;
-    private use ByteBufferHelpers only bufferType;
+    use BytesStringCommon;
+    use ByteBufferHelpers only bufferType;
 
     inline proc chpl_createStringWithNewBufferNV(x: bufferType,
                                                  length: int,

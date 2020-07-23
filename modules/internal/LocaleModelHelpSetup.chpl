@@ -30,12 +30,12 @@
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpSetup {
 
-  private use ChapelLocale;
+  use ChapelLocale;
   public use DefaultRectangular; // danger
   public use ChapelNumLocales;  // hmm...
-  private use ChapelEnv;
-  private use Sys;
-  private use SysCTypes;
+  use ChapelEnv;
+  use Sys;
+  use SysCTypes;
 
   config param debugLocaleModel = false;
 

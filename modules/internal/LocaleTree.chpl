@@ -25,7 +25,7 @@
 
 module LocaleTree {
 
-  private use ChapelLocale; // For declaration of rootLocale.
+  use ChapelLocale; // For declaration of rootLocale.
 
   record chpl_localeTreeRecord {
     var left, right: locale;

@@ -20,9 +20,9 @@
 
 module ChapelDistribution {
 
-  private use ChapelArray, ChapelRange;
-  private use ChapelLocks;
-  private use ChapelHashtable;
+  use ChapelArray, ChapelRange;
+  use ChapelLocks;
+  use ChapelHashtable;
 
   //
   // Abstract distribution class
@@ -443,7 +443,7 @@ module ChapelDistribution {
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
     proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
-      private use Sort;
+      use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
 
       //verify sorted and no duplicates if not --fast

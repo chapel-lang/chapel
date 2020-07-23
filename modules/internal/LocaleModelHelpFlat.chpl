@@ -24,7 +24,7 @@ module LocaleModelHelpFlat {
 
   public use LocaleModelHelpSetup;  // hmm...
   public use LocaleModelHelpRuntime;  // erg
-  private use SysCTypes;
+  use SysCTypes;
 
   //////////////////////////////////////////
   //

@@ -40,11 +40,11 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
-  private use ChapelStandard;
+  use ChapelStandard;
 
-  private use AlignedTSupport;
-  private use MemConsistency;
-  private use SyncVarRuntimeSupport;
+  use AlignedTSupport;
+  use MemConsistency;
+  use SyncVarRuntimeSupport;
 
   /************************************ | *************************************
   *                                                                           *
@@ -916,8 +916,8 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  private use ChapelStandard, SysCTypes;
-  private use AlignedTSupport;
+  use ChapelStandard, SysCTypes;
+  use AlignedTSupport;
 
   //
   // Sync var externs

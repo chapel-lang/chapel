@@ -90,7 +90,7 @@ module ArrayViewSlice {
     // chpl__serialize() routine (and, we assume, chpl__deserialize())
     //
     proc chpl__rvfMe() param {
-      private use Reflection;
+      use Reflection;
 
       if chpl_serializeSlices == false then
         return false;
@@ -108,7 +108,7 @@ module ArrayViewSlice {
     // domain and array
     //
     proc chpl__serialize() where chpl__rvfMe() {
-      private use SysCTypes;
+      use SysCTypes;
       if chpl_debugSerializeSlice {
         // use printf to avoid messing up tests checking comm counts
         extern proc printf(x...);

@@ -21,9 +21,9 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
-  private use ChapelStandard;
-  private import RangeChunk;
-  private use DSIUtil;
+  use ChapelStandard;
+  import RangeChunk;
+  use DSIUtil;
 
   config param debugDefaultSparse = false;
 
@@ -125,7 +125,7 @@ module DefaultSparse {
 
     // private
     proc find(ind) {
-      private use Search;
+      use Search;
       //
       // sjd: unfortunate specialization for rank == 1
       //
@@ -252,7 +252,7 @@ module DefaultSparse {
 
     override proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
-      private import Sort;
+      import Sort;
 
       if addOn != nilLocale {
         if addOn != this.locale {
