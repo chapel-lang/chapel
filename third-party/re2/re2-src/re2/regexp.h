@@ -449,6 +449,9 @@ class Regexp {
   // regardless of the return value.
   bool RequiredPrefixForAccel(std::string* prefix, bool* foldcase);
 
+  // Computes the minimum and maximum match length.
+  // -1 to mean unbounded, and min might be 0.
+  void PossibleMatchLength(int *min, int *max);
  private:
   // Constructor allocates vectors as appropriate for operator.
   explicit Regexp(RegexpOp op, ParseFlags parse_flags);

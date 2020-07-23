@@ -72,6 +72,7 @@ endif
 all: obj/libre2.a obj/so/libre2.$(SOEXT)
 
 INSTALL_HFILES=\
+	re2/file_strings.h\
 	re2/filtered_re2.h\
 	re2/re2.h\
 	re2/set.h\
@@ -90,6 +91,7 @@ HFILES=\
 	util/utf.h\
 	util/util.h\
 	re2/bitmap256.h\
+	re2/file_strings.h\
 	re2/filtered_re2.h\
 	re2/pod_array.h\
 	re2/prefilter.h\
@@ -115,6 +117,7 @@ OFILES=\
 	obj/re2/bitstate.o\
 	obj/re2/compile.o\
 	obj/re2/dfa.o\
+	obj/re2/file_strings.o\
 	obj/re2/filtered_re2.o\
 	obj/re2/mimics_pcre.o\
 	obj/re2/nfa.o\
@@ -309,6 +312,7 @@ shared: obj/so/libre2.$(SOEXT)
 .PHONY: shared-install
 shared-install: obj/so/libre2.$(SOEXT) common-install
 	$(INSTALL) obj/so/libre2.$(SOEXT) $(DESTDIR)$(libdir)/libre2.$(SOEXTVER00)
+	if [ -n "`command -v install_name_tool`" ]; then install_name_tool -id $(DESTDIR)$(libdir)/libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.so.$(SOEXTVER00); fi
 	ln -sf libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.$(SOEXTVER)
 	ln -sf libre2.$(SOEXTVER00) $(DESTDIR)$(libdir)/libre2.$(SOEXT)
 
