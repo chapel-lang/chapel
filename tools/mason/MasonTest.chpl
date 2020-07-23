@@ -53,42 +53,49 @@ proc masonTest(args) throws {
   if MASON_OFFLINE then update = false;
   var compopts: list(string);
   var searchSubStrings: list(string);
-  var countArgs = 0;
-  for arg in args {
+  var countArgs = args.domain.low+2;
+  for arg in args[args.domain.low+2..] {
     countArgs += 1;
-    if countArgs > 2 {
-      if arg == '-h' || arg == '--help' {
+    select (arg) {
+      when '-h'{
         masonTestHelp();
         exit(0);
       }
-      else if arg == '--show' {
+      when '--help'{
+        masonTestHelp();
+        exit(0);
+      }
+      when '--show'{
         show = true;
       }
-      else if arg == '--no-run' {
+      when '--no-run'{
         run = false;
       }
-      else if arg == '--parallel' {
+      when '--parallel' {
         parallel = true;
       }
-      else if arg == '--' {
+      when '--' {
         throw new owned MasonError("Testing does not support -- syntax");
       }
-      else if arg == '--no-update' {
-        update = false;
-      }
-      else if arg == '--keep-binary' {
+      when '--keep-binary' {
         keepExec = true;
       }
-      else if arg == '--recursive' {
+      when '--recursive' {
         subdir = true;
       }
-      else if arg == '--update' {
+      when '--update' {
         update = true;
       }
-      else if arg.startsWith('--setComm=') {
-        setComm = arg['--setComm='.size+1..];
+      when '--no-update' {
+        update = false;
       }
-      else {
+      when '--setComm' {
+        setComm = args[countArgs];
+      }
+      otherwise {
+        if arg.startsWith('--setComm='){
+          setComm = arg['--setComm='.size..];
+        }
         try! {
           if isFile(arg) && arg.endsWith(".chpl") {
             files.append(arg);

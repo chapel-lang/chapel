@@ -59,6 +59,10 @@ proc masonRun(args) throws {
       else if arg == '--release' {
         release=true;
       }
+      else if arg.startsWith('--example=') {
+        masonBuildRun(args);
+        exit(0);
+      }
       else if arg == '--example' {        
         if args.size > 3 {
           masonBuildRun(args);
@@ -150,6 +154,7 @@ private proc masonBuildRun(args: [?d] string) {
     var buildExample = false;
     var updateRegistry = true;
     var execopts: list(string);
+    var exampleProgram='';
     for arg in args[2..] {
       if exec == true {
         execopts.append(arg);
@@ -158,6 +163,10 @@ private proc masonBuildRun(args: [?d] string) {
         if example then
           throw new owned MasonError("Examples do not support `--` syntax");
         exec = true;
+      }
+      else if arg.startsWith("--example=") {
+        execopts.append(arg);
+        example = true;
       }
       else if arg == "--example" {
         example = true;

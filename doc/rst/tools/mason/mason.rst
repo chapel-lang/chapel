@@ -356,7 +356,7 @@ Tests can be listed in the ``Mason.toml`` as a TOML array of strings for the
             "test2.chpl",
             "test3.chpl"]
 
-
+An user may also set the ``CHPL_COMM`` value for running the tests, e.g. ``none``, ``gasnet``, ``ugni`` using ``mason test --setComm``.
 
 Creating and Running Examples
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
