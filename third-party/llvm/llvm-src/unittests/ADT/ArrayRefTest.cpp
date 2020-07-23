@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/ArrayRefTest.cpp - ArrayRef unit tests -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,10 +33,6 @@ static_assert(
 
 // Check that we can't accidentally assign a temporary location to an ArrayRef.
 // (Unfortunately we can't make use of the same thing with constructors.)
-//
-// Disable this check under MSVC; even MSVC 2015 isn't inconsistent between
-// std::is_assignable and actually writing such an assignment.
-#if !defined(_MSC_VER)
 static_assert(
     !std::is_assignable<ArrayRef<int *>&, int *>::value,
     "Assigning from single prvalue element");
@@ -50,7 +45,6 @@ static_assert(
 static_assert(
     !std::is_assignable<ArrayRef<int *>&, std::initializer_list<int *>>::value,
     "Assigning from an initializer list");
-#endif
 
 namespace {
 
@@ -248,5 +242,15 @@ TEST(ArrayRefTest, makeArrayRef) {
   EXPECT_NE(&AR2Ref, &AR2);
   EXPECT_TRUE(AR2.equals(AR2Ref));
 }
+
+TEST(ArrayRefTest, OwningArrayRef) {
+  static const int A1[] = {0, 1};
+  OwningArrayRef<int> A(makeArrayRef(A1));
+  OwningArrayRef<int> B(std::move(A));
+  EXPECT_EQ(A.data(), nullptr);
+}
+
+static_assert(is_trivially_copyable<ArrayRef<int>>::value,
+              "trivially copyable");
 
 } // end anonymous namespace

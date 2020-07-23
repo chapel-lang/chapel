@@ -20,7 +20,7 @@ Introduction
 This document describes the language extensions provided by Clang.  In addition
 to the language extensions listed here, Clang aims to support a broad range of
 GCC extensions.  Please see the `GCC manual
-<http://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html>`_ for more information on
+<https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html>`_ for more information on
 these extensions.
 
 .. _langext-feature_check:
@@ -324,12 +324,19 @@ option for a warning and returns true if that is a valid warning option.
   ...
   #endif
 
+.. _languageextensions-builtin-macros:
+
 Builtin Macros
 ==============
 
 ``__BASE_FILE__``
   Defined to a string that contains the name of the main input file passed to
   Clang.
+
+``__FILE_NAME__``
+  Clang-specific extension that functions similar to ``__FILE__`` but only
+  renders the last path component (the filename) instead of an invocation
+  dependent full path to that file.
 
 ``__COUNTER__``
   Defined to an integer value that starts at zero and is incremented each time
@@ -1050,9 +1057,9 @@ the supported set of system headers, currently:
 * The Microsoft standard C++ library
 
 Clang supports the `GNU C++ type traits
-<http://gcc.gnu.org/onlinedocs/gcc/Type-Traits.html>`_ and a subset of the
+<https://gcc.gnu.org/onlinedocs/gcc/Type-Traits.html>`_ and a subset of the
 `Microsoft Visual C++ Type traits
-<http://msdn.microsoft.com/en-us/library/ms177194(v=VS.100).aspx>`_.
+<https://msdn.microsoft.com/en-us/library/ms177194(v=VS.100).aspx>`_.
 
 Feature detection is supported only for some of the primitives at present. User
 code should not use these checks because they bear no direct relation to the
@@ -1367,8 +1374,8 @@ Objective-C retaining behavior attributes
 -----------------------------------------
 
 In Objective-C, functions and methods are generally assumed to follow the
-`Cocoa Memory Management 
-<http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html>`_
+`Cocoa Memory Management
+<https://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html>`_
 conventions for ownership of object arguments and
 return values. However, there are exceptions, and so Clang provides attributes
 to allow these exceptions to be documented. This are used by ARC and the
@@ -1510,6 +1517,285 @@ parameters of protocol-qualified type.
 
 Query the presence of this new mangling with
 ``__has_feature(objc_protocol_qualifier_mangling)``.
+
+
+OpenCL Features
+===============
+
+C++ for OpenCL
+--------------
+
+This functionality is built on top of OpenCL C v2.0 and C++17 enabling most of
+regular C++ features in OpenCL kernel code. Most functionality from OpenCL C
+is inherited. This section describes minor differences to OpenCL C and any
+limitations related to C++ support as well as interactions between OpenCL and
+C++ features that are not documented elsewhere.
+
+Restrictions to C++17
+^^^^^^^^^^^^^^^^^^^^^
+
+The following features are not supported:
+
+- Virtual functions
+- Exceptions
+- ``dynamic_cast`` operator
+- Non-placement ``new``/``delete`` operators
+- Standard C++ libraries. Currently there is no solution for alternative C++
+  libraries provided. Future release will feature library support.
+
+
+Interplay of OpenCL and C++ features
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Address space behavior
+""""""""""""""""""""""
+
+Address spaces are part of the type qualifiers; many rules are just inherited
+from the qualifier behavior documented in OpenCL C v2.0 s6.5 and Embedded C
+extension ISO/IEC JTC1 SC22 WG14 N1021 s3.1. Note that since the address space
+behavior in C++ is not documented formally, Clang extends the existing concept
+from C and OpenCL. For example conversion rules are extended from qualification
+conversion but the compatibility is determined using notation of sets and
+overlapping of address spaces from Embedded C (ISO/IEC JTC1 SC22 WG14 N1021
+s3.1.3). For OpenCL it means that implicit conversions are allowed from
+a named address space (except for ``__constant``) to ``__generic`` (OpenCL C
+v2.0 6.5.5). Reverse conversion is only allowed explicitly. The ``__constant``
+address space does not overlap with any other and therefore no valid conversion
+between ``__constant`` and other address spaces exists. Most of the rules
+follow this logic.
+
+**Casts**
+
+C-style casts follow OpenCL C v2.0 rules (s6.5.5). All cast operators
+permit conversion to ``__generic`` implicitly. However converting from
+``__generic`` to named address spaces can only be done using ``addrspace_cast``.
+Note that conversions between ``__constant`` and any other address space
+are disallowed.
+
+.. _opencl_cpp_addrsp_deduction:
+
+**Deduction**
+
+Address spaces are not deduced for:
+
+- non-pointer/non-reference template parameters or any dependent types except
+  for template specializations.
+- non-pointer/non-reference class members except for static data members that are
+  deduced to ``__global`` address space.
+- non-pointer/non-reference alias declarations.
+- ``decltype`` expressions.
+
+.. code-block:: c++
+
+  template <typename T>
+  void foo() {
+    T m; // address space of m will be known at template instantiation time.
+    T * ptr; // ptr points to __generic address space object.
+    T & ref = ...; // ref references an object in __generic address space.
+  };
+
+  template <int N>
+  struct S {
+    int i; // i has no address space
+    static int ii; // ii is in global address space
+    int * ptr; // ptr points to __generic address space int.
+    int & ref = ...; // ref references int in __generic address space.
+  };
+
+  template <int N>
+  void bar()
+  {
+    S<N> s; // s is in __private address space
+  }
+
+TODO: Add example for type alias and decltype!
+
+**References**
+
+Reference types can be qualified with an address space.
+
+.. code-block:: c++
+
+  __private int & ref = ...; // references int in __private address space
+
+By default references will refer to ``__generic`` address space objects, except
+for dependent types that are not template specializations
+(see :ref:`Deduction <opencl_cpp_addrsp_deduction>`). Address space compatibility
+checks are performed when references are bound to values. The logic follows the
+rules from address space pointer conversion (OpenCL v2.0 s6.5.5).
+
+**Default address space**
+
+All non-static member functions take an implicit object parameter ``this`` that
+is a pointer type. By default this pointer parameter is in the ``__generic``
+address space. All concrete objects passed as an argument to ``this`` parameter
+will be converted to the ``__generic`` address space first if such conversion is
+valid. Therefore programs using objects in the ``__constant`` address space will
+not be compiled unless the address space is explicitly specified using address
+space qualifiers on member functions
+(see :ref:`Member function qualifier <opencl_cpp_addrspace_method_qual>`) as the
+conversion between ``__constant`` and ``__generic`` is disallowed. Member function
+qualifiers can also be used in case conversion to the ``__generic`` address space
+is undesirable (even if it is legal). For example, a method can be implemented to
+exploit memory access coalescing for segments with memory bank. This not only
+applies to regular member functions but to constructors and destructors too.
+
+.. _opencl_cpp_addrspace_method_qual:
+
+**Member function qualifier**
+
+Clang allows specifying an address space qualifier on member functions to signal
+that they are to be used with objects constructed in some specific address space.
+This works just the same as qualifying member functions with ``const`` or any
+other qualifiers. The overloading resolution will select the candidate with the
+most specific address space if multiple candidates are provided. If there is no
+conversion to an address space among candidates, compilation will fail with a
+diagnostic.
+
+.. code-block:: c++
+
+ struct C {
+    void foo() __local;
+    void foo();
+ };
+
+ __kernel void bar() {
+   __local C c1;
+   C c2;
+   __constant C c3;
+   c1.foo(); // will resolve to the first foo
+   c2.foo(); // will resolve to the second foo
+   c3.foo(); // error due to mismatching address spaces - can't convert to
+             // __local or __generic
+ }
+
+**Implicit special members**
+
+All implicit special members (default, copy, or move constructor, copy or move
+assignment, destructor) will be generated with the ``__generic`` address space.
+
+.. code-block:: c++
+
+  class C {
+    // Has the following implicit definition
+    // void C() __generic;
+    // void C(const __generic C &) __generic;
+    // void C(__generic C &&) __generic;
+    // operator= '__generic C &(__generic C &&)'
+    // operator= '__generic C &(const __generic C &) __generic
+  }
+
+**Builtin operators**
+
+All builtin operators are available in the specific address spaces, thus no
+conversion to ``__generic`` is performed.
+
+**Templates**
+
+There is no deduction of address spaces in non-pointer/non-reference template
+parameters and dependent types (see :ref:`Deduction <opencl_cpp_addrsp_deduction>`).
+The address space of a template parameter is deduced during type deduction if
+it is not explicitly provided in the instantiation.
+
+.. code-block:: c++
+
+  1 template<typename T>
+  2 void foo(T* i){
+  3   T var;
+  4 }
+  5
+  6 __global int g;
+  7 void bar(){
+  8   foo(&g); // error: template instantiation failed as function scope variable
+  9            // appears to be declared in __global address space (see line 3)
+ 10 }
+
+It is not legal to specify multiple different address spaces between template
+definition and instantiation. If multiple different address spaces are specified in
+template definition and instantiation, compilation of such a program will fail with
+a diagnostic.
+
+.. code-block:: c++
+
+  template <typename T>
+  void foo() {
+    __private T var;
+  }
+
+  void bar() {
+    foo<__global int>(); // error: conflicting address space qualifiers are provided
+                         // __global and __private
+  }
+
+Once a template has been instantiated, regular restrictions for address spaces will
+apply.
+
+.. code-block:: c++
+
+  template<typename T>
+  void foo(){
+    T var;
+  }
+
+  void bar(){
+    foo<__global int>(); // error: function scope variable cannot be declared in
+                         // __global address space
+  }
+
+**Temporary materialization**
+
+All temporaries are materialized in the ``__private`` address space. If a
+reference with another address space is bound to them, the conversion will be
+generated in case it is valid, otherwise compilation will fail with a diagnostic.
+
+.. code-block:: c++
+
+  int bar(const unsigned int &i);
+
+  void foo() {
+    bar(1); // temporary is created in __private address space but converted
+            // to __generic address space of parameter reference
+  }
+
+  __global const int& f(__global float &ref) {
+    return ref; // error: address space mismatch between temporary object
+                // created to hold value converted float->int and return
+                // value type (can't convert from __private to __global)
+  }
+
+**Initialization of local and constant address space objects**
+
+TODO
+
+Constructing and destroying global objects
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Global objects must be constructed before the first kernel using the global
+objects is executed and destroyed just after the last kernel using the
+program objects is executed. In OpenCL v2.0 drivers there is no specific
+API for invoking global constructors. However, an easy workaround would be
+to enqueue a constructor initialization kernel that has a name
+``@_GLOBAL__sub_I_<compiled file name>``. This kernel is only present if there
+are any global objects to be initialized in the compiled binary. One way to
+check this is by passing ``CL_PROGRAM_KERNEL_NAMES`` to ``clGetProgramInfo``
+(OpenCL v2.0 s5.8.7).
+
+Note that if multiple files are compiled and linked into libraries, multiple
+kernels that initialize global objects for multiple modules would have to be
+invoked.
+
+Applications are currently required to run initialization of global objects
+manually before running any kernels in which the objects are used.
+
+.. code-block:: console
+
+ clang -cl-std=clc++ test.cl
+
+If there are any global objects to be initialized, the final binary will
+contain the ``@_GLOBAL__sub_I_test.cl`` kernel to be enqueued.
+
+Global destructors can not be invoked in OpenCL v2.0 drivers. However, all
+memory used for program scope objects is released on ``clReleaseProgram``.
 
 Initializer lists for complex numbers in C
 ==========================================
@@ -1784,14 +2070,14 @@ the bitpattern of an integer value; for example ``0b10110110`` becomes
 **Description**:
 
 The '``__builtin_rotateleft``' family of builtins is used to rotate
-the bits in the first argument by the amount in the second argument. 
+the bits in the first argument by the amount in the second argument.
 For example, ``0b10000110`` rotated left by 11 becomes ``0b00110100``.
 The shift value is treated as an unsigned amount modulo the size of
 the arguments. Both arguments and the result have the bitwidth specified
 by the name of the builtin.
 
 ``__builtin_rotateright``
-_------------------------
+-------------------------
 
 * ``__builtin_rotateright8``
 * ``__builtin_rotateright16``
@@ -1816,7 +2102,7 @@ _------------------------
 **Description**:
 
 The '``__builtin_rotateright``' family of builtins is used to rotate
-the bits in the first argument by the amount in the second argument. 
+the bits in the first argument by the amount in the second argument.
 For example, ``0b10000110`` rotated right by 3 becomes ``0b11010000``.
 The shift value is treated as an unsigned amount modulo the size of
 the arguments. Both arguments and the result have the bitwidth specified
@@ -1944,6 +2230,35 @@ form of ``__builtin_operator_delete`` is currently available.
 
 These builtins are intended for use in the implementation of ``std::allocator``
 and other similar allocation libraries, and are only available in C++.
+
+``__builtin_preserve_access_index``
+-----------------------------------
+
+``__builtin_preserve_access_index`` specifies a code section where
+array subscript access and structure/union member access are relocatable
+under bpf compile-once run-everywhere framework. Debuginfo (typically
+with ``-g``) is needed, otherwise, the compiler will exit with an error.
+
+**Syntax**:
+
+.. code-block:: c
+
+  const void * __builtin_preserve_access_index(const void * ptr)
+
+**Example of Use**:
+
+.. code-block:: c
+
+  struct t {
+    int i;
+    int j;
+    union {
+      int a;
+      int b;
+    } c[4];
+  };
+  struct t *v = ...;
+  const void *pb =__builtin_preserve_access_index(&v->c[3].b);
 
 Multiprecision Arithmetic Builtins
 ----------------------------------
@@ -2109,8 +2424,8 @@ Atomic Min/Max builtins with memory ordering
 There are two atomic builtins with min/max in-memory comparison and swap.
 The syntax and semantics are similar to GCC-compatible __atomic_* builtins.
 
-* ``__atomic_fetch_min`` 
-* ``__atomic_fetch_max`` 
+* ``__atomic_fetch_min``
+* ``__atomic_fetch_max``
 
 The builtins work with signed and unsigned integers and require to specify memory ordering.
 The return value is the original value that was stored in memory before comparison.
@@ -2228,11 +2543,11 @@ C++ Coroutines support builtins
 --------------------------------
 
 .. warning::
-  This is a work in progress. Compatibility across Clang/LLVM releases is not 
+  This is a work in progress. Compatibility across Clang/LLVM releases is not
   guaranteed.
 
 Clang provides experimental builtins to support C++ Coroutines as defined by
-http://wg21.link/P0057. The following four are intended to be used by the
+https://wg21.link/P0057. The following four are intended to be used by the
 standard library to implement `std::experimental::coroutine_handle` type.
 
 **Syntax**:
@@ -2276,7 +2591,7 @@ Other coroutine builtins are either for internal clang use or for use during
 development of the coroutine feature. See `Coroutines in LLVM
 <https://llvm.org/docs/Coroutines.html#intrinsics>`_ for
 more information on their semantics. Note that builtins matching the intrinsics
-that take token as the first parameter (llvm.coro.begin, llvm.coro.alloc, 
+that take token as the first parameter (llvm.coro.begin, llvm.coro.alloc,
 llvm.coro.free and llvm.coro.suspend) omit the token parameter and fill it to
 an appropriate value during the emission.
 
@@ -2300,6 +2615,61 @@ automatically will insert one if the first argument to `llvm.coro.suspend` is
 token `none`. If a user calls `__builin_suspend`, clang will insert `token none`
 as the first argument to the intrinsic.
 
+Source location builtins
+------------------------
+
+Clang provides experimental builtins to support C++ standard library implementation
+of ``std::experimental::source_location`` as specified in  http://wg21.link/N4600.
+With the exception of ``__builtin_COLUMN``, these builtins are also implemented by
+GCC.
+
+**Syntax**:
+
+.. code-block:: c
+
+  const char *__builtin_FILE();
+  const char *__builtin_FUNCTION();
+  unsigned    __builtin_LINE();
+  unsigned    __builtin_COLUMN(); // Clang only
+
+**Example of use**:
+
+.. code-block:: c++
+
+  void my_assert(bool pred, int line = __builtin_LINE(), // Captures line of caller
+                 const char* file = __builtin_FILE(),
+                 const char* function = __builtin_FUNCTION()) {
+    if (pred) return;
+    printf("%s:%d assertion failed in function %s\n", file, line, function);
+    std::abort();
+  }
+
+  struct MyAggregateType {
+    int x;
+    int line = __builtin_LINE(); // captures line where aggregate initialization occurs
+  };
+  static_assert(MyAggregateType{42}.line == __LINE__);
+
+  struct MyClassType {
+    int line = __builtin_LINE(); // captures line of the constructor used during initialization
+    constexpr MyClassType(int) { assert(line == __LINE__); }
+  };
+
+**Description**:
+
+The builtins ``__builtin_LINE``, ``__builtin_FUNCTION``, and ``__builtin_FILE`` return
+the values, at the "invocation point", for ``__LINE__``, ``__FUNCTION__``, and
+``__FILE__`` respectively. These builtins are constant expressions.
+
+When the builtins appear as part of a default function argument the invocation
+point is the location of the caller. When the builtins appear as part of a
+default member initializer, the invocation point is the location of the
+constructor or aggregate initialization used to create the object. Otherwise
+the invocation point is the same as the location of the builtin.
+
+When the invocation point of ``__builtin_FUNCTION`` is not a function scope the
+empty string is returned.
+
 Non-standard C++11 Attributes
 =============================
 
@@ -2310,10 +2680,10 @@ Clang supports GCC's ``gnu`` attribute namespace. All GCC attributes which
 are accepted with the ``__attribute__((foo))`` syntax are also accepted as
 ``[[gnu::foo]]``. This only extends to attributes which are specified by GCC
 (see the list of `GCC function attributes
-<http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html>`_, `GCC variable
-attributes <http://gcc.gnu.org/onlinedocs/gcc/Variable-Attributes.html>`_, and
+<https://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html>`_, `GCC variable
+attributes <https://gcc.gnu.org/onlinedocs/gcc/Variable-Attributes.html>`_, and
 `GCC type attributes
-<http://gcc.gnu.org/onlinedocs/gcc/Type-Attributes.html>`_). As with the GCC
+<https://gcc.gnu.org/onlinedocs/gcc/Type-Attributes.html>`_). As with the GCC
 implementation, these attributes must appertain to the *declarator-id* in a
 declaration, which means they must go either at the start of the declaration or
 immediately after the name being declared.
@@ -2375,6 +2745,107 @@ Which compiles to (on X86-32):
           movl    4(%esp), %eax
           movl    %gs:(%eax), %eax
           ret
+
+You can also use the GCC compatibility macros ``__seg_fs`` and ``__seg_gs`` for
+the same purpose. The preprocessor symbols ``__SEG_FS`` and ``__SEG_GS``
+indicate their support.
+
+PowerPC Language Extensions
+------------------------------
+
+Set the Floating Point Rounding Mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PowerPC64/PowerPC64le supports the builtin function ``__builtin_setrnd`` to set
+the floating point rounding mode. This function will use the least significant
+two bits of integer argument to set the floating point rounding mode.
+
+.. code-block:: c++
+
+  double __builtin_setrnd(int mode);
+
+The effective values for mode are:
+
+    - 0 - round to nearest
+    - 1 - round to zero
+    - 2 - round to +infinity
+    - 3 - round to -infinity
+
+Note that the mode argument will modulo 4, so if the int argument is greater
+than 3, it will only use the least significant two bits of the mode.
+Namely, ``__builtin_setrnd(102))`` is equal to ``__builtin_setrnd(2)``.
+
+PowerPC Language Extensions
+------------------------------
+
+Set the Floating Point Rounding Mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PowerPC64/PowerPC64le supports the builtin function ``__builtin_setrnd`` to set
+the floating point rounding mode. This function will use the least significant
+two bits of integer argument to set the floating point rounding mode.
+
+.. code-block:: c++
+
+  double __builtin_setrnd(int mode);
+
+The effective values for mode are:
+
+    - 0 - round to nearest
+    - 1 - round to zero
+    - 2 - round to +infinity
+    - 3 - round to -infinity
+
+Note that the mode argument will modulo 4, so if the integer argument is greater
+than 3, it will only use the least significant two bits of the mode.
+Namely, ``__builtin_setrnd(102))`` is equal to ``__builtin_setrnd(2)``.
+
+PowerPC Language Extensions
+------------------------------
+
+Set the Floating Point Rounding Mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PowerPC64/PowerPC64le supports the builtin function ``__builtin_setrnd`` to set
+the floating point rounding mode. This function will use the least significant
+two bits of integer argument to set the floating point rounding mode.
+
+.. code-block:: c++
+
+  double __builtin_setrnd(int mode);
+
+The effective values for mode are:
+
+    - 0 - round to nearest
+    - 1 - round to zero
+    - 2 - round to +infinity
+    - 3 - round to -infinity
+
+Note that the mode argument will modulo 4, so if the integer argument is greater
+than 3, it will only use the least significant two bits of the mode.
+Namely, ``__builtin_setrnd(102))`` is equal to ``__builtin_setrnd(2)``.
+
+PowerPC cache builtins
+^^^^^^^^^^^^^^^^^^^^^^
+
+The PowerPC architecture specifies instructions implementing cache operations.
+Clang provides builtins that give direct programmer access to these cache
+instructions.
+
+Currently the following builtins are implemented in clang:
+
+``__builtin_dcbf`` copies the contents of a modified block from the data cache
+to main memory and flushes the copy from the data cache.
+
+**Syntax**:
+
+.. code-block:: c
+
+  void __dcbf(const void* addr); /* Data Cache Block Flush */
+
+**Example of Use**:
+
+.. code-block:: c
+
+  int a = 1;
+  __builtin_dcbf (&a);
 
 Extensions for Static Analysis
 ==============================
@@ -2922,3 +3393,29 @@ Specifying Linker Options on ELF Targets
 The ``#pragma comment(lib, ...)`` directive is supported on all ELF targets.
 The second parameter is the library name (without the traditional Unix prefix of
 ``lib``).  This allows you to provide an implicit link of dependent libraries.
+
+Evaluating Object Size Dynamically
+==================================
+
+Clang supports the builtin ``__builtin_dynamic_object_size``, the semantics are
+the same as GCC's ``__builtin_object_size`` (which Clang also supports), but
+``__builtin_dynamic_object_size`` can evaluate the object's size at runtime.
+``__builtin_dynamic_object_size`` is meant to be used as a drop-in replacement
+for ``__builtin_object_size`` in libraries that support it.
+
+For instance, here is a program that ``__builtin_dynamic_object_size`` will make
+safer:
+
+.. code-block:: c
+
+  void copy_into_buffer(size_t size) {
+    char* buffer = malloc(size);
+    strlcpy(buffer, "some string", strlen("some string"));
+    // Previous line preprocesses to:
+    // __builtin___strlcpy_chk(buffer, "some string", strlen("some string"), __builtin_object_size(buffer, 0))
+  }
+
+Since the size of ``buffer`` can't be known at compile time, Clang will fold
+``__builtin_object_size(buffer, 0)`` into ``-1``. However, if this was written
+as ``__builtin_dynamic_object_size(buffer, 0)``, Clang will fold it into
+``size``, providing some extra runtime safety.

@@ -286,6 +286,8 @@ Make the next included directory (-I or -F) an indexer header map
 
 .. option:: -install\_name <arg>
 
+.. option:: -interface-stub-version=<arg>
+
 .. option:: -keep\_private\_externs
 
 .. option:: -lazy\_framework <arg>
@@ -357,6 +359,8 @@ Disable builtin #include directories
 .. option:: -nopie, -no-pie
 
 .. option:: -noprebind
+
+.. option:: -noprofilelib
 
 .. option:: -noseglinkedit
 
@@ -602,6 +606,8 @@ Statically link the sanitizer runtime
 
 .. option:: -static-libstdc++
 
+.. option:: -static-pie
+
 .. option:: -std-default=<arg>
 
 .. option:: -stdlib=<arg>, --stdlib=<arg>, --stdlib <arg>
@@ -641,6 +647,10 @@ Enable some traditional CPP emulation
 .. option:: -umbrella <arg>
 
 .. option:: -unexported\_symbols\_list <arg>
+
+.. option:: -unwindlib=<arg>, --unwindlib=<arg>
+
+Unwind library to use
 
 .. option:: -v, --verbose
 
@@ -699,6 +709,10 @@ Only run preprocess and compilation steps
 .. option:: -c, --compile
 
 Only run preprocess, compile, and assemble steps
+
+.. option:: -emit-interface-stubs
+
+Generate Inteface Stub Files.
 
 .. option:: -emit-llvm
 
@@ -907,6 +921,10 @@ Turn on runtime checks for various forms of undefined or suspicious behavior. Se
 Enable function outlining (AArch64 only)
 
 .. option:: --param <arg>, --param=<arg>
+
+.. option:: -print-supported-cpus, --print-supported-cpus, -mcpu=?, -mtune=?
+
+Print supported cpu models for the given target (if target is not specified, it will print the supported cpus for the default target)
 
 .. option:: -std=<arg>, --std=<arg>, --std <arg>
 
@@ -1239,6 +1257,10 @@ Use ANSI escape codes for diagnostics
 
 Use Apple's kernel extensions ABI
 
+.. option:: -fapple-link-rtlib
+
+Force linking the clang builtins runtime library
+
 .. option:: -fapple-pragma-pack, -fno-apple-pragma-pack
 
 Enable Apple gcc-compatible #pragma pack handling
@@ -1329,6 +1351,16 @@ Generate coverage mapping to enable code coverage analysis
 
 .. option:: -fcreate-profile
 
+.. option:: -fcs-profile-generate
+
+Generate instrumented code to collect context sensitive execution counts into default.profraw (overridden by LLVM\_PROFILE\_FILE env var)
+
+.. program:: clang1
+.. option:: -fcs-profile-generate=<directory>
+.. program:: clang
+
+Generate instrumented code to collect context sensitive execution counts into <directory>/default.profraw (overridden by LLVM\_PROFILE\_FILE env var)
+
 .. option:: -fcxx-exceptions, -fno-cxx-exceptions
 
 Enable C++ exceptions
@@ -1338,6 +1370,10 @@ Enable C++ exceptions
 .. option:: -fdata-sections, -fno-data-sections
 
 Place each data in its own section (ELF Only)
+
+.. option:: -fdebug-compilation-dir <arg>
+
+The compilation directory to embed in the debug info.
 
 .. option:: -fdebug-info-for-profiling, -fno-debug-info-for-profiling
 
@@ -1715,7 +1751,15 @@ Emit OpenMP code only for SIMD-based constructs.
 
 Specify the file name of any generated YAML optimization record
 
+.. option:: -foptimization-record-passes=<arg>
+
+Only include passes which match a specified regular expression in the generated optimization record (by default, include all passes)
+
 .. option:: -foptimize-sibling-calls, -fno-optimize-sibling-calls
+
+.. option:: -forder-file-instrumentation
+
+Generate instrumented code to collect order file into default.profraw file (overridden by '=' form of option or LLVM\_PROFILE\_FILE env var)
 
 .. option:: -foutput-class-dir=<arg>, --output-class-directory <arg>, --output-class-directory=<arg>
 
@@ -1730,6 +1774,10 @@ Specify the default maximum struct packing alignment
 .. option:: -fpascal-strings, -fno-pascal-strings, -mpascal-strings
 
 Recognize and construct Pascal-style string literals
+
+.. option:: -fpass-plugin=<dsopath>
+
+Load pass plugin from a dynamic shared object file (only with new pass manager).
 
 .. option:: -fpcc-struct-return
 
@@ -1858,6 +1906,12 @@ Turn on loop reroller
 
 Generate a YAML optimization record file
 
+.. program:: clang1
+.. option:: -fsave-optimization-record=<arg>
+.. program:: clang
+
+Generate an optimization record file in a specific format (default: YAML)
+
 .. option:: -fseh-exceptions
 
 Use SEH style exceptions
@@ -1954,6 +2008,8 @@ Enable optimizations based on the strict rules for overwriting polymorphic C++ o
 
 .. option:: -fstruct-path-tbaa, -fno-struct-path-tbaa
 
+.. option:: -fsymbol-partition=<arg>
+
 .. option:: -ftabstop=<arg>
 
 .. option:: -ftemplate-backtrace-limit=<arg>
@@ -1971,6 +2027,8 @@ Perform ThinLTO importing using provided function summary index
 .. option:: -fthreadsafe-statics, -fno-threadsafe-statics
 
 .. option:: -ftime-report
+
+.. option:: -ftime-trace
 
 .. option:: -ftls-model=<arg>
 
@@ -2116,6 +2174,14 @@ DEPRECATED: Filename defining the whitelist for imbuing the 'never instrument' X
 
 Enable System z vector language extension
 
+.. option:: -mlong-double-128
+
+Force long double to be 128 bits
+
+.. option:: -mlong-double-64
+
+Force long double to be 64 bits
+
 .. option:: -pedantic, --pedantic, -no-pedantic, --no-pedantic
 
 .. option:: -pedantic-errors, --pedantic-errors
@@ -2204,7 +2270,9 @@ Link stack frames through backchain on System Z
 
 .. option:: -mconsole<arg>
 
+.. program:: clang1
 .. option:: -mcpu=<arg>, -mv5 (equivalent to -mcpu=hexagonv5), -mv55 (equivalent to -mcpu=hexagonv55), -mv60 (equivalent to -mcpu=hexagonv60), -mv62 (equivalent to -mcpu=hexagonv62), -mv65 (equivalent to -mcpu=hexagonv65), -mv66 (equivalent to -mcpu=hexagonv66)
+.. program:: clang
 
 .. option:: -mcrc, -mno-crc
 
@@ -2346,7 +2414,9 @@ The thread model to use, e.g. posix, single (posix by default)
 
 Enable direct TLS access through segment registers (default)
 
+.. program:: clang1
 .. option:: -mtune=<arg>
+.. program:: clang
 
 .. option:: -mtvos-version-min=<arg>, -mappletvos-version-min=<arg>
 
@@ -2357,6 +2427,10 @@ Enable direct TLS access through segment registers (default)
 .. option:: -mwarn-nonportable-cfstrings, -mno-warn-nonportable-cfstrings
 
 .. option:: -mwatchos-version-min=<arg>
+
+.. option:: -mwavefrontsize64, -mno-wavefrontsize64
+
+Wavefront size 64 is used
 
 .. option:: -mwindows<arg>
 
@@ -2404,6 +2478,30 @@ Make the x9 register call-saved (AArch64 only)
 
 Reserve the 1 register (AArch64 only)
 
+.. option:: -ffixed-x10
+
+Reserve the 10 register (AArch64 only)
+
+.. option:: -ffixed-x11
+
+Reserve the 11 register (AArch64 only)
+
+.. option:: -ffixed-x12
+
+Reserve the 12 register (AArch64 only)
+
+.. option:: -ffixed-x13
+
+Reserve the 13 register (AArch64 only)
+
+.. option:: -ffixed-x14
+
+Reserve the 14 register (AArch64 only)
+
+.. option:: -ffixed-x15
+
+Reserve the 15 register (AArch64 only)
+
 .. option:: -ffixed-x18
 
 Reserve the 18 register (AArch64 only)
@@ -2415,6 +2513,38 @@ Reserve the 2 register (AArch64 only)
 .. option:: -ffixed-x20
 
 Reserve the 20 register (AArch64 only)
+
+.. option:: -ffixed-x21
+
+Reserve the 21 register (AArch64 only)
+
+.. option:: -ffixed-x22
+
+Reserve the 22 register (AArch64 only)
+
+.. option:: -ffixed-x23
+
+Reserve the 23 register (AArch64 only)
+
+.. option:: -ffixed-x24
+
+Reserve the 24 register (AArch64 only)
+
+.. option:: -ffixed-x25
+
+Reserve the 25 register (AArch64 only)
+
+.. option:: -ffixed-x26
+
+Reserve the 26 register (AArch64 only)
+
+.. option:: -ffixed-x27
+
+Reserve the 27 register (AArch64 only)
+
+.. option:: -ffixed-x28
+
+Reserve the 28 register (AArch64 only)
 
 .. option:: -ffixed-x3
 
@@ -2436,6 +2566,10 @@ Reserve the 6 register (AArch64 only)
 
 Reserve the 7 register (AArch64 only)
 
+.. option:: -ffixed-x9
+
+Reserve the 9 register (AArch64 only)
+
 .. option:: -mfix-cortex-a53-835769, -mno-fix-cortex-a53-835769
 
 Workaround Cortex-A53 erratum 835769 (AArch64 only)
@@ -2450,6 +2584,10 @@ AMDGPU
 
 Enable code object v3 (AMDGPU only)
 
+.. option:: -mcumode, -mno-cumode
+
+CU wavefront execution mode is used (AMDGPU only)
+
 .. option:: -msram-ecc, -mno-sram-ecc
 
 Enable SRAM ECC (AMDGPU only)
@@ -2463,6 +2601,10 @@ ARM
 .. option:: -ffixed-r9
 
 Reserve the r9 register (ARM only)
+
+.. option:: -mcmse
+
+Allow use of CMSE (Armv8-M Security Extensions)
 
 .. option:: -mexecute-only, -mno-execute-only, -mpure-code
 
@@ -2486,7 +2628,7 @@ Disallow generation of deprecated IT blocks for ARMv8. It is on by default for A
 
 .. option:: -mtp=<arg>
 
-Read thread pointer from coprocessor register (ARM only)
+Thread pointer access method (AArch32/AArch64 only)
 
 .. option:: -munaligned-access, -mno-unaligned-access
 
@@ -2644,13 +2786,23 @@ PowerPC
 
 WebAssembly
 -----------
+.. option:: -matomics, -mno-atomics
+
+.. option:: -mbulk-memory, -mno-bulk-memory
+
 .. option:: -mexception-handling, -mno-exception-handling
+
+.. option:: -mmultivalue, -mno-multivalue
+
+.. option:: -mmutable-globals, -mno-mutable-globals
 
 .. option:: -mnontrapping-fptoint, -mno-nontrapping-fptoint
 
 .. option:: -msign-ext, -mno-sign-ext
 
 .. option:: -msimd128, -mno-simd128
+
+.. option:: -mtail-call, -mno-tail-call
 
 .. option:: -munimplemented-simd128, -mno-unimplemented-simd128
 
@@ -2667,6 +2819,8 @@ X86
 .. option:: -mavx, -mno-avx
 
 .. option:: -mavx2, -mno-avx2
+
+.. option:: -mavx512bf16, -mno-avx512bf16
 
 .. option:: -mavx512bitalg, -mno-avx512bitalg
 
@@ -2692,6 +2846,8 @@ X86
 
 .. option:: -mavx512vnni, -mno-avx512vnni
 
+.. option:: -mavx512vp2intersect, -mno-avx512vp2intersect
+
 .. option:: -mavx512vpopcntdq, -mno-avx512vpopcntdq
 
 .. option:: -mbmi, -mno-bmi
@@ -2707,6 +2863,8 @@ X86
 .. option:: -mclzero, -mno-clzero
 
 .. option:: -mcx16, -mno-cx16
+
+.. option:: -menqcmd, -mno-enqcmd
 
 .. option:: -mf16c, -mno-f16c
 
@@ -2813,6 +2971,10 @@ RISCV
 .. option:: -mrelax, -mno-relax
 
 Enable linker relaxation
+
+.. option:: -msave-restore, -mno-save-restore
+
+Enable using library calls for save and restore
 
 Optimization level
 ~~~~~~~~~~~~~~~~~~

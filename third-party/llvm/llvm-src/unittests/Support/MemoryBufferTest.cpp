@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/MemoryBufferTest.cpp - MemoryBuffer tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -150,11 +149,11 @@ void MemoryBufferTest::testGetOpenFileSlice(bool Reopen) {
     EXPECT_FALSE(sys::fs::openFileForRead(TestPath.c_str(), TestFD));
   }
 
-  ErrorOr<OwningBuffer> Buf =
-      MemoryBuffer::getOpenFileSlice(TestFD, TestPath.c_str(),
-                                     40000, // Size
-                                     80000  // Offset
-                                     );
+  ErrorOr<OwningBuffer> Buf = MemoryBuffer::getOpenFileSlice(
+      sys::fs::convertFDToNativeFile(TestFD), TestPath.c_str(),
+      40000, // Size
+      80000  // Offset
+  );
 
   std::error_code EC = Buf.getError();
   EXPECT_FALSE(EC);

@@ -21,7 +21,6 @@ add_llvm_target(WebAssemblyCodeGen
   WebAssemblyCFGSort.cpp
   WebAssemblyDebugValueManager.cpp
   WebAssemblyLateEHPrepare.cpp
-  WebAssemblyEHRestoreStackPointer.cpp
   WebAssemblyExceptionInfo.cpp
   WebAssemblyExplicitLocals.cpp
   WebAssemblyFastISel.cpp
@@ -61,6 +60,5 @@ add_llvm_target(WebAssemblyCodeGen
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)
-add_subdirectory(InstPrinter)
 add_subdirectory(MCTargetDesc)
 add_subdirectory(TargetInfo)

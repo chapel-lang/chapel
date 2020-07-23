@@ -1,6 +1,8 @@
 llvm-dwarfdump - dump and verify DWARF debug information
 ========================================================
 
+.. program:: llvm-dwarfdump
+
 SYNOPSIS
 --------
 
@@ -14,12 +16,16 @@ archives, and `.dSYM` bundles and prints their contents in
 human-readable form. Only the .debug_info section is printed unless one of
 the section-specific options or :option:`--all` is specified.
 
+If no input file is specified, `a.out` is used instead. If `-` is used as the
+input file, :program:`llvm-dwarfdump` reads the input from its standard input
+stream.
+
 OPTIONS
 -------
 
 .. option:: -a, --all
 
-            Disassemble all supported DWARF sections.
+            Dump all supported DWARF sections.
 
 .. option:: --arch=<arch>
 
@@ -31,9 +37,13 @@ OPTIONS
 
 .. option:: -c, --show-children
 
-            Show a debug info entry's children when using
-            the :option:`--debug-info`, :option:`--find`,
-            and :option:`--name` options.
+            Show a debug info entry's children when selectively printing with
+            the `=<offset>` argument of :option:`--debug-info`, or options such
+            as :option:`--find` or :option:`--name`.
+
+.. option:: --color
+
+            Use colors in output.
 
 .. option:: -f <name>, --find=<name>
 
@@ -51,48 +61,64 @@ OPTIONS
 
             Show help and usage for this command.
 
+.. option:: --help-list
+
+            Show help and usage for this command without grouping the options
+            into categories.
+
 .. option:: -i, --ignore-case
 
-            Ignore case distinctions in when searching entries by name
-            or by regular expression.
+            Ignore case distinctions when using :option:`--name`.
 
-.. option:: -n <pattern>, --name=<pattern>
+.. option:: -n <name>, --name=<name>
 
             Find and print all debug info entries whose name
-            (`DW_AT_name` attribute) matches the exact text in
-            <pattern>. Use the :option:`--regex` option to have
-            <pattern> become a regular expression for more flexible
-            pattern matching.
+            (`DW_AT_name` attribute) is <name>.
 
 .. option:: --lookup=<address>
 
-            Lookup <address> in the debug information and print out the file,
+            Look up <address> in the debug information and print out the file,
             function, block, and line table details.
 
-.. option:: -o <path>, --out-file=<path>
+.. option:: -o <path>
 
-            Redirect output to a file specified by <path>.
+            Redirect output to a file specified by <path>, where `-` is the
+            standard output stream.
 
 .. option:: -p, --show-parents
 
-            Show a debug info entry's parent objects when using the
-            :option:`--debug-info`, :option:`--find`, and
-            :option:`--name` options.
+            Show a debug info entry's parents when selectively printing with
+            the `=<offset>` argument of :option:`--debug-info`, or options such
+            as :option:`--find` or :option:`--name`.
 
-.. option:: -r <n>, --recurse-depth=<n>
+.. option:: --parent-recurse-depth=<N>
 
-            Only recurse to a maximum depth of <n> when dumping debug info
-            entries.
+            When displaying debug info entry parents, only show them to a
+            maximum depth of <N>.
+
+.. option:: --quiet
+
+            Use with :option:`--verify` to not emit to `STDOUT`.
+
+.. option:: -r <N>, --recurse-depth=<N>
+
+            When displaying debug info entries, only show children to a maximum
+            depth of <N>.
 
 .. option:: --statistics
 
             Collect debug info quality metrics and print the results
             as machine-readable single-line JSON output.
 
+.. option:: --summarize-types
+
+            Abbreviate the description of type unit entries.
+
 .. option:: -x, --regex
 
-            Treat any <pattern> strings as regular expressions when searching
-            instead of just as an exact string match.
+            Treat any <name> strings as regular expressions when searching
+            with :option:`--name`. If :option:`--ignore-case` is also specified,
+            the regular expression becomes case-insensitive.
 
 .. option:: -u, --uuid
 
@@ -118,7 +144,7 @@ OPTIONS
 
             Display the version of the tool.
 
-.. option:: --debug-abbrev, --debug-aranges, --debug-cu-index, --debug-frame [=<offset>], --debug-gnu-pubnames, --debug-gnu-pubtypes, --debug-info [=<offset>], --debug-line [=<offset>], --debug-loc [=<offset>], --debug-macro, --debug-pubnames, --debug-pubtypes, --debug-ranges, --debug-str, --debug-str-offsets, --debug-tu-index, --debug-types, --eh-frame, --gdb-index, --apple-names, --apple-types, --apple-namespaces, --apple-objc
+.. option:: --debug-abbrev, --debug-addr, --debug-aranges, --debug-cu-index, --debug-frame [=<offset>], --debug-gnu-pubnames, --debug-gnu-pubtypes, --debug-info [=<offset>], --debug-line [=<offset>], --debug-line-str, --debug-loc [=<offset>], --debug-loclists [=<offset>], --debug-macro, --debug-names, --debug-pubnames, --debug-pubtypes, --debug-ranges, --debug-rnglists, --debug-str, --debug-str-offsets, --debug-tu-index, --debug-types, --eh-frame [=<offset>], --gdb-index, --apple-names, --apple-types, --apple-namespaces, --apple-objc
 
             Dump the specified DWARF section by name. Only the
             `.debug_info` section is shown by default. Some entries
@@ -126,9 +152,11 @@ OPTIONS
             optional offset of the exact entry to dump within the
             respective section. When an offset is provided, only the
             entry at that offset will be dumped, else the entire
-            section will be dumped. Children of items at a specific
-            offset can be dumped by also using the
-            :option:`--show-children` option where applicable.
+            section will be dumped.
+
+.. option:: @<FILE>
+
+            Read command-line options from `<FILE>`.
 
 EXIT STATUS
 -----------

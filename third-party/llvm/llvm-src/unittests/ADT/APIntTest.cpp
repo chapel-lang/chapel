@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/APInt.cpp - APInt unit tests ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -1263,6 +1262,22 @@ TEST(APIntTest, StringBitsNeeded10) {
   EXPECT_EQ(5U, APInt::getBitsNeeded("-10", 10));
   EXPECT_EQ(6U, APInt::getBitsNeeded("-19", 10));
   EXPECT_EQ(6U, APInt::getBitsNeeded("-20", 10));
+
+  EXPECT_EQ(1U, APInt::getBitsNeeded("-1", 10));
+  EXPECT_EQ(2U, APInt::getBitsNeeded("-2", 10));
+  EXPECT_EQ(3U, APInt::getBitsNeeded("-4", 10));
+  EXPECT_EQ(4U, APInt::getBitsNeeded("-8", 10));
+  EXPECT_EQ(5U, APInt::getBitsNeeded("-16", 10));
+  EXPECT_EQ(6U, APInt::getBitsNeeded("-23", 10));
+  EXPECT_EQ(6U, APInt::getBitsNeeded("-32", 10));
+  EXPECT_EQ(7U, APInt::getBitsNeeded("-64", 10));
+  EXPECT_EQ(8U, APInt::getBitsNeeded("-127", 10));
+  EXPECT_EQ(8U, APInt::getBitsNeeded("-128", 10));
+  EXPECT_EQ(9U, APInt::getBitsNeeded("-255", 10));
+  EXPECT_EQ(9U, APInt::getBitsNeeded("-256", 10));
+  EXPECT_EQ(10U, APInt::getBitsNeeded("-512", 10));
+  EXPECT_EQ(11U, APInt::getBitsNeeded("-1024", 10));
+  EXPECT_EQ(12U, APInt::getBitsNeeded("-1025", 10));
 }
 
 TEST(APIntTest, StringBitsNeeded16) {
@@ -2382,6 +2397,42 @@ TEST(APIntTest, RoundingSDiv) {
   }
 }
 
+TEST(APIntTest, umul_ov) {
+  const std::pair<uint64_t, uint64_t> Overflows[] = {
+      {0x8000000000000000, 2},
+      {0x5555555555555556, 3},
+      {4294967296, 4294967296},
+      {4294967295, 4294967298},
+  };
+  const std::pair<uint64_t, uint64_t> NonOverflows[] = {
+      {0x7fffffffffffffff, 2},
+      {0x5555555555555555, 3},
+      {4294967295, 4294967297},
+  };
+
+  bool Overflow;
+  for (auto &X : Overflows) {
+    APInt A(64, X.first);
+    APInt B(64, X.second);
+    (void)A.umul_ov(B, Overflow);
+    EXPECT_TRUE(Overflow);
+  }
+  for (auto &X : NonOverflows) {
+    APInt A(64, X.first);
+    APInt B(64, X.second);
+    (void)A.umul_ov(B, Overflow);
+    EXPECT_FALSE(Overflow);
+  }
+
+  for (unsigned Bits = 1; Bits <= 5; ++Bits)
+    for (unsigned A = 0; A != 1u << Bits; ++A)
+      for (unsigned B = 0; B != 1u << Bits; ++B) {
+        APInt C = APInt(Bits, A).umul_ov(APInt(Bits, B), Overflow);
+        APInt D = APInt(2 * Bits, A) * APInt(2 * Bits, B);
+        EXPECT_TRUE(D.getHiBits(Bits).isNullValue() != Overflow);
+      }
+}
+
 TEST(APIntTest, SolveQuadraticEquationWrap) {
   // Verify that "Solution" is the first non-negative integer that solves
   // Ax^2 + Bx + C = "0 or overflow", i.e. that it is a correct solution
@@ -2465,6 +2516,26 @@ TEST(APIntTest, SolveQuadraticEquationWrap) {
   // Test all widths in [2..6].
   for (unsigned i = 2; i <= 6; ++i)
     Iterate(i);
+}
+
+TEST(APIntTest, MultiplicativeInverseExaustive) {
+  for (unsigned BitWidth = 1; BitWidth <= 16; ++BitWidth) {
+    for (unsigned Value = 0; Value < (1u << BitWidth); ++Value) {
+      APInt V = APInt(BitWidth, Value);
+      APInt MulInv =
+          V.zext(BitWidth + 1)
+              .multiplicativeInverse(APInt::getSignedMinValue(BitWidth + 1))
+              .trunc(BitWidth);
+      APInt One = V * MulInv;
+      if (!V.isNullValue() && V.countTrailingZeros() == 0) {
+        // Multiplicative inverse exists for all odd numbers.
+        EXPECT_TRUE(One.isOneValue());
+      } else {
+        // Multiplicative inverse does not exist for even numbers (and 0).
+        EXPECT_TRUE(MulInv.isNullValue());
+      }
+    }
+  }
 }
 
 } // end anonymous namespace

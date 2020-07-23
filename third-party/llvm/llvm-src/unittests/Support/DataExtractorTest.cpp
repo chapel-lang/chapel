@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/DataExtractorTest.cpp - DataExtractor tests --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -117,4 +116,14 @@ TEST(DataExtractorTest, LEB128) {
   EXPECT_EQ(8U, offset);
 }
 
+TEST(DataExtractorTest, LEB128_error) {
+  DataExtractor DE(StringRef("\x81"), false, 8);
+  uint32_t Offset = 0;
+  EXPECT_EQ(0U, DE.getULEB128(&Offset));
+  EXPECT_EQ(0U, Offset);
+
+  Offset = 0;
+  EXPECT_EQ(0U, DE.getSLEB128(&Offset));
+  EXPECT_EQ(0U, Offset);
+}
 }

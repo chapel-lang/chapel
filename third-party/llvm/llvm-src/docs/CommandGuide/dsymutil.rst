@@ -1,6 +1,8 @@
 dsymutil - manipulate archived DWARF debug symbol files
 =======================================================
 
+.. program:: dsymutil
+
 SYNOPSIS
 --------
 
@@ -34,7 +36,6 @@ OPTIONS
 
  Produce a flat dSYM file. A ``.dwarf`` extension will be appended to the
  executable name unless the output file is specified using the -o option.
-
 
 .. option:: -z, --minimize
 

@@ -7,7 +7,7 @@ add_clang_unittest(SemaTests
   CodeCompleteTest.cpp
   )
 
-target_link_libraries(SemaTests
+clang_target_link_libraries(SemaTests
   PRIVATE
   clangAST
   clangBasic
@@ -17,3 +17,8 @@ target_link_libraries(SemaTests
   clangSerialization
   clangTooling
   )
+
+target_link_libraries(SemaTests
+  PRIVATE
+  LLVMTestingSupport
+)

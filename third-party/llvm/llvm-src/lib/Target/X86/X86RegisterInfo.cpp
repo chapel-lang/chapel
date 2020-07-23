@@ -1,9 +1,8 @@
 //===-- X86RegisterInfo.cpp - X86 Register Information --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -164,6 +163,7 @@ X86RegisterInfo::getLargestLegalSuperClass(const TargetRegisterClass *RC,
     case X86::RFP32RegClassID:
     case X86::RFP64RegClassID:
     case X86::RFP80RegClassID:
+    case X86::VR512_0_15RegClassID:
     case X86::VR512RegClassID:
       // Don't return a super-class that would shrink the spill size.
       // That can happen with the vector and float classes.
@@ -214,6 +214,21 @@ X86RegisterInfo::getPointerRegClass(const MachineFunction &MF,
   case 4: // Available for tailcall (not callee-saved GPRs).
     return getGPRsForTailCall(MF);
   }
+}
+
+bool X86RegisterInfo::shouldRewriteCopySrc(const TargetRegisterClass *DefRC,
+                                           unsigned DefSubReg,
+                                           const TargetRegisterClass *SrcRC,
+                                           unsigned SrcSubReg) const {
+  // Prevent rewriting a copy where the destination size is larger than the
+  // input size. See PR41619.
+  // FIXME: Should this be factored into the base implementation somehow.
+  if (DefRC->hasSuperClassEq(&X86::GR64RegClass) && DefSubReg == 0 &&
+      SrcRC->hasSuperClassEq(&X86::GR64RegClass) && SrcSubReg == X86::sub_32bit)
+    return false;
+
+  return TargetRegisterInfo::shouldRewriteCopySrc(DefRC, DefSubReg,
+                                                  SrcRC, SrcSubReg);
 }
 
 const TargetRegisterClass *
@@ -677,12 +692,27 @@ static bool tryOptimizeLEAtoMOV(MachineBasicBlock::iterator II) {
   return true;
 }
 
+static bool isFuncletReturnInstr(MachineInstr &MI) {
+  switch (MI.getOpcode()) {
+  case X86::CATCHRET:
+  case X86::CLEANUPRET:
+    return true;
+  default:
+    return false;
+  }
+  llvm_unreachable("impossible");
+}
+
 void
 X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                      int SPAdj, unsigned FIOperandNum,
                                      RegScavenger *RS) const {
   MachineInstr &MI = *II;
-  MachineFunction &MF = *MI.getParent()->getParent();
+  MachineBasicBlock &MBB = *MI.getParent();
+  MachineFunction &MF = *MBB.getParent();
+  MachineBasicBlock::iterator MBBI = MBB.getFirstTerminator();
+  bool IsEHFuncletEpilogue = MBBI == MBB.end() ? false
+                                               : isFuncletReturnInstr(*MBBI);
   const X86FrameLowering *TFI = getFrameLowering(MF);
   int FrameIndex = MI.getOperand(FIOperandNum).getIndex();
 
@@ -694,6 +724,8 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
            MF.getFrameInfo().isFixedObjectIndex(FrameIndex)) &&
            "Return instruction can only reference SP relative frame objects");
     FIOffset = TFI->getFrameIndexReferenceSP(MF, FrameIndex, BasePtr, 0);
+  } else if (TFI->Is64Bit && (MBB.isEHFuncletEntry() || IsEHFuncletEpilogue)) {
+    FIOffset = TFI->getWin64EHFrameIndexRef(MF, FrameIndex, BasePtr);
   } else {
     FIOffset = TFI->getFrameIndexReference(MF, FrameIndex, BasePtr);
   }
@@ -750,7 +782,7 @@ X86RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   }
 }
 
-unsigned X86RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+Register X86RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const X86FrameLowering *TFI = getFrameLowering(MF);
   return TFI->hasFP(MF) ? FramePtr : StackPtr;
 }
@@ -762,4 +794,13 @@ X86RegisterInfo::getPtrSizedFrameRegister(const MachineFunction &MF) const {
   if (Subtarget.isTarget64BitILP32())
     FrameReg = getX86SubSuperRegister(FrameReg, 32);
   return FrameReg;
+}
+
+unsigned
+X86RegisterInfo::getPtrSizedStackRegister(const MachineFunction &MF) const {
+  const X86Subtarget &Subtarget = MF.getSubtarget<X86Subtarget>();
+  unsigned StackReg = getStackRegister();
+  if (Subtarget.isTarget64BitILP32())
+    StackReg = getX86SubSuperRegister(StackReg, 32);
+  return StackReg;
 }
