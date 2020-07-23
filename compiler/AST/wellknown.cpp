@@ -62,6 +62,8 @@ FnSymbol *gChplForallError;
 FnSymbol *gAtomicFenceFn;
 FnSymbol *gChplAfterForallFence;
 FnSymbol *gChplCreateStringWithLiteral;
+FnSymbol *gChplCreateBytesWithLiteral;
+FnSymbol *gChplBuildLocaleId;
 
 /************************************* | **************************************
 *                                                                             *
@@ -353,6 +355,17 @@ static WellKnownFn sWellKnownFns[] = {
     FLAG_UNKNOWN
   },
 
+  {
+    "chpl_createBytesWithLiteral",
+    &gChplCreateBytesWithLiteral,
+    FLAG_UNKNOWN
+  },
+
+  {
+    "chpl_buildLocaleID",
+    &gChplBuildLocaleId,
+    FLAG_UNKNOWN
+  },
 };
 
 void gatherWellKnownFns() {

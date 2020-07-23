@@ -68,6 +68,10 @@ proc masonBuild(args) throws {
       else if arg == '--show' {
         show = true;
       }
+      else if arg.startsWith('--example=') {
+        example = true;
+        compopts.append(arg);
+      }
       else if arg == '--example' {
         example = true;
       }

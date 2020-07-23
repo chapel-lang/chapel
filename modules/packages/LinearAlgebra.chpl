@@ -491,8 +491,6 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
 proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
   if Dom.shape(0) == 1 then
     return reshape(A, transpose(Dom));
-  else if Dom.shape(0) == 1 then
-    return reshape(A, transpose(Dom));
   else {
     const rDom = {Dom.dim(1), Dom.dim(0)};
     var C: [rDom] eltType;
@@ -1957,6 +1955,7 @@ A common usage of this interface might look like this:
 module Sparse {
 
   public use LayoutCS;
+  private use LinearAlgebra;
 
   /* Return an empty CSR domain over parent domain:
      ``{1..rows, 1..rows}``

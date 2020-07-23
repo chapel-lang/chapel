@@ -7,7 +7,7 @@ proc main() {
 }
 
 module bash {
-  public use Other;
+  public use super.Other;
 
   proc ls(args='') {
     var p = Other.makeFoo();

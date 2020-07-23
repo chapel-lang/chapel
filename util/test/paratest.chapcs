@@ -120,14 +120,14 @@ def get_num_oversub_jobs():
 
 def get_good_nodepara():
     """
-    Get a "good" nodepara value: default to 3 for comm=none testing, and
-    2 for comm!=none since that's already oversubscribed. If no other shared
+    Get a "good" nodepara value: default to 4 for comm=none testing, and
+    3 for comm!=none since that's already oversubscribed. If no other shared
     jobs are running bump the nodepara by 1.
     """
 
-    nodepara = 3
+    nodepara = 4
     if chpl_comm.get() != 'none':
-        nodepara = 2
+        nodepara = 3
     if get_num_oversub_jobs() == 0:
         nodepara += 1
     return nodepara

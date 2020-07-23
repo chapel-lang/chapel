@@ -152,13 +152,17 @@ module Bytes {
 
     :returns: A new :mod:`bytes <Bytes>`
   */
-  proc createBytesWithBorrowedBuffer(x: c_string, length=x.size) {
-    //NOTE: This function is heavily used by the compiler to create bytes
-    //literals. So, inlining this causes some bloat in the AST that increases
-    //the compilation time slightly. Therefore, currently we are keeping this
-    //one non-inlined.
+  inline proc createBytesWithBorrowedBuffer(x: c_string, length=x.size) {
     return createBytesWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                            size=length+1);
+  }
+
+  pragma "no doc"
+  proc chpl_createBytesWithLiteral(x: c_string, length: int) {
+    // NOTE: This is a "wellknown" function used by the compiler to create
+    // string literals. Inlining this creates some bloat in the AST, slowing the
+    // compilation.
+    return createBytesWithBorrowedBuffer(x, length);
   }
 
   pragma "last resort"

@@ -14,7 +14,8 @@ gfortranFound=$?
 if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && \
       $CHPL_TARGET_PLATFORM != "cray-xc" &&
       ($CHPL_TARGET_COMPILER == "gnu" ||
-       $CHPL_TARGET_COMPILER == "clang") ]] ; then
+       $CHPL_TARGET_COMPILER == "clang") &&
+       $CHPL_SANITIZE_EXE == "none" ]]; then
   echo False
 else
   echo True

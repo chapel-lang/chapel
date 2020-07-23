@@ -1,9 +1,6 @@
 **** Start forall ****
 	multipleAccessDynamic.chpl:7
 
-Regular domain symbol was not found for array
-	multipleAccessDynamic.chpl:3
-
 Iterated over the domain of
 	multipleAccessDynamic.chpl:3
 
@@ -22,13 +19,13 @@ Potential access
 Potential access
 	multipleAccessDynamic.chpl:9
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	multipleAccessDynamic.chpl:4
 
 Potential access
 	multipleAccessDynamic.chpl:9
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	multipleAccessDynamic.chpl:4
 
 	Marking static candidate

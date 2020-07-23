@@ -38,12 +38,10 @@ note: Consider using the type owned MyClass? instead
 owned-shared-fields3.chpl:78: error: Cannot default-initialize fs: shared MyClass
 note: non-nil class types do not support default initialization
 note: Consider using the type shared MyClass? instead
-owned-shared-fields3.chpl:97: error: Cannot default-initialize a tuple component of the type owned MyClass
-note: non-nil class types do not support default initialization
-note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:98: error: Cannot default-initialize a tuple component of the type owned MyClass
-note: non-nil class types do not support default initialization
-note: Consider using the type owned MyClass? instead
-owned-shared-fields3.chpl:99: error: Cannot default-initialize a tuple component of the type owned MyClass
-note: non-nil class types do not support default initialization
-note: Consider using the type owned MyClass? instead
+owned-shared-fields3.chpl:97: error: cannot default initialize the tuple xxx
+note: element 1 of type owned MyClass has no default value
+note: because it is a non-nilable class - consider the type owned MyClass? instead
+owned-shared-fields3.chpl:98: error: cannot default initialize the tuple yyy
+note: element 1 of type (owned MyClass,int(64)) has no default value
+owned-shared-fields3.chpl:99: error: cannot default initialize the tuple zzz
+note: element 1 of type ((owned MyClass,real(64)),real(64)) has no default value

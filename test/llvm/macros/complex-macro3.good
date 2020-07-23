@@ -1,0 +1,1 @@
+complex-macro3.chpl:2: error: Could not find C type ComplexVar - perhaps it is a complex macro?

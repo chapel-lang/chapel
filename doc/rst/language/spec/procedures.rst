@@ -510,7 +510,7 @@ Abstract Intents Table
 The following table summarizes what these abstract intents mean for each
 type:
 
-=================== ================ ======================= =====
+=================== ================ ======================= ====================================================
 \                   meaning of       meaning of             
 type                ``const`` intent default intent          notes
 ``bool``            ``const in``     ``const in``           
@@ -529,12 +529,13 @@ type                ``const`` intent default intent          notes
 ``sync``            ``const ref``    ``ref``                
 ``string``          ``const ref``    ``const ref``          
 ``bytes``           ``const ref``    ``const ref``          
-``record``          ``const ref``    ``const ref``           see
+``record``          ``const ref``    ``const ref``           see :ref:`Default_Intent_for_Arrays_and_Record_this`
 ``union``           ``const ref``    ``const ref``          
 ``dmap``            ``const ref``    ``const ref``          
 ``domain``          ``const ref``    ``const ref``          
-array               ``const ref``    ``ref`` / ``const ref`` see
-=================== ================ ======================= =====
+array               ``const ref``    ``ref`` / ``const ref`` see :ref:`Default_Intent_for_Arrays_and_Record_this`
+tuple               per element      per element             see :ref:`Tuple_Argument_Intents`
+=================== ================ ======================= ====================================================
 
 .. _The_Const_Intent:
 
@@ -546,8 +547,9 @@ and cannot modify the formal argument within its dynamic scope. Whether
 the actual argument will be passed by ``const in`` or ``const ref``
 intent depends on its type. In general, small values, such as scalar
 types, will be passed by ``const in``; while larger values, such as
-domains and arrays, will be passed by ``const ref`` intent. The earlier
-in this sub-section lists the meaning of the const intent for each type.
+domains and arrays, will be passed by ``const ref`` intent. The
+:ref:`Abstract_Intents_Table` earlier in this sub-section lists the
+meaning of the const intent for each type.
 
 .. _The_Default_Intent:
 
@@ -556,20 +558,13 @@ The Default Intent
 
 When no intent is specified for a formal argument, the *default intent*
 is applied. It is designed to take the most natural/least surprising
-action for the argument, based on its type. The earlier in this
-sub-section lists the meaning of the default intent for each type.
+action for the argument, based on its type. The
+:ref:`Abstract_Intents_Table` earlier in this sub-section lists the
+meaning of the default intent for each type.
 
 Default argument passing for tuples generally matches the default
 argument passing strategy that would be applied if each tuple element
-was passed as a separate argument.
-
-   *Open issue*.
-
-   How tuples should be handled under default intents is an open issue;
-   particularly for heterogeneous tuples whose components would fall
-   into separate categories in the table above. One proposed approach is
-   to apply the default intent to each component of the tuple
-   independently.
+was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
 
 .. _Default_Intent_for_Arrays_and_Record_this:
 

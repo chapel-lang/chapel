@@ -107,7 +107,8 @@ decisions. Here are some strategies to make a good design issue:
 - It can be useful to consider alternative solutions to the problem and
   describe the trade-offs among them.
 - A design issue should have two developers not involved in the effort to review.
-- To find reviewers, send an email to chapel-developers_.
+- To find reviewers, send an email to chapel-developers_. Subscribe to the mailing list
+  before sending an email.
 
   * Use a prefix of ``[Design]`` in the subject header.
   * Include a short summary of the topic, potentially including motivation

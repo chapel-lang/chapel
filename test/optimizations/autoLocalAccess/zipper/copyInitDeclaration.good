@@ -28,7 +28,7 @@ Access base's domain is the iterator
 Potential access
 	copyInitDeclaration.chpl:15
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	copyInitDeclaration.chpl:8
 
 	Marking static candidate

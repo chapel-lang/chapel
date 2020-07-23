@@ -1,0 +1,40 @@
+| locale |
+| -----: |
+|      0 |
+
+| locale |
+| -----: |
+|      0 |
+
+| locale |
+| -----: |
+|      0 |
+
+| locale |
+| -----: |
+|      0 |
+
+| locale |
+| -----: |
+|      0 |
+
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+

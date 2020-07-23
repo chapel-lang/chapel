@@ -526,6 +526,8 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
+  override proc dsiSupportsAutoLocalAccess() param { return true; }
+
   override proc dsiSupportsPrivatization() param return true;
   proc dsiGetPrivatizeData() return dist.pid;
   proc dsiGetReprivatizeData() return 0;

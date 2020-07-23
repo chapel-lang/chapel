@@ -765,7 +765,8 @@ module Random {
   */
   module PCGRandom {
 
-    use RandomSupport;
+    use super.RandomSupport;
+    private use Random;
     public use PCGRandomLib;
     use ChapelLocks;
 
@@ -2452,7 +2453,7 @@ module Random {
   */
   module NPBRandom {
 
-    use RandomSupport;
+    use super.RandomSupport;
     use ChapelLocks;
 
     /*

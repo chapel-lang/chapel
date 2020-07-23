@@ -1,7 +1,7 @@
-use BlockDist;
+use common;
 
-var A = newBlockArr({1..10}, int);
-var B = newBlockArr({1..10}, int);
+var A = createArr({1..10}, int);
+var B = createArr({1..10}, int);
 
 // there must be only one static check, and two accesses optimized
 forall (i, loopIdx) in zip(A.domain, 1..) {

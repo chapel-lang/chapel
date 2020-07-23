@@ -1,0 +1,2 @@
+Test for fixed size array of tuples should execute but issues tuple
+related default initialization errors in internal module code

@@ -125,7 +125,7 @@ module TomlParser {
   use DateTime;
   use Map, List;
   import IO.channel;
-  import TOML.TomlReader.Source;
+  private use TOML.TomlReader;
   import TOML.TomlError;
 
   /* Prints a line by line output of parsing process */
@@ -1204,10 +1204,11 @@ module TomlReader {
       var linetokens: list(string);
       var nonEmptyChar: bool = false;
 
-      const doubleQuotes = '(".*?")',           // ""
-            singleQuotes = "('.*?')",           // ''
-            bracketContents = "(\\[\\w+\\])",   // [_]
+      const bracketContents = "(\\[\\w+\\])",   // [_]
             brackets = "(\\[)|(\\])",           // []
+            tblName = '(\\w+."[^"]+")',         // [somename."0.1.0"]
+            doubleQuotes = '(".*?")',           // ""
+            singleQuotes = "('.*?')",           // ''
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =
@@ -1216,10 +1217,11 @@ module TomlReader {
             ld = "^\\d{4}-\\d{2}-\\d{2}",
             ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
 
-      const pattern = compile('|'.join(doubleQuotes,
-                                       singleQuotes,
-                                       bracketContents,
+      const pattern = compile('|'.join(bracketContents,
                                        brackets,
+                                       tblName,
+                                       doubleQuotes,
+                                       singleQuotes,
                                        commas,
                                        curly,
                                        equals,

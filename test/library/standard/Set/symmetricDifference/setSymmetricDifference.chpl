@@ -32,10 +32,12 @@ proc doTest(type eltType) {
   assert(s2.size == (testIters * 2));
 
   s3 = s1 ^ s2;
+  var s4 = s2 ^ s1;
 
   assert(s3.size == s1.size);
   assert(s1.size == testIters);
   assert(s2.size == (testIters * 2));
+  assert(s4 == s3);
 
   for x in s3 do
     assert(!s1.contains(x) && s2.contains(x));
@@ -46,4 +48,3 @@ proc doTest(type eltType) {
 
 doTest(int);
 doTest(testRecord);
-

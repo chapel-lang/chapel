@@ -1,0 +1,5 @@
+localParamWithinLoopExpr.chpl:10: In function 'main':
+localParamWithinLoopExpr.chpl:12: error: unresolved call 'foo(int(64), int(64))'
+localParamWithinLoopExpr.chpl:1: note: this candidate did not match: foo(x: int, param y: int)
+localParamWithinLoopExpr.chpl:12: note: because non-param call actual argument #2
+localParamWithinLoopExpr.chpl:1: note: is passed to param formal 'param y: int(64)'

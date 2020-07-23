@@ -1951,18 +1951,24 @@ record channel {
 }
 
 pragma "no doc"
-proc =(ref ret:channel, x:channel) {
+proc =(ref lhs:channel, rhs:channel) {
+  if lhs.writing==true && rhs.writing==false {
+    compilerError("cannot assign writing channel to reading channel");
+  } else if lhs.writing==false && rhs.writing == true {
+    compilerError("cannot assign reading channel to writing channel");
+  }
+
   // retain -- release
-  on x.home {
-    qio_channel_retain(x._channel_internal);
+  on rhs.home {
+    qio_channel_retain(rhs._channel_internal);
   }
 
-  on ret.home {
-    qio_channel_release(ret._channel_internal);
+  on lhs.home {
+    qio_channel_release(lhs._channel_internal);
   }
 
-  ret.home = x.home;
-  ret._channel_internal = x._channel_internal;
+  lhs.home = rhs.home;
+  lhs._channel_internal = rhs._channel_internal;
 }
 
 pragma "no doc"
@@ -1974,6 +1980,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
 
 pragma "no doc"
 proc channel.init(x: channel) {
+  compilerWarning("new channel(otherChannel) is deprecated");
   this.writing = x.writing;
   this.kind = x.kind;
   this.locking = x.locking;
@@ -1986,8 +1993,29 @@ proc channel.init(x: channel) {
   }
 }
 
-proc channel.init=(x: this.type) {
-  this.init(x);
+proc channel.init=(x: channel) {
+  if this.type.writing != ? {
+    if this.type.writing==true && x.writing==false {
+      compilerError("cannot init writing channel from reading channel");
+    } else if this.type.writing==false && x.writing==true {
+      compilerError("cannot init reading channel from writing channel");
+    }
+  }
+  this.writing = x.writing;
+
+  // allow the kind and locking fields to be modified in initialization
+  this.kind = if this.type.kind != ? then this.type.kind else x.kind;
+  this.locking = if this.type.locking != ?
+                 then this.type.locking
+                 else x.locking;
+
+  this.home = x.home;
+  this._channel_internal = x._channel_internal;
+  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  this.complete();
+  on x.home {
+    qio_channel_retain(x._channel_internal);
+  }
 }
 
 //

@@ -582,6 +582,874 @@ bool isRefOrTupleWithRef(Symbol* index, int tupleElement)
 }
 
 //
+// Context and helper functions for the pass `cullOverReferences`.
+//
+
+// TODO: Move this into `resolution/loopDetails.cpp` and adjust the function
+// `gatherLoopDetails` to use it.
+struct LoopInfo {
+  bool isForall;
+  IteratorDetails leaderDetails;
+  ForLoop* followerForLoop;
+  std::vector<IteratorDetails> detailsVector;
+};
+
+struct CullRefCtx {
+public:
+
+  void propagateConstnessToMethodReceivers(void);
+  void propagateConstnessToFieldAccesses(void);
+  void collectTuplesAndRefMaybeConstArgs(void);
+  void collectOrLowerContextCallExprs(void);
+  void visitCollectedSymbols(void);
+
+  bool isCallApplicableLoop(SymExpr*, CallExpr*, GraphNode, LoopInfo&);
+  bool checkLoopForDependencies(GraphNode, LoopInfo&, bool&);
+  bool checkBuildTupleCall(SymExpr*, CallExpr*, GraphNode, bool&);
+  bool checkContextCallExpr(CallExpr*, GraphNode, bool&);
+  bool checkTupleCastCall(SymExpr*, CallExpr*, GraphNode, bool&);
+  bool checkAccessorLikeCall(SymExpr*, CallExpr*, GraphNode, bool&);
+  bool checkRefMaybeConstFormal(SymExpr*, CallExpr*, GraphNode, bool&);
+  bool checkGetRefTupleField(CallExpr*, GraphNode, bool&);
+  bool checkSetRefTupleField(CallExpr*, GraphNode, bool&);
+  bool checkCompilerRefTemporaries(CallExpr*, GraphNode, bool&);
+  bool checkOuterVariableInForall(SymExpr*, GraphNode, bool&);
+  void visitCollectedSymbol(GraphNode);
+
+  void propagateNonConstnessThroughRevisitGraph(void);
+  void markRemainingSymsWithUnknownConstnessConst(void);
+  void lowerRemainingContextCallExprs(void);
+  void performLateConstCheck(void);
+
+private:
+
+  std::vector<GraphNode> collectedSymbols;
+  revisitUnknowns_t unknownConstSyms;
+  revisitGraph_t revisitGraph;
+  std::map<BaseAST*, BaseAST*> reasonNotConst;
+};
+
+// Forward-flow constness for `FLAG_REF_TO_CONST_WHEN_CONST_THIS`.
+void CullRefCtx::propagateConstnessToMethodReceivers(void) {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+
+    if (!fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+      continue;
+
+    for_SymbolSymExprs(se, fn) {
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (fn != call->resolvedFunction())
+          continue;
+
+        SymExpr* thisActual   = toSymExpr(call->get(1));
+        Symbol*  actualSymbol = thisActual->symbol();
+
+        if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+          if (!parentCall->isPrimitive(PRIM_MOVE))
+            continue;
+
+          SymExpr* lhs    = toSymExpr(parentCall->get(1));
+          Symbol*  lhsSym = lhs->symbol();
+
+          if (actualSymbol->qualType().isConst())
+            markSymbolConst(lhsSym);
+        }
+      }
+    }
+  }
+}
+
+// Forward-flow constness for getting refs to tuples. This would be handled
+// by a FLAG_REF_TO_CONST_WHEN_CONST_THIS accessor but for whatever reason
+// the compiler doesn't always use that for tuples.
+// TODO: Can it?
+void CullRefCtx::propagateConstnessToFieldAccesses(void) {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (!call->isPrimitive(PRIM_GET_MEMBER))
+      continue;
+
+    CallExpr* move = toCallExpr(call->parentExpr);
+    if (!move->isPrimitive(PRIM_MOVE))
+      continue;
+
+    SymExpr* aggregateSe = toSymExpr(call->get(1));
+    SymExpr* lhsSe = toSymExpr(move->get(1));
+    AggregateType* at = toAggregateType(aggregateSe->getValType());
+
+    // note, at might be NULL for unmanaged SomeClass
+    if (at == NULL || at->isClass())
+      continue;
+
+    if (aggregateSe->symbol()->qualType().isConst())
+      markSymbolConst(lhsSe->symbol());
+  }
+}
+
+// Collect referential tuples and arguments marked `INTENT_REF_MAYBE_CONST`
+// for later analysis.
+void CullRefCtx::collectTuplesAndRefMaybeConstArgs(void) {
+
+  forv_Vec(ArgSymbol, arg, gArgSymbols) {
+    DEBUG_SYMBOL(arg);
+
+    // Don't try to delve into `_build_tuple`.
+    if (arg->defPoint->parentSymbol->hasFlag(FLAG_BUILD_TUPLE))
+      continue;
+
+    // Ditto for tuple cast functions.
+    if (arg->defPoint->parentSymbol->hasFlag(FLAG_TUPLE_CAST_FN))
+      continue;
+
+    // If the argument is a tuple with reference fields, explore it...
+    AggregateType* argAt = toAggregateType(arg->getValType());
+    if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
+        containsReferenceFields(argAt)) {
+
+      AggregateType* tupleType  = toAggregateType(arg->type);
+      int            fieldIndex = 1;
+
+      // Collect reference or tuple fields for later.
+      for_fields(field, tupleType) {
+        if (field->isRef() ||
+            field->type->symbol->hasFlag(FLAG_TUPLE)) {
+          collectedSymbols.push_back(makeNode(arg, fieldIndex));
+        }
+        fieldIndex++;
+      }
+
+    } else if (arg->intent == INTENT_REF_MAYBE_CONST) {
+      collectedSymbols.push_back(makeNode(arg, 0));
+    }
+  }
+}
+
+// Try to lower ContextCallExprs, and collect them if they need more
+// analysis first.
+void CullRefCtx::collectOrLowerContextCallExprs(void) {
+  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+    CallExpr* move = toCallExpr(cc->parentExpr);
+    INT_ASSERT(move);
+    INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+
+    SymExpr* lhs = toSymExpr(move->get(1));
+    INT_ASSERT(lhs);
+
+    // Lower certain degenerate cases.
+    if (firstPassLowerContextCall(cc)) {
+      // ContextCall removed, no further action required on it.
+    } else {
+      // ContextCall needs analysis before we can lower it.
+      collectedSymbols.push_back(makeNode(lhs->symbol(), 0));
+    }
+  }
+}
+
+// Loop through all the symbols collected so far and analyze them. 
+void CullRefCtx::visitCollectedSymbols(void) {
+  for (size_t i = 0; i < collectedSymbols.size(); i++) {
+    GraphNode node = collectedSymbols[i];
+    visitCollectedSymbol(node);
+  }
+}
+
+bool CullRefCtx::isCallApplicableLoop(SymExpr* se, CallExpr* call,
+                                      GraphNode node, LoopInfo& info) {
+  bool foundLoop = false;
+
+  if (ForallStmt* pfs = isForallIterExpr(call)) {
+    gatherLoopDetails(pfs, info.isForall, info.leaderDetails,
+                      info.followerForLoop, info.detailsVector);
+    foundLoop = true;
+  } else {
+
+    // Otherwise, look for a ForLoop / old style forall.
+    // Check if sym is iterated over. In that case, what's the
+    // index variable?
+
+    // Find enclosing PRIM_MOVE
+    CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
+    if (move && !move->isPrimitive(PRIM_MOVE))
+      move = NULL;
+
+    if (move != NULL) {
+
+      // Now, LHS of PRIM_MOVE is iterator variable
+      SymExpr* lhs = toSymExpr(move->get(1));
+      Symbol* iterator = lhs->symbol();
+      ForLoop* forLoop = NULL;
+      ForallStmt*   fs = NULL;
+
+      // TODO: expand isChplIterOrLoopIterator to watch for ForallStmt?
+
+      // marked with chpl__iter or with type iterator class?
+      if (isChplIterOrLoopIterator(iterator, forLoop)) {
+
+        // Scroll through exprs until we find ForLoop.
+        if (!forLoop) {
+          for (Expr* e = move; e != NULL; e = e->next) {
+            if ((forLoop = toForLoop(e)) || (fs = toForallStmt(e)))
+              break;
+          }
+        }
+
+        if (forLoop) {
+
+          // Gather the loop details to understand the
+          // correspondence between what was iterated over
+          // and the index variables.
+          gatherLoopDetails(forLoop, info.isForall, info.leaderDetails,
+                            info.followerForLoop, info.detailsVector);
+          foundLoop = true;
+        } else if (fs != NULL) {
+
+          // Ditto if it is a ForallStmt.
+          gatherLoopDetails(fs, info.isForall, info.leaderDetails,
+                            info.followerForLoop, info.detailsVector);
+          foundLoop = true;
+        }
+      }
+    }
+  }
+
+  return foundLoop;
+}
+
+bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
+                                          bool &revisit) {
+  Symbol* sym = node.variable;
+
+  for (size_t i = 0; i < info.detailsVector.size(); i++) {
+    bool iteratorYieldsConstWhenConstThis = false;
+    IteratorDetails& entry = info.detailsVector[i];
+
+    Expr* iterable = entry.iterable;
+    int iterableTupleElement = entry.iterableTupleElement;
+    Symbol* index = entry.index;
+    int indexTupleElement = entry.indexTupleElement;
+    FnSymbol* iteratorFn  = entry.iterator;
+    SymExpr* iterableSe = toSymExpr(iterable);
+
+    // Also check if we are iterating using these() method
+    // ex. functions/ferguson/ref-pair/const-error-iterated*
+    if (!iterableSe)
+      if (CallExpr* iterableCall = toCallExpr(iterable))
+        if (iterableCall->isNamed("these"))
+          iterableSe = toSymExpr(iterableCall->get(1));
+
+    // In the future this could be based upon ref-pair iterators.
+    // For now, the compiler makes this adjustment for
+    // any iterator methods on array implementation classes.
+    // The goal here is that iterating over an array
+    // and modifying the index variable should make us...
+    if (iteratorFn->isMethod() &&
+        (isArrayClass(iteratorFn->getFormal(1)->type) ||
+         iteratorFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))) {
+      iteratorYieldsConstWhenConstThis = true;
+    }
+
+    // Note, if we wanted to use the return intent
+    // of the iterator, it is overwritten in protoIteratorClass.
+    // This flag should be set for array iteration
+    if (iterableSe != NULL &&
+        iterableSe->symbol() == sym &&
+        (iterableTupleElement == 0 ||
+         iterableTupleElement == node.fieldIndex) &&
+        iteratorYieldsConstWhenConstThis &&
+        index != NULL &&
+        isRefOrTupleWithRef(index, indexTupleElement)) {
+
+      // Now the const-ness of the array depends
+      // on whether or not the yielded value is set
+      GraphNode srcNode = makeNode(index, indexTupleElement);
+      collectedSymbols.push_back(srcNode);
+      addDependency(revisitGraph, srcNode, node);
+      revisit = true;
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Is the SymExpr passed to a `_build_tuple` call for a tuple that stores
+// the SymExpr in a ref field? If so, add the tuple as a dependency.
+bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
+                                     GraphNode node, bool &revisit) {
+
+  if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (!calledFn->hasFlag(FLAG_BUILD_TUPLE))
+      return false;
+
+    if (CallExpr* move = toCallExpr(call->parentExpr)) {
+      if (!move->isPrimitive(PRIM_MOVE))
+        return false;
+
+      if (!considerAllowRefCall(move, calledFn))
+        return false;
+
+      SymExpr* lhs       = toSymExpr(move->get(1));
+      Symbol*  lhsSymbol = lhs->symbol();
+      int      j         = 1;
+
+      // Infer the tuple field index from the actual argument index.
+      for_actuals(actual, call) {
+        if (se == actual) break;
+        j++;
+      }
+
+      INT_ASSERT(1 <= j && j <= call->numActuals());
+
+      Symbol*        tupleField = NULL;
+      AggregateType* tupleType  = toAggregateType(lhsSymbol->type);
+      int            k          = 1;
+
+      // Walk tuple fields until we hit the relevant index.
+      for_fields(field, tupleType) {
+        if (j == k) tupleField = field;
+        k++;
+      }
+
+      // If it is a ref field, collect it for later.
+      if (tupleField->isRef()) {
+        DEBUG_SYMBOL(lhsSymbol);
+
+        GraphNode srcNode = makeNode(lhsSymbol, j);
+        collectedSymbols.push_back(srcNode);
+        addDependency(revisitGraph, srcNode, node);
+        revisit = true;
+
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Check for the case that sym is passed a ContextCall and the determination
+// depends on which branch is chosen.
+bool CullRefCtx::checkContextCallExpr(CallExpr* call, GraphNode node,
+                                      bool &revisit) {
+  Symbol* sym = node.variable;
+
+  if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
+    if (!contextCallItDepends(sym, cc))
+      return false;
+
+    // since lhs->symbol() is the result of a move from
+    // a ContextCallExpr, it will already be in the list
+    // of collectedSymbols.
+    //
+    // TODO: This isn't quite right, since the called ref-pair
+    // could still use a ref-if-modified argument by ref in
+    // both branches... or the ref-return version could
+    // be const ref on the actual, while the const-ref-return
+    // version is ref on the actual.
+    CallExpr* move      = toCallExpr(cc->parentExpr);
+    SymExpr*  lhs       = toSymExpr(move->get(1));
+    Symbol*   lhsSymbol = lhs->symbol();
+
+    // Make a note that determining how lhs->symbol()
+    // is used (is it const or not?) will allow us to
+    // resolve this ContextCallExpr.
+    GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+    addDependency(revisitGraph, srcNode, node);
+    revisit = true;
+
+    return true;
+  }
+
+  return false;
+}
+
+// Check for the case that sym is in a call to a tuple cast function. We
+// consider it const if the result of the tuple cast is const.
+bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
+                                    GraphNode node, bool &revisit) {
+
+  if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (!calledFn->hasFlag(FLAG_TUPLE_CAST_FN))
+      return false;
+
+    CallExpr* move = toCallExpr(call->parentExpr);
+
+    if (move && move->isPrimitive(PRIM_MOVE)) {
+      SymExpr*  lhs       = toSymExpr(move->get(1));
+      Symbol*   lhsSymbol = lhs->symbol();
+      GraphNode srcNode   = makeNode(lhsSymbol, node.fieldIndex);
+
+      collectedSymbols.push_back(srcNode);
+      addDependency(revisitGraph, srcNode, node);
+      revisit = true;
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+// Check for the case that sym is the _this actual for a function marked with
+// the flag FLAG_REF_TO_CONST_WHEN_CONST_THIS (which is used for field
+// accessors among other things). In that event, it depends on how the
+// returned value is used.
+bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
+                                       GraphNode node, bool &revisit) {
+  Symbol* sym = node.variable;
+
+  if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (!calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+      return false;
+
+    ArgSymbol* formal = actual_to_formal(se);
+    if (!formal->hasFlag(FLAG_ARG_THIS))
+      return false;
+
+    CallExpr* move = toCallExpr(call->parentExpr);
+
+    if (move && move->isPrimitive(PRIM_MOVE)) {
+      SymExpr* lhs       = toSymExpr(move->get(1));
+      Symbol*  lhsSymbol = lhs->symbol();
+
+      if (lhsSymbol->isRef() && lhsSymbol != sym) {
+        GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+        collectedSymbols.push_back(srcNode);
+        addDependency(revisitGraph, srcNode, node);
+        revisit = true;
+
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Check for the case that sym is passed to an array formal with blank
+// intent. In that case, it depends on the determination of the called
+// function.
+bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
+                                          GraphNode node, bool &revisit) {
+
+  if (FnSymbol* calledFn = call->resolvedFunction()) {
+    if (calledFn->hasFlag(FLAG_BUILD_TUPLE))
+      return false;
+
+    ArgSymbol* formal = actual_to_formal(se);
+    INT_ASSERT(formal);
+
+    if (formal->intent != INTENT_REF_MAYBE_CONST)
+      return false;
+
+    // No need to add formal to `collectedSymbols` because we already did
+    // so in `collectRefMaybeConstArgs`.
+
+    // Make a note that determining how formal
+    // is used (const or not?) will allow us to resolve
+    // this Symbol's const-ness.
+    GraphNode srcNode = makeNode(formal, node.fieldIndex);
+    addDependency(revisitGraph, srcNode, node);
+    revisit = true;
+
+    return true;
+  }
+
+  return false;
+}
+
+// Case: extracting a reference field.
+// from a tuple into another Symbol
+bool CullRefCtx::checkGetRefTupleField(CallExpr* call,
+                                                GraphNode node,
+                                                bool &revisit) {
+  Symbol* sym = node.variable;
+
+  if (!call->isPrimitive(PRIM_GET_MEMBER_VALUE))
+    return false;
+
+  if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+    if (!parentCall->isPrimitive(PRIM_MOVE))
+      return false;
+
+    SymExpr* lhs       = toSymExpr(parentCall->get(1));
+    Symbol*  lhsSymbol = lhs->symbol();
+
+    if (lhsSymbol->isRef()) {
+      SymExpr*       fieldSe    = toSymExpr(call->get(2));
+      Symbol*        field      = fieldSe->symbol();
+
+      // TODO: Is this safe/invariant? Old is...
+      //    AggregateType* tupType = 
+      //      toAggregateType(call->get(1)->getValType());
+      SymExpr*       tupleSe    = toSymExpr(call->get(1));
+      INT_ASSERT(tupleSe);
+
+      AggregateType* tupleType    = toAggregateType(tupleSe->getValType());
+      int            fieldIndex = 1;
+
+      for_fields(curField, tupleType) {
+        if (curField == field) break;
+        fieldIndex++;
+      }
+
+      INT_ASSERT(fieldIndex <= tupleType->numFields());
+
+      // Ignore if the field set isn't the current field.
+      if (node.fieldIndex == 0 || node.fieldIndex == fieldIndex) {
+
+        // Add a dependency to the graph. Knowing if lhsSymbol is set will
+        // tell us if sym tuple element i is set.
+        GraphNode srcNode = makeNode(lhsSymbol, 0);
+        collectedSymbols.push_back(srcNode);
+        GraphNode tupFieldNode = makeNode(sym, fieldIndex);
+        addDependency(revisitGraph, srcNode, tupFieldNode);
+        revisit = true;
+
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// Case: creating a temporary from one tuple to another tuple.
+bool CullRefCtx::checkSetRefTupleField(CallExpr* call, GraphNode node,
+                                       bool &revisit) {
+  Symbol* sym = node.variable;
+
+  if (!call->isPrimitive(PRIM_SET_MEMBER))
+    return false;
+
+  SymExpr* base       = toSymExpr(call->get(1));
+  Symbol*  baseSymbol = base->symbol();
+
+  SymExpr* rhs        = toSymExpr(call->get(3));
+  Symbol*  rhsSymbol  = rhs->symbol();
+
+  if (rhsSymbol != sym)
+    return false;
+
+  SymExpr*       fieldSe    = toSymExpr(call->get(2));
+  Symbol*        field      = fieldSe->symbol();
+  AggregateType* tupleType  = toAggregateType(base->getValType());
+  int            fieldIndex = 1;
+
+  for_fields(curField, tupleType) {
+    if (curField == field) break;
+    fieldIndex++;
+  }
+
+  INT_ASSERT(fieldIndex <= tupleType->numFields());
+
+  // Ignore if the field set isn't the current field.
+  if (node.fieldIndex == 0 || node.fieldIndex == fieldIndex) {
+
+    // Add a dependency in the graph. Knowing if the tuple field is set will
+    // tell us if the RHS is set.
+    GraphNode srcNode = makeNode(baseSymbol, fieldIndex);
+    collectedSymbols.push_back(srcNode);
+    addDependency(revisitGraph, srcNode, makeNode(rhsSymbol, 0));
+    revisit = true;
+
+    return true; 
+  }
+
+  return false;
+}
+
+// Case: sym is moved to a compiler temp, ex.
+//   PRIM_MOVE tmp, PRIM_ADDR_OF sym
+bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
+                                             bool &revisit) {
+  Symbol* sym = node.variable;
+  CallExpr* call2 = call;
+
+  if (call->isPrimitive(PRIM_ADDR_OF) ||
+      call->isPrimitive(PRIM_SET_REFERENCE) ||
+      call->isPrimitive(PRIM_GET_MEMBER) ||
+      call->isPrimitive(PRIM_GET_SVEC_MEMBER)) {
+    call2 = toCallExpr(call->parentExpr);
+  }
+
+  if (!call2->isPrimitive(PRIM_MOVE))
+    return false;
+
+  SymExpr* lhs       = toSymExpr(call2->get(1));
+  Symbol*  lhsSymbol = lhs->symbol();
+
+  if (lhsSymbol != sym && isRefOrTupleWithRef(lhsSymbol, node.fieldIndex)) {
+    GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+    collectedSymbols.push_back(srcNode);
+    addDependency(revisitGraph, srcNode, node);
+    revisit = true;
+
+    return true;
+  }
+
+  return false;
+}
+
+// Case: sym is the outer variable in a forall intent.
+bool CullRefCtx::checkOuterVariableInForall(SymExpr* se, GraphNode node,
+                                            bool &revisit) {
+
+  if (ShadowVarSymbol* svar = refShadowVarForOuterVarExpr(se)) {
+    GraphNode srcNode = makeNode(svar, node.fieldIndex);
+    collectedSymbols.push_back(srcNode);
+    addDependency(revisitGraph, srcNode, node);
+    revisit = true;
+
+    return true;
+  }
+
+  return false;
+}
+
+//
+// Next, determine the const-ness of a collected symbol. Do this by looking
+// at SymExprs referring to that symbol.
+//
+// There are three cases for a given SymExpr:
+//  1) it's a write (ie def)
+//  2) it's a read (ie use)
+//  3) we can't tell yet because it depends on another Symbol's constness.
+//     This could be due to recursion with INTENT_REF_MAYBE_CONST ArgSymbols
+//     or due to nested calls with ContextCallExpr.
+//
+// We will set Qualifier or Intent to mark symbols const,
+// except for tuple elements, we'll update constTupleElements.
+//
+// Note: code in this loop can append to collectedSymbols.
+// TODO: it could visit the same Symbol more than once
+//       i.e. the same Symbol could be added to collectedSymbols multiple
+//       times
+// TODO: I think it would be nicer to structure this pass explicitly
+//       as function-by-function followed by an interprocedural portion.
+//       That might make the interactions clearer, but it would probably
+//       be more complex code. But faster.
+//       E.g. we could process build_tuple calls and consider the
+//       arguments of interest at once, instead of looking through
+//       build_tuple calls for each argument of interest as below.
+//
+void CullRefCtx::visitCollectedSymbol(GraphNode node) {
+  Symbol* sym = node.variable;
+
+  DEBUG_SYMBOL(sym);
+
+  AggregateType* symAt = toAggregateType(sym->getValType());
+  bool symHasRefFields = symAt && containsReferenceFields(symAt);
+
+  // If we already determined that a symbol is const, no need to
+  // do additional work here.
+  if (sym->qualType().isConst() && !symHasRefFields)
+    return;
+
+  if (symHasRefFields) {
+
+    // If it's a tuple, create the field qualifiers if needed.
+    createFieldQualifiersIfNeeded(sym);
+
+    bool allConst = (sym->fieldQualifiers[0] != QUAL_REF);
+    int i = 1;
+    for_fields(field, symAt) {
+      if (field->isRef() && sym->fieldQualifiers[i] == QUAL_REF) {
+        allConst = false;
+      }
+      i++;
+    }
+
+    // If it has ref fields, and all of them are const, do no more here.
+    if (allConst)
+      return;
+  }
+
+  bool setter = false;
+  bool revisit = false;
+
+  for_SymbolSymExprs(se, sym) {
+
+    // Check several cases that might require other information to resolve.
+    // These can be added to the revisitGraph.
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+
+      // Case: some form of loop.
+      {
+        LoopInfo loopInfo;
+
+        // Gathers info about a potential loop. It's important that we
+        // check loops before `_build_tuple` calls because the index
+        // variable might be a tuple.
+        bool isLoop = isCallApplicableLoop(se, call, node, loopInfo);
+
+        if (isLoop) {
+          if (checkLoopForDependencies(node, loopInfo, revisit)) {
+            continue;
+          }
+        }
+      }
+
+      // Case: 'call' invokes build_tuple().
+      if (checkBuildTupleCall(se, call, node, revisit))
+        continue;
+
+      // Case: ContextCallExpr.
+      if (checkContextCallExpr(call, node, revisit))
+        continue;
+
+      // Case: tuple cast function.
+      if (checkTupleCastCall(se, call, node, revisit))
+        continue;
+
+      // Case: accessor-like function.
+      if (checkAccessorLikeCall(se, call, node, revisit))
+        continue;
+
+      // Case: intent-ref-maybe-const formal.
+      if (checkRefMaybeConstFormal(se, call, node, revisit))
+        continue;
+
+      // Case: extracting tuple ref field into another symbol.
+      if (checkGetRefTupleField(call, node, revisit))
+        continue;
+
+      // Case: transferring a ref field from one tuple to another.
+      // TODO: Check for the case of extracting a star tuple field?
+      if (checkSetRefTupleField(call, node, revisit))
+        continue;
+
+      // Case: symbol is moved to a compiler temporary.
+      if (checkCompilerRefTemporaries(call, node, revisit))
+        continue;
+    }
+
+    // Case: symbol is the outer variable in a forall intent.
+    if (checkOuterVariableInForall(se, node, revisit)) {
+      continue;
+    }
+
+    // Determine if se represents a "setting" or a "getting" mention of sym
+    if (!setter && symExprIsSet(se)) {
+      setter              = true;
+      reasonNotConst[sym] = se;
+
+      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+        if (call->isResolved()) {
+          ArgSymbol* formal = actual_to_formal(se);
+          reasonNotConst[se] = formal;
+        }
+      }
+    }
+  }
+
+  // If a symbol has been set, then don't bother revisiting it. Otherwise,
+  // add it to `unknownConstSyms`, because it might still be set
+  // indirectly.
+  if (revisit) {
+    if (setter) {
+      revisit = false;
+    } else {
+      unknownConstSyms.insert(node);
+
+      if (shouldTrace(node.variable))
+        printf("Adding to unknownConstSyms %i,%i\n", node.variable->id,
+               node.fieldIndex);
+    }
+  }
+
+  // If symbol is not going to be revisited, then set its constness now.
+  // If the symbol has been set, it can't be const. Otherwise, we're
+  // sure it's a use and can mark it const.
+  if (!revisit) {
+    if (setter) {
+      markNotConst(node);
+    } else {
+      markConst(node);
+    }
+  }
+}
+
+// Handle the graph of revisits. Note this could be a cyclic graph when there
+// are recursive functions. This algorithm could be naturally represented in
+// terms of Strongly Connected Components analysis, but for now it's just
+// doing it manually.
+void CullRefCtx::propagateNonConstnessThroughRevisitGraph(void) {
+
+  // First, propagate non-const-ness through the graph.
+  for (revisitGraph_t::iterator it = revisitGraph.begin();
+       it != revisitGraph.end();
+       ++it) {
+
+    GraphNode node = it->first;
+    Symbol* sym = node.variable;
+
+    DEBUG_SYMBOL(sym);
+
+    if (unknownConstSyms.count(node) == 0) {
+      if (!isConst(node)) {
+
+        // If sym has known const-ness, and it's a setter, propagate that
+        // information in the graph.
+        transitivelyMarkNotConst(node, revisitGraph, unknownConstSyms,
+            reasonNotConst);
+      }
+    }
+  }
+}
+
+// Next, mark any remaining symbols with unknown const-ness as const, since
+// they are never set (this accounts for cycles possibly due to recursive
+// functions with blank-intent array formals).
+void CullRefCtx::markRemainingSymsWithUnknownConstnessConst(void) {
+  for (revisitUnknowns_t::iterator it = unknownConstSyms.begin();
+       it != unknownConstSyms.end();
+       ++it) {
+
+    GraphNode node = *it;
+    Symbol* sym = node.variable;
+
+    // Anything we didn't remove from unknownConstSyms must be in a cycle of
+    // const-ness.
+    DEBUG_SYMBOL(sym);
+    markConst(node);
+  }
+}
+
+// Lower remaining ContextCallExprs.
+void CullRefCtx::lowerRemainingContextCallExprs(void) {
+  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
+
+    // Some ContextCallExprs have already been removed in
+    // `collectOrLowerContextCallExprs`.
+    if (!cc->inTree())
+      continue;
+
+    CallExpr* move = toCallExpr(cc->parentExpr);
+
+    bool notConst = false;
+    Symbol* lhsSymbol = NULL;
+
+    if (move) {
+      SymExpr* lhs = toSymExpr(move->get(1));
+      lhsSymbol = lhs->symbol();
+      Qualifier qual = lhsSymbol->qualType().getQual();
+
+      if (qual == QUAL_REF)
+        notConst = true;
+    }
+
+    lowerContextCallComputeConstRef(cc, notConst, lhsSymbol);
+  }
+}
+
+// We already changed INTENT_REF_MAYBE_CONST in markConst / markNotConst so
+// there is nothing else to do here for ArgSymbols.
+void CullRefCtx::performLateConstCheck(void) {
+  lateConstCheck(&reasonNotConst);
+}
+
+//
 // This function adjusts calls to functions that have both
 // a ref and non-ref version. These calls are represented with
 // a ContextCallExpr. Whether to use the ref or value/const-ref
@@ -623,730 +1491,51 @@ void cullOverReferences() {
      what LLVM calls a CallGraphSCCPass.
   */
 
-
+  //
   // Determine const-ness of two types of reference symbols:
   //  1) the symbol storing the ref/const ref result of a ref-pair invocation
   //     (aka the result of a ContextCallExpr).
   //  2) ArgSymbols with intent INTENT_REF_MAYBE_CONST
-
+  //
   // Also, adjust ContextCallExprs including the
   // case when the result is not saved.
-
-  // First, collect Symbols that we need to determine the const-ness of
-  std::vector<GraphNode> collectedSymbols;
-
-  revisitUnknowns_t unknownConstSyms;
-
-  std::map<BaseAST*, BaseAST*> reasonNotConst;
-
-  revisitGraph_t revisitGraph;
-
-  // forward-flow constness for FLAG_REF_TO_CONST_WHEN_CONST_THIS
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
-      for_SymbolSymExprs(se, fn) {
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (fn == call->resolvedFunction()) {
-            SymExpr* thisActual   = toSymExpr(call->get(1));
-            Symbol*  actualSymbol = thisActual->symbol();
-
-            if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-              if (parentCall->isPrimitive(PRIM_MOVE)) {
-                SymExpr* lhs    = toSymExpr(parentCall->get(1));
-                Symbol*  lhsSym = lhs->symbol();
-
-                if (actualSymbol->qualType().isConst()) {
-                  markSymbolConst(lhsSym);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  // forward-flow constness for getting refs to tuples
-  // this would be handled by a FLAG_REF_TO_CONST_WHEN_CONST_THIS accessor
-  // but for whatever reason the compiler doesn't always use that for tuples.
-  forv_Vec(CallExpr, call, gCallExprs) {
-    if (call->isPrimitive(PRIM_GET_MEMBER)) {
-      CallExpr* move = toCallExpr(call->parentExpr);
-      if (move->isPrimitive(PRIM_MOVE)) {
-        SymExpr* aggregateSe = toSymExpr(call->get(1));
-        SymExpr* lhsSe = toSymExpr(move->get(1));
-        AggregateType* at = toAggregateType(aggregateSe->getValType());
-        // note, at might be NULL for unmanaged SomeClass
-        if (at && !at->isClass() && aggregateSe->symbol()->qualType().isConst())
-            markSymbolConst(lhsSe->symbol());
-      }
-    }
-  }
-
-
-  // Determine const-ness of ArgSymbols with INTENT_REF_MAYBE_CONST
-  forv_Vec(ArgSymbol, arg, gArgSymbols) {
-    DEBUG_SYMBOL(arg);
-
-    // Don't try to delve into _build_tuple
-    if (arg->defPoint->parentSymbol->hasFlag(FLAG_BUILD_TUPLE)) {
-      continue;
-    }
-
-    if (arg->defPoint->parentSymbol->hasFlag(FLAG_TUPLE_CAST_FN)) {
-      continue;
-    }
-
-    AggregateType* argAt = toAggregateType(arg->getValType());
-    if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
-        containsReferenceFields(argAt)) {
-      AggregateType* tupleType  = toAggregateType(arg->type);
-      int            fieldIndex = 1;
-
-      for_fields(field, tupleType) {
-        if (field->isRef() ||
-            field->type->symbol->hasFlag(FLAG_TUPLE)) {
-          collectedSymbols.push_back(makeNode(arg,fieldIndex));
-        }
-
-        fieldIndex++;
-      }
-    } else if (arg->intent == INTENT_REF_MAYBE_CONST) {
-      collectedSymbols.push_back(makeNode(arg,0));
-    }
-  }
-
-  // Determine const-ness of the results of a ContextCallExpr
-  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
-    CallExpr* move = toCallExpr(cc->parentExpr);
-    INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
-
-    SymExpr* lhs = toSymExpr(move->get(1));
-
-    INT_ASSERT(lhs);
-
-    // Lower certain degenerate cases
-    if (firstPassLowerContextCall(cc)) {
-      // ContextCall removed, no further action required on it
-    } else {
-      // ContextCall needs more analysis, do this in 2nd step
-      collectedSymbols.push_back(makeNode(lhs->symbol(), 0));
-    }
-  }
-
-  // Next, determine the const-ness of the collectedSymbols.
-  // Do this by looking at SymExprs referring to that symbol.
-
-  // There are three cases for a given SymExpr:
-  //  1) it's a write (ie def)
-  //  2) it's a read (ie use)
-  //  3) we can't tell yet because it depends on another Symbol's constness.
-  //     This could be due to recursion with INTENT_REF_MAYBE_CONST ArgSymbols
-  //     or due to nested calls with ContextCallExpr.
-
-  // We will set Qualifier or Intent to mark symbols const,
-  // except for tuple elements, we'll update constTupleElements.
   //
-  // Note: code in this loop can append to collectedSymbols.
-  // TODO: it could visit the same Symbol more than once
-  //       i.e. the same Symbol could be added to collectedSymbols multiple
-  //       times
-  // TODO: I think it would be nicer to structure this pass explicitly
-  //       as function-by-function followed by an interprocedural portion.
-  //       That might make the interactions clearer, but it would probably
-  //       be more complex code. But faster.
-  //       E.g. we could process build_tuple calls and consider the
-  //       arguments of interest at once, instead of looking through
-  //       build_tuple calls for each argument of interest as below.
-  //
-  for(size_t i = 0; i < collectedSymbols.size(); i++) {
 
-    GraphNode node = collectedSymbols[i];
-    Symbol* sym = node.variable;
+  // Set up the context.
+  CullRefCtx ctx;
 
-    DEBUG_SYMBOL(sym);
+  // Start by propagating constness to `this` for functions marked with
+  // `REF_TO_CONST_WHEN_CONST_THIS`.
+  ctx.propagateConstnessToMethodReceivers();
 
-    AggregateType* symAt = toAggregateType(sym->getValType());
-    bool symHasRefFields = symAt && containsReferenceFields(symAt);
+  // Next, propagate constness to field accesses for tuples.
+  ctx.propagateConstnessToFieldAccesses();
 
-    // If we already determined that a symbol is const, no need to
-    // do additional work here.
-    if (sym->qualType().isConst() && !symHasRefFields)
-      continue;
+  // Collect ArgSymbols that are tuples containing reference fields.
+  // Collect ArgSymbols marked with `INTENT_REF_MAYBE_CONST`.
+  ctx.collectTuplesAndRefMaybeConstArgs();
 
-    // If it's a tuple, create the field qualifiers if needed
-    if (symHasRefFields) {
-      createFieldQualifiersIfNeeded(sym);
+  // Try to lower ContextCallExprs and collect those we cannot.
+  ctx.collectOrLowerContextCallExprs();
 
-      // If it has ref fields, and all of them are const, do no more here
-      bool allConst = (sym->fieldQualifiers[0] != QUAL_REF);
-      int i = 1;
-      for_fields(field, symAt) {
-        if (field->isRef()) {
-          if (sym->fieldQualifiers[i] == QUAL_REF)
-            allConst = false;
-        }
-        i++;
-      }
-      if (allConst)
-        continue;
-    }
+  // Analyze the symbols we've collected so far. Builds a dependency graph
+  // based on uses of symbols. At the end of each visit, either mark a
+  // symbol as definitively const or non-const, or add it to a list of
+  // symbols to visit later.
+  ctx.visitCollectedSymbols();
 
-    bool setter = false;
-    bool revisit = false;
+  // Propagate non-constness through the dependency graph we built when
+  // visiting collected symbols.
+  ctx.propagateNonConstnessThroughRevisitGraph();
 
-    for_SymbolSymExprs(se, sym) {
+  // Mark any remaining unknown symbols const because they are never set.
+  ctx.markRemainingSymsWithUnknownConstnessConst();
 
-      // Check several cases that might require other information
-      // to resolve. These can be added to the revisitGraph.
-      if (CallExpr* call = toCallExpr(se->parentExpr)) {
+  // We have enough information to lower all ContextCallExprs now.
+  ctx.lowerRemainingContextCallExprs();
 
-        // Case: loop.
-        bool foundLoop = false;
-        bool isForall = false;
-        IteratorDetails leaderDetails;
-        ForLoop* followerForLoop = NULL;
-        std::vector<IteratorDetails> detailsVector;
-
-        if (ForallStmt* pfs = isForallIterExpr(call)) {
-
-          gatherLoopDetails(pfs, isForall, leaderDetails,
-                            followerForLoop, detailsVector);
-          foundLoop = true;
-        }
-
-        // Otherwise, look for a ForLoop / old style forall
-
-        // Check if sym is iterated over. In that case, what's the
-        // index variable?
-        //
-        // It's important that this case run before the check
-        // for build_tuple.
-        else {
-          // Find enclosing PRIM_MOVE
-          CallExpr* move = toCallExpr(se->parentExpr->getStmtExpr());
-          if (!move->isPrimitive(PRIM_MOVE))
-            move = NULL;
-
-          if (move != NULL) {
-            // Now, LHS of PRIM_MOVE is iterator variable
-            SymExpr* lhs = toSymExpr(move->get(1));
-            Symbol* iterator = lhs->symbol();
-            ForLoop* forLoop = NULL;
-            ForallStmt*   fs = NULL;
-            // Todo expand isChplIterOrLoopIterator to watch for ForallStmt?
-
-            // marked with chpl__iter or with type iterator class?
-            if (isChplIterOrLoopIterator(iterator, forLoop)) {
-
-              // Scroll through exprs until we find ForLoop
-
-              if (!forLoop) {
-                Expr* e = move;
-                while (e) {
-                  if ( (forLoop = toForLoop(e)) )
-                    break;
-                  if ( (fs = toForallStmt(e)) )
-                    break;
-                  e = e->next;
-                }
-              }
-
-              if (forLoop) {
-                // Gather the loop details to understand the
-                // correspondence between what was iterated over
-                // and the index variables.
-
-                /*
-                printf("print working on node %i %i\n",
-                       node.variable->id, node.fieldIndex);
-
-                printf("for iterator %i\n", iterator->id);
-                */
-
-                gatherLoopDetails(forLoop, isForall, leaderDetails,
-                                  followerForLoop, detailsVector);
-                foundLoop = true;
-              }
-              else if (fs) {
-                // Ditto if it is a ForallStmt.
-
-                gatherLoopDetails(fs, isForall, leaderDetails,
-                                  followerForLoop, detailsVector);
-                foundLoop = true;
-              }
-            }
-          }
-        }
-
-        if (foundLoop) {
-                bool handled = false;
-
-                for (size_t i = 0; i < detailsVector.size(); i++) {
-                  bool iteratorYieldsConstWhenConstThis = false;
-
-                  Expr* iterable = detailsVector[i].iterable;
-                  int iterableTupleElement = detailsVector[i].iterableTupleElement;
-                  Symbol* index = detailsVector[i].index;
-                  int indexTupleElement = detailsVector[i].indexTupleElement;
-                  FnSymbol* iteratorFn  = detailsVector[i].iterator;
-                  SymExpr* iterableSe = toSymExpr(iterable);
-
-                  // Also check if we are iterating using these() method
-                  // ex. functions/ferguson/ref-pair/const-error-iterated*
-                  if (!iterableSe)
-                    if (CallExpr* iterableCall = toCallExpr(iterable))
-                      if (iterableCall->isNamed("these"))
-                        iterableSe = toSymExpr(iterableCall->get(1));
-
-                  /*
-                  printf("  i %i\n", (int) i);
-                  printf("  iterable %i %i\n", iterableSe->symbol()->id, iterableTupleElement);
-                  printf("  index %i %i\n", index->id, indexTupleElement);
-                   */
-
-
-                  // In the future this could be based upon ref-pair
-                  // iterators.
-                  // For now, the compiler makes this adjustment for
-                  // any iterator methods on array implementation classes.
-                  // The goal here is that iterating over an array
-                  // and modifying the index variable should make us
-                  // consider the array to be "set".
-                  if (iteratorFn->isMethod() &&
-                      (isArrayClass(iteratorFn->getFormal(1)->type) ||
-                       iteratorFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
-                      iteratorYieldsConstWhenConstThis = true;
-
-                  // Note, if we wanted to use the return intent
-                  // of the iterator, it is overwritten in protoIteratorClass.
-
-                  // This flag should be set for array iteration
-                  if (iterableSe &&
-                      iterableSe->symbol() == sym &&
-                      (iterableTupleElement == 0 || iterableTupleElement ==
-                        node.fieldIndex) &&
-                      iteratorYieldsConstWhenConstThis &&
-                      index &&
-                      isRefOrTupleWithRef(index, indexTupleElement)) {
-                    // Now the const-ness of the array depends
-                    // on whether or not the yielded value is set
-
-                    GraphNode srcNode = makeNode(index, indexTupleElement);
-                    collectedSymbols.push_back(srcNode);
-                    revisit = true;
-                    addDependency(revisitGraph, srcNode, node);
-                    handled = true;
-                  }
-                }
-
-                if (handled)
-                  continue; // continue outer loop
-        }
-
-        // Case: 'call' invokes build_tuple().
-        if (FnSymbol* calledFn = call->resolvedFunction()) {
-          if (calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
-            if (CallExpr* move = toCallExpr(call->parentExpr)) {
-              if (move->isPrimitive(PRIM_MOVE) &&
-                  considerAllowRefCall(move, calledFn)) {
-                SymExpr* lhs       = toSymExpr(move->get(1));
-                Symbol*  lhsSymbol = lhs->symbol();
-                int      j         = 1;
-
-                for_actuals(actual, call) {
-                  if (se == actual) {
-                    break;
-                  }
-
-                  j++;
-                }
-
-                INT_ASSERT(1 <= j && j <= call->numActuals());
-
-                // What is the field we are interested in?
-                Symbol*        tupleField = NULL;
-                AggregateType* tupleType  = toAggregateType(lhsSymbol->type);
-                int            k          = 1;
-
-                for_fields(field, tupleType) {
-                  if (j == k) {
-                    tupleField = field;
-                  }
-
-                  k++;
-                }
-
-                // Does the tuple store the field by reference?
-                if (tupleField->isRef()) {
-                  GraphNode srcNode = makeNode(lhsSymbol, j);
-
-                  collectedSymbols.push_back(srcNode);
-
-                  revisit = true;
-
-                  addDependency(revisitGraph, srcNode, node);
-
-                  //DEBUG_SYMBOL(lhsSymbol);
-                  continue;
-                }
-              }
-            }
-          }
-        }
-
-        // Case: ContextCallExpr.
-        // check for the case that sym is passed a ContextCall
-        // and the determination depends on which branch is chosen.
-        if (ContextCallExpr* cc = toContextCallExpr(call->parentExpr)) {
-          if (contextCallItDepends(sym, cc/*, ignoredDefs*/)) {
-            // since lhs->symbol() is the result of a move from
-            // a ContextCallExpr, it will already be in the list
-            // of collectedSymbols.
-            //
-            // TODO: This isn't quite right, since the called ref-pair
-            // could still use a ref-if-modified argument by ref in
-            // both branches... or the ref-return version could
-            // be const ref on the actual, while the const-ref-return
-            // version is ref on the actual.
-            CallExpr* move      = toCallExpr(cc->parentExpr);
-            SymExpr*  lhs       = toSymExpr(move->get(1));
-            Symbol*   lhsSymbol = lhs->symbol();
-
-            revisit = true;
-
-            // Make a note that determining how lhs->symbol()
-            // is used (is it const or not?) will allow us to
-            // resolve this ContextCallExpr.
-            GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
-
-            addDependency(revisitGraph, srcNode, node);
-
-            continue; // move on to the next SymExpr
-          }
-        }
-
-        // Case: tuple cast fn or accessor-like fn or const?-ref formal.
-        if (FnSymbol* calledFn = call->resolvedFunction()) {
-          ArgSymbol* formal = actual_to_formal(se);
-
-          // Check for the case that sym is in a call
-          // to a tuple cast function. We consider it
-          // const if the result of the tuple cast is const.
-          if (calledFn->hasFlag(FLAG_TUPLE_CAST_FN)) {
-            CallExpr* move = toCallExpr(call->parentExpr);
-
-            if (move && move->isPrimitive(PRIM_MOVE)) {
-              SymExpr*  lhs       = toSymExpr(move->get(1));
-              Symbol*   lhsSymbol = lhs->symbol();
-              GraphNode srcNode   = makeNode(lhsSymbol, node.fieldIndex);
-
-              collectedSymbols.push_back(srcNode);
-
-              revisit = true;
-
-              addDependency(revisitGraph, srcNode, node);
-
-              continue; // move on to the next SymExpr
-            }
-          }
-
-          // Check for the case that sym is the _this
-          // actual for a function marked with the flag
-          // FLAG_REF_TO_CONST_WHEN_CONST_THIS
-          // (which is used for field accessors among other things).
-          // In that event, it depends on how the returned
-          // value is used.
-          if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
-              formal->hasFlag(FLAG_ARG_THIS)) {
-            CallExpr* move = toCallExpr(call->parentExpr);
-
-            if (move && move->isPrimitive(PRIM_MOVE)) {
-              SymExpr* lhs       = toSymExpr(move->get(1));
-              Symbol*  lhsSymbol = lhs->symbol();
-
-              if (lhsSymbol->isRef() && lhsSymbol != sym) {
-                GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
-
-                collectedSymbols.push_back(srcNode);
-
-                revisit = true;
-
-                addDependency(revisitGraph, srcNode, node);
-
-                continue; // move on to the next SymExpr
-              }
-            }
-          }
-
-
-          // Check for the case that sym is passed to an
-          // array formal with blank intent. In that case,
-          // it depends on the determination of the called function.
-          if (formal->intent == INTENT_REF_MAYBE_CONST &&
-              !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
-            // since it has INTENT_REF_MAYBE_CONST, it will
-            // already be in the list of collectedSymbols.
-            revisit = true;
-
-            // Make a note that determining how formal
-            // is used (const or not?) will allow us to resolve
-            // this Symbol's const-ness.
-            GraphNode srcNode = makeNode(formal, node.fieldIndex);
-
-            addDependency(revisitGraph, srcNode, node);
-
-            continue; // move on to the next SymExpr
-          }
-
-        }
-
-        // Case: extracting a reference field.
-        // from a tuple into another Symbol
-        if (call->isPrimitive(PRIM_GET_MEMBER_VALUE))
-          if (CallExpr* parentCall = toCallExpr(call->parentExpr))
-            if (parentCall->isPrimitive(PRIM_MOVE)) {
-              SymExpr* lhs       = toSymExpr(parentCall->get(1));
-              Symbol*  lhsSymbol = lhs->symbol();
-
-              if (lhsSymbol->isRef()) {
-                SymExpr*       fieldSe    = toSymExpr(call->get(2));
-                Symbol*        field      = fieldSe->symbol();
-                AggregateType* tupleType  =
-                  toAggregateType(call->get(1)->getValType());
-                int            fieldIndex = 1;
-
-                for_fields(curField, tupleType) {
-                  if (curField == field) {
-                    break;
-                  }
-
-                  fieldIndex++;
-                }
-
-                INT_ASSERT(fieldIndex <= tupleType->numFields());
-
-                // ignore if the field set isn't
-                // the current field.
-                if (node.fieldIndex == 0 || node.fieldIndex == fieldIndex) {
-                  // add a dependency in the graph. Knowing
-                  // if lhsSymbol is set will tell us if
-                  // sym tuple element i is set.
-                  GraphNode srcNode = makeNode(lhsSymbol, 0);
-
-                  collectedSymbols.push_back(srcNode);
-
-                  revisit = true;
-
-                  addDependency(revisitGraph,
-                                srcNode,
-                                makeNode(sym, fieldIndex));
-
-                  continue;
-                }
-              }
-            }
-
-        // Case: creating a temporary from one tuple to another tuple.
-        if (call->isPrimitive(PRIM_SET_MEMBER)) {
-          SymExpr* base       = toSymExpr(call->get(1));
-          Symbol*  baseSymbol = base->symbol();
-
-          SymExpr* rhs        = toSymExpr(call->get(3));
-          Symbol*  rhsSymbol  = rhs->symbol();
-
-          if (rhsSymbol == sym) {
-            SymExpr*       fieldSe    = toSymExpr(call->get(2));
-            Symbol*        field      = fieldSe->symbol();
-            AggregateType* tupleType  = toAggregateType(base->getValType());
-            int            fieldIndex = 1;
-
-            for_fields(curField, tupleType) {
-              if (curField == field) {
-                break;
-              }
-
-              fieldIndex++;
-            }
-
-            INT_ASSERT(fieldIndex <= tupleType->numFields());
-
-            // ignore if the field set isn't
-            // the current field.
-            if (node.fieldIndex == 0 || node.fieldIndex == fieldIndex) {
-              // add a dependency in the graph. Knowing if the
-              // tuple field is set will tell us if the
-              // RHS is set.
-              GraphNode srcNode = makeNode(baseSymbol, fieldIndex);
-
-              collectedSymbols.push_back(srcNode);
-
-              revisit = true;
-
-              addDependency(revisitGraph,
-                            srcNode,
-                            makeNode(rhsSymbol, 0));
-
-              continue;
-            }
-          }
-        }
-
-        // Check for the case of extracting a star tuple field?
-
-        // Case: sym is moved to a compiler temp, ex.
-        //   PRIM_MOVE tmp, PRIM_ADDR_OF sym
-        CallExpr* call2 = call;
-        if (call->isPrimitive(PRIM_ADDR_OF) ||
-            call->isPrimitive(PRIM_SET_REFERENCE) ||
-            call->isPrimitive(PRIM_GET_MEMBER) ||
-            call->isPrimitive(PRIM_GET_SVEC_MEMBER))
-          call2 = toCallExpr(call->parentExpr);
-
-        if (call2->isPrimitive(PRIM_MOVE)) {
-          SymExpr* lhs       = toSymExpr(call2->get(1));
-          Symbol*  lhsSymbol = lhs->symbol();
-
-          if (lhsSymbol != sym &&
-              isRefOrTupleWithRef(lhsSymbol, node.fieldIndex)) {
-            GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
-
-            collectedSymbols.push_back(srcNode);
-
-            revisit = true;
-
-            addDependency(revisitGraph, srcNode, node);
-
-            continue; // move on to the next SymExpr
-          }
-        }
-      }  // if (CallExpr* call = toCallExpr(se->parentExpr))
-
-      // Case: sym is the outer variable in a forall intent.
-      if (ShadowVarSymbol* svar = refShadowVarForOuterVarExpr(se)) {
-        GraphNode srcNode = makeNode(svar, node.fieldIndex);
-        collectedSymbols.push_back(srcNode);
-        addDependency(revisitGraph, srcNode, node);
-        revisit = true;
-        continue; // move on to the next SymExpr
-      }
-
-      // Determine if se represents a "setting" or a "getting" mention of sym
-      if (!setter && symExprIsSet(se)) {
-        setter              = true;
-        reasonNotConst[sym] = se;
-
-        if (CallExpr* call = toCallExpr(se->parentExpr)) {
-          if (call->isResolved()) {
-            ArgSymbol* formal = actual_to_formal(se);
-
-            reasonNotConst[se] = formal;
-          }
-        }
-      }
-    }  // for_SymbolSymExprs(se, sym)
-
-    if (revisit) {
-      if (setter) {
-        // We decided to revisit this Symbol, but separate uses
-        // determined it to be not const. So don't revisit it.
-        revisit = false;
-      } else {
-        // We might still decide to use setter.
-        unknownConstSyms.insert(node);
-        if (shouldTrace(node.variable)) {
-          printf("Adding to unknownConstSyms %i,%i\n",
-                 node.variable->id, node.fieldIndex);
-        }
-      }
-    }
-
-    if (!revisit) {
-      if (setter) {
-        // it's not CONST & it shouldn't be CONST
-        markNotConst(node);
-      } else {
-        // it is const, mark it so
-        markConst(node);
-      }
-    }
-  }  // for(size_t i = 0; i < collectedSymbols.size(); i++)
-
-  // Handle the graph of revisits
-  // Note this could be a cyclic graph when there are recursive
-  // functions.
-
-  // This algorithm could be naturally represented in terms of
-  // Strongly Connected Components analysis, but for now it's
-  // just doing it manually.
-  {
-    // First, propagate non-const-ness through the graph
-    for (revisitGraph_t::iterator it = revisitGraph.begin();
-         it != revisitGraph.end();
-         ++it) {
-
-      GraphNode node = it->first;
-      Symbol* sym = node.variable;
-
-      DEBUG_SYMBOL(sym);
-
-      if (unknownConstSyms.count(node) == 0) {
-        if (!isConst(node)) {
-          // If sym has known const-ness, and it's a setter,
-          // propagate that information in the graph.
-          transitivelyMarkNotConst(node, revisitGraph, unknownConstSyms,
-              reasonNotConst);
-        }
-      }
-    }
-
-    // Next, mark any remaining symbols with unknown const-ness
-    // as const, since they are never set
-    // (this accounts for cycles possibly due to recursive functions
-    //  with blank-intent array formals)
-    for (revisitUnknowns_t::iterator it = unknownConstSyms.begin();
-         it != unknownConstSyms.end();
-         ++it) {
-
-      GraphNode node = *it;
-      Symbol* sym = node.variable;
-
-      // Anything we didn't remove from unknownConstSyms must be
-      // in a cycle of const-ness
-
-      DEBUG_SYMBOL(sym);
-
-      markConst(node);
-    }
-  }
-
-  // Now, lower ContextCalls
-  forv_Vec(ContextCallExpr, cc, gContextCallExprs) {
-    // Some ContextCallExprs have already been removed above
-    if (!cc->inTree())
-      continue;
-
-    CallExpr* move = toCallExpr(cc->parentExpr);
-
-    bool notConst = false;
-    Symbol* lhsSymbol = NULL;
-
-    if (move) {
-      SymExpr* lhs = toSymExpr(move->get(1));
-      lhsSymbol = lhs->symbol();
-      Qualifier qual = lhsSymbol->qualType().getQual();
-
-      if (qual == QUAL_REF)
-        notConst = true;
-    }
-
-    lowerContextCallComputeConstRef(cc, notConst, lhsSymbol);
-  }
-
-  // We already changed INTENT_REF_MAYBE_CONST in
-  // markConst / markNotConst so there is nothing else to do
-  // here for ArgSymbols.
-
-  lateConstCheck(&reasonNotConst);
+  // Pass off to `resolution/lateConstCheck`.
+  ctx.performLateConstCheck();
 }
 
 // Handle certain degenerate cases, such as when a

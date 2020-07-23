@@ -21,7 +21,6 @@
 #include "preFold.h"
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -31,6 +30,7 @@
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"

@@ -271,7 +271,6 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_PTR_NOTEQUAL:
     case PRIM_DYNAMIC_CAST:
     case PRIM_ARRAY_GET:
-    case PRIM_ARRAY_GET_VALUE:
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:

@@ -8,6 +8,14 @@ Chapel can be used on both 32-bit and 64-bit installations of Cygwin.
 Chapel can be sensitive to directories with spaces, but otherwise it
 will work on Cygwin just like any other platform.
 
+   .. note::
+
+     Please note that running Chapel on Cygwin is supported only as a
+     portability option and should not be expected to result in good
+     performance.  For users wanting to run Chapel on Windows systems,
+     the preferred approach is to use the Windows Subsystem for Linux
+     / Linux Bash Shell.
+
 
 Unpacking Chapel
 ----------------

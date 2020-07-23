@@ -688,7 +688,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
 #endif
   }
 
-  USR_FATAL("Could not find C type %s - "
+  USR_FATAL(this->defPoint, "Could not find C type %s - "
             "perhaps it is a complex macro?", cname);
   return ret;
 }
@@ -1710,28 +1710,6 @@ static void pushAllFieldTypesRecursively(const char* name,
   }
 }
 
-static
-const clang::CodeGen::ABIArgInfo*
-getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
-{
-  const clang::CodeGen::ABIArgInfo* argInfo = NULL;
-#if HAVE_LLVM_VER >= 100
-  llvm::ArrayRef<clang::CodeGen::CGFunctionInfoArgInfo> a=CGI->arguments();
-  argInfo = &a[curCArg].info;
-#else
-  int i = 0;
-  for (auto &ii : CGI->arguments()) {
-    if (i == curCArg) {
-      argInfo = &ii.info;
-      break;
-    }
-    i++;
-  }
-#endif
-
-  return argInfo;
-}
-
 static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
                                              llvm::AttributeList& attrs,
                                              std::vector<const char*>& argNames)
@@ -2358,15 +2336,14 @@ void FnSymbol::codegenDef() {
             llvm::Value* ptr = tmp.val;
             llvm::Type* ptrEltTy = chapelArgTy;
             llvm::Type* i8PtrTy = irBuilder->getInt8PtrTy();
-            llvm::Type* coercePtrTy =
-              llvm::PointerType::get(argInfo->getCoerceToType(), stackSpace);
+            llvm::Type* coercePtrTy = llvm::PointerType::get(sTy, stackSpace);
 
             // handle offset
             if (unsigned offset = argInfo->getDirectOffset()) {
               ptr = irBuilder->CreatePointerCast(ptr, i8PtrTy);
               ptr = irBuilder->CreateConstInBoundsGEP1_32(i8PtrTy, ptr, offset);
               ptr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
-              ptrEltTy = argInfo->getCoerceToType();
+              ptrEltTy = sTy;
             }
 
             // Store into the temp variable
@@ -2562,7 +2539,8 @@ GenRet FnSymbol::codegen() {
           if( isBuiltinExternCFunction(cname) ) {
             // it's OK.
           } else {
-            USR_FATAL("Could not find C function for %s; "
+            USR_FATAL(this->defPoint,
+                      "Could not find C function for %s; "
                       " perhaps it is missing or is a macro?", cname);
           }
         } else {

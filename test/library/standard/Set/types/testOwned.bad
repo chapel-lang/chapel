@@ -1,3 +1,0 @@
-./SetTest.chpl:19: In function 'testSet':
-./SetTest.chpl:20: error: Sets do not support this class type
-testOwned.chpl:9: Function 'testSet' instantiated as: testSet(type t = owned T)
