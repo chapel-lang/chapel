@@ -86,6 +86,9 @@ proc masonTest(args) throws {
       when '--update' {
         update = true;
       }
+      when '--no-update' {
+        update = false;
+      }
       when '--setComm' {
         setComm = args[countArgs];
       }
