@@ -452,6 +452,9 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
                                    MacroInfo::tokens_iterator &start,
                                    MacroInfo::tokens_iterator &end) {
 
+  if (start == end)
+    return;
+
   // Remove any number of outer parens e.g. (1), ((1)) -> 1
   int left_parens = 0;
   int right_parens = 0;
@@ -471,8 +474,12 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 
   int min_parens = (left_parens < right_parens) ? left_parens : right_parens;
   if (min_parens > 0) {
-    start += min_parens;
-    end -= min_parens;
+    MacroInfo::tokens_iterator oldStart = start;
+    MacroInfo::tokens_iterator oldEnd = end;
+    start = oldStart + min_parens;
+    end = oldEnd - min_parens;
+    INT_ASSERT(start != oldStart);
+    INT_ASSERT(end != oldEnd);
   }
 }
 
@@ -665,6 +672,24 @@ static ::Type* getTypeForMacro(const char* name) {
   return t;
 }
 
+static bool handleNumericCastExpr(const MacroInfo* inMacro,
+                                  MacroInfo::tokens_iterator start,
+                                  MacroInfo::tokens_iterator end,
+                                  Immediate* imm,
+                                  const char*& cCastToTypeRet);
+static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+                                         MacroInfo::tokens_iterator start,
+                                         MacroInfo::tokens_iterator end,
+                                         Immediate* imm);
+static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+                                     MacroInfo::tokens_iterator start,
+                                     MacroInfo::tokens_iterator end,
+                                     Immediate* imm);
+static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+                                   MacroInfo::tokens_iterator start,
+                                   MacroInfo::tokens_iterator end,
+                                   Immediate* imm);
+
 static bool handleNumericExpr(const MacroInfo* inMacro,
                               MacroInfo::tokens_iterator start,
                               MacroInfo::tokens_iterator end,
@@ -678,12 +703,39 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
   if (start == end)
     return false;
 
-  // Check for a cast like '(unsigned int) 12'
+  if (handleNumericUnaryPrefixExpr(inMacro, start, end, imm))
+    return true;
+
+  if (handleNumericLiteralExpr(inMacro, start, end, imm))
+    return true;
+
+  if (handleNumericCastExpr(inMacro, start, end, imm, cCastToTypeRet))
+    return true;
+
+  if (handleNumericBinOpExpr(inMacro, start, end, imm))
+    return true;
+
+  return false;
+}
+
+static bool handleNumericCastExpr(const MacroInfo* inMacro,
+                                  MacroInfo::tokens_iterator start,
+                                  MacroInfo::tokens_iterator end,
+                                  Immediate* imm,
+                                  const char*& cCastToTypeRet) {
+
+  if (start == end)
+    return false;
+
   {
+    // Check for a cast like '(unsigned int) 12'
     MacroInfo::tokens_iterator castStart = start;
     MacroInfo::tokens_iterator castEnd = start;
 
     if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
+      if (castEnd == end)
+        return false;
+
       const char* castTo = NULL;
       clang::IdentifierInfo* ii = NULL;
       castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
@@ -746,10 +798,24 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
       return true;
     }
   }
+  return false;
+}
+
+
+static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+                                         MacroInfo::tokens_iterator start,
+                                         MacroInfo::tokens_iterator end,
+                                         Immediate* imm) {
+  if (start == end)
+    return false;
 
   // handle prefix unary operators + and -
   if (start->getKind() == tok::plus ||
       start->getKind() == tok::minus) {
+
+    if (start+1 == end)
+      return false;
+
     Immediate rhsImm;
     const char* tmpCastToTy = NULL;
     bool got = handleNumericExpr(inMacro, start+1, end, &rhsImm, tmpCastToTy);
@@ -767,6 +833,16 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
     fold_constant(p, &rhsImm, NULL, imm);
     return true;
   }
+
+  return false;
+}
+
+static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+                                     MacroInfo::tokens_iterator start,
+                                     MacroInfo::tokens_iterator end,
+                                     Immediate* imm) {
+  if (start == end)
+    return false;
 
   // handle a single numeric literal
   if (start->getKind() == tok::numeric_constant && start+1 == end) {
@@ -870,6 +946,13 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
     return true;
   }
 
+  return false;
+}
+
+static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+                                   MacroInfo::tokens_iterator start,
+                                   MacroInfo::tokens_iterator end,
+                                   Immediate* imm) {
   // handle select binary operators
   // this only works if the LHS and RHS are either:
   //  parenthesized expressions; or
@@ -877,10 +960,6 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
   bool lhsOk = false;
   MacroInfo::tokens_iterator lhsStart = start;
   MacroInfo::tokens_iterator lhsEnd = start;
-  bool rhsOk = false;
-  MacroInfo::tokens_iterator rhsStart = start;
-  MacroInfo::tokens_iterator rhsEnd = start;
-  MacroInfo::tokens_iterator op = start;
 
   // find a LHS constant or parenthesized-expression
   if (start->getKind() == tok::numeric_constant) {
@@ -891,11 +970,13 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
     lhsOk = findParenthesizedExpr(inMacro, start, end, lhsStart, lhsEnd);
   }
 
-  if (lhsOk == false)
+  if (lhsOk == false || lhsEnd == end || lhsEnd+1 == end )
     return false;
 
-  op = lhsEnd;
-  rhsStart = op + 1;
+  bool rhsOk = false;
+  MacroInfo::tokens_iterator op = lhsEnd;
+  MacroInfo::tokens_iterator rhsStart = op + 1;
+  MacroInfo::tokens_iterator rhsEnd = rhsStart;
 
   // find a RHS constant or parenthesized-expression
   if (rhsStart->getKind() == tok::numeric_constant) {
