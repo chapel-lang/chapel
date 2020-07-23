@@ -1574,6 +1574,7 @@ module Random {
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
+      use DSIUtil;
       param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank-1);
@@ -2842,6 +2843,7 @@ module Random {
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
+      use DSIUtil;
       param multiplier = if resultType == complex then 2 else 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank-1);

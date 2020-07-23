@@ -42,7 +42,7 @@ assignment, and unary, binary, and relational operators.
 
 */
 module ChapelTuple {
-  private use ChapelStandard;
+  private use ChapelStandard, DSIUtil;
 
   pragma "tuple" record _tuple {
     param size : int;

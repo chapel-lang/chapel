@@ -155,7 +155,7 @@ module ChapelRange {
 
   private use ChapelBase, SysBasic, HaltWrappers;
 
-  private use Math;
+  private use Math, DSIUtil;
 
   // Turns on range iterator debugging.
   pragma "no doc"

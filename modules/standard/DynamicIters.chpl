@@ -29,7 +29,7 @@
 */
 module DynamicIters {
 
-  private use ChapelLocks;
+  private use ChapelLocks, DSIUtil;
 
 /*
    Toggle debugging output.

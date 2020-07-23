@@ -23,6 +23,7 @@
 module DefaultSparse {
   private use ChapelStandard;
   private import RangeChunk;
+  private use DSIUtil;
 
   config param debugDefaultSparse = false;
 
