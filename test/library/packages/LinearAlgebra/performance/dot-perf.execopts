@@ -1,1 +1,1 @@
---n=1024 --iters=0 --correctness=true
+--n=256 --iters=0 --correctness=true
