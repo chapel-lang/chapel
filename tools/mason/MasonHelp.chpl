@@ -168,6 +168,17 @@ proc masonModifyHelp() {
   writeln("Package names and versions are not validated upon adding");
 }
 
+proc masonUpdateHelp() {
+  writeln("Updates/Generates Mason.lock file");
+  writeln("Usage:");
+  writeln("    mason update [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("    --update                    Explicitly set MASON_OFFLINE to true");
+  writeln("    --[no-]update               Overrides the default MASON_OFFLINE value");
+}
+
 proc masonEnvHelp() {
   writeln("Print environment variables recognized by mason");
   writeln();

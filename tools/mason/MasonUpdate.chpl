@@ -27,6 +27,7 @@ use MasonUtils;
 use MasonEnv;
 use MasonSystem;
 use MasonExternal;
+use MasonHelp;
 
 
 /*
@@ -45,13 +46,33 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion: list(string);
-
+private var update = false;
 //
 // Temporary passthrough transforming array to list to appease the compiler.
 //
-proc UpdateLock(args: [?d] string, tf="Mason.toml", lf="Mason.lock") {
+proc masonUpdate(args: [?d] string) {
+  var tf="Mason.toml";
+  var lf="Mason.lock";
   var listArgs: list(string);
-  for x in args do listArgs.append(x);
+  for arg in args {
+    listArgs.append(arg);
+    select (arg) {
+      when '-h' {
+        masonUpdateHelp();
+        exit(0);
+      }
+      when '--help' {
+        masonUpdateHelp();
+        exit(0);
+      }
+      when '--no-update' {
+        continue;
+      }
+      when '--update' {
+        update = true;
+      }
+    }
+  }
   return UpdateLock(listArgs, tf, lf);
 }
 
@@ -60,12 +81,10 @@ proc UpdateLock(args: [?d] string, tf="Mason.toml", lf="Mason.lock") {
 proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
 
   try! {
-
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-
     updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
@@ -140,12 +159,8 @@ proc checkRegistryChanged() {
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(tf: string, args: list(string)) {
   var skipOffline = false;
-  if args.count('update') == 1 {
-    skipOffline = true;
-  }
-
-  if args.count("--no-update") != 0 then
-    return;
+  if update then skipOffline = true;
+  if !update then return;
 
   if MASON_OFFLINE && (args.count('--update') == 0) && !skipOffline {
     writeln('Skipping update due to MASON_OFFLINE=true');
