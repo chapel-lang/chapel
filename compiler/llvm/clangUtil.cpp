@@ -727,76 +727,74 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
   if (start == end)
     return false;
 
-  {
-    // Check for a cast like '(unsigned int) 12'
-    MacroInfo::tokens_iterator castStart = start;
-    MacroInfo::tokens_iterator castEnd = start;
+  // Check for a cast like '(unsigned int) 12'
+  MacroInfo::tokens_iterator castStart = start;
+  MacroInfo::tokens_iterator castEnd = start;
 
-    if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
-      if (castEnd == end)
+  if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
+    if (castEnd == end)
+      return false;
+
+    const char* castTo = NULL;
+    clang::IdentifierInfo* ii = NULL;
+    castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
+    if (castTo == NULL)
+      return false;
+    start = castEnd;
+
+    // Find the type to cast to
+    // (handles things like macros, nested parens)
+    VarSymbol* tmpVar = NULL;
+    TypeDecl* tmpType = NULL;
+    ValueDecl* tmpVal = NULL;
+    const char* tmpCastToType = NULL;
+
+    handleMacroExpr(inMacro, castStart, castEnd,
+                    tmpVar, tmpType, tmpVal, tmpCastToType);
+
+    if (tmpType == NULL || tmpCastToType != NULL)
+      return false;
+
+    cCastToTypeRet = astr(tmpType->getName().str().c_str());
+
+    const char* rhsCastToTy = NULL;
+    Immediate rhsImm;
+    Immediate retImm;
+    bool got = handleNumericExpr(inMacro, castEnd, end, &rhsImm, rhsCastToTy);
+
+    if (got == false)
+      return false;
+
+    if (rhsCastToTy == NULL) {
+      retImm = rhsImm;
+    } else {
+      ::Type* t = getTypeForMacro(tmpType->getName().str().c_str());
+      if (t == NULL)
         return false;
 
-      const char* castTo = NULL;
-      clang::IdentifierInfo* ii = NULL;
-      castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
-      if (castTo == NULL)
-        return false;
-      start = castEnd;
+      Immediate dstImm = getDefaultImmediate(t);
 
-      // Find the type to cast to
-      // (handles things like macros, nested parens)
-      VarSymbol* tmpVar = NULL;
-      TypeDecl* tmpType = NULL;
-      ValueDecl* tmpVal = NULL;
-      const char* tmpCastToType = NULL;
+      coerce_immediate(&rhsImm, &dstImm);
 
-      handleMacroExpr(inMacro, castStart, castEnd,
-                      tmpVar, tmpType, tmpVal, tmpCastToType);
-
-      if (tmpType == NULL || tmpCastToType != NULL)
-        return false;
-
-      cCastToTypeRet = astr(tmpType->getName().str().c_str());
-
-      const char* rhsCastToTy = NULL;
-      Immediate rhsImm;
-      Immediate retImm;
-      bool got = handleNumericExpr(inMacro, castEnd, end, &rhsImm, rhsCastToTy);
-
-      if (got == false)
-        return false;
-
-      if (rhsCastToTy == NULL) {
-        retImm = rhsImm;
-      } else {
-        ::Type* t = getTypeForMacro(tmpType->getName().str().c_str());
-        if (t == NULL)
-          return false;
-
-        Immediate dstImm = getDefaultImmediate(t);
-
-        coerce_immediate(&rhsImm, &dstImm);
-
-        retImm = dstImm;
-      }
-
-      // Try handling the cast now if we can.
-      // Put it off if the type isn't known yet (e.g. a typedef)
-      ::Type* doCastToType = NULL;
-      if (cCastToTypeRet != NULL) {
-        doCastToType = getTypeForMacro(cCastToTypeRet);
-      }
-
-      if (doCastToType != NULL) {
-        Immediate dstImm = getDefaultImmediate(doCastToType);
-        coerce_immediate(&retImm, &dstImm);
-        *imm = dstImm;
-        cCastToTypeRet = NULL; // cast already handled
-      } else {
-        *imm = retImm;
-      }
-      return true;
+      retImm = dstImm;
     }
+
+    // Try handling the cast now if we can.
+    // Put it off if the type isn't known yet (e.g. a typedef)
+    ::Type* doCastToType = NULL;
+    if (cCastToTypeRet != NULL) {
+      doCastToType = getTypeForMacro(cCastToTypeRet);
+    }
+
+    if (doCastToType != NULL) {
+      Immediate dstImm = getDefaultImmediate(doCastToType);
+      coerce_immediate(&retImm, &dstImm);
+      *imm = dstImm;
+      cCastToTypeRet = NULL; // cast already handled
+    } else {
+      *imm = retImm;
+    }
+    return true;
   }
   return false;
 }
@@ -1007,19 +1005,15 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
     return false;
 
   // Apply the binary operator to the immediate
-  if (op->getKind() == tok::lessless) {
-    int p = 0;
-    switch (op->getKind()) {
-      case tok::lessless:   p = P_prim_lsh;    break;
-      default:
-        INT_FATAL("unhandled case");
-    }
-
-    fold_constant(p, &lhsImm, &rhsImm, imm);
-    return true;
+  int p = 0;
+  switch (op->getKind()) {
+    case tok::lessless:   p = P_prim_lsh;    break;
+    default:
+      return false; // this operator not handled
   }
 
-  return false;
+  fold_constant(p, &lhsImm, &rhsImm, imm);
+  return true;
 }
 
 static void handleMacroExpr(const MacroInfo* inMacro,
