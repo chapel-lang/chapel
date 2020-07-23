@@ -168,6 +168,8 @@ void flushStatements(void);
 GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
+Type* getNamedTypeDuringCodegen(const char* name);
+void gatherTypesForCodegen(void);
 
 void registerPrimitiveCodegens();
 

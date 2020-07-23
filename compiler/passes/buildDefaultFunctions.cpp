@@ -683,7 +683,7 @@ static void buildChplEntryPoints() {
 
   SET_LINENO(chplUserMain);
 
-  chplUserMain->cname = "chpl_user_main";
+  chplUserMain->cname = astr("chpl_user_main");
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.
@@ -694,7 +694,7 @@ static void buildChplEntryPoints() {
 
   chpl_gen_main          = new FnSymbol("chpl_gen_main");
   chpl_gen_main->retType = dtInt[INT_SIZE_64];
-  chpl_gen_main->cname   = "chpl_gen_main";
+  chpl_gen_main->cname   = astr("chpl_gen_main");
 
   chpl_gen_main->insertFormalAtTail(arg);
 

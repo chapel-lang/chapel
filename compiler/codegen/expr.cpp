@@ -3144,7 +3144,7 @@ GenRet codegenCast(const char* typeName, GenRet value, bool Cparens)
   GenInfo* info = gGenInfo;
   GenRet ret;
   ret.isLVPtr = value.isLVPtr;
-  ret.chplType = getNamedType(std::string(typeName));
+  ret.chplType = getNamedTypeDuringCodegen(typeName);
 
   if( info->cfile ) {
     ret.c = "((";
