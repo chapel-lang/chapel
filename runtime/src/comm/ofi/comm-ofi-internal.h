@@ -44,37 +44,38 @@
 uint64_t chpl_comm_ofi_dbg_level;
 FILE* chpl_comm_ofi_dbg_file;
 
-#define DBG_STATS                   0x1UL
-#define DBG_STATSNODES              0x2UL
-#define DBG_STATSTHREADS            0x4UL
-#define DBG_STATSPROGRESS           0x8UL
-#define DBG_CFG                    0x10UL
-#define DBG_CFGFAB                 0x20UL
-#define DBG_CFGFABSALL             0x40UL
-#define DBG_CFGAV                  0x80UL
-#define DBG_THREADS               0x100UL
-#define DBG_THREADDETAILS         0x200UL
-#define DBG_TCIPS                 0x800UL
-#define DBG_INTERFACE            0x1000UL
-#define DBG_AM                  0x10000UL
-#define DBG_AMSEND              0x20000UL
-#define DBG_AMRECV              0x40000UL
-#define DBG_AMBUFFERS           0x80000UL
-#define DBG_RMA                0x100000UL
-#define DBG_RMAWRITE           0x200000UL
-#define DBG_RMAREAD            0x400000UL
-#define DBG_RMAUNORD           0x800000UL
-#define DBG_AMO               0x1000000UL
-#define DBG_AMOREAD           0x2000000UL
-#define DBG_ACK               0x4000000UL
-#define DBG_ORDER             0x8000000UL
-#define DBG_MR               0x10000000UL
-#define DBG_MRDESC           0x20000000UL
-#define DBG_MRKEY            0x40000000UL
-#define DBG_HUGEPAGES        0x80000000UL
-#define DBG_BARRIER         0x100000000UL
-#define DBG_OOB            0x1000000000UL
-#define DBG_TSTAMP        0x10000000000UL
+#define DBG_STATS                      0x1UL
+#define DBG_STATSNODES                 0x2UL
+#define DBG_STATSTHREADS               0x4UL
+#define DBG_STATSPROGRESS              0x8UL
+#define DBG_CFG                       0x10UL
+#define DBG_CFGFAB                   0x100UL
+#define DBG_CFGFABHINTS              0x200UL
+#define DBG_CFGFABSALL               0x400UL
+#define DBG_CFGAV                   0x1000UL
+#define DBG_THREADS                0x10000UL
+#define DBG_THREADDETAILS          0x20000UL
+#define DBG_TCIPS                  0x80000UL
+#define DBG_INTERFACE             0x100000UL
+#define DBG_AM                   0x1000000UL
+#define DBG_AMSEND               0x2000000UL
+#define DBG_AMRECV               0x4000000UL
+#define DBG_AMBUFFERS            0x8000000UL
+#define DBG_RMA                 0x10000000UL
+#define DBG_RMAWRITE            0x20000000UL
+#define DBG_RMAREAD             0x40000000UL
+#define DBG_RMAUNORD            0x80000000UL
+#define DBG_AMO                0x100000000UL
+#define DBG_AMOREAD            0x200000000UL
+#define DBG_ACK               0x1000000000UL
+#define DBG_ORDER             0x2000000000UL
+#define DBG_MR               0x10000000000UL
+#define DBG_MRDESC           0x20000000000UL
+#define DBG_MRKEY            0x40000000000UL
+#define DBG_HUGEPAGES        0x80000000000UL
+#define DBG_BARRIER         0x100000000000UL
+#define DBG_OOB            0x1000000000000UL
+#define DBG_TSTAMP        0x10000000000000UL
 
 void chpl_comm_ofi_dbg_init(void);
 char* chpl_comm_ofi_dbg_prefix(void);
