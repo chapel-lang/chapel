@@ -125,7 +125,7 @@ module TomlParser {
   use DateTime;
   use Map, List;
   import IO.channel;
-  import TOML.TomlReader.Source;
+  private use TOML.TomlReader;
   import TOML.TomlError;
 
   /* Prints a line by line output of parsing process */
