@@ -18,7 +18,7 @@ extern {
 }
 
 proc f(type t, x) {
-  writeln(x, " : ", x.type:string);
+  writeln(x);
   assert(t:string == x.type:string);
 }
 
@@ -31,9 +31,9 @@ f(c_ulong, MY_ULONG_CONSTANT);
 f(c_ulong, MY_ULONG_CONSTANT2);
 writeln();
 
-f(c_long, MY_LONG_LONG_CONSTANT);
-f(c_ulong, MY_ULONG_LONG_CONSTANT);
-f(c_ulong, MY_ULONG_LONG_CONSTANT2);
+f(c_longlong, MY_LONG_LONG_CONSTANT);
+f(c_ulonglong, MY_ULONG_LONG_CONSTANT);
+f(c_ulonglong, MY_ULONG_LONG_CONSTANT2);
 writeln();
 
 f(c_float, MY_FLOAT_CONSTANT);
