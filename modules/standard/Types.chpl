@@ -799,8 +799,8 @@ This method performs the minimum number of runtime checks.
 For example, when casting from `uint(8)` to `uint(64)`,
 no checks at all will be done.
 */
-inline proc integral.safeCast(type T) : T where isUintType(T) {
-  if castChecking {
+inline proc integral.safeCast(type T: integral) : T {
+  if castChecking && isUintType(T) {
     if isIntType(this.type) {
       // int(?) -> uint(?)
       if this < 0 then // runtime check
@@ -815,12 +815,8 @@ inline proc integral.safeCast(type T) : T where isUintType(T) {
             " with a value greater than the maximum of "+ T:string+" to "+T:string);
     }
   }
-  return this:T;
-}
 
-pragma "no doc" // documented with the other safeCast above
-inline proc integral.safeCast(type T) : T where isIntType(T) {
-  if castChecking {
+  if castChecking && isIntType(T) {
     if max(this.type):uint > max(T):uint {
       // this isUintType check lets us avoid a runtime check for this < 0
       if isUintType(this.type) {

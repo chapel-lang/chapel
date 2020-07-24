@@ -71,10 +71,10 @@ module ChapelBase {
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline proc =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
-  inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
-  {
-    __primitive("=", a, b);
-  }
+  inline proc =(ref a: borrowed class, b: a.type) { __primitive("=", a, b); }
+  inline proc =(ref a: borrowed class?, b: a.type) { __primitive("=", a, b); }
+  inline proc =(ref a: unmanaged class, b: a.type) { __primitive("=", a, b); }
+  inline proc =(ref a: unmanaged class?, b: a.type) { __primitive("=", a, b); }
 
   pragma "compiler generated"
   pragma "last resort" // so user-supplied assignment will override this one.
