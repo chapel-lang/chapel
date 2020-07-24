@@ -321,7 +321,10 @@ module Heap {
       if (boundsChecking && isEmpty()) {
         boundsCheckHalt("Called \"heap.pop\" on an empty heap.");
       }
-      _data(0) <=> _data(_data.size-1);
+
+      if _data.size != 1 then
+        _data(0) <=> _data(_data.size-1);
+
       var ret = _data.pop();
       _heapify_down(0);
       _leave();
