@@ -49,8 +49,7 @@ proc masonTest(args) throws {
   var show = false;
   var run = true;
   var parallel = false;
-  var update = true;
-  if MASON_OFFLINE then update = false;
+  var skipUpdate = MASON_OFFLINE;
   var compopts: list(string);
   var searchSubStrings: list(string);
   var countArgs = args.indices.low+2;
@@ -84,10 +83,10 @@ proc masonTest(args) throws {
         subdir = true;
       }
       when '--update' {
-        update = true;
+        skipUpdate = false;
       }
       when '--no-update' {
-        update = false;
+        skipUpdate = true;
       }
       when '--setComm' {
         setComm = args[countArgs];
@@ -115,8 +114,6 @@ proc masonTest(args) throws {
   }
 
   getRuntimeComm();
-  var uargs: list(string);
-  if !update then uargs.append('--no-update');
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
@@ -172,7 +169,7 @@ proc masonTest(args) throws {
       }
     }
 
-    UpdateLock(uargs);
+    updateLock(skipUpdate);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }

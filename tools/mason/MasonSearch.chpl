@@ -53,7 +53,16 @@ proc masonSearch(ref args: list(string)) {
 
   const show = hasOptions(args, "--show");
   const debug = hasOptions(args, "--debug");
-  updateRegistry("", args);
+  var skipUpdate = MASON_OFFLINE;
+  if hasOptions(args, "--update") {
+    skipUpdate = false;
+  }
+
+  if hasOptions(args, "--no-update") {
+    skipUpdate = true;
+  }
+
+  updateRegistry(skipUpdate);
 
   consumeArgs(args);
 
@@ -66,6 +75,7 @@ proc masonSearch(ref args: list(string)) {
   var versions: list(string);
   var registries: list(string);
 
+  writeln('[debug] collecting results');
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
@@ -89,9 +99,10 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
+  writeln('[debug] ranking results');
   var res = rankResults(results, query);
   for r in res do writeln(r);
-  
+
   // Handle --show flag
   if show {
     if results.size == 1 {
@@ -161,6 +172,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
+    writeln('[debug] parsing: ', packageDir + '/' + manifest);
     const manifestReader = openreader(packageDir + '/' + manifest);
     const manifestToml = owned.create(parseToml(manifestReader));
     const brick = manifestToml['brick'];
