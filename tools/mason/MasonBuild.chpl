@@ -76,10 +76,10 @@ proc masonBuild(args) throws {
         example = true;
       }
       else if arg == '--update' {
-        skipUpdate = true;
+        skipUpdate = false;
       }
       else if arg == '--no-update' {
-        skipUpdate = false;
+        skipUpdate = true;
       }
       else {
         compopts.append(arg);
