@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.5.  */
+/* A Bison parser, made by GNU Bison 3.4.2.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +31,9 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
+
 #ifndef YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
 # define YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
 /* Debug traces.  */
@@ -40,12 +44,12 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 33 "chapel.ypp" /* yacc.c:1916  */
+#line 33 "chapel.ypp"
 
   #include <string>
   extern int         captureTokens;
   extern std::string captureString;
-#line 47 "chapel.ypp" /* yacc.c:1916  */
+#line 47 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
   #define _BISON_CHAPEL_DEFINES_0_
@@ -60,7 +64,7 @@ extern int yydebug;
   void stringBufferInit();
 
   #endif
-#line 67 "chapel.ypp" /* yacc.c:1916  */
+#line 67 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
@@ -139,7 +143,7 @@ extern int yydebug;
   };
 
   #endif
-#line 151 "chapel.ypp" /* yacc.c:1916  */
+#line 151 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -157,7 +161,7 @@ extern int yydebug;
   #define YYLTYPE_IS_TRIVIAL  1
 
   #endif
-#line 174 "chapel.ypp" /* yacc.c:1916  */
+#line 174 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -185,7 +189,7 @@ extern int yydebug;
 
   #endif
 
-#line 189 "../include/bison-chapel.h" /* yacc.c:1916  */
+#line 193 "../include/bison-chapel.h"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -397,7 +401,7 @@ int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLT
 yypstate * yypstate_new (void);
 void yypstate_delete (yypstate *ps);
 /* "%code provides" blocks.  */
-#line 205 "chapel.ypp" /* yacc.c:1916  */
+#line 205 "chapel.ypp"
 
   extern int yydebug;
 
@@ -405,6 +409,6 @@ void yypstate_delete (yypstate *ps);
                ParserContext* context,
                const char*    str);
 
-#line 409 "../include/bison-chapel.h" /* yacc.c:1916  */
+#line 413 "../include/bison-chapel.h"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */

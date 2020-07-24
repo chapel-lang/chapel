@@ -212,6 +212,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
+    use DSIUtil;
     // same as DefaultSparseDom's leader
     const numElems = _nnz;
     const numChunks = _computeNumChunks(numElems);

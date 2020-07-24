@@ -28,11 +28,13 @@ module DefaultRectangular {
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
-  use DSIUtil, ChapelArray;
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
-  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative;
-  use ExternalArray;
+  use DSIUtil;
+  public use ChapelArray;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
+  use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
+  use DefaultSparse, DefaultAssociative;
+  public use ExternalArray; // OK: currently expected to be available by
+                            // default... though... why 'use' it here?
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;

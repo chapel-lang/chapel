@@ -200,8 +200,8 @@ appropriately before the elements can be read.
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
-  use SysBasic;
-  use SysError;
+  public use SysBasic;
+  public use SysError;
 
   // TODO -- this should probably be private
   pragma "no doc"
@@ -211,7 +211,7 @@ module ChapelIO {
     return helper(val);
   }
 
-  private use IO;
+  use IO;
 
     private
     proc isIoField(x, param i) param {

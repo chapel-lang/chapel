@@ -21,7 +21,7 @@
 pragma "error mode fatal"
 module MatrixMarket {
 
-  use IO;
+  use IO, DSIUtil;
 
   enum MMCoordFormat { Coordinate, Array }
   enum MMTypes { Real, Complex, Pattern }

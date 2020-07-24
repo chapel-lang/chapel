@@ -83,9 +83,8 @@
 pragma "atomic module"
 module Atomics {
 
-  private use ChapelBase;
-  use MemConsistency;
-  use ChapelEnv;
+  use ChapelBase;             // to get CHPL_CACHE_REMOTE...
+  public use MemConsistency;  // OK: to get and propagate memoryOrder
 
   pragma "no doc"
   pragma "local fn" pragma "fast-on safe extern function"

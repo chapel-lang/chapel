@@ -68,9 +68,9 @@
  */
 module ChapelLocale {
 
-  use LocaleModel;
-  private import HaltWrappers;
-  private use SysCTypes;
+  public use LocaleModel;
+  import HaltWrappers;
+  use SysCTypes;
 
   //
   // Node and sublocale types and special sublocale values.

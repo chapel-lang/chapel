@@ -1864,7 +1864,7 @@ proc isLocalArr(A: [?D]) param : bool {
 pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
-  return (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
+  return D.dist.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually

@@ -27,8 +27,8 @@ module ChapelBase {
   pragma "locale private"
   var rootLocaleInitialized: bool = false;
 
-  use ChapelStandard;
-  private use ChapelEnv, SysCTypes;
+  public use ChapelStandard;
+  use ChapelEnv, SysCTypes;
 
   config param enablePostfixBangChecks = false;
 

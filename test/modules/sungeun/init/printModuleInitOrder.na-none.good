@@ -5,6 +5,7 @@ Initializing Modules:
      MemConsistency
     ChapelThreads
     ChapelTuple
+     DSIUtil
     ChapelRange
     ChapelTaskDataHelp
     LocaleModel
@@ -12,7 +13,6 @@ Initializing Modules:
       LocaleModelHelpSetup
        ChapelLocale
        DefaultRectangular
-        DSIUtil
         ChapelArray
          ChapelDebugPrint
           IO

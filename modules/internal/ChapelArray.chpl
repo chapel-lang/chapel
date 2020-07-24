@@ -161,15 +161,15 @@
  */
 module ChapelArray {
 
-  use ChapelBase; // For opaque type.
+  public use ChapelBase;
   use ChapelTuple;
   use ChapelLocale;
   use ArrayViewSlice;
   use ArrayViewRankChange;
   use ArrayViewReindex;
   import Reflection;
-  private use ChapelDebugPrint;
-  private use SysCTypes;
+  use ChapelDebugPrint;
+  use SysCTypes;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0

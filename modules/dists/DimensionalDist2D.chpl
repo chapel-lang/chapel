@@ -27,7 +27,7 @@
 // * Ensure that reallocation works with block-cyclic 1-d distribution
 //  when the domain's stride changes.
 
-//use DSIUtil;
+use DSIUtil;
 //use WrapperDist;
 
 // debugging/trace certain DSI methods as they are being invoked

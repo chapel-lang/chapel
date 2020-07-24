@@ -64,7 +64,6 @@ module Random {
   public use RandomSupport;
   public use NPBRandom;
   public use PCGRandom;
-  import HaltWrappers;
   import Set.set;
 
 
@@ -769,8 +768,7 @@ module Random {
     use super.RandomSupport;
     private use Random;
     public use PCGRandomLib;
-    private use ChapelLocks;
-    private import HaltWrappers;
+    use ChapelLocks;
 
     // How many generators do we need for this type?
     private
@@ -966,6 +964,8 @@ module Random {
 
        */
       proc getNext(min: eltType, max:eltType): eltType {
+        use HaltWrappers;
+
         _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
@@ -980,6 +980,8 @@ module Random {
        */
       proc getNext(type resultType,
                    min: resultType, max:resultType): resultType {
+        use HaltWrappers;
+
         _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string + "]");
@@ -1573,6 +1575,7 @@ module Random {
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
+      use DSIUtil;
       param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank-1);
@@ -2451,8 +2454,7 @@ module Random {
   module NPBRandom {
 
     use super.RandomSupport;
-    private import HaltWrappers;
-    private use ChapelLocks;
+    use ChapelLocks;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level
@@ -2507,6 +2509,8 @@ module Random {
       proc init(type eltType = real(64),
                 seed: int(64) = SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
+        use HaltWrappers;
+
         this.eltType = eltType;
 
         // The mod operation is written in these steps in order
@@ -2840,6 +2844,7 @@ module Random {
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
+      use DSIUtil;
       param multiplier = if resultType == complex then 2 else 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank-1);
