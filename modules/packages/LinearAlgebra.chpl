@@ -791,6 +791,7 @@ private iter block(indexes, window : int) {
 }
 
 pragma "no doc"
+/* Iterator for blocking up strided dimension wrt window */
 private iter block(indexes, window : int) where indexes.stridable {
   var lowVal = indexes.low;
   const stride = indexes.stride;
