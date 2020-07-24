@@ -2616,6 +2616,18 @@ static void removeUnusedModules() {
     if (usedModules.count(mod) == 0) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
+
+      // Check that any mentions of the dead module are in
+      // dead modules
+      if (fVerify) {
+        for_SymbolSymExprs(se, mod) {
+          if (ModuleSymbol* inMod = se->getModule()) {
+            if (usedModules.count(inMod) != 0) {
+              INT_FATAL(se, "Invalid reference to unused module");
+            }
+          }
+        }
+      }
     }
   }
 }
