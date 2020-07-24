@@ -778,36 +778,38 @@ pragma "no doc"
 /* Iterator for blocking up dimension wrt window */
 private iter block(indexes, window : int) {
   var lowVal = indexes.low;
-  const stridable = indexes.stridable;
+  while (true) {
+    var highVal = lowVal + window - 1;
+    if (highVal >= indexes.high) {
+      yield lowVal..indexes.high;
+      break;
+    } else {
+      yield lowVal..highVal;
+    }
+    lowVal = highVal + 1;
+  }
+}
+
+pragma "no doc"
+private iter block(indexes, window : int) where indexes.stridable {
+  var lowVal = indexes.low;
   const stride = indexes.stride;
   while (true) {
-    if stridable {
-      var highVal = lowVal + window * stride - 1;
-      if (highVal >= indexes.high) {
-        yield lowVal..indexes.high by stride;
-        break;
-      } else {
-        yield lowVal..highVal by stride;
-      }
-      lowVal = highVal + 1;
+    var highVal = lowVal + window * stride - 1;
+    if (highVal >= indexes.high) {
+      yield lowVal..indexes.high by stride;
+      break;
     } else {
-      var highVal = lowVal + window - 1;
-      if (highVal >= indexes.high) {
-        yield lowVal..indexes.high;
-        break;
-      } else {
-        yield lowVal..highVal by;
-      }
-      lowVal = highVal + 1;
+      yield lowVal..highVal by stride;
     }
-    
+    lowVal = highVal + 1;
   }
 }
 
 
 pragma "no doc"
 /* Distributed matrix-matrix multiplication */
-proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, window : int = -1) 
+proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1) 
   where isDistributed(A) || isDistributed(B){
   ref targetLocales = A.targetLocales();
 
@@ -818,7 +820,7 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, window : int = -1)
 
   const commonDim = Adom.dim(1);
   if window < 1 {
-    window = commonDim;
+    window = commonDim.size;
   }
 
   ref Bref = B.reindex(commonDim, Bdom.dim(1));
@@ -827,14 +829,14 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, window : int = -1)
                                         = {Adom.dim(0), Bdom.dim(1)};
   var C : [domainC] eltType;
 
-  coforall loc in targetLocales {
-    on loc with (const commonDim) {
+  coforall loc in targetLocales with (const commonDim) {
+    on loc {
       const localDomainC = C.localSubdomain();
 
       for subArrayChunk in block(commonDim, windowSize) {
         var subArrayA : [localDomainC.dim(0), subArrayChunk] eltType;
         var subArrayB : [subArrayChunk, localDomainC.dim(1)] eltType;
-        
+
         forall i in localDomainC.dim(0) {
           forall j in subArrayChunk {
             subArrayA[i, j] = A[i, j];
