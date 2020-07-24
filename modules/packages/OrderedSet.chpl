@@ -20,7 +20,7 @@
 /*
   This module contains the implementation of the orderedSet type.
 
-  An orderedSet is a collection of unique elements. orderSets are ordered.
+  An orderedSet is a collection of unique elements. orderedSets are ordered.
 
   All references to orderedSet elements are invalidated when the orderedSet is 
   cleared or deinitialized.
