@@ -20,7 +20,7 @@
 /*
   This module contains the implementation of the orderedSet type.
 
-  An orderedSet is a collection of unique elements. orderedSets are ordered.
+  An orderedSet is a collection of unique ordered elements.
 
   All references to orderedSet elements are invalidated when the orderedSet is 
   cleared or deinitialized.
@@ -32,7 +32,7 @@
   the new orderedSet will inherit the parallel safety mode 
   of its originating orderedSet.
 
-  orderedSet is designed with the ability to use enum to choose from different 
+  orderedSet is designed with the ability to use an enum to choose from different 
   implementations under the hood. For now, only treap is supported.
 */
 module OrderedSet {
