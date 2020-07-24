@@ -1275,12 +1275,21 @@ static void resolveModuleCall(CallExpr* call) {
                 call->replace(new CallExpr(fn));
 
               } else {
-                CallExpr* parent = toCallExpr(call->parentExpr);
+                if (CallExpr* parent = toCallExpr(call->parentExpr)) {
 
-                call->replace(new UnresolvedSymExpr(mbrName));
+                  call->replace(new UnresolvedSymExpr(mbrName));
 
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                } else {
+                  USR_FATAL_CONT(call, "This appears to be a first class "
+                                 "function reference created using qualified "
+                                 "access");
+                  USR_PRINT("First class functions created using "
+                            "qualified access are not supported");
+                  USR_PRINT("If this is not intended as a first class "
+                           "function, please report it to the Chapel team");
+                }
               }
 
             } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
