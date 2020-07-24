@@ -53,8 +53,8 @@ proc masonTest(args) throws {
   if MASON_OFFLINE then update = false;
   var compopts: list(string);
   var searchSubStrings: list(string);
-  var countArgs = args.domain.low+2;
-  for arg in args[args.domain.low+2..] {
+  var countArgs = args.indices.low+2;
+  for arg in args[args.indices.low+2..args.indices.high] {
     countArgs += 1;
     select (arg) {
       when '-h'{
