@@ -779,7 +779,7 @@ pragma "no doc"
 private iter block(indexes, window : int) {
   var lowVal = indexes.low;
   const stride = indexes.stride;
-  if indexes.strideable{
+  if indexes.stridable{
     while (true) {
       var highVal = lowVal + window * stride - 1;
       if (highVal >= indexes.high) {
@@ -807,8 +807,9 @@ private iter block(indexes, window : int) {
 
 pragma "no doc"
 /* Distributed matrix-matrix multiplication */
-proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1) 
-  where isDistributed(A) || isDistributed(B){
+proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1)
+  where isDistributed(A) || isDistributed(B)
+{
   ref targetLocales = A.targetLocales();
 
   if A.shape(1) != B.shape(0) {
@@ -830,22 +831,30 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1
   coforall loc in targetLocales with (const commonDim) {
     on loc {
       const localDomainC = C.localSubdomain();
+      const (localDim1, localDim2) = localDomainC.dims();
+      const windowRange = 0..#window;
+      var subArrayA : [localDim1, windowRange] eltType;
+      var subArrayB : [windowRange, localDim2] eltType;
 
-      for subArrayChunk in block(commonDim, windowSize) {
-        var subArrayA : [localDomainC.dim(0), subArrayChunk] eltType;
-        var subArrayB : [subArrayChunk, localDomainC.dim(1)] eltType;
+      for subArrayChunk in block(commonDim, window) {
+        var chunkSize = subArrayChunk.size;
 
-        forall i in localDomainC.dim(0) {
-          forall j in subArrayChunk {
-            subArrayA[i, j] = A[i, j];
+        forall (k, subK) in zip(subArrayChunk, 0..) {
+          forall i in localDim1 {
+            subArrayA[i, subK] = A[i, k];
+          }
+          forall j in localDim2 {
+            subArrayB[subK, j] = Bref[k, j];
           }
         }
-        forall i in subArrayChunk {
-          forall j in localDomainC.dim(1) {
-            subArrayB[i, j] = Bref[i, j];
-          }
+
+        if chunkSize < window {
+          var rest = windowRange#-(window-chunkSize);
+          subArrayA[localDim1, rest] = 0;
+          subArrayB[rest, localDim2] = 0;
         }
-        C.localSlice(localDomainC) = dot(subArrayA, subArrayB);
+
+        C.localSlice(localDomainC) += dot(subArrayA, subArrayB);
       }
     }
   }
