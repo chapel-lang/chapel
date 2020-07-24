@@ -394,7 +394,6 @@ module Curl {
   pragma "no doc"
   module CurlQioIntegration {
 
-    import Sys;
     import Time;
     use IO;
     use Curl;
