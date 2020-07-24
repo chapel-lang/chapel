@@ -778,32 +778,29 @@ pragma "no doc"
 /* Iterator for blocking up dimension wrt window */
 private iter block(indexes, window : int) {
   var lowVal = indexes.low;
-  while (true) {
-    var highVal = lowVal + window - 1;
-    if (highVal >= indexes.high) {
-      yield lowVal..indexes.high;
-      break;
-    } else {
-      yield lowVal..highVal;
-    }
-    lowVal = highVal + 1;
-  }
-}
-
-pragma "no doc"
-/* Iterator for blocking up strided dimension wrt window */
-private iter block(indexes, window : int) where indexes.stridable {
-  var lowVal = indexes.low;
   const stride = indexes.stride;
-  while (true) {
-    var highVal = lowVal + window * stride - 1;
-    if (highVal >= indexes.high) {
-      yield lowVal..indexes.high by stride;
-      break;
-    } else {
-      yield lowVal..highVal by stride;
+  if indexes.strideable{
+    while (true) {
+      var highVal = lowVal + window - 1;
+      if (highVal >= indexes.high) {
+        yield lowVal..indexes.high;
+        break;
+      } else {
+        yield lowVal..highVal;
+      }
+      lowVal = highVal + 1;
     }
-    lowVal = highVal + 1;
+  } else {
+    while (true) {
+      var highVal = lowVal + window * stride - 1;
+      if (highVal >= indexes.high) {
+        yield lowVal..indexes.high by stride;
+        break;
+      } else {
+        yield lowVal..highVal by stride;
+      }
+      lowVal = highVal + 1;
+    }
   }
 }
 
