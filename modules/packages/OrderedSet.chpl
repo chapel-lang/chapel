@@ -31,6 +31,9 @@
   When constructed from another orderedSet, 
   the new orderedSet will inherit the parallel safety mode 
   of its originating orderedSet.
+
+  orderedSet is designed with the ability to use enum to choose from different 
+  implementations under the hood. For now, only treap is supported.
 */
 module OrderedSet {
   include module Treap;
@@ -107,6 +110,7 @@ module OrderedSet {
 
       :arg iterable: A collection of elements to add to this orderedSet.
       :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
+      :type parSafe: bool
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,

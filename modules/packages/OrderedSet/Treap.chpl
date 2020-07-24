@@ -21,6 +21,10 @@
   This module contains a implementation of Treap,
   which provides the functionality of OrderedSet.
   Treap supporst insertion, deletion, query in O(lgN).
+
+  .. note::
+    Generally, users don't have to directly use this module. The methods of a treap 
+    are avaliable for an orderedSet. This page is for reference.
 */
 module Treap {
   import ChapelLocks;
@@ -579,7 +583,7 @@ module Treap {
       :return: if there is such one element
       :rtype: `bool`
     */
-    proc const predecessor(e: eltType, ref result: eltType) {
+    proc const predecessor(e: eltType, ref result: eltType): bool {
       _enter(); defer _leave();
       var baseNode = _find(_root, e);
       if baseNode == nil {
@@ -610,7 +614,7 @@ module Treap {
       :return: if there is such one element
       :rtype: `bool`
     */
-    proc const successor(e: eltType, ref result: eltType) {
+    proc const successor(e: eltType, ref result: eltType): bool {
       _enter(); defer _leave();
       var baseNode = _find(_root, e);
       if baseNode == nil {
