@@ -166,8 +166,9 @@ See :mod:`GMP` for more information on how to use GMP with Chapel.
 
 module BigInteger {
   use GMP;
-  private use HaltWrappers;
-  private use SysCTypes;
+  use HaltWrappers;
+  use SysCTypes;
+  use SysError;
 
   enum Round {
     DOWN = -1,

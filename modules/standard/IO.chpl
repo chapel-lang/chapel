@@ -431,8 +431,8 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-private use SysBasic, SysCTypes;
-use SysError;
+use SysBasic, SysCTypes;
+public use SysError;
 
 /*
 
