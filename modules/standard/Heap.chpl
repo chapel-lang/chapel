@@ -65,6 +65,7 @@ module Heap {
     }
   }
 
+  pragma "no doc"
   proc _checkType(type eltType) {
     //NOTE: This is borrowed from List.chpl
     if isGenericType(eltType) {
@@ -348,7 +349,7 @@ module Heap {
       Iterate over the elements of this heap
       
         .. note::
-        Elements are yield in order
+          Elements are yield in order
     */
     iter consume() {
       var h = this;
@@ -356,7 +357,12 @@ module Heap {
         yield h.pop();
       }
     }
+    /*
+      Returns a new DefaultRectangular array containing a copy of each of the
+      elements contained in this heap.
 
+      :return: A new DefaultRectangular array.
+    */
     proc const toArray(): [] eltType {
       if !isCopyableType(eltType) then
         compilerError("toArray() method is not avaliable on a 'heap'",
@@ -381,7 +387,7 @@ module Heap {
   }
 
   /*
-    Make a heap from a list.
+    Create a heap from a list.
 
     :arg x: The list to initialize the heap from.
     :type x: `list(?t)`
@@ -397,7 +403,7 @@ module Heap {
   }
 
   /*
-    Make a heap from a array.
+    Create a heap from a array.
 
     :arg x: The array to initialize the heap from.
     :type x: `[?d] ?t`

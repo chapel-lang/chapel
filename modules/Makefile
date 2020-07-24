@@ -95,6 +95,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/Version.chpl \
+	standard/Heap.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
