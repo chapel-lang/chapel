@@ -235,6 +235,8 @@ void CallExpr::verify() {
   }
 
   if (primitive != NULL) {
+    INT_ASSERT(baseExpr == NULL);
+
     switch (primitive->tag) {
     case PRIM_BLOCK_PARAM_LOOP:
     case PRIM_BLOCK_WHILEDO_LOOP:
@@ -261,6 +263,11 @@ void CallExpr::verify() {
     default:
       break; // do nothing
     }
+  } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
+    // Confirm that this is a partial call, but only if the call is not
+    // within a DefExpr (indicated by not having a stmt-expr)
+    if (normalized && subCall->getStmtExpr() != NULL)
+      INT_ASSERT(subCall->partialTag == true);
   }
 
   verifyNotOnList(baseExpr);

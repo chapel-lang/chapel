@@ -39,6 +39,7 @@ void       getVisibleFunctions(const char*      name,
 BlockStmt* getVisibilityScope(Expr* expr);
 BlockStmt* getInstantiationPoint(Expr* expr);
 
+void       initTypeHelperNames();
 void       visibleFunctionsClear();
 
 #endif

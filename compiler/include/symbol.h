@@ -716,7 +716,6 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 
 void initAstrConsts();
-void initTypeHelperNames();
 
 // Return true if the arg must use a C pointer whether or not
 // pass-by-reference intents are used.

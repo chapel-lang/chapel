@@ -826,9 +826,9 @@ void debugSummary(BaseAST* ast) {
   else
     printf("<debugSummary: NULL>\n");
 }
-void debugSummary(const char* aString) {
-  if (aString)
-    printf("\"%s\"\n", aString);
+void debugSummary(const char* str) {
+  if (str)
+    printf("\"%s\"\n", str);
   else
     printf("<debugSummary: NULL string>\n");
 }
@@ -893,9 +893,11 @@ void blockSummary(BaseAST* ast) {
     blockSummary(fn->body, fn);
   else if (ModuleSymbol* mod = toModuleSymbol(ast))
     blockSummary(mod->block, mod);
+  else if (DefExpr* def = toDefExpr(ast))
+    blockSummary(def->sym);
   else
-    printf("<blockSummary: node %d is not a BlockStmt/Fn/ModuleSymbol>\n",
-           ast->id);
+    printf("<blockSummary: node %d"
+           " is not a BlockStmt/Fn/ModuleSymbol/DefExpr>\n", ast->id);
 }
 static const char* summarySymbolKind(Symbol* sym) {
   if (isFnSymbol(sym)) return "fn";

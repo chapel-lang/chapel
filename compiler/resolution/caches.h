@@ -22,11 +22,42 @@
 #define _CACHES_H_
 
 #include "baseAST.h"
-#include <vector>
-#include <map>
 
-typedef std::vector<int> SymbolMapCacheKey;
-typedef std::map<SymbolMapCacheKey, FnSymbol*> SymbolMapCache;
+//
+// SymbolMapCache: FnSymbol -> FnSymbol cache based on a SymbolMap
+//
+//   addCache(cache, old_fn, new_fn, map): adds an entry to cache from
+//                                         old_fn to new_fn via map
+//
+//   checkCache(cache, fn, map): returns a function previously added
+//                               via addMapCache if fn matches old_fn
+//                               and the maps contain the same
+//                               key-value pairs (in any order)
+//
+//   freeCache(cache): frees memory associated with cache
+//
+class SymbolMapCacheEntry {
+public:
+  SymbolMapCacheEntry(FnSymbol* ifn, SymbolMap* imap);
+
+  FnSymbol* fn;
+  SymbolMap map;
+};
+
+typedef Map<FnSymbol*,     Vec<SymbolMapCacheEntry*>*> SymbolMapCache;
+typedef MapElem<FnSymbol*, Vec<SymbolMapCacheEntry*>*> SymbolMapCacheElem;
+
+
+void      addCache(SymbolMapCache& cache,
+                   FnSymbol*       oldFn,
+                   FnSymbol*       newFn,
+                   SymbolMap*      map);
+
+FnSymbol* checkCache(SymbolMapCache& cache,
+                     FnSymbol*       oldFn,
+                     SymbolMap*      map);
+
+void      freeCache(SymbolMapCache& cache);
 
 //
 // Caches to avoid creating multiple identical wrappers and
@@ -40,8 +71,5 @@ typedef std::map<SymbolMapCacheKey, FnSymbol*> SymbolMapCache;
 
 extern SymbolMapCache genericsCache;
 extern SymbolMapCache promotionsCache;
-
-FnSymbol*& lookupCache(SymbolMapCache& cache, FnSymbol* fn, SymbolMap* map);
-void      freeCache(SymbolMapCache& cache);
 
 #endif
