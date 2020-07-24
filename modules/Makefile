@@ -133,7 +133,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
-	packages/URL.chpl
+	packages/URL.chpl \
+	packages/OrderedSet.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
