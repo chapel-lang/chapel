@@ -1,7 +1,9 @@
 use OrderedMap;
 
-var m1 = new orderedMap(int, int);
-var m2 = new orderedMap(int, int);
+config param impl: mapImpl;
+
+var m1 = new orderedMap(int, int, false, defaultComparator, impl);
+var m2 = new orderedMap(int, int, false, defaultComparator, impl);
 
 m1[1] = 1;
 m1[2] = 2;

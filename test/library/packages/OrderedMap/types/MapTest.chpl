@@ -1,0 +1,32 @@
+import OrderedMap.orderedMap;
+import OrderedMap.mapImpl;
+import OrderedMap.defaultComparator;
+
+config param impl: mapImpl;
+
+proc testMap(type t) {
+
+  var m = new orderedMap(int, t, false, defaultComparator, impl);
+
+  var x: t;
+  x = if isTuple(t) then (new t[0](1), new t[1](2)) else new t(1);
+
+  var ret = m.add(1, x);
+  assert(ret);
+
+  assert(m.contains(1));
+  var y: t;
+  y = if isTuple(t) then (new t[0](-1), new t[1](-2)) else new t(-1);
+
+  ret = m.add(1, y);
+  assert(!ret);
+
+  ret = m.remove(1);
+  assert(ret);
+  assert(!m.contains(2));
+
+  if isUnmanagedClass(t) {
+    delete x;
+    delete y;
+  }
+}

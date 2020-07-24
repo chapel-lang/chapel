@@ -1,0 +1,3 @@
+# This .future is sometimes passing for multilocale/no-local
+CHPL_COMM!=none
+COMPOPTS <= --no-local

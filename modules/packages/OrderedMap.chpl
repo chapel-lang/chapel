@@ -329,7 +329,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      var element = _set._getReference((k, nil));
+      ref element = _set._getReference((k, nil));
 
       var result = element[1]!.val.borrow();
 
@@ -344,7 +344,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      var element = _set._getReference((k, nil));
+      ref element = _set._getReference((k, nil));
 
       ref result = element[1]!.val;
 
@@ -362,8 +362,9 @@ module OrderedMap {
 
       _enter(); defer _leave();
 
-      var result: (valType, shared _valueWrapper?);
-      var found = _set.lowerBound((k, nil), result);
+      var result: _eltType;
+      var found: bool;
+      (found, result) = _set.lowerBound((k, nil));
       if !found || result[0] != k then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
       return result[1]!.val;
@@ -374,8 +375,9 @@ module OrderedMap {
     proc getAndRemove(k: keyType) {
       _enter(); defer _leave();
 
-      var result: (valType, shared _valueWrapper?);
-      var found = _set.lowerBound((k, nil), result);
+      var result: _eltType;
+      var found: bool;
+      (found, result) = _set.lowerBound((k, nil));
       if !found || result[0] != k then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
 
