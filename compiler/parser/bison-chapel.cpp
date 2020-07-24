@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.0.5.  */
+/* A Bison parser, made by GNU Bison 3.4.2.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2019 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -40,11 +41,14 @@
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
+
 /* Identify Bison output.  */
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.5"
+#define YYBISON_VERSION "3.4.2"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -61,15 +65,16 @@
 
 
 
-/* Copy the first part of user declarations.  */
-
-#line 67 "bison-chapel.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
-#  if defined __cplusplus && 201103L <= __cplusplus
-#   define YY_NULLPTR nullptr
+#  if defined __cplusplus
+#   if 201103L <= __cplusplus
+#    define YY_NULLPTR nullptr
+#   else
+#    define YY_NULLPTR 0
+#   endif
 #  else
-#   define YY_NULLPTR 0
+#   define YY_NULLPTR ((void*)0)
 #  endif
 # endif
 
@@ -81,8 +86,8 @@
 # define YYERROR_VERBOSE 0
 #endif
 
-/* In a future release of Bison, this section will be replaced
-   by #include "bison-chapel.h".  */
+/* Use api.header.include to #include this header
+   instead of duplicating it here.  */
 #ifndef YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
 # define YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED
 /* Debug traces.  */
@@ -93,12 +98,12 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 33 "chapel.ypp" /* yacc.c:355  */
+#line 33 "chapel.ypp"
 
   #include <string>
   extern int         captureTokens;
   extern std::string captureString;
-#line 47 "chapel.ypp" /* yacc.c:355  */
+#line 47 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
   #define _BISON_CHAPEL_DEFINES_0_
@@ -113,7 +118,7 @@ extern int yydebug;
   void stringBufferInit();
 
   #endif
-#line 67 "chapel.ypp" /* yacc.c:355  */
+#line 67 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
@@ -192,7 +197,7 @@ extern int yydebug;
   };
 
   #endif
-#line 151 "chapel.ypp" /* yacc.c:355  */
+#line 151 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_2_
   #define _BISON_CHAPEL_DEFINES_2_
@@ -210,7 +215,7 @@ extern int yydebug;
   #define YYLTYPE_IS_TRIVIAL  1
 
   #endif
-#line 174 "chapel.ypp" /* yacc.c:355  */
+#line 174 "chapel.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_3_
   #define _BISON_CHAPEL_DEFINES_3_
@@ -238,7 +243,7 @@ extern int yydebug;
 
   #endif
 
-#line 242 "bison-chapel.cpp" /* yacc.c:355  */
+#line 247 "bison-chapel.cpp"
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -450,7 +455,7 @@ int yypush_parse (yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, YYLT
 yypstate * yypstate_new (void);
 void yypstate_delete (yypstate *ps);
 /* "%code provides" blocks.  */
-#line 205 "chapel.ypp" /* yacc.c:355  */
+#line 205 "chapel.ypp"
 
   extern int yydebug;
 
@@ -458,21 +463,19 @@ void yypstate_delete (yypstate *ps);
                ParserContext* context,
                const char*    str);
 
-#line 462 "bison-chapel.cpp" /* yacc.c:355  */
+#line 467 "bison-chapel.cpp"
 
 #endif /* !YY_YY_INCLUDE_BISON_CHAPEL_H_INCLUDED  */
 
-/* Copy the second part of user declarations.  */
 
-#line 468 "bison-chapel.cpp" /* yacc.c:358  */
 /* Unqualified %code blocks.  */
-#line 39 "chapel.ypp" /* yacc.c:359  */
+#line 39 "chapel.ypp"
 
   #include <string>
   int         captureTokens;
   std::string captureString;
   bool        parsingPrivate=false;
-#line 213 "chapel.ypp" /* yacc.c:359  */
+#line 213 "chapel.ypp"
 
   #include "build.h"
   #include "CatchStmt.h"
@@ -537,7 +540,7 @@ void yypstate_delete (yypstate *ps);
     fprintf(stderr, "\n");
   }
 
-#line 541 "bison-chapel.cpp" /* yacc.c:359  */
+#line 544 "bison-chapel.cpp"
 
 #ifdef short
 # undef short
@@ -558,13 +561,13 @@ typedef signed char yytype_int8;
 #ifdef YYTYPE_UINT16
 typedef YYTYPE_UINT16 yytype_uint16;
 #else
-typedef unsigned short int yytype_uint16;
+typedef unsigned short yytype_uint16;
 #endif
 
 #ifdef YYTYPE_INT16
 typedef YYTYPE_INT16 yytype_int16;
 #else
-typedef short int yytype_int16;
+typedef short yytype_int16;
 #endif
 
 #ifndef YYSIZE_T
@@ -576,7 +579,7 @@ typedef short int yytype_int16;
 #  include <stddef.h> /* INFRINGES ON USER NAME SPACE */
 #  define YYSIZE_T size_t
 # else
-#  define YYSIZE_T unsigned int
+#  define YYSIZE_T unsigned
 # endif
 #endif
 
@@ -612,15 +615,6 @@ typedef short int yytype_int16;
 # define YY_ATTRIBUTE_UNUSED YY_ATTRIBUTE ((__unused__))
 #endif
 
-#if !defined _Noreturn \
-     && (!defined __STDC_VERSION__ || __STDC_VERSION__ < 201112)
-# if defined _MSC_VER && 1200 <= _MSC_VER
-#  define _Noreturn __declspec (noreturn)
-# else
-#  define _Noreturn YY_ATTRIBUTE ((__noreturn__))
-# endif
-#endif
-
 /* Suppress unused-variable warnings by "using" E.  */
 #if ! defined lint || defined __GNUC__
 # define YYUSE(E) ((void) (E))
@@ -628,7 +622,7 @@ typedef short int yytype_int16;
 # define YYUSE(E) /* empty */
 #endif
 
-#if defined __GNUC__ && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
+#if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
 # define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN \
     _Pragma ("GCC diagnostic push") \
@@ -647,6 +641,8 @@ typedef short int yytype_int16;
 # define YY_INITIAL_VALUE(Value) /* Nothing. */
 #endif
 
+
+#define YY_ASSERT(E) ((void) (0 && (E)))
 
 #if ! defined yyoverflow || YYERROR_VERBOSE
 
@@ -768,16 +764,16 @@ union yyalloc
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  1153
 
-/* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
-   by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
 #define YYMAXUTOK   429
 
+/* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
+   as returned by yylex, with out-of-bounds checking.  */
 #define YYTRANSLATE(YYX)                                                \
-  ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
+  ((unsigned) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
-   as returned by yylex, without out-of-bounds checking.  */
+   as returned by yylex.  */
 static const yytype_uint8 yytranslate[] =
 {
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -5492,22 +5488,22 @@ static const yytype_uint8 yyr2[] =
 
 #define YYRECOVERING()  (!!yyerrstatus)
 
-#define YYBACKUP(Token, Value)                                  \
-do                                                              \
-  if (yychar == YYEMPTY)                                        \
-    {                                                           \
-      yychar = (Token);                                         \
-      yylval = (Value);                                         \
-      YYPOPSTACK (yylen);                                       \
-      yystate = *yyssp;                                         \
-      goto yybackup;                                            \
-    }                                                           \
-  else                                                          \
-    {                                                           \
-      yyerror (&yylloc, context, YY_("syntax error: cannot back up")); \
-      YYERROR;                                                  \
-    }                                                           \
-while (0)
+#define YYBACKUP(Token, Value)                                    \
+  do                                                              \
+    if (yychar == YYEMPTY)                                        \
+      {                                                           \
+        yychar = (Token);                                         \
+        yylval = (Value);                                         \
+        YYPOPSTACK (yylen);                                       \
+        yystate = *yyssp;                                         \
+        goto yybackup;                                            \
+      }                                                           \
+    else                                                          \
+      {                                                           \
+        yyerror (&yylloc, context, YY_("syntax error: cannot back up")); \
+        YYERROR;                                                  \
+      }                                                           \
+  while (0)
 
 /* Error token number */
 #define YYTERROR        1
@@ -5566,10 +5562,10 @@ do {                                            \
 /* Print *YYLOCP on YYO.  Private, do not rely on its existence. */
 
 YY_ATTRIBUTE_UNUSED
-static unsigned
+static int
 yy_location_print_ (FILE *yyo, YYLTYPE const * const yylocp)
 {
-  unsigned res = 0;
+  int res = 0;
   int end_col = 0 != yylocp->last_column ? yylocp->last_column - 1 : 0;
   if (0 <= yylocp->first_line)
     {
@@ -5612,41 +5608,43 @@ do {                                                                      \
 } while (0)
 
 
-/*----------------------------------------.
-| Print this symbol's value on YYOUTPUT.  |
-`----------------------------------------*/
+/*-----------------------------------.
+| Print this symbol's value on YYO.  |
+`-----------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
+yy_symbol_value_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
 {
-  FILE *yyo = yyoutput;
-  YYUSE (yyo);
+  FILE *yyoutput = yyo;
+  YYUSE (yyoutput);
   YYUSE (yylocationp);
   YYUSE (context);
   if (!yyvaluep)
     return;
 # ifdef YYPRINT
   if (yytype < YYNTOKENS)
-    YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
+    YYPRINT (yyo, yytoknum[yytype], *yyvaluep);
 # endif
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   YYUSE (yytype);
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
 
-/*--------------------------------.
-| Print this symbol on YYOUTPUT.  |
-`--------------------------------*/
+/*---------------------------.
+| Print this symbol on YYO.  |
+`---------------------------*/
 
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
+yy_symbol_print (FILE *yyo, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, ParserContext* context)
 {
-  YYFPRINTF (yyoutput, "%s %s (",
+  YYFPRINTF (yyo, "%s %s (",
              yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
 
-  YY_LOCATION_PRINT (yyoutput, *yylocationp);
-  YYFPRINTF (yyoutput, ": ");
-  yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, context);
-  YYFPRINTF (yyoutput, ")");
+  YY_LOCATION_PRINT (yyo, *yylocationp);
+  YYFPRINTF (yyo, ": ");
+  yy_symbol_value_print (yyo, yytype, yyvaluep, yylocationp, context);
+  YYFPRINTF (yyo, ")");
 }
 
 /*------------------------------------------------------------------.
@@ -5680,7 +5678,7 @@ do {                                                            \
 static void
 yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, ParserContext* context)
 {
-  unsigned long int yylno = yyrline[yyrule];
+  unsigned long yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
   int yyi;
   YYFPRINTF (stderr, "Reducing stack by rule %d (line %lu):\n",
@@ -5691,7 +5689,7 @@ yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
                        yystos[yyssp[yyi + 1 - yynrhs]],
-                       &(yyvsp[(yyi + 1) - (yynrhs)])
+                       &yyvsp[(yyi + 1) - (yynrhs)]
                        , &(yylsp[(yyi + 1) - (yynrhs)])                       , context);
       YYFPRINTF (stderr, "\n");
     }
@@ -5795,7 +5793,10 @@ yytnamerr (char *yyres, const char *yystr)
           case '\\':
             if (*++yyp != '\\')
               goto do_not_strip_quotes;
-            /* Fall through.  */
+            else
+              goto append;
+
+          append:
           default:
             if (yyres)
               yyres[yyn] = *yyp;
@@ -5813,7 +5814,7 @@ yytnamerr (char *yyres, const char *yystr)
   if (! yyres)
     return yystrlen (yystr);
 
-  return yystpcpy (yyres, yystr) - yyres;
+  return (YYSIZE_T) (yystpcpy (yyres, yystr) - yyres);
 }
 # endif
 
@@ -5891,10 +5892,10 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
                 yyarg[yycount++] = yytname[yyx];
                 {
                   YYSIZE_T yysize1 = yysize + yytnamerr (YY_NULLPTR, yytname[yyx]);
-                  if (! (yysize <= yysize1
-                         && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
+                  if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+                    yysize = yysize1;
+                  else
                     return 2;
-                  yysize = yysize1;
                 }
               }
         }
@@ -5918,9 +5919,10 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
 
   {
     YYSIZE_T yysize1 = yysize + yystrlen (yyformat);
-    if (! (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
+    if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+      yysize = yysize1;
+    else
       return 2;
-    yysize = yysize1;
   }
 
   if (*yymsg_alloc < yysize)
@@ -6031,13 +6033,16 @@ yypstate_new (void)
 void
 yypstate_delete (yypstate *yyps)
 {
+  if (yyps)
+    {
 #ifndef yyoverflow
-  /* If the stack was reallocated but the parse did not complete, then the
-     stack still needs to be freed.  */
-  if (!yyps->yynew && yyps->yyss != yyps->yyssa)
-    YYSTACK_FREE (yyps->yyss);
+      /* If the stack was reallocated but the parse did not complete, then the
+         stack still needs to be freed.  */
+      if (!yyps->yynew && yyps->yyss != yyps->yyssa)
+        YYSTACK_FREE (yyps->yyss);
 #endif
-  free (yyps);
+      free (yyps);
+    }
 }
 
 #define yynerrs yyps->yynerrs
@@ -6123,23 +6128,33 @@ YYLTYPE yylloc = yyloc_default;
   yylsp[0] = *yypushed_loc;
   goto yysetstate;
 
+
 /*------------------------------------------------------------.
-| yynewstate -- Push a new state, which is found in yystate.  |
+| yynewstate -- push a new state, which is found in yystate.  |
 `------------------------------------------------------------*/
- yynewstate:
+yynewstate:
   /* In all cases, when you get here, the value and location stacks
      have just been pushed.  So pushing a state here evens the stacks.  */
   yyssp++;
 
- yysetstate:
-  *yyssp = yystate;
+
+/*--------------------------------------------------------------------.
+| yynewstate -- set current state (the top of the stack) to yystate.  |
+`--------------------------------------------------------------------*/
+yysetstate:
+  YYDPRINTF ((stderr, "Entering state %d\n", yystate));
+  YY_ASSERT (0 <= yystate && yystate < YYNSTATES);
+  *yyssp = (yytype_int16) yystate;
 
   if (yyss + yystacksize - 1 <= yyssp)
+#if !defined yyoverflow && !defined YYSTACK_RELOCATE
+    goto yyexhaustedlab;
+#else
     {
       /* Get the current used size of the three stacks, in elements.  */
-      YYSIZE_T yysize = yyssp - yyss + 1;
+      YYSIZE_T yysize = (YYSIZE_T) (yyssp - yyss + 1);
 
-#ifdef yyoverflow
+# if defined yyoverflow
       {
         /* Give user a chance to reallocate the stack.  Use copies of
            these so that the &'s don't force the real ones into
@@ -6157,15 +6172,11 @@ YYLTYPE yylloc = yyloc_default;
                     &yyvs1, yysize * sizeof (*yyvsp),
                     &yyls1, yysize * sizeof (*yylsp),
                     &yystacksize);
-
-        yyls = yyls1;
         yyss = yyss1;
         yyvs = yyvs1;
+        yyls = yyls1;
       }
-#else /* no yyoverflow */
-# ifndef YYSTACK_RELOCATE
-      goto yyexhaustedlab;
-# else
+# else /* defined YYSTACK_RELOCATE */
       /* Extend the stack our own way.  */
       if (YYMAXDEPTH <= yystacksize)
         goto yyexhaustedlab;
@@ -6182,36 +6193,34 @@ YYLTYPE yylloc = yyloc_default;
         YYSTACK_RELOCATE (yyss_alloc, yyss);
         YYSTACK_RELOCATE (yyvs_alloc, yyvs);
         YYSTACK_RELOCATE (yyls_alloc, yyls);
-#  undef YYSTACK_RELOCATE
+# undef YYSTACK_RELOCATE
         if (yyss1 != yyssa)
           YYSTACK_FREE (yyss1);
       }
 # endif
-#endif /* no yyoverflow */
 
       yyssp = yyss + yysize - 1;
       yyvsp = yyvs + yysize - 1;
       yylsp = yyls + yysize - 1;
 
       YYDPRINTF ((stderr, "Stack size increased to %lu\n",
-                  (unsigned long int) yystacksize));
+                  (unsigned long) yystacksize));
 
       if (yyss + yystacksize - 1 <= yyssp)
         YYABORT;
     }
-
-  YYDPRINTF ((stderr, "Entering state %d\n", yystate));
+#endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
 
   if (yystate == YYFINAL)
     YYACCEPT;
 
   goto yybackup;
 
+
 /*-----------.
 | yybackup.  |
 `-----------*/
 yybackup:
-
   /* Do appropriate processing given the current state.  Read a
      lookahead token if we need one and don't already have one.  */
 
@@ -6296,7 +6305,7 @@ yydefault:
 
 
 /*-----------------------------.
-| yyreduce -- Do a reduction.  |
+| yyreduce -- do a reduction.  |
 `-----------------------------*/
 yyreduce:
   /* yyn is the number of a rule to reduce with.  */
@@ -6318,140 +6327,140 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 2:
-#line 506 "chapel.ypp" /* yacc.c:1663  */
+  case 2:
+#line 506 "chapel.ypp"
     { yyblock = (yyval.pblockstmt); }
-#line 6325 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6334 "bison-chapel.cpp"
     break;
 
   case 3:
-#line 511 "chapel.ypp" /* yacc.c:1663  */
+#line 511 "chapel.ypp"
     { (yyval.pblockstmt) = new BlockStmt(); resetTempID(); }
-#line 6331 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6340 "bison-chapel.cpp"
     break;
 
   case 4:
-#line 512 "chapel.ypp" /* yacc.c:1663  */
+#line 512 "chapel.ypp"
     { (yyvsp[-1].pblockstmt)->appendChapelStmt((yyvsp[0].pblockstmt)); context->generatedStmt = (yyvsp[-1].pblockstmt); resetTempID(); }
-#line 6337 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6346 "bison-chapel.cpp"
     break;
 
   case 6:
-#line 519 "chapel.ypp" /* yacc.c:1663  */
+#line 519 "chapel.ypp"
     { (yyval.pblockstmt) = buildPragmaStmt( (yyvsp[-1].vpch), (yyvsp[0].pblockstmt) ); }
-#line 6343 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6352 "bison-chapel.cpp"
     break;
 
   case 7:
-#line 524 "chapel.ypp" /* yacc.c:1663  */
+#line 524 "chapel.ypp"
     { (yyval.vpch) = new Vec<const char*>(); (yyval.vpch)->add(astr((yyvsp[0].pch))); }
-#line 6349 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6358 "bison-chapel.cpp"
     break;
 
   case 8:
-#line 525 "chapel.ypp" /* yacc.c:1663  */
+#line 525 "chapel.ypp"
     { (yyvsp[-2].vpch)->add(astr((yyvsp[0].pch))); }
-#line 6355 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6364 "bison-chapel.cpp"
     break;
 
   case 25:
-#line 546 "chapel.ypp" /* yacc.c:1663  */
+#line 546 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[-1].pexpr)); }
-#line 6361 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6370 "bison-chapel.cpp"
     break;
 
   case 26:
-#line 547 "chapel.ypp" /* yacc.c:1663  */
+#line 547 "chapel.ypp"
     { (yyval.pblockstmt) = buildAtomicStmt((yyvsp[0].pblockstmt)); }
-#line 6367 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6376 "bison-chapel.cpp"
     break;
 
   case 27:
-#line 548 "chapel.ypp" /* yacc.c:1663  */
+#line 548 "chapel.ypp"
     { (yyval.pblockstmt) = buildBeginStmt((yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt)); }
-#line 6373 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6382 "bison-chapel.cpp"
     break;
 
   case 28:
-#line 549 "chapel.ypp" /* yacc.c:1663  */
+#line 549 "chapel.ypp"
     { (yyval.pblockstmt) = buildGotoStmt(GOTO_BREAK, (yyvsp[-1].pch)); }
-#line 6379 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6388 "bison-chapel.cpp"
     break;
 
   case 29:
-#line 550 "chapel.ypp" /* yacc.c:1663  */
+#line 550 "chapel.ypp"
     { (yyval.pblockstmt) = buildCobeginStmt((yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));  }
-#line 6385 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6394 "bison-chapel.cpp"
     break;
 
   case 30:
-#line 551 "chapel.ypp" /* yacc.c:1663  */
+#line 551 "chapel.ypp"
     { (yyval.pblockstmt) = buildGotoStmt(GOTO_CONTINUE, (yyvsp[-1].pch)); }
-#line 6391 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6400 "bison-chapel.cpp"
     break;
 
   case 31:
-#line 552 "chapel.ypp" /* yacc.c:1663  */
+#line 552 "chapel.ypp"
     { (yyval.pblockstmt) = buildDeleteStmt((yyvsp[-1].pcallexpr)); }
-#line 6397 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6406 "bison-chapel.cpp"
     break;
 
   case 32:
-#line 553 "chapel.ypp" /* yacc.c:1663  */
+#line 553 "chapel.ypp"
     { (yyval.pblockstmt) = buildLabelStmt((yyvsp[-1].pch), (yyvsp[0].pblockstmt)); }
-#line 6403 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6412 "bison-chapel.cpp"
     break;
 
   case 33:
-#line 554 "chapel.ypp" /* yacc.c:1663  */
+#line 554 "chapel.ypp"
     { (yyval.pblockstmt) = buildLocalStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 6409 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6418 "bison-chapel.cpp"
     break;
 
   case 34:
-#line 555 "chapel.ypp" /* yacc.c:1663  */
+#line 555 "chapel.ypp"
     { (yyval.pblockstmt) = buildLocalStmt((yyvsp[0].pblockstmt)); }
-#line 6415 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6424 "bison-chapel.cpp"
     break;
 
   case 35:
-#line 556 "chapel.ypp" /* yacc.c:1663  */
+#line 556 "chapel.ypp"
     { (yyval.pblockstmt) = buildOnStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 6421 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6430 "bison-chapel.cpp"
     break;
 
   case 36:
-#line 557 "chapel.ypp" /* yacc.c:1663  */
+#line 557 "chapel.ypp"
     { (yyval.pblockstmt) = buildSerialStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 6427 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6436 "bison-chapel.cpp"
     break;
 
   case 37:
-#line 558 "chapel.ypp" /* yacc.c:1663  */
+#line 558 "chapel.ypp"
     { (yyval.pblockstmt) = buildSerialStmt(new SymExpr(gTrue), (yyvsp[0].pblockstmt)); }
-#line 6433 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6442 "bison-chapel.cpp"
     break;
 
   case 38:
-#line 559 "chapel.ypp" /* yacc.c:1663  */
+#line 559 "chapel.ypp"
     { (yyval.pblockstmt) = buildSyncStmt((yyvsp[0].pblockstmt)); }
-#line 6439 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6448 "bison-chapel.cpp"
     break;
 
   case 39:
-#line 560 "chapel.ypp" /* yacc.c:1663  */
+#line 560 "chapel.ypp"
     { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_YIELD, (yyvsp[-1].pexpr)); }
-#line 6445 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6454 "bison-chapel.cpp"
     break;
 
   case 40:
-#line 561 "chapel.ypp" /* yacc.c:1663  */
+#line 561 "chapel.ypp"
     { (yyval.pblockstmt) = buildErrorStandin(); }
-#line 6451 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6460 "bison-chapel.cpp"
     break;
 
   case 41:
-#line 566 "chapel.ypp" /* yacc.c:1663  */
+#line 566 "chapel.ypp"
     {
       (yyval.pmodsymbol) = buildModule((yyvsp[0].pch), currentModuleType, NULL, yyfilename, (yyvsp[-3].b), (yyvsp[-2].b), (yylsp[-3]).comment);
       // store previous module name in order to restore it once we're
@@ -6461,768 +6470,768 @@ yyreduce:
       (yyloc).prevModule = currentModuleName;
       currentModuleName = (yyvsp[0].pch);
     }
-#line 6465 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6474 "bison-chapel.cpp"
     break;
 
   case 42:
-#line 579 "chapel.ypp" /* yacc.c:1663  */
+#line 579 "chapel.ypp"
     { (yyvsp[-2].pmodsymbol)->block = new BlockStmt();
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr((yyvsp[-2].pmodsymbol)));
       currentModuleName = (yylsp[-2]).prevModule;  // restore previous module name
     }
-#line 6474 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6483 "bison-chapel.cpp"
     break;
 
   case 43:
-#line 584 "chapel.ypp" /* yacc.c:1663  */
+#line 584 "chapel.ypp"
     { (yyvsp[-3].pmodsymbol)->block = (yyvsp[-1].pblockstmt);
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr((yyvsp[-3].pmodsymbol)));
       currentModuleName = (yylsp[-3]).prevModule;  // restore previous module name
     }
-#line 6483 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6492 "bison-chapel.cpp"
     break;
 
   case 44:
-#line 589 "chapel.ypp" /* yacc.c:1663  */
+#line 589 "chapel.ypp"
     { (yyvsp[-3].pmodsymbol)->block = buildErrorStandin();
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr((yyvsp[-3].pmodsymbol)));
       currentModuleName = (yylsp[-3]).prevModule;  // restore previous module name
     }
-#line 6492 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6501 "bison-chapel.cpp"
     break;
 
   case 45:
-#line 596 "chapel.ypp" /* yacc.c:1663  */
+#line 596 "chapel.ypp"
     { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
-#line 6498 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6507 "bison-chapel.cpp"
     break;
 
   case 46:
-#line 597 "chapel.ypp" /* yacc.c:1663  */
+#line 597 "chapel.ypp"
     { (yyval.b) = false; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
-#line 6504 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6513 "bison-chapel.cpp"
     break;
 
   case 47:
-#line 598 "chapel.ypp" /* yacc.c:1663  */
+#line 598 "chapel.ypp"
     { (yyval.b) = true; (yyloc).comment = context->latestComment; context->latestComment = NULL; }
-#line 6510 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6519 "bison-chapel.cpp"
     break;
 
   case 48:
-#line 602 "chapel.ypp" /* yacc.c:1663  */
+#line 602 "chapel.ypp"
     { (yyval.b) = false; }
-#line 6516 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6525 "bison-chapel.cpp"
     break;
 
   case 49:
-#line 603 "chapel.ypp" /* yacc.c:1663  */
+#line 603 "chapel.ypp"
     { (yyval.b) = true;  }
-#line 6522 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6531 "bison-chapel.cpp"
     break;
 
   case 50:
-#line 607 "chapel.ypp" /* yacc.c:1663  */
+#line 607 "chapel.ypp"
     { (yyval.b) = false; }
-#line 6528 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6537 "bison-chapel.cpp"
     break;
 
   case 51:
-#line 608 "chapel.ypp" /* yacc.c:1663  */
+#line 608 "chapel.ypp"
     { (yyval.b) = false; }
-#line 6534 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6543 "bison-chapel.cpp"
     break;
 
   case 52:
-#line 609 "chapel.ypp" /* yacc.c:1663  */
+#line 609 "chapel.ypp"
     { (yyval.b) = true; }
-#line 6540 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6549 "bison-chapel.cpp"
     break;
 
   case 53:
-#line 614 "chapel.ypp" /* yacc.c:1663  */
+#line 614 "chapel.ypp"
     {
     (yylsp[0]).comment = context->latestComment;
     context->latestComment = NULL;
   }
-#line 6549 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6558 "bison-chapel.cpp"
     break;
 
   case 54:
-#line 619 "chapel.ypp" /* yacc.c:1663  */
+#line 619 "chapel.ypp"
     {
    (yyval.pblockstmt) = buildIncludeModule((yyvsp[-1].pch), (yyvsp[-4].b), (yyvsp[-3].b), (yylsp[-6]).comment);
  }
-#line 6557 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6566 "bison-chapel.cpp"
     break;
 
   case 55:
-#line 634 "chapel.ypp" /* yacc.c:1663  */
+#line 634 "chapel.ypp"
     { (yyval.pblockstmt) = new BlockStmt(); }
-#line 6563 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6572 "bison-chapel.cpp"
     break;
 
   case 56:
-#line 635 "chapel.ypp" /* yacc.c:1663  */
+#line 635 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt);              }
-#line 6569 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6578 "bison-chapel.cpp"
     break;
 
   case 57:
-#line 636 "chapel.ypp" /* yacc.c:1663  */
+#line 636 "chapel.ypp"
     { (yyval.pblockstmt) = buildErrorStandin(); }
-#line 6575 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6584 "bison-chapel.cpp"
     break;
 
   case 58:
-#line 641 "chapel.ypp" /* yacc.c:1663  */
+#line 641 "chapel.ypp"
     { (yyval.pblockstmt) = new BlockStmt(); (yyval.pblockstmt)->appendChapelStmt((yyvsp[0].pblockstmt)); }
-#line 6581 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6590 "bison-chapel.cpp"
     break;
 
   case 59:
-#line 642 "chapel.ypp" /* yacc.c:1663  */
+#line 642 "chapel.ypp"
     { (yyvsp[-1].pblockstmt)->appendChapelStmt((yyvsp[0].pblockstmt)); }
-#line 6587 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6596 "bison-chapel.cpp"
     break;
 
   case 60:
-#line 647 "chapel.ypp" /* yacc.c:1663  */
+#line 647 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6597 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6606 "bison-chapel.cpp"
     break;
 
   case 61:
-#line 652 "chapel.ypp" /* yacc.c:1663  */
+#line 652 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6607 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6616 "bison-chapel.cpp"
     break;
 
   case 62:
-#line 657 "chapel.ypp" /* yacc.c:1663  */
+#line 657 "chapel.ypp"
     { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyvsp[-2].ponlylist)->push_back(cur); }
-#line 6616 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6625 "bison-chapel.cpp"
     break;
 
   case 63:
-#line 661 "chapel.ypp" /* yacc.c:1663  */
+#line 661 "chapel.ypp"
     { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyvsp[-4].ponlylist)->push_back(cur); }
-#line 6625 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6634 "bison-chapel.cpp"
     break;
 
   case 64:
-#line 670 "chapel.ypp" /* yacc.c:1663  */
+#line 670 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6635 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6644 "bison-chapel.cpp"
     break;
 
   case 65:
-#line 675 "chapel.ypp" /* yacc.c:1663  */
+#line 675 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6645 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6654 "bison-chapel.cpp"
     break;
 
   case 66:
-#line 680 "chapel.ypp" /* yacc.c:1663  */
+#line 680 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), new UnresolvedSymExpr("_"));
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6655 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6664 "bison-chapel.cpp"
     break;
 
   case 67:
-#line 685 "chapel.ypp" /* yacc.c:1663  */
+#line 685 "chapel.ypp"
     { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = (yyvsp[0].pexpr);
                                          (yyvsp[-2].ponlylist)->push_back(cur); }
-#line 6664 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6673 "bison-chapel.cpp"
     break;
 
   case 68:
-#line 689 "chapel.ypp" /* yacc.c:1663  */
+#line 689 "chapel.ypp"
     { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), (yyvsp[0].pexpr));
                                          (yyvsp[-4].ponlylist)->push_back(cur); }
-#line 6673 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6682 "bison-chapel.cpp"
     break;
 
   case 69:
-#line 693 "chapel.ypp" /* yacc.c:1663  */
+#line 693 "chapel.ypp"
     { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>((yyvsp[-2].pexpr), new UnresolvedSymExpr("_"));
                                          (yyvsp[-4].ponlylist)->push_back(cur); }
-#line 6682 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6691 "bison-chapel.cpp"
     break;
 
   case 70:
-#line 701 "chapel.ypp" /* yacc.c:1663  */
+#line 701 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6692 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6701 "bison-chapel.cpp"
     break;
 
   case 72:
-#line 710 "chapel.ypp" /* yacc.c:1663  */
+#line 710 "chapel.ypp"
     { (yyval.ponlylist) = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = new UnresolvedSymExpr("");
                                          (yyval.ponlylist)->push_back(cur); }
-#line 6702 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6711 "bison-chapel.cpp"
     break;
 
   case 74:
-#line 719 "chapel.ypp" /* yacc.c:1663  */
-    { (yyval.b) = (currentModuleType != MOD_INTERNAL ? true : false); }
-#line 6708 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 719 "chapel.ypp"
+    { (yyval.b) = true; }
+#line 6717 "bison-chapel.cpp"
     break;
 
   case 75:
-#line 720 "chapel.ypp" /* yacc.c:1663  */
+#line 720 "chapel.ypp"
     { (yyval.b) = false; }
-#line 6714 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6723 "bison-chapel.cpp"
     break;
 
   case 76:
-#line 721 "chapel.ypp" /* yacc.c:1663  */
+#line 721 "chapel.ypp"
     { (yyval.b) = true; }
-#line 6720 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6729 "bison-chapel.cpp"
     break;
 
   case 77:
-#line 725 "chapel.ypp" /* yacc.c:1663  */
+#line 725 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-1].ponlylist), (yyvsp[-3].b)); }
-#line 6726 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6735 "bison-chapel.cpp"
     break;
 
   case 78:
-#line 726 "chapel.ypp" /* yacc.c:1663  */
+#line 726 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-3].pexpr), "", (yyvsp[-1].ponlylist), true, (yyvsp[-5].b)); }
-#line 6732 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6741 "bison-chapel.cpp"
     break;
 
   case 79:
-#line 727 "chapel.ypp" /* yacc.c:1663  */
+#line 727 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), (yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), true, (yyvsp[-7].b)); }
-#line 6738 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6747 "bison-chapel.cpp"
     break;
 
   case 80:
-#line 728 "chapel.ypp" /* yacc.c:1663  */
+#line 728 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), new UnresolvedSymExpr("_"), (yyvsp[-1].ponlylist), true, (yyvsp[-7].b)); }
-#line 6744 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6753 "bison-chapel.cpp"
     break;
 
   case 81:
-#line 729 "chapel.ypp" /* yacc.c:1663  */
+#line 729 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-3].pexpr), "", (yyvsp[-1].ponlylist), false, (yyvsp[-5].b)); }
-#line 6750 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6759 "bison-chapel.cpp"
     break;
 
   case 82:
-#line 730 "chapel.ypp" /* yacc.c:1663  */
+#line 730 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), (yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), false, (yyvsp[-7].b)); }
-#line 6756 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6765 "bison-chapel.cpp"
     break;
 
   case 83:
-#line 731 "chapel.ypp" /* yacc.c:1663  */
+#line 731 "chapel.ypp"
     { (yyval.pblockstmt) = buildUseStmt((yyvsp[-5].pexpr), new UnresolvedSymExpr("_"), (yyvsp[-1].ponlylist), false, (yyvsp[-7].b)); }
-#line 6762 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6771 "bison-chapel.cpp"
     break;
 
   case 84:
-#line 735 "chapel.ypp" /* yacc.c:1663  */
+#line 735 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt);
                                                setImportPrivacy((yyval.pblockstmt), (yyvsp[-3].b));}
-#line 6769 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6778 "bison-chapel.cpp"
     break;
 
   case 85:
-#line 740 "chapel.ypp" /* yacc.c:1663  */
+#line 740 "chapel.ypp"
     { (yyval.pimportstmt) = buildImportStmt((yyvsp[0].pexpr)); }
-#line 6775 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6784 "bison-chapel.cpp"
     break;
 
   case 86:
-#line 741 "chapel.ypp" /* yacc.c:1663  */
+#line 741 "chapel.ypp"
     { (yyval.pimportstmt) = buildImportStmt((yyvsp[-2].pexpr), (yyvsp[0].pch)); }
-#line 6781 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6790 "bison-chapel.cpp"
     break;
 
   case 87:
-#line 742 "chapel.ypp" /* yacc.c:1663  */
+#line 742 "chapel.ypp"
     { (yyval.pimportstmt) = buildImportStmt((yyvsp[-4].pexpr), (yyvsp[-1].ponlylist)); }
-#line 6787 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6796 "bison-chapel.cpp"
     break;
 
   case 88:
-#line 746 "chapel.ypp" /* yacc.c:1663  */
+#line 746 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pimportstmt)); }
-#line 6793 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6802 "bison-chapel.cpp"
     break;
 
   case 89:
-#line 747 "chapel.ypp" /* yacc.c:1663  */
+#line 747 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[-2].pblockstmt); (yyval.pblockstmt)->insertAtTail((yyvsp[0].pimportstmt)); }
-#line 6799 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6808 "bison-chapel.cpp"
     break;
 
   case 90:
-#line 751 "chapel.ypp" /* yacc.c:1663  */
+#line 751 "chapel.ypp"
     { (yyval.pblockstmt) = buildRequireStmt((yyvsp[-1].pcallexpr)); }
-#line 6805 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6814 "bison-chapel.cpp"
     break;
 
   case 91:
-#line 756 "chapel.ypp" /* yacc.c:1663  */
+#line 756 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr), (yyvsp[-2].pch));   }
-#line 6811 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6820 "bison-chapel.cpp"
     break;
 
   case 92:
-#line 758 "chapel.ypp" /* yacc.c:1663  */
+#line 758 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr), "<=>"); }
-#line 6817 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6826 "bison-chapel.cpp"
     break;
 
   case 93:
-#line 760 "chapel.ypp" /* yacc.c:1663  */
+#line 760 "chapel.ypp"
     { (yyval.pblockstmt) = buildAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr), PRIM_REDUCE_ASSIGN); }
-#line 6823 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6832 "bison-chapel.cpp"
     break;
 
   case 94:
-#line 762 "chapel.ypp" /* yacc.c:1663  */
+#line 762 "chapel.ypp"
     { (yyval.pblockstmt) = buildLAndAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr));    }
-#line 6829 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6838 "bison-chapel.cpp"
     break;
 
   case 95:
-#line 764 "chapel.ypp" /* yacc.c:1663  */
+#line 764 "chapel.ypp"
     { (yyval.pblockstmt) = buildLOrAssignment((yyvsp[-3].pexpr), (yyvsp[-1].pexpr));     }
-#line 6835 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6844 "bison-chapel.cpp"
     break;
 
   case 96:
-#line 770 "chapel.ypp" /* yacc.c:1663  */
+#line 770 "chapel.ypp"
     { (yyval.pch) = NULL; }
-#line 6841 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6850 "bison-chapel.cpp"
     break;
 
   case 97:
-#line 771 "chapel.ypp" /* yacc.c:1663  */
+#line 771 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); }
-#line 6847 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6856 "bison-chapel.cpp"
     break;
 
   case 98:
-#line 775 "chapel.ypp" /* yacc.c:1663  */
+#line 775 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); }
-#line 6853 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6862 "bison-chapel.cpp"
     break;
 
   case 99:
-#line 776 "chapel.ypp" /* yacc.c:1663  */
+#line 776 "chapel.ypp"
     { (yyval.pch) = "none"; redefiningReservedWordError((yyval.pch)); }
-#line 6859 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6868 "bison-chapel.cpp"
     break;
 
   case 100:
-#line 777 "chapel.ypp" /* yacc.c:1663  */
+#line 777 "chapel.ypp"
     { (yyval.pch) = "this"; }
-#line 6865 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6874 "bison-chapel.cpp"
     break;
 
   case 101:
-#line 778 "chapel.ypp" /* yacc.c:1663  */
+#line 778 "chapel.ypp"
     { (yyval.pch) = "false"; redefiningReservedWordError((yyval.pch)); }
-#line 6871 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6880 "bison-chapel.cpp"
     break;
 
   case 102:
-#line 779 "chapel.ypp" /* yacc.c:1663  */
+#line 779 "chapel.ypp"
     { (yyval.pch) = "true"; redefiningReservedWordError((yyval.pch)); }
-#line 6877 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6886 "bison-chapel.cpp"
     break;
 
   case 103:
-#line 780 "chapel.ypp" /* yacc.c:1663  */
+#line 780 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); redefiningReservedTypeError((yyvsp[0].pch)); }
-#line 6883 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6892 "bison-chapel.cpp"
     break;
 
   case 104:
-#line 783 "chapel.ypp" /* yacc.c:1663  */
+#line 783 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); }
-#line 6889 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6898 "bison-chapel.cpp"
     break;
 
   case 105:
-#line 784 "chapel.ypp" /* yacc.c:1663  */
+#line 784 "chapel.ypp"
     { (yyval.pch) = "none"; redefiningReservedWordError((yyval.pch)); }
-#line 6895 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6904 "bison-chapel.cpp"
     break;
 
   case 106:
-#line 785 "chapel.ypp" /* yacc.c:1663  */
+#line 785 "chapel.ypp"
     { (yyval.pch) = "this"; redefiningReservedWordError((yyval.pch)); }
-#line 6901 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6910 "bison-chapel.cpp"
     break;
 
   case 107:
-#line 786 "chapel.ypp" /* yacc.c:1663  */
+#line 786 "chapel.ypp"
     { (yyval.pch) = "false"; redefiningReservedWordError((yyval.pch)); }
-#line 6907 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6916 "bison-chapel.cpp"
     break;
 
   case 108:
-#line 787 "chapel.ypp" /* yacc.c:1663  */
+#line 787 "chapel.ypp"
     { (yyval.pch) = "true"; redefiningReservedWordError((yyval.pch)); }
-#line 6913 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6922 "bison-chapel.cpp"
     break;
 
   case 109:
-#line 788 "chapel.ypp" /* yacc.c:1663  */
+#line 788 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); redefiningReservedTypeError((yyvsp[0].pch)); }
-#line 6919 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6928 "bison-chapel.cpp"
     break;
 
   case 110:
-#line 800 "chapel.ypp" /* yacc.c:1663  */
+#line 800 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); }
-#line 6925 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6934 "bison-chapel.cpp"
     break;
 
   case 111:
-#line 801 "chapel.ypp" /* yacc.c:1663  */
+#line 801 "chapel.ypp"
     { (yyval.pch) = "this"; }
-#line 6931 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6940 "bison-chapel.cpp"
     break;
 
   case 112:
-#line 812 "chapel.ypp" /* yacc.c:1663  */
+#line 812 "chapel.ypp"
     { (yyval.pch) = "bool"; }
-#line 6937 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6946 "bison-chapel.cpp"
     break;
 
   case 113:
-#line 813 "chapel.ypp" /* yacc.c:1663  */
+#line 813 "chapel.ypp"
     { (yyval.pch) = "int"; }
-#line 6943 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6952 "bison-chapel.cpp"
     break;
 
   case 114:
-#line 814 "chapel.ypp" /* yacc.c:1663  */
+#line 814 "chapel.ypp"
     { (yyval.pch) = "uint"; }
-#line 6949 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6958 "bison-chapel.cpp"
     break;
 
   case 115:
-#line 815 "chapel.ypp" /* yacc.c:1663  */
+#line 815 "chapel.ypp"
     { (yyval.pch) = "real"; }
-#line 6955 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6964 "bison-chapel.cpp"
     break;
 
   case 116:
-#line 816 "chapel.ypp" /* yacc.c:1663  */
+#line 816 "chapel.ypp"
     { (yyval.pch) = "imag"; }
-#line 6961 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6970 "bison-chapel.cpp"
     break;
 
   case 117:
-#line 817 "chapel.ypp" /* yacc.c:1663  */
+#line 817 "chapel.ypp"
     { (yyval.pch) = "complex"; }
-#line 6967 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6976 "bison-chapel.cpp"
     break;
 
   case 118:
-#line 818 "chapel.ypp" /* yacc.c:1663  */
+#line 818 "chapel.ypp"
     { (yyval.pch) = "bytes"; }
-#line 6973 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6982 "bison-chapel.cpp"
     break;
 
   case 119:
-#line 819 "chapel.ypp" /* yacc.c:1663  */
+#line 819 "chapel.ypp"
     { (yyval.pch) = "string"; }
-#line 6979 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6988 "bison-chapel.cpp"
     break;
 
   case 120:
-#line 820 "chapel.ypp" /* yacc.c:1663  */
+#line 820 "chapel.ypp"
     { (yyval.pch) = "sync"; }
-#line 6985 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 6994 "bison-chapel.cpp"
     break;
 
   case 121:
-#line 821 "chapel.ypp" /* yacc.c:1663  */
+#line 821 "chapel.ypp"
     { (yyval.pch) = "single"; }
-#line 6991 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7000 "bison-chapel.cpp"
     break;
 
   case 122:
-#line 822 "chapel.ypp" /* yacc.c:1663  */
+#line 822 "chapel.ypp"
     { (yyval.pch) = "owned"; }
-#line 6997 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7006 "bison-chapel.cpp"
     break;
 
   case 123:
-#line 823 "chapel.ypp" /* yacc.c:1663  */
+#line 823 "chapel.ypp"
     { (yyval.pch) = "shared"; }
-#line 7003 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7012 "bison-chapel.cpp"
     break;
 
   case 124:
-#line 824 "chapel.ypp" /* yacc.c:1663  */
+#line 824 "chapel.ypp"
     { (yyval.pch) = "borrowed"; }
-#line 7009 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7018 "bison-chapel.cpp"
     break;
 
   case 125:
-#line 825 "chapel.ypp" /* yacc.c:1663  */
+#line 825 "chapel.ypp"
     { (yyval.pch) = "unmanaged"; }
-#line 7015 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7024 "bison-chapel.cpp"
     break;
 
   case 126:
-#line 826 "chapel.ypp" /* yacc.c:1663  */
+#line 826 "chapel.ypp"
     { (yyval.pch) = "domain"; }
-#line 7021 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7030 "bison-chapel.cpp"
     break;
 
   case 127:
-#line 827 "chapel.ypp" /* yacc.c:1663  */
+#line 827 "chapel.ypp"
     { (yyval.pch) = "index"; }
-#line 7027 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7036 "bison-chapel.cpp"
     break;
 
   case 128:
-#line 828 "chapel.ypp" /* yacc.c:1663  */
+#line 828 "chapel.ypp"
     { (yyval.pch) = "locale"; }
-#line 7033 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7042 "bison-chapel.cpp"
     break;
 
   case 129:
-#line 829 "chapel.ypp" /* yacc.c:1663  */
+#line 829 "chapel.ypp"
     { (yyval.pch) = "nothing"; }
-#line 7039 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7048 "bison-chapel.cpp"
     break;
 
   case 130:
-#line 830 "chapel.ypp" /* yacc.c:1663  */
+#line 830 "chapel.ypp"
     { (yyval.pch) = "void"; }
-#line 7045 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7054 "bison-chapel.cpp"
     break;
 
   case 131:
-#line 834 "chapel.ypp" /* yacc.c:1663  */
+#line 834 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtBools[BOOL_SIZE_DEFAULT]->symbol); }
-#line 7051 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7060 "bison-chapel.cpp"
     break;
 
   case 132:
-#line 835 "chapel.ypp" /* yacc.c:1663  */
+#line 835 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyEnumerated->symbol); }
-#line 7057 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7066 "bison-chapel.cpp"
     break;
 
   case 133:
-#line 836 "chapel.ypp" /* yacc.c:1663  */
+#line 836 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtInt[INT_SIZE_DEFAULT]->symbol); }
-#line 7063 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7072 "bison-chapel.cpp"
     break;
 
   case 134:
-#line 837 "chapel.ypp" /* yacc.c:1663  */
+#line 837 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtUInt[INT_SIZE_DEFAULT]->symbol); }
-#line 7069 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7078 "bison-chapel.cpp"
     break;
 
   case 135:
-#line 838 "chapel.ypp" /* yacc.c:1663  */
+#line 838 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol); }
-#line 7075 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7084 "bison-chapel.cpp"
     break;
 
   case 136:
-#line 839 "chapel.ypp" /* yacc.c:1663  */
+#line 839 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtImag[FLOAT_SIZE_DEFAULT]->symbol); }
-#line 7081 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7090 "bison-chapel.cpp"
     break;
 
   case 137:
-#line 840 "chapel.ypp" /* yacc.c:1663  */
+#line 840 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol); }
-#line 7087 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7096 "bison-chapel.cpp"
     break;
 
   case 138:
-#line 841 "chapel.ypp" /* yacc.c:1663  */
+#line 841 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtBytes->symbol); }
-#line 7093 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7102 "bison-chapel.cpp"
     break;
 
   case 139:
-#line 842 "chapel.ypp" /* yacc.c:1663  */
+#line 842 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtString->symbol); }
-#line 7099 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7108 "bison-chapel.cpp"
     break;
 
   case 140:
-#line 843 "chapel.ypp" /* yacc.c:1663  */
+#line 843 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtLocale->symbol); }
-#line 7105 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7114 "bison-chapel.cpp"
     break;
 
   case 141:
-#line 844 "chapel.ypp" /* yacc.c:1663  */
+#line 844 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtNothing->symbol); }
-#line 7111 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7120 "bison-chapel.cpp"
     break;
 
   case 142:
-#line 845 "chapel.ypp" /* yacc.c:1663  */
+#line 845 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtVoid->symbol); }
-#line 7117 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7126 "bison-chapel.cpp"
     break;
 
   case 143:
-#line 852 "chapel.ypp" /* yacc.c:1663  */
+#line 852 "chapel.ypp"
     { (yyval.pch) = "_syncvar"; }
-#line 7123 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7132 "bison-chapel.cpp"
     break;
 
   case 144:
-#line 853 "chapel.ypp" /* yacc.c:1663  */
+#line 853 "chapel.ypp"
     { (yyval.pch) = "_singlevar"; }
-#line 7129 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7138 "bison-chapel.cpp"
     break;
 
   case 145:
-#line 854 "chapel.ypp" /* yacc.c:1663  */
+#line 854 "chapel.ypp"
     { (yyval.pch) = "_domain"; }
-#line 7135 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7144 "bison-chapel.cpp"
     break;
 
   case 146:
-#line 855 "chapel.ypp" /* yacc.c:1663  */
+#line 855 "chapel.ypp"
     { (yyval.pch) = "_index"; }
-#line 7141 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7150 "bison-chapel.cpp"
     break;
 
   case 147:
-#line 859 "chapel.ypp" /* yacc.c:1663  */
+#line 859 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7147 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7156 "bison-chapel.cpp"
     break;
 
   case 148:
-#line 860 "chapel.ypp" /* yacc.c:1663  */
+#line 860 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7153 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7162 "bison-chapel.cpp"
     break;
 
   case 149:
-#line 864 "chapel.ypp" /* yacc.c:1663  */
+#line 864 "chapel.ypp"
     { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_RETURN); }
-#line 7159 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7168 "bison-chapel.cpp"
     break;
 
   case 150:
-#line 865 "chapel.ypp" /* yacc.c:1663  */
+#line 865 "chapel.ypp"
     { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_RETURN, (yyvsp[-1].pexpr)); }
-#line 7165 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7174 "bison-chapel.cpp"
     break;
 
   case 151:
-#line 869 "chapel.ypp" /* yacc.c:1663  */
+#line 869 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(new BlockStmt()); }
-#line 7171 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7180 "bison-chapel.cpp"
     break;
 
   case 153:
-#line 871 "chapel.ypp" /* yacc.c:1663  */
+#line 871 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7177 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7186 "bison-chapel.cpp"
     break;
 
   case 154:
-#line 881 "chapel.ypp" /* yacc.c:1663  */
+#line 881 "chapel.ypp"
     { (yyval.b) = parsingPrivate; parsingPrivate=true;}
-#line 7183 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7192 "bison-chapel.cpp"
     break;
 
   case 155:
-#line 882 "chapel.ypp" /* yacc.c:1663  */
+#line 882 "chapel.ypp"
     { parsingPrivate=(yyvsp[-1].b); applyPrivateToBlock((yyvsp[0].pblockstmt)); (yyval.pblockstmt) = (yyvsp[0].pblockstmt); }
-#line 7189 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7198 "bison-chapel.cpp"
     break;
 
   case 163:
-#line 896 "chapel.ypp" /* yacc.c:1663  */
+#line 896 "chapel.ypp"
     { (yyval.pblockstmt) = buildForwardingStmt((yyvsp[-1].pexpr)); }
-#line 7195 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7204 "bison-chapel.cpp"
     break;
 
   case 164:
-#line 897 "chapel.ypp" /* yacc.c:1663  */
+#line 897 "chapel.ypp"
     { (yyval.pblockstmt) = buildForwardingStmt((yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), true); }
-#line 7201 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7210 "bison-chapel.cpp"
     break;
 
   case 165:
-#line 898 "chapel.ypp" /* yacc.c:1663  */
+#line 898 "chapel.ypp"
     { (yyval.pblockstmt) = buildForwardingStmt((yyvsp[-3].pexpr), (yyvsp[-1].ponlylist), false); }
-#line 7207 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7216 "bison-chapel.cpp"
     break;
 
   case 166:
-#line 899 "chapel.ypp" /* yacc.c:1663  */
+#line 899 "chapel.ypp"
     { (yyval.pblockstmt) = buildForwardingDeclStmt((yyvsp[0].pblockstmt)); }
-#line 7213 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7222 "bison-chapel.cpp"
     break;
 
   case 167:
-#line 904 "chapel.ypp" /* yacc.c:1663  */
+#line 904 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7222 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7231 "bison-chapel.cpp"
     break;
 
   case 168:
-#line 909 "chapel.ypp" /* yacc.c:1663  */
+#line 909 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
                                              NULL,
@@ -7232,20 +7241,20 @@ yyreduce:
                                              FLAG_EXTERN,
                                              (yylsp[-6]).comment));
     }
-#line 7236 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7245 "bison-chapel.cpp"
     break;
 
   case 169:
-#line 919 "chapel.ypp" /* yacc.c:1663  */
+#line 919 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7245 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7254 "bison-chapel.cpp"
     break;
 
   case 170:
-#line 924 "chapel.ypp" /* yacc.c:1663  */
+#line 924 "chapel.ypp"
     {
 
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
@@ -7256,20 +7265,20 @@ yyreduce:
                                              FLAG_EXTERN,
                                              (yylsp[-6]).comment));
     }
-#line 7260 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7269 "bison-chapel.cpp"
     break;
 
   case 171:
-#line 935 "chapel.ypp" /* yacc.c:1663  */
+#line 935 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7269 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7278 "bison-chapel.cpp"
     break;
 
   case 172:
-#line 940 "chapel.ypp" /* yacc.c:1663  */
+#line 940 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
                                              NULL,
@@ -7279,20 +7288,20 @@ yyreduce:
                                              FLAG_EXPORT,
                                              (yylsp[-6]).comment));
     }
-#line 7283 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7292 "bison-chapel.cpp"
     break;
 
   case 173:
-#line 950 "chapel.ypp" /* yacc.c:1663  */
+#line 950 "chapel.ypp"
     {
       (yylsp[0]).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7292 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7301 "bison-chapel.cpp"
     break;
 
   case 174:
-#line 955 "chapel.ypp" /* yacc.c:1663  */
+#line 955 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
                                              (yyvsp[-7].pch),
@@ -7302,27 +7311,27 @@ yyreduce:
                                              FLAG_EXPORT,
                                              (yylsp[-6]).comment));
     }
-#line 7306 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7315 "bison-chapel.cpp"
     break;
 
   case 175:
-#line 966 "chapel.ypp" /* yacc.c:1663  */
+#line 966 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildExternExportFunctionDecl(FLAG_EXTERN, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt));
     }
-#line 7314 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7323 "bison-chapel.cpp"
     break;
 
   case 176:
-#line 970 "chapel.ypp" /* yacc.c:1663  */
+#line 970 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildExternExportFunctionDecl(FLAG_EXPORT, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt));
     }
-#line 7322 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7331 "bison-chapel.cpp"
     break;
 
   case 177:
-#line 975 "chapel.ypp" /* yacc.c:1663  */
+#line 975 "chapel.ypp"
     {
       const char* comment = context->latestComment;
       context->latestComment = NULL;
@@ -7330,11 +7339,11 @@ yyreduce:
       (yyvsp[-2].pflagset)->insert(FLAG_EXTERN);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), comment, (yyvsp[-2].pflagset), (yyvsp[-3].pexpr));
     }
-#line 7334 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7343 "bison-chapel.cpp"
     break;
 
   case 178:
-#line 983 "chapel.ypp" /* yacc.c:1663  */
+#line 983 "chapel.ypp"
     {
       const char* comment = context->latestComment;
       context->latestComment = NULL;
@@ -7342,395 +7351,395 @@ yyreduce:
       (yyvsp[-2].pflagset)->insert(FLAG_EXPORT);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), comment, (yyvsp[-2].pflagset), (yyvsp[-3].pexpr));
     }
-#line 7346 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7355 "bison-chapel.cpp"
     break;
 
   case 179:
-#line 994 "chapel.ypp" /* yacc.c:1663  */
+#line 994 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildExternBlockStmt(astr((yyvsp[0].pch)));
     }
-#line 7354 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7363 "bison-chapel.cpp"
     break;
 
   case 180:
-#line 1000 "chapel.ypp" /* yacc.c:1663  */
+#line 1000 "chapel.ypp"
     { (yyval.pblockstmt) = DoWhileStmt::build((yyvsp[-1].pexpr), (yyvsp[-3].pblockstmt)); }
-#line 7360 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7369 "bison-chapel.cpp"
     break;
 
   case 181:
-#line 1001 "chapel.ypp" /* yacc.c:1663  */
+#line 1001 "chapel.ypp"
     { (yyval.pblockstmt) = WhileDoStmt::build((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7366 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7375 "bison-chapel.cpp"
     break;
 
   case 182:
-#line 1002 "chapel.ypp" /* yacc.c:1663  */
+#line 1002 "chapel.ypp"
     { (yyval.pblockstmt) = buildCoforallLoopStmt((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));       }
-#line 7372 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7381 "bison-chapel.cpp"
     break;
 
   case 183:
-#line 1003 "chapel.ypp" /* yacc.c:1663  */
+#line 1003 "chapel.ypp"
     { (yyval.pblockstmt) = buildCoforallLoopStmt((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true); }
-#line 7378 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7387 "bison-chapel.cpp"
     break;
 
   case 184:
-#line 1004 "chapel.ypp" /* yacc.c:1663  */
+#line 1004 "chapel.ypp"
     { (yyval.pblockstmt) = buildCoforallLoopStmt(NULL, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt));     }
-#line 7384 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7393 "bison-chapel.cpp"
     break;
 
   case 185:
-#line 1005 "chapel.ypp" /* yacc.c:1663  */
+#line 1005 "chapel.ypp"
     { (yyval.pblockstmt) = ForLoop::buildForLoop(  (yyvsp[-3].pexpr), (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
-#line 7390 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7399 "bison-chapel.cpp"
     break;
 
   case 186:
-#line 1006 "chapel.ypp" /* yacc.c:1663  */
+#line 1006 "chapel.ypp"
     { (yyval.pblockstmt) = ForLoop::buildForLoop(  (yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
-#line 7396 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7405 "bison-chapel.cpp"
     break;
 
   case 187:
-#line 1007 "chapel.ypp" /* yacc.c:1663  */
+#line 1007 "chapel.ypp"
     { (yyval.pblockstmt) = ForLoop::buildForLoop(NULL, (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt), false, false); }
-#line 7402 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7411 "bison-chapel.cpp"
     break;
 
   case 188:
-#line 1008 "chapel.ypp" /* yacc.c:1663  */
+#line 1008 "chapel.ypp"
     { (yyval.pblockstmt) = ForLoop::buildForLoop(NULL, (yyvsp[-1].pcallexpr), (yyvsp[0].pblockstmt), true, false); }
-#line 7408 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7417 "bison-chapel.cpp"
     break;
 
   case 189:
-#line 1009 "chapel.ypp" /* yacc.c:1663  */
+#line 1009 "chapel.ypp"
     { (yyval.pblockstmt) = buildParamForLoopStmt((yyvsp[-3].pch), (yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7414 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7423 "bison-chapel.cpp"
     break;
 
   case 190:
-#line 1010 "chapel.ypp" /* yacc.c:1663  */
+#line 1010 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pexpr), NULL, (yyvsp[0].pblockstmt), false, false); }
-#line 7420 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7429 "bison-chapel.cpp"
     break;
 
   case 191:
-#line 1011 "chapel.ypp" /* yacc.c:1663  */
+#line 1011 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pexpr),   (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), false, false); }
-#line 7426 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7435 "bison-chapel.cpp"
     break;
 
   case 192:
-#line 1012 "chapel.ypp" /* yacc.c:1663  */
+#line 1012 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-3].pexpr),   (yyvsp[-1].pcallexpr), NULL, (yyvsp[0].pblockstmt), true,  false); }
-#line 7432 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7441 "bison-chapel.cpp"
     break;
 
   case 193:
-#line 1013 "chapel.ypp" /* yacc.c:1663  */
+#line 1013 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pexpr),   (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), true,  false); }
-#line 7438 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7447 "bison-chapel.cpp"
     break;
 
   case 194:
-#line 1014 "chapel.ypp" /* yacc.c:1663  */
+#line 1014 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-1].pexpr), NULL, (yyvsp[0].pblockstmt), false, false); }
-#line 7444 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7453 "bison-chapel.cpp"
     break;
 
   case 195:
-#line 1015 "chapel.ypp" /* yacc.c:1663  */
+#line 1015 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), false, false); }
-#line 7450 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7459 "bison-chapel.cpp"
     break;
 
   case 196:
-#line 1016 "chapel.ypp" /* yacc.c:1663  */
+#line 1016 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-1].pcallexpr), NULL, (yyvsp[0].pblockstmt), true,  false); }
-#line 7456 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7465 "bison-chapel.cpp"
     break;
 
   case 197:
-#line 1017 "chapel.ypp" /* yacc.c:1663  */
+#line 1017 "chapel.ypp"
     { (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pcallexpr), (yyvsp[-1].pcallexpr),   (yyvsp[0].pblockstmt), true,  false); }
-#line 7462 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7471 "bison-chapel.cpp"
     break;
 
   case 198:
-#line 1019 "chapel.ypp" /* yacc.c:1663  */
+#line 1019 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), NULL, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7472 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7481 "bison-chapel.cpp"
     break;
 
   case 199:
-#line 1025 "chapel.ypp" /* yacc.c:1663  */
+#line 1025 "chapel.ypp"
     {
       if ((yyvsp[-5].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-3].pexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-5].pcallexpr)->get(1)->remove(), (yyvsp[-3].pexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7482 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7491 "bison-chapel.cpp"
     break;
 
   case 200:
-#line 1031 "chapel.ypp" /* yacc.c:1663  */
+#line 1031 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), NULL, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7492 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7501 "bison-chapel.cpp"
     break;
 
   case 201:
-#line 1037 "chapel.ypp" /* yacc.c:1663  */
+#line 1037 "chapel.ypp"
     {
       if ((yyvsp[-5].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-3].pcallexpr), "invalid index expression");
       (yyval.pblockstmt) = ForallStmt::build((yyvsp[-5].pcallexpr)->get(1)->remove(), (yyvsp[-3].pcallexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7502 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7511 "bison-chapel.cpp"
     break;
 
   case 202:
-#line 1043 "chapel.ypp" /* yacc.c:1663  */
+#line 1043 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
         (yyval.pblockstmt) = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), NULL, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
       else
         (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pcallexpr)->get(1)->remove(),                       NULL, new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7513 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7522 "bison-chapel.cpp"
     break;
 
   case 203:
-#line 1050 "chapel.ypp" /* yacc.c:1663  */
+#line 1050 "chapel.ypp"
     {
       if ((yyvsp[-3].pcallexpr)->argList.length > 1)
         (yyval.pblockstmt) = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-3].pcallexpr)), (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
       else
         (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-3].pcallexpr)->get(1)->remove(),                       (yyvsp[-2].pcallexpr), new BlockStmt((yyvsp[0].pblockstmt)), false, true);
     }
-#line 7524 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7533 "bison-chapel.cpp"
     break;
 
   case 204:
-#line 1057 "chapel.ypp" /* yacc.c:1663  */
+#line 1057 "chapel.ypp"
     {
       (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-2].pcallexpr), NULL, new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7532 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7541 "bison-chapel.cpp"
     break;
 
   case 205:
-#line 1061 "chapel.ypp" /* yacc.c:1663  */
+#line 1061 "chapel.ypp"
     {
       (yyval.pblockstmt) = ForallStmt::build(NULL, (yyvsp[-3].pcallexpr), (yyvsp[-2].pcallexpr),   new BlockStmt((yyvsp[0].pblockstmt)), true,  true);
     }
-#line 7540 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7549 "bison-chapel.cpp"
     break;
 
   case 206:
-#line 1067 "chapel.ypp" /* yacc.c:1663  */
+#line 1067 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ZIP, (yyvsp[-1].pcallexpr)); }
-#line 7546 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7555 "bison-chapel.cpp"
     break;
 
   case 207:
-#line 1071 "chapel.ypp" /* yacc.c:1663  */
+#line 1071 "chapel.ypp"
     { (yyval.pblockstmt) = buildIfStmt((yyvsp[-2].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7552 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7561 "bison-chapel.cpp"
     break;
 
   case 208:
-#line 1072 "chapel.ypp" /* yacc.c:1663  */
+#line 1072 "chapel.ypp"
     { (yyval.pblockstmt) = buildIfStmt((yyvsp[-1].pexpr), (yyvsp[0].pblockstmt)); }
-#line 7558 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7567 "bison-chapel.cpp"
     break;
 
   case 209:
-#line 1073 "chapel.ypp" /* yacc.c:1663  */
+#line 1073 "chapel.ypp"
     { (yyval.pblockstmt) = buildIfStmt((yyvsp[-4].pexpr), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7564 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7573 "bison-chapel.cpp"
     break;
 
   case 210:
-#line 1074 "chapel.ypp" /* yacc.c:1663  */
+#line 1074 "chapel.ypp"
     { (yyval.pblockstmt) = buildIfStmt((yyvsp[-3].pexpr), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7570 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7579 "bison-chapel.cpp"
     break;
 
   case 211:
-#line 1075 "chapel.ypp" /* yacc.c:1663  */
+#line 1075 "chapel.ypp"
     {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-4].pexpr),(yyvsp[-3].pch),(yyvsp[-2].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 7577 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7586 "bison-chapel.cpp"
     break;
 
   case 212:
-#line 1077 "chapel.ypp" /* yacc.c:1663  */
+#line 1077 "chapel.ypp"
     {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-3].pexpr),(yyvsp[-2].pch),(yyvsp[-1].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 7584 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7593 "bison-chapel.cpp"
     break;
 
   case 213:
-#line 1079 "chapel.ypp" /* yacc.c:1663  */
+#line 1079 "chapel.ypp"
     {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-6].pexpr),(yyvsp[-5].pch),(yyvsp[-4].pexpr)), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7591 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7600 "bison-chapel.cpp"
     break;
 
   case 214:
-#line 1081 "chapel.ypp" /* yacc.c:1663  */
+#line 1081 "chapel.ypp"
     {
 (yyval.pblockstmt) = buildIfStmt(convertAssignmentAndWarn((yyvsp[-5].pexpr),(yyvsp[-4].pch),(yyvsp[-3].pexpr)), (yyvsp[-2].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7598 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7607 "bison-chapel.cpp"
     break;
 
   case 215:
-#line 1086 "chapel.ypp" /* yacc.c:1663  */
+#line 1086 "chapel.ypp"
     { (yyval.pblockstmt) = DeferStmt::build((yyvsp[0].pblockstmt)); }
-#line 7604 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7613 "bison-chapel.cpp"
     break;
 
   case 216:
-#line 1089 "chapel.ypp" /* yacc.c:1663  */
+#line 1089 "chapel.ypp"
     { (yyval.pblockstmt) = TryStmt::build(false, (yyvsp[-1].pexpr)); }
-#line 7610 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7619 "bison-chapel.cpp"
     break;
 
   case 217:
-#line 1090 "chapel.ypp" /* yacc.c:1663  */
+#line 1090 "chapel.ypp"
     { (yyval.pblockstmt) = TryStmt::build(true,  (yyvsp[-1].pexpr)); }
-#line 7616 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7625 "bison-chapel.cpp"
     break;
 
   case 218:
-#line 1091 "chapel.ypp" /* yacc.c:1663  */
+#line 1091 "chapel.ypp"
     { (yyval.pblockstmt) = TryStmt::build(false, (yyvsp[0].pblockstmt)); }
-#line 7622 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7631 "bison-chapel.cpp"
     break;
 
   case 219:
-#line 1092 "chapel.ypp" /* yacc.c:1663  */
+#line 1092 "chapel.ypp"
     { (yyval.pblockstmt) = TryStmt::build(true,  (yyvsp[0].pblockstmt)); }
-#line 7628 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7637 "bison-chapel.cpp"
     break;
 
   case 220:
-#line 1093 "chapel.ypp" /* yacc.c:1663  */
+#line 1093 "chapel.ypp"
     { (yyval.pblockstmt) = TryStmt::build(false, (yyvsp[-1].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7634 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7643 "bison-chapel.cpp"
     break;
 
   case 221:
-#line 1094 "chapel.ypp" /* yacc.c:1663  */
+#line 1094 "chapel.ypp"
     { (yyval.pblockstmt) = TryStmt::build(true,  (yyvsp[-1].pblockstmt), (yyvsp[0].pblockstmt)); }
-#line 7640 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7649 "bison-chapel.cpp"
     break;
 
   case 222:
-#line 1098 "chapel.ypp" /* yacc.c:1663  */
+#line 1098 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(); }
-#line 7646 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7655 "bison-chapel.cpp"
     break;
 
   case 223:
-#line 1099 "chapel.ypp" /* yacc.c:1663  */
+#line 1099 "chapel.ypp"
     { (yyvsp[-1].pblockstmt)->insertAtTail((yyvsp[0].pexpr)); }
-#line 7652 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7661 "bison-chapel.cpp"
     break;
 
   case 224:
-#line 1103 "chapel.ypp" /* yacc.c:1663  */
+#line 1103 "chapel.ypp"
     { (yyval.pexpr) = CatchStmt::build((yyvsp[0].pblockstmt)); }
-#line 7658 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7667 "bison-chapel.cpp"
     break;
 
   case 225:
-#line 1104 "chapel.ypp" /* yacc.c:1663  */
+#line 1104 "chapel.ypp"
     { (yyval.pexpr) = CatchStmt::build((yyvsp[-1].pdefexpr), (yyvsp[0].pblockstmt)); }
-#line 7664 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7673 "bison-chapel.cpp"
     break;
 
   case 226:
-#line 1105 "chapel.ypp" /* yacc.c:1663  */
+#line 1105 "chapel.ypp"
     { (yyval.pexpr) = CatchStmt::build((yyvsp[-2].pdefexpr), (yyvsp[0].pblockstmt)); }
-#line 7670 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7679 "bison-chapel.cpp"
     break;
 
   case 227:
-#line 1109 "chapel.ypp" /* yacc.c:1663  */
+#line 1109 "chapel.ypp"
     { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch)), NULL, new UnresolvedSymExpr("Error")); }
-#line 7676 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7685 "bison-chapel.cpp"
     break;
 
   case 228:
-#line 1110 "chapel.ypp" /* yacc.c:1663  */
+#line 1110 "chapel.ypp"
     { (yyval.pdefexpr) = new DefExpr(new VarSymbol((yyvsp[-2].pch)), NULL, (yyvsp[0].pexpr));   }
-#line 7682 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7691 "bison-chapel.cpp"
     break;
 
   case 229:
-#line 1114 "chapel.ypp" /* yacc.c:1663  */
+#line 1114 "chapel.ypp"
     { (yyval.pblockstmt) = buildPrimitiveStmt(PRIM_THROW, (yyvsp[-1].pexpr)); }
-#line 7688 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7697 "bison-chapel.cpp"
     break;
 
   case 230:
-#line 1118 "chapel.ypp" /* yacc.c:1663  */
+#line 1118 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(buildSelectStmt((yyvsp[-3].pexpr), (yyvsp[-1].pblockstmt))); }
-#line 7694 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7703 "bison-chapel.cpp"
     break;
 
   case 231:
-#line 1120 "chapel.ypp" /* yacc.c:1663  */
+#line 1120 "chapel.ypp"
     { (yyval.pblockstmt) = buildErrorStandin(); }
-#line 7700 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7709 "bison-chapel.cpp"
     break;
 
   case 232:
-#line 1124 "chapel.ypp" /* yacc.c:1663  */
+#line 1124 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(); }
-#line 7706 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7715 "bison-chapel.cpp"
     break;
 
   case 233:
-#line 1125 "chapel.ypp" /* yacc.c:1663  */
+#line 1125 "chapel.ypp"
     { (yyvsp[-1].pblockstmt)->insertAtTail((yyvsp[0].pexpr)); }
-#line 7712 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7721 "bison-chapel.cpp"
     break;
 
   case 234:
-#line 1130 "chapel.ypp" /* yacc.c:1663  */
+#line 1130 "chapel.ypp"
     { (yyval.pexpr) = new CondStmt(new CallExpr(PRIM_WHEN, (yyvsp[-1].pcallexpr)), (yyvsp[0].pblockstmt)); }
-#line 7718 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7727 "bison-chapel.cpp"
     break;
 
   case 235:
-#line 1132 "chapel.ypp" /* yacc.c:1663  */
+#line 1132 "chapel.ypp"
     { (yyval.pexpr) = new CondStmt(new CallExpr(PRIM_WHEN), (yyvsp[0].pblockstmt)); }
-#line 7724 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7733 "bison-chapel.cpp"
     break;
 
   case 236:
-#line 1134 "chapel.ypp" /* yacc.c:1663  */
+#line 1134 "chapel.ypp"
     { (yyval.pexpr) = new CondStmt(new CallExpr(PRIM_WHEN), (yyvsp[0].pblockstmt)); }
-#line 7730 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7739 "bison-chapel.cpp"
     break;
 
   case 237:
-#line 1141 "chapel.ypp" /* yacc.c:1663  */
+#line 1141 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
                                              NULL,
@@ -7740,11 +7749,11 @@ yyreduce:
                                              FLAG_UNKNOWN,
                                              (yylsp[-5]).comment));
     }
-#line 7744 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7753 "bison-chapel.cpp"
     break;
 
   case 238:
-#line 1151 "chapel.ypp" /* yacc.c:1663  */
+#line 1151 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildChapelStmt(buildClassDefExpr((yyvsp[-4].pch),
                                              NULL,
@@ -7754,71 +7763,71 @@ yyreduce:
                                              FLAG_UNKNOWN,
                                              (yylsp[-5]).comment));
     }
-#line 7758 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7767 "bison-chapel.cpp"
     break;
 
   case 239:
-#line 1164 "chapel.ypp" /* yacc.c:1663  */
+#line 1164 "chapel.ypp"
     {
              (yyval.aggrTag)                     = AGGREGATE_CLASS;
              (yyloc).comment             = context->latestComment;
              context->latestComment = NULL;
            }
-#line 7768 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7777 "bison-chapel.cpp"
     break;
 
   case 240:
-#line 1169 "chapel.ypp" /* yacc.c:1663  */
+#line 1169 "chapel.ypp"
     {
              (yyval.aggrTag)                     = AGGREGATE_RECORD;
              (yyloc).comment             = context->latestComment;
              context->latestComment = NULL;
            }
-#line 7778 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7787 "bison-chapel.cpp"
     break;
 
   case 241:
-#line 1174 "chapel.ypp" /* yacc.c:1663  */
+#line 1174 "chapel.ypp"
     {
              (yyval.aggrTag)                     = AGGREGATE_UNION;
              (yyloc).comment             = context->latestComment;
              context->latestComment = NULL;
            }
-#line 7788 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7797 "bison-chapel.cpp"
     break;
 
   case 242:
-#line 1182 "chapel.ypp" /* yacc.c:1663  */
+#line 1182 "chapel.ypp"
     { (yyval.pcallexpr) = NULL; }
-#line 7794 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7803 "bison-chapel.cpp"
     break;
 
   case 243:
-#line 1183 "chapel.ypp" /* yacc.c:1663  */
+#line 1183 "chapel.ypp"
     { (yyval.pcallexpr) = (yyvsp[0].pcallexpr); }
-#line 7800 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7809 "bison-chapel.cpp"
     break;
 
   case 244:
-#line 1188 "chapel.ypp" /* yacc.c:1663  */
+#line 1188 "chapel.ypp"
     { (yyval.pblockstmt) = new BlockStmt(); }
-#line 7806 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7815 "bison-chapel.cpp"
     break;
 
   case 245:
-#line 1190 "chapel.ypp" /* yacc.c:1663  */
+#line 1190 "chapel.ypp"
     { (yyvsp[-1].pblockstmt)->insertAtTail((yyvsp[0].pblockstmt)); }
-#line 7812 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7821 "bison-chapel.cpp"
     break;
 
   case 246:
-#line 1192 "chapel.ypp" /* yacc.c:1663  */
+#line 1192 "chapel.ypp"
     { (yyvsp[-2].pblockstmt)->insertAtTail(buildPragmaStmt((yyvsp[-1].vpch), (yyvsp[0].pblockstmt))); }
-#line 7818 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7827 "bison-chapel.cpp"
     break;
 
   case 247:
-#line 1197 "chapel.ypp" /* yacc.c:1663  */
+#line 1197 "chapel.ypp"
     {
       EnumType* pdt = (yyvsp[-4].penumtype);
       for_vector(DefExpr, ec, *(yyvsp[-1].pvecOfDefs)) {
@@ -7834,29 +7843,29 @@ yyreduce:
       (yyvsp[-4].penumtype)->symbol = pst;
       (yyval.pblockstmt) = buildChapelStmt(new DefExpr(pst));
     }
-#line 7838 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7847 "bison-chapel.cpp"
     break;
 
   case 248:
-#line 1213 "chapel.ypp" /* yacc.c:1663  */
+#line 1213 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildErrorStandin();
     }
-#line 7846 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7855 "bison-chapel.cpp"
     break;
 
   case 249:
-#line 1220 "chapel.ypp" /* yacc.c:1663  */
+#line 1220 "chapel.ypp"
     {
       (yyval.penumtype) = new EnumType();
       (yyloc).comment = context->latestComment;
       context->latestComment = NULL;
     }
-#line 7856 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7865 "bison-chapel.cpp"
     break;
 
   case 250:
-#line 1229 "chapel.ypp" /* yacc.c:1663  */
+#line 1229 "chapel.ypp"
     {
       (yyval.pvecOfDefs) = new std::vector<DefExpr*>();
       (yyval.pvecOfDefs)->push_back((yyvsp[0].pdefexpr));
@@ -7864,57 +7873,57 @@ yyreduce:
       // start here for enabling documentation of enum constants
       //context->latestComment = NULL;
     }
-#line 7868 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7877 "bison-chapel.cpp"
     break;
 
   case 251:
-#line 1237 "chapel.ypp" /* yacc.c:1663  */
+#line 1237 "chapel.ypp"
     {
       (yyval.pvecOfDefs) = (yyvsp[-1].pvecOfDefs);
     }
-#line 7876 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7885 "bison-chapel.cpp"
     break;
 
   case 252:
-#line 1241 "chapel.ypp" /* yacc.c:1663  */
+#line 1241 "chapel.ypp"
     {
       (yyvsp[-2].pvecOfDefs)->push_back((yyvsp[0].pdefexpr));
     }
-#line 7884 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7893 "bison-chapel.cpp"
     break;
 
   case 253:
-#line 1247 "chapel.ypp" /* yacc.c:1663  */
+#line 1247 "chapel.ypp"
     { (yyval.pdefexpr) = new DefExpr(new EnumSymbol((yyvsp[0].pch))); }
-#line 7890 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7899 "bison-chapel.cpp"
     break;
 
   case 254:
-#line 1248 "chapel.ypp" /* yacc.c:1663  */
+#line 1248 "chapel.ypp"
     { (yyval.pdefexpr) = new DefExpr(new EnumSymbol((yyvsp[-2].pch)), (yyvsp[0].pexpr)); }
-#line 7896 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7905 "bison-chapel.cpp"
     break;
 
   case 255:
-#line 1253 "chapel.ypp" /* yacc.c:1663  */
+#line 1253 "chapel.ypp"
     {
       captureTokens = 1;
       captureString.clear();
     }
-#line 7905 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7914 "bison-chapel.cpp"
     break;
 
   case 256:
-#line 1258 "chapel.ypp" /* yacc.c:1663  */
+#line 1258 "chapel.ypp"
     {
       captureTokens = 0;
       (yyvsp[0].pfnsymbol)->userString = astr(captureString);
     }
-#line 7914 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7923 "bison-chapel.cpp"
     break;
 
   case 257:
-#line 1263 "chapel.ypp" /* yacc.c:1663  */
+#line 1263 "chapel.ypp"
     {
       (yyvsp[-5].pfnsymbol)->retTag = (yyvsp[-3].retTag);
       if ((yyvsp[-3].retTag) == RET_REF || (yyvsp[-3].retTag) == RET_CONST_REF)
@@ -7932,37 +7941,37 @@ yyreduce:
       (yyvsp[-5].pfnsymbol)->insertAtTail((yyvsp[0].pblockstmt));
       (yyval.pexpr) = new DefExpr(buildLambda((yyvsp[-5].pfnsymbol)));
     }
-#line 7936 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7945 "bison-chapel.cpp"
     break;
 
   case 258:
-#line 1285 "chapel.ypp" /* yacc.c:1663  */
+#line 1285 "chapel.ypp"
     {
                   (yyval.pfnsymbol) = new FnSymbol("");
                 }
-#line 7944 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7953 "bison-chapel.cpp"
     break;
 
   case 259:
-#line 1288 "chapel.ypp" /* yacc.c:1663  */
+#line 1288 "chapel.ypp"
     {
                   (yyval.pfnsymbol) = new FnSymbol("");
                   (yyval.pfnsymbol)->addFlag(FLAG_INLINE);
                 }
-#line 7953 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7962 "bison-chapel.cpp"
     break;
 
   case 260:
-#line 1292 "chapel.ypp" /* yacc.c:1663  */
+#line 1292 "chapel.ypp"
     {
                   (yyval.pfnsymbol) = new FnSymbol("");
                   (yyval.pfnsymbol)->addFlag(FLAG_OVERRIDE);
                 }
-#line 7962 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7971 "bison-chapel.cpp"
     break;
 
   case 261:
-#line 1300 "chapel.ypp" /* yacc.c:1663  */
+#line 1300 "chapel.ypp"
     {
       // Capture the latest comment
       (yylsp[0]).comment = context->latestComment;
@@ -7972,22 +7981,22 @@ yyreduce:
       captureTokens = 1;
       captureString.clear();
     }
-#line 7976 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7985 "bison-chapel.cpp"
     break;
 
   case 262:
-#line 1310 "chapel.ypp" /* yacc.c:1663  */
+#line 1310 "chapel.ypp"
     {
       // Stop capturing and save the result.
       captureTokens = 0;
 
       (yyvsp[0].pfnsymbol)->userString = astr(captureString);
     }
-#line 7987 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 7996 "bison-chapel.cpp"
     break;
 
   case 263:
-#line 1317 "chapel.ypp" /* yacc.c:1663  */
+#line 1317 "chapel.ypp"
     {
       FnSymbol* fn = (yyvsp[-6].pfnsymbol);
       FnSymbol* linkageFn = (yyvsp[-9].pfnsymbol);
@@ -8010,691 +8019,691 @@ yyreduce:
       (yyval.pblockstmt) = buildFunctionDecl((yyvsp[-6].pfnsymbol), (yyvsp[-4].retTag), (yyvsp[-3].pexpr), (yyvsp[-2].b), (yyvsp[-1].lifetimeAndWhere).where, (yyvsp[-1].lifetimeAndWhere).lifetime, (yyvsp[0].pblockstmt), (yylsp[-8]).comment);
       context->latestComment = NULL;
     }
-#line 8014 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8023 "bison-chapel.cpp"
     break;
 
   case 264:
-#line 1343 "chapel.ypp" /* yacc.c:1663  */
+#line 1343 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), NULL);
     }
-#line 8022 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8031 "bison-chapel.cpp"
     break;
 
   case 265:
-#line 1347 "chapel.ypp" /* yacc.c:1663  */
+#line 1347 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-2].pt), NULL);
       (yyval.pfnsymbol)->addFlag(FLAG_ASSIGNOP);
     }
-#line 8031 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8040 "bison-chapel.cpp"
     break;
 
   case 266:
-#line 1352 "chapel.ypp" /* yacc.c:1663  */
+#line 1352 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-4].pt), (yyvsp[-3].pexpr));
     }
-#line 8039 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8048 "bison-chapel.cpp"
     break;
 
   case 267:
-#line 1356 "chapel.ypp" /* yacc.c:1663  */
+#line 1356 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), (yyvsp[-1].pch), (yyvsp[-4].pt), (yyvsp[-3].pexpr));
       (yyval.pfnsymbol)->addFlag(FLAG_ASSIGNOP);
     }
-#line 8048 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8057 "bison-chapel.cpp"
     break;
 
   case 268:
-#line 1361 "chapel.ypp" /* yacc.c:1663  */
+#line 1361 "chapel.ypp"
     {
       (yyval.pfnsymbol) = buildFunctionSymbol((yyvsp[0].pfnsymbol), "dummy", INTENT_BLANK, NULL);
     }
-#line 8056 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8065 "bison-chapel.cpp"
     break;
 
   case 270:
-#line 1368 "chapel.ypp" /* yacc.c:1663  */
+#line 1368 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[-1].pexpr); }
-#line 8062 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8071 "bison-chapel.cpp"
     break;
 
   case 271:
-#line 1372 "chapel.ypp" /* yacc.c:1663  */
+#line 1372 "chapel.ypp"
     { (yyval.pch) = (yyvsp[0].pch); }
-#line 8068 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8077 "bison-chapel.cpp"
     break;
 
   case 272:
-#line 1373 "chapel.ypp" /* yacc.c:1663  */
+#line 1373 "chapel.ypp"
     { (yyval.pch) = astr("~", (yyvsp[0].pch)); }
-#line 8074 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8083 "bison-chapel.cpp"
     break;
 
   case 273:
-#line 1374 "chapel.ypp" /* yacc.c:1663  */
+#line 1374 "chapel.ypp"
     { (yyval.pch) = "&"; }
-#line 8080 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8089 "bison-chapel.cpp"
     break;
 
   case 274:
-#line 1375 "chapel.ypp" /* yacc.c:1663  */
+#line 1375 "chapel.ypp"
     { (yyval.pch) = "|"; }
-#line 8086 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8095 "bison-chapel.cpp"
     break;
 
   case 275:
-#line 1376 "chapel.ypp" /* yacc.c:1663  */
+#line 1376 "chapel.ypp"
     { (yyval.pch) = "^"; }
-#line 8092 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8101 "bison-chapel.cpp"
     break;
 
   case 276:
-#line 1377 "chapel.ypp" /* yacc.c:1663  */
+#line 1377 "chapel.ypp"
     { (yyval.pch) = "~"; }
-#line 8098 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8107 "bison-chapel.cpp"
     break;
 
   case 277:
-#line 1378 "chapel.ypp" /* yacc.c:1663  */
+#line 1378 "chapel.ypp"
     { (yyval.pch) = "=="; }
-#line 8104 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8113 "bison-chapel.cpp"
     break;
 
   case 278:
-#line 1379 "chapel.ypp" /* yacc.c:1663  */
+#line 1379 "chapel.ypp"
     { (yyval.pch) = "!="; }
-#line 8110 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8119 "bison-chapel.cpp"
     break;
 
   case 279:
-#line 1380 "chapel.ypp" /* yacc.c:1663  */
+#line 1380 "chapel.ypp"
     { (yyval.pch) = "<="; }
-#line 8116 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8125 "bison-chapel.cpp"
     break;
 
   case 280:
-#line 1381 "chapel.ypp" /* yacc.c:1663  */
+#line 1381 "chapel.ypp"
     { (yyval.pch) = ">="; }
-#line 8122 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8131 "bison-chapel.cpp"
     break;
 
   case 281:
-#line 1382 "chapel.ypp" /* yacc.c:1663  */
+#line 1382 "chapel.ypp"
     { (yyval.pch) = "<"; }
-#line 8128 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8137 "bison-chapel.cpp"
     break;
 
   case 282:
-#line 1383 "chapel.ypp" /* yacc.c:1663  */
+#line 1383 "chapel.ypp"
     { (yyval.pch) = ">"; }
-#line 8134 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8143 "bison-chapel.cpp"
     break;
 
   case 283:
-#line 1384 "chapel.ypp" /* yacc.c:1663  */
+#line 1384 "chapel.ypp"
     { (yyval.pch) = "+"; }
-#line 8140 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8149 "bison-chapel.cpp"
     break;
 
   case 284:
-#line 1385 "chapel.ypp" /* yacc.c:1663  */
+#line 1385 "chapel.ypp"
     { (yyval.pch) = "-"; }
-#line 8146 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8155 "bison-chapel.cpp"
     break;
 
   case 285:
-#line 1386 "chapel.ypp" /* yacc.c:1663  */
+#line 1386 "chapel.ypp"
     { (yyval.pch) = "*"; }
-#line 8152 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8161 "bison-chapel.cpp"
     break;
 
   case 286:
-#line 1387 "chapel.ypp" /* yacc.c:1663  */
+#line 1387 "chapel.ypp"
     { (yyval.pch) = "/"; }
-#line 8158 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8167 "bison-chapel.cpp"
     break;
 
   case 287:
-#line 1388 "chapel.ypp" /* yacc.c:1663  */
+#line 1388 "chapel.ypp"
     { (yyval.pch) = "<<"; }
-#line 8164 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8173 "bison-chapel.cpp"
     break;
 
   case 288:
-#line 1389 "chapel.ypp" /* yacc.c:1663  */
+#line 1389 "chapel.ypp"
     { (yyval.pch) = ">>"; }
-#line 8170 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8179 "bison-chapel.cpp"
     break;
 
   case 289:
-#line 1390 "chapel.ypp" /* yacc.c:1663  */
+#line 1390 "chapel.ypp"
     { (yyval.pch) = "%"; }
-#line 8176 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8185 "bison-chapel.cpp"
     break;
 
   case 290:
-#line 1391 "chapel.ypp" /* yacc.c:1663  */
+#line 1391 "chapel.ypp"
     { (yyval.pch) = "**"; }
-#line 8182 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8191 "bison-chapel.cpp"
     break;
 
   case 291:
-#line 1392 "chapel.ypp" /* yacc.c:1663  */
+#line 1392 "chapel.ypp"
     { (yyval.pch) = "!"; }
-#line 8188 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8197 "bison-chapel.cpp"
     break;
 
   case 292:
-#line 1393 "chapel.ypp" /* yacc.c:1663  */
+#line 1393 "chapel.ypp"
     { (yyval.pch) = "chpl_by"; }
-#line 8194 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8203 "bison-chapel.cpp"
     break;
 
   case 293:
-#line 1394 "chapel.ypp" /* yacc.c:1663  */
+#line 1394 "chapel.ypp"
     { (yyval.pch) = "#"; }
-#line 8200 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8209 "bison-chapel.cpp"
     break;
 
   case 294:
-#line 1395 "chapel.ypp" /* yacc.c:1663  */
+#line 1395 "chapel.ypp"
     { (yyval.pch) = "chpl_align"; }
-#line 8206 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8215 "bison-chapel.cpp"
     break;
 
   case 295:
-#line 1396 "chapel.ypp" /* yacc.c:1663  */
+#line 1396 "chapel.ypp"
     { (yyval.pch) = "<=>"; }
-#line 8212 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8221 "bison-chapel.cpp"
     break;
 
   case 296:
-#line 1397 "chapel.ypp" /* yacc.c:1663  */
+#line 1397 "chapel.ypp"
     { (yyval.pch) = "<~>"; }
-#line 8218 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8227 "bison-chapel.cpp"
     break;
 
   case 297:
-#line 1398 "chapel.ypp" /* yacc.c:1663  */
+#line 1398 "chapel.ypp"
     { (yyval.pch) = "init="; }
-#line 8224 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8233 "bison-chapel.cpp"
     break;
 
   case 298:
-#line 1399 "chapel.ypp" /* yacc.c:1663  */
+#line 1399 "chapel.ypp"
     { (yyval.pch) = astr((yyvsp[-1].pch), "!"); }
-#line 8230 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8239 "bison-chapel.cpp"
     break;
 
   case 299:
-#line 1403 "chapel.ypp" /* yacc.c:1663  */
+#line 1403 "chapel.ypp"
     { (yyval.pch) = "="; }
-#line 8236 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8245 "bison-chapel.cpp"
     break;
 
   case 300:
-#line 1404 "chapel.ypp" /* yacc.c:1663  */
+#line 1404 "chapel.ypp"
     { (yyval.pch) = "+="; }
-#line 8242 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8251 "bison-chapel.cpp"
     break;
 
   case 301:
-#line 1405 "chapel.ypp" /* yacc.c:1663  */
+#line 1405 "chapel.ypp"
     { (yyval.pch) = "-="; }
-#line 8248 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8257 "bison-chapel.cpp"
     break;
 
   case 302:
-#line 1406 "chapel.ypp" /* yacc.c:1663  */
+#line 1406 "chapel.ypp"
     { (yyval.pch) = "*="; }
-#line 8254 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8263 "bison-chapel.cpp"
     break;
 
   case 303:
-#line 1407 "chapel.ypp" /* yacc.c:1663  */
+#line 1407 "chapel.ypp"
     { (yyval.pch) = "/="; }
-#line 8260 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8269 "bison-chapel.cpp"
     break;
 
   case 304:
-#line 1408 "chapel.ypp" /* yacc.c:1663  */
+#line 1408 "chapel.ypp"
     { (yyval.pch) = "%="; }
-#line 8266 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8275 "bison-chapel.cpp"
     break;
 
   case 305:
-#line 1409 "chapel.ypp" /* yacc.c:1663  */
+#line 1409 "chapel.ypp"
     { (yyval.pch) = "**="; }
-#line 8272 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8281 "bison-chapel.cpp"
     break;
 
   case 306:
-#line 1410 "chapel.ypp" /* yacc.c:1663  */
+#line 1410 "chapel.ypp"
     { (yyval.pch) = "&="; }
-#line 8278 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8287 "bison-chapel.cpp"
     break;
 
   case 307:
-#line 1411 "chapel.ypp" /* yacc.c:1663  */
+#line 1411 "chapel.ypp"
     { (yyval.pch) = "|="; }
-#line 8284 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8293 "bison-chapel.cpp"
     break;
 
   case 308:
-#line 1412 "chapel.ypp" /* yacc.c:1663  */
+#line 1412 "chapel.ypp"
     { (yyval.pch) = "^="; }
-#line 8290 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8299 "bison-chapel.cpp"
     break;
 
   case 309:
-#line 1413 "chapel.ypp" /* yacc.c:1663  */
+#line 1413 "chapel.ypp"
     { (yyval.pch) = ">>="; }
-#line 8296 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8305 "bison-chapel.cpp"
     break;
 
   case 310:
-#line 1414 "chapel.ypp" /* yacc.c:1663  */
+#line 1414 "chapel.ypp"
     { (yyval.pch) = "<<="; }
-#line 8302 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8311 "bison-chapel.cpp"
     break;
 
   case 311:
-#line 1418 "chapel.ypp" /* yacc.c:1663  */
+#line 1418 "chapel.ypp"
     { (yyval.pfnsymbol) = new FnSymbol("_"); (yyval.pfnsymbol)->addFlag(FLAG_NO_PARENS); }
-#line 8308 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8317 "bison-chapel.cpp"
     break;
 
   case 312:
-#line 1419 "chapel.ypp" /* yacc.c:1663  */
+#line 1419 "chapel.ypp"
     { (yyval.pfnsymbol) = (yyvsp[-1].pfnsymbol); }
-#line 8314 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8323 "bison-chapel.cpp"
     break;
 
   case 313:
-#line 1423 "chapel.ypp" /* yacc.c:1663  */
+#line 1423 "chapel.ypp"
     { (yyval.pfnsymbol) = (yyvsp[-1].pfnsymbol); }
-#line 8320 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8329 "bison-chapel.cpp"
     break;
 
   case 314:
-#line 1427 "chapel.ypp" /* yacc.c:1663  */
+#line 1427 "chapel.ypp"
     { (yyval.pfnsymbol) = buildFunctionFormal(NULL, NULL); }
-#line 8326 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8335 "bison-chapel.cpp"
     break;
 
   case 315:
-#line 1428 "chapel.ypp" /* yacc.c:1663  */
+#line 1428 "chapel.ypp"
     { (yyval.pfnsymbol) = buildFunctionFormal(NULL, (yyvsp[0].pdefexpr)); }
-#line 8332 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8341 "bison-chapel.cpp"
     break;
 
   case 316:
-#line 1429 "chapel.ypp" /* yacc.c:1663  */
+#line 1429 "chapel.ypp"
     { (yyval.pfnsymbol) = buildFunctionFormal((yyvsp[-2].pfnsymbol), (yyvsp[0].pdefexpr)); }
-#line 8338 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8347 "bison-chapel.cpp"
     break;
 
   case 317:
-#line 1434 "chapel.ypp" /* yacc.c:1663  */
+#line 1434 "chapel.ypp"
     { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), NULL); }
-#line 8344 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8353 "bison-chapel.cpp"
     break;
 
   case 318:
-#line 1436 "chapel.ypp" /* yacc.c:1663  */
+#line 1436 "chapel.ypp"
     { (yyval.pdefexpr) = buildPragmaDefExpr((yyvsp[-4].vpch), buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), (yyvsp[0].pexpr), NULL)); }
-#line 8350 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8359 "bison-chapel.cpp"
     break;
 
   case 319:
-#line 1438 "chapel.ypp" /* yacc.c:1663  */
+#line 1438 "chapel.ypp"
     { (yyval.pdefexpr) = buildArgDefExpr((yyvsp[-3].pt), (yyvsp[-2].pch), (yyvsp[-1].pexpr), NULL, (yyvsp[0].pexpr)); }
-#line 8356 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8365 "bison-chapel.cpp"
     break;
 
   case 320:
-#line 1440 "chapel.ypp" /* yacc.c:1663  */
+#line 1440 "chapel.ypp"
     { (yyval.pdefexpr) = buildTupleArgDefExpr((yyvsp[-5].pt), (yyvsp[-3].pblockstmt), (yyvsp[-1].pexpr), (yyvsp[0].pexpr)); }
-#line 8362 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8371 "bison-chapel.cpp"
     break;
 
   case 321:
-#line 1442 "chapel.ypp" /* yacc.c:1663  */
+#line 1442 "chapel.ypp"
     { USR_FATAL("variable-length argument may not be grouped in a tuple"); }
-#line 8368 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8377 "bison-chapel.cpp"
     break;
 
   case 322:
-#line 1446 "chapel.ypp" /* yacc.c:1663  */
+#line 1446 "chapel.ypp"
     { (yyval.pt) = INTENT_BLANK; }
-#line 8374 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8383 "bison-chapel.cpp"
     break;
 
   case 323:
-#line 1447 "chapel.ypp" /* yacc.c:1663  */
+#line 1447 "chapel.ypp"
     { (yyval.pt) = (yyvsp[0].pt); }
-#line 8380 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8389 "bison-chapel.cpp"
     break;
 
   case 324:
-#line 1451 "chapel.ypp" /* yacc.c:1663  */
+#line 1451 "chapel.ypp"
     { (yyval.pt) = INTENT_IN; }
-#line 8386 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8395 "bison-chapel.cpp"
     break;
 
   case 325:
-#line 1452 "chapel.ypp" /* yacc.c:1663  */
+#line 1452 "chapel.ypp"
     { (yyval.pt) = INTENT_INOUT; }
-#line 8392 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8401 "bison-chapel.cpp"
     break;
 
   case 326:
-#line 1453 "chapel.ypp" /* yacc.c:1663  */
+#line 1453 "chapel.ypp"
     { (yyval.pt) = INTENT_OUT; }
-#line 8398 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8407 "bison-chapel.cpp"
     break;
 
   case 327:
-#line 1454 "chapel.ypp" /* yacc.c:1663  */
+#line 1454 "chapel.ypp"
     { (yyval.pt) = INTENT_CONST; }
-#line 8404 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8413 "bison-chapel.cpp"
     break;
 
   case 328:
-#line 1455 "chapel.ypp" /* yacc.c:1663  */
+#line 1455 "chapel.ypp"
     { (yyval.pt) = INTENT_CONST_IN; }
-#line 8410 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8419 "bison-chapel.cpp"
     break;
 
   case 329:
-#line 1456 "chapel.ypp" /* yacc.c:1663  */
+#line 1456 "chapel.ypp"
     { (yyval.pt) = INTENT_CONST_REF; }
-#line 8416 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8425 "bison-chapel.cpp"
     break;
 
   case 330:
-#line 1457 "chapel.ypp" /* yacc.c:1663  */
+#line 1457 "chapel.ypp"
     { (yyval.pt) = INTENT_PARAM; }
-#line 8422 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8431 "bison-chapel.cpp"
     break;
 
   case 331:
-#line 1458 "chapel.ypp" /* yacc.c:1663  */
+#line 1458 "chapel.ypp"
     { (yyval.pt) = INTENT_REF; }
-#line 8428 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8437 "bison-chapel.cpp"
     break;
 
   case 332:
-#line 1459 "chapel.ypp" /* yacc.c:1663  */
+#line 1459 "chapel.ypp"
     { (yyval.pt) = INTENT_TYPE; }
-#line 8434 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8443 "bison-chapel.cpp"
     break;
 
   case 333:
-#line 1463 "chapel.ypp" /* yacc.c:1663  */
+#line 1463 "chapel.ypp"
     { (yyval.pt) = INTENT_BLANK; }
-#line 8440 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8449 "bison-chapel.cpp"
     break;
 
   case 334:
-#line 1464 "chapel.ypp" /* yacc.c:1663  */
+#line 1464 "chapel.ypp"
     { (yyval.pt) = INTENT_PARAM; }
-#line 8446 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8455 "bison-chapel.cpp"
     break;
 
   case 335:
-#line 1465 "chapel.ypp" /* yacc.c:1663  */
+#line 1465 "chapel.ypp"
     { (yyval.pt) = INTENT_REF;   }
-#line 8452 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8461 "bison-chapel.cpp"
     break;
 
   case 336:
-#line 1466 "chapel.ypp" /* yacc.c:1663  */
+#line 1466 "chapel.ypp"
     { (yyval.pt) = INTENT_CONST_REF;   }
-#line 8458 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8467 "bison-chapel.cpp"
     break;
 
   case 337:
-#line 1467 "chapel.ypp" /* yacc.c:1663  */
+#line 1467 "chapel.ypp"
     { (yyval.pt) = INTENT_CONST;   }
-#line 8464 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8473 "bison-chapel.cpp"
     break;
 
   case 338:
-#line 1468 "chapel.ypp" /* yacc.c:1663  */
+#line 1468 "chapel.ypp"
     { (yyval.pt) = INTENT_TYPE;  }
-#line 8470 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8479 "bison-chapel.cpp"
     break;
 
   case 339:
-#line 1472 "chapel.ypp" /* yacc.c:1663  */
+#line 1472 "chapel.ypp"
     { (yyval.procIter) = ProcIter_PROC; }
-#line 8476 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8485 "bison-chapel.cpp"
     break;
 
   case 340:
-#line 1473 "chapel.ypp" /* yacc.c:1663  */
+#line 1473 "chapel.ypp"
     { (yyval.procIter) = ProcIter_ITER; }
-#line 8482 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8491 "bison-chapel.cpp"
     break;
 
   case 341:
-#line 1477 "chapel.ypp" /* yacc.c:1663  */
+#line 1477 "chapel.ypp"
     { (yyval.retTag) = RET_VALUE; }
-#line 8488 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8497 "bison-chapel.cpp"
     break;
 
   case 342:
-#line 1478 "chapel.ypp" /* yacc.c:1663  */
+#line 1478 "chapel.ypp"
     { (yyval.retTag) = RET_VALUE; }
-#line 8494 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8503 "bison-chapel.cpp"
     break;
 
   case 343:
-#line 1479 "chapel.ypp" /* yacc.c:1663  */
+#line 1479 "chapel.ypp"
     { (yyval.retTag) = RET_CONST_REF; }
-#line 8500 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8509 "bison-chapel.cpp"
     break;
 
   case 344:
-#line 1480 "chapel.ypp" /* yacc.c:1663  */
+#line 1480 "chapel.ypp"
     { (yyval.retTag) = RET_REF; }
-#line 8506 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8515 "bison-chapel.cpp"
     break;
 
   case 345:
-#line 1481 "chapel.ypp" /* yacc.c:1663  */
+#line 1481 "chapel.ypp"
     { (yyval.retTag) = RET_PARAM; }
-#line 8512 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8521 "bison-chapel.cpp"
     break;
 
   case 346:
-#line 1482 "chapel.ypp" /* yacc.c:1663  */
+#line 1482 "chapel.ypp"
     { (yyval.retTag) = RET_TYPE; }
-#line 8518 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8527 "bison-chapel.cpp"
     break;
 
   case 347:
-#line 1486 "chapel.ypp" /* yacc.c:1663  */
+#line 1486 "chapel.ypp"
     { (yyval.b) = false; }
-#line 8524 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8533 "bison-chapel.cpp"
     break;
 
   case 348:
-#line 1487 "chapel.ypp" /* yacc.c:1663  */
+#line 1487 "chapel.ypp"
     { (yyval.b) = true;  }
-#line 8530 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8539 "bison-chapel.cpp"
     break;
 
   case 349:
-#line 1490 "chapel.ypp" /* yacc.c:1663  */
+#line 1490 "chapel.ypp"
     { (yyval.pblockstmt) = NULL; }
-#line 8536 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8545 "bison-chapel.cpp"
     break;
 
   case 352:
-#line 1496 "chapel.ypp" /* yacc.c:1663  */
+#line 1496 "chapel.ypp"
     { (yyval.pblockstmt) = new BlockStmt((yyvsp[0].pblockstmt)); }
-#line 8542 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8551 "bison-chapel.cpp"
     break;
 
   case 353:
-#line 1500 "chapel.ypp" /* yacc.c:1663  */
+#line 1500 "chapel.ypp"
     { 
       DefExpr * de = new DefExpr(new VarSymbol((yyvsp[0].pch)));
       USR_WARN(de, "support for space in query expressions is deprecated");
       (yyval.pexpr) = de;
   }
-#line 8552 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8561 "bison-chapel.cpp"
     break;
 
   case 354:
-#line 1505 "chapel.ypp" /* yacc.c:1663  */
+#line 1505 "chapel.ypp"
     { (yyval.pexpr) = buildQueriedExpr((yyvsp[0].pch)); }
-#line 8558 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8567 "bison-chapel.cpp"
     break;
 
   case 355:
-#line 1509 "chapel.ypp" /* yacc.c:1663  */
+#line 1509 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gUninstantiated); }
-#line 8564 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8573 "bison-chapel.cpp"
     break;
 
   case 356:
-#line 1510 "chapel.ypp" /* yacc.c:1663  */
+#line 1510 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8570 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8579 "bison-chapel.cpp"
     break;
 
   case 357:
-#line 1511 "chapel.ypp" /* yacc.c:1663  */
+#line 1511 "chapel.ypp"
     { if (DefExpr* def = toDefExpr((yyvsp[0].pexpr))) {
                              def->sym->addFlag(FLAG_PARAM);
                            }
                            (yyval.pexpr) = (yyvsp[0].pexpr);
                          }
-#line 8580 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8589 "bison-chapel.cpp"
     break;
 
   case 358:
-#line 1519 "chapel.ypp" /* yacc.c:1663  */
+#line 1519 "chapel.ypp"
     { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(NULL, NULL); }
-#line 8586 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8595 "bison-chapel.cpp"
     break;
 
   case 359:
-#line 1521 "chapel.ypp" /* yacc.c:1663  */
+#line 1521 "chapel.ypp"
     { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), NULL); }
-#line 8592 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8601 "bison-chapel.cpp"
     break;
 
   case 360:
-#line 1523 "chapel.ypp" /* yacc.c:1663  */
+#line 1523 "chapel.ypp"
     { (yyval.lifetimeAndWhere) = makeWhereAndLifetime(NULL, (yyvsp[0].pexpr)); }
-#line 8598 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8607 "bison-chapel.cpp"
     break;
 
   case 361:
-#line 1525 "chapel.ypp" /* yacc.c:1663  */
+#line 1525 "chapel.ypp"
     { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 8604 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8613 "bison-chapel.cpp"
     break;
 
   case 362:
-#line 1527 "chapel.ypp" /* yacc.c:1663  */
+#line 1527 "chapel.ypp"
     { (yyval.lifetimeAndWhere) = makeWhereAndLifetime((yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 8610 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8619 "bison-chapel.cpp"
     break;
 
   case 363:
-#line 1532 "chapel.ypp" /* yacc.c:1663  */
+#line 1532 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8616 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8625 "bison-chapel.cpp"
     break;
 
   case 364:
-#line 1534 "chapel.ypp" /* yacc.c:1663  */
+#line 1534 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(",", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 8622 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8631 "bison-chapel.cpp"
     break;
 
   case 365:
-#line 1538 "chapel.ypp" /* yacc.c:1663  */
+#line 1538 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr("=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 8628 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8637 "bison-chapel.cpp"
     break;
 
   case 366:
-#line 1539 "chapel.ypp" /* yacc.c:1663  */
+#line 1539 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 8634 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8643 "bison-chapel.cpp"
     break;
 
   case 367:
-#line 1540 "chapel.ypp" /* yacc.c:1663  */
+#line 1540 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 8640 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8649 "bison-chapel.cpp"
     break;
 
   case 368:
-#line 1541 "chapel.ypp" /* yacc.c:1663  */
+#line 1541 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 8646 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8655 "bison-chapel.cpp"
     break;
 
   case 369:
-#line 1542 "chapel.ypp" /* yacc.c:1663  */
+#line 1542 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 8652 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8661 "bison-chapel.cpp"
     break;
 
   case 370:
-#line 1543 "chapel.ypp" /* yacc.c:1663  */
+#line 1543 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr));}
-#line 8658 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8667 "bison-chapel.cpp"
     break;
 
   case 371:
-#line 1544 "chapel.ypp" /* yacc.c:1663  */
+#line 1544 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_RETURN, (yyvsp[0].pexpr)); }
-#line 8664 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8673 "bison-chapel.cpp"
     break;
 
   case 372:
-#line 1549 "chapel.ypp" /* yacc.c:1663  */
+#line 1549 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr((yyvsp[0].pch))); }
-#line 8670 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8679 "bison-chapel.cpp"
     break;
 
   case 373:
-#line 1551 "chapel.ypp" /* yacc.c:1663  */
+#line 1551 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_LIFETIME_OF, new UnresolvedSymExpr("this")); }
-#line 8676 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8685 "bison-chapel.cpp"
     break;
 
   case 374:
-#line 1556 "chapel.ypp" /* yacc.c:1663  */
+#line 1556 "chapel.ypp"
     { (yyval.pblockstmt) = (yyvsp[-1].pblockstmt); }
-#line 8682 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8691 "bison-chapel.cpp"
     break;
 
   case 375:
-#line 1558 "chapel.ypp" /* yacc.c:1663  */
+#line 1558 "chapel.ypp"
     { (yyval.pblockstmt) = handleConfigTypes((yyvsp[-1].pblockstmt)); }
-#line 8688 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8697 "bison-chapel.cpp"
     break;
 
   case 376:
-#line 1560 "chapel.ypp" /* yacc.c:1663  */
+#line 1560 "chapel.ypp"
     { (yyval.pblockstmt) = convertTypesToExtern((yyvsp[-1].pblockstmt)); }
-#line 8694 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8703 "bison-chapel.cpp"
     break;
 
   case 377:
-#line 1565 "chapel.ypp" /* yacc.c:1663  */
+#line 1565 "chapel.ypp"
     {
       VarSymbol* var = new VarSymbol((yyvsp[-1].pch));
 
@@ -8707,11 +8716,11 @@ yyreduce:
 
       (yyval.pblockstmt) = buildChapelStmt(def);
     }
-#line 8711 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8720 "bison-chapel.cpp"
     break;
 
   case 378:
-#line 1578 "chapel.ypp" /* yacc.c:1663  */
+#line 1578 "chapel.ypp"
     {
       VarSymbol* var = new VarSymbol((yyvsp[-3].pch));
 
@@ -8725,279 +8734,279 @@ yyreduce:
       (yyvsp[0].pblockstmt)->insertAtHead(def);
       (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pblockstmt));
     }
-#line 8729 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8738 "bison-chapel.cpp"
     break;
 
   case 379:
-#line 1594 "chapel.ypp" /* yacc.c:1663  */
+#line 1594 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 8735 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8744 "bison-chapel.cpp"
     break;
 
   case 380:
-#line 1596 "chapel.ypp" /* yacc.c:1663  */
+#line 1596 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8741 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8750 "bison-chapel.cpp"
     break;
 
   case 381:
-#line 1598 "chapel.ypp" /* yacc.c:1663  */
+#line 1598 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExprFromArrayType((yyvsp[0].pcallexpr)); }
-#line 8747 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8756 "bison-chapel.cpp"
     break;
 
   case 382:
-#line 1602 "chapel.ypp" /* yacc.c:1663  */
+#line 1602 "chapel.ypp"
     { (yyval.pflagset) = buildVarDeclFlags(FLAG_PARAM); }
-#line 8753 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8762 "bison-chapel.cpp"
     break;
 
   case 383:
-#line 1603 "chapel.ypp" /* yacc.c:1663  */
+#line 1603 "chapel.ypp"
     { (yyval.pflagset) = buildVarDeclFlags(FLAG_CONST); }
-#line 8759 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8768 "bison-chapel.cpp"
     break;
 
   case 384:
-#line 1604 "chapel.ypp" /* yacc.c:1663  */
+#line 1604 "chapel.ypp"
     { (yyval.pflagset) = buildVarDeclFlags(FLAG_REF_VAR); }
-#line 8765 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8774 "bison-chapel.cpp"
     break;
 
   case 385:
-#line 1605 "chapel.ypp" /* yacc.c:1663  */
+#line 1605 "chapel.ypp"
     { (yyval.pflagset) = buildVarDeclFlags(FLAG_CONST, FLAG_REF_VAR); }
-#line 8771 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8780 "bison-chapel.cpp"
     break;
 
   case 386:
-#line 1606 "chapel.ypp" /* yacc.c:1663  */
+#line 1606 "chapel.ypp"
     { (yyval.pflagset) = buildVarDeclFlags(); }
-#line 8777 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8786 "bison-chapel.cpp"
     break;
 
   case 387:
-#line 1611 "chapel.ypp" /* yacc.c:1663  */
+#line 1611 "chapel.ypp"
     {
       (yyvsp[-2].pflagset)->insert(FLAG_CONFIG);
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
       context->latestComment = NULL;
     }
-#line 8787 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8796 "bison-chapel.cpp"
     break;
 
   case 388:
-#line 1617 "chapel.ypp" /* yacc.c:1663  */
+#line 1617 "chapel.ypp"
     {
       (yyval.pblockstmt) = buildVarDecls((yyvsp[-1].pblockstmt), context->latestComment, (yyvsp[-2].pflagset));
       context->latestComment = NULL;
     }
-#line 8796 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8805 "bison-chapel.cpp"
     break;
 
   case 390:
-#line 1626 "chapel.ypp" /* yacc.c:1663  */
+#line 1626 "chapel.ypp"
     {
       for_alist(expr, (yyvsp[0].pblockstmt)->body)
         (yyvsp[-2].pblockstmt)->insertAtTail(expr->remove());
     }
-#line 8805 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8814 "bison-chapel.cpp"
     break;
 
   case 391:
-#line 1634 "chapel.ypp" /* yacc.c:1663  */
+#line 1634 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt(new DefExpr(new VarSymbol((yyvsp[-2].pch)), (yyvsp[0].pexpr), (yyvsp[-1].pexpr))); }
-#line 8811 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8820 "bison-chapel.cpp"
     break;
 
   case 392:
-#line 1636 "chapel.ypp" /* yacc.c:1663  */
+#line 1636 "chapel.ypp"
     { (yyval.pblockstmt) = buildTupleVarDeclStmt((yyvsp[-3].pblockstmt), (yyvsp[-1].pexpr), (yyvsp[0].pexpr)); }
-#line 8817 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8826 "bison-chapel.cpp"
     break;
 
   case 393:
-#line 1641 "chapel.ypp" /* yacc.c:1663  */
+#line 1641 "chapel.ypp"
     { (yyval.pexpr) = new DefExpr(new VarSymbol("chpl__tuple_blank")); }
-#line 8823 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8832 "bison-chapel.cpp"
     break;
 
   case 394:
-#line 1643 "chapel.ypp" /* yacc.c:1663  */
+#line 1643 "chapel.ypp"
     { (yyval.pexpr) = new DefExpr(new VarSymbol((yyvsp[0].pch))); }
-#line 8829 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8838 "bison-chapel.cpp"
     break;
 
   case 395:
-#line 1645 "chapel.ypp" /* yacc.c:1663  */
+#line 1645 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[-1].pblockstmt); }
-#line 8835 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8844 "bison-chapel.cpp"
     break;
 
   case 396:
-#line 1650 "chapel.ypp" /* yacc.c:1663  */
+#line 1650 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[0].pexpr)); }
-#line 8841 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8850 "bison-chapel.cpp"
     break;
 
   case 397:
-#line 1652 "chapel.ypp" /* yacc.c:1663  */
+#line 1652 "chapel.ypp"
     { (yyval.pblockstmt) = buildChapelStmt((yyvsp[-1].pexpr)); }
-#line 8847 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8856 "bison-chapel.cpp"
     break;
 
   case 398:
-#line 1654 "chapel.ypp" /* yacc.c:1663  */
+#line 1654 "chapel.ypp"
     { (yyval.pblockstmt) = ((yyvsp[0].pblockstmt)->insertAtHead((yyvsp[-2].pexpr)), (yyvsp[0].pblockstmt)); }
-#line 8853 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8862 "bison-chapel.cpp"
     break;
 
   case 399:
-#line 1660 "chapel.ypp" /* yacc.c:1663  */
+#line 1660 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 8859 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8868 "bison-chapel.cpp"
     break;
 
   case 400:
-#line 1661 "chapel.ypp" /* yacc.c:1663  */
+#line 1661 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gNoInit); }
-#line 8865 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8874 "bison-chapel.cpp"
     break;
 
   case 401:
-#line 1662 "chapel.ypp" /* yacc.c:1663  */
+#line 1662 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8871 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8880 "bison-chapel.cpp"
     break;
 
   case 402:
-#line 1668 "chapel.ypp" /* yacc.c:1663  */
+#line 1668 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 8877 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8886 "bison-chapel.cpp"
     break;
 
   case 403:
-#line 1670 "chapel.ypp" /* yacc.c:1663  */
+#line 1670 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, NULL); }
-#line 8883 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8892 "bison-chapel.cpp"
     break;
 
   case 404:
-#line 1672 "chapel.ypp" /* yacc.c:1663  */
+#line 1672 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 8891 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8900 "bison-chapel.cpp"
     break;
 
   case 405:
-#line 1676 "chapel.ypp" /* yacc.c:1663  */
+#line 1676 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-1].pcallexpr)), NULL);
     }
-#line 8899 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8908 "bison-chapel.cpp"
     break;
 
   case 406:
-#line 1680 "chapel.ypp" /* yacc.c:1663  */
+#line 1680 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 8905 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8914 "bison-chapel.cpp"
     break;
 
   case 407:
-#line 1682 "chapel.ypp" /* yacc.c:1663  */
+#line 1682 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 8913 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8922 "bison-chapel.cpp"
     break;
 
   case 408:
-#line 1686 "chapel.ypp" /* yacc.c:1663  */
+#line 1686 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr(PRIM_ERROR);
     }
-#line 8921 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8930 "bison-chapel.cpp"
     break;
 
   case 409:
-#line 1693 "chapel.ypp" /* yacc.c:1663  */
+#line 1693 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 8927 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8936 "bison-chapel.cpp"
     break;
 
   case 410:
-#line 1694 "chapel.ypp" /* yacc.c:1663  */
+#line 1694 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8933 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8942 "bison-chapel.cpp"
     break;
 
   case 411:
-#line 1695 "chapel.ypp" /* yacc.c:1663  */
+#line 1695 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8939 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8948 "bison-chapel.cpp"
     break;
 
   case 412:
-#line 1696 "chapel.ypp" /* yacc.c:1663  */
+#line 1696 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 8945 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8954 "bison-chapel.cpp"
     break;
 
   case 413:
-#line 1697 "chapel.ypp" /* yacc.c:1663  */
+#line 1697 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 8951 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8960 "bison-chapel.cpp"
     break;
 
   case 414:
-#line 1702 "chapel.ypp" /* yacc.c:1663  */
+#line 1702 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 8957 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8966 "bison-chapel.cpp"
     break;
 
   case 415:
-#line 1703 "chapel.ypp" /* yacc.c:1663  */
+#line 1703 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 8963 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8972 "bison-chapel.cpp"
     break;
 
   case 416:
-#line 1704 "chapel.ypp" /* yacc.c:1663  */
+#line 1704 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pcallexpr); }
-#line 8969 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8978 "bison-chapel.cpp"
     break;
 
   case 417:
-#line 1705 "chapel.ypp" /* yacc.c:1663  */
+#line 1705 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 8975 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8984 "bison-chapel.cpp"
     break;
 
   case 418:
-#line 1706 "chapel.ypp" /* yacc.c:1663  */
+#line 1706 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 8981 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8990 "bison-chapel.cpp"
     break;
 
   case 419:
-#line 1727 "chapel.ypp" /* yacc.c:1663  */
+#line 1727 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr));
     }
-#line 8989 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 8998 "bison-chapel.cpp"
     break;
 
   case 420:
-#line 1731 "chapel.ypp" /* yacc.c:1663  */
+#line 1731 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr("chpl__buildArrayRuntimeType",
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pcallexpr));
     }
-#line 8997 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9006 "bison-chapel.cpp"
     break;
 
   case 421:
-#line 1735 "chapel.ypp" /* yacc.c:1663  */
+#line 1735 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
@@ -9005,1245 +9014,1246 @@ yyreduce:
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pexpr)), (yyvsp[0].pexpr), (yyvsp[-4].pcallexpr)->get(1)->remove(),
              new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pexpr)->copy()));
     }
-#line 9009 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9018 "bison-chapel.cpp"
     break;
 
   case 422:
-#line 1743 "chapel.ypp" /* yacc.c:1663  */
+#line 1743 "chapel.ypp"
     {
       (yyval.pcallexpr) = new CallExpr(PRIM_ERROR);
     }
-#line 9017 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9026 "bison-chapel.cpp"
     break;
 
   case 423:
-#line 1749 "chapel.ypp" /* yacc.c:1663  */
+#line 1749 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 9023 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9032 "bison-chapel.cpp"
     break;
 
   case 424:
-#line 1750 "chapel.ypp" /* yacc.c:1663  */
+#line 1750 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9029 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9038 "bison-chapel.cpp"
     break;
 
   case 425:
-#line 1751 "chapel.ypp" /* yacc.c:1663  */
+#line 1751 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9035 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9044 "bison-chapel.cpp"
     break;
 
   case 426:
-#line 1756 "chapel.ypp" /* yacc.c:1663  */
+#line 1756 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9041 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9050 "bison-chapel.cpp"
     break;
 
   case 427:
-#line 1758 "chapel.ypp" /* yacc.c:1663  */
+#line 1758 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pcallexpr), (yyvsp[0].pexpr)); }
-#line 9047 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9056 "bison-chapel.cpp"
     break;
 
   case 428:
-#line 1764 "chapel.ypp" /* yacc.c:1663  */
+#line 1764 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayRuntimeType", gNil, (yyvsp[0].pexpr)); }
-#line 9053 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9062 "bison-chapel.cpp"
     break;
 
   case 429:
-#line 1766 "chapel.ypp" /* yacc.c:1663  */
+#line 1766 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pcallexpr), (yyvsp[0].pexpr)); }
-#line 9059 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9068 "bison-chapel.cpp"
     break;
 
   case 430:
-#line 1768 "chapel.ypp" /* yacc.c:1663  */
+#line 1768 "chapel.ypp"
     { (yyval.pexpr) = buildFormalArrayType((yyvsp[-2].pexpr), (yyvsp[0].pexpr), (yyvsp[-4].pcallexpr)); }
-#line 9065 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9074 "bison-chapel.cpp"
     break;
 
   case 431:
-#line 1772 "chapel.ypp" /* yacc.c:1663  */
+#line 1772 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 9071 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9080 "bison-chapel.cpp"
     break;
 
   case 432:
-#line 1773 "chapel.ypp" /* yacc.c:1663  */
+#line 1773 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9077 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9086 "bison-chapel.cpp"
     break;
 
   case 433:
-#line 1774 "chapel.ypp" /* yacc.c:1663  */
+#line 1774 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9083 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9092 "bison-chapel.cpp"
     break;
 
   case 434:
-#line 1775 "chapel.ypp" /* yacc.c:1663  */
+#line 1775 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9089 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9098 "bison-chapel.cpp"
     break;
 
   case 435:
-#line 1776 "chapel.ypp" /* yacc.c:1663  */
+#line 1776 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9095 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9104 "bison-chapel.cpp"
     break;
 
   case 436:
-#line 1782 "chapel.ypp" /* yacc.c:1663  */
+#line 1782 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9101 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9110 "bison-chapel.cpp"
     break;
 
   case 437:
-#line 1783 "chapel.ypp" /* yacc.c:1663  */
+#line 1783 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9107 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9116 "bison-chapel.cpp"
     break;
 
   case 438:
-#line 1784 "chapel.ypp" /* yacc.c:1663  */
+#line 1784 "chapel.ypp"
     { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9113 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9122 "bison-chapel.cpp"
     break;
 
   case 439:
-#line 1785 "chapel.ypp" /* yacc.c:1663  */
+#line 1785 "chapel.ypp"
     { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9119 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9128 "bison-chapel.cpp"
     break;
 
   case 440:
-#line 1789 "chapel.ypp" /* yacc.c:1663  */
+#line 1789 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr));}
-#line 9125 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9134 "bison-chapel.cpp"
     break;
 
   case 441:
-#line 1790 "chapel.ypp" /* yacc.c:1663  */
+#line 1790 "chapel.ypp"
     { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9131 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9140 "bison-chapel.cpp"
     break;
 
   case 442:
-#line 1794 "chapel.ypp" /* yacc.c:1663  */
+#line 1794 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("chpl__tuple_blank"); }
-#line 9137 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9146 "bison-chapel.cpp"
     break;
 
   case 443:
-#line 1795 "chapel.ypp" /* yacc.c:1663  */
+#line 1795 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9143 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9152 "bison-chapel.cpp"
     break;
 
   case 444:
-#line 1796 "chapel.ypp" /* yacc.c:1663  */
+#line 1796 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9149 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9158 "bison-chapel.cpp"
     break;
 
   case 445:
-#line 1800 "chapel.ypp" /* yacc.c:1663  */
+#line 1800 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9155 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9164 "bison-chapel.cpp"
     break;
 
   case 446:
-#line 1801 "chapel.ypp" /* yacc.c:1663  */
+#line 1801 "chapel.ypp"
     { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9161 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9170 "bison-chapel.cpp"
     break;
 
   case 447:
-#line 1805 "chapel.ypp" /* yacc.c:1663  */
+#line 1805 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); }
-#line 9167 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9176 "bison-chapel.cpp"
     break;
 
   case 449:
-#line 1810 "chapel.ypp" /* yacc.c:1663  */
+#line 1810 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[0].pexpr)); }
-#line 9173 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9182 "bison-chapel.cpp"
     break;
 
   case 450:
-#line 1811 "chapel.ypp" /* yacc.c:1663  */
+#line 1811 "chapel.ypp"
     { (yyvsp[-2].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9179 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9188 "bison-chapel.cpp"
     break;
 
   case 451:
-#line 1815 "chapel.ypp" /* yacc.c:1663  */
+#line 1815 "chapel.ypp"
     { (yyval.pexpr) = buildNamedActual((yyvsp[-2].pch), (yyvsp[0].pexpr)); }
-#line 9185 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9194 "bison-chapel.cpp"
     break;
 
   case 452:
-#line 1816 "chapel.ypp" /* yacc.c:1663  */
+#line 1816 "chapel.ypp"
     { (yyval.pexpr) = buildNamedActual((yyvsp[-2].pch), (yyvsp[0].pexpr)); }
-#line 9191 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9200 "bison-chapel.cpp"
     break;
 
   case 453:
-#line 1817 "chapel.ypp" /* yacc.c:1663  */
+#line 1817 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9197 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9206 "bison-chapel.cpp"
     break;
 
   case 454:
-#line 1818 "chapel.ypp" /* yacc.c:1663  */
+#line 1818 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9203 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9212 "bison-chapel.cpp"
     break;
 
   case 455:
-#line 1822 "chapel.ypp" /* yacc.c:1663  */
+#line 1822 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr((yyvsp[0].pch)); }
-#line 9209 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9218 "bison-chapel.cpp"
     break;
 
   case 456:
-#line 1823 "chapel.ypp" /* yacc.c:1663  */
+#line 1823 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9215 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9224 "bison-chapel.cpp"
     break;
 
   case 457:
-#line 1835 "chapel.ypp" /* yacc.c:1663  */
+#line 1835 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9221 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9230 "bison-chapel.cpp"
     break;
 
   case 458:
-#line 1837 "chapel.ypp" /* yacc.c:1663  */
+#line 1837 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr)); }
-#line 9227 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9236 "bison-chapel.cpp"
     break;
 
   case 459:
-#line 1839 "chapel.ypp" /* yacc.c:1663  */
+#line 1839 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gUninstantiated); }
-#line 9233 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9242 "bison-chapel.cpp"
     break;
 
   case 465:
-#line 1850 "chapel.ypp" /* yacc.c:1663  */
+#line 1850 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_singlevar", (yyvsp[0].pexpr)); }
-#line 9239 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9248 "bison-chapel.cpp"
     break;
 
   case 466:
-#line 1852 "chapel.ypp" /* yacc.c:1663  */
+#line 1852 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildIndexType", (yyvsp[-1].pcallexpr)); }
-#line 9245 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9254 "bison-chapel.cpp"
     break;
 
   case 467:
-#line 1854 "chapel.ypp" /* yacc.c:1663  */
+#line 1854 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), (yyvsp[-1].pcallexpr)); }
-#line 9251 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9260 "bison-chapel.cpp"
     break;
 
   case 468:
-#line 1856 "chapel.ypp" /* yacc.c:1663  */
+#line 1856 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildSubDomainType", (yyvsp[-1].pcallexpr)); }
-#line 9257 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9266 "bison-chapel.cpp"
     break;
 
   case 469:
-#line 1858 "chapel.ypp" /* yacc.c:1663  */
+#line 1858 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildSparseDomainRuntimeType", buildDotExpr((yyvsp[-1].pcallexpr)->copy(), "defaultSparseDist"), (yyvsp[-1].pcallexpr)); }
-#line 9263 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9272 "bison-chapel.cpp"
     break;
 
   case 470:
-#line 1860 "chapel.ypp" /* yacc.c:1663  */
+#line 1860 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__atomicType", (yyvsp[0].pexpr)); }
-#line 9269 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9278 "bison-chapel.cpp"
     break;
 
   case 471:
-#line 1862 "chapel.ypp" /* yacc.c:1663  */
+#line 1862 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_syncvar", (yyvsp[0].pexpr)); }
-#line 9275 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9284 "bison-chapel.cpp"
     break;
 
   case 472:
-#line 1865 "chapel.ypp" /* yacc.c:1663  */
+#line 1865 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("_owned"); }
-#line 9281 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9290 "bison-chapel.cpp"
     break;
 
   case 473:
-#line 1867 "chapel.ypp" /* yacc.c:1663  */
+#line 1867 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_owned", (yyvsp[0].pexpr)); }
-#line 9287 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9296 "bison-chapel.cpp"
     break;
 
   case 474:
-#line 1869 "chapel.ypp" /* yacc.c:1663  */
+#line 1869 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtUnmanaged->symbol); }
-#line 9293 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9302 "bison-chapel.cpp"
     break;
 
   case 475:
-#line 1871 "chapel.ypp" /* yacc.c:1663  */
+#line 1871 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_UNMANAGED_CLASS_CHECKED, (yyvsp[0].pexpr)); }
-#line 9299 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9308 "bison-chapel.cpp"
     break;
 
   case 476:
-#line 1873 "chapel.ypp" /* yacc.c:1663  */
+#line 1873 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("_shared"); }
-#line 9305 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9314 "bison-chapel.cpp"
     break;
 
   case 477:
-#line 1875 "chapel.ypp" /* yacc.c:1663  */
+#line 1875 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( "_shared", (yyvsp[0].pexpr)); }
-#line 9311 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9320 "bison-chapel.cpp"
     break;
 
   case 478:
-#line 1877 "chapel.ypp" /* yacc.c:1663  */
+#line 1877 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtBorrowed->symbol); }
-#line 9317 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9326 "bison-chapel.cpp"
     break;
 
   case 479:
-#line 1879 "chapel.ypp" /* yacc.c:1663  */
+#line 1879 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr( PRIM_TO_BORROWED_CLASS_CHECKED, (yyvsp[0].pexpr)); }
-#line 9323 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9332 "bison-chapel.cpp"
     break;
 
   case 480:
-#line 1882 "chapel.ypp" /* yacc.c:1663  */
+#line 1882 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyManagementNonNilable->symbol); }
-#line 9329 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9338 "bison-chapel.cpp"
     break;
 
   case 481:
-#line 1884 "chapel.ypp" /* yacc.c:1663  */
+#line 1884 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(dtAnyRecord->symbol); }
-#line 9335 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9344 "bison-chapel.cpp"
     break;
 
   case 482:
-#line 1889 "chapel.ypp" /* yacc.c:1663  */
+#line 1889 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9341 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9350 "bison-chapel.cpp"
     break;
 
   case 483:
-#line 1891 "chapel.ypp" /* yacc.c:1663  */
+#line 1891 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true); }
-#line 9347 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9356 "bison-chapel.cpp"
     break;
 
   case 484:
-#line 1893 "chapel.ypp" /* yacc.c:1663  */
+#line 1893 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr(NULL, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9353 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9362 "bison-chapel.cpp"
     break;
 
   case 485:
-#line 1895 "chapel.ypp" /* yacc.c:1663  */
+#line 1895 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 9359 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9368 "bison-chapel.cpp"
     break;
 
   case 486:
-#line 1897 "chapel.ypp" /* yacc.c:1663  */
+#line 1897 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true); }
-#line 9365 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9374 "bison-chapel.cpp"
     break;
 
   case 487:
-#line 1899 "chapel.ypp" /* yacc.c:1663  */
+#line 1899 "chapel.ypp"
     { (yyval.pexpr) = buildForLoopExpr(NULL, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 9371 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9380 "bison-chapel.cpp"
     break;
 
   case 488:
-#line 1901 "chapel.ypp" /* yacc.c:1663  */
+#line 1901 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9377 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9386 "bison-chapel.cpp"
     break;
 
   case 489:
-#line 1903 "chapel.ypp" /* yacc.c:1663  */
+#line 1903 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pexpr), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true); }
-#line 9383 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9392 "bison-chapel.cpp"
     break;
 
   case 490:
-#line 1905 "chapel.ypp" /* yacc.c:1663  */
+#line 1905 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9389 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9398 "bison-chapel.cpp"
     break;
 
   case 491:
-#line 1907 "chapel.ypp" /* yacc.c:1663  */
+#line 1907 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 9395 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9404 "bison-chapel.cpp"
     break;
 
   case 492:
-#line 1909 "chapel.ypp" /* yacc.c:1663  */
+#line 1909 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pexpr), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true); }
-#line 9401 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9410 "bison-chapel.cpp"
     break;
 
   case 493:
-#line 1911 "chapel.ypp" /* yacc.c:1663  */
+#line 1911 "chapel.ypp"
     { (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 9407 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9416 "bison-chapel.cpp"
     break;
 
   case 494:
-#line 1913 "chapel.ypp" /* yacc.c:1663  */
+#line 1913 "chapel.ypp"
     {
       if ((yyvsp[-2].pcallexpr)->argList.length > 1)
         (yyval.pexpr) = buildForallLoopExpr(NULL, new CallExpr("chpl__ensureDomainExpr", (yyvsp[-2].pcallexpr)), (yyvsp[0].pexpr), NULL, true);
       else
         (yyval.pexpr) = buildForallLoopExpr(NULL, (yyvsp[-2].pcallexpr)->get(1)->remove(), (yyvsp[0].pexpr), NULL, true);
     }
-#line 9418 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9427 "bison-chapel.cpp"
     break;
 
   case 495:
-#line 1920 "chapel.ypp" /* yacc.c:1663  */
+#line 1920 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pexpr), (yyvsp[0].pexpr), NULL, true);
     }
-#line 9428 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9437 "bison-chapel.cpp"
     break;
 
   case 496:
-#line 1926 "chapel.ypp" /* yacc.c:1663  */
+#line 1926 "chapel.ypp"
     {
       if ((yyvsp[-4].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-2].pcallexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-4].pcallexpr)->get(1)->remove(), (yyvsp[-2].pcallexpr), (yyvsp[0].pexpr), NULL, false, true);
     }
-#line 9438 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9447 "bison-chapel.cpp"
     break;
 
   case 497:
-#line 1932 "chapel.ypp" /* yacc.c:1663  */
+#line 1932 "chapel.ypp"
     {
       if ((yyvsp[-7].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-5].pexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pcallexpr)->get(1)->remove(), (yyvsp[-5].pexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 9448 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9457 "bison-chapel.cpp"
     break;
 
   case 498:
-#line 1938 "chapel.ypp" /* yacc.c:1663  */
+#line 1938 "chapel.ypp"
     {
       if ((yyvsp[-7].pcallexpr)->argList.length != 1)
         USR_FATAL((yyvsp[-5].pcallexpr), "invalid index expression");
       (yyval.pexpr) = buildForallLoopExpr((yyvsp[-7].pcallexpr)->get(1)->remove(), (yyvsp[-5].pcallexpr), (yyvsp[0].pexpr), (yyvsp[-2].pexpr), false, true);
     }
-#line 9458 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9467 "bison-chapel.cpp"
     break;
 
   case 499:
-#line 1947 "chapel.ypp" /* yacc.c:1663  */
+#line 1947 "chapel.ypp"
     { (yyval.pexpr) = new IfExpr((yyvsp[-4].pexpr), (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9464 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9473 "bison-chapel.cpp"
     break;
 
   case 500:
-#line 1956 "chapel.ypp" /* yacc.c:1663  */
+#line 1956 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gNil); }
-#line 9470 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9479 "bison-chapel.cpp"
     break;
 
   case 508:
-#line 1972 "chapel.ypp" /* yacc.c:1663  */
+#line 1972 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<~>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9476 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9485 "bison-chapel.cpp"
     break;
 
   case 509:
-#line 1976 "chapel.ypp" /* yacc.c:1663  */
+#line 1976 "chapel.ypp"
     { (yyval.pcallexpr) = NULL; }
-#line 9482 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9491 "bison-chapel.cpp"
     break;
 
   case 511:
-#line 1981 "chapel.ypp" /* yacc.c:1663  */
+#line 1981 "chapel.ypp"
     { (yyval.pcallexpr) = (yyvsp[-1].pcallexpr); }
-#line 9488 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9497 "bison-chapel.cpp"
     break;
 
   case 512:
-#line 1985 "chapel.ypp" /* yacc.c:1663  */
+#line 1985 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); addTaskIntent((yyval.pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 9494 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9503 "bison-chapel.cpp"
     break;
 
   case 513:
-#line 1986 "chapel.ypp" /* yacc.c:1663  */
+#line 1986 "chapel.ypp"
     { addTaskIntent((yyvsp[-2].pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 9500 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9509 "bison-chapel.cpp"
     break;
 
   case 514:
-#line 1990 "chapel.ypp" /* yacc.c:1663  */
+#line 1990 "chapel.ypp"
     { (yyval.pcallexpr) = (yyvsp[-1].pcallexpr); }
-#line 9506 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9515 "bison-chapel.cpp"
     break;
 
   case 515:
-#line 1994 "chapel.ypp" /* yacc.c:1663  */
+#line 1994 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST); addForallIntent((yyval.pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 9512 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9521 "bison-chapel.cpp"
     break;
 
   case 516:
-#line 1995 "chapel.ypp" /* yacc.c:1663  */
+#line 1995 "chapel.ypp"
     { addForallIntent((yyvsp[-2].pcallexpr), (yyvsp[0].pShadowVar)); }
-#line 9518 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9527 "bison-chapel.cpp"
     break;
 
   case 517:
-#line 2000 "chapel.ypp" /* yacc.c:1663  */
+#line 2000 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildForPrefix((yyvsp[-3].pShadowVarPref), (yyvsp[-2].pexpr), (yyvsp[-1].pexpr), (yyvsp[0].pexpr));
     }
-#line 9526 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9535 "bison-chapel.cpp"
     break;
 
   case 518:
-#line 2004 "chapel.ypp" /* yacc.c:1663  */
+#line 2004 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildFromReduceIntent((yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 9534 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9543 "bison-chapel.cpp"
     break;
 
   case 519:
-#line 2008 "chapel.ypp" /* yacc.c:1663  */
+#line 2008 "chapel.ypp"
     {
       (yyval.pShadowVar) = ShadowVarSymbol::buildFromReduceIntent((yyvsp[0].pexpr), (yyvsp[-2].pexpr));
     }
-#line 9542 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9551 "bison-chapel.cpp"
     break;
 
   case 520:
-#line 2014 "chapel.ypp" /* yacc.c:1663  */
+#line 2014 "chapel.ypp"
     { (yyval.pShadowVarPref) = SVP_CONST;     }
-#line 9548 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9557 "bison-chapel.cpp"
     break;
 
   case 521:
-#line 2015 "chapel.ypp" /* yacc.c:1663  */
+#line 2015 "chapel.ypp"
     { (yyval.pShadowVarPref) = SVP_IN;        }
-#line 9554 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9563 "bison-chapel.cpp"
     break;
 
   case 522:
-#line 2016 "chapel.ypp" /* yacc.c:1663  */
+#line 2016 "chapel.ypp"
     { (yyval.pShadowVarPref) = SVP_CONST_IN;  }
-#line 9560 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9569 "bison-chapel.cpp"
     break;
 
   case 523:
-#line 2017 "chapel.ypp" /* yacc.c:1663  */
+#line 2017 "chapel.ypp"
     { (yyval.pShadowVarPref) = SVP_REF;       }
-#line 9566 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9575 "bison-chapel.cpp"
     break;
 
   case 524:
-#line 2018 "chapel.ypp" /* yacc.c:1663  */
+#line 2018 "chapel.ypp"
     { (yyval.pShadowVarPref) = SVP_CONST_REF; }
-#line 9572 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9581 "bison-chapel.cpp"
     break;
 
   case 525:
-#line 2019 "chapel.ypp" /* yacc.c:1663  */
+#line 2019 "chapel.ypp"
     { (yyval.pShadowVarPref) = SVP_VAR;       }
-#line 9578 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9587 "bison-chapel.cpp"
     break;
 
   case 527:
-#line 2025 "chapel.ypp" /* yacc.c:1663  */
+#line 2025 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<~>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9584 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9593 "bison-chapel.cpp"
     break;
 
   case 528:
-#line 2030 "chapel.ypp" /* yacc.c:1663  */
+#line 2030 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW); }
-#line 9590 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9599 "bison-chapel.cpp"
     break;
 
   case 529:
-#line 2032 "chapel.ypp" /* yacc.c:1663  */
+#line 2032 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol))); }
-#line 9598 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9607 "bison-chapel.cpp"
     break;
 
   case 530:
-#line 2036 "chapel.ypp" /* yacc.c:1663  */
+#line 2036 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol))); }
-#line 9606 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9615 "bison-chapel.cpp"
     break;
 
   case 531:
-#line 2040 "chapel.ypp" /* yacc.c:1663  */
+#line 2040 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtUnmanaged->symbol))); }
-#line 9614 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9623 "bison-chapel.cpp"
     break;
 
   case 532:
-#line 2044 "chapel.ypp" /* yacc.c:1663  */
+#line 2044 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtBorrowed->symbol))); }
-#line 9622 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9631 "bison-chapel.cpp"
     break;
 
   case 533:
-#line 2052 "chapel.ypp" /* yacc.c:1663  */
+#line 2052 "chapel.ypp"
     { (yyvsp[-1].pcallexpr)->insertAtTail((yyvsp[0].pexpr));
       (yyval.pexpr) = (yyvsp[-1].pcallexpr); }
-#line 9629 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9638 "bison-chapel.cpp"
     break;
 
   case 534:
-#line 2057 "chapel.ypp" /* yacc.c:1663  */
+#line 2057 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol)),
                         new CallExpr((yyvsp[-4].pexpr), (yyvsp[-1].pcallexpr)));
     }
-#line 9639 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9648 "bison-chapel.cpp"
     break;
 
   case 535:
-#line 2063 "chapel.ypp" /* yacc.c:1663  */
+#line 2063 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol)),
                         new CallExpr((yyvsp[-4].pexpr), (yyvsp[-1].pcallexpr)));
     }
-#line 9649 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9658 "bison-chapel.cpp"
     break;
 
   case 536:
-#line 2069 "chapel.ypp" /* yacc.c:1663  */
+#line 2069 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtOwned->symbol)),
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr((yyvsp[-5].pexpr), (yyvsp[-2].pcallexpr))));
     }
-#line 9660 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9669 "bison-chapel.cpp"
     break;
 
   case 537:
-#line 2076 "chapel.ypp" /* yacc.c:1663  */
+#line 2076 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_NEW,
                         new NamedExpr(astr_chpl_manager,
                                       new SymExpr(dtShared->symbol)),
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr((yyvsp[-5].pexpr), (yyvsp[-2].pcallexpr))));
     }
-#line 9671 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9680 "bison-chapel.cpp"
     break;
 
   case 538:
-#line 2085 "chapel.ypp" /* yacc.c:1663  */
+#line 2085 "chapel.ypp"
     { USR_WARN((yyvsp[-1].pexpr), "the syntax 'new owned(an expression)' is deprecated");
       USR_PRINT((yyvsp[-1].pexpr), "instead use 'owned.create(an expression)'");
       (yyval.pexpr) = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, (yyvsp[-1].pexpr))); }
-#line 9679 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9688 "bison-chapel.cpp"
     break;
 
   case 539:
-#line 2089 "chapel.ypp" /* yacc.c:1663  */
+#line 2089 "chapel.ypp"
     { USR_WARN((yyvsp[-1].pexpr), "the syntax 'new shared(an expression)' is deprecated");
       USR_PRINT((yyvsp[-1].pexpr), "instead use 'shared.create(an expression)'");
       (yyval.pexpr) = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, (yyvsp[-1].pexpr))); }
-#line 9687 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9696 "bison-chapel.cpp"
     break;
 
   case 540:
-#line 2096 "chapel.ypp" /* yacc.c:1663  */
+#line 2096 "chapel.ypp"
     { (yyval.pexpr) = buildLetExpr((yyvsp[-2].pblockstmt), (yyvsp[0].pexpr)); }
-#line 9693 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9702 "bison-chapel.cpp"
     break;
 
   case 549:
-#line 2112 "chapel.ypp" /* yacc.c:1663  */
+#line 2112 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_TUPLE_EXPAND, (yyvsp[-1].pexpr)); }
-#line 9699 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9708 "bison-chapel.cpp"
     break;
 
   case 550:
-#line 2114 "chapel.ypp" /* yacc.c:1663  */
+#line 2114 "chapel.ypp"
     { (yyval.pexpr) = createCast((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9705 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9714 "bison-chapel.cpp"
     break;
 
   case 551:
-#line 2116 "chapel.ypp" /* yacc.c:1663  */
+#line 2116 "chapel.ypp"
     { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9711 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9720 "bison-chapel.cpp"
     break;
 
   case 552:
-#line 2118 "chapel.ypp" /* yacc.c:1663  */
+#line 2118 "chapel.ypp"
     { (yyval.pexpr) = buildBoundedRange((yyvsp[-2].pexpr), (yyvsp[0].pexpr), false, true); }
-#line 9717 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9726 "bison-chapel.cpp"
     break;
 
   case 553:
-#line 2133 "chapel.ypp" /* yacc.c:1663  */
+#line 2133 "chapel.ypp"
     { (yyval.pexpr) = buildLowBoundedRange((yyvsp[-1].pexpr)); }
-#line 9723 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9732 "bison-chapel.cpp"
     break;
 
   case 554:
-#line 2135 "chapel.ypp" /* yacc.c:1663  */
+#line 2135 "chapel.ypp"
     { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr)); }
-#line 9729 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9738 "bison-chapel.cpp"
     break;
 
   case 555:
-#line 2137 "chapel.ypp" /* yacc.c:1663  */
+#line 2137 "chapel.ypp"
     { (yyval.pexpr) = buildHighBoundedRange((yyvsp[0].pexpr), true); }
-#line 9735 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9744 "bison-chapel.cpp"
     break;
 
   case 556:
-#line 2139 "chapel.ypp" /* yacc.c:1663  */
+#line 2139 "chapel.ypp"
     { (yyval.pexpr) = buildUnboundedRange(); }
-#line 9741 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9750 "bison-chapel.cpp"
     break;
 
   case 557:
-#line 2143 "chapel.ypp" /* yacc.c:1663  */
+#line 2143 "chapel.ypp"
     { (yyval.pexpr) = NULL; }
-#line 9747 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9756 "bison-chapel.cpp"
     break;
 
   case 558:
-#line 2144 "chapel.ypp" /* yacc.c:1663  */
+#line 2144 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9753 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9762 "bison-chapel.cpp"
     break;
 
   case 559:
-#line 2148 "chapel.ypp" /* yacc.c:1663  */
+#line 2148 "chapel.ypp"
     { (yyval.pexpr) = tryExpr((yyvsp[0].pexpr)); }
-#line 9759 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9768 "bison-chapel.cpp"
     break;
 
   case 560:
-#line 2149 "chapel.ypp" /* yacc.c:1663  */
+#line 2149 "chapel.ypp"
     { (yyval.pexpr) = tryBangExpr((yyvsp[0].pexpr)); }
-#line 9765 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9774 "bison-chapel.cpp"
     break;
 
   case 561:
-#line 2150 "chapel.ypp" /* yacc.c:1663  */
+#line 2150 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9771 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9780 "bison-chapel.cpp"
     break;
 
   case 566:
-#line 2168 "chapel.ypp" /* yacc.c:1663  */
+#line 2168 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9777 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9786 "bison-chapel.cpp"
     break;
 
   case 567:
-#line 2169 "chapel.ypp" /* yacc.c:1663  */
+#line 2169 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
-#line 9783 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9792 "bison-chapel.cpp"
     break;
 
   case 568:
-#line 2170 "chapel.ypp" /* yacc.c:1663  */
+#line 2170 "chapel.ypp"
     {(yyval.pexpr) = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, (yyvsp[-1].pexpr));}
-#line 9789 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9798 "bison-chapel.cpp"
     break;
 
   case 569:
-#line 2171 "chapel.ypp" /* yacc.c:1663  */
+#line 2171 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[0].pexpr); }
-#line 9795 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9804 "bison-chapel.cpp"
     break;
 
   case 570:
-#line 2175 "chapel.ypp" /* yacc.c:1663  */
+#line 2175 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
-#line 9801 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9810 "bison-chapel.cpp"
     break;
 
   case 571:
-#line 2176 "chapel.ypp" /* yacc.c:1663  */
+#line 2176 "chapel.ypp"
     { (yyval.pexpr) = buildSquareCallExpr((yyvsp[-3].pexpr), (yyvsp[-1].pcallexpr)); }
-#line 9807 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9816 "bison-chapel.cpp"
     break;
 
   case 572:
-#line 2177 "chapel.ypp" /* yacc.c:1663  */
+#line 2177 "chapel.ypp"
     { (yyval.pexpr) = buildPrimitiveExpr((yyvsp[-1].pcallexpr)); }
-#line 9813 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9822 "bison-chapel.cpp"
     break;
 
   case 573:
-#line 2181 "chapel.ypp" /* yacc.c:1663  */
+#line 2181 "chapel.ypp"
     { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), (yyvsp[0].pch)); }
-#line 9819 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9828 "bison-chapel.cpp"
     break;
 
   case 574:
-#line 2182 "chapel.ypp" /* yacc.c:1663  */
+#line 2182 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(PRIM_TYPEOF, (yyvsp[-2].pexpr)); }
-#line 9825 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9834 "bison-chapel.cpp"
     break;
 
   case 575:
-#line 2183 "chapel.ypp" /* yacc.c:1663  */
+#line 2183 "chapel.ypp"
     { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "_dom"); }
-#line 9831 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9840 "bison-chapel.cpp"
     break;
 
   case 576:
-#line 2184 "chapel.ypp" /* yacc.c:1663  */
+#line 2184 "chapel.ypp"
     { (yyval.pexpr) = buildDotExpr((yyvsp[-2].pexpr), "locale"); }
-#line 9837 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9846 "bison-chapel.cpp"
     break;
 
   case 577:
-#line 2185 "chapel.ypp" /* yacc.c:1663  */
+#line 2185 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(buildDotExpr((yyvsp[-4].pexpr), "chpl_bytes")); }
-#line 9843 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9852 "bison-chapel.cpp"
     break;
 
   case 578:
-#line 2193 "chapel.ypp" /* yacc.c:1663  */
+#line 2193 "chapel.ypp"
     { (yyval.pexpr) = (yyvsp[-1].pexpr); }
-#line 9849 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9858 "bison-chapel.cpp"
     break;
 
   case 579:
-#line 2194 "chapel.ypp" /* yacc.c:1663  */
+#line 2194 "chapel.ypp"
     { (yyval.pexpr) = buildOneTuple((yyvsp[-2].pexpr)); }
-#line 9855 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9864 "bison-chapel.cpp"
     break;
 
   case 580:
-#line 2195 "chapel.ypp" /* yacc.c:1663  */
+#line 2195 "chapel.ypp"
     { (yyval.pexpr) = buildTuple((yyvsp[-1].pcallexpr)); }
-#line 9861 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9870 "bison-chapel.cpp"
     break;
 
   case 581:
-#line 2196 "chapel.ypp" /* yacc.c:1663  */
+#line 2196 "chapel.ypp"
     { (yyval.pexpr) = buildTuple((yyvsp[-2].pcallexpr)); }
-#line 9867 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9876 "bison-chapel.cpp"
     break;
 
   case 582:
-#line 2200 "chapel.ypp" /* yacc.c:1663  */
+#line 2200 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gFalse); }
-#line 9873 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9882 "bison-chapel.cpp"
     break;
 
   case 583:
-#line 2201 "chapel.ypp" /* yacc.c:1663  */
+#line 2201 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gTrue); }
-#line 9879 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9888 "bison-chapel.cpp"
     break;
 
   case 585:
-#line 2206 "chapel.ypp" /* yacc.c:1663  */
+#line 2206 "chapel.ypp"
     { (yyval.pexpr) = buildIntLiteral((yyvsp[0].pch), yyfilename, chplLineno);    }
-#line 9885 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9894 "bison-chapel.cpp"
     break;
 
   case 586:
-#line 2207 "chapel.ypp" /* yacc.c:1663  */
+#line 2207 "chapel.ypp"
     { (yyval.pexpr) = buildRealLiteral((yyvsp[0].pch));   }
-#line 9891 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9900 "bison-chapel.cpp"
     break;
 
   case 587:
-#line 2208 "chapel.ypp" /* yacc.c:1663  */
+#line 2208 "chapel.ypp"
     { (yyval.pexpr) = buildImagLiteral((yyvsp[0].pch));   }
-#line 9897 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9906 "bison-chapel.cpp"
     break;
 
   case 588:
-#line 2209 "chapel.ypp" /* yacc.c:1663  */
+#line 2209 "chapel.ypp"
     { (yyval.pexpr) = buildStringLiteral((yyvsp[0].pch)); }
-#line 9903 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9912 "bison-chapel.cpp"
     break;
 
   case 589:
-#line 2210 "chapel.ypp" /* yacc.c:1663  */
+#line 2210 "chapel.ypp"
     { (yyval.pexpr) = buildBytesLiteral((yyvsp[0].pch)); }
-#line 9909 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9918 "bison-chapel.cpp"
     break;
 
   case 590:
-#line 2211 "chapel.ypp" /* yacc.c:1663  */
+#line 2211 "chapel.ypp"
     { (yyval.pexpr) = buildCStringLiteral((yyvsp[0].pch)); }
-#line 9915 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9924 "bison-chapel.cpp"
     break;
 
   case 591:
-#line 2212 "chapel.ypp" /* yacc.c:1663  */
+#line 2212 "chapel.ypp"
     { (yyval.pexpr) = new SymExpr(gNone); }
-#line 9921 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9930 "bison-chapel.cpp"
     break;
 
   case 592:
-#line 2213 "chapel.ypp" /* yacc.c:1663  */
+#line 2213 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-1].pcallexpr)); }
-#line 9927 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9936 "bison-chapel.cpp"
     break;
 
   case 593:
-#line 2214 "chapel.ypp" /* yacc.c:1663  */
+#line 2214 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-2].pcallexpr)); }
-#line 9933 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9942 "bison-chapel.cpp"
     break;
 
   case 594:
-#line 2215 "chapel.ypp" /* yacc.c:1663  */
+#line 2215 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayExpr",  (yyvsp[-1].pcallexpr)); }
-#line 9939 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9948 "bison-chapel.cpp"
     break;
 
   case 595:
-#line 2216 "chapel.ypp" /* yacc.c:1663  */
+#line 2216 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__buildArrayExpr",  (yyvsp[-2].pcallexpr)); }
-#line 9945 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9954 "bison-chapel.cpp"
     break;
 
   case 596:
-#line 2218 "chapel.ypp" /* yacc.c:1663  */
+#line 2218 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr("chpl__buildAssociativeArrayExpr", (yyvsp[-1].pcallexpr));
     }
-#line 9953 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9962 "bison-chapel.cpp"
     break;
 
   case 597:
-#line 2222 "chapel.ypp" /* yacc.c:1663  */
+#line 2222 "chapel.ypp"
     {
       (yyval.pexpr) = new CallExpr("chpl__buildAssociativeArrayExpr", (yyvsp[-2].pcallexpr));
     }
-#line 9961 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9970 "bison-chapel.cpp"
     break;
 
   case 598:
-#line 2229 "chapel.ypp" /* yacc.c:1663  */
+#line 2229 "chapel.ypp"
     { (yyval.pcallexpr) = new CallExpr(PRIM_ACTUALS_LIST, (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9967 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9976 "bison-chapel.cpp"
     break;
 
   case 599:
-#line 2230 "chapel.ypp" /* yacc.c:1663  */
+#line 2230 "chapel.ypp"
     { (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[-2].pexpr)); (yyvsp[-4].pcallexpr)->insertAtTail((yyvsp[0].pexpr)); }
-#line 9973 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9982 "bison-chapel.cpp"
     break;
 
   case 600:
-#line 2234 "chapel.ypp" /* yacc.c:1663  */
+#line 2234 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("+", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9979 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9988 "bison-chapel.cpp"
     break;
 
   case 601:
-#line 2235 "chapel.ypp" /* yacc.c:1663  */
+#line 2235 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("-", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9985 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 9994 "bison-chapel.cpp"
     break;
 
   case 602:
-#line 2236 "chapel.ypp" /* yacc.c:1663  */
+#line 2236 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("*", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9991 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10000 "bison-chapel.cpp"
     break;
 
   case 603:
-#line 2237 "chapel.ypp" /* yacc.c:1663  */
+#line 2237 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("/", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 9997 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10006 "bison-chapel.cpp"
     break;
 
   case 604:
-#line 2238 "chapel.ypp" /* yacc.c:1663  */
+#line 2238 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10003 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10012 "bison-chapel.cpp"
     break;
 
   case 605:
-#line 2239 "chapel.ypp" /* yacc.c:1663  */
+#line 2239 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(">>", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10009 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10018 "bison-chapel.cpp"
     break;
 
   case 606:
-#line 2240 "chapel.ypp" /* yacc.c:1663  */
+#line 2240 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("%", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10015 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10024 "bison-chapel.cpp"
     break;
 
   case 607:
-#line 2241 "chapel.ypp" /* yacc.c:1663  */
+#line 2241 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("==", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10021 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10030 "bison-chapel.cpp"
     break;
 
   case 608:
-#line 2242 "chapel.ypp" /* yacc.c:1663  */
+#line 2242 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("!=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10027 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10036 "bison-chapel.cpp"
     break;
 
   case 609:
-#line 2243 "chapel.ypp" /* yacc.c:1663  */
+#line 2243 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10033 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10042 "bison-chapel.cpp"
     break;
 
   case 610:
-#line 2244 "chapel.ypp" /* yacc.c:1663  */
+#line 2244 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(">=", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10039 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10048 "bison-chapel.cpp"
     break;
 
   case 611:
-#line 2245 "chapel.ypp" /* yacc.c:1663  */
+#line 2245 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("<", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10045 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10054 "bison-chapel.cpp"
     break;
 
   case 612:
-#line 2246 "chapel.ypp" /* yacc.c:1663  */
+#line 2246 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr(">", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10051 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10060 "bison-chapel.cpp"
     break;
 
   case 613:
-#line 2247 "chapel.ypp" /* yacc.c:1663  */
+#line 2247 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10057 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10066 "bison-chapel.cpp"
     break;
 
   case 614:
-#line 2248 "chapel.ypp" /* yacc.c:1663  */
+#line 2248 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("|", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10063 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10072 "bison-chapel.cpp"
     break;
 
   case 615:
-#line 2249 "chapel.ypp" /* yacc.c:1663  */
+#line 2249 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("^", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10069 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10078 "bison-chapel.cpp"
     break;
 
   case 616:
-#line 2250 "chapel.ypp" /* yacc.c:1663  */
+#line 2250 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("&&", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10075 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10084 "bison-chapel.cpp"
     break;
 
   case 617:
-#line 2251 "chapel.ypp" /* yacc.c:1663  */
+#line 2251 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("||", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10081 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10090 "bison-chapel.cpp"
     break;
 
   case 618:
-#line 2252 "chapel.ypp" /* yacc.c:1663  */
+#line 2252 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("**", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10087 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10096 "bison-chapel.cpp"
     break;
 
   case 619:
-#line 2253 "chapel.ypp" /* yacc.c:1663  */
+#line 2253 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl_by", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10093 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10102 "bison-chapel.cpp"
     break;
 
   case 620:
-#line 2254 "chapel.ypp" /* yacc.c:1663  */
+#line 2254 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl_align", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10099 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10108 "bison-chapel.cpp"
     break;
 
   case 621:
-#line 2255 "chapel.ypp" /* yacc.c:1663  */
+#line 2255 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("#", (yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10105 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10114 "bison-chapel.cpp"
     break;
 
   case 622:
-#line 2256 "chapel.ypp" /* yacc.c:1663  */
+#line 2256 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("chpl__distributed", (yyvsp[0].pexpr), (yyvsp[-2].pexpr)); }
-#line 10111 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10120 "bison-chapel.cpp"
     break;
 
   case 623:
-#line 2260 "chapel.ypp" /* yacc.c:1663  */
+#line 2260 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("+", (yyvsp[0].pexpr)); }
-#line 10117 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10126 "bison-chapel.cpp"
     break;
 
   case 624:
-#line 2261 "chapel.ypp" /* yacc.c:1663  */
+#line 2261 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("-", (yyvsp[0].pexpr)); }
-#line 10123 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10132 "bison-chapel.cpp"
     break;
 
   case 625:
-#line 2262 "chapel.ypp" /* yacc.c:1663  */
+#line 2262 "chapel.ypp"
     { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '-'); }
-#line 10129 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10138 "bison-chapel.cpp"
     break;
 
   case 626:
-#line 2263 "chapel.ypp" /* yacc.c:1663  */
+#line 2263 "chapel.ypp"
     { (yyval.pexpr) = buildPreDecIncWarning((yyvsp[0].pexpr), '+'); }
-#line 10135 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10144 "bison-chapel.cpp"
     break;
 
   case 627:
-#line 2264 "chapel.ypp" /* yacc.c:1663  */
+#line 2264 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("!", (yyvsp[0].pexpr)); }
-#line 10141 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10150 "bison-chapel.cpp"
     break;
 
   case 628:
-#line 2265 "chapel.ypp" /* yacc.c:1663  */
+#line 2265 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("postfix!", (yyvsp[-1].pexpr)); }
-#line 10147 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10156 "bison-chapel.cpp"
     break;
 
   case 629:
-#line 2266 "chapel.ypp" /* yacc.c:1663  */
+#line 2266 "chapel.ypp"
     { (yyval.pexpr) = new CallExpr("~", (yyvsp[0].pexpr)); }
-#line 10153 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10162 "bison-chapel.cpp"
     break;
 
   case 630:
-#line 2270 "chapel.ypp" /* yacc.c:1663  */
+#line 2270 "chapel.ypp"
     { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10159 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10168 "bison-chapel.cpp"
     break;
 
   case 631:
-#line 2271 "chapel.ypp" /* yacc.c:1663  */
+#line 2271 "chapel.ypp"
     { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10165 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10174 "bison-chapel.cpp"
     break;
 
   case 632:
-#line 2272 "chapel.ypp" /* yacc.c:1663  */
+#line 2272 "chapel.ypp"
     { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10171 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10180 "bison-chapel.cpp"
     break;
 
   case 633:
-#line 2273 "chapel.ypp" /* yacc.c:1663  */
+#line 2273 "chapel.ypp"
     { (yyval.pexpr) = buildReduceExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10177 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10186 "bison-chapel.cpp"
     break;
 
   case 634:
-#line 2277 "chapel.ypp" /* yacc.c:1663  */
+#line 2277 "chapel.ypp"
     { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10183 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10192 "bison-chapel.cpp"
     break;
 
   case 635:
-#line 2278 "chapel.ypp" /* yacc.c:1663  */
+#line 2278 "chapel.ypp"
     { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10189 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10198 "bison-chapel.cpp"
     break;
 
   case 636:
-#line 2279 "chapel.ypp" /* yacc.c:1663  */
+#line 2279 "chapel.ypp"
     { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pexpr)); }
-#line 10195 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10204 "bison-chapel.cpp"
     break;
 
   case 637:
-#line 2280 "chapel.ypp" /* yacc.c:1663  */
+#line 2280 "chapel.ypp"
     { (yyval.pexpr) = buildScanExpr((yyvsp[-2].pexpr), (yyvsp[0].pcallexpr), true); }
-#line 10201 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10210 "bison-chapel.cpp"
     break;
 
   case 638:
-#line 2285 "chapel.ypp" /* yacc.c:1663  */
+#line 2285 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("SumReduceScanOp"); }
-#line 10207 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10216 "bison-chapel.cpp"
     break;
 
   case 639:
-#line 2286 "chapel.ypp" /* yacc.c:1663  */
+#line 2286 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("ProductReduceScanOp"); }
-#line 10213 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10222 "bison-chapel.cpp"
     break;
 
   case 640:
-#line 2287 "chapel.ypp" /* yacc.c:1663  */
+#line 2287 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("LogicalAndReduceScanOp"); }
-#line 10219 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10228 "bison-chapel.cpp"
     break;
 
   case 641:
-#line 2288 "chapel.ypp" /* yacc.c:1663  */
+#line 2288 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("LogicalOrReduceScanOp"); }
-#line 10225 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10234 "bison-chapel.cpp"
     break;
 
   case 642:
-#line 2289 "chapel.ypp" /* yacc.c:1663  */
+#line 2289 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseAndReduceScanOp"); }
-#line 10231 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10240 "bison-chapel.cpp"
     break;
 
   case 643:
-#line 2290 "chapel.ypp" /* yacc.c:1663  */
+#line 2290 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseOrReduceScanOp"); }
-#line 10237 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10246 "bison-chapel.cpp"
     break;
 
   case 644:
-#line 2291 "chapel.ypp" /* yacc.c:1663  */
+#line 2291 "chapel.ypp"
     { (yyval.pexpr) = new UnresolvedSymExpr("BitwiseXorReduceScanOp"); }
-#line 10243 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10252 "bison-chapel.cpp"
     break;
 
 
-#line 10247 "bison-chapel.cpp" /* yacc.c:1663  */
+#line 10256 "bison-chapel.cpp"
+
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -10269,14 +10279,13 @@ yyreduce:
   /* Now 'shift' the result of the reduction.  Determine what state
      that goes to, based on the state we popped back to and the rule
      number reduced by.  */
-
-  yyn = yyr1[yyn];
-
-  yystate = yypgoto[yyn - YYNTOKENS] + *yyssp;
-  if (0 <= yystate && yystate <= YYLAST && yycheck[yystate] == *yyssp)
-    yystate = yytable[yystate];
-  else
-    yystate = yydefgoto[yyn - YYNTOKENS];
+  {
+    const int yylhs = yyr1[yyn] - YYNTOKENS;
+    const int yyi = yypgoto[yylhs] + *yyssp;
+    yystate = (0 <= yyi && yyi <= YYLAST && yycheck[yyi] == *yyssp
+               ? yytable[yyi]
+               : yydefgoto[yylhs]);
+  }
 
   goto yynewstate;
 
@@ -10359,12 +10368,10 @@ yyerrlab:
 | yyerrorlab -- error raised explicitly by YYERROR.  |
 `---------------------------------------------------*/
 yyerrorlab:
-
-  /* Pacify compilers like GCC when the user code never invokes
-     YYERROR and the label yyerrorlab therefore never appears in user
-     code.  */
-  if (/*CONSTCOND*/ 0)
-     goto yyerrorlab;
+  /* Pacify compilers when the user code never invokes YYERROR and the
+     label yyerrorlab therefore never appears in user code.  */
+  if (0)
+    YYERROR;
 
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYERROR.  */
@@ -10431,12 +10438,14 @@ yyacceptlab:
   yyresult = 0;
   goto yyreturn;
 
+
 /*-----------------------------------.
 | yyabortlab -- YYABORT comes here.  |
 `-----------------------------------*/
 yyabortlab:
   yyresult = 1;
   goto yyreturn;
+
 
 #if !defined yyoverflow || YYERROR_VERBOSE
 /*-------------------------------------------------.
@@ -10448,6 +10457,10 @@ yyexhaustedlab:
   /* Fall through.  */
 #endif
 
+
+/*-----------------------------------------------------.
+| yyreturn -- parsing is finished, return the result.  |
+`-----------------------------------------------------*/
 yyreturn:
   if (yychar != YYEMPTY)
     {
@@ -10473,6 +10486,10 @@ yyreturn:
 #endif
   yyps->yynew = 1;
 
+
+/*-----------------------------------------.
+| yypushreturn -- ask for the next token.  |
+`-----------------------------------------*/
 yypushreturn:
 #if YYERROR_VERBOSE
   if (yymsg != yymsgbuf)
