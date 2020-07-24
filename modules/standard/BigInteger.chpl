@@ -169,6 +169,7 @@ module BigInteger {
   use HaltWrappers;
   use SysCTypes;
   use SysError;
+  use SysBasic;
 
   enum Round {
     DOWN = -1,

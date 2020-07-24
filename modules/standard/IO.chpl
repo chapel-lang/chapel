@@ -433,6 +433,7 @@ module IO {
 
 use SysBasic, SysCTypes;
 public use SysError;
+public use SysBasic;
 
 /*
 
