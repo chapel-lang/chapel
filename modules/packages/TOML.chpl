@@ -1218,7 +1218,6 @@ module TomlReader {
             ld = "^\\d{4}-\\d{2}-\\d{2}",
             ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
 
-
       const pattern = compile('|'.join(doubleQuotes,
                                        singleQuotes,
                                        bracketContents,
