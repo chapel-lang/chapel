@@ -768,7 +768,7 @@ module Random {
 
     use super.RandomSupport;
     private use Random;
-    public use PCGRandomLib;
+    private use PCGRandomLib;
     private use ChapelLocks;
     private import HaltWrappers;
 
