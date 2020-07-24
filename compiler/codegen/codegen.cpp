@@ -40,6 +40,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
 
@@ -2248,6 +2249,52 @@ static void setupDefaultFilenames() {
   }
 }
 
+static std::map<const char*, Type*> cnameToTypeMap;
+
+void gatherTypesForCodegen(void) {
+  // A reasonable alternative to this code might be to
+  // map types like c_int to Clang types and query Clang for their sizes.
+  // See for example addMinMax in clangUtil.cpp.
+
+  // Gather type cnames for use in code generation
+  // must be run before clang parses macros
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->hasFlag(FLAG_EXTERN) && var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      Type* t = NULL;
+      if (var->type != dtUnknown) {
+        t = var->type;
+      } else {
+        // handle extern type c_int = int(32) e.g. before normalize
+        DefExpr* def = var->defPoint;
+        if (CallExpr* call = toCallExpr(def->init)) {
+          t = typeForTypeSpecifier(call, false);
+        }
+      }
+
+      if (t != NULL)
+        cnameToTypeMap[var->cname] = t;
+    }
+  }
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->type != dtUnknown)
+      cnameToTypeMap[ts->cname] = ts->type;
+  }
+}
+
+Type* getNamedTypeDuringCodegen(const char* name) {
+  std::map<const char*, Type*>::iterator it;
+
+  name = astr(name);
+
+  it = cnameToTypeMap.find(name);
+  if (it != cnameToTypeMap.end()) {
+    return it->second;
+  }
+
+  return NULL;
+}
+
 
 void codegen() {
   if (no_codegen)
@@ -2262,6 +2309,7 @@ void codegen() {
   // Prepare primitives for codegen
   CallExpr::registerPrimitivesForCodegen();
 
+  gatherTypesForCodegen();
   setupDefaultFilenames();
 
   if( llvmCodegen ) {
