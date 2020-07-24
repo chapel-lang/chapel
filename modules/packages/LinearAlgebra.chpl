@@ -781,23 +781,23 @@ private iter block(indexes, window : int) {
   const stride = indexes.stride;
   if indexes.strideable{
     while (true) {
-      var highVal = lowVal + window - 1;
-      if (highVal >= indexes.high) {
-        yield lowVal..indexes.high;
-        break;
-      } else {
-        yield lowVal..highVal;
-      }
-      lowVal = highVal + 1;
-    }
-  } else {
-    while (true) {
       var highVal = lowVal + window * stride - 1;
       if (highVal >= indexes.high) {
         yield lowVal..indexes.high by stride;
         break;
       } else {
         yield lowVal..highVal by stride;
+      }
+      lowVal = highVal + 1;
+    }
+  } else {
+    while (true) {
+      var highVal = lowVal + window - 1;
+      if (highVal >= indexes.high) {
+        yield lowVal..indexes.high;
+        break;
+      } else {
+        yield lowVal..highVal;
       }
       lowVal = highVal + 1;
     }
