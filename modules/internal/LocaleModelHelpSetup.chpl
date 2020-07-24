@@ -31,8 +31,8 @@
 module LocaleModelHelpSetup {
 
   use ChapelLocale;
-  public use DefaultRectangular; // danger
-  public use ChapelNumLocales;  // hmm...
+  public use DefaultRectangular;
+  public use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
   use SysCTypes;

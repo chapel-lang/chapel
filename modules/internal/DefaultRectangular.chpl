@@ -29,11 +29,12 @@ module DefaultRectangular {
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
   use DSIUtil;
-  public use ChapelArray;  // erg...
+  public use ChapelArray;
   use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
-  public use ExternalArray; // OK: currently expected to be available by default...
+  public use ExternalArray; // OK: currently expected to be available by
+                            // default... though... why 'use' it here?
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;

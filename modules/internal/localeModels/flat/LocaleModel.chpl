@@ -29,8 +29,8 @@
 //
 module LocaleModel {
 
-  public use LocaleModelHelpFlat;  // Danger
-  public use LocaleModelHelpMem;  // hmm...
+  public use LocaleModelHelpFlat;
+  public use LocaleModelHelpMem;
 
   use IO;
 

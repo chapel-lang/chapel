@@ -178,7 +178,7 @@ module String {
   use SysBasic;
 
   use CString;
-  public use StringCasts;  // hmm...
+  public use StringCasts;
   public use BytesStringCommon only encodePolicy;  // expose encodePolicy
 
   use NVStringFactory;

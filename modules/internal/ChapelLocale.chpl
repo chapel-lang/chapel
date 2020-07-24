@@ -68,7 +68,7 @@
  */
 module ChapelLocale {
 
-  public use LocaleModel;  // Danger?
+  public use LocaleModel;
   import HaltWrappers;
   use SysCTypes;
 
