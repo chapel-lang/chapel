@@ -828,7 +828,7 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1
                                         = {Adom.dim(0), Bdom.dim(1)};
   var C : [domainC] eltType;
 
-  coforall loc in targetLocales with (const commonDim) {
+  coforall loc in targetLocales {
     on loc {
       const localDomainC = C.localSubdomain();
       const (localDim1, localDim2) = localDomainC.dims();
@@ -839,14 +839,8 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1
       for subArrayChunk in block(commonDim, window) {
         var chunkSize = subArrayChunk.size;
 
-        forall (k, subK) in zip(subArrayChunk, 0..) {
-          forall i in localDim1 {
-            subArrayA[i, subK] = A[i, k];
-          }
-          forall j in localDim2 {
-            subArrayB[subK, j] = Bref[k, j];
-          }
-        }
+        subArrayA[localDim1, 0..#chunkSize] = A[localDim1, subArrayChunk];
+        subArrayB[0..#chunkSize, localDim2] = Bref[subArrayChunk, localDim2];
 
         if chunkSize < window {
           var rest = windowRange#-(window-chunkSize);
