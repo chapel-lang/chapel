@@ -831,21 +831,29 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1
   coforall loc in targetLocales {
     on loc {
       const localDomainC = C.localSubdomain();
-      const (localDim1, localDim2) = localDomainC.dims();
+      const (localDim0, localDim1) = localDomainC.dims();
       const windowRange = 0..#window;
-      var subArrayA : [localDim1, windowRange] eltType;
-      var subArrayB : [windowRange, localDim2] eltType;
+      var subArrayA : [localDim0, windowRange] eltType;
+      var subArrayB : [windowRange, localDim1] eltType;
 
       for subArrayChunk in block(commonDim, window) {
         var chunkSize = subArrayChunk.size;
 
-        subArrayA[localDim1, 0..#chunkSize] = A[localDim1, subArrayChunk];
-        subArrayB[0..#chunkSize, localDim2] = Bref[subArrayChunk, localDim2];
+        forall i in localDim0 {
+          forall (j, subJ) in zip(subArrayChunk, 0..) {
+            subArrayA[i, subJ] = A[i, j];
+          }
+        }
+        forall (i, subI) in zip(subArrayChunk, 0..) {
+          forall j in localDim1 {
+            subArrayB[subI, j] = B[i, j];
+          }
+        }
 
         if chunkSize < window {
           var rest = windowRange#-(window-chunkSize);
-          subArrayA[localDim1, rest] = 0;
-          subArrayB[rest, localDim2] = 0;
+          subArrayA[localDim0, rest] = 0;
+          subArrayB[rest, localDim1] = 0;
         }
 
         C.localSlice(localDomainC) += dot(subArrayA, subArrayB);
