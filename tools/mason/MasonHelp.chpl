@@ -169,14 +169,13 @@ proc masonModifyHelp() {
 }
 
 proc masonUpdateHelp() {
-  writeln("Updates/Generates Mason.lock file");
+  writeln("Update registries and generate Mason.lock");
   writeln("Usage:");
   writeln("    mason update [options]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
-  writeln("    --update                    Explicitly set MASON_OFFLINE to true");
-  writeln("    --[no-]update               Overrides the default MASON_OFFLINE value");
+  writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
 }
 
 proc masonEnvHelp() {
