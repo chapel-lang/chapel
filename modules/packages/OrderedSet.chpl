@@ -80,7 +80,11 @@ module OrderedSet {
     /* The implementation to use */
     param implType = defaultImpl;
 
-    //TODO: Should this documented?
+    /*
+      FIXME: This shuoldn't be documented.
+      Attaching pragma "no doc" on this will give an error.
+      See #16097
+    */
     /* The underlying implementation */
     forwarding var instance: getTypeFromEnumVal(implType, eltType, parSafe);
 
