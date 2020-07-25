@@ -534,70 +534,89 @@ module Treap {
     /*
       Find the first element in the orderedSet
       which does not compare less than e.
-      Returns whether there is such an element.
 
-      :arg result: The destination to store the result
-      :type result: `eltType`
+      Returns a tuple containing two element:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurence in the orderedSet, if there's any.
 
-      :returns: whether there is such an element
-      :rtype: `bool`
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
     */
-    proc const lowerBound(e: eltType, ref result: eltType): bool {
+    proc const lowerBound(e: eltType): (bool, eltType) {
+      if !isDefaultInitializable(e) {
+        compilerError("lowerBound is not avaliable on types that can't be \
+                      default-initialized, here: " + eltType: string);
+      }
+      
       _enter(); defer _leave();
+
       var node = _lower_bound(_root, e);
-      if node == nil then return false;
-      result = node!.element;
-      return true;
+      var result: (bool, eltType);
+      if node == nil then  result[0] = false;
+      else result = (true, node!.element);
+      return result;
     }
 
     /*
       Find the first element in the orderedSet
       which does not compare less than e.
-      Returns whether there is such an element.
 
-      :arg result: The destination to store the result
-      :type result: `eltType`
+      Returns a tuple containing two element:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurence in the orderedSet, if there's any.
 
-      :returns: whether there is such an element
-      :rtype: `bool`
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
     */
-    proc const upperBound(e: eltType, ref result: eltType): bool {
+    proc const upperBound(e: eltType): (bool, eltType) {
+      if !isDefaultInitializable(e) {
+        compilerError("upperBound is not avaliable on types that can't be \
+                      default-initialized, here: " + eltType: string);
+      }
+
       _enter(); defer _leave();
+
       var node = _upper_bound(_root, e);
-      if node == nil then return false;
-      result = node!.element;
-      return true;
+      var result: (bool, eltType);
+      if node == nil then  result[0] = false;
+      else result = (true, node!.element);
+      return result;
     }
 
     /*
       Find the predecessor of one element in the orderedSet.
       Returns if there is such one element.
-      If there is, store the result in `result`.
+
+      Returns a tuple containing two element:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurence in the orderedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
 
-      :arg result: The destination to store the result
-      :type result: `eltType`
-
-      :return: if there is such one element
-      :rtype: `bool`
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
     */
-    proc const predecessor(e: eltType, ref result: eltType): bool {
+    proc const predecessor(e: eltType, ref result: eltType): (bool, eltType) {
+      if !isDefaultInitializable(e) {
+        compilerError("predecessor is not avaliable on types that can't be \
+                      default-initialized, here: " + eltType: string);
+      }
+
       _enter(); defer _leave();
+
+      var result: (bool, eltType);
+      result[0] = false;
       var baseNode = _find(_root, e);
       if baseNode == nil {
-        return false;
+        return result;
       }
 
       var resultNode = _neighbour(baseNode, 0);
-      if resultNode == nil {
-        return false;
+      if resultNode != nil {
+        result = (true, resultNode!.element);
       }
-      else {
-        result = resultNode!.element;
-        return true;
-      }
+      return result;
     }
     
     /*
@@ -605,30 +624,36 @@ module Treap {
       Returns if there is such one element.
       If there is, store the result in `result`.
 
+      Returns a tuple containing two element:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurence in the orderedSet, if there's any.
+
       :arg e: The element to base
       :type e: `eltType`
 
-      :arg result: The destination to store the result
-      :type result: `eltType`
-
-      :return: if there is such one element
-      :rtype: `bool`
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
     */
-    proc const successor(e: eltType, ref result: eltType): bool {
+    proc const successor(e: eltType, ref result: eltType): (bool, eltType) {
+      if !isDefaultInitializable(e) {
+        compilerError("successor is not avaliable on types that can't be \
+                      default-initialized, here: " + eltType: string);
+      }
+
       _enter(); defer _leave();
+
+      var result: (bool, eltType);
+      result[0] = false;
       var baseNode = _find(_root, e);
       if baseNode == nil {
-        return false;
+        return result;
       }
 
       var resultNode = _neighbour(baseNode, 1);
-      if resultNode == nil {
-        return false;
+      if resultNode != nil {
+        result = (true, resultNode!.element);
       }
-      else {
-        result = resultNode!.element;
-        return true;
-      }
+      return result;
     }
 
     pragma "no doc"

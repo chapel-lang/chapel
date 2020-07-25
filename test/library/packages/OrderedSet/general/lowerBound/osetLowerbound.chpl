@@ -28,7 +28,8 @@ proc doTest(arr: [?d] int) {
     var now = arr[i];
 
     var setResult: int;
-    var setFound: bool = s1.lowerBound(now, setResult);
+    var setFound: bool;
+    (setFound, setResult) = s1.lowerBound(now);
 
     var arrResult: int;
     var arrFound: bool = lowerBound(arr, now, arrResult);
@@ -38,7 +39,7 @@ proc doTest(arr: [?d] int) {
 
     now = arr[i] + 1;
 
-    setFound = s1.lowerBound(now, setResult);
+    (setFound, setResult) = s1.lowerBound(now);
 
     arrFound = lowerBound(arr, now, arrResult);
     

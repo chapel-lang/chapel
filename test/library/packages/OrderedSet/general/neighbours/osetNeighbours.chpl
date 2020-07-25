@@ -18,7 +18,8 @@ proc doTest(arr: [?d] int) {
     var now = arr[i];
 
     var setResult: int;
-    var setFound: bool = s1.predecessor(now, setResult);
+    var setFound: bool;
+    (setFound, setResult) = s1.predecessor(now, setResult);
 
     var arrResult: int;
     var arrFound: bool = i != 0;
@@ -27,7 +28,7 @@ proc doTest(arr: [?d] int) {
     assert(setFound == arrFound);
     assert(!setFound || setResult == arrResult);
 
-    setFound = s1.successor(now, setResult);
+    (setFound, setResult) = s1.successor(now, setResult);
 
     arrFound = i != testIters - 1;
     if arrFound then arrResult = arr[i+1];

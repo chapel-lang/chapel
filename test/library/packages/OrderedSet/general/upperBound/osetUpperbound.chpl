@@ -29,7 +29,8 @@ proc doTest(arr: [?d] int) {
     var now = arr[i];
 
     var setResult: int;
-    var setFound: bool = s1.upperBound(now, setResult);
+    var setFound: bool;
+    (setFound, setResult) = s1.upperBound(now);
 
     var arrResult: int;
     var arrFound: bool = upperBound(arr, now, arrResult);
@@ -39,7 +40,7 @@ proc doTest(arr: [?d] int) {
 
     now = arr[i] - 1;
 
-    setFound = s1.upperBound(now, setResult);
+    (setFound, setResult) = s1.upperBound(now);
     assert(setFound);
 
     arrFound = upperBound(arr, now, arrResult);
