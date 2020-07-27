@@ -6,10 +6,10 @@ config const str: string = """
 score="3"
 
 [DataStructures."0.1.0"]
-score="1"
+score ="1"
 
 [GPUIterator."0.0.1"]
-score="4"
+score= "4"
 
 # key = "value"
 [NumpyLike."0.1.0"]

@@ -1208,8 +1208,7 @@ module TomlReader {
             singleQuotes = "('.*?')",           // ''
             bracketContents = "(\\[\\w+\\])",   // [_]
             brackets = "(\\[)|(\\])",           // []
-            // TODO: fix table headers
-            tblName = '(\\w+.[^=]"[^"]+")',         // [somename."0.1.0"]
+            tblName = '(\\w+.[^= ]"[^"]+")',     // [somename."0.1.0"]
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =
