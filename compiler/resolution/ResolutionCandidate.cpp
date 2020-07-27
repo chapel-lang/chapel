@@ -205,7 +205,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
         }
 
         if (formalIdxToActual[j] == NULL &&
-            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT) &&
+            !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -238,7 +239,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // or have a default value.
   while (formal) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
-        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT) &&
+        !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
       failingArgument = formal;
       reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;
@@ -955,6 +957,10 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       // This only happens when no actual exists for this formal,
       // so no point in trying to find one.
     }
+
+    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT) ||
+        formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+      continue;
 
     if (formal->type == dtMethodToken)
       fnIsMethod = true;

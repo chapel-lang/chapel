@@ -5872,9 +5872,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
-  if (strncmp(varname, "_formal_tmp_", 12) == 0) {
+  if (strncmp(varname, "_formal_tmp_in_", 15) == 0)
+    varname += 15;
+  else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
-  }
 
   if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
     Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
