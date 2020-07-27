@@ -360,7 +360,13 @@ module BytesStringCommon {
                x.numBytes);
         }
       }
-      return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
+      if r.idxType == byteIndex {
+        return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
+      }
+      else {
+        const retRange = intR[x.byteIndices];
+        return (retRange, retRange.size); // it maybe ascii string or bytes
+      }
     }
 
     if t == bytes || r.idxType == byteIndex {
