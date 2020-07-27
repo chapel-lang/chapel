@@ -152,7 +152,6 @@ void buildDefaultFunctions() {
         // for extern types that are simple (as far as we can tell), we build
         // definitions for those assignments here.
         if (type->hasFlag(FLAG_EXTERN)) {
-          //build_extern_init_function(type->type);
           buildExternAssignmentFunction(type->type);
         }
       }
@@ -217,9 +216,11 @@ static FnSymbol* functionExists(const char* name,
    case 0:  break;
   }
 
+  const char* nameAstr = astr(name);
+
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (strcmp(name, fn->name))
+    if (fn->name != nameAstr)
       continue;
 
     // numFormals must match exactly.

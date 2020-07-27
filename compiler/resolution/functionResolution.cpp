@@ -8674,8 +8674,6 @@ void resolve() {
 
   resolveForallStmts2();
 
-  freeCache(defaultsCache);
-
   freeCache(genericsCache);
   freeCache(promotionsCache);
 
