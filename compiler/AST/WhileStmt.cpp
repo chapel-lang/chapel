@@ -195,7 +195,7 @@ void WhileStmt::checkConstLoops()
 
               else
               {
-                // ... or without param folding
+                // Check more if the RHS of the move is not a param.
                 checkWhileLoopCondition(moveSrc);
               }
             }
