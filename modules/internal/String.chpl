@@ -1289,9 +1289,9 @@ module String {
 
     if localThis.isASCII() {
       for i in this.byteIndices {
-      var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
-                                            len=1, loc=this.locale_id);
-      yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
+        var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i,
+                                                   len=1);
+        yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       }
     }
     else {
@@ -1299,9 +1299,9 @@ module String {
       while i < localThis.buffLen {
         const curPos = localThis.buff+i;
         const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                     buffLen=localThis.buffLen,
-                                                     offset=i,
-                                                     allowEsc=true);
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
         newBuf[nBytes] = 0;
 
