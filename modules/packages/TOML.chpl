@@ -1209,7 +1209,7 @@ module TomlReader {
             bracketContents = "(\\[\\w+\\])",   // [_]
             brackets = "(\\[)|(\\])",           // []
             // TODO: fix table headers
-            //tblName = '(\\w+."[^"]+")',         // [somename."0.1.0"]
+            tblName = '(\\w+.[^=]"[^"]+")',         // [somename."0.1.0"]
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =
@@ -1220,6 +1220,7 @@ module TomlReader {
 
       const pattern = compile('|'.join(doubleQuotes,
                                        singleQuotes,
+                                       tblName,
                                        bracketContents,
                                        brackets,
                                        commas,
