@@ -4167,8 +4167,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
                    str);
   } else if (isInitEqualsPreResolve(call)) {
     INT_ASSERT(info.actuals.v[0]->getValType() == dtMethodToken);
-
-    // TODO: Not sure if this is enforced, should we remove?
     INT_ASSERT(info.actuals.n == 3);
 
     Type* receiverType = info.actuals.v[1]->getValType();
