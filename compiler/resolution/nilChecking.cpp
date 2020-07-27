@@ -1011,9 +1011,8 @@ static bool adjustWhenNilCmp(Expr* arg1, Expr* arg2,
 static bool doAdjustForConditional(CondStmt* cond, bool inThenBranch,
                                    AliasMap& OUT) {
 
-  if (CallExpr* CE = toCallExpr(getSingleDefExpr(cond->condExpr)))
-   if (CE->isNamed("_cond_test") && CE->numActuals() == 1)
-    if (SymExpr* testArg = toSymExpr(CE->get(1)))
+  Expr* theCond = skip_cond_test(getSingleDefExpr(cond->condExpr));
+  if (SymExpr* testArg = toSymExpr(theCond))
     {
      if (isClassIshType(testArg->symbol()))
       // in Chapel: if obj then ...

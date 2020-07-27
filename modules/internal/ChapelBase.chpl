@@ -715,8 +715,7 @@ module ChapelBase {
   inline proc chpl_statementLevelSymbol(a) { }
   inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
   inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc chpl_statementLevelSymbol(param a) param { return a; }
-  inline proc chpl_statementLevelSymbol(type a) type { return a; }
+  // param and type args are handled in the compiler
 
   //
   // If an iterator is called without capturing the result, iterate over it
@@ -742,22 +741,23 @@ module ChapelBase {
 
   inline proc _cond_test(x: borrowed object?) return x != nil;
   inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: integral) return x != 0:x.type;
+  inline proc _cond_test(x: int) return x != 0;
+  inline proc _cond_test(x: uint) return x != 0;
 
   inline proc _cond_test(param x: bool) param return x;
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
 
   inline proc _cond_test(x) {
+   if !( x.type <= _iteratorRecord ) then
     compilerError("type '", x.type:string, "' used in if or while condition");
-  }
-
-  inline proc _cond_test(x: _iteratorRecord) {
+   else
     compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
   }
 
-  proc _cond_invalid(x: borrowed object) param return false;
+  proc _cond_invalid(x: borrowed object?) param return false;
   proc _cond_invalid(x: bool) param return false;
-  proc _cond_invalid(x: integral) param return false;
+  proc _cond_invalid(x: int) param return false;
+  proc _cond_invalid(x: uint) param return false;
   proc _cond_invalid(x) param return true;
 
   //
