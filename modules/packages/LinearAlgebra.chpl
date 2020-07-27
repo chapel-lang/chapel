@@ -785,7 +785,7 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
                        ref CMat : [] eltType) 
 {
   // TODO - Add logic to calculate blockSize 
-  // based to eltType and L1 cache size
+  // based on eltType and L1 cache size
   const blockSize = 32;
   const bVecRange = 0..#blockSize;
   const blockDom = {bVecRange, bVecRange};
