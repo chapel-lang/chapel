@@ -71,20 +71,17 @@ module ChapelBase {
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline proc =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
-  inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
-  {
-    __primitive("=", a, b);
-  }
-
-  pragma "compiler generated"
-  pragma "last resort" // so user-supplied assignment will override this one.
-    // The CG pragma is needed because this function interferes with
-    // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType)
-  where isBorrowedOrUnmanagedClassType(a.type) &&
-        !isNonNilableClassType(a.type) {
-    __primitive("=", a, nil);
-  }
+  // Need pragma "last resort" to allow assignments to sync/single vars.
+  // a.type in a formal's type is computed before instantiation vs.
+  // a.type in the where clause is computed after instantiation.
+  pragma "last resort"
+  inline proc =(ref a: borrowed class,   b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: borrowed class?,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: unmanaged class,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: unmanaged class?, b: a.type) where b.type <= a.type { __primitive("=", a, b); }
 
   inline proc =(ref a: nothing, b: ?t) where t != nothing {
     compilerError("a nothing variable cannot be assigned");

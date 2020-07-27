@@ -1,7 +1,8 @@
 union-copy-init3.chpl:5: In function 'init=':
 union-copy-init3.chpl:7: error: unresolved call '==(U, int(64))'
-$CHPL_HOME/modules/internal/String.chpl:465: note: this candidate did not match: ==(x: ?t, y: int)
-$CHPL_HOME/modules/internal/String.chpl:465: note: because where clause evaluated to false
-$CHPL_HOME/modules/internal/ChapelBase.chpl:99: note: candidates are: ==(a: _nilType, b: _nilType)
-$CHPL_HOME/modules/internal/ChapelBase.chpl:100: note:                 ==(a: bool, b: bool)
-note: and 122 other candidates, use --print-all-candidates to see them
+$CHPL_HOME/modules/internal/ChapelBase.chpl:100: note: this candidate did not match: ==(a: _nilType, b: _nilType)
+union-copy-init3.chpl:7: note: because call actual argument #1 with type U
+$CHPL_HOME/modules/internal/ChapelBase.chpl:100: note: is passed to formal 'a: nil'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:101: note: candidates are: ==(a: bool, b: bool)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:107: note:                 ==(a: borrowed object?, b: borrowed object?)
+note: and 123 other candidates, use --print-all-candidates to see them
