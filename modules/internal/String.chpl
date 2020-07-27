@@ -1614,7 +1614,7 @@ module String {
                            region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
     if this.isASCII() then
       return doSearchNoEnc(this, needle, region,
-                      count=false, fromLeft=false): byteIndex;
+                           count=false, fromLeft=false): byteIndex;
     else
       return doSearchUTF8(needle, region,
                           count=false, fromLeft=false): byteIndex;
@@ -1677,8 +1677,7 @@ module String {
   iter string.split(maxsplit: int = -1) /* : string */ {
     if this.isASCII() {
       for s in doSplitWSNoEnc(this, maxsplit) do yield s;
-    }
-    else {
+    } else {
       // note: to improve performance, this code collapses several cases into a
       //       single yield statement, which makes it confusing to read
       // TODO: specifying return type leads to un-inited string?
@@ -1803,8 +1802,7 @@ module String {
     proc string.strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
       if this.isASCII() {
         return doStripNoEnc(this, chars, leading, trailing);
-      }
-      else {
+      } else {
         if this.isEmpty() then return "";
         if chars.isEmpty() then return this;
 
