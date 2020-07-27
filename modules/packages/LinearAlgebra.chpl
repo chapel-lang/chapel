@@ -834,9 +834,9 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
 pragma "no doc"
 inline proc hasDefaultIndices(Adom : domain(2), Bdom : domain(2)) {
   return Adom.low == (0,0) && Bdom.low == (0,0) && 
-                          (if Adom.stridable && Bdom.stridable
+                          (if Adom.stridable || Bdom.stridable
                            then Adom.stride == 1 && Bdom.stride == 1 
-                           else false);
+                           else true);
 }
 
 /*
