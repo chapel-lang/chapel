@@ -4138,7 +4138,7 @@ static bool isInitEqualsPreResolve(CallExpr* call) {
   bool result = false;
 
   if (isMethodPreResolve(call))
-    if (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals))
+    if (call->isNamedAstr(astrInitEquals))
       result = true;
 
   return result;
@@ -4167,25 +4167,18 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
                    str);
   } else if (isInitEqualsPreResolve(call)) {
     INT_ASSERT(info.actuals.v[0]->getValType() == dtMethodToken);
+
+    // TODO: Not sure if this is enforced, should we remove?
     INT_ASSERT(info.actuals.n == 3);
 
     Type* receiverType = info.actuals.v[1]->getValType();
     Type* exprType = info.actuals.v[2]->getValType();
-    
-    USR_FATAL_CONT(call, "could not find initializer for type '%s' "
-                         "accepting expression of type '%s'",
+   
+    USR_FATAL_CONT(call, "could not find a copy initializer ('%s') "
+                         "for type '%s' from type '%s'",
+                         astrInitEquals,
                          receiverType->symbol->name,
-                         exprType->symbol->name);
-
-    // TODO: Should we restrict the expression location as well?
-    if (isRecord(receiverType) || isClass(receiverType)) {
-      if (receiverType->getModule()->modTag == MOD_USER) {
-        USR_PRINT("you can define an '%s' method for %s that accepts %s",
-                  astrInitEquals,
-                  receiverType->symbol->name,
-                  exprType->symbol->name);
-      }
-    }
+                         exprType->symbol->name); 
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
