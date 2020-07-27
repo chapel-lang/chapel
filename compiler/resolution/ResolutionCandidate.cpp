@@ -39,7 +39,7 @@ static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
 
-std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
+std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -425,19 +425,12 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    std::map<Type*,bool> *formalCoercible = actualFormalCoercible[actualType];
-    if (formalCoercible != NULL) {
-      if (formalCoercible->count(formalType) > 0) {
-        allowCoercions = (*formalCoercible)[formalType];
-      } else {
-        allowCoercions = shouldAllowCoercionsType(actualType, formalType);
-        (*formalCoercible)[formalType] = allowCoercions;
-      }
+    std::map<Type*,bool>& formalCoercible = actualFormalCoercible[actualType];
+    if (formalCoercible.count(formalType) > 0) {
+      allowCoercions = formalCoercible[formalType];
     } else {
-      std::map<Type*,bool> *formalCoercible = new std::map<Type*,bool>();
       allowCoercions = shouldAllowCoercionsType(actualType, formalType);
-      (*formalCoercible)[formalType] = allowCoercions;
-      actualFormalCoercible[actualType] = formalCoercible;
+      formalCoercible[formalType] = allowCoercions;
     }
   }
 
@@ -468,11 +461,7 @@ static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
 }
 
 void clearCoercibleCache() {
-  std::map<Type*,std::map<Type*,bool>*>::iterator it;
-  for (it = actualFormalCoercible.begin(); it != actualFormalCoercible.end();
-       ++it) {
-    delete it->second;
-  }
+  actualFormalCoercible.clear();
 }
 
 // Uses formalSym and actualSym to compute allowCoercion and implicitBang

@@ -126,9 +126,6 @@ static void handleReceiverFormals() {
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
-
-        } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {

@@ -112,9 +112,13 @@ int debugID(int id);
 int debugID(BaseAST* ast);
 void debugSummary(int id);
 void debugSummary(BaseAST* ast);
+void debugSummary(const char* str);
 Symbol* debugParentSym(int id);
 Symbol* debugParentSym(BaseAST* ast);
 Expr* debugParentExpr(int id);
 Expr* debugParentExpr(BaseAST* ast);
+void blockSummary(int id);
+void blockSummary(BaseAST* ast);
+void blockSummary(BlockStmt* block, Symbol* sym);
 
 #endif

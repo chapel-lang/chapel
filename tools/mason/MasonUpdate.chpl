@@ -46,13 +46,12 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 */
 
 private var failedChapelVersion: list(string);
-private var update = false;
-//
-// Temporary passthrough transforming array to list to appease the compiler.
-//
+
 proc masonUpdate(args: [?d] string) {
-  var tf="Mason.toml";
-  var lf="Mason.lock";
+  var tf = "Mason.toml";
+  var lf = "Mason.lock";
+  var skipUpdate = MASON_OFFLINE;
+
   var listArgs: list(string);
   for arg in args {
     listArgs.append(arg);
@@ -66,26 +65,26 @@ proc masonUpdate(args: [?d] string) {
         exit(0);
       }
       when '--no-update' {
-        continue;
+        skipUpdate = true;
       }
       when '--update' {
-        update = true;
+        skipUpdate = false;
       }
     }
   }
-  return UpdateLock(listArgs, tf, lf);
+  return updateLock(skipUpdate, tf, lf);
 }
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-    updateRegistry(tf, args);
+    updateRegistry(skipUpdate);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
@@ -157,22 +156,16 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(tf: string, args: list(string)) {
-  var skipOffline = false;
-  if update then skipOffline = true;
-  if !update then return;
+proc updateRegistry(skipUpdate: bool) {
 
-  if MASON_OFFLINE && (args.count('--update') == 0) && !skipOffline {
-    writeln('Skipping update due to MASON_OFFLINE=true');
-    return;
-  }
+  if skipUpdate then return;
+
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
-      if tf == "Mason.toml" then
-        writeln("Updating ", name);
+      writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist

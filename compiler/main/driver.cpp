@@ -46,6 +46,7 @@
 #include "symbol.h"
 #include "timer.h"
 #include "version.h"
+#include "visibleFunctions.h"
 
 #include <inttypes.h>
 #include <string>
@@ -1545,6 +1546,7 @@ int main(int argc, char* argv[]) {
 
     initFlags();
     initAstrConsts();
+    initTypeHelperNames();
     initRootModule();
     initPrimitive();
     initPrimitiveTypes();

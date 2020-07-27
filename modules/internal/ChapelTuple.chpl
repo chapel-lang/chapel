@@ -313,12 +313,12 @@ module ChapelTuple {
   // Note: statically inlining the _chpl_complex runtime functions is necessary
   // for good performance
   //
-  inline proc _cast(type t, x: (?,?)) where t == complex(64) {
+  inline proc _cast(type t: complex(64), x: (?,?)) {
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
     return _chpl_complex64(x(0):real(32),x(1):real(32));
   }
 
-  inline proc _cast(type t, x: (?,?)) where t == complex(128) {
+  inline proc _cast(type t: complex(128), x: (?,?)) {
     extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
     return _chpl_complex128(x(0):real(64),x(1):real(64));
   }
