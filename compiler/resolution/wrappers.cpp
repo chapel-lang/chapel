@@ -75,6 +75,7 @@ static void addDefaultTokensAndReorder(FnSymbol *fn,
 static void replaceDefaultTokensWithDefaults(FnSymbol *fn,
                                              CallExpr* call,
                                              bool resolveNewCode);
+
 static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
                              ArgSymbol* formal, SymExpr* actual,
                              SymbolMap& copyMap,
@@ -92,13 +93,15 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
                            SymbolMap& copyMap);
 
+static void fixHiddenInoutArg(FnSymbol *fn, CallExpr* call,
+                              ArgSymbol* formal, SymExpr* actual,
+                              SymbolMap& copyMap);
+
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
-                           SymbolMap& copyMap,
-                           SymbolMap& inTmpToActualMap);
+                           SymbolMap& copyMap);
 
-static void handleOutIntents(FnSymbol* fn, CallExpr* call,
-                             SymbolMap& inTmpToActualMap);
+static void handleOutIntents(FnSymbol* fn, CallExpr* call);
 
 bool       isPromotionRequired(FnSymbol* fn, CallInfo& info,
                                std::vector<ArgSymbol*>& actualIdxToFormal);
@@ -204,8 +207,6 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
     //   proc f(a, b=a, c:a.type)
     // where a formal arguments refer to previous formals
     SymbolMap copyMap;
-    // For inout arguments, a map from the in-copy-temp to the real actual
-    SymbolMap inTmpToActualMap;
 
     Expr* currActual = call->get(1);
     Expr* nextActual = NULL;
@@ -230,8 +231,10 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
       // needs a coercion to the actual type).
       handleCoercion(retval, call, formal, actual, copyMap);
 
+      fixHiddenInoutArg(retval, call, formal, actual, copyMap);
+
       // adjust for in intent
-      handleInIntent(retval, call, formal, actual, copyMap, inTmpToActualMap);
+      handleInIntent(retval, call, formal, actual, copyMap);
 
       copyMap.put(formal, actual->symbol());
 
@@ -243,7 +246,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
     // are not available on the way into the function (only on the way out).
     // Consider e.g. proc g(out x, y = x)
     // Here 'y = x' should refer to the value of 'x' on the way in to the fn.
-    handleOutIntents(retval, call, inTmpToActualMap);
+    handleOutIntents(retval, call);
   }
 
   return retval;
@@ -416,10 +419,7 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
 
   if (formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
     // pass the same actual a second time
-    SymExpr* prevActual = toSymExpr(actual->prev);
-    INT_ASSERT(prevActual != NULL);
-    actual->setSymbol(prevActual->symbol());
-    return;
+    INT_FATAL("hidden inout formal should have already been replaced");
   }
 
   // Create a Block to store the default values
@@ -1662,10 +1662,22 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
   return result;
 }
 
+static void fixHiddenInoutArg(FnSymbol *fn, CallExpr* call,
+                              ArgSymbol* formal, SymExpr* actual,
+                              SymbolMap& copyMap) {
+  if (formal->intent == INTENT_INOUT ||
+      formal->originalIntent == INTENT_INOUT)
+  {
+    SymExpr* nextSe = toSymExpr(actual->next);
+    INT_ASSERT(nextSe);
+    // replace dummy actual argument with the real inout actual
+    nextSe->setSymbol(actual->symbol());
+  }
+}
+
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
-                           SymbolMap& copyMap,
-                           SymbolMap& inTmpToActualMap) {
+                           SymbolMap& copyMap) {
 
   bool inout = (formal->intent == INTENT_INOUT ||
                 formal->originalIntent == INTENT_INOUT);
@@ -1745,7 +1757,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         resolveCallAndCallee(copy, false); // false - allow unresolved
         resolveCall(move);
 
-        if (inout) inTmpToActualMap.put(tmp, actualSym);
         actual->setSymbol(tmp);
       } else {
         // Is actualSym something that owns its value?
@@ -1774,7 +1785,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
           resolveCallAndCallee(copy, false); // false - allow unresolved
           resolveCall(move);
 
-          if (inout) inTmpToActualMap.put(tmp, actualSym);
           actual->setSymbol(tmp);
         }
       }
@@ -1782,8 +1792,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
   }
 }
 
-static void handleOutIntents(FnSymbol* fn, CallExpr* call,
-                             SymbolMap& inTmpToActualMap) {
+static void handleOutIntents(FnSymbol* fn, CallExpr* call) {
 
   int j = 0;
 
@@ -1802,8 +1811,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     SET_LINENO(currActual);
     nextActual = currActual->next;
 
-    bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
-
     if (formal->intent == INTENT_OUT || formal->originalIntent == INTENT_OUT) {
       Expr* useExpr = currActual;
       if (NamedExpr* named = toNamedExpr(currActual))
@@ -1811,11 +1818,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
 
       SymExpr* se = toSymExpr(useExpr);
       Symbol* actualSym = se->symbol();
-      if (inout) {
-        Symbol* mapSym = inTmpToActualMap.get(actualSym);
-        if (mapSym)
-          actualSym = mapSym;
-      }
 
       // For untyped out formals with runtime types, pass the type
       // as the previous argument.
