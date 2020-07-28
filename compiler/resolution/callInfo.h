@@ -21,11 +21,23 @@
 #ifndef _CALL_INFO_H_
 #define _CALL_INFO_H_
 
+#include "baseAST.h"
+
 #include "vec.h"
+#include <queue>
+#include <set>
 
 class BlockStmt;
 class CallExpr;
 class Symbol;
+
+#if 0 //wass
+enum NextPoiStatus {
+  POI_FIRST,
+  POI_FINISHED,
+  POI_UNEXPECTED
+};
+#endif
 
 class CallInfo {
 public:
@@ -44,6 +56,22 @@ public:
 
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
+
+  // for getVisibleFunctions()
+  std::set<BlockStmt*>    visited;
+  std::queue<BlockStmt*>  scopeQueue;
+//wass  NextPoiStatus           nextPOIstatus;
+  BlockStmt*              popScopeQueue();
+  void                    clearVisibilityData();
 };
+
+#if 0// wass
+// sentinels for callInfo.nextPOI
+extern BlockStmt* firstPOImark;      // just started POI tranversal
+extern BlockStmt* finishedPOImark;   // finished POI traversal
+extern BlockStmt* unexpectedPOImark; // no POIs are expected
+extern BlockStmt* includeAllPOImark; // traverse all POIs
+extern BlockStmt* backupIncludeAllPOImark;
+#endif
 
 #endif

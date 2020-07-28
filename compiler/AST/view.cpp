@@ -870,7 +870,7 @@ Expr* debugParentExpr(BaseAST* ast) {
   else if (Expr* expr = toExpr(ast))
     return expr->parentExpr;
   else if (Symbol* sym = toSymbol(ast))
-    return sym->defPoint->parentExpr;
+    return sym->defPoint ? sym->defPoint->parentExpr : NULL;
   else {
     printf("<debugParentExpr: node %d is neither Expr nor Symbol>\n", ast->id);
     return NULL;
