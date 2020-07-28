@@ -27,6 +27,7 @@ module DefaultAssociative {
   use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
   use ChapelBase, ChapelLocks, IO;
   use ChapelHashing, ChapelHashtable;
+  use SysError;
 
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
