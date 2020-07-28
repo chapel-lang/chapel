@@ -904,8 +904,11 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
       bool outIntent = formal->intent == INTENT_OUT ||
                        formal->originalIntent == INTENT_OUT;
 
+      bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
+
       if (outIntent &&
           formal->typeExpr == NULL &&
+          inout == false &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
 
         INT_ASSERT(prevFormal && prevActual);

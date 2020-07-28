@@ -1819,10 +1819,13 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call) {
       SymExpr* se = toSymExpr(useExpr);
       Symbol* actualSym = se->symbol();
 
+      bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
+
       // For untyped out formals with runtime types, pass the type
       // as the previous argument.
       Type* formalType = formal->type->getValType();
       if (formal->typeExpr == NULL &&
+          inout == false &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
         const char* dummyName = astr("_formal_type_tmp_", formal->name);
         VarSymbol* typeTmp = newTemp(dummyName, formalType);
