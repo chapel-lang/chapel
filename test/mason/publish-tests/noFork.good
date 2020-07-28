@@ -1,1 +1,9 @@
+Checking Registry with DummyPath path.
+------------------------------------------------------
+The current mason environment is:
+MASON_HOME: /home/anking/chapel/test/mason/publish-tests/mason_home *
+MASON_REGISTRY: registry|https://github.com/chapel-lang/mason-registry *
+MASON_OFFLINE: false *
+SPACK_ROOT: /home/anking/chapel/test/mason/publish-tests/mason_home/spack *
+   In order to use a local registry, ensure that MASON_REGISTRY points to the path.
 DummyPath is not a local git repository.
