@@ -1905,6 +1905,8 @@ static bool backendRequiresCopyForIn(Type* t) {
 // behavior will result by applying "in" intents to them.
 static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                                         SymbolMap& formals2vars) {
+  SET_LINENO(fn);
+
   Expr* start = new CallExpr(PRIM_NOOP);
   fn->insertAtHead(start);
 
@@ -1951,7 +1953,6 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
      case INTENT_OUT: {
       BlockStmt* defaultExpr = NULL;
-      BlockStmt* typeExpr = NULL;
 
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
@@ -1964,7 +1965,14 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         if (formal->typeExpr != NULL) {
           typeTmp = newTemp("_formal_type_tmp_");
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
-          typeExpr = formal->typeExpr->copy();
+          BlockStmt* typeExpr = formal->typeExpr->copy();
+          start->insertBefore(new DefExpr(typeTmp));
+          CallExpr* setType = new CallExpr(PRIM_MOVE,
+                                           typeTmp,
+                                           typeExpr->body.tail->remove());
+          start->insertBefore(typeExpr);
+          start->insertBefore(setType);
+          typeExpr->flattenAndRemove();
         }
 
         if (defaultExpr != NULL) {
@@ -1990,18 +1998,6 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
           start->insertBefore(init);
           start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
         }
-
-        // Copy the type expr if present
-        if (typeExpr != NULL) {
-          CallExpr* setType = new CallExpr(PRIM_MOVE,
-                                           typeTmp,
-                                           typeExpr->body.tail->remove());
-          start->insertBefore(new DefExpr(typeTmp));
-          start->insertBefore(typeExpr);
-          start->insertBefore(setType);
-          typeExpr->flattenAndRemove();
-        }
-
       } else {
         if (defaultExpr != NULL) {
           CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,

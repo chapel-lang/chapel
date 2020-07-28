@@ -1,0 +1,6 @@
+inout-tuple-ref-wait-array.chpl:6: warning: inout varargs not currently supported
+inout-tuple-ref-wait-array.chpl:6: note: vararg formal 'args' converted to ref intent
+2 3 4 5
+0 0 0 0
+0 0 0 0
+0 0 0 0

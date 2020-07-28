@@ -1,2 +1,4 @@
+inout-tuple-ref.chpl:3: warning: inout varargs not currently supported
+inout-tuple-ref.chpl:3: note: vararg formal 'args' converted to ref intent
 1 3 4 5
 5 5 5 5
