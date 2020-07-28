@@ -3563,6 +3563,9 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 *                                                                             *
 ************************************** | *************************************/
 static void fixupInoutFormals(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_EXTERN))
+    return;
+
   for_formals(formal, fn) {
     if (formal->intent == INTENT_INOUT) {
       // Add a hidden out formal after the inout one.
