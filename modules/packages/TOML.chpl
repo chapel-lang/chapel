@@ -155,6 +155,7 @@ module TomlParser {
       ti = compile('^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?$'),
       ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
       inBrackets = compile("(\\[.*?\\])"),
+      tblName = compile('(\\w+.[^=]"[^"]+)'),
       corner = compile("(\\[.+\\])"),
       brackets = compile('\\[|\\]'),
       whitespace = compile("\\s"),
@@ -171,6 +172,9 @@ module TomlParser {
             var token = top(source);
             if comment.match(token) {
               parseComment();
+            }
+            else if tblName.match(token) {
+              parseSubTbl();
             }
             else if inBrackets.match(token) {
               parseTable();
@@ -224,9 +228,26 @@ module TomlParser {
       curTable = tblname;
     }
 
+    // checks if quotes exist and avoids '.' within them to create subtables
+    proc splitWithoutQuotes(tblPath: string) {
+      var countPeriod = 0;
+      var hasQuotes: bool = false;
+      for ch in tblPath {
+        if ch == "." then countPeriod+=1; 
+        if ch == '"' {
+          hasQuotes = true;
+          break;
+        }
+      }
+      return (hasQuotes, countPeriod);
+    }
+
     /* Creates a path to a sub-table when no parent has been initialized */
     proc makePath(tblPath: string) {
-      var path = tblPath.split('.');
+      var res = splitWithoutQuotes(tblPath);
+      var hasQuotes: bool = res[0];
+      var countPeriod = res[1];
+      var path = tblPath.split('.', countPeriod);
       var firstIn = path.domain.first;
       var first = true;
       var i: int = 0;
@@ -298,7 +319,10 @@ module TomlParser {
 
     /* Returns leaf of embedded table */
     proc splitTblPath(s: string) {
-      var A = s.split('.');
+      var res = splitWithoutQuotes(s);
+      var hasQuotes = res[0];
+      var countPeriod = res[1];
+      var A = s.split('.', countPeriod);
       var fIdx = A.domain.first;
       var leaf = A[A.domain.last];
       var path = '.'.join(A[..A.domain.last-1]);
@@ -413,6 +437,7 @@ module TomlParser {
           throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
           return new unmanaged Toml(val);
         }
+
       }
       catch e: IllegalArgumentError {
         writeln("Line "+ debugCounter:string +": Illegal Value -> " + val);
@@ -423,7 +448,6 @@ module TomlParser {
         exit(1);
       }
     }
-
     proc debugPrint() {
       writeln(debugCounter, ':');
       writeln(rootTable);
@@ -686,13 +710,26 @@ used to recursively hold tables and respective values
       for idx in root.A do this.A[idx] = new unmanaged Toml(root.A[idx]!)?;
       this.tag = root.tag;
     }
-
+   
+    // checks if quotes exist and avoids '.' within them to create subtables
+    proc splitWithoutQuotes(tblPath: string) {
+      var countPeriod = 0;
+      var hasQuotes: bool = false;
+      for ch in tblPath {
+        if ch == "." then countPeriod+=1; 
+        if ch == '"' {
+          hasQuotes = true;
+          break;
+        }
+      }
+      return (hasQuotes, countPeriod);
+    }
 
     /* Returns the index of the table path given as a parameter */
     proc this(tbl: string) ref : unmanaged Toml? throws {
-      const indx = tbl.split('.');
+      var (hasQuotes, countPeriod) = splitWithoutQuotes(tbl);
+      const indx = tbl.split('.', countPeriod);
       var top = indx.domain.first;
-
       //
       // TODO: This is a bug when the return type of this routine is a
       // non-nilable class, see #14367/#14861. So for now, we have to make
