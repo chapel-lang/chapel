@@ -3563,20 +3563,28 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 *                                                                             *
 ************************************** | *************************************/
 static void fixupInoutFormals(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_EXTERN))
-    return;
-
   for_formals(formal, fn) {
     if (formal->intent == INTENT_INOUT) {
-      // Add a hidden out formal after the inout one.
-      ArgSymbol* outFormal = formal->copy();
-      outFormal->name = astr(outFormal->name, "_out");
-      outFormal->originalIntent = INTENT_OUT;
-      outFormal->intent = INTENT_OUT;
-      outFormal->addFlag(FLAG_HIDDEN_FORMAL_INOUT);
-      outFormal->defaultExpr = new BlockStmt(new SymExpr(formal));
-      DefExpr* def = new DefExpr(outFormal);
-      formal->defPoint->insertAfter(def);
+      if (fn->hasFlag(FLAG_EXTERN)) {
+        formal->originalIntent = INTENT_REF;
+        formal->intent = INTENT_REF;
+      } else if (formal->variableExpr != NULL) {
+        USR_WARN(formal, "inout varargs not currently supported");
+        USR_PRINT(formal, "vararg formal '%s' converted to ref intent",
+                  formal->name);
+        formal->originalIntent = INTENT_REF;
+        formal->intent = INTENT_REF;
+      } else {
+        // Add a hidden out formal after the inout one.
+        ArgSymbol* outFormal = formal->copy();
+        outFormal->name = astr(outFormal->name, "_out");
+        outFormal->originalIntent = INTENT_OUT;
+        outFormal->intent = INTENT_OUT;
+        outFormal->addFlag(FLAG_HIDDEN_FORMAL_INOUT);
+        outFormal->defaultExpr = new BlockStmt(new SymExpr(formal));
+        DefExpr* def = new DefExpr(outFormal);
+        formal->defPoint->insertAfter(def);
+      }
     }
   }
 }
