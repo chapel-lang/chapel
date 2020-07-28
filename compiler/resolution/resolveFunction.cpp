@@ -158,6 +158,11 @@ static void resolveFormals(FnSymbol* fn) {
 // When compiling for Python interoperability, default values for arguments
 // should get propagated to the generated Python files.
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
+
+  // ignore hidden formals used to implement inout for this purpose
+  if (formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+    return;
+
   if (fLibraryPython) {
     Expr* end = formal->defaultExpr->body.tail;
 
