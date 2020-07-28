@@ -19,23 +19,16 @@
  */
 
 #include "callInfo.h"
+
 #include "driver.h"
 #include "expr.h"
 #include "iterator.h"
 #include "resolution.h"
 #include "stringutil.h"
 
-// wass remove these
-BlockStmt* firstPOImark      = NULL;
-BlockStmt* finishedPOImark   = NULL;
-BlockStmt* includeAllPOImark = NULL;
-BlockStmt* unexpectedPOImark = NULL;
-BlockStmt* backupIncludeAllPOImark = NULL;
-
 CallInfo::CallInfo() {
   call  = NULL;
   scope = NULL;
-//wass  nextPOIstatus = POI_UNEXPECTED;
   name  = NULL;
 }
 
@@ -160,6 +153,7 @@ void CallInfo::haltNotWellFormed() const {
 }
 
 // a convenience
+// can enhanced it to return NULL is the queue is empty
 BlockStmt* CallInfo::popScopeQueue() {
   BlockStmt* retval = scopeQueue.front();
   scopeQueue.pop();
@@ -167,7 +161,6 @@ BlockStmt* CallInfo::popScopeQueue() {
 }
 
 void CallInfo::clearVisibilityData() {
-//  if (call->id == breakOnResolveID) gdbShouldBreakHere(); //wass
   visited.clear();
   // if not empty already, pop() until it is
   INT_ASSERT(scopeQueue.empty());

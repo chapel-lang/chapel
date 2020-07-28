@@ -3389,7 +3389,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
 #if 0 //wass - old
   findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
-#else // wass new stuff
+#else //wass new stuff
 
   info.clearVisibilityData(); // needed when recursing with CHECK_CALLABLE_ONLY
   do
@@ -8704,17 +8704,6 @@ void resolve() {
   unmarkDefaultedGenerics();
 
   adjustInternalSymbols();
-
-#if 0 //wass
-  { //wass move elsewhere, together with init of typeHelperNames
-    SET_LINENO(rootModule);
-    firstPOImark      = new BlockStmt(new CallExpr("firstPOImark"));
-    finishedPOImark   = new BlockStmt(new CallExpr("finishedPOImark"));
-    unexpectedPOImark = new BlockStmt(new CallExpr("unexpectedPOImark"));
-    includeAllPOImark = new BlockStmt(new CallExpr("includeAllPOImark"));
-    backupIncludeAllPOImark = includeAllPOImark;
-  }
-#endif
 
   resolveExterns();
 
