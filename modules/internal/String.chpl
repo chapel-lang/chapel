@@ -1289,8 +1289,7 @@ module String {
 
     if localThis.isASCII() {
       for i in this.byteIndices {
-        var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i,
-                                                   len=1);
+        var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       }
     }
@@ -1303,8 +1302,6 @@ module String {
                                                    offset=i,
                                                    allowEsc=true);
         var (newBuf, newSize) = bufferCopyLocal(curPos, nBytes);
-        newBuf[nBytes] = 0;
-
         yield chpl_createStringWithOwnedBufferNV(newBuf, nBytes, newSize, 1);
 
         i += nBytes;
