@@ -1,20 +1,18 @@
 use Spawn;
+use FileSystem;
 
 var baseDir = "endToEnd/";
 var debug = false;
 
-var shell1 = spawnshell("ls " + baseDir , stdout=PIPE);
+var packages = listdir(baseDir);
 
-var line1:string;
-while shell1.stdout.readline(line1) {
-  endToEndTest(line1);
+for package in packages {
+  endToEndTest(package);
 }
 
-shell1.wait();
+proc endToEndTest(package: string) {
+  var line1:string;
 
-proc endToEndTest(s: string) {
-  // remove new line `\n`
-  var package = s[0..s.size-2];
   if debug then writeln("Running for package " + package);
 
   var packageDir = baseDir + package;
@@ -33,7 +31,7 @@ proc endToEndTest(s: string) {
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./read", stdout=PIPE);
   while shell2.stdout.readline(line1) {
-    write(line1);
+    if(line1.strip() != "true") then writeln("Chapel to Chapel failed");
   }
   shell2.wait(); 
 
@@ -44,7 +42,7 @@ proc endToEndTest(s: string) {
   shell2.wait();
   shell2 = spawnshell("python3 "+packageDir+"/read.py", stdout=PIPE);
   while shell2.stdout.readline(line1) {
-    write(line1);
+    if(line1.strip() != "true") then writeln("Chapel to Python failed");
   }
   shell2.wait(); 
   
@@ -55,7 +53,7 @@ proc endToEndTest(s: string) {
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./read", stdout=PIPE);
   while shell2.stdout.readline(line1) {
-    write(line1);
+    if(line1.strip() != "true") then writeln("Python to Chapel failed");
   }
   shell2.wait();
   
