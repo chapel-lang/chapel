@@ -20,7 +20,6 @@ namespace chapel {
     ~FieldGeneratorBase();
 
     virtual void GenerateMembers(Printer* printer) = 0;
-    string property_name();
     string name();
     string type_name(const FieldDescriptor* descriptor);
     string proto_type_name(const FieldDescriptor* descriptor);

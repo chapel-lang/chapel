@@ -60,7 +60,7 @@ namespace chapel {
       const FieldDescriptor* fieldDescriptor = descriptor_->field(i);
       FieldGeneratorBase* field_obj;
       
-      vars[i]["field_name"] = GetPropertyName(fieldDescriptor);
+      vars[i]["field_name"] = GetFieldName(fieldDescriptor);
       vars[i]["field_number"] = StrCat(fieldDescriptor->number());
       vars[i]["type_name"] = field_obj->type_name(fieldDescriptor);
       vars[i]["proto_field_type"] = field_obj->proto_type_name(fieldDescriptor);

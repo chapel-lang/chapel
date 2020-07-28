@@ -19,8 +19,6 @@ namespace chapel {
   
   string GetFieldName(const FieldDescriptor* descriptor);
 
-  string GetPropertyName(const FieldDescriptor* descriptor);
-
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor);
 
   string GetModuleName(const FileDescriptor* descriptor);

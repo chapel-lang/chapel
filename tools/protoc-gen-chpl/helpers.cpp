@@ -94,12 +94,6 @@ namespace chapel {
       return descriptor->name();
   }
 
-  string GetPropertyName(const FieldDescriptor* descriptor) {
-    string property_name = GetFieldName(descriptor);
-    property_name += "_";
-    return property_name;
-  }
-
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
       case FieldDescriptor::TYPE_ENUM:

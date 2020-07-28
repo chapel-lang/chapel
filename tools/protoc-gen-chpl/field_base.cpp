@@ -30,7 +30,6 @@ namespace chapel {
   void FieldGeneratorBase::SetCommonFieldVariables(
       map<string, string>* variables) {
 
-    (*variables)["property_name"] = property_name();
     (*variables)["type_name"] = type_name(descriptor_);
     (*variables)["proto_type_name"] = proto_type_name(descriptor_);
     (*variables)["name"] = name();
@@ -44,10 +43,6 @@ namespace chapel {
   }
 
   FieldGeneratorBase::~FieldGeneratorBase() {
-  }
-
-  string FieldGeneratorBase::property_name() {
-    return GetPropertyName(descriptor_);
   }
 
   string FieldGeneratorBase::name() {
