@@ -891,6 +891,17 @@ proc diag(A: [?Adom] ?eltType, k=0) {
   else compilerError("A must have rank 2 or less");
 }
 
+pragma "no doc"
+proc diag(A: [?Adom] ?eltType, k=0) where isDistributed(A) {
+  if (Adom.rank == 2) {
+    if (k == 0) then
+      return _dist_diag_vec(A);
+    else 
+      return _dist_diag_vec(A, k);
+  }
+  else compilerError("A must have rank 2 or less");
+}
+
 private proc _diag_vec(A:[?Adom] ?eltType) {
   const (m, n) = Adom.shape;
   const d = if m < n then 0 else 1;
@@ -945,6 +956,58 @@ private proc _diag_mat(A:[?Adom] ?eltType){
     diagonal[i, i] = A[i];
 
   return diagonal;
+}
+
+private proc _dist_diag_vec(A:[?Adom] ?eltType) {
+  const (m, n) = Adom.shape;
+  const d = if m < n then 0 else 1;
+  const diagSize = Adom.dim(d).size;
+  if hasDefaultIndices(Adom) then return _dist_diag_vec_helper(A, d, diagSize);
+  else {
+    ref Aref = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
+    return _dist_diag_vec_helper(Aref, d, diagSize);
+  } 
+}
+
+private proc _dist_diag_vec(A:[?Adom] ?eltType, k : int) {
+  const (m, n) = Adom.shape;
+  const d = if m < n then 0 else 1;
+  const K = abs(k);
+
+  if (m < K) then halt("k is out of range");
+
+  const diagSize = Adom.dim(d).size - K;
+  ref Aref = A.reindex(k..#Adom.shape(0), 0..#Adom.shape(1));
+  return _dist_diag_vec_helper(Aref, d, diagSize);
+}
+
+private proc _dist_diag_vec_helper(A:[?Adom] ?eltType, d:int, diagSize:int) {
+  private use BlockDist;
+  var targetLocales = [loc in A.targetLocales()] 
+                        if _containsDiag(A, loc) then loc;
+  var diagDom = {0..#diagSize} dmapped Block({0..#diagSize}, 
+                                              targetLocales=targetLocales);
+  var diag : [diagDom] eltType = [i in Adom.low(0)..#diagSize] A[i,i];
+
+  return diag;
+}
+
+inline proc _containsDiag(ref array, ref loc) {
+  var retBool : bool = false;
+  on loc do {
+    const localDom = array.localSubdomain();
+    const dim0 = localDom.dim(0);
+    const dim1 = localDom.dim(1);
+    if dim0.high >= dim1.low && dim1.high >= dim0.low then retBool = true;
+  }
+  return retBool;
+}
+
+inline proc hasDefaultIndices(Adom) {
+  return Adom.low(0) == Adom.low(1) && 
+                          (if Adom.stridable 
+                           then Adom.stride == 1
+                           else true);
 }
 
 
