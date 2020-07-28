@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <enum_field.hh>
+#include <enum_field.h>
 
 namespace chapel {
 

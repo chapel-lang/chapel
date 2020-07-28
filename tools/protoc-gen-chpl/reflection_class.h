@@ -18,19 +18,36 @@
  * limitations under the License.
  */
 
-#include <primitive_field.h>
+#ifndef REFLECTION_CLASS_HH
+#define REFLECTION_CLASS_HH
+
+#include <string>
+
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/io/printer.h>
 
 namespace chapel {
 
-  PrimitiveFieldGenerator::PrimitiveFieldGenerator(const FieldDescriptor* descriptor)
-      : FieldGeneratorBase(descriptor) {
-  }
+  using namespace std;
 
-  PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {
-  }
+  using namespace google::protobuf;
+  using namespace google::protobuf::io;
 
-  void PrimitiveFieldGenerator::GenerateMembers(Printer* printer) {
-    printer->Print(variables_, "var $name$: $type_name$;\n");
-  }
+  class ReflectionClassGenerator {
+   public:
+    ReflectionClassGenerator(const FileDescriptor* file);
+    ~ReflectionClassGenerator();
+
+    void Generate(Printer* printer);
+
+   private:
+    const FileDescriptor* file_;
+
+    string module_name;
+
+    void WriteIntroduction(Printer* printer);
+  };
 
 }  // namespace chapel
+
+#endif  // REFLECTION_CLASS_HH

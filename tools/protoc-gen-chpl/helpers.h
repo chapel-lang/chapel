@@ -18,19 +18,31 @@
  * limitations under the License.
  */
 
-#include <primitive_field.h>
+#ifndef PB_HELPERS_HH
+#define PB_HELPERS_HH
+
+#include <string>
+
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/compiler/code_generator.h>
 
 namespace chapel {
+  
+  using namespace std;
+  
+  using namespace google::protobuf;
+  using namespace google::protobuf::compiler;
 
-  PrimitiveFieldGenerator::PrimitiveFieldGenerator(const FieldDescriptor* descriptor)
-      : FieldGeneratorBase(descriptor) {
-  }
+  class FieldGeneratorBase;
 
-  PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {
-  }
+  string GetOutputFile(const FileDescriptor* descriptor, string*error);
+  
+  string GetFieldName(const FieldDescriptor* descriptor);
 
-  void PrimitiveFieldGenerator::GenerateMembers(Printer* printer) {
-    printer->Print(variables_, "var $name$: $type_name$;\n");
-  }
+  FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor);
 
-}  // namespace chapel
+  string GetModuleName(const FileDescriptor* descriptor);
+
+} // namespace chapel
+
+#endif /* PB_HELPERS_HH */

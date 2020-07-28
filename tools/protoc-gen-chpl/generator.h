@@ -18,19 +18,33 @@
  * limitations under the License.
  */
 
-#include <primitive_field.h>
+#ifndef PB_GENERATOR_HH
+#define PB_GENERATOR_HH
+
+#include <string>
+
+#include <google/protobuf/compiler/code_generator.h>
+#include <google/protobuf/descriptor.h>
 
 namespace chapel {
 
-  PrimitiveFieldGenerator::PrimitiveFieldGenerator(const FieldDescriptor* descriptor)
-      : FieldGeneratorBase(descriptor) {
-  }
+  using namespace std;
 
-  PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {
-  }
+  using namespace google::protobuf::compiler;
+  using namespace google::protobuf;
 
-  void PrimitiveFieldGenerator::GenerateMembers(Printer* printer) {
-    printer->Print(variables_, "var $name$: $type_name$;\n");
-  }
+  class Generator : public CodeGenerator {
+  public:
+    Generator();
+    ~Generator();
+    bool Generate(
+      const FileDescriptor *file,
+      const string &parameter,         
+      GeneratorContext *generator_context,     
+      string *error)
+    const override;
+  };
 
-}  // namespace chapel
+} // namespace chapel
+
+#endif /* PB_GENERATOR_HH */

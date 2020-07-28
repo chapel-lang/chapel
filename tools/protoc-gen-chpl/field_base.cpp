@@ -21,8 +21,8 @@
 #include <google/protobuf/stubs/strutil.h>
 #include <google/protobuf/stubs/logging.h>
 
-#include <field_base.hh>
-#include <helpers.hh>
+#include <field_base.h>
+#include <helpers.h>
 
 namespace chapel {
   

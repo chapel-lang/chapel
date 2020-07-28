@@ -18,19 +18,29 @@
  * limitations under the License.
  */
 
-#include <primitive_field.h>
+#ifndef PB_ENUM_FIELD_HH
+#define PB_ENUM_FIELD_HH
+
+#include <string>
+
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/descriptor.h>
+
+#include <field_base.h>
 
 namespace chapel {
+  
+  using namespace google::protobuf;
+  using namespace google::protobuf::io;
+  
+  class EnumFieldGenerator : public FieldGeneratorBase {
+   public:
+    EnumFieldGenerator(const FieldDescriptor* descriptor);
+    ~EnumFieldGenerator();
 
-  PrimitiveFieldGenerator::PrimitiveFieldGenerator(const FieldDescriptor* descriptor)
-      : FieldGeneratorBase(descriptor) {
-  }
+    void GenerateMembers(Printer* printer);
+  };
 
-  PrimitiveFieldGenerator::~PrimitiveFieldGenerator() {
-  }
+}  // namespace chapelespace chapel
 
-  void PrimitiveFieldGenerator::GenerateMembers(Printer* printer) {
-    printer->Print(variables_, "var $name$: $type_name$;\n");
-  }
-
-}  // namespace chapel
+#endif  // PB_ENUM_FIELD_HH

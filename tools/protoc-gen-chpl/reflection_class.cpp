@@ -18,10 +18,10 @@
  * limitations under the License.
  */
 
-#include <reflection_class.hh>
-#include <message.hh>
-#include <helpers.hh>
-#include <enum.hh>
+#include <reflection_class.h>
+#include <message.h>
+#include <helpers.h>
+#include <enum.h>
 
 namespace chapel {
 

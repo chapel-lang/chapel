@@ -20,7 +20,7 @@
 
 #include <google/protobuf/stubs/strutil.h>
 
-#include <enum.hh>
+#include <enum.h>
 
 namespace chapel {
 

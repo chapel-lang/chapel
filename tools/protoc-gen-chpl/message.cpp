@@ -31,10 +31,10 @@
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/wire_format_lite.h>
 
-#include <helpers.hh>
-#include <message.hh>
-#include <enum.hh>
-#include <field_base.hh>
+#include <helpers.h>
+#include <message.h>
+#include <enum.h>
+#include <field_base.h>
 
 namespace chapel {
 

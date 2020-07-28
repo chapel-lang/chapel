@@ -22,12 +22,12 @@
 
 #include <google/protobuf/stubs/strutil.h>
 
-#include <helpers.hh>
-#include <primitive_field.hh>
-#include <repeated_primitive_field.hh>
-#include <enum_field.hh>
-#include <repeated_enum_field.hh>
-#include <field_base.hh>
+#include <helpers.h>
+#include <primitive_field.h>
+#include <repeated_primitive_field.h>
+#include <enum_field.h>
+#include <repeated_enum_field.h>
+#include <field_base.h>
 
 namespace chapel {
   

@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include <repeated_primitive_field.hh>
+#include <repeated_primitive_field.h>
 
 namespace chapel {
 

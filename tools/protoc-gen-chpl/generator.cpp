@@ -23,9 +23,9 @@
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
-#include <generator.hh>
-#include <helpers.hh>
-#include <reflection_class.hh>
+#include <generator.h>
+#include <helpers.h>
+#include <reflection_class.h>
 
 namespace chapel {
 
