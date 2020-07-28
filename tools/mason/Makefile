@@ -32,11 +32,11 @@ linkFile=$(bdir)/mason
 
 MASON_SOURCES=*.chpl
 
-all: $(bdir)/mason
+all: $(bdir)/mason FORCE
 
-mason: $(bdir)/mason
+mason: $(bdir)/mason FORCE
 
-install: $(bdir)/mason
+install: $(bdir)/mason FORCE
 
 $(bdir)/mason: $(MASON_SOURCES)
 	@if [ $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_regexp.py) != re2 ]; then \
@@ -46,8 +46,10 @@ $(bdir)/mason: $(MASON_SOURCES)
 	@echo "Building Mason..."
 	@chplBinDir=$(bdir) ./buildMason
 
-clean:
+clean: FORCE
 	@echo "Removing Mason..."
 	rm -f $(bdir)/mason
 
-clobber: clean
+clobber: clean FORCE
+
+FORCE:
