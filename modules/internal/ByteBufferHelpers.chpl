@@ -103,6 +103,7 @@ module ByteBufferHelpers {
   inline proc bufferCopyLocal(src_addr: bufferType, len: int) {
       const (dst, allocSize) = bufferAlloc(len+1);
       bufferMemcpyLocal(dst=dst, src=src_addr, len=len);
+      dst[len] = 0;
       return (dst, allocSize);
   }
 
