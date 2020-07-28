@@ -3569,9 +3569,7 @@ static void fixupInoutFormals(FnSymbol* fn) {
         formal->originalIntent = INTENT_REF;
         formal->intent = INTENT_REF;
       } else if (formal->variableExpr != NULL) {
-        USR_WARN(formal, "inout varargs not currently supported");
-        USR_PRINT(formal, "vararg formal '%s' converted to ref intent",
-                  formal->name);
+        USR_FATAL_CONT(formal, "inout varargs not currently supported");
         formal->originalIntent = INTENT_REF;
         formal->intent = INTENT_REF;
       } else {
