@@ -26,7 +26,7 @@ proc main(args: [] string) {
 
   //use cublas saxpy
   timer.start();
-  cu_axpy(cublas_handle, N:int(32), X, Y, a);
+  cu_saxpy(cublas_handle, N:int(32), X, Y, a);
   timer.stop();
 
   //destroy cublas handle
