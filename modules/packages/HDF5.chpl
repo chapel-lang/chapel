@@ -75,7 +75,7 @@ module HDF5 {
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
-    public use SysCTypes;
+    public use SysCTypes, SysBasic;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";
