@@ -1,0 +1,22 @@
+
+[GnuPlot]
+
+[GnuPlot."0.0.1"]
+score = "4"
+
+[LocalAtomics]
+
+[LocalAtomics."0.1.0"]
+score = "5"
+
+[NumpyLike]
+
+[NumpyLike."0.0.1"]
+score = "2"
+
+[csm]
+
+[csm."0.1.0"]
+score = "3"
+
+
