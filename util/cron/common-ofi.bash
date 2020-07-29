@@ -37,7 +37,7 @@ if [ -z "$lchOK" ] ; then
   module load gnu-openmpi
 
   set -x
-  module list -l 2>&1 | grep -E -q '\bgnu-openmpi\b' || return $?
+  module list 2>&1 | grep -E -q '\bgnu-openmpi\b' || return $?
 
   export MPI_DIR=$(which mpicc | sed 's,/bin/mpicc$,,')
 fi

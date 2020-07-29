@@ -10,8 +10,8 @@ function ck_module_list() {
 
     case "$1" in ( "" ) ;; ( * ) log_error "ck_module_list: too many args=$@"; exit 2;; esac
 
-    local output=$( set +x; module list -t 2>&1 ) || {
-        log_error "Failed: module list -t"
+    local output=$( set +x; module -t list 2>&1 ) || {
+        log_error "Failed: module -t list"
         exit 2
     }
     case "$output" in
@@ -32,7 +32,7 @@ function list_loaded_modules() {
 
     # Sorted module list (currently loaded modules) to stdout
 
-    module list -t 2>&1 | tail -n +2 | sort
+    module -t list 2>&1 | tail -n +2 | sort
 }
 
 function get_module_re() {
@@ -64,7 +64,7 @@ function get_module_re() {
     done
     case "$target" in ( "" ) log_error "get_module_re: missing args: one <target> is required"; exit 2;; esac
 
-    local found=$( set +x; module list -t 2>&1 | cut -d/ -f1 | grep -e "^$target" || : ok )
+    local found=$( set +x; module -t list 2>&1 | cut -d/ -f1 | grep -e "^$target" || : ok )
     if [ -n "$filter" ]; then
         found=$( grep -v -e "$filter" <<<"$found" || : ok )
     fi
@@ -84,7 +84,7 @@ function get_module_version() {
     case "$2" in ( "" ) ;; ( * ) log_error "get_module_version: too many args=$@"; exit 2;; esac
     local target=$1
 
-    local found=$( set +x; module list -t 2>&1 | grep -E -e "^$target(/|$)" || : ok )
+    local found=$( set +x; module -t list 2>&1 | grep -E -e "^$target(/|$)" || : ok )
     case "$found" in
     ( "" )  echo "";;
     ( *\ * )    log_error "Unrecognized module list=$found"; exit 2;;
