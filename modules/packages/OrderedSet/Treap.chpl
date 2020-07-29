@@ -824,8 +824,7 @@ module Treap {
 
     /*
       Returns a new DefaultRectangular array containing a copy of each of the
-      elements contained in this orderedSet. The elements of the returned array are
-      not guaranteed to follow any particular ordering.
+      elements contained in this orderedSet. The array will be in order.
 
       :return: An array containing a copy of each of the elements in this orderedSet.
       :rtype: `[] eltType`
