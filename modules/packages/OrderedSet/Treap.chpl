@@ -90,6 +90,7 @@ module Treap {
     var rank, size: int;
     var parent: unmanaged _treapNode(eltType)?;
     var children: (unmanaged _treapNode(eltType)?, unmanaged _treapNode(eltType)?);
+
     proc update() {
       size = 1;
       for child in children {
@@ -98,6 +99,7 @@ module Treap {
         }
       }
     }
+
     proc deinit() {
       for child in children {
         if child != nil {
@@ -105,6 +107,7 @@ module Treap {
         }
       }
     }
+
     proc sanityChecks() {
       if !_sanityChecks then return;
       for child in children {
