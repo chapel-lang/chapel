@@ -2050,7 +2050,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         // (The local variable is not strictly necessary but is a more
         //  typical pattern for follow-on passes)
         tmp->addFlag(FLAG_NO_COPY);
-        start->insertBefore(new CallExpr(PRIM_ASSIGN, tmp, formal));
+        start->insertBefore(new CallExpr(PRIM_MOVE, tmp, formal));
 
         // Default-initializers and '_new' wrappers take ownership
         // Note: FLAG_INSERT_AUTO_DESTROY is blindly applied to any formal
