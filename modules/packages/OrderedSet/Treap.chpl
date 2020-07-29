@@ -87,6 +87,10 @@ module Treap {
   class _treapNode {
     type eltType;
     var element: eltType;
+    /*
+      rank is a random number used to guarantee the complexity of the treap
+      size is the size of the subtree rooted on the node 
+    */
     var rank, size: int;
     var parent: unmanaged _treapNode(eltType)?;
     var children: (unmanaged _treapNode(eltType)?, unmanaged _treapNode(eltType)?);
