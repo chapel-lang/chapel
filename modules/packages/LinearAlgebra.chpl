@@ -893,32 +893,33 @@ proc diag(A: [?Adom] ?eltType, k=0) {
 
 private proc _diag_vec(A:[?Adom] ?eltType) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 0 else 1;
-  const dim = Adom.dim(d);
+  const diagSize = if m < n then m else n;
 
-  var diagonal = Vector(dim, eltType);
-
-  forall i in dim do
-    diagonal[i] = A[i,i];
+  var diagonal : [0..#diagSize] eltType;
+  forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize, 
+                                 Adom.dim(1)#diagSize, 
+                                 0..) do
+    diagonal[diagInd] = A[i,j]; 
 
   return diagonal;
 }
 
 private proc _diag_vec(A:[?Adom] ?eltType, k) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 0 else 1;
-  const dim = Adom.dim(d);
 
   if k > 0 {
     // Upper diagonal
     if m < k then halt("k is out of range");
 
     var length = min(m, n - k);
-    const space = dim.first..#length;
-    var diagonal = Vector(space, eltType);
+    var diagonal = Vector(0..#length, eltType);
+    const offset = Adom.dim(1).stride * k;
 
-    forall i in space do
-      diagonal[i] = A[i, i+k];
+    forall (i, j, diagInd) in 
+      zip(Adom.dim(0)#length, 
+          Adom.dim(1)#length,
+          0..) do
+      diagonal[diagInd] = A[i, j+offset];
 
     return diagonal;
   }
@@ -928,11 +929,14 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
     if m < K then halt("k is out of range");
 
     var length = min(n, m - K);
-    const space = dim.first..#length;
-    var diagonal = Vector(space, eltType);
+    var diagonal = Vector(0..#length, eltType);
+    const offset = Adom.dim(0).stride * K;
 
-    forall i in space do
-      diagonal[i] = A[i+K, i];
+    forall (i, j, diagInd) in 
+      zip(Adom.dim(0)#length,
+          Adom.dim(1)#length,
+          0..) do
+      diagonal[diagInd] = A[i+offset, j];
 
     return diagonal;
   }
