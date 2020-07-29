@@ -76,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/DynamicIters.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
+	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
@@ -95,7 +96,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/Version.chpl \
-	standard/Heap.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
