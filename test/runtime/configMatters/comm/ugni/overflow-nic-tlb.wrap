@@ -6,7 +6,7 @@
 # heap size so that it's just big enough to cause the message
 # we're testing here.
 #
-hpm=$(module list --terse 2>&1 | grep craype-hugepages)
+hpm=$(module -t list 2>&1 | grep craype-hugepages)
 if [[ -n "$hpm" ]] ; then module unload $hpm ; fi
 
 export CHPL_RT_CALL_STACK_SIZE=128K
