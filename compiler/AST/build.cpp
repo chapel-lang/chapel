@@ -774,10 +774,17 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* useSysCTypes = buildUseList(new UnresolvedSymExpr("SysCTypes"),
-                                         "", NULL, /* private = */ false);
-  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
-  BlockStmt* ret = buildChapelStmt(useSysCTypes);
+  bool privateUse = true;
+
+  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // (System error codes do not need to be part of this).
+  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
+                                     NULL, privateUse);
+  buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
+  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
+
+  useBlock->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useBlock);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
