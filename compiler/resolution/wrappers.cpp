@@ -69,12 +69,6 @@
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
                                        std::vector<ArgSymbol*>& actualIdxToFml);
-static void addDefaultTokensAndReorder(FnSymbol *fn,
-                                       CallExpr* call,
-                                       std::vector<ArgSymbol*>& actualIdxToFml);
-static void replaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                             CallExpr* call,
-                                             bool resolveNewCode);
 
 static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
                              ArgSymbol* formal, SymExpr* actual,
@@ -113,13 +107,6 @@ static FnSymbol*  promotionWrap(FnSymbol* fn,
 static FnSymbol*  buildEmptyWrapper(FnSymbol* fn);
 
 static ArgSymbol* copyFormalForWrapper(ArgSymbol* formal);
-
-/*static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual);*/
 
 static bool typeExprReturnsType(ArgSymbol* formal);
 
@@ -287,51 +274,6 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      BlockStmt* body,
                                      SymbolMap& copyMap);
 
-static
-void addDefaultTokensAndReorder(FnSymbol *fn,
-                                CallExpr* call,
-                                std::vector<ArgSymbol*>& actualFormals) {
-  int numFormals = fn->numFormals();
-  std::vector<Symbol*> newActuals(numFormals);
-
-  // Gather the actuals into newActuals with NULLs where
-  // we need to fill in a default. This also happens
-  // to address the need to reorder the actuals.
-  int i = 0;
-  for_formals(formal, fn) {
-    Symbol* actualSym = NULL;
-    int j = 0;
-    for_actuals(actual, call) {
-      if (actualFormals[j] == formal) {
-        SymExpr* se = toSymExpr(actual);
-        INT_ASSERT(se);
-        actualSym = se->symbol();
-      }
-      j++;
-    }
-
-    newActuals[i] = actualSym;
-
-    i++;
-  }
-
-  // Remove the actuals from the call
-  // (we'll add them back again in a moment)
-  for_actuals(actual, call) {
-    actual->remove();
-  }
-
-  // Add the actuals back in the call along with gUnknown for
-  // defaulted arguments (we'll fix that in replaceDefaultTokensWithDefaults)
-  for_vector_allowing_0s(Symbol, actual, newActuals) {
-    if (actual != NULL) {
-      call->insertAtTail(actual);
-    } else {
-      call->insertAtTail(new SymExpr(gUnknown));
-    }
-  }
-}
-
 // info is used to handle out-of-order named arguments
 // if there aren't any out-of-order arguments (as with promotion)
 // it can be NULL.
@@ -494,36 +436,6 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
   // Flatten body
   body->flattenAndRemove();
 }
-
-
-// This function is used for promotion cases in fixDefaultArgumentsInWrapCall
-static
-void replaceDefaultTokensWithDefaults(FnSymbol *fn,
-                                      CallExpr* call,
-                                      bool resolveNewCode) {
-
-  SymbolMap copyMap;
-
-  Expr* currActual = call->get(1);
-  Expr* nextActual = NULL;
-  for_formals(formal, fn) {
-    nextActual = currActual->next;
-
-    SET_LINENO(currActual);
-
-    SymExpr* actual = toSymExpr(currActual);
-    INT_ASSERT(actual);
-
-    // Fix any gUnknown arguments added by the above defaults and
-    // replace them with the real defaults.
-    handleDefaultArg(fn, call, formal, actual, copyMap, false);
-
-    copyMap.put(formal, actual->symbol());
-
-    currActual = nextActual;
-  }
-}
-
 
 static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
                                                  ArgSymbol* formal) {
@@ -1952,9 +1864,6 @@ static void       collectPromotionFormals(PromotionInfo& promotion,
 static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
-static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion);
-
-
 static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
   int i = 0;
   for_actuals(actual, call)
@@ -2138,8 +2047,6 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   normalize(retval);
 
   fixUnresolvedSymExprsForPromotionWrapper(retval, fn);
-
-  fixDefaultArgumentsInWrapCall(promotion);
 
   return retval;
 }
@@ -2695,38 +2602,6 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
   }
 }
 
-static void fixDefaultArgumentsInWrapCall(PromotionInfo& promotion) {
-  bool anyDefaulted = false;
-  for (size_t i = 0; i < promotion.defaulted.size(); i++) {
-    if (promotion.defaulted[i])
-      anyDefaulted = true;
-  }
-  // Handle default arguments, if necessary.
-  if (anyDefaulted) {
-
-    // Set up actualIdxToFormal to indicate which defaults we need
-    std::vector<ArgSymbol*> actualIdxToFormal;
-
-    int i = 0;
-    for_formals(formal, promotion.fn) {
-      if (promotion.defaulted[i] == false) {
-        actualIdxToFormal.push_back(formal);
-      }
-      i++;
-    }
-
-    // Update the calls
-    for_vector(CallExpr, wrapCall, promotion.wrapCalls) {
-
-      addDefaultTokensAndReorder(promotion.fn, wrapCall, actualIdxToFormal);
-
-      // don't resolve it yet since other parts of the promotion
-      // wrapper aren't resolved
-      replaceDefaultTokensWithDefaults(promotion.fn, wrapCall,
-                                       /* resolve it? */ false);
-    }
-  }
-}
 
 //
 // In order for fast followers to trigger, the invoking loop requires a static
