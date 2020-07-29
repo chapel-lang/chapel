@@ -36,7 +36,7 @@ module Treap {
   private use OrderedSet only orderedSet;
 
   pragma "no doc"
-  private param _sanityChecks = true;
+  private param _sanityChecks = false;
 
   // The locker is borrowed from List.chpl
   // 
