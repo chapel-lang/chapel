@@ -1427,8 +1427,11 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
           char buf[3];
           long num;
           buf[0] = buf[1] = buf[2] = '\0';
-          if( str[pos] ) buf[0] = str[pos++];
-          if( str[pos] ) buf[1] = str[pos++];
+          if (str[pos] && isxdigit(str[pos])) {
+              buf[0] = str[pos++];
+              if( str[pos] && isxdigit(str[pos]))
+                buf[1] = str[pos++];
+          }
           num = strtol(buf, NULL, 16);
           newString += (char) num;
         }
