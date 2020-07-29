@@ -44,15 +44,7 @@ void cublas_destroy(cublasHandle_t *handle){
 
 }
 
-
-int cublas_saxpy(cublasHandle_t *handle, int n, float alpha, float *x, int incX, float *y, int incY){
-
-    cublasSaxpy(*handle, n, &alpha, x, 1, y, 1);
-    cudaDeviceSynchronize();
-    return 0;
-
-}
-
+/*
 int cublas_axpy(cublasHandle_t *handle, int n, float alpha, void *x, int incX, void *y, int incY){
 
     cublasSaxpy(*handle, n, &alpha, x, 1, y, 1);
@@ -60,17 +52,41 @@ int cublas_axpy(cublasHandle_t *handle, int n, float alpha, void *x, int incX, v
     return 0;
 
 }
+*/
+
+int cublas_saxpy(cublasHandle_t *handle, int n, float alpha, float *x, int incX, float *y, int incY){
+
+    cublasSaxpy(*handle, n, &alpha, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
 
 
-/*
-int cublas_daxpy(cublasHandle_t *handle, int n, double alpha, double *x, int incX, double *y, int incy){
+int cublas_daxpy(cublasHandle_t *handle, int n, double alpha, double *x, int incX, double *y, int incY){
 
     cublasDaxpy(*handle, n, &alpha, x, incX, y, incY);
     cudaDeviceSynchronize();
     return 0;
 
 }
-*/
+
+int cublas_caxpy(cublasHandle_t *handle, int n, cuComplex alpha, cuComplex *x, int incX, cuComplex *y, int incY){
+
+    cublasCaxpy(*handle, n, &alpha, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_zaxpy(cublasHandle_t *handle, int n, cuDoubleComplex alpha, cuDoubleComplex *x, int incX, cuDoubleComplex *y, int incY){
+
+    cublasZaxpy(*handle, n, &alpha, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
 
 int cublas_sgemm(cublasHandle_t *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc){
 
