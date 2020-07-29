@@ -526,6 +526,34 @@ static bool fits_in_uint(int width, Immediate* imm) {
 }
 
 
+static SymExpr* findSourceOfInCopy(Symbol* sym) {
+  if (startsWith(sym->name, "_formal_tmp_in_")) {
+    for_SymbolSymExprs(se, sym) {
+      CallExpr* call = toCallExpr(se->getStmtExpr());
+      SymExpr* lhsSe = NULL;
+      CallExpr* initOrCtor = NULL;
+      if (isInitOrReturn(call, lhsSe, initOrCtor)) {
+        if (lhsSe->symbol() == sym) {
+          if (initOrCtor == NULL && call->isPrimitive()) {
+            // e.g. PRIM_MOVE lhs rhs
+            SymExpr* rhsSe = toSymExpr(call->get(2));
+            INT_ASSERT(rhsSe);
+            return rhsSe;
+          } else {
+            // assumes that the called function is init/coerce
+            // and the last argument is the source
+            Expr* rhs = initOrCtor->get(initOrCtor->numActuals());
+            SymExpr* rhsSe = toSymExpr(rhs);
+            INT_ASSERT(rhsSe);
+            return rhsSe;
+          }
+        }
+      }
+    }
+  }
+  return NULL;
+}
+
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
 //
@@ -575,6 +603,15 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
       if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       {
+
+        if (formal->intent == INTENT_INOUT) {
+          // check for a formal temp to handle the `in` part; if we have
+          // it, look at the source of it.
+          if (SymExpr* sourceSe = findSourceOfInCopy(sym)) {
+            return isLegalLvalueActualArg(formal, sourceSe,
+                                          constnessErrorOut, exprTmpErrorOut);
+          }
+        }
         constnessErrorOut = constnessError;
         exprTmpErrorOut = exprTmpError;
         return false;

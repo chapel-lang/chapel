@@ -1736,8 +1736,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         // here. The called function will destroy.
         tmp->addFlag(FLAG_NO_AUTO_DESTROY);
         tmp->addFlag(FLAG_EXPR_TEMP);
-        if (inout)
-          tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
 
         // Does this need to be here?
         if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
