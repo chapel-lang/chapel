@@ -274,8 +274,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
                           bool* needRefIntent) {
   bool retval = false;
 
-  if (formal->intent == INTENT_INOUT     ||
-      formal->intent == INTENT_OUT       ||
+  if (formal->intent == INTENT_OUT       ||
       formal->intent == INTENT_REF       ||
       formal->intent == INTENT_CONST_REF) {
     retval = true;
