@@ -261,6 +261,10 @@ module Treap {
       _leave();
     }
 
+    proc const _contains(const ref x: eltType): bool {
+      return _find(_root, x) != nil;
+    }
+
     /*
       Returns `true` if the given element is a member of this orderedSet, and `false`
       otherwise.
@@ -274,7 +278,7 @@ module Treap {
 
       on this {
         _enter(); 
-        result = _find(_root, x) != nil;
+        result = _contains(x);
         _leave();
       }
 
@@ -767,7 +771,7 @@ module Treap {
 
           // TODO: Take locks on other?
           for x in other do
-            if this.contains(x) {
+            if this._contains(x) {
               result = false;
               break;
             }
