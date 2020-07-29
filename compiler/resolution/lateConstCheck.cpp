@@ -268,19 +268,9 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
       // Use the DefExpr only once to print the containing function.
       BaseAST* pin = !result ? (BaseAST*) formal->defPoint : formal;
 
-      /*
-      USR_FATAL_CONT(pin, "element #%d of formal '%s' is const and "
-                          "cannot be modified",
-                          (fieldIdx-1),
-                          formal->name);
-      */
-
-      const char* parens = "";
-
-      USR_FATAL_CONT(pin, "tuple formal '%s' of %s%s is const and "
+      USR_FATAL_CONT(pin, "tuple formal '%s' of '%s' is const and "
                           "cannot be modified",
                           formal->name,
-                          parens,
                           calledFn->name);
                           
       // TODO: Pin IFF the element is a user type.
@@ -442,7 +432,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
     }
 
     bool isActualFieldConst = false;
-    bool isActualFormal = false;
+    bool isActualConst = false;
     Symbol* actualSym = NULL;
 
     // Determine if the actual field is const or not.
@@ -464,7 +454,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
           DEBUG_SYMBOL(sym);
 
           isActualFieldConst = true;
-          isActualFormal = (toArgSymbol(original) != NULL);
+          isActualConst = true;
           actualSym = original;
         }
 
@@ -472,6 +462,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
       } else if (sym->hasFlag(FLAG_TEMP)) {
         CallExpr* build = NULL;
 
+        // Fetch the _build_tuple call for the actual.
         for_SymbolSymExprs(se, sym) {
           CallExpr* move = toCallExpr(se->parentExpr);
           if (move == NULL || !move->isPrimitive(PRIM_MOVE)) {
@@ -497,6 +488,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
           build = buildCall;
         }
 
+        // Check the argument to _build_tuple. Is it const?
         if (build != NULL) {
           Expr* buildArg = build->get(fieldIdx);
 
@@ -504,8 +496,8 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
 
           SymExpr* buildSymExpr = toSymExpr(buildArg);
           if (buildSymExpr != NULL) {
-            Symbol* buildSym = buildSymExpr->symbol();
 
+            Symbol* buildSym = buildSymExpr->symbol();
             if (buildSym->qualType().isConst()) {
               DEBUG_SYMBOL(buildSym);
 
@@ -527,10 +519,9 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
         if (arg != NULL && arg != formal) {
           DEBUG_SYMBOL(arg);
 
-          isActualFormal = true;
-
           if (arg->intent & INTENT_CONST && arg->qualType().isConst()) {
             isActualFieldConst = true;
+            isActualConst = true;
             actualSym = arg;
           } else if (arg->intent == INTENT_REF_MAYBE_CONST) {
 
@@ -554,21 +545,22 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
         use = um->at(formal);
       }
 
-      BaseAST* pin = result ? (BaseAST*) actualSym : actualSym->defPoint;
+      // BaseAST* pin = result ? (BaseAST*) actual : actualSym->defPoint;
 
-      const char* parens = "";
-
-      USR_FATAL_CONT(pin, "const actual element is passed to %s tuple "
-                          "formal '%s' of %s%s",
-                          intentDescrString(INTENT_REF),
-                          formal->name,
-                          parens,
-                          calledFn->name);
+      USR_FATAL_CONT(actual, "const actual element is passed to %s tuple "
+                        "formal '%s' of '%s'",
+                        intentDescrString(INTENT_REF),
+                        formal->name,
+                        calledFn->name);
 
       // TODO: Pin if the element is a user type.
-      USR_PRINT("tuple element #%d of type %s",
+      USR_PRINT("tuple element #%d of type '%s'",
                 fieldIdx-1,
                 ft->symbol->name);
+
+      const char* descriptor = isActualConst ? "actual" : "element";
+      USR_PRINT(actualSym->defPoint, "const %s declared here",
+                                     descriptor);
 
       if (fieldIntent == INTENT_REF_MAYBE_CONST) {
         USR_PRINT(use, "formal element has %s due to modification, "
@@ -579,8 +571,6 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
           printFormalUseChain(formal, um);
         }
       }
-
-      // TODO: Emit more errors about actual?
 
       result = true;
     }
