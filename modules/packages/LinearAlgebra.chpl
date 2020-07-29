@@ -812,17 +812,16 @@ proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1
 {
   ref targetLocales = A.targetLocales();
 
-  if A.shape(1) != B.shape(0) {
-    halt("Array dimensions don't match.\n Trying to multiply arrays of dimensions ", 
-         A.shape, " ", B.shape);
-  }
+  if Adom.rank != 2 || Bdom.rank != 2 then
+    compilerError("Ranks are not 2 and 2");
+  if A.shape(1) != B.shape(0) then
+    halt("Mismatched shape in matrix-vector multiplication");
 
   const commonDim = Adom.dim(1);
   if window < 1 {
     window = commonDim.size;
   }
 
-  ref Bref = B.reindex(commonDim, Bdom.dim(1));
   var domainC : domain(2) dmapped Block(boundingBox = {Adom.dim(0), Bdom.dim(1)},
                                         targetLocales = targetLocales) 
                                         = {Adom.dim(0), Bdom.dim(1)};
