@@ -152,7 +152,7 @@ proc test() {
   // unmanaged, OK
   run(new unmanaged C?());
   
-  // atomic
+  // atomic, OK
   var atm: atomic int;
   run(atm);
 
@@ -181,11 +181,11 @@ proc test() {
   // domain, OK
   run({0..0});
 
-  // array/formal=ref
+  // array/formal=ref, OK
   var arr: [0..0] int;
   runArrayRefFormal(arr);
  
-  // array/formal=const
+  // array/formal=const, OK
   runArrayConstFormal(arr);
 }
 test();
