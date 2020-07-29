@@ -893,7 +893,7 @@ proc diag(A: [?Adom] ?eltType, k=0) {
 
 private proc _diag_vec(A:[?Adom] ?eltType) {
   const (m, n) = Adom.shape;
-  const diagSize = if m < n then m else n;
+  const diagSize = min(m, n);
 
   var diagonal : [0..#diagSize] eltType;
   forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize, 
