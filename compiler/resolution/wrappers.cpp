@@ -94,8 +94,7 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            SymbolMap& copyMap);
 
 static void fixHiddenInoutArg(FnSymbol *fn, CallExpr* call,
-                              ArgSymbol* formal, SymExpr* actual,
-                              SymbolMap& copyMap);
+                              ArgSymbol* formal, SymExpr* actual);
 
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
@@ -231,7 +230,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
       // needs a coercion to the actual type).
       handleCoercion(retval, call, formal, actual, copyMap);
 
-      fixHiddenInoutArg(retval, call, formal, actual, copyMap);
+      fixHiddenInoutArg(retval, call, formal, actual);
 
       // adjust for in intent
       handleInIntent(retval, call, formal, actual, copyMap);
@@ -1663,15 +1662,16 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
 }
 
 static void fixHiddenInoutArg(FnSymbol *fn, CallExpr* call,
-                              ArgSymbol* formal, SymExpr* actual,
-                              SymbolMap& copyMap) {
+                              ArgSymbol* formal, SymExpr* actual) {
   if (formal->intent == INTENT_INOUT ||
       formal->originalIntent == INTENT_INOUT)
   {
-    SymExpr* nextSe = toSymExpr(actual->next);
-    INT_ASSERT(nextSe);
-    // replace dummy actual argument with the real inout actual
-    nextSe->setSymbol(actual->symbol());
+    if (actual && !fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+      SymExpr* nextSe = toSymExpr(actual->next);
+      INT_ASSERT(nextSe);
+      // replace dummy actual argument with the real inout actual
+      nextSe->setSymbol(actual->symbol());
+    }
   }
 }
 
