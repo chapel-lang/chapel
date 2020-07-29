@@ -2680,7 +2680,7 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
           collectDefExprs(loop, defs);
 
           for_vector(DefExpr, def, defs) {
-            if (strcmp(def->sym->name, unsym->unresolved) == 0) {
+            if (def->sym->name == unsym->unresolved) {
               unsym->replace(new SymExpr(def->sym));
 
               found = true;
