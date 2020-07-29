@@ -1047,17 +1047,20 @@ module ChapelArray {
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
-                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
+                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
+                           definedConst: bool = false) {
+      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges,
+                                          definedConst);
       if x.linksDistribution() {
         _value.add_dom(x);
       }
       return x;
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool) {
+    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
+                           definedConst: bool = false) {
       var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
-      return newRectangularDom(rank, idxType, stridable, ranges);
+      return newRectangularDom(rank, idxType, stridable, ranges, definedConst);
     }
 
     proc newAssociativeDom(type idxType, param parSafe: bool=true) {
@@ -1162,8 +1165,9 @@ module ChapelArray {
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
-              param stridable: bool = false) {
-      this.init(d.newRectangularDom(rank, idxType, stridable));
+              param stridable: bool = false,
+              param definedConst: bool = false) {
+      this.init(d.newRectangularDom(rank, idxType, stridable, definedConst));
     }
 
     proc init(d: _distribution,

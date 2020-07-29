@@ -571,7 +571,8 @@ override proc Block.dsiDisplayRepresentation() {
 }
 
 override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                                         param stridable: bool, inds) {
+                                         param stridable: bool, inds,
+                                         definedConst: bool) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -589,7 +590,8 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
-                                   this: unmanaged, locDomsTemp, whole);
+                                   this: unmanaged, locDomsTemp, whole,
+                                   definedConst=definedConst);
 
   if debugBlockDist {
     writeln("Creating new Block domain:");
