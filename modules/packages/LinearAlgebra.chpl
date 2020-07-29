@@ -769,17 +769,29 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   private use RangeChunk;
 
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
-  if hasDefaultIndices(Adom, Bdom)
-  {
-    _matmatMultHelper(A, B, C);
+
+  if hasNonStridedIndices(Adom) {
+    if hasNonStridedIndices(Bdom) then 
+      _matmatMultHelper(A, B, C);
+    else
+      _matmatMultHelper(A,
+                        B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
   } else {
-    _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)), 
-                      B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)), 
-                      C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+    if hasNonStridedIndices(Bdom) then 
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)), 
+                        B, 
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+    else
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)),
+                        B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
   }
   return C;
 }
 
+pragma "no doc"
+/* Helper for Generic matrix-matrix multiplication */
 proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
                        ref BMat : [?Bdom] eltType,
                        ref CMat : [] eltType) 
@@ -789,18 +801,20 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
   const blockSize = 32;
   const bVecRange = 0..#blockSize;
   const blockDom = {bVecRange, bVecRange};
+  const (Adim0, Adim1) = Adom.dims();
+  const (Bdim0, Bdim1) = Bdom.dims();
 
   const numTasks = min(here.maxTaskPar, Bdom.shape(1));
   coforall tid in 0..#numTasks {
-    const myChunk = chunk(0..#Bdom.shape(1), numTasks, tid);
+    const myChunk = chunk(Bdim1, numTasks, tid);
 
     var AA: [blockDom] eltType,
         BB: [blockDom] eltType,
         CC: [blockDom] eltType;
 
-    for (jj,kk) in {myChunk by blockSize, 0..#Bdom.shape(0) by blockSize} {
+    for (jj,kk) in {myChunk by blockSize, Bdim0 by blockSize} {
       const jMax = min(jj+blockSize-1, myChunk.high);
-      const kMax = min(kk+blockSize-1, Bdom.shape(0)-1);
+      const kMax = min(kk+blockSize-1, Bdim0.high);
       const jRange = 0..jMax-jj;
       const kRange = 0..kMax-kk;
 
@@ -808,8 +822,8 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
         for (kB, k) in zip(kk..kMax, 0..) do
           BB[j,k] = BMat[kB,jB];
 
-      for ii in 0..#Adom.shape(0) by blockSize {
-        const iMax = min(ii+blockSize-1, Adom.shape(0)-1);
+      for ii in Adim0 by blockSize {
+        const iMax = min(ii+blockSize-1, Adim0.high);
         const iRange = 0..iMax-ii;
 
         for (iB, i) in zip(ii..iMax, 0..) do
@@ -825,18 +839,16 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
         for (iB, i) in zip(ii..iMax, 0..) do
           for (jB, j) in zip(jj..jMax, 0..) do
             CMat[iB,jB] += CC[i,j];
-        
       }
     }
   }
 }
 
 pragma "no doc"
-inline proc hasDefaultIndices(Adom : domain(2), Bdom : domain(2)) {
-  return Adom.low == (0,0) && Bdom.low == (0,0) && 
-                          (if Adom.stridable || Bdom.stridable
-                           then Adom.stride == 1 && Bdom.stride == 1 
-                           else true);
+private inline proc hasNonStridedIndices(Adom : domain(2)) {
+  return (if Adom.stridable
+          then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1 
+          else true);
 }
 
 /*
