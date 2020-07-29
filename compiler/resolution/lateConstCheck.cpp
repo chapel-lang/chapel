@@ -126,30 +126,34 @@ static bool isTupleFunctionToSkip(FnSymbol* calledFn) {
   // Skip chpl__unref for tuples because it's triggering weird constness
   // violations. TODO: Remove when the below can pass without the check:
   //    release/examples/spec/Tuples/tuple-return-behavior.chpl
-  if (calledFn->hasFlag(FLAG_UNREF_FN))
+  if (calledFn->hasFlag(FLAG_UNREF_FN)) {
     return true;
+  }
 
   // Skip chpl__initCopy because it modifies formal intents in weird ways
   // when the formal requires FLAG_COPY_MUTATE (e.g. owned or tuples of
   // owned).
-  if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
+  if (calledFn->hasFlag(FLAG_INIT_COPY_FN)) {
     return true;
+  }
 
   // Don't delve into chpl__autoCopy.
-  if (calledFn->hasFlag(FLAG_AUTO_COPY_FN))
+  if (calledFn->hasFlag(FLAG_AUTO_COPY_FN)) {
     return true;
+  }
 
   return false;
 }
 
 // Print use chains when debugging.
 static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
-  if (um == NULL)
+  if (um == NULL) {
     return;
+  }
 
   printf("Printing use chain for formal %s [%d]\n",
-         formal->name,
-         formal->id);
+            formal->name,
+            formal->id);
 
   BaseAST* tmp = formal;
   int count = 0;
@@ -166,30 +170,34 @@ static void printFormalUseChain(ArgSymbol* formal, UseMap* um) {
 static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
                                  UseMap* um) {
 
-  if (isTupleFunctionToSkip(calledFn))
+  if (isTupleFunctionToSkip(calledFn)) {
     return false;
+  }
 
+  // Leave if formal is not a tuple.
   AggregateType* at = toAggregateType(formal->getValType());
-
-  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
+  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
     return false;
+  }
+
+  // Leave if we have no info about this formal's constness.
+  if (formal->fieldQualifiers == NULL) {
+    return false;
+  }
 
   bool isFormalIntentMaybeConst = formal->intent == INTENT_REF_MAYBE_CONST;
   bool isFormalIntentConst = formal->intent & INTENT_CONST;
   bool isFormalIntentRef = formal->intent & INTENT_REF;
 
-  // Nothing to do if the tuple formal is ref.
-  if (isFormalIntentRef && !isFormalIntentConst)
+  // Leave if formal intent is ref.
+  if (isFormalIntentRef && !isFormalIntentConst) {
     return false;
+  }
 
   if (isFormalIntentConst && !formal->qualType().isConst()) {
     INT_FATAL(formal, "has const intent %s but not a const qualtype",
                       intentDescrString(formal->intent));
   }
-
-  // Leave if we have no info about this formal's constness.
-  if (formal->fieldQualifiers == NULL)
-    return false;
 
   DEBUG_SYMBOL(formal);
 
@@ -211,16 +219,18 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
 
     // Skip ref tuple fields that are never set.
-    if (isFieldMarkedConst)
+    if (isFieldMarkedConst) {
       continue;
+    }
 
     // TODO: Special handling for managed class wrappers?
     AggregateType* ft = toAggregateType(field->getValType());
     INT_ASSERT(ft != NULL);
 
     // TODO: Handle tuples containing tuples.
-    if (ft->symbol->hasFlag(FLAG_TUPLE))
+    if (ft->symbol->hasFlag(FLAG_TUPLE)) {
       continue;
+    }
 
     // Select the "field intent" based on the formal intent.
     IntentTag fieldIntent = INTENT_BLANK;
@@ -258,13 +268,25 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
       // Use the DefExpr only once to print the containing function.
       BaseAST* pin = !result ? (BaseAST*) formal->defPoint : formal;
 
-      USR_FATAL_CONT(pin, "element %d of formal '%s' is const and "
+      /*
+      USR_FATAL_CONT(pin, "element #%d of formal '%s' is const and "
                           "cannot be modified",
                           (fieldIdx-1),
                           formal->name);
+      */
 
-      // TODO: Pin on type when it is a user type.
-      USR_PRINT("tuple element of type %s", ft->symbol->name);
+      const char* parens = "";
+
+      USR_FATAL_CONT(pin, "tuple formal '%s' of %s%s is const and "
+                          "cannot be modified",
+                          formal->name,
+                          parens,
+                          calledFn->name);
+                          
+      // TODO: Pin IFF the element is a user type.
+      USR_PRINT("tuple element #%d of type %s",
+                fieldIdx-1,
+                ft->symbol->name);
 
       // TODO: Cannot indicate which field was set with the current UseMap.
       // We need to adjust the key type (maybe to GraphNode) to store the
@@ -284,6 +306,72 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
   return result;
 }
 
+// TODO: Could we could get rid of this if we just propagated constness to
+// coerce temporaries instead?
+static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
+  Symbol* original = NULL;
+
+  AggregateType* at = toAggregateType(sym->getValType());
+  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
+    return NULL;
+  }
+
+  // Find a PRIM_SET_MEMBER for the coerce temp. The third argument is
+  // the read field temporary.
+  //    ('.=' coerce_tmp x0 read_x0)
+  for_SymbolSymExprs(se, sym) {
+    CallExpr* set = toCallExpr(se->parentExpr);
+    if (set == NULL || !set->isPrimitive(PRIM_SET_MEMBER)) {
+      continue;
+    }
+
+    SymExpr* fromReadTmp = toSymExpr(set->get(3));
+    if (fromReadTmp == NULL) {
+      continue;
+    }
+
+    Symbol* readTmp = fromReadTmp->symbol();
+
+    // Find a call to PRIM_MOVE for the read field. The RHS expression
+    // will contain the original actual.
+    //    ('move' read_x0 ('.' tup x0))
+    for_SymbolSymExprs(useReadTmp, readTmp) {
+      CallExpr* move = toCallExpr(useReadTmp->parentExpr);
+      if (move == NULL || !move->isPrimitive(PRIM_MOVE)) {
+        continue;
+      }
+
+      SymExpr* lhsUse = toSymExpr(move->get(1));
+      Symbol* lhs = lhsUse->symbol();
+
+      // TODO: Is this even possible?
+      if (lhs != readTmp) {
+        continue;
+      }
+
+      // Get the PRIM_GET_MEMBER from the move expression.
+      //    ('.' tup x0)
+      CallExpr* get = toCallExpr(move->get(2));
+      if (get == NULL || !get->isPrimitive(PRIM_GET_MEMBER)) {
+        continue;
+      }
+
+      // The first argument is the original actual.
+      SymExpr* useOriginal = toSymExpr(get->get(1));
+      INT_ASSERT(useOriginal != NULL);
+
+      // Done!
+      original = useOriginal->symbol();
+    }
+
+    if (original != NULL) {
+      break;
+    }
+  }
+
+  return original;
+}
+
 // Check REF (e.g. atomic) and REF_IF_MODIFIED (e.g. array) tuple elements
 // and compare formals to actuals. If the formal is const and the actual
 // is not, then emit an error. Skip if the tuple formal intent is not
@@ -294,23 +382,25 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
   FnSymbol* calledFn = call->resolvedFunction();
   INT_ASSERT(calledFn != NULL);
 
-  if (isTupleFunctionToSkip(calledFn))
+  if (isTupleFunctionToSkip(calledFn)) {
     return false;
+  }
  
   AggregateType* at = toAggregateType(formal->getValType());
-
-  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE))
+  if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
     return false;
-
-  bool isFormalIntentMaybeConst = formal->intent == INTENT_REF_MAYBE_CONST;
+  }
 
   // Nothing to do if the tuple formal is not REF_MAYBE_CONST.
-  if (!isFormalIntentMaybeConst)
+  bool isFormalIntentMaybeConst = formal->intent == INTENT_REF_MAYBE_CONST;
+  if (!isFormalIntentMaybeConst) {
     return false;
+  }
 
   // Leave if we have no info about this formal's constness.
-  if (formal->fieldQualifiers == NULL)
+  if (formal->fieldQualifiers == NULL) {
     return false;
+  }
 
   DEBUG_SYMBOL(formal);
 
@@ -330,80 +420,167 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
     }
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
-
     AggregateType* ft = toAggregateType(field->getValType());
     INT_ASSERT(ft != NULL);
 
     // TODO: Handle tuples containing tuples.
-    if (ft->symbol->hasFlag(FLAG_TUPLE))
+    if (ft->symbol->hasFlag(FLAG_TUPLE)) {
       continue;
+    }
 
     IntentTag fieldIntent = blankIntentForType(ft);
 
     // Only worry about REF and REF_IF_MODIFIED formals.
     if (fieldIntent != INTENT_REF_MAYBE_CONST &&
-        fieldIntent != INTENT_REF)
+        fieldIntent != INTENT_REF) {
       continue;
+    }
 
-    // If a ref-if-modified field is never set then it's const.
-    if (fieldIntent == INTENT_REF_MAYBE_CONST && isFieldMarkedConst)
+    // If a ref-if-modified field is never set, then it's const.
+    if (fieldIntent == INTENT_REF_MAYBE_CONST && isFieldMarkedConst) {
       continue;
+    }
 
     bool isActualFieldConst = false;
+    bool isActualFormal = false;
+    Symbol* actualSym = NULL;
 
     // Determine if the actual field is const or not.
     if (SymExpr* se = toSymExpr(actual)) {
       Symbol* sym = se->symbol();
-      INT_ASSERT(sym != NULL);
 
-      // Make sure formal and actual tuples have the same type.
       INT_ASSERT(toAggregateType(sym->getValType()) == at);
 
-      if (sym->id == 1487861 || sym->id == 700109) gdbShouldBreakHere();
+      // Case: Actual is coerced from value tuple.
+      if (sym->hasFlag(FLAG_COERCE_TEMP)) {
 
-      // Only fetch field qualifier if it exists.
-      if (sym->fieldQualifiers != NULL) {
-        Qualifier q = sym->fieldQualifiers[fieldIdx];
-        INT_ASSERT(q != QUAL_UNKNOWN);
-        isActualFieldConst = QualifiedType::qualifierIsConst(q);
+        // Walk backwards from coerce_tmp to original value tuple.
+        Symbol* original = getOriginalTupleFromCoerceTmp(sym);
+        if (original == NULL) {
+          INT_FATAL(sym, "Unable to unpack coercion temp: %d", sym->id);
+        }
+
+        if (original->qualType().isConst()) {
+          DEBUG_SYMBOL(sym);
+
+          isActualFieldConst = true;
+          isActualFormal = (toArgSymbol(original) != NULL);
+          actualSym = original;
+        }
+
+      // Case: Actual is referential tuple built from expression.
+      } else if (sym->hasFlag(FLAG_TEMP)) {
+        CallExpr* build = NULL;
+
+        for_SymbolSymExprs(se, sym) {
+          CallExpr* move = toCallExpr(se->parentExpr);
+          if (move == NULL || !move->isPrimitive(PRIM_MOVE)) {
+            continue;
+          }
+
+          SymExpr* useCheck = toSymExpr(move->get(1));
+          Symbol* check = useCheck->symbol();
+          if (check != sym) {
+            continue;
+          }
+
+          CallExpr* buildCall = toCallExpr(move->get(2));
+          if (buildCall == NULL) {
+            continue;
+          }
+
+          FnSymbol* buildFn = buildCall->resolvedFunction();
+          if (buildFn == NULL || !buildFn->hasFlag(FLAG_BUILD_TUPLE)) {
+            continue;
+          }
+
+          build = buildCall;
+        }
+
+        if (build != NULL) {
+          Expr* buildArg = build->get(fieldIdx);
+
+          INT_ASSERT(buildArg->getValType() == field->getValType());
+
+          SymExpr* buildSymExpr = toSymExpr(buildArg);
+          if (buildSymExpr != NULL) {
+            Symbol* buildSym = buildSymExpr->symbol();
+
+            if (buildSym->qualType().isConst()) {
+              DEBUG_SYMBOL(buildSym);
+
+              isActualFieldConst = true;
+              actualSym = buildSym;
+            }
+          }
+        } else {
+
+          // TODO: Should we be more conservative and do nothing?
+          INT_FATAL(sym, "Unhandled temporary in tuple const checks: %d",
+                         sym->id);
+        }
+
+      // Case: Actual is a formal.
+      } else if (ArgSymbol* arg = toArgSymbol(sym)) {
+
+        // But not _this_ formal...
+        if (arg != NULL && arg != formal) {
+          DEBUG_SYMBOL(arg);
+
+          isActualFormal = true;
+
+          if (arg->intent & INTENT_CONST && arg->qualType().isConst()) {
+            isActualFieldConst = true;
+            actualSym = arg;
+          } else if (arg->intent == INTENT_REF_MAYBE_CONST) {
+
+            if (fieldIntent == INTENT_REF_MAYBE_CONST) {
+              Qualifier q = arg->fieldQualifiers[fieldIdx];
+              isActualFieldConst = QualifiedType::qualifierIsConst(q);
+              actualSym = arg;
+            }
+          }
+        }
       }
     } else {
-      INT_FATAL(actual, "unhandled actual");
+      INT_FATAL(actual, "unhandled actual %d", actual->id);
     }
 
     if (isActualFieldConst && !isFieldMarkedConst) {
-      BaseAST* use = NULL;
+      INT_ASSERT(actualSym != NULL);
 
-      // Only fetch the closest use if it is safe to do so.
+      BaseAST* use = NULL;
       if (um != NULL && um->count(formal)) {
         use = um->at(formal);
       }
 
-      // Use the DefExpr only once to print the containing function.
-      BaseAST* pin = !result ? (BaseAST*) formal->defPoint : formal;
+      BaseAST* pin = result ? (BaseAST*) actualSym : actualSym->defPoint;
 
-      USR_FATAL_CONT(pin, "const actual element is passed to %s element "
-                          "%d of tuple formal '%s'",
-                          intentDescrString(fieldIntent),
-                          (fieldIdx-1),
-                          formal->name);
+      const char* parens = "";
+
+      USR_FATAL_CONT(pin, "const actual element is passed to %s tuple "
+                          "formal '%s' of %s%s",
+                          intentDescrString(INTENT_REF),
+                          formal->name,
+                          parens,
+                          calledFn->name);
 
       // TODO: Pin if the element is a user type.
-      USR_PRINT("tuple element of type %s", ft->symbol->name);
+      USR_PRINT("tuple element #%d of type %s",
+                fieldIdx-1,
+                ft->symbol->name);
 
-      if (fieldIntent == INTENT_REF_MAYBE_CONST) {                            
-        USR_PRINT("because element is modified in the body of '%s'",
-                  calledFn->name);
+      if (fieldIntent == INTENT_REF_MAYBE_CONST) {
+        USR_PRINT(use, "formal element has %s due to modification, "
+                       "possibly here",
+                       intentDescrString(INTENT_REF));
 
-        // TODO: More accurate error reporting.
-        if (use != NULL) {
-          USR_PRINT(use, "possibly set here");
+        if (doPrintDebugInfo) {
+          printFormalUseChain(formal, um);
         }
       }
 
-      if (doPrintDebugInfo) {
-        printFormalUseChain(formal, um);
-      }
+      // TODO: Emit more errors about actual?
 
       result = true;
     }

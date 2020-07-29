@@ -62,14 +62,17 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 1487861;
-static const int breakOnId2 = 700109;
+static const int breakOnId1 = 1386606; // sample array formal
+static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
-  if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3) { \
-    gdbShouldBreakHere(); \
-  }
+  do { \
+    if (sym->id == breakOnId1 || sym->id == breakOnId2 || \
+        sym->id == breakOnId3) { \
+      gdbShouldBreakHere(); \
+    } \
+  } while (0)
 
 static const int trace_all = 0;
 static const int trace_usr = 0;
@@ -702,7 +705,7 @@ void CullRefCtx::collectTuplesAndRefMaybeConstArgs(void) {
     if (arg->defPoint->parentSymbol->hasFlag(FLAG_TUPLE_CAST_FN))
       continue;
 
-    // If the argument is a tuple with reference fields, explore it...
+    // If the formal is a tuple with reference fields, explore it...
     AggregateType* argAt = toAggregateType(arg->getValType());
     if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
         containsReferenceFields(argAt)) {
