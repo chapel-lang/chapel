@@ -1,2 +1,1 @@
-usedWithRange.chpl:1: error: the type of the actual argument 'r' is generic
-note: generic actual arguments are not currently supported
+usedWithRange.chpl:1: error: noinit is only supported for arrays

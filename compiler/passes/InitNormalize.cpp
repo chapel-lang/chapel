@@ -560,7 +560,6 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     CallExpr*  tmpInit = NULL;
     if (noinit) {
       tmpInit = new CallExpr(PRIM_NOINIT_INIT_VAR, tmp, checkType);
-      //field->sym->addFlag(FLAG_NO_AUTO_DESTROY);
     } else {
       tmpInit = new CallExpr(PRIM_INIT_VAR, tmp,  initExpr, checkType);
     }

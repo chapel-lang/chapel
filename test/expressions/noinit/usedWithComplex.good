@@ -1,2 +1,1 @@
-3.4 + 5.0i
-0.0 + 0.0i
+usedWithComplex.chpl:1: error: noinit is only supported for arrays

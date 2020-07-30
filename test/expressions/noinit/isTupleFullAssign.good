@@ -1,1 +1,1 @@
-(7, 4)
+isTupleFullAssign.chpl:1: error: noinit is only supported for arrays

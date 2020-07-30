@@ -22,6 +22,7 @@ _chpl ()
     -*)
       # developer options
       local devel_opts="\
+--allow-noinit-array-not-pod \
 --atomics \
 --auto-local-access \
 --auto-local-access-dynamic \
@@ -139,6 +140,7 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-allow-noinit-array-not-pod \
 --no-auto-local-access \
 --no-auto-local-access-dynamic \
 --no-bounds-checks \

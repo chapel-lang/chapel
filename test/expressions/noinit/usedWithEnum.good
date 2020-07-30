@@ -1,2 +1,1 @@
-bar
-foo
+usedWithEnum.chpl:3: error: noinit is only supported for arrays

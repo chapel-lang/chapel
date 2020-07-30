@@ -1,2 +1,1 @@
-recordHasTypeField.chpl:12: error: the type of the actual argument 'bar' is generic
-note: generic actual arguments are not currently supported
+recordHasTypeField.chpl:12: error: noinit is only supported for arrays

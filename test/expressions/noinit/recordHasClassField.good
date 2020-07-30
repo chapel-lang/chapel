@@ -1,2 +1,1 @@
-recordHasClassField.chpl:9: error: unresolved call 'foo.noinit()'
-recordHasClassField.chpl:9: note: because no functions named noinit found in scope
+recordHasClassField.chpl:9: error: noinit is only supported for arrays

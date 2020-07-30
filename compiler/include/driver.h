@@ -156,6 +156,7 @@ extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fAllowNoinitArrayNotPod;
 extern bool fNoLifetimeChecking;
 extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;

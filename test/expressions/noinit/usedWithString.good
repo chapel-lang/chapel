@@ -1,2 +1,1 @@
-usedWithString.chpl:1: error: unresolved call 'string.noinit()'
-usedWithString.chpl:1: note: because no functions named noinit found in scope
+usedWithString.chpl:1: error: noinit is only supported for arrays

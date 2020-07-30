@@ -1,4 +1,1 @@
-I default initialized!
-(5, {bar = 2})
-I default initialized!
-(0, {bar = 3})
+tupleWithClass.chpl:11: error: noinit is only supported for arrays

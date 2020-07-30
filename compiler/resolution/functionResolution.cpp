@@ -210,7 +210,7 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static bool  moveIsAcceptable(CallExpr* call);
 static void  moveHaltMoveIsUnacceptable(CallExpr* call);
-static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call, bool noinit);
+static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val, AggregateType* at, Expr* call);
 
 static bool useLegacyNilability(Expr* at) {
   if (at != NULL) {
@@ -3183,7 +3183,6 @@ static bool isGenericRecordInit(CallExpr* call) {
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
     if ((ures->unresolved == astrInit ||
-         ures->unresolved == astr("noinit") ||
          ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
@@ -3638,16 +3637,23 @@ static void resolveNormalCallConstRef(CallExpr* call) {
 }
 
 // Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  eltType = instClass->getField("eltType")->getValType();
+  return eltType;
+}
+
+// Returns the element type, given an array type.
 // Recurse into it if it is still an array.
 static Type* finalArrayElementType(AggregateType* arrayType) {
   Type* eltType = NULL;
   do {
-    Type* instType = arrayType->getField("_instance")->type;
-    AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-    eltType = instClass->getField("eltType")->getValType();
+    eltType = arrayElementType(arrayType);
     arrayType = toAggregateType(eltType);
-  } while
-    (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+  } while (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
 
   return eltType;
 }
@@ -6703,7 +6709,7 @@ FnSymbol* findZeroArgInitFn(AggregateType* at) {
     DefExpr* def = new DefExpr(tmpAt);
     tmpBlock->insertAtTail(def);
 
-    call = createGenericRecordVarDefaultInitCall(tmpAt, at, def, false);
+    call = createGenericRecordVarDefaultInitCall(tmpAt, at, def);
 
     tmpBlock->remove();
 
@@ -9904,6 +9910,19 @@ static void lowerRuntimeTypeInit(CallExpr* call,
     return;
   }
 
+  if (noinit) {
+    if (!at->symbol->hasFlag(FLAG_ARRAY)) {
+      USR_FATAL(call, "noinit is only supported for arrays");
+    } else if (fAllowNoinitArrayNotPod == false) {
+      // noinit of an array
+      Type* eltType = arrayElementType(at);
+      bool notPOD = propagateNotPOD(eltType);
+      if (notPOD) {
+        USR_FATAL_CONT(call, "noinit is only supported for arrays of trivially copyable types");
+      }
+    }
+  }
+
   SymExpr* typeSe = toSymExpr(call->get(2));
   INT_ASSERT(typeSe);
   Symbol* typeSym = typeSe->symbol();
@@ -10375,10 +10394,10 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
   SET_LINENO(call);
 
-  // Mark variables initialized with PRIM_NOINIT_INIT_VAR
-  // as not to be destroyed.
-  //if (call->isPrimitive(PRIM_NOINIT_INIT_VAR))
-  //  val->addFlag(FLAG_NO_AUTO_DESTROY);
+  if (call->isPrimitive(PRIM_NOINIT_INIT_VAR) &&
+      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    USR_FATAL_CONT(call, "noinit is only supported for arrays");
+  }
 
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
     if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
@@ -10567,9 +10586,7 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
   // This code not intended to handle _array etc (but these are generic, right?)
   INT_ASSERT(isRecordWrappedType(at->getValType()) == false);
 
-  bool isNoinit = call->isPrimitive(PRIM_NOINIT_INIT_VAR);
-  const char* name = isNoinit?"noinit":"init";
-  CallExpr* callInit = new CallExpr(name, gMethodToken, val);
+  CallExpr* callInit = new CallExpr("init", gMethodToken, val);
 
   // This juggling is required by use of
   // for_exprs_postorder() in resolveBlockStmt
@@ -10580,7 +10597,7 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 
   resolveCallAndCallee(callInit);
 
-  if (isNoinit == false && isRecord(at) && at->hasPostInitializer()) {
+  if (isRecord(at) && at->hasPostInitializer()) {
     CallExpr* postinit = new CallExpr("postinit", gMethodToken, val);
     call->insertBefore(postinit);
     resolveCallAndCallee(postinit);
@@ -10591,15 +10608,13 @@ static void lowerPrimInitNonGenericRecordVar(CallExpr* call,
 // code will be added before this.
 static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                                                        AggregateType* at,
-                                                       Expr* call,
-                                                       bool noinit) {
+                                                       Expr* call) {
 
   AggregateType* root = at->getRootInstantiation();
 
   val->type = root;
 
-  const char* name = noinit ? "noinit" : "init";
-  CallExpr* initCall = new CallExpr(name, gMethodToken, new NamedExpr("this", new SymExpr(val)));
+  CallExpr* initCall = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(val)));
   form_Map(SymbolMapElem, e, at->substitutions) {
     Symbol* field = root->getField(e->key->name);
     bool hasDefault = false;
@@ -10662,9 +10677,7 @@ static void lowerPrimInitGenericRecordVar(CallExpr* call,
 
   val->type = root;
 
-  bool noinit = call->isPrimitive(PRIM_NOINIT_INIT_VAR);
-  CallExpr* initCall =
-    createGenericRecordVarDefaultInitCall(val, at, call, noinit);
+  CallExpr* initCall = createGenericRecordVarDefaultInitCall(val, at, call);
 
   call->insertBefore(initCall);
   resolveCallAndCallee(initCall);

@@ -1,4 +1,3 @@
-a
-a
-a
-a
+enumCheckUninit.chpl:1: error: noinit is only supported for arrays
+enumCheckUninit.chpl:1: error: noinit is only supported for arrays
+enumCheckUninit.chpl:1: error: noinit is only supported for arrays
