@@ -40,16 +40,35 @@ module cuBLAS {
     cublas_daxpy(handle, n, alpha, x, incX, y, incY);
   } 
 
-  proc cu_caxpy(handle: c_void_ptr, n: c_int, ref alpha: complex(64), x: c_ptr(complex(64)), incX: c_int = 1, y: c_ptr(complex(64)), incY: c_int = 1){
+  proc cu_caxpy(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), ref alpha: complex(64), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
-    cubas_caxpy(handle, n, alpha, x, incX, y, incY);
+    cublas_caxpy(handle, n, alpha, x, incX, y, incY);
   }
 
   proc cu_zaxpy(handle: c_void_ptr, n: c_int, ref alpha: complex(128), x: c_ptr(complex(128)), incX: c_int = 1, y: c_ptr(complex(128)), incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
-    cubas_zaxpy(handle, n, alpha, x, incX, y, incY);
+    cublas_zaxpy(handle, n, alpha, x, incX, y, incY);
   }
 
+  proc cu_isamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_isamax(handle, n, x, incX, result);
+  }
+
+  proc cu_idamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_int)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_idamax(handle, n, x, incX, result);
+  }
+
+  proc cu_isamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_isamin(handle, n, x, incX, result);
+  }
+
+  proc cu_idamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_int)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_idamin(handle, n, x, incX, result);
+  }
 
   proc cu_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, c: c_ptr(c_float), ldc: c_int){
     require "c_cublas.h", "c_cublas.o";
@@ -64,11 +83,16 @@ module cuBLAS {
     extern proc to_gpu(src_ptr: c_ptr, size: size_t): c_ptr(c_float);
     extern proc to_cpu(dst_ptr: c_void_ptr, src_ptr: c_void_ptr, size: size_t): c_void_ptr;
  
-    extern proc cublas_saxpy(handle: c_void_ptr, N: c_int, alpha: c_float, X: c_ptr(c_float), incX: c_int, Y: c_ptr(c_float), incY: c_int);
-    extern proc cublas_daxpy(handle: c_void_ptr, N: c_int, alpha: c_double, X: c_ptr(c_double), incX: c_int, Y: c_ptr(c_double), incY: c_int);
-    extern proc cublas_caxpy(handle: c_void_ptr, N: c_int, alpha: c_float, X: c_ptr(c_float), incX: c_int, Y: c_ptr(c_float), incY: c_int);
-    extern proc cublas_caxpy(handle: c_void_ptr, N: c_int, alpha: c_float, X: c_ptr(c_double), incX: c_int, Y: c_ptr(c_double), incY: c_int);
+    extern proc cublas_saxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
+    extern proc cublas_daxpy(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
+    extern proc cublas_caxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
+    extern proc cublas_zaxpy(handle: c_void_ptr, n: c_int, alpha: c_float, X: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
 
+    extern proc cublas_isamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int));
+    extern proc cublas_idamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, results: c_ptr(c_int));
+
+    extern proc cublas_isamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int));
+    extern proc cublas_idamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, results: c_ptr(c_int));
 
     extern proc cublas_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, C: c_ptr(c_float), ldc: c_int);
   }
