@@ -251,53 +251,78 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
   return lastFn; // never reached
 }
 
+static const char* fnKindAndName(FnSymbol* fn) {
+  if (fn == NULL)
+    return "";
+
+  ModuleSymbol* mod = fn->getModule();
+  if (mod && mod->initFn == fn)
+    return astr("module ", "'", mod->name, "'");
+
+  if (strcmp(fn->name, "init") == 0)
+    return astr("initializer");
+
+  if (fn->isIterator())
+    return astr("iterator ", "'", fn->name, "'");
+
+
+  return astr("function ", "'", fn->name, "'");
+}
+
+static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
+  // Find the first call to the function within the instantiation point,
+  // so that we can have a better error message line number.
+  BlockStmt* instantiationPoint = errFn->instantiationPoint();
+  Expr* bestPoint = instantiationPoint;
+
+  if (instantiationPoint != NULL) {
+    std::vector<CallExpr*> calls;
+    collectFnCalls(instantiationPoint, calls);
+    for_vector(CallExpr, call, calls) {
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+        if (fn == errFn) {
+          bestPoint = call;
+          break;
+        }
+      }
+    }
+
+    const char* subsDesc = errFn->substitutionsToString(", ");
+
+    FnSymbol* inFn = bestPoint->getFunction();
+
+    if (subsDesc == NULL || subsDesc[0] == '\0') {
+      print_error("%s:%d: %s called here",
+                  cleanFilename(bestPoint),
+                  bestPoint->linenum(),
+                  fnKindAndName(errFn));
+    } else {
+      print_error("%s:%d: %s called here as: %s(%s)",
+                  cleanFilename(bestPoint),
+                  bestPoint->linenum(),
+                  fnKindAndName(errFn),
+                  errFn->name,
+                  subsDesc);
+    }
+
+    if (inFn->instantiatedFrom != NULL) {
+      // finish the current line
+      print_error(" within %s\n", fnKindAndName(inFn));
+      // continue to print call sites
+      printInstantiationNote(inFn, errFn);
+    } else {
+      // finish the current line
+      print_error("\n");
+    }
+  }
+}
+
 // Print instantiation information for err_fn.
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
 static void printInstantiationNoteForLastError() {
   if (err_fn_header_printed && err_fn && err_fn->instantiatedFrom) {
-
-    // Find the first call to the function within the instantiation point,
-    // so that we can have a better error message line number.
-    BlockStmt* instantiationPoint = err_fn->instantiationPoint();
-    Expr* bestPoint = instantiationPoint;
-
-    if (instantiationPoint != NULL) {
-      std::vector<CallExpr*> calls;
-      collectFnCalls(instantiationPoint, calls);
-      for_vector(CallExpr, call, calls) {
-        if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-          if (fn == err_fn) {
-            bestPoint = call;
-            break;
-          }
-        }
-      }
-
-      const char* subsDesc = err_fn->substitutionsToString(", ");
-
-      const char* intro = "";
-      if (strcmp(err_fn->name, "init") == 0)
-        intro = "Initializer";
-      else if (err_fn->isIterator())
-        intro = astr("Iterator ", "'", err_fn->name, "'");
-      else
-        intro = astr("Function ", "'", err_fn->name, "'");
-
-      if (subsDesc == NULL || subsDesc[0] == '\0') {
-        print_error("%s:%d: %s instantiated here\n",
-                    cleanFilename(bestPoint),
-                    bestPoint->linenum(),
-                    intro);
-      } else {
-        print_error("%s:%d: %s instantiated as: %s(%s)\n",
-                    cleanFilename(bestPoint),
-                    bestPoint->linenum(),
-                    intro,
-                    err_fn->name,
-                    subsDesc);
-      }
-    }
+    printInstantiationNote(err_fn, NULL);
   }
 
   // Clear this variable in case e.g. err_fn is deleted in a future pass
@@ -339,8 +364,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
         // If the function is compiler-generated, or inlined, or doesn't match
         // the error function and line number, nothing is printed.
-        if (err_fn->getModule()->initFn != err_fn     &&
-            !err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             err_fn->linenum()) {
           bool suppress = false;
 
@@ -355,16 +379,10 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
           }
 
           if (suppress == false) {
-            print_error("%s:%d: In ", cleanFilename(err_fn), err_fn->linenum());
+            print_error("%s:%d: In %s:\n",
+                        cleanFilename(err_fn), err_fn->linenum(),
+                        fnKindAndName(err_fn));
 
-            if (strcmp(err_fn->name, "init") == 0) {
-              print_error("initializer:\n");
-
-            } else {
-              print_error("%s '%s':\n",
-                          (err_fn->isIterator() ? "iterator" : "function"),
-                          err_fn->name);
-            }
             // We printed the header, so can print instantiation notes.
             err_fn_header_printed = true;
           }
