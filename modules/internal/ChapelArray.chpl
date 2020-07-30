@@ -397,24 +397,24 @@ module ChapelArray {
     return new _domain(dist, parentDom);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution, param rank: int,
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       param rank: int,
                                        type idxType = int,
-                                       param stridable: bool) {
+                                       param stridable: bool,
+                                       param isNoInit: bool) {
     return new _domain(dist, rank, idxType, stridable);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
-                                       param parSafe: bool) {
+                                       param parSafe: bool,
+                                       param isNoInit: bool) {
     return new _domain(dist, idxType, parSafe);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution, parentDom: domain) {
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       parentDom: domain,
+                                       param isNoInit: bool) {
     return new _domain(dist, parentDom);
-  }
-
-  proc chpl__convertRuntimeTypeToValue(type t: domain) {
-    compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, or BaseSparseDom", 0);
-    return 0; // dummy
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -446,9 +446,10 @@ module ChapelArray {
     return dom.buildArray(eltType, true);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dom: domain, type eltType) {
-    // TODO: add initElts argument
-    return dom.buildArray(eltType, true);
+  proc chpl__convertRuntimeTypeToValue(dom: domain,
+                                       type eltType,
+                                       param isNoInit: bool) {
+    return dom.buildArray(eltType, !isNoInit);
   }
 
   proc chpl__convertValueToRuntimeType(arr: []) type {
@@ -1534,6 +1535,7 @@ module ChapelArray {
       return _newArray(x);
     }
 
+    // assumes that data is already initialized
     pragma "no doc"
     pragma "no copy return"
     proc buildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -3251,8 +3253,7 @@ module ChapelArray {
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy_arr(_unowned: bool, _instance,
-                              param deinitElts=true) {
+  inline proc _do_destroy_arr(_unowned: bool, _instance, deinitElts=true) {
     if ! _unowned {
       on _instance {
         param arrIsInList = !_instance.isSliceArrayView();
@@ -3294,7 +3295,7 @@ module ChapelArray {
       }
     }
   }
-  inline proc _do_destroy_array(array: _array, param deinitElts=true) {
+  inline proc _do_destroy_array(array: _array, deinitElts=true) {
     _do_destroy_arr(array._unowned, array._instance, deinitElts);
   }
 
@@ -3317,6 +3318,7 @@ module ChapelArray {
         }
       }
     }
+    array._instance.dsiElementDeinitializationComplete();
   }
 
   //

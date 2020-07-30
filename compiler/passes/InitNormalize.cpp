@@ -545,6 +545,11 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     DefExpr*   tmpDefn   = new DefExpr(tmp);
     Expr*      checkType = NULL;
 
+    bool noinit = false;
+    if (SymExpr* se = toSymExpr(initExpr))
+      if (se->symbol() == gNoInit)
+        noinit = true;
+
     if (field->exprType == NULL) {
       checkType = new SymExpr(type->symbol);
     } else {
@@ -552,8 +557,12 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     }
 
     // Set the value for TMP
-    CallExpr*  tmpInit = new CallExpr(PRIM_INIT_VAR,
-                                      tmp,  initExpr, checkType);
+    CallExpr*  tmpInit = NULL;
+    if (noinit) {
+      tmpInit = new CallExpr(PRIM_NOINIT_INIT_VAR, tmp, checkType);
+    } else {
+      tmpInit = new CallExpr(PRIM_INIT_VAR, tmp,  initExpr, checkType);
+    }
 
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);

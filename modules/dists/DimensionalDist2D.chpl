@@ -372,9 +372,8 @@ class DimensionalArr : BaseRectangularArr {
 class LocDimensionalArr {
   type eltType;
   const locDom;  // a LocDimensionalDom
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myStorageArr: [locDom.myStorageDom] eltType;
 
   proc init(type eltType,
@@ -388,8 +387,6 @@ class LocDimensionalArr {
 
   proc deinit() {
     // Elements in myStorageArr are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myStorageArr, deinitElts=false);
   }
 
   // guard against dynamic dispatch resolution trying to resolve
@@ -1109,11 +1106,20 @@ override proc DimensionalArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc DimensionalArr.dsiDestroyArr(param deinitElts:bool) {
+override proc DimensionalArr.dsiElementDeinitializationComplete() {
+  coforall desc in localAdescs {
+    on desc {
+      desc.myStorageArr.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc DimensionalArr.dsiDestroyArr(deinitElts:bool) {
   coforall desc in localAdescs {
     on desc {
       if deinitElts then
         _deinitElements(desc.myStorageArr);
+      desc.myStorageArr.dsiElementDeinitializationComplete();
       delete desc;
     }
   }

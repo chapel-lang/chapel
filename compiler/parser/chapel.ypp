@@ -762,6 +762,8 @@ assignment_stmt:
     { $$ = buildLAndAssignment($1, $3);    }
 | lhs_expr TASSIGNLOR      opt_try_expr TSEMI
     { $$ = buildLOrAssignment($1, $3);     }
+| lhs_expr TASSIGN         TNOINIT TSEMI
+    { $$ = buildAssignment($1, new SymExpr(gNoInit), "="); }
 ;
 
 // Here are some nonterminals for identifiers

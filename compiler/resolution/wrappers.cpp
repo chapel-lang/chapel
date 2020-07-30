@@ -901,9 +901,14 @@ static void defaultedFormalApplyDefault(ArgSymbol* formal,
     if (fromExpr == NULL) {
       initExpr = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, typeTmp);
     } else {
-      initExpr = new CallExpr(PRIM_MOVE,
-                              temp,
-                              new CallExpr(PRIM_COERCE, fromExpr, typeTmp));
+      SymExpr* fromExprSe = toSymExpr(fromExpr);
+      if (fromExprSe && fromExprSe->symbol() == gNoInit) {
+        initExpr = new CallExpr(PRIM_NOINIT_INIT_VAR, temp, typeTmp);
+      } else {
+        initExpr = new CallExpr(PRIM_MOVE,
+                                temp,
+                                new CallExpr(PRIM_COERCE, fromExpr, typeTmp));
+      }
     }
     body->insertAtTail(initExpr);
   }

@@ -2541,6 +2541,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_DEFAULT_INIT_VAR:
+    case PRIM_NOINIT_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
@@ -3221,7 +3222,8 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if ((ures->unresolved == astrInit || ures->unresolved == astrInitEquals) &&
+    if ((ures->unresolved == astrInit ||
+         ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();
@@ -3675,16 +3677,23 @@ static void resolveNormalCallConstRef(CallExpr* call) {
 }
 
 // Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  eltType = instClass->getField("eltType")->getValType();
+  return eltType;
+}
+
+// Returns the element type, given an array type.
 // Recurse into it if it is still an array.
 static Type* finalArrayElementType(AggregateType* arrayType) {
   Type* eltType = NULL;
   do {
-    Type* instType = arrayType->getField("_instance")->type;
-    AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-    eltType = instClass->getField("eltType")->getValType();
+    eltType = arrayElementType(arrayType);
     arrayType = toAggregateType(eltType);
-  } while
-    (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+  } while (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
 
   return eltType;
 }
@@ -9940,13 +9949,29 @@ static void replaceReturnedTypesWithRuntimeTypes()
   }
 }
 
-static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
+static void lowerRuntimeTypeInit(CallExpr* call,
+                                 Symbol* var,
+                                 AggregateType* at,
+                                 bool noinit)
 {
   INT_ASSERT(at->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
 
   if (var->hasFlag(FLAG_NO_INIT)) {
     call->convertToNoop();
     return;
+  }
+
+  if (noinit) {
+    if (!at->symbol->hasFlag(FLAG_ARRAY)) {
+      USR_FATAL(call, "noinit is only supported for arrays");
+    } else if (fAllowNoinitArrayNotPod == false) {
+      // noinit of an array
+      Type* eltType = arrayElementType(at);
+      bool notPOD = propagateNotPOD(eltType);
+      if (notPOD) {
+        USR_FATAL_CONT(call, "noinit is only supported for arrays of trivially copyable types");
+      }
+    }
   }
 
   SymExpr* typeSe = toSymExpr(call->get(2));
@@ -9998,7 +10023,7 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
   //
   // (var _rtt_1)
   // ('move' _rtt_1 ('.v' foo "field1"))
-  // (var _rtt_2)
+  // (var _rtt_2)lowerRuntimeTypeInit
   // ('move' _rtt_2 ('.v' foo "field2"))
   // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
   SET_LINENO(call);
@@ -10020,6 +10045,10 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
+
+  // Add the argument indicating if this is a noinit
+  Symbol* isNoInit = noinit ? gTrue : gFalse;
+  runtimeTypeToValueCall->insertAtTail(isNoInit);
 
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
@@ -10097,6 +10126,7 @@ static void resolvePrimInit(CallExpr* call) {
   Expr* typeExpr = NULL;
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+             call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
   valExpr = call->get(1);
@@ -10104,7 +10134,8 @@ static void resolvePrimInit(CallExpr* call) {
   if (call->numActuals() >= 2)
     typeExpr = call->get(2);
 
-  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_NOINIT_INIT_VAR))
     INT_ASSERT(valExpr && typeExpr);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) && typeExpr == NULL)
@@ -10151,7 +10182,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   SET_LINENO(call);
 
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+        call->isPrimitive(PRIM_NOINIT_INIT_VAR)) {
       // handled in lowerPrimInit
       errorInvalidParamInit(call, val, at);
     }
@@ -10413,10 +10445,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
   SET_LINENO(call);
 
+  if (call->isPrimitive(PRIM_NOINIT_INIT_VAR) &&
+      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    USR_FATAL_CONT(call, "noinit is only supported for arrays");
+  }
+
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+        call->isPrimitive(PRIM_NOINIT_INIT_VAR)) {
       errorInvalidParamInit(call, val, at);
-      lowerRuntimeTypeInit(call, val, at);
+      lowerRuntimeTypeInit(call, val, at,
+                           call->isPrimitive(PRIM_NOINIT_INIT_VAR));
     }
 
   // Shouldn't be default-initializing iterator records here
@@ -10481,7 +10520,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (at                                           != NULL &&
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
-
 
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&
