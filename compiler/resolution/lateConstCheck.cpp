@@ -505,11 +505,6 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
               actualSym = buildSym;
             }
           }
-        } else {
-
-          // TODO: Should we be more conservative and do nothing?
-          INT_FATAL(sym, "Unhandled temporary in tuple const checks: %d",
-                         sym->id);
         }
 
       // Case: Actual is a formal.
