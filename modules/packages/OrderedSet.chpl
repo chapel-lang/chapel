@@ -48,18 +48,18 @@ module OrderedSet {
   enum setImpl {treap};
 
   pragma "no doc"
-  proc getTypeFromEnumVal(param val, type eltType, param parSafe) type {
+  proc getTypeFromEnumVal(param val: setImpl, type eltType, param parSafe) type {
     if val == setImpl.treap then return treap(eltType, parSafe);
   }
 
   pragma "no doc"
-  proc getInstanceFromEnumVal(param val, type eltType, param parSafe,
+  proc getInstanceFromEnumVal(param val: setImpl, type eltType, param parSafe,
                               comparator: record = defaultComparator) {
     if val == setImpl.treap then return new treap(eltType, parSafe, comparator);
   }
 
   pragma "no doc"
-  proc getInstanceFromEnumVal(param val, type eltType, iterable, param parSafe,
+  proc getInstanceFromEnumVal(param val: setImpl, type eltType, iterable, param parSafe,
                               comparator: record = defaultComparator)
                               where canResolveMethod(iterable, "these") {
     if val == setImpl.treap {
