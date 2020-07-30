@@ -1565,12 +1565,39 @@ static const char* cnameExprToString(Expr* cnameExpr) {
 
 void establishDefinedConstIfApplicable(DefExpr* defExpr,
                                        std::set<Flag>* flags) {
-  if (CallExpr *initCall = toCallExpr(defExpr->init)) {
-    if (initCall->isNamed("chpl__buildDomainExpr")) {
-      if (flags->size() == 1 && flags->count(FLAG_CONST)) {
-        initCall->get(2)->replace(new SymExpr(gTrue));
+
+  CallExpr *callToAdjust = NULL;
+
+  if (defExpr->init != NULL) {
+    if (CallExpr *initCall = toCallExpr(defExpr->init)) {
+      if (initCall->isNamed("chpl__buildDomainExpr")) {
+        if (flags->size() == 1 && flags->count(FLAG_CONST)) {
+          callToAdjust = initCall;
+        }
       }
     }
+  }
+
+  if (callToAdjust == NULL) {
+    if (defExpr->exprType != NULL) {
+      if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
+        if (initType->isNamed("chpl__buildArrayRuntimeType")) {
+          if (CallExpr *typeCall = toCallExpr(initType->get(1))) {
+            if (typeCall->isNamed("chpl__ensureDomainExpr")) {
+              if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
+                if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
+                  callToAdjust = buildDomExpr;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (callToAdjust != NULL) {
+    callToAdjust->get(2)->replace(new SymExpr(gTrue));
   }
 }
                 
@@ -1602,11 +1629,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           if (cnameExpr != NULL && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
 
-          if (defExpr->init) {
-            //if (strcmp(defExpr->init->fname(), "/Users/ekayraklio/code/chapel/versions/f02/chapel/test/optimizations/constDomain/basic.chpl") == 0) {
-              establishDefinedConstIfApplicable(defExpr, flags);
-            //}
-          }
+          establishDefinedConstIfApplicable(defExpr, flags);
 
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);

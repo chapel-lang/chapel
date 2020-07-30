@@ -59,6 +59,16 @@ const constDomNoInit3: domain(1, int, false);
 test(constDomNoInit3);
 writeln();
 
+writeln("domain of an array defined with range literal");
+var arrWithRangeLiteral: [1..10] int;
+test(arrWithRangeLiteral.domain);
+writeln();
+
+writeln("domain of an array defined with domain literal");
+var arrWithDomainLiteral: [{1..10}] int;
+test(arrWithDomainLiteral.domain);
+writeln();
+
 //var distSpace = {1..10};
 //var distVarDom = distSpace dmapped Block(distSpace);
 //var distVarArr: [distVarDom] int;
