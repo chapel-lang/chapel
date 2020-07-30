@@ -46,7 +46,7 @@ static const int breakOnId1 = 0;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
-static const bool doPrintDebugInfo = true;
+static const bool doPrintDebugInfo = false;
 
 #define DEBUG_SYMBOL(sym__) \
   do { \
