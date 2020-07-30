@@ -525,6 +525,36 @@ static bool fits_in_uint(int width, Immediate* imm) {
   return false;
 }
 
+// Since an `inout` copy will be made at the call site, this function
+// looks for the original value before the copy in order to do correct
+// const-ness checking for passing to inout arguments.
+static SymExpr* findSourceOfInCopy(Symbol* sym) {
+  if (startsWith(sym->name, "_formal_tmp_in_")) {
+    for_SymbolSymExprs(se, sym) {
+      CallExpr* call = toCallExpr(se->getStmtExpr());
+      SymExpr* lhsSe = NULL;
+      CallExpr* initOrCtor = NULL;
+      if (isInitOrReturn(call, lhsSe, initOrCtor)) {
+        if (lhsSe->symbol() == sym) {
+          if (initOrCtor == NULL && call->isPrimitive()) {
+            // e.g. PRIM_MOVE lhs rhs
+            SymExpr* rhsSe = toSymExpr(call->get(2));
+            INT_ASSERT(rhsSe);
+            return rhsSe;
+          } else {
+            // assumes that the called function is init/coerce
+            // and the last argument is the source
+            Expr* rhs = initOrCtor->get(initOrCtor->numActuals());
+            SymExpr* rhsSe = toSymExpr(rhs);
+            INT_ASSERT(rhsSe);
+            return rhsSe;
+          }
+        }
+      }
+    }
+  }
+  return NULL;
+}
 
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
@@ -575,6 +605,15 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
       if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       {
+
+        if (formal->intent == INTENT_INOUT) {
+          // check for a formal temp to handle the `in` part; if we have
+          // it, look at the source of it.
+          if (SymExpr* sourceSe = findSourceOfInCopy(sym)) {
+            return isLegalLvalueActualArg(formal, sourceSe,
+                                          constnessErrorOut, exprTmpErrorOut);
+          }
+        }
         constnessErrorOut = constnessError;
         exprTmpErrorOut = exprTmpError;
         return false;
@@ -2518,6 +2557,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_MOVE:
+    case PRIM_ASSIGN:
       resolveMove(call);
       break;
 
@@ -5761,6 +5801,11 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
     nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
   }
 
+  // A constness error for an inout argument need only be
+  // reported for the first of the 2 formals.
+  if (errorMsg && formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+    errorMsg = false;
+
   if (errorMsg == true) {
     if (nonTaskFnParent &&
         nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
@@ -5871,9 +5916,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
-  if (strncmp(varname, "_formal_tmp_", 12) == 0) {
+  if (strncmp(varname, "_formal_tmp_in_", 15) == 0)
+    varname += 15;
+  else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
-  }
 
   if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
     Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
@@ -6785,7 +6831,8 @@ static void  moveFinalize(CallExpr* call);
 
 // Helper: is this a move from the result of main()?
 static bool isMoveFromMain(CallExpr* call) {
-  INT_ASSERT(call->isPrimitive(PRIM_MOVE)); // caller responsibility
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE) ||
+             call->isPrimitive(PRIM_ASSIGN)); // caller responsibility
   if (CallExpr* rhs = toCallExpr(call->get(2)))
     if (FnSymbol* target = rhs->resolvedFunction())
       if (target == chplUserMain)
@@ -7015,7 +7062,11 @@ static Type* moveDetermineLhsType(CallExpr* call) {
       gdbShouldBreakHere();
     }
 
-    lhsSym->type = call->get(2)->typeInfo();
+    Type* type = call->get(2)->typeInfo();
+    if (call->isPrimitive(PRIM_ASSIGN))
+      type = type->getValType();
+
+    lhsSym->type = type;
   }
 
   return lhsSym->type;
