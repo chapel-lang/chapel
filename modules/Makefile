@@ -117,6 +117,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/OrderedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -133,8 +134,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
-	packages/URL.chpl \
-	packages/OrderedSet.chpl
+	packages/URL.chpl
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
