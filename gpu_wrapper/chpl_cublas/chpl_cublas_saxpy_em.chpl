@@ -28,12 +28,12 @@ proc main() {
 
   //use cublas saxpy
   timer.start();
-  cu_axpy(cublas_handle, N:int(32), gpu_ptr_X, gpu_ptr_Y, a);
+  cu_saxpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
   gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(real)*N:size_t); 
   timer.stop();
 
   //destroy cublas handle
-  cublas_destroy_handle(cublas_handle);
+  //cublas_destroy_handle(cublas_handle);
 
   var e = timer.elapsed()*1000;
 
@@ -41,9 +41,16 @@ proc main() {
     writeln(Y[i]);
   }
 
-}
+  Y = 6.0:real(32);
+  gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(real)*N:size_t);
+  gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(real)*N:size_t);
+  cu_saxpy(cublas_handle, N, gpu_ptr_X, gpu_ptr_Y, a);
+  gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(real)*N:size_t);
 
-proc file.openAppender() {
-  var writer = this.writer(start=this.size);
-  return writer;
+  for i in 1..N {
+    writeln(Y[i]);
+  }
+
+  //destroy cublas handle
+  cublas_destroy_handle(cublas_handle);
 }
