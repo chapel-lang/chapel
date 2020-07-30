@@ -226,8 +226,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
     }
 
     // TODO: Special handling for managed class wrappers?
-    AggregateType* ft = toAggregateType(field->getValType());
-    INT_ASSERT(ft != NULL);
+    Type* ft = field->getValType();
 
     // TODO: Handle tuples containing tuples.
     if (ft->symbol->hasFlag(FLAG_TUPLE)) {
@@ -246,14 +245,9 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
                         fieldIdx);
     }
     
-    // Check ref-if-modified fields in "checkTupleFormalToActual".
-    if (fieldIntent == INTENT_REF_MAYBE_CONST) {
-      INT_ASSERT(!isFormalIntentConst);
-      continue;
-    }
-
-    // Ditto for ref fields (sync/single/atomic).
-    if (fieldIntent == INTENT_REF) {
+    // Check ref/ref-if-modified fields in "checkTupleFormalToActual".
+    if (fieldIntent == INTENT_REF_MAYBE_CONST ||
+        fieldIntent == INTENT_REF) {
       INT_ASSERT(!isFormalIntentConst);
       continue;
     }
@@ -262,7 +256,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
     if (fieldIntent & INTENT_CONST && !isFieldMarkedConst) {
       BaseAST* use = NULL;
 
-      // Only fetch the closest use if it's safe to do so.
+      // Only fetch the closest use if the UseMap exists.
       if (um != NULL && um->count(formal)) {
         use = um->at(formal);
       }
@@ -301,7 +295,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
 // TODO: Could we could get rid of this if we just propagated constness to
 // coerce temporaries instead?
 static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
-  Symbol* original = NULL;
+  Symbol* result = NULL;
 
   AggregateType* at = toAggregateType(sym->getValType());
   if (at == NULL || !at->symbol->hasFlag(FLAG_TUPLE)) {
@@ -336,7 +330,6 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
       SymExpr* lhsUse = toSymExpr(move->get(1));
       Symbol* lhs = lhsUse->symbol();
 
-      // TODO: Is this even possible?
       if (lhs != readTmp) {
         continue;
       }
@@ -353,15 +346,15 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
       INT_ASSERT(useOriginal != NULL);
 
       // Done!
-      original = useOriginal->symbol();
+      result = useOriginal->symbol();
     }
 
-    if (original != NULL) {
+    if (result != NULL) {
       break;
     }
   }
 
-  return original;
+  return result;
 }
 
 // Check REF (e.g. atomic) and REF_IF_MODIFIED (e.g. array) tuple elements
@@ -384,8 +377,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
   }
 
   // Nothing to do if the tuple formal is not REF_MAYBE_CONST.
-  bool isFormalIntentMaybeConst = formal->intent == INTENT_REF_MAYBE_CONST;
-  if (!isFormalIntentMaybeConst) {
+  if (!(formal->intent == INTENT_REF_MAYBE_CONST)) {
     return false;
   }
 
@@ -412,8 +404,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
     }
 
     bool isFieldMarkedConst = QualifiedType::qualifierIsConst(q);
-    AggregateType* ft = toAggregateType(field->getValType());
-    INT_ASSERT(ft != NULL);
+    Type* ft = field->getValType();
 
     // TODO: Handle tuples containing tuples.
     if (ft->symbol->hasFlag(FLAG_TUPLE)) {
@@ -437,7 +428,17 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
     bool isActualConst = false;
     Symbol* actualSym = NULL;
 
-    // Determine if the actual field is const or not.
+    // Determine where the actual is coming from and if its origin is const
+    // or not. There are three cases that we cover so far:
+    //
+    //    - coerce tmps: when a value tuple (e.g. VarSymbol) is coerced to
+    //                   a referential tuple.
+    //    - call tmps: look for a _build_tuple call (there should be exactly
+    //                 one for each tuple expression). If we find it then
+    //                 we check if the argument to the call is const.
+    //    - ArgSymbol: great, it should already be a referential tuple and
+    //                 we can check its constness.
+    //
     if (SymExpr* se = toSymExpr(actual)) {
       Symbol* sym = se->symbol();
 
@@ -448,6 +449,7 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
 
         // Walk backwards from coerce_tmp to original value tuple.
         Symbol* original = getOriginalTupleFromCoerceTmp(sym);
+
         if (original == NULL) {
           INT_FATAL(sym, "Unable to unpack coercion temp: %d", sym->id);
         }
@@ -542,20 +544,18 @@ static bool checkTupleFormalToActual(ArgSymbol* formal, Expr* actual,
         use = um->at(formal);
       }
 
-      // BaseAST* pin = result ? (BaseAST*) actual : actualSym->defPoint;
-
       USR_FATAL_CONT(actual, "const actual element is passed to %s tuple "
-                        "formal '%s' of '%s'",
-                        intentDescrString(INTENT_REF),
-                        formal->name,
-                        calledFn->name);
+                             "formal '%s' of '%s'",
+                             intentDescrString(INTENT_REF),
+                             formal->name,
+                             calledFn->name);
 
       // TODO: Pin if the element is a user type.
       USR_PRINT("tuple element #%d of type '%s'",
                 fieldIdx-1,
                 ft->symbol->name);
 
-      const char* descriptor = isActualConst ? "actual" : "element";
+      const char* descriptor = isActualConst ? "tuple" : "element";
       USR_PRINT(actualSym->defPoint, "const %s declared here",
                                      descriptor);
 
