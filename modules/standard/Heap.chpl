@@ -291,7 +291,7 @@ module Heap {
     /*
       Push elements of a list into the heap
 
-      :arg x: The list of which elements is to push.
+      :arg x: The list in which elements are to push.
       :type x: `list(eltType)`
     */
     proc push(ref x: list(eltType)) {
@@ -304,7 +304,7 @@ module Heap {
     /*
       Push elements in an array into a heap.
 
-      :arg x: The array of which elements is to push.
+      :arg x: The array in which elements are to push.
       :type x: `[?d] eltType`
     */
     proc push(ref x:[?d] eltType) {
