@@ -1,1 +1,1 @@
-nest_func_iterator2c.chpl:1: error: out intent not yet supported for iterators
+nest_func_iterator2c.chpl:1: error: out intent is not yet supported for iterators

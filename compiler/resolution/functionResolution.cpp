@@ -525,7 +525,9 @@ static bool fits_in_uint(int width, Immediate* imm) {
   return false;
 }
 
-
+// Since an `inout` copy will be made at the call site, this function
+// looks for the original value before the copy in order to do correct
+// const-ness checking for passing to inout arguments.
 static SymExpr* findSourceOfInCopy(Symbol* sym) {
   if (startsWith(sym->name, "_formal_tmp_in_")) {
     for_SymbolSymExprs(se, sym) {

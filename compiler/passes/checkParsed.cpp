@@ -467,9 +467,9 @@ checkFunction(FnSymbol* fn) {
   if (isIterator) {
     for_formals(formal, fn) {
       if (formal->intent == INTENT_OUT) {
-        USR_FATAL_CONT(formal, "out intent not yet supported for iterators");
+        USR_FATAL_CONT(formal, "out intent is not yet supported for iterators");
       } else if (formal->intent == INTENT_INOUT) {
-        USR_FATAL_CONT(formal, "inout intent not yet supported for iterators");
+        USR_FATAL_CONT(formal, "inout intent is not yet supported for iterators");
       }
     }
   }
