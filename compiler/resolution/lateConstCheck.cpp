@@ -28,6 +28,8 @@
 #include "resolveIntents.h"
 #include "symbol.h"
 
+#include <set>
+
 /* This file implements late (after cull over references)
    const checking.
    
@@ -44,7 +46,7 @@ static const int breakOnId1 = 0;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
-static const bool doPrintDebugInfo = 0;
+static const bool doPrintDebugInfo = true;
 
 #define DEBUG_SYMBOL(sym__) \
   do { \
@@ -611,20 +613,7 @@ static bool isFunctionToSkip(FnSymbol* calledFn) {
    TODO: decide if we also need const checking in functionResolution.cpp.
  */
 void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
-
-  // Check const ref elements of tuple formals. TODO: Is there a better
-  // place to move this? At the very least, restructure the loop over
-  // calls so that this can fit inline instead of as a separate pass over
-  // formals.
-  forv_Vec(ArgSymbol, formal, gArgSymbols) {
-    FnSymbol* fn = toFnSymbol(formal->defPoint->parentSymbol);
-    INT_ASSERT(fn != NULL);
-
-    bool skip = isFunctionToSkip(fn);
-    if (!skip) {
-      checkTupleFormalUses(fn, formal, reasonNotConst);
-    } 
-  }
+  std::set<FnSymbol*> visitedFunctions;
 
   forv_Vec(CallExpr, call, gCallExprs) {
 
@@ -636,6 +625,17 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
       char        cn1          = calledFn->name[0];
       const char* calleeParens = (isalpha(cn1) || cn1 == '_') ? "()" : "";
       int formalIdx = 0;
+
+      // Run checks for tuple formals that are not REF/IF-MODIFIED once.
+      if (!visitedFunctions.count(calledFn)) {
+        visitedFunctions.insert(calledFn);
+
+        for_formals(formal, calledFn) {
+          if (!isFunctionToSkip(calledFn)) {
+            checkTupleFormalUses(calledFn, formal, reasonNotConst);
+          }
+        }
+      }
 
       // resolved calls
       for_formals_actuals(formal, actual, call) {
