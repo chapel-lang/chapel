@@ -21,11 +21,7 @@
 #ifndef _CALL_INFO_H_
 #define _CALL_INFO_H_
 
-#include "baseAST.h"
 #include "vec.h"
-
-#include <queue>
-#include <set>
 
 class BlockStmt;
 class CallExpr;
@@ -48,12 +44,6 @@ public:
 
   Vec<Symbol*>     actuals;     // actual symbols
   Vec<const char*> actualNames; // named arguments
-
-  // for getVisibleFunctions()
-  std::set<BlockStmt*>    visited;
-  std::queue<BlockStmt*>  scopeQueue;
-  BlockStmt*              popScopeQueue();
-  void                    clearVisibilityData();
 };
 
 #endif

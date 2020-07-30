@@ -551,9 +551,9 @@ static void getVisibleFunctions(const char*              name,
 
   for (std::vector<BlockStmt*>::iterator it = currentScopes->begin();
        it != currentScopes->end(); it++)
-    if (visited->find(*it) == visited->end())
-      getVisibleFunctionsImpl(name, call, *it, *visited, nextScopes,
-                              visibleFns, false);
+    // visit each scope
+    getVisibleFunctionsImpl(name, call, *it, *visited, nextScopes,
+                            visibleFns, false);
 }
 
 void getVisibleFunctions(const char*      name,

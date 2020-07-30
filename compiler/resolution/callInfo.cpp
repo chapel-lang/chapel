@@ -20,6 +20,7 @@
 
 #include "callInfo.h"
 
+#include "baseAST.h"
 #include "driver.h"
 #include "expr.h"
 #include "iterator.h"
@@ -150,20 +151,6 @@ void CallInfo::haltNotWellFormed() const {
       USR_STOP();
     }
   }
-}
-
-// a convenience
-// can enhanced it to return NULL is the queue is empty
-BlockStmt* CallInfo::popScopeQueue() {
-  BlockStmt* retval = scopeQueue.front();
-  scopeQueue.pop();
-  return retval;
-}
-
-void CallInfo::clearVisibilityData() {
-  visited.clear();
-  // if not empty already, pop() until it is
-  INT_ASSERT(scopeQueue.empty());
 }
 
 const char* CallInfo::toString() {
