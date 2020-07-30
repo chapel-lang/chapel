@@ -90,6 +90,9 @@ module Heap {
     /*
       Comparator record that defines how the
       data is compared. The greatest element will be on the top.
+
+      .. note::
+        ``defaultComparator`` makes a max-heap and ``reverseCompartor`` makes a min-heap.
     */
     var comparator: record;
 
@@ -122,7 +125,7 @@ module Heap {
 
       :arg eltType: The type of the elements
 
-      :arg comparator: `DefaultComparator` makes max-heap and `ReverseCompartor` makes a min-heap
+      :arg comparator: The comparator to use
 
       :arg parSafe: If `true`, this heap will use parallel safe operations.
       :type parSafe: `param bool`
@@ -349,7 +352,7 @@ module Heap {
       Iterate over the elements of this heap
       
         .. note::
-          Elements are yield in order
+          Elements are yielded in order and removed from the heap
     */
     iter consume() {
       var h = this;
@@ -357,9 +360,13 @@ module Heap {
         yield h.pop();
       }
     }
+
     /*
       Returns a new DefaultRectangular array containing a copy of each of the
       elements contained in this heap.
+
+        .. note::
+          Elements of the array are not in order
 
       :return: A new DefaultRectangular array.
     */
@@ -375,7 +382,10 @@ module Heap {
     }
 
     /*
-      Write the contents of this list to a channel.
+      Write the contents of this heap to a channel.
+
+        .. note::
+          Elements are not written in order
 
       :arg ch: A channel to write to.
     */
@@ -392,7 +402,7 @@ module Heap {
     :arg x: The list to initialize the heap from.
     :type x: `list(?t)`
 
-    :arg comparator: The comparator type
+    :arg comparator: The comparator to use
 
     :rtype: heap(t, comparator)
   */
@@ -403,12 +413,12 @@ module Heap {
   }
 
   /*
-    Create a heap from a array.
+    Create a heap from an array.
 
     :arg x: The array to initialize the heap from.
     :type x: `[?d] ?t`
 
-    :arg comparator: The comparator type
+    :arg comparator: The comparator to use
 
     :rtype: heap(t, comparator)
   */
