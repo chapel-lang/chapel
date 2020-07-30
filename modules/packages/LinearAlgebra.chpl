@@ -899,6 +899,8 @@ proc diag(A: [?Adom] ?eltType, k=0) where isDistributed(A) {
     else 
       return _dist_diag_vec(A, k);
   }
+  else if (Adom.rank == 1) then
+    return _dist_diag_mat(A);
   else compilerError("A must have rank 2 or less");
 }
 
@@ -987,12 +989,12 @@ private proc _dist_diag_vec_helper(A:[?Adom] ?eltType, d:int, diagSize:int) {
                         if _containsDiag(A, loc) then loc;
   var diagDom = {0..#diagSize} dmapped Block({0..#diagSize}, 
                                               targetLocales=targetLocales);
-  var diag : [diagDom] eltType = [i in Adom.low(0)..#diagSize] A[i,i];
+  var diagonal : [diagDom] eltType = [i in Adom.low(0)..#diagSize] A[i,i];
 
-  return diag;
+  return diagonal;
 }
 
-inline proc _containsDiag(ref array, ref loc) {
+private inline proc _containsDiag(ref array, ref loc) {
   var retBool : bool = false;
   on loc do {
     const localDom = array.localSubdomain();
@@ -1003,11 +1005,22 @@ inline proc _containsDiag(ref array, ref loc) {
   return retBool;
 }
 
-inline proc hasDefaultIndices(Adom) {
+private inline proc hasDefaultIndices(Adom) {
   return Adom.low(0) == Adom.low(1) && 
                           (if Adom.stridable 
                            then Adom.stride == 1
                            else true);
+}
+
+private proc _dist_diag_matrix(A:[?Adom] ?eltType) {
+  const dim = Adom.dim(0);
+  var diagDom = {dim, dim} dmapped Block({dim, dim}, 
+                                         targetLocales=A.targetLocales());
+  var diagonal : [diagDom] eltType;
+  forall i in dim {
+    diagonal[i,i] = A[i];
+  }
+  return diagonal;
 }
 
 
