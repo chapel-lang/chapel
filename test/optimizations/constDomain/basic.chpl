@@ -9,16 +9,6 @@ proc test(d) {
   writeln("Array on domain: ", arr);
 }
 
-writeln("var domain inited with literal (low level)");
-var customVarDom = chpl__buildDomainExpr(1..10, definedConst=false);
-test(customVarDom);
-writeln();
-
-writeln("const domain inited with literal (low level)");
-const customConstDom = chpl__buildDomainExpr(1..10, definedConst=true);
-test(customConstDom);
-writeln();
-
 writeln("var domain inited with literal");
 var varDom = {1..10};
 test(varDom);
