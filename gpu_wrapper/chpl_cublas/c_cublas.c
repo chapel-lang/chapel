@@ -87,6 +87,37 @@ int cublas_zaxpy(cublasHandle_t *handle, int n, cuDoubleComplex alpha, cuDoubleC
 
 }
 
+int cublas_isamax(cublasHandle_t *handle, int n, float *x, int incX, int *results){
+
+    cublasIsamax(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_idamax(cublasHandle_t *handle, int n, double *x, int incX, int *results){
+
+    cublasIdamax(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_isamin(cublasHandle_t *handle, int n, float *x, int incX, int *results){
+
+    cublasIsamin(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_idamin(cublasHandle_t *handle, int n, double *x, int incX, int *results){
+
+    cublasIdamin(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
 
 int cublas_sgemm(cublasHandle_t *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc){
 
