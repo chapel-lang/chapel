@@ -292,12 +292,12 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
     FnSymbol* inFn = bestPoint->getFunction();
 
     if (subsDesc == NULL || subsDesc[0] == '\0') {
-      print_error("%s:%d: %s called here",
+      print_error("%s:%d: %s called ",
                   cleanFilename(bestPoint),
                   bestPoint->linenum(),
                   fnKindAndName(errFn));
     } else {
-      print_error("%s:%d: %s called here as: %s(%s)",
+      print_error("%s:%d: %s called as %s(%s)",
                   cleanFilename(bestPoint),
                   bestPoint->linenum(),
                   fnKindAndName(errFn),
