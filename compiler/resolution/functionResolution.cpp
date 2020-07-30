@@ -3387,11 +3387,12 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
   FnSymbol*                 retval     = NULL;
 
-#if 0 //wass - old
+#if 1 //wass - original
   findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
-#else //wass new stuff
 
+#else //wass new stuff, moved into findVisibleFunctionsAndCandidates()
   info.clearVisibilityData(); // needed when recursing with CHECK_CALLABLE_ONLY
+
   do
     findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
   while
@@ -4393,15 +4394,29 @@ static void findVisibleFunctionsAndCandidates(
 
     handleTaskIntentArgs(info, fn);
 
-  } else {
-    findVisibleFunctions(info, visibleFns);
+    trimVisibleCandidates(info, mostApplicable, visibleFns);
+
+    findVisibleCandidates(info, mostApplicable, candidates);
+
+    explainGatherCandidate(info, candidates);
+
+    return;
   }
 
-  trimVisibleCandidates(info, mostApplicable, visibleFns);
+  // needed for recursive call to resolveNormalCall() with CHECK_CALLABLE_ONLY
+  info.clearVisibilityData();
 
-  findVisibleCandidates(info, mostApplicable, candidates);
+  do {
+    findVisibleFunctions(info, visibleFns);
 
-  explainGatherCandidate(info, candidates);
+    trimVisibleCandidates(info, mostApplicable, visibleFns);
+
+    findVisibleCandidates(info, mostApplicable, candidates);
+
+    explainGatherCandidate(info, candidates);
+  }
+  while
+    (candidates.n == 0 && ! info.scopeQueue.empty());
 }
 
 static void findVisibleCandidates(CallInfo&                  info,
