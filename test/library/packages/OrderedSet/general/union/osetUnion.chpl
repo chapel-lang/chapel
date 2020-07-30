@@ -12,7 +12,7 @@ proc doTest(type eltType) {
   var s3 = new orderedSet(eltType, false, defaultComparator, impl);
   var s4 = new orderedSet(eltType, false, defaultComparator, impl);
 
-  assert(s1.size == s2.size == s3.size == 0);
+  assert(s1.size == s2.size && s2.size == s3.size && s3.size == 0);
 
   for i in 1..testIters {
     var x = i:eltType;
