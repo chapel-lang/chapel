@@ -1,1 +1,1 @@
-{1..5}
+usedWithDomain.chpl:1: error: noinit is only supported for arrays

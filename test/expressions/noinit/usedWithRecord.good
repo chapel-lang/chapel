@@ -1,3 +1,1 @@
-(bar = 4, baz = true)
-I default initialized!
-(bar = 0, baz = false)
+usedWithRecord.chpl:9: error: noinit is only supported for arrays

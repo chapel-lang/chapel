@@ -1,4 +1,2 @@
-Task 1 finishing
-Task 2 done!
-4
-true
+usedWithSingle.chpl:1: error: noinit is only supported for arrays
+usedWithSingle.chpl:2: error: noinit is only supported for arrays
