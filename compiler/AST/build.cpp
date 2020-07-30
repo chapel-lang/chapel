@@ -1563,6 +1563,18 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
+void establishDefinedConstIfApplicable(DefExpr* defExpr,
+                                       std::set<Flag>* flags) {
+  if (CallExpr *initCall = toCallExpr(defExpr->init)) {
+    if (initCall->isNamed("chpl__buildDomainExpr")) {
+      if (flags->size() == 1 && flags->count(FLAG_CONST)) {
+        initCall->get(2)->replace(new SymExpr(gTrue));
+      }
+    }
+  }
+}
+                
+
 BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
@@ -1589,6 +1601,12 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
 
           if (cnameExpr != NULL && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
+
+          if (defExpr->init) {
+            //if (strcmp(defExpr->init->fname(), "/Users/ekayraklio/code/chapel/versions/f02/chapel/test/optimizations/constDomain/basic.chpl") == 0) {
+              establishDefinedConstIfApplicable(defExpr, flags);
+            //}
+          }
 
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);

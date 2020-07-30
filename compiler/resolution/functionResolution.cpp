@@ -10138,6 +10138,10 @@ static void lowerRuntimeTypeInit(CallExpr* call,
   Symbol* isNoInit = noinit ? gTrue : gFalse;
   runtimeTypeToValueCall->insertAtTail(isNoInit);
 
+  // Add the argument indicating if this is defined as const
+  Symbol* definedConst = var->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+  runtimeTypeToValueCall->insertAtTail(definedConst);
+
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
   resolveCallAndCallee(runtimeTypeToValueCall);

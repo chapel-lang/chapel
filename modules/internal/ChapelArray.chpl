@@ -401,8 +401,9 @@ module ChapelArray {
                                        param rank: int,
                                        type idxType = int,
                                        param stridable: bool,
-                                       param isNoInit: bool) {
-    return new _domain(dist, rank, idxType, stridable);
+                                       param isNoInit: bool,
+                                       param definedConst: bool) {
+    return new _domain(dist, rank, idxType, stridable, definedConst);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
@@ -448,7 +449,8 @@ module ChapelArray {
 
   proc chpl__convertRuntimeTypeToValue(dom: domain,
                                        type eltType,
-                                       param isNoInit: bool) {
+                                       param isNoInit: bool,
+                                       param definedConst) {
     return dom.buildArray(eltType, !isNoInit);
   }
 
@@ -626,7 +628,7 @@ module ChapelArray {
     return true;
   }
 
-  proc chpl__buildDomainExpr(ranges...)
+  proc chpl__buildDomainExpr(ranges..., param definedConst)
   where chpl__isTupleOfRanges(ranges) {
     param rank = ranges.size;
     for param i in 1..rank-1 do
@@ -635,12 +637,20 @@ module ChapelArray {
     for param i in 0..rank-1 do
       if ! isBoundedRange(ranges(i)) then
         compilerError("one of domain's dimensions is not a bounded range");
-    var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
-    d.setIndices(ranges);
-    return d;
+    if definedConst {
+      const d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
+      d.setIndices(ranges);
+      return d;
+    }
+    else {
+      var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
+      d.setIndices(ranges);
+      return d;
+    }
   }
 
-  proc chpl__buildDomainExpr(keys...) {
+  // definedConst is added only for interface consistency
+  proc chpl__buildDomainExpr(keys..., param definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = _getLiteralType(keys(0).type);
@@ -674,7 +684,9 @@ module ChapelArray {
   pragma "compiler generated"
   pragma "last resort"
   proc chpl__ensureDomainExpr(x...) {
-    return chpl__buildDomainExpr((...x));
+    // we are creating array with a range literal(s). So, the array's domain
+    // cannot be changed anymore.
+    return chpl__buildDomainExpr((...x), definedConst=true);
   }
 
   pragma "compiler generated"
@@ -698,7 +710,8 @@ module ChapelArray {
 
   proc chpl__distributed(d: _distribution, ranges...)
   where chpl__isTupleOfRanges(ranges) {
-    return chpl__distributed(d, chpl__buildDomainExpr((...ranges)));
+    return chpl__distributed(d, chpl__buildDomainExpr((...ranges),
+                                          /* TODO */   definedConst=false));
   }
 
   //

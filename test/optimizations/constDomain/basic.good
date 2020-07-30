@@ -1,0 +1,50 @@
+var domain inited with literal (low level)
+Using user-variable: false
+Using instance: false
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const domain inited with literal (low level)
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+var domain inited with literal
+Using user-variable: false
+Using instance: false
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const domain inited with literal
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+var domain no init expr minimal type
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain no init expr minimal type
+Using user-variable: true
+Using instance: true
+Array on domain: 
+
+var domain no init expr 2 fields
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain no init expr 2 fields
+Using user-variable: true
+Using instance: true
+Array on domain: 
+
+var domain no init expr
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain no init expr
+Using user-variable: true
+Using instance: true
+Array on domain: 
+
