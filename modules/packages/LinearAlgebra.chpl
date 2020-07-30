@@ -659,7 +659,12 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 pragma "no doc"
 /* Returns ``true`` if the domain is distributed */
 private proc isDistributed(a) param {
-  return !isSubtype(a.domain.dist.type, DefaultDist);
+  if chpl__isArrayView(a) {
+    return !chpl__getActualArray(a).isDefaultRectangular();
+  }
+  else {
+    return !isSubtype(a.domain.dist.type, DefaultDist);
+  }
 }
 
 /* Inner product of 2 vectors. */
