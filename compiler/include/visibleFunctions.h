@@ -23,6 +23,8 @@
 
 #include "vec.h"
 
+#include <set>
+
 class BlockStmt;
 class CallExpr;
 class CallInfo;
@@ -30,6 +32,12 @@ class Expr;
 class FnSymbol;
 
 void       findVisibleFunctions(CallInfo&       info,
+                                Vec<FnSymbol*>& visibleFns);
+
+void       findVisibleFunctions(CallInfo&       info,
+                                std::set<BlockStmt*>*    visited,
+                                std::vector<BlockStmt*>* currentScopes,
+                                std::vector<BlockStmt*>* nextScopes,
                                 Vec<FnSymbol*>& visibleFns);
 
 void       getVisibleFunctions(const char*      name,

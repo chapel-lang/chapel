@@ -3387,18 +3387,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
 
   FnSymbol*                 retval     = NULL;
 
-#if 1 //wass - original
   findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
-
-#else //wass new stuff, moved into findVisibleFunctionsAndCandidates()
-  info.clearVisibilityData(); // needed when recursing with CHECK_CALLABLE_ONLY
-
-  do
-    findVisibleFunctionsAndCandidates(info, mostApplicable, candidates);
-  while
-    (candidates.n == 0 && ! info.scopeQueue.empty());
-
-#endif
 
   numMatches = disambiguateByMatch(info,
                                    candidates,
@@ -4403,20 +4392,24 @@ static void findVisibleFunctionsAndCandidates(
     return;
   }
 
-  // needed for recursive call to resolveNormalCall() with CHECK_CALLABLE_ONLY
-  info.clearVisibilityData();
+  std::set<BlockStmt*> visited;
+  std::vector<BlockStmt*> currentScopes, nextScopes;
 
   do {
-    findVisibleFunctions(info, visibleFns);
+    findVisibleFunctions(info, &visited, &currentScopes, &nextScopes,
+                         visibleFns);
 
     trimVisibleCandidates(info, mostApplicable, visibleFns);
 
     findVisibleCandidates(info, mostApplicable, candidates);
 
     explainGatherCandidate(info, candidates);
+
+    currentScopes.clear();
+    swap(currentScopes, nextScopes);
   }
   while
-    (candidates.n == 0 && ! info.scopeQueue.empty());
+    (candidates.n == 0 && ! currentScopes.empty());
 }
 
 static void findVisibleCandidates(CallInfo&                  info,
