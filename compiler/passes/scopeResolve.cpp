@@ -689,6 +689,8 @@ static bool isMethodNameLocal(const char* name, Type* type);
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE);
 
+static void checkModuleSymExpr(SymExpr* se);
+
 static void resolveUnresolvedSymExprs() {
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -802,6 +804,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     usymExpr->replace(symExpr);
 
     updateMethod(usymExpr, sym, symExpr);
+
+    // Check for invalid uses of module symbols
+    if (isModuleSymbol(sym)) {
+      checkModuleSymExpr(symExpr);
+    }
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
@@ -1094,6 +1101,47 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
         errorDotInsideWithClause(origUSE, blockInfo->primitive->name);
       }
     }
+  }
+}
+
+// se refers to a ModuleSymbol. Check it is a valid mention of a module.
+static void checkModuleSymExpr(SymExpr* se) {
+  bool validModuleMention = false;
+
+  ModuleSymbol* mod = toModuleSymbol(se->symbol());
+  INT_ASSERT(mod != NULL); // caller should ensure this
+
+  CallExpr* call = toCallExpr(se->parentExpr);
+  if (call != NULL) {
+    // check for (Call gModuleToken, ModuleName, Args)
+    if (SymExpr* prevSe = toSymExpr(se->prev))
+      if (prevSe->symbol() == gModuleToken)
+        validModuleMention = true;
+    // check for (Call (Call . ModuleName FnName) Args)
+    if (call->isNamedAstr(astrSdot))
+      validModuleMention = true;
+    // check for PRIM_REFERENCED_MODULES_LIST
+    if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST))
+      validModuleMention = true;
+  }
+  if (Expr* stmt = se->getStmtExpr())
+    if (isUseStmt(stmt) || isImportStmt(stmt))
+      validModuleMention = true;
+
+  if (validModuleMention == false) {
+    bool callOfModule = false;
+    if (call != NULL)
+      if (SymExpr* baseSe = toSymExpr(call->baseExpr))
+        if (baseSe->symbol() == mod)
+          callOfModule = true;
+
+    const char* reason = NULL;
+    if (callOfModule)
+      reason = "cannot be called like procedures";
+    else
+      reason = "cannot be mentioned like variables";
+
+    USR_FATAL_CONT(se, "modules (like '%s' here) %s", mod->name, reason);
   }
 }
 
@@ -2616,6 +2664,18 @@ static void removeUnusedModules() {
     if (usedModules.count(mod) == 0) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
+
+      // Check that any mentions of the dead module are in
+      // dead modules
+      if (fVerify) {
+        for_SymbolSymExprs(se, mod) {
+          if (ModuleSymbol* inMod = se->getModule()) {
+            if (usedModules.count(inMod) != 0) {
+              INT_FATAL(se, "Invalid reference to unused module");
+            }
+          }
+        }
+      }
     }
   }
 }
