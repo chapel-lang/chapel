@@ -251,6 +251,30 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
   return lastFn; // never reached
 }
 
+static CallExpr* findACallSite(FnSymbol* fn) {
+  fn = findNonTaskCaller(fn);
+
+  for_SymbolSymExprs(se, fn) {
+    CallExpr* call = toCallExpr(se->parentExpr);
+    if (se == call->baseExpr) {
+      return call;
+    }
+  }
+
+  return NULL;
+}
+
+static bool isModuleInitFunction(FnSymbol* fn) {
+  ModuleSymbol* mod = fn->getModule();
+  if (mod && mod->initFn == fn)
+    return true;
+  if (fn->hasFlag(FLAG_MODULE_INIT))
+    return true;
+
+  return false;
+}
+
+
 static const char* fnKindAndName(FnSymbol* fn) {
   if (fn == NULL)
     return "";
@@ -270,6 +294,11 @@ static const char* fnKindAndName(FnSymbol* fn) {
 }
 
 static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
+
+  // Stop now if it's a module init function
+  if (isModuleInitFunction(errFn))
+    return;
+
   // Find the first call to the function within the instantiation point,
   // so that we can have a better error message line number.
   BlockStmt* instantiationPoint = errFn->instantiationPoint();
@@ -286,7 +315,12 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
         }
       }
     }
+  } else {
+    // Find a call to the function
+    bestPoint = findACallSite(errFn);
+  }
 
+  if (bestPoint != NULL) {
     const char* subsDesc = errFn->substitutionsToString(", ");
 
     FnSymbol* inFn = bestPoint->getFunction();
@@ -305,7 +339,7 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
                   subsDesc);
     }
 
-    if (inFn->instantiatedFrom != NULL) {
+    if (inFn->instantiatedFrom != NULL || fPrintCallStackOnError) {
       // finish the current line
       print_error(" within %s\n", fnKindAndName(inFn));
       // continue to print call sites
@@ -321,7 +355,8 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
 static void printInstantiationNoteForLastError() {
-  if (err_fn_header_printed && err_fn && err_fn->instantiatedFrom) {
+  if (err_fn_header_printed && err_fn &&
+      (err_fn->instantiatedFrom || fPrintCallStackOnError)) {
     printInstantiationNote(err_fn, NULL);
   }
 
@@ -494,6 +529,7 @@ static void printErrorFooter(bool guess) {
 // call chain looks like e.g. after a resolution error.
 //
 static void printCallStack(bool force, bool shortModule, FILE* out) {
+  /*
   if (!force) {
     if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
       return;
@@ -526,7 +562,7 @@ static void printCallStack(bool force, bool shortModule, FILE* out) {
               (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
               (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
 
-  }
+  }*/
 }
 
 static void printCallStackOnError() {
