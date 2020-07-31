@@ -818,7 +818,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       // otherwise copy construct it
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr(copy_fun, read);
+      CallExpr* copy = new CallExpr(copy_fun, new SymExpr(gFalse), read);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       if (recordContainingCopyMutatesField(toField->type))
         arg->intent = INTENT_REF;

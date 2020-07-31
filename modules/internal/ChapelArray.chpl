@@ -3643,7 +3643,7 @@ module ChapelArray {
   //
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
-      __primitive("move", a, chpl__autoCopy(b.clone()));
+      __primitive("move", a, chpl__autoCopy(false, b.clone()));
     } else if a._value._doms.size == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
@@ -4429,14 +4429,14 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(const ref rhs: []) {
+  proc chpl__initCopy(definedConst: bool, const ref rhs: []) {
     pragma "no copy"
     var lhs = chpl__coerceCopy(rhs.type, rhs);
     return lhs;
   }
 
-  pragma "auto copy fn" proc chpl__autoCopy(x: []) {
-    pragma "no copy" var b = chpl__initCopy(x);
+  pragma "auto copy fn" proc chpl__autoCopy(definedConst: bool, x: []) {
+    pragma "no copy" var b = chpl__initCopy(definedConst, x);
     return b;
   }
 
@@ -4924,7 +4924,8 @@ module ChapelArray {
   proc chpl__unref(ir: _iteratorRecord) {
     pragma "no auto destroy"
     pragma "no copy"
-    var toArray = chpl__initCopy(ir); // call iterator -> array copy fn
+    // TODO: definedConst can be added to `chpl__unref`, too
+    var toArray = chpl__initCopy(false, ir); // call iterator -> array copy fn
     return toArray;
   }
 
@@ -4962,19 +4963,21 @@ module ChapelArray {
     }
   }
 
-  // chpl__initCopy(ir: _iteratorRecord) is used to create an array
-  // out of for-expressions, forall-expressions, promoted expressions.
-  // The 'ir' iterator - or its standalone/leader/follower counterpart -
-  // is invoked to generate the desired array elements.
+  // chpl__initCopy(definedConst: bool, ir: _iteratorRecord) is used to create
+  // an array out of for-expressions, forall-expressions, promoted expressions.
+  // The 'ir' iterator - or its standalone/leader/follower counterpart - is
+  // invoked to generate the desired array elements.
 
   pragma "init copy fn"
-  proc chpl__initCopy(ir: _iteratorRecord)
+  proc chpl__initCopy(definedConst: bool, ir: _iteratorRecord)
     where chpl_iteratorHasDomainShape(ir)
   {
 
     // ENGIN: here ir._shape_ could be a privatized domain. Make sure that the
     // initializer we call here do not create another set of privatized
     // instances
+    // TODO: can we make this domain constant by passing an argument to the
+    // initializer
     var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain
@@ -4986,7 +4989,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(ir: _iteratorRecord)
+  proc chpl__initCopy(definedConst: bool, ir: _iteratorRecord)
     where chpl_iteratorHasRangeShape(ir) && !chpl_iteratorFromForExpr(ir)
   {
     // Need this pragma in the range case to avoid leaking 'shape'.
@@ -5050,7 +5053,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(ir: _iteratorRecord) {
+  proc chpl__initCopy(definedConst: bool, ir: _iteratorRecord) {
     // We'd like to know the yielded type of the record, but we can't
     // access the (runtime) component of that until we actually yield
     // something.
@@ -5088,7 +5091,7 @@ module ChapelArray {
         // recursively - in that case it shouldn't be removed!
         pragma "no auto destroy"
         pragma "no copy"
-        var eltCopy = try chpl__initCopy(elt);
+        var eltCopy = try chpl__initCopy(definedConst, elt);
 
         if i >= size {
           // Allocate a new buffer and then copy.

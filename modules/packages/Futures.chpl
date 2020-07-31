@@ -251,14 +251,14 @@ module Futures {
 
   pragma "no doc"
   pragma "init copy fn"
-  proc chpl__initCopy(x: Future) {
+  proc chpl__initCopy(definedConst: bool, x: Future) {
     x.acquire();
     return x;
   }
 
   pragma "no doc"
   pragma "auto copy fn"
-  proc chpl__autoCopy(x: Future) {
+  proc chpl__autoCopy(definedConst: bool, x: Future) {
     x.acquire();
     return x;
   }

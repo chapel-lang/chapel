@@ -292,7 +292,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
     *needRefIntent = true;
 
   } else if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
-             formal == fn->getFormal(1) &&
+             formal == fn->getFormal(2) &&
              recordContainingCopyMutatesField(formal->getValType())) {
     retval = true;
     *needRefIntent = true;
@@ -2043,7 +2043,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
         start->insertBefore(new CallExpr(PRIM_MOVE,
                                          tmp,
-                                         new CallExpr(astr_initCopy, formal)));
+                                         new CallExpr(astr_initCopy,
+                                                      /*definedConst=*/gTrue,
+                                                      formal)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -2091,7 +2093,8 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            // types.
            start->insertBefore(new CallExpr(PRIM_MOVE,
                                             tmp,
-                                            new CallExpr(astr_autoCopy, formal)));
+                                            new CallExpr(astr_autoCopy, gFalse,
+                                                         formal)));
 
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.

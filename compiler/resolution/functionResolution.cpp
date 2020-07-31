@@ -6657,7 +6657,8 @@ void resolveInitVar(CallExpr* call) {
     // 'chpl__initCopy' and how to turn them into something else when necessary
     // (e.g. chpl__unalias).
 
-    CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove());
+    SymExpr *definedConst = new SymExpr(dst->hasFlag(FLAG_CONST)? gTrue:gFalse);
+    CallExpr* initCopy = new CallExpr(astr_initCopy, definedConst, srcExpr->remove());
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -6773,7 +6774,8 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   CallExpr* call = NULL;
 
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr(astr_initCopy, tmpAt);
+    call = new CallExpr(astr_initCopy, /* definedConst = */new SymExpr(gFalse), 
+                                       tmpAt);
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }

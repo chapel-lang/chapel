@@ -332,7 +332,9 @@ module ChapelSyncvar {
 
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(const ref rhs : _syncvar) {
+  proc chpl__autoCopy(definedConst: bool, const ref rhs : _syncvar) {
+    // Does it make sense to have a const sync? If so, can we make use of that
+    // information here?
     return new _syncvar(rhs);
   }
 
@@ -782,7 +784,7 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(ref sv : _singlevar(?t)) {
+  proc chpl__initCopy(definedConst: bool, ref sv : _singlevar(?t)) {
     return sv.readFF();
   }
 

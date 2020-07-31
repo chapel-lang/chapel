@@ -668,7 +668,11 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   resolveBlockStmt(block);
 
   if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
-    CallExpr* copy = new CallExpr(astr_initCopy, temp);
+    // we may just pass false for definedConst into initCopy, but this feels
+    // more principled
+    SymExpr *definedConst = new SymExpr(rvv->hasFlag(FLAG_CONST) ?
+                                        gTrue : gFalse);
+    CallExpr* copy = new CallExpr(astr_initCopy, definedConst, temp);
     block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
     resolveCallAndCallee(copy);
   } else {
@@ -1366,7 +1370,9 @@ static void addArgCoercion(FnSymbol*  fn,
     if (typeNeedsCopyInitDeinit(at) && propagateNotPOD(at) &&
         !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      castCall = new CallExpr(astr_initCopy, prevActual);
+      SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
+                                          gTrue:gFalse);
+      castCall = new CallExpr(astr_initCopy, definedConst, prevActual);
     } else {
       castCall   = new CallExpr(PRIM_DEREF, prevActual);
     }
@@ -1660,10 +1666,14 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         }
 
         CallExpr* copy = NULL;
-        if (coerceRuntimeTypes)
-          copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym);
-        else
-          copy = new CallExpr(astr_initCopy, actualSym);
+        SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
+                                            gTrue:gFalse);
+        if (coerceRuntimeTypes) {
+          copy = new CallExpr(astr_coerceCopy, /*definedConst,*/ runtimeTypeTemp, actualSym);
+        }
+        else {
+          copy = new CallExpr(astr_initCopy, definedConst, actualSym);
+        }
 
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
         anchor->insertBefore(new DefExpr(tmp));

@@ -656,7 +656,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
-            SymExpr* copiedSe = toSymExpr(rhsCall->get(1));
+            SymExpr* copiedSe = toSymExpr(rhsCall->get(2));
             INT_ASSERT(copiedSe);
             SymExpr* dstSe = toSymExpr(callNext->get(1));
             INT_ASSERT(dstSe);
@@ -725,7 +725,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
       copyExpr->replace(new SymExpr(unaliasTemp));
     } else {
-      copyExpr->replace(copyExpr->get(1)->remove());
+      copyExpr->replace(copyExpr->get(2)->remove());
     }
 
     if (copiesToNoDestroy) {

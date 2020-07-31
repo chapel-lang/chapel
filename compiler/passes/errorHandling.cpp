@@ -1021,8 +1021,8 @@ bool canFunctionImplicitlyThrow(FnSymbol* fn)
     return true;
   // initCopy promoting iterators to arrays can be too
   if (fn->hasFlag(FLAG_INIT_COPY_FN))
-    if (fn->numFormals() >= 1)
-      if (ArgSymbol* arg = fn->getFormal(1))
+    if (fn->numFormals() >= 2)  // definedConst is the first arg
+      if (ArgSymbol* arg = fn->getFormal(2))
         if (arg->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
           return true;
 

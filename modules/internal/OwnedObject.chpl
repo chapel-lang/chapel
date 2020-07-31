@@ -414,7 +414,7 @@ module OwnedObject {
   // for problems with initializers in this case
   pragma "no doc"
   pragma "auto copy fn"
-  proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
+  proc chpl__autoCopy(definedConst: bool, pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned) {
     var ret = new _owned(src);
     return ret;

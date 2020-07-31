@@ -34,7 +34,7 @@ module CString {
   }
 
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string) : c_string {
+  inline proc chpl__autoCopy(definedConst: bool, x: c_string) : c_string {
     return x;
   }
 

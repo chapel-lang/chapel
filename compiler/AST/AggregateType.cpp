@@ -2308,6 +2308,10 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             if (defPoint->exprType == NULL) {
               CallExpr* copy = new CallExpr(astr_initCopy);
               defPoint->init->replace(copy);
+
+              SymExpr *definedConst = new SymExpr(
+                  defPoint->sym->hasFlag(FLAG_CONST) ? gTrue:gFalse);
+              copy->insertAtTail(definedConst);
               copy->insertAtTail(fe);
             }
           }

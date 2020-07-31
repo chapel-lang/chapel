@@ -1380,9 +1380,9 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
   fn->insertAtTail(new DefExpr(eltType));
 
   if( !zippered ) {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(%S, iteratorIndex(_getIterator(%S)))))}", gFalse, eltType, data);
   } else {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)))))}", eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(%S, iteratorIndex(_getIteratorZip(%S)))))}", gFalse, eltType, data);
   }
 }
 
