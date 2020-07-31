@@ -25,7 +25,7 @@ module ByteBufferHelpers {
   pragma "no doc"
   type byteType = uint(8);
   pragma "no doc"
-  type bufferType = c_ptr(uint(8));
+  type bufferType = c_ptr(byteType);
   pragma "no doc"
   type locIdType = chpl_nodeID.type;
 
