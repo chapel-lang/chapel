@@ -2506,8 +2506,6 @@ void makeBinary(void) {
     const char* command = astr(astr(CHPL_MAKE, " "),
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
-    extern bool printPasses; if (::getenv("CHPL_VASS_print_make") != NULL)
-      printf("%s+ %s\n", printPasses ? "\n" : "", command);
     mysystem(command, "compiling generated source");
   }
 

@@ -159,10 +159,9 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
-	@echo linking $(LDFLAGS) -o $@
-	@$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
 	$(TAGS_COMMAND)
-	-@#$(EBROWSE_COMMAND)
+	$(EBROWSE_COMMAND)
 
 $(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
 	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
