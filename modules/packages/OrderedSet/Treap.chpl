@@ -608,7 +608,7 @@ module Treap {
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
     */
-    proc const predecessor(e: eltType, ref result: eltType): (bool, eltType) {
+    proc const predecessor(e: eltType): (bool, eltType) {
       if !isDefaultInitializable(e) {
         compilerError("predecessor is not avaliable on types that can't be \
                       default-initialized, here: " + eltType: string);
@@ -645,7 +645,7 @@ module Treap {
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
     */
-    proc const successor(e: eltType, ref result: eltType): (bool, eltType) {
+    proc const successor(e: eltType): (bool, eltType) {
       if !isDefaultInitializable(e) {
         compilerError("successor is not avaliable on types that can't be \
                       default-initialized, here: " + eltType: string);
@@ -712,13 +712,20 @@ module Treap {
       :return: if there is such one element
       :rtype: `bool`
     */
-    proc const kth(k: int, ref result: eltType): bool {
+    proc const kth(k: int): (bool, eltType) {
+      if !isDefaultInitializable(e) {
+        compilerError("kth is not avaliable on types that can't be \
+                      default-initialized, here: " + eltType: string);
+      }
+
       _enter(); defer _leave();
 
       var resultNode = _kth(_root, k);
-      if resultNode == nil then return false;
-      result = resultNode!.element;
-      return true;
+      if resultNode == nil {
+        var defaultValue: eltType;
+        return (false, defaultValue);
+      }
+      return (true, resultNode!.element);
     }
 
     /*

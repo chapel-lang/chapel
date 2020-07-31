@@ -18,12 +18,13 @@ proc doTest(arr: [?d] int) {
     var now = arr[i];
 
     var setResult: int;
-    var setFound: bool = s1.kth(i+1, setResult);
+    var setFound: bool;
+    (setFound, setResult) = s1.kth(i+1);
 
     assert(setFound);
     assert(setResult == now);
 
-    assert(s1.kth(i + 1 + testIters, setResult) == false);
+    assert(s1.kth(i + 1 + testIters)[0] == false);
   }
 }
 
