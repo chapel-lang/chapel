@@ -107,6 +107,7 @@ module Treap {
     proc deinit() {
       for child in children {
         if child != nil {
+          // Delete the tree recursively by nodes' deinit
           delete child;
         }
       }
@@ -186,7 +187,7 @@ module Treap {
       :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, param parSafe=false, comparator: record = defaultComparator) {
+    proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -203,7 +204,7 @@ module Treap {
       :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, iterable, param parSafe=false, comparator: record = defaultComparator)
+    proc init(type eltType, iterable, param parSafe = false, comparator: record = defaultComparator)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkType(eltType); 
 
@@ -216,7 +217,7 @@ module Treap {
     }
 
     /*
-      Visit elements in the left child, root, right child order
+      Inorder traversal for output
     */
     pragma "no doc"
     proc const _lmrVisit(node: nodeType, ch: channel) throws {
@@ -480,6 +481,7 @@ module Treap {
       on this {
         _enter();
         if _root != nil {
+          // Delete the tree recursively by nodes' deinit
           delete _root;
           _root = nil;
         }
@@ -667,6 +669,7 @@ module Treap {
       return result;
     }
 
+    /* Implementation for the `kth` procedure, without acquring the lock */
     pragma "no doc"
     proc _kth(node: nodeType, in k: int): nodeType {
       if node == nil then return nil;
