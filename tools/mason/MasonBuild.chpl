@@ -103,7 +103,6 @@ proc masonBuild(args) throws {
     const tomlName = configNames[0];
     const lockName = configNames[1];
     buildProgram(release, show, force, compopts, tomlName, lockName);
-    
   }
 }
 
