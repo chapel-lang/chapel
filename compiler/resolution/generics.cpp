@@ -694,7 +694,8 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
         else if (Type* type = getInstantiationType(defType, NULL,
                                                    newFormal->type, NULL,
                                                    call,
-                                                   true, false)) {
+                                                   true, false,
+                                                   inOrOutFormal(formal))) {
           val = type->symbol;
         }
       }

@@ -1179,6 +1179,12 @@ static bool needToAddCoercion(Type*      actualType,
   if (actualType == dtNil && isClassLikeOrPtr(formalType))
     return false;
 
+  if (inOrOutFormal(formal)) {
+    Type* toType = getUnaliasTypeDuringResolution(actualType);
+    if (toType == formal->getValType())
+      return false; // handled by other wrapper code, e.g. handleInIntent
+  }
+
   // One day, we shouldn't need coercion if canCoerceAsSubtype
   // returns true. That would cover the above case. However,
   // the emitted C code doesn't encode the class hierarchy in
@@ -1584,6 +1590,15 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
   bool inout = (formal->intent == INTENT_INOUT ||
                 formal->originalIntent == INTENT_INOUT) &&
                fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false;
+
+  bool in = (formal->intent == INTENT_IN ||
+             formal->originalIntent == INTENT_IN ||
+             formal->intent == INTENT_CONST_IN ||
+             formal->originalIntent == INTENT_CONST_IN);
+
+  if (inout == false && in == false)
+    return;
+
   // don't consider inout in promotion wrapper for this purpose,
   // because it's handled within the body of the function.
 
@@ -1599,7 +1614,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 
   Expr* anchor = call->getStmtExpr();
 
-  Symbol* actualSym = actual->symbol();
+  Symbol* origActualSym = actual->symbol();
+  Symbol* actualSym = origActualSym;
 
   // The result of a default argument for 'in' intent is already owned and
   // does not need to be copied.
@@ -1744,8 +1760,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
     // the default actual is enough, though.
     if (actual->symbol()->hasFlag(FLAG_DEFAULT_ACTUAL) == false &&
         fn->hasFlag(FLAG_PROMOTION_WRAPPER) == false) {
-      INT_ASSERT(actual->symbol() != actualSym);
-      inTmpToActualMap.put(actual->symbol(), actualSym);
+      INT_ASSERT(actual->symbol() != origActualSym);
+      inTmpToActualMap.put(actual->symbol(), origActualSym);
     }
   }
 }

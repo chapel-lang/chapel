@@ -177,6 +177,7 @@ static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
+static void resolveUnalias(AggregateType* at);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -393,6 +394,35 @@ FnSymbol* getAutoDestroy(Type* t) {
 
 FnSymbol* getUnalias(Type* t) {
   return unaliasMap.get(t);
+}
+
+Type* getUnaliasTypeDuringResolution(Type* t) {
+  if (isSyncType(t) || isSingleType(t)) {
+    Type* baseType = t->getField("valType")->type;
+    return baseType;
+  }
+  if (t->symbol->hasFlag(FLAG_DOMAIN) ||
+      t->symbol->hasFlag(FLAG_ARRAY)) {
+
+    AggregateType* at = toAggregateType(t);
+    INT_ASSERT(at);
+
+    // check if it is an array view
+    // (otherwise we can infinite loop in resolving array functions)
+    Symbol* instanceField = at->getField("_instance", false);
+    if (instanceField) {
+      if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
+
+        // doesn't call resolveAutoCopyEtc b/c of infinite loop
+        resolveUnalias(at);
+        if (FnSymbol* unalias = getUnalias(at)) {
+          return unalias->retType;
+        }
+      }
+    }
+  }
+
+  return t;
 }
 
 FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn) {
@@ -1508,12 +1538,10 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
-  if (isSyncType(actualType) || isSingleType(actualType)) {
-    Type* baseType = actualType->getField("valType")->type;
-
-    // sync can't store an array or a param, so no need to
-    // propagate promotes / paramNarrows
-    return canDispatch(baseType, NULL, formalType, formalSym, fn);
+  Type* unaliasType = getUnaliasTypeDuringResolution(actualType);
+  if (unaliasType != actualType) {
+    return canDispatch(unaliasType, actualSym, formalType, formalSym, fn,
+                       promotes, paramNarrows);
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
@@ -6564,7 +6592,10 @@ void resolveInitVar(CallExpr* call) {
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (genericTgt) {
-      Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call);
+      Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call,
+                                        /* allowCoercion */ true,
+                                        /* implicitBang */ false,
+                                        /* inOrOtherValue */ true);
 
       // Does not allow initializations of the form:
       //   var x : MyGenericType = <expr>;
@@ -9305,6 +9336,10 @@ static void resolveAutoCopyEtc(AggregateType* at) {
     autoDestroyMap.put(at, fn);
   }
 
+  resolveUnalias(at);
+}
+
+static void resolveUnalias(AggregateType* at) {
   // resolve unalias
   // We make the 'unalias' hook available to all user records,
   // but for now it only applies to array/domain/distribution

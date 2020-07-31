@@ -408,7 +408,8 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
 
       } else if (Type* type = getInstantiationType(defaultType, NULL,
                                                    formal->type, NULL, ctx,
-                                                   true, false)) {
+                                                   true, false,
+                                                   inOrOutFormal(formal))) {
         substitutions.put(formal, type->symbol);
       }
     }
@@ -473,15 +474,26 @@ Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
   bool implicitBang = allowImplicitNilabilityRemoval(actual->type, actual,
                                                      formal->type, formal);
 
+  bool inOrOtherValue = inOrOutFormal(formal);
+
   return getInstantiationType(actual->type, actual, formal->type, formal, ctx,
-                              allowCoercions, implicitBang);
+                              allowCoercions, implicitBang, inOrOtherValue);
 }
 
 
 Type* getInstantiationType(Type* actualType, Symbol* actualSym,
                            Type* formalType, Symbol* formalSym,
                            Expr* ctx,
-                           bool allowCoercion, bool implicitBang) {
+                           bool allowCoercion, bool implicitBang,
+                           bool inOrOtherValue) {
+
+  // memoize unaliasing for in/inout/out/value return
+  if (inOrOtherValue) {
+    if (Type* unalias = getUnaliasTypeDuringResolution(actualType)) {
+      actualType = unalias;
+    }
+  }
+
   Type* ret = getBasicInstantiationType(actualType, actualSym,
                                         formalType, formalSym, ctx,
                                         allowCoercion, implicitBang);
@@ -506,6 +518,17 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
   }
 
   return ret;
+}
+
+bool inOrOutFormal(ArgSymbol* formal) {
+  return (formal->intent == INTENT_IN ||
+          formal->originalIntent == INTENT_IN ||
+          formal->intent == INTENT_CONST_IN ||
+          formal->originalIntent == INTENT_CONST_IN ||
+          formal->intent == INTENT_OUT ||
+          formal->originalIntent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT ||
+          formal->originalIntent == INTENT_INOUT);
 }
 
 static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
