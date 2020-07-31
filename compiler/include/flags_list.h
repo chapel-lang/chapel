@@ -145,7 +145,6 @@ symbolFlag( FLAG_FIRST_CLASS_FUNCTION_INVOCATION, npr, "first class function inv
 symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
 symbolFlag( FLAG_FOLLOWER_INDEX, npr, "follower index", "a variable representing a follower loop index" )
 symbolFlag( FLAG_FORMAL_TEMP, npr, "formal temp", "a formal temp requiring write-back for an out or inout argument" )
-symbolFlag( FLAG_FORMAL_TEMP_INOUT, npr, "formal temp inout", "a formal temp to back an inout argument" )
 symbolFlag( FLAG_FORMAL_TEMP_OUT, npr, "formal temp out", "a formal temp to back an out argument" )
 symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
@@ -166,10 +165,6 @@ symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible t
 symbolFlag( FLAG_GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
 symbolFlag( FLAG_HAS_POSTINIT , ypr, "has postinit" , "type that has a postinit method" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
-
-// marks a hidden formal that appears after an inout argument.
-// the hidden formal covers the "out" part of the "inout".
-symbolFlag( FLAG_HIDDEN_FORMAL_INOUT , npr, "hidden formal for inout" , "a separate formal to implement the copy-back part of an inout argument" )
 
 symbolFlag( FLAG_IGNORE_RUNTIME_TYPE , ypr, "ignore runtime type" , "use the static type only in the return value" )
 symbolFlag( FLAG_IGNORE_IN_GLOBAL_ANALYSIS , ypr, "ignore in global analysis" , "ignore this function in global use-before-def analysis" )

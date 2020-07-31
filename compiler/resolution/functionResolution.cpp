@@ -5900,11 +5900,6 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
     nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
   }
 
-  // A constness error for an inout argument need only be
-  // reported for the first of the 2 formals.
-  if (errorMsg && formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
-    errorMsg = false;
-
   if (errorMsg == true) {
     if (nonTaskFnParent &&
         nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {

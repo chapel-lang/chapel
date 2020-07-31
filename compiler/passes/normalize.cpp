@@ -63,8 +63,6 @@ static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
 
-static void        fixupInoutFormals(FnSymbol* fn);
-
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
@@ -171,8 +169,6 @@ void normalize() {
         updateInitMethod(fn);
       }
     }
-
-    fixupInoutFormals(fn);
   }
 
   normalizeBase(theProgram, true);
@@ -3555,36 +3551,6 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-* Add a second formal for each inout formal so that later parts of            *
-* compilation can handle the `in` and `out` parts separately.                 *
-*                                                                             *
-************************************** | *************************************/
-static void fixupInoutFormals(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (formal->intent == INTENT_INOUT) {
-      if (fn->hasFlag(FLAG_EXTERN)) {
-        formal->originalIntent = INTENT_REF;
-        formal->intent = INTENT_REF;
-      } else if (formal->variableExpr != NULL) {
-        USR_FATAL_CONT(formal, "inout varargs not currently supported");
-        formal->originalIntent = INTENT_REF;
-        formal->intent = INTENT_REF;
-      } else {
-        // Add a hidden out formal after the inout one.
-        ArgSymbol* outFormal = formal->copy();
-        outFormal->name = astr(outFormal->name, "_out");
-        outFormal->originalIntent = INTENT_OUT;
-        outFormal->intent = INTENT_OUT;
-        outFormal->addFlag(FLAG_HIDDEN_FORMAL_INOUT);
-        outFormal->defaultExpr = new BlockStmt(new SymExpr(formal));
-        DefExpr* def = new DefExpr(outFormal);
-        formal->defPoint->insertAfter(def);
-      }
-    }
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *

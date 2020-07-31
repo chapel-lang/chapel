@@ -159,10 +159,6 @@ static void resolveFormals(FnSymbol* fn) {
 // should get propagated to the generated Python files.
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
 
-  // ignore hidden formals used to implement inout for this purpose
-  if (formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
-    return;
-
   if (fLibraryPython) {
     Expr* end = formal->defaultExpr->body.tail;
 
@@ -977,11 +973,8 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
       bool outIntent = formal->intent == INTENT_OUT ||
                        formal->originalIntent == INTENT_OUT;
 
-      bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
-
       if (outIntent &&
           formal->typeExpr == NULL &&
-          inout == false &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
 
         INT_ASSERT(prevFormal && prevActual);
@@ -1894,8 +1887,7 @@ void insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
 
   for_formals(formal, fn) {
-    if (formalRequiresTemp(formal, fn) &&
-        !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
+    if (formalRequiresTemp(formal, fn)) {
       SET_LINENO(formal);
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
@@ -1928,11 +1920,9 @@ void insertFormalTemps(FnSymbol* fn) {
 bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
-    // 'out' and 'inout' intents are passed by ref at the C level, so we
-    // need to make an explicit copy in the codegen'd function */
+    // 'out' requires a temp currently
     //
     (formal->intent == INTENT_OUT ||
-     formal->intent == INTENT_INOUT ||
      //
      // 'in' and 'const in' also require a copy, but for simple types
      // (like ints or class references), we can rely on C's copy when
@@ -2102,16 +2092,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
      }
-     case INTENT_INOUT: {
-      // This formal will be the `in` part. The next formal is the `out` part.
-      tmp->addFlag(FLAG_NO_COPY);
-      start->insertBefore(new CallExpr(PRIM_ASSIGN, tmp, formal));
-
-      tmp->addFlag(FLAG_FORMAL_TEMP);
-      tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+     case INTENT_INOUT:
+      INT_FATAL("Unexpected INTENT case.");
       break;
-     }
 
      case INTENT_IN:
      case INTENT_CONST_IN:
@@ -2216,14 +2199,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
     if (formal->getValType() != dtNothing) {
       // For inout or out intent, this assigns the modified value back to the
       // formal at the end of the function body.
-      if (formal->intent == INTENT_INOUT) {
-        // This formal will be the `in` part. The next formal is the `out` part.
-        DefExpr* nextDef = toDefExpr(formal->defPoint->next);
-        INT_ASSERT(nextDef && nextDef->sym->hasFlag(FLAG_HIDDEN_FORMAL_INOUT));
-        ArgSymbol* outFormal = toArgSymbol(nextDef->sym);
-        INT_ASSERT(outFormal);
-        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, outFormal, tmp));
-      } else if (formal->intent == INTENT_OUT) {
+      if (formal->intent == INTENT_OUT) {
         fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
       }
     }
