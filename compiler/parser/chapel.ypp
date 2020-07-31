@@ -2189,8 +2189,7 @@ bool_literal:
 
 str_bytes_literal:
   STRINGLITERAL   { $$ = buildStringLiteral($1); }
-| BYTESLITERAL    { $$ = buildBytesLiteral($1); } 
-| CSTRINGLITERAL  { $$ = buildCStringLiteral($1); }
+| BYTESLITERAL    { $$ = buildBytesLiteral($1); }
 ;
 
 literal_expr:
@@ -2199,6 +2198,7 @@ literal_expr:
 | INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
+| CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
                                             new SymExpr(gTrue)); }
