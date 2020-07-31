@@ -745,14 +745,6 @@ static void getVisibleFnsFromUseList(const char*      name,
   }
 }
 
-static bool vc = true; //wass
-
-//
-// If scopeQueue==NULL, visibleFns will include functions visible
-// through points of instantiation, if any. Otherwise all POIs,
-// if any, will be pushed onto scopeQueue.
-// If we are inUseChain, there should be no POIs.
-//
 static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
@@ -761,17 +753,12 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain)
 {
-bool vv = call->id == breakOnRemoveID && !inUseChain; //wass
-if (vv) printf("{ %-7d\n", block->id);
-  if (call->id == breakOnRemoveID && vc) gdbShouldBreakHere(); //wass
-
   const bool firstVisit = (visited.find(block) == visited.end());
 
   if (!firstVisit && inUseChain) {
     // We've seen this block already, but we just found it again from going up
     // in scope from the call site.  That means that we may have skipped private
     // uses, so we should go through only the private uses - not in a use chain.
-if (vv) printf("} %-7d    already visited\n", block->id);
     return;
   }
 
@@ -787,39 +774,29 @@ if (vv) printf("} %-7d    already visited\n", block->id);
     getVisibleFnsFirstVisit(name, call, block, visited, visibleFns);
 
   if (block->useList != NULL)
-{if (vv) printf("  use list\n");
     getVisibleFnsFromUseList(name, call, block, visited, visibleFns,
                              inUseChain, firstVisit);
-}
 
   // Need to continue going up in case our parent scopes also had private
   // uses that were skipped.
   if (block != rootModule->block) {
     BlockStmt* next  = getVisibilityScopeNoParentModule(block);
-if (vv) printf("  next %-7d\n", next->id);
+
     // Recurse in the enclosing block
     getVisibleFunctionsImpl(name, call, next, visited, nextScopes,
                             visibleFns, inUseChain);
   }
 
-  if (inUseChain) INT_ASSERT(instantiationPt == NULL); //wass find a better place
-
   // Also look at the instantiation point
   if (instantiationPt != NULL)
   {
+    INT_ASSERT(!inUseChain);
     if (nextScopes == NULL)
-{if (vv) printf("  visiting POI %d\n", instantiationPt->id);
       getVisibleFunctionsImpl(name, call, // visit all POIs right away
                   instantiationPt, visited, NULL, visibleFns, inUseChain);
-}
     else
-{if (vv) printf("  pushing POI %d\n", instantiationPt->id);
       nextScopes->push_back(instantiationPt); // come back to it later
-}
   }
-  else if (vv) printf("  no POI\n");
-
-if (vv) printf("} %-7d    done\n", block->id);
 }
 
 /*
