@@ -4394,6 +4394,7 @@ static void findVisibleFunctionsAndCandidates(
 
   std::set<BlockStmt*> visited;
   std::vector<BlockStmt*> currentScopes, nextScopes;
+  currentScopes.push_back(getVisibilityScope(call));
 
   do {
     findVisibleFunctions(info, &visited, &currentScopes, &nextScopes,
@@ -4406,7 +4407,7 @@ static void findVisibleFunctionsAndCandidates(
     explainGatherCandidate(info, candidates);
 
     currentScopes.clear();
-    swap(currentScopes, nextScopes);
+    std::swap(currentScopes, nextScopes);
   }
   while
     (candidates.n == 0 && ! currentScopes.empty());

@@ -543,16 +543,9 @@ static void getVisibleFunctions(const char*              name,
     return;
   }
 
-  if (currentScopes->empty()) {
-    // We are just starting out. Prime it with the scope of 'call'.
-    BlockStmt* startingScope = getVisibilityScope(call);
-    currentScopes->push_back(startingScope);
-  }
-
-  for (std::vector<BlockStmt*>::iterator it = currentScopes->begin();
-       it != currentScopes->end(); it++)
-    // visit each scope
-    getVisibleFunctionsImpl(name, call, *it, *visited, nextScopes,
+  // visit everything in currentScopes
+  for_vector(BlockStmt, block, *currentScopes)
+    getVisibleFunctionsImpl(name, call, block, *visited, nextScopes,
                             visibleFns, false);
 }
 
