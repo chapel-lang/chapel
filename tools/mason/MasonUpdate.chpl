@@ -84,7 +84,14 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-    updateRegistry(skipUpdate);
+    
+    if isFile(lockPath) {
+      const openLock = openreader(lockPath);
+      const LockFile = parseToml(openLock);
+      if LockFile.pathExists('dependencies') then updateRegistry(skipUpdate);
+    }
+    else updateRegistry(skipUpdate);
+
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
