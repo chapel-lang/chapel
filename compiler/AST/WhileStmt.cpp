@@ -168,27 +168,16 @@ void WhileStmt::checkConstLoops()
         {
           if (outerCall->isPrimitive(PRIM_MOVE))
           {
-            // Expect the update to be the result of a call to _cond_test.
-            if (CallExpr* innerCall = toCallExpr(outerCall->get(2)))
-            {
-              FnSymbol* fn = innerCall->resolvedFunction();
+            Expr* condSrc = skip_cond_test(outerCall->get(2));
 
-              if (innerCall->numActuals()        == 1 &&
-                  strcmp(fn->name, "_cond_test") == 0)
-              {
-                checkWhileLoopCondition(innerCall->get(1));
-              }
-              else
-              {
-                INT_FATAL(innerCall,
-                          "Expected the update of a loop conditional "
-                          "to be piped through _cond_test().");
-              }
+            // The RHS of the move can be a call.
+            if (CallExpr* condCall = toCallExpr(condSrc)) {
+              checkWhileLoopCondition(condCall);
             }
 
             // The RHS of the move can also be a SymExpr as the result of param
             // folding ...
-            else if (SymExpr* moveSrc = toSymExpr(outerCall->get(2)))
+            else if (SymExpr* moveSrc = toSymExpr(condSrc))
             {
               // ... in which case, the literal should be 'true' or 'false'.
               if (moveSrc->symbol() == gTrue)
@@ -206,9 +195,8 @@ void WhileStmt::checkConstLoops()
 
               else
               {
-                INT_FATAL(moveSrc,
-                          "Expected const loop condition variable to be "
-                          "true or false.");
+                // Check more if the RHS of the move is not a param.
+                checkWhileLoopCondition(moveSrc);
               }
             }
 

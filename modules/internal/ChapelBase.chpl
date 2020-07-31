@@ -27,8 +27,8 @@ module ChapelBase {
   pragma "locale private"
   var rootLocaleInitialized: bool = false;
 
-  use ChapelStandard;
-  private use ChapelEnv, SysCTypes;
+  public use ChapelStandard;
+  use ChapelEnv, SysCTypes;
 
   config param enablePostfixBangChecks = false;
 
@@ -71,20 +71,17 @@ module ChapelBase {
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline proc =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
-  inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
-  {
-    __primitive("=", a, b);
-  }
-
-  pragma "compiler generated"
-  pragma "last resort" // so user-supplied assignment will override this one.
-    // The CG pragma is needed because this function interferes with
-    // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType)
-  where isBorrowedOrUnmanagedClassType(a.type) &&
-        !isNonNilableClassType(a.type) {
-    __primitive("=", a, nil);
-  }
+  // Need pragma "last resort" to allow assignments to sync/single vars.
+  // a.type in a formal's type is computed before instantiation vs.
+  // a.type in the where clause is computed after instantiation.
+  pragma "last resort"
+  inline proc =(ref a: borrowed class,   b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: borrowed class?,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: unmanaged class,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: unmanaged class?, b: a.type) where b.type <= a.type { __primitive("=", a, b); }
 
   inline proc =(ref a: nothing, b: ?t) where t != nothing {
     compilerError("a nothing variable cannot be assigned");
@@ -715,8 +712,7 @@ module ChapelBase {
   inline proc chpl_statementLevelSymbol(a) { }
   inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
   inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc chpl_statementLevelSymbol(param a) param { return a; }
-  inline proc chpl_statementLevelSymbol(type a) type { return a; }
+  // param and type args are handled in the compiler
 
   //
   // If an iterator is called without capturing the result, iterate over it
@@ -742,22 +738,23 @@ module ChapelBase {
 
   inline proc _cond_test(x: borrowed object?) return x != nil;
   inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: integral) return x != 0:x.type;
+  inline proc _cond_test(x: int) return x != 0;
+  inline proc _cond_test(x: uint) return x != 0;
 
   inline proc _cond_test(param x: bool) param return x;
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
 
   inline proc _cond_test(x) {
+   if !( x.type <= _iteratorRecord ) then
     compilerError("type '", x.type:string, "' used in if or while condition");
-  }
-
-  inline proc _cond_test(x: _iteratorRecord) {
+   else
     compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
   }
 
-  proc _cond_invalid(x: borrowed object) param return false;
+  proc _cond_invalid(x: borrowed object?) param return false;
   proc _cond_invalid(x: bool) param return false;
-  proc _cond_invalid(x: integral) param return false;
+  proc _cond_invalid(x: int) param return false;
+  proc _cond_invalid(x: uint) param return false;
   proc _cond_invalid(x) param return true;
 
   //

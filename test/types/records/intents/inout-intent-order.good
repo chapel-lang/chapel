@@ -1,0 +1,176 @@
+
+test_inout_inout
+init 1 1
+init 2 2
+init= 1 1
+init= 2 2
+a is (x = 1, ptr = {xx = 1})
+b is (x = 2, ptr = {xx = 2})
+init 3 3
+lhs(1 1) = rhs(3 3)
+deinit 3 3
+init 4 4
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+lhs(1 1) = rhs(3 3)
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+deinit 3 3
+(x = 3, ptr = {xx = 3}) (x = 4, ptr = {xx = 4})
+deinit 4 4
+deinit 3 3
+
+test_inout_inout2
+init 1 1
+init 2 2
+init= 1 1
+init= 2 2
+a is (x = 1, ptr = {xx = 1})
+b is (x = 2, ptr = {xx = 2})
+init 3 3
+lhs(1 1) = rhs(3 3)
+deinit 3 3
+init 4 4
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+lhs(1 1) = rhs(3 3)
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+deinit 3 3
+deinit 4 4
+deinit 3 3
+
+test_in_inout
+init 1 1
+init 2 2
+init= 1 1
+init= 2 2
+a is (x = 1, ptr = {xx = 1})
+init 4 4
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+deinit 1 1
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+(x = 1, ptr = {xx = 1}) (x = 4, ptr = {xx = 4})
+deinit 4 4
+deinit 1 1
+
+test_inout_in
+init 1 1
+init 2 2
+init= 1 1
+init= 2 2
+a is (x = 1, ptr = {xx = 1})
+b is (x = 1, ptr = {xx = 1})
+init 3 3
+lhs(1 1) = rhs(3 3)
+deinit 3 3
+deinit 2 2
+lhs(1 1) = rhs(3 3)
+deinit 3 3
+(x = 3, ptr = {xx = 3}) (x = 2, ptr = {xx = 2})
+deinit 2 2
+deinit 3 3
+
+test_in_in
+init 1 1
+init 2 2
+init= 1 1
+init= 2 2
+a is (x = 1, ptr = {xx = 1})
+b is (x = 2, ptr = {xx = 2})
+deinit 2 2
+deinit 1 1
+(x = 1, ptr = {xx = 1}) (x = 2, ptr = {xx = 2})
+deinit 2 2
+deinit 1 1
+
+test_out_out
+init 1 1
+init 2 2
+init (default)
+init (default)
+a is (x = 0, ptr = {xx = 0})
+b is (x = 0, ptr = {xx = 0})
+init 10 10
+lhs(0 0) = rhs(10 10)
+deinit 10 10
+init 20 20
+lhs(0 0) = rhs(20 20)
+deinit 20 20
+lhs(1 1) = rhs(10 10)
+lhs(2 2) = rhs(20 20)
+deinit 20 20
+deinit 10 10
+(x = 10, ptr = {xx = 10}) (x = 20, ptr = {xx = 20})
+deinit 20 20
+deinit 10 10
+
+test_out_out2
+init 1 1
+init 2 2
+init (default)
+init (default)
+a is (x = 0, ptr = {xx = 0})
+b is (x = 0, ptr = {xx = 0})
+init 10 10
+lhs(0 0) = rhs(10 10)
+deinit 10 10
+init 20 20
+lhs(0 0) = rhs(20 20)
+deinit 20 20
+lhs(1 1) = rhs(10 10)
+lhs(2 2) = rhs(20 20)
+deinit 20 20
+deinit 10 10
+(x = 10, ptr = {xx = 10}) (x = 20, ptr = {xx = 20})
+deinit 20 20
+deinit 10 10
+
+test_out_inout
+init 1 1
+init 2 2
+init= 2 2
+init (default)
+a is (x = 0, ptr = {xx = 0})
+b is (x = 2, ptr = {xx = 2})
+init 10 10
+lhs(0 0) = rhs(10 10)
+deinit 10 10
+init 20 20
+lhs(2 2) = rhs(20 20)
+deinit 20 20
+lhs(1 1) = rhs(10 10)
+lhs(2 2) = rhs(20 20)
+deinit 20 20
+deinit 10 10
+(x = 10, ptr = {xx = 10}) (x = 20, ptr = {xx = 20})
+deinit 20 20
+deinit 10 10
+
+test_inout_out
+init 1 1
+init 2 2
+init= 1 1
+init (default)
+a is (x = 1, ptr = {xx = 1})
+b is (x = 0, ptr = {xx = 0})
+init 10 10
+lhs(1 1) = rhs(10 10)
+deinit 10 10
+init 20 20
+lhs(0 0) = rhs(20 20)
+deinit 20 20
+lhs(1 1) = rhs(10 10)
+lhs(2 2) = rhs(20 20)
+deinit 20 20
+deinit 10 10
+(x = 10, ptr = {xx = 10}) (x = 20, ptr = {xx = 20})
+deinit 20 20
+deinit 10 10
+testing writeback order with integers
+2
+2
+2
+2

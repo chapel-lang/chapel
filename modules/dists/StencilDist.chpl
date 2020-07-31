@@ -355,9 +355,8 @@ class LocStencilArr {
   param stridable: bool;
   const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -408,8 +407,6 @@ class LocStencilArr {
     }
 
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
 
     if locRAD != nil then
       delete locRAD;
@@ -1140,8 +1137,15 @@ override proc StencilArr.dsiElementInitializationComplete() {
   }
 }
 
+override proc StencilArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
 
-override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
+override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       var arr = locArr(localeIdx);
@@ -1162,6 +1166,7 @@ override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
             }
           }
         }
+        arr.myElems.dsiElementDeinitializationComplete();
         delete arr;
       }
     }

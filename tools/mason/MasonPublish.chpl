@@ -59,6 +59,15 @@ proc masonPublish(ref args: list(string)) throws {
     var noUpdate = hasOptions(args, '--no-update');
     var createReg = hasOptions(args, '-c', '--create-registry');
 
+    var skipUpdate = MASON_OFFLINE;
+    if update {
+      skipUpdate = false;
+    }
+    if noUpdate {
+      skipUpdate = true;
+    }
+    
+
     const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
     if args.size > 5 {
       throw new owned MasonError(badSyntaxMessage);
@@ -118,7 +127,7 @@ proc masonPublish(ref args: list(string)) throws {
       if !isLocal {
         throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
       }
-      else updateRegistry('Mason.toml', args);
+      else updateRegistry(skipUpdate);
     }
 
     if !isLocal && !doesGitOriginExist() && !dry {

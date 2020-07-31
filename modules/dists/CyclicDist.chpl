@@ -807,13 +807,22 @@ override proc CyclicArr.dsiElementInitializationComplete() {
   }
 }
 
+override proc CyclicArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
 
-override proc CyclicArr.dsiDestroyArr(param deinitElts:bool) {
+override proc CyclicArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
       var arr = locArr(localeIdx);
       if deinitElts then
         _deinitElements(arr.myElems);
+      arr.myElems.dsiElementDeinitializationComplete();
       delete arr;
     }
   }
@@ -1041,9 +1050,8 @@ class LocCyclicArr {
 
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true)?; // non-nil if doRADOpt=true
   var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType)?; // see below for why
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -1061,8 +1069,6 @@ class LocCyclicArr {
 
   proc deinit() {
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
     if locRAD != nil then
       delete locRAD;
     if locCyclicRAD != nil then

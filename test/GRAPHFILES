@@ -272,6 +272,7 @@ types/string/psahabu/perf/substring.graph
 # suite: Standard Library
 library/packages/Sort/performance/sorts-linearithmic.graph
 library/packages/Sort/performance/sorts-quadratic.graph
+library/packages/LinearAlgebra/performance/dot-perf.graph
 library/packages/LinearAlgebra/performance/linearalgebra-perf.graph
 sparse/CS/multiplication/cs-multiplication.graph
 sparse/CS/resize/cs-resize.graph

@@ -91,6 +91,7 @@
 #include "symbol.h"
 #include "type.h"
 #include "version.h"
+#include "wellknown.h"
 
 #include "codegen.h"
 
@@ -98,6 +99,8 @@
 
 #include "llvmDebug.h"
 #include "llvmVer.h"
+
+#include "../ifa/prim_data.h"
 
 typedef Type ChapelType;
 
@@ -170,6 +173,13 @@ struct ClangInfo {
   // before running optimization.
   std::string asmTargetLayoutStr;
 
+  int intSizeInBits;
+  int longSizeInBits;
+  int longLongSizeInBits;
+  int charSizeInBits;
+  int shortSizeInBits;
+  int ptrSizeInBits;
+
   ClangInfo(
     std::string clangCcIn,
     std::string clangCxxIn,
@@ -196,7 +206,13 @@ ClangInfo::ClangInfo(
          Clang(NULL),
          Ctx(NULL),
          cCodeGen(NULL), cCodeGenAction(NULL),
-         asmTargetLayoutStr()
+         asmTargetLayoutStr(),
+         intSizeInBits(0),
+         longSizeInBits(0),
+         longLongSizeInBits(0),
+         charSizeInBits(0),
+         shortSizeInBits(0),
+         ptrSizeInBits(0)
 {
 }
 
@@ -278,6 +294,35 @@ void addMinMax(ASTContext* Ctx, const char* prefix, clang::CanQualType qt)
 }
 
 static
+::Type* getIntWithBits(int nbits, bool unsigned_) {
+
+  switch (nbits) {
+    case 64:
+      return unsigned_ ? dtUInt[INT_SIZE_64] : dtInt[INT_SIZE_64];
+    case 32:
+      return unsigned_ ? dtUInt[INT_SIZE_32] : dtInt[INT_SIZE_32];
+    case 16:
+      return unsigned_ ? dtUInt[INT_SIZE_16] : dtInt[INT_SIZE_16];
+    case 8:
+      return unsigned_ ? dtUInt[INT_SIZE_8] : dtInt[INT_SIZE_8];
+    default:
+      INT_FATAL("case not handled");
+  }
+
+  return NULL;
+}
+
+static
+void setupCIntType(::Type*& type, int nbits, bool unsigned_) {
+  if (type != NULL) {
+    INT_ASSERT(get_width(type) == nbits);
+    INT_ASSERT(is_signed(type) == !unsigned_);
+  } else {
+    type = getIntWithBits(nbits, unsigned_);
+  }
+}
+
+static
 void setupClangContext(GenInfo* info, ASTContext* Ctx)
 {
   ClangInfo* clangInfo = info->clangInfo;
@@ -287,6 +332,30 @@ void setupClangContext(GenInfo* info, ASTContext* Ctx)
 
   // Set up some constants that depend on the Clang context.
   {
+    clangInfo->intSizeInBits = Ctx->getTypeSize(Ctx->IntTy.getTypePtr());
+    clangInfo->longSizeInBits = Ctx->getTypeSize(Ctx->LongTy.getTypePtr());
+    clangInfo->longLongSizeInBits = Ctx->getTypeSize(Ctx->LongLongTy.getTypePtr());
+    clangInfo->charSizeInBits = Ctx->getTypeSize(Ctx->CharTy.getTypePtr());
+    clangInfo->shortSizeInBits = Ctx->getTypeSize(Ctx->ShortTy.getTypePtr());
+    clangInfo->ptrSizeInBits = Ctx->getTypeSize(Ctx->VoidPtrTy.getTypePtr());
+
+    setupCIntType(dt_c_int, clangInfo->intSizeInBits, false);
+    setupCIntType(dt_c_uint, clangInfo->intSizeInBits, true);
+    setupCIntType(dt_c_long, clangInfo->longSizeInBits, false);
+    setupCIntType(dt_c_ulong, clangInfo->longSizeInBits, true);
+    setupCIntType(dt_c_longlong, clangInfo->longLongSizeInBits, false);
+    setupCIntType(dt_c_ulonglong, clangInfo->longLongSizeInBits, true);
+    setupCIntType(dt_c_char, clangInfo->charSizeInBits,
+                  !Ctx->CharTy.getTypePtr()->isSignedIntegerType());
+    setupCIntType(dt_c_schar, clangInfo->charSizeInBits, false);
+    setupCIntType(dt_c_uchar, clangInfo->charSizeInBits, true);
+    setupCIntType(dt_c_short, clangInfo->shortSizeInBits, false);
+    setupCIntType(dt_c_ushort, clangInfo->shortSizeInBits, true);
+    setupCIntType(dt_c_intptr, clangInfo->ptrSizeInBits, false);
+    setupCIntType(dt_c_uintptr, clangInfo->ptrSizeInBits, true);
+    setupCIntType(dt_ssize_t, clangInfo->ptrSizeInBits, false);
+    setupCIntType(dt_size_t, clangInfo->ptrSizeInBits, true);
+
     addMinMax(Ctx, "CHAR", Ctx->CharTy);
     addMinMax(Ctx, "SCHAR", Ctx->SignedCharTy);
     addMinMax(Ctx, "UCHAR", Ctx->UnsignedCharTy);
@@ -318,21 +387,13 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 
 static const bool debugPrintMacros = false;
 
-static void handleMacroToken(const MacroInfo* inMacro,
-                             bool negate,
-                             const Token tok,
-                             VarSymbol*& varRet,
-                             TypeDecl*& cTypeRet,
-                             ValueDecl*& cValueRet);
-
-static void handleMacroTokens(const MacroInfo* inMacro,
-                              MacroInfo::tokens_iterator start,
-                              MacroInfo::tokens_iterator end,
-                              bool negate,
-                              VarSymbol*& varRet,
-                              TypeDecl*& cTypeRet,
-                              ValueDecl*& cValueRet,
-                              TypeDecl*& cCastToTypeRet);
+static void handleMacroExpr(const MacroInfo* inMacro,
+                            MacroInfo::tokens_iterator start,
+                            MacroInfo::tokens_iterator end,
+                            VarSymbol*& varRet,
+                            TypeDecl*& cTypeRet,
+                            ValueDecl*& cValueRet,
+                            const char*& cCastToTypeRet);
 
 
 // Adds a mapping from id->getName() to a variable or CDecl to info->lvt
@@ -346,10 +407,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 
   const bool debugPrint = debugPrintMacros;
 
-  if( debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
+  if (debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
 
   //Handling only simple string or integer defines
-  if(macro->getNumParams() > 0)
+  if (macro->getNumParams() > 0)
   {
     if( debugPrint) {
       printf("the macro takes arguments\n");
@@ -360,23 +421,11 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   VarSymbol* varRet = NULL;
   TypeDecl* cTypeRet = NULL;
   ValueDecl* cValueRet = NULL;
-  TypeDecl* cCastToTypeRet = NULL;
+  const char* cCastToTypeRet = NULL;
 
-  handleMacroTokens(macro,
-                    macro->tokens_begin(), macro->tokens_end(),
-                    false,
-                    varRet, cTypeRet, cValueRet, cCastToTypeRet);
-
-  const char* castToTypeStr = NULL;
-  if (cCastToTypeRet) {
-    if (cTypeRet) {
-      if (debugPrint) {
-        printf("casting a type?");
-      }
-      return;
-    }
-    castToTypeStr = astr(cCastToTypeRet->getName().str().c_str());
-  }
+  handleMacroExpr(macro,
+                  macro->tokens_begin(), macro->tokens_end(),
+                  varRet, cTypeRet, cValueRet, cCastToTypeRet);
 
   if( debugPrint ) {
     std::string s = std::string(id->getName());
@@ -385,15 +434,16 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     if( cTypeRet ) kind = "cdecl type";
     if( cValueRet ) kind = "cdecl value";
     if( kind ) printf("%s: adding an %s to the lvt\n", s.c_str(), kind);
+    if( cCastToTypeRet ) printf("with cast to %s\n", cCastToTypeRet);
   }
   if( varRet ) {
-    info->lvt->addGlobalVarSymbol(id->getName(), varRet, castToTypeStr);
+    info->lvt->addGlobalVarSymbol(id->getName(), varRet, cCastToTypeRet);
   }
   if( cTypeRet ) {
     info->lvt->addGlobalCDecl(id->getName(), cTypeRet);
   }
   if( cValueRet ) {
-    info->lvt->addGlobalCDecl(id->getName(), cValueRet, castToTypeStr);
+    info->lvt->addGlobalCDecl(id->getName(), cValueRet, cCastToTypeRet);
   }
 
 }
@@ -401,6 +451,9 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 static void removeMacroOuterParens(const MacroInfo* inMacro,
                                    MacroInfo::tokens_iterator &start,
                                    MacroInfo::tokens_iterator &end) {
+
+  if (start == end)
+    return;
 
   // Remove any number of outer parens e.g. (1), ((1)) -> 1
   int left_parens = 0;
@@ -421,135 +474,57 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 
   int min_parens = (left_parens < right_parens) ? left_parens : right_parens;
   if (min_parens > 0) {
-    start += min_parens;
-    end -= min_parens;
+    MacroInfo::tokens_iterator oldStart = start;
+    MacroInfo::tokens_iterator oldEnd = end;
+    start = oldStart + min_parens;
+    end = oldEnd - min_parens;
+    INT_ASSERT(start != oldStart);
+    INT_ASSERT(end != oldEnd);
   }
 }
 
-static void handleMacroTokens(const MacroInfo* inMacro,
-                              MacroInfo::tokens_iterator start,
-                              MacroInfo::tokens_iterator end,
-                              bool negate,
-                              VarSymbol*& varRet,
-                              TypeDecl*& cTypeRet,
-                              ValueDecl*& cValueRet,
-                              TypeDecl*& cCastToTypeRet)
-{
-  GenInfo* info = gGenInfo;
-  INT_ASSERT(info);
-  ClangInfo* clangInfo = info->clangInfo;
-  INT_ASSERT(clangInfo);
+// finds a parenthesized expression at the start of start..end
+// the expression does not necessarily cover the entire expression.
+static bool findParenthesizedExpr(const MacroInfo* inMacro,
+                                  MacroInfo::tokens_iterator start,
+                                  MacroInfo::tokens_iterator end,
+                                  MacroInfo::tokens_iterator &pStart,
+                                  MacroInfo::tokens_iterator &pEnd) {
+  int inparens = 0;
+  for (MacroInfo::tokens_iterator cur = start; cur != end; ++cur) {
 
-  const bool debugPrint = debugPrintMacros;
+    if (cur->getKind() == tok::l_paren) inparens++;
+    if (cur->getKind() == tok::r_paren) inparens--;
 
-  varRet = NULL;
-  cTypeRet = NULL;
-  cValueRet = NULL;
-  cCastToTypeRet = NULL;
-
-  if (start == end) {
-    if( debugPrint) {
-      printf("the macro is empty\n");
-    }
-    return;
-  }
-
-  if (debugPrint) {
-    for (MacroInfo::tokens_iterator cur = start;
-         cur != end;
-         ++cur) {
-      Token t = *cur;
-      printf("Found token type %i\n", t.getKind());
-    }
-  }
-
-  // Remove any number of outer parens e.g. (1), ((1)) -> 1
-  removeMacroOuterParens(inMacro, start, end);
-
-  // Check: are the first 3 symbols a cast expression?
-  bool isCast = false;
-  MacroInfo::tokens_iterator castStart;
-  MacroInfo::tokens_iterator castEnd;
-  MacroInfo::tokens_iterator lastCastToken;
-
-  {
-    bool inparens = false;
-    for (MacroInfo::tokens_iterator cur = start;
-         cur != end;
-         ++cur) {
-      if (!inparens && cur->getKind() == tok::l_paren) {
-        // OK, found (
-        inparens = true;
-        castStart = cur + 1;
-      } else if (inparens && cur->getKind() != tok::r_paren) {
-        // OK, found casttype
-        // (this could check for type tokens, unsigned int / type_t)
-      } else if (inparens && cur->getKind() == tok::r_paren) {
-        // OK, found )
-        castEnd = cur;
-        lastCastToken = cur;
-        isCast = true;
-        break;
-      } else {
-        // Some other pattern, stop looking for a cast.
-        break;
-      }
-    }
-  }
-
-
-  // If we found a cast, pass it.
-  if (isCast) {
-    start = lastCastToken + 1;
-    removeMacroOuterParens(inMacro, start, end);
-  }
-
-  while (start != end) {
-    if (start->getKind() == tok::minus) {
-      // If the first symbol is now tok::minus, consume it and set negate
-      ++start;
-      negate = !negate;
-      removeMacroOuterParens(inMacro, start, end);
-    } else if (start->getKind() == tok::plus) {
-      // If the first symbol is now tok::plus, consume it
-      ++start;
-      removeMacroOuterParens(inMacro, start, end);
+    if (inparens==1 && cur->getKind() == tok::l_paren) {
+      // just found the outermost (
+      pStart = cur;
+    } else if (inparens > 0) {
+      // pass a parenthesized expression
+    } else if (inparens==0 && cur->getKind() == tok::r_paren) {
+      // just found the outermost )
+      pEnd = cur+1;
+      return true;
     } else {
-      break; // done processing unary + and -
+      // Some other pattern, stop looking for a parenthesized expr.
+      break;
     }
   }
 
-  if (isCast) {
-    VarSymbol* tmpVar = NULL;
-    TypeDecl* tmpType = NULL;
-    ValueDecl* tmpVal = NULL;
-    TypeDecl* tmpCastType = NULL;
+  pStart = start;
+  pEnd = start;
+  return false;
+}
 
-    handleMacroTokens(inMacro, castStart, castEnd,
-                      false,
-                      tmpVar, tmpType, tmpVal, tmpCastType);
 
-    if (tmpCastType) {
-      if (debugPrint) {
-        printf("cast contained a cast\n");
-      }
-      return;
-    }
-    if (!tmpType) {
-      if (debugPrint) {
-        printf("the cast didn't give a C type\n");
-      }
-      return;
-    }
+// Returns a type/identifier/macro name or NULL if it was not handled
+static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
+                                              MacroInfo::tokens_iterator start,
+                                              MacroInfo::tokens_iterator end,
+                                              IdentifierInfo*& ii) {
+  ii = NULL;
 
-    cCastToTypeRet = tmpType;
-  }
-
-  if (start == end)
-    return;
-
-  // At this point, the only multiple token scenario we
-  // intend to handle is things like 'unsigned int'.
+  // handle things like 'unsigned int'
   int _unsigned = 0;
   int _signed = 0;
   int _long = 0;
@@ -558,6 +533,8 @@ static void handleMacroTokens(const MacroInfo* inMacro,
   int _char = 0;
   int _float = 0;
   int _double = 0;
+
+  removeMacroOuterParens(inMacro, start, end);
 
   while (start != end) {
     if (start->getKind() == tok::kw_unsigned) {
@@ -602,171 +579,539 @@ static void handleMacroTokens(const MacroInfo* inMacro,
 
     // Give up if there are any tokens beyond the main token
     if (start != end)
-      return;
+      return NULL;
 
-    handleMacroToken(inMacro, negate, tok, varRet, cTypeRet, cValueRet);
+    if (tok.getKind() == tok::identifier) {
+      IdentifierInfo* tokId = tok.getIdentifierInfo();
+      ii = tokId;
+      return astr(tokId->getNameStart());
+    }
   } else {
     // Give up if we didn't handle all the tokens in the above loop
     if (start != end)
-      return;
+      return NULL;
 
-    const char* nType = NULL;
-    if (_double > 0) nType = "c_double";
-    else if (_float > 0) nType = "c_float";
-    else if (_unsigned > 0) {
-      if (_long == 2) nType = "c_ulonglong";
-      if (_long == 1) nType = "c_ulong";
-      if (_long == 0 && _short == 0) nType = "c_uint";
-      if (_short == 1) nType = "c_ushort";
-      if (_char == 1) nType = "c_uchar";
+    // Rule out cases that don't make sense
+    // char -> only can add signed or unsigned
+    if (_char > 0 &&
+        (_short > 0 || _long > 0 || _int > 0 ||  _float > 0 || _double > 0))
+      return NULL;
+    // float/double -> only can add long or signed
+    if ((_float > 0 || _double > 0) &&
+        (_short > 0 || _char > 0 || _int > 0 || _unsigned > 0))
+      return NULL;
+    // can't have both float and double
+    if (_float > 0 && _double > 0)
+      return NULL;
+    // can't have int int or char char
+    if (_int > 1 || _char > 1)
+      return NULL;
+    // can't have both signed and unsigned
+    if (_signed > 0 && _unsigned > 0)
+      return NULL;
+    // can't have both short and long
+    if (_long > 0 && _short > 0)
+      return NULL;
+    // can't have short short or long long long
+    if (_long > 2 || _short > 1)
+      return NULL;
+
+    const char* ret = NULL;
+
+    if (_double > 0) {
+      // signed double would be OK
+      if (_long == 0) ret = "c_double";
+      // one day this might work with long double
+    } else if (_float > 0) {
+      // signed float would be OK
+      if (_long == 0) ret = "c_float";
+    } else if (_unsigned > 0) {
+      if (_long == 2) ret = "c_ulonglong";
+      else if (_long == 1) ret = "c_ulong";
+      else if (_short == 1) ret = "c_ushort";
+      else if (_char == 1) ret = "c_uchar";
+      else if (_long == 0 && _short == 0) ret = "c_uint";
     } else {
-      if (_long == 2) nType = "c_longlong";
-      if (_long == 1) nType = "c_long";
-      if (_long == 0 && _short == 0) nType = "c_int";
-      if (_short == 1) nType = "c_short";
-      if (_signed > 0 && _char == 1) nType = "c_schar";
-      if (_signed == 0 && _char == 1) nType = "c_char";
+      if (_long == 2) ret = "c_longlong";
+      else if (_long == 1) ret = "c_long";
+      else if (_short == 1) ret = "c_short";
+      else if (_signed > 0 && _char == 1) ret = "c_schar";
+      else if (_signed == 0 && _char == 1) ret = "c_char";
+      else if (_long == 0 && _short == 0) ret = "c_int";
     }
 
-    if (nType) {
-      TypeDecl* tmpType = NULL;
-      ValueDecl* tmpVal = NULL;
-      info->lvt->getCDecl(nType, &tmpType, &tmpVal);
-      cTypeRet = tmpType;
-    }
+    if (ret != NULL)
+      return astr(ret);
   }
+  return NULL;
 }
 
-static void handleMacroToken(const MacroInfo* inMacro,
-                             bool negate,
-                             const Token tok,
-                             VarSymbol*& varRet,
-                             TypeDecl*& cTypeRet,
-                             ValueDecl*& cValueRet)
+static const char* handleStringExpr(const MacroInfo* inMacro,
+                                    MacroInfo::tokens_iterator start,
+                                    MacroInfo::tokens_iterator end) {
+  removeMacroOuterParens(inMacro, start, end);
+
+  Token tok = *start; // the main token
+  ++start;
+
+  // Give up if there are any tokens beyond the main token
+  if (start != end)
+    return NULL;
+
+  if (tok.getKind() == tok::string_literal) {
+    std::string body = std::string(tok.getLiteralData(), tok.getLength());
+    return astr(body.c_str());
+  }
+
+  return NULL;
+}
+
+static ::Type* getTypeForMacro(const char* name) {
+  // Look for the saved types in dt_c_int etc.
+  ::Type* t = getWellKnownTypeWithName(name);
+  return t;
+}
+
+static bool handleNumericCastExpr(const MacroInfo* inMacro,
+                                  MacroInfo::tokens_iterator start,
+                                  MacroInfo::tokens_iterator end,
+                                  Immediate* imm,
+                                  const char*& cCastToTypeRet);
+static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+                                         MacroInfo::tokens_iterator start,
+                                         MacroInfo::tokens_iterator end,
+                                         Immediate* imm);
+static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+                                     MacroInfo::tokens_iterator start,
+                                     MacroInfo::tokens_iterator end,
+                                     Immediate* imm);
+static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+                                   MacroInfo::tokens_iterator start,
+                                   MacroInfo::tokens_iterator end,
+                                   Immediate* imm);
+
+static bool handleNumericExpr(const MacroInfo* inMacro,
+                              MacroInfo::tokens_iterator start,
+                              MacroInfo::tokens_iterator end,
+                              Immediate* imm,
+                              const char*& cCastToTypeRet) {
+
+  cCastToTypeRet = NULL;
+
+  removeMacroOuterParens(inMacro, start, end);
+
+  if (start == end)
+    return false;
+
+  if (handleNumericUnaryPrefixExpr(inMacro, start, end, imm))
+    return true;
+
+  if (handleNumericLiteralExpr(inMacro, start, end, imm))
+    return true;
+
+  if (handleNumericCastExpr(inMacro, start, end, imm, cCastToTypeRet))
+    return true;
+
+  if (handleNumericBinOpExpr(inMacro, start, end, imm))
+    return true;
+
+  return false;
+}
+
+static bool handleNumericCastExpr(const MacroInfo* inMacro,
+                                  MacroInfo::tokens_iterator start,
+                                  MacroInfo::tokens_iterator end,
+                                  Immediate* imm,
+                                  const char*& cCastToTypeRet) {
+
+  if (start == end)
+    return false;
+
+  // Check for a cast like '(unsigned int) 12'
+  MacroInfo::tokens_iterator castStart = start;
+  MacroInfo::tokens_iterator castEnd = start;
+
+  if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
+    if (castEnd == end)
+      return false;
+
+    const char* castTo = NULL;
+    clang::IdentifierInfo* ii = NULL;
+    castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
+    if (castTo == NULL)
+      return false;
+    start = castEnd;
+
+    // Find the type to cast to
+    // (handles things like macros, nested parens)
+    VarSymbol* tmpVar = NULL;
+    TypeDecl* tmpType = NULL;
+    ValueDecl* tmpVal = NULL;
+    const char* tmpCastToType = NULL;
+
+    handleMacroExpr(inMacro, castStart, castEnd,
+                    tmpVar, tmpType, tmpVal, tmpCastToType);
+
+    if (tmpType == NULL || tmpCastToType != NULL)
+      return false;
+
+    cCastToTypeRet = astr(tmpType->getName().str().c_str());
+
+    const char* rhsCastToTy = NULL;
+    Immediate rhsImm;
+    Immediate retImm;
+    bool got = handleNumericExpr(inMacro, castEnd, end, &rhsImm, rhsCastToTy);
+
+    if (got == false)
+      return false;
+
+    if (rhsCastToTy == NULL) {
+      retImm = rhsImm;
+    } else {
+      ::Type* t = getTypeForMacro(tmpType->getName().str().c_str());
+      if (t == NULL)
+        return false;
+
+      Immediate dstImm = getDefaultImmediate(t);
+
+      coerce_immediate(&rhsImm, &dstImm);
+
+      retImm = dstImm;
+    }
+
+    // Try handling the cast now if we can.
+    // Put it off if the type isn't known yet (e.g. a typedef)
+    ::Type* doCastToType = NULL;
+    if (cCastToTypeRet != NULL) {
+      doCastToType = getTypeForMacro(cCastToTypeRet);
+    }
+
+    if (doCastToType != NULL) {
+      Immediate dstImm = getDefaultImmediate(doCastToType);
+      coerce_immediate(&retImm, &dstImm);
+      *imm = dstImm;
+      cCastToTypeRet = NULL; // cast already handled
+    } else {
+      *imm = retImm;
+    }
+    return true;
+  }
+  return false;
+}
+
+
+static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
+                                         MacroInfo::tokens_iterator start,
+                                         MacroInfo::tokens_iterator end,
+                                         Immediate* imm) {
+  if (start == end)
+    return false;
+
+  // handle prefix unary operators + and -
+  if (start->getKind() == tok::plus ||
+      start->getKind() == tok::minus) {
+
+    if (start+1 == end)
+      return false;
+
+    Immediate rhsImm;
+    const char* tmpCastToTy = NULL;
+    bool got = handleNumericExpr(inMacro, start+1, end, &rhsImm, tmpCastToTy);
+    if (got == false || tmpCastToTy != NULL)
+      return false;
+
+    int p = 0;
+    switch (start->getKind()) {
+      case tok::plus:   p = P_prim_plus;    break;
+      case tok::minus:  p = P_prim_minus;   break;
+      default:
+        INT_FATAL("unhandled case");
+    }
+
+    fold_constant(p, &rhsImm, NULL, imm);
+    return true;
+  }
+
+  return false;
+}
+
+static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
+                                     MacroInfo::tokens_iterator start,
+                                     MacroInfo::tokens_iterator end,
+                                     Immediate* imm) {
+  if (start == end)
+    return false;
+
+  // handle a single numeric literal
+  if (start->getKind() == tok::numeric_constant && start+1 == end) {
+    Token tok = *start; // the main token
+    VarSymbol* varRet = NULL;
+    std::string numString;
+    int hex;
+    int isfloat;
+
+    if (tok.getLiteralData() && tok.getLength()) {
+      numString.append(tok.getLiteralData(), tok.getLength());
+    }
+
+    hex = 0;
+    if (numString[0] == '0' && (numString[1] == 'x' || numString[1] == 'X')) {
+      hex = 1;
+    }
+
+    // check that it begins with a digit
+    if (!isdigit(numString[0]))
+      return false;
+
+    isfloat = 0;
+    if (numString.find('.') != std::string::npos) {
+      isfloat = 1;
+    }
+    // also check for exponent since e.g. 1e10 is a float.
+    if (hex) {
+      // C99 hex floats use p for exponent
+      if (numString.find('p') != std::string::npos ||
+          numString.find('P') != std::string::npos) {
+        isfloat = 1;
+      }
+    } else {
+      if (numString.find('e') != std::string::npos ||
+          numString.find('E') != std::string::npos) {
+        isfloat = 1;
+      }
+    }
+
+    if (!isfloat) {
+      IF1_int_type size = INT_SIZE_32;
+
+      int _unsigned = 0;
+      int _long = 0;
+
+      for (int i = numString.length() - 1; i >= 0; i--) {
+        if (tolower(numString[i]) == 'l') {
+          numString[i] = '\0';
+          _long++;
+        } else if (tolower(numString[i]) == 'u') {
+          numString[i] = '\0';
+          _unsigned++;
+        } else {
+          break;
+        }
+      }
+
+      ::Type* t = NULL;
+      if (_unsigned > 1 || _long > 2) return false;
+      if (_unsigned > 0) {
+        if (_long == 2)      t = dt_c_ulonglong;
+        else if (_long == 1) t = dt_c_ulong;
+        else                 t = dt_c_uint;
+      } else {
+        if (_long == 2)      t = dt_c_longlong;
+        else if (_long == 1) t = dt_c_long;
+        else                 t = dt_c_int;
+      }
+      INT_ASSERT(t != NULL);
+
+      if        (t == dtInt[INT_SIZE_64] || t == dtUInt[INT_SIZE_64]) {
+        size = INT_SIZE_64;
+      } else if (t == dtInt[INT_SIZE_32] || t == dtUInt[INT_SIZE_32]) {
+        size = INT_SIZE_32;
+      } else {
+        INT_FATAL("unhandled case");
+      }
+
+      if (_unsigned > 0) {
+        varRet = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
+      } else {
+        varRet = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
+      }
+    } else {
+      IF1_float_type size = FLOAT_SIZE_64;
+
+      if (tolower(numString[numString.length() - 1]) == 'l') {
+        numString[numString.length() - 1] = '\0';
+        // TODO: use long double support once it exists
+      } else if (tolower(numString[numString.length() - 1]) == 'f') {
+        numString[numString.length() - 1] = '\0';
+        size = FLOAT_SIZE_32;
+      }
+
+      varRet = new_RealSymbol(numString.c_str(), size);
+    }
+
+    INT_ASSERT(varRet != NULL);
+    *imm = *varRet->immediate;
+    return true;
+  }
+
+  return false;
+}
+
+static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
+                                   MacroInfo::tokens_iterator start,
+                                   MacroInfo::tokens_iterator end,
+                                   Immediate* imm) {
+  // handle select binary operators
+  // this only works if the LHS and RHS are either:
+  //  parenthesized expressions; or
+  //  numeric constants
+  bool lhsOk = false;
+  MacroInfo::tokens_iterator lhsStart = start;
+  MacroInfo::tokens_iterator lhsEnd = start;
+
+  // find a LHS constant or parenthesized-expression
+  if (start->getKind() == tok::numeric_constant) {
+    lhsOk = true;
+    lhsStart = start;
+    lhsEnd = start+1;
+  } else {
+    lhsOk = findParenthesizedExpr(inMacro, start, end, lhsStart, lhsEnd);
+  }
+
+  if (lhsOk == false || lhsEnd == end || lhsEnd+1 == end )
+    return false;
+
+  bool rhsOk = false;
+  MacroInfo::tokens_iterator op = lhsEnd;
+  MacroInfo::tokens_iterator rhsStart = op + 1;
+  MacroInfo::tokens_iterator rhsEnd = rhsStart;
+
+  // find a RHS constant or parenthesized-expression
+  if (rhsStart->getKind() == tok::numeric_constant) {
+    rhsOk = true;
+    rhsEnd = rhsStart+1;
+  } else {
+    rhsOk = findParenthesizedExpr(inMacro, rhsStart, end, rhsStart, rhsEnd);
+  }
+
+  if (rhsOk == false)
+    return false;
+
+  // fail if it didn't cover everything
+  if (lhsStart != start || rhsEnd != end)
+    return false;
+
+  // Compute the lhs and rhs immediates
+  Immediate lhsImm;
+  Immediate rhsImm;
+  const char* lhsCastToTy = NULL;
+  const char* rhsCastToTy = NULL;
+
+  lhsOk = handleNumericExpr(inMacro, lhsStart, lhsEnd, &lhsImm, lhsCastToTy);
+  rhsOk = handleNumericExpr(inMacro, rhsStart, rhsEnd, &rhsImm, rhsCastToTy);
+  if (lhsOk == false || rhsOk == false)
+    return false;
+  if (lhsCastToTy != NULL || rhsCastToTy != NULL)
+    return false;
+
+  // Apply the binary operator to the immediate
+  int p = 0;
+  switch (op->getKind()) {
+    case tok::lessless:   p = P_prim_lsh;    break;
+    default:
+      return false; // this operator not handled
+  }
+
+  fold_constant(p, &lhsImm, &rhsImm, imm);
+  return true;
+}
+
+static void handleMacroExpr(const MacroInfo* inMacro,
+                            MacroInfo::tokens_iterator start,
+                            MacroInfo::tokens_iterator end,
+                            VarSymbol*& varRet,
+                            TypeDecl*& cTypeRet,
+                            ValueDecl*& cValueRet,
+                            const char*& cCastToTypeRet)
 {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-
   Preprocessor &preproc = clangInfo->Clang->getPreprocessor();
 
   const bool debugPrint = debugPrintMacros;
 
-  switch(tok.getKind()) {
-    case tok::numeric_constant: {
-      std::string numString;
-      int hex;
-      int isfloat;
-      if( negate ) numString.append("-");
+  varRet = NULL;
+  cTypeRet = NULL;
+  cValueRet = NULL;
 
-      if (tok.getLiteralData() && tok.getLength()) {
-        numString.append(tok.getLiteralData(), tok.getLength());
-      }
-
-      if( debugPrint) printf("num = %s\n", numString.c_str());
-
-      hex = 0;
-      if( numString[0] == '0' && (numString[1] == 'x' || numString[1] == 'X'))
-      {
-        hex = 1;
-      }
-
-      isfloat = 0;
-      if(numString.find('.') != std::string::npos) {
-        isfloat = 1;
-      }
-      // also check for exponent since e.g. 1e10 is a float.
-      if( hex ) {
-        // C99 hex floats use p for exponent
-        if(numString.find('p') != std::string::npos ||
-           numString.find('P') != std::string::npos) {
-          isfloat = 1;
-        }
-      } else {
-        if(numString.find('e') != std::string::npos ||
-           numString.find('E') != std::string::npos) {
-          isfloat = 1;
-        }
-      }
-
-      if( !isfloat ) {
-        IF1_int_type size = INT_SIZE_32;
-
-        if(tolower(numString[numString.length() - 1]) == 'l') {
-          numString[numString.length() - 1] = '\0';
-          size = INT_SIZE_64;
-        }
-
-        if(tolower(numString[numString.length() - 1]) == 'u') {
-          numString[numString.length() - 1] = '\0';
-          varRet = new_UIntSymbol(strtoul(numString.c_str(), NULL, 0), size);
-        }
-        else {
-          varRet = new_IntSymbol(strtol(numString.c_str(), NULL, 0), size);
-        }
-      }
-      else {
-        IF1_float_type size = FLOAT_SIZE_64;
-
-        if(tolower(numString[numString.length() - 1]) == 'l') {
-          numString[numString.length() - 1] = '\0';
-        }
-
-        varRet = new_RealSymbol(numString.c_str(), size);
-      }
-      break;
+  if (start == end) {
+    if( debugPrint) {
+      printf("the macro is empty\n");
     }
-    case tok::string_literal: {
-      std::string body = std::string(tok.getLiteralData(), tok.getLength());
-      if( debugPrint) printf("str = %s\n", body.c_str());
-      varRet = new_CStringSymbol(body.c_str());
-      break;
-    }
-    case tok::identifier: {
-      IdentifierInfo* tokId = tok.getIdentifierInfo();
-      std::string idName = std::string(tokId->getName());
-      if( debugPrint) {
-        printf("id = %s\n", idName.c_str());
-      }
-
-      // Handle the case where the macro refers to something we've
-      // already parsed in C
-      varRet = info->lvt->getVarSymbol(idName);
-      if( !varRet ) {
-        info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
-      }
-      if( !varRet && !cTypeRet && !cValueRet ) {
-        // Check to see if it's another macro.
-        MacroInfo* otherMacro = preproc.getMacroInfo(tokId);
-        if( otherMacro && otherMacro != inMacro ) {
-          // Handle the other macro to add it to the LVT under the new name
-          // The recursive call will add it to the LVT
-          if( debugPrint) printf("other macro\n");
-          handleMacro(tokId, otherMacro);
-          // Get whatever was added in the recursive call
-          // so that we can add it under the new name.
-          varRet = info->lvt->getVarSymbol(idName);
-          info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
-        }
-      }
-      if( debugPrint ) {
-        if( varRet ) printf("found var %s\n", varRet->cname);
-        if( cTypeRet ) {
-          std::string s = std::string(cTypeRet->getName());
-          printf("found cdecl type %s\n", s.c_str());
-        }
-        if( cValueRet ) {
-          std::string s = std::string(cValueRet->getName());
-          printf("found cdecl value %s\n", s.c_str());
-        }
-      }
-      break;
-    }
-    default:
-      break;
+    return;
   }
 
+  if (debugPrint) {
+    for (MacroInfo::tokens_iterator cur = start;
+         cur != end;
+         ++cur) {
+      Token t = *cur;
+      printf("Found token type %i\n", t.getKind());
+    }
+  }
+
+  clang::IdentifierInfo* ii = NULL;
+  const char* idName = handleTypeOrIdentifierExpr(inMacro, start, end, ii);
+  if (idName != NULL) {
+    if( debugPrint) {
+      printf("id = %s\n", idName);
+    }
+
+    // Handle the case where the macro refers to something we've
+    // already parsed in C
+    varRet = info->lvt->getVarSymbol(idName);
+    if( !varRet ) {
+      info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
+    }
+    if( !varRet && !cTypeRet && !cValueRet && ii != NULL) {
+      // Check to see if it's another macro.
+      MacroInfo* otherMacro = preproc.getMacroInfo(ii);
+      if( otherMacro && otherMacro != inMacro ) {
+        // Handle the other macro to add it to the LVT under the new name
+        // The recursive call will add it to the LVT
+        if( debugPrint) printf("other macro\n");
+        handleMacro(ii, otherMacro);
+        // Get whatever was added in the recursive call
+        // so that we can add it under the new name.
+        varRet = info->lvt->getVarSymbol(idName);
+        info->lvt->getCDecl(idName, &cTypeRet, &cValueRet);
+      }
+    }
+    if( debugPrint ) {
+      if( varRet ) printf("found var %s\n", varRet->cname);
+      if( cTypeRet ) {
+        std::string s = std::string(cTypeRet->getName());
+        printf("found cdecl type %s\n", s.c_str());
+      }
+      if( cValueRet ) {
+        std::string s = std::string(cValueRet->getName());
+        printf("found cdecl value %s\n", s.c_str());
+      }
+    }
+    return;
+  }
+
+  const char* str = handleStringExpr(inMacro, start, end);
+  if (str != NULL) {
+    if( debugPrint) printf("str = %s\n", str);
+    varRet = new_CStringSymbol(str);
+    return;
+  }
+
+  Immediate imm;
+  const char* castToTy = NULL;
+  if (handleNumericExpr(inMacro, start, end, &imm, castToTy)) {
+    if (debugPrint) {
+      printf("num = ");
+      fprint_imm(stdout, imm, true);
+      printf("\n");
+    }
+    varRet = new_ImmediateSymbol(&imm);
+    cCastToTypeRet = castToTy;
+    return;
+  }
 }
 
 

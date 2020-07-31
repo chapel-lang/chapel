@@ -26,7 +26,7 @@
       This module is expected to change in the future.
  */
 module LinkedLists {
-  private use SysBasic;
+  use SysBasic;
 
 pragma "no doc"
 class listNode {
@@ -43,7 +43,7 @@ class listNode {
       l1.append(i);
   }
 
-  private use IO;
+  use IO;
 
 /*
   A singly linked list.
@@ -317,6 +317,7 @@ record LinkedList {
 
   pragma "no doc"
   proc readThis(f) throws {
+    use SysError;
 
     //
     // Special handling for reading in order to handle reading an arbitrary

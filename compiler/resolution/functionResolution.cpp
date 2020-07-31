@@ -525,6 +525,36 @@ static bool fits_in_uint(int width, Immediate* imm) {
   return false;
 }
 
+// Since an `inout` copy will be made at the call site, this function
+// looks for the original value before the copy in order to do correct
+// const-ness checking for passing to inout arguments.
+static SymExpr* findSourceOfInCopy(Symbol* sym) {
+  if (startsWith(sym->name, "_formal_tmp_in_")) {
+    for_SymbolSymExprs(se, sym) {
+      CallExpr* call = toCallExpr(se->getStmtExpr());
+      SymExpr* lhsSe = NULL;
+      CallExpr* initOrCtor = NULL;
+      if (isInitOrReturn(call, lhsSe, initOrCtor)) {
+        if (lhsSe->symbol() == sym) {
+          if (initOrCtor == NULL && call->isPrimitive()) {
+            // e.g. PRIM_MOVE lhs rhs
+            SymExpr* rhsSe = toSymExpr(call->get(2));
+            INT_ASSERT(rhsSe);
+            return rhsSe;
+          } else {
+            // assumes that the called function is init/coerce
+            // and the last argument is the source
+            Expr* rhs = initOrCtor->get(initOrCtor->numActuals());
+            SymExpr* rhsSe = toSymExpr(rhs);
+            INT_ASSERT(rhsSe);
+            return rhsSe;
+          }
+        }
+      }
+    }
+  }
+  return NULL;
+}
 
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
@@ -575,6 +605,15 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
       if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       {
+
+        if (formal->intent == INTENT_INOUT) {
+          // check for a formal temp to handle the `in` part; if we have
+          // it, look at the source of it.
+          if (SymExpr* sourceSe = findSourceOfInCopy(sym)) {
+            return isLegalLvalueActualArg(formal, sourceSe,
+                                          constnessErrorOut, exprTmpErrorOut);
+          }
+        }
         constnessErrorOut = constnessError;
         exprTmpErrorOut = exprTmpError;
         return false;
@@ -2502,6 +2541,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_DEFAULT_INIT_VAR:
+    case PRIM_NOINIT_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_DECL:
       resolveGenericActuals(call);
       resolvePrimInit(call);
@@ -2518,6 +2558,7 @@ void resolveCall(CallExpr* call) {
       break;
 
     case PRIM_MOVE:
+    case PRIM_ASSIGN:
       resolveMove(call);
       break;
 
@@ -3181,7 +3222,8 @@ static bool isGenericRecordInit(CallExpr* call) {
   bool retval = false;
 
   if (UnresolvedSymExpr* ures = toUnresolvedSymExpr(call->baseExpr)) {
-    if ((ures->unresolved == astrInit || ures->unresolved == astrInitEquals) &&
+    if ((ures->unresolved == astrInit ||
+         ures->unresolved == astrInitEquals) &&
         call->numActuals()               >= 2) {
       Type* t1 = call->get(1)->typeInfo();
       Type* t2 = call->get(2)->typeInfo();
@@ -3635,16 +3677,23 @@ static void resolveNormalCallConstRef(CallExpr* call) {
 }
 
 // Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  eltType = instClass->getField("eltType")->getValType();
+  return eltType;
+}
+
+// Returns the element type, given an array type.
 // Recurse into it if it is still an array.
 static Type* finalArrayElementType(AggregateType* arrayType) {
   Type* eltType = NULL;
   do {
-    Type* instType = arrayType->getField("_instance")->type;
-    AggregateType* instClass = toAggregateType(canonicalClassType(instType));
-    eltType = instClass->getField("eltType")->getValType();
+    eltType = arrayElementType(arrayType);
     arrayType = toAggregateType(eltType);
-  } while
-    (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+  } while (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
 
   return eltType;
 }
@@ -4122,6 +4171,26 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   USR_STOP();
 }
 
+static bool isMethodPreResolve(CallExpr* call) {
+  bool result = false;
+
+  if (call->numActuals() >= 2)
+    if (SymExpr* se = toSymExpr(call->get(1)))
+      result = se->symbol() == gMethodToken;
+
+  return result;
+}
+
+static bool isInitEqualsPreResolve(CallExpr* call) {
+  bool result = false;
+
+  if (isMethodPreResolve(call))
+    if (call->isNamedAstr(astrInitEquals))
+      result = true;
+
+  return result;
+}
+
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
@@ -4143,7 +4212,18 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     USR_FATAL_CONT(call,
                    "unresolved enumerated type symbol or call '%s'",
                    str);
+  } else if (isInitEqualsPreResolve(call)) {
+    INT_ASSERT(info.actuals.v[0]->getValType() == dtMethodToken);
+    INT_ASSERT(info.actuals.n == 3);
 
+    Type* receiverType = info.actuals.v[1]->getValType();
+    Type* exprType = info.actuals.v[2]->getValType();
+   
+    USR_FATAL_CONT(call, "could not find a copy initializer ('%s') "
+                         "for type '%s' from type '%s'",
+                         astrInitEquals,
+                         receiverType->symbol->name,
+                         exprType->symbol->name); 
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
@@ -4224,18 +4304,12 @@ static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates);
 
-
 void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
-  bool isMethod = false;
-  if (call->numActuals() >= 2) {
-    if (SymExpr* se = toSymExpr(call->get(1))) {
-      isMethod = se->symbol() == gMethodToken;
-    }
-  }
+  bool isMethod = isMethodPreResolve(call);
 
   bool isInit   = isMethod && (call->isNamedAstr(astrInit) || call->isNamedAstr(astrInitEquals));
   bool isNew    = call->numActuals() >= 1 && call->isNamedAstr(astrNew);
@@ -5736,6 +5810,11 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
     nonTaskFnParent->addFlag(FLAG_MODIFIES_CONST_FIELDS);
   }
 
+  // A constness error for an inout argument need only be
+  // reported for the first of the 2 formals.
+  if (errorMsg && formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+    errorMsg = false;
+
   if (errorMsg == true) {
     if (nonTaskFnParent &&
         nonTaskFnParent->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
@@ -5846,9 +5925,10 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
-  if (strncmp(varname, "_formal_tmp_", 12) == 0) {
+  if (strncmp(varname, "_formal_tmp_in_", 15) == 0)
+    varname += 15;
+  else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
-  }
 
   if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
     Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
@@ -6760,7 +6840,8 @@ static void  moveFinalize(CallExpr* call);
 
 // Helper: is this a move from the result of main()?
 static bool isMoveFromMain(CallExpr* call) {
-  INT_ASSERT(call->isPrimitive(PRIM_MOVE)); // caller responsibility
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE) ||
+             call->isPrimitive(PRIM_ASSIGN)); // caller responsibility
   if (CallExpr* rhs = toCallExpr(call->get(2)))
     if (FnSymbol* target = rhs->resolvedFunction())
       if (target == chplUserMain)
@@ -6990,7 +7071,11 @@ static Type* moveDetermineLhsType(CallExpr* call) {
       gdbShouldBreakHere();
     }
 
-    lhsSym->type = call->get(2)->typeInfo();
+    Type* type = call->get(2)->typeInfo();
+    if (call->isPrimitive(PRIM_ASSIGN))
+      type = type->getValType();
+
+    lhsSym->type = type;
   }
 
   return lhsSym->type;
@@ -8674,8 +8759,6 @@ void resolve() {
 
   resolveForallStmts2();
 
-  freeCache(defaultsCache);
-
   freeCache(genericsCache);
   freeCache(promotionsCache);
 
@@ -9866,13 +9949,29 @@ static void replaceReturnedTypesWithRuntimeTypes()
   }
 }
 
-static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
+static void lowerRuntimeTypeInit(CallExpr* call,
+                                 Symbol* var,
+                                 AggregateType* at,
+                                 bool noinit)
 {
   INT_ASSERT(at->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE));
 
   if (var->hasFlag(FLAG_NO_INIT)) {
     call->convertToNoop();
     return;
+  }
+
+  if (noinit) {
+    if (!at->symbol->hasFlag(FLAG_ARRAY)) {
+      USR_FATAL(call, "noinit is only supported for arrays");
+    } else if (fAllowNoinitArrayNotPod == false) {
+      // noinit of an array
+      Type* eltType = arrayElementType(at);
+      bool notPOD = propagateNotPOD(eltType);
+      if (notPOD) {
+        USR_FATAL_CONT(call, "noinit is only supported for arrays of trivially copyable types");
+      }
+    }
   }
 
   SymExpr* typeSe = toSymExpr(call->get(2));
@@ -9924,7 +10023,7 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
   //
   // (var _rtt_1)
   // ('move' _rtt_1 ('.v' foo "field1"))
-  // (var _rtt_2)
+  // (var _rtt_2)lowerRuntimeTypeInit
   // ('move' _rtt_2 ('.v' foo "field2"))
   // ('move' x chpl__convertRuntimeTypeToValue _rtt_1 _rtt_2 ... )
   SET_LINENO(call);
@@ -9946,6 +10045,10 @@ static void lowerRuntimeTypeInit(CallExpr* call, Symbol* var, AggregateType* at)
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
+
+  // Add the argument indicating if this is a noinit
+  Symbol* isNoInit = noinit ? gTrue : gFalse;
+  runtimeTypeToValueCall->insertAtTail(isNoInit);
 
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
@@ -10023,6 +10126,7 @@ static void resolvePrimInit(CallExpr* call) {
   Expr* typeExpr = NULL;
 
   INT_ASSERT(call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+             call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
              call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL));
 
   valExpr = call->get(1);
@@ -10030,7 +10134,8 @@ static void resolvePrimInit(CallExpr* call) {
   if (call->numActuals() >= 2)
     typeExpr = call->get(2);
 
-  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR))
+  if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_NOINIT_INIT_VAR))
     INT_ASSERT(valExpr && typeExpr);
 
   if (call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL) && typeExpr == NULL)
@@ -10077,7 +10182,8 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
   SET_LINENO(call);
 
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+        call->isPrimitive(PRIM_NOINIT_INIT_VAR)) {
       // handled in lowerPrimInit
       errorInvalidParamInit(call, val, at);
     }
@@ -10339,10 +10445,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
   SET_LINENO(call);
 
+  if (call->isPrimitive(PRIM_NOINIT_INIT_VAR) &&
+      type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == false) {
+    USR_FATAL_CONT(call, "noinit is only supported for arrays");
+  }
+
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
-    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR)) {
+    if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+        call->isPrimitive(PRIM_NOINIT_INIT_VAR)) {
       errorInvalidParamInit(call, val, at);
-      lowerRuntimeTypeInit(call, val, at);
+      lowerRuntimeTypeInit(call, val, at,
+                           call->isPrimitive(PRIM_NOINIT_INIT_VAR));
     }
 
   // Shouldn't be default-initializing iterator records here
@@ -10407,7 +10520,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (at                                           != NULL &&
              at->instantiatedFrom                         == NULL &&
              isNonGenericRecordWithInitializers(at)       == true) {
-
 
     errorInvalidParamInit(call, val, at);
     if (!val->hasFlag(FLAG_NO_INIT) &&

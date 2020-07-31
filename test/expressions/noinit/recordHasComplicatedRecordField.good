@@ -1,0 +1,1 @@
+recordHasComplicatedRecordField.chpl:10: error: noinit is only supported for arrays

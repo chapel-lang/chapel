@@ -430,7 +430,7 @@ inline proc localizeNeighborNodes(eli: index(Elems),
                                   z: [] real, ref z_local: 8*real) {
 
   for param i in 0..nodesPerElem-1 {
-    const noi = elemToNode[eli][i];  // can this always be localAccess
+    const noi = elemToNode.localAccess[eli][i];  // can this always be localAccess
     
     x_local[i] = x[noi];
     y_local[i] = y[noi];
@@ -884,7 +884,7 @@ inline proc computeDTF(indx) {
     return max(real);
 
   const myarealg = arealg.localAccess[indx];
-  var dtf = ss[indx]**2;
+  var dtf = ss.localAccess[indx]**2;
   if myvdov < 0.0 then
     dtf += qqc2 * myarealg**2 * myvdov**2;
   dtf = sqrt(dtf);
@@ -903,7 +903,7 @@ proc CalcCourantConstraintForElems() {
 
 
 inline proc calcDtHydroTmp(indx) {
-  const myvdov = vdov[indx];
+  const myvdov = vdov.localAccess[indx];
   if (myvdov == 0.0) then
     return max(real);
   else

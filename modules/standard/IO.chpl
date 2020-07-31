@@ -431,8 +431,9 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-private use SysBasic, SysCTypes;
-use SysError;
+public use SysBasic;
+use SysCTypes;
+public use SysError;
 
 /*
 
@@ -5228,7 +5229,8 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use SysCTypes;
-//use SysError;
+  use SysBasic;
+  use SysError;
 //use IO;
 
 // ---------------------------------------------------------------

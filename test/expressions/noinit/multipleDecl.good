@@ -1,0 +1,3 @@
+multipleDecl.chpl:5: error: noinit is only supported for arrays
+multipleDecl.chpl:5: error: noinit is only supported for arrays
+multipleDecl.chpl:5: error: noinit is only supported for arrays

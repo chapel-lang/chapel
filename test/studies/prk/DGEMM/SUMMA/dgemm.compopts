@@ -1,0 +1,2 @@
+-s useBlockDist=true -s blasImpl=off -s lapackImpl=off
+-s useBlockDist=false -s blasImpl=off -s lapackImpl=off

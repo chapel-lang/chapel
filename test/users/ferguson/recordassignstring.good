@@ -1,4 +1,4 @@
-recordassignstring.chpl:10: error: unresolved call 'Point.init=(string)'
+recordassignstring.chpl:10: error: could not find a copy initializer ('init=') for type 'Point' from type 'string'
 recordassignstring.chpl:1: note: this candidate did not match: Point.init=(other: Point)
 recordassignstring.chpl:10: note: because call actual argument #1 with type string
 recordassignstring.chpl:1: note: is passed to formal 'other: Point'

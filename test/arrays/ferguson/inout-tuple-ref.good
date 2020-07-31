@@ -1,2 +1,1 @@
-1 3 4 5
-5 5 5 5
+inout-tuple-ref.chpl:3: error: inout varargs not currently supported

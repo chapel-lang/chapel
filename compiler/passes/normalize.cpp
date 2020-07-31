@@ -63,6 +63,8 @@ static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
 
+static void        fixupInoutFormals(FnSymbol* fn);
+
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
@@ -169,6 +171,8 @@ void normalize() {
         updateInitMethod(fn);
       }
     }
+
+    fixupInoutFormals(fn);
   }
 
   normalizeBase(theProgram, true);
@@ -740,6 +744,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
           call->isPrimitive(PRIM_INIT_VAR)  ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
           call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         if (call->get(1) == se) {
           retval = se->symbol();
@@ -2572,7 +2577,7 @@ static Symbol* varModuleName(VarSymbol* var) {
 ************************************** | *************************************/
 
 static void           normVarTypeInference(DefExpr* expr);
-static void           normVarTypeWoutInit(DefExpr* expr);
+static void           normVarTypeWoutInit(DefExpr* expr, bool noinit);
 static void           normVarTypeWithInit(DefExpr* expr);
 static void           normVarNoinit(DefExpr* defExpr);
 
@@ -2615,7 +2620,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       normVarTypeInference(defExpr);
 
     } else if (type != NULL && init == NULL) {
-      normVarTypeWoutInit(defExpr);
+      normVarTypeWoutInit(defExpr, false);
 
     } else if (type != NULL && init != NULL) {
       if (init->isNoInitExpr() == true) {
@@ -2911,11 +2916,12 @@ static void normVarTypeInference(DefExpr* defExpr) {
 // The type is explicit and the initial value is implied by the type
 //
 
-static void normVarTypeWoutInit(DefExpr* defExpr) {
+static void normVarTypeWoutInit(DefExpr* defExpr, bool noinit) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
 
-  CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, var, typeExpr);
+  PrimitiveTag prim = noinit?PRIM_NOINIT_INIT_VAR:PRIM_DEFAULT_INIT_VAR;
+  CallExpr* init = new CallExpr(prim, var, typeExpr);
 
   if (var->hasFlag(FLAG_EXTERN)) {
     // Put initialization for extern vars in a type block since
@@ -2946,10 +2952,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 }
 
 static void normVarNoinit(DefExpr* defExpr) {
-  if (fUseNoinit)
-    USR_WARN(defExpr, "noinit is currently ignored");
-  defExpr->init->remove();
-  normVarTypeWoutInit(defExpr);
+  normVarTypeWoutInit(defExpr, true);
 }
 
 //
@@ -3549,6 +3552,37 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
 
     newWhere->insertAtTail(oldWhere);
     newWhere->insertAtTail(new CallExpr("==", eltExpr->remove(), getEltType));
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Add a second formal for each inout formal so that later parts of            *
+* compilation can handle the `in` and `out` parts separately.                 *
+*                                                                             *
+************************************** | *************************************/
+static void fixupInoutFormals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_INOUT) {
+      if (fn->hasFlag(FLAG_EXTERN)) {
+        formal->originalIntent = INTENT_REF;
+        formal->intent = INTENT_REF;
+      } else if (formal->variableExpr != NULL) {
+        USR_FATAL_CONT(formal, "inout varargs not currently supported");
+        formal->originalIntent = INTENT_REF;
+        formal->intent = INTENT_REF;
+      } else {
+        // Add a hidden out formal after the inout one.
+        ArgSymbol* outFormal = formal->copy();
+        outFormal->name = astr(outFormal->name, "_out");
+        outFormal->originalIntent = INTENT_OUT;
+        outFormal->intent = INTENT_OUT;
+        outFormal->addFlag(FLAG_HIDDEN_FORMAL_INOUT);
+        outFormal->defaultExpr = new BlockStmt(new SymExpr(formal));
+        DefExpr* def = new DefExpr(outFormal);
+        formal->defPoint->insertAfter(def);
+      }
+    }
   }
 }
 

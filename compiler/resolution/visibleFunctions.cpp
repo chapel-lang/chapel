@@ -55,12 +55,14 @@
    provides a significant performance improvement for compiling 'hello'.
  */
 
+typedef std::pair<bool, std::vector<FnSymbol*> > ReexportEntry;
+
 class VisibleFunctionBlock {
 public:
                                         VisibleFunctionBlock();
 
   Map<const char*, Vec<FnSymbol*>*>     visibleFunctions;
-  std::map<const char*, std::pair<bool, std::vector<FnSymbol*>*> > reexports;
+  std::map<const char*, ReexportEntry>  reexports;
 };
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
@@ -69,7 +71,6 @@ static int                                    nVisibleFunctions       = 0;
 
 static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
 static std::set<const char*> typeHelperNames;
-bool builtTypeHelperNames = false;
 
 
 /************************************* | **************************************
@@ -94,25 +95,6 @@ void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
-  if (!builtTypeHelperNames) {
-    // Build the cache of names we care about even though they aren't methods
-    typeHelperNames.insert(astrSassign);
-    typeHelperNames.insert(astrSeq);
-    typeHelperNames.insert(astrSne);
-    typeHelperNames.insert(astrSgt);
-    typeHelperNames.insert(astrSgte);
-    typeHelperNames.insert(astrSlt);
-    typeHelperNames.insert(astrSlte);
-    typeHelperNames.insert(astrSswap); // ?
-    typeHelperNames.insert(astr_cast);
-    typeHelperNames.insert(astr_defaultOf);
-    typeHelperNames.insert(astrNew);
-    typeHelperNames.insert(astr_initCopy);
-    typeHelperNames.insert(astr_autoCopy);
-    typeHelperNames.insert(astr("chpl__autoDestroy"));
-    builtTypeHelperNames = true;
-  }
-
   //
   // update visible function map as necessary
   //
@@ -128,7 +110,7 @@ void findVisibleFunctions(CallInfo&       info,
         visibleFns.append(*fns);
       }
       updateReexportEntry(vfb, info.name, block, call);
-      visibleFns.append(*vfb->reexports[info.name].second);
+      visibleFns.append(vfb->reexports[info.name].second);
     }
   } else {
     // Methods, fields, and type helper functions should ignore the privacy and
@@ -193,6 +175,24 @@ static void buildVisibleFunctionMap() {
     }
   }
   nVisibleFunctions = gFnSymbols.n;
+}
+
+// Build the cache of names we care about even though they aren't methods
+void initTypeHelperNames() {
+  typeHelperNames.insert(astrSassign);
+  typeHelperNames.insert(astrSeq);
+  typeHelperNames.insert(astrSne);
+  typeHelperNames.insert(astrSgt);
+  typeHelperNames.insert(astrSgte);
+  typeHelperNames.insert(astrSlt);
+  typeHelperNames.insert(astrSlte);
+  typeHelperNames.insert(astrSswap); // ?
+  typeHelperNames.insert(astr_cast);
+  typeHelperNames.insert(astr_defaultOf);
+  typeHelperNames.insert(astrNew);
+  typeHelperNames.insert(astr_initCopy);
+  typeHelperNames.insert(astr_autoCopy);
+  typeHelperNames.insert(astr("chpl__autoDestroy"));
 }
 
 /************************************* | **************************************
@@ -279,7 +279,7 @@ static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
           }
 
           updateReexportEntry(vfb, nameToUse, mod->block, call);
-          for_vector(FnSymbol, fn, *vfb->reexports[nameToUse].second) {
+          for_vector(FnSymbol, fn, vfb->reexports[nameToUse].second) {
             vec->push_back(fn);
           }
         } else {
@@ -296,13 +296,11 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
                                 BlockStmt* block, CallExpr* call) {
   // Check to see if this scope also had already checked for
   // re-exports with that particular name.
-  std::pair<bool, std::vector<FnSymbol*>*> reexportEntry = vfb->reexports[name];
+  ReexportEntry& reexportEntry = vfb->reexports[name];
   if (reexportEntry.first == false) {
     // We haven't checked before, so recurse, save, and include what we found
-    reexportEntry.second = new std::vector<FnSymbol*>();
     reexportEntry.first = true;
-    buildReexportVec(block, name, call, reexportEntry.second);
-    vfb->reexports[name] = reexportEntry;
+    buildReexportVec(block, name, call, &reexportEntry.second);
   }
 }
 
@@ -865,11 +863,9 @@ void visibleFunctionsClear() {
       delete vfn;
     }
 
-    for(std::map<const char*, std::pair<bool,
-          std::vector<FnSymbol*>*> >::iterator it = vfb->reexports.begin();
-        it != vfb->reexports.end(); ++it) {
-      std::pair<bool, std::vector<FnSymbol*>*> val = it->second;
-      delete val.second;
+    std::map<const char*, ReexportEntry>::iterator it;
+    for (it= vfb->reexports.begin(); it != vfb->reexports.end(); ++it) {
+      it->second.second.clear();
     }
 
     delete vfb;

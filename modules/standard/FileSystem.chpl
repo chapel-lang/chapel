@@ -92,11 +92,12 @@
  */
 module FileSystem {
 
-  use SysError;
-  private use Path;
-  private use HaltWrappers;
-  private use SysCTypes;
+  public use SysError;
+  use Path;
+  use HaltWrappers;
+  use SysCTypes;
   use IO;
+  use SysBasic;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -867,6 +868,7 @@ proc getUID(out error: syserr, name: string): int {
 // of casting and error checking.
 //
 private module GlobWrappers {
+  import HaltWrappers;
   extern type glob_t;
   use SysCTypes;
 

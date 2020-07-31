@@ -70,7 +70,7 @@ instead of RDMA.
 
 ``CHPL_COMM=ugni`` without hugepages can detect some, but not all invalid
 remote reads/writes, but comes with a large performance cost. Hugepages can be
-unloaded with ``module unload $(module list -t 2>&1 | grep craype-hugepages)``
+unloaded with ``module unload $(module -t list 2>&1 | grep craype-hugepages)``
 
 
 Configuration Limitations

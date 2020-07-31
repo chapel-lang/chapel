@@ -156,6 +156,7 @@ extern bool fRegionVectorizer;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
+extern bool fAllowNoinitArrayNotPod;
 extern bool fNoLifetimeChecking;
 extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;
@@ -190,7 +191,6 @@ extern bool fLibraryPython;
 extern bool fMultiLocaleInterop;
 extern bool fMultiLocaleLibraryDebug;
 
-extern bool fUseNoinit;
 extern bool no_codegen;
 extern bool developer;
 extern bool fVerify;

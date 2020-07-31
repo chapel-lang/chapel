@@ -33,6 +33,7 @@ void gatherWellKnownFns();
 
 std::vector<Type*> getWellKnownTypes();
 void clearGenericWellKnownTypes();
+Type* getWellKnownTypeWithName(const char* name);
 
 std::vector<FnSymbol*> getWellKnownFunctions();
 void clearGenericWellKnownFunctions();
@@ -52,6 +53,23 @@ extern AggregateType* dtOpaqueArray;
 extern AggregateType* dtTaskBundleRecord;
 extern AggregateType* dtTuple;
 extern AggregateType* dtRef;
+
+extern Type* dt_c_int;
+extern Type* dt_c_uint;
+extern Type* dt_c_long;
+extern Type* dt_c_ulong;
+extern Type* dt_c_longlong;
+extern Type* dt_c_ulonglong;
+extern Type* dt_c_char;
+extern Type* dt_c_schar;
+extern Type* dt_c_uchar;
+extern Type* dt_c_short;
+extern Type* dt_c_ushort;
+extern Type* dt_c_intptr;
+extern Type* dt_c_uintptr;
+extern Type* dt_c_ptrdiff;
+extern Type* dt_ssize_t;
+extern Type* dt_size_t;
 
 // The well-known functions
 extern FnSymbol *gChplHereAlloc;

@@ -488,6 +488,8 @@ AllCompTime: &timecomp-base
 allocate:
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 arguments:
   09/20/17:
@@ -965,6 +967,8 @@ knucleotide: &knucleotide-base
     - Deprecate adding to associative domain by assigning to array (#13945)
   09/11/19:
     - Optimize the method map.this(k) (#14065)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -1651,6 +1655,10 @@ search:
   12/10/19:
     - Allow messages in new Errors (#14545)
 
+search-throughput:
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+
 spectralnorm:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks
@@ -1733,6 +1741,8 @@ substring:
     - Remove string.indices from getView (#15653)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 taskSpawn:
   07/24/16:
@@ -1759,6 +1769,8 @@ temporary-copies:
     - Remove string.indices from getView (#15653)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 twopt-paircount:
   06/22/17:
@@ -1904,6 +1916,9 @@ compilerAndTestingStats: &compiler-perf-base
     - Give errors in reexporting ambiguities (#15316)
   04/16/20:
     - Cache whether a ResolveScope or UseStmt can reexport (#15517)
+  07/27/20:
+    - Replace some where-clauses with formals types (#16130)
+    - Handle bool tests in the compiler (#16062)
 
 allTotalTime:
   <<: *compiler-perf-base

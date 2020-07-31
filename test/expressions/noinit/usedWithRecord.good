@@ -1,0 +1,1 @@
+usedWithRecord.chpl:9: error: noinit is only supported for arrays

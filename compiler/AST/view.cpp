@@ -826,6 +826,12 @@ void debugSummary(BaseAST* ast) {
   else
     printf("<debugSummary: NULL>\n");
 }
+void debugSummary(const char* str) {
+  if (str)
+    printf("\"%s\"\n", str);
+  else
+    printf("<debugSummary: NULL string>\n");
+}
 
 // find the Parent Symbol
 Symbol* debugParentSym(int id) {
@@ -842,7 +848,7 @@ Symbol* debugParentSym(BaseAST* ast) {
   else if (Expr* expr = toExpr(ast))
     return expr->parentSymbol;
   else if (Symbol* sym = toSymbol(ast))
-    return sym->defPoint->parentSymbol;
+    return sym->defPoint ? sym->defPoint->parentSymbol : NULL;
   else {
     printf("<debugParentSym: node %d is neither Expr nor Symbol>\n", ast->id);
     return NULL;
@@ -869,6 +875,74 @@ Expr* debugParentExpr(BaseAST* ast) {
     printf("<debugParentExpr: node %d is neither Expr nor Symbol>\n", ast->id);
     return NULL;
   }
+}
+
+// print minimal information about each statement in the block
+void blockSummary(int id) {
+  if (BaseAST* ast = aid09(id))
+    blockSummary(ast);
+  else
+    printf("%s\n", aidNotFoundError("blockSummary", id));
+}
+void blockSummary(BaseAST* ast) {
+  if (ast == NULL)
+    printf("<blockSummary: NULL>\n");
+  else if (BlockStmt* block = toBlockStmt(ast))
+    blockSummary(block, NULL);
+  else if (FnSymbol* fn = toFnSymbol(ast))
+    blockSummary(fn->body, fn);
+  else if (ModuleSymbol* mod = toModuleSymbol(ast))
+    blockSummary(mod->block, mod);
+  else if (DefExpr* def = toDefExpr(ast))
+    blockSummary(def->sym);
+  else
+    printf("<blockSummary: node %d"
+           " is not a BlockStmt/Fn/ModuleSymbol/DefExpr>\n", ast->id);
+}
+static const char* summarySymbolKind(Symbol* sym) {
+  if (isFnSymbol(sym)) return "fn";
+  if (isVarSymbol(sym)) return "var";
+  if (isTypeSymbol(sym)) return "type";
+  if (isModuleSymbol(sym)) return "module";
+  return sym->astTagAsString();
+}
+static void summarySymbolPrint(Symbol* sym, const char* prefix = NULL,
+                               const char* suffix = NULL) {
+  printf("%s%s %s[%d] %s", prefix ? prefix : "", 
+         summarySymbolKind(sym), sym->name, sym->id, suffix ? suffix : "");
+}
+void blockSummary(BlockStmt* block, Symbol* sym) {
+  printf("%9d { \n", block->id);
+  for_alist(stmt, block->body) {
+    printf("%9d    ", stmt->id);
+    if (CallExpr* call = toCallExpr(stmt)) {
+      if (PrimitiveOp* prim = call->primitive) {
+        printf("'%s' ", prim->name);
+      } else if (Expr* base = call->baseExpr) {
+        if (SymExpr* se = toSymExpr(base))
+          summarySymbolPrint(se->symbol(), "call ");
+        else if (UnresolvedSymExpr* use = toUnresolvedSymExpr(base))
+          printf("call \"%s\" ", use->unresolved);
+        else
+          printf("call %s %d ", base->astTagAsString(), base->id);
+      } else {
+        // nothing
+      }
+    } else if (DefExpr* def = toDefExpr(stmt)) {
+      printf("def ");
+      if (Symbol* sym = def->sym) {
+        summarySymbolPrint(sym);
+      } else {
+        // nothing
+      }
+    } else {
+      printf("%s ", stmt->astTagAsString());
+    }
+    printf("\n");
+  }
+  printf("%9d }   %s\n", block->id, debugLoc(block));
+  if (sym != NULL)
+    summarySymbolPrint(sym, "in ", "\n");
 }
 
 
