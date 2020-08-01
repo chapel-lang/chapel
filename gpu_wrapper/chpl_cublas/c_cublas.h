@@ -1,4 +1,4 @@
-void *cublas_create();
+void* cublas_create(void);
 void cublas_destroy(c_void_ptr *handle);
 float *cublas_array(size_t size);
 float* to_gpu(float* src_ptr, size_t size);
