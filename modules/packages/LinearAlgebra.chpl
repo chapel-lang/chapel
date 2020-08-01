@@ -992,7 +992,8 @@ private proc _dist_diag_vec_helper(A:[?Adom] ?eltType, d:int, diagSize:int) {
   private use BlockDist;
   var targetLocales = [loc in A.targetLocales()] 
                         if _containsDiag(A, loc) then loc;
-  var diagDom = {0..#diagSize} dmapped Block({0..#diagSize}, 
+  const diagDim = Adom.dim(0)#diagSize;
+  var diagDom = {diagDim} dmapped Block({diagDim}, 
                                               targetLocales=targetLocales);
   var diagonal : [diagDom] eltType = [i in Adom.low(0)..#diagSize] A[i,i];
 
