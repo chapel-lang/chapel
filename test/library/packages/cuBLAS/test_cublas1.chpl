@@ -42,6 +42,7 @@ proc main() {
 
 proc test_amax() {
   test_cuamax_helper(real(32));
+  test_cuamax_helper(real(64));
 }
 
 
@@ -65,7 +66,15 @@ proc test_cuamax_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    cu_isamax(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+    select t {
+      when real(32) do {
+        cu_isamax(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+      when real(64) do {
+        cu_idamax(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+    }
+
     var idx = r-1;
     var err = abs(idx - 2);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
@@ -84,7 +93,15 @@ proc test_cuamax_helper(type t) {
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
-    cu_isamax(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+    select t {
+      when real(32) do {
+        cu_isamax(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+      when real(64) do {
+        cu_idamax(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+    }
+
     var idx = r;
     var err = abs(idx - 3);
     trackErrors(name, err, errorThreshold, passed, failed, tests);

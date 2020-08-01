@@ -28,7 +28,7 @@ void to_cpu(void* dst_ptr, void* src_ptr, size_t size){
     //printf("CUDA memcpy DtoH error: %s\n", cudaGetErrorString(memcpy_err));
 }
 
-void* cublas_create(){
+void* cublas_create(void){
 
     cublasHandle_t *handle = (cublasHandle_t*)malloc(sizeof(cublasHandle_t));
     cublasStatus_t err = cublasCreate(handle);
