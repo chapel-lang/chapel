@@ -38,6 +38,7 @@ proc blasPrefix(type t) {
 
 proc main() {
   test_amax();
+  test_axpy();
 }
 
 proc test_amax() {
@@ -45,6 +46,10 @@ proc test_amax() {
   test_cuamax_helper(real(64));
 }
 
+proc test_axpy() {
+  test_axpy_helper(real(32));
+  test_axpy_helper(real(64));
+}
 
 proc test_cuamax_helper(type t) {
   var passed = 0,
@@ -53,7 +58,6 @@ proc test_cuamax_helper(type t) {
   const errorThreshold = blasError(t);
   var name = "%samax".format(blasPrefix(t));
 
-  // Simple test
   {
     const D = {0..2};
     var X: [D] t = [3: t, 2: t, 4: t];
@@ -105,6 +109,48 @@ proc test_cuamax_helper(type t) {
     var idx = r;
     var err = abs(idx - 3);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_axpy_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%saxpy".format(blasPrefix(t));
+
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 2: t, 3: t],
+        Y: [D] t = [3: t, 2: t, 1: t];
+
+    var N = X.size:int(32);
+    var a = 2: t;
+    const Yin = Y;
+
+    //Get pointer to X allocated in GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_saxpy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), a);
+      }
+      when real(64) do {
+        cu_daxpy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), a);
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
+
+    for i in D {
+      var err = abs(a*X[i] + Yin[i] - Y[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
   }
   printErrors(name, passed, failed, tests);
 }

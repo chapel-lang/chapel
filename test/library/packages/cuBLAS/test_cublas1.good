@@ -1,2 +1,4 @@
 samax : 2 PASSED, 0 FAILED
 damax : 2 PASSED, 0 FAILED
+saxpy : 3 PASSED, 0 FAILED
+daxpy : 3 PASSED, 0 FAILED
