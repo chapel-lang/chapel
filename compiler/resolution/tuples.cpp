@@ -35,6 +35,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -206,7 +207,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
       // Otherwise, copy it
       element = new VarSymbol(astr("elt_", name), args[i]->type);
       ctor->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr(astr_autoCopy, arg);
+      CallExpr* copy = new CallExpr(astr_autoCopy, new SymExpr(gFalse), arg);
       ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
 
@@ -439,8 +440,14 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   // Adjust any formals for blank-intent tuple behavior now
   resolveSignature(fn);
 
-  INT_ASSERT(fn->numFormals() == 1); // expected of the original function
-  arg = fn->getFormal(1);
+  if (fn->name == astr_initCopy || fn->name == astr_autoCopy) {
+    INT_ASSERT(fn->numFormals() == 2); // expected of the original function
+    arg = fn->getFormal(2);
+  }
+  else {
+    INT_ASSERT(fn->numFormals() == 1); // expected of the original function
+    arg = fn->getFormal(1);
+  }
   ct = toAggregateType(arg->type);
   if (isReferenceType(ct))
     ct = toAggregateType(ct->getValType());
@@ -617,7 +624,9 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
       insertBefore->insertBefore(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
+      SymExpr *definedConst = new SymExpr(toField->hasFlag(FLAG_CONST) ?
+                                          gTrue:gFalse);
+      CallExpr* copy = new CallExpr(astr_autoCopy, definedConst, readF);
       insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
 
       resolveCallAndCallee(copy, true);
@@ -767,7 +776,9 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
+      SymExpr *definedConst = new SymExpr(toField->hasFlag(FLAG_CONST) ?
+                                          gTrue:gFalse);
+      CallExpr* copy = new CallExpr(astr_autoCopy, definedConst, readF);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
     // Expecting insertCasts to fix any type mismatch in the last MOVE added
@@ -888,7 +899,7 @@ instantiate_tuple_unref(FnSymbol* fn)
         // If it is a reference, copy construct it
         element = new VarSymbol(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
-        CallExpr* copy = new CallExpr(useCopy, read);
+        CallExpr* copy = new CallExpr(useCopy, new SymExpr(gFalse), read);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       } else {
         // Otherwise, bit copy it
@@ -951,7 +962,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
       if (copyWith && typeNeedsCopyInitDeinit(useType) &&
           (valueOnly || !isReferenceType(field->type))) {
         VarSymbol* var = newTemp("test_copy", useType);
-        CallExpr* copy = new CallExpr(copyWith, var);
+        CallExpr* copy = new CallExpr(copyWith, new SymExpr(gFalse), var);
         testBlock->insertAtTail(copy);
         resolveCallAndCallee(copy);
 
@@ -1075,13 +1086,13 @@ fixupTupleFunctions(FnSymbol* fn,
   }
 
   if (fn->hasFlag(FLAG_INIT_COPY_FN) &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+      fn->getFormal(2)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_initCopy(newFn);
     return true;
   }
 
   if (fn->hasFlag(FLAG_AUTO_COPY_FN) &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+      fn->getFormal(2)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_autoCopy(newFn);
     return true;
   }

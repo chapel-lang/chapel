@@ -326,7 +326,7 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(ref sv : _syncvar(?t)) {
+  proc chpl__initCopy(definedConst: bool, ref sv : _syncvar(?t)) {
     return sv.readFE();
   }
 
@@ -790,7 +790,7 @@ module ChapelSyncvar {
 
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(const ref rhs : _singlevar) {
+  proc chpl__autoCopy(definedConst: bool, const ref rhs : _singlevar) {
     return new _singlevar(rhs);
   }
 

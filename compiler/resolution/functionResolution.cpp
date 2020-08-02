@@ -4008,8 +4008,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
         USR_FATAL_CONT(call,
                        "Cannot initialize %s from %s",
-                       toString(info.actuals.v[0]->type),
-                       toString(info.actuals.v[1]->type));
+                       toString(info.actuals.v[1]->type),
+                       toString(info.actuals.v[2]->type));
 
     } else if (info.name == astrThis) {
       Type* type = info.actuals.v[1]->getValType();
@@ -5730,9 +5730,10 @@ static void captureTaskIntentValues(int        argNum,
       if (hasAutoCopyForType(formal->type) == true) {
         FnSymbol* autoCopy = getAutoCopy(formal->type);
 
-        marker->insertBefore("'move'(%S,%S(%S))",
+        marker->insertBefore("'move'(%S,%S(%S, %S))",
                              capTemp,
                              autoCopy,
+                             gFalse, // can we do something better here?
                              varActual);
 
       } else if (isReferenceType(varActual->type) ==  true &&
@@ -9334,7 +9335,17 @@ static const char* autoCopyFnForType(AggregateType* at) {
 
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
   VarSymbol* tmp    = newTemp(at);
-  CallExpr*  call   = new CallExpr(fnName, tmp);
+  CallExpr*  call   = NULL;
+
+  if (fnName == astr_initCopy || fnName == astr_autoCopy) {
+    call = new CallExpr(fnName, new SymExpr(gFalse), tmp);
+  }
+  else {
+    call = new CallExpr(fnName, tmp);
+  }
+
+
+
 
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 

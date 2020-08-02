@@ -59,9 +59,13 @@ var arrWithDomainLiteral: [{1..10}] int;
 test(arrWithDomainLiteral.domain);
 writeln();
 
+//writeln("var distributed domain with var space");
 //var distSpace = {1..10};
 //var distVarDom = distSpace dmapped Block(distSpace);
-//var distVarArr: [distVarDom] int;
+//test(distVarDom);
+//writeln();
 
-//writeln(distVarDom.definedConst);
-//writeln(distVarArr);
+//writeln("const distributed domain with var space");
+//const distVarDomConst = distSpace dmapped Block(distSpace);
+//test(distVarDomConst);
+//writeln();

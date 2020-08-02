@@ -1669,7 +1669,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
                                             gTrue:gFalse);
         if (coerceRuntimeTypes) {
-          copy = new CallExpr(astr_coerceCopy, /*definedConst,*/ runtimeTypeTemp, actualSym);
+          copy = new CallExpr(astr_coerceCopy, definedConst, runtimeTypeTemp, actualSym);
         }
         else {
           copy = new CallExpr(astr_initCopy, definedConst, actualSym);
@@ -1700,7 +1700,9 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
             tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
           }
 
-          CallExpr* copy = new CallExpr(astr_coerceMove,
+          SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
+                                              gTrue:gFalse);
+          CallExpr* copy = new CallExpr(astr_coerceMove, definedConst,
                                         runtimeTypeTemp, actualSym);
 
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);

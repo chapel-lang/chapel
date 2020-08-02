@@ -1540,7 +1540,8 @@ void resolveIfExprType(CondStmt* stmt) {
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
       if (typeNeedsCopyInitDeinit(rhs->getValType())) {
-        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove());
+        CallExpr* copy = new CallExpr(astr_autoCopy, new SymExpr(gFalse),
+                                      rhs->remove());
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
         if (isReferenceType(thenType)) {
@@ -2338,7 +2339,10 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  toResolve = new CallExpr(astr_autoCopy, new SymExpr(from));
+                  SymExpr *definedConst = new SymExpr(to->hasFlag(FLAG_CONST) ?
+                                                      gTrue:gFalse);
+                  toResolve = new CallExpr(astr_autoCopy, definedConst,
+                                           new SymExpr(from));
                   rhs = toResolve;
 
                 } else if (rhsType->refType == lhsType) {
@@ -2386,11 +2390,13 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 }
 
                 CallExpr* callCoerceFn = NULL;
+                SymExpr *definedConst = new SymExpr(to->hasFlag(FLAG_CONST) ?
+                                                    gTrue:gFalse);
                 if (stealRHS) {
-                  callCoerceFn = new CallExpr(astr_coerceMove,
+                  callCoerceFn = new CallExpr(astr_coerceMove, definedConst,
                                               fromType, from);
                 } else {
-                  callCoerceFn = new CallExpr(astr_coerceCopy,
+                  callCoerceFn = new CallExpr(astr_coerceCopy, definedConst,
                                               fromType, from);
                   // Since the initialization pattern normally does not
                   // require adding an auto-destroy for a call-expr-temp,

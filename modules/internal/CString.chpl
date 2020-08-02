@@ -29,7 +29,7 @@ module CString {
   //inline proc c_string.c_str() return this;
 
   pragma "init copy fn"
-  inline proc chpl__initCopy(x: c_string) : c_string {
+  inline proc chpl__initCopy(definedConst: bool, x: c_string) : c_string {
     return x;
   }
 

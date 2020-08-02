@@ -471,7 +471,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 static bool fixupDefaultInitCopy(FnSymbol* fn,
                                  FnSymbol* newFn,
                                  CallExpr* call) {
-  ArgSymbol* arg    = newFn->getFormal(1);
+  ArgSymbol* arg    = newFn->getFormal(2);
   bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
