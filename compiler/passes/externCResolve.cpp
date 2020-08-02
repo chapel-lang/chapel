@@ -142,7 +142,7 @@ Expr* convertStructToChplType(ModuleSymbol* module,
   const char* chpl_name = astr(rd->getNameAsString().c_str());
   const char* cname = chpl_name;
 
-  if (!llvmCodegen) {
+  if (!fLlvmCodegen) {
     cname = astr("struct ", cname);
   }
 
@@ -400,7 +400,7 @@ static
 void convertDeclToChpl(ModuleSymbol* module,
                        const char*   cname) {
   INT_ASSERT(cname != NULL);
-  INT_ASSERT(externC);
+  INT_ASSERT(fAllowExternC);
   INT_ASSERT(cname != astrSdot);
   INT_ASSERT(cname[0] != '\0');
   INT_ASSERT(module != NULL);
@@ -552,7 +552,7 @@ Symbol* tryCResolve(BaseAST* context, const char* name) {
   if (nSymbolsFound != 0)
     return got;
 
-  if (externC == true) {
+  if (fAllowExternC == true) {
     llvm::SmallSet<ModuleSymbol*, 24> visited;
 
     retval = tryCResolve(context, module, name, visited);

@@ -792,7 +792,7 @@ buildExternBlockStmt(const char* c_code) {
 #ifdef HAVE_LLVM
     // Chapel was built with LLVM
     // Just bring up an error if extern blocks are disabled
-    if (externC == false)
+    if (fAllowExternC == false)
       USR_FATAL(ret, "extern block syntax is turned off. Use "
                      "--extern-c flag to turn on.");
 #else

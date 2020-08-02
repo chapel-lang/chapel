@@ -1191,13 +1191,13 @@ static const char* sCfgFname = "chpl_compilation_config";
 static void codegen_header_compilation_config() {
   const bool usingLauncher = 0 != strcmp(CHPL_LAUNCHER, "none");
   // Generate C code only when not in LLVM mode or when using a launcher
-  const bool genCCode = usingLauncher || !llvmCodegen;
+  const bool genCCode = usingLauncher || !fLlvmCodegen;
 
   GenInfo* info = gGenInfo;
   FILE* save_cfile = info->cfile;
   fileinfo cfgfile = { NULL, NULL, NULL };
 
-  if (llvmCodegen) {
+  if (fLlvmCodegen) {
     info->cfile = NULL;
     genConfigGlobalsAndAbout();
     genFunctionTables();
@@ -1656,7 +1656,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
 #ifdef HAVE_LLVM
     //include generated extern C header file
-    if (externC && gAllExternCode.filename != NULL) {
+    if (fAllowExternC && gAllExternCode.filename != NULL) {
       fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
       // If we wanted to, here is where we would re-enable
       // the memory warning macros.
@@ -1956,7 +1956,7 @@ codegen_config() {
   }
 
 
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     llvm::FunctionType *createConfigType;
     llvm::Function *createConfigFunc;
@@ -2303,7 +2303,7 @@ void codegen() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
-    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+    if (!fLlvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
 
   // Prepare primitives for codegen
@@ -2312,7 +2312,7 @@ void codegen() {
   gatherTypesForCodegen();
   setupDefaultFilenames();
 
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
 #else
@@ -2341,7 +2341,7 @@ void codegen() {
   convertToRefTypes();
 
   // Wrap calls to chosen functions from c library
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
@@ -2352,7 +2352,7 @@ void codegen() {
 #endif
   }
 
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
     if(fIncrementalCompilation)
@@ -2439,7 +2439,7 @@ void codegen() {
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
@@ -2497,7 +2497,7 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
-  if(llvmCodegen) {
+  if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
     makeBinaryLLVM();
 #endif
