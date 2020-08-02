@@ -491,7 +491,6 @@ static void setupChplHome(const char* argv0) {
   }
 }
 
-// NOTE: We are leaking memory here by dropping astr() results on the ground.
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
