@@ -53,6 +53,10 @@
 #include <sstream>
 #include <map>
 
+#ifdef HAVE_LLVM
+#include "llvm/Config/llvm-config.h"
+#endif
+
 std::map<std::string, const char*> envMap;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
@@ -1153,6 +1157,10 @@ static void printStuff(const char* argv0) {
 
   if (fPrintVersion) {
     fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
+
+#ifdef HAVE_LLVM
+    fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+#endif
 
     fPrintCopyright  = true;
     printedSomething = true;
