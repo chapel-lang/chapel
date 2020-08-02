@@ -1239,7 +1239,7 @@ static void setupLLVMCodeGen() {
     fLlvmCodegen = false;
   } else {
 #ifdef HAVE_LLVM
-    fLlvmCodegen = false;
+    fLlvmCodegen = true;
 #else
     fLlvmCodegen = false;
 #endif
