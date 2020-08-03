@@ -743,6 +743,20 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (name == astrSdot || !usymExpr->inTree())
     return NULL;
 
+  if (CallExpr* parentCall = toCallExpr(usymExpr->parentExpr)) {
+    if (parentCall->baseExpr && parentCall->baseExpr == usymExpr &&
+        parentCall->numActuals() > 0) {
+      if (SymExpr* firstArg = toSymExpr(parentCall->get(1))) {
+        if (firstArg->symbol() == gModuleToken) {
+          // Don't resolve the name of transformed module calls - doing so will
+          // accidentally find closer symbols with the same name instead of
+          // going into the intended module.
+          return NULL;
+        }
+      }
+    }
+  }
+
   // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that we've
   // already encountered an error when trying to resolve.
   for_vector(BaseAST, node, failedUSymExprs) {
