@@ -2228,6 +2228,12 @@ module DefaultRectangular {
     return res;
   }
 
+  proc DefaultRectangularArr.doiSwap(arr) {
+    this.data <=> arr.data;
+    this.initShiftedData();
+    arr.initShiftedData();
+  }
+
   // A helper routine to take the first parallel scan over a vector
   // yielding the number of tasks used, the ranges computed by each
   // task, and the scanned results of each task's scan.  This is

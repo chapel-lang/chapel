@@ -4335,8 +4335,15 @@ module ChapelArray {
   // Swap operator for arrays
   //
   inline proc <=>(x: [], y: []) {
-    forall (a,b) in zip(x, y) do
-      a <=> b;
+    if (x._value.type == y._value.type && Reflection.canResolveMethod(x._value, "doiSwap", y._value)) {
+       writeln("implemented");
+        x._value.doiSwap(y._value);
+     
+    } else {
+      writeln("using old swap");
+      forall (a,b) in zip(x, y) do
+        a <=> b;
+    }
   }
 
   /* Return a copy of the array ``A`` containing the same values but

@@ -45,7 +45,7 @@ private use CommDiagnostics;
 private use ChapelLocks;
 private use ChapelDebugPrint;
 private use LayoutCS;
-
+import Reflection;
 public use SparseBlockDist;
 //
 // These flags are used to output debug information and run extra
@@ -1533,6 +1533,16 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
       !disableBlockDistBulkTransfer {
   _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
   return true;
+}
+
+proc BlockArr.doiSwap(arr) {
+  coforall (loc, localArr1, localArr2) in zip(Locales,this.locArr, arr.locArr) {
+    localArr1.myElems.doiSwap(localArr2.myElems);
+  }
+  /*for i in 0..#this.locArr.size {
+    this.locArr[i].myElems.doiSwap(arr.locArr[i].myElems);
+    }*/
+  //this.locArr[0].myElems.doiSwap(arr.locArr[0].myElems);
 }
 
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
