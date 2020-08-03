@@ -347,7 +347,7 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param stridable: bool;
-    const definedConst: bool;
+    var definedConst: bool;
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);

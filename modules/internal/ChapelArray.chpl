@@ -698,20 +698,54 @@ module ChapelArray {
   //
   // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
-  proc chpl__distributed(d: _distribution, dom: domain) {
-    if isRectangularDom(dom) {
-      var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
-      return distDom;
-    } else {
-      var distDom: domain(dom._value.idxType) dmapped d = dom;
-      return distDom;
+  proc chpl__distributed(d: _distribution, dom: domain,
+                         param definedConst: bool) {
+    if definedConst {
+      if isRectangularDom(dom) {
+        const distDom: domain(dom.rank,
+                              dom._value.idxType,
+                              dom._value.stridable) dmapped d = dom;
+
+        //use Reflection;
+        //if isSubtype(distDom._value.type, BaseRectangularDom) {
+          //compilerWarning(distDom._value.type:string, " has the field");
+          //distDom._value.definedConst = true;
+        //}
+        //else {
+          //compilerWarning(distDom._value.type:string, " doesn't have the field");
+        //}
+      
+        
+
+        extern proc printf(s...);
+        if distDom.definedConst then
+          printf("definedConst\n");
+        else
+          printf("not definedConst\n");
+
+        return distDom;
+      } else {
+        const distDom: domain(dom._value.idxType) dmapped d = dom;
+        return distDom;
+      }
+
+    }
+    else {
+      if isRectangularDom(dom) {
+        var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
+        return distDom;
+      } else {
+        var distDom: domain(dom._value.idxType) dmapped d = dom;
+        return distDom;
+      }
     }
   }
 
-  proc chpl__distributed(d: _distribution, ranges...)
+  proc chpl__distributed(d: _distribution, ranges..., param definedConst: bool)
   where chpl__isTupleOfRanges(ranges) {
     return chpl__distributed(d, chpl__buildDomainExpr((...ranges),
-                                          /* TODO */   definedConst=false));
+                                                      definedConst=definedConst),
+                             definedConst=definedConst);
   }
 
   //
@@ -810,7 +844,9 @@ module ChapelArray {
     return _getDomain(parentDom._value);
   }
 
-  proc chpl__distributed(d: _distribution, type domainType) type {
+  // this is a type function and as such, definedConst has no effect
+  proc chpl__distributed(d: _distribution, type domainType,
+                         param definedConst: bool) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
                     domainType:string);
@@ -4448,6 +4484,7 @@ module ChapelArray {
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
+    lhs.definedConst = definedConst;
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -4467,6 +4504,7 @@ module ChapelArray {
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
+    lhs.definedConst = definedConst;
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -5047,6 +5085,14 @@ module ChapelArray {
 
     return result;
   }
+
+  proc chpl__fixupConstDomain(dom: domain) {
+    if isSubtype(dom._value.type, BaseRectangularDom) {
+      dom._value.definedConst = true;
+    }
+  }
+
+  proc chpl__fixupConstDomain(x) { }
 
   pragma "unchecked throws"
   proc chpl__throwErrorUnchecked(in e: owned Error) throws {

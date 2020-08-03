@@ -1566,38 +1566,41 @@ static const char* cnameExprToString(Expr* cnameExpr) {
 void establishDefinedConstIfApplicable(DefExpr* defExpr,
                                        std::set<Flag>* flags) {
 
-  CallExpr *callToAdjust = NULL;
-
   if (defExpr->init != NULL) {
-    if (CallExpr *initCall = toCallExpr(defExpr->init)) {
-      if (initCall->isNamed("chpl__buildDomainExpr")) {
-        if (flags->size() == 1 && flags->count(FLAG_CONST)) {
-          callToAdjust = initCall;
+    if (flags->size() == 1 && flags->count(FLAG_CONST)) {
+      if (CallExpr *initCall = toCallExpr(defExpr->init)) {
+        if (initCall->isNamed("chpl__buildDomainExpr")) {
+          initCall->get(2)->replace(new SymExpr(gTrue));
+          return;
+        }
+        else if (initCall->isNamed("chpl__distributed")) {
+          initCall->get(3)->replace(new SymExpr(gTrue));
+          return;
         }
       }
     }
+    // TODO initCopy etc here?
   }
 
-  if (callToAdjust == NULL) {
-    if (defExpr->exprType != NULL) {
-      if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
-        if (initType->isNamed("chpl__buildArrayRuntimeType")) {
-          if (CallExpr *typeCall = toCallExpr(initType->get(1))) {
-            if (typeCall->isNamed("chpl__ensureDomainExpr")) {
-              if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
-                if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
-                  callToAdjust = buildDomExpr;
-                }
+  if (defExpr->exprType != NULL) {
+    if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
+      if (initType->isNamed("chpl__distributed")) {
+        initType->get(3)->replace(new SymExpr(gTrue));
+        return;
+      }
+      else if (initType->isNamed("chpl__buildArrayRuntimeType")) {
+        if (CallExpr *typeCall = toCallExpr(initType->get(1))) {
+          if (typeCall->isNamed("chpl__ensureDomainExpr")) {
+            if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
+              if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
+                buildDomExpr->get(2)->replace(new SymExpr(gTrue));
+                return;
               }
             }
           }
         }
       }
     }
-  }
-
-  if (callToAdjust != NULL) {
-    callToAdjust->get(2)->replace(new SymExpr(gTrue));
   }
 }
                 

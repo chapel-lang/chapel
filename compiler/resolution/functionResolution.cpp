@@ -6597,6 +6597,9 @@ void resolveInitVar(CallExpr* call) {
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);
 
+      if (dst->hasFlag(FLAG_CONST))
+        tmp->addFlag(FLAG_CONST);
+
       CallExpr* coerce = new CallExpr(PRIM_COERCE,
                                       srcExpr->copy(),
                                       targetTypeExpr);

@@ -59,13 +59,36 @@ var arrWithDomainLiteral: [{1..10}] int;
 test(arrWithDomainLiteral.domain);
 writeln();
 
-//writeln("var distributed domain with var space");
-//var distSpace = {1..10};
-//var distVarDom = distSpace dmapped Block(distSpace);
-//test(distVarDom);
-//writeln();
+writeln("var distributed domain defined with var space");
+var distVarSpace = {1..10};
+var distVarDom = distVarSpace dmapped Block(distVarSpace);
+test(distVarDom);
+writeln();
 
-//writeln("const distributed domain with var space");
-//const distVarDomConst = distSpace dmapped Block(distSpace);
-//test(distVarDomConst);
-//writeln();
+writeln("var distributed domain defined with const space");
+const distConstSpace = {1..10};
+var distVarDomConstSpace = distConstSpace dmapped Block(distConstSpace);
+test(distVarDomConstSpace);
+writeln();
+
+writeln("const distributed domain defined with var space");
+const distConstDom = distVarSpace dmapped Block(distVarSpace);
+test(distConstDom);
+writeln();
+
+writeln("const distributed domain defined with const space");
+const distConstDomConstSpace = distConstSpace dmapped Block(distConstSpace);
+test(distConstDomConstSpace);
+writeln();
+
+writeln("const domain copy-inited with var domain");
+const constFromVar = varDom;
+test(constFromVar);
+writeln();
+
+writeln("const domain copy-inited with var domain (explicit type)");
+const constFromVarWithType: domain(1)  = varDom;
+test(constFromVarWithType);
+writeln();
+
+
