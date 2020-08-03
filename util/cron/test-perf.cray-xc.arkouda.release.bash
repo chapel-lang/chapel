@@ -5,7 +5,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-xc'
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-xc.arkouda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-xc.arkouda.release"
 
 # setup arkouda
 source $CWD/common-arkouda.bash
@@ -30,5 +30,5 @@ source /cray/css/users/chapelu/setup_python36.bash
 # Run on an elogin node, so we have to tunnel to the login
 export ARKOUDA_TUNNEL_SERVER=$EPROXY_LOGIN
 
-test_master
+test_release
 sync_graphs

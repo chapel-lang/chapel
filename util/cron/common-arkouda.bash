@@ -23,12 +23,11 @@ if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
 fi
 
-currentSha=`git rev-parse HEAD`
-
-# test against Chapel release
+# test against Chapel release (checking our current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,master"
+  currentSha=`git rev-parse HEAD`
   git checkout 1.22.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
@@ -39,8 +38,6 @@ function test_release() {
 function test_master() {
   export CHPL_TEST_PERF_DESCRIPTION=master
   export CHPL_TEST_PERF_CONFIGS="release:v,master"
-  git checkout $currentSha
-  git clean -ffdx $CHPL_HOME
   $CWD/nightly -cron ${nightly_args}
 }
 
