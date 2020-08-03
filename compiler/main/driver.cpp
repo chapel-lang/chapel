@@ -1243,8 +1243,18 @@ static void setupLLVMCodeGen() {
       fLlvmCodegen = false;
     } else {
 #ifdef HAVE_LLVM
-      fLlvmCodegen = true;
+      const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
+      if (chpl_llvm_by_default != NULL &&
+          0 != strcmp(chpl_llvm_by_default, "0")) {
+        // LLVM-by-default was requested
+        fLlvmCodegen = true;
+      } else {
+        // LLVM-by-default not requested
+        // (in the future, this will change to `true`)
+        fLlvmCodegen = false;
+      }
 #else
+      // Not built with LLVM
       fLlvmCodegen = false;
 #endif
     }
