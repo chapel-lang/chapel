@@ -10,7 +10,7 @@ proc mysystem(cmd: string): int {
 
 var binpath = CHPL_HOST_PLATFORM + "-" + CHPL_HOST_ARCH;
 var ret = mysystem(CHPL_HOME + "/bin/" + binpath + "/" +
-                   "chpl -o a.out --savec " + outdir + " " + filename);
+                   "chpl -o a.out --no-llvm --savec " + outdir + " " + filename);
 if ret != 0 then
   halt("Error compiling Chapel code");
 

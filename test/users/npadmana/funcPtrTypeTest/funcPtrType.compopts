@@ -1,1 +1,1 @@
---no-local
+--no-llvm --no-local
