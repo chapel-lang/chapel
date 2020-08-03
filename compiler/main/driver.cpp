@@ -1238,11 +1238,16 @@ static void setupLLVMCodeGen() {
   } else if (fNoLlvmCodegen) {
     fLlvmCodegen = false;
   } else {
+    const char* chpl_llvm = getenv("CHPL_LLVM");
+    if (chpl_llvm != NULL && 0 == strcmp(chpl_llvm, "none")) {
+      fLlvmCodegen = false;
+    } else {
 #ifdef HAVE_LLVM
-    fLlvmCodegen = true;
+      fLlvmCodegen = true;
 #else
-    fLlvmCodegen = false;
+      fLlvmCodegen = false;
 #endif
+    }
   }
 }
 
@@ -1467,8 +1472,12 @@ static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
   // LLVM does not currently work on 32-bit x86
   bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
-  if (fLlvmCodegen && unsupportedLlvmConfiguration) {
+  if (fLlvmCodegen && unsupportedLlvmConfiguration)
     USR_FATAL("--llvm not yet supported for this architecture");
+
+  if (0 == strcmp(CHPL_LLVM, "none")) {
+    if (fYesLlvmCodegen)
+      USR_FATAL("--llvm not supported when CHPL_LLVM=none");
   }
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
@@ -1498,7 +1507,7 @@ static void checkUnsupportedConfigs(void) {
   // Check for cce classic
   if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
     const char* cce_variant = getenv("CRAY_PE_CCE_VARIANT");
-    if (strstr(cce_variant, "CC=Classic")) {
+    if (cce_variant && strstr(cce_variant, "CC=Classic")) {
       USR_FATAL("CCE classic (cce < 9.x.x / 9.x.x-classic) is no longer supported."
                  " Please notify the Chapel team if this configuration is"
                  " important to you.");
