@@ -5,7 +5,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs'
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.arkouda"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.arkouda.release"
 
 # setup arkouda
 source $CWD/common-arkouda.bash
@@ -19,5 +19,7 @@ export GASNET_ODP_VERBOSE=0
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 
-test_master
+# Skip setops for release testing (fragmentation causes timeout/oom)
+export CHPL_TEST_ARKOUDA_BENCHMARKS='stream argsort coargsort gather scatter reduce scan noop'
+test_release
 sync_graphs
