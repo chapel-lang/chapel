@@ -408,13 +408,15 @@ module ChapelArray {
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
                                        param parSafe: bool,
-                                       param isNoInit: bool) {
+                                       param isNoInit: bool,
+                                       param definedConst: bool) {
     return new _domain(dist, idxType, parSafe);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        parentDom: domain,
-                                       param isNoInit: bool) {
+                                       param isNoInit: bool,
+                                       param definedConst: bool) {
     return new _domain(dist, parentDom);
   }
 
@@ -628,7 +630,7 @@ module ChapelArray {
     return true;
   }
 
-  proc chpl__buildDomainExpr(ranges..., param definedConst)
+  proc chpl__buildDomainExpr(ranges..., definedConst)
   where chpl__isTupleOfRanges(ranges) {
     param rank = ranges.size;
     for param i in 1..rank-1 do
@@ -650,7 +652,7 @@ module ChapelArray {
   }
 
   // definedConst is added only for interface consistency
-  proc chpl__buildDomainExpr(keys..., param definedConst) {
+  proc chpl__buildDomainExpr(keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = _getLiteralType(keys(0).type);
@@ -4218,7 +4220,7 @@ module ChapelArray {
           if kind == _tElt.move {
             if isArray(dst) {
               pragma "no auto destroy" pragma "no copy"
-              var newArr = chpl__coerceMove(a.eltType, src);
+              var newArr = chpl__coerceMove(definedConst=false, a.eltType, src);
               __primitive("=", dst, newArr);
             } else {
               __primitive("=", dst, src);
@@ -4466,7 +4468,8 @@ module ChapelArray {
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
-    lhs.definedConst = definedConst;
+
+    chpl__fixupConstDomain(definedConst, lhs);
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -4486,7 +4489,8 @@ module ChapelArray {
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
-    lhs.definedConst = definedConst;
+
+    chpl__fixupConstDomain(definedConst, lhs);
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -5068,10 +5072,10 @@ module ChapelArray {
     return result;
   }
 
-  proc chpl__fixupConstDomain(dom: domain) {
-    if isSubtype(dom._value.type, BaseRectangularDom) {
-      dom._value.definedConst = true;
-    }
+  proc chpl__fixupConstDomain(dom: domain) 
+      where isSubtype(dom._value.type, BaseRectangularDom) {
+
+    dom._value.definedConst = true;
   }
 
   proc chpl__fixupConstDomain(x) { }

@@ -1570,7 +1570,7 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
     if (flags->size() == 1 && flags->count(FLAG_CONST)) {
       if (CallExpr *initCall = toCallExpr(defExpr->init)) {
         if (initCall->isNamed("chpl__buildDomainExpr")) {
-          initCall->get(2)->replace(new SymExpr(gTrue));
+          initCall->argList.last()->replace(new SymExpr(gTrue));
           return;
         }
         else if (initCall->isNamed("chpl__distributed")) {
@@ -1593,7 +1593,7 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
           if (typeCall->isNamed("chpl__ensureDomainExpr")) {
             if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
               if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
-                buildDomExpr->get(2)->replace(new SymExpr(gTrue));
+                buildDomExpr->argList.last()->replace(new SymExpr(gTrue));
                 return;
               }
             }

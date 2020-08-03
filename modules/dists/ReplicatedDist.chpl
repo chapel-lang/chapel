@@ -289,7 +289,8 @@ proc Replicated.dsiClone(): _to_unmanaged(this.type) {
 override proc Replicated.dsiNewRectangularDom(param rank: int,
                                          type idxType,
                                          param stridable: bool,
-                                         inds)
+                                         inds,
+                                         definedConst: bool = false)
 {
   if traceReplicatedDist then writeln("Replicated.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable, inds));

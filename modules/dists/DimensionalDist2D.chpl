@@ -779,7 +779,8 @@ proc DimensionalDom.dsiSerialWrite(f): void {
 override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
                                             type idxType,
                                             param stridable: bool,
-                                            inds)
+                                            inds,
+                                            definedConst: bool = false)
 //  : DimensionalDom(rank, idxType, stridable, this.type, ...)
 {
   _traceddd(this, ".dsiNewRectangularDom ",
