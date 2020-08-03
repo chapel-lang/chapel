@@ -2214,13 +2214,13 @@ literal_expr:
     {
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
     }
-| str_bytes_literal TLSBR opt_actual_ls TRSBR
+| str_bytes_literal TLSBR actual_expr TRSBR
   {
-    $$ = buildSquareCallExpr($1, $3);
+    $$ = buildSquareCallExpr($1, new CallExpr(PRIM_ACTUALS_LIST, $3));
   }
-| str_bytes_literal TLP opt_actual_ls TRP
+| str_bytes_literal TLP actual_expr TRP
   {
-    $$ = new CallExpr($1, $3);
+    $$ = new CallExpr($1, new CallExpr(PRIM_ACTUALS_LIST, $3));
   }  
 
 ;
