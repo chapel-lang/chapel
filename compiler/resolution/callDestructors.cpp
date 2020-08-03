@@ -778,11 +778,17 @@ bool isCallExprTemporary(Expr* initFrom) {
 }
 
 bool doesCopyInitializationRequireCopy(Expr* initFrom) {
-  if (typeNeedsCopyInitDeinit(initFrom->getValType())) {
+  Type* fromType = initFrom->getValType();
+  if (typeNeedsCopyInitDeinit(fromType)) {
     // RHS is a reference, need a copy
     if (initFrom->isRef())
       return true;
     // Past here, it's a value.
+
+    // e.g. an array view being copied into an array.
+    // This copy might be copy-elided later.
+    if (getUnaliasTypeDuringResolution(fromType) != fromType)
+      return true;
 
     // Is it the result of a call returning by value?
     if (isCallExprTemporary(initFrom))
