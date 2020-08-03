@@ -42,9 +42,6 @@ if [ -z "$lchOK" ] ; then
   export MPI_DIR=$(which mpicc | sed 's,/bin/mpicc$,,')
 fi
 
-# Make sure we have a libfabric to use, with the required API version.
-source /cray/css/users/chapelu/setup_libfabric.bash || return 1
-
 if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
   # Bump the timeout slightly if we might be oversubscribed.
   export CHPL_TEST_TIMEOUT=500
