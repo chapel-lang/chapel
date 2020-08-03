@@ -705,24 +705,6 @@ module ChapelArray {
         const distDom: domain(dom.rank,
                               dom._value.idxType,
                               dom._value.stridable) dmapped d = dom;
-
-        //use Reflection;
-        //if isSubtype(distDom._value.type, BaseRectangularDom) {
-          //compilerWarning(distDom._value.type:string, " has the field");
-          //distDom._value.definedConst = true;
-        //}
-        //else {
-          //compilerWarning(distDom._value.type:string, " doesn't have the field");
-        //}
-      
-        
-
-        extern proc printf(s...);
-        if distDom.definedConst then
-          printf("definedConst\n");
-        else
-          printf("not definedConst\n");
-
         return distDom;
       } else {
         const distDom: domain(dom._value.idxType) dmapped d = dom;
