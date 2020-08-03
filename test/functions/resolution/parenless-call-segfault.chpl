@@ -1,5 +1,6 @@
 module M {
   proc y() {
+    writeln("Executing y");
     return 33;
   }
 }
