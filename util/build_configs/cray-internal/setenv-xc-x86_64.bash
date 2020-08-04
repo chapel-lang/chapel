@@ -334,7 +334,7 @@ else
         list_loaded_modules
     fi
 
-    gen_version_gcc=9.3.0
+    gen_version_gcc=7.3.0
     gen_version_intel=16.0.3.210
     gen_version_cce=10.0.2
 
