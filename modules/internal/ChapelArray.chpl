@@ -4334,13 +4334,18 @@ module ChapelArray {
   //
   // Swap operator for arrays
   //
-  inline proc <=>(x: [], y: []) {
-    if (x._value.type == y._value.type && Reflection.canResolveMethod(x._value, "doiSwap", y._value)) {
-       writeln("implemented");
+  inline proc <=>(x: [?xD], y: [?yD]) {
+    var hasSwapped: bool = false;
+    // Check if array can use optimized pointer swap
+    if (!chpl__isArrayView(x._value)
+        && x._value.type == y._value.type
+        && xD == yD) {
+      if(Reflection.canResolveMethod(x._value, "doiSwap", y._value)) {
         x._value.doiSwap(y._value);
-     
-    } else {
-      writeln("using old swap");
+        hasSwapped=true;
+      }
+    }
+    if !hasSwapped {
       forall (a,b) in zip(x, y) do
         a <=> b;
     }

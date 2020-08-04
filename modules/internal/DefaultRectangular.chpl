@@ -2228,6 +2228,8 @@ module DefaultRectangular {
     return res;
   }
 
+  // A helper routine that will perform a pointer swap on an array
+  // instead of doing a deep copy of that array.
   proc DefaultRectangularArr.doiSwap(arr) {
     this.data <=> arr.data;
     this.initShiftedData();
