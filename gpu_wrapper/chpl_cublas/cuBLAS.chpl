@@ -77,6 +77,9 @@ module cuBLAS {
 
   module C_CUBLAS {
     use SysCTypes;
+
+    //extern type complex = complex(64);
+
     extern proc cublas_create(): c_void_ptr;
     extern proc cublas_destroy(handle: c_void_ptr);
     extern proc cublas_array(size: size_t): c_ptr(c_float);
@@ -85,7 +88,7 @@ module cuBLAS {
  
     extern proc cublas_saxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
     extern proc cublas_daxpy(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
-    extern proc cublas_caxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
+    extern proc cublas_caxpy(handle: c_void_ptr, n: c_int, alpha: complex(64), x: c_ptr(complex(64)), incX: c_int, y: c_ptr(complex(64)), incY: c_int);
     extern proc cublas_zaxpy(handle: c_void_ptr, n: c_int, alpha: c_float, X: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
 
     extern proc cublas_isamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int));

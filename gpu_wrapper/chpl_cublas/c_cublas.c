@@ -1,6 +1,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <complex.h>
 #include  "cublas_v2.h"
 
 float* cublas_array(size_t size){
@@ -13,8 +14,8 @@ float* cublas_array(size_t size){
 
 }
 
-void* to_gpu(float* src_ptr, size_t size){
-    float *dst_ptr;
+void* to_gpu(void* src_ptr, size_t size){
+    void *dst_ptr;
     cudaError_t malloc_err = cudaMalloc(&dst_ptr, size);
     //printf("CUDA malloc error: %s\n", cudaGetErrorString(malloc_err));
     cudaError_t memcpy_err = cudaMemcpy(dst_ptr, src_ptr, size, cudaMemcpyHostToDevice);
@@ -71,9 +72,9 @@ int cublas_daxpy(cublasHandle_t *handle, int n, double alpha, double *x, int inc
 
 }
 
-int cublas_caxpy(cublasHandle_t *handle, int n, cuComplex alpha, cuComplex *x, int incX, cuComplex *y, int incY){
+int cublas_caxpy(cublasHandle_t *handle, int n, complex alpha, complex *x, int incX, complex *y, int incY){
 
-    cublasCaxpy(*handle, n, &alpha, x, incX, y, incY);
+    cublasCaxpy(*handle, n, (cuComplex*) &alpha, (cuComplex*) x,  incX, (cuComplex*) y, incY);
     cudaDeviceSynchronize();
     return 0;
 
