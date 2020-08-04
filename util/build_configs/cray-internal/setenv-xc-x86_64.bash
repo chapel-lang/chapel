@@ -352,6 +352,10 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
+
+        # pin to versions of mpich/libsci that work with gen_version_gcc
+        load_module_version cray-mpich 7.7.13
+        load_module_version cray-libsci 19.06.1
     }
 
     function load_prgenv_intel() {
