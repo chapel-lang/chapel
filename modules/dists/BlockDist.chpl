@@ -1383,7 +1383,8 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   // in initializer we have to pass sparseLayoutType as it has no default value
   const c = new unmanaged BlockDom(rank, idxType, stridable,
                                    privdist.sparseLayoutType, privdist,
-                                   locDomsTemp, {(...privatizeData.dims)});
+                                   locDomsTemp, {(...privatizeData.dims)},
+                                   definedConst=definedConst);
   return c;
 }
 

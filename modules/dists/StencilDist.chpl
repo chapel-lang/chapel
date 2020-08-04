@@ -565,7 +565,8 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLSD;
 
   var dom = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
-             _to_unmanaged(this), locDomsTemp, fluff=fluff, periodic=periodic);
+             _to_unmanaged(this), locDomsTemp, fluff=fluff, periodic=periodic,
+             definedConst=definedConst);
   dom.dsiSetIndices(inds);
 
   if debugStencilDist {
