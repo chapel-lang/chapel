@@ -1037,6 +1037,8 @@ def set_up_executables():
     logger.write('[localeModel: "{0}"]'.format(locale_model))
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
 
+    os.environ["CHPL_LLVM"] = chpl_llvm.get()
+
     # skip stdin tests for most custom launchers, except for amdprun and slurm
     if (launcher != "none" and launcher != "amudprun" and launcher !=
         "slurm-srun" and not os.environ.get("CHPL_NO_STDIN_REDIRECT")
