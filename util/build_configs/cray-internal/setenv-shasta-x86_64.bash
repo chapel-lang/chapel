@@ -339,10 +339,9 @@ else
         list_loaded_modules
     fi
 
-    # Please keep the gen versions in compiler_versions.bash the same as these!
-    #[TODO] target_version_gcc=
-    #[TODO] target_version_intel=
-    #[TODO] target_version_cce=
+    #[TODO] gen_version_gcc=
+    #[TODO] gen_version_intel=
+    #[TODO] gen_version_cce=
 
     if [ "$CRAYPE_NETWORK_TARGET" == slingshot* ]; then
         target_cpu_module=craype-x86-rome

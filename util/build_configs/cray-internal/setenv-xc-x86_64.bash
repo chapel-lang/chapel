@@ -334,10 +334,9 @@ else
         list_loaded_modules
     fi
 
-    # Please keep the gen versions in compiler_versions.bash the same as these!
-    target_version_gcc=9.3.0
-    target_version_intel=16.0.3.210
-    target_version_cce=10.0.2
+    gen_version_gcc=9.3.0
+    gen_version_intel=16.0.3.210
+    gen_version_cce=10.0.2
 
     target_cpu_module=craype-sandybridge
 
@@ -345,7 +344,7 @@ else
 
         local target_prgenv="PrgEnv-gnu"
         local target_compiler="gcc"
-        local target_version=$target_version_gcc
+        local target_version=$gen_version_gcc
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
@@ -353,17 +352,13 @@ else
         # load target PrgEnv with compiler version
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
-
-        # pin to versions of mpich/libsci that work with target_version_gcc
-        load_module_version cray-mpich 7.7.13
-        load_module_version cray-libsci 19.06.1
     }
 
     function load_prgenv_intel() {
 
         local target_prgenv="PrgEnv-intel"
         local target_compiler="intel"
-        local target_version=$target_version_intel
+        local target_version=$gen_version_intel
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
@@ -377,7 +372,7 @@ else
 
         local target_prgenv="PrgEnv-cray"
         local target_compiler="cce"
-        local target_version=$target_version_cce
+        local target_version=$gen_version_cce
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
