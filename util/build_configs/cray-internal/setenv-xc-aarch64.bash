@@ -266,9 +266,9 @@ else
         list_loaded_modules
     fi
 
-    # Please keep the gen versions in compiler_versions.bash the same as these!
-    gen_version_gcc=7.3.0
-    gen_version_cce=9.1.3
+    # Please keep the target versions in compiler_versions.bash the same as these!
+    target_version_gcc=9.3.0
+    target_version_cce=10.0.2
 
     target_cpu_module=craype-arm-thunderx2
 
@@ -276,7 +276,7 @@ else
 
         local target_prgenv="PrgEnv-gnu"
         local target_compiler="gcc"
-        local target_version=$gen_version_gcc
+        local target_version=$target_version_gcc
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
@@ -285,7 +285,7 @@ else
         load_module $target_prgenv
         load_module_version $target_compiler $target_version
 
-        # pin to versions of mpich/libsci that work with gen_version_gcc
+        # pin to versions of mpich/libsci that work with target_version_gcc
         load_module_version cray-mpich 7.7.13
         load_module_version cray-libsci 19.06.1
     }
@@ -294,7 +294,7 @@ else
 
         local target_prgenv="PrgEnv-cray"
         local target_compiler="cce"
-        local target_version=$gen_version_cce
+        local target_version=$target_version_cce
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
