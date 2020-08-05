@@ -5,5 +5,4 @@ MASON_HOME: $PWD/mason_home *
 MASON_REGISTRY: registry|https://github.com/chapel-lang/mason-registry *
 MASON_OFFLINE: false *
 SPACK_ROOT: $PWD/mason_home/spack *
-   In order to use a local registry, ensure that MASON_REGISTRY points to the path.
 DummyPath is not a local git repository.
