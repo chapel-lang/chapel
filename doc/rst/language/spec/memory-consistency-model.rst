@@ -181,10 +181,10 @@ operations*.
    :math:`Y` and :math:`Z` in program order.
 
 -  The program ``t = begin{Y}; waitFor(t); Z;`` implies :math:`Y`
-   :math:`<_p` :math:`Z`
+   :math:`<_p` :math:`Z`.
 
 -  :math:`X` :math:`<_p` :math:`Y` and :math:`Y` :math:`<_p` :math:`Z`
-   imply :math:`X` :math:`<_p` :math:`Z`
+   imply :math:`X` :math:`<_p` :math:`Z`.
 
 .. _memory_order:
 
