@@ -41,6 +41,6 @@ namespace chapel {
     void GenerateMembers(Printer* printer);
   };
 
-}  // namespace chapelespace chapel
+}  // namespace chapel
 
 #endif  // PB_ENUM_FIELD_HH

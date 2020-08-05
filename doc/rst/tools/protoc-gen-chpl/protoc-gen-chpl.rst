@@ -30,8 +30,8 @@ Once you have the compiler installed, in ``$CHPL_HOME`` run the following:
 
    make protoc-gen-chpl
   
-It builds the protoc-gen-chpl binary so that the command line interface can be used.
-This installs protoc-gen-chpl in the same place as the chapel compiler (``chpl``) so that
+It builds the ``protoc-gen-chpl`` binary so that the command line interface can be used.
+This installs ``protoc-gen-chpl`` in the same place as the chapel compiler (``chpl``) so that
 it can be used anywhere in the user's file system.
 
 To remove protobuf suppot, change directory to ``$CHPL_HOME/tools/protoc-gen-chpl`` and run:
@@ -53,8 +53,11 @@ Below is an example of an ``addressbook`` for a person. This section descibes a
 simple ``.proto`` file and the corresponding generated chapel code. For complete
 details on ``.proto`` files see the links at the end of this document.
 
-The Chapel implementation only supports the `proto3`_ syntax of protobuf. The
-``.proto`` file starts with an optional package declaration, which helps to prevent
+.. note::
+
+    The Chapel implementation only supports the `proto3`_ syntax of protobuf.
+
+The ``.proto`` file starts with an optional package declaration, which helps to prevent
 naming conflicts between different projects.
 
 .. code-block:: proto
@@ -64,7 +67,7 @@ naming conflicts between different projects.
 
 In Chapel the generated records will be placed in a module matching the ``package``
 name. If the ``package`` name is not specified the module takes the name of the
-proto file with all non-aplhanumeric characters replaced by an ``underscore``.
+proto file with all non-alphanumeric characters replaced by an ``underscore``.
 
 Next, you have to define your messages. A message is just an aggregate containing
 a set of typed fields. Many standard simple data types are available as field types,
@@ -88,15 +91,15 @@ including int64, int32, float, double, and string.
     repeated string number = 5; // Person might have more than one number.
   }
   
-In the above example the ``Person`` message contains ``string`` type ``name``
-field with field number ``1``, ``int32`` type ``id`` field with field number
-``2`` as well as ``string`` type ``email`` field with field number ``3``. You
+In the above example the ``Person`` message contains a ``string`` typed ``name``
+field with field number ``1``, a ``int32`` typed ``id`` field with field number
+``2`` as well as a ``string`` typed ``email`` field with field number ``3``. You
 can also define enum types if you want one of your fields to have one of a
 predefined list of values - here you want to specify that a contact type can be
-one of FAMILY, FRIENDS, or WORK. The ``Contact`` type ``contact`` with field number
+one of FAMILY, FRIENDS, or WORK. The ``contact`` field with field number
 ``4`` is an example. If a field is repeated, the field may be repeated any number
-of times (including zero). For example, the ``string`` type ``number`` field with
-field number ``4``. The order of the repeated values will be preserved in the protocol
+of times (including zero). For example, the ``string`` typed ``number`` field with
+field number ``5``. The order of the repeated values will be preserved in the protocol
 buffer. If a field is not set, a default value is assigned to the field by Chapel.
 
 
@@ -123,11 +126,11 @@ The generated ``addressbook.chpl`` file will contain:
 * A wrapper module with the name ``addressbook``.
 * A record with the name ``Person``.
 * An enum with the name ``Contact``.
-* ``name_``, ``id_``, ``email_``, ``contact_`` and ``number_`` fields.
+* ``name``, ``id``, ``email``, ``contact`` and ``number`` fields.
 * ``writeToOutputFile`` and ``parseFromInputFile`` functions for serialization/parsing.
 
 You can import this module to a ``chpl`` file and can create an instance of ``Person``
-for populating data.
+for populating data;
 
 .. code-block:: chpl
 

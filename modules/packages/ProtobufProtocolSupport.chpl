@@ -36,7 +36,7 @@ module ProtobufProtocolSupport {
   pragma "no doc"
   module WireEncoding {
     /*
-      This module have implementation of encoding/decoding algorithms
+      This module contains the implementation of encoding/decoding algorithms
       for basic proto types. The other module functions are written over
       these implementations.
     */
@@ -291,7 +291,7 @@ module ProtobufProtocolSupport {
   pragma "no doc"
   module Fields {
     /*
-      This module have functions for encoding/decoding simple non-repetitive protobuf
+      This module contains functions for encoding/decoding simple non-repetitive protobuf
       fields. A tag (generated using fieldNumber and wireType) is appended to the encoded
       value of the field.
     */
@@ -481,7 +481,7 @@ module ProtobufProtocolSupport {
   pragma "no doc"
   module RepeatedFields {
     /*
-      This module have functions for encoding/decoding repetitive protobuf
+      This module contains functions for encoding/decoding repetitive protobuf
       fields.
     */
 
