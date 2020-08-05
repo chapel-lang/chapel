@@ -145,6 +145,8 @@ static int txCQLen;
 //
 // Memory registration support.
 //
+static chpl_bool scalableMemReg;
+
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
 
@@ -1832,34 +1834,55 @@ void init_ofiExchangeAvInfo(void) {
 
 static
 void init_ofiForMem(void) {
-  //
-  // With scalable memory registration we just register the whole
-  // address space here; with non-scalable we register each region
-  // individually.
-  //
   void* fixedHeapStart;
   size_t fixedHeapSize;
   chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
 
   //
-  // At present the user can specify a fixed heap in which case we will
-  // register that and only that, or they'd better be using a provider
-  // which supports scalable registration of the entire address space.
+  // We default to scalable registration if none of the settings that
+  // force basic registration are present, but the user can override
+  // that by specifying use of a fixed heap.  Note that this is to
+  // some extent just a backstop, because if the user does specify a
+  // fixed heap we will have earlier included FI_MR_ALLOCATED in our
+  // hints, which might well have caused the selection of a provider
+  // which requires basic registration.
   //
-  if (fixedHeapStart != NULL && fixedHeapSize != 0) {
+  const uint64_t basicMemRegBits = (FI_MR_BASIC
+                                    | FI_MR_LOCAL
+                                    | FI_MR_VIRT_ADDR
+                                    | FI_MR_ALLOCATED
+                                    | FI_MR_PROV_KEY);
+  scalableMemReg = ((ofi_info->domain_attr->mr_mode & basicMemRegBits) == 0
+                    && fixedHeapSize == 0);
+
+  //
+  // With scalable memory registration we just register the whole
+  // address space here; with non-scalable we register each region
+  // individually.  Currently with non-scalable we actually only
+  // register a fixed heap.  We may do something more complicated
+  // in the future, though.
+  //
+  if (scalableMemReg) {
+    numMemRegions = 1;
+    memTab[0].addr = (void*) 0;
+    memTab[0].base = 0;
+    memTab[0].size = SIZE_MAX;
+  } else {
+    if (fixedHeapSize == 0) {
+      INTERNAL_ERROR_V("must specify fixed heap with %s provider",
+                       ofi_info->fabric_attr->prov_name);
+    }
+
     numMemRegions = 1;
     memTab[0].addr = fixedHeapStart;
     memTab[0].base = ((ofi_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR) == 0)
                      ? (size_t) fixedHeapStart
                      : (size_t) 0;
     memTab[0].size = fixedHeapSize;
-  } else {
-    CHK_TRUE((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0);
-    numMemRegions = 1;
-    memTab[0].addr = (void*) 0;
-    memTab[0].base = 0;
-    memTab[0].size = SIZE_MAX;
   }
+
+  const chpl_bool prov_key =
+    ((ofi_info->domain_attr->mr_mode & FI_MR_PROV_KEY) != 0);
 
   uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
   if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) {
@@ -1871,9 +1894,10 @@ void init_ofiForMem(void) {
                i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
-                      bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
+                      bufAcc, (prov_key ? 0 : i), 0, 0, &ofiMrTab[i], NULL));
     memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
     memTab[i].key  = fi_mr_key(ofiMrTab[i]);
+    CHK_TRUE(prov_key || memTab[i].key == i);
     DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64, i, memTab[i].key);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEpRma->fid, 0));
@@ -1882,10 +1906,13 @@ void init_ofiForMem(void) {
   }
 
   //
-  // Share the memory regions around the job.
+  // Unless we're doing scalable registration of the entire address
+  // space, share the memory regions around the job.
   //
-  CHPL_CALLOC(memTabMap, chpl_numNodes);
-  chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
+  if (!scalableMemReg) {
+    CHPL_CALLOC(memTabMap, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
+  }
 }
 
 
@@ -2124,7 +2151,9 @@ void fini_ofi(void) {
     OFI_CHK(fi_close(&ofiMrTab[i]->fid));
   }
 
-  CHPL_FREE(memTabMap);
+  if (memTabMap != NULL) {
+    CHPL_FREE(memTabMap);
+  }
 
   CHPL_FREE(amLZs[1]);
   CHPL_FREE(amLZs[0]);
@@ -2371,14 +2400,23 @@ struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
 
 static inline
 int mrGetDesc(void** pDesc, void* addr, size_t size) {
-  struct memEntry* mr;
-  if ((mr = getMemEntry(&memTab, addr, size)) == NULL) {
-    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): no entry", addr, size);
-    return -1;
+  void* desc;
+
+  if (scalableMemReg) {
+    desc = NULL;
+  } else {
+    struct memEntry* mr;
+    if ((mr = getMemEntry(&memTab, addr, size)) == NULL) {
+      DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): no entry", addr, size);
+      return -1;
+    }
+    desc = mr->desc;
+    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): desc %p", addr, size, desc);
   }
-  DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): desc %p", addr, size, mr->desc);
-  if (pDesc != NULL)
-    *pDesc = mr->desc;
+
+  if (pDesc != NULL) {
+    *pDesc = desc;
+  }
   return 0;
 }
 
@@ -2386,17 +2424,26 @@ int mrGetDesc(void** pDesc, void* addr, size_t size) {
 static inline
 int mrGetKey(uint64_t* pKey, uint64_t* pOff,
              int iNode, void* addr, size_t size) {
-  struct memEntry* mr;
-  if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
-    DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
-               iNode, addr, size);
-    return -1;
+  uint64_t key;
+  uint64_t off;
+
+  if (scalableMemReg) {
+    key = 0;
+    off = (uint64_t) addr;
+  } else {
+    struct memEntry* mr;
+    if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
+      DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
+                 iNode, addr, size);
+      return -1;
+    }
+
+    key = mr->key;
+    off = (uint64_t) addr - mr->base;
+    DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64 ", off %" PRIx64,
+               iNode, addr, size, key, off);
   }
 
-  const uint64_t key = mr->key;
-  const uint64_t off = (uint64_t) addr - mr->base;
-  DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64 ", off %" PRIx64,
-             iNode, addr, size, key, off);
   if (pKey != NULL) {
     *pKey = key;
     *pOff = off;
