@@ -326,7 +326,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
 
   AList &bodyExprs = forall->loopBody()->body;
 
-  // fund the check_typle_var_decl and get the size of the tuple
+  // find the check_tuple_var_decl and get the size of the tuple
   if (CallExpr *firstCall = toCallExpr(bodyExprs.get(bodyExprCount++))) {
     if (firstCall->isNamed("_check_tuple_var_decl")) {
       if (SymExpr *firstArgSE = toSymExpr(firstCall->get(1))) {
@@ -699,7 +699,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // ...
 // param staticCheckN = staticCheck(arrN, loopDomain)
 //
-// if (staticCheck1 || statickCheck2 || ... || staticCheckN) {
+// if (staticCheck1 || staticCheck2 || ... || staticCheckN) {
 //   
 //   const dynamicCheck = (!staticCheck1 || dynamicCheck(arr1, loopDomain)) &&
 //                        (!staticCheck2 || dynamicCheck(arr2, loopDomain)) &&
@@ -732,7 +732,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // out unnecessary loops during resolution.
 // 
 // Note that the static checks are param flags and during resolution we'll
-// defintely lose either loop0 or the bigger branch. In other words, there can
+// definitely lose either loop0 or the bigger branch. In other words, there can
 // be duplicate loops at the end of normalize, but after resolution we expect
 // them to go away.
 static void generateOptimizedLoops(ForallStmt *forall) {
