@@ -104,7 +104,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if checkRegistryPath(registryPath, isLocal) {
       if dry {
-        dryRun(username, registryPath, isLocal);
+        dryRun(username, registryPath, true);
       }
       else {
         publishPackage(username, registryPath, isLocal);
@@ -267,6 +267,19 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
     }
   }
   else {
+    const spacer = '------------------------------------------------------';
+    writeln('Checking Registry with ' + registryPath + ' path.');
+    var registryTest = registryPathCheck(registryPath, username, false);
+    writeln(spacer);
+    writeln('The current mason environment is:');
+    returnMasonEnv();
+    var reg = MASON_REGISTRY;
+
+    if reg.size == 1 {
+      if reg[0] == ('mason-registry', regUrl) 
+        then writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
+    }
+
     if checkRegistryPath(registryPath, isLocal) {
       writeln('Package can be published to local registry');
       exit(0);
@@ -549,14 +562,6 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     writeln(spacer);
   }
-  writeln('Checking Registry with ' + path + ' path.');
-  var registryTest = registryPathCheck(path, username, trueIfLocal);
-  writeln(spacer);
-  writeln('The current mason environment is:');
-  returnMasonEnv();
-  if MASON_REGISTRY.size == 1 {
-    writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
-  }
   
   writeln(spacer);
   if package && !ci {
@@ -578,7 +583,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && registryTest && testTest 
+  if packageTest && remoteTest && moduleTest && testTest 
     && licenseTest && gitTagTest && masonFieldsTest {
     writeln('(PASSED) Your package is ready to publish');
   }
@@ -600,9 +605,6 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     if !testTest {
       writeln('(FAILED) Your package does not have tests');
-    }
-    if !registryTest {
-      writeln('(FAILED) Your proposed registry is not a valid registry or path to a registry');
     }
     if !remoteTest {
       writeln('(FAILED) Your package has no remote origin and cannot be published');
