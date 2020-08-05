@@ -34,29 +34,20 @@ OBJ=$(SOURCES:.cpp=.o)
 LDFLAGS = -lprotobuf -lprotoc
 CPPFLAGS = -I.
 
-all: protoc-gen-chpl
+all: $(bdir)/protoc-gen-chpl FORCE
 
-protoc-gen-chpl:	$(OBJ)
+protoc-gen-chpl: $(bdir)/protoc-gen-chpl FORCE
+
+install: $(bdir)/protoc-gen-chpl FORCE
+
+$(bdir)/protoc-gen-chpl:	$(OBJ)
 	@echo "Building protoc-gen-chpl.."
 	$(CC) -o $@ $^ $(LDFLAGS) -lstdc++
 
-install: protoc-gen-chpl
-ifneq ($(wildcard $(linkFile)),)
-	@echo "Removing old symbolic link..."
-	rm -f $(linkFile)
-	@echo
-endif
-	@echo "Installing symbolic link..."
-	@mkdir -p $(bdir)
-	cd $(CHPL_BIN_DIR) && ln -s $(link) protoc-gen-chpl
-
 clean:
 	@echo "Removing protoc-gen-chpl..."
-	rm -f $(shell pwd)/protoc-gen-chpl $(shell pwd)/$(OBJ)
-ifneq ($(wildcard $(linkFile)),)
-	@echo "Removing old symbolic link..."
-	@rm -f $(linkFile)
-	@echo
-endif
+	rm -f $(bdir)/protoc-gen-chpl
 
-clobber: clean
+clobber: clean FORCE
+
+FORCE:

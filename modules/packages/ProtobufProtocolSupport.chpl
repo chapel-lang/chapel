@@ -297,7 +297,7 @@ module ProtobufProtocolSupport {
     */
 
     use IO;
-    use WireEncoding;
+    use super.WireEncoding;
 
     proc uint64Append(val: uint(64), fieldNumber: int, ch: writingChannel) throws {
       tagAppend(fieldNumber, varint, ch);
@@ -485,7 +485,7 @@ module ProtobufProtocolSupport {
       fields.
     */
 
-    use WireEncoding;
+    use super.WireEncoding;
     use List;
     use IO;
 
