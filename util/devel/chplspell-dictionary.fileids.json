@@ -202,6 +202,9 @@
   "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/addInitGuards.cpp"
   ],
+  "4bd54270-d6dc-11ea-8acb-843835579daa": [
+    "compiler/passes/checkResolved.cpp"
+  ],
   "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/cleanup.cpp"
   ],
@@ -306,6 +309,9 @@
   ],
   "7b9a1e46-8ab8-11e6-b915-843835579daa": [
     "doc/rst/developer/bestPractices/README.rst"
+  ],
+  "53b60e8e-d6dc-11ea-8acb-843835579daa": [
+    "doc/rst/developer/bestPractices/Sanitizers.rst"
   ],
   "b557a264-8ab5-11e6-b915-843835579daa": [
     "doc/rst/developer/bestPractices/SpellChecking.rst"
@@ -699,6 +705,9 @@
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
+  "83d35d38-d6dc-11ea-8acb-843835579daa": [
+    "runtime/include/mem/jemalloc/chpl-mem-impl.h"
+  ],
   "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/qio/sys.h"
   ],
@@ -759,6 +768,9 @@
   ],
   "c756642a-c5e5-11e7-82fe-10ddb1d4c3d5": [
     "runtime/src/launch/smp/launch-smp.c"
+  ],
+  "88143c78-d6dc-11ea-8acb-843835579daa": [
+    "runtime/src/mem/jemalloc/mem-jemalloc.c"
   ],
   "a2b5a7e0-2404-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c"
