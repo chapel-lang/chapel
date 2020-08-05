@@ -2407,7 +2407,7 @@ module String {
       return createStringWithNewBuffer(cs);
     }
     catch {
-      halt("Casting a non-UTF-8 c_string to strign");
+      halt("Casting a non-UTF-8 c_string to string");
     }
   }
 
