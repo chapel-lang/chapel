@@ -2705,6 +2705,7 @@ pnext
 rnext
 
 FILEID: 2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5
+urse
 wkfn
 yylloc
 yyparse
@@ -3679,6 +3680,7 @@ nsize
 tagno
 tname
 ttag
+vdebugstarted
 
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chplserversrc
@@ -3707,7 +3709,9 @@ dclass
 kace
 linkedlist
 paircount
+pdarray
 regexdnaredux
+setops
 tdata
 threadring
 timecomp
@@ -3863,6 +3867,8 @@ FILEID: f60e4ad6-a966-11e6-91b8-10ddb1d4c3d5
 csep
 
 FILEID: 7db5465c-ad3f-11e6-91b8-10ddb1d4c3d5
+inalloca
+irgen
 isget
 negbv
 srcwide
@@ -3873,6 +3879,7 @@ astrs
 cdesc
 disubprogram
 dtype
+inalloca
 isinstance
 ndarray
 nfor
@@ -4258,6 +4265,7 @@ FILEID: 06bdda1e-bb86-11e6-9740-843835579daa
 chplspell
 scspell
 ukacd
+whereami
 
 FILEID: 726887c4-bc39-11e6-9740-843835579daa
 knowledgecenter
@@ -4513,6 +4521,7 @@ FILEID: 01f4f6a8-2016-11e7-980e-10ddb1d4c3d5
 fock
 iact
 sswap
+stmted
 
 FILEID: c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5
 sealedabstract
@@ -4561,6 +4570,7 @@ FILEID: 3b5ef8a0-780c-11e7-88ba-10ddb1d4c3d5
 fieldtag
 linetokens
 ptrhold
+somename
 tablename
 tblname
 tblpath
@@ -4690,6 +4700,7 @@ strfy
 FILEID: f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5
 addrvec
 allocinfo
+ambuffers
 amoread
 amrecv
 amsend
@@ -4699,9 +4710,11 @@ atomicvalid
 bxor
 cfgav
 cfgfab
+cfgfabhints
 cfgfabsall
 cmpl
 cmpls
+cmplt
 commprogress
 comparand
 configmore
@@ -4709,12 +4722,14 @@ cqes
 cswap
 ctxs
 dsrd
+dupinfo
 enocq
 etoosmall
 fabfail
 fabsall
 fids
 freeinfo
+hmem
 lcpus
 libiberty
 librdmacm
@@ -4722,11 +4737,14 @@ mrdesc
 mrkey
 ofichkerr
 ofichkret
+ofiwg
 olen
 opnd
+pkey
 pmichkret
 pmichksuccess
 procid
+provs
 rbuf
 rbufs
 readerr
@@ -4755,6 +4773,7 @@ ttcip
 txed
 txns
 txntrk
+ungood
 waitset
 writemsg
 xcrc
@@ -4903,6 +4922,7 @@ infs
 inparens
 ipra
 isysroot
+lessless
 maino
 mpicxx
 ploc
@@ -5040,6 +5060,7 @@ eunknown
 
 FILEID: 9410539a-9317-11e9-a422-10ddb1d4c3d5
 tilda
+whereami
 
 FILEID: c0ac0568-bd81-11e9-8464-10ddb1d4c3d5
 ilroy
@@ -5087,6 +5108,7 @@ withvp
 
 FILEID: b35c0a0c-cac9-11e9-8464-10ddb1d4c3d5
 idxt
+localx
 
 FILEID: b6f2f694-cac9-11e9-8464-10ddb1d4c3d5
 nsize
@@ -5237,6 +5259,20 @@ FILEID: 0ad18466-aac5-11ea-8acb-843835579daa
 inthash
 ttwang
 
+FILEID: 4bd54270-d6dc-11ea-8acb-843835579daa
+alignof
+
+FILEID: 53b60e8e-d6dc-11ea-8acb-843835579daa
+asan
+fsanitize
+
+FILEID: 83d35d38-d6dc-11ea-8acb-843835579daa
+dallocx
+rallocx
+
+FILEID: 88143c78-d6dc-11ea-8acb-843835579daa
+dallocx
+
 NATURAL:
 aarch
 abcd
@@ -5337,6 +5373,7 @@ astfalk
 astimezone
 astloc
 astlocs
+astrs
 asts
 atanh
 atexit
@@ -5347,6 +5384,7 @@ atoi
 atomicbool
 atomicness
 attaches
+attrs
 audrey
 authhdr
 autocopy
@@ -5745,6 +5783,7 @@ dequeue
 dequeuer
 dequeues
 dereference
+dereferenceable
 dereferenced
 dereferences
 dereferencing
@@ -6217,6 +6256,7 @@ hartley
 hasendbit
 hasher
 hashtable
+hashtables
 haskell
 haswell
 haverford
@@ -6292,6 +6332,7 @@ idents
 idxs
 ieee
 iface
+ifdefs
 ified
 ifneq
 ignorecase
@@ -6383,18 +6424,24 @@ irwxo
 irwxu
 isaac
 isalias
+isalnum
+isalpha
+isascii
 isborrowed
 isclosed
+isdigit
 isdirect
 isfinite
 isgid
 isinf
+islower
 isnan
 isocalendar
 isoformat
 isopen
 isoweekday
 isowned
+isprint
 isset
 isshared
 isslice
@@ -6755,6 +6802,7 @@ minmax
 minnesota
 misassumption
 miscompiles
+misconfigured
 misdistributed
 mitre
 mjolnir
@@ -7643,6 +7691,7 @@ subfield
 subfolders
 subgraph
 subgraphs
+subindex
 sublicense
 sublocale
 sublocales
@@ -7791,6 +7840,7 @@ toend
 toeof
 tokenized
 tokyo
+tolower
 toml
 tommy
 tonum
@@ -7802,6 +7852,7 @@ toposort
 toraw
 toret
 tounmanaged
+toupper
 towlower
 towupper
 traceback
