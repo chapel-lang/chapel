@@ -120,6 +120,71 @@ int cublas_idamin(cublasHandle_t *handle, int n, double *x, int incX, int *resul
 
 }
 
+int cublas_sasum(cublasHandle_t *handle, int n, float *x, int incX, float *results){
+
+    cublasSasum(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_dasum(cublasHandle_t *handle, int n, double *x, int incX, double *results){
+
+    cublasDasum(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_scopy(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY){
+
+    cublasScopy(*handle, n, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_dcopy(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY){
+
+    cublasDcopy(*handle, n, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_sdot(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float *result){
+
+    cublasSdot(*handle, n, x, incX, y, incY, result);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_ddot(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY, double *result){
+
+    cublasDdot(*handle, n, x, incX, y, incY, result);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+
+int cublas_snrm2(cublasHandle_t *handle, int n, float *x, int incX, float *results){
+
+    cublasSnrm2(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_dnrm2(cublasHandle_t *handle, int n, double *x, int incX, double *results){
+
+    cublasDnrm2(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
 int cublas_sgemm(cublasHandle_t *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc){
 
     cublasSgemm(*handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc);
