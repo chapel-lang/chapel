@@ -95,7 +95,20 @@ module cuBLAS {
     extern proc cublas_idamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, results: c_ptr(c_int));
 
     extern proc cublas_isamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int));
-    extern proc cublas_idamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, results: c_ptr(c_int));
+    extern proc cublas_idamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_int));
+
+    extern proc cublas_sasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_float));
+    extern proc cublas_dasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_double));
+
+    extern proc cublas_scopy(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
+    extern proc cublas_dcopy(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
+
+    extern proc cublas_sdot(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int, result: c_ptr(c_float));
+    extern proc cublas_ddot(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int, result: c_ptr(c_double));
+
+    extern proc cublas_snrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_float));
+    extern proc cublas_dnrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_double));
+
 
     extern proc cublas_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, C: c_ptr(c_float), ldc: c_int);
   }

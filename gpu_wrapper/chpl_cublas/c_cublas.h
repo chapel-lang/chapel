@@ -15,4 +15,16 @@ int cublas_idamax(c_void_ptr *handle, int n, double *x, int incX, int *results);
 int cublas_isamin(c_void_ptr *handle, int n, float *x, int incX, int *results);
 int cublas_idamin(c_void_ptr *handle, int n, double *x, int incX, int *results);
 
+int cublas_sasum(cublasHandle_t *handle, int n, float *x, int incX, float *results);
+int cublas_dasum(cublasHandle_t *handle, int n, double *x, int incX, double *results);
+
+int cublas_scopy(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY);
+int cublas_dcopy(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY);
+
+int cublas_sdot(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float *result);
+int cublas_ddot(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY, double *result);
+
+int cublas_snrm2(cublasHandle_t *handle, int n, float *x, int incX, float *results);
+int cublas_dnrm2(cublasHandle_t *handle, int n, double *x, int incX, double *results);
+
 int cublas_sgemm(c_void_ptr *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc);
