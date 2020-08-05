@@ -226,7 +226,8 @@ endif
 #
 # Avoid false positives for memcmp size. This flag we are adding here is
 # available at least all the way back to gcc 7.3. However, we started seeing
-# errors when we switched to gcc 9.3. So, only throw this flag for version >9
+# errors when we switched to gcc 9.3. Moreover, we don't see it in version 10.
+# So, only throw this flag for major version 9
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
