@@ -1,4 +1,4 @@
-Updating registry
+Skipping registry update since no dependency found in manifest file.
 
 ======================================================================
 FAIL test1.chpl: test1
