@@ -273,16 +273,9 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
     writeln(spacer);
     writeln('The current mason environment is:');
     returnMasonEnv();
-    var regExists: bool = false;
-    const regUrl = "https://github.com/chapel-lang/mason-registry";
-    for regs in MASON_REGISTRY {
-      for reg in regs {
-        if reg == regUrl then regExists = true; 
-      }
-    }
-    if regExists {
-      writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
-    }
+    var reg = MASON_REGISTRY;
+    if reg.contains(('mason-registry', regUrl)) 
+      then writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
     if checkRegistryPath(registryPath, isLocal) {
       writeln('Package can be published to local registry');
       exit(0);
