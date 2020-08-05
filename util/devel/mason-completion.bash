@@ -85,7 +85,15 @@ _complete_mason_search(){
 }
 
 _complete_mason_update(){
-  _options update
+  local cur
+  cur=${COMP_WORDS[COMP_CWORD]}
+  case "$cur" in
+    -*) 
+      _options update
+      ;;
+     *)
+      ;;
+  esac
 }
 
 _complete_mason_run(){
