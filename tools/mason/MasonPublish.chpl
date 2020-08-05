@@ -274,8 +274,12 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
     writeln('The current mason environment is:');
     returnMasonEnv();
     var reg = MASON_REGISTRY;
-    if reg.contains(('mason-registry', regUrl)) 
-      then writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
+
+    if reg.size == 1 {
+      if reg[0] == ('mason-registry', regUrl) 
+        then writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
+    }
+
     if checkRegistryPath(registryPath, isLocal) {
       writeln('Package can be published to local registry');
       exit(0);
