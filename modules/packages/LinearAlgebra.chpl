@@ -503,6 +503,44 @@ proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
   }
 }
 
+pragma "no doc"
+proc tranpose(A: [?Dom] ?eltType, keepDistribution = true) 
+  where isDistributed(A) 
+{
+  // Add case for rank 1
+  const transposedDom = {Dom.dim(1), Dom.dim(0)};
+  const targetLocales = A.targetLocales();
+
+  if keepDistribution {
+    var distDom = transposedDom dmapped Block(boundingBox=transposedDom, 
+                                              targetLocales=targetLocales);
+    var transposedMat : [distDom] eltType;
+
+    coforall loc in targetLocales {
+      var localDomain = A.localSubdomain(); 
+
+      transposedMat[localDomain.dim(1), localDomain.dim(0)] = 
+        A.localSlice(localDomain);
+    }
+
+    return transposedMat;
+
+  } else {
+    var distDom = transposedDom dmapped Block(boundingBox=transposedDom, 
+                                              targetLocales=targetLocales.T);
+    var transposedMat : [distDom] eltType;
+
+    coforall loc in targetLocales {
+      const localDomainA = A.localSubdomain();
+      const localDomainTMat = transposedMat.localSubdomain();
+
+      transposedMat.localSlice(localDomainTMat) = A.localSlice(localDomainA).T;
+    }
+
+    return transposedMat;
+  }
+}
+
 /* Transpose vector or matrix */
 proc _array.T where isDenseMatrix(this)
 {
