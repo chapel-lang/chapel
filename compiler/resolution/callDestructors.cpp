@@ -636,8 +636,6 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // and using a qualified-type generates yet another temp.
   Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->getValType());
 
-  FnSymbol* unaliasFn = NULL;
-
   bool copiesToNoDestroy = false;
 
   // Determine if
@@ -673,20 +671,25 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               Type*      actualType = copiedSe->symbol()->getValType();
               Type*      returnType = rhsFn->retType->getValType();
 
-              unaliasFn = getUnalias(useLhs->type);
-
-              // Cannot reduce initCopy/autoCopy when types differ
-              //   (unless there is an unaliasFn available)
-              // Cannot reduce initCopy/autoCopy for sync variables
-              bool typesOK = unaliasFn != NULL || actualType == returnType;
-
-              if (typesOK                  == true  &&
+              // Skip this transformation if
+              //  * the type differs
+              //  * it is a domain (for A.domain returning unowned)
+              //  * if it's a sync or single variable (different init/auto copy)
+              if (actualType == returnType &&
                   isSyncType(formalType)   == false &&
                   isSingleType(formalType) == false)
               {
-                copyExpr = rhsCall;
-                if (dstSe->symbol()->hasFlag(FLAG_NO_AUTO_DESTROY))
-                  copiesToNoDestroy = true;
+                bool copyFromUnownedDomain = false;
+                if (actualType->symbol->hasFlag(FLAG_DOMAIN)) {
+                  if (fn->hasFlag(FLAG_NO_COPY_RETURN))
+                    copyFromUnownedDomain = true;
+                }
+
+                if (copyFromUnownedDomain == false) {
+                  copyExpr = rhsCall;
+                  if (dstSe->symbol()->hasFlag(FLAG_NO_AUTO_DESTROY))
+                    copiesToNoDestroy = true;
+                }
               }
             }
           }
@@ -707,30 +710,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // the copyExpr might be a copy added when normalizing initialization
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
-    FnSymbol* rhsFn = copyExpr->resolvedFunction();
-
-    // Use an unalias call if possible
-    if (rhsFn->hasFlag(FLAG_INIT_COPY_FN) && unaliasFn != NULL) {
-      // BHARSH: It seems important that there's a temporary to store the
-      // result of the unaliasFn call. Otherwise we'll move into a variable
-      // that has multiple uses, which seems to cause a variety of problems.
-      //
-      // In particular, I noticed that `changeRetToArgAndClone` generates
-      // bad AST if I simply did this:
-      //   copyExpr->replace(new CallExpr(unaliasFn, refVar));
-      VarSymbol* unaliasTemp = newTemp("unaliasTemp", unaliasFn->retType);
-      CallExpr*  unaliasCall = new CallExpr(unaliasFn, tmpVar);
-      Expr* anchor = copyExpr->getStmtExpr();
-
-      // The call needs to be inserted before it is needed but
-      // after any error handling conditional that might be after callExpr.
-      anchor->insertBefore(new DefExpr(unaliasTemp));
-      anchor->insertBefore(new CallExpr(PRIM_MOVE, unaliasTemp, unaliasCall));
-
-      copyExpr->replace(new SymExpr(unaliasTemp));
-    } else {
-      copyExpr->replace(copyExpr->get(1)->remove());
-    }
+    copyExpr->replace(copyExpr->get(1)->remove());
 
     if (copiesToNoDestroy) {
       useLhs->addFlag(FLAG_NO_AUTO_DESTROY);
@@ -762,11 +742,7 @@ bool isLocalVariable(Expr* initFrom) {
   return false;
 }
 
-static
-bool isCallExprTemporary(Expr* initFrom) {
-  SymExpr* fromSe = toSymExpr(initFrom);
-  INT_ASSERT(fromSe);
-  Symbol* fromSym = fromSe->symbol();
+bool isCallExprTemporary(Symbol* fromSym) {
   if (fromSym->hasFlag(FLAG_EXPR_TEMP) ||
       fromSym->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW)) {
     // It's from an auto-destroyed value that is an expression temporary
@@ -775,6 +751,33 @@ bool isCallExprTemporary(Expr* initFrom) {
   }
 
   return false;
+}
+
+bool isTemporaryFromNoCopyReturn(Symbol* fromSym) {
+
+  bool anyNoCopyReturn = false;
+  for_SymbolSymExprs(se, fromSym) {
+    SymExpr* lhsSe = NULL;
+    CallExpr* initOrCtor = NULL;
+    if (CallExpr* call = toCallExpr(se->parentExpr)) {
+      if (isInitOrReturn(call, lhsSe, initOrCtor)) {
+        if (lhsSe == se) {
+          if (initOrCtor != NULL) {
+            if (FnSymbol* calledFn = initOrCtor->resolvedOrVirtualFunction())
+              if (calledFn->hasFlag(FLAG_NO_COPY_RETURN))
+                anyNoCopyReturn = true;
+          } else {
+            // Track moving from another temp.
+            SymExpr* rhsSe = toSymExpr(call->get(2));
+            if (isTemporaryFromNoCopyReturn(rhsSe->symbol()))
+              anyNoCopyReturn = true;
+          }
+        }
+      }
+    }
+  }
+
+  return anyNoCopyReturn;
 }
 
 bool doesCopyInitializationRequireCopy(Expr* initFrom) {
@@ -787,12 +790,20 @@ bool doesCopyInitializationRequireCopy(Expr* initFrom) {
 
     // e.g. an array view being copied into an array.
     // This copy might be copy-elided later.
-    if (getUnaliasTypeDuringResolution(fromType) != fromType)
+    if (getCopyTypeDuringResolution(fromType) != fromType)
       return true;
 
     // Is it the result of a call returning by value?
-    if (isCallExprTemporary(initFrom))
-      return false;
+    SymExpr* fromSe = toSymExpr(initFrom);
+    if (isCallExprTemporary(fromSe->symbol())) {
+      // check for the sub-expression being a function marked with
+      //  pragma "no copy return"
+      // in that event, the copy is required.
+      if (isTemporaryFromNoCopyReturn(fromSe->symbol()))
+        return true;
+      else
+        return false;
+    }
 
     // Is it a local variable? Or a global? or an outer?
     // Need a copy in any of these cases for variable initialization.
@@ -809,9 +820,22 @@ bool doesValueReturnRequireCopy(Expr* initFrom) {
       return true;
     // Past here, it's a value.
 
+    // e.g. an array view being copied into an array.
+    // This copy might be copy-elided later.
+    //if (getCopyTypeDuringResolution(fromType) != fromType)
+    //  return true;
+
     // Is it the result of a call returning by value?
-    if (isCallExprTemporary(initFrom))
-      return false;
+    SymExpr* fromSe = toSymExpr(initFrom);
+    if (isCallExprTemporary(fromSe->symbol())) {
+      // check for the sub-expression being a function marked with
+      //  pragma "no copy return"
+      // in that event, the copy is required.
+      if (isTemporaryFromNoCopyReturn(fromSe->symbol()))
+        return true;
+      else
+        return false;
+    }
 
     // Is it a local variable?
     if (isLocalVariable(initFrom))
@@ -1596,7 +1620,6 @@ static void checkForErroneousInitCopies() {
           if (FnSymbol* callInFn = se->getFunction()) {
             bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
                              callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                             callInFn->hasFlag(FLAG_UNALIAS_FN) ||
                              callInFn->hasFlag(FLAG_COERCE_FN) ||
                              (callInFn->hasFlag(FLAG_COPY_INIT) &&
                               callInFn->hasFlag(FLAG_COMPILER_GENERATED));
@@ -1621,7 +1644,6 @@ static void checkForErroneousInitCopies() {
         if (FnSymbol* callInFn = se->getFunction()) {
           bool inCopyIsh = callInFn->hasFlag(FLAG_INIT_COPY_FN) ||
                            callInFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                           callInFn->hasFlag(FLAG_UNALIAS_FN) ||
                            callInFn->hasFlag(FLAG_COERCE_FN) ||
                            (callInFn->hasFlag(FLAG_COPY_INIT) &&
                             callInFn->hasFlag(FLAG_COMPILER_GENERATED));

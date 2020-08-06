@@ -650,7 +650,8 @@ static bool canCopyElideVar(Symbol* rhs) {
 static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
   return canCopyElideVar(rhs) &&
          rhs->getValType() == lhs->getValType() &&
-         rhs->defPoint->parentSymbol == call->parentSymbol;
+         rhs->defPoint->parentSymbol == call->parentSymbol &&
+         !(isCallExprTemporary(rhs) && isTemporaryFromNoCopyReturn(rhs));
 }
 
 // returns true if there was an unconditional return

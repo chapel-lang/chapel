@@ -226,11 +226,13 @@ FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==tr
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
-FnSymbol* getUnalias(Type* t);
 
-// Some types should decay to another type when assigned into a variable.
+FnSymbol* getInitCopyDuringResolution(Type* t);
+
+// Some types should change to another type when assigned into a variable.
 // This function returns that type.
-Type* getUnaliasTypeDuringResolution(Type* t);
+// Examples: array view -> array; sync int -> int; iterator -> array
+Type* getCopyTypeDuringResolution(Type* t);
 
 FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn);
 const char* getErroneousCopyError(FnSymbol* fn);
@@ -322,6 +324,9 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 
 // in/out/inout
 bool inOrOutFormal(ArgSymbol* formal);
+
+bool isCallExprTemporary(Symbol* fromSym);
+bool isTemporaryFromNoCopyReturn(Symbol* fromSym);
 
 void resolveIfExprType(CondStmt* stmt);
 

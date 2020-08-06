@@ -111,10 +111,10 @@ SymbolMap                          paramMap;
 Vec<CallExpr*>                     callStack;
 
 std::map<Type*,     FnSymbol*>     autoCopyMap;
+std::map<Type*,     FnSymbol*>     initCopyMap;
 std::map<Type*,     Serializers>   serializeMap;
 
 Map<Type*,          FnSymbol*>     autoDestroyMap;
-Map<Type*,          FnSymbol*>     unaliasMap;
 Map<FnSymbol*,      FnSymbol*>     coerceMoveFromCopyMap;
 Map<Type*,          FnSymbol*>     valueToRuntimeTypeMap;
 Map<FnSymbol*,      FnSymbol*>     iteratorLeaderMap;
@@ -177,7 +177,7 @@ static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
-static void resolveUnalias(AggregateType* at);
+static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static Expr* foldTryCond(Expr* expr);
 
@@ -392,18 +392,8 @@ FnSymbol* getAutoDestroy(Type* t) {
   return autoDestroyMap.get(t);
 }
 
-FnSymbol* getUnalias(Type* t) {
-  return unaliasMap.get(t);
-}
-
-Type* getUnaliasTypeDuringResolution(Type* t) {
-  if (isSyncType(t) || isSingleType(t)) {
-    Type* baseType = t->getField("valType")->type;
-    return baseType;
-  }
-  if (t->symbol->hasFlag(FLAG_DOMAIN) ||
-      t->symbol->hasFlag(FLAG_ARRAY)) {
-
+static bool isAliasingArray(Type* t) {
+  if (t->symbol->hasFlag(FLAG_ARRAY)) {
     AggregateType* at = toAggregateType(t);
     INT_ASSERT(at);
 
@@ -412,18 +402,50 @@ Type* getUnaliasTypeDuringResolution(Type* t) {
     Symbol* instanceField = at->getField("_instance", false);
     if (instanceField) {
       if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
-
-        // doesn't call resolveAutoCopyEtc b/c of infinite loop
-        resolveUnalias(at);
-        if (FnSymbol* unalias = getUnalias(at)) {
-          return unalias->retType;
-        }
+        return true;
       }
     }
   }
 
+  return false;
+}
+
+Type* getCopyTypeDuringResolution(Type* t) {
+  if (isSyncType(t) || isSingleType(t)) {
+    Type* baseType = t->getField("valType")->type;
+    return baseType;
+  }
+  if (isAliasingArray(t) ||
+      t->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    AggregateType* at = toAggregateType(t);
+    INT_ASSERT(at);
+
+    FnSymbol* fn = getInitCopyDuringResolution(at);
+    INT_ASSERT(fn);
+    return fn->retType;
+  }
+
   return t;
 }
+
+FnSymbol* getInitCopyDuringResolution(Type* type) {
+  std::map<Type*, FnSymbol*>::iterator it = initCopyMap.find(type);
+
+  FnSymbol* fn = NULL;
+  if (it != initCopyMap.end())
+    fn = it->second;  // can also be NULL
+
+  if (fn != NULL)
+    return fn;
+
+  if (AggregateType* at = toAggregateType(type)) {
+    fn = autoMemoryFunction(at, astr_initCopy);
+    initCopyMap[at] = fn;
+  }
+
+  return fn;
+}
+
 
 FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn) {
   return coerceMoveFromCopyMap.get(coerceCopyFn);
@@ -1538,10 +1560,15 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
-  Type* unaliasType = getUnaliasTypeDuringResolution(actualType);
-  if (unaliasType != actualType) {
-    return canDispatch(unaliasType, actualSym, formalType, formalSym, fn,
-                       promotes, paramNarrows);
+  if (formalSym != NULL &&
+      (formalSym->originalIntent == INTENT_IN ||
+       formalSym->originalIntent == INTENT_CONST_IN ||
+       formalSym->originalIntent == INTENT_INOUT)) {
+    Type* copyType = getCopyTypeDuringResolution(actualType);
+    if (copyType != actualType) {
+      return canDispatch(copyType, actualSym, formalType, formalSym, fn,
+                         promotes, paramNarrows);
+    }
   }
 
   if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
@@ -3910,7 +3937,6 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
       if (inFn != NULL) {
         inCopyIsh = inFn->hasFlag(FLAG_INIT_COPY_FN) ||
                     inFn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                    inFn->hasFlag(FLAG_UNALIAS_FN) ||
                     inFn->name == astrInitEquals;
       }
       if (inCopyIsh) {
@@ -6690,7 +6716,6 @@ void resolveInitVar(CallExpr* call) {
     // For example, even though domains can leverage 'init=' for basic
     // copy-initialization, the compiler only currently knows about calls to
     // 'chpl__initCopy' and how to turn them into something else when necessary
-    // (e.g. chpl__unalias).
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
@@ -8661,7 +8686,6 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
           FnSymbol*     fn     = frame->getFunction();
           bool inCopyIsh = fn->hasFlag(FLAG_INIT_COPY_FN) ||
                            fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-                           fn->hasFlag(FLAG_UNALIAS_FN) ||
                            fn->hasFlag(FLAG_COERCE_FN) ||
                            fn->name == astrInitEquals;
           if (inCopyIsh) {
@@ -9269,7 +9293,6 @@ static void resolveDestructors() {
 ************************************** | *************************************/
 
 static const char* autoCopyFnForType(AggregateType* at);
-static FnSymbol*   autoMemoryFunction(AggregateType* at, const char* fnName);
 
 static void resolveAutoCopies() {
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -9335,20 +9358,6 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
     autoDestroyMap.put(at, fn);
   }
-
-  resolveUnalias(at);
-}
-
-static void resolveUnalias(AggregateType* at) {
-  // resolve unalias
-  // We make the 'unalias' hook available to all user records,
-  // but for now it only applies to array/domain/distribution
-  // in order to minimize the changes.
-  if (unaliasMap.get(at) == NULL && isRecordWrappedType(at) == true) {
-    FnSymbol* fn = autoMemoryFunction(at, "chpl__unalias");
-
-    unaliasMap.put(at, fn);
-  }
 }
 
 // Just use 'chpl__initCopy' instead of 'chpl__autoCopy'
@@ -9400,8 +9409,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       // if it's an initCopy e.g. we should have already marked it as erroneous
       if (fn->hasFlag(FLAG_INIT_COPY_FN) ||
-          fn->hasFlag(FLAG_AUTO_COPY_FN) ||
-          fn->hasFlag(FLAG_UNALIAS_FN))
+          fn->hasFlag(FLAG_AUTO_COPY_FN))
         INT_ASSERT(fn->hasFlag(FLAG_ERRONEOUS_COPY));
 
       // Return the resolved function, for storing in the map

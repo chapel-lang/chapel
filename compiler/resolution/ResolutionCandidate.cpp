@@ -489,8 +489,8 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 
   // memoize unaliasing for in/inout/out/value return
   if (inOrOtherValue) {
-    if (Type* unalias = getUnaliasTypeDuringResolution(actualType)) {
-      actualType = unalias;
+    if (Type* copyType = getCopyTypeDuringResolution(actualType)) {
+      actualType = copyType;
     }
   }
 

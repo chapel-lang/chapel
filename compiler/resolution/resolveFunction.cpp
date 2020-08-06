@@ -751,11 +751,18 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE) == true &&
           call->get(1)                 == se) {
-        Type* rhsType = call->get(2)->typeInfo();
+        Expr* fromExpr = call->get(2);
+        Type* rhsType = fromExpr->typeInfo();
 
+        SymExpr* fromSe = toSymExpr(fromExpr);
+        bool domain = rhsType->symbol->hasFlag(FLAG_DOMAIN) &&
+                      fromSe != NULL &&
+                      isCallExprTemporary(fromSe->symbol()) &&
+                      isTemporaryFromNoCopyReturn(fromSe->symbol());
         bool arrayIsh = (rhsType->symbol->hasFlag(FLAG_ARRAY) ||
                          rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
+        bool handleDomain = skipArray == false && domain;
         bool handleArray = skipArray == false && arrayIsh;
         bool handleTuple = skipTuple == false &&
                            isTupleContainingAnyReferences(rhsType);
@@ -763,13 +770,19 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
         // TODO: Should we check if the RHS is a symbol with
         // 'no auto destroy' on it? If it is, then we'd be copying
         // the RHS and it would never be destroyed...
-        if ((handleArray || handleTuple) && !isTypeExpr(call->get(2))) {
+        if ((handleArray || handleDomain || handleTuple) &&
+            !isTypeExpr(call->get(2))) {
+
+          // Calling this for the side effect of resolving initCopy
+          getCopyTypeDuringResolution(rhsType);
+          FnSymbol* initCopyFn = getInitCopyDuringResolution(rhsType);
+          INT_ASSERT(initCopyFn);
 
           SET_LINENO(call);
           Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
+          VarSymbol* tmp       = newTemp("copy_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
-          CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+          CallExpr*  unrefCall = new CallExpr(initCopyFn, tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);
           FnSymbol*  unrefFn   = NULL;
 
@@ -815,7 +828,6 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
 static bool doNotUnaliasArray(FnSymbol* fn) {
   return (fn->hasFlag(FLAG_NO_COPY_RETURN) ||
-          fn->hasFlag(FLAG_UNALIAS_FN) ||
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
@@ -841,7 +853,6 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
       fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
       fn->hasFlag(FLAG_COERCE_FN)                || // chpl__coerceCopy/Move
       fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
-      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
       (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
                                     //  * they might return by ref

@@ -352,6 +352,8 @@ module ChapelArray {
   // It would have implications for alias analysis
   // of arrays.
 
+  pragma "no copy return"
+  pragma "return not owned"
   proc _getDomain(value) {
     if _to_unmanaged(value.type) != value.type then
       compilerError("Domain on borrow created");
@@ -821,6 +823,7 @@ module ChapelArray {
     return isSparseDom(dom);
   }
 
+  pragma "no copy return"
   pragma "return not owned"
   proc chpl__parentDomainFromDomainRuntimeType(type domainType) {
     pragma "no copy"
@@ -859,6 +862,7 @@ module ChapelArray {
     return _getDistribution(dist._value);
   }
 
+  pragma "no copy return"
   pragma "return not owned"
   proc chpl__domainFromArrayRuntimeType(type rtt) {
     pragma "no copy"
@@ -2512,6 +2516,7 @@ module ChapelArray {
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
 
+    pragma "no copy return"
     pragma "return not owned"
     proc _dom return _getDomain(_value.dom);
 
@@ -4430,38 +4435,6 @@ module ChapelArray {
     for x in Xs do yield x;
   }
 
-  // This implementation of arrays and domains can create aliases
-  // of domains and arrays. Additionally, array aliases are possible
-  // in the language with the => operator.
-  //
-  // A call to the chpl__unalias function is added by the compiler when a user
-  // variable is initialized from an expression that would normally not require
-  // a copy.
-  //
-  // For example, if we have
-  //   var A:[1..10] int;
-  //   var B = A[1..3];
-  // then B is initialized with a slice of A. But since B is a new
-  // variable, it needs to be a new 3-element array with distinct storage.
-  // Since the slice is implemented as a function call, without chpl__unalias,
-  // B would just be initialized to the result of the function call -
-  // meaning that B would not refer to distinct array elements.
-  pragma "unalias fn"
-  inline proc chpl__unalias(x: domain) {
-    if _to_unmanaged(x._instance.type) != x._instance.type then
-      compilerError("Domain on borrow created");
-
-    if x._unowned {
-      // We could add an autoDestroy here, but it wouldn't do anything for
-      // an unowned domain.
-      pragma "no auto destroy" var ret = x;
-      return ret;
-    } else {
-      pragma "no copy" var ret = x;
-      return ret;
-    }
-  }
-
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where isRectangularDom(rhs) {
@@ -5046,28 +5019,6 @@ module ChapelArray {
     return ret;
   }
 
-
-  // see comment on chpl__unalias for domains
-  pragma "unalias fn"
-  inline proc chpl__unalias(x: []) {
-    param isview = (x._value.isSliceArrayView() ||
-                    x._value.isRankChangeArrayView() ||
-                    x._value.isReindexArrayView());
-
-    if isview {
-      // Intended to call chpl__initCopy
-      pragma "no auto destroy" var ret = x;
-      // Since chpl__unalias replaces a initCopy(auto/initCopy()) the
-      // inner value needs to be auto-destroyed.
-      // TODO: Should this be inserted by the compiler?
-      chpl__autoDestroy(x);
-      return ret;
-    } else {
-      // Just return a bit-copy/shallow-copy of 'x'
-      pragma "no copy" var ret = x;
-      return ret;
-    }
-  }
 
   // chpl__initCopy(ir: _iteratorRecord, definedConst: bool) is used to create
   // an array out of for-expressions, forall-expressions, promoted expressions.

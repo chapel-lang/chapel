@@ -1180,7 +1180,7 @@ static bool needToAddCoercion(Type*      actualType,
     return false;
 
   if (inOrOutFormal(formal)) {
-    Type* toType = getUnaliasTypeDuringResolution(actualType);
+    Type* toType = getCopyTypeDuringResolution(actualType);
     if (toType == formal->getValType())
       return false; // handled by other wrapper code, e.g. handleInIntent
   }
