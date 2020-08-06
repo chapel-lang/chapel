@@ -85,6 +85,16 @@ module cuBLAS {
     cublas_sgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, c, ldc);
   }
 
+  proc cu_scopy(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_scopy(handle, n, x, incX, y, incY);
+  }
+
+  proc cu_dcopy(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_dcopy(handle, n, x, incX, y, incY);
+  }
+
   module C_CUBLAS {
     use SysCTypes;
 
@@ -118,7 +128,6 @@ module cuBLAS {
 
     extern proc cublas_snrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_float));
     extern proc cublas_dnrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_double));
-
 
     extern proc cublas_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, C: c_ptr(c_float), ldc: c_int);
   }
