@@ -2,5 +2,7 @@ samax : 2 PASSED, 0 FAILED
 damax : 2 PASSED, 0 FAILED
 samin : 2 PASSED, 0 FAILED
 damin : 2 PASSED, 0 FAILED
+sasum : 1 PASSED, 0 FAILED
+dasum : 1 PASSED, 0 FAILED
 saxpy : 3 PASSED, 0 FAILED
 daxpy : 3 PASSED, 0 FAILED
