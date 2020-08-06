@@ -4,5 +4,7 @@ samin : 2 PASSED, 0 FAILED
 damin : 2 PASSED, 0 FAILED
 sasum : 1 PASSED, 0 FAILED
 dasum : 1 PASSED, 0 FAILED
+scopy : 3 PASSED, 0 FAILED
+dcopy : 3 PASSED, 0 FAILED
 saxpy : 3 PASSED, 0 FAILED
 daxpy : 3 PASSED, 0 FAILED
