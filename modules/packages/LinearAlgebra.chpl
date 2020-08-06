@@ -1986,7 +1986,7 @@ proc svd(A: [?Adom] ?t)
   return (A, W, V);
 }
 
-inline private proc pythag(a : real, b : real) {
+private inline proc pythag(a : real, b : real) {
   var absa, absb : real;
   absa = abs(a);
   absb = abs(b);
