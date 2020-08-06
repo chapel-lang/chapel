@@ -6,5 +6,7 @@ sasum : 1 PASSED, 0 FAILED
 dasum : 1 PASSED, 0 FAILED
 scopy : 3 PASSED, 0 FAILED
 dcopy : 3 PASSED, 0 FAILED
+ sdot : 1 PASSED, 0 FAILED
+ ddot : 1 PASSED, 0 FAILED
 saxpy : 3 PASSED, 0 FAILED
 daxpy : 3 PASSED, 0 FAILED

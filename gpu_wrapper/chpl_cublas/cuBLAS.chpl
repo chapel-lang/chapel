@@ -95,6 +95,16 @@ module cuBLAS {
     cublas_dcopy(handle, n, x, incX, y, incY);
   }
 
+  proc cu_sdot(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), result: c_ptr(c_float), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_sdot(handle, n, x, incX, y, incY, result);
+  }
+
+  proc cu_ddot(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), result: c_ptr(c_double), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_ddot(handle, n, x, incX, y, incY, result);
+  }
+
   module C_CUBLAS {
     use SysCTypes;
 
