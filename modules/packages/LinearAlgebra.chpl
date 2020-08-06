@@ -1757,6 +1757,7 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
+pragma "no doc" 
 proc svd(A: [?Adom] ?t)
   where !usingLAPACK || !isLAPACKType(t) 
 {
@@ -1983,6 +1984,14 @@ proc svd(A: [?Adom] ?t)
   }
 
   return (A, W, V);
+}
+
+inline private proc pythag(a : real, b : real) {
+  var absa, absb : real;
+  absa = abs(a);
+  absb = abs(b);
+  if (absa > absb) then return absa * sqrt(1.0 + (absb/absa)*(absb/absa));
+  else return (if absb == 0.0 then 0.0 else absb * sqrt(1.0 + (absa/absb) * (absa/absb)));
 }
 
 /*
