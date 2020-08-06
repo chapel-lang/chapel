@@ -35,6 +35,7 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "view.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -1621,6 +1622,8 @@ static void checkForErroneousInitCopies() {
                             callInFn->hasFlag(FLAG_COMPILER_GENERATED));
           if (inCopyIsh == false) {
 
+            nprint_view(fn);
+            nprint_view(callInFn);
             USR_FATAL_CONT(se, "invalid copy-initialization");
 
             if (errors.count(fn) != 0)
