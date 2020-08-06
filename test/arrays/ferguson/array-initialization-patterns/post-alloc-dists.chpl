@@ -9,7 +9,7 @@
 use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, StencilDist;
 
 enum DistType { default, block, cyclic, blockcyclic, replicated, stencil };
-config param distType: DistType = DistType.block;
+config param distType: DistType = DistType.default;
 
 writeln("alloc int test begins");
 
