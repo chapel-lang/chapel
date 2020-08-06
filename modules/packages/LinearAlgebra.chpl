@@ -518,7 +518,6 @@ proc tranpose(A: [?Dom] ?eltType, keepDistribution = true)
 
     coforall loc in targetLocales {
       var localDomain = A.localSubdomain(); 
-
       transposedMat[localDomain.dim(1), localDomain.dim(0)] = 
         A.localSlice(localDomain);
     }
@@ -533,7 +532,6 @@ proc tranpose(A: [?Dom] ?eltType, keepDistribution = true)
     coforall loc in targetLocales {
       const localDomainA = A.localSubdomain();
       const localDomainTMat = transposedMat.localSubdomain();
-
       transposedMat.localSlice(localDomainTMat) = A.localSlice(localDomainA).T;
     }
 
