@@ -42,6 +42,7 @@ proc main() {
   test_amin();
   test_asum();
   test_copy();
+  test_dot();
   test_axpy();
 
 }
@@ -64,6 +65,11 @@ proc test_asum(){
 proc test_copy(){
   test_cucopy_helper(real(32));
   test_cucopy_helper(real(64));
+}
+
+proc test_dot(){
+  test_cudot_helper(real(32));
+  test_cudot_helper(real(64));
 }
 
 proc test_axpy() {
@@ -326,3 +332,43 @@ proc test_cuaxpy_helper(type t) {
   printErrors(name, passed, failed, tests);
 }
 
+proc test_cudot_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sdot".format(blasPrefix(t));
+
+  // Simple test
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 2: t, 3: t],
+        Y: [D] t = [3: t, 2: t, 1: t];
+
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y allocated in GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    var prod = X*Y;
+    var red = + reduce prod;
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+    var r : t;
+
+    select t {
+      when real(32) do {
+        cu_sdot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(r));
+      }
+      when real(64) do {
+        cu_ddot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(r));
+      }
+    }
+
+    var err = abs(red - r);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
