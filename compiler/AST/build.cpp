@@ -37,6 +37,7 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "TryStmt.h"
+#include "view.h"
 #include "wellknown.h"
 
 #include <map>
@@ -1380,9 +1381,9 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
   fn->insertAtTail(new DefExpr(eltType));
 
   if( !zippered ) {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(%S, iteratorIndex(_getIterator(%S)))))}", gFalse, eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(%S, iteratorIndex(_getIterator(%S)))))}", eltType, gFalse, data);
   } else {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(%S, iteratorIndex(_getIteratorZip(%S)))))}", gFalse, eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(%S, iteratorIndex(_getIteratorZip(%S)))))}", eltType, gFalse, data);
   }
 }
 
@@ -1570,10 +1571,14 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
     if (flags->size() == 1 && flags->count(FLAG_CONST)) {
       if (CallExpr *initCall = toCallExpr(defExpr->init)) {
         if (initCall->isNamed("chpl__buildDomainExpr")) {
+          //std::cout << "Replacing \n";
+          //nprint_view(initCall->argList.last());
           initCall->argList.last()->replace(new SymExpr(gTrue));
           return;
         }
         else if (initCall->isNamed("chpl__distributed")) {
+          //std::cout << "Replacing \n";
+          //nprint_view(initCall->get(3));
           initCall->get(3)->replace(new SymExpr(gTrue));
           return;
         }
@@ -1585,6 +1590,8 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
   if (defExpr->exprType != NULL) {
     if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
       if (initType->isNamed("chpl__distributed")) {
+        //std::cout << "Replacing \n";
+        //nprint_view(initType->get(3));
         initType->get(3)->replace(new SymExpr(gTrue));
         return;
       }
@@ -1593,6 +1600,8 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
           if (typeCall->isNamed("chpl__ensureDomainExpr")) {
             if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
               if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
+                //std::cout << "Replacing \n";
+                //nprint_view(buildDomExpr->argList.last());
                 buildDomExpr->argList.last()->replace(new SymExpr(gTrue));
                 return;
               }
