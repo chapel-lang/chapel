@@ -11,7 +11,6 @@ module One {
 }
 
 module Two {
-  public use One;
   private use TwoPoint1;
 
   class Stored : StoredParent {
@@ -46,7 +45,7 @@ module Three {
 }
 
 module User {
-  use One, Three;
+  use Three;
 
   proc main() {
     var x = blah();
