@@ -365,7 +365,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
 
                 rhs->remove();
                 autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), 
-                                        new SymExpr(gFalse), rhs);
+                                        rhs,
+                                        new SymExpr(gFalse));
                 move->insertAtTail(autoCopy);
               }
             }
@@ -445,8 +446,8 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
               FnSymbol* copyFn = getAutoCopyForType(varLhs->type);
 
               callRhs->remove();
-              CallExpr* copyCall = new CallExpr(copyFn, new SymExpr(gFalse), 
-                                                exprRhs);
+              CallExpr* copyCall = new CallExpr(copyFn, exprRhs,
+                                                new SymExpr(gFalse));
               move->insertAtTail(copyCall);
             }
           }
@@ -499,7 +500,7 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
 
               rhs->remove();
               autoCopy = new CallExpr(getAutoCopyForType(symRhs->type),
-                                      new SymExpr(gFalse), rhs);
+                                      rhs, new SymExpr(gFalse));
               move->insertAtTail(autoCopy);
             }
           }
@@ -659,7 +660,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
-            SymExpr* copiedSe = toSymExpr(rhsCall->get(2));
+            SymExpr* copiedSe = toSymExpr(rhsCall->get(1));
             INT_ASSERT(copiedSe);
             SymExpr* dstSe = toSymExpr(callNext->get(1));
             INT_ASSERT(dstSe);
@@ -667,7 +668,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
             // check that the initCopy is copying the variable we just set
             if (copiedSe->symbol() == useLhs &&
                 useLhs->hasFlag(FLAG_TEMP)) {
-              ArgSymbol* formalArg  = rhsFn->getFormal(2);
+              ArgSymbol* formalArg  = rhsFn->getFormal(1);
               Type*      formalType = formalArg->type;
               Type*      actualType = copiedSe->symbol()->getValType();
               Type*      returnType = rhsFn->retType->getValType();
@@ -728,7 +729,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
 
       copyExpr->replace(new SymExpr(unaliasTemp));
     } else {
-      copyExpr->replace(copyExpr->get(2)->remove());
+      copyExpr->replace(copyExpr->get(1)->remove());
     }
 
     if (copiesToNoDestroy) {
@@ -1084,8 +1085,8 @@ static void insertCopiesForYields()
         stmt->insertBefore(new DefExpr(tmp));
         stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
                            new CallExpr(getAutoCopyForType(type),
-                                        new SymExpr(gFalse),
-                                        foundSe->copy())));
+                                        foundSe->copy(),
+                                        new SymExpr(gFalse))));
 
         foundSe->replace(new SymExpr(tmp));
       }

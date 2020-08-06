@@ -45,7 +45,7 @@ static void removePODinitDestroy()
       // second argument: whose type is the same as the return type
       INT_ASSERT(fn->numFormals() >= 2);
 
-      if (fn->getFormal(2)->type != fn->retType)
+      if (fn->getFormal(1)->type != fn->retType)
         // In some cases, the autoCopy function has a different return type than
         // its argument type.
         // In that case, the replace() below won't work because it will cause a
@@ -62,7 +62,7 @@ static void removePODinitDestroy()
 
         // Remove those calls we gathered
         for_vector(CallExpr, call, calls) {
-          Expr* actual = call->get(2);
+          Expr* actual = call->get(1);
           ArgSymbol* arg = actual_to_formal(actual);
           if (arg)
           {

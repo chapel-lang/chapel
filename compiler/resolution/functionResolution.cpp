@@ -4008,8 +4008,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
 
         USR_FATAL_CONT(call,
                        "Cannot initialize %s from %s",
-                       toString(info.actuals.v[1]->type),
-                       toString(info.actuals.v[2]->type));
+                       toString(info.actuals.v[0]->type),
+                       toString(info.actuals.v[1]->type));
 
     } else if (info.name == astrThis) {
       Type* type = info.actuals.v[1]->getValType();
@@ -5733,8 +5733,8 @@ static void captureTaskIntentValues(int        argNum,
         marker->insertBefore("'move'(%S,%S(%S, %S))",
                              capTemp,
                              autoCopy,
-                             gFalse, // can we do something better here?
-                             varActual);
+                             varActual,
+                             gFalse); // can we do something better here?
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
@@ -6662,7 +6662,8 @@ void resolveInitVar(CallExpr* call) {
     // (e.g. chpl__unalias).
 
     SymExpr *definedConst = new SymExpr(dst->hasFlag(FLAG_CONST)? gTrue:gFalse);
-    CallExpr* initCopy = new CallExpr(astr_initCopy, definedConst, srcExpr->remove());
+    CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
+                                                     definedConst);
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -6778,8 +6779,9 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   CallExpr* call = NULL;
 
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr(astr_initCopy, /* definedConst = */new SymExpr(gFalse), 
-                                       tmpAt);
+    call = new CallExpr(astr_initCopy, tmpAt,
+                        /* definedConst = */new SymExpr(gFalse));
+                       
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -9341,7 +9343,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
   CallExpr*  call   = NULL;
 
   if (fnName == astr_initCopy || fnName == astr_autoCopy) {
-    call = new CallExpr(fnName, new SymExpr(gFalse), tmp);
+    call = new CallExpr(fnName, tmp, new SymExpr(gFalse));
   }
   else {
     call = new CallExpr(fnName, tmp);

@@ -471,7 +471,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
 static bool fixupDefaultInitCopy(FnSymbol* fn,
                                  FnSymbol* newFn,
                                  CallExpr* call) {
-  ArgSymbol* arg    = newFn->getFormal(2);
+  ArgSymbol* arg    = newFn->getFormal(1);
   bool       retval = false;
 
   if (AggregateType* ct = toAggregateType(arg->type)) {
@@ -515,8 +515,8 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         if (SymExpr *firstArgSE = toSymExpr(call->get(1))) {
           if (SymExpr *secondArgSE = toSymExpr(call->get(2))) {
             CallExpr *constFixupCall = new CallExpr("chpl__fixupConstDomain");
-            constFixupCall->insertAtTail(new SymExpr(newFn->getFormal(1)));
             constFixupCall->insertAtTail(thisTmp);
+            constFixupCall->insertAtTail(new SymExpr(newFn->getFormal(2)));
             initCall->insertAfter(constFixupCall);
             resolveCallAndCallee(constFixupCall);
           }

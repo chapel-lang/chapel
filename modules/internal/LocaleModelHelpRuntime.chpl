@@ -187,8 +187,8 @@ module LocaleModelHelpRuntime {
   }
 
   // wrap around runtime's chpl__initCopy
-  proc chpl__initCopy(definedConst: bool ,
-                      initial: chpl_localeID_t): chpl_localeID_t {
+  proc chpl__initCopy(initial: chpl_localeID_t,
+                      definedConst: bool): chpl_localeID_t {
     // We need an explicit copy constructor because the compiler cannot create
     // a correct one for a record type whose members are not known to it.
     pragma "init copy fn"

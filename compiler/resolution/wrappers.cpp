@@ -673,7 +673,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     // more principled
     SymExpr *definedConst = new SymExpr(rvv->hasFlag(FLAG_CONST) ?
                                         gTrue : gFalse);
-    CallExpr* copy = new CallExpr(astr_initCopy, definedConst, temp);
+    CallExpr* copy = new CallExpr(astr_initCopy, temp, definedConst);
     block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
     resolveCallAndCallee(copy);
   } else {
@@ -1373,7 +1373,7 @@ static void addArgCoercion(FnSymbol*  fn,
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
       SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
                                           gTrue:gFalse);
-      castCall = new CallExpr(astr_initCopy, definedConst, prevActual);
+      castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
     } else {
       castCall   = new CallExpr(PRIM_DEREF, prevActual);
     }
@@ -1670,10 +1670,11 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
                                             gTrue:gFalse);
         if (coerceRuntimeTypes) {
-          copy = new CallExpr(astr_coerceCopy, definedConst, runtimeTypeTemp, actualSym);
+          copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
+                                               definedConst);
         }
         else {
-          copy = new CallExpr(astr_initCopy, definedConst, actualSym);
+          copy = new CallExpr(astr_initCopy, actualSym, definedConst);
         }
 
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
@@ -1703,8 +1704,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 
           SymExpr *definedConst = new SymExpr(formal->hasFlag(FLAG_CONST) ?
                                               gTrue:gFalse);
-          CallExpr* copy = new CallExpr(astr_coerceMove, definedConst,
-                                        runtimeTypeTemp, actualSym);
+          CallExpr* copy = new CallExpr(astr_coerceMove, 
+                                        runtimeTypeTemp, actualSym, definedConst);
 
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
           anchor->insertBefore(new DefExpr(tmp));

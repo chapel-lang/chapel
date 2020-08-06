@@ -2013,7 +2013,7 @@ static Expr* preFoldNamed(CallExpr* call) {
   } else if (call->isNamedAstr(astr_initCopy) ||
              call->isNamedAstr(astr_autoCopy)) {
     if (call->numActuals() == 2) {
-      if (SymExpr* symExpr = toSymExpr(call->get(2))) {
+      if (SymExpr* symExpr = toSymExpr(call->get(1))) {
         if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
           if (var->immediate != NULL) {
             retval = new SymExpr(var);

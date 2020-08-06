@@ -340,12 +340,12 @@ module ChapelDistribution {
 
   // this helper is added by the compiler into the body of instantiations of the
   // generic chpl__initCopy
-  inline proc chpl__fixupConstDomain(definedConst: bool, x: domain) {
+  inline proc chpl__fixupConstDomain(x: domain, definedConst: bool) {
     if isSubtype(x._value.type, BaseRectangularDom) {
       x._value.definedConst = definedConst;
     }
   }
-  inline proc chpl__fixupConstDomain(definedConst: bool, x) { }
+  inline proc chpl__fixupConstDomain(x, definedConst: bool) { }
 
   class BaseRectangularDom : BaseDom {
     param rank : int;

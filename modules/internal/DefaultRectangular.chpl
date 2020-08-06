@@ -140,7 +140,7 @@ module DefaultRectangular {
       //
       // The code below is copied from the contents of the "proc =".
       const nd = new dmap(new unmanaged DefaultDist());
-      __primitive("move", defaultDist, chpl__autoCopy(false, nd.clone()));
+      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(), false));
     }
   }
 

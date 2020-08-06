@@ -697,7 +697,7 @@ checkAutoCopyMap()
     if (hasAutoCopyForType(key)) {
       FnSymbol* fn = getAutoCopyForType(key);
       if (fn->numFormals() > 1) {
-        Type* baseType = fn->getFormal(2)->getValType();
+        Type* baseType = fn->getFormal(1)->getValType();
         INT_ASSERT(baseType == key);
       }
     }

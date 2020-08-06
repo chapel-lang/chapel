@@ -447,8 +447,8 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
                                             gTrue:gFalse);
         CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp,
                                           new CallExpr(astr_initCopy,
-                                                       definedConst,
-                                                       tail->copy()));
+                                                       tail->copy(),
+                                                       definedConst));
         tail->insertBefore(tempMove);
         normalize(tempMove);
         tail->replace(new SymExpr(ir_temp));

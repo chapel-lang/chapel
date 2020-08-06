@@ -496,8 +496,8 @@ static bool findCopyElisionCandidate(CallExpr* call,
             rhsCall->isNamedAstr(astr_autoCopy) ||
             rhsCall->isNamedAstr(astr_coerceCopy)) {
           int nActuals = rhsCall->numActuals();
-          if (nActuals >= 2) {  // definedConst argument is always there
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals))) {
+          if (nActuals >= 2) {  // definedConst argument is always the last
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals-1))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
                 rhs = rhsSe->symbol();
@@ -517,8 +517,8 @@ static bool findCopyElisionCandidate(CallExpr* call,
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       int nActuals = call->numActuals();
       if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-1))) {
-          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals-1))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
               rhs = rhsSe->symbol();
@@ -569,7 +569,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
                                                   rhs));
 
           // Use the result of the PRIM_ASSIGN_ELIDED_COPY in the coerceMove.
-          call->get(3)->replace(new SymExpr(tmp));
+          call->get(2)->replace(new SymExpr(tmp));
         } else {
           // Change the copy into a move and don't destroy the variable.
           call->convertToNoop();

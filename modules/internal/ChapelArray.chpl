@@ -3663,7 +3663,7 @@ module ChapelArray {
   //
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
-      __primitive("move", a, chpl__autoCopy(false, b.clone()));
+      __primitive("move", a, chpl__autoCopy(b.clone(), false));
     } else if a._value._doms.size == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
@@ -4220,7 +4220,7 @@ module ChapelArray {
           if kind == _tElt.move {
             if isArray(dst) {
               pragma "no auto destroy" pragma "no copy"
-              var newArr = chpl__coerceMove(definedConst=false, a.eltType, src);
+              var newArr = chpl__coerceMove(a.eltType, src, definedConst=false);
               __primitive("=", dst, newArr);
             } else {
               __primitive("=", dst, src);
@@ -4449,27 +4449,27 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(definedConst: bool, const ref rhs: []) {
+  proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     pragma "no copy"
-    var lhs = chpl__coerceCopy(definedConst, rhs.type, rhs);
+    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
     return lhs;
   }
 
-  pragma "auto copy fn" proc chpl__autoCopy(definedConst: bool, x: []) {
-    pragma "no copy" var b = chpl__initCopy(definedConst, x);
+  pragma "auto copy fn" proc chpl__autoCopy(x: [], definedConst: bool) {
+    pragma "no copy" var b = chpl__initCopy(x, definedConst);
     return b;
   }
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_domain, rhs:_domain) {
+  proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
 
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
 
-    chpl__fixupConstDomain(definedConst, lhs);
+    chpl__fixupConstDomain(lhs, definedConst);
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -4479,7 +4479,8 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_domain, in rhs:_domain) {
+  proc chpl__coerceMove(type dstType:_domain, in rhs:_domain,
+                        definedConst: bool) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
 
     // TODO: just return rhs
@@ -4490,7 +4491,7 @@ module ChapelArray {
     lhs; // no split init
     lhs = rhs;
 
-    chpl__fixupConstDomain(definedConst, lhs);
+    chpl__fixupConstDomain(lhs, definedConst);
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -4501,7 +4502,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_domain, rhs:_tuple) {
+  proc chpl__coerceCopy(type dstType:_domain, rhs:_tuple, definedConst: bool) {
     var lhs:dstType;
     lhs; // no split init
     if chpl__isLegalRectTupDomAssign(lhs, rhs) {
@@ -4514,7 +4515,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_domain, in rhs:_tuple) {
+  proc chpl__coerceMove(type dstType:_domain, in rhs:_tuple, definedConst: bool) {
     var lhs:dstType;
     lhs; // no split init
     if chpl__isLegalRectTupDomAssign(lhs, rhs) {
@@ -4528,7 +4529,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_domain, rhs:range(?)) {
+  proc chpl__coerceCopy(type dstType:_domain, rhs:range(?), definedConst: bool) {
     var lhs:dstType;
     lhs; // no split init
     lhs = {rhs};
@@ -4536,7 +4537,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_domain, in rhs:range(?)) {
+  proc chpl__coerceMove(type dstType:_domain, in rhs:range(?), definedConst: bool) {
     var lhs:dstType;
     lhs; // no split init
     lhs = {rhs};
@@ -4545,7 +4546,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_domain, rhs: _iteratorRecord) {
+  proc chpl__coerceCopy(type dstType:_domain, rhs: _iteratorRecord, definedConst: bool) {
     // assumes rhs is iterable
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4558,7 +4559,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_domain, rhs: _iteratorRecord) {
+  proc chpl__coerceMove(type dstType:_domain, rhs: _iteratorRecord, definedConst: bool) {
     // assumes rhs is iterable
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4572,7 +4573,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_domain, rhs) {
+  proc chpl__coerceCopy(type dstType:_domain, rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4585,7 +4586,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_domain, in rhs) {
+  proc chpl__coerceMove(type dstType:_domain, in rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
     var lhs:dstType;
     if isRectangularDom(lhs) then
@@ -4600,7 +4601,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array, rhs:_array) {
+  proc chpl__coerceCopy(type dstType:_array, rhs:_array, definedConst: bool) {
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
@@ -4636,8 +4637,9 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array,
-                        pragma "no auto destroy" in rhs:_array) {
+  proc chpl__coerceMove(type dstType:_array,
+                        pragma "no auto destroy" in rhs:_array,
+                        definedConst: bool) {
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
@@ -4689,7 +4691,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array, rhs:_domain) {
+  proc chpl__coerceCopy(type dstType:_array, rhs:_domain, definedConst: bool) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
@@ -4711,7 +4713,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array, in rhs:_domain) {
+  proc chpl__coerceMove(type dstType:_array, in rhs:_domain, definedConst: bool) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
@@ -4734,7 +4736,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array, rhs:range(?)) {
+  proc chpl__coerceCopy(type dstType:_array, rhs:range(?), definedConst: bool) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
@@ -4752,7 +4754,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array, in rhs:range(?)) {
+  proc chpl__coerceMove(type dstType:_array, in rhs:range(?), definedConst: bool) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
@@ -4771,7 +4773,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array, rhs:_tuple) {
+  proc chpl__coerceCopy(type dstType:_array, rhs:_tuple, definedConst: bool) {
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
@@ -4791,8 +4793,9 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array,
-                        pragma "no auto destroy" in rhs:_tuple) {
+  proc chpl__coerceMove(type dstType:_array,
+                        pragma "no auto destroy" in rhs:_tuple,
+                        definedConst: bool) {
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
@@ -4813,7 +4816,8 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array, rhs:desyncEltType(dstType)) {
+  proc chpl__coerceCopy(type dstType:_array, rhs:desyncEltType(dstType),
+                        definedConst: bool) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
@@ -4834,7 +4838,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array, in rhs:desyncEltType(dstType)) {
+  proc chpl__coerceMove(type dstType:_array, in rhs:desyncEltType(dstType), definedConst: bool) {
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
     const ref dom = chpl__domainFromArrayRuntimeType(dstType);
 
@@ -4857,8 +4861,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array,
-                        rhs: _iteratorRecord) {
+  proc chpl__coerceCopy(type dstType:_array, rhs: _iteratorRecord, definedConst: bool) {
     // assumes rhs is iterable
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4876,7 +4879,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array, rhs: _iteratorRecord) {
+  proc chpl__coerceMove(type dstType:_array, rhs: _iteratorRecord, definedConst: bool) {
     // assumes rhs is iterable
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4895,7 +4898,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceCopy(definedConst: bool, type dstType:_array, rhs) {
+  proc chpl__coerceCopy(type dstType:_array, rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4913,7 +4916,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
-  proc chpl__coerceMove(definedConst: bool, type dstType:_array, in rhs) {
+  proc chpl__coerceMove(type dstType:_array, in rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 
     type eltType = chpl__eltTypeFromArrayRuntimeType(dstType);
@@ -4950,7 +4953,7 @@ module ChapelArray {
     pragma "no auto destroy"
     pragma "no copy"
     // TODO: definedConst can be added to `chpl__unref`, too
-    var toArray = chpl__initCopy(false, ir); // call iterator -> array copy fn
+    var toArray = chpl__initCopy(ir, false); // call iterator -> array copy fn
     return toArray;
   }
 
@@ -4988,13 +4991,13 @@ module ChapelArray {
     }
   }
 
-  // chpl__initCopy(definedConst: bool, ir: _iteratorRecord) is used to create
+  // chpl__initCopy(ir: _iteratorRecord, definedConst: bool) is used to create
   // an array out of for-expressions, forall-expressions, promoted expressions.
   // The 'ir' iterator - or its standalone/leader/follower counterpart - is
   // invoked to generate the desired array elements.
 
   pragma "init copy fn"
-  proc chpl__initCopy(definedConst: bool, ir: _iteratorRecord)
+  proc chpl__initCopy(ir: _iteratorRecord, definedConst: bool)
     where chpl_iteratorHasDomainShape(ir)
   {
 
@@ -5014,7 +5017,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(definedConst: bool, ir: _iteratorRecord)
+  proc chpl__initCopy(ir: _iteratorRecord, definedConst: bool)
     where chpl_iteratorHasRangeShape(ir) && !chpl_iteratorFromForExpr(ir)
   {
     // Need this pragma in the range case to avoid leaking 'shape'.
@@ -5086,7 +5089,7 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(definedConst: bool, ir: _iteratorRecord) {
+  proc chpl__initCopy(ir: _iteratorRecord, definedConst: bool) {
     // We'd like to know the yielded type of the record, but we can't
     // access the (runtime) component of that until we actually yield
     // something.
@@ -5124,7 +5127,7 @@ module ChapelArray {
         // recursively - in that case it shouldn't be removed!
         pragma "no auto destroy"
         pragma "no copy"
-        var eltCopy = try chpl__initCopy(definedConst, elt);
+        var eltCopy = try chpl__initCopy(elt, definedConst);
 
         if i >= size {
           // Allocate a new buffer and then copy.

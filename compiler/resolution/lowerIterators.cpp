@@ -2738,7 +2738,7 @@ static void handlePolymorphicIterators()
 
 static void reconstructIRAutoCopy(FnSymbol* fn)
 {
-  Symbol* arg = fn->getFormal(2);
+  Symbol* arg = fn->getFormal(1);
   Symbol* ret = fn->getReturnSymbol();
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(ret->defPoint->remove());
@@ -2761,7 +2761,7 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
     if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
       FnSymbol* autoCopy = getAutoCopyForType(field->type);
       Symbol* valueToCopy = fieldValue;
-      Type* copyArgType = autoCopy->getFormal(2)->type;
+      Type* copyArgType = autoCopy->getFormal(1)->type;
       // If the copy function is expecting a reference type that is
       // a reference to the value we have, do a PRIM_ADDR_OF to pass it.
       if (isReferenceType(copyArgType) &&
@@ -2773,9 +2773,8 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
       copyResult = newTemp(autoCopy->retType);
       block->insertAtTail(new DefExpr(copyResult));
       block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult,
-                                       new CallExpr(autoCopy,
-                                                    new SymExpr(gFalse),
-                                                    valueToCopy)));
+                                       new CallExpr(autoCopy, valueToCopy,
+                                                    new SymExpr(gFalse))));
     }
 
     // Now set the field
@@ -2816,7 +2815,7 @@ static void reconstructIRautoCopyAutoDestroy()
     if (!fn->inTree()) continue;
 
     if (fn->numFormals() == 2 &&
-        fn->getFormal(2)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+        fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))

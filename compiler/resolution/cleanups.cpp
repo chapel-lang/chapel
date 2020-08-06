@@ -804,8 +804,8 @@ static void cleanupVoidVarsAndFields() {
           }
         }
         if (seenVoid && fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-          INT_ASSERT(call->numActuals() < 2);
-          // A 0- or 1-arg call to autoDestroy would upset later passes.
+          INT_ASSERT(call->numActuals() == 0);
+          // A 0-arg call to autoDestroy would upset later passes.
           call->remove();
         }
       }

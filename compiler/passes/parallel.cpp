@@ -355,7 +355,7 @@ static Symbol* insertAutoCopyForTaskArg
     fcall->insertBefore(new DefExpr(valTmp));
     SymExpr *definedConst = new SymExpr(var->hasFlag(FLAG_CONST) ?
                                         gTrue:gFalse);
-    CallExpr* autoCopyCall = new CallExpr(autoCopyFn, definedConst, var);
+    CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var, definedConst);
     fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
     var = valTmp;
   }
