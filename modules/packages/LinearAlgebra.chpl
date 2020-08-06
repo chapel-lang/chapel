@@ -1757,6 +1757,234 @@ proc svd(A: [?Adom] ?t) throws
   return (u, s, vt);
 }
 
+proc svd(A: [?Adom] ?t)
+  where !usingLAPACK || !isLAPACKType(t) 
+{
+  var (m,n) = Adom.shape;
+  var flag, i, its, j, jj, l, nm : int = 0;
+  var anorm, c, f, g, h, s, scale, x, y, z : real = 0.0;
+  var rv1 = Vector(1..n, eltType);
+
+  var W = Vector(1..n, eltType);
+  var V = Matrix(1..n, eltType);
+
+  for i in 1..n {
+    l = i+1;
+    rv1[i] = scale*g;
+    g = 0.0;
+    s = 0.0;
+    scale = 0.0;
+    
+    if i <= m {
+
+      forall k in i..m with (+ reduce scale) do scale += abs(A[k,i]);
+
+      if scale != 0 {
+        forall k in i..m with (+ reduce s) { 
+          A[k,i] /= scale;
+          s += A[k,i]*A[k,i];
+        }
+
+        f=A[i,i];
+        g = -signbit(s)*signbit(f)*sqrt(s); 
+        h = f*g-s;
+        A[i,i] = f-g;
+
+        for j in l..n {
+          s= 0.0;
+          forall k in i..m with (+ reduce s) do s += A[k,i]*A[k,j]; 
+          f=s/h;
+          A[l..m,j] += f*A[l..m,i];
+        }
+
+        A[i..m,i] *= scale;
+      } 
+    }
+
+    W[i] = scale * g;
+    g = 0.0;
+    s = 0.0;
+    scale = 0.0;
+
+    if (i <= m && i != n) {
+      forall k in l..n with (+ reduce scale) do scale += abs(A[i,k]);
+      if scale != 0 {
+        forall k in l..n with (+ reduce s){
+          A[i, k] /= scale;
+          s += A[i, k]*A[i, k];
+        }
+
+        f = A[i, l];
+        g = -signbit(s)*signbit(f)*sqrt(s);
+        h=f*g-s;
+        A[i, l] = f-g;
+
+        rv1[l..n] = A[i, l..n] / h;
+
+        for j in l..m {
+          s = 0.0;
+          forall k in l..n with(+ reduce s) do s += A[j, k]*A[i, k];
+          A[j, l..n] += s*rv1[l..n];
+        }
+
+        A[i, l..n] *= scale;
+      }
+    }
+
+    anorm = max(anorm, abs(W[i]) + abs(rv1[i]));
+  }
+
+  for i in n..1 by -1 {
+    if i < n {
+      if g != 0 {
+        V[l..n, i] = (A[i, l..n] / A[i, l]) / g;
+
+        for j in l..n {
+          s = 0.0;
+          forall k in l..n with (+ reduce s) do s += A[i, k] * V[k, j];
+          V[l..n, j] += s*V[l..n, i]; 
+        }
+      }
+
+      V[i, l..n] = 0.0;
+      V[l..n, i] = 0.0;
+    }
+
+    V[i,i] = 1.0;
+    g = rv1[i];
+    l = i;
+  }
+
+  for i in min(m, n)..1 by -1 {
+    l = i+1;
+    g = W[i];
+    A[i, l..n] = 0.0;
+
+    if g != 0 {
+      g = 1.0/g;
+
+      for j in l..n {
+        s = 0.0;
+        forall k in l..m with(+ reduce s) do s += A[k, i] * A[k, j];
+        f = (s / A[i, i]) * g;
+        A[i..m, j] += f*A[i..m, i];
+      }
+
+      A[i..m, i] *= g;
+    } else {
+      A[i..m, i] = 0.0;
+    }
+
+    A[i, i] += 1;
+  }
+
+  for k in n..1 by -1 {
+    for its in 1..30 {
+      flag = 1;
+      for l in k..1 by -1 {
+        nm = l-1;
+
+        if abs(rv1[l]) + anorm == anorm {
+          flag = 0;
+          break;
+        }
+        if abs(W[nm]) + anorm == anorm then break;
+      }
+
+      if flag {
+        c = 0.0;
+        s = 1.0;
+        for i in l..k {
+          f = s*rv1[i];
+          rv1[i] = c*rv1[i];
+          if abs(f) + anorm == anorm then break;
+          g = W[i];
+          h = pythag(f, g);
+          W[i] = h;
+          h = 1.0/h;
+          c = g*h;
+          s = -f*h;
+
+          forall j in 1..m {
+            var y : real = A[j, nm];
+            var z : real = A[j, i];
+            A[j, nm] = y*c + z*s;
+            A[j, i] = z*c - y*s;
+          }
+        }
+      }
+
+      z = W[k];
+      if l == k {
+        if z < 0 {
+          W[k] = -z;
+          V[1..n, k] *= -1;
+        }
+        break;
+      }
+
+      if its == 30 then halt("No convergence in 30 iterations");
+
+      x = W[l];
+      nm = k-1;
+      y = W[nm];
+      g = rv1[nm];
+      h = rv1[k];
+      f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
+      g = pythag(f, 1.0);
+      f = ((x-z)*(x+z)+h*((y/(f + -signbit(g)*signbit(f)*sqrt(g)))-h))/x;
+      c = 1.0;
+      s = 1.0;
+
+      for j in 1..nm {
+        i = j + 1;
+        g = rv1[i];
+        y = W[i];
+        h = s*g;
+        g = c*g; 
+        z = pythag(f,h); 
+        rv1[j] = z; 
+        c = f/z;
+        s = h/z;
+        f = x*c+g*s;
+        g = g*c-x*s;
+        h = y*s;
+        y *= c;
+        forall jj in 1..n {
+          var x : real = V[jj,j];
+          var z : real = V[jj, i];
+          V[jj, j] = x*c+z*s;
+          V[jj, i] = z*c-x*s;
+        }
+        z = pythag(f,h);
+        W[j] = z;
+
+        if z != 0 {
+          z = 1.0 /z;
+          c = f*z;
+          s = h*z;
+        }
+
+        f = c*g+s*y;
+        x = c*y-s*g;
+
+        forall jj in 1..m {
+          var y : real = A[jj, j];
+          var z : real = A[jj, i];
+          A[jj, j] = y*c+z*s;
+          A[jj, i] = z*c-y*s;
+        }
+      }
+
+      rv1[l] = 0.0;
+      rv1[k] = f;
+      W[k] = x;
+    }
+  }
+
+  return (A, W, V);
+}
+
 /*
   Compute the approximate solution to ``A * x = b`` using the Jacobi method.
   iteration will stop when ``maxiter`` is reached or error is smaller than
