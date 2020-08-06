@@ -224,6 +224,17 @@ WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
 #
+# Avoid false positives for memcmp size. This flag we are adding here is
+# available at least all the way back to gcc 7.3. However, we started seeing
+# errors when we switched to gcc 9.3. Moreover, we don't see it in version 10.
+# So, only throw this flag for major version 9
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
+endif
+
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
 # compiled with gcc 5.X.
