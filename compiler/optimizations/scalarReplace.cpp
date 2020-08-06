@@ -381,6 +381,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
           // Do we need to add PRIM_ASSIGN here?
           !(isSymExpr(call->get(2)) ||
             toCallExpr(call->get(2))->isPrimitive(PRIM_GET_MEMBER_VALUE))) {
+        //std::cout << "Returning false 10\n";
         return false;
       }
     }
@@ -407,6 +408,7 @@ scalarReplaceRecord(AggregateType* ct, Symbol* sym) {
     }
   }
   if (memberAccessed == false) {
+    //std::cout << "Returning false 30\n";
     return false;
   }
 

@@ -2743,8 +2743,12 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
   BlockStmt* block = new BlockStmt();
   block->insertAtTail(ret->defPoint->remove());
   AggregateType* irt = toAggregateType(arg->type);
+
+  //std::cout << "Iterator record type\n";
+  //nprint_view(irt);
   for_fields(field, irt) {
     SET_LINENO(field);
+
 
     Symbol* fieldValue = newTemp(field->name, field->qualType());
     block->insertAtTail(new DefExpr(fieldValue));
@@ -2811,8 +2815,8 @@ static void reconstructIRautoCopyAutoDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->inTree()) continue;
 
-    if (fn->numFormals() == 1 &&
-        fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    if (fn->numFormals() == 2 &&
+        fn->getFormal(2)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     {
       SET_LINENO(fn);
       if (fn->hasFlag(FLAG_AUTO_COPY_FN))

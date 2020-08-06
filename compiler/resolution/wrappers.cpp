@@ -61,6 +61,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 #include "visibleFunctions.h"
 
 #include <map>
@@ -2716,6 +2717,7 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
     INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
   }
 
+  //nprint_view(wrapper);
   for_formals(formal, wrapper) {
     if (requiresPromotion.count(formal) > 0) {
       Symbol*      field       = new VarSymbol(formal->name, formal->type);
