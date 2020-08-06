@@ -316,6 +316,10 @@ static void getVisibleMethods(const char* name, CallExpr* call,
                               BlockStmt* block, std::set<BlockStmt*>& visited,
                               Vec<FnSymbol*>& visibleFns);
 
+static void lookAtTypeFirst(const char* name, CallExpr* call,
+                            std::set<BlockStmt*>& visited,
+                            Vec<FnSymbol*>& visibleFns);
+
 static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call);
 
 
@@ -324,8 +328,31 @@ static void getVisibleMethods(const char* name, CallExpr* call,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
+  lookAtTypeFirst(name, call, visited, visibleFns);
+
   getVisibleMethods(name, call, block, visited, visibleFns);
 
+}
+
+static void lookAtTypeFirst(const char* name, CallExpr* call,
+                            std::set<BlockStmt*>& visited,
+                            Vec<FnSymbol*>& visibleFns) {
+  INT_ASSERT(call->numActuals() >= 1);
+  Expr* typeActual = NULL;
+
+  if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
+    typeActual = call->get(2);
+  } else {
+    typeActual = call->get(1);
+  }
+  Type* t = typeActual->getValType();
+
+  // Look at own methods
+  getVisibleMethods(name, call, getVisibilityScope(t->symbol->defPoint),
+                    visited, visibleFns);
+
+  // Follow inheritance?  (May be more necessary if I remove the support for
+  // following private uses)
 }
 
 static void getVisibleMethods(const char* name, CallExpr* call,
