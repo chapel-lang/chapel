@@ -70,6 +70,16 @@ module cuBLAS {
     cublas_idamin(handle, n, x, incX, result);
   }
 
+  proc cu_sasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_float)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_sasum(handle, n, x, incX, result);
+  }
+
+  proc cu_dasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_double)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_dasum(handle, n, x, incX, result);
+  }
+
   proc cu_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, c: c_ptr(c_float), ldc: c_int){
     require "c_cublas.h", "c_cublas.o";
     cublas_sgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, c, ldc);

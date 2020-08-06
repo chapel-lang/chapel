@@ -37,9 +37,12 @@ proc blasPrefix(type t) {
 }
 
 proc main() {
+
   test_amax();
   test_amin();
+  test_asum();
   test_axpy();
+
 }
 
 proc test_amax() {
@@ -50,6 +53,11 @@ proc test_amax() {
 proc test_amin(){
   test_cuamin_helper(real(32));
   test_cuamin_helper(real(64));
+}
+
+proc test_asum(){
+  test_cuasum_helper(real(32));
+  test_cuasum_helper(real(64));
 }
 
 proc test_axpy() {
@@ -181,6 +189,56 @@ proc test_cuamax_helper(type t) {
   }
   printErrors(name, passed, failed, tests);
 }
+
+proc test_cuasum_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sasum".format(blasPrefix(t));
+
+  // Simple test
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 2: t, 3: t];
+    var N = X.size:int(32);
+
+    param width = if isComplexType(t) then numBits(t)/2 else numBits(t);
+
+    var norm: real(width);
+    if isComplexType(t) {
+      for x in X {
+        norm += abs(x.re);
+        norm += abs(x.im);
+      }
+    } else {
+      norm = +reduce(X);
+    }
+
+    var r: t;
+
+    //Get pointer to X allocated in GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_sasum(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+      when real(64) do {
+        cu_dasum(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+    }
+
+    var err = norm - r;
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+  }
+  printErrors(name, passed, failed, tests);
+}
+
 
 proc test_cuaxpy_helper(type t) {
   var passed = 0,
