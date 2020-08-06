@@ -518,7 +518,7 @@ static bool findCopyElisionCandidate(CallExpr* call,
       int nActuals = call->numActuals();
       if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
         if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
-          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals-1))) {
+          if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
               rhs = rhsSe->symbol();
