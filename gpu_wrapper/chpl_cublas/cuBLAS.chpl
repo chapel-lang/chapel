@@ -105,6 +105,16 @@ module cuBLAS {
     cublas_ddot(handle, n, x, incX, y, incY, result);
   }
 
+  proc cu_snrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), result: c_ptr(c_float), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_snrm2(handle, n, x, incX, result);
+  }
+
+  proc cu_dnrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), result: c_ptr(c_double), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_dnrm2(handle, n, x, incX, result);
+  }
+
   module C_CUBLAS {
     use SysCTypes;
 

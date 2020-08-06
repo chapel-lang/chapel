@@ -8,5 +8,7 @@ scopy : 3 PASSED, 0 FAILED
 dcopy : 3 PASSED, 0 FAILED
  sdot : 1 PASSED, 0 FAILED
  ddot : 1 PASSED, 0 FAILED
+snrm2 : 1 PASSED, 0 FAILED
+dnrm2 : 1 PASSED, 0 FAILED
 saxpy : 3 PASSED, 0 FAILED
 daxpy : 3 PASSED, 0 FAILED
