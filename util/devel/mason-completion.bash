@@ -14,7 +14,7 @@ _options(){
 
 _complete_mason_system(){
   arg=$(mason system --help | grep -v '^[A-Za-z]' | grep -v '^.*--'  | \
-     grep -v '<command>' | grep -v '\[options\]'  | sed 's/^[ \t]*//' | \
+     grep -v '<command>' | grep -v '\[options\]'  | sed $'s/^[ \t]*//' | \
      cut -d" " -f1 | xargs echo)
   cur=${COMP_WORDS[COMP_CWORD]}
   case "$cur" in 
@@ -29,7 +29,7 @@ _complete_mason_system(){
 
 _complete_mason_external(){
   arg=$(mason external --help | grep -v '^[A-Za-z]' | grep -v '^.*--'  | \
-     grep -v '<command>' | grep -v '\[options\]'  | sed 's/^[ \t]*//' | \
+     grep -v '<command>' | grep -v '\[options\]'  | sed $'s/^[ \t]*//' | \
      cut -d" " -f1 | xargs echo)
   cur=${COMP_WORDS[COMP_CWORD]}
   case "$cur" in 
@@ -179,7 +179,7 @@ _complete_mason_command(){
   cur=${COMP_WORDS[COMP_CWORD]}
   prev="${COMP_WORDS[COMP_CWORD-1]}"
   arg=$(mason --help | grep -v '^[A-Za-z]' | grep -v '^.*--'  | \
-     grep -v '<command>' | grep -v '\[options\]'  | sed 's/^[ \t]*//' | \
+     grep -v '<command>' | grep -v '\[options\]'  | sed $'s/^[ \t]*//' | \
      cut -d" " -f1 | xargs echo)
     COMPREPLY=($(compgen -W "$arg" "${COMP_WORDS[1]}"))
 }
@@ -206,7 +206,7 @@ _mason(){
     local subcmd
     local arg
     arg=$(mason --help | grep -v '^[A-Za-z]' | grep -v '^.*--'  | \
-       grep -v '<command>' | grep -v '\[options\]'  | sed 's/^[ \t]*//' | \
+       grep -v '<command>' | grep -v '\[options\]'  | sed $'s/^[ \t]*//' | \
        cut -d" " -f1 | xargs echo)
 
     for i in $arg
