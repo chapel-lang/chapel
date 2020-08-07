@@ -768,9 +768,9 @@ bool isTemporaryFromNoCopyReturn(Symbol* fromSym) {
                 anyNoCopyReturn = true;
           } else {
             // Track moving from another temp.
-            SymExpr* rhsSe = toSymExpr(call->get(2));
-            if (isTemporaryFromNoCopyReturn(rhsSe->symbol()))
-              anyNoCopyReturn = true;
+            if (SymExpr* rhsSe = toSymExpr(call->get(2)))
+              if (isTemporaryFromNoCopyReturn(rhsSe->symbol()))
+                anyNoCopyReturn = true;
           }
         }
       }
