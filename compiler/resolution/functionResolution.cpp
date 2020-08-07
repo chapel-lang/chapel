@@ -4314,20 +4314,10 @@ public:
       if (fn == NULL) printf("  %d null\n", i);
       else printf("  %s[%d]   %s\n", fn->name, fn->id, debugLoc(fn));
     }
-    printf("%ld candidates   nextBatchIdx %d\n", lrcandidates.size(), nextBatchIdx);
+    printf("%ld candidates   nextBatchIdx %d\n",
+           lrcandidates.size(), nextBatchIdx);
   }
 };
-
-#if 0 //wass no longer used
-static void findVisibleCandidates(CallInfo&                  info,
-                                  Vec<FnSymbol*>&            visibleFns,
-                                  Vec<ResolutionCandidate*>& candidates);
-
-static void gatherCandidates(CallInfo&                  info,
-                             Vec<FnSymbol*>&            visibleFns,
-                             bool                       lastResort,
-                             Vec<ResolutionCandidate*>& candidates);
-#endif //wass
 
 static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
@@ -4425,15 +4415,8 @@ static void findVisibleFunctionsAndCandidates(
 
     handleTaskIntentArgs(info, fn);
 
-    trimVisibleCandidates(info, mostApplicable, visibleFns);
-
-    INT_ASSERT(mostApplicable.only() == fn); //wass ???
-
-#if 1 //wass
+    // no need for trimVisibleCandidates() and findVisibleCandidates()
     gatherCandidates(info, fn, candidates);
-#else
-    findVisibleCandidates(info, mostApplicable, candidates);
-#endif
 
     explainGatherCandidate(info, candidates);
 
@@ -4453,8 +4436,7 @@ static void findVisibleFunctionsAndCandidates(
 
     gatherCandidatesAndLastResort(info, mostApplicable, lrc, candidates);
 
-    explainGatherCandidate(info, candidates);
-
+    visibleFns.clear();
     currentScopes.clear();
     std::swap(currentScopes, nextScopes);
   }
@@ -4463,26 +4445,11 @@ static void findVisibleFunctionsAndCandidates(
 
   // If needed, look at "last resort" candidates.
   while (candidates.n == 0 && lrc.hasMore()) {
-//    printf("last resort  %s  %d %s\n", info.name, info.call->id, debugLoc(info.call)); //wass
     gatherLastResortCandidates(info, lrc, candidates);
-
-    explainGatherCandidate(info, candidates);
   }
-}
 
-#if 0 //wass
-static void findVisibleCandidates(CallInfo&                  info,
-                                  Vec<FnSymbol*>&            visibleFns,
-                                  Vec<ResolutionCandidate*>& candidates) {
-  // Search user-defined (i.e. non-compiler-generated) functions first.
-  gatherCandidates(info, visibleFns, false, candidates);
-
-  // If no results, try again with any compiler-generated candidates.
-  if (candidates.n == 0) {
-    gatherCandidates(info, visibleFns, true, candidates);
-  }
+  explainGatherCandidate(info, candidates);
 }
-#endif
 
 // run filterCandidate() on 'fn' if appropriate
 static void gatherCandidates(CallInfo&                  info,
@@ -4544,10 +4511,6 @@ static void gatherCandidatesAndLastResort(CallInfo& info,
 static void gatherLastResortCandidates(CallInfo&                  info,
                                        LastResortCandidates&      lrc,
                                        Vec<ResolutionCandidate*>& candidates) {
-if (info.call->id == breakOnRemoveID) {
-  lrc.debugPrint();
-  gdbShouldBreakHere();
-}
   std::vector<FnSymbol*>& fns = lrc.lrcandidates;
   int idx = lrc.nextBatchIdx;
 
