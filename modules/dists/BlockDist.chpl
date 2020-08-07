@@ -1537,9 +1537,11 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
 
 // Block1 <=> Block2 
 proc BlockArr.doiSwap(arr) {
-  coforall (loc, localArr1, localArr2) in zip(Locales,this.locArr, arr.locArr) {
-    localArr1.myElems.doiSwap(localArr2.myElems);
-    localArr1.locRAD <=> localArr2.locRAD;
+  coforall (locarr1, locarr2) in zip(this.locArr, arr.locArr) {
+    on locarr1 {
+      locarr1.myElems <=> locarr2.myElems;
+      locarr1.locRAD <=> locarr2.locRAD;
+    }
   }
 }
 
