@@ -743,6 +743,20 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   if (name == astrSdot || !usymExpr->inTree())
     return NULL;
 
+  if (CallExpr* parentCall = toCallExpr(usymExpr->parentExpr)) {
+    if (parentCall->baseExpr && parentCall->baseExpr == usymExpr &&
+        parentCall->numActuals() > 0) {
+      if (SymExpr* firstArg = toSymExpr(parentCall->get(1))) {
+        if (firstArg->symbol() == gModuleToken) {
+          // Don't resolve the name of transformed module calls - doing so will
+          // accidentally find closer symbols with the same name instead of
+          // going into the intended module.
+          return NULL;
+        }
+      }
+    }
+  }
+
   // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that we've
   // already encountered an error when trying to resolve.
   for_vector(BaseAST, node, failedUSymExprs) {
@@ -1320,12 +1334,21 @@ static void resolveModuleCall(CallExpr* call) {
                 call->replace(new CallExpr(fn));
 
               } else {
-                CallExpr* parent = toCallExpr(call->parentExpr);
+                if (CallExpr* parent = toCallExpr(call->parentExpr)) {
 
-                call->replace(new UnresolvedSymExpr(mbrName));
+                  call->replace(new UnresolvedSymExpr(mbrName));
 
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                } else {
+                  USR_FATAL_CONT(call, "This appears to be a first class "
+                                 "function reference created using qualified "
+                                 "access");
+                  USR_PRINT("First class functions created using "
+                            "qualified access are not supported");
+                  USR_PRINT("If this is not intended as a first class "
+                           "function, please report it to the Chapel team");
+                }
               }
 
             } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {

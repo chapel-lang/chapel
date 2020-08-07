@@ -30,6 +30,5 @@ source /cray/css/users/chapelu/setup_python36.bash
 # Run on an elogin node, so we have to tunnel to the login
 export ARKOUDA_TUNNEL_SERVER=$EPROXY_LOGIN
 
-test_release
 test_master
 sync_graphs

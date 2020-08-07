@@ -577,7 +577,7 @@ module ChapelHashtable {
           rehashHelpers!.startRehash(tableSize);
 
         // tableNumFullSlots stays the same during this operation
-        // and all all deleleted slots are removed
+        // and all all deleted slots are removed
         tableNumDeletedSlots = 0;
 
         // Move old data into newly resized table

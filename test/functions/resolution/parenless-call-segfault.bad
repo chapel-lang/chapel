@@ -1,8 +1,4 @@
-parenless-call-segfault.chpl:11: internal error: UTI-MIS-0691 chpl version 1.23.0 pre-release (c54a5da1fe)
-Note: This source location is a guess.
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+parenless-call-segfault.chpl:9: In function 'main':
+parenless-call-segfault.chpl:12: error: This appears to be a first class function reference created using qualified access
+note: First class functions created using qualified access are not supported
+note: If this is not intended as a first class function, please report it to the Chapel team

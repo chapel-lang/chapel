@@ -1,3 +1,0 @@
-qualInitsSameName.chpl:8: In function 'main':
-qualInitsSameName.chpl:10: error: 'y' used before defined
-qualInitsSameName.chpl:10: note: defined here

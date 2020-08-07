@@ -334,10 +334,9 @@ else
         list_loaded_modules
     fi
 
-    # Please keep the gen versions in compiler_versions.bash the same as these!
     gen_version_gcc=7.3.0
     gen_version_intel=16.0.3.210
-    gen_version_cce=9.1.3
+    gen_version_cce=10.0.2
 
     target_cpu_module=craype-sandybridge
 
