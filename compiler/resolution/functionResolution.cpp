@@ -6597,6 +6597,7 @@ void resolveInitVar(CallExpr* call) {
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);
 
+      // this protects against issues with coercing from sync int to int
       if ((targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) && !genericTgt)) {
         if (dst->hasFlag(FLAG_CONST)) {
           tmp->addFlag(FLAG_CONST);

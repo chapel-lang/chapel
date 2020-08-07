@@ -35,7 +35,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -442,12 +441,11 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
 
   if (fn->name == astr_initCopy || fn->name == astr_autoCopy) {
     INT_ASSERT(fn->numFormals() == 2); // expected of the original function
-    arg = fn->getFormal(1);
   }
   else {
     INT_ASSERT(fn->numFormals() == 1); // expected of the original function
-    arg = fn->getFormal(1);
   }
+  arg = fn->getFormal(1);
   ct = toAggregateType(arg->type);
   if (isReferenceType(ct))
     ct = toAggregateType(ct->getValType());

@@ -1571,27 +1571,20 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
     if (flags->size() == 1 && flags->count(FLAG_CONST)) {
       if (CallExpr *initCall = toCallExpr(defExpr->init)) {
         if (initCall->isNamed("chpl__buildDomainExpr")) {
-          //std::cout << "Replacing \n";
-          //nprint_view(initCall->argList.last());
           initCall->argList.last()->replace(new SymExpr(gTrue));
           return;
         }
         else if (initCall->isNamed("chpl__distributed")) {
-          //std::cout << "Replacing \n";
-          //nprint_view(initCall->get(3));
           initCall->get(3)->replace(new SymExpr(gTrue));
           return;
         }
       }
     }
-    // TODO initCopy etc here?
   }
 
   if (defExpr->exprType != NULL) {
     if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
       if (initType->isNamed("chpl__distributed")) {
-        //std::cout << "Replacing \n";
-        //nprint_view(initType->get(3));
         initType->get(3)->replace(new SymExpr(gTrue));
         return;
       }
@@ -1600,8 +1593,6 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
           if (typeCall->isNamed("chpl__ensureDomainExpr")) {
             if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
               if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
-                //std::cout << "Replacing \n";
-                //nprint_view(buildDomExpr->argList.last());
                 buildDomExpr->argList.last()->replace(new SymExpr(gTrue));
                 return;
               }

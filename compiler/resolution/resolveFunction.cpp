@@ -1540,8 +1540,7 @@ void resolveIfExprType(CondStmt* stmt) {
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
       if (typeNeedsCopyInitDeinit(rhs->getValType())) {
-        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove(),
-                                      new SymExpr(gFalse));
+        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove(), gFalse);
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
         if (isReferenceType(thenType)) {
@@ -2044,8 +2043,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
         start->insertBefore(new CallExpr(PRIM_MOVE,
                                          tmp,
-                                         new CallExpr(astr_initCopy, formal,
-                                                      /*definedConst=*/gTrue)));
+                                         new CallExpr(astr_initCopy, formal, gTrue)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
