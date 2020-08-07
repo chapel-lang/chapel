@@ -17,14 +17,27 @@ _complete_mason_system(){
      grep -v '<command>' | grep -v '\[options\]'  | sed $'s/^[ \t]*//' | \
      cut -d" " -f1 | xargs echo)
   cur=${COMP_WORDS[COMP_CWORD]}
-  case "$cur" in 
-    -*)
-      _options system
-      ;;
-     *)
-      COMPREPLY=($(compgen -W "$arg" "$cur"))
-      ;;
-  esac
+  if [[ ${COMP_CWORD} -le 2 ]]
+  then
+    case "$cur" in 
+      -*)
+        _options system 
+        ;;
+       *)
+        COMPREPLY=($(compgen -W "$arg" "$cur"))
+        ;;
+    esac
+  fi
+  if [[ ${COMP_CWORD} -gt 2 ]]
+  then
+    case "$cur" in
+      -*)
+        _options system
+        ;;
+       *)
+        ;;
+    esac
+  fi
 }
 
 _complete_mason_publish(){
