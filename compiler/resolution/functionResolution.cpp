@@ -1560,10 +1560,14 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
-  if (formalSym != NULL &&
-      (formalSym->originalIntent == INTENT_IN ||
-       formalSym->originalIntent == INTENT_CONST_IN ||
-       formalSym->originalIntent == INTENT_INOUT)) {
+  // TODO: if we can avoid an inifinite loop, it would be better
+  // for the below to always call getCopyTypeDuringResolution
+  // in order to make canCoerce more consistent.
+  if ((isSyncType(actualType) || isSingleType(actualType)) ||
+      (formalSym != NULL &&
+       (formalSym->originalIntent == INTENT_IN ||
+        formalSym->originalIntent == INTENT_CONST_IN ||
+        formalSym->originalIntent == INTENT_INOUT))) {
     Type* copyType = getCopyTypeDuringResolution(actualType);
     if (copyType != actualType) {
       return canDispatch(copyType, actualSym, formalType, formalSym, fn,
