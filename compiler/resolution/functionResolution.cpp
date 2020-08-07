@@ -440,10 +440,12 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
              actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // Is the formal an array type? If not, coercion to copy
     // will not be relevant.
-    // This check is here to avoid an infinite loop.
+    // The checks here are to avoid infinite loops.
     if (formalType == dtAny ||
         formalType->symbol->hasFlag(FLAG_ARRAY)) {
-      copyType = getCopyTypeDuringResolution(actualType);
+      if (fn == NULL || fn->name != astr_initCopy) {
+        copyType = getCopyTypeDuringResolution(actualType);
+      }
     }
   }
 
