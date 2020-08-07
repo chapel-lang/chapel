@@ -428,6 +428,29 @@ Type* getCopyTypeDuringResolution(Type* t) {
   return t;
 }
 
+static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
+                                 Type* formalType, ArgSymbol* formalSym,
+                                 FnSymbol* fn) {
+
+  Type* copyType = NULL;
+
+  if (isSyncType(actualType) || isSingleType(actualType)) {
+    copyType = getCopyTypeDuringResolution(actualType);
+  } else if (isAliasingArray(actualType) ||
+             actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    // Is the formal an array type? If not, coercion to copy
+    // will not be relevant.
+    // This check is here to avoid an infinite loop.
+    if (formalType == dtAny ||
+        formalType->symbol->hasFlag(FLAG_ARRAY)) {
+      copyType = getCopyTypeDuringResolution(actualType);
+    }
+  }
+
+  if (copyType == dtUnknown) copyType = NULL;
+  return copyType;
+}
+
 FnSymbol* getInitCopyDuringResolution(Type* type) {
   std::map<Type*, FnSymbol*>::iterator it = initCopyMap.find(type);
 
@@ -1560,15 +1583,8 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
-  // TODO: if we can avoid an inifinite loop, it would be better
-  // for the below to always call getCopyTypeDuringResolution
-  // in order to make canCoerce more consistent.
-  if ((isSyncType(actualType) || isSingleType(actualType)) ||
-      (formalSym != NULL &&
-       (formalSym->originalIntent == INTENT_IN ||
-        formalSym->originalIntent == INTENT_CONST_IN ||
-        formalSym->originalIntent == INTENT_INOUT))) {
-    Type* copyType = getCopyTypeDuringResolution(actualType);
+  if (Type* copyType = canCoerceToCopyType(actualType, actualSym,
+                                           formalType, formalSym, fn)) {
     if (copyType != actualType) {
       return canDispatch(copyType, actualSym, formalType, formalSym, fn,
                          promotes, paramNarrows);

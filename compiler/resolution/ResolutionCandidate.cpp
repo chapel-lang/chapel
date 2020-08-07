@@ -521,13 +521,18 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 }
 
 bool inOrOutFormal(ArgSymbol* formal) {
-  return (formal->intent == INTENT_IN ||
-          formal->originalIntent == INTENT_IN ||
-          formal->intent == INTENT_CONST_IN ||
+  // Rule out type/param variables
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) ||
+      formal->hasFlag(FLAG_PARAM) ||
+      formal->intent == INTENT_TYPE ||
+      formal->originalIntent == INTENT_TYPE ||
+      formal->intent == INTENT_PARAM ||
+      formal->originalIntent == INTENT_PARAM)
+    return false;
+
+  return (formal->originalIntent == INTENT_IN ||
           formal->originalIntent == INTENT_CONST_IN ||
-          formal->intent == INTENT_OUT ||
           formal->originalIntent == INTENT_OUT ||
-          formal->intent == INTENT_INOUT ||
           formal->originalIntent == INTENT_INOUT);
 }
 
