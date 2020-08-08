@@ -4320,6 +4320,7 @@ static void gatherCandidates(CallInfo&                  info,
 
 static void gatherCandidatesAndLastResort(CallInfo& info,
                              Vec<FnSymbol*>&            visibleFns,
+                             int&                       numVisited,
                              LastResortCandidates&      lrc,
                              Vec<ResolutionCandidate*>& candidates);
 
@@ -4331,7 +4332,7 @@ static void gatherLastResortCandidates(CallInfo&                  info,
 static
 void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& mostApplicable,
-                           int&            numVisited,
+                           int&            numVisitedVis,
                            Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
@@ -4346,14 +4347,14 @@ void trimVisibleCandidates(CallInfo&       info,
                        call->get(2)->getValType() == call->get(3)->getValType();
 
   if (!(isInit || isNew || isDeinit) || info.call->isResolved()) {
-   if (numVisited == 0)
+   if (numVisitedVis == 0)
     mostApplicable = visibleFns;
    else
     // copy only new fns since last time
-    for (int i = numVisited; i < visibleFns.n; i++)
+    for (int i = numVisitedVis; i < visibleFns.n; i++)
       mostApplicable.add(visibleFns.v[i]);
   } else {
-    for (int i = numVisited; i < visibleFns.n; i++) {
+    for (int i = numVisitedVis; i < visibleFns.n; i++) {
       FnSymbol* fn = visibleFns.v[i];
       bool shouldKeep = true;
       BaseAST* actual = NULL;
@@ -4401,14 +4402,14 @@ void trimVisibleCandidates(CallInfo&       info,
     }
   }
 
-  numVisited = visibleFns.n;
+  numVisitedVis = visibleFns.n;
 }
 
 void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& mostApplicable,
                            Vec<FnSymbol*>& visibleFns) {
-  int numVisited = 0;
-  trimVisibleCandidates(info, mostApplicable, numVisited, visibleFns);
+  int numVisitedVis = 0;
+  trimVisibleCandidates(info, mostApplicable, numVisitedVis, visibleFns);
 }
 
 static void findVisibleFunctionsAndCandidates(
@@ -4433,7 +4434,11 @@ static void findVisibleFunctionsAndCandidates(
     return;
   }
 
-  int numVisitedVis = 0;
+  // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
+  // so that we can revisit them for error reporting.
+  // Keep track in 'numVisited*' of where we left off with the previous POI
+  // to avoid revisiting those functions for the next POI.
+  int numVisitedVis = 0, numVisitedMA = 0;
   LastResortCandidates lrc;
   std::set<BlockStmt*> visited;
   std::vector<BlockStmt*> currentScopes, nextScopes;
@@ -4443,9 +4448,11 @@ static void findVisibleFunctionsAndCandidates(
     findVisibleFunctions(info, &visited, &currentScopes, &nextScopes,
                          &numVisitedVis, visibleFns);
 
-    trimVisibleCandidates(info, mostApplicable, numVisitedVis, visibleFns);
+    trimVisibleCandidates(info, mostApplicable,
+                          numVisitedVis, visibleFns);
 
-    gatherCandidatesAndLastResort(info, mostApplicable, lrc, candidates);
+    gatherCandidatesAndLastResort(info, mostApplicable, numVisitedMA,
+                                  lrc, candidates);
 
     currentScopes.clear();
     std::swap(currentScopes, nextScopes);
@@ -4506,16 +4513,18 @@ static void gatherCandidates(CallInfo&                  info,
 // store last-resort fns into 'lrc'
 static void gatherCandidatesAndLastResort(CallInfo& info,
                              Vec<FnSymbol*>&            visibleFns,
+                             int&                       numVisited,
                              LastResortCandidates&      lrc,
                              Vec<ResolutionCandidate*>& candidates) {
-  forv_Vec(FnSymbol, fn, visibleFns) {
-    if (fn->hasFlag(FLAG_LAST_RESORT)) {
+  for (int i = numVisited; i < visibleFns.n; i++) {
+    FnSymbol* fn = visibleFns.v[i];
+    if (fn->hasFlag(FLAG_LAST_RESORT))
       lrc.push_back(fn);
-    } else {
+    else
       gatherCandidates(info, fn, candidates);
-    }
   }
   markEndOfPOI(lrc);
+  numVisited = visibleFns.n;
 }
 
 // run filterCandidate() on the next batch of last resort fns
