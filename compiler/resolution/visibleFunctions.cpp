@@ -91,7 +91,23 @@ static void  buildVisibleFunctionMap();
 
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 
+static void getVisibleFunctions(const char*              name,
+                                CallExpr*                call,
+                                std::set<BlockStmt*>*    visited,
+                                std::vector<BlockStmt*>* currentScopes,
+                                std::vector<BlockStmt*>* nextScopes,
+                                Vec<FnSymbol*>&          visibleFns);
+
 void findVisibleFunctions(CallInfo&       info,
+                          Vec<FnSymbol*>& visibleFns) {
+  findVisibleFunctions(info, NULL, NULL, NULL, NULL, visibleFns);
+}
+
+void findVisibleFunctions(CallInfo&       info,
+                          std::set<BlockStmt*>*    visited,
+                          std::vector<BlockStmt*>* currentScopes,
+                          std::vector<BlockStmt*>* nextScopes,
+                          int*            numVisitedP,
                           Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
@@ -123,27 +139,30 @@ void findVisibleFunctions(CallInfo&       info,
       getVisibleMethods(info.name, call, visibleFns);
 
     } else {
-      getVisibleFunctions(info.name, call, visibleFns);
-
+      getVisibleFunctions(info.name, call,
+                          visited, currentScopes, nextScopes, visibleFns);
     }
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
       call->id == explainCallID) {
-    USR_PRINT(call, "call: %s", info.toString());
+    int startVisited = numVisitedP ? *numVisitedP : 0;
+    if (startVisited == 0)
+      USR_PRINT(call, "call: %s", info.toString());
 
     if (visibleFns.n == 0) {
+     if (numVisitedP == NULL)
       USR_PRINT(call, "no visible functions found");
 
     } else {
-      bool first = true;
+      int i = 0;
 
       forv_Vec(FnSymbol, visibleFn, visibleFns) {
+       if (i++ >= startVisited)
         USR_PRINT(visibleFn,
                   "%s %s",
-                  first ? "visible functions are:" : "                      ",
+                  i == 1 ? "visible functions are:" : "                      ",
                   toString(visibleFn));
-        first = false;
       }
     }
   }
@@ -509,12 +528,30 @@ static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void getVisibleFunctions(const char*           name,
+static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
+                                std::vector<BlockStmt*>* nextScopes,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool inUseChain);
+
+static void getVisibleFunctions(const char*              name,
+                                CallExpr*                call,
+                                std::set<BlockStmt*>*    visited,
+                                std::vector<BlockStmt*>* currentScopes,
+                                std::vector<BlockStmt*>* nextScopes,
+                                Vec<FnSymbol*>&          visibleFns) {
+  if (visited == NULL) {
+    getVisibleFunctions(name, call, visibleFns);  // it allocates 'visited'
+    return;
+  }
+
+  // visit everything in currentScopes
+  for_vector(BlockStmt, block, *currentScopes)
+    getVisibleFunctionsImpl(name, call, block, *visited, nextScopes,
+                            visibleFns, false);
+}
 
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
@@ -522,7 +559,7 @@ void getVisibleFunctions(const char*      name,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
-  getVisibleFunctions(name, call, block, visited, visibleFns, false);
+  getVisibleFunctionsImpl(name, call, block, visited, NULL, visibleFns, false);
 }
 
 static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt*    block,
@@ -569,10 +606,9 @@ static void getVisibleFnsShowBlock(BlockStmt* block, ModuleSymbol* inMod,
     printf("visible fns: block %i  %s\n",
            block->id, debugLoc(block));
 
-  if (instantiationPt) {
+  if (instantiationPt)
     printf("  instantiated from block %i  %s\n",
            instantiationPt->id, debugLoc(instantiationPt));
-  }
 }
 
 static void getVisibleFnsFirstVisit(const char*       name,
@@ -674,12 +710,12 @@ static void getVisibleFnsFromUseList(const char*      name,
 
             if (mod->isVisible(call)) {
               if (use->isARenamedSym(name)) {
-                getVisibleFunctions(use->getRenamedSym(name),
+                getVisibleFunctionsImpl(use->getRenamedSym(name),
                                     call, mod->block,
-                                    visited, visibleFns, true);
+                                    visited, NULL, visibleFns, true);
               } else {
-                getVisibleFunctions(name, call, mod->block,
-                                    visited, visibleFns, true);
+                getVisibleFunctionsImpl(name, call, mod->block, 
+                                    visited, NULL, visibleFns, true);
               }
             }
           }
@@ -698,11 +734,11 @@ static void getVisibleFnsFromUseList(const char*      name,
           INT_ASSERT(mod);
           if (mod->isVisible(call)) {
             if (import->isARenamedSym(name)) {
-              getVisibleFunctions(import->getRenamedSym(name), call,
-                                  mod->block, visited, visibleFns, true);
+              getVisibleFunctionsImpl(import->getRenamedSym(name), call,
+                                  mod->block, visited, NULL, visibleFns, true);
             } else {
-              getVisibleFunctions(name, call, mod->block, visited,
-                                  visibleFns, true);
+              getVisibleFunctionsImpl(name, call, mod->block, visited,
+                                  NULL, visibleFns, true);
             }
           }
         }
@@ -713,10 +749,11 @@ static void getVisibleFnsFromUseList(const char*      name,
   }
 }
 
-static void getVisibleFunctions(const char*           name,
+static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
+                                std::vector<BlockStmt*>* nextScopes,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain)
 {
@@ -750,13 +787,20 @@ static void getVisibleFunctions(const char*           name,
     BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
     // Recurse in the enclosing block
-    getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
+    getVisibleFunctionsImpl(name, call, next, visited, nextScopes,
+                            visibleFns, inUseChain);
   }
 
-    // Also look at the instantiation point
+  // Also look at the instantiation point
   if (instantiationPt != NULL)
-    getVisibleFunctions(name, call, instantiationPt, visited, visibleFns,
-                        inUseChain);
+  {
+    INT_ASSERT(!inUseChain);
+    if (nextScopes == NULL)
+      getVisibleFunctionsImpl(name, call, // visit all POIs right away
+                  instantiationPt, visited, NULL, visibleFns, inUseChain);
+    else
+      nextScopes->push_back(instantiationPt); // come back to it later
+  }
 }
 
 /*

@@ -4291,21 +4291,47 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void findVisibleCandidates(CallInfo&                  info,
-                                  Vec<FnSymbol*>&            visibleFns,
-                                  Vec<ResolutionCandidate*>& candidates);
+//
+// We gather a list of last-resort candidates as we go.
+// The last-resort candidates visible from the call are followed by a NULL
+// to separate them from those visible from the point of instantiation.
+//
+typedef std::vector<FnSymbol*> LastResortCandidates;
 
-static void gatherCandidates(CallInfo&                  info,
-                             Vec<FnSymbol*>&            visibleFns,
-                             bool                       lastResort,
-                             Vec<ResolutionCandidate*>& candidates);
+// add a null separator if needed
+static void markEndOfPOI(LastResortCandidates& lrc) {
+  if (int sz = (int) lrc.size())
+    if (lrc[sz-1] != NULL)
+      lrc.push_back(NULL);
+}
+
+// do we have more LRCs to look at?
+static bool haveMoreLRCs(LastResortCandidates& lrc, int numVisited) {
+  return numVisited < (int)lrc.size();
+}
 
 static void filterCandidate (CallInfo&                  info,
                              FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates);
 
+static void gatherCandidates(CallInfo&                  info,
+                             FnSymbol*                  fn,
+                             Vec<ResolutionCandidate*>& candidates);
+
+static void gatherCandidatesAndLastResort(CallInfo& info,
+                             Vec<FnSymbol*>&            visibleFns,
+                             LastResortCandidates&      lrc,
+                             Vec<ResolutionCandidate*>& candidates);
+
+static void gatherLastResortCandidates(CallInfo&                  info,
+                                       LastResortCandidates&      lrc,
+                                       int&                       numVisited,
+                                       Vec<ResolutionCandidate*>& candidates);
+
+static
 void trimVisibleCandidates(CallInfo&       info,
                            Vec<FnSymbol*>& mostApplicable,
+                           int&            numVisited,
                            Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
@@ -4320,9 +4346,15 @@ void trimVisibleCandidates(CallInfo&       info,
                        call->get(2)->getValType() == call->get(3)->getValType();
 
   if (!(isInit || isNew || isDeinit) || info.call->isResolved()) {
+   if (numVisited == 0)
     mostApplicable = visibleFns;
+   else
+    // copy only new fns since last time
+    for (int i = numVisited; i < visibleFns.n; i++)
+      mostApplicable.add(visibleFns.v[i]);
   } else {
-    forv_Vec(FnSymbol, fn, visibleFns) {
+    for (int i = numVisited; i < visibleFns.n; i++) {
+      FnSymbol* fn = visibleFns.v[i];
       bool shouldKeep = true;
       BaseAST* actual = NULL;
       BaseAST* formal = NULL;
@@ -4368,6 +4400,15 @@ void trimVisibleCandidates(CallInfo&       info,
       }
     }
   }
+
+  numVisited = visibleFns.n;
+}
+
+void trimVisibleCandidates(CallInfo&       info,
+                           Vec<FnSymbol*>& mostApplicable,
+                           Vec<FnSymbol*>& visibleFns) {
+  int numVisited = 0;
+  trimVisibleCandidates(info, mostApplicable, numVisited, visibleFns);
 }
 
 static void findVisibleFunctionsAndCandidates(
@@ -4380,41 +4421,51 @@ static void findVisibleFunctionsAndCandidates(
 
   if (fn != NULL) {
     visibleFns.add(fn);
+    mostApplicable.add(fn); // for better error reporting
 
     handleTaskIntentArgs(info, fn);
 
-  } else {
-    findVisibleFunctions(info, visibleFns);
+    // no need for trimVisibleCandidates() and findVisibleCandidates()
+    gatherCandidates(info, fn, candidates);
+
+    explainGatherCandidate(info, candidates);
+
+    return;
   }
 
-  trimVisibleCandidates(info, mostApplicable, visibleFns);
+  int numVisitedVis = 0;
+  LastResortCandidates lrc;
+  std::set<BlockStmt*> visited;
+  std::vector<BlockStmt*> currentScopes, nextScopes;
+  currentScopes.push_back(getVisibilityScope(call));
 
-  findVisibleCandidates(info, mostApplicable, candidates);
+  do {
+    findVisibleFunctions(info, &visited, &currentScopes, &nextScopes,
+                         &numVisitedVis, visibleFns);
+
+    trimVisibleCandidates(info, mostApplicable, numVisitedVis, visibleFns);
+
+    gatherCandidatesAndLastResort(info, mostApplicable, lrc, candidates);
+
+    currentScopes.clear();
+    std::swap(currentScopes, nextScopes);
+  }
+  while
+    (candidates.n == 0 && ! currentScopes.empty());
+
+  // If needed, look at "last resort" candidates.
+  int numVisitedLRC = 0;
+  while (candidates.n == 0 && haveMoreLRCs(lrc, numVisitedLRC)) {
+    gatherLastResortCandidates(info, lrc, numVisitedLRC, candidates);
+  }
 
   explainGatherCandidate(info, candidates);
 }
 
-static void findVisibleCandidates(CallInfo&                  info,
-                                  Vec<FnSymbol*>&            visibleFns,
-                                  Vec<ResolutionCandidate*>& candidates) {
-  // Search user-defined (i.e. non-compiler-generated) functions first.
-  gatherCandidates(info, visibleFns, false, candidates);
-
-  // If no results, try again with any compiler-generated candidates.
-  if (candidates.n == 0) {
-    gatherCandidates(info, visibleFns, true, candidates);
-  }
-}
-
+// run filterCandidate() on 'fn' if appropriate
 static void gatherCandidates(CallInfo&                  info,
-                             Vec<FnSymbol*>&            visibleFns,
-                             bool                       lastResort,
+                             FnSymbol*                  fn,
                              Vec<ResolutionCandidate*>& candidates) {
-  forv_Vec(FnSymbol, fn, visibleFns) {
-    // Only consider functions marked with/without FLAG_LAST_RESORT
-    // (where existence of the flag matches the lastResort argument)
-    if (fn->hasFlag(FLAG_LAST_RESORT) == lastResort) {
-
       // Consider
       //
       //   c1.foo(10, 20);
@@ -4449,10 +4500,38 @@ static void gatherCandidates(CallInfo&                  info,
           filterCandidate(info, fn, candidates);
         }
       }
-    }
-  }
 }
 
+// filter non-last-resort fns into 'candidates',
+// store last-resort fns into 'lrc'
+static void gatherCandidatesAndLastResort(CallInfo& info,
+                             Vec<FnSymbol*>&            visibleFns,
+                             LastResortCandidates&      lrc,
+                             Vec<ResolutionCandidate*>& candidates) {
+  forv_Vec(FnSymbol, fn, visibleFns) {
+    if (fn->hasFlag(FLAG_LAST_RESORT)) {
+      lrc.push_back(fn);
+    } else {
+      gatherCandidates(info, fn, candidates);
+    }
+  }
+  markEndOfPOI(lrc);
+}
+
+// run filterCandidate() on the next batch of last resort fns
+static void gatherLastResortCandidates(CallInfo&                  info,
+                                       LastResortCandidates&      lrc,
+                                       int&                       numVisited,
+                                       Vec<ResolutionCandidate*>& candidates) {
+  int idx = numVisited;
+
+  for (FnSymbol* fn = lrc[idx]; fn != NULL; fn = lrc[++idx]) {
+    gatherCandidates(info, fn, candidates);
+  }
+
+  numVisited = ++idx;
+}
+    
 static void filterCandidate(CallInfo&                  info,
                             FnSymbol*                  fn,
                             Vec<ResolutionCandidate*>& candidates) {
