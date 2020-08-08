@@ -701,7 +701,7 @@ module ChapelArray {
   // Support for distributed domain expression e.g. {1..3, 1..3} dmapped Dist()
   //
   proc chpl__distributed(d: _distribution, dom: domain,
-                         param definedConst: bool) {
+                         definedConst: bool) {
     if definedConst {
       if isRectangularDom(dom) {
         const distDom: domain(dom.rank,
@@ -725,7 +725,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl__distributed(d: _distribution, ranges..., param definedConst: bool)
+  proc chpl__distributed(d: _distribution, ranges..., definedConst: bool)
   where chpl__isTupleOfRanges(ranges) {
     return chpl__distributed(d, chpl__buildDomainExpr((...ranges),
                                                       definedConst=definedConst),
@@ -830,7 +830,7 @@ module ChapelArray {
 
   // this is a type function and as such, definedConst has no effect
   proc chpl__distributed(d: _distribution, type domainType,
-                         param definedConst: bool) type {
+                         definedConst: bool) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
                     domainType:string);
@@ -1199,7 +1199,7 @@ module ChapelArray {
               param rank : int,
               type idxType = int,
               param stridable: bool = false,
-              param definedConst: bool = false) {
+              definedConst: bool = false) {
       this.init(d.newRectangularDom(rank, idxType, stridable, definedConst));
     }
 
@@ -1207,18 +1207,22 @@ module ChapelArray {
               param rank : int,
               type idxType = int,
               param stridable: bool = false,
-              ranges: rank*range(idxType, BoundedRangeType.bounded,stridable)) {
-      this.init(d.newRectangularDom(rank, idxType, stridable, ranges));
+              ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
+              definedConst: bool = false) {
+      this.init(d.newRectangularDom(rank, idxType, stridable, ranges,
+                definedConst));
     }
 
     proc init(d: _distribution,
               type idxType,
-              param parSafe: bool = true) {
+              param parSafe: bool = true,
+              definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
 
     proc init(d: _distribution,
-              dom: domain) {
+              dom: domain,
+              definedConst: bool = false) {
       this.init(d.newSparseDom(dom.rank, dom._value.idxType, dom));
     }
 
@@ -4433,7 +4437,7 @@ module ChapelArray {
   // B would just be initialized to the result of the function call -
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
-  inline proc chpl__unalias(x: domain) {
+  inline proc chpl__unalias(x: domain, definedConst: bool) {
     if _to_unmanaged(x._instance.type) != x._instance.type then
       compilerError("Domain on borrow created");
 
@@ -4460,6 +4464,10 @@ module ChapelArray {
     return b;
   }
 
+  // The coercion functions below define `lhs` as `var`. However, the compiler
+  // will pass `definedConst` to the `chpl__convertRuntimeTypeToValue` under the
+  // covers. So if this function is called with // `definedConst=true`, the
+  // domain instance of lhs will have // `definedConst=true`
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
@@ -4468,8 +4476,6 @@ module ChapelArray {
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
-
-    chpl__fixupConstDomain(lhs, definedConst);
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -4490,8 +4496,6 @@ module ChapelArray {
     var lhs:dstType;
     lhs; // no split init
     lhs = rhs;
-
-    chpl__fixupConstDomain(lhs, definedConst);
 
     // Error for assignment between local and distributed domains.
     if lhs.dist._value.dsiIsLayout() && !rhsIsLayout then
@@ -4971,7 +4975,7 @@ module ChapelArray {
 
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
-  inline proc chpl__unalias(x: []) {
+  inline proc chpl__unalias(x: [], definedConst: bool) {
     param isview = (x._value.isSliceArrayView() ||
                     x._value.isRankChangeArrayView() ||
                     x._value.isReindexArrayView());
@@ -5075,13 +5079,22 @@ module ChapelArray {
     return result;
   }
 
-  proc chpl__fixupConstDomain(dom: domain) 
+  proc chpl__fixupConstDomain(dom: domain, definedConst: bool) 
       where isSubtype(dom._value.type, BaseRectangularDom) {
 
-    dom._value.definedConst = true;
+    if definedConst {
+      if _isPrivatized(dom._value) {
+        coforall l in Locales do on l {
+          dom._value.definedConst = true;
+        }
+      }
+      else {
+        dom._value.definedConst = true;
+      }
+    }
   }
 
-  proc chpl__fixupConstDomain(x) { }
+  proc chpl__fixupConstDomain(x, definedConst: bool) { }
 
   pragma "unchecked throws"
   proc chpl__throwErrorUnchecked(in e: owned Error) throws {

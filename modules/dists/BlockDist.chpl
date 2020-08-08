@@ -1367,10 +1367,11 @@ record BlockDomPrvData {
   var distpid;
   var dims;
   var locdoms;  //todo rvf its elements along with the rest of the record
+  var definedConst;
 }
 
 proc BlockDom.dsiGetPrivatizeData() {
-  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms);
+  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms, definedConst);
 }
 
 proc BlockDom.dsiPrivatize(privatizeData) {
@@ -1384,7 +1385,7 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   const c = new unmanaged BlockDom(rank, idxType, stridable,
                                    privdist.sparseLayoutType, privdist,
                                    locDomsTemp, {(...privatizeData.dims)},
-                                   definedConst=definedConst);
+                                   definedConst=privatizeData.definedConst);
   return c;
 }
 

@@ -713,7 +713,8 @@ proc CyclicDom.dsiGetPrivatizeData() return 0;
 proc CyclicDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
   return new unmanaged CyclicDom(rank, idxType, stridable,
-                                 privdist, locDoms, whole);
+                                 privdist, locDoms, whole,
+                                 definedConst=definedConst);
 }
 
 proc CyclicDom.dsiGetReprivatizeData() return 0;

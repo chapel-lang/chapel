@@ -1806,7 +1806,8 @@ proc StencilDom.dsiPrivatize(privatizeData) {
     = locDoms;
 
   var c = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
-            privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic);
+            privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic,
+            definedConst=definedConst);
 
   if c.whole.size > 0 {
     var absFluff : fluff.type;
