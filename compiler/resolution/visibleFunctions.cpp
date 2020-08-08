@@ -100,13 +100,14 @@ static void getVisibleFunctions(const char*              name,
 
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
-  findVisibleFunctions(info, NULL, NULL, NULL, visibleFns);
+  findVisibleFunctions(info, NULL, NULL, NULL, NULL, visibleFns);
 }
 
 void findVisibleFunctions(CallInfo&       info,
                           std::set<BlockStmt*>*    visited,
                           std::vector<BlockStmt*>* currentScopes,
                           std::vector<BlockStmt*>* nextScopes,
+                          int*            numVisitedP,
                           Vec<FnSymbol*>& visibleFns) {
   CallExpr* call = info.call;
 
@@ -145,20 +146,23 @@ void findVisibleFunctions(CallInfo&       info,
 
   if ((explainCallLine && explainCallMatch(call)) ||
       call->id == explainCallID) {
-    USR_PRINT(call, "call: %s", info.toString());
+    int startVisited = numVisitedP ? *numVisitedP : 0;
+    if (startVisited == 0)
+      USR_PRINT(call, "call: %s", info.toString());
 
     if (visibleFns.n == 0) {
+     if (numVisitedP == NULL)
       USR_PRINT(call, "no visible functions found");
 
     } else {
-      bool first = true;
+      int i = 0;
 
       forv_Vec(FnSymbol, visibleFn, visibleFns) {
+       if (i++ >= startVisited)
         USR_PRINT(visibleFn,
                   "%s %s",
-                  first ? "visible functions are:" : "                      ",
+                  i == 1 ? "visible functions are:" : "                      ",
                   toString(visibleFn));
-        first = false;
       }
     }
   }
