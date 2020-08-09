@@ -1758,47 +1758,52 @@ proc svd(A: [?Adom] ?t) throws
 }
 
 pragma "no doc" 
-proc svd(A: [?Adom] ?t)
-  where !usingLAPACK || !isLAPACKType(t) 
+proc svdNative(A : [?Adom] ?eltType) 
+  where (!isLAPACKType(t) || !usingLAPACK) && isDenseDom(Adom) 
+    && Adom.rank == 2
 {
   var (m,n) = Adom.shape;
-  var flag, i, its, j, jj, l, nm : int = 0;
+
+  ref U = A.redindex(0..#m, 0..#n);
+
+  var l, nm : int = 0;
+  var flag : bool;
   var anorm, c, f, g, h, s, scale, x, y, z : real = 0.0;
-  var rv1 = Vector(1..n, eltType);
+  var rv1 = Vector(0..#n, eltType);
 
-  var W = Vector(1..n, eltType);
-  var V = Matrix(1..n, eltType);
+  var W = Vector(0..#n, eltType);
+  var V = Matrix(0..#n, eltType);
 
-  for i in 1..n {
-    l = i+1;
+  for i in 0..<n {
+    l = i+2;
     rv1[i] = scale*g;
     g = 0.0;
     s = 0.0;
     scale = 0.0;
     
-    if i <= m {
+    if i < m {
 
-      forall k in i..m with (+ reduce scale) do scale += abs(A[k,i]);
+      forall k in i..<m with (+ reduce scale) do scale += abs(U[k,i]);
 
-      if scale != 0 {
-        forall k in i..m with (+ reduce s) { 
-          A[k,i] /= scale;
-          s += A[k,i]*A[k,i];
+      if scale != 0.0 {
+        forall k in i..<m with (+ reduce s) { 
+          U[k,i] /= scale;
+          s += U[k,i]*U[k,i];
         }
 
-        f=A[i,i];
-        g = -signbit(s)*signbit(f)*sqrt(s); 
+        f = U[i,i];
+        g = -sign(sqrt(s),f); 
         h = f*g-s;
-        A[i,i] = f-g;
+        U[i,i] = f-g;
 
-        for j in l..n {
+        for j in l-1..<n {
           s= 0.0;
-          forall k in i..m with (+ reduce s) do s += A[k,i]*A[k,j]; 
+          forall k in i..<m with (+ reduce s) do s += U[k,i]*U[k,j]; 
           f=s/h;
-          A[l..m,j] += f*A[l..m,i];
+          forall k in i..<m do U[k, j] += f*U[k, i];
         }
 
-        A[i..m,i] *= scale;
+        forall k in i..<m do U[k, i] *= scale;
       } 
     }
 
@@ -1807,48 +1812,52 @@ proc svd(A: [?Adom] ?t)
     s = 0.0;
     scale = 0.0;
 
-    if (i <= m && i != n) {
-      forall k in l..n with (+ reduce scale) do scale += abs(A[i,k]);
-      if scale != 0 {
-        forall k in l..n with (+ reduce s){
-          A[i, k] /= scale;
-          s += A[i, k]*A[i, k];
+    if (i < m && i+1 != n) {
+      forall k in l-1..<n with (+ reduce scale) do scale += abs(U[i,k]);
+      if scale != 0.0 {
+        forall k in l-1..<n with (+ reduce s){
+          U[i, k] /= scale;
+          s += U[i, k]*U[i, k];
         }
 
-        f = A[i, l];
-        g = -signbit(s)*signbit(f)*sqrt(s);
-        h=f*g-s;
-        A[i, l] = f-g;
+        f = U[i, l-1];
+        g = -sign(sqrt(s),f);
+        h = f*g-s;
+        U[i, l-1] = f-g;
 
-        rv1[l..n] = A[i, l..n] / h;
+        forall k in l-1..<n do rv1[k] = U[i, k]/h;
 
-        for j in l..m {
+        for j in l-1..<m {
           s = 0.0;
-          forall k in l..n with(+ reduce s) do s += A[j, k]*A[i, k];
-          A[j, l..n] += s*rv1[l..n];
+          forall k in l-1..<n with (+ reduce s) do s += U[j, k]*U[i, k];
+          forall k in l-1..<n do U[j, k] += s*rv1[k];
         }
 
-        A[i, l..n] *= scale;
+        forall k in l-1..<n do U[i, k] *= scale;
       }
     }
 
     anorm = max(anorm, abs(W[i]) + abs(rv1[i]));
   }
 
-  for i in n..1 by -1 {
-    if i < n {
-      if g != 0 {
-        V[l..n, i] = (A[i, l..n] / A[i, l]) / g;
+  for i in 0..n-1 by -1 {
+    if i < n-1 {
+      if g != 0.0 {
+        forall j in l..<n {
+          V[j,i] = (U[i,j]/U[i,l])/g;
+        }
 
-        for j in l..n {
+        for j in l..<n {
           s = 0.0;
-          forall k in l..n with (+ reduce s) do s += A[i, k] * V[k, j];
-          V[l..n, j] += s*V[l..n, i]; 
+          forall k in l..<n with (+ reduce s) do s += U[i, k] * V[k, j];
+          forall k in l..<n do V[k, j] += s*V[k, i];
         }
       }
 
-      V[i, l..n] = 0.0;
-      V[l..n, i] = 0.0;
+      forall j in l..<n {
+        V[i, j] = 0.0;
+        V[j, i] = 0.0;
+      }
     }
 
     V[i,i] = 1.0;
@@ -1856,40 +1865,42 @@ proc svd(A: [?Adom] ?t)
     l = i;
   }
 
-  for i in min(m, n)..1 by -1 {
+  for i in 0..min(m, n)-1 by -1 {
     l = i+1;
     g = W[i];
-    A[i, l..n] = 0.0;
+    
+    forall j in l..<n do U[i, j]=0.0;
 
-    if g != 0 {
+    if g != 0.0 {
       g = 1.0/g;
 
-      for j in l..n {
+      for j in l..<n {
         s = 0.0;
-        forall k in l..m with(+ reduce s) do s += A[k, i] * A[k, j];
-        f = (s / A[i, i]) * g;
-        A[i..m, j] += f*A[i..m, i];
+        forall k in l..<m with (+ reduce s) do s += U[k, i] * U[k, j];
+        f = (s / U[i, i]) * g;
+        forall k in i..<m do U[k, j] += f*U[k, i];
       }
 
-      A[i..m, i] *= g;
+      forall j in i..<m do U[j, i] *= g;
     } else {
-      A[i..m, i] = 0.0;
+      forall j in i..<m do U[j, i]=0.0;
     }
 
-    A[i, i] += 1;
+    U[i, i] += 1;
   }
 
-  for k in n..1 by -1 {
-    for its in 1..30 {
-      flag = 1;
-      for l in k..1 by -1 {
-        nm = l-1;
+  for k in 0..n-1 by -1 {
+    for its in 0..<30 {
+      flag = true;
+      for l2 in 0..k by -1 {
+        l = l2;
+        nm = l2-1;
 
-        if abs(rv1[l]) + anorm == anorm {
-          flag = 0;
+        if l2 == 0 || abs(rv1[l2]) <= eps*anorm {
+          flag = false;
           break;
         }
-        if abs(W[nm]) + anorm == anorm then break;
+        if abs(W[nm]) <= eps*anorm then break;
       }
 
       if flag {
@@ -1898,7 +1909,7 @@ proc svd(A: [?Adom] ?t)
         for i in l..k {
           f = s*rv1[i];
           rv1[i] = c*rv1[i];
-          if abs(f) + anorm == anorm then break;
+          if abs(f) < eps*anorm then break;
           g = W[i];
           h = pythag(f, g);
           W[i] = h;
@@ -1906,25 +1917,25 @@ proc svd(A: [?Adom] ?t)
           c = g*h;
           s = -f*h;
 
-          forall j in 1..m {
-            var y : real = A[j, nm];
-            var z : real = A[j, i];
-            A[j, nm] = y*c + z*s;
-            A[j, i] = z*c - y*s;
+          forall j in 0..<m {
+            var y = U[j, nm];
+            var z = U[j, i];
+            U[j, nm] = y*c + z*s;
+            U[j, i] = z*c - y*s;
           }
         }
       }
 
       z = W[k];
       if l == k {
-        if z < 0 {
+        if z < 0.0 {
           W[k] = -z;
-          V[1..n, k] *= -1;
+          for j in 0..<n do U[j, k] = -U[j,k];
         }
         break;
       }
 
-      if its == 30 then halt("No convergence in 30 iterations");
+      if its == 29 then halt("No convergence in 30 iterations");
 
       x = W[l];
       nm = k-1;
@@ -1933,12 +1944,12 @@ proc svd(A: [?Adom] ?t)
       h = rv1[k];
       f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
       g = pythag(f, 1.0);
-      f = ((x-z)*(x+z)+h*((y/(f + -signbit(g)*signbit(f)*sqrt(g)))-h))/x;
+      f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x;
       c = 1.0;
       s = 1.0;
 
-      for j in 1..nm {
-        i = j + 1;
+      for j in l..nm {
+        var i = j + 1;
         g = rv1[i];
         y = W[i];
         h = s*g;
@@ -1951,16 +1962,16 @@ proc svd(A: [?Adom] ?t)
         g = g*c-x*s;
         h = y*s;
         y *= c;
-        forall jj in 1..n {
-          var x : real = V[jj,j];
-          var z : real = V[jj, i];
+        forall jj in 0..<n {
+          var x = V[jj,j];
+          var z = V[jj, i];
           V[jj, j] = x*c+z*s;
           V[jj, i] = z*c-x*s;
         }
         z = pythag(f,h);
         W[j] = z;
 
-        if z != 0 {
+        if z != 0.0 {
           z = 1.0 /z;
           c = f*z;
           s = h*z;
@@ -1969,11 +1980,11 @@ proc svd(A: [?Adom] ?t)
         f = c*g+s*y;
         x = c*y-s*g;
 
-        forall jj in 1..m {
-          var y : real = A[jj, j];
-          var z : real = A[jj, i];
-          A[jj, j] = y*c+z*s;
-          A[jj, i] = z*c-y*s;
+        forall jj in 0..<m {
+          var y = U[jj, j];
+          var z = U[jj, i];
+          U[jj, j] = y*c+z*s;
+          U[jj, i] = z*c-y*s;
         }
       }
 
@@ -1983,7 +1994,7 @@ proc svd(A: [?Adom] ?t)
     }
   }
 
-  return (A, W, V);
+  return (A, W, V.T);
 }
 
 private inline proc pythag(a : real, b : real) {
