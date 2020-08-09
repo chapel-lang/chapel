@@ -37,7 +37,6 @@
 #include "parser.h"
 #include "stringutil.h"
 #include "TryStmt.h"
-#include "view.h"
 #include "wellknown.h"
 
 #include <map>
