@@ -158,12 +158,14 @@ module ChapelDistribution {
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
-    var definedConst: bool;
-
     proc init() {
     }
 
     proc deinit() {
+    }
+
+    proc getDefinedConst() {
+      return false;
     }
 
     proc dsiMyDist(): unmanaged BaseDist {
@@ -226,7 +228,7 @@ module ChapelDistribution {
         local {
           _arrsLock.lock();
           if rmFromList {
-            if !definedConst {
+            if !getDefinedConst() {
               _arrs.remove(x);
             }
           }
@@ -255,7 +257,7 @@ module ChapelDistribution {
         if locking then
           _arrsLock.lock();
         if addToList {
-          if !definedConst {
+          if !getDefinedConst() {
             _arrs.add(x);
           }
         }
@@ -353,12 +355,10 @@ module ChapelDistribution {
     type idxType;
     param stridable: bool;
 
-    proc init(param rank : int, type idxType, param stridable: bool,
-              definedConst: bool) {
-      this.rank = rank;
-      this.idxType = idxType;
-      this.stridable = stridable;
-      this.definedConst = definedConst;
+    var definedConst: bool;
+
+    override proc getDefinedConst() {
+      return definedConst;
     }
 
     proc getBaseArrType() type {
