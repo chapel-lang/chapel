@@ -164,10 +164,6 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    proc getDefinedConst() {
-      return false;
-    }
-
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
       pragma "unsafe" var ret: unmanaged BaseDist; // nil
@@ -228,7 +224,13 @@ module ChapelDistribution {
         local {
           _arrsLock.lock();
           if rmFromList {
-            if !getDefinedConst() {
+            var avoidList = false;
+            if isSubtype(this.type, BaseRectangularDom) {
+              if (this:BaseRectangularDom).definedConst {
+                avoidList = true;
+              }
+            }
+            if !avoidList {
               _arrs.remove(x);
             }
           }
@@ -257,7 +259,13 @@ module ChapelDistribution {
         if locking then
           _arrsLock.lock();
         if addToList {
-          if !getDefinedConst() {
+          var avoidList = false;
+          if isSubtype(this.type, BaseRectangularDom) {
+            if (this:BaseRectangularDom).definedConst {
+              avoidList = true;
+            }
+          }
+          if !avoidList {
             _arrs.add(x);
           }
         }
@@ -356,10 +364,6 @@ module ChapelDistribution {
     param stridable: bool;
 
     var definedConst: bool;
-
-    override proc getDefinedConst() {
-      return definedConst;
-    }
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
