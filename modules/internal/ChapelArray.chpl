@@ -4975,7 +4975,7 @@ module ChapelArray {
 
   // see comment on chpl__unalias for domains
   pragma "unalias fn"
-  inline proc chpl__unalias(x: [], definedConst: bool) {
+  inline proc chpl__unalias(x: []) {
     param isview = (x._value.isSliceArrayView() ||
                     x._value.isRankChangeArrayView() ||
                     x._value.isReindexArrayView());
