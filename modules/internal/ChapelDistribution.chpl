@@ -158,6 +158,8 @@ module ChapelDistribution {
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
 
+    var definedConst: bool;
+
     proc init() {
     }
 
@@ -223,10 +225,14 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
-          if rmFromList then
-            _arrs.remove(x);
-          else
+          if rmFromList {
+            if !definedConst {
+              _arrs.remove(x);
+            }
+          }
+          else {
             _arrs_containing_dom -=1;
+          }
           cnt = _arrs.size;
           cnt += _arrs_containing_dom;
           // add one for the main domain record
@@ -248,10 +254,14 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
-        if addToList then
-          _arrs.add(x);
-        else
+        if addToList {
+          if !definedConst {
+            _arrs.add(x);
+          }
+        }
+        else {
           _arrs_containing_dom += 1;
+        }
         if locking then
           _arrsLock.unlock();
       }
@@ -342,7 +352,14 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param stridable: bool;
-    var definedConst: bool;
+
+    proc init(param rank : int, type idxType, param stridable: bool,
+              definedConst: bool) {
+      this.rank = rank;
+      this.idxType = idxType;
+      this.stridable = stridable;
+      this.definedConst = definedConst;
+    }
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
