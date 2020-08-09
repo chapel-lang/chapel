@@ -4437,7 +4437,7 @@ module ChapelArray {
   // B would just be initialized to the result of the function call -
   // meaning that B would not refer to distinct array elements.
   pragma "unalias fn"
-  inline proc chpl__unalias(x: domain, definedConst: bool) {
+  inline proc chpl__unalias(x: domain) {
     if _to_unmanaged(x._instance.type) != x._instance.type then
       compilerError("Domain on borrow created");
 
