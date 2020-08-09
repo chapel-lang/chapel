@@ -708,13 +708,13 @@ proc type CyclicDom.chpl__deserialize(data) {
 
 override proc CyclicDom.dsiSupportsPrivatization() param return true;
 
-proc CyclicDom.dsiGetPrivatizeData() return 0;
+proc CyclicDom.dsiGetPrivatizeData() return (definedConst, );
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
   return new unmanaged CyclicDom(rank, idxType, stridable,
                                  privdist, locDoms, whole,
-                                 definedConst=definedConst);
+                                 definedConst=privatizeData[0]);
 }
 
 proc CyclicDom.dsiGetReprivatizeData() return 0;

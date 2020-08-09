@@ -1796,7 +1796,8 @@ proc Stencil.dsiReprivatize(other, reprivatizeData) {
 
 override proc StencilDom.dsiSupportsPrivatization() param return true;
 
-proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims(),
+                                              definedConst);
 
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
@@ -1807,7 +1808,7 @@ proc StencilDom.dsiPrivatize(privatizeData) {
 
   var c = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
             privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic,
-            definedConst=definedConst);
+            definedConst=privatizeData[2]);
 
   if c.whole.size > 0 {
     var absFluff : fluff.type;

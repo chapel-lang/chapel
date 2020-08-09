@@ -719,11 +719,13 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
 
 override proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
-proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
+proc BlockCyclicDom.dsiGetPrivatizeData() return (dist.pid, definedConst);
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
-  var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
+  var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData[0]);
+  var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
+                                       stridable=stridable, dist=privateDist,
+                                       definedConst=privatizeData[1]);
   c.locDomsNil = locDomsNil;
   c.whole = whole;
   return c;
