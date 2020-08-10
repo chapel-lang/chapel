@@ -1758,7 +1758,7 @@ proc svd(A: [?Adom] ?t) throws
 }
 
 pragma "no doc" 
-proc svdNative(A : [?Adom] ?eltType) 
+proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8) 
   where (!isLAPACKType(t) || !usingLAPACK) && isDenseDom(Adom) 
     && Adom.rank == 2
 {
