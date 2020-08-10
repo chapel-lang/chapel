@@ -1758,16 +1758,16 @@ proc svd(A: [?Adom] ?t) throws
 }
 
 pragma "no doc" 
-proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
+proc svd(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
   throws
-  where (!isLAPACKType(t) || !usingLAPACK) && isDenseDom(Adom) 
+  where isRealType(eltType) && !usingLAPACK && isDenseDom(Adom) 
     && Adom.rank == 2
 {
   var (m,n) = Adom.shape;
-  ref U = A.redindex(0..#m, 0..#n);
+  ref U = A.reindex(0..#m, 0..#n);
   var l, nm : int = 0;
   var flag : bool;
-  var anorm, c, f, g, h, s, scale, x, y, z : real = 0.0;
+  var anorm, c, f, g, h, s, scale, x, y, z : eltType = 0.0;
   var rv1 = Vector(0..#n, eltType);
 
   var W = Vector(0..#n, eltType);
@@ -1796,9 +1796,9 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
         U[i,i] = f-g;
 
         forall j in l-1..<n {
-          var s= 0.0;
+          var s : eltType = 0.0;
           forall k in i..<m with (+ reduce s) do s += U[k,i]*U[k,j]; 
-          var f=s/h;
+          var f : eltType =s/h;
           forall k in i..<m do U[k, j] += f*U[k, i];
         }
 
@@ -1827,7 +1827,7 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
         forall k in l-1..<n do rv1[k] = U[i, k]/h;
 
         forall j in l-1..<m {
-          var s = 0.0;
+          var s : eltType = 0.0;
           forall k in l-1..<n with (+ reduce s) do s += U[j, k]*U[i, k];
           forall k in l-1..<n do U[j, k] += s*rv1[k];
         }
@@ -1847,7 +1847,7 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
         }
 
         forall j in l..<n {
-          var s = 0.0;
+          var s : eltType = 0.0;
           forall k in l..<n with (+ reduce s) do s += U[i, k] * V[k, j];
           forall k in l..<n do V[k, j] += s*V[k, i];
         }
@@ -1874,9 +1874,9 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
       g = 1.0/g;
 
       forall j in l..<n {
-        var s = 0.0;
+        var s : eltType = 0.0;
         forall k in l..<m with (+ reduce s) do s += U[k, i] * U[k, j];
-        var f = (s / U[i, i]) * g;
+        var f : eltType = (s / U[i, i]) * g;
         forall k in i..<m do U[k, j] += f*U[k, i];
       }
 
@@ -1917,8 +1917,8 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
           s = -f*h;
 
           forall j in 0..<m {
-            var y = U[j, nm];
-            var z = U[j, i];
+            var y : eltType = U[j, nm];
+            var z : eltType = U[j, i];
             U[j, nm] = y*c + z*s;
             U[j, i] = z*c - y*s;
           }
@@ -1936,7 +1936,7 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
 
       if its >= iterations {
         var msg = "SVD computation did not converge in "  +
-          iterations + "iterations";
+          iterations:string + "iterations";
         throw new owned LinearAlgebraError(msg);
       }
 
@@ -1966,8 +1966,8 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
         h = y*s;
         y *= c;
         forall jj in 0..<n {
-          var x = V[jj,j];
-          var z = V[jj, i];
+          var x : eltType = V[jj,j];
+          var z : eltType = V[jj, i];
           V[jj, j] = x*c+z*s;
           V[jj, i] = z*c-x*s;
         }
@@ -1984,8 +1984,8 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
         x = c*y-s*g;
 
         forall jj in 0..<m {
-          var y = U[jj, j];
-          var z = U[jj, i];
+          var y : eltType = U[jj, j];
+          var z : eltType = U[jj, i];
           U[jj, j] = y*c+z*s;
           U[jj, i] = z*c-y*s;
         }
@@ -2000,16 +2000,16 @@ proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
   return (A, W, V);
 }
 
-private inline proc signedVal(a, b) {
-  return if b >= 0 then (if a >= 0 then a else -a) else (if a >= 0 then -a else a);
+private inline proc signedVal(a : ?t, b : t) {
+  return if b >= 0:t then (if a >= 0 then a else -a) else (if a >= 0 then -a else a);
 }
 
-private inline proc pythag(a : real, b : real) {
-  var absa, absb : real;
+private inline proc pythag(a : ?t, b : t) : t {
+  var absa, absb : t;
   absa = abs(a);
   absb = abs(b);
   if (absa > absb) then return absa * sqrt(1.0 + (absb/absa)*(absb/absa));
-  else return (if absb == 0.0 then 0.0 else absb * sqrt(1.0 + (absa/absb) * (absa/absb)));
+  else return (if absb == 0.0 then 0.0:t else absb * sqrt(1.0 + (absa/absb) * (absa/absb)));
 }
 
 /*
