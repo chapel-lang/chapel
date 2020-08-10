@@ -238,6 +238,9 @@ module ChapelArray {
       var newValue = originalValue;
       if hereID != here.id {
         newValue = parentValue.dsiPrivatize(privatizeData);
+        if isSubtype(parentValue.type, BaseDom) {
+          newValue.definedConst = parentValue.definedConst;
+        }
         __primitive("chpl_newPrivatizedClass", newValue, n);
         newValue.pid = n;
       } else {
@@ -1082,8 +1085,10 @@ module ChapelArray {
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
                            ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
                            definedConst: bool = false) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges,
-                                          definedConst);
+      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
+
+      x.definedConst = definedConst;
+                     
       if x.linksDistribution() {
         _value.add_dom(x);
       }

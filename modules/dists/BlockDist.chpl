@@ -571,8 +571,7 @@ override proc Block.dsiDisplayRepresentation() {
 }
 
 override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                                         param stridable: bool, inds,
-                                         definedConst: bool = false) {
+                                         param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
@@ -590,8 +589,7 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
-                                   this: unmanaged, locDomsTemp, whole,
-                                   definedConst=definedConst);
+                                   this: unmanaged, locDomsTemp, whole);
 
   if debugBlockDist {
     writeln("Creating new Block domain:");
@@ -1367,11 +1365,10 @@ record BlockDomPrvData {
   var distpid;
   var dims;
   var locdoms;  //todo rvf its elements along with the rest of the record
-  var definedConst;
 }
 
 proc BlockDom.dsiGetPrivatizeData() {
-  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms, definedConst);
+  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms);
 }
 
 proc BlockDom.dsiPrivatize(privatizeData) {
@@ -1384,8 +1381,8 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   // in initializer we have to pass sparseLayoutType as it has no default value
   const c = new unmanaged BlockDom(rank, idxType, stridable,
                                    privdist.sparseLayoutType, privdist,
-                                   locDomsTemp, {(...privatizeData.dims)},
-                                   definedConst=privatizeData.definedConst);
+                                   locDomsTemp, {(...privatizeData.dims)});
+                                   
   return c;
 }
 

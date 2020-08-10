@@ -50,8 +50,7 @@ module ArrayViewReindex {
     }
 
     override proc dsiNewRectangularDom(param rank, type idxType,
-                                       param stridable, inds,
-                                       definedConst: bool = false) {
+                                       param stridable, inds) {
       var newdom = new unmanaged ArrayViewReindexDom(rank=rank,
                                            idxType=idxType,
                                            //                                           stridable=true,

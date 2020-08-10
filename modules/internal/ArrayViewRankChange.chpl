@@ -73,8 +73,7 @@ module ArrayViewRankChange {
     }
 
     override proc dsiNewRectangularDom(param rank, type idxType,
-                                       param stridable, inds,
-                                       definedConst: bool = false) {
+                                       param stridable, inds){
       var newdom = new unmanaged ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,

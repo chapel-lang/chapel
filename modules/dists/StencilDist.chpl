@@ -547,8 +547,7 @@ override proc Stencil.dsiDisplayRepresentation() {
 }
 
 override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                                           param stridable: bool, inds,
-                                           definedConst: bool = false) {
+                                           param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
@@ -565,8 +564,7 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLSD;
 
   var dom = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
-             _to_unmanaged(this), locDomsTemp, fluff=fluff, periodic=periodic,
-             definedConst=definedConst);
+             _to_unmanaged(this), locDomsTemp, fluff=fluff, periodic=periodic);
   dom.dsiSetIndices(inds);
 
   if debugStencilDist {
@@ -1796,8 +1794,7 @@ proc Stencil.dsiReprivatize(other, reprivatizeData) {
 
 override proc StencilDom.dsiSupportsPrivatization() param return true;
 
-proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims(),
-                                              definedConst);
+proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
 
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
@@ -1807,8 +1804,7 @@ proc StencilDom.dsiPrivatize(privatizeData) {
     = locDoms;
 
   var c = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
-            privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic,
-            definedConst=privatizeData[2]);
+            privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic);
 
   if c.whole.size > 0 {
     var absFluff : fluff.type;

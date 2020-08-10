@@ -90,11 +90,11 @@ module DefaultRectangular {
 
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
-                                       param stridable: bool, inds,
-                                       definedConst: bool = false) {
+                                       param stridable: bool, inds) {
+                                       
       const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
-                                                      _to_unmanaged(this),
-                                                      definedConst);
+                                                      _to_unmanaged(this));
+                                                     
       dom.dsiSetIndices(inds);
       return dom;
     }
@@ -154,8 +154,8 @@ module DefaultRectangular {
     proc type isDefaultRectangular() param return true;
     override proc isDefaultRectangular() param return true;
 
-    proc init(param rank, type idxType, param stridable, dist, definedConst) {
-      super.init(rank, idxType, stridable, definedConst);
+    proc init(param rank, type idxType, param stridable, dist) {
+      super.init(rank, idxType, stridable);
       this.dist = dist;
     }
 

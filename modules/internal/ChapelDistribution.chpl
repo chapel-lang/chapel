@@ -108,8 +108,7 @@ module ChapelDistribution {
     }
 
     proc dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool, inds,
-                              definedConst: bool=false) {
+                              param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
@@ -157,6 +156,8 @@ module ChapelDistribution {
     var _arrsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
+
+    var definedConst: bool;
 
     proc init() {
     }
@@ -224,14 +225,11 @@ module ChapelDistribution {
         local {
           _arrsLock.lock();
           if rmFromList {
-            var avoidList = false;
-            if isSubtype(this.type, BaseRectangularDom) {
-              if (this:BaseRectangularDom).definedConst {
-                avoidList = true;
-              }
-            }
-            if !avoidList {
+            if !this.definedConst {
               _arrs.remove(x);
+            }
+            else {
+              _arrs_containing_dom -=1;
             }
           }
           else {
@@ -259,14 +257,11 @@ module ChapelDistribution {
         if locking then
           _arrsLock.lock();
         if addToList {
-          var avoidList = false;
-          if isSubtype(this.type, BaseRectangularDom) {
-            if (this:BaseRectangularDom).definedConst {
-              avoidList = true;
-            }
-          }
-          if !avoidList {
+          if !this.definedConst {
             _arrs.add(x);
+          }
+          else {
+            _arrs_containing_dom += 1;
           }
         }
         else {
@@ -362,8 +357,6 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param stridable: bool;
-
-    var definedConst: bool;
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);

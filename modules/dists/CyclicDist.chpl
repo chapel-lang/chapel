@@ -351,8 +351,7 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
 }
 
 override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType,
-                                          param stridable: bool, inds,
-                                          definedConst: bool = false) {
+                                          param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -369,8 +368,7 @@ override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLCD;
 
   var dom = new unmanaged CyclicDom(rank, idxType, stridable,
-                                    this: unmanaged, locDomsTemp, whole,
-                                    definedConst=definedConst);
+                                    this: unmanaged, locDomsTemp, whole);
   return dom;
 }
 
@@ -708,13 +706,12 @@ proc type CyclicDom.chpl__deserialize(data) {
 
 override proc CyclicDom.dsiSupportsPrivatization() param return true;
 
-proc CyclicDom.dsiGetPrivatizeData() return (definedConst, );
+proc CyclicDom.dsiGetPrivatizeData() return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
   return new unmanaged CyclicDom(rank, idxType, stridable,
-                                 privdist, locDoms, whole,
-                                 definedConst=privatizeData[0]);
+                                 privdist, locDoms, whole);
 }
 
 proc CyclicDom.dsiGetReprivatizeData() return 0;

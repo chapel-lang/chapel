@@ -300,8 +300,7 @@ proc BlockCyclic._locsize {
 // create a new rectangular domain over this distribution
 //
 override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
-                                      param stridable: bool, inds,
-                                      definedConst: bool = false) {
+                                      param stridable: bool, inds) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -719,13 +718,12 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
 
 override proc BlockCyclicDom.dsiSupportsPrivatization() param return true;
 
-proc BlockCyclicDom.dsiGetPrivatizeData() return (dist.pid, definedConst);
+proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
-  var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData[0]);
+  var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
   var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
                                        stridable=stridable, dist=privateDist,
-                                       definedConst=privatizeData[1]);
   c.locDomsNil = locDomsNil;
   c.whole = whole;
   return c;
