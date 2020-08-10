@@ -20,7 +20,7 @@ use lib "$FindBin::Bin";
 use nightlysubs;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com chapel+tests\@discoursemail.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
 $replymail = "";
 
