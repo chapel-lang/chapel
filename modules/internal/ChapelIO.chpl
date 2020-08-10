@@ -211,7 +211,7 @@ module ChapelIO {
     return helper(val);
   }
 
-  private use IO;
+  use IO;
 
     private
     proc isIoField(x, param i) param {

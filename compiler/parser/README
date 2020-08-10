@@ -34,17 +34,16 @@ not control the date-stamp on the sources relative to the generated files
 when a user updates their repository.
 
 
-This means that we require that developers
+This means that we require that developers who work on the parser:
 
-1) who work on the parser have *at least* Bison 2.5 installed.
-
+1) have the following versions installed: Bison 2.5 or later; Flex 2.6 or later
 
 2) explicitly build the generated parser when they alter the parser
 sources.  One way to do this is to run "make parser" in this
 directory.
 
 
-3) who submit a pull request to modify the parser sources also submit
+3) when submitting a pull request to modify the parser sources, also include
 the generated parser.  We find it helpful to add the sources and the
 generated files as separate commits within the same pull request.
 This enables the reviewer to more easily ignore the extensive diffs

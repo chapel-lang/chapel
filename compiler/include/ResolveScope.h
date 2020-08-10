@@ -42,6 +42,12 @@ class UnresolvedSymExpr;
 class UseStmt;
 class VisibilityStmt;
 
+enum importUseProgress {
+  IUP_NOT_STARTED, // We haven't started resolving use or import statements
+  IUP_IN_PROGRESS, // We started but haven't completed resolving them
+  IUP_COMPLETED    // We've finished resolving use and import statements
+};
+
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
@@ -55,6 +61,8 @@ public:
   static void           destroyAstMap();
 
 public:
+  importUseProgress progress;
+
                         ResolveScope(ModuleSymbol*       modSym,
                                      const ResolveScope* parent);
 

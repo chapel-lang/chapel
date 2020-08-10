@@ -1,9 +1,6 @@
 **** Start forall ****
 	dynamicCheckInGenericFunction.chpl:16
 
-Regular domain symbol was not found for array
-	dynamicCheckInGenericFunction.chpl:13
-
 Iterated over the domain of
 	dynamicCheckInGenericFunction.chpl:13
 
@@ -22,7 +19,7 @@ Potential access
 Potential access
 	dynamicCheckInGenericFunction.chpl:17
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	dynamicCheckInGenericFunction.chpl:13
 
 	Marking static candidate

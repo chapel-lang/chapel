@@ -86,7 +86,7 @@ The default intent for :record:`shared` types is ``const ref``.
  */
 module SharedObject {
 
-  private use ChapelError, Atomics, ChapelBase;
+  use ChapelError, Atomics, ChapelBase;
   use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for
@@ -430,9 +430,11 @@ module SharedObject {
     // retain-release
     if rhs.chpl_pn != nil then
       rhs.chpl_pn!.retain();
+    const chpl_p_tmp = rhs.chpl_p;
+    const chpl_pn_tmp = rhs.chpl_pn;
     lhs.doClear();
-    lhs.chpl_p = rhs.chpl_p;
-    lhs.chpl_pn = rhs.chpl_pn;
+    lhs.chpl_p = chpl_p_tmp;
+    lhs.chpl_pn = chpl_pn_tmp;
   }
 
   /*

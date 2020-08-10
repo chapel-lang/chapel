@@ -329,8 +329,18 @@ module Map {
       return result;
     }
 
-    proc getValue(k: keyType) const
-    where isNonNilableClass(valType) {
+    /* Get a copy of the element stored at position `k`. This method is only
+       available when a map's `valType` is a non-nilable class.
+     */
+    proc getValue(k: keyType) const {
+      if !isNonNilableClass(valType) then
+        compilerError('getValue can only be called when a map value type ',
+                      'is a non-nilable class');
+
+      if isOwnedClass(valType) then
+        compilerError('getValue cannot be called when a map value type ',
+                      'is an owned class, use getBorrowed instead');
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -613,7 +623,7 @@ module Map {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from. 
   */
-  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)){
+  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
@@ -737,8 +747,15 @@ module Map {
      left-hand map, but not the right-hand map. */
   proc -=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
-    for k in b.keys() do
-      a.remove(k);
+    a._enter(); defer a._leave();
+    for k in b.keys() {
+      var (found, slot) = a.table.findFullSlot(k);
+      if found {
+        var outKey: keyType, outVal: valueType;
+        a.table.clearSlot(slot, outKey, outVal);
+      }
+    }
+    a.table.maybeShrinkAfterRemove();
   }
 
   /* Returns a new map containing the keys that are in either a or b, but

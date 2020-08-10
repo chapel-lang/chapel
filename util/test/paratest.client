@@ -67,10 +67,6 @@ sub main {
     $valgrind = "-valgrind" if ($ARGV[5] == 1);
     $valgrind = "-valgrindexe" if ($ARGV[5] == 2);
 
-    $memleaks = "";
-    $memleaks = "-memleaks" if ($ARGV[6] == 1);
-    $memleaks = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[6] == 2);
-
     print "$id $workingdir $testdir $futures_mode $valgrind" if $debug;
     if ($#ARGV>=7) {
         $compopts = "-compopts \"" . $ARGV[7] . "\"";
@@ -102,6 +98,10 @@ sub main {
     $dirfname =~ s/\//-/g;
     $logfile = "$logdir/$dirfname.$node.log";
     unlink $logfile if (-e $logfile);
+
+    $memleaks = "";
+    $memleaks = "-memleaks" if ($ARGV[6] == 1);
+    $memleaks = "-memleakslog $logdir/tmp.$dirfname.$node.memleaks" if ($ARGV[6] == 2);
 
     $testarg = "-compiler $compiler -logfile $logfile $futures_mode $valgrind $compopts $execopts $memleaks";
     $testarg = "$testarg $testdir -norecurse";

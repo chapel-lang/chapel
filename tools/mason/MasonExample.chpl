@@ -39,7 +39,7 @@ proc masonExample(args) {
   var build = true;
   var release = false;
   var force = false;
-  var noUpdate = false;
+  var skipUpdate = MASON_OFFLINE;
   var update = false;
   var examples: list(string);
   for arg in args {
@@ -59,10 +59,15 @@ proc masonExample(args) {
       force = true;
     }
     else if arg == '--no-update' {
-      noUpdate = true;
+      skipUpdate = true;
     }
     else if arg == '--update' {
-      update = true;
+      skipUpdate = false;
+    }
+    else if arg.startsWith('--example=') {
+      var exampleProgram = arg.split("=");
+      examples.append(exampleProgram[1]);
+      continue;
     }
     else if arg == '--example' {
       continue;
@@ -74,14 +79,7 @@ proc masonExample(args) {
       examples.append(arg);
     }
   }
-  var uargs: list(string);
-  if (!build || noUpdate) then uargs.append("--no-update");
-  else {
-    if MASON_OFFLINE && update {
-      uargs.append('--update');
-    }
-  }
-  UpdateLock(uargs);
+  updateLock(skipUpdate);
   runExamples(show, run, build, release, force, examples);
 }
 

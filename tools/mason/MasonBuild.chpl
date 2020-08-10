@@ -40,7 +40,7 @@ proc masonBuild(args) throws {
   var compopts: list(string);
   var opt = false;
   var example = false;
-  var update = false;
+  var skipUpdate = MASON_OFFLINE;
 
   if args.size > 2 {
 
@@ -68,15 +68,18 @@ proc masonBuild(args) throws {
       else if arg == '--show' {
         show = true;
       }
+      else if arg.startsWith('--example=') {
+        example = true;
+        compopts.append(arg);
+      }
       else if arg == '--example' {
         example = true;
       }
       else if arg == '--update' {
-        update = true;
+        skipUpdate = false;
       }
-      // passed to UpdateLock
       else if arg == '--no-update' {
-        continue;
+        skipUpdate = true;
       }
       else {
         compopts.append(arg);
@@ -86,8 +89,8 @@ proc masonBuild(args) throws {
   if example {
     // compopts become test names. Build never runs examples
     compopts.append("--no-run");
-    if update then compopts.append('--update');
-    if hasOptions(args, '--no-update') then compopts.append('--no-update');
+    if skipUpdate then compopts.append('--no-update');
+                  else compopts.append('--update');
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
@@ -96,7 +99,7 @@ proc masonBuild(args) throws {
   else {
     var argsList = new list(string);
     for x in args do argsList.append(x);
-    const configNames = UpdateLock(argsList);
+    const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
     buildProgram(release, show, force, compopts, tomlName, lockName);

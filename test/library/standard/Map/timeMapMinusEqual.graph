@@ -1,0 +1,5 @@
+perfkeys: -= time =, Total time =
+graphkeys: -= time, total time
+files: timeMapMinusEqual.dat
+ylabel: Time (seconds)
+graphtitle: Map -= time

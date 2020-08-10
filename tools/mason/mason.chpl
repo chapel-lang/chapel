@@ -84,7 +84,7 @@ proc main(args: [] string) throws {
       when 'add' do masonModify(args);
       when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);
-      when 'update' do UpdateLock(args);
+      when 'update' do masonUpdate(args);
       when 'run' do masonRun(args);
       when 'search' do masonSearch(args);
       when 'system' do masonSystem(args);

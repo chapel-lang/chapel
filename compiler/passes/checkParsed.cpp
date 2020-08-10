@@ -463,6 +463,16 @@ checkFunction(FnSymbol* fn) {
       numNonVoidReturns == 0) {
     USR_FATAL_CONT(fn, "function declared 'ref' but does not return anything");
   }
+
+  if (isIterator) {
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT) {
+        USR_FATAL_CONT(formal, "out intent is not yet supported for iterators");
+      } else if (formal->intent == INTENT_INOUT) {
+        USR_FATAL_CONT(formal, "inout intent is not yet supported for iterators");
+      }
+    }
+  }
 }
 
 static void nestedName(ModuleSymbol* mod) {

@@ -1,1 +1,1 @@
---report-auto-local-access
+--report-auto-local-access -M$CHPL_HOME/test/optimizations/autoLocalAccess

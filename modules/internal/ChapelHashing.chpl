@@ -23,7 +23,7 @@
 // chpl__defaultHash and related functions
 module ChapelHashing {
 
-  private use ChapelBase;
+  use ChapelBase;
 
   proc chpl__defaultHashWrapper(x): int {
     const hash = chpl__defaultHash(x);

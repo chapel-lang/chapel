@@ -1,0 +1,1 @@
+iterinout.chpl:1: error: inout intent is not yet supported for iterators

@@ -22,7 +22,6 @@ COMMON_LAUNCHER_SRCS = \
 	chpl-linefile-support.c \
 	chpl-string-support.c \
 	chplcast.c \
-	chpltypes.c \
 	config.c \
 	error.c
 

@@ -1,9 +1,5 @@
 #14902
 
-When iterators yield a tuple expression capturing a const element by
-and then that tuple expression is returned by `const ref`, the
-const element is mutable after yield (e.g., within a forall).
-
-There are two tests here. Oddly enough, only the second reflects the
-assignment in the global `gElem` (I would expect the first to do so
-as well, but it does not - very odd).
+Iterator yield checks are all screwed up (we currently can't yield
+referential tuples (?), so why is it working? And why is this
+test outputting 0/256 instead of 256/512? Questions...

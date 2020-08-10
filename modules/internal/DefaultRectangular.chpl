@@ -28,11 +28,13 @@ module DefaultRectangular {
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
-  use DSIUtil, ChapelArray;
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
-  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative;
-  use ExternalArray;
+  use DSIUtil;
+  public use ChapelArray;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
+  use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
+  use DefaultSparse, DefaultAssociative;
+  public use ExternalArray; // OK: currently expected to be available by
+                            // default... though... why 'use' it here?
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
@@ -695,6 +697,9 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
+                                       /* this means consider elements
+                                          already initialized */
+                                       initElts=true,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
@@ -1026,6 +1031,7 @@ module DefaultRectangular {
     // should the comms post-alloc be called after initialization?
     var callPostAlloc: bool = true;
 
+    var deinitElts: bool = true;
     //var numelm: int = -1; // for correctness checking
 
     // fields end here
@@ -1047,6 +1053,7 @@ module DefaultRectangular {
       this.externArr = externArr;
       this._borrowed = _borrowed;
       this.callPostAlloc = false;
+      this.deinitElts = initElts;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
@@ -1080,9 +1087,15 @@ module DefaultRectangular {
         _ddata_allocate_postalloc(data, size);
         callPostAlloc = false;
       }
+
+      deinitElts = true;
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiElementDeinitializationComplete() {
+      deinitElts = false;
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
       }
@@ -1094,7 +1107,7 @@ module DefaultRectangular {
       } else {
         var numInd = dom.dsiNumIndices;
         var numElts:intIdxType = numInd;
-        if deinitElts && numInd > 0 {
+        if deinitElts && this.deinitElts && numInd > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
 

@@ -209,18 +209,15 @@ DECLARE_GET_MALLCTL_VALUE(unsigned);
 
 
 // get the number of arenas
-unsigned get_num_arenas(void) {
+static unsigned get_num_arenas(void) {
   return get_unsigned_mallctl_value("opt.narenas");
 }
 
-// set the current arena, returning the old value
-unsigned set_arena(unsigned new_arena) {
-  unsigned old_arena;
-  size_t old_size = sizeof(old_arena);
-  if (CHPL_JE_MALLCTL("thread.arena", &old_arena, &old_size, &new_arena, sizeof(new_arena)) != 0) {
+// set the current threads arena
+static void set_arena(unsigned arena) {
+  if (CHPL_JE_MALLCTL("thread.arena", NULL, NULL, &arena, sizeof(arena)) != 0) {
     chpl_internal_error("could not change current thread's arena");
   }
-  return old_arena;
 }
 
 // initialize our arenas (this is required to be able to set the chunk hooks)
@@ -350,11 +347,11 @@ static void useUpMemNotInHeap(void) {
     size_t alloc_size;
     alloc_size = classes[class];
     do {
-      if ((p = CHPL_JE_MALLOC(alloc_size)) == NULL) {
+      if ((p = CHPL_JE_MALLOCX(alloc_size, MALLOCX_NO_FLAGS)) == NULL) {
         chpl_internal_error("could not use up memory outside of shared heap");
       }
     } while (addressNotInHeap(p));
-    CHPL_JE_FREE(p);
+    CHPL_JE_DALLOCX(p, MALLOCX_NO_FLAGS);
   }
 }
 
@@ -369,6 +366,10 @@ static void initializeSharedHeap(void) {
   useUpMemNotInHeap();
 }
 
+
+// The dedicated arena to use for large allocations (this is important to
+// minimize contention for large allocations)
+unsigned CHPL_JE_LG_ARENA;
 
 void chpl_mem_layerInit(void) {
   void* heap_base;
@@ -401,11 +402,12 @@ void chpl_mem_layerInit(void) {
   } else {
     void* p;
     heap.type = NONE;
-    if ((p = CHPL_JE_MALLOC(1)) == NULL) {
+    if ((p = CHPL_JE_MALLOCX(1, MALLOCX_NO_FLAGS)) == NULL) {
       chpl_internal_error("cannot init heap: chpl_je_malloc() failed");
     }
-    CHPL_JE_FREE(p);
+    CHPL_JE_DALLOCX(p, MALLOCX_NO_FLAGS);
   }
+  CHPL_JE_LG_ARENA = get_num_arenas()-1;
 }
 
 

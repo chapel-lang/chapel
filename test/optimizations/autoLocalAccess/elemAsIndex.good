@@ -1,0 +1,32 @@
+**** Start forall ****
+	elemAsIndex.chpl:19
+
+Iterated symbol
+	elemAsIndex.chpl:15
+
+Loop is suitable for further analysis
+	elemAsIndex.chpl:19
+
+Potential access
+	elemAsIndex.chpl:20
+
+	regular domain symbol was not found for array
+	elemAsIndex.chpl:15
+
+	Marking dynamic candidate
+	elemAsIndex.chpl:20
+
+**** End forall ****
+	elemAsIndex.chpl:19
+
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+2 4 6 8 10 12 14 16 18 20

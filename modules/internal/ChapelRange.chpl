@@ -153,9 +153,9 @@
  */
 module ChapelRange {
 
-  private use ChapelBase, SysBasic, HaltWrappers;
+  use ChapelBase, SysBasic, HaltWrappers;
 
-  use Math;
+  use Math, DSIUtil;
 
   // Turns on range iterator debugging.
   pragma "no doc"
@@ -879,7 +879,7 @@ module ChapelRange {
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
 pragma "no doc"
-proc range.safeCast(type t) where isRangeType(t) {
+proc range.safeCast(type t: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != this.boundedType {
@@ -905,7 +905,7 @@ proc range.safeCast(type t) where isRangeType(t) {
    new type is not stridable, then force the new stride to be 1.
  */
 pragma "no doc"
-proc _cast(type t, r: range(?)) where isRangeType(t) {
+proc _cast(type t: range(?), r: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != r.boundedType {
@@ -2411,7 +2411,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //# Utilities
   //#
 
-  proc _cast(type t, x: range(?)) where t == string {
+  proc _cast(type t: string, x: range(?)) {
     var ret: string;
 
     if x.hasLowBound() then

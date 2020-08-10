@@ -125,7 +125,7 @@ module TomlParser {
   use DateTime;
   use Map, List;
   import IO.channel;
-  import TOML.TomlReader.Source;
+  private use TOML.TomlReader;
   import TOML.TomlError;
 
   /* Prints a line by line output of parsing process */
@@ -1208,6 +1208,8 @@ module TomlReader {
             singleQuotes = "('.*?')",           // ''
             bracketContents = "(\\[\\w+\\])",   // [_]
             brackets = "(\\[)|(\\])",           // []
+            // TODO: fix table headers
+            //tblName = '(\\w+."[^"]+")',         // [somename."0.1.0"]
             comments = "(\\#)",                 // #
             commas = "(\\,)",                   // ,
             equals = "(\\=)",                   // =

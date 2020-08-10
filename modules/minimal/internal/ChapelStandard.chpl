@@ -22,9 +22,9 @@
 //
 pragma "export init"
 module ChapelStandard {
-  use ChapelLocale;
-  use ChapelTaskTable;
-  use MemTracking;
-  use ChapelUtil;
-  use IO;
+  public use ChapelLocale;
+  public use ChapelTaskTable;
+  public use MemTracking;
+  public use ChapelUtil;
+  public use IO;
 }

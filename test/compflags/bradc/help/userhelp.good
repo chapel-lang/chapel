@@ -63,12 +63,8 @@ Optimization Control Options:
                                       optimization
       --tuple-copy-limit <limit>      Limit on the size of tuples considered
                                       for optimization
-      --[no-]use-noinit               Enable [disable] ability to skip default
-                                      initialization through the keyword
-                                      noinit
       --[no-]infer-local-fields       Enable [disable] analysis to infer local
                                       fields in classes and records
-                                      (experimental)
       --[no-]vectorize                Enable [disable] generation of
                                       vectorization hints
       --[no-]auto-local-access        Enable [disable] using local access

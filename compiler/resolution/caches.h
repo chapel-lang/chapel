@@ -57,11 +57,6 @@ FnSymbol* checkCache(SymbolMapCache& cache,
                      FnSymbol*       oldFn,
                      SymbolMap*      map);
 
-void      replaceCache(SymbolMapCache& cache,
-                       FnSymbol*       oldFn,
-                       FnSymbol*       newFn,
-                       SymbolMap*      map);
-
 void      freeCache(SymbolMapCache& cache);
 
 //
@@ -76,53 +71,5 @@ void      freeCache(SymbolMapCache& cache);
 
 extern SymbolMapCache genericsCache;
 extern SymbolMapCache promotionsCache;
-
-
-
-
-
-
-
-//
-// SymbolVecCache: FnSymbol -> FnSymbol cache based on a Vec<Symbol*>
-//
-//   This cache works similarly to the SymbolMapCache above except
-//   instead of a map, the cache is based on a vector.  The cache
-//   entries match if the functions are the same and the vectors
-//   contain the same elements (in any order).
-//
-class SymbolVecCacheEntry {
-public:
-  SymbolVecCacheEntry(FnSymbol* fn, Vec<Symbol*>* ivec);
-
-  FnSymbol*    fn;
-  Vec<Symbol*> vec;
-};
-
-typedef Map<FnSymbol*,     Vec<SymbolVecCacheEntry*>*> SymbolVecCache;
-typedef MapElem<FnSymbol*, Vec<SymbolVecCacheEntry*>*> SymbolVecCacheElem;
-
-
-void      addCache(SymbolVecCache& cache,
-                   FnSymbol*       newFn,
-                   FnSymbol*       oldFn,
-                   Vec<Symbol*>* vec);
-
-FnSymbol* checkCache(SymbolVecCache& cache,
-                     FnSymbol*       fn,
-                     Vec<Symbol*>*   vec);
-
-void      freeCache(SymbolVecCache& cache);
-
-//
-// Caches to avoid creating multiple identical wrappers and
-// instantiating the same functions in the same ways
-//
-// Note that these caches are necessary for correctness, not just
-// performance, because they can impact the types that are created
-// when instantiating constructors and building up the default
-// wrappers for constructors.
-//
-extern SymbolVecCache defaultsCache;
 
 #endif

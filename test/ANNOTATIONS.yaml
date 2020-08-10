@@ -434,7 +434,10 @@ all:
   06/06/20:
     - text: Don't GET domain's dimensions unless needed (#15777)
       config: 16-node-xc, 16-node-cs, chapcs.comm-counts
-
+  06/21/20:
+    - Switch the domain's list of arrays to a hashtable (#15895)
+  06/25/20:
+    - Avoid allocating memory for empty hashtables (#15918)
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -481,14 +484,12 @@ AllCompTime: &timecomp-base
       config: 16-node-cs
     - text: Warm up the comm layer, in the many-to-one test (#15798)
       config: 16-node-cs
-  06/21/20:
-    - Switch the domain's list of arrays to a hashtable (#15895)
-  06/25/20:
-    - Avoid allocating memory for empty hashtables (#15918)
 
 allocate:
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 arguments:
   09/20/17:
@@ -676,6 +677,8 @@ cs-resize:
 dist-performance.cc:
   04/29/20:
     - Use workaround to enable lifetime checking for lists of borrowed classes (#15575)
+  06/27/20:
+    - Revert changes to `list._commonInitFromIterable` (#15943)
 
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
@@ -964,6 +967,8 @@ knucleotide: &knucleotide-base
     - Deprecate adding to associative domain by assigning to array (#13945)
   09/11/19:
     - Optimize the method map.this(k) (#14065)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -1302,6 +1307,8 @@ memleaksfull:
     - Use `localAccess` automatically (#15713)
   06/18/20:
     - Close a trivial test leak (#15871)
+  07/14/20:
+    - Add tests for set, map, list of arrays (#16034)
 
 meteor:
   12/18/13:
@@ -1435,6 +1442,10 @@ pidigits: &pidigits-base
 pidigits-submitted:
   <<: *pidigits-base
 
+primes:
+  07/01/20:
+    - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+
 prk-stencil:
   02/14/16:
     - Improved performance on PRK-stencil (#3288)
@@ -1492,6 +1503,8 @@ ptrans: &ptrans-base
     - Make BlockCyclic more parallel (#5224)
   01/27/17:
     - Fix bug in BlockCyclic indexing, convert arrays to tuples(#5229)
+  07/07/20:
+    - Distribution improvements for automatic localAccess (#15959)
 ptrans.ml-perf:
   <<: *ptrans-base
 ptrans.ml-time:
@@ -1505,6 +1518,8 @@ ra:
     - Rank change dom dist view (#5694)
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
 
 ra.ml-perf:
   09/19/17:
@@ -1640,6 +1655,10 @@ search:
   12/10/19:
     - Allow messages in new Errors (#14545)
 
+search-throughput:
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+
 spectralnorm:
   01/21/15:
     - qthreads updated to yield every ~100 uncontested sync var locks
@@ -1722,6 +1741,8 @@ substring:
     - Remove string.indices from getView (#15653)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 taskSpawn:
   07/24/16:
@@ -1748,6 +1769,8 @@ temporary-copies:
     - Remove string.indices from getView (#15653)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 twopt-paircount:
   06/22/17:
@@ -1760,6 +1783,8 @@ testSerialReductions:
     - result of Greg's commit to let the tasking layer determine parallelism
   12/19/18:
     - Merge ExternArr and friends into DefaultRectangular (#11893)
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
 
 thread-ring:
   03/19/15:
@@ -1807,6 +1832,10 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+
+timeMapMinusEqual:
+  07/10/20:
+    - Optimize map -= operation (#16038)
 
 views-forall-iter:
   10/12/17:
@@ -1887,6 +1916,9 @@ compilerAndTestingStats: &compiler-perf-base
     - Give errors in reexporting ambiguities (#15316)
   04/16/20:
     - Cache whether a ResolveScope or UseStmt can reexport (#15517)
+  07/27/20:
+    - Replace some where-clauses with formals types (#16130)
+    - Handle bool tests in the compiler (#16062)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -1901,12 +1933,17 @@ arkouda: &arkouda-base
   04/22/20:
     - Optimize coargsort for numeric arrays (mhmerrill/arkouda#330)
   04/28/20:
-    - Improve comm=none build and execution speed (mhmerrill/arkouda#358)
-  04/28/20:
+    - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
+      config: chapcs
     - text: Move XC testing from login to elogin node
       config: 16-node-xc
   05/20/20:
     - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
+  07/01/20:
+    - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
+  07/02/20:
+    - Reduce fragmentation for large allocations (#15992)
+
 
 arkouda-comp:
   <<: *arkouda-base

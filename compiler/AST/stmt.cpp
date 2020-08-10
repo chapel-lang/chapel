@@ -1016,6 +1016,16 @@ CondStmt* isConditionalInCondStmt(Expr* expr) {
   return NULL;
 }
 
+// If 'expr' is the result of a call to '_cond_stmt', return the call's
+// actual argument. Otherwise return 'expr'.
+Expr* skip_cond_test(Expr* expr) {
+  if (CallExpr* call = toCallExpr(expr))
+    if (call->numActuals() == 1    &&
+        call->isNamed("_cond_test")  )
+      return call->get(1);
+  return expr;
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *

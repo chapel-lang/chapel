@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-# These tests are disabled currently for multi-locale runs.
+# These tests are disabled currently for multi-locale runs and with sanitizers
 
 from __future__ import print_function
 from os import environ
 
-print(environ['CHPL_COMM'] != 'none')
+print(environ['CHPL_COMM'] != 'none' or environ['CHPL_SANITIZE_EXE'] != 'none')

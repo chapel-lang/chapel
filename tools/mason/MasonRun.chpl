@@ -47,7 +47,7 @@ proc masonRun(args) throws {
         masonBuildRun(args);
         exit(1);
       }
-      else if arg == '--' {        
+      else if arg == '--' {
         exec = true;
       }
       else if arg == '--show' {
@@ -59,7 +59,11 @@ proc masonRun(args) throws {
       else if arg == '--release' {
         release=true;
       }
-      else if arg == '--example' {        
+      else if arg.startsWith('--example=') {
+        masonBuildRun(args);
+        exit(0);
+      }
+      else if arg == '--example' {
         if args.size > 3 {
           masonBuildRun(args);
         }
@@ -84,11 +88,11 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     const tomlFile = owned.create(parseToml(toParse));
     const project = tomlFile["brick"]!["name"]!.s;
- 
+
     // Find the Binary and execute
     if isDir(joinPath(projectHome, 'target')) {
       var execs = ' '.join(execopts.these());
-    
+
       // decide which binary(release or debug) to run
       var command: string;
       if release {
@@ -148,8 +152,9 @@ private proc masonBuildRun(args: [?d] string) {
     var force = false;
     var exec = false;
     var buildExample = false;
-    var updateRegistry = true;
+    var skipUpdate = MASON_OFFLINE;
     var execopts: list(string);
+    var exampleProgram='';
     for arg in args[2..] {
       if exec == true {
         execopts.append(arg);
@@ -158,6 +163,10 @@ private proc masonBuildRun(args: [?d] string) {
         if example then
           throw new owned MasonError("Examples do not support `--` syntax");
         exec = true;
+      }
+      else if arg.startsWith("--example=") {
+        execopts.append(arg);
+        example = true;
       }
       else if arg == "--example" {
         example = true;
@@ -175,7 +184,10 @@ private proc masonBuildRun(args: [?d] string) {
         release = true;
       }
       else if arg == '--no-update' {
-        updateRegistry = false;
+        skipUpdate = true;
+      }
+      else if arg == '--update' {
+        skipUpdate = false;
       }
       else {
         // could be examples or execopts
@@ -191,10 +203,10 @@ private proc masonBuildRun(args: [?d] string) {
     }
     else {
       var buildArgs: list(string);
-      //var buildArgs: [0..1] string = ["mason", "build"];
       buildArgs.append("mason");
       buildArgs.append("build");
-      if !updateRegistry then buildArgs.append("--no-update");
+      if skipUpdate then buildArgs.append("--no-update");
+                    else buildArgs.append("--update");
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
