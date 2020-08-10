@@ -1758,7 +1758,8 @@ proc svd(A: [?Adom] ?t) throws
 }
 
 pragma "no doc" 
-proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8) 
+proc svdNative(A : [?Adom] ?eltType, iterations : int = 30, eps : real = 1e-8)
+  throws
   where (!isLAPACKType(t) || !usingLAPACK) && isDenseDom(Adom) 
     && Adom.rank == 2
 {
@@ -1888,7 +1889,7 @@ proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8)
   }
 
   for k in 0..n-1 by -1 {
-    for its in 0..<30 {
+    for its in 0..<iterations {
       flag = true;
       for l2 in 0..k by -1 {
         l = l2;
@@ -1933,7 +1934,11 @@ proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8)
         break;
       }
 
-      if its == 29 then halt("No convergence in 30 iterations");
+      if its >= iterations {
+        var msg = "SVD computation did not converge in "  +
+          iterations + "iterations";
+        throw new owned LinearAlgebraError(msg);
+      }
 
       x = W[l];
       nm = k-1;
