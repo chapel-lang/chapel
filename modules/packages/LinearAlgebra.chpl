@@ -1995,6 +1995,10 @@ proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8)
   return (A, W, V);
 }
 
+private inline proc signedVal(a, b) {
+  return if b >= 0 then (if a >= 0 then a else -a) else (if a >= 0 then -a else a);
+}
+
 private inline proc pythag(a : real, b : real) {
   var absa, absb : real;
   absa = abs(a);
