@@ -27,6 +27,14 @@
   * Both `push` and `pop` operations are O(lgN).
   * Querying the top element is O(1).
   * Initialization from an array is O(N).
+
+  The heap accepts a comparator to determine how elements are compared. The default 
+  comparator is `defaultComparator` and makes a max-heap. In this case, ``top`` 
+  will return the greatest element in the heap.
+
+  If a ``reverseComparator`` is passed to ``init``, 
+  ``top`` will return the minimal element.
+
 */
 module Heap {
   import ChapelLocks;
@@ -90,9 +98,6 @@ module Heap {
     /*
       Comparator record that defines how the
       data is compared. The greatest element will be on the top.
-
-      .. note::
-        ``defaultComparator`` makes a max-heap and ``reverseCompartor`` makes a min-heap.
     */
     var comparator: record;
 
@@ -185,7 +190,7 @@ module Heap {
     }
 
     /*
-      Returns `true` if this heap contains zero elements.
+      Returns `true` if the heap is empty (has size == 0), `false` otherwise
 
       :return: `true` if this heap is empty.
       :rtype: `bool`
@@ -203,15 +208,10 @@ module Heap {
       :return: The top element in the heap
       :rtype: `eltType`
 
-      .. note::
-        The default behaviour is to return the maximal element.
-        *Maximal* is defined by ``comparator``. If a ``reverseComparator`` is passed to ``init``,
-        the heap will return the minimal element.
-
     */
     proc top() {
       if (isOwnedClass(eltType)) {
-        compilerError("top() method is not avaliable on a 'heap'",
+        compilerError("top() method is not available on a 'heap'",
                       " with elements of an owned type, here: ",
                       eltType: string);
       }
@@ -233,7 +233,7 @@ module Heap {
     }
 
     /*
-      helper procs to maintain the heap
+      Helper procedures to maintain the heap
     */
     pragma "no doc"
     proc _heapify_up(in pos: int) {
@@ -276,9 +276,9 @@ module Heap {
       _heapify_up(_data.size-1);
     }
     /*
-      Push an element into the heap
+      Push an element into the heap.
 
-      :arg element: The element that will be pushed
+      :arg element: The element to push
       :type element: `eltType`
     */
     proc push(in element: eltType)
@@ -289,9 +289,9 @@ module Heap {
     }
 
     /*
-      Push elements of a list into the heap
+      Push elements of a list into the heap.
 
-      :arg x: The list in which elements are to push.
+      :arg x: The list of elements to push
       :type x: `list(eltType)`
     */
     proc push(ref x: list(eltType)) {
@@ -304,7 +304,7 @@ module Heap {
     /*
       Push elements in an array into a heap.
 
-      :arg x: The array in which elements are to push.
+      :arg x: The array of elements to push
       :type x: `[?d] eltType`
     */
     proc push(ref x:[?d] eltType) {
@@ -336,11 +336,7 @@ module Heap {
     }
 
     /*
-      Iterate over the elements of this heap
-
-        .. note::
-          Elements are not yielded in order
-
+      Iterate over the elements of this heap in in arbitrary order.
     */
     iter these() ref {
       for e in _data {
@@ -349,10 +345,8 @@ module Heap {
     }
 
     /*
-      Iterate over the elements of this heap
-      
-        .. note::
-          Elements are yielded in order and removed from the heap
+      Iterate over the elements of this heap in order, 
+      while removing the yielded elements.
     */
     iter consume() {
       var h = this;
@@ -362,17 +356,14 @@ module Heap {
     }
 
     /*
-      Returns a new DefaultRectangular array containing a copy of each of the
-      elements contained in this heap.
+      Returns a new array containing a copy of each of the
+      elements contained in this heap in arbitrary order.
 
-        .. note::
-          Elements of the array are not in order
-
-      :return: A new DefaultRectangular array.
+      :return: A new array.
     */
     proc const toArray(): [] eltType {
       if !isCopyableType(eltType) then
-        compilerError("toArray() method is not avaliable on a 'heap'",
+        compilerError("toArray() method is not available on a 'heap'",
                       " with elements of a type that can't be copied, here: ",
                       eltType: string);
       _enter();
@@ -382,10 +373,7 @@ module Heap {
     }
 
     /*
-      Write the contents of this heap to a channel.
-
-        .. note::
-          Elements are not written in order
+      Write the contents of this heap to a channel in arbitrary order.
 
       :arg ch: A channel to write to.
     */
