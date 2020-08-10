@@ -76,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/DynamicIters.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
+	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
