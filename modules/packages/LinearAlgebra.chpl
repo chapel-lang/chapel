@@ -1763,9 +1763,7 @@ proc svdNative(A : [?Adom] ?eltType)
     && Adom.rank == 2
 {
   var (m,n) = Adom.shape;
-
   ref U = A.redindex(0..#m, 0..#n);
-
   var l, nm : int = 0;
   var flag : bool;
   var anorm, c, f, g, h, s, scale, x, y, z : real = 0.0;
@@ -1796,10 +1794,10 @@ proc svdNative(A : [?Adom] ?eltType)
         h = f*g-s;
         U[i,i] = f-g;
 
-        for j in l-1..<n {
-          s= 0.0;
+        forall j in l-1..<n {
+          var s= 0.0;
           forall k in i..<m with (+ reduce s) do s += U[k,i]*U[k,j]; 
-          f=s/h;
+          var f=s/h;
           forall k in i..<m do U[k, j] += f*U[k, i];
         }
 
@@ -1827,8 +1825,8 @@ proc svdNative(A : [?Adom] ?eltType)
 
         forall k in l-1..<n do rv1[k] = U[i, k]/h;
 
-        for j in l-1..<m {
-          s = 0.0;
+        forall j in l-1..<m {
+          var s = 0.0;
           forall k in l-1..<n with (+ reduce s) do s += U[j, k]*U[i, k];
           forall k in l-1..<n do U[j, k] += s*rv1[k];
         }
@@ -1847,8 +1845,8 @@ proc svdNative(A : [?Adom] ?eltType)
           V[j,i] = (U[i,j]/U[i,l])/g;
         }
 
-        for j in l..<n {
-          s = 0.0;
+        forall j in l..<n {
+          var s = 0.0;
           forall k in l..<n with (+ reduce s) do s += U[i, k] * V[k, j];
           forall k in l..<n do V[k, j] += s*V[k, i];
         }
@@ -1874,10 +1872,10 @@ proc svdNative(A : [?Adom] ?eltType)
     if g != 0.0 {
       g = 1.0/g;
 
-      for j in l..<n {
-        s = 0.0;
+      forall j in l..<n {
+        var s = 0.0;
         forall k in l..<m with (+ reduce s) do s += U[k, i] * U[k, j];
-        f = (s / U[i, i]) * g;
+        var f = (s / U[i, i]) * g;
         forall k in i..<m do U[k, j] += f*U[k, i];
       }
 
@@ -1930,7 +1928,7 @@ proc svdNative(A : [?Adom] ?eltType)
       if l == k {
         if z < 0.0 {
           W[k] = -z;
-          for j in 0..<n do U[j, k] = -U[j,k];
+          forall j in 0..<n do U[j, k] = -U[j,k];
         }
         break;
       }
@@ -1994,7 +1992,7 @@ proc svdNative(A : [?Adom] ?eltType)
     }
   }
 
-  return (A, W, V.T);
+  return (A, W, V);
 }
 
 private inline proc pythag(a : real, b : real) {
