@@ -74,7 +74,6 @@ proc masonSearch(ref args: list(string)) {
   var packages: list(string);
   var versions: list(string);
   var registries: list(string);
-
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
@@ -98,8 +97,12 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
-  var res = rankResults(results, query);
-  for r in res do writeln(r);
+  var res: list(string);
+  res = rankResults(results, query);
+  for r in res {
+    r = r.replace('_', '(');
+    writeln(r,")");
+  }
 
   // Handle --show flag
   if show {
@@ -133,6 +136,7 @@ proc masonSearch(ref args: list(string)) {
    are displayed first */
 proc rankResults(results: list(string), query: string): [] string {
   use Sort;
+  var res = rankOnScores(results);
   record Comparator { }
   proc Comparator.compare(a, b) {
     if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
@@ -140,9 +144,47 @@ proc rankResults(results: list(string), query: string): [] string {
     else return 1;
   }
   var cmp : Comparator;
+  if query != ".*" then sort(res, comparator=cmp);
+  return res;
+}
+
+/* Returns a map of packages found in cache along with their scores */
+proc getPackageScores(res: list(string)) {
+  use Map;
+  const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
+  var cacheExists: bool = false;
+  if isFile(pathToReg) then cacheExists = true;
+  const parse = open(pathToReg, iomode.r);
+  const cacheFile = owned.create(parseToml(parse));
+  var packageScores: map(string, int);
+  var packageName: string;
+  const defaultScore = 5;
+  var packageScore: int;
+  for r in res {
+    r = r.replace(' ','');
+    r = r.replace('(', '_');
+    r = r.replace(')', '');
+    packageName = r;
+    if cacheExists && cacheFile.pathExists(packageName) {
+      packageScore = cacheFile[r]!['score']!.s : int;
+      packageScores.add(packageName, packageScore);
+    } else packageScores.add(packageName, defaultScore);
+  }
+  return packageScores;
+}
+
+/* Sort based on scores from cache file */
+proc rankOnScores(results: list(string)) {
+  use Sort;
+  var packageScores = getPackageScores(results);
+  record Comparator { }
+  proc Comparator.compare(a, b) {
+    if packageScores[a] > packageScores[b] then return -1;
+    else return 1;
+  }
+  var rankCmp : Comparator;
   var res = results.toArray();
-  if query == ".*" then sort(res);
-  else sort(res, comparator=cmp);
+  sort(res, comparator=rankCmp);
   return res;
 }
 
