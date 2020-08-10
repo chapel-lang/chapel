@@ -385,6 +385,17 @@ module Heap {
   }
 
   /*
+    Copy elements to this heap from another heap.
+
+    :arg lhs: The heap to assign to.
+    :arg rhs: The heap to assign from.
+  */
+  proc =(ref lhs: heap(?t, ?), ref rhs: heap(t, ?)) {
+    lhs.comparator = rhs.comparator;
+    lhs._data = rhs._data;
+  }
+
+  /*
     Create a heap from a list.
 
     :arg x: The list to initialize the heap from.
