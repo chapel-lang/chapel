@@ -1790,7 +1790,7 @@ proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8)
         }
 
         f = U[i,i];
-        g = -sign(sqrt(s),f); 
+        g = -signedVal(sqrt(s),f); 
         h = f*g-s;
         U[i,i] = f-g;
 
@@ -1819,7 +1819,7 @@ proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8)
         }
 
         f = U[i, l-1];
-        g = -sign(sqrt(s),f);
+        g = -signedVal(sqrt(s),f);
         h = f*g-s;
         U[i, l-1] = f-g;
 
@@ -1942,7 +1942,7 @@ proc svdNative(A : [?Adom] ?eltType, eps : real = 1e-8)
       h = rv1[k];
       f = ((y-z)*(y+z)+(g-h)*(g+h))/(2.0*h*y);
       g = pythag(f, 1.0);
-      f = ((x-z)*(x+z)+h*((y/(f+sign(g,f)))-h))/x;
+      f = ((x-z)*(x+z)+h*((y/(f+signedVal(g,f)))-h))/x;
       c = 1.0;
       s = 1.0;
 
