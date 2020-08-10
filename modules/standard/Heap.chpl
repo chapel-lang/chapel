@@ -294,7 +294,7 @@ module Heap {
       :arg x: The list of elements to push
       :type x: `list(eltType)`
     */
-    proc push(ref x: list(eltType)) {
+    proc push(const ref x: list(eltType)) {
       _enter();
       for e in x do
         _push(x);
@@ -307,7 +307,7 @@ module Heap {
       :arg x: The array of elements to push
       :type x: `[?d] eltType`
     */
-    proc push(ref x:[?d] eltType) {
+    proc push(const ref x:[?d] eltType) {
       _enter();
       for e in x do
         _push(e);
@@ -394,7 +394,7 @@ module Heap {
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(x: list(?t), parSafe: bool = false, comparator = defaultComparator) {
+  proc createHeap(const ref x: list(?t), parSafe: bool = false, comparator = defaultComparator) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;
@@ -410,7 +410,7 @@ module Heap {
 
     :rtype: heap(t, comparator)
   */
-  proc createHeap(x: [?d] ?t, param parSafe: bool = false, comparator = defaultComparator) {
+  proc createHeap(const ref x: [?d] ?t, param parSafe: bool = false, comparator = defaultComparator) {
     var h = new heap(t, parSafe, comparator);
     h._commonInitFromIterable(x);
     return h;
