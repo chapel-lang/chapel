@@ -168,7 +168,6 @@ int cublas_ddot(cublasHandle_t *handle, int n, double *x, int incX, double *y, i
 
 }
 
-
 int cublas_snrm2(cublasHandle_t *handle, int n, float *x, int incX, float *results){
 
     cublasSnrm2(*handle, n, x, incX, results);
@@ -183,6 +182,80 @@ int cublas_dnrm2(cublasHandle_t *handle, int n, double *x, int incX, double *res
     cudaDeviceSynchronize();
     return 0;
 
+}
+
+int cublas_srot(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float c, float s){
+    cublasSrot(*handle, n, x, incX, y, incY, &c, &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_drot(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY, double c, double s){
+    cublasDrot(*handle, n, x, incX, y, incY, &c, &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_srotg(cublasHandle_t *handle, float a, float b, float c, float s){
+    cublasSrotg(*handle, &a, &b, &c, &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_drotg(cublasHandle_t *handle, double a, double b, double c, double s){
+    cublasDrotg(*handle, &a, &b, &c, &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_srotm(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float *param){
+    cublasSrotm(*handle, n, x, incX, y, incY, param);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_drotm(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY, double *param){
+    cublasDrotm(*handle, n, x, incX, y, incY, param);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_srotmg(cublasHandle_t *handle, float d1, float d2, float x1, float y1, float *param){
+
+    cublasSrotmg(*handle, &d1, &d2, &x1, &y1, param);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_drotmg(cublasHandle_t *handle, double d1, double d2, double x1, double y1, double *param){
+    cublasDrotmg(*handle, &d1, &d2, &x1, &y1, param);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_sscal(cublasHandle_t *handle, int n, float alpha, float *x, int incX){
+    cublasSscal(*handle, n, &alpha, x, incX);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_dscal(cublasHandle_t *handle, int n, double alpha, double *x, int incX){
+    cublasDscal(*handle, n, &alpha, x, incX);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_sswap(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY){
+    cublasSswap(*handle, n, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_dswap(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY){
+    cublasDswap(*handle, n, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
 }
 
 int cublas_sgemm(cublasHandle_t *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc){

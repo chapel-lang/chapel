@@ -41,10 +41,15 @@ proc main() {
   test_amax();
   test_amin();
   test_asum();
+  test_axpy();
   test_copy();
   test_dot();
   test_nrm2();
-  test_axpy();
+  test_rot();
+  test_scal();
+  test_swap();
+  //test_rotg();
+  //test_rotm();
 
 }
 
@@ -53,24 +58,14 @@ proc test_amax() {
   test_cuamax_helper(real(64));
 }
 
-proc test_amin(){
+proc test_amin() {
   test_cuamin_helper(real(32));
   test_cuamin_helper(real(64));
 }
 
-proc test_asum(){
+proc test_asum() {
   test_cuasum_helper(real(32));
   test_cuasum_helper(real(64));
-}
-
-proc test_copy(){
-  test_cucopy_helper(real(32));
-  test_cucopy_helper(real(64));
-}
-
-proc test_dot(){
-  test_cudot_helper(real(32));
-  test_cudot_helper(real(64));
 }
 
 proc test_axpy() {
@@ -78,10 +73,54 @@ proc test_axpy() {
   test_cuaxpy_helper(real(64));
 }
 
+proc test_copy() {
+  test_cucopy_helper(real(32));
+  test_cucopy_helper(real(64));
+}
+
+proc test_dot() {
+  test_cudot_helper(real(32));
+  test_cudot_helper(real(64));
+}
+
 proc test_nrm2() {
   test_cunrm2_helper(real(32));
   test_cunrm2_helper(real(64));
 }
+
+proc test_rot() {
+  test_curot_helper(real(32));
+  test_curot_helper(real(64));
+}
+
+
+proc test_rotg() {
+  test_curotg_helper(real(32));
+  test_curotg_helper(real(64));
+}
+
+
+proc test_rotm() {
+  test_curotm_helper(real(32));
+  test_curotm_helper(real(64));
+}
+
+
+proc test_rotmg() {
+  test_curotmg_helper(real(32));
+  test_curotmg_helper(real(64));
+}
+
+proc test_scal(){
+  test_cuscal_helper(real(32));
+  test_cuscal_helper(real(64));
+}
+
+proc test_swap(){
+  test_cuswap_helper(real(32));
+  test_cuswap_helper(real(64));
+}
+
 
 proc test_cuamin_helper(type t) {
   var passed = 0,
@@ -413,6 +452,300 @@ proc test_cunrm2_helper(type t) {
 
     var err = norm - r;
     trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_curot_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%srot".format(blasPrefix(t));
+
+  {
+    var err: t;
+
+    const D = {0..1};
+
+    var X: [D] t = [4:t, 2:t],
+        Y: [D] t = [1:t, 3:t],
+        c = 2.0: t,
+        s = 2.0: t;
+
+    const Xin = X,
+          Yin = Y;
+
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_srot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c, s);
+      }
+      when real(64) do {
+        cu_drot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c, s);
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+    gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
+
+    for i in X.domain {
+
+      err = abs(Xin[i] * c  + Yin[i] * s - X[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+      err = abs(Yin[i] * c  - Xin[i] * s - Y[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
+
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+
+proc test_curotg_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%srotg".format(blasPrefix(t));
+
+  {
+
+    var err: t;
+
+    // inputs
+    var a = 1.0: t,
+        b = 0.0: t;
+    // outputs
+    var c: t,
+        s: t;
+
+    // Save inputs by value
+    var A: t = a,
+        B: t = b;
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_srotg(cublas_handle, a, b, c, s);
+      }
+      when real(64) do {
+        cu_drotg(cublas_handle, a, b, c, s);
+      }
+    }
+
+    // rename outputs
+    var r = a;
+    var z = b;
+    const zero: t;
+
+    // r == sqrt(a**2 + b**2)
+    var R = ((A**2 + B**2)**0.5): t;
+    err = abs(r - R);
+    writeln("err1: ", err);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    // c s * a  = r
+    //-s c   b    0
+    err = abs(c*A + s*B - r);
+    writeln("c*A + s*B - r ", " c: ", c, " A: ", A, " s: ", s, " B: ", B, " r: ", r);
+    writeln("err2: ", err);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+    err = abs(-s*A + c*B);
+    writeln("err3: ", err);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    // The parameter z is defined such that if |a| > |b|, z is s; otherwise if
+    // c is not 0 z is 1/c; otherwise z is 1.
+    if abs(A) > abs(B) then
+      err = abs(z - s);
+    else if c != zero then {
+      err = abs((z - 1.0/c): t);
+      writeln("err4a: ", err);}
+    else {
+      err = abs((z - 1.0): t);
+      writeln("err4b: ", err); }
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_curotm_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%srotm".format(blasPrefix(t));
+  var err: t;
+
+  // Simple test
+  {
+    const D = {0..1};
+
+    var X: [D] t = [4:t, 2:t],
+        Y: [D] t = [1:t, 3:t];
+
+    var P: [0..4] t = [-2.0: t, // flag
+                        1.0: t, 0.0: t,
+                        0.0: t, 1.0: t];
+
+    const Xin = X,
+          Yin = Y;
+
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y and P allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+    var gpu_ptr_P = cpu_to_gpu(c_ptrTo(P), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_srotm(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), gpu_ptr_P:c_ptr(t));
+      }
+      when real(64) do {
+        cu_drotm(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), gpu_ptr_P:c_ptr(t));
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+    gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
+    gpu_to_cpu(c_ptrTo(P), gpu_ptr_P, c_sizeof(t)*N:size_t);
+
+    var flag = P[0],
+        h11 = P[1],
+        h21 = P[2],
+        h12 = P[3],
+        h22 = P[4];
+
+    select flag {
+      when 0.0: t do {
+        h11 = 1.0: t;
+        h22 = 1.0: t;
+      }
+      when 1.0: t do {
+        h12 = 1.0: t;
+        h21 = -1.0: t;
+      }
+      when -2.0: t do {
+        h11 = 1.0: t;
+        h22 = 1.0: t;
+        h12 = 0.0: t;
+        h21 = 0.0: t;
+      }
+    }
+
+    for i in D {
+      err = abs(h11 * Xin[i] + h12 * Yin[i] - X[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      err = abs(h21 * Xin[i] + h22 * Yin[i] - Y[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+
+proc test_cuscal_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sscal".format(blasPrefix(t));
+
+  {
+    const D = {0..2};
+
+    var a = 1.5: t,
+        X: [D] t = [1: t, 2: t, 3: t];
+
+    const Xin = X;
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y and P allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_sscal(cublas_handle, N, a, gpu_ptr_X:c_ptr(t));
+      }
+      when real(64) do {
+        cu_dscal(cublas_handle, N, a, gpu_ptr_X:c_ptr(t));
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+
+    for i in D {
+      var err = abs(a * Xin[i] - X[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+
+proc test_cuswap_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sswap".format(blasPrefix(t));
+
+  // Simple test
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 1: t, 1: t],
+        Y: [D] t = [2: t, 2: t, 2: t];
+
+    const Xin = X,
+          Yin = Y;
+
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y and P allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_sswap(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t));
+      }
+      when real(64) do {
+        cu_dswap(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t));
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+    gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
+
+    for i in D {
+      var err = abs(Xin[i] - Y[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      err = abs(Yin[i] - X[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
   }
   printErrors(name, passed, failed, tests);
 }
