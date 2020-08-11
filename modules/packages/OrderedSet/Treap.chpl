@@ -18,13 +18,13 @@
  */
 
 /*
-  This module contains a implementation of Treap,
+  This module contains an implementation of Treap,
   which provides the functionality of OrderedSet.
-  Treap supporst insertion, deletion, query in O(lgN).
+  Treap supports insertion, deletion, query in O(lgN).
 
   .. note::
     Generally, users don't have to directly use this module. The methods of a treap 
-    are avaliable for an orderedSet. This page is for reference.
+    are available for an orderedSet. This page is for reference.
 */
 module Treap {
   import ChapelLocks;
@@ -88,10 +88,15 @@ module Treap {
     type eltType;
     var element: eltType;
     /*
-      rank is a random number used to guarantee the complexity of the treap
-      size is the size of the subtree rooted on the node 
+      priority is a randomly generated number.
+
+      A node should have greater priority than its children.
+      In this way, a treap can take advantage of randomness and avoid bad cases
+      like regressing to a linked list when all nodes have at most one child.
+
+      size is the size of the subtree rooted on the node.
     */
-    var rank, size: int;
+    var priority, size: int;
     var parent: unmanaged _treapNode(eltType)?;
     var children: (unmanaged _treapNode(eltType)?, unmanaged _treapNode(eltType)?);
 
@@ -220,15 +225,15 @@ module Treap {
       Inorder traversal for output
     */
     pragma "no doc"
-    proc const _lmrVisit(node: nodeType, ch: channel) throws {
+    proc const _inorderVisit(node: nodeType, ch: channel) throws {
       if node == nil {
         return;
       }
       else {
         node!.sanityChecks();
-        _lmrVisit(node!.children[0], ch);
+        _inorderVisit(node!.children[0], ch);
         ch.write(node!.element, ' ');
-        _lmrVisit(node!.children[1], ch);
+        _inorderVisit(node!.children[1], ch);
       }
     }
 
@@ -238,7 +243,7 @@ module Treap {
     pragma "no doc"
     proc const _visit(ch: channel) throws {
       ch.write('[ ');
-      _lmrVisit(_root, ch);
+      _inorderVisit(_root, ch);
       ch.write(']');
     }
 
@@ -262,6 +267,7 @@ module Treap {
       _leave();
     }
 
+    pragma "no doc"
     proc const _contains(const ref x: eltType): bool {
       return _find(_root, x) != nil;
     }
@@ -288,6 +294,8 @@ module Treap {
 
     /*
       Helper procedure to make x become a child of y, in position pos
+      Note that it's not robust and should be called with care to avoid
+      invalidating the tree. All it does is simply linking.
     */
     pragma "no doc"
     proc _link(x: nodeType, y: nodeType, pos: int) {
@@ -298,8 +306,11 @@ module Treap {
     }
 
     /*
-      The rotation will make the node.children[pos] becomes the new root
-      Note that the rotation will change the value of node passed in
+      Helper procedure to rotate
+      The rotation will make the node.children[pos] become the new root of
+      the subtree formerly rooted at node.
+
+      Note that the rotation will change the value of node passed in.
     */
     pragma "no doc"
     proc _rotate(ref node: nodeType, pos: int) {
@@ -310,12 +321,12 @@ module Treap {
       _link(node, child, pos^1);
       
 
-      // Update the size field
+      // Update the size field.
       node!.update();
       child!.update();
 
       child!.parent = parent;
-      node = child; // This is for change the node in its parent's children array
+      node = child; // This is for change the node in its parent's children array.
     }
 
     /*
@@ -348,7 +359,7 @@ module Treap {
     /* Given one element, return the reference to the element in the orderedSet, 
        which equals to the former in the perspective of the comparator.
 
-       This procedure could halt when there is no hit
+       This procedure could halt when there is no hit.
 
        Used by orderedMap
      */
@@ -364,7 +375,7 @@ module Treap {
     /* Given one element, return the element in the orderedSet, which equals to the 
        former in the perspective of the comparator.
 
-       This procedure could halt when there is no hit
+       This procedure could halt when there is no hit.
 
        Used by orderedMap
      */
@@ -397,7 +408,7 @@ module Treap {
         var result = false;
         var pos: int = cmp > 0;
         result = _insert(node!.children[pos], element, node);
-        if node!.children[pos]!.rank > node!.rank {
+        if node!.children[pos]!.priority > node!.priority {
           _rotate(node, pos);
         }
         node!.update();
@@ -418,13 +429,13 @@ module Treap {
           return true;
         }
 
-        // Choose the child with the greater rank
+        // Choose the child with the greater priority
         var childPos = 0;
         if children[0] == nil {
           childPos = 1;
         } else {
           if children[1] != nil {
-            if children[1]!.rank > children[0]!.rank {
+            if children[1]!.priority > children[0]!.priority {
               childPos = 1;
             }
           }
@@ -495,7 +506,7 @@ module Treap {
       else if 1, return successor
     */
     pragma "no doc"
-    proc _neighbour(in node: nodeType, in direction: int) {
+    proc _neighbor(in node: nodeType, in direction: int) {
       // Assuming direction is 1, we're finding the successor
       if node == nil then return nil;
       if node!.children[direction] {
@@ -510,7 +521,7 @@ module Treap {
       }
       else {
         // node doesn't have right child,
-        // find its first ancesstor whose left child tree it belongs to
+        // find its first ancestor whose left child tree it belongs to
         direction ^= 1;
         while node!.parent != nil && node!.parent!.children[direction] != node {
           node = node!.parent;
@@ -546,18 +557,18 @@ module Treap {
 
     /*
       Find the first element in the orderedSet
-      which does not compare less than e.
+      which is not less than e.
 
-      Returns a tuple containing two element:
+      Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurence in the orderedSet, if there's any.
+      The second element is the occurrence in the orderedSet, if there's any.
 
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
     */
     proc const lowerBound(e: eltType): (bool, eltType) {
       if !isDefaultInitializable(e) {
-        compilerError("lowerBound is not avaliable on types that can't be \
+        compilerError("lowerBound is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
       
@@ -572,18 +583,18 @@ module Treap {
 
     /*
       Find the first element in the orderedSet
-      which does not compare less than e.
+      which is greater than e.
 
-      Returns a tuple containing two element:
+      Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurence in the orderedSet, if there's any.
+      The second element is the occurrence in the orderedSet, if there's any.
 
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
     */
     proc const upperBound(e: eltType): (bool, eltType) {
       if !isDefaultInitializable(e) {
-        compilerError("upperBound is not avaliable on types that can't be \
+        compilerError("upperBound is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
 
@@ -598,11 +609,11 @@ module Treap {
 
     /*
       Find the predecessor of one element in the orderedSet.
-      Returns if there is such one element.
+      Returns if there is such an element.
 
-      Returns a tuple containing two element:
+      Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurence in the orderedSet, if there's any.
+      The second element is the occurrence in the orderedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
@@ -612,7 +623,7 @@ module Treap {
     */
     proc const predecessor(e: eltType): (bool, eltType) {
       if !isDefaultInitializable(e) {
-        compilerError("predecessor is not avaliable on types that can't be \
+        compilerError("predecessor is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
 
@@ -625,7 +636,7 @@ module Treap {
         return result;
       }
 
-      var resultNode = _neighbour(baseNode, 0);
+      var resultNode = _neighbor(baseNode, 0);
       if resultNode != nil {
         result = (true, resultNode!.element);
       }
@@ -634,12 +645,12 @@ module Treap {
     
     /*
       Find the successor of one element in the orderedSet.
-      Returns if there is such one element.
+      Returns if there is such an element.
       If there is, store the result in `result`.
 
-      Returns a tuple containing two element:
+      Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurence in the orderedSet, if there's any.
+      The second element is the occurrence in the orderedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
@@ -649,7 +660,7 @@ module Treap {
     */
     proc const successor(e: eltType): (bool, eltType) {
       if !isDefaultInitializable(e) {
-        compilerError("successor is not avaliable on types that can't be \
+        compilerError("successor is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
 
@@ -662,14 +673,14 @@ module Treap {
         return result;
       }
 
-      var resultNode = _neighbour(baseNode, 1);
+      var resultNode = _neighbor(baseNode, 1);
       if resultNode != nil {
         result = (true, resultNode!.element);
       }
       return result;
     }
 
-    /* Implementation for the `kth` procedure, without acquring the lock */
+    /* Implementation for the `kth` procedure, without acquiring the lock */
     pragma "no doc"
     proc _kth(node: nodeType, in k: int): nodeType {
       if node == nil then return nil;
@@ -703,7 +714,7 @@ module Treap {
 
     /*
       Find the k-th element in the orderedSet. k starts from 1.
-      Returns if there is such one element.
+      Returns if there is such an element.
       If there is, store the result in `result`.
 
       :arg k: To find k-th element
@@ -712,12 +723,12 @@ module Treap {
       :arg result: The destination to store the result
       :type result: `eltType`
 
-      :return: if there is such one element
+      :return: if there is such an element
       :rtype: `bool`
     */
     proc const kth(k: int): (bool, eltType) {
       if !isDefaultInitializable(e) {
-        compilerError("kth is not avaliable on types that can't be \
+        compilerError("kth is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
 
@@ -759,7 +770,7 @@ module Treap {
       var node = _first();
       while node != nil {
         yield node!.element;
-        node = _neighbour(node, 1);
+        node = _neighbor(node, 1);
       }
     }
 
@@ -833,7 +844,7 @@ module Treap {
     }
 
     /*
-      Returns a new DefaultRectangular array containing a copy of each of the
+      Returns a new array containing a copy of each of the
       elements contained in this orderedSet. The array will be in order.
 
       :return: An array containing a copy of each of the elements in this orderedSet.
