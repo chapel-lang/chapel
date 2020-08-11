@@ -433,7 +433,8 @@ module Treap {
         var childPos = 0;
         if children[0] == nil {
           childPos = 1;
-        } else {
+        }
+        else {
           if children[1] != nil {
             if children[1]!.priority > children[0]!.priority {
               childPos = 1;
@@ -609,7 +610,6 @@ module Treap {
 
     /*
       Find the predecessor of one element in the orderedSet.
-      Returns if there is such an element.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
@@ -645,8 +645,6 @@ module Treap {
     
     /*
       Find the successor of one element in the orderedSet.
-      Returns if there is such an element.
-      If there is, store the result in `result`.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
@@ -714,17 +712,16 @@ module Treap {
 
     /*
       Find the k-th element in the orderedSet. k starts from 1.
-      Returns if there is such an element.
-      If there is, store the result in `result`.
+
+      Returns a tuple containing two elements:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurrence in the orderedSet, if there's any.
 
       :arg k: To find k-th element
       :type k: `int`
 
-      :arg result: The destination to store the result
-      :type result: `eltType`
-
-      :return: if there is such an element
-      :rtype: `bool`
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
     */
     proc const kth(k: int): (bool, eltType) {
       if !isDefaultInitializable(e) {
@@ -826,9 +823,8 @@ module Treap {
     }
 
     /*
-      Returns `true` if this orderedSet contains zero elements.
+      Returns `true` if this treap is empty (size == 0).
 
-      :return: `true` if this orderedSet is empty.
       :rtype: `bool`
     */
     inline proc const isEmpty(): bool {
