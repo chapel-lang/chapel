@@ -1551,6 +1551,16 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
+  /*
+  if (isSyncType(actualType) || isSingleType(actualType)) {
+    Type* baseType = actualType->getField("valType")->type;
+
+    // sync can't store an array or a param, so no need to
+    // propagate promotes / paramNarrows
+    return canDispatch(baseType, NULL, formalType, formalSym, fn);
+  }
+  */
+
   if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
     return true;
   }
@@ -5590,9 +5600,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     actualScalarType = actualType->scalarPromotionType->getValType();
   }
 
+  /*
   if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
     actualScalarType = actualScalarType->getField("valType")->getValType();
   }
+  */
 
   const char* reason = "";
   typedef enum {

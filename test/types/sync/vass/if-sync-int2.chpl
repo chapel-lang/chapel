@@ -3,4 +3,4 @@
 // to a bool within an if.
 
 var i$: sync int = 5;
-if i$.readFE() then writeln("yes");
+if i$ then writeln("yes");
