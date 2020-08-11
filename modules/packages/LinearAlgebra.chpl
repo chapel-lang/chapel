@@ -1340,16 +1340,21 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
 
    Returns a tuple of ``(x, residues, rank, s)``, where:
 
-  - ``x`` is the the least-squares solution with shape of ``b``
-  - ``residues`` is the square of the 2-norm for each column in ``b - a x`` if ``M > N`` and ``A.rank == n``
-    - ``residues`` is a scalar if ``b`` is 1-D, otherwise it is a 1-element array
-  - ``rank`` is the effective rank of ``A``
-  - ``s`` is the singular values of ``a``
+    - ``x`` is the the least-squares solution with shape of ``b``
 
-    .. note::
+    - ``residues`` is:
 
-      This procedure depends on the :mod:`LAPACK` module, and will generate a
-      compiler error if ``lapackImpl`` is ``none``.
+        + the square of the 2-norm for each column in ``b - a x`` if ``M > N`` and ``A.rank == n``.
+        + a scalar if ``b`` is 1-D
+
+    - ``rank`` is the effective rank of ``A``
+
+    - ``s`` is the singular values of ``a``
+
+   .. note::
+
+     This procedure depends on the :mod:`LAPACK` module, and will generate a
+     compiler error if ``lapackImpl`` is ``none``.
 */
 proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
