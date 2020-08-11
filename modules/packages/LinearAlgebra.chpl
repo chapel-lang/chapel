@@ -1353,7 +1353,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
       compiler error if ``lapackImpl`` is ``none``.
 */
 proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
-  where A.rank == 2 && b.rank <= 2 && usingLAPACK && isLAPACKType(t)
+  where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
 {
   use SysCTypes;
   import LAPACK;
@@ -1367,13 +1367,7 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
     throw new LinearAlgebraError('leastSquares(): A and b cannot be empty');
   }
 
-
-  if A.shape[0] < A.shape[1] {
-    // TODO: Pad matrix with 0s
-  }
-
   // TODO: Support b.rank == 2  -- (m,k)
-
   const (m, n) = A.shape;
 
   // TODO: Support overwrite=true/false
@@ -1411,6 +1405,24 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   }
 
   return (x1, residue, rank, s);
+}
+
+pragma "no doc" // TODO: To be publicly documented in the future
+/* Generate Vandermonde matrix */
+proc vander(x: [?d], in N=0) where d.rank == 1 {
+
+  if N == 0 then N = d.size;
+
+  var resultDom = {d.dim(0), 0..<N};
+  var result: [resultDom] x.eltType;
+
+  forall i in resultDom.dim(0) {
+    for j in resultDom.dim(1) by -1 {
+      result[i, j] = x[i]**(N-1-j);
+    }
+  }
+
+  return result;
 }
 
 
