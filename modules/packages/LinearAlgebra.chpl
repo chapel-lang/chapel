@@ -1320,7 +1320,6 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   return y;
 }
 
-//m x n * n => m
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
 proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
@@ -1393,7 +1392,7 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
 
   // Check for errors
   if info < 0 then
-    throw new owned IllegalArgumentError('gelsd(): Argument %i incorrect'.format(info));
+    throw new owned IllegalArgumentError('gelsd(): Argument %i is incorrect'.format(-info));
   else if info > 0 then
     throw new owned LinearAlgebraError('gelsd(): SVD failed to converge with %i off-diagonal elements not converged to 0'.format(info));
 
@@ -1416,10 +1415,8 @@ proc vander(x: [?d], in N=0) where d.rank == 1 {
   var resultDom = {d.dim(0), 0..<N};
   var result: [resultDom] x.eltType;
 
-  forall i in resultDom.dim(0) {
-    for j in resultDom.dim(1) by -1 {
-      result[i, j] = x[i]**(N-1-j);
-    }
+  forall (i,j) in zip(resultDom.dim(0), resultDom.dim(1) by -1) {
+    result[i, j] = x[i]**(N-1-j);
   }
 
   return result;
@@ -1816,7 +1813,7 @@ proc type _array.rank param {
 }
 
 //
-// Type helperr
+// Type helpers
 //
 
 pragma "no doc"
