@@ -504,7 +504,24 @@ module ChapelIteratorSupport {
   //
   //    Domains and other iterators are in this category
   proc chpl__canHaveFastFollowers(x) param {
-    return isArray(x);
+    return false;
+  }
+
+  proc chpl__canHaveFastFollowers(x: []) param {
+    return true;
+  }
+
+  proc chpl__canHaveFastFollowers(x: _tuple) param {
+    return chpl__canHaveFastFollowers(x, 0);
+  }
+
+  proc chpl__canHaveFastFollowers(x: _tuple, param dim) param {
+    if x.size-1 == dim then
+      return chpl__canHaveFastFollowers(x(dim));
+    else
+      return chpl__canHaveFastFollowers(x(dim)) ||
+             chpl__canHaveFastFollowers(x, dim+1);
+
   }
 
   proc chpl__canLeadFastFollowers(x) param {
@@ -539,15 +556,6 @@ module ChapelIteratorSupport {
     }
   }
 
-  proc chpl__hasAnIterandWithFastFollowers(x: _tuple, param dim=0) param {
-    if x.size-1 == dim then
-      return chpl__canHaveFastFollowers(x(dim));
-    else
-      return chpl__canHaveFastFollowers(x(dim)) ||
-             chpl__hasAnIterandWithFastFollowers(x, dim+1);
-
-  }
-
   //
   // return true if any iterator supports fast followers
   //
@@ -571,7 +579,7 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
-    if !chpl__hasAnIterandWithFastFollowers(x) {
+    if !chpl__canHaveFastFollowers(x) {
       return false;
     }
     else {
