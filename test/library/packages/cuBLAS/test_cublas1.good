@@ -4,11 +4,17 @@ samin : 2 PASSED, 0 FAILED
 damin : 2 PASSED, 0 FAILED
 sasum : 1 PASSED, 0 FAILED
 dasum : 1 PASSED, 0 FAILED
+saxpy : 3 PASSED, 0 FAILED
+daxpy : 3 PASSED, 0 FAILED
 scopy : 3 PASSED, 0 FAILED
 dcopy : 3 PASSED, 0 FAILED
  sdot : 1 PASSED, 0 FAILED
  ddot : 1 PASSED, 0 FAILED
 snrm2 : 1 PASSED, 0 FAILED
 dnrm2 : 1 PASSED, 0 FAILED
-saxpy : 3 PASSED, 0 FAILED
-daxpy : 3 PASSED, 0 FAILED
+ srot : 4 PASSED, 0 FAILED
+ drot : 4 PASSED, 0 FAILED
+sscal : 3 PASSED, 0 FAILED
+dscal : 3 PASSED, 0 FAILED
+sswap : 6 PASSED, 0 FAILED
+dswap : 6 PASSED, 0 FAILED
