@@ -314,7 +314,7 @@ sub mysystem {
             open(MAIL, $mailcommand);
             print MAIL "=== Summary ===================================================\n";
             print MAIL "ERROR $_[1]: $status\n";
-            print MAIL "===============================================================\n";
+            print MAIL "=== End Summary ===============================================\n";
             print MAIL "Build: ", $buildurl, "\n";
             close(MAIL);
         } else {
