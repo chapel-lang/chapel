@@ -20,20 +20,17 @@
 /*
   This module contains the implementation of the orderedSet type.
 
-  An orderedSet is a collection of unique ordered elements.
+  An orderedSet is a collection of unique and ordered elements. The order is defined 
+  by a comparator passed in when the orderedSet is initialized.
 
   All references to orderedSet elements are invalidated when the orderedSet is 
   cleared or deinitialized.
 
   orderedSet are not parallel safe by default, but can be made parallel safe by 
-  setting the param formal `parSafe` to true in any orderedSet constructor.
+  setting the param formal `parSafe` to true in any orderedSet constructor. When 
+  constructed from another orderedSet, the new orderedSet will inherit 
+  the parallel safety mode of its originating orderedSet.
 
-  When constructed from another orderedSet, 
-  the new orderedSet will inherit the parallel safety mode 
-  of its originating orderedSet.
-
-  orderedSet is designed with the ability to use an enum to choose from different 
-  implementations under the hood. For now, only treap is supported.
 */
 module OrderedSet {
   include module Treap;
@@ -81,7 +78,7 @@ module OrderedSet {
     param implType = defaultImpl;
 
     /*
-      FIXME: This shuoldn't be documented.
+      FIXME: This shouldn't be documented.
       Attaching pragma "no doc" on this will give an error.
       See #16097
     */
@@ -93,7 +90,6 @@ module OrderedSet {
 
       :arg eltType: The type of the elements of this orderedSet.
       :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
-      :type parSafe: bool
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, param parSafe = false,
@@ -114,7 +110,6 @@ module OrderedSet {
 
       :arg iterable: A collection of elements to add to this orderedSet.
       :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
-      :type parSafe: bool
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
