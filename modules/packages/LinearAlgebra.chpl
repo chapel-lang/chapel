@@ -1420,7 +1420,7 @@ proc vander(x: [?d], in N=0) where d.rank == 1 {
   var resultDom = {d.dim(0), 0..<N};
   var result: [resultDom] x.eltType;
 
-  forall (i,j) in zip(resultDom.dim(0), resultDom.dim(1) by -1) {
+  forall (i,j) in resultDom {
     result[i, j] = x[i]**(N-1-j);
   }
 
