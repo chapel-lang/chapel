@@ -180,7 +180,7 @@ module OrderedSet {
     :arg lhs: The orderedSet to assign to.
     :arg rhs: The orderedSet to assign from. 
   */
-  proc =(ref lhs: orderedSet(?t), rhs: orderedSet(?r)) {
+  proc =(ref lhs: orderedSet(?t), rhs: orderedSet(t)) {
     lhs.clear();
     for x in rhs {
       lhs.add(x);
