@@ -686,7 +686,7 @@ module Treap {
       /* The size of children
          If nil then 0 ( which is the default value for int )
       */
-      var childSize: [0..#2] int;
+      var childSize: (int, int);
 
       if node!.children[0] != nil {
         childSize[0] = node!.children[0]!.size;
