@@ -42,6 +42,8 @@ module ChapelIteratorSupport {
   private use ChapelStandard;
   private use Reflection;
 
+  extern proc printf(s...);
+
   //
   // module support for iterators
   //
@@ -514,8 +516,27 @@ module ChapelIteratorSupport {
     }
   }
 
-  proc chpl__hasInertFastFollowers(x) param { 
-    return !isArray(x);
+  proc chpl__hasInertFastFollowers(x) param {
+    return true;
+  }
+
+  proc chpl__hasInertFastFollowers(x: []) param { 
+    return false;
+    //return !isArray(x);
+  }
+
+  proc chpl__hasInertFastFollowers(x: _tuple) param {
+    return chpl__hasInertFastFollowers(x, 0);
+  }
+
+  proc chpl__hasInertFastFollowers(x: _tuple, param dim) param {
+    if x.size-1 == dim {
+      return chpl__hasInertFastFollowers(x(dim));
+    }
+    else {
+      return chpl__hasInertFastFollowers(x(dim)) &&
+             chpl__hasInertFastFollowers(x, dim+1);
+    }
   }
 
   proc chpl__hasAnIterandWithFastFollowers(x: _tuple, param dim=0) param {
@@ -580,18 +601,23 @@ module ChapelIteratorSupport {
   // their fast followers
   //
   proc chpl__dynamicFastFollowCheck(x) {
+    var ret: bool;
     if chpl__canHaveFastFollowers(x) {
-      return chpl__dynamicFastFollowCheck(x, x);
+      ret = chpl__dynamicFastFollowCheck(x, x);
     }
     else {
-      return false;
+      ret = false;
     }
+    //printf("Dynamic fast follow check for type %s : %s\n",
+           //(x.type:string).c_str(), (ret:string).c_str());
+    return ret;
   }
 
   proc chpl__dynamicFastFollowCheck(x, lead) {
-    compilerWarning("Dynamic fast follow check called with unexpected types ",
-                    x.type:string, " and ", lead.type:string);
-    return false;
+    return chpl__hasInertFastFollowers(x);
+    //compilerWarning("Dynamic fast follow check called with unexpected types ",
+                    //x.type:string, " and ", lead.type:string);
+    //return false;
   }
 
   proc chpl__dynamicFastFollowCheck(x: [], lead) {
@@ -602,6 +628,10 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
+    if chpl__hasInertFastFollowers(x) {
+      return true;
+    }
+
     if chpl__canLeadFastFollowers(x(0)) {
       return chpl__dynamicFastFollowCheckZip(x, x(0));
     }
@@ -611,7 +641,9 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__dynamicFastFollowCheckZip(x, lead) {
-    return chpl__hasInertFastFollowers(x) || chpl__dynamicFastFollowCheck(x, lead);
+    //compilerWarning("HERE ", x.type:string, " ", lead.type:string);
+    return chpl__dynamicFastFollowCheck(x, lead);
+    //return chpl__dynamicFastFollowCheck(x, lead);
   }
 
   proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 0) {
@@ -675,8 +707,10 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFastFollower(x, leaderIndex) {
-    // ENGIN: want to call chpl__canHaveFastFollowers, but can't get it to work
+    // ENGIN: want to call chpl__canHaveFastFollowers, but we need the promotion
+    // wrapper written by the compiler.
     if chpl__staticFastFollowCheck(x) then
+    //if chpl__canHaveFastFollowers(x) then
       return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
       return _toFollower(_getIterator(x), leaderIndex);
