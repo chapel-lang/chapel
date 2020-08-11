@@ -386,13 +386,11 @@ module OrderedSet {
     if a.size != b.size then
       return false;
 
-    var result = true;
-
     for x in a do
       if !b.contains(x) then
         return false;
 
-    return result;
+    return true;
   }
 
   /*
@@ -436,13 +434,11 @@ module OrderedSet {
     if a.size > b.size then
       return false;
 
-    var result = true;
-
     for x in a do
       if !b.contains(x) then
         return false;
 
-    return result;
+    return true;
   }
 
   /*
@@ -473,12 +469,10 @@ module OrderedSet {
     if a.size < b.size then
       return false;
 
-    var result = true;
-
     for x in b do
       if !a.contains(x) then
         return false;
 
-    return result;
+    return true;
   }
 }
