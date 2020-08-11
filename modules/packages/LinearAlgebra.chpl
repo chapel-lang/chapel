@@ -1353,7 +1353,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
       compiler error if ``lapackImpl`` is ``none``.
 */
 proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
-  where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
+  where A.rank == 2 && b.rank <= 2 && usingLAPACK && isLAPACKType(t)
 {
   use SysCTypes;
   import LAPACK;
@@ -1367,6 +1367,7 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
     throw new LinearAlgebraError('leastSquares(): A and b cannot be empty');
   }
 
+
   if A.shape[0] < A.shape[1] {
     // TODO: Pad matrix with 0s
   }
@@ -1377,8 +1378,15 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
 
   // TODO: Support overwrite=true/false
   var workA = A;
-  var workB: [1..b.size, 1..1] real;
-  workB[.., 1] = b;
+  const bdim1 = b.domain.dim(0);
+  const bdim2 = if b.rank == 1 then 0..0
+                else b.domain.dim(1);
+
+  var workB: [0..<b.size, 0..<bdim2.size] real;
+  if b.rank == 1 then
+    workB[.., 0] = b;
+  else
+    workB = b;
 
   const rcond = if cond == -1.0 then max((...A.shape))*epsilon(t) else cond;
 
@@ -1395,11 +1403,11 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   else if info > 0 then
     throw new owned LinearAlgebraError('gelsd(): SVD failed to converge with %i off-diagonal elements not converged to 0'.format(info));
 
-  var x1 = workB[1..n, 1];
+  var x1 = workB[0..<n, 0];
 
   var residue: t;
   if rank == n {
-    residue = + reduce (abs(workB[n+1.., 1]**2));
+    residue = + reduce (abs(workB[n.., 0]**2));
   }
 
   return (x1, residue, rank, s);
