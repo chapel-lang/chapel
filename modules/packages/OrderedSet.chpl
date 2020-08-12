@@ -20,8 +20,11 @@
 /*
   This module contains the implementation of the orderedSet type.
 
-  An orderedSet is a collection of unique and ordered elements. The order is defined 
-  by a comparator passed in when the orderedSet is initialized.
+  An orderedSet is a collection of unique and ordered elements. The orderedSet 
+  accepts a comparator to determine how elements are compared. The default 
+  comparator is `defaultComparator`. In this case, elements are stored and 
+  considered in ascending order. For example, ``these`` will yield elements in 
+  ascending order.
 
   All references to orderedSet elements are invalidated when the orderedSet is 
   cleared or deinitialized.
