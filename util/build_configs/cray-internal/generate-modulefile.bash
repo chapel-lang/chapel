@@ -151,21 +151,12 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
         module swap PrgEnv-pgi PrgEnv-gnu
     }
 
-    # Some libraries are not yet available in static form.
+    # Some libraries are not available in static form.
     setenv CRAYPE_LINK_TYPE dynamic
 
-    # Work around libfabric module not setting everything we need yet:
-    # set LIBFABRIC_DIR to the parent of libfabric's PATH entry.
     if { ! [info exists env(LOADEDMODULES)] ||
          ! [string match *libfabric* $env(LOADEDMODULES)] } {
         module load libfabric
-    }
-    if { [info exists env(PATH)] &&
-         [regsub {^(.*:)?([^:]*libfabric[^:]*)/bin.*} $env(PATH) {\2} lfp] == 1
-       } {
-        setenv LIBFABRIC_DIR $lfp
-    } else {
-        puts stderr "Error: Cannot find libfabric path"
     }
 }
 
