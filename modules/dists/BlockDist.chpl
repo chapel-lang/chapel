@@ -1535,6 +1535,16 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
   return true;
 }
 
+// Block1 <=> Block2 
+proc BlockArr.doiSwap(arr) {
+  coforall (locarr1, locarr2) in zip(this.locArr, arr.locArr) {
+    on locarr1 {
+      locarr1.myElems <=> locarr2.myElems;
+      locarr1.locRAD <=> locarr2.locRAD;
+    }
+  }
+}
+
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
   if debugBlockDistBulkTransfer then
     writeln("In Block=Block Bulk Transfer: Dest[", destDom, "] = Src[", srcDom, "]");
