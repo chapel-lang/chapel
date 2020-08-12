@@ -78,6 +78,18 @@ proc masonRunHelp() {
   writeln('   e.g. mason run --build - --runtimeArg=true');
 }
 
+proc masonBenchHelp() {
+  writeln('Run benchmarks using UnitTest Benchmarking framework.');
+  writeln();
+  writeln('Usage:');
+  writeln('    mason bench [options] <path>');
+  writeln();
+  writeln('Options:');
+  writeln('    -h, --help                   Display this message');
+  writeln('        --show                   Increase verbosity');
+  writeln();
+}
+
 proc masonBuildHelp() {
   writeln('Compile a local package and all of its dependencies');
   writeln();

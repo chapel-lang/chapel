@@ -37,6 +37,7 @@ use MasonSystem;
 use MasonExternal;
 use MasonPublish;
 use MasonInit;
+use MasonBench;
 
 /*
 
@@ -84,6 +85,7 @@ proc main(args: [] string) throws {
       when 'add' do masonModify(args);
       when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);
+      when 'bench' do masonBench(args);
       when 'update' do masonUpdate(args);
       when 'run' do masonRun(args);
       when 'search' do masonSearch(args);
