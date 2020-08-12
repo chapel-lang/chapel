@@ -42,8 +42,6 @@ module ChapelIteratorSupport {
   private use ChapelStandard;
   private use Reflection;
 
-  extern proc printf(s...);
-
   //
   // module support for iterators
   //
