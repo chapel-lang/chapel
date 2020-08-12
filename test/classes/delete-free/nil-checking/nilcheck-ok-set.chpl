@@ -24,7 +24,7 @@ proc okSetInTask() {
     s$.writeEF(1);
   }
 
-  s$; // wait for task to complete
+  s$.readFE(); // wait for task to complete
 
   x!.method();
 }

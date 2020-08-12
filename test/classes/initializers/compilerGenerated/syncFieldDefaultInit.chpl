@@ -10,6 +10,3 @@ class Foo {
 var foo = new unmanaged Foo();
 writeln(foo.x$.readFF());
 delete foo;
-
-if this == here.id {
-                    
