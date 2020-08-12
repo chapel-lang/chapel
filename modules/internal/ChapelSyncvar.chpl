@@ -820,6 +820,7 @@ module ChapelSyncvar {
   }
 
   proc =(ref lhs : _singlevar(?t), rhs : t) {
+    compilerError("Cannot assign directly to a single var; apply .writeEF() to modify it");
     lhs.wrapped.writeEF(rhs);
   }
 

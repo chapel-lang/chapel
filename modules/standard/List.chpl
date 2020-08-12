@@ -799,6 +799,7 @@ module List {
     pragma "no doc"
     inline proc ref _extendGeneric(collection) {
 
+      compilerWarning("In _extendGenric()");
       //
       // TODO: This could avoid repeated resizes at smaller total capacities
       // if we resized once and then performed repeated moves, rather than
@@ -1761,6 +1762,9 @@ module List {
     :arg rhs: The list to assign from.
   */
   proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
+    if !isCopyableType(rhs.eltType) then
+      compilerError("Cannot copy list from array with element type " +
+                    "that cannot be copied");
     lhs.clear();
     lhs.extend(rhs);
   }

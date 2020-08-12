@@ -21,7 +21,7 @@ proc okSetInTask() {
 
   begin with (ref x) {
     x = new owned MyClass(1);
-    s$ = 1;
+    s$.writeEF(1);
   }
 
   s$; // wait for task to complete

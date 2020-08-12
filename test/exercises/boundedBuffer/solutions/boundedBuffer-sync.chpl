@@ -124,6 +124,12 @@ class BoundedBuffer {
 
   var rng = new owned RandomStream(real);
 
+  // TODO: I don't think this should be required
+  proc init(type eltType = real, capacity: int = 0) {
+    this.eltType = eltType;
+    this.capacity = capacity;
+  }
+
   //
   // Place an item at the head position of the buffer, assuming
   // it's available (empty).  If not, the write to 'buff$[head]' will
@@ -132,7 +138,7 @@ class BoundedBuffer {
   proc produce(item: eltType) {
     if noisy then sleep(rng.getNext() / prodNoiseScale);
 
-    buff$[advance(head$)] = item;
+    buff$[advance(head$)].writeEF(item);
   }
 
   //
@@ -154,7 +160,7 @@ class BoundedBuffer {
   proc consume(): (eltType, bool) {
     if noisy then sleep(rng.getNext() / consNoiseScale);
 
-    const val = buff$[advance(tail$)];
+    const val = buff$[advance(tail$)].readFE();
     return (val, val != sentinel);
   }
 
@@ -162,9 +168,9 @@ class BoundedBuffer {
   // a simple helper function for advancing the head or tail position.
   //
   inline proc advance(ref pos$: sync int) {
-    const prevPos = pos$;
+    const prevPos = pos$.readFE();
 
-    pos$ = (prevPos + 1) % capacity;;
+    pos$.writeEF((prevPos + 1) % capacity);
 
     return prevPos;
   }

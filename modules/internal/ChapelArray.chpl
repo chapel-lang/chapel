@@ -3953,6 +3953,13 @@ module ChapelArray {
         // move it into the array
         __primitive("=", aa, copy);
       }
+    } else if isSyncType(a.eltType) {
+      forall aa in a {
+        pragma "no auto destroy"
+        var copy: a.eltType = aa.readFE(); // run copy initializer
+        // move it into the array
+        __primitive("=", aa, copy);
+      }
     } else {
       forall aa in a {
         pragma "no auto destroy"
@@ -4130,7 +4137,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "ignore transfer errors"
-  inline proc chpl__transferArray(ref a: [], const ref b,
+  proc chpl__transferArray(ref a: [], const ref b,
                            param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
@@ -4145,7 +4152,15 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-
+          /* Not currently necessary, I think
+        } else if isSyncType(a.eltType) {
+          forall aa in a with (in b) {
+            pragma "no auto destroy"
+            var copy: a.eltType = b.readFE(); // make a copy for this iteration
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
+          */
         } else {
           forall aa in a with (in b) {
             pragma "no auto destroy"
@@ -4224,6 +4239,13 @@ module ChapelArray {
             __primitive("=", aa, copy);
           }
 
+        } else if isSyncType(a.eltType) {
+          [ (aa,bb) in zip(a,b) ] {
+            pragma "no auto destroy"
+            var copy: a.eltType = bb.readFE(); // init copy
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
         } else {
           [ (aa,bb) in zip(a,b) ] {
             pragma "no auto destroy"
@@ -4242,7 +4264,7 @@ module ChapelArray {
 
   // assigning from a param
   pragma "find user line"
-  inline proc chpl__transferArray(ref a: [], param b,
+  proc chpl__transferArray(ref a: [], param b,
                                   param kind=_tElt.assign) {
     forall aa in a do
       aa = b;
