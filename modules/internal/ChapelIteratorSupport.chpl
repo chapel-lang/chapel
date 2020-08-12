@@ -687,10 +687,7 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFastFollower(x, leaderIndex) {
-    // ENGIN: want to call chpl__canHaveFastFollowers, but we need the promotion
-    // wrapper written by the compiler.
-    if chpl__staticFastFollowCheck(x) then
-    //if chpl__canHaveFastFollowers(x) then
+    if chpl__canHaveFastFollowers(x) then
       return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
       return _toFollower(_getIterator(x), leaderIndex);
