@@ -519,7 +519,7 @@ proc tranpose(A: [?Dom] ?eltType, keepDistribution = true)
     coforall loc in targetLocales {
       var localDomain = A.localSubdomain(); 
       transposedMat[localDomain.dim(1), localDomain.dim(0)] = 
-        A.localSlice(localDomain);
+        A.localSlice(localDomain).T;
     }
 
     return transposedMat;
@@ -540,7 +540,7 @@ proc tranpose(A: [?Dom] ?eltType, keepDistribution = true)
 }
 
 /* Transpose vector or matrix */
-proc _array.T where isDenseMatrix(this)
+proc _array.T where isDenseMatrix(this) || isDistributed(this)
 {
   return transpose(this);
 }
