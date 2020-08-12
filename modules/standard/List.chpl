@@ -799,7 +799,6 @@ module List {
     pragma "no doc"
     inline proc ref _extendGeneric(collection) {
 
-      compilerWarning("In _extendGenric()");
       //
       // TODO: This could avoid repeated resizes at smaller total capacities
       // if we resized once and then performed repeated moves, rather than
