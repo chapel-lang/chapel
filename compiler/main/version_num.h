@@ -23,7 +23,7 @@
 
 #define MAJOR_VERSION 1
 #define MINOR_VERSION "22"
-#define UPDATE_VERSION "1"
+#define UPDATE_VERSION "2"
 
 static const char* BUILD_VERSION =
 #include "BUILD_VERSION"
