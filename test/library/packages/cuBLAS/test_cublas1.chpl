@@ -63,6 +63,8 @@ proc test_amax() {
 proc test_amin() {
   test_cuamin_helper(real(32));
   test_cuamin_helper(real(64));
+  test_cuamin_helper(complex(64));
+  test_cuamin_helper(complex(128));
 }
 
 proc test_asum() {
@@ -223,6 +225,12 @@ proc test_cuamin_helper(type t) {
       when real(64) do {
         cu_idamin(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
       }
+      when complex(64) do {
+        cu_icamin(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+      when complex(128) do {
+        cu_izamin(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
     }
 
     var idx = r-1;
@@ -249,6 +257,12 @@ proc test_cuamin_helper(type t) {
       }
       when real(64) do {
         cu_idamin(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+      when complex(64) do {
+        cu_icamin(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+      }
+      when complex(128) do {
+        cu_izamin(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
       }
     }
 

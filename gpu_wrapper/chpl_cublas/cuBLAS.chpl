@@ -80,6 +80,16 @@ module cuBLAS {
     cublas_idamin(handle, n, x, incX, result);
   }
 
+  proc cu_icamin(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), incX: c_int, result: c_ptr(c_int)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_icamin(handle, n, x, incX, result);
+  }
+
+  proc cu_izamin(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), incX: c_int, result: c_ptr(c_int)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_izamin(handle, n, x, incX, result);
+  }
+
   proc cu_sasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_float)){
     require "c_cublas.h", "c_cublas.o";
     cublas_sasum(handle, n, x, incX, result);
@@ -206,9 +216,10 @@ module cuBLAS {
     extern proc cublas_icamax(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), incX: c_int, result: c_ptr(c_int));
     extern proc cublas_izamax(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), incX: c_int, results: c_ptr(c_int));
 
-
     extern proc cublas_isamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int));
     extern proc cublas_idamin(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_int));
+    extern proc cublas_icamin(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), incX: c_int, result: c_ptr(c_int));
+    extern proc cublas_izamin(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), incX: c_int, result: c_ptr(c_int));
 
     extern proc cublas_sasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_float));
     extern proc cublas_dasum(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, result: c_ptr(c_double));
