@@ -45,7 +45,7 @@ module cuBLAS {
     cublas_caxpy(handle, n, alpha, x, incX, y, incY);
   }
 
-  proc cu_zaxpy(handle: c_void_ptr, n: c_int, ref alpha: complex(128), x: c_ptr(complex(128)), incX: c_int = 1, y: c_ptr(complex(128)), incY: c_int = 1){
+  proc cu_zaxpy(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), ref alpha: complex(128), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_zaxpy(handle, n, alpha, x, incX, y, incY);
   }
@@ -189,7 +189,7 @@ module cuBLAS {
     extern proc cublas_saxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);
     extern proc cublas_daxpy(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
     extern proc cublas_caxpy(handle: c_void_ptr, n: c_int, alpha: complex(64), x: c_ptr(complex(64)), incX: c_int, y: c_ptr(complex(64)), incY: c_int);
-    extern proc cublas_zaxpy(handle: c_void_ptr, n: c_int, alpha: c_float, X: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int);
+    extern proc cublas_zaxpy(handle: c_void_ptr, n: c_int, alpha: complex(128), X: c_ptr(complex(128)), incX: c_int, y: c_ptr(complex(128)), incY: c_int);
 
     extern proc cublas_isamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, result: c_ptr(c_int));
     extern proc cublas_idamax(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, results: c_ptr(c_int));
