@@ -2640,7 +2640,14 @@ static void fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 // exist yet), we use a primitive as a placeholder. When the record is filled
 // in during iterator lowering, we replace the primitive with the actual field.
 //
-static void buildFastFollowerCheck(bool                  isStatic,
+
+enum FastFollowerCheckType {
+  CAN_HAVE_FF,
+  STATIC_FF_CHECK,
+  DYNAMIC_FF_CHECK
+};
+
+static void buildFastFollowerCheck(FastFollowerCheckType checkType,
                                    bool                  addLead,
                                    FnSymbol*             wrapper,
                                    Type*                 IRtype,
@@ -2659,17 +2666,25 @@ static void buildFastFollowerCheck(bool                  isStatic,
   returnTmp->addFlag(FLAG_EXPR_TEMP);
   returnTmp->addFlag(FLAG_MAYBE_PARAM);
 
-  if (isStatic == true) {
-    fnName          = "chpl__staticFastFollowCheck";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_PARAM;
-
-  } else {
-    fnName          = "chpl__dynamicFastFollowCheck";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_VALUE;
+  switch (checkType) {
+    case CAN_HAVE_FF:
+      fnName          = "chpl__canHaveFastFollowers";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_PARAM;
+      break;
+    case STATIC_FF_CHECK:
+      fnName          = "chpl__staticFastFollowCheck";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_PARAM;
+      break;
+    case DYNAMIC_FF_CHECK:
+      fnName          = "chpl__dynamicFastFollowCheck";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_VALUE;
+      break;
+    default:
+      INT_FATAL("Unknown FastFollowerCheckType");
+      break;
   }
 
   checkFn->addFlag(FLAG_COMPILER_GENERATED);
@@ -2736,13 +2751,19 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {
   std::set<ArgSymbol*>& requiresPromotion = promotionFormalsMap[wrapFn];
   SET_LINENO(wrapFn);
 
+  // Build "canHaveFastFollowers" check functions -- these don't call DSI
+  // functions. They are called before calling DSI functions and return true for
+  // arrays, false otherwise. 
+  buildFastFollowerCheck(CAN_HAVE_FF,  false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(CAN_HAVE_FF,  true,  wrapFn, ir, requiresPromotion);
+
   // Build static (param) fast follower check functions
-  buildFastFollowerCheck(true,  false, wrapFn, ir, requiresPromotion);
-  buildFastFollowerCheck(true,  true,  wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(STATIC_FF_CHECK,  false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(STATIC_FF_CHECK,  true,  wrapFn, ir, requiresPromotion);
 
   // Build dynamic fast follower check functions
-  buildFastFollowerCheck(false, false, wrapFn, ir, requiresPromotion);
-  buildFastFollowerCheck(false, true,  wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(DYNAMIC_FF_CHECK, false, wrapFn, ir, requiresPromotion);
+  buildFastFollowerCheck(DYNAMIC_FF_CHECK, true,  wrapFn, ir, requiresPromotion);
 
   // Done with this wrapFn.
   promotionFormalsMap.erase(wrapFn);
