@@ -1,22 +1,15 @@
 #!/usr/bin/env bash
 #
-# Test gasnet mpi against hellos on linux64.
+# Test gasnet mpi against hellos on cray-cs.
 
 CWD=$(cd $(dirname $0) ; pwd)
-source $CWD/common.bash
-
-# setup for mpi
-export CHPL_COMM=gasnet
-export CHPL_COMM_SUBSTRATE=mpi
-export GASNET_QUIET=Y
-OPEN_MPI_DIR="/usr/lib64/mpi/gcc/openmpi"
-export PATH="$OPEN_MPI_DIR/bin:$PATH"
-export LD_LIBRARY_PATH="$OPEN_MPI_DIR/lib:$LD_LIBRARY_PATH"
-
-export CHPL_TEST_NUM_LOCALES_AVAILABLE=$SLURM_NNODES
-
-nightly_args="${nightly_args} -no-buildcheck"
+source $CWD/common-slurm-gasnet.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-mpi"
+
+# setup for mpi
+module load openmpi/gcc
+export CHPL_COMM_SUBSTRATE=mpi
+export CHPL_LAUNCHER=slurm-gasnetrun_mpi
 
 $CWD/nightly -cron -hellos ${nightly_args}
