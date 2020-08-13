@@ -100,7 +100,8 @@ proc masonSearch(ref args: list(string)) {
   var res: list(string);
   res = rankResults(results, query);
   for r in res {
-    r = r.replace('_', '(');
+    r = r.replace('.', '(');
+    r = r.replace('_', '.');
     writeln(r,")");
   }
 
@@ -161,8 +162,8 @@ proc getPackageScores(res: list(string)) {
   const defaultScore = 5;
   var packageScore: int;
   for r in res {
-    r = r.replace(' ','');
-    r = r.replace('(', '_');
+    r = r.replace('.', '_');
+    r = r.replace(' (', '.');
     r = r.replace(')', '');
     packageName = r;
     if cacheExists && cacheFile.pathExists(packageName) {
