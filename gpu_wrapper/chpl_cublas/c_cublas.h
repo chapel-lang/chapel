@@ -7,7 +7,8 @@ void to_cpu(void* dst_ptr, void* src_ptr, size_t size);
 
 int cublas_saxpy(c_void_ptr *handle, int N, float alpha, float *x, int incX, float *y, int incY);
 int cublas_daxpy(c_void_ptr *handle, int N, double alpha, double *x, int incX, double *y, int incY);
-int cublas_caxpy(c_void_ptr *handle, int N, complex alpha, complex *x, int incX, complex *y, int incY);
+int cublas_caxpy(c_void_ptr *handle, int N, complex float alpha, complex float *x, int incX, complex float *y, int incY);
+int cublas_zaxpy(c_void_ptr *handle, int N, complex double alpha, complex double *x, int incX, complex double *y, int incY);
 
 int cublas_isamax(c_void_ptr *handle, int n, float *x, int incX, int *results);
 int cublas_idamax(c_void_ptr *handle, int n, double *x, int incX, int *results);

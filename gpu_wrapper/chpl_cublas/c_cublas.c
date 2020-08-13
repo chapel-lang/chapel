@@ -72,17 +72,20 @@ int cublas_daxpy(cublasHandle_t *handle, int n, double alpha, double *x, int inc
 
 }
 
-int cublas_caxpy(cublasHandle_t *handle, int n, complex alpha, complex *x, int incX, complex *y, int incY){
+int cublas_caxpy(cublasHandle_t *handle, int n, complex float alpha, complex float *x, int incX, complex float *y, int incY){
 
-    cublasCaxpy(*handle, n, (cuComplex*) &alpha, (cuComplex*) x,  incX, (cuComplex*) y, incY);
+    cublasCaxpy(*handle, n, (cuFloatComplex*) &alpha, (cuFloatComplex*) x,  incX, (cuFloatComplex*) y, incY);
     cudaDeviceSynchronize();
     return 0;
 
 }
 
-int cublas_zaxpy(cublasHandle_t *handle, int n, cuDoubleComplex alpha, cuDoubleComplex *x, int incX, cuDoubleComplex *y, int incY){
+int cublas_zaxpy(cublasHandle_t *handle, int n, complex double alpha, complex double *x, int incX, complex double *y, int incY){
 
-    cublasZaxpy(*handle, n, &alpha, x, incX, y, incY);
+    cuDoubleComplex* comp_alpha = (cuDoubleComplex*) &alpha;
+    printf("alpha cuDouble: %f + i%f\n",  comp_alpha->x, comp_alpha->y);
+
+    cublasZaxpy(*handle, n, (cuDoubleComplex*) &alpha, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY);
     cudaDeviceSynchronize();
     return 0;
 
