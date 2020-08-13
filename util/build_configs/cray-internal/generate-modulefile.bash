@@ -104,7 +104,11 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 
     # Load/unload cray-mpich if not previously loaded
 
-    set mpichLoaded [string match "*PE_MPICH*" $env(PE_PKGCONFIG_PRODUCTS)]
+    if { [ info exists env(PE_PKGCONFIG_PRODUCTS) ] } {
+        set mpichLoaded [string match "*PE_MPICH*" $env(PE_PKGCONFIG_PRODUCTS)]
+    } else {
+        set mpichLoaded 0
+    }
     # Logic for mpich is split into loading and unloading phases
     if { !([is-loaded chapel] == 1) }  {
         # Loading chapel
@@ -135,9 +139,11 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 
 if { ! [ info exists env(PE_ENV) ] } {
     module load PrgEnv-gnu
+    set compiler GNU
+} else {
+    set compiler $env(PE_ENV)
 }
 
-set compiler $env(PE_ENV)
 
 if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
     # Interim settings for Shasta systems.
