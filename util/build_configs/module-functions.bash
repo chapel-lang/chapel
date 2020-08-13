@@ -19,7 +19,7 @@ function ck_module_list() {
         log_error "module list=<empty>"
         exit 2
         ;;
-    ( "Currently Loaded Modulefiles:"*[a-zA-Z0-9] )
+    ( *[a-zA-Z0-9] )
         ;;
     ( * )
         log_error "Unrecognized module list=$output"
