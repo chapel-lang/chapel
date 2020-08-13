@@ -95,6 +95,22 @@ int cublas_idamax(cublasHandle_t *handle, int n, double *x, int incX, int *resul
 
 }
 
+int cublas_icamax(cublasHandle_t *handle, int n, complex float *x, int incX, int *results){
+
+    cublasIcamax(*handle, n, (cuFloatComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_izamax(cublasHandle_t *handle, int n, complex double *x, int incX, int *results){
+
+    cublasIzamax(*handle, n, (cuDoubleComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
 int cublas_isamin(cublasHandle_t *handle, int n, float *x, int incX, int *results){
 
     cublasIsamin(*handle, n, x, incX, results);
@@ -106,6 +122,22 @@ int cublas_isamin(cublasHandle_t *handle, int n, float *x, int incX, int *result
 int cublas_idamin(cublasHandle_t *handle, int n, double *x, int incX, int *results){
 
     cublasIdamin(*handle, n, x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_icamin(cublasHandle_t *handle, int n, complex float *x, int incX, int *results){
+
+    cublasIcamin(*handle, n, (cuFloatComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_izamin(cublasHandle_t *handle, int n, complex double *x, int incX, int *results){
+
+    cublasIzamin(*handle, n, (cuDoubleComplex*) x, incX, results);
     cudaDeviceSynchronize();
     return 0;
 
@@ -127,6 +159,22 @@ int cublas_dasum(cublasHandle_t *handle, int n, double *x, int incX, double *res
 
 }
 
+int cublas_scasum(cublasHandle_t *handle, int n, complex float *x, int incX, float *results){
+
+    cublasScasum(*handle, n, (cuFloatComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_dzasum(cublasHandle_t *handle, int n, complex double *x, int incX, double *results){
+
+    cublasDzasum(*handle, n, (cuDoubleComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
 int cublas_scopy(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY){
 
     cublasScopy(*handle, n, x, incX, y, incY);
@@ -138,6 +186,22 @@ int cublas_scopy(cublasHandle_t *handle, int n, float *x, int incX, float *y, in
 int cublas_dcopy(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY){
 
     cublasDcopy(*handle, n, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_ccopy(cublasHandle_t *handle, int n, complex float *x, int incX, complex float *y, int incY){
+
+    cublasCcopy(*handle, n, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_zcopy(cublasHandle_t *handle, int n, complex double *x, int incX, complex double *y, int incY){
+
+    cublasZcopy(*handle, n, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY);
     cudaDeviceSynchronize();
     return 0;
 
@@ -175,6 +239,22 @@ int cublas_dnrm2(cublasHandle_t *handle, int n, double *x, int incX, double *res
 
 }
 
+int cublas_scnrm2(cublasHandle_t *handle, int n, complex float *x, int incX, float *results){
+
+    cublasScnrm2(*handle, n, (cuFloatComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_dznrm2(cublasHandle_t *handle, int n, complex double *x, int incX, double *results){
+
+    cublasDznrm2(*handle, n, (cuDoubleComplex*) x, incX, results);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
 int cublas_srot(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float c, float s){
     cublasSrot(*handle, n, x, incX, y, incY, &c, &s);
     cudaDeviceSynchronize();
@@ -186,6 +266,31 @@ int cublas_drot(cublasHandle_t *handle, int n, double *x, int incX, double *y, i
     cudaDeviceSynchronize();
     return 0;
 }
+
+int cublas_crot(cublasHandle_t *handle, int n, complex float *x, int incX, complex float *y, int incY, float c, complex float s){
+    cublasCrot(*handle, n, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY, &c, (cuFloatComplex*) &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_csrot(cublasHandle_t *handle, int n, complex float *x, int incX, complex float *y, int incY, float c, float s){
+    cublasCsrot(*handle, n, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY, &c, &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zrot(cublasHandle_t *handle, int n, complex double *x, int incX, complex double *y, int incY, double c, complex double s){
+    cublasZrot(*handle, n, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY, &c, (cuDoubleComplex*) &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zdrot(cublasHandle_t *handle, int n, complex double *x, int incX, complex double *y, int incY, double c, double s){
+    cublasZdrot(*handle, n, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY, &c, &s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
 
 int cublas_srotg(cublasHandle_t *handle, float a, float b, float c, float s){
     cublasSrotg(*handle, &a, &b, &c, &s);
@@ -237,6 +342,18 @@ int cublas_dscal(cublasHandle_t *handle, int n, double alpha, double *x, int inc
     return 0;
 }
 
+int cublas_cscal(cublasHandle_t *handle, int n, complex float alpha, complex float *x, int incX){
+    cublasCscal(*handle, n, (cuFloatComplex*) &alpha, (cuFloatComplex*) x, incX);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zscal(cublasHandle_t *handle, int n, complex double alpha, complex double *x, int incX){
+    cublasZscal(*handle, n, (cuDoubleComplex*) &alpha, (cuDoubleComplex*) x, incX);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
 int cublas_sswap(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY){
     cublasSswap(*handle, n, x, incX, y, incY);
     cudaDeviceSynchronize();
@@ -245,6 +362,18 @@ int cublas_sswap(cublasHandle_t *handle, int n, float *x, int incX, float *y, in
 
 int cublas_dswap(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY){
     cublasDswap(*handle, n, x, incX, y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_cswap(cublasHandle_t *handle, int n, complex float *x, int incX, complex float *y, int incY){
+    cublasCswap(*handle, n, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zswap(cublasHandle_t *handle, int n, complex double *x, int incX, complex double *y, int incY){
+    cublasZswap(*handle, n, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY);
     cudaDeviceSynchronize();
     return 0;
 }
