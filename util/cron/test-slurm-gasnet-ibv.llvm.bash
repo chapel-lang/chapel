@@ -6,7 +6,7 @@
 # test against "examples"
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/common-slurm-gasnet.bash
+source $CWD/common-slurm-gasnet-cray-cs.bash
 source $CWD/common-llvm.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.llvm"
