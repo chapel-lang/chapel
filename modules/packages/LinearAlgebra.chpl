@@ -657,7 +657,18 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 pragma "no doc"
 /* Returns ``true`` if the domain is distributed */
 private proc isDistributed(a) param {
-  return !isSubtype(a.domain.dist.type, DefaultDist);
+  if chpl__isArrayView(a) {
+    // NOTE that this'll return true even if `a` is a slice of a distributed
+    // array that falls entirely in a single locale
+    return !chpl__getActualArray(a).isDefaultRectangular();
+  }
+  else if isSparseDom(a.domain) {
+    // TODO: is there a better way to check for distributed sparse domains?
+    return isSubtype(a.domain.dist.type, Block);
+  }
+  else {
+    return !isSubtype(a.domain.dist.type, DefaultDist);
+  }
 }
 
 /* Inner product of 2 vectors. */
