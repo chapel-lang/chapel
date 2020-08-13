@@ -619,6 +619,8 @@ CoMD:
     - Update PR 5296 (#6722)
   06/25/19:
     - Simplify standalone iterator for DefaultRectangular domains/arrays (#13189)
+  08/05/20:
+    - Adjust target compiler versions for some Cray configs (#16196)
 
 CoMD-elegant-aos:
   06/12/18:
@@ -1717,6 +1719,8 @@ stencil:
     - machine related (no commits on the day before)
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+  08/13/20:
+    - Optimize array swap operator for basic cases (#16209)
 
 stream:
   05/13/16:
