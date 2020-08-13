@@ -16,9 +16,6 @@ export CHPL_COMM=gasnet
 unset CHPL_START_TEST_ARGS
 nightly_args="${nightly_args} -no-buildcheck"
 
-# we use at most 8 locales in examples and hellos
-export CHPL_TEST_NUM_LOCALES_AVAILABLE=8
-
 # host-specific
 export CHPL_TARGET_CPU=native
 export GASNET_PHYSMEM_MAX=16G
