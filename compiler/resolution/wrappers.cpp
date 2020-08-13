@@ -2666,21 +2666,25 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
   returnTmp->addFlag(FLAG_EXPR_TEMP);
   returnTmp->addFlag(FLAG_MAYBE_PARAM);
 
-  if (checkType == CAN_HAVE_FF) {
-    fnName          = "chpl__canHaveFastFollowers";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_PARAM;
-  } else if (checkType == STATIC_FF_CHECK) {
-    fnName          = "chpl__staticFastFollowCheck";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_PARAM;
-  } else if (checkType == DYNAMIC_FF_CHECK) {
-    fnName          = "chpl__dynamicFastFollowCheck";
-
-    checkFn         = new FnSymbol(fnName);
-    checkFn->retTag = RET_VALUE;
+  switch (checkType) {
+    case CAN_HAVE_FF:
+      fnName          = "chpl__canHaveFastFollowers";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_PARAM;
+      break;
+    case STATIC_FF_CHECK:
+      fnName          = "chpl__staticFastFollowCheck";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_PARAM;
+      break;
+    case DYNAMIC_FF_CHECK:
+      fnName          = "chpl__dynamicFastFollowCheck";
+      checkFn         = new FnSymbol(fnName);
+      checkFn->retTag = RET_VALUE;
+      break;
+    default:
+      INT_FATAL("Unknown FastFollowerCheckType");
+      break;
   }
 
   checkFn->addFlag(FLAG_COMPILER_GENERATED);
@@ -2747,7 +2751,7 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {
   std::set<ArgSymbol*>& requiresPromotion = promotionFormalsMap[wrapFn];
   SET_LINENO(wrapFn);
 
-  // Build "canHaveFastFollowers" check functions -- these doesn't call DSI
+  // Build "canHaveFastFollowers" check functions -- these don't call DSI
   // functions. They are called before calling DSI functions and return true for
   // arrays, false otherwise. 
   buildFastFollowerCheck(CAN_HAVE_FF,  false, wrapFn, ir, requiresPromotion);
