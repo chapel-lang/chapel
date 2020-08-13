@@ -25,8 +25,10 @@ void* to_gpu(void* src_ptr, size_t size){
 }
 
 void to_cpu(void* dst_ptr, void* src_ptr, size_t size){
+
     cudaError_t memcpy_err = cudaMemcpy(dst_ptr, src_ptr, size, cudaMemcpyDeviceToHost);
     //printf("CUDA memcpy DtoH error: %s\n", cudaGetErrorString(memcpy_err));
+
 }
 
 void* cublas_create(void){
@@ -45,16 +47,6 @@ void cublas_destroy(cublasHandle_t *handle){
 
 }
 
-/*
-int cublas_axpy(cublasHandle_t *handle, int n, float alpha, void *x, int incX, void *y, int incY){
-
-    cublasSaxpy(*handle, n, &alpha, x, 1, y, 1);
-    cudaDeviceSynchronize();
-    return 0;
-
-}
-*/
-
 int cublas_saxpy(cublasHandle_t *handle, int n, float alpha, float *x, int incX, float *y, int incY){
 
     cublasSaxpy(*handle, n, &alpha, x, incX, y, incY);
@@ -62,7 +54,6 @@ int cublas_saxpy(cublasHandle_t *handle, int n, float alpha, float *x, int incX,
     return 0;
 
 }
-
 
 int cublas_daxpy(cublasHandle_t *handle, int n, double alpha, double *x, int incX, double *y, int incY){
 
@@ -81,9 +72,6 @@ int cublas_caxpy(cublasHandle_t *handle, int n, complex float alpha, complex flo
 }
 
 int cublas_zaxpy(cublasHandle_t *handle, int n, complex double alpha, complex double *x, int incX, complex double *y, int incY){
-
-    cuDoubleComplex* comp_alpha = (cuDoubleComplex*) &alpha;
-    printf("alpha cuDouble: %f + i%f\n",  comp_alpha->x, comp_alpha->y);
 
     cublasZaxpy(*handle, n, (cuDoubleComplex*) &alpha, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY);
     cudaDeviceSynchronize();
