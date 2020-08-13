@@ -12,8 +12,8 @@ int cublas_zaxpy(c_void_ptr *handle, int N, complex double alpha, complex double
 
 int cublas_isamax(c_void_ptr *handle, int n, float *x, int incX, int *results);
 int cublas_idamax(c_void_ptr *handle, int n, double *x, int incX, int *results);
-int cublas_camax(c_void_ptr *handle, int n, complex float *x, int incX, int *results);
-int cublas_zamax(c_void_ptr *handle, int n, complex double *x, int incX, int *results);
+int cublas_icamax(c_void_ptr *handle, int n, complex float *x, int incX, int *results);
+int cublas_izamax(c_void_ptr *handle, int n, complex double *x, int incX, int *results);
 
 int cublas_isamin(c_void_ptr *handle, int n, float *x, int incX, int *results);
 int cublas_idamin(c_void_ptr *handle, int n, double *x, int incX, int *results);
