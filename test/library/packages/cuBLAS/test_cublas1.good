@@ -4,6 +4,8 @@ camax : 2 PASSED, 0 FAILED
 zamax : 2 PASSED, 0 FAILED
 samin : 2 PASSED, 0 FAILED
 damin : 2 PASSED, 0 FAILED
+camin : 2 PASSED, 0 FAILED
+zamin : 2 PASSED, 0 FAILED
 sasum : 1 PASSED, 0 FAILED
 dasum : 1 PASSED, 0 FAILED
 saxpy : 3 PASSED, 0 FAILED
