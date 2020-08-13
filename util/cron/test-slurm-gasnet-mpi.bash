@@ -5,7 +5,7 @@
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-mpi"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-mpi"
 
 # setup for mpi
 module load openmpi/gcc
