@@ -405,21 +405,21 @@ module ChapelArray {
                                        type idxType = int,
                                        param stridable: bool,
                                        param isNoInit: bool,
-                                       param definedConst: bool) {
+                                       definedConst: bool) {
     return new _domain(dist, rank, idxType, stridable, definedConst);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
                                        param parSafe: bool,
                                        param isNoInit: bool,
-                                       param definedConst: bool) {
+                                       definedConst: bool) {
     return new _domain(dist, idxType, parSafe);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        parentDom: domain,
                                        param isNoInit: bool,
-                                       param definedConst: bool) {
+                                       definedConst: bool) {
     return new _domain(dist, parentDom);
   }
 
@@ -455,7 +455,7 @@ module ChapelArray {
   proc chpl__convertRuntimeTypeToValue(dom: domain,
                                        type eltType,
                                        param isNoInit: bool,
-                                       param definedConst) {
+                                       definedConst: bool) {
     return dom.buildArray(eltType, !isNoInit);
   }
 
