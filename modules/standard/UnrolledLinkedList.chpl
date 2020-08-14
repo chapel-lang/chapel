@@ -96,6 +96,13 @@ module UnrolledLinkedList {
       data[size] = x;
       size += 1;
     }
+
+    proc append(ref x: eltType) where isOwnedClass(x)
+    lifetime this < x {
+      _sanity(size != capacity);
+      data[size] = x;
+      size += 1;
+    }
   };
 
   record unrolledLinkedList {
@@ -340,6 +347,29 @@ module UnrolledLinkedList {
       _tail!.append(x);
     }
 
+    pragma "no doc"
+    proc _append(ref x: eltType) where isOwnedClass(x)
+    lifetime this < x { 
+      _size += 1;
+      if _tail == nil {
+        _tail = new unmanaged _linkedNode(eltType, nodeCapacity);
+        _head = _tail;
+      }
+
+      _sanity(_tail != nil);
+
+      if _tail!.size == nodeCapacity {
+        // the node is full, create new node
+
+        try! {
+          // This could change the value of _tail
+          _split(_tail: unmanaged _linkedNode(eltType));
+        }
+      }
+
+      _tail!.append(x);
+    }
+
     /*
       Add an element to the end of this unrolledLinkedList.
 
@@ -347,6 +377,14 @@ module UnrolledLinkedList {
       :type x: `eltType`
     */
     proc ref append(x: eltType)
+    lifetime this < x {
+      _enter();
+      _append(x);
+      _leave();
+    }
+
+    pragma "no doc"
+    proc append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x {
       _enter();
       _append(x);
