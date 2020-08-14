@@ -873,6 +873,26 @@ module String {
       return this:c_string; // folded out in resolution
     }
 
+
+    proc _cpIndexLenHelpNoAdjustment(ref start: int) {
+      const localThis: string = this.localize();
+      const i = start;
+
+      if localThis.isASCII() {
+        start += 1;
+        return (this.buff[i]:int(32), i:byteIndex, 1:int);
+
+      }
+      else {
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
+        start += nBytes;
+        return (cp:int(32), i:byteIndex, nBytes:int);
+      }
+    }
+
     /*
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
@@ -880,7 +900,15 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    iter _cpIndexLen(start = 0:byteIndex) {
+    iter _cpIndexLen() {
+      const thisLen = this.buffLen;
+      var i = 0;
+      while i < thisLen {
+        yield _cpIndexLenHelpNoAdjustment(i);  // this increments i
+      }
+    }
+
+    iter _cpIndexLen(start: byteIndex) {
       var localThis: string = this.localize();
 
       if localThis.isASCII() {
