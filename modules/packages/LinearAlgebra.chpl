@@ -664,6 +664,7 @@ private proc isDistributed(a) param {
   }
   else if isSparseDom(a.domain) {
     // TODO: is there a better way to check for distributed sparse domains?
+    use BlockDist;
     return isSubtype(a.domain.dist.type, Block);
   }
   else {
