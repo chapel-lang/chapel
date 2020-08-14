@@ -43,7 +43,8 @@ proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
 
 proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
   if chpl__staticAutoLocalCheck(accessBase, loopDomain) then
-    return accessBase.domain == loopDomain;
+    return accessBase.domain == loopDomain &&
+           accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist);
   else
     return false;
 }
