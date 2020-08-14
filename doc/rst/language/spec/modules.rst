@@ -567,8 +567,15 @@ The syntax of the import statement is given by:
 .. code-block:: syntax
 
    import-statement:
-     privacy-specifier[OPT] `import' module-or-symbol-rename ;
-     privacy-specifier[OPT] `import' module-or-symbol-base unqualified-list ;
+     privacy-specifier[OPT] `import' import-expression-list ;
+
+   import-expression-list:
+     import-expression
+     import-expression , import-expression-list
+
+   import-expression:
+     module-or-symbol-rename
+     module-or-symbol-base unqualified-list
 
    module-or-symbol-rename:
      rename-base
