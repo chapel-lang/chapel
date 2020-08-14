@@ -2231,15 +2231,15 @@ module DefaultRectangular {
   // A helper routine that will perform a pointer swap on an array
   // instead of doing a deep copy of that array. Returns true
   // if used the optimized swap, false otherwise
-  proc DefaultRectangularArr.doiSwap(other) {
+  proc DefaultRectangularArr.doiOptimizedSwap(other) {
    // Get shape of array
     var size1: rank*(this.dom.ranges(0).intIdxType);
-    for (i, r) in zip(0..#size1.size, this.dom.ranges) do
+    for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
       size1(i) = r.size;
 
     // Get shape of array
     var size2: rank*(other.dom.ranges(0).intIdxType);
-    for (i, r) in zip(0..#size2.size, other.dom.ranges) do
+    for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
       size2(i) = r.size;
     
     if(this.locale == other.locale &&

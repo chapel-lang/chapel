@@ -1536,7 +1536,7 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
 }
 
 // Block1 <=> Block2 
-proc BlockArr.doiSwap(other) {
+proc BlockArr.doiOptimizedSwap(other) {
   if(this.dom.dist == other.dom.dist &&
      this.dom.dist.dsiEqualDMaps(other.dom.dist)) {
     coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
