@@ -952,8 +952,8 @@ module String {
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
     //
-    inline proc doSearchUTF8(needle: string, region: range(?),
-                             param count: bool, param fromLeft: bool = true) {
+    proc doSearchUTF8(needle: string, region: range(?),
+                      param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
