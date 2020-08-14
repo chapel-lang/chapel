@@ -5085,18 +5085,8 @@ module ChapelArray {
   }
 
   proc chpl__fixupConstDomain(dom: domain, definedConst: bool) 
-      where isSubtype(dom._value.type, BaseRectangularDom) {
-
-    if definedConst {
-      if _isPrivatized(dom._value) {
-        coforall l in Locales do on l {
-          dom._value.definedConst = true;
-        }
-      }
-      else {
-        dom._value.definedConst = true;
-      }
-    }
+      where isSubtype(dom._value.type, BaseDom) {
+    dom._value.definedConst = definedConst;
   }
 
   proc chpl__fixupConstDomain(x, definedConst: bool) { }
