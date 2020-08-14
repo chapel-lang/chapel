@@ -41,10 +41,8 @@ if { [ info exists env(CRAYPE_DIR) ]} {
     set start_path "/opt/cray/craype"
 } elseif { [ file exists "/opt/cray/pe/craype" ]} { # SLES12?
     set start_path "/opt/cray/pe/craype"
-} elseif { [ file exists "/opt/cray/xt-asyncpe" ]} {
-    set start_path "/opt/cray/xt-asyncpe"
 } else {
-    puts stderr "Either craype/1.05 or later or xt-asyncpe/5.21 or later  are required."
+    puts stderr "craype is required."
     exit 1
 }
 
@@ -57,7 +55,7 @@ if { [file exists "$latest_module/admin/bin/modulefile-utils.tcl" ]} {
     source $latest_module/admin/bin/modulefile-utils.tcl
 } else {
     puts stderr "Error: could not find modulefile-utils.tcl."
-    puts stderr "Either craype/1.05 or later  or xt-asyncpe/5.21 or later are required."
+    puts stderr "craype is required."
     exit 1
 }
 
@@ -72,13 +70,12 @@ proc ModulesHelp { } {
 conflicts cray-mpich2 < 7.0.0
 conflicts xt-mpich2 < 6.0.0
 conflict chapel
-#conflict gcc
 
 ##
 ## Now, we're going to attempt to get to the right build type
 ###
 #
-set network seastar
+set network aries
 if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
     set network $env(XTPE_NETWORK_TARGET)
 } elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
@@ -177,11 +174,10 @@ if { [ file exists $CHPL_LOC/release_info ] } {
     set REL_INFO ""
 }
 
-# The default comm layer on X* for Chapel version 1.11+ is ugni, which requires a
-# craype-hugepages module in order to link correctly. If CHPL_COMM is not set
-# in the environment or is set to ugni, make sure there is a craype-hugepages
-# module loaded. Use craype-hugepages16M if a craype-hugepages module is not
-# already loaded.
+# The default comm layer on cray-x* is ugni, which requires a craype-hugepages
+# module for performance.  If CHPL_COMM is not set in the environment or is set
+# to ugni, make sure there is a craype-hugepages module loaded. Use
+# craype-hugepages16M if a craype-hugepages module is not already loaded.
 if { [info exists env(CHPL_COMM)] } {
     set chpl_comm $env(CHPL_COMM)
 } elseif { [string match cray-x* $CHPL_HOST_PLATFORM] } {
@@ -200,8 +196,7 @@ if { !([is-loaded chapel] == 1) }  {
     }
 
     # Check to see if we require hugepages
-    if { ([string equal UNSET-WILL-BE-UGNI $chpl_comm] || [string equal ugni $chpl_comm]) &&
-         ([string equal -nocase GNU $compiler] || [string equal -nocase INTEL $compiler] || [string equal -nocase CRAY $compiler]) } {
+    if { ([string equal UNSET-WILL-BE-UGNI $chpl_comm] || [string equal ugni $chpl_comm]) } {
 
         if {! $hugepagesLoaded} {
             module load craype-hugepages16M
