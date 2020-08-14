@@ -1300,21 +1300,10 @@ module String {
     Iterates over the string Unicode character by Unicode character.
   */
   iter string.codepoints(): int(32) {
-    var localThis: string = this.localize();
-
-    if this.isASCII() {
-      for b in this.chpl_bytes() do yield b;
-    }
-    else {
-      var i = 0;
-      while i < localThis.buffLen {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
-                                                   offset=i,
-                                                   allowEsc=true);
-        yield cp;
-        i += nBytes;
-      }
+    const localThis = this.localize();
+    var i = 0;
+    while i < localThis.buffLen {
+      yield _cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
     }
   }
 
