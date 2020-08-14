@@ -16,7 +16,9 @@ proc doTest(type eltType) {
   var s2: set(eltType);
   var s3: set(eltType);
 
-  assert(s1.size == s2.size == s3.size == 0);
+  assert(s1.size == 0);
+  assert(s2.size == 0);
+  assert(s3.size == 0);
 
   for i in 1..testIters {
     var x = i:eltType;
