@@ -79,6 +79,7 @@ module UnrolledLinkedList {
     }
   }
 
+  pragma "no doc"
   class _linkedNode {
     type eltType;
     var capacity: int = 32;
@@ -123,8 +124,10 @@ module UnrolledLinkedList {
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
 
+    pragma "no doc"
     var _head: unmanaged _linkedNode(eltType)? = nil;
 
+    pragma "no doc"
     var _tail: unmanaged _linkedNode(eltType)? = nil;
 
     pragma "no doc"
@@ -1071,6 +1074,7 @@ module UnrolledLinkedList {
       return result;
     }
 
+    pragma "no doc"
     proc const ref this(i: int) const ref {
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid unrolledLinkedList index: " + i:string;
