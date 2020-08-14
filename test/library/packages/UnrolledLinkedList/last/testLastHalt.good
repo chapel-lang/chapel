@@ -1,0 +1,1 @@
+testLastHalt.chpl:5: error: halt reached - Called "unrolledLinkedList.last" on an empty unrolledLinkedList.

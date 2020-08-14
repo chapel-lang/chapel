@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/UnrolledLinkedList.chpl:137: In initializer:
+$CHPL_HOME/modules/standard/UnrolledLinkedList.chpl:138: error: unrolledLinkedList element type must be default-initializable
+./ListTest.chpl:15: Initializer instantiated as: init(type eltType = borrowed T, param parSafe = 0)
