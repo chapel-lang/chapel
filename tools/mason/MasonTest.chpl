@@ -44,7 +44,7 @@ var files: list(string);
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
 */
-proc masonTest(args) throws {
+proc masonTest(args: [] string) throws {
 
   var show = false;
   var run = true;

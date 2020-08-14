@@ -36,7 +36,7 @@ Initialises a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
 */
-proc masonInit(args) throws {
+proc masonInit(args: [] string) throws {
   try! {
     var dirName = '';
     var show = false;

@@ -26,7 +26,7 @@ use MasonExample;
 use FileSystem;
 use TOML;
 
-proc masonRun(args) throws {
+proc masonRun(args: [] string) throws {
 
   var show = false;
   var example = false;
@@ -199,7 +199,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then execopts.append("--release");
       if force then execopts.append("--force");
       if show then execopts.append("--show");
-      masonExample(execopts);
+      masonExample(execopts.toArray());
     }
     else {
       var buildArgs: list(string);
@@ -211,7 +211,7 @@ private proc masonBuildRun(args: [?d] string) {
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
 
-      masonBuild(buildArgs);
+      masonBuild(buildArgs.toArray());
       runProjectBinary(show, release, execopts);
     }
   }

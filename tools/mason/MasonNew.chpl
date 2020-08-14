@@ -33,7 +33,7 @@ use MasonEnv;
   Creates a new library project at a given directory
   mason new <projectName/directoryName>
 */
-proc masonNew(args) throws {
+proc masonNew(args: [] string) throws {
   var vcs = true;
   var show = false;
   var packageName = '';

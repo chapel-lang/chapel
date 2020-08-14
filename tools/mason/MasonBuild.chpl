@@ -33,7 +33,7 @@ use MasonSystem;
 use MasonExternal;
 use MasonExample;
 
-proc masonBuild(args) throws {
+proc masonBuild(args: [] string) throws {
   var show = false;
   var release = false;
   var force = false;
@@ -94,7 +94,7 @@ proc masonBuild(args) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
-    masonExample(compopts);
+    masonExample(compopts.toArray());
   }
   else {
     var argsList = new list(string);
