@@ -655,8 +655,12 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 }
 
 pragma "no doc"
-/* Returns ``true`` if the domain is distributed */
-private proc isDistributed(a) param {
+/* 
+   Returns ``true`` if the domain is distributed 
+
+   This is currently public only for unit testing purposes.
+*/
+proc isDistributed(a) param {
   if chpl__isArrayView(a) {
     // NOTE that this'll return true even if `a` is a slice of a distributed
     // array that falls entirely in a single locale
