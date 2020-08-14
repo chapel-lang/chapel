@@ -76,11 +76,11 @@ module Treap {
   pragma "no doc"
   proc _checkType(type t) {
     if isGenericType(t) {
-      compilerWarning('creating an orderedSet with element type ' + t:string, 2);
-      compilerError('orderedSet element type cannot currently be generic', 2);
+      compilerError('creating an treap with element type ' + t:string
+                      + '. treap element type cannot currently be generic', 2);
     }
     if isOwnedClass(t) then
-        compilerError('orderedSet does not support owned class type: ' + t:string, 2);
+        compilerError('treap does not support owned class type: ' + t:string, 2);
   }
 
   pragma "no doc"
