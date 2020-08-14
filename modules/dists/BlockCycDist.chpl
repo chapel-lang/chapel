@@ -723,7 +723,7 @@ proc BlockCyclicDom.dsiGetPrivatizeData() return dist.pid;
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
   var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
   var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
-                                       stridable=stridable, dist=privateDist,
+                                       stridable=stridable, dist=privateDist);
   c.locDomsNil = locDomsNil;
   c.whole = whole;
   return c;

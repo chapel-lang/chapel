@@ -542,9 +542,10 @@ static SymExpr* findSourceOfInCopy(Symbol* sym) {
             INT_ASSERT(rhsSe);
             return rhsSe;
           } else {
-            // assumes that the called function is init/coerce
-            // and the last argument is the source
-            Expr* rhs = initOrCtor->get(initOrCtor->numActuals());
+            // assumes that the called function is init/coerce:
+            //   the last argument is definedConst
+            //   second to the last argument is the source
+            Expr* rhs = initOrCtor->get(initOrCtor->numActuals()-1);
             SymExpr* rhsSe = toSymExpr(rhs);
             INT_ASSERT(rhsSe);
             return rhsSe;
