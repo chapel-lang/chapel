@@ -1190,6 +1190,20 @@ module BytesStringCommon {
     return (b & 0xc0) != 0x80;
   }
 
+  /* 
+   Returns the byte index of the beginning of the first codepoint starting from
+   (and including) i
+   */
+  proc _findStartOfNextCodepointFromByte(x: string, i: byteIndex) {
+    var ret = i:int;
+    if ret > 0 {
+      while ret < x.buffLen && !isInitialByte(x.buff[ret]) {
+        ret += 1;
+      }
+    }
+    return ret;
+  }
+
   // character-wise operation helpers
 
   require "ctype.h";

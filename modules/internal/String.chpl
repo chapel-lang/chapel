@@ -900,35 +900,11 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    iter _cpIndexLen() {
-      const thisLen = this.buffLen;
-      var i = 0;
-      while i < thisLen {
+    iter _cpIndexLen(start = 0:byteIndex) {
+      const localThis = this.localize();
+      var i = _findStartOfNextCodepointFromByte(this, start);
+      while i < localThis.buffLen {
         yield _cpIndexLenHelpNoAdjustment(i);  // this increments i
-      }
-    }
-
-    iter _cpIndexLen(start: byteIndex) {
-      var localThis: string = this.localize();
-
-      if localThis.isASCII() {
-        for (i,b) in zip(this.byteIndices, this.chpl_bytes()) {
-          yield(b:int(32), i:byteIndex, 1:int);
-        }
-      }
-      else {
-        var i = start:int;
-        if i > 0 then
-          while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-            i += 1; // in case `start` is in the middle of a multibyte character
-        while i < localThis.buffLen {
-          const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                     buffLen=localThis.buffLen,
-                                                     offset=i,
-                                                     allowEsc=true);
-          yield (cp:int(32), i:byteIndex, nBytes:int);
-          i += nBytes;
-        }
       }
     }
 
