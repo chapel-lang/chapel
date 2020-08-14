@@ -676,48 +676,6 @@ statement must begin with one of the following:
 A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
 
-And both programs are also equivalent to:
-
-   *Example (import3.chpl)*.
-
-   .. code-block:: chapel
-
-      module M1 {
-        proc foo() {
-          writeln("In M1's foo.");
-        }
-      }
-
-      module M2 {
-        proc main() {
-          import M1.{foo};
-
-          writeln("In M2's main.");
-          foo();
-        }
-      }
-
-   which also prints out
-
-   .. code-block:: printoutput
-
-      In M2's main.
-      In M1's foo.
-
-The ``module-or-symbol-rename`` or ``module-or-symbol-base`` in an ``import``
-statement must begin with one of the following:
-
- * a top-level module name
- * a module name currently in scope due to another ``use`` or ``import``
-   statement
- * any number of ``super`` components to indicate a number of parents of the
-   current module (e.g. ``super.super.SomeModule``)
- * ``this`` to indicate the requested module is a submodule of the current
-   module
-
-A submodule may not be imported without either the full path to it, or a
-``super`` or ``this`` prefix at the beginning of the path.
-
 The names that are made visible by an ``import`` statement are inserted in to a
 new scope that immediately encloses the scope within which the statement
 appears.  This implies that the position of the ``import`` statement within a
@@ -749,44 +707,6 @@ they are shadowed by symbols of the same name in B.  This means that A could
 contain references like ``B.cSymbol`` and it would reference C's cSymbol.
 Conversely, if B's import of C is ``private`` then A will not be able to see C's
 symbols due to that ``import``.
-
-This notion of re-exporting extends to the case in which a scope imports symbols
-from multiple modules.  For example, if a module A imports a module B, and
-module B contains a public import of modules C1, C2, and C3, then all three of
-those modules will be referenceable by A as though they were submodules of B.
-Similarly, if module B instead publicly imports specific symbols from C1, C2,
-and C3, A will be able to reference those symbols as though they were defined
-directly in B.  However, an error is signaled if symbols with the same name are
-imported from these modules.
-
-The import statement may specify a single module or module-level symbol, or it
-may specify multiple module-level symbols in the ``unqualified-list``.  Unlike
-``use`` statements, symbols specified for unqualified access are not able to be
-accessed with the module qualifier.  A separate import statement may be provided
-to enable this behavior.  It is an error to provide a name in an
-``unqualified-list`` that does not exist or is not visible in the respective
-module.
-
-If a type or type's secondary methods are defined in the imported module, then
-any instances of the type obtained in the scope of the import may access the
-fields and methods of that type, regardless of the ``unqualified-list``. These
-fields and methods cannot be specified in an ``unqualified-list`` on their own.
-The privacy of import statements is also ignored when determining if an instance
-can access the fields and methods, for similar reasons.
-
-Within an ``unqualified-list``, a visible symbol from that module may optionally
-be given a new name using the ``as`` keyword.  This new name will be usable from
-the scope of the import in place of the old name unless the old name is
-additionally specified in the ``unqualified-list``.  If an import which renames
-a symbol is present at module scope, imports and uses of that module will also
-be able to reference that symbol using the new name instead of the old name.
-Renaming does not affect accesses to that symbol via the source module's prefix,
-nor does it affect imports or uses of that module from other contexts.  It is an
-error to attempt to rename a symbol that does not exist or is not visible in the
-respective module, or to rename a symbol to a name that is already present in
-the same ``unqualified-list``.  It is, however, perfectly acceptable to rename a
-symbol to a name present in the respective module which was not specified via
-that ``unqualified-list``.
 
 This notion of re-exporting extends to the case in which a scope imports symbols
 from multiple modules.  For example, if a module A imports a module B, and
