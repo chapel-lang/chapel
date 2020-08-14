@@ -299,9 +299,9 @@ Using Modules
 
 The ``use`` statement provides one of the two primary ways to access a module’s
 symbols from outside of the module, the other being the ``import`` statement.
-Use statements make both the module’s name and its public symbols available
-for reference within a given scope. For top-level modules, a ``use`` or
-``import`` statement is required before referring to the module’s name or the
+Use statements by default make both the module’s name and its public symbols
+available for reference within a given scope. For top-level modules, a ``use``
+or ``import`` statement is required before referring to the module’s name or the
 symbols it contains within a given lexical scope.
 
 The syntax of the use statement is given by:
@@ -335,6 +335,7 @@ The syntax of the use statement is given by:
 
    rename-base:
      identifier `as' identifier
+     identifier `as' _
      identifier
 
 For example, the program
@@ -424,6 +425,15 @@ A module or enum being used may optionally be given a new name using the ``as``
 keyword.  This new name will be usable from the scope of the use in place of the
 old name.  This new name does not affect uses or imports of that module from
 other contexts.
+
+The ``as`` keyword can also be used to disable references to the module name
+while still allowing references to the symbols within the module.  This is
+accomplished by providing ``_`` as the new name for the module.  When a module
+is renamed to ``_``, symbols within it will only be accessible without a module
+name prefix - no prefix will be useable to reference the symbol.  For example,
+if a module A uses a module B in this manner and B defines a symbol bSymbol, A
+can contain references to ``bSymbol``, but cannot contain references to
+``B.bSymbol`` or ``_.bSymbol``.
 
 Use statements may be explicitly declared ``public`` or ``private``.
 By default, uses are ``private``.  Making a use ``public`` causes its
