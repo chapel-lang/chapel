@@ -5,7 +5,7 @@ var messageObj = new Types();
 var file = open("out", iomode.r);
 var readingChannel = file.reader();
 
-messageObj.parseFromInputFile(readingChannel);
+messageObj.deserialize(readingChannel);
 
 writeln(messageObj.ui64 == 9223372036854);
 writeln(messageObj.ui32 == 429496729);

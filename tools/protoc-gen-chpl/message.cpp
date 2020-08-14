@@ -90,7 +90,7 @@ namespace chapel {
     printer->Print("\n");
 
     printer->Print(
-      "proc writeToOutputFile(ch) throws {\n"
+      "proc serialize(ch) throws {\n"
       "  writeToOutputFileHelper(this, ch);\n"
       "}\n"
       "\n");
@@ -124,7 +124,7 @@ namespace chapel {
 
     printer->Print("\n");
     printer->Print(
-      "proc parseFromInputFile(ch) throws {\n"
+      "proc deserialize(ch) throws {\n"
       "  parseFromInputFileHelper(this, ch);\n"
       "}\n"
       "\n");

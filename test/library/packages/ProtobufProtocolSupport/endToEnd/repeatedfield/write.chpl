@@ -51,4 +51,4 @@ messageObj.byt.append(b"\x00\x01\x02\x03");
 messageObj.st.append("aniket");
 messageObj.st.append("String with spaces");
 
-messageObj.writeToOutputFile(writingChannel);
+messageObj.serialize(writingChannel);

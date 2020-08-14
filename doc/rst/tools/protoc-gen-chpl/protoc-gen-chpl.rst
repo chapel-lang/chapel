@@ -127,7 +127,7 @@ The generated ``addressbook.chpl`` file will contain:
 * A record with the name ``Person``.
 * An enum with the name ``Contact``.
 * ``name``, ``id``, ``email``, ``contact`` and ``number`` fields.
-* ``writeToOutputFile`` and ``parseFromInputFile`` functions for serialization/parsing.
+* ``serialize`` and ``deserialize`` functions for serialization/parsing.
 
 You can import this module to a ``chpl`` file and can create an instance of ``Person``
 for populating data;
@@ -153,16 +153,16 @@ Serialization and parsing
 
 The whole purpose of using protocol buffers is to serialize your data so that it
 can be parsed elsewhere. You can serialize your message object using the 
-``IO`` module and the ``writeToOutputFile`` function.
+``IO`` module and the ``serialize`` function.
 
 .. code-block:: chpl
   
   var file = open("out", iomode.cw);
   var writingChannel = file.writer();
 
-  messageObj.writeToOutputFile(writingChannel);
+  messageObj.serialize(writingChannel);
   
-Parsing is also similar, each generated record has a ``parseFromInputFile``
+Parsing is also similar, each generated record has a ``deserialize``
 function. So to parse the file we have just created we can use:
 
 .. code-block:: chpl
@@ -174,7 +174,7 @@ function. So to parse the file we have just created we can use:
   var readingChannel = file.reader();
   
   var messageObj = new Person();
-  messageObj.parseFromInputFile(readingChannel);
+  messageObj.deserialize(readingChannel);
 
 
 Features

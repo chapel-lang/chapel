@@ -29,4 +29,4 @@ messageObj.db = 444444444444.23444;
 messageObj.sf32 = -4567;
 messageObj.sf64 = 6473899292;
 
-messageObj.writeToOutputFile(writingChannel);
+messageObj.serialize(writingChannel);

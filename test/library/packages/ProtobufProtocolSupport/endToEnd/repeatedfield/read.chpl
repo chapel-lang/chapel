@@ -6,7 +6,7 @@ var messageObj = new repeatedField();
 var file = open("out", iomode.r);
 var readingChannel = file.reader();
 
-messageObj.parseFromInputFile(readingChannel);
+messageObj.deserialize(readingChannel);
 
 var lst1 = new list(uint(64));
 lst1.append(1);
