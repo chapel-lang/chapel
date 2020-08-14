@@ -2243,8 +2243,6 @@ module DefaultRectangular {
       size2(i) = r.size;
     
     if(this.locale == other.locale &&
-       !chpl__isArrayView(this) &&
-       !chpl__isArrayView(other) &&
        size1 == size2) {
       this.data <=> other.data;
       this.initShiftedData();

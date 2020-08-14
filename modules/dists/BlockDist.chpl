@@ -1537,13 +1537,10 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
 
 // Block1 <=> Block2 
 proc BlockArr.doiOptimizedSwap(other) {
-  if(this.dom.dist == other.dom.dist &&
-     this.dom.dist.dsiEqualDMaps(other.dom.dist)) {
+  if(this.dom.dist.dsiEqualDMaps(other.dom.dist)) {
     coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
       on locarr1 {
-        locarr1.myElems.data <=> locarr2.myElems.data;
-        locarr1.myElems.initShiftedData();
-        locarr2.myElems.initShiftedData();
+        locarr1.myElems <=> locarr2.myElems;
         locarr1.locRAD <=> locarr2.locRAD;
       }
     }
