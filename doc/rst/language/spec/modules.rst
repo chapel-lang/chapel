@@ -443,45 +443,16 @@ shadow the public symbols of C1, C2, and C3. However an error is
 signaled if C1, C2, C3 have conflicting public module-level
 definitions of the same symbol.
 
-An optional ``limitation-clause`` may be provided to limit the symbols
-made available by a given use statement. If an ``except`` list is
-provided, then all the visible but unlisted symbols in the module or
-enumerated type will be made available without prefix. If an ``only``
-list is provided, then just the listed visible symbols in the module or
-enumerated type will be made available without prefix. All visible
-symbols not provided via these limited use statements are still
-accessible by prefixing the access with the name of the module or
-enumerated type. It is an error to provide a name in a
-``limitation-clause`` that does not exist or is not visible in the
-respective module or enumerated type.
-
-If a type or type's secondary methods are defined in the used module, then any
-instances of the type obtained in the scope of the use may access the fields and
-methods of that type, regardless of the ``limitation-clause``. These fields
-and methods cannot be specified in a ``limitation-clause`` on their own.  The
-privacy of use statements is also ignored when determining if an instance can
-access the fields and methods, for similar reasons.
-
-This notion of transitivity extends to the case in which a scope
-imports symbols from multiple modules or constants from multiple
-enumeration types. For example if a module A uses modules B1, B2, B3
-and modules B1, B2, B3 publicly use modules C1, C2, C3 respectively,
-then all of the public symbols in B1, B2, B3 have the potential to
-shadow the public symbols of C1, C2, and C3. However an error is
-signaled if C1, C2, C3 have conflicting public module-level
-definitions of the same symbol.
-
-An optional ``limitation-clause`` may be provided to limit the symbols
-made available by a given use statement. If an ``except`` list is
-provided, then all the visible but unlisted symbols in the module or
-enumerated type will be made available without prefix. If an ``only``
-list is provided, then just the listed visible symbols in the module or
-enumerated type will be made available without prefix. All visible
-symbols not provided via these limited use statements are still
-accessible by prefixing the access with the name of the module or
-enumerated type. It is an error to provide a name in a
-``limitation-clause`` that does not exist or is not visible in the
-respective module or enumerated type.
+An optional ``limitation-clause`` may be provided to limit the symbols made
+available by a given use statement. If an ``except`` list is provided, then all
+the visible but unlisted symbols in the module or enumerated type will be made
+available without prefix. If an ``only`` list is provided, then just the listed
+visible symbols in the module or enumerated type will be made available without
+prefix. All visible symbols not provided via these limited use statements are
+still accessible by prefixing the access with the name of the module or
+enumerated type (unless the module has been renamed to ``_``, as described
+earlier). It is an error to provide a name in a ``limitation-clause`` that does
+not exist or is not visible in the respective module or enumerated type.
 
 If a type or type's secondary methods are defined in the used module, then any
 instances of the type obtained in the scope of the use may access the fields and
