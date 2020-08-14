@@ -26,6 +26,7 @@
     Generally, users don't have to directly use this module. The methods of a treap 
     are available for an orderedSet. This page is for reference.
 */
+pragma "no doc"
 module Treap {
   import ChapelLocks;
   private use HaltWrappers;
@@ -823,7 +824,7 @@ module Treap {
     }
 
     /*
-      Returns `true` if this treap is empty (size == 0).
+      Returns `true` if this orderedSet is empty (size == 0).
 
       :rtype: `bool`
     */

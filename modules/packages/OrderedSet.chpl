@@ -157,8 +157,187 @@ module OrderedSet {
 
       :arg ch: A channel to write to.
     */
-    proc const writeThis(ch: channel) throws {
+    inline proc const writeThis(ch: channel) throws {
       instance.writeThis(ch);
+    }
+
+    /*
+      The current number of elements contained in this orderedSet.
+    */
+    inline proc const size {
+      return instance.size;
+    }
+
+    /*
+      Add a copy of the element `x` to this orderedSet. Does nothing if this orderedSet
+      already contains an element equal to the value of `x`.
+
+      :arg x: The element to add to this orderedSet.
+    */
+    inline proc ref add(x: eltType) lifetime this < x {
+      instance.add(x);
+    }
+
+    /*
+      Returns `true` if the given element is a member of this orderedSet, and `false`
+      otherwise.
+
+      :arg x: The element to test for membership.
+      :return: Whether or not the given element is a member of this orderedSet.
+      :rtype: `bool`
+    */
+    inline proc const contains(const ref x: eltType): bool {
+      return instance.contains(x);
+    }
+
+    /*
+      Attempt to remove the item from this orderedSet with a value equal to `x`. If
+      an element equal to `x` was removed from this orderedSet, return `true`, else
+      return `false` if no such value was found.
+
+      :arg x: The element to remove.
+      :return: Whether or not an element equal to `x` was removed.
+      :rtype: `bool`
+    */
+    inline proc ref remove(const ref x: eltType): bool {
+      return instance.remove(x);
+    }
+
+    /*
+      Clear the contents of this orderedSet.
+
+      .. warning::
+
+        Clearing the contents of this orderedSet will invalidate all existing
+        references to the elements contained in this orderedSet.
+    */
+    inline proc ref clear() {
+      return instance.clear();
+    }
+
+    /*
+      Find the first element in the orderedSet
+      which is not less than e.
+
+      Returns a tuple containing two elements:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurrence in the orderedSet, if there's any.
+
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
+    */
+    inline proc const lowerBound(e: eltType): (bool, eltType) {
+      return instance.lowerBound(e);
+    }
+
+    /*
+      Find the first element in the orderedSet
+      which is greater than e.
+
+      Returns a tuple containing two elements:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurrence in the orderedSet, if there's any.
+
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
+    */
+    inline proc const upperBound(e: eltType): (bool, eltType) {
+      return instance.upperBound(e);
+    }
+
+    /*
+      Find the predecessor of one element in the orderedSet.
+
+      Returns a tuple containing two elements:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurrence in the orderedSet, if there's any.
+
+      :arg e: The element to base
+      :type e: `eltType`
+
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
+    */
+    inline proc const predecessor(e: eltType): (bool, eltType) {
+      return instance.predecessor(e);
+    }
+
+    /*
+      Find the successor of one element in the orderedSet.
+
+      Returns a tuple containing two elements:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurrence in the orderedSet, if there's any.
+
+      :arg e: The element to base
+      :type e: `eltType`
+
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
+    */
+    inline proc const successor(e: eltType): (bool, eltType) {
+      return instance.successor(e);
+    }
+
+    /*
+      Find the k-th element in the orderedSet. k starts from 1.
+
+      Returns a tuple containing two elements:
+      The first element is a `bool` that indicates whether there is such an element.
+      The second element is the occurrence in the orderedSet, if there's any.
+
+      :arg k: To find k-th element
+      :type k: `int`
+
+      :returns: a tuple containing result
+      :rtype: `(bool, eltType)`
+    */
+    inline proc const kth(k: int): (bool, eltType) {
+      return instance.kth(k);
+    }
+
+    /*
+      Returns `true` if this orderedSet shares no elements in common with the orderedSet
+      `other`, and `false` otherwise.
+
+      :arg other: The orderedSet to compare against.
+      :return: Whether or not this orderedSet and `other` are disjoint.
+      :rtype: `bool`
+    */
+    inline proc const isDisjoint(const ref other: orderedSet(eltType, ?)): bool {
+      return instance.isDisjoint(other);
+    }
+
+    /*
+      Returns `true` if this orderedSet and `other` have at least one element in
+      common, and `false` otherwise.
+
+      :arg other: The orderedSet to compare against.
+      :return: Whether or not this orderedSet and `other` intersect.
+      :rtype: `bool`
+    */
+    inline proc const isIntersecting(const ref other: orderedSet(eltType, ?)): bool {
+      return instance.isIntersecting(other);
+    }
+
+    /*
+      Returns `true` if this orderedSet is empty (size == 0).
+
+      :rtype: `bool`
+    */
+    inline proc const isEmpty(): bool {
+      return instance.isEmpty();
+    }
+
+    /*
+      Returns a new array containing a copy of each of the
+      elements contained in this orderedSet. The array will be in order.
+
+      :return: An array containing a copy of each of the elements in this orderedSet.
+      :rtype: `[] eltType`
+    */
+    inline proc const toArray(): [] eltType {
+      return instance.toArray();
     }
   }
 
