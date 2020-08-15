@@ -11,7 +11,14 @@ messageObj.deserialize(readingChannel);
 writeln(messageObj.a == color.blue);
 writeln(messageObj.b == 564);
 
-var lst = new list(color);
-lst.append(color.blue);
-lst.append(color.green);
-writeln(messageObj.c == lst);
+var lst1 = new list(color);
+lst1.append(color.blue);
+lst1.append(color.green);
+writeln(messageObj.c == lst1);
+
+writeln(messageObj.d == enumTest_fruit.orange);
+
+var lst2 = new list(enumTest_fruit);
+lst2.append(enumTest_fruit.orange);
+lst2.append(enumTest_fruit.apple);
+writeln(messageObj.e == lst2);

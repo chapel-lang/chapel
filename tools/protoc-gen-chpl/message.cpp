@@ -50,7 +50,7 @@ namespace chapel {
   }
 
   string MessageGenerator::record_name() {
-    return descriptor_->name();
+    return GetMessageName(descriptor_);
   }
 
   void MessageGenerator::Generate(Printer* printer) {
@@ -99,7 +99,15 @@ namespace chapel {
     printer->Indent();
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
-      if(vars[i]["proto_field_type"] == "enum") {
+      if(vars[i]["proto_field_type"] == "message") {
+        if(vars[i]["is_repeated"] == "0") {
+          printer->Print(vars[i],
+            "$proto_field_type$Append($field_name$, $field_number$, binCh);\n");
+        } else {
+          printer->Print(vars[i],
+            "$proto_field_type$RepeatedAppend($field_name$, $field_number$, binCh);\n");
+        }
+      } else if(vars[i]["proto_field_type"] == "enum") {
         if(vars[i]["is_repeated"] == "0") {
           printer->Print(vars[i],
             "$proto_field_type$Append($field_name$:uint(64), $field_number$, binCh);\n");
@@ -141,7 +149,15 @@ namespace chapel {
     for (int i = 0; i < descriptor_->field_count(); i++) {
       printer->Print(vars[i],
         "when $field_number$ {\n");
-        if(vars[i]["proto_field_type"] == "enum") {
+        if(vars[i]["proto_field_type"] == "message") {
+          if(vars[i]["is_repeated"] == "0") {
+            printer->Print(vars[i],
+              "  $field_name$ = $proto_field_type$Consume(binCh, $type_name$);\n");
+          } else {
+            printer->Print(vars[i],
+              "  $field_name$.extend($proto_field_type$RepeatedConsume(binCh, $type_name$));\n");
+          }
+        } else if(vars[i]["proto_field_type"] == "enum") {
           if(vars[i]["is_repeated"] == "0") {
             printer->Print(vars[i],
               "  $field_name$ = $proto_field_type$Consume(binCh):$type_name$;\n");

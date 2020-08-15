@@ -46,6 +46,7 @@ namespace chapel {
     string module_name;
 
     void WriteIntroduction(Printer* printer);
+    bool HasNestedGeneratedTypes(const Descriptor* descriptor);
   };
 
 }  // namespace chapel

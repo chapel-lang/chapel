@@ -18,34 +18,21 @@
  * limitations under the License.
  */
 
-#include <google/protobuf/stubs/strutil.h>
-
-#include <enum.h>
-#include <helpers.h>
+#include <repeated_message_field.h>
 
 namespace chapel {
 
-  EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor) :
-      descriptor_(descriptor) {
+  RepeatedMessageFieldGenerator::RepeatedMessageFieldGenerator(
+      const FieldDescriptor* descriptor)
+      : FieldGeneratorBase(descriptor) {
   }
 
-  EnumGenerator::~EnumGenerator() {
+  RepeatedMessageFieldGenerator::~RepeatedMessageFieldGenerator() {
+
   }
 
-  void EnumGenerator::Generate(Printer* printer) {
-    printer->Print("enum $name$ {\n",
-                   "name", GetEnumName(descriptor_));
-    printer->Indent();
-    
-    for (int i = 0; i < descriptor_->value_count(); i++) {
-      printer->Print("$name$ = $number$,\n",
-                     "name", descriptor_->value(i)->name(),
-                     "number", StrCat(descriptor_->value(i)->number()));
-    }
-
-    printer->Outdent();
-    printer->Print("}\n"); 
-              
+  void RepeatedMessageFieldGenerator::GenerateMembers(Printer* printer) {
+    printer->Print(variables_, "var $name$: list($type_name$);\n");
   }
 
 }  // namespace chapel

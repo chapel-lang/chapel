@@ -51,8 +51,8 @@ namespace chapel {
       for (int i = 0; i < file_->enum_type_count(); i++) {
         EnumGenerator enumGenerator(file_->enum_type(i));
         enumGenerator.Generate(printer);
+        printer->Print("\n");
       }
-      printer->Print("\n");
     }
 
     // write children: Messages
@@ -61,11 +61,37 @@ namespace chapel {
       for (int i = 0; i < file_->message_type_count(); i++) {
         MessageGenerator messageGenerator(file_->message_type(i));
         messageGenerator.Generate(printer);
+        printer->Print("\n");
+      }
+    }
+
+    // write grand children: Message nested types
+    // handled here since nested records and enum declaration in records
+    // are not yet supported in Chapel.
+    printer->Print("// Nested Types\n");
+    for (int i = 0; i < file_->message_type_count(); i++) {
+      const Descriptor* descriptor = file_->message_type(i);
+
+      if (HasNestedGeneratedTypes(descriptor)) {
+        for (int i = 0; i < descriptor->enum_type_count(); i++) {
+          printer->Print("// Parent $parent$\n",
+                          "parent", descriptor->name());
+          EnumGenerator enumGenerator(descriptor->enum_type(i));
+          enumGenerator.Generate(printer);
+          printer->Print("\n");
+        }
+
+        for (int i = 0; i < descriptor->nested_type_count(); i++) {
+          printer->Print("// Parent $parent$\n",
+                          "parent", descriptor->name());
+          MessageGenerator messageGenerator(descriptor->nested_type(i));
+          messageGenerator.Generate(printer);
+          printer->Print("\n");
+        }
       }
     }
 
     printer->Outdent();
-    printer->Print("\n");
     printer->Print("}\n");
 
   }
@@ -78,6 +104,13 @@ namespace chapel {
       "*/\n"
       "\n",
       "file_name", file_->name());
+  }
+
+  bool ReflectionClassGenerator::HasNestedGeneratedTypes(const Descriptor* descriptor) {
+    if (descriptor->enum_type_count() > 0 || descriptor->nested_type_count() > 0) {
+      return true;
+    }
+    return false;
   }
 
 }  // namespace chapel

@@ -18,34 +18,27 @@
  * limitations under the License.
  */
 
-#include <google/protobuf/stubs/strutil.h>
+#ifndef PB_REPEATED_MESSAGE_FIELD_HH
+#define PB_REPEATED_MESSAGE_FIELD_HH
 
-#include <enum.h>
-#include <helpers.h>
+#include <google/protobuf/io/printer.h>
+#include <google/protobuf/descriptor.h>
+
+#include <field_base.h>
 
 namespace chapel {
+  
+  using namespace google::protobuf;
+  using namespace google::protobuf::io;
+  
+  class RepeatedMessageFieldGenerator : public FieldGeneratorBase {
+   public:
+    RepeatedMessageFieldGenerator(const FieldDescriptor* descriptor);
+    ~RepeatedMessageFieldGenerator();
 
-  EnumGenerator::EnumGenerator(const EnumDescriptor* descriptor) :
-      descriptor_(descriptor) {
-  }
-
-  EnumGenerator::~EnumGenerator() {
-  }
-
-  void EnumGenerator::Generate(Printer* printer) {
-    printer->Print("enum $name$ {\n",
-                   "name", GetEnumName(descriptor_));
-    printer->Indent();
-    
-    for (int i = 0; i < descriptor_->value_count(); i++) {
-      printer->Print("$name$ = $number$,\n",
-                     "name", descriptor_->value(i)->name(),
-                     "number", StrCat(descriptor_->value(i)->number()));
-    }
-
-    printer->Outdent();
-    printer->Print("}\n"); 
-              
-  }
+    void GenerateMembers(Printer* printer);
+  };
 
 }  // namespace chapel
+
+#endif /* PB_REPEATED_MESSAGE_FIELD_HH */

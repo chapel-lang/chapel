@@ -40,7 +40,6 @@ To remove protobuf suppot, change directory to ``$CHPL_HOME/tools/protoc-gen-chp
 
    make clean
 
-
 Defining protocol format
 ========================
 
@@ -75,33 +74,38 @@ including int64, int32, float, double, and string.
 
 .. code-block:: proto
 
-  enum Contact {
-    FAMILY = 0;
-    FRIENDS = 1;
-    WORK = 2;
-  }
-
   message Person {
     string name = 1;
     int32 id = 2;  // Unique ID number for this person.
     string email = 3;
 
-    Contact contact = 4;
+    enum PhoneType {
+      MOBILE = 0;
+      HOME = 1;
+      WORK = 2;
+    }
 
-    repeated string number = 5; // Person might have more than one number.
+    message PhoneNumber {
+      string number = 1;
+      PhoneType phntype = 2;
+    }
+
+    repeated PhoneNumber phones = 4;
+
   }
   
 In the above example the ``Person`` message contains a ``string`` typed ``name``
 field with field number ``1``, a ``int32`` typed ``id`` field with field number
 ``2`` as well as a ``string`` typed ``email`` field with field number ``3``. You
 can also define enum types if you want one of your fields to have one of a
-predefined list of values - here you want to specify that a contact type can be
-one of FAMILY, FRIENDS, or WORK. The ``contact`` field with field number
-``4`` is an example. If a field is repeated, the field may be repeated any number
-of times (including zero). For example, the ``string`` typed ``number`` field with
-field number ``5``. The order of the repeated values will be preserved in the protocol
+predefined list of values - here you want to specify that a phone type can be
+one of MOBILE, HOME, or WORK. You can also define nested messages and use these
+as field types, like the ``PhoneNumber`` message containing a ``string`` typed
+``number`` field with field number ``1`` and a ``phntype`` enum field with field
+number ``2``. The ``phones`` field with field number ``4`` is an example of a repeated message
+field. If a field is repeated, the field may be repeated any number of times
+(including zero). The order of the repeated values will be preserved in the protocol
 buffer. If a field is not set, a default value is assigned to the field by Chapel.
-
 
 Compiling your protocol buffers
 ===============================
@@ -124,9 +128,9 @@ The generated file
 The generated ``addressbook.chpl`` file will contain:
 
 * A wrapper module with the name ``addressbook``.
-* A record with the name ``Person``.
-* An enum with the name ``Contact``.
-* ``name``, ``id``, ``email``, ``contact`` and ``number`` fields.
+* ``Person`` record with ``name``, ``id``, ``email`` and ``phones`` fields.
+* ``Person_PhoneNumber`` record with ``number`` and ``phntype`` fields.
+* An enum with the name ``Person_PhoneType``.
 * ``serialize`` and ``deserialize`` functions for serialization/parsing.
 
 You can import this module to a ``chpl`` file and can create an instance of ``Person``
@@ -137,16 +141,20 @@ for populating data;
   use addressbook;
   use IO;
 
-  var messageObj = new Person();
+  var messageObj: Person;
   messageObj.name = "John";
   messageObj.id = 429496729;
   messageObj.email = "John@a.com";
 
-  messageObj.contact = Contact.WORK;
+  var phoneNumber1: Person_PhoneNumber;
+  phoneNumber1.number = "555-4321";
+  phoneNumber1.phntype = Person_PhoneType.HOME;
+  messageObj.phones.append(phoneNumber1);
   
-  messageObj.number.append("555-4321");
-  messageObj.number.append("555-7890");
-
+  var phoneNumber2: Person_PhoneNumber;
+  phoneNumber2.number = "555-4444";
+  phoneNumber2.phntype = Person_PhoneType.WORK;
+  messageObj.phones.append(phoneNumber2);
 
 Serialization and parsing
 =========================
@@ -188,6 +196,8 @@ The following features are currently supported
 #. `Packages`_
 #. `Enumerations`_
 #. `Repeated fields`_
+#. `Nested types`_
+#. `Using other message types`_
 
 
 .. _Protocol Buffers: https://developers.google.com/protocol-buffers
@@ -199,3 +209,5 @@ The following features are currently supported
 .. _Packages: https://developers.google.com/protocol-buffers/docs/proto3#packages
 .. _Enumerations: https://developers.google.com/protocol-buffers/docs/proto3#enum
 .. _Repeated fields: https://developers.google.com/protocol-buffers/docs/proto3#specifying_field_rules
+.. _Nested types: https://developers.google.com/protocol-buffers/docs/proto3#nested
+.. _Using other message types: https://developers.google.com/protocol-buffers/docs/proto3#other

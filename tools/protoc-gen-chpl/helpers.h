@@ -42,6 +42,10 @@ namespace chapel {
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor);
 
   string GetModuleName(const FileDescriptor* descriptor);
+  
+  string GetMessageName(const Descriptor* descriptor);
+
+  string GetEnumName(const EnumDescriptor* descriptor);
 
 } // namespace chapel
 

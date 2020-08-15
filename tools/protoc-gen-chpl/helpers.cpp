@@ -27,6 +27,8 @@
 #include <repeated_primitive_field.h>
 #include <enum_field.h>
 #include <repeated_enum_field.h>
+#include <message_field.h>
+#include <repeated_message_field.h>
 #include <field_base.h>
 
 namespace chapel {
@@ -93,9 +95,30 @@ namespace chapel {
   string GetFieldName(const FieldDescriptor* descriptor) {
       return descriptor->name();
   }
+  
+  string GetNestedTypeName(const Descriptor* descriptor, string name) {
+    if (descriptor != NULL) {
+      return descriptor->name() + "_" + name;
+    }
+    return name;
+  }
+
+  string GetMessageName(const Descriptor* descriptor) {
+    return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
+  }
+
+  string GetEnumName(const EnumDescriptor* descriptor) {
+    return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
+  }
 
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
+      case FieldDescriptor::TYPE_MESSAGE:
+        if (descriptor->is_repeated()) {
+          return new RepeatedMessageFieldGenerator(descriptor);
+        } else {
+          return new MessageFieldGenerator(descriptor);
+        }
       case FieldDescriptor::TYPE_ENUM:
         if (descriptor->is_repeated()) {
           return new RepeatedEnumFieldGenerator(descriptor);

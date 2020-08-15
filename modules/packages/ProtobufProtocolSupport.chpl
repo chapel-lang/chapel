@@ -272,6 +272,26 @@ module ProtobufProtocolSupport {
       return val;
     }
 
+    proc messageAppendBase(val, ch:writingChannel) throws {
+     var initialOffset = ch.offset();
+     ch.mark();
+     val._serialize(ch);
+     var currentOffset = ch.offset();
+     ch.revert();
+     unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
+     val._serialize(ch);
+   }
+
+   proc messageConsumeBase(ch:readingChannel, ref messageObj, memWriter:writingChannel,
+                           memReader:readingChannel) throws {
+     var s: bytes;
+     var (payloadLength, _) = unsignedVarintConsume(ch);
+     ch.readbytes(s, payloadLength:int);
+     memWriter.write(s);
+     memWriter.close();
+     messageObj._deserialize(memReader);
+   }
+
     proc serializeHelper(ref message, ch) throws {
       ch.lock();
       defer { ch.unlock(); }
@@ -300,6 +320,8 @@ module ProtobufProtocolSupport {
     use super.WireEncoding;
 
     proc uint64Append(val: uint(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, varint, ch);
       uint64AppendBase(val, ch);
     }
@@ -309,6 +331,8 @@ module ProtobufProtocolSupport {
     }
 
     proc uint32Append(val: uint(32), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, varint, ch);
       uint32AppendBase(val, ch);
     }
@@ -318,6 +342,8 @@ module ProtobufProtocolSupport {
     }
     
     proc int64Append(val: int(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, varint, ch);
       int64AppendBase(val, ch);
     }
@@ -327,6 +353,8 @@ module ProtobufProtocolSupport {
     }
 
     proc int32Append(val: int(32), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, varint, ch);
       int32AppendBase(val, ch);
     }
@@ -336,6 +364,8 @@ module ProtobufProtocolSupport {
     }
 
     proc boolAppend(val: bool, fieldNumber: int, ch: writingChannel) throws {
+      if val == false then return;
+
       tagAppend(fieldNumber, varint, ch);
       boolAppendBase(val, ch);
     }
@@ -345,6 +375,8 @@ module ProtobufProtocolSupport {
     }
 
     proc sint64Append(val: int(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, varint, ch);
       sint64AppendBase(val, ch);
     }
@@ -354,6 +386,8 @@ module ProtobufProtocolSupport {
     }
 
     proc sint32Append(val: int(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, varint, ch);
       sint32AppendBase(val, ch);
     }
@@ -363,6 +397,8 @@ module ProtobufProtocolSupport {
     }
 
     proc bytesAppend(val: bytes, fieldNumber: int, ch: writingChannel) throws {
+      if val == b"" then return;
+
       tagAppend(fieldNumber, lengthDelimited, ch);
       bytesAppendBase(val, ch);
     }
@@ -372,6 +408,8 @@ module ProtobufProtocolSupport {
     }
 
     proc stringAppend(val: string, fieldNumber: int, ch: writingChannel) throws {
+      if val == "" then return;
+
       tagAppend(fieldNumber, lengthDelimited, ch);
       stringAppendBase(val, ch);
     }
@@ -381,6 +419,8 @@ module ProtobufProtocolSupport {
     }
 
     proc fixed32Append(val: uint(32), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, fixed32Type, ch);
       fixed32AppendBase(val, ch);
     }
@@ -390,6 +430,8 @@ module ProtobufProtocolSupport {
     }
 
     proc fixed64Append(val: uint(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, fixed64Type, ch);
       fixed64AppendBase(val, ch);
     }
@@ -399,6 +441,8 @@ module ProtobufProtocolSupport {
     }
 
     proc floatAppend(val: real(32), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0.0 then return;
+
       tagAppend(fieldNumber, fixed32Type, ch);
       floatAppendBase(val, ch);
     }
@@ -408,6 +452,8 @@ module ProtobufProtocolSupport {
     }
 
     proc doubleAppend(val: real(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0.0 then return;
+
       tagAppend(fieldNumber, fixed64Type, ch);
       doubleAppendBase(val, ch);
     }
@@ -417,6 +463,8 @@ module ProtobufProtocolSupport {
     }
 
     proc sfixed64Append(val: int(64), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, fixed64Type, ch);
       sfixed64AppendBase(val, ch);
     }
@@ -426,6 +474,8 @@ module ProtobufProtocolSupport {
     }
 
     proc sfixed32Append(val: int(32), fieldNumber: int, ch: writingChannel) throws {
+      if val == 0 then return;
+
       tagAppend(fieldNumber, fixed32Type, ch);
       sfixed32AppendBase(val, ch);
     }
@@ -441,6 +491,22 @@ module ProtobufProtocolSupport {
 
     proc enumConsume(ch: readingChannel): uint(64) throws {
       return enumConsumeBase(ch);
+    }
+
+    proc messageAppend(val, fieldNumber: int, ch:writingChannel) throws {
+      tagAppend(fieldNumber, lengthDelimited, ch);
+      messageAppendBase(val, ch);
+    }
+
+    proc messageConsume(ch:readingChannel, type messageType) throws {
+      var tmpMem = openmem();
+      var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
+      var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+
+      var tmpObj: messageType;
+      messageConsumeBase(ch, tmpObj, memWriter, memReader);
+      tmpMem.close();
+      return tmpObj;
     }
 
     proc consumeUnknownField(fieldNumber: int, wireType: int, ch: readingChannel): bytes throws {
@@ -894,6 +960,27 @@ module ProtobufProtocolSupport {
         var val = enumConsumeBase(ch);
         returnList.append(val:enumType);
       }
+      return returnList;
+    }
+
+    proc messageRepeatedAppend(valList, fieldNumber: int, ch: writingChannel) throws {
+      if valList.isEmpty() then return;
+      for val in valList {
+        tagAppend(fieldNumber, lengthDelimited, ch);
+        messageAppendBase(val, ch);
+      }
+    }
+
+    proc messageRepeatedConsume(ch: readingChannel, type messageType) throws {
+      var returnList: list(messageType);
+      var tmpMem = openmem();
+      var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
+      var memReader = tmpMem.reader(kind=iokind.little, locking=false);
+
+      var tmpObj: messageType;
+      messageConsumeBase(ch, tmpObj, memWriter, memReader);
+      returnList.append(tmpObj);
+      tmpMem.close();
       return returnList;
     }
 
