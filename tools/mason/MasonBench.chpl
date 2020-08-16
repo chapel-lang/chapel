@@ -73,7 +73,7 @@ proc masonBench(args) throws {
     const cwd = getEnv("PWD"); 
     const projectHome = getProjectHome(cwd);
     var benchTestsFromDir: list(string);
-    var benchTestPath = joinPath(projectHome, "benchmarks");
+    var benchTestPath = joinPath(projectHome, "benchmark");
     var benchTests = findfiles(startdir=benchTestPath, recursive=true, hidden=false);
     for bench in benchTests {
       if bench.endsWith(".chpl") {
@@ -109,20 +109,60 @@ proc masonBench(args) throws {
 
 /* displays list of bench test files derived from bench/, Mason.toml file */
 proc printMetadata(compopts: list(string), benchTestsFromDir: list(string), benchTestsFromToml: list(string)) {
-	writeln("Bench Test files from bench directory ... ");
-	for benchTest in benchTestsFromDir do writeln(benchTest);
-	writeln("Bench Test files from Mason.toml...");
-	for benchTest in benchTestsFromToml do writeln(benchTest);
+  writeln("Bench Test files from bench directory ... ");
+  for benchTest in benchTestsFromDir do writeln(benchTest);
+  writeln("Bench Test files from Mason.toml...");
+  for benchTest in benchTestsFromToml do writeln(benchTest);
 }
 
 /* run the bench tests gathered */
-proc runBenchTests(show:bool, compopts: list(string), benchTestsFromDir: list(string), benchTestsFromToml: list(string)) {
-  if(benchTestsFromToml.size > 0) {
-    for benchTest in benchTestsFromToml {
-      for bTest in benchTestsFromDir {
+proc runBenchTests(show:bool, ref cmdLineCompopts: list(string),
+    benchTestsFromDir: list(string), benchTestsFromToml: list(string)) throws {
+	try! {
+		if show then writeln("Running benchmarks ...");
+		const cwd = getEnv("PWD"); 
+		const projectHome = getProjectHome(cwd);
+		const toParse = open(projectHome + "/Mason.lock", iomode.r);
+		const lockFile = owned.create(parseToml(toParse));
+		const sourceList = genSourceList(lockFile);
+		getSrcCode(sourceList, show);
+		const project = lockFile["root"]!["name"]!.s;
+		const projectPath = "".join(projectHome, "/src/", project, ".chpl");
+		const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
+		if isDir(joinPath(projectHome, "target/benchmark/")) {
+			rmTree(joinPath(projectHome, "target/benchmark/"));
+		}
+		// Make target files if they dont exist from a build
+		makeTargetFiles("debug", projectHome);
+		if show then writeln("Made target files...");
+		if(benchTestsFromToml.size > 0) {
+			// if benchTests found in Toml execute them only
+			// check if file actually exists in bench/ else show error that a file doesnt exist  
+			var invalidTests: list(string);
+			for bT in benchTestsFromToml {
+				var testPresentInDir: bool = false;
+				for benchT in benchTestsFromDir {
+					if(bT == basename(benchT)) then testPresentInDir = true;
+				}
+				if(testPresentInDir == false) then invalidTests.append(bT);
+			}
+			if invalidTests.size > 0 {
+				for test in invalidTests {
+					if invalidTests.size == 1 then write(test);
+					else write(test, ', ');
+				}
+				throw new owned MasonError("from Mason.toml could not be found in your benchmarks/ directory.");
+			} else {
+				// run benchmarks
+			}
+		} else {
+			// otherwise run other benchTests
 
-      }
-    }
-  }
+		}
+	}
+	catch e: MasonError {
+		writeln(e.message());
+		exit(1);
+	}
 }
 

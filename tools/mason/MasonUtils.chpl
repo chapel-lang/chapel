@@ -57,6 +57,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   const target = joinPath(projectHome, 'target');
   const srcBin = joinPath(target, binLoc);
   const example = joinPath(target, 'example');
+  const benchmark = joinPath(target, 'benchmark');
 
   if !isDir(target) {
     mkdir(target);
@@ -66,6 +67,9 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
   }
   if !isDir(example) {
     mkdir(example);
+  }
+  if !isDir(benchmark) {
+    mkdir(benchmark);
   }
 
   const actualTest = joinPath(projectHome,'test');

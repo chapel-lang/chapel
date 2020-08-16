@@ -276,6 +276,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
+        writeln(compCommand);
         const compilation = runWithStatus(compCommand, show);
         
         if compilation != 0 {
