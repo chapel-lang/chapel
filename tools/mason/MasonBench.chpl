@@ -1,3 +1,23 @@
+/*
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 use TOML;
 use Path;
 use Spawn;
@@ -48,21 +68,38 @@ proc masonBench(args) throws {
       }
     }
   }
-  if show then printMetadata(compopts);
   try! {
+    // get bench files from bench directory 
     const cwd = getEnv("PWD"); 
     const projectHome = getProjectHome(cwd);
-    var benchTestName: list(string);
-    var benchTestPath = joinPath(projectHome, "bench");
+    var benchTestsFromDir: list(string);
+    var benchTestPath = joinPath(projectHome, "benchmarks");
     var benchTests = findfiles(startdir=benchTestPath, recursive=true, hidden=false);
     for bench in benchTests {
       if bench.endsWith(".chpl") {
-        benchTestName.append(getBenchTestPath(bench));
+        benchTestsFromDir.append(bench);
       }
     }
-    for bench in benchTestName do writeln(bench);
+    // get bench files from Mason.toml or any toml files
+    var benchTestsFromToml: list(string);
+    const tomlFilePath = joinPath(projectHome, 'Mason.toml');
+    const toParse = open(tomlFilePath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if isFile(tomlFilePath) {
+      if tomlFile.pathExists('brick.benchmarks') {
+        var benchTests = tomlFile['brick']!['benchmarks']!.toString(); 
+        var stripBenchTests = benchTests.split(',').strip('[]');
+        for test in stripBenchTests {
+          const benchTest = test.strip().strip('"');
+          benchTestsFromToml.append(benchTest);
+        }
+      }
+    }
+    if show {
+      printMetadata(compopts, benchTestsFromDir, benchTestsFromToml); 
+    }
     updateLock(skipUpdate);
-    runBenchTests(show, compopts);
+    runBenchTests(show, compopts, benchTestsFromDir, benchTestsFromToml);
   }
   catch e: MasonError {
     writeln(e.message());
@@ -70,37 +107,22 @@ proc masonBench(args) throws {
   }
 }
 
-proc runBenchTests(show, compopts) {
-  for c in compopts do writeln(c); 
+/* displays list of bench test files derived from bench/, Mason.toml file */
+proc printMetadata(compopts: list(string), benchTestsFromDir: list(string), benchTestsFromToml: list(string)) {
+	writeln("Bench Test files from bench directory ... ");
+	for benchTest in benchTestsFromDir do writeln(benchTest);
+	writeln("Bench Test files from Mason.toml...");
+	for benchTest in benchTestsFromToml do writeln(benchTest);
 }
 
-proc printMetadata(compopts: list(string)) {
-  writeln("Files : ");
-  for a in files do writeln(a);
-  writeln("Dirs : ");
-  for d in dirs do writeln(d);
-  writeln("Compopts : ");
-  for c in compopts do writeln(c);
-}
+/* run the bench tests gathered */
+proc runBenchTests(show:bool, compopts: list(string), benchTestsFromDir: list(string), benchTestsFromToml: list(string)) {
+  if(benchTestsFromToml.size > 0) {
+    for benchTest in benchTestsFromToml {
+      for bTest in benchTestsFromDir {
 
-// TODO: refactor getTestPath to accomodate bench tests and unit tests
-proc getBenchTestPath(fullPath: string, testPath = "") : string {
-  var split = splitPath(fullPath);
-	writeln(split);
-	return fullPath;
-/*
-  if split[1] == "bench" {
-    return testPath;
-  }
-  else {
-    if testPath == "" {
-      return getTestPath(split[0], split[1]);
-    }
-    else {
-      var appendedPath = joinPath(split[1], testPath);
-      return getTestPath(split[0], appendedPath);
+      }
     }
   }
-*/
 }
 
