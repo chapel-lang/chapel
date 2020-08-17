@@ -173,7 +173,8 @@ proc getPackageScores(res: list(string)) {
   const cacheFile = owned.create(parseToml(parse));
   var packageScores: map(string, int);
   var packageName: string;
-  const defaultScore = 5;
+  // defaultScore = (8/12 * 100) = 66
+  const defaultScore = 66;
   var packageScore: int;
   for r in res {
     r = splitNameVersion(r, false);
