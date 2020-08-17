@@ -82,19 +82,19 @@ proc masonPublish(ref args: list(string)) throws {
     if createReg {
       var pathReg: string;
       for i in 2..<args.size {
-			 // Find positional arguments
-				if !args[i].startsWith('-') {
-					if pathReg == '' {
-						pathReg = args[i];
-					} else {
-						// Multiple positional arguments is an error
-						throw new owned MasonError("mason publish --create-registry expects only one path");
-					}
-				}
-			}
-			if pathReg == '' {
-				// No positional arguments is an error
-				throw new owned MasonError("mason publish --create-registry expects a path");
+        // Find positional arguments
+        if !args[i].startsWith('-') {
+          if pathReg == '' {
+            pathReg = args[i];
+          } else {
+           // Multiple positional arguments is an error
+            throw new owned MasonError("mason publish --create-registry expects only one path");
+          }
+        }
+      }
+      if pathReg == '' {
+        // No positional arguments is an error
+        throw new owned MasonError("mason publish --create-registry expects a path");
       }
       try! {
         if pathReg == 'publish' then throw new owned MasonError('Valid path required ' +
@@ -251,7 +251,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
 
     if !isLocal {
       gitC(safeDir + "/mason-registry", "git add .");
-      commitSubProcess(safeDir + '/mason-registry', command);
+      commitSubProcess(safeDir + '/mason-registry', command.toArray());
       gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
       rmTree(safeDir + '/');
       writeln('--------------------------------------------------------------------');
@@ -259,7 +259,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
      }
     else {
       gitC(safeDir, 'git add Bricks/' + name);
-      commitSubProcess(safeDir, command);
+      commitSubProcess(safeDir, command.toArray());
       writeln('Successfully published package to ' + registryPath);
     }
 
@@ -272,7 +272,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
 /* Subprocess function designed to pass a message to 'git commit' without get the string
  split by the MasonUtils runCommand()/
  */
-private proc commitSubProcess(dir: string, command) throws {
+private proc commitSubProcess(dir: string, command: [] string) throws {
   var spawnArgs = [cmd in command] cmd;
   const oldDir = here.cwd();
   here.chdir(dir);
