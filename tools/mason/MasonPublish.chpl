@@ -80,18 +80,22 @@ proc masonPublish(ref args: list(string)) throws {
     }
 
     if createReg {
-      var pathReg = '';
-      var idx_flag = 0;
-      var idx_pathReg = 0;
-      var idx = 0;
-      for arg in args {
-        if arg != "mason" && arg != "publish" {
-          if arg == "-c" || arg == "--create-registry" then idx_flag = idx;
-          else if !arg.startsWith("-") then idx_pathReg = idx;
-        }
-        idx += 1;
+      var pathReg: string;
+      for i in 2..<args.size {
+			 // Find positional arguments
+				if !args[i].startsWith('-') {
+					if pathReg == '' {
+						pathReg = args[i];
+					} else {
+						// Multiple positional arguments is an error
+						throw new owned MasonError("mason publish --create-registry expects only one path");
+					}
+				}
+			}
+			if pathReg == '' {
+				// No positional arguments is an error
+				throw new owned MasonError("mason publish --create-registry expects a path");
       }
-      pathReg = args[idx_pathReg];
       try! {
         if pathReg == 'publish' then throw new owned MasonError('Valid path required ' +
             'with "mason publish --create-registry"');
@@ -268,7 +272,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
 /* Subprocess function designed to pass a message to 'git commit' without get the string
  split by the MasonUtils runCommand()/
  */
-private proc commitSubProcess(dir, command) throws {
+private proc commitSubProcess(dir: string, command) throws {
   var spawnArgs = [cmd in command] cmd;
   const oldDir = here.cwd();
   here.chdir(dir);
