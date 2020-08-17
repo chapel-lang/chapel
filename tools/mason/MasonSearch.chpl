@@ -97,12 +97,10 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
-  var res: list(string);
-  res = rankResults(results, query);
-  for r in res {
-    r = r.replace('.', '(');
-    r = r.replace('_', '.');
-    writeln(r,")");
+  var res = rankResults(results, query);
+  for package in res {
+    const pkgName = splitNameVersion(package, true);
+    writeln(pkgName);
   }
 
   // Handle --show flag
@@ -132,6 +130,22 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
+/* Split pkg.0_1_0 to (pkg, 0.1.0) & viceversa */
+proc splitNameVersion(ref package: string, original: bool) {
+  if original {
+    var res = package.split('.');
+    var name = res[0];
+    var version = res[1];
+    version = version.replace('_', '.');
+    return name + ' (' + version + ')';
+  }
+  else {
+    package = package.replace('.', '_');
+    package = package.replace(' (', '.');
+    package = package.replace(')', '');
+    return package;
+  }
+}
 
 /* Sort the results in a order such that results that startWith needle
    are displayed first */
@@ -162,9 +176,7 @@ proc getPackageScores(res: list(string)) {
   const defaultScore = 5;
   var packageScore: int;
   for r in res {
-    r = r.replace('.', '_');
-    r = r.replace(' (', '.');
-    r = r.replace(')', '');
+    r = splitNameVersion(r, false);
     packageName = r;
     if cacheExists && cacheFile.pathExists(packageName) {
       packageScore = cacheFile[r]!['score']!.s : int;
