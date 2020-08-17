@@ -90,6 +90,7 @@ module BytesStringCommon {
   */
   proc decodeByteBuffer(buff: bufferType, length: int, policy: decodePolicy)
       throws {
+    use SysBasic;
     pragma "fn synchronization free"
     extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): syserr;
     pragma "fn synchronization free"
@@ -212,6 +213,7 @@ module BytesStringCommon {
    */
   proc decodeHelp(buff:c_ptr(uint(8)), buffLen:int, 
                   offset:int, allowEsc: bool ) {
+    use SysBasic;
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32), 
                                     ref nBytes:c_int,
@@ -350,17 +352,30 @@ module BytesStringCommon {
       compilerError("codepointIndex ranges cannot be used with bytes in getView");
     }
 
-    if t == bytes || r.idxType == byteIndex {
+    proc simpleCaseHelper() {
       // cast the argument r to `int` to make sure that we are not dealing with
       // byteIndex
       const intR = r:range(int, r.boundedType, r.stridable);
       if boundsChecking {
         if !x.byteIndices.boundsCheck(intR) {
-          halt("range ", r, " out of bounds for " + t:string + " with ",
-               x.numBytes, " bytes");
+          halt("range ", r, " out of bounds for " + t:string + " with length ",
+               x.numBytes);
         }
       }
-      return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
+      if r.idxType == byteIndex {
+        return (intR[x.byteIndices], -1);  // -1; I can't know numCodepoints
+      }
+      else {
+        const retRange = intR[x.byteIndices];
+        return (retRange, retRange.size); // it maybe ascii string or bytes
+      }
+    }
+
+    if t == bytes || r.idxType == byteIndex {
+      return simpleCaseHelper();
+    }
+    else if t == string && x.isASCII() {
+      return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
       if r.stridable {
@@ -548,6 +563,151 @@ module BytesStringCommon {
         start = end+localSep.numBytes;
       }
     }
+  }
+
+  // split iterator over whitespace
+  iter doSplitWSNoEnc(const ref x: ?t, maxsplit: int = -1): t {
+    assertArgType(t, "doSplitWSNoEnc");
+
+    if !x.isEmpty() {
+      const localx: t = x.localize();
+      var done : bool = false;
+      var yieldChunk : bool = false;
+      var chunk : t;
+
+      const noSplits : bool = maxsplit == 0;
+      const limitSplits : bool = maxsplit > 0;
+      var splitCount: int = 0;
+      const iEnd: idxType = localx.buffLen - 2;
+
+      var inChunk : bool = false;
+      var chunkStart : idxType;
+
+      for (i,c) in zip(x.indices, localx.bytes()) {
+        // emit whole string, unless all whitespace
+        // TODO Engin: Why is x inside the loop?
+        if noSplits {
+          done = true;
+          if !localx.isSpace() then {
+            chunk = localx;
+            yieldChunk = true;
+          }
+        } else {
+          var cSpace = byte_isWhitespace(c);
+          // first char of a chunk
+          if !(inChunk || cSpace) {
+            chunkStart = i;
+            inChunk = true;
+            if i > iEnd {
+              chunk = localx[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            }
+          } else if inChunk {
+            // first char out of a chunk
+            if cSpace {
+              splitCount += 1;
+              // last split under limit
+              if limitSplits && splitCount > maxsplit {
+                chunk = localx[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              // no limit
+              } else {
+                chunk = localx[chunkStart..i-1];
+                yieldChunk = true;
+                inChunk = false;
+              }
+            // out of chars
+            } else if i > iEnd {
+              chunk = localx[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            }
+          }
+        }
+
+        if yieldChunk {
+          yield chunk;
+          yieldChunk = false;
+        }
+        if done then
+          break;
+      }
+    }
+  }
+
+  // Helper function that uses a param bool to toggle between count and find
+  //TODO: this could be a much better string search
+  //      (Boyer-Moore-Horspool|any thing other than brute force)
+  proc doSearchNoEnc(const ref x: ?t, needle: t, region: range(?),
+                     param count: bool, param fromLeft: bool = true) {
+    assertArgType(t, "doSearch");
+
+    // needle.buffLen is <= than x.buffLen, so go to the home locale
+    var ret: int = -1;
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(x.locale_id, c_sublocid_any)) {
+      // any value >= 0 means we have a solution
+      // used because we cant break out of an on-clause early
+      var localRet: int = -2;
+      const nLen = needle.buffLen;
+      const (view, _) = getView(x, region);
+      const xLen = view.size;
+
+      // Edge cases
+      if count {
+        if nLen == 0 { // Empty needle
+          localRet = view.size;
+        }
+      } else { // find
+        if nLen == 0 { // Empty needle
+          if fromLeft {
+            localRet = -1;
+          } else {
+            localRet = if xLen == 0
+              then -1
+              else xLen;
+          }
+        }
+      }
+
+      if nLen > xLen {
+        localRet = -1;
+      }
+
+      if localRet == -2 {
+        localRet = -1;
+        const localNeedle = needle.localize();
+        const needleLen = localNeedle.buffLen;
+
+        // i *is not* an index into anything, it is the order of the element
+        // of view we are searching from.
+        const numPossible = xLen - nLen + 1;
+        const searchSpace = if fromLeft
+            then 0..#(numPossible)
+            else 0..#(numPossible) by -1;
+        for i in searchSpace {
+          // j *is* the index into the localNeedle's buffer
+          for j in 0..#nLen {
+            const idx = view.orderToIndex(i+j); // 0s based idx
+            if x.buff[idx] != localNeedle.buff[j] then break;
+
+            if j == nLen-1 {
+              if count {
+                localRet += 1;
+              } else { // find
+                localRet = view.orderToIndex(i);
+              }
+            }
+          }
+          if !count && localRet != -1 then break;
+        }
+      }
+      if count then localRet += 1;
+      ret = localRet;
+    }
+    return ret;
   }
 
   // TODO: could use a multi-pattern search or some variant when there are
@@ -884,6 +1044,49 @@ module BytesStringCommon {
     return ret;
   }
 
+  proc doStripNoEnc(const ref x: ?t, chars: t, leading:bool, trailing:bool) : t {
+    if x.isEmpty() then return if t==string then "" else b"";
+
+    if chars.isEmpty() then return x;
+
+    const localX: t = x.localize();
+    const localChars: t = chars.localize();
+
+    var start: idxType = 0;
+    var end: idxType = localX.buffLen-1;
+
+    if leading {
+      label outer for (i, xChar) in zip(x.indices, localX.bytes()) {
+        for removeChar in localChars.bytes() {
+          if xChar == removeChar {
+            start = i + 1;
+            continue outer;
+          }
+        }
+        break;
+      }
+    }
+
+    if trailing {
+      // Because we are working with codepoints whose starting byte index
+      // is not initially known, it is faster to work forward, assuming we
+      // are already past the end of the string, and then update the end
+      // point as we are proven wrong.
+      end = -1;
+      label outer for (i, xChar) in zip(x.indices, localX.bytes()) {
+        for removeChar in localChars.bytes() {
+          if xChar == removeChar {
+            continue outer;
+          }
+        }
+        // This was not a character to be removed, so update tentative end.
+        end = i;
+      }
+    }
+
+    return localX[start..end];
+  }
+
   inline proc doEq(a: ?t1, b: ?t2) {
     assertArgType(t1, "doEq");
     assertArgType(t2, "doEq");
@@ -987,5 +1190,67 @@ module BytesStringCommon {
     return (b & 0xc0) != 0x80;
   }
 
+  // character-wise operation helpers
 
+  require "ctype.h";
+
+  inline proc byte_isAscii(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isascii(c: c_int): c_int;
+    return isascii(c: c_int) != 0;
+  }
+
+  inline proc byte_isWhitespace(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isspace(c: c_int): c_int;
+    return isspace(c: c_int) != 0;
+  }
+
+  inline proc byte_isPrintable(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isprint(c: c_int): c_int;
+    return isprint(c: c_int) != 0;
+  }
+
+  inline proc byte_isAlpha(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isalpha(c: c_int): c_int;
+    return isalpha(c: c_int) != 0;
+  }
+
+  inline proc byte_isUpper(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isupper(c: c_int): c_int;
+    return isupper(c: c_int) != 0;
+  }
+
+  inline proc byte_isLower(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc islower(c: c_int): c_int;
+    return islower(c: c_int) != 0;
+  }
+
+  inline proc byte_isDigit(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isdigit(c: c_int): c_int;
+    return isdigit(c: c_int) != 0;
+  }
+
+  inline proc byte_isAlnum(c: byteType): bool {
+    pragma "fn synchronization free"
+    extern proc isalnum(c: c_int): c_int;
+    return isalnum(c: c_int) != 0;
+  }
+
+  inline proc byte_toUpper(c: byteType): byteType {
+    pragma "fn synchronization free"
+    extern proc toupper(c: c_int): c_int;
+    return toupper(c: c_int):byteType;
+  }
+
+  inline proc byte_toLower(c: byteType): byteType {
+    pragma "fn synchronization free"
+    extern proc tolower(c: c_int): c_int;
+    return tolower(c: c_int):byteType;
+  }
 }

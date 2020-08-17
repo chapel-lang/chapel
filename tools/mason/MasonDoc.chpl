@@ -24,7 +24,7 @@ private use MasonHelp;
 private use IO;
 private use MasonUtils;
 
-proc masonDoc(args) throws {
+proc masonDoc(args: [] string) throws {
   try! {
     if args.size > 2 {
       masonDocHelp();

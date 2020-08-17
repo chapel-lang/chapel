@@ -53,7 +53,16 @@ proc masonSearch(ref args: list(string)) {
 
   const show = hasOptions(args, "--show");
   const debug = hasOptions(args, "--debug");
-  updateRegistry("", args);
+  var skipUpdate = MASON_OFFLINE;
+  if hasOptions(args, "--update") {
+    skipUpdate = false;
+  }
+
+  if hasOptions(args, "--no-update") {
+    skipUpdate = true;
+  }
+
+  updateRegistry(skipUpdate);
 
   consumeArgs(args);
 
@@ -91,7 +100,7 @@ proc masonSearch(ref args: list(string)) {
   }
   var res = rankResults(results, query);
   for r in res do writeln(r);
-  
+
   // Handle --show flag
   if show {
     if results.size == 1 {

@@ -29,7 +29,7 @@ if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 || -z $5 ]]; then
 fi
 
 # Ensure that PrgEnv-gnu is loaded
-existing_prgenv=$(module list --terse 2>&1 | grep PrgEnv-)
+existing_prgenv=$(module -t list 2>&1 | grep PrgEnv-)
 if [ -z "${existing_prgenv}" ]
 then
   # No PrgEnv loaded, load PrgEnv-gnu

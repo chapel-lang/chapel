@@ -137,7 +137,7 @@ The default intent for :record:`owned` is ``const ref``.
 
  */
 module OwnedObject {
-  private use ChapelStandard;
+  use ChapelStandard;
 
   /*
      :record:`owned` manages the deletion of a class instance assuming

@@ -1,0 +1,2 @@
+testGetValueOwned.chpl:7: In function 'test':
+testGetValueOwned.chpl:13: error: getValue cannot be called when a map value type is an owned class, use getBorrowed instead

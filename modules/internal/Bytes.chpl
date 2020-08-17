@@ -419,76 +419,6 @@ module Bytes {
       return __primitive("ascii", this, i);
     }
 
-    // Helper function that uses a param bool to toggle between count and find
-    //TODO: this could be a much better string search
-    //      (Boyer-Moore-Horspool|any thing other than brute force)
-    //
-    inline proc _search_helper(needle: bytes, region: range(?),
-                               param count: bool, param fromLeft: bool = true) {
-      // needle.buffLen is <= than this.buffLen, so go to the home locale
-      var ret: int = -1;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        // any value >= 0 means we have a solution
-        // used because we cant break out of an on-clause early
-        var localRet: int = -2;
-        const nLen = needle.buffLen;
-        const (view, _) = getView(this, region);
-        const thisLen = view.size;
-
-        // Edge cases
-        if count {
-          if nLen == 0 { // Empty needle
-            localRet = view.size;
-          }
-        } else { // find
-          if nLen == 0 { // Empty needle
-            if fromLeft {
-              localRet = -1;
-            } else {
-              localRet = if thisLen == 0
-                then -1
-                else thisLen;
-            }
-          }
-        }
-
-        if nLen > thisLen {
-          localRet = -1;
-        }
-
-        if localRet == -2 {
-          localRet = -1;
-          const localNeedle = needle.localize();
-          const needleLen = localNeedle.buffLen;
-
-          // i *is not* an index into anything, it is the order of the element
-          // of view we are searching from.
-          const numPossible = thisLen - nLen + 1;
-          const searchSpace = if fromLeft
-              then 0..#(numPossible)
-              else 0..#(numPossible) by -1;
-          for i in searchSpace {
-            const bufIdx = view.orderToIndex(i);
-            const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx,
-                                            buf2=localNeedle.buff, off2=0,
-                                            len=needleLen);
-            if found {
-              if count {
-                localRet += 1;
-              } else { // find
-                localRet = view.orderToIndex(i);
-              }
-            }
-            if !count && localRet != -1 then break;
-          }
-        }
-        if count then localRet += 1;
-        ret = localRet;
-      }
-      return ret;
-    }
-
     pragma "last resort"
     inline proc join(const ref S) : bytes where isTuple(S) {
       joinArgDepr();
@@ -745,7 +675,7 @@ module Bytes {
               :mod:`bytes <Bytes>`.
    */
   inline proc bytes.find(needle: bytes, region: range(?) = this.indices) : idxType {
-    return _search_helper(needle, region, count=false): idxType;
+    return doSearchNoEnc(this, needle, region, count=false): idxType;
   }
 
   /*
@@ -762,8 +692,8 @@ module Bytes {
               :mod:`bytes <Bytes>`.
    */
   inline proc bytes.rfind(needle: bytes, region: range(?) = this.indices) : idxType {
-    return _search_helper(needle, region, count=false,
-                          fromLeft=false): idxType;
+    return doSearchNoEnc(this, needle, region, count=false,
+                         fromLeft=false): idxType;
   }
 
   /*
@@ -778,7 +708,7 @@ module Bytes {
     :returns: the number of times `needle` occurs in the :mod:`bytes <Bytes>`
    */
   inline proc bytes.count(needle: bytes, region: range(?) = this.indices) : int {
-    return _search_helper(needle, region, count=true);
+    return doSearchNoEnc(this, needle, region, count=true);
   }
 
   /*
@@ -826,73 +756,7 @@ module Bytes {
     :yields: :mod:`bytes <Bytes>` 
    */
   iter bytes.split(maxsplit: int = -1) : bytes {
-    if !this.isEmpty() {
-      const localThis: bytes = this.localize();
-      var done : bool = false;
-      var yieldChunk : bool = false;
-      var chunk : bytes;
-
-      const noSplits : bool = maxsplit == 0;
-      const limitSplits : bool = maxsplit > 0;
-      var splitCount: int = 0;
-      const iEnd: idxType = localThis.buffLen - 2;
-
-      var inChunk : bool = false;
-      var chunkStart : idxType;
-
-      for (i,c) in zip(this.indices, localThis.bytes()) {
-        // emit whole string, unless all whitespace
-        // TODO Engin: Why is this inside the loop?
-        if noSplits {
-          done = true;
-          if !localThis.isSpace() then {
-            chunk = localThis;
-            yieldChunk = true;
-          }
-        } else {
-          var cSpace = byte_isWhitespace(c);
-          // first char of a chunk
-          if !(inChunk || cSpace) {
-            chunkStart = i;
-            inChunk = true;
-            if i > iEnd {
-              chunk = localThis[chunkStart..];
-              yieldChunk = true;
-              done = true;
-            }
-          } else if inChunk {
-            // first char out of a chunk
-            if cSpace {
-              splitCount += 1;
-              // last split under limit
-              if limitSplits && splitCount > maxsplit {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              // no limit
-              } else {
-                chunk = localThis[chunkStart..i-1];
-                yieldChunk = true;
-                inChunk = false;
-              }
-            // out of chars
-            } else if i > iEnd {
-              chunk = localThis[chunkStart..];
-              yieldChunk = true;
-              done = true;
-            }
-          }
-        }
-
-        if yieldChunk {
-          yield chunk;
-          yieldChunk = false;
-        }
-        if done then
-          break;
-      }
-    }
-
+    for s in doSplitWSNoEnc(this, maxsplit) do yield s;
   }
 
     /*
@@ -950,46 +814,7 @@ module Bytes {
                 occurrences of characters in `chars` removed as appropriate.
     */
     proc bytes.strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
-      if this.isEmpty() then return b"";
-      if chars.isEmpty() then return this;
-
-      const localThis: bytes = this.localize();
-      const localChars: bytes = chars.localize();
-
-      var start: idxType = 0;
-      var end: idxType = localThis.buffLen-1;
-
-      if leading {
-        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
-          for removeChar in localChars.bytes() {
-            if thisChar == removeChar {
-              start = i + 1;
-              continue outer;
-            }
-          }
-          break;
-        }
-      }
-
-      if trailing {
-        // Because we are working with codepoints whose starting byte index
-        // is not initially known, it is faster to work forward, assuming we
-        // are already past the end of the string, and then update the end
-        // point as we are proven wrong.
-        end = 0;
-        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
-          for removeChar in localChars.bytes() {
-            if thisChar == removeChar {
-              continue outer;
-            }
-          }
-          // This was not a character to be removed, so update tentative end.
-          end = i;
-        }
-      }
-
-      return localThis[start..end];
-
+      return doStripNoEnc(this, chars, leading, trailing);
     }
 
     /*
@@ -1438,70 +1263,6 @@ module Bytes {
   pragma "no doc"
   inline proc >(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) > 0);
-  }
-
-  // character-wise operation helpers
-
-  require "ctype.h";
-
-  private inline proc byte_isAscii(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isascii(c: c_int): c_int;
-    return isascii(c: c_int) != 0;
-  }
-
-  private inline proc byte_isWhitespace(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isspace(c: c_int): c_int;
-    return isspace(c: c_int) != 0;
-  }
-
-  private inline proc byte_isPrintable(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isprint(c: c_int): c_int;
-    return isprint(c: c_int) != 0;
-  }
-
-  private inline proc byte_isAlpha(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isalpha(c: c_int): c_int;
-    return isalpha(c: c_int) != 0;
-  }
-
-  private inline proc byte_isUpper(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isupper(c: c_int): c_int;
-    return isupper(c: c_int) != 0;
-  }
-
-  private inline proc byte_isLower(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc islower(c: c_int): c_int;
-    return islower(c: c_int) != 0;
-  }
-
-  private inline proc byte_isDigit(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isdigit(c: c_int): c_int;
-    return isdigit(c: c_int) != 0;
-  }
-
-  private inline proc byte_isAlnum(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isalnum(c: c_int): c_int;
-    return isalnum(c: c_int) != 0;
-  }
-
-  private inline proc byte_toUpper(c: byteType): byteType {
-    pragma "fn synchronization free"
-    extern proc toupper(c: c_int): c_int;
-    return toupper(c: c_int):byteType;
-  }
-
-  private inline proc byte_toLower(c: byteType): byteType {
-    pragma "fn synchronization free"
-    extern proc tolower(c: c_int): c_int;
-    return tolower(c: c_int):byteType;
   }
 
   //

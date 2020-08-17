@@ -339,7 +339,6 @@ else
         list_loaded_modules
     fi
 
-    # Please keep the gen versions in compiler_versions.bash the same as these!
     #[TODO] gen_version_gcc=
     #[TODO] gen_version_intel=
     #[TODO] gen_version_cce=

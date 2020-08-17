@@ -244,7 +244,12 @@ static bool needsFixup(Type* t) {
 static bool validateFormalIntent(FnSymbol* fn, ArgSymbol* as) {
   Type* t = maybeUnwrapRef(as->type);
 
-  //
+  // inout intent is not supported at all yet. Since any inout
+  // argument will trigger an error, skip any error
+  // for the hidden argument used for the inout intent.
+  if (as->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+    return false;
+
   // TODO: If we ever add more types to these fixup routines, we really ought
   // to put these conditions in tables.
   //

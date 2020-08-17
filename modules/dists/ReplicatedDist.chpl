@@ -472,6 +472,7 @@ class LocReplicatedArr {
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
   pragma "local field" pragma "unsafe" pragma "no auto destroy"
   // may be re-initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var arrLocalRep: [myDom.domLocalRep] eltType;
 
   proc init(type eltType,
@@ -606,7 +607,10 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
 override proc ReplicatedArr.dsiElementInitializationComplete() {
 }
 
-override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
+override proc ReplicatedArr.dsiElementDeinitializationComplete() {
+}
+
+override proc ReplicatedArr.dsiDestroyArr(deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc {
       delete locArr;

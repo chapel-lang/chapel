@@ -705,7 +705,7 @@ void initPrimitiveTypes() {
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
 
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
-  gOpaque->cname = "NULL";
+  gOpaque->cname = astr("NULL");
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
@@ -716,12 +716,12 @@ void initPrimitiveTypes() {
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
 
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
-  gSyncVarAuxFields->cname = "NULL";
+  gSyncVarAuxFields->cname = astr("NULL");
 
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
 
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
-  gSingleVarAuxFields->cname = "NULL";
+  gSingleVarAuxFields->cname = astr("NULL");
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
@@ -822,7 +822,7 @@ createType(const char* name, const char* cname, bool internalType) {
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol*    ts = new TypeSymbol(name, pt);
 
-  ts->cname = cname;
+  ts->cname = astr(cname);
 
   // This prevents cleanAST() from sweeping these
   ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
@@ -1412,16 +1412,6 @@ bool typeNeedsCopyInitDeinit(Type* type) {
   }
 
   return retval;
-}
-
-Type* getNamedType(std::string name) {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if(name == ts->name || name == ts->cname) {
-      return ts->type;
-    }
-  }
-
-  return NULL;
 }
 
 // Do variables of the type 't' need capture for tasks?

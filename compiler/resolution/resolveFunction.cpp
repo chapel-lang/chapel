@@ -158,6 +158,11 @@ static void resolveFormals(FnSymbol* fn) {
 // When compiling for Python interoperability, default values for arguments
 // should get propagated to the generated Python files.
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
+
+  // ignore hidden formals used to implement inout for this purpose
+  if (formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+    return;
+
   if (fLibraryPython) {
     Expr* end = formal->defaultExpr->body.tail;
 
@@ -899,8 +904,11 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
       bool outIntent = formal->intent == INTENT_OUT ||
                        formal->originalIntent == INTENT_OUT;
 
+      bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
+
       if (outIntent &&
           formal->typeExpr == NULL &&
+          inout == false &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
 
         INT_ASSERT(prevFormal && prevActual);
@@ -1012,6 +1020,7 @@ bool FixPrimInitsVisitor::enterFnSym(FnSymbol* node) {
 
 bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+      call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
       call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
     Expr* prevent = NULL;
     SymExpr* se = toSymExpr(call->get(1));
@@ -1810,7 +1819,8 @@ void insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
 
   for_formals(formal, fn) {
-    if (formalRequiresTemp(formal, fn)) {
+    if (formalRequiresTemp(formal, fn) &&
+        !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
       SET_LINENO(formal);
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
@@ -1904,10 +1914,18 @@ static bool backendRequiresCopyForIn(Type* t) {
 // behavior will result by applying "in" intents to them.
 static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                                         SymbolMap& formals2vars) {
+  SET_LINENO(fn);
+
+  Expr* start = new CallExpr(PRIM_NOOP);
+  fn->insertAtHead(start);
+
   // Enumerate the formals that have local temps.
-  form_Map(SymbolMapElem, e, formals2vars) {
-    ArgSymbol* formal = toArgSymbol(e->key); // Get the formal.
-    Symbol*    tmp    = e->value;            // Get the temp.
+  // Process them in formal order so that the order of copy/writeback
+  // is consistent.
+  for_formals(formal, fn) {
+    Symbol* tmp = formals2vars.get(formal);
+    if (tmp == NULL)
+      continue;
 
     SET_LINENO(formal);
 
@@ -1925,6 +1943,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       }
     }
 
+    if (formal->getValType() != dtNothing) {
+      start->insertBefore(new DefExpr(tmp));
+    }
+
     // This switch adds the extra code inside the current function necessary
     // to implement the ref-to-value semantics, where needed.
     switch (formal->intent)
@@ -1940,7 +1962,6 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
 
      case INTENT_OUT: {
       BlockStmt* defaultExpr = NULL;
-      BlockStmt* typeExpr = NULL;
 
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
@@ -1953,7 +1974,14 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         if (formal->typeExpr != NULL) {
           typeTmp = newTemp("_formal_type_tmp_");
           typeTmp->addFlag(FLAG_MAYBE_TYPE);
-          typeExpr = formal->typeExpr->copy();
+          BlockStmt* typeExpr = formal->typeExpr->copy();
+          start->insertBefore(new DefExpr(typeTmp));
+          CallExpr* setType = new CallExpr(PRIM_MOVE,
+                                           typeTmp,
+                                           typeExpr->body.tail->remove());
+          start->insertBefore(typeExpr);
+          start->insertBefore(setType);
+          typeExpr->flattenAndRemove();
         }
 
         if (defaultExpr != NULL) {
@@ -1961,8 +1989,8 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
                                         defaultExpr->body.tail->remove());
           if (typeTmp != NULL)
             init->insertAtTail(new SymExpr(typeTmp));
-          fn->insertAtHead(init);
-          fn->insertAtHead(defaultExpr);
+          start->insertBefore(defaultExpr);
+          start->insertBefore(init);
         } else {
           CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp);
           if (typeTmp != NULL) {
@@ -1976,34 +2004,21 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
             INT_ASSERT(typeFormal != NULL);
             init->insertAtTail(new SymExpr(typeFormal));
           }
-          fn->insertAtHead(new CallExpr(PRIM_END_OF_STATEMENT));
-          fn->insertAtHead(init);
+          start->insertBefore(init);
+          start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
         }
-
-        // Copy the type expr if present
-        if (typeExpr != NULL) {
-          CallExpr* setType = new CallExpr(PRIM_MOVE,
-                                           typeTmp,
-                                           typeExpr->body.tail->remove());
-          fn->insertAtHead(setType);
-          fn->insertAtHead(typeExpr);
-          typeExpr->flattenAndRemove();
-          fn->insertAtHead(new DefExpr(typeTmp));
-        }
-
       } else {
-
         if (defaultExpr != NULL) {
           CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
                                         defaultExpr->body.tail->remove(),
                                         formalType->symbol);
-          fn->insertAtHead(init);
-          fn->insertAtHead(defaultExpr);
+          start->insertBefore(defaultExpr);
+          start->insertBefore(init);
         } else {
           CallExpr * init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
                                          formalType->symbol);
-          fn->insertAtHead(new CallExpr(PRIM_END_OF_STATEMENT));
-          fn->insertAtHead(init);
+          start->insertBefore(init);
+          start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
         }
       }
 
@@ -2012,22 +2027,23 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
      }
-     case INTENT_INOUT:
-      fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                    tmp,
-                                    new CallExpr(astr_initCopy, formal)));
+     case INTENT_INOUT: {
+      // This formal will be the `in` part. The next formal is the `out` part.
+      tmp->addFlag(FLAG_NO_COPY);
+      start->insertBefore(new CallExpr(PRIM_ASSIGN, tmp, formal));
 
       tmp->addFlag(FLAG_FORMAL_TEMP);
       tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
+     }
 
      case INTENT_IN:
      case INTENT_CONST_IN:
       if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
-        fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                      tmp,
-                                      new CallExpr(astr_initCopy, formal)));
+        start->insertBefore(new CallExpr(PRIM_MOVE,
+                                         tmp,
+                                         new CallExpr(astr_initCopy, formal)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
@@ -2035,7 +2051,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         // (The local variable is not strictly necessary but is a more
         //  typical pattern for follow-on passes)
         tmp->addFlag(FLAG_NO_COPY);
-        fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+        start->insertBefore(new CallExpr(PRIM_MOVE, tmp, formal));
 
         // Default-initializers and '_new' wrappers take ownership
         // Note: FLAG_INSERT_AUTO_DESTROY is blindly applied to any formal
@@ -2060,7 +2076,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
          if (fn->hasFlag(FLAG_BEGIN)) {
            // autoCopy/autoDestroy will be added later, in parallel pass
            // by insertAutoCopyDestroyForTaskArg()
-           fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+           start->insertBefore(new CallExpr(PRIM_MOVE, tmp, formal));
            tmp->removeFlag(FLAG_INSERT_AUTO_DESTROY);
 
          } else {
@@ -2073,9 +2089,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
            // This is probably not intentional: It gives tuple-wrapped
            // record-wrapped types different behavior from bare record-wrapped
            // types.
-           fn->insertAtHead(new CallExpr(PRIM_MOVE,
-                                         tmp,
-                                         new CallExpr(astr_autoCopy, formal)));
+           start->insertBefore(new CallExpr(PRIM_MOVE,
+                                            tmp,
+                                            new CallExpr(astr_autoCopy, formal)));
 
            // WORKAROUND:
            // This is a temporary bug fix that results in leaked memory.
@@ -2108,7 +2124,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
          }
 
        } else {
-         fn->insertAtHead(new CallExpr(PRIM_MOVE, tmp, formal));
+         start->insertBefore(new CallExpr(PRIM_MOVE, tmp, formal));
          // If this is a simple move, then we did not call chpl__autoCopy to
          // create tmp, so then it is a bad idea to insert a call to
          // chpl__autodestroy later.
@@ -2120,12 +2136,15 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
     }
 
     if (formal->getValType() != dtNothing) {
-      fn->insertAtHead(new DefExpr(tmp));
-
       // For inout or out intent, this assigns the modified value back to the
       // formal at the end of the function body.
       if (formal->intent == INTENT_INOUT) {
-        fn->insertIntoEpilogue(new CallExpr("=", formal, tmp));
+        // This formal will be the `in` part. The next formal is the `out` part.
+        DefExpr* nextDef = toDefExpr(formal->defPoint->next);
+        INT_ASSERT(nextDef && nextDef->sym->hasFlag(FLAG_HIDDEN_FORMAL_INOUT));
+        ArgSymbol* outFormal = toArgSymbol(nextDef->sym);
+        INT_ASSERT(outFormal);
+        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, outFormal, tmp));
       } else if (formal->intent == INTENT_OUT) {
         fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
       }

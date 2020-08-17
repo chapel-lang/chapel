@@ -253,7 +253,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TESTCID:
   case PRIM_GETCID:
   case PRIM_ARRAY_GET:
-  case PRIM_ARRAY_GET_VALUE:
   case PRIM_DYNAMIC_CAST:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       return FAST_AND_LOCAL;

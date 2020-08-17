@@ -31,11 +31,11 @@
 module LocaleModelHelpSetup {
 
   use ChapelLocale;
-  use DefaultRectangular;
-  use ChapelNumLocales;
+  public use DefaultRectangular;
+  public use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
-  private use SysCTypes;
+  use SysCTypes;
 
   config param debugLocaleModel = false;
 

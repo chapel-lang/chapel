@@ -473,20 +473,94 @@ module ChapelIteratorSupport {
     return _toStandalone(x.these(), (...args));
   }
 
+  // arrays: can lead fast followers, can produce fast followers
+  // domains: can lead fast followers, doesn't produce fast followers
+  // other iterators: cannot lead fast followers, doesn't produce fast followers
+
+  // There are three types of iterands w.r.t. fast followers:
+  // 1. Those that can have fast followers:
+  //    
+  //    We can generate fast followers for these types, and they are the only
+  //    category of types that can result in fast followers in a
+  //    non-zippered forall.
+  //    
+  //    Arrays are in this category
+  //
+  // 2. Those that can lead fast followers:
+  // 
+  //    We can generate fast followers in zippered foralls where the first
+  //    iterand is one of these types. Note that, being able to lead fast
+  //    followers doesn't mean being able to generate fast followers.
+  //
+  //    Domains and arrays are in this category
+  //    
+  // 3. Those that can appear in a fast copy of a forall as followers
+  //
+  //    Basically reverse of 1. These iterands do not break static or dynamic
+  //    check. When `toFastFollower` is called with them, we just call
+  //    `toFollow`
+  //
+  //    Domains and other iterators are in this category
+  proc chpl__canHaveFastFollowers(x) param {
+    return false;
+  }
+
+  proc chpl__canHaveFastFollowers(x: []) param {
+    return true;
+  }
+
+  proc chpl__canHaveFastFollowersZip(x: _tuple) param {
+    return chpl__canHaveFastFollowersZipHelp(x, 0);
+  }
+
+  proc chpl__canHaveFastFollowersZipHelp(x: _tuple, param dim) param {
+    if x.size-1 == dim then
+      return chpl__canHaveFastFollowers(x(dim));
+    else
+      return chpl__canHaveFastFollowers(x(dim)) ||
+             chpl__canHaveFastFollowersZipHelp(x, dim+1);
+  }
+
+  proc chpl__canLeadFastFollowers(x) param {
+    return isDomain(x) || isArray(x);
+  }
+
+  proc chpl__hasInertFastFollowers(x) param {
+    return true;
+  }
+
+  proc chpl__hasInertFastFollowers(x: []) param { 
+    return false;
+  }
+
+  proc chpl__hasInertFastFollowersZip(x: _tuple) param {
+    return chpl__hasInertFastFollowersZipHelp(x, 0);
+  }
+
+  proc chpl__hasInertFastFollowersZipHelp(x: _tuple, param dim) param {
+    if x.size-1 == dim {
+      return chpl__hasInertFastFollowers(x(dim));
+    }
+    else {
+      return chpl__hasInertFastFollowers(x(dim)) &&
+             chpl__hasInertFastFollowersZipHelp(x, dim+1);
+    }
+  }
 
   //
   // return true if any iterator supports fast followers
   //
   proc chpl__staticFastFollowCheck(x) param {
     pragma "no copy" const lead = x;
-    if isDomain(lead) || isArray(lead) then
+    if chpl__canHaveFastFollowers(lead) then
       return chpl__staticFastFollowCheck(x, lead);
-    else
+    else {
       return false;
+    }
   }
 
   proc chpl__staticFastFollowCheck(x, lead) param {
-    return false;
+    return chpl__hasInertFastFollowers(x);
   }
 
   proc chpl__staticFastFollowCheck(x: [], lead) param {
@@ -494,22 +568,24 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
-    pragma "no copy" const lead = x(0);
-    if isDomain(lead) || isArray(lead) then
-      return chpl__staticFastFollowCheckZip(x, lead);
-    else
+    if !chpl__canHaveFastFollowersZip(x) {
       return false;
-  }
-
-  proc chpl__staticFastFollowCheckZip(x, lead) param {
-    return chpl__staticFastFollowCheck(x, lead);
+    }
+    else {
+      pragma "no copy" const lead = x(0);
+      if chpl__canLeadFastFollowers(lead) then
+        return chpl__staticFastFollowCheckZip(x, lead);
+      else
+        return false;
+    }
   }
 
   proc chpl__staticFastFollowCheckZip(x: _tuple, lead, param dim = 0) param {
     if x.size-1 == dim then
-      return chpl__staticFastFollowCheckZip(x(dim), lead);
+      return chpl__staticFastFollowCheck(x(dim), lead);
     else
-      return chpl__staticFastFollowCheckZip(x(dim), lead) || chpl__staticFastFollowCheckZip(x, lead, dim+1);
+      return chpl__staticFastFollowCheck(x(dim), lead) &&
+             chpl__staticFastFollowCheckZip(x, lead, dim+1);
   }
 
   //
@@ -517,11 +593,16 @@ module ChapelIteratorSupport {
   // their fast followers
   //
   proc chpl__dynamicFastFollowCheck(x) {
-    return chpl__dynamicFastFollowCheck(x, x);
+    if chpl__canHaveFastFollowers(x) {
+      return chpl__dynamicFastFollowCheck(x, x);
+    }
+    else {
+      return false;
+    }
   }
 
   proc chpl__dynamicFastFollowCheck(x, lead) {
-    return true;
+    return chpl__hasInertFastFollowers(x);
   }
 
   proc chpl__dynamicFastFollowCheck(x: [], lead) {
@@ -532,18 +613,24 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
-    return chpl__dynamicFastFollowCheckZip(x, x(0));
-  }
+    if !chpl__canHaveFastFollowersZip(x) {
+      return false;
+    }
 
-  proc chpl__dynamicFastFollowCheckZip(x, lead) {
-    return chpl__dynamicFastFollowCheck(x, lead);
+    if chpl__canLeadFastFollowers(x(0)) {
+      return chpl__dynamicFastFollowCheckZip(x, x(0));
+    }
+    else {
+      return false;
+    }
   }
 
   proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 0) {
     if x.size-1 == dim then
-      return chpl__dynamicFastFollowCheckZip(x(dim), lead);
+      return chpl__dynamicFastFollowCheck(x(dim), lead);
     else
-      return chpl__dynamicFastFollowCheckZip(x(dim), lead) && chpl__dynamicFastFollowCheckZip(x, lead, dim+1);
+      return chpl__dynamicFastFollowCheck(x(dim), lead) &&
+             chpl__dynamicFastFollowCheckZip(x, lead, dim+1);
   }
 
   pragma "no implicit copy"
@@ -600,7 +687,7 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFastFollower(x, leaderIndex) {
-    if chpl__staticFastFollowCheck(x) then
+    if chpl__canHaveFastFollowers(x) then
       return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
       return _toFollower(_getIterator(x), leaderIndex);
@@ -625,6 +712,7 @@ module ChapelIteratorSupport {
       return (_toFastFollowerZip(x(dim), leaderIndex),
               (..._toFastFollowerZip(x, leaderIndex, dim+1)));
   }
+
 
 
 

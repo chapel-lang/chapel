@@ -1,0 +1,2 @@
+usedWithSingle.chpl:1: error: noinit is only supported for arrays
+usedWithSingle.chpl:2: error: noinit is only supported for arrays

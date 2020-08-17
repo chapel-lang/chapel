@@ -1,2 +1,0 @@
-recordHasComplicatedRecordField.chpl:10: warning: noinit is currently ignored
-(baz = (namingIsHard = 0))

@@ -126,9 +126,6 @@ static void handleReceiverFormals() {
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
-
-        } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -692,6 +689,8 @@ static bool isMethodNameLocal(const char* name, Type* type);
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE);
 
+static void checkModuleSymExpr(SymExpr* se);
+
 static void resolveUnresolvedSymExprs() {
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -743,6 +742,20 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   if (name == astrSdot || !usymExpr->inTree())
     return NULL;
+
+  if (CallExpr* parentCall = toCallExpr(usymExpr->parentExpr)) {
+    if (parentCall->baseExpr && parentCall->baseExpr == usymExpr &&
+        parentCall->numActuals() > 0) {
+      if (SymExpr* firstArg = toSymExpr(parentCall->get(1))) {
+        if (firstArg->symbol() == gModuleToken) {
+          // Don't resolve the name of transformed module calls - doing so will
+          // accidentally find closer symbols with the same name instead of
+          // going into the intended module.
+          return NULL;
+        }
+      }
+    }
+  }
 
   // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that we've
   // already encountered an error when trying to resolve.
@@ -805,6 +818,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     usymExpr->replace(symExpr);
 
     updateMethod(usymExpr, sym, symExpr);
+
+    // Check for invalid uses of module symbols
+    if (isModuleSymbol(sym)) {
+      checkModuleSymExpr(symExpr);
+    }
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
@@ -1100,6 +1118,47 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+// se refers to a ModuleSymbol. Check it is a valid mention of a module.
+static void checkModuleSymExpr(SymExpr* se) {
+  bool validModuleMention = false;
+
+  ModuleSymbol* mod = toModuleSymbol(se->symbol());
+  INT_ASSERT(mod != NULL); // caller should ensure this
+
+  CallExpr* call = toCallExpr(se->parentExpr);
+  if (call != NULL) {
+    // check for (Call gModuleToken, ModuleName, Args)
+    if (SymExpr* prevSe = toSymExpr(se->prev))
+      if (prevSe->symbol() == gModuleToken)
+        validModuleMention = true;
+    // check for (Call (Call . ModuleName FnName) Args)
+    if (call->isNamedAstr(astrSdot))
+      validModuleMention = true;
+    // check for PRIM_REFERENCED_MODULES_LIST
+    if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST))
+      validModuleMention = true;
+  }
+  if (Expr* stmt = se->getStmtExpr())
+    if (isUseStmt(stmt) || isImportStmt(stmt))
+      validModuleMention = true;
+
+  if (validModuleMention == false) {
+    bool callOfModule = false;
+    if (call != NULL)
+      if (SymExpr* baseSe = toSymExpr(call->baseExpr))
+        if (baseSe->symbol() == mod)
+          callOfModule = true;
+
+    const char* reason = NULL;
+    if (callOfModule)
+      reason = "cannot be called like procedures";
+    else
+      reason = "cannot be mentioned like variables";
+
+    USR_FATAL_CONT(se, "modules (like '%s' here) %s", mod->name, reason);
+  }
+}
+
 static bool hasOuterVariable(ShadowVarSymbol* svar) {
   switch (svar->intent) {
     case TFI_DEFAULT:
@@ -1275,12 +1334,21 @@ static void resolveModuleCall(CallExpr* call) {
                 call->replace(new CallExpr(fn));
 
               } else {
-                CallExpr* parent = toCallExpr(call->parentExpr);
+                if (CallExpr* parent = toCallExpr(call->parentExpr)) {
 
-                call->replace(new UnresolvedSymExpr(mbrName));
+                  call->replace(new UnresolvedSymExpr(mbrName));
 
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                } else {
+                  USR_FATAL_CONT(call, "This appears to be a first class "
+                                 "function reference created using qualified "
+                                 "access");
+                  USR_PRINT("First class functions created using "
+                            "qualified access are not supported");
+                  USR_PRINT("If this is not intended as a first class "
+                           "function, please report it to the Chapel team");
+                }
               }
 
             } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
@@ -2619,6 +2687,18 @@ static void removeUnusedModules() {
     if (usedModules.count(mod) == 0) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
+
+      // Check that any mentions of the dead module are in
+      // dead modules
+      if (fVerify) {
+        for_SymbolSymExprs(se, mod) {
+          if (ModuleSymbol* inMod = se->getModule()) {
+            if (usedModules.count(inMod) != 0) {
+              INT_FATAL(se, "Invalid reference to unused module");
+            }
+          }
+        }
+      }
     }
   }
 }

@@ -2234,7 +2234,8 @@ for testname in testsrc:
                         keyfile = PerfTFile(test_filename,'keys') #e.g. .perfkeys
                     else:
                         perfexecname = re.sub(r'\{0}$'.format(PerfSfx('keys')), '', explicitexecgoodfile)
-                        if os.path.isfile(explicitexecgoodfile):
+                        if (os.path.isfile(explicitexecgoodfile) and
+                            test_filename != explicitexecgoodfile):
                             keyfile = explicitexecgoodfile
                         else:
                             keyfile = PerfTFile(test_filename,'keys')

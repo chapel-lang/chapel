@@ -1,0 +1,3 @@
+Vector.chpl:xxx: In initializer:
+Vector.chpl:xxx: error: Vector does not support an eltType that can't be default initialized, here: owned T
+VectorTest.chpl:xxx: Initializer instantiated as: init(type eltType = owned T, param parSafe = 0)

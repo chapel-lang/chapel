@@ -239,7 +239,7 @@ module CommDiagnostics
       var first = true;
       c <~> "(";
       for param i in 0..<numFields(chpl_commDiagnostics) {
-        param name = getFieldName(this.type, i);
+        param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
@@ -371,6 +371,81 @@ module CommDiagnostics
     return cd;
   }
 
+
+  /*
+    Print the current communication counts in a markdown table using a
+    row per locale and a column per operation.  By default, operations
+    for which all locales have a count of zero are not displayed in
+    the table, though an argument can be used to reverse that
+    behavior.
+
+    :arg printEmptyColumns: Indicates whether empty columns should be printed (defaults to ``false``)
+    :type printEmptyColumns: `bool`
+  */
+  proc printCommDiagnosticsTable(printEmptyColumns=false) {
+    use Reflection;
+    param unstable = "unstable";
+
+    // grab all comm diagnostics
+    var CommDiags = getCommDiagnostics();
+
+    // cache number of fields and store vector of whether field is active
+    param nFields = numFields(chpl_commDiagnostics);
+
+    // How wide should the column be for this field?  A negative value
+    // indicates an unstable field.  0 indicates that the field should
+    // be skipped in the table.
+    var fieldWidth: [0..<nFields] int;
+
+    // print column headers while determining which fields are active
+    writef("| %6s ", "locale");
+    for param fieldID in 0..<nFields {
+      param name = getFieldName(chpl_commDiagnostics, fieldID);
+      // We should be able to write this as follows:
+      //
+      //      const maxval = max reduce [locID in LocaleSpace] getField(CommDiags[locID], fieldID);
+      //
+      // except that it doesn't work due to #16042.  So I'm using this
+      // annoying workaround instead:
+
+      var maxval = 0;
+      for locID in LocaleSpace do
+        maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
+
+      if printEmptyColumns || maxval != 0 {
+        const width = if commDiagsPrintUnstable == false && name == "amo"
+                        then -unstable.size
+                        else max(name.size, ceil(log10(maxval+1)):int);
+        fieldWidth[fieldID] = width;
+
+        writef("| %*s ", abs(width), name);
+      }
+    }
+    writeln("|");
+
+    writef("| -----: ");
+    for param fieldID in 0..<nFields {
+      const width = abs(fieldWidth[fieldID]);
+      if width != 0 {
+        writef("| %.*s: ", width-1, "------------------");
+      }
+    }
+    writeln("|");
+
+    // print a row per locale showing the active fields
+    for locID in LocaleSpace {
+      writef("| %6s ", locID:string);
+      for param fieldID in 0..<nFields {
+        var width = fieldWidth[fieldID];
+        const count = if width < 0 then unstable
+                                   else getField(CommDiags[locID],
+                                                 fieldID):string;
+        if width != 0 then
+          writef("| %*s ", abs(width), count);
+      }
+      writeln("|");
+    }
+  }
 
   /*
     If this is set, on-the-fly reporting of communication operations
