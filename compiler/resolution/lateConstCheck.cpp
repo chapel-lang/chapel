@@ -253,7 +253,7 @@ static bool checkTupleFormalUses(FnSymbol* calledFn, ArgSymbol* formal,
     }
 
     // The tuple intent is const, but it is used somewhere...
-    if (fieldIntent & INTENT_CONST && !isFieldMarkedConst) {
+    if ((fieldIntent & INTENT_CONST) && !isFieldMarkedConst) {
       BaseAST* use = NULL;
 
       // Only fetch the closest use if the UseMap exists.
@@ -306,11 +306,20 @@ static Symbol* getOriginalTupleFromCoerceTmp(Symbol* sym) {
   // the read field temporary.
   //    ('.=' coerce_tmp x0 read_x0)
   for_SymbolSymExprs(se, sym) {
+
+    // The parent call should be a PRIM_SET_MEMBER.
     CallExpr* set = toCallExpr(se->parentExpr);
     if (set == NULL || !set->isPrimitive(PRIM_SET_MEMBER)) {
       continue;
     }
 
+    // Make sure the coerce temp is in the correct position.
+    SymExpr* coerceTmpLhs = toSymExpr(set->get(1));
+    if (coerceTmpLhs == NULL || coerceTmpLhs->symbol() != sym) {
+      continue;
+    }
+
+    // Third argument should be the read temp. 
     SymExpr* fromReadTmp = toSymExpr(set->get(3));
     if (fromReadTmp == NULL) {
       continue;

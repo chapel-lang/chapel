@@ -1040,6 +1040,7 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
 
         // Don't worry about tracking the destination if it's constant or
         // marked with the flag FLAG_REF_TO_CONST.
+        // TODO: Also check against `isConstValWillNotChange`?
         if (lhsSymbol->hasFlag(FLAG_REF_TO_CONST) ||
             lhsSymbol->isConstant() ||
             QualifiedType::qualifierIsConst(lhsSymbol->qual)) {
