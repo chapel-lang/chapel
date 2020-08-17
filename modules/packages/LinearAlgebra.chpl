@@ -777,14 +777,92 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Ranks are not 2 and 2");
+  if Adom.shape(1) != Bdom.shape(0) then
+    halt("Mismatched shape in matrix-matrix multiplication");
+
+  private use RangeChunk;
 
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
 
-  // naive algorithm
-  forall (i,j) in C.domain do
-    C[i,j] = + reduce (A[i,..]*B[..,j]);
-
+  if hasNonStridedIndices(Adom) {
+    if hasNonStridedIndices(Bdom) then 
+      _matmatMultHelper(A, B, C);
+    else
+      _matmatMultHelper(A,
+                        B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+  } else {
+    if hasNonStridedIndices(Bdom) then 
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)), 
+                        B, 
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+    else
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)),
+                        B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+  }
   return C;
+}
+
+pragma "no doc"
+/* Helper for Generic matrix-matrix multiplication */
+proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
+                       ref BMat : [?Bdom] eltType,
+                       ref CMat : [] eltType) 
+{
+  // TODO - Add logic to calculate blockSize 
+  // based on eltType and L1 cache size
+  const blockSize = 32;
+  const bVecRange = 0..#blockSize;
+  const blockDom = {bVecRange, bVecRange};
+  const (Adim0, Adim1) = Adom.dims();
+  const (Bdim0, Bdim1) = Bdom.dims();
+
+  const numTasks = min(here.maxTaskPar, Bdom.shape(1));
+  coforall tid in 0..#numTasks {
+    const myChunk = chunk(Bdim1, numTasks, tid);
+
+    var AA: [blockDom] eltType,
+        BB: [blockDom] eltType,
+        CC: [blockDom] eltType;
+
+    for (jj,kk) in {myChunk by blockSize, Bdim0 by blockSize} {
+      const jMax = min(jj+blockSize-1, myChunk.high);
+      const kMax = min(kk+blockSize-1, Bdim0.high);
+      const jRange = 0..jMax-jj;
+      const kRange = 0..kMax-kk;
+
+      for (jB, j) in zip(jj..jMax, 0..) do
+        for (kB, k) in zip(kk..kMax, 0..) do
+          BB[j,k] = BMat[kB,jB];
+
+      for ii in Adim0 by blockSize {
+        const iMax = min(ii+blockSize-1, Adim0.high);
+        const iRange = 0..iMax-ii;
+
+        for (iB, i) in zip(ii..iMax, 0..) do
+          for (kB, k) in zip(kk..kMax, 0..) do
+            AA[i,k] = AMat[iB, kB];
+
+        for cc in CC do
+          cc = 0;
+
+        for (k,j,i) in {kRange, jRange, iRange} do
+          CC[i,j] += AA[i,k] * BB[j,k];
+
+        for (iB, i) in zip(ii..iMax, 0..) do
+          for (jB, j) in zip(jj..jMax, 0..) do
+            CMat[iB,jB] += CC[i,j];
+      }
+    }
+  }
+}
+
+pragma "no doc"
+private inline proc hasNonStridedIndices(Adom : domain(2)) {
+  return (if Adom.stridable
+          then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1 
+          else true);
 }
 
 /*
