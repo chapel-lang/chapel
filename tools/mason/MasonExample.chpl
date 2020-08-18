@@ -32,7 +32,7 @@ use FileSystem;
 use MasonEnv;
 
 /* Runs the .chpl files found within the /example directory */
-proc masonExample(args) {
+proc masonExample(args: [] string) {
 
   var show = false;
   var run = true;

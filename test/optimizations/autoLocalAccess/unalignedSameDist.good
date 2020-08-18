@@ -1,0 +1,43 @@
+**** Start forall ****
+	unalignedSameDist.chpl:24
+
+Iterated over the domain of
+	unalignedSameDist.chpl:19
+
+, whose domain cannot be determined statically
+	unalignedSameDist.chpl:19
+
+Loop is suitable for further analysis
+	unalignedSameDist.chpl:24
+
+Potential access
+	unalignedSameDist.chpl:25
+
+	regular domain symbol was not found for array
+	unalignedSameDist.chpl:18
+
+Potential access
+	unalignedSameDist.chpl:26
+
+	Can optimize: Access base is the iterator's base
+	unalignedSameDist.chpl:26
+
+	Marking static candidate
+	unalignedSameDist.chpl:26
+
+	Marking dynamic candidate
+	unalignedSameDist.chpl:25
+
+**** End forall ****
+	unalignedSameDist.chpl:24
+
+Static check successful. Using localAccess with dynamic check
+	unalignedSameDist.chpl:25
+
+Static check successful. Using localAccess
+	unalignedSameDist.chpl:26
+
+Static check successful. Using localAccess
+	unalignedSameDist.chpl:26
+
+2 2 2 2 2 2 2 2 2 2
