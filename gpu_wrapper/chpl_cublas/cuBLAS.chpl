@@ -115,6 +115,16 @@ module cuBLAS {
     cublas_dcopy(handle, n, x, incX, y, incY);
   }
 
+  proc cu_ccopy(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_ccopy(handle, n, x, incX, y, incY);
+  }
+
+  proc cu_zcopy(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zcopy(handle, n, x, incX, y, incY);
+  }
+
   proc cu_sdot(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), result: c_ptr(c_float), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_sdot(handle, n, x, incX, y, incY, result);
@@ -123,6 +133,26 @@ module cuBLAS {
   proc cu_ddot(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), result: c_ptr(c_double), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_ddot(handle, n, x, incX, y, incY, result);
+  }
+
+  proc cu_cdotu(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), result: c_ptr(cmplex(64)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cdotu(handle, n, x, incX, y, incY, result);
+  }
+
+  proc cu_cdotc(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), result: c_ptr(cmplex(64)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cdotc(handle, n, x, incX, y, incY, result);
+  }
+
+  proc cu_zdotu(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), result: c_ptr(cmplex(128)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zdotu(handle, n, x, incX, y, incY, result);
+  }
+
+  proc cu_zdotc(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), result: c_ptr(cmplex(128)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zdotc(handle, n, x, incX, y, incY, result);
   }
 
   proc cu_snrm2(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), result: c_ptr(c_float), incX: c_int = 1){
@@ -135,6 +165,16 @@ module cuBLAS {
     cublas_dnrm2(handle, n, x, incX, result);
   }
 
+  proc cu_scnrm2(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), result: c_ptr(c_float), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_scnrm2(handle, n, x, incX, result);
+  }
+
+  proc cu_dznrm2(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), result: c_ptr(c_double), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_dznrm2(handle, n, x, incX, result);
+  }
+
   proc cu_srot(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), c: c_float, s: c_float, incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_srot(handle, n, x, incX, y, incY, c, s);
@@ -143,6 +183,26 @@ module cuBLAS {
   proc cu_drot(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), c: c_double, s: c_double, incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_drot(handle, n, x, incX, y, incY, c, s);
+  }
+
+  proc cu_crot(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), c: c_float, s: complex(64), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_crot(handle, n, x, incX, y, incY, c, s);
+  }
+
+  proc cu_csrot(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), c: c_float, s: c_float, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_csrot(handle, n, x, incX, y, incY, c, s);
+  }
+
+  proc cu_zrot(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), c: c_double, s: complex(128), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zrot(handle, n, x, incX, y, incY, c, s);
+  }
+
+  proc cu_zdrot(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), c: c_double, s: complex(128), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zdrot(handle, n, x, incX, y, incY, c, s);
   }
 
   proc cu_srotg(handle: c_void_ptr, a: c_float, b: c_float, c: c_float, s: c_float){
@@ -185,6 +245,26 @@ module cuBLAS {
     cublas_dscal(handle, n, alpha, x, incX);
   }
 
+  proc cu_cscal(handle: c_void_ptr, n: c_int, alpha: complex(64), x: c_ptr(complex(64)), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cscal(handle, n, alpha, x, incX);
+  }
+
+  proc cu_csscal(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(complex(64)), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_csscal(handle, n, alpha, x, incX);
+  }
+
+  proc cu_zscal(handle: c_void_ptr, n: c_int, alpha: complex(128), x: c_ptr(complex(128)), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zscal(handle, n, alpha, x, incX);
+  }
+
+  proc cu_zdscal(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(complex(128)), incX: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zdcal(handle, n, alpha, x, incX);
+  }
+
   proc cu_sswap(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_sswap(handle, n, x, incX, y, incY);
@@ -193,6 +273,16 @@ module cuBLAS {
   proc cu_dswap(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_dswap(handle, n, x, incX, y, incY);
+  }
+
+  proc cu_cswap(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cswap(handle, n, x, incX, y, incY);
+  }
+
+  proc cu_zswap(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cswap(handle, n, x, incX, y, incY);
   }
 
   module C_CUBLAS {
