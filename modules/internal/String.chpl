@@ -1612,12 +1612,12 @@ module String {
                    indicate no limit.
    */
   iter string.split(maxsplit: int = -1) /* : string */ {
+    // TODO: specifying return type leads to un-inited string?
     if this.isASCII() {
       for s in doSplitWSNoEnc(this, maxsplit) do yield s;
     } else {
       // note: to improve performance, this code collapses several cases into a
       //       single yield statement, which makes it confusing to read
-      // TODO: specifying return type leads to un-inited string?
       if !this.isEmpty() {
         const localThis: string = this.localize();
         var done : bool = false;

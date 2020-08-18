@@ -516,51 +516,94 @@ module BytesStringCommon {
     return result;
   }
 
+  proc doSplitHelp(const ref localx: ?t, const ref localSep: t,
+                   maxsplit: int = -1, ignoreEmpty: bool = false,
+                   ref start: getIndexType(t), ref splitCount: int): t {
+
+    type _idxt = getIndexType(t);
+
+    // really should be <, but we need to avoid returns and extra yields so
+    // the iterator gets inlined
+    var splitAll: bool = maxsplit <= 0;
+
+    var chunk: t;
+    var end: _idxt = -1;
+    var done = false;
+
+    if (maxsplit == 0) {
+      chunk = localx;
+      done = true;
+    } else {
+      if (splitAll || splitCount < maxsplit) then
+        end = localx.find(localSep, start..);
+
+      if(end == -1) {
+        // Separator not found
+        chunk = localx[start..];
+        done = true;
+      } else {
+        chunk = localx[start..end-1];
+      }
+    }
+
+    if done {
+      start = localx.numBytes+1;
+    }
+    else {
+      start = end+localSep.numBytes;
+    }
+    //writeln(start, " -- ", chunk);
+    return chunk;
+  }
+
   iter doSplit(const ref x: ?t, sep: t, maxsplit: int = -1,
-                ignoreEmpty: bool = false): t {
+               ignoreEmpty: bool = false): t {
     assertArgType(t, "doSplit");
 
     type _idxt = getIndexType(t);
 
     if !(maxsplit == 0 && ignoreEmpty && x.isEmpty()) {
-      const localThis: t = x.localize();
+      const localx: t = x.localize();
       const localSep: t = sep.localize();
 
-      // really should be <, but we need to avoid returns and extra yields so
-      // the iterator gets inlined
-      var splitAll: bool = maxsplit <= 0;
       var splitCount: int = 0;
 
       var start: _idxt = 0;
-      var done: bool = false;
-      while !done  {
-        var chunk: t;
-        var end: _idxt = -1;
-
-        if (maxsplit == 0) {
-          chunk = localThis;
-          done = true;
-        } else {
-          if (splitAll || splitCount < maxsplit) then
-            end = localThis.find(localSep, start..);
-
-          if(end == -1) {
-            // Separator not found
-            chunk = localThis[start..];
-            done = true;
-          } else {
-            chunk = localThis[start..end-1];
-          }
-        }
-
+      //var done: bool = false;
+      while start <= localx.numBytes  {
+        const chunk = doSplitHelp(localx, localSep, maxsplit, ignoreEmpty, start, splitCount);
         if !(ignoreEmpty && chunk.isEmpty()) {
-          // Putting the yield inside the if prevents us from being inlined
-          // in the zippered case, but I don't think there is any way to avoid
-          // that easily
           yield chunk;
           splitCount += 1;
         }
-        start = end+localSep.numBytes;
+        
+        //var chunk: t;
+        //var end: _idxt = -1;
+
+        //if (maxsplit == 0) {
+          //chunk = localx;
+          //done = true;
+        //} else {
+          //if (splitAll || splitCount < maxsplit) then
+            //end = localx.find(localSep, start..);
+
+          //if(end == -1) {
+            //// Separator not found
+            //chunk = localx[start..];
+            //done = true;
+          //} else {
+            //chunk = localx[start..end-1];
+          //}
+        //}
+
+        //if !(ignoreEmpty && chunk.isEmpty()) {
+          //// Putting the yield inside the if prevents us from being inlined
+          //// in the zippered case, but I don't think there is any way to avoid
+          //// that easily
+          //yield chunk;
+          //splitCount += 1;
+        //}
+        //start = end+localSep.numBytes;
       }
     }
   }
@@ -652,7 +695,7 @@ module BytesStringCommon {
 
       while i <= localx.numBytes-1 {
         yield doSplitWSNoEncHelp(localx, _maxsplit, i, splitCount);
-        _maxsplit -= 1;
+        //_maxsplit -= 1;
       }
       //const localx: t = x.localize();
       //var done : bool = false;
