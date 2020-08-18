@@ -107,7 +107,7 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
         set mpichLoaded 0
     }
     # Logic for mpich is split into loading and unloading phases
-    if { !([is-loaded chapel] == 1) }  {
+    if { [ module-info mode load ] } {
         # Loading chapel
 
         if {$mpichLoaded} {
@@ -188,7 +188,7 @@ if { [info exists env(CHPL_COMM)] } {
 
 set hugepagesLoaded [string match "*HUGETLB*" $env(PE_PRODUCT_LIST)]
 # Logic for hugepages is split into loading and unloading phases
-if { !([is-loaded chapel] == 1) }  {
+if { [ module-info mode load ] } {
     # Loading chapel
 
     if {$hugepagesLoaded} {
