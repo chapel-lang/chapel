@@ -948,6 +948,154 @@ module String {
       compilerError("not implemented: readThis");
     }
 
+    proc doSplitWSUTF8Help(const ref localThis, maxsplit: int, ref i: int,
+                           ref splitCount: int) {
+      // note: to improve performance, this code collapses several cases into a
+      //       single yield statement, which makes it confusing to read
+      var done : bool = false;
+      var yieldChunk : bool = false;
+      var chunk : string;
+
+      const noSplits : bool = maxsplit == 0;
+      const limitSplits : bool = maxsplit > 0;
+      const iEnd: byteIndex = localThis.buffLen - 2;
+
+      var inChunk : bool = false;
+      var chunkStart : byteIndex;
+
+      i = _findStartOfNextCodepointFromByte(this, i:byteIndex);
+
+      const (decodeRet, c, nBytes) = decodeHelp(buff=localThis.buff,
+                                                buffLen=localThis.buffLen,
+                                                offset=i,
+                                                allowEsc=true);
+
+      // emit whole string, unless all whitespace
+      if noSplits {
+        done = true;
+        if !localThis.isSpace() then {
+          chunk = localThis;
+          yieldChunk = true;
+        }
+      } else {
+        var cSpace = codepoint_isWhitespace(c);
+        // first char of a chunk
+        if !(inChunk || cSpace) {
+          chunkStart = i;
+          inChunk = true;
+          if i - 1 + nBytes > iEnd {
+            chunk = localThis[chunkStart..];
+            yieldChunk = true;
+            done = true;
+          }
+        } else if inChunk {
+          // first char out of a chunk
+          if cSpace {
+            splitCount += 1;
+            // last split under limit
+            if limitSplits && splitCount > maxsplit {
+              chunk = localThis[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            // no limit
+            } else {
+              chunk = localThis[chunkStart..(i-1):byteIndex];
+              yieldChunk = true;
+              inChunk = false;
+            }
+          // out of chars
+          } else if i - 1 + nBytes > iEnd {
+            chunk = localThis[chunkStart..];
+            yieldChunk = true;
+            done = true;
+          }
+        }
+      }
+
+      if done {
+        i = localThis.buffLen;
+      }
+      else {
+        i += nBytes;
+      }
+      if yieldChunk {
+        return chunk;
+      }
+      return ""; // to keep the compiler happy
+    }
+
+    iter doSplitWSUTF8(maxsplit: int) {
+      if !this.isEmpty() {
+        const localThis: string = this.localize();
+        var splitCount: int = 0;
+        var i = 0;
+        while i < localThis.buffLen {
+          yield doSplitWSUTF8Help(localThis, maxsplit, i, splitCount);
+        }
+        /*var done : bool = false;*/
+        //var yieldChunk : bool = false;
+        //var chunk : string;
+
+        //const noSplits : bool = maxsplit == 0;
+        //const limitSplits : bool = maxsplit > 0;
+        //const iEnd: byteIndex = localThis.buffLen - 2;
+
+        //var inChunk : bool = false;
+        //var chunkStart : byteIndex;
+
+        //for (c, i, nBytes) in localThis._cpIndexLen() {
+          //// emit whole string, unless all whitespace
+          //if noSplits {
+            //done = true;
+            //if !localThis.isSpace() then {
+              //chunk = localThis;
+              //yieldChunk = true;
+            //}
+          //} else {
+            //var cSpace = codepoint_isWhitespace(c);
+            //// first char of a chunk
+            //if !(inChunk || cSpace) {
+              //chunkStart = i;
+              //inChunk = true;
+              //if i - 1 + nBytes > iEnd {
+                //chunk = localThis[chunkStart..];
+                //yieldChunk = true;
+                //done = true;
+              //}
+            //} else if inChunk {
+              //// first char out of a chunk
+              //if cSpace {
+                //splitCount += 1;
+                //// last split under limit
+                //if limitSplits && splitCount > maxsplit {
+                  //chunk = localThis[chunkStart..];
+                  //yieldChunk = true;
+                  //done = true;
+                //// no limit
+                //} else {
+                  //chunk = localThis[chunkStart..i-1];
+                  //yieldChunk = true;
+                  //inChunk = false;
+                //}
+              //// out of chars
+              //} else if i - 1 + nBytes > iEnd {
+                //chunk = localThis[chunkStart..];
+                //yieldChunk = true;
+                //done = true;
+              //}
+            //}
+          //}
+
+          //if yieldChunk {
+            //yield chunk;
+            //yieldChunk = false;
+          //}
+          //if done then
+            //break;
+        //}
+      }
+    }
+
     // Helper function that uses a param bool to toggle between count and find
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
@@ -1616,73 +1764,7 @@ module String {
     if this.isASCII() {
       for s in doSplitWSNoEnc(this, maxsplit) do yield s;
     } else {
-      // note: to improve performance, this code collapses several cases into a
-      //       single yield statement, which makes it confusing to read
-      if !this.isEmpty() {
-        const localThis: string = this.localize();
-        var done : bool = false;
-        var yieldChunk : bool = false;
-        var chunk : string;
-
-        const noSplits : bool = maxsplit == 0;
-        const limitSplits : bool = maxsplit > 0;
-        var splitCount: int = 0;
-        const iEnd: byteIndex = localThis.buffLen - 2;
-
-        var inChunk : bool = false;
-        var chunkStart : byteIndex;
-
-        for (c, i, nBytes) in localThis._cpIndexLen() {
-          // emit whole string, unless all whitespace
-          if noSplits {
-            done = true;
-            if !localThis.isSpace() then {
-              chunk = localThis;
-              yieldChunk = true;
-            }
-          } else {
-            var cSpace = codepoint_isWhitespace(c);
-            // first char of a chunk
-            if !(inChunk || cSpace) {
-              chunkStart = i;
-              inChunk = true;
-              if i - 1 + nBytes > iEnd {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              }
-            } else if inChunk {
-              // first char out of a chunk
-              if cSpace {
-                splitCount += 1;
-                // last split under limit
-                if limitSplits && splitCount > maxsplit {
-                  chunk = localThis[chunkStart..];
-                  yieldChunk = true;
-                  done = true;
-                // no limit
-                } else {
-                  chunk = localThis[chunkStart..i-1];
-                  yieldChunk = true;
-                  inChunk = false;
-                }
-              // out of chars
-              } else if i - 1 + nBytes > iEnd {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              }
-            }
-          }
-
-          if yieldChunk {
-            yield chunk;
-            yieldChunk = false;
-          }
-          if done then
-            break;
-        }
-      }
+      for s in doSplitWSUTF8(maxsplit) do yield s;
     }
   }
 
