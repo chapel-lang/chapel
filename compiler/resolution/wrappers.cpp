@@ -1670,7 +1670,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                             gTrue:gFalse);
         if (coerceRuntimeTypes) {
           copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
-                                               definedConst);
+                              definedConst);
         }
         else {
           copy = new CallExpr(astr_initCopy, actualSym, definedConst);

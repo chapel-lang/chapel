@@ -1563,8 +1563,8 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-void establishDefinedConstIfApplicable(DefExpr* defExpr,
-                                       std::set<Flag>* flags) {
+static void establishDefinedConstIfApplicable(DefExpr* defExpr,
+                                              std::set<Flag>* flags) {
 
   if (defExpr->init != NULL) {
     if (flags->size() == 1 && flags->count(FLAG_CONST)) {

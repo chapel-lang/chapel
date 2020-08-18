@@ -41,8 +41,8 @@ static void removePODinitDestroy()
         continue;
 
       // We expect both initCopy and autoCopy functions to have two arguments
-      // definedConst: whether the LHS was defined const
       // second argument: whose type is the same as the return type
+      // definedConst: whether the LHS was defined const
       INT_ASSERT(fn->numFormals() >= 2);
 
       if (fn->getFormal(1)->type != fn->retType)
