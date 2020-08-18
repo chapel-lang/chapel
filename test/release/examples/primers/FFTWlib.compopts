@@ -1,1 +1,9 @@
--I$FFTW_DIR/include -L$FFTW_DIR/lib -sautoInitFFTW_MT=false  -lfftw3
+#!/usr/bin/env bash
+system=$($CHPL_HOME/util/printchplenv | grep 'CHPL_TARGET_PLATFORM' | cut -d\  -f2)
+
+if [ "$system" = "cray-xc" ] || [ "$system" = "cray-cs" ]
+then 
+    echo "-I$FFTW_INC -L$FFTW_DIR -sautoInitFFTW_MT=false  -lfftw3"
+else
+    echo "-I$FFTW_DIR/include -L$FFTW_DIR/lib -sautoInitFFTW_MT=false  -lfftw3"
+fi
