@@ -411,7 +411,7 @@ if ($mailer eq "") {
 print "\$mailer = $mailer\n";
 
 
-$launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
+$launchcmd = "$ENV{'CHPL_TEST_LAUNCHCMD'}";
 
 if ($debug == 1) {
     $subjectid = "Debug";
