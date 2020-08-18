@@ -67,9 +67,12 @@ static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
-  if (sym->id == breakOnId1 || sym->id == breakOnId2 || sym->id == breakOnId3) { \
-    gdbShouldBreakHere(); \
-  }
+  do { \
+    if (sym->id == breakOnId1 || sym->id == breakOnId2 || \
+        sym->id == breakOnId3) { \
+      gdbShouldBreakHere(); \
+    } \
+  } while (0)
 
 static const int trace_all = 0;
 static const int trace_usr = 0;
@@ -641,6 +644,8 @@ void CullRefCtx::propagateConstnessToMethodReceivers(void) {
         if (fn != call->resolvedFunction())
           continue;
 
+        DEBUG_SYMBOL(call);
+
         SymExpr* thisActual   = toSymExpr(call->get(1));
         Symbol*  actualSymbol = thisActual->symbol();
 
@@ -700,12 +705,12 @@ void CullRefCtx::collectTuplesAndRefMaybeConstArgs(void) {
     if (arg->defPoint->parentSymbol->hasFlag(FLAG_TUPLE_CAST_FN))
       continue;
 
-    // If the argument is a tuple with reference fields, explore it...
+    // If the formal is a tuple with reference fields, explore it...
     AggregateType* argAt = toAggregateType(arg->getValType());
     if (argAt && argAt->symbol->hasFlag(FLAG_TUPLE) &&
         containsReferenceFields(argAt)) {
 
-      AggregateType* tupleType  = toAggregateType(arg->type);
+      AggregateType* tupleType  = argAt; 
       int            fieldIndex = 1;
 
       // Collect reference or tuple fields for later.
@@ -876,6 +881,7 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
 // the SymExpr in a ref field? If so, add the tuple as a dependency.
 bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
                                      GraphNode node, bool &revisit) {
+  Symbol* sym = se->symbol();
 
   if (FnSymbol* calledFn = call->resolvedFunction()) {
     if (!calledFn->hasFlag(FLAG_BUILD_TUPLE))
@@ -912,6 +918,8 @@ bool CullRefCtx::checkBuildTupleCall(SymExpr* se, CallExpr* call,
 
       // If it is a ref field, collect it for later.
       if (tupleField->isRef()) {
+
+        DEBUG_SYMBOL(sym);
         DEBUG_SYMBOL(lhsSymbol);
 
         GraphNode srcNode = makeNode(lhsSymbol, j);
@@ -967,6 +975,7 @@ bool CullRefCtx::checkContextCallExpr(CallExpr* call, GraphNode node,
 // consider it const if the result of the tuple cast is const.
 bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
                                     GraphNode node, bool &revisit) {
+  Symbol* sym = se->symbol();
 
   if (FnSymbol* calledFn = call->resolvedFunction()) {
     if (!calledFn->hasFlag(FLAG_TUPLE_CAST_FN))
@@ -974,16 +983,31 @@ bool CullRefCtx::checkTupleCastCall(SymExpr* se, CallExpr* call,
 
     CallExpr* move = toCallExpr(call->parentExpr);
 
-    if (move && move->isPrimitive(PRIM_MOVE)) {
+    if (move != NULL && move->isPrimitive(PRIM_MOVE)) {
       SymExpr*  lhs       = toSymExpr(move->get(1));
       Symbol*   lhsSymbol = lhs->symbol();
-      GraphNode srcNode   = makeNode(lhsSymbol, node.fieldIndex);
 
-      collectedSymbols.push_back(srcNode);
-      addDependency(revisitGraph, srcNode, node);
-      revisit = true;
+      AggregateType* lhsAt = toAggregateType(lhsSymbol->type);
 
-      return true;
+      // AFAIK, only internal (tuple -> tuple) casts that adjust tuple ref
+      // levels will be labeled with the flag FLAG_TUPLE_CAST_FN.
+      INT_ASSERT(lhsAt != NULL);
+      INT_ASSERT(lhsAt->symbol->hasFlag(FLAG_TUPLE));
+
+      // Only add the LHS as a dependency if it contains reference fields.
+      // If not, then it's a cast to a value tuple and we don't care
+      // about it.
+      if (containsReferenceFields(lhsAt)) {
+        DEBUG_SYMBOL(sym);
+        DEBUG_SYMBOL(lhsSymbol);
+
+        GraphNode srcNode   = makeNode(lhsSymbol, node.fieldIndex);
+        collectedSymbols.push_back(srcNode);
+        addDependency(revisitGraph, srcNode, node);
+        revisit = true;
+
+        return true;
+      }
     }
   }
 
@@ -1013,12 +1037,24 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
       Symbol*  lhsSymbol = lhs->symbol();
 
       if (lhsSymbol->isRef() && lhsSymbol != sym) {
-        GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
-        collectedSymbols.push_back(srcNode);
-        addDependency(revisitGraph, srcNode, node);
-        revisit = true;
 
-        return true;
+        // Don't worry about tracking the destination if it's constant or
+        // marked with the flag FLAG_REF_TO_CONST.
+        // TODO: Also check against `isConstValWillNotChange`?
+        if (lhsSymbol->hasFlag(FLAG_REF_TO_CONST) ||
+            lhsSymbol->isConstant() ||
+            QualifiedType::qualifierIsConst(lhsSymbol->qual)) {
+          return false;
+        } else {
+          GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+          collectedSymbols.push_back(srcNode);
+          addDependency(revisitGraph, srcNode, node);
+          revisit = true;
+
+          DEBUG_SYMBOL(call);
+
+          return true;
+        }
       }
     }
   }
@@ -1031,6 +1067,7 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
 // function.
 bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
                                           GraphNode node, bool &revisit) {
+  Symbol* sym = node.variable;
 
   if (FnSymbol* calledFn = call->resolvedFunction()) {
     if (calledFn->hasFlag(FLAG_BUILD_TUPLE))
@@ -1042,6 +1079,25 @@ bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
     if (formal->intent != INTENT_REF_MAYBE_CONST)
       return false;
 
+    // @dlongnecke-cray:
+    //
+    // If formal is receiver marked INTENT_REF_MAYBE_CONST (e.g. array or
+    // tuple containing array), and the function to be called is marked
+    // FLAG_REF_TO_CONST_WHEN_CONST_THIS, go ahead and leave if the actual
+    // is constant. Otherwise we can create a situation where the actual
+    // receiver depends on the formal when being marked const. If the
+    // function returns a "non-const" access of the formal (e.g. via a
+    // this call), the compiler views that as an escaping reference and
+    // will transitively mark the actual receiver as non-const (when we
+    // know that it _is_ const). Things get even weirder when the function
+    // being called is an iterator.
+    if (calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) &&
+        formal->hasFlag(FLAG_ARG_THIS)) {
+      if (se->qualType().isConst()) {
+        return false;
+      }
+    }
+
     // No need to add formal to `collectedSymbols` because we already did
     // so in `collectRefMaybeConstArgs`.
 
@@ -1051,6 +1107,9 @@ bool CullRefCtx::checkRefMaybeConstFormal(SymExpr* se, CallExpr* call,
     GraphNode srcNode = makeNode(formal, node.fieldIndex);
     addDependency(revisitGraph, srcNode, node);
     revisit = true;
+
+    DEBUG_SYMBOL(formal);
+    DEBUG_SYMBOL(sym);
 
     return true;
   }
