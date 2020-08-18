@@ -1392,7 +1392,7 @@ module String {
   proc string.this(i: byteIndex) : string {
     var idx = i: int;
     if boundsChecking && (idx < 0 || idx >= this.buffLen)
-      then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
+      then halt("index ", i:int, " out of bounds for string with ", this.buffLen, " bytes");
 
     if this.isASCII() {
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
@@ -1442,12 +1442,12 @@ module String {
    */
   proc string.item(i: codepointIndex) : string {
     if boundsChecking && i < 0 then
-      halt("index ", i, " out of bounds for string");
+      halt("index ", i:int, " out of bounds for string");
 
     if this.isEmpty() then return "";
     if this.isASCII() {
       if boundsChecking && i >= this.numBytes then
-        halt("index ", i, " out of bounds for string with length ", this.size);
+        halt("index ", i:int, " out of bounds for string with length ", this.size);
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
                                             len=1, loc=this.locale_id);
       return chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
@@ -1463,7 +1463,7 @@ module String {
         charCount += 1;
       }
       if boundsChecking then
-        halt("index ", i, " out of bounds for string with length ", this.size);
+        halt("index ", i:int, " out of bounds for string with length ", this.size);
       return "";
     }
   }

@@ -565,75 +565,159 @@ module BytesStringCommon {
     }
   }
 
+  proc doSplitWSNoEncHelp(const ref localx: ?t, maxsplit: int = -1,
+                          ref i: int, ref splitCount: int): t {
+
+    var done : bool = false;
+    var yieldChunk : bool = false;
+    var chunk : t;
+
+    const noSplits : bool = maxsplit == 0;
+    const limitSplits : bool = maxsplit > 0;
+    const iEnd: idxType = localx.buffLen - 2;
+
+    var inChunk : bool = false;
+    var chunkStart : idxType;
+
+    // emit whole string, unless all whitespace
+    // TODO Engin: Why is noSplit check inside the loop?
+    while i < localx.size {
+      var c = localx.byte(i);
+      if noSplits {
+        done = true;
+        if !localx.isSpace() then {
+          chunk = localx;
+          yieldChunk = true;
+        }
+      } else {
+        var cSpace = byte_isWhitespace(c);
+        // first char of a chunk
+        if !(inChunk || cSpace) {
+          chunkStart = i;
+          inChunk = true;
+          if i > iEnd {
+            chunk = localx[chunkStart..];
+            yieldChunk = true;
+            done = true;
+          }
+        } else if inChunk {
+          // first char out of a chunk
+          if cSpace {
+            splitCount += 1;
+            // last split under limit
+            if limitSplits && splitCount > maxsplit {
+              chunk = localx[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            // no limit
+            } else {
+              chunk = localx[chunkStart..i-1];
+              yieldChunk = true;
+              inChunk = false;
+            }
+          // out of chars
+          } else if i > iEnd {
+            chunk = localx[chunkStart..];
+            yieldChunk = true;
+            done = true;
+          }
+        }
+      }
+
+      if done {
+        i = localx.size;
+      }
+      if yieldChunk {
+        return chunk;
+        //yield chunk;
+        //yieldChunk = false;
+      }
+      else {
+        i += 1;
+      }
+    }
+
+    return ""; // to keep the compiler happy
+  }
+
   // split iterator over whitespace
   iter doSplitWSNoEnc(const ref x: ?t, maxsplit: int = -1): t {
     assertArgType(t, "doSplitWSNoEnc");
 
     if !x.isEmpty() {
       const localx: t = x.localize();
-      var done : bool = false;
-      var yieldChunk : bool = false;
-      var chunk : t;
-
-      const noSplits : bool = maxsplit == 0;
-      const limitSplits : bool = maxsplit > 0;
+      var i = 0;
       var splitCount: int = 0;
-      const iEnd: idxType = localx.buffLen - 2;
+      var _maxsplit = maxsplit;
 
-      var inChunk : bool = false;
-      var chunkStart : idxType;
-
-      for (i,c) in zip(x.indices, localx.bytes()) {
-        // emit whole string, unless all whitespace
-        // TODO Engin: Why is x inside the loop?
-        if noSplits {
-          done = true;
-          if !localx.isSpace() then {
-            chunk = localx;
-            yieldChunk = true;
-          }
-        } else {
-          var cSpace = byte_isWhitespace(c);
-          // first char of a chunk
-          if !(inChunk || cSpace) {
-            chunkStart = i;
-            inChunk = true;
-            if i > iEnd {
-              chunk = localx[chunkStart..];
-              yieldChunk = true;
-              done = true;
-            }
-          } else if inChunk {
-            // first char out of a chunk
-            if cSpace {
-              splitCount += 1;
-              // last split under limit
-              if limitSplits && splitCount > maxsplit {
-                chunk = localx[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              // no limit
-              } else {
-                chunk = localx[chunkStart..i-1];
-                yieldChunk = true;
-                inChunk = false;
-              }
-            // out of chars
-            } else if i > iEnd {
-              chunk = localx[chunkStart..];
-              yieldChunk = true;
-              done = true;
-            }
-          }
-        }
-
-        if yieldChunk {
-          yield chunk;
-          yieldChunk = false;
-        }
-        if done then
-          break;
+      while i <= localx.numBytes-1 {
+        yield doSplitWSNoEncHelp(localx, _maxsplit, i, splitCount);
+        _maxsplit -= 1;
       }
+      //const localx: t = x.localize();
+      //var done : bool = false;
+      //var yieldChunk : bool = false;
+      //var chunk : t;
+
+      //const noSplits : bool = maxsplit == 0;
+      //const limitSplits : bool = maxsplit > 0;
+      //var splitCount: int = 0;
+      //const iEnd: idxType = localx.buffLen - 2;
+
+      //var inChunk : bool = false;
+      //var chunkStart : idxType;
+
+      //for (i,c) in zip(x.indices, localx.bytes()) {
+        //// emit whole string, unless all whitespace
+        //// TODO Engin: Why is x inside the loop?
+        //if noSplits {
+          //done = true;
+          //if !localx.isSpace() then {
+            //chunk = localx;
+            //yieldChunk = true;
+          //}
+        //} else {
+          //var cSpace = byte_isWhitespace(c);
+          //// first char of a chunk
+          //if !(inChunk || cSpace) {
+            //chunkStart = i;
+            //inChunk = true;
+            //if i > iEnd {
+              //chunk = localx[chunkStart..];
+              //yieldChunk = true;
+              //done = true;
+            //}
+          //} else if inChunk {
+            //// first char out of a chunk
+            //if cSpace {
+              //splitCount += 1;
+              //// last split under limit
+              //if limitSplits && splitCount > maxsplit {
+                //chunk = localx[chunkStart..];
+                //yieldChunk = true;
+                //done = true;
+              //// no limit
+              //} else {
+                //chunk = localx[chunkStart..i-1];
+                //yieldChunk = true;
+                //inChunk = false;
+              //}
+            //// out of chars
+            //} else if i > iEnd {
+              //chunk = localx[chunkStart..];
+              //yieldChunk = true;
+              //done = true;
+            //}
+          //}
+        //}
+
+        //if yieldChunk {
+          //yield chunk;
+          //yieldChunk = false;
+        //}
+        //if done then
+          //break;
+      //}
     }
   }
 
