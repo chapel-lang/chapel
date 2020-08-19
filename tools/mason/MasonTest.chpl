@@ -200,7 +200,7 @@ proc masonTest(args) throws {
   }
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
+proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -232,7 +232,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     var testsCompiled: list(string);
     // get the test names from lockfile or from test directory
     if (files.size == 0 && dirs.size == 0) {
-      testNames = getTests(lockFile.borrow(), projectHome);
+      testNames = getTests(lockFile.borrow(), projectHome, false);
       numTests = testNames.size;
     }
     else {
@@ -276,7 +276,6 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
-        writeln(compCommand);
         const compilation = runWithStatus(compCommand, show);
         
         if compilation != 0 {
@@ -385,12 +384,22 @@ private proc getMasonDependencies(sourceList: list(3*string),
   return masonCompopts;
 }
 
-private proc getTests(lock: borrowed Toml, projectHome: string) {
+/* Fetches tests from LockFile and from test directory recursively */
+proc getTests(lock: borrowed Toml, projectHome: string, bench: bool) {
   var testNames: list(string);
-  const testPath = joinPath(projectHome, "test");
+  var keyName: string;
+  var dirName: string;
+  if bench {
+    keyName = "benchmarks";
+    dirName = "benchmark";
+  } else {
+    keyName = "tests";
+    dirName = "test";
+  }
+  const testPath = joinPath(projectHome, dirName);
 
-  if lock.pathExists("root.tests") {
-    var tests = lock["root"]!["tests"]!.toString();
+  if lock.pathExists("root."+keyName) {
+    var tests = lock["root"]![keyName]!.toString();
     var strippedTests = tests.split(',').strip('[]');
     for test in strippedTests {
       const t = test.strip().strip('"');
@@ -401,7 +410,8 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
-        testNames.append(getTestPath(test));
+        if !bench then testNames.append(getTestPath(test));
+        else testNames.append(basename(test));
       }
     }
   }
