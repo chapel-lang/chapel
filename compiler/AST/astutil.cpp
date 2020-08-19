@@ -63,6 +63,14 @@ void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
       calls.push_back(call);
 }
 
+void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->resolvedOrVirtualFunction() != NULL)
+      calls.push_back(call);
+}
+
+
 void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
   AST_CHILDREN_CALL(ast, collectExprs, exprs);
   if (Expr* expr = toExpr(ast))
