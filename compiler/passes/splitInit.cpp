@@ -497,6 +497,7 @@ static bool findCopyElisionCandidate(CallExpr* call,
             rhsCall->isNamedAstr(astr_coerceCopy)) {
           int nActuals = rhsCall->numActuals();
           if (nActuals >= 2) {  // definedConst argument is always the last arg
+            sanityCheckDefinedConstArg(rhsCall->get(nActuals));
             if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals-1))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
@@ -520,6 +521,7 @@ static bool findCopyElisionCandidate(CallExpr* call,
       // initCopy(lhs, rhs, definedConst, retArg)
       if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
         if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
+          sanityCheckDefinedConstArg(call->get(nActuals-1));
           if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();

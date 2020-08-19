@@ -699,6 +699,8 @@ checkAutoCopyMap()
       if (fn->numFormals() > 1) {
         Type* baseType = fn->getFormal(1)->getValType();
         INT_ASSERT(baseType == key);
+
+        sanityCheckDefinedConstArg(fn->getFormal(2));
       }
     }
   }
