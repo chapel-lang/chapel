@@ -400,6 +400,38 @@ module ChapelArray {
     return new _domain(dist, parentDom);
   }
 
+  inline proc chpl__coerceHelp(type dstType: domain, definedConst: bool) {
+    pragma "no copy"
+    pragma "no auto destroy"
+    const ref dist = __primitive("get runtime type field", dstType, "dist");
+    type instanceType = chpl__instanceTypeFromDomainRuntimeType(dstType);
+    if chpl__isRectangularDomType(dstType) {
+      return chpl__convertRuntimeTypeToValue(dist=dist,
+                                             rank=instanceType.rank,
+                                             idxType=instanceType.idxType,
+                                             stridable=instanceType.stridable,
+                                             isNoInit=false,
+                                             definedConst=definedConst);
+    }
+    else if chpl__isSparseDomType(dstType) {
+      pragma "no copy"
+      pragma "no auto destroy"
+      const ref parentDom = __primitive("get runtime type field", dstType,
+                                        "parentDom");
+      return chpl__convertRuntimeTypeToValue(dist=dist,
+                                             parentDom=parentDom,
+                                             isNoInit=false,
+                                             definedConst=definedConst);
+    }
+    else {
+      return chpl__convertRuntimeTypeToValue(dist=dist,
+                                             idxType=instanceType.idxType,
+                                             parSafe=instanceType.parSafe,
+                                             isNoInit=false,
+                                             definedConst=definedConst);
+    }
+  }
+
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        param rank: int,
                                        type idxType = int,
@@ -878,6 +910,14 @@ module ChapelArray {
 
   pragma "ignore runtime type"
   proc chpl__instanceTypeFromArrayRuntimeType(type rtt) type {
+    // this function is compile-time only and should not be run
+    __primitive("chpl_warning",
+                "chpl__instanceTypeFromArrayRuntimeType should not be run");
+    return __primitive("static field type", rtt, "_instance");
+  }
+
+  pragma "ignore runtime type"
+  proc chpl__instanceTypeFromDomainRuntimeType(type rtt) type {
     // this function is compile-time only and should not be run
     __primitive("chpl_warning",
                 "chpl__instanceTypeFromArrayRuntimeType should not be run");
@@ -4485,8 +4525,8 @@ module ChapelArray {
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
     param rhsIsLayout = rhs.dist._value.dsiIsLayout();
 
-    var lhs:dstType;
-    lhs; // no split init
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
@@ -4505,8 +4545,8 @@ module ChapelArray {
     // if the domain types are the same and their runtime types
     // are the same.
 
-    var lhs:dstType;
-    lhs; // no split init
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = rhs;
 
     // Error for assignment between local and distributed domains.
@@ -4519,8 +4559,8 @@ module ChapelArray {
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_tuple, definedConst: bool) {
-    var lhs:dstType;
-    lhs; // no split init
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     if chpl__isLegalRectTupDomAssign(lhs, rhs) {
       lhs = {(...rhs)};
     } else {
@@ -4532,8 +4572,8 @@ module ChapelArray {
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:_tuple, definedConst: bool) {
-    var lhs:dstType;
-    lhs; // no split init
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     if chpl__isLegalRectTupDomAssign(lhs, rhs) {
       lhs = {(...rhs)};
     } else {
@@ -4546,16 +4586,16 @@ module ChapelArray {
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:range(?), definedConst: bool) {
-    var lhs:dstType;
-    lhs; // no split init
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = {rhs};
     return lhs;
   }
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs:range(?), definedConst: bool) {
-    var lhs:dstType;
-    lhs; // no split init
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     lhs = {rhs};
     return lhs;
   }
@@ -4564,7 +4604,8 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs: _iteratorRecord, definedConst: bool) {
     // assumes rhs is iterable
-    var lhs:dstType;
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     if isRectangularDom(lhs) then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
@@ -4577,7 +4618,8 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, rhs: _iteratorRecord, definedConst: bool) {
     // assumes rhs is iterable
-    var lhs:dstType;
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     if isRectangularDom(lhs) then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
@@ -4591,7 +4633,8 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
-    var lhs:dstType;
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     if isRectangularDom(lhs) then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
@@ -4604,7 +4647,8 @@ module ChapelArray {
   pragma "coerce fn"
   proc chpl__coerceMove(type dstType:_domain, in rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
-    var lhs:dstType;
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
     if isRectangularDom(lhs) then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();

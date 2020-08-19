@@ -10162,26 +10162,8 @@ static void lowerRuntimeTypeInit(CallExpr* call,
   runtimeTypeToValueCall->insertAtTail(isNoInit);
 
   // Add the argument indicating if this is defined as const
-  bool insideCoerceCopyOrMove = false;
-  FnSymbol *parentFun = toFnSymbol(call->parentSymbol);
-  if (parentFun != NULL) {
-    if (parentFun->name == astr_coerceCopy ||
-        parentFun->name == astr_coerceMove) {
-      insideCoerceCopyOrMove = true;
-    }
-  }
-
-  if (insideCoerceCopyOrMove) {
-    // we don't care about the flags on the lhs, but care about the
-    // `definedConst` formal to the parent function
-    runtimeTypeToValueCall->insertAtTail(new SymExpr(parentFun->getFormal(3)));
-  }
-  else {
-    // we are someplace outside chpl__coerceCopy and chpl__coerceMove, so take a
-    // look at the symbol's constness
-    Symbol* definedConst = var->hasFlag(FLAG_CONST) ? gTrue : gFalse;
-    runtimeTypeToValueCall->insertAtTail(definedConst);
-  }
+  Symbol* definedConst = var->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+  runtimeTypeToValueCall->insertAtTail(definedConst);
 
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
