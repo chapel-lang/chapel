@@ -721,7 +721,7 @@ module ChapelBase {
   inline proc chpl_statementLevelSymbol(ir: _iteratorRecord) {
     iter _ir_copy_recursive(ir) {
       for e in ir do
-        yield chpl__initCopy(e, false);
+        yield chpl__initCopy(e, definedConst=false);
     }
 
     pragma "no copy" var irc = _ir_copy_recursive(ir);

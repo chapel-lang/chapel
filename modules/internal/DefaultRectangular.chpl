@@ -91,10 +91,8 @@ module DefaultRectangular {
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
                                        param stridable: bool, inds) {
-                                       
       const dom = new unmanaged DefaultRectangularDom(rank, idxType, stridable,
                                                       _to_unmanaged(this));
-                                                     
       dom.dsiSetIndices(inds);
       return dom;
     }
@@ -140,7 +138,8 @@ module DefaultRectangular {
       //
       // The code below is copied from the contents of the "proc =".
       const nd = new dmap(new unmanaged DefaultDist());
-      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(), false));
+      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(),
+                                                      definedConst=false));
     }
   }
 

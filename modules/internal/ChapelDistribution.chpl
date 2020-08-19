@@ -224,12 +224,10 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
-          if rmFromList && !this.definedConst {
+          if rmFromList && !this.definedConst
             _arrs.remove(x);
-          }
-          else {
+          else
             _arrs_containing_dom -=1;
-          }
           cnt = _arrs.size;
           cnt += _arrs_containing_dom;
           // add one for the main domain record
@@ -251,12 +249,10 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
-        if addToList && !this.definedConst {
+        if addToList && !this.definedConst
           _arrs.add(x);
-        }
-        else {
+        else
           _arrs_containing_dom += 1;
-        }
         if locking then
           _arrsLock.unlock();
       }
@@ -341,7 +337,6 @@ module ChapelDistribution {
     //     chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
     //   }
   }
-
 
   class BaseRectangularDom : BaseDom {
     param rank : int;

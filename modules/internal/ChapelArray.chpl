@@ -3712,7 +3712,7 @@ module ChapelArray {
   //
   proc =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
-      __primitive("move", a, chpl__autoCopy(b.clone(), false));
+      __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
     } else if a._value._doms.size == 0 {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
@@ -5013,7 +5013,7 @@ module ChapelArray {
     pragma "no auto destroy"
     pragma "no copy"
     // TODO: definedConst can be added to `chpl__unref`, too
-    var toArray = chpl__initCopy(ir, false); // call iterator -> array copy fn
+    var toArray = chpl__initCopy(ir, definedConst=false); // call iterator -> array copy fn
     return toArray;
   }
 
@@ -5062,10 +5062,10 @@ module ChapelArray {
   {
 
     // ENGIN: here ir._shape_ could be a privatized domain. Make sure that the
-    // initializer we call here do not create another set of privatized
+    // initializer we call here does not create another set of privatized
     // instances
     // TODO: can we make this domain constant by passing an argument to the
-    // initializer
+    // initializer?
     var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain

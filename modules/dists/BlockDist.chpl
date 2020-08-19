@@ -1382,7 +1382,6 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   const c = new unmanaged BlockDom(rank, idxType, stridable,
                                    privdist.sparseLayoutType, privdist,
                                    locDomsTemp, {(...privatizeData.dims)});
-                                   
   return c;
 }
 
