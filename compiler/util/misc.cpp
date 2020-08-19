@@ -346,17 +346,17 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
   }
 
   if (bestPoint != NULL) {
-    const char* subsDesc = errFn->substitutionsToString(", ");
+    const char* subsDesc = errFn->argsToString(", ");
 
     FnSymbol* inFn = bestPoint->getFunction();
 
     if (subsDesc == NULL || subsDesc[0] == '\0') {
-      print_error("%s:%d: %s called ",
+      print_error("  %s:%d: %s called ",
                   cleanFilename(bestPoint),
                   bestPoint->linenum(),
                   fnKindAndName(errFn));
     } else {
-      print_error("%s:%d: %s called as %s(%s)",
+      print_error("  %s:%d: %s called as %s(%s)",
                   cleanFilename(bestPoint),
                   bestPoint->linenum(),
                   fnKindAndName(errFn),
