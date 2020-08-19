@@ -665,7 +665,10 @@ module BytesStringCommon {
       var splitCount: int = 0;
 
       while i <= localx.numBytes-1 {
-        yield doSplitWSNoEncHelp(localx, maxsplit, i, splitCount);
+        const chunk = doSplitWSNoEncHelp(localx, maxsplit, i, splitCount);
+        if !chunk.isEmpty() {
+          yield chunk;
+        }
       }
     }
   }
