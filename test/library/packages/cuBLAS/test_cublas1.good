@@ -22,6 +22,8 @@ zcopy : 3 PASSED, 0 FAILED
  ddot : 1 PASSED, 0 FAILED
 cdotu : 1 PASSED, 0 FAILED
 zdotu : 1 PASSED, 0 FAILED
+cdotc : 1 PASSED, 0 FAILED
+zdotc : 1 PASSED, 0 FAILED
 snrm2 : 1 PASSED, 0 FAILED
 dnrm2 : 1 PASSED, 0 FAILED
  srot : 4 PASSED, 0 FAILED
