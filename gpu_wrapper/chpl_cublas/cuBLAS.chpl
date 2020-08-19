@@ -100,6 +100,16 @@ module cuBLAS {
     cublas_dasum(handle, n, x, incX, result);
   }
 
+  proc cu_scasum(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), incX: c_int, result: c_ptr(c_float)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_scasum(handle, n, x, incX, result);
+  }
+
+  proc cu_dzasum(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), incX: c_int, result: c_ptr(c_double)){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_dzasum(handle, n, x, incX, result);
+  }
+
   proc cu_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, c: c_ptr(c_float), ldc: c_int){
     require "c_cublas.h", "c_cublas.o";
     cublas_sgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, c, ldc);
@@ -135,7 +145,7 @@ module cuBLAS {
     cublas_ddot(handle, n, x, incX, y, incY, result);
   }
 
-  proc cu_cdotu(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), result: c_ptr(cmplex(64)), incX: c_int = 1, incY: c_int = 1){
+  proc cu_cdotu(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), result: c_ptr(complex(64)), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_cdotu(handle, n, x, incX, y, incY, result);
   }
@@ -145,7 +155,7 @@ module cuBLAS {
     cublas_cdotc(handle, n, x, incX, y, incY, result);
   }
 
-  proc cu_zdotu(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), result: c_ptr(cmplex(128)), incX: c_int = 1, incY: c_int = 1){
+  proc cu_zdotu(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), result: c_ptr(complex(128)), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_zdotu(handle, n, x, incX, y, incY, result);
   }

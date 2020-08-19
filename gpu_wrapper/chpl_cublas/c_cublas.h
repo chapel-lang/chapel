@@ -32,8 +32,8 @@ int cublas_zcopy(c_void_ptr *handle, int n, complex double *x, int incX, complex
 
 int cublas_sdot(c_void_ptr *handle, int n, float *x, int incX, float *y, int incY, float *result);
 int cublas_ddot(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY, double *result);
-int cublas_cdot(c_void_ptr *handle, int n, complex float *x, int incX, complex float *y, int incY, complex float *result);
-int cublas_zdot(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY, complex double *result);
+int cublas_cdotu(c_void_ptr *handle, int n, complex float *x, int incX, complex float *y, int incY, complex float *result);
+int cublas_zdotu(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY, complex double *result);
 
 int cublas_snrm2(c_void_ptr *handle, int n, float *x, int incX, float *results);
 int cublas_dnrm2(c_void_ptr *handle, int n, double *x, int incX, double *results);
