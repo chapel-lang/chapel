@@ -1,13 +1,13 @@
-proc h(arg) {
+proc h(arg, otherArg) {
   arg = 11;
 }
 
-proc g(arg) {
-  h(arg);
+proc g(arg, otherArg: int) {
+  h(arg, otherArg);
 }
 
-proc f(arg:string) {
-  g(arg);
+proc f(arg:string, otherArg:int) {
+  g(arg, otherArg);
 }
 
-f("hi");
+f("hi", 1);

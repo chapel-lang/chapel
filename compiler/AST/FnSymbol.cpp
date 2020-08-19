@@ -1086,7 +1086,7 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
-const char* FnSymbol::substitutionsToString(const char* sep) const {
+const char* FnSymbol::argsToString(const char* sep) const {
   if (sep == NULL || sep[0] == '\0')
     sep = " ";
 
@@ -1097,69 +1097,81 @@ const char* FnSymbol::substitutionsToString(const char* sep) const {
   if (genericFn != NULL) {
     for_formals(genericArg, genericFn) {
       Symbol* sym = const_cast<FnSymbol*>(this)->substitutions.get(genericArg);
-      if (sym != NULL) {
-        Type* t = sym->getValType();
+      if (sym == NULL)
+        sym = genericArg;
 
-        // add a separator if this isn't the first one
-        if (ret[0] != '\0')
-          ret = astr(ret, sep);
+      Type* t = sym->getValType();
 
-        // Get the concrete formal, too
-        ArgSymbol* concreteArg = NULL;
-        for_formals(arg, this) {
-          if (arg->name == genericArg->name)
-            concreteArg = arg;
-        }
+      // add a separator if this isn't the first one
+      if (ret[0] != '\0')
+        ret = astr(ret, sep);
 
-        bool isParam = genericArg->intent == INTENT_PARAM ||
-                       genericArg->originalIntent == INTENT_PARAM;
-        bool isType = genericArg->intent == INTENT_TYPE ||
-                      genericArg->originalIntent == INTENT_TYPE ||
-                      genericArg->hasFlag(FLAG_TYPE_VARIABLE);
+      // Get the concrete formal, too
+      ArgSymbol* concreteArg = NULL;
+      for_formals(arg, this) {
+        if (arg->name == genericArg->name)
+          concreteArg = arg;
+      }
 
-        const char* name = genericArg->name;
-        if (genericArg->hasFlag(FLAG_EXPANDED_VARARGS) &&
-            name[0] == '_' && name[1] == 'e') {
-          // change _e##_name into name(##)
-          std::string num = name;
-          num.erase(0, 2); // remove _e
-          std::string n = num; // ##_name
-          num.resize(num.find('_')); // ##
-          n.erase(0, n.find('_')+1); // name
-          name = astr(n.c_str(), "(", num.c_str(), ")");
-        }
+      bool isParam = genericArg->intent == INTENT_PARAM ||
+                     genericArg->originalIntent == INTENT_PARAM;
+      bool isType = genericArg->intent == INTENT_TYPE ||
+                    genericArg->originalIntent == INTENT_TYPE ||
+                    genericArg->hasFlag(FLAG_TYPE_VARIABLE);
 
-        if (isParam) {
-          ret = astr(ret, "param ", name);
-          if (isNumericParamDefaultType(t) == false)
-            ret = astr(ret, ": ", toString(t));
-          Immediate* imm = getSymbolImmediate(sym);
-          if (imm == NULL && concreteArg != NULL) {
-            // Also look in the defaultExpr. See e.g. recursive-leader-errr.chpl
-            // and the iterKind enum.
-            // Not sure why this pattern doesn't set the immediate.
-            if (SymExpr* se = toSymExpr(concreteArg->defaultExpr->body.tail)) {
-              Symbol* sym = se->symbol();
-              imm = getSymbolImmediate(sym);
-              if (imm == NULL) {
-                if (isEnumSymbol(sym)) {
-                  ret = astr(ret, " = ", toString(t), ".", sym->name);
-                }
+      const char* name = genericArg->name;
+      if (genericArg->hasFlag(FLAG_EXPANDED_VARARGS) &&
+          name[0] == '_' && name[1] == 'e') {
+        // change _e##_name into name(##)
+        std::string num = name;
+        num.erase(0, 2); // remove _e
+        std::string n = num; // ##_name
+        num.resize(num.find('_')); // ##
+        n.erase(0, n.find('_')+1); // name
+        name = astr(n.c_str(), "(", num.c_str(), ")");
+      }
+
+      if (isParam) {
+        ret = astr(ret, "param ", name);
+        if (isNumericParamDefaultType(t) == false)
+          ret = astr(ret, ": ", toString(t));
+        Immediate* imm = getSymbolImmediate(sym);
+        if (imm == NULL && concreteArg != NULL) {
+          // Also look in the defaultExpr. See e.g. recursive-leader-errr.chpl
+          // and the iterKind enum.
+          // Not sure why this pattern doesn't set the immediate.
+          if (SymExpr* se = toSymExpr(concreteArg->defaultExpr->body.tail)) {
+            Symbol* sym = se->symbol();
+            imm = getSymbolImmediate(sym);
+            if (imm == NULL) {
+              if (isEnumSymbol(sym)) {
+                ret = astr(ret, " = ", toString(t), ".", sym->name);
               }
             }
           }
-          if (imm) {
-            const size_t bufSize = 128;
-            char buf[bufSize];
-            snprint_imm(buf, bufSize, *imm);
-            ret = astr(ret, " = ", buf);
-          }
-        } else if (isType) {
-          ret = astr(ret, "type ", name, " = ", toString(t));
-        } else {
-          ret = astr(ret, name, ": ", toString(t));
         }
+        if (imm) {
+          const size_t bufSize = 128;
+          char buf[bufSize];
+          snprint_imm(buf, bufSize, *imm);
+          ret = astr(ret, " = ", buf);
+        }
+      } else if (isType) {
+        ret = astr(ret, "type ", name, " = ", toString(t));
+      } else {
+        ret = astr(ret, name, ": ", toString(t));
       }
+    }
+  } else {
+    // get args for fully concrete functions
+    for_formals(arg, this) {
+      Type* t = arg->getValType();
+
+      // add a separator if this isn't the first one
+      if (ret[0] != '\0')
+        ret = astr(ret, sep);
+
+      ret = astr(ret, arg->name, ": ", toString(t));
     }
   }
 
