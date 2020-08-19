@@ -517,8 +517,8 @@ module BytesStringCommon {
   }
 
   proc doSplitHelp(const ref localx: ?t, const ref localSep: t,
-                   maxsplit: int = -1, ignoreEmpty: bool = false,
-                   ref start: getIndexType(t), ref splitCount: int): t {
+                   const maxsplit: int = -1, const ignoreEmpty: bool = false,
+                   ref start: getIndexType(t), const splitCount: int): t {
 
     type _idxt = getIndexType(t);
 
@@ -552,7 +552,6 @@ module BytesStringCommon {
     else {
       start = end+localSep.numBytes;
     }
-    //writeln(start, " -- ", chunk);
     return chunk;
   }
 
@@ -568,8 +567,9 @@ module BytesStringCommon {
 
       var splitCount: int = 0;
 
+      // this is passed as a ref to the helper
       var start: _idxt = 0;
-      //var done: bool = false;
+
       while start <= localx.numBytes  {
         const chunk = doSplitHelp(localx, localSep, maxsplit, ignoreEmpty, start, splitCount);
         if !(ignoreEmpty && chunk.isEmpty()) {
@@ -581,15 +581,12 @@ module BytesStringCommon {
   }
 
   proc doSplitWSNoEncHelp(const ref localx: ?t, maxsplit: int = -1,
-                          ref i: int, ref splitCount: int): t {
-
+                          ref i: int, const splitCount: int,
+                          const noSplits: bool, const limitSplits: bool,
+                          const iEnd: byteIndex): t {
     var done : bool = false;
     var yieldChunk : bool = false;
     var chunk : t;
-
-    const noSplits : bool = maxsplit == 0;
-    const limitSplits : bool = maxsplit > 0;
-    const iEnd: idxType = localx.buffLen - 2;
 
     var inChunk : bool = false;
     var chunkStart : idxType;
@@ -618,9 +615,8 @@ module BytesStringCommon {
         } else if inChunk {
           // first char out of a chunk
           if cSpace {
-            splitCount += 1;
             // last split under limit
-            if limitSplits && splitCount > maxsplit {
+            if limitSplits && splitCount >= maxsplit {
               chunk = localx[chunkStart..];
               yieldChunk = true;
               done = true;
@@ -644,15 +640,13 @@ module BytesStringCommon {
       }
       if yieldChunk {
         return chunk;
-        //yield chunk;
-        //yieldChunk = false;
       }
       else {
         i += 1;
       }
     }
 
-    return ""; // to keep the compiler happy
+    return "";
   }
 
   // split iterator over whitespace
@@ -661,13 +655,19 @@ module BytesStringCommon {
 
     if !x.isEmpty() {
       const localx: t = x.localize();
-      var i = 0;
       var splitCount: int = 0;
 
-      while i <= localx.numBytes-1 {
-        const chunk = doSplitWSNoEncHelp(localx, maxsplit, i, splitCount);
+      // this is passed to the helper as a ref
+      var i = 0;
+
+      while i < localx.numBytes {
+        const chunk = doSplitWSNoEncHelp(localx, maxsplit, i, splitCount,
+                                         noSplits=(maxsplit==0),
+                                         limitSplits=(maxsplit>0),
+                                         iEnd=(localx.buffLen-2):byteIndex);
         if !chunk.isEmpty() {
           yield chunk;
+          splitCount += 1;
         }
       }
     }

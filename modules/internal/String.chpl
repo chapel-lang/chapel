@@ -171,7 +171,6 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
 
  */
 module String {
-        extern proc printf(s...);
   use ChapelStandard;
   use SysCTypes;
   use ByteBufferHelpers;
@@ -950,26 +949,18 @@ module String {
     }
 
     proc doSplitWSUTF8Help(const ref localThis, maxsplit: int, ref i: int,
-                           ref splitCount: int) {
+                           const splitCount: int, const noSplits: bool,
+                           const limitSplits: bool, const iEnd: byteIndex) {
       // note: to improve performance, this code collapses several cases into a
       //       single yield statement, which makes it confusing to read
       var done : bool = false;
       var yieldChunk : bool = false;
       var chunk : string;
 
-      const noSplits : bool = maxsplit == 0;
-      const limitSplits : bool = maxsplit > 0;
-      const iEnd: byteIndex = localThis.buffLen - 2;
-
       var inChunk : bool = false;
       var chunkStart : byteIndex;
 
-      //printf("Called with %lld\n", i);
-
       i = _findStartOfNextCodepointFromByte(this, i:byteIndex);
-
-      //printf("Adjusted to %lld\n", i);
-
 
       while i < localThis.buffLen {
         const (decodeRet, c, nBytes) = decodeHelp(buff=localThis.buff,
@@ -985,31 +976,25 @@ module String {
           }
         } else {
           var cSpace = codepoint_isWhitespace(c);
-          //printf("Codepoint %d is whitespace: %lld\n", c, if cSpace then 1 else 0);
           // first char of a chunk
           if !(inChunk || cSpace) {
-              //printf("POSITION %lld\n", 10);
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              //printf("POSITION %lld\n", 20);
               chunk = localThis[chunkStart..];
               yieldChunk = true;
               done = true;
             }
           } else if inChunk {
             // first char out of a chunk
-              //printf("POSITION %lld\n", 30);
             if cSpace {
-              splitCount += 1;
               // last split under limit
-              if limitSplits && splitCount > maxsplit {
+              if limitSplits && splitCount >= maxsplit {
                 chunk = localThis[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                //printf("POSITION %lld\n", 100);
                 chunk = localThis[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
@@ -1030,7 +1015,6 @@ module String {
           i += nBytes;
         }
         if yieldChunk {
-          //printf("chunkStart %lld\n", chunkStart:int);
           return chunk;
         }
       }
@@ -1039,13 +1023,20 @@ module String {
 
     iter doSplitWSUTF8(maxsplit: int) {
       if !this.isEmpty() {
-        const localThis: string = this.localize();
-        var splitCount: int = 0;
+        const localThis = this.localize();
+        var splitCount = 0;
+
+        // this is passed to the helper as ref
         var i = 0;
+
         while i < localThis.buffLen {
-          const chunk =  doSplitWSUTF8Help(localThis, maxsplit, i, splitCount);
+          const chunk =  doSplitWSUTF8Help(localThis, maxsplit, i, splitCount,
+                                           noSplits=(maxsplit==0),
+                                           limitSplits=(maxsplit>0),
+                                           iEnd=(localThis.buffLen-2):byteIndex);
           if !chunk.isEmpty() {
             yield chunk;
+            splitCount += 1;
           }
         }
       }
