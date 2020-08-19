@@ -166,14 +166,14 @@ extern bool fOverrideChecking;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
 
-extern bool llvmCodegen;
+extern bool fLlvmCodegen;
 
 // Is the cache for remote data enabled?
 extern bool fCacheRemote;
 
 // externC allows blocks like extern { } to be parsed
 // with clang and then added to the enclosing module's scope
-extern bool externC;
+extern bool fAllowExternC;
 extern char breakOnCodegenCname[256];
 extern int breakOnCodegenID;
 

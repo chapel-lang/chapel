@@ -41,7 +41,7 @@ with open(goodfile, 'w') as gfh:
     if genLLVM:
         gfh.write('Compilation command: chpl -o about --cc-warnings --llvm about.chpl \n')
     else:
-        gfh.write('Compilation command: chpl -o about --cc-warnings about.chpl \n')
+        gfh.write('Compilation command: chpl -o about --cc-warnings --no-llvm about.chpl \n')
     gfh.write('Chapel compiler version:\n')
     gfh.write('Chapel environment:\n')
     gfh.write('  CHPL_HOME: %s\n'%(chpl_home))

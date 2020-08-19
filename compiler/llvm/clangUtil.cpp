@@ -1437,7 +1437,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangArgs.push_back("-c");
   clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
 
-  if (!llvmCodegen)
+  if (!fLlvmCodegen)
     clangArgs.push_back("-fsyntax-only");
 
   if( printSystemCommands && developer ) {
@@ -1450,7 +1450,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   // Initialize LLVM targets so that the clang commands can know if the
   // target CPU supports vectorization, avx, etc, etc
   // Also important for generating assembly from this program.
-  if (llvmCodegen) {
+  if (fLlvmCodegen) {
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmPrinters();
@@ -1981,7 +1981,27 @@ void runClang(const char* just_parse_filename) {
   runtime_includes += CHPL_RUNTIME_SUBDIR;
   runtime_includes += "/list-includes-and-defines";
 
-  readArgsFromFile(runtime_includes, args);
+  bool rtOk = readArgsFromFile(runtime_includes, args, /*errFatal*/ false);
+  if (rtOk == false) {
+    std::string runtime_dir(CHPL_RUNTIME_LIB);
+    runtime_dir += "/";
+    runtime_dir += CHPL_RUNTIME_SUBDIR;
+
+    if (developer)
+      USR_FATAL_CONT("Expected runtime library in %s", runtime_dir.c_str());
+
+    const char* module_home = getenv("CHPL_MODULE_HOME");
+    if (module_home) {
+      USR_FATAL("The requested configuration is not included in the module. "
+                "Please send the package maintainer the output of "
+                "$CHPL_HOME/util/printchplenv and request support for this "
+                "configuration.");
+    } else {
+      USR_FATAL("The runtime has not been built for this configuration. "
+                "Check $CHPL_HOME/util/printchplenv and try rebuilding "
+                "with $CHPL_MAKE from $CHPL_HOME.");
+    }
+  }
 
   std::string dashImodules = "-I";
   dashImodules += CHPL_HOME;
@@ -2096,7 +2116,7 @@ void runClang(const char* just_parse_filename) {
     clangOtherArgs.push_back("llvm/chapel_libc_wrapper.h");
 
     // Include extern C blocks
-    if( externC && gAllExternCode.filename ) {
+    if( fAllowExternC && gAllExternCode.filename ) {
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(gAllExternCode.filename);
     }
@@ -2143,7 +2163,7 @@ void runClang(const char* just_parse_filename) {
 
   setupClang(gGenInfo, rtmain);
 
-  if( llvmCodegen || externC )
+  if( fLlvmCodegen || fAllowExternC )
   {
     GenInfo *info = gGenInfo;
 
