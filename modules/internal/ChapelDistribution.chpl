@@ -224,7 +224,7 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
-          if rmFromList && !this.definedConst
+          if rmFromList && !this.definedConst then
             _arrs.remove(x);
           else
             _arrs_containing_dom -=1;
@@ -249,7 +249,7 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
-        if addToList && !this.definedConst
+        if addToList && !this.definedConst then
           _arrs.add(x);
         else
           _arrs_containing_dom += 1;
