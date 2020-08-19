@@ -2,21 +2,24 @@
  * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define _GNU_SOURCE
+// needed for dlfcn.h on linux
 
 #include "chplrt.h"
 #include "chpl-linefile-support.h"
@@ -45,19 +48,52 @@
 #include <libunwind.h>
 
 #ifdef __linux__
+#include <dlfcn.h> // for dladdr
 // We create a pipe with addr2line and try to get a line number
 // Currently the precise line number works only on linux64
-static int chpl_unwind_getLineNum(char *process_name, void *addr){
-  char buf[128];
+static int chpl_unwind_getLineNum(void *addr){
+
+  // Compute the object containing the address
+  int rc;
+  Dl_info info;
+  intptr_t relativeAddr;
+  char process_name[256];
+  char buf[256];
+  const char* path;
   int line;
   char* p;
   FILE *f;
 
+  rc = dladdr(addr, &info);
+  if (rc == 0)
+    return 0; // dladdr failed.
+
+  // Compute the relative address within the object
+  relativeAddr = (intptr_t)addr - (intptr_t)info.dli_fbase;
+
+  // Compute the path to the file containing the object
+  path = info.dli_fname;
+  if (path == NULL) {
+    // Try using the file path from the current executable
+    ssize_t len;
+    len = readlink("/proc/self/exe", process_name, sizeof(process_name));
+    // It unlikely to happen but this means that the process name is too big
+    // for our buffer. In this case, we truncate the name
+    if (len == sizeof(process_name))
+      return 0; // truncation occured, give up.
+    // add null terminator
+    process_name[len] = '\0';
+    path = process_name;
+  }
+
   // We use a little POSIX script for avoiding the case in which
   // addr2line isn't present
-  sprintf(buf,
+  rc = snprintf(buf, sizeof(buf),
           "if test -x /usr/bin/addr2line; then /usr/bin/addr2line -e %s %p;fi",
-          process_name, addr);
+          path, (void*)relativeAddr);
+  if (rc >= sizeof(buf))
+    return 0; // command too long
+
   f = popen (buf, "r");
   if(f == NULL){
     // We wasn't able to start our pipe, we just give up
@@ -88,15 +124,6 @@ static void chpl_stack_unwind(void){
 
 #ifdef __linux__
   unw_proc_info_t info;
-  // Get the exec path and name for the precise line printing
-  char process_name[128];
-
-  line = readlink("/proc/self/exe", process_name, sizeof(process_name));
-  // It unlikely to happen but this means that the process name is too big 
-  // for our buffer. In this case, we truncate the name
-  if(line == sizeof(process_name))
-    line = sizeof(process_name)-1;
-  process_name[line] = '\0';
 #endif
 
   // Check if we need to print the stack trace (default = yes)
@@ -127,8 +154,7 @@ static void chpl_stack_unwind(void){
 #ifdef __linux__
         // Maybe we can get a more precise line number
         unw_get_proc_info(&cursor, &info);
-        line = chpl_unwind_getLineNum(process_name,
-                                      (void *)(info.start_ip + wordValue));
+        line = chpl_unwind_getLineNum((void *)(info.start_ip + wordValue));
         // We wasn't able to obtain the line number, let's use the procedure
         // line number
         if(line == 0)
