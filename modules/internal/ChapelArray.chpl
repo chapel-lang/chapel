@@ -400,38 +400,6 @@ module ChapelArray {
     return new _domain(dist, parentDom);
   }
 
-  inline proc chpl__coerceHelp(type dstType: domain, definedConst: bool) {
-    pragma "no copy"
-    pragma "no auto destroy"
-    const ref dist = __primitive("get runtime type field", dstType, "dist");
-    type instanceType = chpl__instanceTypeFromDomainRuntimeType(dstType);
-    if chpl__isRectangularDomType(dstType) {
-      return chpl__convertRuntimeTypeToValue(dist=dist,
-                                             rank=instanceType.rank,
-                                             idxType=instanceType.idxType,
-                                             stridable=instanceType.stridable,
-                                             isNoInit=false,
-                                             definedConst=definedConst);
-    }
-    else if chpl__isSparseDomType(dstType) {
-      pragma "no copy"
-      pragma "no auto destroy"
-      const ref parentDom = __primitive("get runtime type field", dstType,
-                                        "parentDom");
-      return chpl__convertRuntimeTypeToValue(dist=dist,
-                                             parentDom=parentDom,
-                                             isNoInit=false,
-                                             definedConst=definedConst);
-    }
-    else {
-      return chpl__convertRuntimeTypeToValue(dist=dist,
-                                             idxType=instanceType.idxType,
-                                             parSafe=instanceType.parSafe,
-                                             isNoInit=false,
-                                             definedConst=definedConst);
-    }
-  }
-
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        param rank: int,
                                        type idxType = int,
@@ -4516,10 +4484,38 @@ module ChapelArray {
     return b;
   }
 
-  // The coercion functions below define `lhs` as `var`. However, the compiler
-  // will pass `definedConst` to the `chpl__convertRuntimeTypeToValue` under the
-  // covers. So if this function is called with // `definedConst=true`, the
-  // domain instance of lhs will have // `definedConst=true`
+  inline proc chpl__coerceHelp(type dstType: domain, definedConst: bool) {
+    pragma "no copy"
+    pragma "no auto destroy"
+    const ref dist = __primitive("get runtime type field", dstType, "dist");
+    type instanceType = chpl__instanceTypeFromDomainRuntimeType(dstType);
+    if chpl__isRectangularDomType(dstType) {
+      return chpl__convertRuntimeTypeToValue(dist=dist,
+                                             rank=instanceType.rank,
+                                             idxType=instanceType.idxType,
+                                             stridable=instanceType.stridable,
+                                             isNoInit=false,
+                                             definedConst=definedConst);
+    }
+    else if chpl__isSparseDomType(dstType) {
+      pragma "no copy"
+      pragma "no auto destroy"
+      const ref parentDom = __primitive("get runtime type field", dstType,
+                                        "parentDom");
+      return chpl__convertRuntimeTypeToValue(dist=dist,
+                                             parentDom=parentDom,
+                                             isNoInit=false,
+                                             definedConst=definedConst);
+    }
+    else {
+      return chpl__convertRuntimeTypeToValue(dist=dist,
+                                             idxType=instanceType.idxType,
+                                             parSafe=instanceType.parSafe,
+                                             isNoInit=false,
+                                             definedConst=definedConst);
+    }
+  }
+
   pragma "find user line"
   pragma "coerce fn"
   proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
