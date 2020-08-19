@@ -319,7 +319,7 @@ module MainModule {
       }
     }
 
-    /* Multiple modules may be named in a single ``use`` statement  */
+    /* Multiple modules may be named in a single ``use`` statement */
     {
       use modToUse, AnotherModule, ThirdModule;
 
