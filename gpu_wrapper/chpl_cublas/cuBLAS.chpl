@@ -150,7 +150,7 @@ module cuBLAS {
     cublas_cdotu(handle, n, x, incX, y, incY, result);
   }
 
-  proc cu_cdotc(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), result: c_ptr(cmplex(64)), incX: c_int = 1, incY: c_int = 1){
+  proc cu_cdotc(handle: c_void_ptr, n: c_int, x: c_ptr(complex(64)), y: c_ptr(complex(64)), result: c_ptr(complex(64)), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_cdotc(handle, n, x, incX, y, incY, result);
   }
@@ -160,7 +160,7 @@ module cuBLAS {
     cublas_zdotu(handle, n, x, incX, y, incY, result);
   }
 
-  proc cu_zdotc(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), result: c_ptr(cmplex(128)), incX: c_int = 1, incY: c_int = 1){
+  proc cu_zdotc(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), result: c_ptr(complex(128)), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_zdotc(handle, n, x, incX, y, incY, result);
   }

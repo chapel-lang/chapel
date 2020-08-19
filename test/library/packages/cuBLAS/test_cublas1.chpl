@@ -108,6 +108,8 @@ proc test_dotc(){
 proc test_nrm2() {
   test_cunrm2_helper(real(32));
   test_cunrm2_helper(real(64));
+  test_cunrm2_helper(complex(64));
+  test_cunrm2_helper(complex(128));
 }
 
 proc test_rot() {
@@ -588,18 +590,31 @@ proc test_cunrm2_helper(type t) {
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
-    var r : t;
+    var err = 1.0;
 
     select t {
       when real(32) do {
+        var r: real(32);
         cu_snrm2(cublas_handle, N, gpu_ptr_X:c_ptr(t), c_ptrTo(r));
+        err = norm - r;
       }
       when real(64) do {
+        var r: real(64);
         cu_dnrm2(cublas_handle, N, gpu_ptr_X:c_ptr(t), c_ptrTo(r));
+        err = norm - r;
+      }
+      when complex(64) do {
+        var r: real(32);
+        cu_scnrm2(cublas_handle, N, gpu_ptr_X:c_ptr(t), c_ptrTo(r));
+        err = norm -r;
+      }
+      when complex(128) do {
+        var r: real(64);
+        cu_dznrm2(cublas_handle, N, gpu_ptr_X:c_ptr(t), c_ptrTo(r));
+        err = norm - r;
       }
     }
 
-    var err = norm - r;
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
