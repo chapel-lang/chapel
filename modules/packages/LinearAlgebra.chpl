@@ -915,10 +915,9 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
     var diagonal = Vector(0..#length, eltType);
     const offset = Adom.dim(1).stride * k;
 
-    forall (i, j, diagInd) in 
-      zip(Adom.dim(0)#length, 
-          Adom.dim(1)#length,
-          0..) do
+    forall (i, j, diagInd) in zip(Adom.dim(0)#length, 
+                                  Adom.dim(1)#length,
+                                  0..) do
       diagonal[diagInd] = A[i, j+offset];
 
     return diagonal;
