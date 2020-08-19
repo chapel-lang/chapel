@@ -44,6 +44,7 @@ proc main() {
   test_axpy();
   test_copy();
   test_dot();
+  test_dotu();
   test_nrm2();
   test_rot();
   test_scal();
@@ -70,21 +71,32 @@ proc test_amin() {
 proc test_asum() {
   test_cuasum_helper(real(32));
   test_cuasum_helper(real(64));
+  test_cuasum_helper(complex(64));
+  test_cuasum_helper(complex(128));
 }
 
 proc test_axpy() {
   test_cuaxpy_helper(real(32));
   test_cuaxpy_helper(real(64));
+  test_cuaxpy_helper(complex(64));
+  test_cuaxpy_helper(complex(128));
 }
 
 proc test_copy() {
   test_cucopy_helper(real(32));
   test_cucopy_helper(real(64));
+  test_cucopy_helper(complex(64));
+  test_cucopy_helper(complex(128));
 }
 
 proc test_dot() {
   test_cudot_helper(real(32));
   test_cudot_helper(real(64));
+}
+
+proc test_dotu(){
+  test_cudotu_helper(complex(64));
+  test_cudotu_helper(complex(128));
 }
 
 proc test_nrm2() {
@@ -298,24 +310,37 @@ proc test_cuasum_helper(type t) {
       norm = +reduce(X);
     }
 
-    var r: t;
-
     //Get pointer to X allocated on GPU
     var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
+    var err = 1.0;
+
     select t {
       when real(32) do {
+        var r : real(32);
         cu_sasum(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+        err = norm - r;
       }
       when real(64) do {
+        var r : real(64);
         cu_dasum(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+        err = norm - r;
+      }
+      when complex(64) do {
+        var r : real(32);
+        cu_scasum(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+        err = norm - r;
+      }
+      when complex(128) do {
+        var r : real(64);
+        cu_dzasum(cublas_handle, N, gpu_ptr_X:c_ptr(t), 1, c_ptrTo(r));
+        err = norm - r;
       }
     }
 
-    var err = norm - r;
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
   }
@@ -348,6 +373,12 @@ proc test_cucopy_helper(type t) {
       }
       when real(64) do {
         cu_dcopy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t));
+      }
+      when complex(64) do {
+        cu_ccopy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t));
+      }
+      when complex(128) do {
+        cu_zcopy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t));
       }
     }
 
@@ -390,6 +421,12 @@ proc test_cuaxpy_helper(type t) {
       }
       when real(64) do {
         cu_daxpy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), a);
+      }
+      when complex(64) do {
+        cu_caxpy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), a);
+      }
+      when complex(128) do {
+        cu_zaxpy(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), a);
       }
     }
 
@@ -438,6 +475,46 @@ proc test_cudot_helper(type t) {
     }
 
     var err = abs(red - r);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cudotu_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sdotu".format(blasPrefix(t));
+
+  // Simple test
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 2: t, 3: t],
+        Y: [D] t = [3: t, 2: t, 1: t];
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    var prod = X*Y;
+    var red = + reduce prod;
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+    var res : t;
+
+    select t {
+      when complex(64) do {
+        cu_cdotu(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(res));
+      }
+      when complex(128) do {
+        cu_zdotu(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(res));
+      }
+    }
+
+    var err = abs(red - res);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
