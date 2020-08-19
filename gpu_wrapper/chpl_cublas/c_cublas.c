@@ -239,6 +239,22 @@ int cublas_zdotu(cublasHandle_t *handle, int n, complex double *x, int incX, com
 
 }
 
+int cublas_cdotc(cublasHandle_t *handle, int n, complex float *x, int incX, complex float *y, int incY, complex float *result){
+
+    cublasCdotu(*handle, n, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY, (cuFloatComplex*) result);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
+int cublas_zdotc(cublasHandle_t *handle, int n, complex double *x, int incX, complex double *y, int incY, complex double *result){
+
+    cublasZdotu(*handle, n, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY, (cuDoubleComplex*) result);
+    cudaDeviceSynchronize();
+    return 0;
+
+}
+
 int cublas_snrm2(cublasHandle_t *handle, int n, float *x, int incX, float *results){
 
     cublasSnrm2(*handle, n, x, incX, results);

@@ -45,6 +45,7 @@ proc main() {
   test_copy();
   test_dot();
   test_dotu();
+  test_dotc();
   test_nrm2();
   test_rot();
   test_scal();
@@ -97,6 +98,11 @@ proc test_dot() {
 proc test_dotu(){
   test_cudotu_helper(complex(64));
   test_cudotu_helper(complex(128));
+}
+
+proc test_dotc(){
+  test_cudotc_helper(complex(64));
+  test_cudotc_helper(complex(128));
 }
 
 proc test_nrm2() {
@@ -511,6 +517,46 @@ proc test_cudotu_helper(type t) {
       }
       when complex(128) do {
         cu_zdotu(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(res));
+      }
+    }
+
+    var err = abs(red - res);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cudotc_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sdotc".format(blasPrefix(t));
+
+  // Simple test
+  {
+    const D = {0..2};
+    var X: [D] t = [1: t, 2: t, 3: t],
+        Y: [D] t = [3: t, 2: t, 1: t];
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    var prod = conjg(X)*Y;
+    var red = + reduce prod;
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+    var res : t;
+
+    select t {
+      when complex(64) do {
+        cu_cdotc(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(res));
+      }
+      when complex(128) do {
+        cu_zdotc(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c_ptrTo(res));
       }
     }
 
