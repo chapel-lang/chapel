@@ -4458,6 +4458,13 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
+  inline proc chpl__initCopy(rhs: domain, definedConst: bool) {
+    pragma "no copy"
+    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
+    return lhs;
+  }
+
+  pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
     pragma "no copy"
     var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);

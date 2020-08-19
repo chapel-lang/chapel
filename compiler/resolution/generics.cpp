@@ -511,17 +511,6 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
         // above code adds a call that would be considered already resolved.
         resolveCallAndCallee(initCall);
 
-        // Workaround: adjust domain const-ness
-        if (SymExpr *firstArgSE = toSymExpr(call->get(1))) {
-          if (SymExpr *secondArgSE = toSymExpr(call->get(2))) {
-            CallExpr *constFixupCall = new CallExpr("chpl__fixupConstDomain");
-            constFixupCall->insertAtTail(thisTmp);
-            constFixupCall->insertAtTail(new SymExpr(newFn->getFormal(2)));
-            initCall->insertAfter(constFixupCall);
-            resolveCallAndCallee(constFixupCall);
-          }
-        }
-
         // Workaround: setting init= argument to ref in case
         // the fields were not resolved yet
         if (recordContainingCopyMutatesField(ct)) {
