@@ -251,13 +251,32 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
   return lastFn; // never reached
 }
 
-static CallExpr* findACallSite(FnSymbol* fn) {
+static void gatherFunctionsCalledTransitively(FnSymbol* fn,
+                                              std::set<FnSymbol*>& fns) {
+  if (fns.count(fn) == 0) {
+    fns.insert(fn);
+
+    // Gather calls from the function body & declaration
+    std::vector<CallExpr*> calls;
+    collectVirtualAndFnCalls(fn, calls);
+
+    // gather calls from the called functions (transitively)
+    for_vector(CallExpr, call, calls) {
+      FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+      gatherFunctionsCalledTransitively(calledFn, fns);
+    }
+  }
+}
+
+static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
   fn = findNonTaskCaller(fn);
 
   for_SymbolSymExprs(se, fn) {
     CallExpr* call = toCallExpr(se->parentExpr);
     if (se == call->baseExpr) {
-      return call;
+      FnSymbol* inFn = call->getFunction();
+      if (inFn && ignoreFns.count(inFn) == 0)
+        return call;
     }
   }
 
@@ -293,11 +312,17 @@ static const char* fnKindAndName(FnSymbol* fn) {
   return astr("function ", "'", fn->name, "'");
 }
 
-static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
+// Note - this function is recursive.
+static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
+                                  std::set<FnSymbol*>& currentFns) {
 
   // Stop now if it's a module init function
   if (isModuleInitFunction(errFn))
     return;
+
+  // Gather functions called, transitively, so that we can rule out
+  // recursive calls when showing a stack trace.
+  gatherFunctionsCalledTransitively(errFn, currentFns);
 
   // Find the first call to the function within the instantiation point,
   // so that we can have a better error message line number.
@@ -317,7 +342,7 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
     }
   } else {
     // Find a call to the function
-    bestPoint = findACallSite(errFn);
+    bestPoint = findACallSite(errFn, currentFns);
   }
 
   if (bestPoint != NULL) {
@@ -343,7 +368,7 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
       // finish the current line
       print_error(" within %s\n", fnKindAndName(inFn));
       // continue to print call sites
-      printInstantiationNote(inFn, errFn);
+      printInstantiationNote(inFn, errFn, currentFns);
     } else {
       // finish the current line
       print_error("\n");
@@ -357,7 +382,8 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn) {
 static void printInstantiationNoteForLastError() {
   if (err_fn_header_printed && err_fn &&
       (err_fn->instantiatedFrom || fPrintCallStackOnError)) {
-    printInstantiationNote(err_fn, NULL);
+    std::set<FnSymbol*> currentFns;
+    printInstantiationNote(err_fn, NULL, currentFns);
   }
 
   // Clear this variable in case e.g. err_fn is deleted in a future pass
