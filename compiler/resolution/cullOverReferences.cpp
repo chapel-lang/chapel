@@ -1053,9 +1053,9 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
           // LHS, not the receiver's field index (the LHS is almost
           // guaranteed to be a different type, in which case the receiver
           // fieldIndex makes no sense to use).
-          // TODO: Any codes that try to return the receiver itself or a
-          // shallow copy of the receiver may need to differentiate between a
-          // field in the LHS and the entire LHS.
+          // TODO: If (in the future) the call returns an aggregate type that
+          // is also a tuple of references, then this code may have to be
+          // adjusted to be aware of the field index of the LHS.
           GraphNode srcNode = makeNode(lhsSymbol, 0);
           collectedSymbols.push_back(srcNode);
           addDependency(revisitGraph, srcNode, node);
