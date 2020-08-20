@@ -392,13 +392,11 @@ FnSymbol* getAutoDestroy(Type* t) {
   return autoDestroyMap.get(t);
 }
 
-static bool isAliasingArray(Type* t) {
+bool isAliasingArray(Type* t) {
   if (t->symbol->hasFlag(FLAG_ARRAY)) {
     AggregateType* at = toAggregateType(t);
     INT_ASSERT(at);
 
-    // check if it is an array view
-    // (otherwise we can infinite loop in resolving array functions)
     Symbol* instanceField = at->getField("_instance", false);
     if (instanceField) {
       if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
@@ -415,7 +413,7 @@ Type* getCopyTypeDuringResolution(Type* t) {
     Type* baseType = t->getField("valType")->type;
     return baseType;
   }
-  if (isAliasingArray(t) ||
+  if (isAliasingArray(t) || // avoid infinite loop in resolving array functions
       t->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     AggregateType* at = toAggregateType(t);
     INT_ASSERT(at);
@@ -6742,6 +6740,16 @@ void resolveInitVar(CallExpr* call) {
     // For example, even though domains can leverage 'init=' for basic
     // copy-initialization, the compiler only currently knows about calls to
     // 'chpl__initCopy' and how to turn them into something else when necessary
+
+    // Normally e.g. var y = foo() - where foo returns by value - will not add a
+    // copy and so the result of foo() need not be auto-destroyed.  However, if
+    // foo() is returning an array slice, then it is copied from and the source
+    // of the copy does need to be destroyed.
+    if (SymExpr* rhsSe = toSymExpr(srcExpr))
+      if (VarSymbol* rhsVar = toVarSymbol(rhsSe->symbol()))
+        if (isAliasingArray(rhsVar->getValType()))
+          if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false)
+            rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),

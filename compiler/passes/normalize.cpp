@@ -3010,8 +3010,7 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
       var->hasFlag(FLAG_PARAM)           == false && // Note 1.
       var->hasFlag(FLAG_REF_VAR)         == false &&
 
-      fn->_this                          != var   && // Note 2.
-      fn->hasFlag(FLAG_INIT_COPY_FN)     == false) { // Note 3.
+      fn->_this                          != var) {   // Note 2.
 
     // Note that if the DefExpr is at module scope, the auto-destroy
     // for it will end up in the module deinit function.
@@ -3026,19 +3025,6 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 
 // Note 2: "this" should be passed by reference.  Then, no constructor call
 // is made, and therefore no autodestroy call is needed.
-
-// Note 3: If a record arg to an init copy function is passed by value,
-// infinite recursion would ensue.  This is an unreachable case (assuming that
-// magic conversions from R -> ref R are removed and all existing
-// implementations of chpl__initCopy are rewritten using "ref" or "const ref"
-// intent on the record argument).
-
-
-// Note 4: These two cases should be regularized.  Either the copy constructor
-// should *always* be called (and the corresponding destructor always called),
-// or we should ensure that the destructor is called only if a constructor is
-// called on the same variable.  The latter case is an optimization, so the
-// simplest implementation calls the copy-constructor in both cases.
 
 /************************************* | **************************************
 *                                                                             *

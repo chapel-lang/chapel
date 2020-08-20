@@ -759,7 +759,8 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
                       fromSe != NULL &&
                       isCallExprTemporary(fromSe->symbol()) &&
                       isTemporaryFromNoCopyReturn(fromSe->symbol());
-        bool arrayIsh = (rhsType->symbol->hasFlag(FLAG_ARRAY) ||
+        bool array = rhsType->symbol->hasFlag(FLAG_ARRAY);
+        bool arrayIsh = (array ||
                          rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
         bool handleDomain = skipArray == false && domain;
@@ -767,9 +768,6 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
         bool handleTuple = skipTuple == false &&
                            isTupleContainingAnyReferences(rhsType);
 
-        // TODO: Should we check if the RHS is a symbol with
-        // 'no auto destroy' on it? If it is, then we'd be copying
-        // the RHS and it would never be destroyed...
         if ((handleArray || handleDomain || handleTuple) &&
             !isTypeExpr(call->get(2))) {
 
@@ -782,7 +780,6 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           CallExpr*  unrefCall = new CallExpr(initCopyFn, tmp);
           CallExpr*  shapeSet  = findSetShape(call, ret);
-          FnSymbol*  unrefFn   = NULL;
 
           // Used by callDestructors to catch assignment from
           // a ref to 'tmp' when we know we don't want to copy.
@@ -793,13 +790,9 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           call->insertAtTail(unrefCall);
 
-          unrefFn = resolveNormalCall(unrefCall);
-
-          resolveFunction(unrefFn);
-
           // Relies on the ArrayView variant having
           // the 'unref fn' flag in ChapelArray.
-          if (arrayIsh && unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+          if (array && isAliasingArray(rhs->getValType()) == false) {
             // If the function does not have this flag, this must
             // be a non-view array. Remove the unref call.
             unrefCall->replace(rhs->copy());
@@ -812,11 +805,13 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
             if (shapeSet) setIteratorRecordShape(shapeSet);
 
-          } else if (shapeSet) {
-            // Set the shape on the array unref temp instead of 'ret'.
-            shapeSet->get(1)->replace(new SymExpr(tmp));
-            call->insertBefore(shapeSet->remove());
-            setIteratorRecordShape(shapeSet);
+          } else {
+            if (shapeSet) {
+              // Set the shape on the array unref temp instead of 'ret'.
+              shapeSet->get(1)->replace(new SymExpr(tmp));
+              call->insertBefore(shapeSet->remove());
+              setIteratorRecordShape(shapeSet);
+            }
           }
         }
       }
