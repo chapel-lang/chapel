@@ -1,14 +1,14 @@
 use OrderedSet;
 use OsetTest;
 
-config param impl: setImpl;
+
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new orderedSet(eltType, false, defaultComparator, impl);
-  var s2 = new orderedSet(eltType, false, defaultComparator, impl);
-  var s3 = new orderedSet(eltType, false, defaultComparator, impl);
-  var s4 = new orderedSet(eltType, false, defaultComparator, impl);
+  var s1 = new orderedSet(eltType, false, defaultComparator);
+  var s2 = new orderedSet(eltType, false, defaultComparator);
+  var s3 = new orderedSet(eltType, false, defaultComparator);
+  var s4 = new orderedSet(eltType, false, defaultComparator);
 
   assert(s1.size == s2.size && s2.size == s3.size && s3.size == 0);
 

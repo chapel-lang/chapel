@@ -1,11 +1,11 @@
 use OrderedSet;
 use OsetTest;
 
-config param impl: setImpl;
+
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new orderedSet(eltType, false, defaultComparator, impl);
+  var s1 = new orderedSet(eltType, false, defaultComparator);
 
   assert(s1.size == 0 && s1.isEmpty());
 

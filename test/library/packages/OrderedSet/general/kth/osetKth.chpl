@@ -2,11 +2,11 @@ use OrderedSet;
 use Random;
 use Sort;
 
-config param impl: setImpl;
+
 config const testIters = 128;
 
 proc doTest(arr: [?d] int) {
-  var s1 = new orderedSet(int, false, defaultComparator, impl);
+  var s1 = new orderedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);

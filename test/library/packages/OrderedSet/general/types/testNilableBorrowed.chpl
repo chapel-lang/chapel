@@ -1,7 +1,7 @@
 use OrderedSet;
 use OsetTest;
 
-config param impl: setImpl;
+
 
 type T = testClass;
 
@@ -12,7 +12,7 @@ proc <(lhs: borrowed T?, rhs: borrowed T?) {
   return lhs!.dummy < rhs!.dummy;
 }
 
-var s = new orderedSet(borrowed T?, false, defaultComparator, impl);
+var s = new orderedSet(borrowed T?, false, defaultComparator);
 
 var a = new T();
 var b: borrowed T? = a.borrow();

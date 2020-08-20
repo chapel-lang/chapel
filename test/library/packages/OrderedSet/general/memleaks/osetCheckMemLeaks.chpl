@@ -1,7 +1,7 @@
 use OrderedSet;
 use OsetTest;
 
-config param impl: setImpl;
+
 
 class C { var x: int = 0; }
 proc <(x: shared C?, y: shared C?) {
@@ -15,7 +15,7 @@ const hi = 128;
 
 proc test() {
   var arr: [0..#hi] shared C?;
-  var s = new orderedSet(shared C?, false, defaultComparator, impl);
+  var s = new orderedSet(shared C?, false, defaultComparator);
 
   for i in 0..#hi do arr[i] = new shared C(i);
   for x in arr do s.add(x);

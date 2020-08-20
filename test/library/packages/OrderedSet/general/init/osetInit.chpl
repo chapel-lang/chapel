@@ -1,12 +1,12 @@
 use OrderedSet;
 use OsetTest;
 
-config param impl: setImpl;
 
-var s1 = new orderedSet(int, false, defaultComparator, impl);
-var s2 = new orderedSet(testRecord, false, defaultComparator, impl);
-var s3 = new orderedSet(borrowed testClass, false, defaultComparator, impl);
-var s4 = new orderedSet(int, 1..10, false, defaultComparator, impl);
+
+var s1 = new orderedSet(int, false, defaultComparator);
+var s2 = new orderedSet(testRecord, false, defaultComparator);
+var s3 = new orderedSet(borrowed testClass, false, defaultComparator);
+var s4 = new orderedSet(int, 1..10, false, defaultComparator);
 
 assert(s1.size == 0);
 assert(s2.size == 0);

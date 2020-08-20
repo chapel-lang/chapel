@@ -2,7 +2,7 @@ use OrderedSet;
 use Random;
 use Sort;
 
-config param impl: setImpl;
+
 config const testIters = 128;
 
 proc lowerBound(arr: [?d] int, target: int, out result): bool {
@@ -16,7 +16,7 @@ proc lowerBound(arr: [?d] int, target: int, out result): bool {
 }
 
 proc doTest(arr: [?d] int) {
-  var s1 = new orderedSet(int, false, defaultComparator, impl);
+  var s1 = new orderedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);

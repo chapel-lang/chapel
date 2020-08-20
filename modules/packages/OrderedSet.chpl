@@ -42,34 +42,6 @@ module OrderedSet {
   private use IO;
   public use Sort only defaultComparator;
 
-
-  //TODO: Maybe add skipList in the future
-  /* Implementations supported */
-  enum setImpl {treap};
-
-  pragma "no doc"
-  proc getTypeFromEnumVal(param val: setImpl, type eltType, param parSafe) type {
-    if val == setImpl.treap then return treap(eltType, parSafe);
-  }
-
-  pragma "no doc"
-  proc getInstanceFromEnumVal(param val: setImpl, type eltType, param parSafe,
-                              comparator: record = defaultComparator) {
-    if val == setImpl.treap then return new treap(eltType, parSafe, comparator);
-  }
-
-  pragma "no doc"
-  proc getInstanceFromEnumVal(param val: setImpl, type eltType, iterable, param parSafe,
-                              comparator: record = defaultComparator)
-                              where canResolveMethod(iterable, "these") {
-    if val == setImpl.treap {
-       return new treap(eltType, iterable, parSafe, comparator);
-    }
-  }
-
-  /* The default implementation to use */
-  param defaultImpl = setImpl.treap;
-
   record orderedSet {
     /* The type of the elements contained in this orderedSet. */
     type eltType;
@@ -77,16 +49,9 @@ module OrderedSet {
     /* If `true`, this orderedSet will perform parallel safe operations. */
     param parSafe = false;
 
-    /* The implementation to use */
-    param implType = defaultImpl;
-
-    /*
-      FIXME: This shouldn't be documented.
-      Attaching pragma "no doc" on this will give an error.
-      See #16097
-    */
     /* The underlying implementation */
-    forwarding var instance: getTypeFromEnumVal(implType, eltType, parSafe);
+    pragma "no doc"
+    var instance: treap(eltType, parSafe);
 
     /*
       Initializes an empty orderedSet containing elements of the given type.
@@ -96,13 +61,11 @@ module OrderedSet {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, param parSafe = false,
-              comparator: record = defaultComparator,
-              param implType: setImpl = defaultImpl) {
+              comparator: record = defaultComparator) {
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.implType = implType;
 
-      this.instance = getInstanceFromEnumVal(implType, eltType, parSafe, comparator); 
+      this.instance = new treap(eltType, parSafe, comparator);
     }
 
     /*
@@ -116,15 +79,12 @@ module OrderedSet {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              comparator: record = defaultComparator,
-              param implType: setImpl = defaultImpl)
+              comparator: record = defaultComparator)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.implType = implType;
 
-      this.instance = getInstanceFromEnumVal(implType, eltType, iterable,
-                                            parSafe, comparator); 
+      this.instance = new treap(eltType, iterable, parSafe, comparator);
     }
 
     /*
@@ -137,8 +97,7 @@ module OrderedSet {
     proc init=(const ref other: orderedSet(?t)) lifetime this < other {
       this.eltType = t;
       this.parSafe = other.parSafe;
-      this.instance = getInstanceFromEnumVal(this.implType, this.eltType,
-                                            this.parSafe,
+      this.instance = new treap(this.eltType, this.parSafe,
                                             other.instance.comparator); 
 
       this.complete();
@@ -174,7 +133,7 @@ module OrderedSet {
 
       :arg x: The element to add to this orderedSet.
     */
-    inline proc ref add(x: eltType) lifetime this < x {
+    inline proc ref add(in x: eltType) lifetime this < x {
       instance.add(x);
     }
 
@@ -212,7 +171,7 @@ module OrderedSet {
         references to the elements contained in this orderedSet.
     */
     inline proc ref clear() {
-      return instance.clear();
+      instance.clear();
     }
 
     /*
@@ -294,6 +253,23 @@ module OrderedSet {
     */
     inline proc const kth(k: int): (bool, eltType) {
       return instance.kth(k);
+    }
+
+    /*
+      Iterate over the elements of this orderedSet. Yields constant references
+      that cannot be modified.
+
+      .. warning::
+
+        Modifying this orderedSet while iterating over it may invalidate the
+        references returned by an iterator and is considered undefined
+        behavior.
+      
+      :yields: A constant reference to an element in this orderedSet.
+    */
+    iter const these() {
+      for x in instance do
+        yield x;
     }
 
     /*

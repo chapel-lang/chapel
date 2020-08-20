@@ -1,6 +1,6 @@
 use OrderedSet;
-config param impl: setImpl;
-var oset = new orderedSet(int, false, defaultComparator, impl);
+
+var oset = new orderedSet(int, false, defaultComparator);
 for i in 1..10 {
   oset.add(i);
   writeln(oset.size);
