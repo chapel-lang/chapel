@@ -773,8 +773,6 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
         if ((handleArray || handleDomain || handleTuple) &&
             !isTypeExpr(call->get(2))) {
 
-          // Calling this for the side effect of resolving initCopy
-          getCopyTypeDuringResolution(rhsType);
           FnSymbol* initCopyFn = getInitCopyDuringResolution(rhsType);
           INT_ASSERT(initCopyFn);
 

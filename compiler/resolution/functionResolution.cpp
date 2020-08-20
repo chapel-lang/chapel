@@ -438,13 +438,16 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
     copyType = getCopyTypeDuringResolution(actualType);
   } else if (isAliasingArray(actualType) ||
              actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-    // Is the formal an array type? If not, coercion to copy
-    // will not be relevant.
-    // The checks here are to avoid infinite loops.
+    // The conditions below avoid infinite loops and problems
+    // relating to resolving initCopy for iterators when not needed.
     if (formalType == dtAny ||
         formalType->symbol->hasFlag(FLAG_ARRAY)) {
-      if (fn == NULL || fn->name != astr_initCopy) {
-        copyType = getCopyTypeDuringResolution(actualType);
+      if (fn == NULL ||
+          !(fn->name == astr_initCopy || fn->name == astr_autoCopy)) {
+
+        if (formalSym == NULL || inOrOutFormal(formalSym)) {
+          copyType = getCopyTypeDuringResolution(actualType);
+        }
       }
     }
   }
