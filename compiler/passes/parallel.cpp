@@ -353,8 +353,7 @@ static Symbol* insertAutoCopyForTaskArg
     // Insert a call to the autoCopy function ahead of the call.
     VarSymbol* valTmp = newTemp(baseType);
     fcall->insertBefore(new DefExpr(valTmp));
-    SymExpr *definedConst = new SymExpr(var->hasFlag(FLAG_CONST) ?
-                                        gTrue:gFalse);
+    Symbol *definedConst = var->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
     CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var, definedConst);
     fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
     var = valTmp;

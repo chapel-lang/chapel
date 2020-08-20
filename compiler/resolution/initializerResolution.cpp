@@ -443,8 +443,7 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       Expr* tail = block->body.tail;
       if (tail->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         VarSymbol* ir_temp = newTemp("ir_temp");
-        SymExpr *definedConst = new SymExpr(argSym->hasFlag(FLAG_CONST) ?
-                                            gTrue:gFalse);
+        Symbol *definedConst = argSym->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
         CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp,
                                           new CallExpr(astr_initCopy,
                                                        tail->copy(),

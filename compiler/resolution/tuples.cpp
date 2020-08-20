@@ -622,8 +622,7 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
       insertBefore->insertBefore(new DefExpr(element));
 
       // otherwise copy construct it
-      SymExpr *definedConst = new SymExpr(toField->hasFlag(FLAG_CONST) ?
-                                          gTrue:gFalse);
+      Symbol *definedConst = toField->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
       CallExpr* copy = new CallExpr(astr_autoCopy, readF, definedConst);
       insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
 
@@ -774,8 +773,7 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
-      SymExpr *definedConst = new SymExpr(toField->hasFlag(FLAG_CONST) ?
-                                          gTrue:gFalse);
+      Symbol *definedConst = toField->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
       CallExpr* copy = new CallExpr(astr_autoCopy, readF, definedConst);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
@@ -827,7 +825,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       // otherwise copy construct it
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr(copy_fun, read, new SymExpr(gFalse));
+      CallExpr* copy = new CallExpr(copy_fun, read, gFalse);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       if (recordContainingCopyMutatesField(toField->type))
         arg->intent = INTENT_REF;
@@ -897,7 +895,7 @@ instantiate_tuple_unref(FnSymbol* fn)
         // If it is a reference, copy construct it
         element = new VarSymbol(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
-        CallExpr* copy = new CallExpr(useCopy, read, new SymExpr(gFalse));
+        CallExpr* copy = new CallExpr(useCopy, read, gFalse);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       } else {
         // Otherwise, bit copy it
@@ -960,7 +958,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
       if (copyWith && typeNeedsCopyInitDeinit(useType) &&
           (valueOnly || !isReferenceType(field->type))) {
         VarSymbol* var = newTemp("test_copy", useType);
-        CallExpr* copy = new CallExpr(copyWith, var, new SymExpr(gFalse));
+        CallExpr* copy = new CallExpr(copyWith, var, gFalse);
         testBlock->insertAtTail(copy);
         resolveCallAndCallee(copy);
 

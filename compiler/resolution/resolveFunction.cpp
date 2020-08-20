@@ -2340,8 +2340,8 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                   rhs = new SymExpr(from);
 
                 } else if (rhsType == lhsType->refType) {
-                  SymExpr *definedConst = new SymExpr(to->hasFlag(FLAG_CONST) ?
-                                                      gTrue:gFalse);
+                  Symbol *definedConst = to->hasFlag(FLAG_CONST) ?
+                                         gTrue : gFalse;
                   toResolve = new CallExpr(astr_autoCopy,
                                            new SymExpr(from), definedConst);
                   rhs = toResolve;
@@ -2391,8 +2391,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 }
 
                 CallExpr* callCoerceFn = NULL;
-                SymExpr *definedConst = new SymExpr(to->hasFlag(FLAG_CONST) ?
-                                                    gTrue:gFalse);
+                Symbol *definedConst = to->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
                 if (stealRHS) {
                   callCoerceFn = new CallExpr(astr_coerceMove, 
                                               fromType, from, definedConst);
