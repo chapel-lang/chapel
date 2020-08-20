@@ -835,8 +835,9 @@ where !usingLAPACK
                           inverse of singular matrix");
     }
     for j in i+1..n {
-      ACopy[j, ..] -= (ACopy[j, i] / ACopy[i, i]) * ACopy[i, ..];
-      ident[j, ..] -= (ident[j, i] / ident[i, i]) * ident[i, ..];
+      var normalVal = ACopy[j, i] / ACopy[i, i];
+      ACopy[j, ..] -= normalVal * ACopy[i, ..];
+      ident[j, ..] -= normalVal * ident[i, ..];
     }
     i += 1;
   }
@@ -846,23 +847,24 @@ where !usingLAPACK
   while i >= 1 {
     if isclose(ACopy[i,i], 0.0)  {
       var j = i + 1;
-      while j >= 1 && isclose(ACopy[j,i], 0.0) do j += 1;
+      while j >= 1 && isclose(ACopy[j,i], 0.0) do j -= 1;
       if j >= 1 {
         ACopy[i, ..] <=> ACopy[j, ..];
         ident[i, ..] <=> ident[j, ..];
       } else throw new LinearAlgebraError("Cannot compute\
                           inverse of singular matrix");
     }
-    for j in 0..i-1 by -1 {
-      ACopy[j, ..] -= (ACopy[j, i] / ACopy[i, i]) * ACopy[i, ..];
-      ident[j, ..] -= (ident[j, i] / ident[i, i]) * ident[i, ..];
+    for j in 1..i-1 by -1 {
+      var normalVal = ACopy[j, i] / ACopy[i, i];
+      ACopy[j, ..] -= normalVal * ACopy[i, ..];
+      ident[j, ..] -= normalVal * ident[i, ..];
     }
     i -= 1;
   }
 
   ref diagVec = diag(ACopy);
   forall (x1, x2) in zip(diagVec.domain, 1..n) {
-    ident[.., x2] = diagVec[x1];
+    ident[x2, ..] /= diagVec[x1];
   }
 
   return ident;
