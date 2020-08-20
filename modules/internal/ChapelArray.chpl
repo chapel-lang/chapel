@@ -4337,13 +4337,8 @@ module ChapelArray {
   inline proc <=>(x: [?xD], y: [?yD]) {
     var hasSwapped: bool = false;
     // Check if array can use optimized pointer swap
-    if (x._value.type == y._value.type &&
-        !chpl__isArrayView(x._value) &&
-        Reflection.canResolveMethod(x._value, "doiSwap", y._value)) {
-      if(xD == yD) {
-        x._value.doiSwap(y._value);
-        hasSwapped=true;
-      }
+    if Reflection.canResolveMethod(x._value, "doiOptimizedSwap", y._value) {
+      hasSwapped = x._value.doiOptimizedSwap(y._value);
     }
     if !hasSwapped {
       forall (a,b) in zip(x, y) do
