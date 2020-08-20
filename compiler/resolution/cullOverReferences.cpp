@@ -62,8 +62,8 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
-static const int breakOnId2 = 0;
+static const int breakOnId1 = 1686508; // yret _ref((_ref(string),int(64)))[1304238]
+static const int breakOnId2 = 1686401; // arg _ref(7*_ref((_ref(string),int(64)))) [1686350]
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
@@ -509,6 +509,8 @@ void markNotConst(GraphNode node)
 
   if (at && containsReferenceFields(at)) {
     createFieldQualifiersIfNeeded(sym);
+
+    INT_ASSERT(fieldIndex <= at->numFields());
 
     if (fieldIndex == 0) {
       // mark all fields
@@ -1046,7 +1048,15 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
             QualifiedType::qualifierIsConst(lhsSymbol->qual)) {
           return false;
         } else {
-          GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+
+          // Use 0 to indicate that we care about the constness of the entire
+          // LHS, not the receiver's field index (the LHS is almost
+          // guaranteed to be a different type, in which case our fieldIndex
+          // makes no sense to use).
+          // TODO: Any codes that try to return the receiver itself or a
+          // shallow copy of the receiver may need to differentiate between a
+          // field in the LHS and the entire LHS.
+          GraphNode srcNode = makeNode(lhsSymbol, 0);
           collectedSymbols.push_back(srcNode);
           addDependency(revisitGraph, srcNode, node);
           revisit = true;
