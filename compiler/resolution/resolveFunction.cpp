@@ -2043,9 +2043,11 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      case INTENT_IN:
      case INTENT_CONST_IN:
       if (!shouldAddInFormalTempAtCallSite(formal, fn)) {
+        Symbol* definedConst = formal->intent == INTENT_CONST_IN ? gTrue : gFalse;
         start->insertBefore(new CallExpr(PRIM_MOVE,
                                          tmp,
-                                         new CallExpr(astr_initCopy, formal, gTrue)));
+                                         new CallExpr(astr_initCopy, formal,
+                                                      definedConst)));
 
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       } else {
