@@ -292,7 +292,7 @@ module cuBLAS {
 
   proc cu_zswap(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
-    cublas_cswap(handle, n, x, incX, y, incY);
+    cublas_zswap(handle, n, x, incX, y, incY);
   }
 
   module C_CUBLAS {
