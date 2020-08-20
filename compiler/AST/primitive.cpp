@@ -1056,6 +1056,7 @@ initPrimitive() {
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
+  prim_def(PRIM_GET_VISIBLE_SYMBOLS, "get visible symbols", returnInfoVoid);
 
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.

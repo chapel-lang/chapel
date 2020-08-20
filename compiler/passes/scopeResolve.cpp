@@ -2715,6 +2715,50 @@ static void detectUserDefinedBorrowMethods() {
   }
 }
 
+/* Find any "get visible symbols" primitive calls and print out all
+   symbols that are visible from that point.
+ */
+static void processGetVisibleSymbols() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
+      std::set<Symbol*> alreadyFound;
+      // build a map from filename to set of visible symbols in that file
+      std::map<const char*, std::set<Symbol*>*> visibleMap;
+      forv_Vec(VarSymbol, sym, gVarSymbols) {
+        Symbol* found = lookup(sym->name, call);
+        if (found != NULL && alreadyFound.count(found) == 0 &&
+            !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
+            !found->hasFlag(FLAG_COMPILER_GENERATED) &&
+            !found->hasFlag(FLAG_TEMP)) {
+          const char* fname = found->defPoint->fname();
+          alreadyFound.insert(found);
+          if (visibleMap.count(fname) == 0) {
+            visibleMap.insert({fname, new std::set<Symbol*>()});
+          }
+          visibleMap[fname]->insert(found);
+        }
+      }
+
+      printf("%s:%d: Printing symbols visible from here:\n",
+             call->fname(), call->linenum());
+      // now walk the map printing visible symbols from each file
+      std::map<const char*, std::set<Symbol*>*>::iterator mapIdx;
+      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
+        std::set<Symbol*>::iterator setIdx;
+        for (setIdx = mapIdx->second->begin();
+             setIdx != mapIdx->second->end(); setIdx++) {
+          Symbol* sym = *setIdx;
+          printf("  %s:%d: %s\n", sym->defPoint->fname(),
+                 sym->defPoint->linenum(), sym->name); 
+        }
+        delete mapIdx->second;
+      }
+      call->remove();
+    }
+  }
+}
+
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2739,6 +2783,8 @@ void scopeResolve() {
   markGenerics();
 
   processGenericFields();
+
+  processGetVisibleSymbols();
 
   ResolveScope::destroyAstMap();
 
