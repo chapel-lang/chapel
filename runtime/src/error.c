@@ -54,17 +54,31 @@
 // Currently the precise line number works only on linux64
 static int chpl_unwind_getLineNum(void *addr){
 
-  // Compute the object containing the address
   int rc;
   Dl_info info;
   intptr_t relativeAddr;
-  char process_name[256];
-  char buf[256];
-  const char* path;
+  char buf[1024];
+  int i = 0;
   int line;
   char* p;
   FILE *f;
+  ssize_t path_len;
 
+  // We use a little shell script for avoiding the case in which
+  // addr2line isn't present
+  const char* scriptPreArgs =
+    "if test -x /usr/bin/addr2line; then /usr/bin/addr2line -e ";
+  // then the path
+  // then space
+  // then the address
+  // then
+  const char* scriptPostArgs = "; fi";
+
+  // Start the buffer out with the script
+  memcpy(buf, scriptPreArgs, strlen(scriptPreArgs));
+  i = strlen(scriptPreArgs);
+
+  // Compute the object containing the address
   rc = dladdr(addr, &info);
   if (rc == 0)
     return 0; // dladdr failed.
@@ -73,42 +87,40 @@ static int chpl_unwind_getLineNum(void *addr){
   relativeAddr = (intptr_t)addr - (intptr_t)info.dli_fbase;
 
   // Compute the path to the file containing the object
-  path = info.dli_fname;
-  if (path == NULL) {
+  if (info.dli_fname != NULL && info.dli_fname[0] != '\0') {
+    // use the path from dladdr
+    path_len = strlen(info.dli_fname);
+    if (i+path_len >= sizeof(buf))
+      return 0; // not enough room in buffer - give up
+    memcpy(&buf[i], info.dli_fname, path_len);
+  } else {
     // Try using the file path from the current executable
-    ssize_t len;
-    len = readlink("/proc/self/exe", process_name, sizeof(process_name));
-    // It unlikely to happen but this means that the process name is too big
-    // for our buffer. In this case, we truncate the name
-    if (len == sizeof(process_name))
-      return 0; // truncation occured, give up.
-    // add null terminator
-    process_name[len] = '\0';
-    path = process_name;
+    path_len = readlink("/proc/self/exe", &buf[i], sizeof(buf)-i);
+    if (path_len >= sizeof(buf)-i)
+      return 0; // truncation occured - give up.
+    if (path_len == -1)
+      return 0; // readlink returned error - give up.
   }
+  i += path_len;
 
-  // We use a little POSIX script for avoiding the case in which
-  // addr2line isn't present
-  rc = snprintf(buf, sizeof(buf),
-          "if test -x /usr/bin/addr2line; then /usr/bin/addr2line -e %s %p;fi",
-          path, (void*)relativeAddr);
-  if (rc >= sizeof(buf))
-    return 0; // command too long
+  rc = snprintf(&buf[i], sizeof(buf)-i,
+                " %p%s", (void*)relativeAddr, scriptPostArgs);
+  if (rc+1 >= sizeof(buf)-i)
+    return 0; // command too long for buffer - give up
 
-  f = popen (buf, "r");
-  if(f == NULL){
-    // We wasn't able to start our pipe, we just give up
-    return 0;
-  }
+  f = popen(buf, "r");
+  if (f == NULL)
+    return 0; // popen failed - give up
+
   p = fgets(buf, sizeof(buf), f);
-  if(p == NULL){
-    // For some reason we wasn't able to read from the pipe, close and exit
+  if (p == NULL){
+    // couldn't read from the pipe - close and give up
     pclose(f);
     return 0;
   }
   pclose(f);
   // file name is until ':'
-  while (*p++ != ':');
+  while (*p++ != ':') { }
   line = atoi(p);
 
   return line;
