@@ -32,5 +32,9 @@ znrm2 : 1 PASSED, 0 FAILED
  drot : 4 PASSED, 0 FAILED
 sscal : 3 PASSED, 0 FAILED
 dscal : 3 PASSED, 0 FAILED
+cscal : 3 PASSED, 0 FAILED
+zscal : 3 PASSED, 0 FAILED
 sswap : 6 PASSED, 0 FAILED
 dswap : 6 PASSED, 0 FAILED
+cswap : 6 PASSED, 0 FAILED
+zswap : 6 PASSED, 0 FAILED
