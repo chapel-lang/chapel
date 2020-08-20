@@ -1051,8 +1051,8 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
 
           // Use 0 to indicate that we care about the constness of the entire
           // LHS, not the receiver's field index (the LHS is almost
-          // guaranteed to be a different type, in which case our fieldIndex
-          // makes no sense to use).
+          // guaranteed to be a different type, in which case the receiver
+          // fieldIndex makes no sense to use).
           // TODO: Any codes that try to return the receiver itself or a
           // shallow copy of the receiver may need to differentiate between a
           // field in the LHS and the entire LHS.
