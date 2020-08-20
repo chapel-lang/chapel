@@ -300,7 +300,7 @@ Using Modules
 The ``use`` statement provides one of the two primary ways to access a module’s
 symbols from outside of the module, the other being the ``import`` statement.
 Use statements by default make both the module’s name and its public symbols
-available for reference within a given scope. For top-level modules, a ``use``
+available for access within a given scope. For top-level modules, a ``use``
 or ``import`` statement is required before referring to the module’s name or the
 symbols it contains within a given lexical scope.
 
@@ -418,7 +418,7 @@ names are inserted in to a common enclosing scope.
 
 An error is signaled if multiple enumeration constants or public
 module-level symbols would be inserted into this enclosing scope with
-the same name, and that name is referenced by other statements in the
+the same name, and that name is accessed by other statements in the
 same scope as the use.
 
 A module or enum being used may optionally be given a new name using the ``as``
@@ -426,13 +426,13 @@ keyword.  This new name will be usable from the scope of the use in place of the
 old name.  This new name does not affect uses or imports of that module from
 other contexts.
 
-The ``as`` keyword can also be used to disable references to the module name
-while still allowing references to the symbols within the module.  This is
+The ``as`` keyword can also be used to disable accesses to the module name
+while still allowing accesses to the symbols within the module.  This is
 accomplished by providing ``_`` as the new name for the module.  When a module
 is renamed to ``_``, symbols within it will only be accessible without a module
-name prefix - no prefix will be useable to reference the symbol.  For example,
+name prefix - no prefix will be useable to access the symbol.  For example,
 if a module A uses a module B in this manner and B defines a symbol bSymbol, A
-can contain references to ``bSymbol``, but cannot contain references to
+can contain accesses to ``bSymbol``, but cannot contain accesses to
 ``B.bSymbol`` or ``_.bSymbol``.
 
 Use statements may be explicitly declared ``public`` or ``private``.
@@ -459,18 +459,18 @@ referred to as `re-exporting`.  However, symbols with the same name in the scope
 with the use will still take precedence.  If module A uses module B, and module
 B contains a public use of module C, then C will be visible to A as though it
 was a submodule of B, and its symbols can also be treated as though they were
-defined within B.  This means that A could contain references like
+defined within B.  This means that A could contain mentions like
 ``B.C.cSymbol`` if cSymbol was a symbol defined in C, regardless of if C was
-actually a submodule of B.  This also means that A could contain references like
-``B.cSymbol`` which would reference C's cSymbol, assuming these symbols were not
+actually a submodule of B.  This also means that A could contain mentions like
+``B.cSymbol`` which would access C's cSymbol, assuming these symbols were not
 shadowed by symbols with the same name in B.  Conversely, if B's use of C is
 ``private`` then A will not be able to see C's symbols due to that ``use``.
 
 This notion of re-exporting extends to the case in which a scope uses multiple
 modules.  For example, if a module A uses a module B, and module B contains a
 public use of modules C1, C2, and C3, then all three of those modules will be
-referenceable by A as though they were submodules of B.  This also means that
-symbols in C1, C2, and C3 will be referenceable as though they were defined in
+accessable by A as though they were submodules of B.  This also means that
+symbols in C1, C2, and C3 will be accessable as though they were defined in
 B, assuming these symbols were not shadowed by symbols with the same name in B
 and that these symbols do not conflict with each other.
 
@@ -534,7 +534,7 @@ Within an ``only`` list, a visible symbol from that module may optionally be
 given a new name using the ``as`` keyword. This new name will be usable from the
 scope of the use in place of the old name unless the old name is additionally
 specified in the ``only`` list. If a use which renames a symbol is present at
-module scope, uses and imports of that module will also be able to reference
+module scope, uses and imports of that module will also be able to access
 that symbol using the new name instead of the old name. Renaming does not affect
 accesses to that symbol via the source module’s or enumerated type’s prefix, nor
 does it affect uses or imports of that module or enumerated type from other
@@ -693,7 +693,7 @@ statements, or a combination of ``import`` and ``use`` statements, then the
 newly-visible names are inserted into a common enclosing scope.
 
 An error is signaled if multiple public module-level symbols would be inserted
-into this enclosing scope with the same name, and that name is referenced by
+into this enclosing scope with the same name, and that name is mentioned by
 other statements in the same scope as the import.
 
 A module or a public module-level symbol being imported may optionally be given
@@ -708,21 +708,21 @@ a strategy which will be referred to as `re-exporting`.  However, symbols with
 the same name in the scope with the import will still take precedence.  If
 module A imports module B, and module B contains a public import of module C,
 then C will be visible to A as though it was a submodule of B.  This means that
-A could contain references like ``B.C.cSymbol`` if cSymbol was a symbol defined
+A could contain mentions like ``B.C.cSymbol`` if cSymbol was a symbol defined
 in C, regardless of if C was actually a submodule of B.  Similarly, if module B
 contains a public import of some public symbols defined in module C, then those
 symbols will be visible to A as though they were defined in module B, unless
 they are shadowed by symbols of the same name in B.  This means that A could
-contain references like ``B.cSymbol`` and it would reference C's cSymbol.
+contain mentions like ``B.cSymbol`` and it would access C's cSymbol.
 Conversely, if B's import of C is ``private`` then A will not be able to see C's
 symbols due to that ``import``.
 
 This notion of re-exporting extends to the case in which a scope imports symbols
 from multiple modules.  For example, if a module A imports a module B, and
 module B contains a public import of modules C1, C2, and C3, then all three of
-those modules will be referenceable by A as though they were submodules of B.
+those modules will be accessable by A as though they were submodules of B.
 Similarly, if module B instead publicly imports specific symbols from C1, C2,
-and C3, A will be able to reference those symbols as though they were defined
+and C3, A will be able to access those symbols as though they were defined
 directly in B.  However, an error is signaled if symbols with the same name are
 imported from these modules.
 
@@ -746,7 +746,7 @@ be given a new name using the ``as`` keyword.  This new name will be usable from
 the scope of the import in place of the old name unless the old name is
 additionally specified in the ``unqualified-list``.  If an import which renames
 a symbol is present at module scope, imports and uses of that module will also
-be able to reference that symbol using the new name instead of the old name.
+be able to access that symbol using the new name instead of the old name.
 Renaming does not affect accesses to that symbol via the source module's prefix,
 nor does it affect imports or uses of that module from other contexts.  It is an
 error to attempt to rename a symbol that does not exist or is not visible in the
