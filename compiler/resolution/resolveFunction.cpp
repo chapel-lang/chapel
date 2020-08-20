@@ -1540,7 +1540,9 @@ void resolveIfExprType(CondStmt* stmt) {
       CallExpr* call = toCallExpr(refBranch->body.tail);
       SymExpr* rhs = toSymExpr(call->get(2));
       if (typeNeedsCopyInitDeinit(rhs->getValType())) {
-        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove(), gFalse);
+        Symbol *definedConst = ret->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+        CallExpr* copy = new CallExpr(astr_autoCopy, rhs->remove(),
+                                      definedConst);
         call->insertAtTail(copy);
         resolveCallAndCallee(copy);
         if (isReferenceType(thenType)) {

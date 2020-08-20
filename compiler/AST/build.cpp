@@ -32,6 +32,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "ImportStmt.h"
+#include "IfExpr.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -1563,21 +1564,29 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
+static void establishDefinedConstWithIfExprs(Expr* e) {
+  if (CallExpr *initCall = toCallExpr(e)) {
+    if (initCall->isNamed("chpl__buildDomainExpr")) {
+      initCall->argList.last()->replace(new SymExpr(gTrue));
+      return;
+    }
+    else if (initCall->isNamed("chpl__distributed")) {
+      initCall->get(3)->replace(new SymExpr(gTrue));
+      return;
+    }
+  }
+  else if (IfExpr *initIf = toIfExpr(e)) {
+    establishDefinedConstWithIfExprs(initIf->getThenStmt()->body.head);
+    establishDefinedConstWithIfExprs(initIf->getElseStmt()->body.head);
+  }
+}
+
 static void establishDefinedConstIfApplicable(DefExpr* defExpr,
                                               std::set<Flag>* flags) {
 
   if (defExpr->init != NULL) {
     if (flags->size() == 1 && flags->count(FLAG_CONST)) {
-      if (CallExpr *initCall = toCallExpr(defExpr->init)) {
-        if (initCall->isNamed("chpl__buildDomainExpr")) {
-          initCall->argList.last()->replace(new SymExpr(gTrue));
-          return;
-        }
-        else if (initCall->isNamed("chpl__distributed")) {
-          initCall->get(3)->replace(new SymExpr(gTrue));
-          return;
-        }
-      }
+      establishDefinedConstWithIfExprs(defExpr->init);
     }
   }
 
