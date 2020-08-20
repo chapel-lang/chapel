@@ -322,8 +322,8 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
                            bool implicitBang=false,
                            bool inOrOtherValue=false);
 
-// in/out/inout
-bool inOrOutFormal(ArgSymbol* formal);
+// in/out/inout but excluding formals to chpl__coerceMove etc
+bool inOrOutFormalNeedingCopyType(ArgSymbol* formal);
 
 bool isCallExprTemporary(Symbol* fromSym);
 bool isTemporaryFromNoCopyReturn(Symbol* fromSym);

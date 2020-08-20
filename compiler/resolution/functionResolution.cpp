@@ -443,9 +443,10 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
     if (formalType == dtAny ||
         formalType->symbol->hasFlag(FLAG_ARRAY)) {
       if (fn == NULL ||
-          !(fn->name == astr_initCopy || fn->name == astr_autoCopy)) {
+          !(fn->name == astr_initCopy || fn->name == astr_autoCopy ||
+            fn->name == astr_coerceMove || fn->name == astr_coerceCopy)) {
 
-        if (formalSym == NULL || inOrOutFormal(formalSym)) {
+        if (formalSym == NULL || inOrOutFormalNeedingCopyType(formalSym)) {
           copyType = getCopyTypeDuringResolution(actualType);
         }
       }

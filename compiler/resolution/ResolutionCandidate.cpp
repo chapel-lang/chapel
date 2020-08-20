@@ -403,13 +403,14 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       Type* defaultType = tail->typeInfo();
 
+      bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
       if (defaultType == dtTypeDefaultToken) {
         substitutions.put(formal, dtTypeDefaultToken->symbol);
 
       } else if (Type* type = getInstantiationType(defaultType, NULL,
                                                    formal->type, NULL, ctx,
                                                    true, false,
-                                                   inOrOutFormal(formal))) {
+                                                   inOutCopy)) {
         substitutions.put(formal, type->symbol);
       }
     }
@@ -465,7 +466,7 @@ void clearCoercibleCache() {
   actualFormalCoercible.clear();
 }
 
-// Uses formalSym and actualSym to compute allowCoercion and implicitBang
+//
 // in a way that is appropriate for uses when resolving arguments
 static
 Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
@@ -474,10 +475,10 @@ Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
   bool implicitBang = allowImplicitNilabilityRemoval(actual->type, actual,
                                                      formal->type, formal);
 
-  bool inOrOtherValue = inOrOutFormal(formal);
+  bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
 
   return getInstantiationType(actual->type, actual, formal->type, formal, ctx,
-                              allowCoercions, implicitBang, inOrOtherValue);
+                              allowCoercions, implicitBang, inOutCopy);
 }
 
 
@@ -520,7 +521,7 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
   return ret;
 }
 
-bool inOrOutFormal(ArgSymbol* formal) {
+bool inOrOutFormalNeedingCopyType(ArgSymbol* formal) {
   // Rule out type/param variables
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) ||
       formal->hasFlag(FLAG_PARAM) ||
@@ -528,6 +529,14 @@ bool inOrOutFormal(ArgSymbol* formal) {
       formal->originalIntent == INTENT_TYPE ||
       formal->intent == INTENT_PARAM ||
       formal->originalIntent == INTENT_PARAM)
+    return false;
+
+  FnSymbol* inFn = formal->defPoint->getFunction();
+  INT_ASSERT(inFn);
+
+  // Don't consider 'in' in chpl__coerceMove for this purpose.
+  if (inFn->name == astr_coerceMove || inFn->name == astr_coerceCopy ||
+      inFn->name == astr_initCopy || inFn->name == astr_autoCopy)
     return false;
 
   return (formal->originalIntent == INTENT_IN ||
