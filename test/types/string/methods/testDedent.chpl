@@ -1,35 +1,81 @@
 /* Temporary dummy method to make sure I can compile this test */
-proc string.dedent(columns=0, ignoreFirst=true) { return this; }
+use Regexp;
+
+// Using (?m: .. ) as a work-around for multiLine not working (#15689)
+const reWhitespaceOnly = compile('''(?m:^[ \t]+$)''');
+// Using (?m: .. ) as a work-around for multiLine not working (#15689)
+//const reLeadingWhitespace = compile('''(^[\s\t]*)(?:[\s\t\n])''', multiLine=true);
+const reLeadingWhitespace = compile('''(?m:^[ \t]+)''');
+
+proc string.dedent(columns=0, ignoreFirst=true) {
+  //writeln('[DEBUG]: string = \n', this);
+  var margin = '';
+  var text = reWhitespaceOnly.sub('', this);
+  var indents = reLeadingWhitespace.matches(text);
+
+  // Find longest leading string of spaces and tabs common to all lines
+  for indent in indents {
+    var match = text[indent[0].offset..#indent[0].size];
+    //writeln('[DEBUG]: match = "', match, '"');
+
+    if margin == '' {
+      // Initialize margin
+      margin = match;
+    } else if match.startsWith(margin) {
+      // Current indent is deeper than margin, continue
+      continue;
+    } else if margin.startsWith(match) {
+      // Current indent is shallower than margin, change margin
+      margin = match;
+    }
+    else {
+      // Find largest common whitespace between current line and previous margin
+      for i in margin.indices {
+        if margin[i] != match[i] {
+          margin = margin[..<i];
+          break;
+        }
+      }
+    }
+  }
+
+  if margin != '' {
+    text = text.replace(margin, '');
+  }
+
+  return text;
+}
+
 
 var testStrings = [
 
   // [0] Common use-case
-  """a
+  """[0]
      b
      c""".dedent(),
 
   // [1] Newlines before/after
   """
-  a
+  [1]
   b
   c
   """.dedent(),
 
   // [2] Note there is trailing whitespace in this example:
   """  
-  a
+  [2]
     
   b
   c
   """.dedent(),
 
   // [3] Remove 4 columns of indentation (there are 5 columns before b and c)
-  """a
+  """[3]
      b
      c""".dedent(columns=4),
 
   // [4] removing (up to) 10 columns (ignoring first line though)
-  """ a
+  """ [4]
         b
          c
           d
@@ -37,12 +83,12 @@ var testStrings = [
 
 
   // [5] Don't ignore the indentation level of the first line
-  """a
+  """[5]
      b
      c""".dedent(ignoreFirst=false),
 
   // [6] Mixing tabs and whitespace
-  """a
+  """[6]
     b
   		c
   	 d
@@ -51,7 +97,7 @@ var testStrings = [
 
   // [7]
   """
-      a
+      [7]
     b
   c
     d
@@ -59,34 +105,34 @@ var testStrings = [
   """.dedent(),
 
   // [8]
-  """ a
+  """ [8]
       b
       c""".dedent(),
 
   // [9]
-  """ a
+  """ [9]
       b
       c""".dedent(ignoreFirst=false),
 
   // [10]
-  """ a
+  """ [10]
       b
       c""".dedent(ignoreFirst=false, columns=2),
 
   // [11]
-  """ a
+  """ [11]
       b
       c""".dedent(ignoreFirst=true, columns=2),
 
   // [12]
-  """ a
+  """ [12]
         b
          c
           d
            e""".dedent(),
 
   // [13]
-  """      a
+  """      [13]
           b
          c
         d
@@ -94,14 +140,14 @@ var testStrings = [
 
   // [14]
   """
-   a
+   [14]
     b
  c
   """.dedent(),
 
   // [15] Empty lines
   """
-  a
+  [15]
 
   b
   c
@@ -109,7 +155,7 @@ var testStrings = [
 
   // [16] Note there is trailing white space in this string
   """
-  a
+  [16]
  
   b
   c
@@ -117,7 +163,7 @@ var testStrings = [
 
   // [17] Note there is trailing white space in this string
   """
-  a
+  [17]
   
   b
   c
@@ -127,7 +173,7 @@ var testStrings = [
 
 // Test driver loop
 for i in testStrings.indices {
-  writeln('[%i]'.format(i));
+  //writeln('[%i]'.format(i));
   writeln(testStrings[i]);
   writeln('---');
 }
