@@ -273,13 +273,11 @@ module CommDiagnostics
 
   private extern proc chpl_comm_stopVerboseHere();
 
-  private extern proc chpl_comm_startDiagnostics(stacktrace: bool,
-                                                 print_unstable: bool);
+  private extern proc chpl_comm_startDiagnostics(print_unstable: bool);
 
   private extern proc chpl_comm_stopDiagnostics();
 
-  private extern proc chpl_comm_startDiagnosticsHere(stacktrace: bool,
-                                                     print_unstable: bool);
+  private extern proc chpl_comm_startDiagnosticsHere(print_unstable: bool);
 
   private extern proc chpl_comm_stopDiagnosticsHere();
 
@@ -315,7 +313,7 @@ module CommDiagnostics
     Start counting communication operations across the whole program.
    */
   proc startCommDiagnostics() {
-    chpl_comm_startDiagnostics(commDiagsStacktrace, commDiagsPrintUnstable);
+    chpl_comm_startDiagnostics(commDiagsPrintUnstable);
   }
 
   /*
@@ -329,7 +327,7 @@ module CommDiagnostics
     Start counting communication operations initiated on this locale.
    */
   proc startCommDiagnosticsHere() {
-    chpl_comm_startDiagnosticsHere(commDiagsStacktrace, commDiagsPrintUnstable);
+    chpl_comm_startDiagnosticsHere(commDiagsPrintUnstable);
   }
 
   /*

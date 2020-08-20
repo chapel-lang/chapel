@@ -63,9 +63,9 @@ void chpl_comm_stopVerbose(void);
 void chpl_comm_startVerboseHere(chpl_bool, chpl_bool);
 void chpl_comm_stopVerboseHere(void);
 
-void chpl_comm_startDiagnostics(chpl_bool, chpl_bool);
+void chpl_comm_startDiagnostics(chpl_bool);
 void chpl_comm_stopDiagnostics(void);
-void chpl_comm_startDiagnosticsHere(chpl_bool, chpl_bool);
+void chpl_comm_startDiagnosticsHere(chpl_bool);
 void chpl_comm_stopDiagnosticsHere(void);
 void chpl_comm_resetDiagnosticsHere(void);
 void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
