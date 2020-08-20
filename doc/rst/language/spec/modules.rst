@@ -454,17 +454,17 @@ signaled if C1, C2, C3 have conflicting public module-level
 definitions of the same symbol.
 
 Making a use ``public`` additionally causes its symbols to be visible as though
-they were defined in the scope with the import, a strategy which will be
-referred to as `re-exporting`.  However, symbols with the same name in the scope
-with the use will still take precedence.  If module A uses module B, and module
-B contains a public use of module C, then C will be visible to A as though it
-was a submodule of B, and its symbols can also be treated as though they were
-defined within B.  This means that A could contain mentions like
-``B.C.cSymbol`` if cSymbol was a symbol defined in C, regardless of if C was
-actually a submodule of B.  This also means that A could contain mentions like
-``B.cSymbol`` which would access C's cSymbol, assuming these symbols were not
-shadowed by symbols with the same name in B.  Conversely, if B's use of C is
-``private`` then A will not be able to see C's symbols due to that ``use``.
+they were defined in the scope with the import.  This strategy is called
+`re-exporting`.  However, symbols with the same name in the scope with the use
+will still take precedence.  If module A uses module B, and module B contains a
+public use of module C, then C will be visible to A as though it was a submodule
+of B, and its symbols can also be treated as though they were defined within B.
+This means that A could contain mentions like ``B.C.cSymbol`` if cSymbol was a
+symbol defined in C, regardless of if C was actually a submodule of B.  This
+also means that A could contain mentions like ``B.cSymbol`` which would access
+C's cSymbol, assuming these symbols were not shadowed by symbols with the same
+name in B.  Conversely, if B's use of C is ``private`` then A will not be able
+to see C's symbols due to that ``use``.
 
 This notion of re-exporting extends to the case in which a scope uses multiple
 modules.  For example, if a module A uses a module B, and module B contains a

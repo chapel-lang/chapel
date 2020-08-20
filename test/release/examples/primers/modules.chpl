@@ -120,9 +120,9 @@ module MainModule {
     /* Access From Outside a Module
        ----------------------------
        In multi-module programs, it is common for modules to access the contents
-       of other modules.  The starting point for doing so is the "``use``
-       statement" or the "``import`` statement" in Chapel.  These statements can
-       be inserted at any lexical scope that contains executable code.
+       of other modules.  The starting point for doing so is the
+       `use statement` or the `import statement` in Chapel.  These statements
+       can be inserted at any lexical scope that contains executable code.
 
        By default, a ``use`` statement makes all of a specific
        module's visible symbols available to the scope that contains
@@ -243,9 +243,9 @@ module MainModule {
       // writeln(modToUse.bar); // would be an error, modToUse not visible
     }
 
-    /* This syntax can also be used by ``use`` statements to enable just
-       unqualified access to a symbol, similar to how the unqualified list
-       syntax for ``import`` statements doesn't enable qualified access.
+    /* With this syntax, a ``use`` statement can enable just unqualified access
+       to a symbol, similar to how the unqualified list syntax for ``import``
+       statements doesn't enable qualified access.
     */
     {
       use modToUse as _;
