@@ -456,15 +456,89 @@ definitions of the same symbol.
 Making a use ``public`` additionally causes its symbols to be visible as though
 they were defined in the scope with the import.  This strategy is called
 `re-exporting`.  However, symbols with the same name in the scope with the use
-will still take precedence.  If module A uses module B, and module B contains a
-public use of module C, then C will be visible to A as though it was a submodule
-of B, and its symbols can also be treated as though they were defined within B.
-This means that A could contain mentions like ``B.C.cSymbol`` if cSymbol was a
-symbol defined in C, regardless of if C was actually a submodule of B.  This
-also means that A could contain mentions like ``B.cSymbol`` which would access
-C's cSymbol, assuming these symbols were not shadowed by symbols with the same
-name in B.  Conversely, if B's use of C is ``private`` then A will not be able
-to see C's symbols due to that ``use``.
+will still take precedence.
+
+   *Example (use-reexport1.chpl)*.
+
+   Say we have a module A that uses a module B, and module B contains a public
+   use of module C:
+
+   .. code-block:: chapel
+
+      module C {
+        var cSymbol: int;
+      }
+
+      module B {
+        public use C;
+      }
+
+      module A {
+         use B;
+
+   In this case, C will be visible to A as though it was a submodule of B, and
+   its symbols can also be treated as though they were defined within B.  This
+   means that A could contain mentions like ``B.C.cSymbol`` if cSymbol was a
+   symbol defined in C, regardless of if C was actually a submodule of B:
+
+   .. code-block:: chapel
+
+         writeln(B.C.cSymbol);
+
+   This also means that A could contain mentions like ``B.cSymbol`` which would
+   access C's cSymbol, assuming these symbols were not shadowed by symbols with
+   the same name in B:
+
+   .. code-block:: chapel
+
+         writeln(B.cSymbol);
+
+   .. BLOCK-test-chapelpost
+
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      0
+
+   *Example (use-reexport2.chpl)*.
+
+   However, if the public use of C also disabled accesses to the module name
+   using the ``as`` keyword, e.g.
+
+   .. code-block:: chapel
+
+      module C {
+        var cSymbol: int;
+      }
+
+      module B {
+        public use C as _;
+      }
+
+      module A {
+         use B;
+
+   Then A could only contain mentions like ``B.cSymbol``, it could not access
+   ``cSymbol`` using ``B.C.cSymbol``.  This is because C is not present as a
+   public name in B's scope.
+
+   .. code-block:: chapel
+
+      // writeln(B.C.cSymbol); // Would not work
+      writeln(B.cSymbol);
+
+   .. BLOCK-test-chapelpost
+
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      0
+
+Conversely, if B's use of C was ``private`` then A would not be able to see C's
+symbols at all due to that ``use``.
 
 This notion of re-exporting extends to the case in which a scope uses multiple
 modules.  For example, if a module A uses a module B, and module B contains a
