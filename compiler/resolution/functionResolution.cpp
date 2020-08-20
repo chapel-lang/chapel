@@ -6955,7 +6955,14 @@ static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
                                                         CallExpr* call) {
 
   if (FnSymbol* fn = call->resolvedFunction()) {
-    fn->setInstantiationPoint(at->symbol->instantiationPoint);
+    if (fn->instantiatedFrom != NULL) {
+      // it is a generic function, so make sure to set instantiationPoint
+      if (at->symbol->instantiationPoint == NULL) {
+        fn->setInstantiationPoint(getInstantiationPoint(at->symbol->defPoint));
+      } else {
+        fn->setInstantiationPoint(at->symbol->instantiationPoint);
+      }
+    }
 
     inTryResolve++;
     tryResolveStates.push_back(CHECK_BODY_RESOLVES);
