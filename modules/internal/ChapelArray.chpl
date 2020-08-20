@@ -4466,28 +4466,34 @@ module ChapelArray {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(const ref other : domain, definedConst: bool) where isRectangularDom(other) {
-    var lhs = new _domain(other.dist, other.rank, other.idxType, other.stridable,
-                          other.dims(), definedConst=definedConst);
+  proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
+      where isRectangularDom(rhs) {
+
+    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
+                          rhs.dims(), definedConst=definedConst);
     return lhs;
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(const ref other : domain, definedConst: bool) where isAssociativeDom(other) {
-    var lhs = new _domain(other.dist, other.idxType, other.parSafe,
+  proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
+      where isAssociativeDom(rhs) {
+
+    var lhs = new _domain(rhs.dist, rhs.idxType, rhs.parSafe,
                           definedConst=definedConst);
     // No need to lock this domain since it's not exposed anywhere yet.
     // No need to handle arrays over this domain either for the same reason.
-    lhs._instance.dsiAssignDomain(other, lhsPrivate=true);
+    lhs._instance.dsiAssignDomain(rhs, lhsPrivate=true);
     return lhs;
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(const ref other : domain, definedConst: bool) where isSparseDom(other) {
-    var lhs = new _domain(other.dist, other.parentDom, definedConst=definedConst);
+  proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
+      where isSparseDom(rhs) {
+
+    var lhs = new _domain(rhs.dist, rhs.parentDom, definedConst=definedConst);
     // No need to lock this domain since it's not exposed anywhere yet.
     // No need to handle arrays over this domain either for the same reason.
-    lhs._instance.dsiAssignDomain(other, lhsPrivate=true);
+    lhs._instance.dsiAssignDomain(rhs, lhsPrivate=true);
     return lhs;
   }
 
