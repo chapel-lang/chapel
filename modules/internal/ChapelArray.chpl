@@ -4469,9 +4469,27 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: [], definedConst: bool) {
-    pragma "no copy"
-    var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
-    return lhs;
+
+    // Reindex and rank change domains should use a non-view domain
+    // when creating the new array. This is not a problem for slices
+    // because they already use a non-view domain.
+    if rhs._value.isRankChangeArrayView() {
+      type t = chpl__buildArrayRuntimeType(_getDomain(rhs.domain.upDom),
+                                           rhs.eltType);
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(t, rhs);
+      return lhs;
+    } else if rhs._value.isReindexArrayView() {
+      type t = chpl__buildArrayRuntimeType(_getDomain(rhs.domain.updom),
+                                           rhs.eltType);
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(t, rhs);
+      return lhs;
+    } else {
+      pragma "no copy"
+      var lhs = chpl__coerceCopy(rhs.type, rhs);
+      return lhs;
+    }
   }
 
   pragma "auto copy fn" proc chpl__autoCopy(x: [], definedConst: bool) {
@@ -4648,7 +4666,6 @@ module ChapelArray {
     }
     return lhs;
   }
-
 
   pragma "find user line"
   pragma "coerce fn"

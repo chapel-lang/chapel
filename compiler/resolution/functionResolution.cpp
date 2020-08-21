@@ -420,6 +420,10 @@ Type* getCopyTypeDuringResolution(Type* t) {
 
     FnSymbol* fn = getInitCopyDuringResolution(at);
     INT_ASSERT(fn);
+
+    if (fn->retType == t)
+      INT_FATAL("Expected different return type for this initCopy");
+
     return fn->retType;
   }
 
@@ -6777,6 +6781,11 @@ void resolveInitVar(CallExpr* call) {
       resolveExpr(initCopy);
       resolveMove(call);
     }
+
+    if (isAliasingArray(srcExpr->getValType()) || initCopyIter)
+      if (FnSymbol* initCopyFn = initCopy->resolvedFunction())
+        if (initCopyFn->retType == srcExpr->getValType())
+          INT_FATAL("Expected different return type for this initCopy");
 
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());

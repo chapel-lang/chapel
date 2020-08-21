@@ -1,0 +1,21 @@
+
+slice
+to const ref is view:         true
+to var is view:               false
+returned is view:             false
+.domain to const ref is view: false
+.domain to var is view:       false
+
+reindex
+to const ref is view:         true
+to var is view:               false
+returned is view:             false
+.domain to const ref is view: true
+.domain to var is view:       true
+
+rank change
+to const ref is view:         true
+to var is view:               false
+returned is view:             false
+.domain to const ref is view: true
+.domain to var is view:       true
