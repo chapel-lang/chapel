@@ -113,18 +113,18 @@ conditionally with :proc:`~Test.skipIf`:
 
    use UnitTest;
 
-   /* calculates factorial */
+   // calculates factorial 
    proc factorial(x: int): int {
      return if x == 0 then 1 else x * factorial(x-1);
    }
 
-   /*Conditional skip*/
+   //Conditional skip
    proc test1(test: borrowed Test) throws {
      test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      test.assertTrue(factorial(5) == 120);
    }
 
-   /*Unconditional skip*/
+   //Unconditional skip
    proc test2(test: borrowed Test) throws {
      test.skip("Skipping the test directly");
    }
@@ -240,10 +240,12 @@ Output:
   OK
 
 */
+
 module UnitTest {
   use Reflection;
   use TestError;
   use List, Map;
+  public use Benchmark;
   private use IO;
 
   pragma "no doc"
@@ -1365,6 +1367,7 @@ module UnitTest {
       var details: string;
 
       proc init(details: string = "") {
+        writeln("Hi");
         this.details = details;
       }
 
@@ -1414,6 +1417,34 @@ module UnitTest {
       proc init(details: string = "") {
         super.init(details);
       }
+    }
+  }
+
+  module Benchmark {
+    use Time;
+    // N - default number of repititions
+    var N: int = 10000;
+    // use hcf to match function signature
+    // to reset timer
+    var t: Timer;
+    proc resetTimer() {
+      t.clear();
+    }
+    // start the timer
+    proc startTimer() {
+      t.start();
+    }
+    // to stop timer and gather total time
+    proc stopTimer() {
+      t.stop();
+    }
+   // returns total time
+    proc totalTime() {
+      writeln("Total time elapsed: ", t.elapsed(TimeUnits.microseconds));
+    }
+   // returns average time
+    proc avgTime() {
+      writeln("Average Time: ", t.elapsed(TimeUnits.microseconds) / N);
     }
   }
 }
