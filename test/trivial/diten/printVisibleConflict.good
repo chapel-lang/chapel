@@ -1,0 +1,14 @@
+  <internal>:0: _local
+  <internal>:0: _privatization
+  <internal>:0: boundsChecking
+  <internal>:0: castChecking
+  <internal>:0: chpl_checkDivByZero
+  <internal>:0: chpl_checkNilDereferences
+  <internal>:0: chpl_nodeID
+  <internal>:0: chpl_overloadSetsChecks
+  <internal>:0: chpl_warnUnstable
+  modules/minimal/internal/ChapelLocale.chpl:27: chpl_sublocID_t
+  printVisibleConflict.chpl:11: xyzSymbol
+printVisibleConflict.chpl:12: Printing symbols visible from here:
+printVisibleConflict.chpl:2: error: symbol zzzSymbol is multiply defined
+printVisibleConflict.chpl:5: note: also defined here
