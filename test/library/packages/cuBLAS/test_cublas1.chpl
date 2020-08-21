@@ -49,9 +49,9 @@ proc main() {
   test_nrm2();
   test_rot();
   test_rotg();
+  test_rotm();
   test_scal();
   test_swap();
-
   //test_rotm();
 
 }
@@ -1050,23 +1050,21 @@ proc test_curotm_helper(type t) {
     //Get pointer to X and Y and P allocated on GPU
     var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
     var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
-    var gpu_ptr_P = cpu_to_gpu(c_ptrTo(P), c_sizeof(t)*N:size_t);
 
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
     select t {
       when real(32) do {
-        cu_srotm(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), gpu_ptr_P:c_ptr(t));
+        cu_srotm(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), P);
       }
       when real(64) do {
-        cu_drotm(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), gpu_ptr_P:c_ptr(t));
+        cu_drotm(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), P);
       }
     }
 
     gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
     gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
-    gpu_to_cpu(c_ptrTo(P), gpu_ptr_P, c_sizeof(t)*N:size_t);
 
     var flag = P[0],
         h11 = P[1],

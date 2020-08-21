@@ -235,12 +235,12 @@ module cuBLAS {
     cublas_zrotg(handle, a, b, c, s);
   }
 
-  proc cu_srotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), params: c_ptr(c_float), incX: c_int = 1, incY: c_int = 1){
+  proc cu_srotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), params: []real(32), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_srotm(handle, n, x, incX, y, incY, params);
   }
 
-  proc cu_drotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), params: c_ptr(c_double), incX: c_int = 1, incY: c_int = 1){
+  proc cu_drotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), y: c_ptr(c_double), params: []real(64), incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_drotm(handle, n, x, incX, y, incY, params);
   }
@@ -365,8 +365,8 @@ module cuBLAS {
     extern proc cublas_crotg(handle: c_void_ptr, a: complex(64), b: complex(64), ref c: c_float, ref s: complex(64));
     extern proc cublas_zrotg(handle: c_void_ptr, a: complex(128), b: complex(128), ref c: c_double, ref s: complex(128));
 
-    extern proc cublas_srotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int, params: c_ptr(c_float));
-    extern proc cublas_drotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int, params: c_ptr(c_double));
+    extern proc cublas_srotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int, params: []c_float);
+    extern proc cublas_drotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int, params: []c_double);
 
     extern proc cublas_srotmg(handle: c_void_ptr, d1: c_float, d2: c_float, x1: c_float, y1: c_float, params: c_ptr(c_float));
     extern proc cublas_drotmg(handle: c_void_ptr, d1: c_double, d2: c_double, x1: c_double, y1: c_double, params: c_ptr(c_float));

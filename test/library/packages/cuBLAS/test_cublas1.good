@@ -34,6 +34,8 @@ srotg : 4 PASSED, 0 FAILED
 drotg : 4 PASSED, 0 FAILED
 crotg : 4 PASSED, 0 FAILED
 zrotg : 4 PASSED, 0 FAILED
+srotm : 4 PASSED, 0 FAILED
+drotm : 4 PASSED, 0 FAILED
 sscal : 3 PASSED, 0 FAILED
 dscal : 3 PASSED, 0 FAILED
 cscal : 3 PASSED, 0 FAILED
