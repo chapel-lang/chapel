@@ -2229,11 +2229,27 @@ module DefaultRectangular {
   }
 
   // A helper routine that will perform a pointer swap on an array
-  // instead of doing a deep copy of that array.
-  proc DefaultRectangularArr.doiSwap(arr) {
-    this.data <=> arr.data;
-    this.initShiftedData();
-    arr.initShiftedData();
+  // instead of doing a deep copy of that array. Returns true
+  // if used the optimized swap, false otherwise
+  proc DefaultRectangularArr.doiOptimizedSwap(other) {
+   // Get shape of array
+    var size1: rank*(this.dom.ranges(0).intIdxType);
+    for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
+      size1(i) = r.size;
+
+    // Get shape of array
+    var size2: rank*(other.dom.ranges(0).intIdxType);
+    for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
+      size2(i) = r.size;
+    
+    if(this.locale == other.locale &&
+       size1 == size2) {
+      this.data <=> other.data;
+      this.initShiftedData();
+      other.initShiftedData();
+      return true;
+    }
+    return false;
   }
 
   // A helper routine to take the first parallel scan over a vector

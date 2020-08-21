@@ -55,6 +55,10 @@ def get_link_args(unwind):
       libs = third_party_utils.default_get_link_args(
                        'libunwind', libs=['libunwind.la', 'libunwind-x86_64.la'])
 
+    # add -ldl so that we can call dladdr
+    if "-ldl" not in libs:
+        libs.append("-ldl")
+
     return libs
 
 

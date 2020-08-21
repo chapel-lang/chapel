@@ -3278,7 +3278,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
-  inline proc <~>(const ref ch: channel, x) const ref throws
+  inline proc <~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
     try ch.readwrite(x);
     return ch;

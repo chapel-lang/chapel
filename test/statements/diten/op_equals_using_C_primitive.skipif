@@ -1,5 +1,3 @@
 # --baseline implies no inlining but this test requires inlining
 COMPOPTS <= --baseline
 COMPOPTS <= --no-inline
-
-COMPOPTS <= --llvm

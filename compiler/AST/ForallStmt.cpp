@@ -158,7 +158,6 @@ void ForallStmt::verify() {
   INT_ASSERT(fLoopBody->blockTag == BLOCK_NORMAL);
   INT_ASSERT(!fLoopBody->blockInfoGet());
   INT_ASSERT(!fLoopBody->isLoopStmt());
-  INT_ASSERT(!fLoopBody->useList);
   INT_ASSERT(!fLoopBody->userLabel);
   INT_ASSERT(!fLoopBody->byrefVars);
 
