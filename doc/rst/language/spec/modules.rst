@@ -530,12 +530,58 @@ Conversely, if B's use of C was ``private`` then A would not be able to see C's
 symbols at all due to that ``use``.
 
 This notion of re-exporting extends to the case in which a scope uses multiple
-modules.  For example, if a module A uses a module B, and module B contains a
-public use of modules C1, C2, and C3, then all three of those modules will be
-accessible by A as though they were submodules of B.  This also means that
-symbols in C1, C2, and C3 will be accessible as though they were defined in
-B, assuming these symbols were not shadowed by symbols with the same name in B
-and that these symbols do not conflict with each other.
+modules.
+
+   *Example (use-reexport3.chpl)*.
+
+   Say we have a module A that uses a module B, and module B contains a
+   public use of modules C1, C2, and C3.
+
+   .. code-block:: chapel
+
+      module C1 {
+        var c1Symbol: int;
+      }
+
+      module C2 {
+        var c2Symbol: bool;
+      }
+
+      module C3 {
+        var c3Symbol = 3;
+      }
+
+      module B {
+        public use C1, C2, C3;
+      }
+
+      module A {
+        proc main() {
+          use B;
+          writeln(B.C1.c1Symbol);
+          writeln(B.C2.c2Symbol);
+          writeln(B.C3.c3Symbol);
+
+          writeln(B.c1Symbol);
+          writeln(B.c2Symbol);
+          writeln(B.c3Symbol);
+        }
+      }
+
+   In this case all three of those modules will be accessible by A as though
+   they were submodules of B.  This also means that symbols in C1, C2, and C3
+   will be accessible as though they were defined in B, assuming these symbols
+   were not shadowed by symbols with the same name in B and that these symbols
+   do not conflict with each other.
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      false
+      3
+      0
+      false
+      3
 
 An optional ``limitation-clause`` may be provided to limit the symbols made
 available by a given use statement. If an ``except`` list is provided, then all
