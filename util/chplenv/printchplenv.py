@@ -95,6 +95,8 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
+    ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER),
+    ChapelEnv('CHPL_SANITIZE_EXE', RUNTIME, 'sanitizers'),
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
@@ -171,6 +173,8 @@ def compute_all_values():
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
+    ENV_VALS['CHPL_SANITIZE'] = chpl_sanitizers.get()
+    ENV_VALS['CHPL_SANITIZE_EXE'] = chpl_sanitizers.get('exe')
 
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""

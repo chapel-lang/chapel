@@ -168,6 +168,16 @@ proc masonModifyHelp() {
   writeln("Package names and versions are not validated upon adding");
 }
 
+proc masonUpdateHelp() {
+  writeln("Update registries and generate Mason.lock");
+  writeln("Usage:");
+  writeln("    mason update [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
+}
+
 proc masonEnvHelp() {
   writeln("Print environment variables recognized by mason");
   writeln();

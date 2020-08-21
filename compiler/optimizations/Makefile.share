@@ -17,7 +17,6 @@
 # limitations under the License.
 
 OPTIMIZATIONS_SRCS = \
-	autoLocalAccess.cpp \
 	bulkCopyRecords.cpp \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
@@ -29,6 +28,7 @@ OPTIMIZATIONS_SRCS = \
 	noAliasSets.cpp \
         optimizeForallUnorderedOps.cpp \
 	optimizeOnClauses.cpp \
+	preNormalizeOptimizations.cpp \
 	refPropagation.cpp \
 	remoteValueForwarding.cpp \
 	removeEmptyRecords.cpp \

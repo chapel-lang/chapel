@@ -1,3 +1,8 @@
 tup.chpl:1: In function 'f':
-tup.chpl:2: error: illegal lvalue in assignment
-tup.chpl:16: error: illegal lvalue in assignment
+tup.chpl:1: error: tuple formal 'x' of 'f' is const and cannot be modified
+note: tuple element #1 of type [domain(1,int(64),false)] int(64)
+tup.chpl:2: note: possibly set here
+tup.chpl:16: error: const actual element is passed to 'ref' intent tuple formal 'x' of 'g'
+note: tuple element #1 of type '[domain(1,int(64),false)] int(64)'
+tup.chpl:15: note: const element declared here
+tup.chpl:6: note: formal element has 'ref' intent due to modification, possibly here

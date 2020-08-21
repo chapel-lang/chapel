@@ -21,8 +21,9 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
-  private use ChapelStandard;
+  use ChapelStandard;
   import RangeChunk;
+  use DSIUtil;
 
   config param debugDefaultSparse = false;
 

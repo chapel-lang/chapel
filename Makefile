@@ -74,6 +74,7 @@ notcompiler: FORCE
 
 compiler: FORCE
 	@echo "Making the compiler..."
+	@cd third-party && $(MAKE) llvm
 	@cd compiler && $(MAKE)
 
 parser: FORCE

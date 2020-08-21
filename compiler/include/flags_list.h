@@ -166,6 +166,11 @@ symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible t
 symbolFlag( FLAG_GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
 symbolFlag( FLAG_HAS_POSTINIT , ypr, "has postinit" , "type that has a postinit method" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
+
+// marks a hidden formal that appears after an inout argument.
+// the hidden formal covers the "out" part of the "inout".
+symbolFlag( FLAG_HIDDEN_FORMAL_INOUT , npr, "hidden formal for inout" , "a separate formal to implement the copy-back part of an inout argument" )
+
 symbolFlag( FLAG_IGNORE_RUNTIME_TYPE , ypr, "ignore runtime type" , "use the static type only in the return value" )
 symbolFlag( FLAG_IGNORE_IN_GLOBAL_ANALYSIS , ypr, "ignore in global analysis" , "ignore this function in global use-before-def analysis" )
 symbolFlag( FLAG_RVV, npr, "RVV", "variable is the return value variable" )
@@ -273,7 +278,11 @@ symbolFlag( FLAG_NO_COPY_RETURN, ypr, "no copy return", ncm)
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )
 symbolFlag( FLAG_NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol" )
 symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not require autoCopy/autoDestroy" )
+
+// This flag disables initialization entirely. In contrast, `= noinit`
+// will possibly run a `proc noinit` initializer.
 symbolFlag( FLAG_NO_INIT , ypr, "no init", "Do not initialize this variable" )
+
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)

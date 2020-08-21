@@ -1,3 +1,4 @@
+use Sys;
 //
 // This test checks the error message printed by the comm=ugni SIGBUS
 // handler when we run out of memory while trying to allocate an array

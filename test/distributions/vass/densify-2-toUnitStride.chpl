@@ -1,3 +1,5 @@
+use DSIUtil;
+
 // I used to have a separate densifyToUnitStride implementation.
 // This test was written for it. Now we fake it.
 proc densifyToUnitStride(w,r) {

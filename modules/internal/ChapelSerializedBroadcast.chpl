@@ -23,7 +23,7 @@
 //
 module ChapelSerializedBroadcast {
   use ChapelLocale;
-  use CPtr;
+  public use CPtr;
 
   config param chpl__enableSerializedGlobals = true;
 

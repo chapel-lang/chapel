@@ -55,12 +55,14 @@
    provides a significant performance improvement for compiling 'hello'.
  */
 
+typedef std::pair<bool, std::vector<FnSymbol*> > ReexportEntry;
+
 class VisibleFunctionBlock {
 public:
                                         VisibleFunctionBlock();
 
   Map<const char*, Vec<FnSymbol*>*>     visibleFunctions;
-  std::map<const char*, std::pair<bool, std::vector<FnSymbol*>*> > reexports;
+  std::map<const char*, ReexportEntry>  reexports;
 };
 
 static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
@@ -69,7 +71,6 @@ static int                                    nVisibleFunctions       = 0;
 
 static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
 static std::set<const char*> typeHelperNames;
-bool builtTypeHelperNames = false;
 
 
 /************************************* | **************************************
@@ -90,28 +91,25 @@ static void  buildVisibleFunctionMap();
 
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 
+static void getVisibleFunctions(const char*              name,
+                                CallExpr*                call,
+                                std::set<BlockStmt*>*    visited,
+                                std::vector<BlockStmt*>* currentScopes,
+                                std::vector<BlockStmt*>* nextScopes,
+                                Vec<FnSymbol*>&          visibleFns);
+
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
-  CallExpr* call = info.call;
+  findVisibleFunctions(info, NULL, NULL, NULL, NULL, visibleFns);
+}
 
-  if (!builtTypeHelperNames) {
-    // Build the cache of names we care about even though they aren't methods
-    typeHelperNames.insert(astrSassign);
-    typeHelperNames.insert(astrSeq);
-    typeHelperNames.insert(astrSne);
-    typeHelperNames.insert(astrSgt);
-    typeHelperNames.insert(astrSgte);
-    typeHelperNames.insert(astrSlt);
-    typeHelperNames.insert(astrSlte);
-    typeHelperNames.insert(astrSswap); // ?
-    typeHelperNames.insert(astr_cast);
-    typeHelperNames.insert(astr_defaultOf);
-    typeHelperNames.insert(astrNew);
-    typeHelperNames.insert(astr_initCopy);
-    typeHelperNames.insert(astr_autoCopy);
-    typeHelperNames.insert(astr("chpl__autoDestroy"));
-    builtTypeHelperNames = true;
-  }
+void findVisibleFunctions(CallInfo&       info,
+                          std::set<BlockStmt*>*    visited,
+                          std::vector<BlockStmt*>* currentScopes,
+                          std::vector<BlockStmt*>* nextScopes,
+                          int*            numVisitedP,
+                          Vec<FnSymbol*>& visibleFns) {
+  CallExpr* call = info.call;
 
   //
   // update visible function map as necessary
@@ -128,7 +126,7 @@ void findVisibleFunctions(CallInfo&       info,
         visibleFns.append(*fns);
       }
       updateReexportEntry(vfb, info.name, block, call);
-      visibleFns.append(*vfb->reexports[info.name].second);
+      visibleFns.append(vfb->reexports[info.name].second);
     }
   } else {
     // Methods, fields, and type helper functions should ignore the privacy and
@@ -141,27 +139,30 @@ void findVisibleFunctions(CallInfo&       info,
       getVisibleMethods(info.name, call, visibleFns);
 
     } else {
-      getVisibleFunctions(info.name, call, visibleFns);
-
+      getVisibleFunctions(info.name, call,
+                          visited, currentScopes, nextScopes, visibleFns);
     }
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
       call->id == explainCallID) {
-    USR_PRINT(call, "call: %s", info.toString());
+    int startVisited = numVisitedP ? *numVisitedP : 0;
+    if (startVisited == 0)
+      USR_PRINT(call, "call: %s", info.toString());
 
     if (visibleFns.n == 0) {
+     if (numVisitedP == NULL)
       USR_PRINT(call, "no visible functions found");
 
     } else {
-      bool first = true;
+      int i = 0;
 
       forv_Vec(FnSymbol, visibleFn, visibleFns) {
+       if (i++ >= startVisited)
         USR_PRINT(visibleFn,
                   "%s %s",
-                  first ? "visible functions are:" : "                      ",
+                  i == 1 ? "visible functions are:" : "                      ",
                   toString(visibleFn));
-        first = false;
       }
     }
   }
@@ -193,6 +194,24 @@ static void buildVisibleFunctionMap() {
     }
   }
   nVisibleFunctions = gFnSymbols.n;
+}
+
+// Build the cache of names we care about even though they aren't methods
+void initTypeHelperNames() {
+  typeHelperNames.insert(astrSassign);
+  typeHelperNames.insert(astrSeq);
+  typeHelperNames.insert(astrSne);
+  typeHelperNames.insert(astrSgt);
+  typeHelperNames.insert(astrSgte);
+  typeHelperNames.insert(astrSlt);
+  typeHelperNames.insert(astrSlte);
+  typeHelperNames.insert(astrSswap); // ?
+  typeHelperNames.insert(astr_cast);
+  typeHelperNames.insert(astr_defaultOf);
+  typeHelperNames.insert(astrNew);
+  typeHelperNames.insert(astr_initCopy);
+  typeHelperNames.insert(astr_autoCopy);
+  typeHelperNames.insert(astr("chpl__autoDestroy"));
 }
 
 /************************************* | **************************************
@@ -279,7 +298,7 @@ static void buildReexportVec(VisibilityStmt* visStmt, const char* name,
           }
 
           updateReexportEntry(vfb, nameToUse, mod->block, call);
-          for_vector(FnSymbol, fn, *vfb->reexports[nameToUse].second) {
+          for_vector(FnSymbol, fn, vfb->reexports[nameToUse].second) {
             vec->push_back(fn);
           }
         } else {
@@ -296,13 +315,11 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
                                 BlockStmt* block, CallExpr* call) {
   // Check to see if this scope also had already checked for
   // re-exports with that particular name.
-  std::pair<bool, std::vector<FnSymbol*>*> reexportEntry = vfb->reexports[name];
+  ReexportEntry& reexportEntry = vfb->reexports[name];
   if (reexportEntry.first == false) {
     // We haven't checked before, so recurse, save, and include what we found
-    reexportEntry.second = new std::vector<FnSymbol*>();
     reexportEntry.first = true;
-    buildReexportVec(block, name, call, reexportEntry.second);
-    vfb->reexports[name] = reexportEntry;
+    buildReexportVec(block, name, call, &reexportEntry.second);
   }
 }
 
@@ -318,6 +335,10 @@ static void getVisibleMethods(const char* name, CallExpr* call,
                               BlockStmt* block, std::set<BlockStmt*>& visited,
                               Vec<FnSymbol*>& visibleFns);
 
+static void lookAtTypeFirst(const char* name, CallExpr* call,
+                            std::set<BlockStmt*>& visited,
+                            Vec<FnSymbol*>& visibleFns);
+
 static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call);
 
 
@@ -326,8 +347,31 @@ static void getVisibleMethods(const char* name, CallExpr* call,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
+  lookAtTypeFirst(name, call, visited, visibleFns);
+
   getVisibleMethods(name, call, block, visited, visibleFns);
 
+}
+
+static void lookAtTypeFirst(const char* name, CallExpr* call,
+                            std::set<BlockStmt*>& visited,
+                            Vec<FnSymbol*>& visibleFns) {
+  INT_ASSERT(call->numActuals() >= 1);
+  Expr* typeActual = NULL;
+
+  if (call->numActuals() >= 2 && call->get(1)->typeInfo() == dtMethodToken) {
+    typeActual = call->get(2);
+  } else {
+    typeActual = call->get(1);
+  }
+  Type* t = typeActual->getValType();
+
+  // Look at own methods
+  getVisibleMethods(name, call, getVisibilityScope(t->symbol->defPoint),
+                    visited, visibleFns);
+
+  // Follow inheritance?  (May be more necessary if I remove the support for
+  // following private uses)
 }
 
 static void getVisibleMethods(const char* name, CallExpr* call,
@@ -484,12 +528,30 @@ static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void getVisibleFunctions(const char*           name,
+static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
+                                std::vector<BlockStmt*>* nextScopes,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool inUseChain);
+
+static void getVisibleFunctions(const char*              name,
+                                CallExpr*                call,
+                                std::set<BlockStmt*>*    visited,
+                                std::vector<BlockStmt*>* currentScopes,
+                                std::vector<BlockStmt*>* nextScopes,
+                                Vec<FnSymbol*>&          visibleFns) {
+  if (visited == NULL) {
+    getVisibleFunctions(name, call, visibleFns);  // it allocates 'visited'
+    return;
+  }
+
+  // visit everything in currentScopes
+  for_vector(BlockStmt, block, *currentScopes)
+    getVisibleFunctionsImpl(name, call, block, *visited, nextScopes,
+                            visibleFns, false);
+}
 
 void getVisibleFunctions(const char*      name,
                          CallExpr*        call,
@@ -497,7 +559,7 @@ void getVisibleFunctions(const char*      name,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
-  getVisibleFunctions(name, call, block, visited, visibleFns, false);
+  getVisibleFunctionsImpl(name, call, block, visited, NULL, visibleFns, false);
 }
 
 static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt*    block,
@@ -544,10 +606,9 @@ static void getVisibleFnsShowBlock(BlockStmt* block, ModuleSymbol* inMod,
     printf("visible fns: block %i  %s\n",
            block->id, debugLoc(block));
 
-  if (instantiationPt) {
+  if (instantiationPt)
     printf("  instantiated from block %i  %s\n",
            instantiationPt->id, debugLoc(instantiationPt));
-  }
 }
 
 static void getVisibleFnsFirstVisit(const char*       name,
@@ -649,12 +710,12 @@ static void getVisibleFnsFromUseList(const char*      name,
 
             if (mod->isVisible(call)) {
               if (use->isARenamedSym(name)) {
-                getVisibleFunctions(use->getRenamedSym(name),
+                getVisibleFunctionsImpl(use->getRenamedSym(name),
                                     call, mod->block,
-                                    visited, visibleFns, true);
+                                    visited, NULL, visibleFns, true);
               } else {
-                getVisibleFunctions(name, call, mod->block,
-                                    visited, visibleFns, true);
+                getVisibleFunctionsImpl(name, call, mod->block, 
+                                    visited, NULL, visibleFns, true);
               }
             }
           }
@@ -673,11 +734,11 @@ static void getVisibleFnsFromUseList(const char*      name,
           INT_ASSERT(mod);
           if (mod->isVisible(call)) {
             if (import->isARenamedSym(name)) {
-              getVisibleFunctions(import->getRenamedSym(name), call,
-                                  mod->block, visited, visibleFns, true);
+              getVisibleFunctionsImpl(import->getRenamedSym(name), call,
+                                  mod->block, visited, NULL, visibleFns, true);
             } else {
-              getVisibleFunctions(name, call, mod->block, visited,
-                                  visibleFns, true);
+              getVisibleFunctionsImpl(name, call, mod->block, visited,
+                                  NULL, visibleFns, true);
             }
           }
         }
@@ -688,10 +749,11 @@ static void getVisibleFnsFromUseList(const char*      name,
   }
 }
 
-static void getVisibleFunctions(const char*           name,
+static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
+                                std::vector<BlockStmt*>* nextScopes,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain)
 {
@@ -725,13 +787,20 @@ static void getVisibleFunctions(const char*           name,
     BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
     // Recurse in the enclosing block
-    getVisibleFunctions(name, call, next, visited, visibleFns, inUseChain);
+    getVisibleFunctionsImpl(name, call, next, visited, nextScopes,
+                            visibleFns, inUseChain);
   }
 
-    // Also look at the instantiation point
+  // Also look at the instantiation point
   if (instantiationPt != NULL)
-    getVisibleFunctions(name, call, instantiationPt, visited, visibleFns,
-                        inUseChain);
+  {
+    INT_ASSERT(!inUseChain);
+    if (nextScopes == NULL)
+      getVisibleFunctionsImpl(name, call, // visit all POIs right away
+                  instantiationPt, visited, NULL, visibleFns, inUseChain);
+    else
+      nextScopes->push_back(instantiationPt); // come back to it later
+  }
 }
 
 /*
@@ -865,11 +934,9 @@ void visibleFunctionsClear() {
       delete vfn;
     }
 
-    for(std::map<const char*, std::pair<bool,
-          std::vector<FnSymbol*>*> >::iterator it = vfb->reexports.begin();
-        it != vfb->reexports.end(); ++it) {
-      std::pair<bool, std::vector<FnSymbol*>*> val = it->second;
-      delete val.second;
+    std::map<const char*, ReexportEntry>::iterator it;
+    for (it= vfb->reexports.begin(); it != vfb->reexports.end(); ++it) {
+      it->second.second.clear();
     }
 
     delete vfb;

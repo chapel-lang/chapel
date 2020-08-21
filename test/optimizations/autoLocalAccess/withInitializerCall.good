@@ -1,9 +1,6 @@
 **** Start forall ****
 	withInitializerCall.chpl:13
 
-Regular domain symbol was not found for array
-	withInitializerCall.chpl:12
-
 Iterated over the domain of
 	withInitializerCall.chpl:12
 
@@ -27,9 +24,6 @@ Potential access
 
 **** Start forall ****
 	withInitializerCall.chpl:20
-
-Regular domain symbol was not found for array
-	withInitializerCall.chpl:19
 
 Iterated over the domain of
 	withInitializerCall.chpl:19
@@ -54,9 +48,6 @@ Potential access
 
 **** Start forall ****
 	withInitializerCall.chpl:29
-
-Regular domain symbol was not found for array
-	withInitializerCall.chpl:28
 
 Iterated over the domain of
 	withInitializerCall.chpl:28
@@ -81,9 +72,6 @@ Potential access
 
 **** Start forall ****
 	withInitializerCall.chpl:36
-
-Regular domain symbol was not found for array
-	withInitializerCall.chpl:35
 
 Iterated over the domain of
 	withInitializerCall.chpl:35

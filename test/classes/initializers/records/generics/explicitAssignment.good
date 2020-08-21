@@ -1,5 +1,5 @@
 explicitAssignment.chpl:15: In function 'main':
-explicitAssignment.chpl:16: error: unresolved call 'Foo(real(64)).init=(Foo(int(64)))'
+explicitAssignment.chpl:16: error: could not find a copy initializer ('init=') for type 'Foo(real(64))' from type 'Foo(int(64))'
 explicitAssignment.chpl:3: note: this candidate did not match: Foo.init=(other: this.type)
 explicitAssignment.chpl:16: note: because call actual argument #1 with type Foo(int(64))
 explicitAssignment.chpl:3: note: is passed to formal 'other: Foo(real(64))'

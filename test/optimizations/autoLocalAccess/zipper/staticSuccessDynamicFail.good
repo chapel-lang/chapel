@@ -1,9 +1,6 @@
 **** Start forall ****
 	staticSuccessDynamicFail.chpl:6
 
-Regular domain symbol was not found for array
-	staticSuccessDynamicFail.chpl:4
-
 Iterated over the domain of
 	staticSuccessDynamicFail.chpl:4
 
@@ -22,7 +19,7 @@ Potential access
 Potential access
 	staticSuccessDynamicFail.chpl:7
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	staticSuccessDynamicFail.chpl:3
 
 	Marking static candidate

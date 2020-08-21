@@ -26,6 +26,7 @@
 
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
+#include "error.h"
 
 ////////////////////
 //
@@ -33,6 +34,8 @@
 //
 
 extern int chpl_verbose_comm;     // set via startVerboseComm
+extern int chpl_verbose_comm_stacktrace;
+
 extern int chpl_comm_diagnostics; // set via startCommDiagnostics
 extern int chpl_comm_diags_print_unstable;
 
@@ -55,9 +58,9 @@ typedef struct _chpl_commDiagnostics {
 #undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
 
-void chpl_comm_startVerbose(chpl_bool);
+void chpl_comm_startVerbose(chpl_bool, chpl_bool);
 void chpl_comm_stopVerbose(void);
-void chpl_comm_startVerboseHere(chpl_bool);
+void chpl_comm_startVerboseHere(chpl_bool, chpl_bool);
 void chpl_comm_stopVerboseHere(void);
 
 void chpl_comm_startDiagnostics(chpl_bool);
@@ -126,7 +129,16 @@ int chpl_comm_diags_is_enabled(void) {
     if (chpl_verbose_comm                                          \
         && chpl_comm_diags_is_enabled()                            \
         && (!is_unstable || chpl_comm_diags_print_unstable)) {     \
-      printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);        \
+      char* stack = NULL;                                          \
+      if (chpl_verbose_comm_stacktrace) {                          \
+        stack = chpl_stack_unwind_to_string(' ');                  \
+      }                                                            \
+      if (stack != NULL) {                                         \
+        printf("%d: " format " <%s>\n", chpl_nodeID, __VA_ARGS__, stack); \
+        chpl_mem_free(stack, 0, 0);                                \
+      } else {                                                     \
+        printf("%d: " format "\n", chpl_nodeID, __VA_ARGS__);      \
+      }                                                            \
     }                                                              \
   } while(0)
 

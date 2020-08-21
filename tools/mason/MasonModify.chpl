@@ -24,7 +24,7 @@ use MasonUtils;
 private use Map;
 
 /* Modify manifest file */
-proc masonModify(args) throws {
+proc masonModify(args: [] string) throws {
   try! {
 
     // Check for help flags

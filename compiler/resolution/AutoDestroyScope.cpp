@@ -437,7 +437,8 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
         if (startingScope->isVariableInitialized(var)) {
           bool outIntentFormalReturn = forErrorReturn == false &&
-                                       var->hasFlag(FLAG_FORMAL_TEMP_OUT);
+                                       (var->hasFlag(FLAG_FORMAL_TEMP_OUT) ||
+                                        var->hasFlag(FLAG_FORMAL_TEMP_INOUT));
           // No deinit for out formal returns - deinited at call site
           if (outIntentFormalReturn == false)
             deinitialize(insertBeforeStmt, NULL, var);

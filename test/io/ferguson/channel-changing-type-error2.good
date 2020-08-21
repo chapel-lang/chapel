@@ -1,0 +1,2 @@
+channel-changing-type-error2.chpl:3: In function 'main':
+channel-changing-type-error2.chpl:6: error: cannot init writing channel from reading channel

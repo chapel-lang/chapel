@@ -13,7 +13,7 @@ extern record simpleStruct {
   var e : my_string;
 }
 
-extern proc retStruct(a : my_int, b : my_int, r : renamedStruct) : fancyStruct;
+extern proc retStruct(a : my_int, b : my_int, in r : renamedStruct) : fancyStruct;
 
 extern proc tdPointer(ref a : fancyStruct, ref b : c_ptr(renamedStruct)) : void;
 

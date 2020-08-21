@@ -39,7 +39,7 @@ static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
 
-std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
+std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -205,7 +205,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
         }
 
         if (formalIdxToActual[j] == NULL &&
-            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT) &&
+            !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -238,7 +239,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // or have a default value.
   while (formal) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
-        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT) &&
+        !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
       failingArgument = formal;
       reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;
@@ -425,19 +427,12 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    std::map<Type*,bool> *formalCoercible = actualFormalCoercible[actualType];
-    if (formalCoercible != NULL) {
-      if (formalCoercible->count(formalType) > 0) {
-        allowCoercions = (*formalCoercible)[formalType];
-      } else {
-        allowCoercions = shouldAllowCoercionsType(actualType, formalType);
-        (*formalCoercible)[formalType] = allowCoercions;
-      }
+    std::map<Type*,bool>& formalCoercible = actualFormalCoercible[actualType];
+    if (formalCoercible.count(formalType) > 0) {
+      allowCoercions = formalCoercible[formalType];
     } else {
-      std::map<Type*,bool> *formalCoercible = new std::map<Type*,bool>();
       allowCoercions = shouldAllowCoercionsType(actualType, formalType);
-      (*formalCoercible)[formalType] = allowCoercions;
-      actualFormalCoercible[actualType] = formalCoercible;
+      formalCoercible[formalType] = allowCoercions;
     }
   }
 
@@ -468,11 +463,7 @@ static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
 }
 
 void clearCoercibleCache() {
-  std::map<Type*,std::map<Type*,bool>*>::iterator it;
-  for (it = actualFormalCoercible.begin(); it != actualFormalCoercible.end();
-       ++it) {
-    delete it->second;
-  }
+  actualFormalCoercible.clear();
 }
 
 // Uses formalSym and actualSym to compute allowCoercion and implicitBang
@@ -966,6 +957,10 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       // This only happens when no actual exists for this formal,
       // so no point in trying to find one.
     }
+
+    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT) ||
+        formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
+      continue;
 
     if (formal->type == dtMethodToken)
       fnIsMethod = true;

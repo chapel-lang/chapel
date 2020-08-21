@@ -949,11 +949,16 @@ void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
   }
 }
 
-void readArgsFromFile(std::string path, std::vector<std::string>& args) {
+bool readArgsFromFile(std::string path, std::vector<std::string>& args,
+                      bool errFatal) {
 
   FILE* fd = fopen(path.c_str(), "r");
-  if (!fd)
-    USR_FATAL("Could not open file %s", path.c_str());
+  if (!fd) {
+    if (errFatal)
+      USR_FATAL("Could not open file %s", path.c_str());
+
+    return false;
+  }
 
   int ch;
   // Read arguments.
@@ -973,6 +978,8 @@ void readArgsFromFile(std::string path, std::vector<std::string>& args) {
   }
 
   fclose(fd);
+
+  return true;
 }
 
 // Expands variables like $CHPL_HOME in the string

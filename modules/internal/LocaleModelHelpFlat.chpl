@@ -22,9 +22,9 @@ module LocaleModelHelpFlat {
 
   param localeModelHasSublocales = false;
 
-  use LocaleModelHelpSetup;
-  use LocaleModelHelpRuntime;
-  private use SysCTypes;
+  public use LocaleModelHelpSetup;
+  public use LocaleModelHelpRuntime;
+  use SysCTypes;
 
   //////////////////////////////////////////
   //

@@ -24,9 +24,10 @@ pragma "unsafe" // workaround for trying to default-initialize nil objects
 module DefaultAssociative {
 
   use DSIUtil;
-  private use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
-  private use ChapelBase, ChapelLocks, IO;
-  private use ChapelHashing, ChapelHashtable;
+  use ChapelDistribution, ChapelRange, SysBasic, ChapelArray;
+  use ChapelBase, ChapelLocks, IO;
+  use ChapelHashing, ChapelHashtable;
+  use SysError;
 
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
@@ -286,11 +287,13 @@ module DefaultAssociative {
           table.table[slot].status = chpl__hash_status.empty;
         }
         numEntries.write(0);
+        table.maybeShrinkAfterRemove();
         unlockTable();
       }
     }
 
     proc dsiMember(idx: idxType): bool {
+      lockTable(); defer { unlockTable(); }
       var (foundFullSlot, slotNum) = table.findFullSlot(idx);
       return foundFullSlot;
     }
@@ -375,6 +378,7 @@ module DefaultAssociative {
         } else {
           retval = 0;
         }
+        table.maybeShrinkAfterRemove();
       }
       return retval;
     }
@@ -443,6 +447,9 @@ module DefaultAssociative {
     // used during rehashes (could move into an array in rehash fn)
     var tmpData: _ddata(eltType);
 
+    // indicates if elements need to be deinitialized
+    var eltsNeedDeinit = true;
+
     proc init(type eltType,
               type idxType,
               param parSafeDom,
@@ -457,6 +464,7 @@ module DefaultAssociative {
 
       this.data = dom.table.allocateData(tableSize, eltType);
       this.tmpData = nil;
+      this.eltsNeedDeinit = initElts;
       this.complete();
 
       if initElts {
@@ -787,15 +795,20 @@ module DefaultAssociative {
     }
 
     override proc dsiElementInitializationComplete() {
-      // No action necessary because associative array
+      // No post-allocate necessary because associative array
       // runs the post-allocate on the array in dom.allocateData
       // (because not all elements are necessarily initialized, but
       //  the access pattern is predictable at least in default forall
       //  iteration).
+      this.eltsNeedDeinit = true;
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
-      if deinitElts {
+    override proc dsiElementDeinitializationComplete() {
+      this.eltsNeedDeinit = false;
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
+      if deinitElts && this.eltsNeedDeinit {
         if _elementNeedsDeinit() {
           if _deinitElementsIsParallel(eltType) {
             forall slot in dom.table.allSlots() {
@@ -812,6 +825,7 @@ module DefaultAssociative {
           }
         }
       }
+      this.eltsNeedDeinit = false;
     }
   }
 }

@@ -2,7 +2,7 @@
 
 # The HDF5 package requires the hdf5 library.
 
-if h5cc -showconfig 2>&1 > /dev/null ; then
+if h5cc -showconfig 2>&1 | grep -q 'High-level library: yes' ; then
   echo 'False'
 else
   echo 'True'
