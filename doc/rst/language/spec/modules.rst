@@ -474,28 +474,21 @@ will still take precedence.
       }
 
       module A {
-         use B;
+        proc main() {
+          use B;
+          writeln(B.C.cSymbol);
+          writeln(B.cSymbol);
+        }
+      }
 
    In this case, C will be visible to A as though it was a submodule of B, and
    its symbols can also be treated as though they were defined within B.  This
-   means that A could contain mentions like ``B.C.cSymbol`` if cSymbol was a
+   means that A can contain mentions like ``B.C.cSymbol`` if cSymbol was a
    symbol defined in C, regardless of if C was actually a submodule of B:
 
-   .. code-block:: chapel
-
-         writeln(B.C.cSymbol);
-
-   This also means that A could contain mentions like ``B.cSymbol`` which would
+   This also means that A can contain mentions like ``B.cSymbol`` which would
    access C's cSymbol, assuming these symbols were not shadowed by symbols with
    the same name in B:
-
-   .. code-block:: chapel
-
-         writeln(B.cSymbol);
-
-   .. BLOCK-test-chapelpost
-
-      }
 
    .. BLOCK-test-chapeloutput
 
@@ -518,20 +511,16 @@ will still take precedence.
       }
 
       module A {
-         use B;
+        proc main() {
+          use B;
+          // writeln(B.C.cSymbol); // Would not work
+          writeln(B.cSymbol);
+        }
+      }
 
    Then A could only contain mentions like ``B.cSymbol``, it could not access
    ``cSymbol`` using ``B.C.cSymbol``.  This is because C is not present as a
    public name in B's scope.
-
-   .. code-block:: chapel
-
-      // writeln(B.C.cSymbol); // Would not work
-      writeln(B.cSymbol);
-
-   .. BLOCK-test-chapelpost
-
-      }
 
    .. BLOCK-test-chapeloutput
 
