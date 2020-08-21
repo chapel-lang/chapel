@@ -48,9 +48,10 @@ proc main() {
   test_dotc();
   test_nrm2();
   test_rot();
+  test_rotg();
   test_scal();
   test_swap();
-  //test_rotg();
+
   //test_rotm();
 
 }
@@ -124,6 +125,7 @@ proc test_rot() {
 proc test_rotg() {
   test_curotg_helper(real(32));
   test_curotg_helper(real(64));
+  //test_curotg_helper(complex(64));
 }
 
 proc test_rotm() {
@@ -875,29 +877,23 @@ proc test_curotg_helper(type t) {
     // r == sqrt(a**2 + b**2)
     var R = ((A**2 + B**2)**0.5): t;
     err = abs(r - R);
-    writeln("err1: ", err);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     // c s * a  = r
     //-s c   b    0
     err = abs(c*A + s*B - r);
-    writeln("c*A + s*B - r ", " c: ", c, " A: ", A, " s: ", s, " B: ", B, " r: ", r);
-    writeln("err2: ", err);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
     err = abs(-s*A + c*B);
-    writeln("err3: ", err);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     // The parameter z is defined such that if |a| > |b|, z is s; otherwise if
     // c is not 0 z is 1/c; otherwise z is 1.
     if abs(A) > abs(B) then
       err = abs(z - s);
-    else if c != zero then {
+    else if c != zero then
       err = abs((z - 1.0/c): t);
-      writeln("err4a: ", err);}
-    else {
+    else
       err = abs((z - 1.0): t);
-      writeln("err4b: ", err); }
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
