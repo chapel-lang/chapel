@@ -39,5 +39,5 @@ If you have authored a commit that is missing the signed-off-by line, you can am
 If you've pushed your changes to GitHub already you'll need to force push your branch after this with `git push -f`.
 
 
-
-[text of DCO]: https://developercertificate.org/
+---
+[text of the DCO]: https://developercertificate.org/
