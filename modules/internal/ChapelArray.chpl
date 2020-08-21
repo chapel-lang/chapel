@@ -4477,17 +4477,17 @@ module ChapelArray {
       type t = chpl__buildArrayRuntimeType(_getDomain(rhs.domain.upDom),
                                            rhs.eltType);
       pragma "no copy"
-      var lhs = chpl__coerceCopy(t, rhs);
+      var lhs = chpl__coerceCopy(t, rhs, definedConst);
       return lhs;
     } else if rhs._value.isReindexArrayView() {
       type t = chpl__buildArrayRuntimeType(_getDomain(rhs.domain.updom),
                                            rhs.eltType);
       pragma "no copy"
-      var lhs = chpl__coerceCopy(t, rhs);
+      var lhs = chpl__coerceCopy(t, rhs, definedConst);
       return lhs;
     } else {
       pragma "no copy"
-      var lhs = chpl__coerceCopy(rhs.type, rhs);
+      var lhs = chpl__coerceCopy(rhs.type, rhs, definedConst);
       return lhs;
     }
   }

@@ -778,7 +778,8 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
           Expr*      rhs       = call->get(2)->remove();
           VarSymbol* tmp       = newTemp("copy_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
-          CallExpr*  unrefCall = new CallExpr(initCopyFn, tmp);
+          Symbol* definedConst = gFalse;
+          CallExpr*  unrefCall = new CallExpr(initCopyFn, tmp, definedConst);
           CallExpr*  shapeSet  = findSetShape(call, ret);
 
           // Used by callDestructors to catch assignment from
