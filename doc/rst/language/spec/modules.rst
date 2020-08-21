@@ -532,8 +532,8 @@ symbols at all due to that ``use``.
 This notion of re-exporting extends to the case in which a scope uses multiple
 modules.  For example, if a module A uses a module B, and module B contains a
 public use of modules C1, C2, and C3, then all three of those modules will be
-accessable by A as though they were submodules of B.  This also means that
-symbols in C1, C2, and C3 will be accessable as though they were defined in
+accessible by A as though they were submodules of B.  This also means that
+symbols in C1, C2, and C3 will be accessible as though they were defined in
 B, assuming these symbols were not shadowed by symbols with the same name in B
 and that these symbols do not conflict with each other.
 
@@ -783,7 +783,7 @@ symbols due to that ``import``.
 This notion of re-exporting extends to the case in which a scope imports symbols
 from multiple modules.  For example, if a module A imports a module B, and
 module B contains a public import of modules C1, C2, and C3, then all three of
-those modules will be accessable by A as though they were submodules of B.
+those modules will be accessible by A as though they were submodules of B.
 Similarly, if module B instead publicly imports specific symbols from C1, C2,
 and C3, A will be able to access those symbols as though they were defined
 directly in B.  However, an error is signaled if symbols with the same name are
