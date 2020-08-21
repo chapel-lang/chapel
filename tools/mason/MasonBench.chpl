@@ -132,7 +132,7 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
       numBenchTests = files.size;
       customBenchTest = true;
     }
-    printMetadata(compopts, benchTestNames);
+    writeln("*********** Benchmark Results ****************");
     if numBenchTests > 0 {
       for benchTest in benchTestNames {
         var benchTestPath: string;
@@ -147,19 +147,28 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
         const outputLoc = projectHome + "/target/benchmark/" + stripExt(benchTestTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl", benchTestPath, projectPath, moveTo, allCompopts);
-        writeln(compCommand);
         const compilation = runWithStatus(compCommand, show);
         if compilation != 0 {
-          stderr.writeln("compilation failed for " + benchTest);
+          stderr.writeln("Compilation failed for " + benchTest);
           const errMsg = benchTest + " failed to compile";
           // TODO:  add to results from unit test 
         } else {
-          writeln("Compiled " + benchTest + "successfully");
+          writeln("Compiled " + benchTest + " successfully");
+          runAndLogBenchmarks(projectHome, outputLoc, benchTestName);
         }
+        writeln("**********************************************");
       }  
     }
   }
   catch e: MasonError {
     stderr.writeln(e.message());
   }
+}
+
+/* Execute benchmarks from target/ and log output */
+proc runAndLogBenchmarks(projectHome: string, outputLoc: string, benchTestName: string) {
+  var executable = outputLoc;
+  var line: string;
+  var exec = spawn([executable]);
+  exec.wait();
 }

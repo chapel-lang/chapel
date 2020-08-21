@@ -1440,11 +1440,11 @@ module UnitTest {
     }
    // returns total time
     proc totalTime() {
-      writeln("Total time elapsed: ", t.elapsed(TimeUnits.microseconds));
+      writeln("Total time elapsed(microseconds): ", t.elapsed(TimeUnits.microseconds));
     }
    // returns average time
     proc avgTime() {
-      writeln("Average Time: ", t.elapsed(TimeUnits.microseconds) / N);
+      writeln("Average Time(ms/N): ", t.elapsed(TimeUnits.microseconds) / N);
     }
   }
 }
