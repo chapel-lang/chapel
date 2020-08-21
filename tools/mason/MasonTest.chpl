@@ -133,7 +133,7 @@ proc masonTest(args) throws {
       for test in tests{
         if test.endsWith(".chpl"){
           if(inProjectDir){
-            testNames.append(getTestPath(test));
+            testNames.append(getTestPath(test, false, ""));
           }
           else{
             var testLoc = "";
@@ -168,7 +168,8 @@ proc masonTest(args) throws {
         }
       }
     }
-
+   
+    
     updateLock(skipUpdate);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
@@ -410,8 +411,8 @@ proc getTests(lock: borrowed Toml, projectHome: string, bench: bool) {
     var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
-        if !bench then testNames.append(getTestPath(test));
-        else testNames.append(basename(test));
+        if !bench then testNames.append(getTestPath(test, bench));
+        else testNames.append(getTestPath(test, bench));
       }
     }
   }
@@ -419,18 +420,30 @@ proc getTests(lock: borrowed Toml, projectHome: string, bench: bool) {
 }
 
 /* Gets the path of the test following the test dir */
-proc getTestPath(fullPath: string, testPath = "") : string {
+proc getTestPath(fullPath: string, bench: bool, testPath = "") : string {
   var split = splitPath(fullPath);
-  if split[1] == "test" {
-    return testPath;
-  }
-  else {
-    if testPath == "" {
-      return getTestPath(split[0], split[1]);
+  //for x in split do writeln("(getTestPath): ", x);
+  if !bench {
+    if split[1] == "test" {
+      return testPath;
     }
     else {
-      var appendedPath = joinPath(split[1], testPath);
-      return getTestPath(split[0], appendedPath);
+      if testPath == "" {
+        return getTestPath(split[0], bench, split[1]);
+      }
+      else {
+        var appendedPath = joinPath(split[1], testPath);
+        return getTestPath(split[0], bench, appendedPath);
+      }
+    }
+  } else {
+    if split[1] == "benchmark" then return testPath;
+    else {
+      if testPath == "" then return getTestPath(split[0], bench, split[1]);
+      else {
+        var appendedPath = joinPath(split[1], testPath);
+        return getTestPath(split[0], bench, appendedPath);
+      }
     }
   }
 }

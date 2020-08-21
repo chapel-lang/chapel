@@ -145,8 +145,9 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
         if cwd == projectHome && customTest then
           benchTestTemp = relPath(benchTestTemp, "benchmark/");
         const outputLoc = projectHome + "/target/benchmark/" + stripExt(benchTestTemp, ".chpl");
+        if !isDir(dirname(outputLoc)) then mkdir(dirname(outputLoc));
         const moveTo = "-o " + outputLoc;
-        const compCommand = " ".join("chpl", benchTestPath, projectPath, moveTo, allCompopts);
+        const compCommand = " ".join("chpl --fast", benchTestPath, projectPath, moveTo, allCompopts);
         const compilation = runWithStatus(compCommand, show);
         if compilation != 0 {
           stderr.writeln("Compilation failed for " + benchTest);
