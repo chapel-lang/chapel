@@ -125,7 +125,8 @@ proc test_rot() {
 proc test_rotg() {
   test_curotg_helper(real(32));
   test_curotg_helper(real(64));
-  //test_curotg_helper(complex(64));
+  test_cucrotg_helper(complex(64));
+  test_cuzrotg_helper(complex(128));
 }
 
 proc test_rotm() {
@@ -896,6 +897,128 @@ proc test_curotg_helper(type t) {
       err = abs((z - 1.0): t);
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cucrotg_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%srotg".format(blasPrefix(t));
+
+  {
+
+    var err: t;
+
+    // inputs
+    var a = 1.0: t,
+        b = 0.0: t;
+    // outputs
+    var c: real(32),
+        s: t;
+
+    // Save inputs by value
+    var A: t = a,
+        B: t = b;
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when complex(64) do {
+        cu_crotg(cublas_handle, a, b, c, s);
+      }
+    }
+
+    // rename outputs
+    var r = a;
+    var z = b;
+    const zero: t;
+
+    // r == sqrt(a**2 + b**2)
+    var R = ((A**2 + B**2)**0.5): t;
+    err = abs(r - R);
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+    // c s * a  = r
+    //-s c   b    0
+    err = abs(c*A + s*B - r);
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+    err = abs(-s*A + c*B);
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+
+    // The parameter z is defined such that if |a| > |b|, z is s; otherwise if
+    // c is not 0 z is 1/c; otherwise z is 1.
+    if abs(A) > abs(B) then
+      err = abs(z - s);
+    else if c != zero then
+      err = abs((z - 1.0/c): t);
+    else
+      err = abs((z - 1.0): t);
+
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cuzrotg_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%srotg".format(blasPrefix(t));
+
+  {
+
+    var err: t;
+
+    // inputs
+    var a = 1.0: t,
+        b = 0.0: t;
+    // outputs
+    var c: real(64),
+        s: t;
+
+    // Save inputs by value
+    var A: t = a,
+        B: t = b;
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when complex(128) do {
+        cu_zrotg(cublas_handle, a, b, c, s);
+      }
+    }
+
+    // rename outputs
+    var r = a;
+    var z = b;
+    const zero: t;
+
+    // r == sqrt(a**2 + b**2)
+    var R = ((A**2 + B**2)**0.5): t;
+    err = abs(r - R);
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+    // c s * a  = r
+    //-s c   b    0
+    err = abs(c*A + s*B - r);
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+    err = abs(-s*A + c*B);
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+
+    // The parameter z is defined such that if |a| > |b|, z is s; otherwise if
+    // c is not 0 z is 1/c; otherwise z is 1.
+    if abs(A) > abs(B) then
+      err = abs(z - s);
+    else if c != zero then
+      err = abs((z - 1.0/c): t);
+    else
+      err = abs((z - 1.0): t);
+
+    trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
   }
   printErrors(name, passed, failed, tests);
 }
