@@ -365,8 +365,8 @@ private proc printTestResults(ref result, timeElapsed) {
   }
 }
 
-
-private proc getMasonDependencies(sourceList: list(3*string),
+/* Get dependencies list from manifest */
+proc getMasonDependencies(sourceList: list(3*string),
                                  testName: string) {
 
   // Declare test to run as the main module

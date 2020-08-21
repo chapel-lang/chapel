@@ -35,6 +35,7 @@ private use Map;
 
 var files : list(string);
 var dirs : list(string);
+var customBenchTest: bool=false;
 
 proc masonBench(args) throws {
   var show: bool = false;
@@ -119,8 +120,44 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
     if (files.size == 0 && dirs.size == 0) {
       benchTestNames = getTests(lockFile.borrow(), projectHome, true);
       numBenchTests = benchTestNames.size;
+    } else {
+      try! {
+        for dir in dirs {
+          for file in findfiles(startdir = dir, recursive=subdir) {
+            if file.endsWith(".chpl") then files.append(file);
+          }
+        }
+      }
+      benchTestNames = files;
+      numBenchTests = files.size;
+      customBenchTest = true;
     }
     printMetadata(compopts, benchTestNames);
+    if numBenchTests > 0 {
+      for benchTest in benchTestNames {
+        var benchTestPath: string;
+        if customBenchTest then benchTestPath = "".join(cwd, "/", benchTest);
+        else benchTestPath = "".join(projectHome, "/benchmark/", benchTest);
+        const benchTestName = basename(stripExt(benchTest, ".chpl"));
+        const masonCompopts = getMasonDependencies(sourceList, benchTestName);
+        const allCompopts = "".join(" ".join(compopts.these()), masonCompopts);
+        var benchTestTemp: string = benchTest;
+        if cwd == projectHome && customTest then
+          benchTestTemp = relPath(benchTestTemp, "benchmark/");
+        const outputLoc = projectHome + "/target/benchmark/" + stripExt(benchTestTemp, ".chpl");
+        const moveTo = "-o " + outputLoc;
+        const compCommand = " ".join("chpl", benchTestPath, projectPath, moveTo, allCompopts);
+        writeln(compCommand);
+        const compilation = runWithStatus(compCommand, show);
+        if compilation != 0 {
+          stderr.writeln("compilation failed for " + benchTest);
+          const errMsg = benchTest + " failed to compile";
+          // TODO:  add to results from unit test 
+        } else {
+          writeln("Compiled " + benchTest + "successfully");
+        }
+      }  
+    }
   }
   catch e: MasonError {
     stderr.writeln(e.message());
