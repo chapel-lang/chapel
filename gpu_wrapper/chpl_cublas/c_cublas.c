@@ -324,14 +324,26 @@ int cublas_zdrot(cublasHandle_t *handle, int n, complex double *x, int incX, com
 }
 
 
-int cublas_srotg(cublasHandle_t *handle, float a, float b, float c, float s){
-    cublasSrotg(*handle, &a, &b, &c, &s);
+int cublas_srotg(cublasHandle_t *handle, float a, float b, float *c, float *s){
+    cublasSrotg(*handle, &a, &b, c, s);
     cudaDeviceSynchronize();
     return 0;
 }
 
-int cublas_drotg(cublasHandle_t *handle, double a, double b, double c, double s){
-    cublasDrotg(*handle, &a, &b, &c, &s);
+int cublas_drotg(cublasHandle_t *handle, double a, double b, double *c, double *s){
+    cublasDrotg(*handle, &a, &b, c, s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_crotg(cublasHandle_t *handle, complex float a, complex float b, float *c, complex float *s){
+    cublasCrotg(*handle, (cuFloatComplex*) &a, (cuFloatComplex*) &b, c, (cuFloatComplex*) s);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zrotg(cublasHandle_t *handle, complex double a, complex double b, double *c, complex double *s){
+    cublasZrotg(*handle, (cuDoubleComplex*) &a, (cuDoubleComplex*) &b, c, (cuDoubleComplex*) s);
     cudaDeviceSynchronize();
     return 0;
 }

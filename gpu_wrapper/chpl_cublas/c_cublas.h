@@ -49,10 +49,10 @@ int cublas_csrot(c_void_ptr *handle, int n, complex float *x, int incX, complex 
 int cublas_zrot(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY,  double c, complex double s);
 int cublas_zdrot(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY,  double c, double s);
 
-int cublas_srotg(c_void_ptr *handle, float a, float b, float c, float s);
-int cublas_drotg(c_void_ptr *handle, double a, double b, double c, double s);
-//int cublas_crotg(c_void_ptr *handle, complex float a, complex float b, complex float c, complex float s);
-//int cublas_zrotg(c_void_ptr *handle, complex double a, complex double b, complex double c, complex double s);
+int cublas_srotg(c_void_ptr *handle, float a, float b, float *c, float *s);
+int cublas_drotg(c_void_ptr *handle, double a, double b, double *c, double *s);
+int cublas_crotg(c_void_ptr *handle, complex float a, complex float b, float *c, complex float *s);
+int cublas_zrotg(c_void_ptr *handle, complex double a, complex double b, double *c, complex double *s);
 
 int cublas_srotm(c_void_ptr *handle, int n, float *x, int incX, float *y, int incY, float *param);
 int cublas_drotm(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY, double *param);

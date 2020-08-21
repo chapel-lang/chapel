@@ -30,6 +30,8 @@ cnrm2 : 1 PASSED, 0 FAILED
 znrm2 : 1 PASSED, 0 FAILED
  srot : 4 PASSED, 0 FAILED
  drot : 4 PASSED, 0 FAILED
+srotg : 4 PASSED, 0 FAILED
+drotg : 4 PASSED, 0 FAILED
 sscal : 3 PASSED, 0 FAILED
 dscal : 3 PASSED, 0 FAILED
 cscal : 3 PASSED, 0 FAILED
