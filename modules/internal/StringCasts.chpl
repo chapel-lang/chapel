@@ -82,6 +82,29 @@ module StringCasts {
                                               numCodepoints=len);
   }
 
+  private proc removeUnderscores(type t: integral, x: string) throws {
+    var localX = x.localize();
+    const hasUnderscores = localX.find("_") != -1;
+
+    if hasUnderscores {
+      localX = localX.strip();
+      // make sure the string only has one word
+      var numElements: int;
+      for localX.split() {
+        numElements += 1;
+        if numElements > 1 then break;
+      }
+      if numElements > 1 then
+        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+
+      // remove underscores everywhere but the first position
+      if localX.size >= 2 then
+        localX = localX[0] + localX[1..].replace("_", "");
+    }
+
+    return localX;
+  }
+
   inline proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
@@ -112,24 +135,7 @@ module StringCasts {
     var retVal: t;
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
-    var localX = x.localize();
-    const hasUnderscores = localX.find("_") != -1;
-
-    if hasUnderscores {
-      localX = localX.strip();
-      // make sure the string only has one word
-      var numElements: int;
-      for localX.split() {
-        numElements += 1;
-        if numElements > 1 then break;
-      }
-      if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
-
-      // remove underscores everywhere but the first position
-      if localX.size >= 2 then
-        localX = localX[0] + localX[1..].replace("_", "");
-    }
+    const localX = removeUnderscores(t, x);
 
     if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
