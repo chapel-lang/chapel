@@ -1752,9 +1752,9 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     SET_LINENO(currActual);
     nextActual = currActual->next;
 
-    bool out = formal->intent == INTENT_OUT || 
+    bool out = formal->intent == INTENT_OUT ||
                formal->originalIntent == INTENT_OUT;
-    bool inout = formal->intent == INTENT_INOUT || 
+    bool inout = formal->intent == INTENT_INOUT ||
                  formal->originalIntent == INTENT_INOUT;
 
     if (out || inout) {
@@ -1804,8 +1804,8 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
         Symbol* mapSym = inTmpToActualMap.get(actualSe->symbol());
         if (mapSym == NULL) {
           // e.g. inout with a defaulted actual
-          assignTo = actualSe->symbol(); 
-          assignFrom = actualSe->symbol(); 
+          assignTo = actualSe->symbol();
+          assignFrom = actualSe->symbol();
         } else {
           // we have
           //  in_tmp = copy(x)
@@ -1814,7 +1814,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
           // add assign like
           //  x = in_tmp
           assignTo = mapSym;
-          assignFrom = actualSe->symbol(); 
+          assignFrom = actualSe->symbol();
         }
       }
 
@@ -2805,7 +2805,7 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall) {
 
   // Build "canHaveFastFollowers" check functions -- these don't call DSI
   // functions. They are called before calling DSI functions and return true for
-  // arrays, false otherwise. 
+  // arrays, false otherwise.
   buildFastFollowerCheck(CAN_HAVE_FF,  false, wrapFn, ir, requiresPromotion);
   buildFastFollowerCheck(CAN_HAVE_FF,  true,  wrapFn, ir, requiresPromotion);
 
