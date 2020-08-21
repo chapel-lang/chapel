@@ -28,7 +28,7 @@ function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,master"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.22.0
+  git checkout 1.22.1
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   $CWD/nightly -cron ${nightly_args}
