@@ -1673,10 +1673,12 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       }
 
       CallExpr* copy = NULL;
+      Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
       if (coerceRuntimeTypes)
-        copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym);
+        copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
+                            definedConst);
       else
-        copy = new CallExpr(astr_initCopy, actualSym);
+        copy = new CallExpr(astr_initCopy, actualSym, definedConst);
 
       CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
       anchor->insertBefore(new DefExpr(tmp));
@@ -1703,15 +1705,9 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
           tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
-        CallExpr* copy = NULL;
         Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
-        if (coerceRuntimeTypes) {
-          copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
-                              definedConst);
-        }
-        else {
-          copy = new CallExpr(astr_initCopy, actualSym, definedConst);
-        }
+        CallExpr* copy = new CallExpr(astr_coerceMove,
+                                      runtimeTypeTemp, actualSym, definedConst);
 
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
         anchor->insertBefore(new DefExpr(tmp));
@@ -1721,36 +1717,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         resolveCall(move);
 
         actual->setSymbol(tmp);
-      } else {
-        // Is actualSym something that owns its value?
-        // Is it a call-temp storing the result of a call?
-        // Then "move" ownership to the called function
-        // (don't destroy it here, it will be destroyed there).
-        actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
-
-        if (coerceRuntimeTypes) {
-          VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
-          tmp->addFlag(FLAG_NO_AUTO_DESTROY);
-          tmp->addFlag(FLAG_EXPR_TEMP);
-
-          // Does this need to be here?
-          if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
-            tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-          }
-
-          Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
-          CallExpr* copy = new CallExpr(astr_coerceMove, 
-                                        runtimeTypeTemp, actualSym, definedConst);
-
-          CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
-          anchor->insertBefore(new DefExpr(tmp));
-          anchor->insertBefore(move);
-
-          resolveCallAndCallee(copy, false); // false - allow unresolved
-          resolveCall(move);
-
-          actual->setSymbol(tmp);
-        }
       }
     }
   }
