@@ -150,3 +150,4 @@ performance/array/distCreate-small-deinit.ml-perf.graph
 performance/array/distCreate-large-init.ml-perf.graph
 performance/array/distCreate-large-deinit.ml-perf.graph
 library/packages/Sort/performance/dist-performance.ml-perf.graph
+library/packages/LinearAlgebra/performance/dot-perf.ml-perf.graph

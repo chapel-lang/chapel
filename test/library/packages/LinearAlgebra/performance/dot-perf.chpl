@@ -6,6 +6,8 @@ use LinearAlgebra;
 use Time;
 use Math;
 
+param const useBlockDist = false;
+
 config const n=1024,
              iters=10,
              thresh=1.0e-10,
@@ -19,7 +21,9 @@ config type eltType = real;
 const nbytes = numBytes(eltType);
 
 proc main() {
-  const dom = {1..n, 1..n};
+  const dom = {1..n, 1..n} dmapped if useBlockDist then
+                      new dmap(new Block(boundingBox={1..n, 1..n})) else
+                      defaultDist;
   
   var BA : [dom] real = [(i,j) in dom] (j / (1000000));
 

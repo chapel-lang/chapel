@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:
+files: dotDist-perf-native.dat, dotDist-perf-BLAS.dat
+graphkeys: Native, BLAS
+ylabel: Time (seconds)
+graphtitle: Distributed LinearAlgebra.dot() performance (4096*4096 matrix)
