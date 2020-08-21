@@ -349,12 +349,24 @@ int cublas_zrotg(cublasHandle_t *handle, complex double a, complex double b, dou
 }
 
 int cublas_srotm(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float *param){
-    cublasSrotm(*handle, n, x, incX, y, incY, param);
+    float param_host[5];
+
+    for(int i = 0; i < 5; i ++){
+      param_host[i] = param[i];
+    }
+
+    cublasSrotm(*handle, n, x, incX, y, incY, param_host);
     cudaDeviceSynchronize();
     return 0;
 }
 
 int cublas_drotm(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY, double *param){
+    double param_host[5];
+
+    for(int i = 0; i < 5; i ++){
+      param_host[i] = param[i];
+    }
+
     cublasDrotm(*handle, n, x, incX, y, incY, param);
     cudaDeviceSynchronize();
     return 0;
