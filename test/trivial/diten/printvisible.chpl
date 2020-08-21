@@ -1,2 +1,2 @@
 var xyzSymbol = 1;
-__primitive("get visible symbols");
+__primitive(c"get visible symbols");
