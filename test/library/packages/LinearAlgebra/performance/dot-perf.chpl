@@ -11,8 +11,6 @@ param const useBlockDist = false;
 config const n=1024,
              iters=10,
              thresh=1.0e-10,
-             /* Skip benchmarking against reduction */
-             reference=false,
              /* Omit timing output */
              correctness=false;
 
