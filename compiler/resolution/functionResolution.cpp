@@ -432,20 +432,23 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
 
   Type* copyType = NULL;
 
-  if (isSyncType(actualType) || isSingleType(actualType)) {
-    copyType = getCopyTypeDuringResolution(actualType);
-  } else if (isAliasingArray(actualType) ||
-             actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+  Type* actualValType = actualType->getValType();
+  Type* formalValType = formalType->getValType();
+
+  if (isSyncType(actualValType) || isSingleType(actualValType)) {
+    copyType = getCopyTypeDuringResolution(actualValType);
+  } else if (isAliasingArray(actualValType) ||
+             actualValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // The conditions below avoid infinite loops and problems
     // relating to resolving initCopy for iterators when not needed.
-    if (formalType == dtAny ||
-        formalType->symbol->hasFlag(FLAG_ARRAY)) {
+    if (formalValType == dtAny ||
+        formalValType->symbol->hasFlag(FLAG_ARRAY)) {
       if (fn == NULL ||
           !(fn->name == astr_initCopy || fn->name == astr_autoCopy ||
             fn->name == astr_coerceMove || fn->name == astr_coerceCopy)) {
 
         if (formalSym == NULL || inOrOutFormalNeedingCopyType(formalSym)) {
-          copyType = getCopyTypeDuringResolution(actualType);
+          copyType = getCopyTypeDuringResolution(actualValType);
         }
       }
     }
