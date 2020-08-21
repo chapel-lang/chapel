@@ -11,11 +11,11 @@ to const ref is view:         true
 to var is view:               false
 returned is view:             false
 .domain to const ref is view: true
-.domain to var is view:       true
+.domain to var is view:       false
 
 rank change
 to const ref is view:         true
 to var is view:               false
 returned is view:             false
 .domain to const ref is view: true
-.domain to var is view:       true
+.domain to var is view:       false

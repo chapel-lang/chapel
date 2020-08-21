@@ -2834,6 +2834,7 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
+      pragma "no copy"
       const rcdom = this.domain[(...args)];
 
       // TODO: With additional effort, we could collapse rank changes of
@@ -3085,7 +3086,7 @@ module ChapelArray {
       const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
 
-      pragma "no auto destroy" const newDom = new _domain(redistRec, rank, updom.idxType, updom.stridable, updom.dims());
+      pragma "no copy" pragma "no auto destroy" const newDom = new _domain(redistRec, rank, updom.idxType, updom.stridable, updom.dims());
       newDom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse reindexings of
@@ -4439,9 +4440,25 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where isRectangularDom(rhs) {
 
-    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
-                          rhs.dims(), definedConst=definedConst);
-    return lhs;
+    if isSubtype(rhs.dist._value.type, ArrayViewRankChangeDist) {
+      // Use the dist the view is over
+      var lhs = new _domain(_getDistribution(rhs.dist._value.downDist),
+                            rhs.rank, rhs.idxType, rhs.stridable,
+                            rhs.dims(), definedConst=definedConst);
+
+      return lhs;
+    } else if isSubtype(rhs.dist._value.type, ArrayViewReindexDist) {
+      // Use the dist the view is over
+      var lhs = new _domain(_getDistribution(rhs.dist._value.downDist),
+                            rhs.rank, rhs.idxType, rhs.stridable,
+                            rhs.dims(), definedConst=definedConst);
+
+      return lhs;
+    } else {
+      var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
+                            rhs.dims(), definedConst=definedConst);
+      return lhs;
+    }
   }
 
   pragma "init copy fn"
