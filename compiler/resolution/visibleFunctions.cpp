@@ -94,21 +94,18 @@ static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr);
 static void getVisibleFunctions(const char*              name,
                                 CallExpr*                call,
                                 std::set<BlockStmt*>*    visited,
-                                std::vector<BlockStmt*>* currentScopes,
-                                std::vector<BlockStmt*>* nextScopes,
+                                VisibilityInfo*          visInfo,
                                 Vec<FnSymbol*>&          visibleFns);
 
 void findVisibleFunctions(CallInfo&       info,
                           Vec<FnSymbol*>& visibleFns) {
-  findVisibleFunctions(info, NULL, NULL, NULL, NULL, visibleFns);
+  findVisibleFunctions(info, NULL, NULL, visibleFns);
 }
 
-void findVisibleFunctions(CallInfo&       info,
-                          std::set<BlockStmt*>*    visited,
-                          std::vector<BlockStmt*>* currentScopes,
-                          std::vector<BlockStmt*>* nextScopes,
-                          int*            numVisitedP,
-                          Vec<FnSymbol*>& visibleFns) {
+void findVisibleFunctions(CallInfo&             info,
+                          std::set<BlockStmt*>* visited,
+                          VisibilityInfo*       visInfo,
+                          Vec<FnSymbol*>&       visibleFns) {
   CallExpr* call = info.call;
 
   //
@@ -139,19 +136,18 @@ void findVisibleFunctions(CallInfo&       info,
       getVisibleMethods(info.name, call, visibleFns);
 
     } else {
-      getVisibleFunctions(info.name, call,
-                          visited, currentScopes, nextScopes, visibleFns);
+      getVisibleFunctions(info.name, call, visited, visInfo, visibleFns);
     }
   }
 
   if ((explainCallLine && explainCallMatch(call)) ||
       call->id == explainCallID) {
-    int startVisited = numVisitedP ? *numVisitedP : 0;
+    int startVisited = visInfo ? visInfo->numVisited : 0;
     if (startVisited == 0)
       USR_PRINT(call, "call: %s", info.toString());
 
     if (visibleFns.n == 0) {
-     if (numVisitedP == NULL)
+     if (visInfo == NULL)
       USR_PRINT(call, "no visible functions found");
 
     } else {
@@ -532,25 +528,21 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
-                                std::vector<BlockStmt*>* nextScopes,
+                                VisibilityInfo*       visInfo,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool inUseChain);
 
 static void getVisibleFunctions(const char*              name,
                                 CallExpr*                call,
                                 std::set<BlockStmt*>*    visited,
-                                std::vector<BlockStmt*>* currentScopes,
-                                std::vector<BlockStmt*>* nextScopes,
+                                VisibilityInfo*          visInfo,
                                 Vec<FnSymbol*>&          visibleFns) {
-  if (visited == NULL) {
+  if (visited == NULL)
     getVisibleFunctions(name, call, visibleFns);  // it allocates 'visited'
-    return;
-  }
 
-  // visit everything in currentScopes
-  for_vector(BlockStmt, block, *currentScopes)
-    getVisibleFunctionsImpl(name, call, block, *visited, nextScopes,
-                            visibleFns, false);
+  else
+    getVisibleFunctionsImpl(name, call, visInfo->currStart, *visited,
+                            visInfo, visibleFns, false);
 }
 
 void getVisibleFunctions(const char*      name,
@@ -559,7 +551,8 @@ void getVisibleFunctions(const char*      name,
   BlockStmt*           block    = getVisibilityScope(call);
   std::set<BlockStmt*> visited;
 
-  getVisibleFunctionsImpl(name, call, block, visited, NULL, visibleFns, false);
+  getVisibleFunctionsImpl(name, call, block, visited,
+                          NULL, visibleFns, false);
 }
 
 static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt*    block,
@@ -753,7 +746,7 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 CallExpr*             call,
                                 BlockStmt*            block,
                                 std::set<BlockStmt*>& visited,
-                                std::vector<BlockStmt*>* nextScopes,
+                                VisibilityInfo*       visInfo,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain)
 {
@@ -787,7 +780,7 @@ static void getVisibleFunctionsImpl(const char*       name,
     BlockStmt* next  = getVisibilityScopeNoParentModule(block);
 
     // Recurse in the enclosing block
-    getVisibleFunctionsImpl(name, call, next, visited, nextScopes,
+    getVisibleFunctionsImpl(name, call, next, visited, visInfo,
                             visibleFns, inUseChain);
   }
 
@@ -795,11 +788,12 @@ static void getVisibleFunctionsImpl(const char*       name,
   if (instantiationPt != NULL)
   {
     INT_ASSERT(!inUseChain);
-    if (nextScopes == NULL)
+    if (visInfo == NULL)
       getVisibleFunctionsImpl(name, call, // visit all POIs right away
                   instantiationPt, visited, NULL, visibleFns, inUseChain);
     else
-      nextScopes->push_back(instantiationPt); // come back to it later
+      // Overwrites instantiationPt from an outer scope, if any
+      visInfo->nextPOI = instantiationPt; // come back to it later
   }
 }
 

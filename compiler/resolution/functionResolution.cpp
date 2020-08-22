@@ -4441,12 +4441,12 @@ static void findVisibleFunctionsAndCandidates(
   int numVisitedVis = 0, numVisitedMA = 0;
   LastResortCandidates lrc;
   std::set<BlockStmt*> visited;
-  std::vector<BlockStmt*> currentScopes, nextScopes;
-  currentScopes.push_back(getVisibilityScope(call));
+  VisibilityInfo visInfo;
+  visInfo.currStart = getVisibilityScope(call);
 
   do {
-    findVisibleFunctions(info, &visited, &currentScopes, &nextScopes,
-                         &numVisitedVis, visibleFns);
+    findVisibleFunctions(info, &visited,
+                         &visInfo, visibleFns);
 
     trimVisibleCandidates(info, mostApplicable,
                           numVisitedVis, visibleFns);
@@ -4454,11 +4454,11 @@ static void findVisibleFunctionsAndCandidates(
     gatherCandidatesAndLastResort(info, mostApplicable, numVisitedMA,
                                   lrc, candidates);
 
-    currentScopes.clear();
-    std::swap(currentScopes, nextScopes);
+    visInfo.currStart = visInfo.nextPOI;
+    visInfo.nextPOI = NULL;
   }
   while
-    (candidates.n == 0 && ! currentScopes.empty());
+    (candidates.n == 0 && visInfo.currStart != NULL);
 
   // If needed, look at "last resort" candidates.
   int numVisitedLRC = 0;
