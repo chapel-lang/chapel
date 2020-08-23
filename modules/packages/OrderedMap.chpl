@@ -26,8 +26,7 @@
   constructed from another orderedMap, the new orderedMap will inherit 
   the parallel safety mode of its originating orderedMap.
 
-  The time complexity of an orderedMap depends on the implementation it used.
-  Treap supports insertion and deletion in O(lgN).
+  OrderedSet supports searching for a certain key, insertion and deletion in O(logN).
 */
 module OrderedMap {
   import ChapelLocks;
