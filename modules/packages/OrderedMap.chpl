@@ -26,7 +26,7 @@
   constructed from another orderedMap, the new orderedMap will inherit 
   the parallel safety mode of its originating orderedMap.
 
-  The time compleixity of an orderedMap depends on the implementation it used.
+  The time complexity of an orderedMap depends on the implementation it used.
   Treap supports insertion and deletion in O(lgN).
 */
 module OrderedMap {
@@ -80,7 +80,7 @@ module OrderedMap {
 
   /*
     The shared nilable class helps us to find one element with the key
-    and without speicfiying the value
+    and without specifying the value
     See `contains`
   */
   pragma "no doc"
@@ -189,11 +189,11 @@ module OrderedMap {
     }
 
     /*
-      Clears the contents of this orederdMap.
+      Clears the contents of this orderedMap.
 
       .. warning::
 
-        Clearing the contents of this orderdMap will invalidate all existing
+        Clearing the contents of this orderedMap will invalidate all existing
         references to the elements contained in this orderedMap.
     */
     proc clear() {
@@ -239,7 +239,7 @@ module OrderedMap {
       for already-existing keys.
 
       :arg m: The other orderedMap
-      :type m: orderdMap(keyType, valType)
+      :type m: orderedMap(keyType, valType)
     */
     proc update(m: orderedMap(keyType, valType, parSafe)) {
       _enter(); defer _leave();
@@ -585,7 +585,6 @@ module OrderedMap {
 
       This will invalidate any references to elements previously contained in
       `lhs`.
-      `lhs` will not inhert the implementation enum of `rhs`.
 
     :arg lhs: The orderedMap to assign to.
     :arg rhs: The orderedMap to assign from. 
@@ -640,8 +639,6 @@ module OrderedMap {
 
   /*
     Returns a new orderedMap containing the keys and values in either a or b.
-    .. note::
-      The result will inhert the implementation type and the comparator of `lhs`
   */
   proc +(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
@@ -659,9 +656,6 @@ module OrderedMap {
 
   /*
     Returns a new orderedMap containing the keys and values in either a or b.
-
-    .. note::
-      The result will inhert the implementation type and the comparator of `lhs`
   */
   proc |(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
@@ -683,9 +677,6 @@ module OrderedMap {
 
   /*
     Returns a new orderedMap containing the keys that are in both a and b.
-
-    .. note::
-      The result will inhert the implementation type and the comparator of `lhs`
   */
   proc &(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
@@ -706,9 +697,6 @@ module OrderedMap {
 
   /*
     Returns a new orderedMap containing the keys that are only in a, but not b.
-
-    .. note::
-      The result will inhert the implementation type and the comparator of `lhs`
   */
   proc -(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
@@ -735,8 +723,6 @@ module OrderedMap {
     Returns a new orderedMap containing the keys that are in either a or b, but
     not both.
 
-    .. note::
-      The result will inhert the implementation type and the comparator of `lhs`
   */
   proc ^(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
