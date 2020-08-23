@@ -53,28 +53,6 @@ module OrderedMap {
     }
   }
 
-  /* Implementations supported */
-  enum mapImpl {treap};
-
-  /* The default implementation to use */
-  param defaultImpl = mapImpl.treap;
-
-  /*
-    TODO:
-    Locking is handled outside.
-    Maybe we should use the lock from the underlying implementation.
-  */
-  pragma "no doc"
-  proc getTypeFromEnumVal(param val, type eltType, param parSafe) type {
-    if val == mapImpl.treap then return Treap.treap(eltType, false);
-  }
-
-  pragma "no doc"
-  proc getInstanceFromEnumVal(param val, type eltType, param parSafe,
-                              comparator: record = defaultComparator) {
-    if val == mapImpl.treap then return new Treap.treap(eltType, false, comparator);
-  }
-
   pragma "no doc"
   proc _checkKeyType(type keyType) {
     if isGenericType(keyType) {
@@ -99,6 +77,27 @@ module OrderedMap {
     }
   }
 
+
+  /*
+    The shared nilable class helps us to find one element with the key
+    and without speicfiying the value
+    See `contains`
+  */
+  pragma "no doc"
+  class _valueWrapper {
+    var val;
+  }
+  /*
+    This doesn't indicate any comparing.
+    Just to make (keyType, shared _valueWrapper?) comparable.
+  */
+  proc <(a: shared _valueWrapper?, b: shared _valueWrapper?) {
+    return false;
+  }
+  proc >(a: shared _valueWrapper?, b: shared _valueWrapper?) {
+    return false;
+  }
+
   record orderedMap {
     /* Type of orderedMap keys. */
     type keyType;
@@ -111,25 +110,14 @@ module OrderedMap {
     /* The comparator used to compare keys */
     var comparator: record = defaultComparator;
 
-    /* The implementation to use */
-    param implType = defaultImpl;
-
-    /*
-      The shared nilable class helps us to find one element with the key
-      and without speicfiying the value
-      See `contains`
-    */
-    pragma "no doc"
-    class _valueWrapper {
-      var val;
-    }
-
+    // TODO: Maybe we want something like record optional for this?
     pragma "no doc"
     type _eltType = (keyType, shared _valueWrapper?);
 
     /* The underlying implementation */
     pragma "no doc"
-    var _set: getTypeFromEnumVal(implType, _eltType, parSafe);
+    var _set: orderedSet(_eltType, parSafe);
+
 
     //TODO: Maybe we should use the lock from the underlying implementation
     pragma "no doc"
@@ -165,8 +153,7 @@ module OrderedMap {
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type keyType, type valType, param parSafe = false,
-              comparator: record = defaultComparator,
-              param implType: mapImpl = defaultImpl) {
+              comparator: record = defaultComparator) {
       _checkKeyType(keyType);
       _checkValType(valType);
 
@@ -174,11 +161,9 @@ module OrderedMap {
       this.valType = valType;
       this.parSafe = parSafe;
       this.comparator = comparator;
-      this.implType = implType;
       this._eltType = (keyType, shared _valueWrapper(valType)?);
 
-      this._set = getInstanceFromEnumVal(implType, _eltType, parSafe,
-                                              new _keyComparator(comparator)); 
+      this._set = new orderedSet(_eltType, false, new _keyComparator(comparator)); 
     }
 
     /*
@@ -196,9 +181,9 @@ module OrderedMap {
       this.valType = vt;
       this.parSafe = other.parSafe;
       this.comparator = other.comparator;
-      this.implType = other.implType;
       this._eltType = (keyType, shared _valueWrapper(valType)?);
-      this._set = getInstanceFromEnumVal(this.implType, this._eltType, this.parSafe, other._set.comparator); 
+
+      this._set = other._set;
 
       this.complete();
     }
@@ -256,8 +241,7 @@ module OrderedMap {
       :arg m: The other orderedMap
       :type m: orderdMap(keyType, valType)
     */
-    proc update(pragma "intent ref maybe const formal"
-                m: orderedMap(keyType, valType, parSafe)) {
+    proc update(m: orderedMap(keyType, valType, parSafe)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
@@ -286,7 +270,7 @@ module OrderedMap {
         _set.add((k, new shared _valueWrapper(defaultValue)?));
       } 
 
-      ref e = _set._getReference((k, nil));
+      ref e = _set.instance._getReference((k, nil));
 
       ref result = e[1]!.val;
       return result;
@@ -298,7 +282,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set._getValue((k, nil));
+      var e = _set.instance._getValue((k, nil));
 
       const result = e[1]!.val;
       return result;
@@ -310,7 +294,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // Could halt
-      var e = _set._getValue((k, nil));
+      var e = _set.instance._getValue((k, nil));
 
       const ref result = e[1]!.val;
       return result;
@@ -329,7 +313,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set._getReference((k, nil));
+      ref element = _set.instance._getReference((k, nil));
 
       var result = element[1]!.val.borrow();
 
@@ -344,7 +328,7 @@ module OrderedMap {
       _enter(); defer _leave();
 
       // This could halt
-      ref element = _set._getReference((k, nil));
+      ref element = _set.instance._getReference((k, nil));
 
       ref result = element[1]!.val;
 
@@ -502,7 +486,7 @@ module OrderedMap {
         return false;
       }
 
-      ref e = _set._getReference((k, nil));
+      ref e = _set.instance._getReference((k, nil));
       e[1] = new shared _valueWrapper(v)?;
 
       return true;
@@ -681,7 +665,7 @@ module OrderedMap {
   */
   proc |(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator, a.implType);
+    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for e in a.items() do newMap.add(e[0], e[1]);
     for e in b.items() do newMap.add(e[0], e[1]);
@@ -705,7 +689,7 @@ module OrderedMap {
   */
   proc &(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator, a.implType);
+    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
     for (k, v) in a.items() {
       if b.contains(k) then
         newMap.add(k, v);
@@ -728,7 +712,7 @@ module OrderedMap {
   */
   proc -(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator, a.implType);
+    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for (k, v) in a.items() {
       if !b.contains(k) then
@@ -756,7 +740,7 @@ module OrderedMap {
   */
   proc ^(a: orderedMap(?keyType, ?valueType, ?parSafe),
          b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator, a.implType);
+    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
     for k in a.keys() do
       if !b.contains(k) then newMap[k] = a[k];
