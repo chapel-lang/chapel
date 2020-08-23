@@ -137,7 +137,7 @@ module Treap {
     param parSafe = false;
 
     /* The comparator to use for comparing elements */
-    var comparator: record = defaultComparator;
+    var comparator;
 
     pragma "no doc"
     type nodeType = unmanaged _treapNode(eltType)?;
