@@ -4445,8 +4445,8 @@ static void findVisibleFunctionsAndCandidates(
   visInfo.currStart = getVisibilityScope(call);
 
   do {
-    findVisibleFunctions(info, &visited,
-                         &visInfo, visibleFns);
+    findVisibleFunctions(info, &visInfo, &visited,
+                         &numVisitedVis, visibleFns);
 
     trimVisibleCandidates(info, mostApplicable,
                           numVisitedVis, visibleFns);

@@ -35,16 +35,16 @@ class VisibilityInfo {
 public:
   BlockStmt* currStart;
   BlockStmt* nextPOI;
-  int        numVisited;
-  VisibilityInfo() : currStart(NULL), nextPOI(NULL), numVisited(0) {}
+  VisibilityInfo() : currStart(NULL), nextPOI(NULL) {}
 };
 
 void       findVisibleFunctions(CallInfo&       info,
                                 Vec<FnSymbol*>& visibleFns);
 
 void       findVisibleFunctions(CallInfo&             info,
-                                std::set<BlockStmt*>* visited,
                                 VisibilityInfo*       visInfo,
+                                std::set<BlockStmt*>* visited,
+                                int*                  numVisitedP,
                                 Vec<FnSymbol*>&       visibleFns);
 
 void       getVisibleFunctions(const char*      name,
