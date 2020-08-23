@@ -1422,37 +1422,40 @@ module UnitTest {
 
   module Benchmark {
     use Time;
-    // N - default number of repititions
+    /* N - default number of repititions */
     var N: int = 10000;
-    // use hcf to match function signature
-    // to reset timer
+    // TODO: use hcf to match function signature
     var t: Timer;
+    var firstTest: bool = false;
+    /* Reset the timer */
     proc resetTimer() {
       t.clear();
     }
-    // start the timer
+    /* Start the timer */
     proc startTimer() {
       t.start();
+      resetTimer();
     }
-    // to stop timer and gather total time
+    /* Stop the timer */
     proc stopTimer() {
       t.stop();
     }
-   // returns total time
+    /* Returns total time elapsed */
     proc totalTime() {
       return t.elapsed(TimeUnits.microseconds);
     }
-   // returns average time
+    /* Returns average time (total time / number of iterations) */
     proc avgTime() {
       return t.elapsed(TimeUnits.microseconds) / N;
     }
-   // log results
-   proc showData() {
+    /* Output benchmark metrics */
+    proc log(functionName: string) {
       const totalTimeElapsed = totalTime();
       const averageTime = avgTime();
+      writeln("Function: ", functionName);
       writeln("Iterations: ", N);
-      writeln("Total time elapsed(microseconds): ", totalTimeElapsed);
-      writeln("Average Time(ms/N): ", averageTime);
-   }
+      writeln("Total Time Elapsed (ms): ", totalTimeElapsed);
+      writeln("Average Time (ms/N): ", averageTime);
+    }
   }
 }

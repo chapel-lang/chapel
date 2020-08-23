@@ -36,7 +36,7 @@ private use Map;
 var files : list(string);
 var dirs : list(string);
 var customBenchTest: bool=false;
-
+const separator = "\n============================================\n";
 proc masonBench(args) throws {
   var show: bool = false;
   var skipUpdate = MASON_OFFLINE;
@@ -114,9 +114,22 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
       rmTree(joinPath(projectHome, "target/benchmark/"));
     }
     makeTargetFiles("debug", projectHome);
-    var numBenchTests: int;
-    var benchTestNames: list(string);
-    var benchTestsCompiled: list(string);
+
+    const (numBenchTests, benchTestNames) = gatherBenchTestFiles(lockFile, projectHome);
+    var benchTestsCompiled: list(string) = compileBenchTests(numBenchTests, benchTestNames, 
+          cwd, projectHome, lockFile, sourceList, project, projectPath, compopts, show);
+    runBenchTestExecutables(benchTestsCompiled, projectHome);
+  }
+  catch e: MasonError {
+    stderr.writeln(e.message());
+  }
+}
+
+/* Gathers Bench test files from LockFile or bench directory */
+proc gatherBenchTestFiles(lockFile, projectHome) {
+  var numBenchTests: int;
+  var benchTestNames: list(string);
+  try!{
     if (files.size == 0 && dirs.size == 0) {
       benchTestNames = getTests(lockFile.borrow(), projectHome, true);
       numBenchTests = benchTestNames.size;
@@ -132,7 +145,19 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
       numBenchTests = files.size;
       customBenchTest = true;
     }
-    writeln("*********** Benchmark Results ****************");
+  }
+  catch e: MasonError {
+    stderr.writeln(e.message());
+  }
+  return (numBenchTests, benchTestNames);
+}
+
+/* Compiles tests found inside of benchmarks directory */
+proc compileBenchTests(numBenchTests: int, benchTestNames: list(string), cwd, projectHome, lockFile, 
+    sourceList, project, projectPath, compopts, show) {
+  var benchTestsCompiled: list(string);
+  try! {
+    writeln("Compiling Benchmark Tests ...\n ");
     if numBenchTests > 0 {
       for benchTest in benchTestNames {
         var benchTestPath: string;
@@ -155,10 +180,28 @@ proc runBenchTests(show: bool, ref cmdLineCompopts: list(string)) throws {
           // TODO:  add to results from unit test 
         } else {
           writeln("Compiled " + benchTest + " successfully");
-          runAndLogBenchmarks(projectHome, outputLoc, benchTestName);
+          benchTestsCompiled.append(benchTest);
         }
-        writeln("**********************************************");
       }  
+    }
+    writeln(separator);
+  }
+  catch e: MasonError {
+    stderr.writeln(e.message());
+  }
+  return benchTestsCompiled;
+}
+
+/* Runs executables found inside of target/benchmark directory */
+proc runBenchTestExecutables(benchTestNames: list(string), projectHome: string) {
+  try! {
+    writeln("             Benchmark Results              ");
+    writeln(separator);
+    for benchTest in benchTestNames {
+      const outputLoc = projectHome + "/target/benchmark/" + stripExt(benchTest, ".chpl");
+      const benchTestName = basename(stripExt(benchTest, ".chpl"));
+      runAndLogBenchmarks(projectHome, outputLoc, benchTestName);
+      writeln(separator);
     }
   }
   catch e: MasonError {
