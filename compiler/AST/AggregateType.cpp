@@ -2308,7 +2308,11 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             if (defPoint->exprType == NULL) {
               CallExpr* copy = new CallExpr(astr_initCopy);
               defPoint->init->replace(copy);
+
+              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ? 
+                                     gTrue : gFalse;
               copy->insertAtTail(fe);
+              copy->insertAtTail(definedConst);
             }
           }
         }

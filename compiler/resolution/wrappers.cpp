@@ -668,7 +668,10 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   resolveBlockStmt(block);
 
   if (temp->isRef() && (formalIntent & INTENT_FLAG_REF) == 0) {
-    CallExpr* copy = new CallExpr(astr_initCopy, temp);
+    // we may just pass false for definedConst into initCopy, but this feels
+    // more principled
+    Symbol *definedConst = rvv->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+    CallExpr* copy = new CallExpr(astr_initCopy, temp, definedConst);
     block->insertAtTail(new CallExpr(PRIM_MOVE, rvv, copy));
     resolveCallAndCallee(copy);
   } else {
@@ -1366,7 +1369,8 @@ static void addArgCoercion(FnSymbol*  fn,
     if (typeNeedsCopyInitDeinit(at) && propagateNotPOD(at) &&
         !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      castCall = new CallExpr(astr_initCopy, prevActual);
+      Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+      castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
     } else {
       castCall   = new CallExpr(PRIM_DEREF, prevActual);
     }
@@ -1660,10 +1664,14 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         }
 
         CallExpr* copy = NULL;
-        if (coerceRuntimeTypes)
-          copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym);
-        else
-          copy = new CallExpr(astr_initCopy, actualSym);
+        Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+        if (coerceRuntimeTypes) {
+          copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
+                              definedConst);
+        }
+        else {
+          copy = new CallExpr(astr_initCopy, actualSym, definedConst);
+        }
 
         CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
         anchor->insertBefore(new DefExpr(tmp));
@@ -1690,8 +1698,9 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
             tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
           }
 
-          CallExpr* copy = new CallExpr(astr_coerceMove,
-                                        runtimeTypeTemp, actualSym);
+          Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+          CallExpr* copy = new CallExpr(astr_coerceMove, 
+                                        runtimeTypeTemp, actualSym, definedConst);
 
           CallExpr* move = new CallExpr(PRIM_MOVE, tmp, copy);
           anchor->insertBefore(new DefExpr(tmp));

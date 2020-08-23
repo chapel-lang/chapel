@@ -23,6 +23,7 @@
 
 #include "baseAST.h"
 #include "symbol.h"
+#include "expr.h"
 
 #include <map>
 #include <vector>
@@ -334,6 +335,21 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 void startGenerousResolutionForErrors();
 bool inGenerousResolutionForErrors();
 void stopGenerousResolutionForErrors();
+
+// In chpl__initCopy etc we have a definedConst argument. This argument can be
+// at different places in the function signature. In various places, we call the
+// function below to make sure it is where we expect it to be.
+static inline void sanityCheckDefinedConstArg(BaseAST *arg) {
+  if(SymExpr* argSE = toSymExpr(arg)) {
+    INT_ASSERT(argSE->symbol()->type == dtBool);
+  }
+  else if (ArgSymbol *argSym = toArgSymbol(arg)) {
+    INT_ASSERT(argSym->type == dtBool);
+  }
+  else {
+    INT_FATAL("Illegal argument was found while looking for definedConst");
+  }
+}
 
 
 // Return the array element type, or NULL if not an array

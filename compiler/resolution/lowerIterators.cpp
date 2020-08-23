@@ -2768,7 +2768,9 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
       }
       copyResult = newTemp(autoCopy->retType);
       block->insertAtTail(new DefExpr(copyResult));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult, new CallExpr(autoCopy, valueToCopy)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult,
+                                       new CallExpr(autoCopy, valueToCopy,
+                                                    new SymExpr(gFalse))));
     }
 
     // Now set the field
@@ -2808,7 +2810,7 @@ static void reconstructIRautoCopyAutoDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->inTree()) continue;
 
-    if (fn->numFormals() == 1 &&
+    if (fn->numFormals() == 2 && // 2nd arg is `definedConst`
         fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     {
       SET_LINENO(fn);

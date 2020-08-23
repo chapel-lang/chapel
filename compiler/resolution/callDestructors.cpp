@@ -364,7 +364,9 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
                 CallExpr* autoCopy = NULL;
 
                 rhs->remove();
-                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
+                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), 
+                                        rhs,
+                                        new SymExpr(gFalse));
                 move->insertAtTail(autoCopy);
               }
             }
@@ -444,7 +446,8 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
               FnSymbol* copyFn = getAutoCopyForType(varLhs->type);
 
               callRhs->remove();
-              CallExpr* copyCall = new CallExpr(copyFn, exprRhs);
+              CallExpr* copyCall = new CallExpr(copyFn, exprRhs,
+                                                new SymExpr(gFalse));
               move->insertAtTail(copyCall);
             }
           }
@@ -496,7 +499,8 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
               CallExpr* autoCopy = NULL;
 
               rhs->remove();
-              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), rhs);
+              autoCopy = new CallExpr(getAutoCopyForType(symRhs->type),
+                                      rhs, new SymExpr(gFalse));
               move->insertAtTail(autoCopy);
             }
           }
@@ -1079,7 +1083,10 @@ static void insertCopiesForYields()
         Symbol* tmp = newTemp("_yield_expr_tmp_", type);
         Expr* stmt = foundSe->getStmtExpr();
         stmt->insertBefore(new DefExpr(tmp));
-        stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(getAutoCopyForType(type), foundSe->copy())));
+        stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                           new CallExpr(getAutoCopyForType(type),
+                                        foundSe->copy(),
+                                        new SymExpr(gFalse))));
 
         foundSe->replace(new SymExpr(tmp));
       }

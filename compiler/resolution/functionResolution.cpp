@@ -542,9 +542,10 @@ static SymExpr* findSourceOfInCopy(Symbol* sym) {
             INT_ASSERT(rhsSe);
             return rhsSe;
           } else {
-            // assumes that the called function is init/coerce
-            // and the last argument is the source
-            Expr* rhs = initOrCtor->get(initOrCtor->numActuals());
+            // assumes that the called function is init/coerce:
+            //   the last argument is definedConst
+            //   second to the last argument is the source
+            Expr* rhs = initOrCtor->get(initOrCtor->numActuals()-1);
             SymExpr* rhsSe = toSymExpr(rhs);
             INT_ASSERT(rhsSe);
             return rhsSe;
@@ -5730,10 +5731,11 @@ static void captureTaskIntentValues(int        argNum,
       if (hasAutoCopyForType(formal->type) == true) {
         FnSymbol* autoCopy = getAutoCopy(formal->type);
 
-        marker->insertBefore("'move'(%S,%S(%S))",
+        marker->insertBefore("'move'(%S,%S(%S, %S))",
                              capTemp,
                              autoCopy,
-                             varActual);
+                             varActual,
+                             gFalse); // can we do something better here?
 
       } else if (isReferenceType(varActual->type) ==  true &&
                  isReferenceType(capTemp->type)   == false) {
@@ -6596,6 +6598,13 @@ void resolveInitVar(CallExpr* call) {
       if (dst->hasFlag(FLAG_PARAM))
         tmp->addFlag(FLAG_PARAM);
 
+      // this protects against issues with coercing from sync int to int
+      if ((targetType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) && !genericTgt)) {
+        if (dst->hasFlag(FLAG_CONST)) {
+          tmp->addFlag(FLAG_CONST);
+        }
+      }
+
       CallExpr* coerce = new CallExpr(PRIM_COERCE,
                                       srcExpr->copy(),
                                       targetTypeExpr);
@@ -6657,7 +6666,9 @@ void resolveInitVar(CallExpr* call) {
     // 'chpl__initCopy' and how to turn them into something else when necessary
     // (e.g. chpl__unalias).
 
-    CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove());
+    Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
+    CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
+                                                     definedConst);
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -6773,7 +6784,9 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   CallExpr* call = NULL;
 
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
-    call = new CallExpr(astr_initCopy, tmpAt);
+    call = new CallExpr(astr_initCopy, tmpAt,
+                        /* definedConst = */gFalse);
+                       
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -9332,7 +9345,17 @@ static const char* autoCopyFnForType(AggregateType* at) {
 
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName) {
   VarSymbol* tmp    = newTemp(at);
-  CallExpr*  call   = new CallExpr(fnName, tmp);
+  CallExpr*  call   = NULL;
+
+  if (fnName == astr_initCopy || fnName == astr_autoCopy) {
+    call = new CallExpr(fnName, tmp, new SymExpr(gFalse));
+  }
+  else {
+    call = new CallExpr(fnName, tmp);
+  }
+
+
+
 
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
@@ -10133,10 +10156,14 @@ static void lowerRuntimeTypeInit(CallExpr* call,
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
-
+ 
   // Add the argument indicating if this is a noinit
   Symbol* isNoInit = noinit ? gTrue : gFalse;
   runtimeTypeToValueCall->insertAtTail(isNoInit);
+
+  // Add the argument indicating if this is defined as const
+  Symbol* definedConst = var->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+  runtimeTypeToValueCall->insertAtTail(definedConst);
 
   call->replace(new CallExpr(PRIM_MOVE, var, runtimeTypeToValueCall));
 
