@@ -1,12 +1,9 @@
 import OrderedMap.orderedMap;
-import OrderedMap.mapImpl;
 import OrderedMap.defaultComparator;
-
-config param impl: mapImpl;
 
 proc testMap(type t) {
 
-  var m = new orderedMap(int, t, false, defaultComparator, impl);
+  var m = new orderedMap(int, t, false, defaultComparator);
 
   var x: t;
   x = if isTuple(t) then (new t[0](1), new t[1](2)) else new t(1);

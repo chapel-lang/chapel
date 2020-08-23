@@ -1,8 +1,8 @@
 use OrderedMap;
 
-config param impl: mapImpl;
 
-var m = new orderedMap(int, int, false, defaultComparator, impl);
+
+var m = new orderedMap(int, int, false, defaultComparator);
 
 for i in -10..10 do
   m[i] = -i;

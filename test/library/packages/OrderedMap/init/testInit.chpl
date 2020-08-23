@@ -1,9 +1,9 @@
 use OrderedMap;
 
-config param impl: mapImpl;
+
 
 {
-  var m = new orderedMap(string, int, false, defaultComparator, impl);
+  var m = new orderedMap(string, int, false, defaultComparator);
   m["one"] = 1;
   writeln(m);
 }

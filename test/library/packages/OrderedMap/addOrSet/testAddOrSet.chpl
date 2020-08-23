@@ -1,8 +1,8 @@
 use OrderedMap;
 
-config param impl: mapImpl;
 
-var m = new orderedMap(int, int, false, defaultComparator, impl);
+
+var m = new orderedMap(int, int, false, defaultComparator);
 for i in 1..10 {
   m.addOrSet(i, i);
 }

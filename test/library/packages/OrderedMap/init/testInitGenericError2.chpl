@@ -1,6 +1,6 @@
 use OrderedMap;
 
-config param impl: mapImpl;
+
 
 class C {
   var x = 10;

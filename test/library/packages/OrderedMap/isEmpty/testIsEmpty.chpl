@@ -1,6 +1,6 @@
 use OrderedMap;
 
-config param impl: mapImpl;
+
 
 var m = new orderedMap(int, int, false, defaultComparator);
 assert(m.isEmpty());

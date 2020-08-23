@@ -1,6 +1,6 @@
 use OrderedMap;
 
-config param impl: mapImpl;
+
 
 record FacInt {
   var n: uint = 0;
@@ -35,7 +35,7 @@ proc >(a: FacInt, b: FacInt) {
   return a.n > b.n;
 }
 
-var fac = new orderedMap(int, FacInt, false, defaultComparator, impl);
+var fac = new orderedMap(int, FacInt, false, defaultComparator);
 
 for i in 1..15 {
   fac[i] = new FacInt(i: uint);

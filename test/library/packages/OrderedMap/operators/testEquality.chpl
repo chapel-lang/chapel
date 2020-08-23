@@ -1,9 +1,9 @@
 use OrderedMap;
 
-config param impl: mapImpl;
 
-var m1 = new orderedMap(int, int, false, defaultComparator, impl),
-    m2 = new orderedMap(int, int, false, defaultComparator, impl);
+
+var m1 = new orderedMap(int, int, false, defaultComparator),
+    m2 = new orderedMap(int, int, false, defaultComparator);
 
 for i in 1..10 {
   m1[i] = -i;

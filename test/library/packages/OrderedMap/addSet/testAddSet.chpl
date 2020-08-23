@@ -1,8 +1,8 @@
 use OrderedMap;
 
-config param impl: mapImpl;
 
-var m = new orderedMap(int, int, false, defaultComparator, impl);
+
+var m = new orderedMap(int, int, false, defaultComparator);
 
 var ret:bool = m.add(1, -1);
 assert(ret);

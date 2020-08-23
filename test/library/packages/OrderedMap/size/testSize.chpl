@@ -1,9 +1,9 @@
 use OrderedMap;
 use utilFunctions;
 
-config param impl: mapImpl;
 
-var m = new orderedMap(string, real, false, defaultComparator, impl);
+
+var m = new orderedMap(string, real, false, defaultComparator);
 
 writeln(m.isEmpty());
 writeln(m.size);

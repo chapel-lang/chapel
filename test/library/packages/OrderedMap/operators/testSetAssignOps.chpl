@@ -1,10 +1,10 @@
 use OrderedMap;
 
-config param impl: mapImpl;
 
-var m0 = new orderedMap(int, int, false, defaultComparator, impl);
-var m1 = new orderedMap(int, int, false, defaultComparator, impl);
-var m2 = new orderedMap(int, int, false, defaultComparator, impl);
+
+var m0 = new orderedMap(int, int, false, defaultComparator);
+var m1 = new orderedMap(int, int, false, defaultComparator);
+var m2 = new orderedMap(int, int, false, defaultComparator);
 
 m0[1] = 1;
 m0[2] = 2;
