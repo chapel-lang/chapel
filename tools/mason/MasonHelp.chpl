@@ -87,6 +87,7 @@ proc masonBenchHelp() {
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
+  writeln('        --[no]-update            [Do not] update the mason-registry before running benchmarks ');
   writeln();
 }
 
