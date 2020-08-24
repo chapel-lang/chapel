@@ -182,7 +182,7 @@ static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
 static Expr* foldTryCond(Expr* expr);
 
 static void unmarkDefaultedGenerics();
-static void resolveUses(ModuleSymbol* mod);
+static void resolveUses(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
 static void resolveExports();
 static void resolveEnumTypes();
@@ -8903,10 +8903,10 @@ void resolve() {
 
   resolveObviousGlobals();
 
-  resolveUses(ModuleSymbol::mainModule());
+  resolveUses(ModuleSymbol::mainModule(), "");
 
   if (printModuleInitModule)
-    resolveUses(printModuleInitModule);
+    resolveUses(printModuleInitModule, "");
 
   if (chpl_gen_main)
     resolveFunction(chpl_gen_main);
@@ -9027,30 +9027,32 @@ static void unmarkDefaultedGenerics() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveUses(ModuleSymbol* mod) {
-  static Vec<ModuleSymbol*> initMods;
-  static int                moduleResolutionDepth = 0;
+static std::set<ModuleSymbol*> moduleInitResolved;
 
-  if (initMods.set_in(mod) == NULL) {
-    initMods.set_add(mod);
+static void resolveUses(ModuleSymbol* mod, const char* path) {
+  if (moduleInitResolved.count(mod) == 0) {
+    moduleInitResolved.insert(mod);
 
-    ++moduleResolutionDepth;
+    if (fPrintModuleResolution == true) {
+      // update path variable
+      if (path == NULL || path[0] == '\0')
+        path = mod->name;
+      else
+        path = astr(path, ".", mod->name);
+    }
 
     if (ModuleSymbol* parent = mod->defPoint->getModule()) {
       if (parent != theProgram && parent != rootModule) {
-        resolveUses(parent);
+        resolveUses(parent, path);
       }
     }
 
     for_vector(ModuleSymbol, usedMod, mod->modUseList) {
-      resolveUses(usedMod);
+      resolveUses(usedMod, path);
     }
 
     if (fPrintModuleResolution == true) {
-      fprintf(stderr,
-              "%2d Resolving module %30s ...",
-              moduleResolutionDepth,
-              mod->name);
+      fprintf(stderr, "%s\n  from %s\n", mod->name, path);
     }
 
     resolveSignatureAndFunction(mod->initFn);
@@ -9064,10 +9066,9 @@ static void resolveUses(ModuleSymbol* mod) {
 
       mod->accept(&visitor);
 
-      fprintf(stderr, " %6d asts\n", visitor.total());
+      if (developer)
+        fprintf(stderr, "%s contains %6d asts\n", mod->name, visitor.total());
     }
-
-    --moduleResolutionDepth;
   }
 }
 
