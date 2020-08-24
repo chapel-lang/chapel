@@ -108,9 +108,10 @@ proc masonPublish(ref args: list(string)) throws {
           gitC(pathReg, 'git add .');
           commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialised registry"']);
         }
+        const absPathReg = Path.absPath(pathReg);
         writeln("Initialised local registry at %s".format(pathReg));
         writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path: ");
-        writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'.format("mason-registry",regUrl, basename(pathReg), pathReg));
+        writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'.format("mason-registry",regUrl, basename(pathReg), absPathReg));
         exit(0);
       }
       catch e: MasonError {
