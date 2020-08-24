@@ -823,6 +823,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 static bool doNotUnaliasArray(FnSymbol* fn) {
   return (fn->hasFlag(FLAG_NO_COPY_RETURN) ||
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+          fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
           fn->hasFlag(FLAG_COERCE_FN) ||

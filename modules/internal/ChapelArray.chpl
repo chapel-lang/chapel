@@ -454,6 +454,7 @@ module ChapelArray {
     return dom.buildArray(eltType, true);
   }
 
+  pragma "no copy returns owned" // workaround for order of resolution issue
   proc chpl__convertRuntimeTypeToValue(dom: domain,
                                        type eltType,
                                        param isNoInit: bool,
