@@ -19,5 +19,5 @@ export GASNET_ODP_VERBOSE=0
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 
-test_master
+test_nightly
 sync_graphs
