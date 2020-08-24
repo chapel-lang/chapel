@@ -454,134 +454,9 @@ signaled if C1, C2, C3 have conflicting public module-level
 definitions of the same symbol.
 
 Making a use ``public`` additionally causes its symbols to be visible as though
-they were defined in the scope with the import.  This strategy is called
-`re-exporting`.  However, symbols with the same name in the scope with the use
-will still take precedence.
-
-   *Example (use-reexport1.chpl)*.
-
-   Say we have a module A that uses a module B, and module B contains a public
-   use of module C:
-
-   .. code-block:: chapel
-
-      module C {
-        var cSymbol: int;
-      }
-
-      module B {
-        public use C;
-      }
-
-      module A {
-        proc main() {
-          use B;
-          writeln(B.C.cSymbol);
-          writeln(B.cSymbol);
-        }
-      }
-
-   In this case, C will be visible to A as though it was a submodule of B, and
-   its symbols can also be treated as though they were defined within B.  This
-   means that A can contain mentions like ``B.C.cSymbol`` if cSymbol was a
-   symbol defined in C, regardless of if C was actually a submodule of B:
-
-   This also means that A can contain mentions like ``B.cSymbol`` which would
-   access C's cSymbol, assuming these symbols were not shadowed by symbols with
-   the same name in B:
-
-   .. BLOCK-test-chapeloutput
-
-      0
-      0
-
-   *Example (use-reexport2.chpl)*.
-
-   However, if the public use of C also disabled accesses to the module name
-   using the ``as`` keyword, e.g.
-
-   .. code-block:: chapel
-
-      module C {
-        var cSymbol: int;
-      }
-
-      module B {
-        public use C as _;
-      }
-
-      module A {
-        proc main() {
-          use B;
-          // writeln(B.C.cSymbol); // Would not work
-          writeln(B.cSymbol);
-        }
-      }
-
-   Then A could only contain mentions like ``B.cSymbol``, it could not access
-   ``cSymbol`` using ``B.C.cSymbol``.  This is because C is not present as a
-   public name in B's scope.
-
-   .. BLOCK-test-chapeloutput
-
-      0
-
-Conversely, if B's use of C was ``private`` then A would not be able to see C's
-symbols at all due to that ``use``.
-
-This notion of re-exporting extends to the case in which a scope uses multiple
-modules.
-
-   *Example (use-reexport3.chpl)*.
-
-   Say we have a module A that uses a module B, and module B contains a
-   public use of modules C1, C2, and C3.
-
-   .. code-block:: chapel
-
-      module C1 {
-        var c1Symbol: int;
-      }
-
-      module C2 {
-        var c2Symbol: bool;
-      }
-
-      module C3 {
-        var c3Symbol = 3;
-      }
-
-      module B {
-        public use C1, C2, C3;
-      }
-
-      module A {
-        proc main() {
-          use B;
-          writeln(B.C1.c1Symbol);
-          writeln(B.C2.c2Symbol);
-          writeln(B.C3.c3Symbol);
-
-          writeln(B.c1Symbol);
-          writeln(B.c2Symbol);
-          writeln(B.c3Symbol);
-        }
-      }
-
-   In this case all three of those modules will be accessible by A as though
-   they were submodules of B.  This also means that symbols in C1, C2, and C3
-   will be accessible as though they were defined in B, assuming these symbols
-   were not shadowed by symbols with the same name in B and that these symbols
-   do not conflict with each other.
-
-   .. BLOCK-test-chapeloutput
-
-      0
-      false
-      3
-      0
-      false
-      3
+they were defined in the scope with the use.  This strategy is called
+`re-exporting`.  More information about re-exporting can be found in the
+relevant section (:ref:`Reexporting`).
 
 An optional ``limitation-clause`` may be provided to limit the symbols made
 available by a given use statement. If an ``except`` list is provided, then all
@@ -813,27 +688,8 @@ imports or uses of that module from other contexts.
 Import statements may be explicitly declared ``public`` or ``private``.  By
 default, imports are ``private``.  Making an import ``public`` causes its
 symbols to be visible as though they were defined in the scope with the import,
-a strategy which will be referred to as `re-exporting`.  However, symbols with
-the same name in the scope with the import will still take precedence.  If
-module A imports module B, and module B contains a public import of module C,
-then C will be visible to A as though it was a submodule of B.  This means that
-A could contain mentions like ``B.C.cSymbol`` if cSymbol was a symbol defined
-in C, regardless of if C was actually a submodule of B.  Similarly, if module B
-contains a public import of some public symbols defined in module C, then those
-symbols will be visible to A as though they were defined in module B, unless
-they are shadowed by symbols of the same name in B.  This means that A could
-contain mentions like ``B.cSymbol`` and it would access C's cSymbol.
-Conversely, if B's import of C is ``private`` then A will not be able to see C's
-symbols due to that ``import``.
-
-This notion of re-exporting extends to the case in which a scope imports symbols
-from multiple modules.  For example, if a module A imports a module B, and
-module B contains a public import of modules C1, C2, and C3, then all three of
-those modules will be accessible by A as though they were submodules of B.
-Similarly, if module B instead publicly imports specific symbols from C1, C2,
-and C3, A will be able to access those symbols as though they were defined
-directly in B.  However, an error is signaled if symbols with the same name are
-imported from these modules.
+a strategy which will be referred to as `re-exporting`.  More information about
+re-exporting can be found in the relevant section (:ref:`Reexporting`).
 
 The import statement may specify a single module or module-level symbol, or it
 may specify multiple module-level symbols in the ``unqualified-list``.  Unlike
@@ -954,6 +810,213 @@ disambiguate the symbols in this case.
    because it is defined in both M1 and M3. This will result in a
    compiler error. The call could be qualified via M1.printY() or
    M3.printY() to resolve this ambiguity.
+
+.. _Reexporting:
+
+Re-exporting
+~~~~~~~~~~~~
+
+Making a use or import ``public`` causes the symbols brought in by that
+statement to be visible as though they were defined in the scope with the use or
+import, a strategy which will be referred to as `re-exporting`.  However,
+symbols with the same name in the scope with the use or import will still take
+precedence.
+
+   *Example (use-reexport1.chpl)*.
+
+   Say we have a module A that uses a module B, and module B contains a public
+   use of module C:
+
+   .. code-block:: chapel
+
+      module C {
+        var cSymbol: int;
+      }
+
+      module B {
+        public use C;
+      }
+
+      module A {
+        proc main() {
+          use B;
+          writeln(B.C.cSymbol);
+          writeln(B.cSymbol);
+        }
+      }
+
+   In this case, C will be visible to A as though it was a submodule of B, and
+   its symbols can also be treated as though they were defined within B.  This
+   means that A can contain mentions like ``B.C.cSymbol`` if cSymbol was a
+   symbol defined in C, regardless of if C was actually a submodule of B.
+
+   This also means that A can contain mentions like ``B.cSymbol`` which would
+   access C's cSymbol, assuming these symbols were not shadowed by symbols with
+   the same name in B.
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      0
+
+   *Example (use-reexport2.chpl)*.
+
+   However, if the public use of C also disabled accesses to the module name
+   using the ``as`` keyword, e.g.
+
+   .. code-block:: chapel
+
+      module C {
+        var cSymbol: int;
+      }
+
+      module B {
+        public use C as _;
+      }
+
+      module A {
+        proc main() {
+          use B;
+          // writeln(B.C.cSymbol); // Would not work
+          writeln(B.cSymbol);
+        }
+      }
+
+   Then A could only contain mentions like ``B.cSymbol``, it could not access
+   ``cSymbol`` using ``B.C.cSymbol``.  This is because C is not present as a
+   public name in B's scope.
+
+   .. BLOCK-test-chapeloutput
+
+      0
+
+Conversely, if B's use of C was ``private`` then A would not be able to see C's
+symbols at all due to that ``use``.
+
+The situation for ``import`` is similar.  Because import statements only
+enable either qualified or unqualified access to a symbol, it more closely
+resembles the second example instead of the first.
+
+   *Example (import-reexport1.chpl)*.
+
+   Say we have a module A that imports module B, and module B contains a public
+   import of module C:
+
+   .. code-block:: chapel
+
+      module C {
+        var cSymbol: int;
+      }
+
+      module B {
+        public import C;
+      }
+
+      module A {
+        proc main() {
+          import B;
+          writeln(B.C.cSymbol);
+        }
+      }
+
+   In this case, C will be visible to A as though it was a submodule of B.  This
+   means that A can contain mentions like ``B.C.cSymbol`` if cSymbol was a
+   symbol defined in C, regardless of if C was actually a submodule of B.
+
+   .. BLOCK-test-chapeloutput
+
+      0
+
+   *Example (import-reexport2.chpl)*.
+
+   Alternatively, if module B contains a public import of some public symbols
+   defined in module C, then those symbols will be visible to A as though they
+   were defined in module B, unless they are shadowed by symbols of the same
+   name in B.
+
+   .. code-block:: chapel
+
+      module C {
+        var cSymbol: int;
+      }
+
+      module B {
+        public import C.cSymbol;
+      }
+
+      module A {
+        proc main() {
+          import B;
+          writeln(B.cSymbol);
+        }
+      }
+
+   This means that A could contain mentions like ``B.cSymbol`` and it would
+   access C's cSymbol.
+
+   .. BLOCK-test-chapeloutput
+
+      0
+
+Again, if B's import of C is ``private`` then A will not be able to see C's
+symbols due to that ``import``.
+
+This notion of re-exporting extends to the case in which a scope uses multiple
+modules.
+
+   *Example (use-reexport3.chpl)*.
+
+   Say we have a module A that uses a module B, and module B contains a
+   public use of modules C1, C2, and C3.
+
+   .. code-block:: chapel
+
+      module C1 {
+        var c1Symbol: int;
+      }
+
+      module C2 {
+        var c2Symbol: bool;
+      }
+
+      module C3 {
+        var c3Symbol = 3;
+      }
+
+      module B {
+        public use C1, C2, C3;
+      }
+
+      module A {
+        proc main() {
+          use B;
+          writeln(B.C1.c1Symbol);
+          writeln(B.C2.c2Symbol);
+          writeln(B.C3.c3Symbol);
+
+          writeln(B.c1Symbol);
+          writeln(B.c2Symbol);
+          writeln(B.c3Symbol);
+        }
+      }
+
+   In this case all three of those modules will be accessible by A as though
+   they were submodules of B.  This also means that symbols in C1, C2, and C3
+   will be accessible as though they were defined in B, assuming these symbols
+   were not shadowed by symbols with the same name in B and that these symbols
+   do not conflict with each other.
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      false
+      3
+      0
+      false
+      3
+
+This similarly applies to import statements that contain multiple
+subexpressions.
 
 .. _Module_Initialization:
 
