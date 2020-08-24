@@ -113,7 +113,12 @@ module StringCasts {
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
     var localX = x.localize();
-    _cleanupStringForNumericCast(localX, t:string);
+
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
@@ -173,20 +178,35 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  proc _cleanupStringForNumericCast(ref s: string, typeName: string) throws {
+  proc _isSingleWord(const ref s: string) {
+    use BytesStringCommon only byte_isWhitespace;
+
+    // here we assume that the string is all ASCII, if not, we'll get an error
+    // from the actual conversion function, anyways
+    for b in s.bytes() {
+      if byte_isWhitespace(b) then return false;
+    }
+    return true;
+  }
+
+  proc _cleanupStringForNumericCast(ref s: string) {
     var len = s.size;
 
-    if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " +
-                                           typeName);
+    const hasUnderscores = s[1..].find("_") != -1;
 
-    if len >= 2 && s[1..].find("_") != -1 {
-      // Don't remove a leading underscore in the string number,
-      // but remove the rest.
-      if len > 2 && s[0] == "_" {
-        s = s[0] + s[1..].replace("_", "");
-      } else {
-        s = s.replace("_", "");
+    if hasUnderscores {
+      s = s.strip();
+      // don't remove anything and let it fail later on
+      if _isSingleWord(s) {
+        if len >= 2 && s[1..].find("_") != -1 {
+          // Don't remove a leading underscore in the string number,
+          // but remove the rest.
+          if len > 2 && s[0] == "_" {
+            s = s[0] + s[1..].replace("_", "");
+          } else {
+            s = s.replace("_", "");
+          }
+        }
       }
     }
   }
@@ -203,7 +223,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForNumericCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -229,7 +253,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForNumericCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
