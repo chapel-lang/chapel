@@ -30,6 +30,10 @@ cnrm2 : 1 PASSED, 0 FAILED
 znrm2 : 1 PASSED, 0 FAILED
  srot : 4 PASSED, 0 FAILED
  drot : 4 PASSED, 0 FAILED
+ccrot : 4 PASSED, 0 FAILED
+csrot : 4 PASSED, 0 FAILED
+ zrot : 4 PASSED, 0 FAILED
+zdrot : 4 PASSED, 0 FAILED
 srotg : 4 PASSED, 0 FAILED
 drotg : 4 PASSED, 0 FAILED
 crotg : 4 PASSED, 0 FAILED

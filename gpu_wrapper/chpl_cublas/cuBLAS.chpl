@@ -210,7 +210,7 @@ module cuBLAS {
     cublas_zrot(handle, n, x, incX, y, incY, c, s);
   }
 
-  proc cu_zdrot(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), c: c_double, s: complex(128), incX: c_int = 1, incY: c_int = 1){
+  proc cu_zdrot(handle: c_void_ptr, n: c_int, x: c_ptr(complex(128)), y: c_ptr(complex(128)), c: c_double, s: c_double, incX: c_int = 1, incY: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
     cublas_zdrot(handle, n, x, incX, y, incY, c, s);
   }
@@ -245,12 +245,12 @@ module cuBLAS {
     cublas_drotm(handle, n, x, incX, y, incY, params);
   }
 
-  proc cu_srotmg(handle: c_void_ptr, d1: c_float, d2: c_float, x1: c_float, y1: c_float, params: c_ptr(c_float)){
+  proc cu_srotmg(handle: c_void_ptr, ref d1: c_float, ref d2: c_float, ref x1: c_float, ref y1: c_float, params: []real(32)){
     require "c_cublas.h", "c_cublas.o";
     cublas_srotmg(handle, d1, d2, x1, y1, params);
   }
 
-  proc cu_drotmg(handle: c_void_ptr, d1: c_double, d2: c_double, x1: c_double, y1: c_double, params: c_ptr(c_float)){
+  proc cu_drotmg(handle: c_void_ptr, ref d1: c_double, ref d2: c_double, ref x1: c_double, ref y1: c_double, params: []real(64)){
     require "c_cublas.h", "c_cublas.o";
     cublas_drotmg(handle, d1, d2, x1, y1, params);
   }
@@ -368,8 +368,8 @@ module cuBLAS {
     extern proc cublas_srotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int, params: []c_float);
     extern proc cublas_drotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int, params: []c_double);
 
-    extern proc cublas_srotmg(handle: c_void_ptr, d1: c_float, d2: c_float, x1: c_float, y1: c_float, params: c_ptr(c_float));
-    extern proc cublas_drotmg(handle: c_void_ptr, d1: c_double, d2: c_double, x1: c_double, y1: c_double, params: c_ptr(c_float));
+    extern proc cublas_srotmg(handle: c_void_ptr, ref d1: c_float, ref d2: c_float, ref x1: c_float, ref y1: c_float, params: []c_float);
+    extern proc cublas_drotmg(handle: c_void_ptr, ref d1: c_double, ref d2: c_double, ref x1: c_double, ref y1: c_double, params: []c_float);
 
     extern proc cublas_sscal(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int);
     extern proc cublas_dscal(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int);
