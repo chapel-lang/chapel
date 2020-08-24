@@ -44,6 +44,19 @@ If you have authored a commit that is missing the signed-off-by line, you can am
 
 If you've pushed your changes to GitHub already you'll need to force push your branch after this with `git push -f`.
 
+## Fixing DCO
+
+If your Pull Request fails the DCO check, it's necessary to fix the entire commit history in the PR. Best practice is to 
+squash the commit history to a single commit, append the DCO sign-off as described above, and force push. For example, 
+if you have 2 commits in your history (Note the ~2):
+
+    git rebase -i HEAD~2
+    (interactive squash + DCO append)
+    git push origin -f
+
+Note, that in general rewriting history in this way may introduce issues to the review process and this should only be done to 
+correct a DCO mistake.
+
 
 ## Resources for contributing to Chapel
 
