@@ -369,7 +369,7 @@ module cuBLAS {
     extern proc cublas_drotm(handle: c_void_ptr, n: c_int, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int, params: []c_double);
 
     extern proc cublas_srotmg(handle: c_void_ptr, ref d1: c_float, ref d2: c_float, ref x1: c_float, ref y1: c_float, params: []c_float);
-    extern proc cublas_drotmg(handle: c_void_ptr, ref d1: c_double, ref d2: c_double, ref x1: c_double, ref y1: c_double, params: []c_float);
+    extern proc cublas_drotmg(handle: c_void_ptr, ref d1: c_double, ref d2: c_double, ref x1: c_double, ref y1: c_double, params: []c_double);
 
     extern proc cublas_sscal(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int);
     extern proc cublas_dscal(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int);
