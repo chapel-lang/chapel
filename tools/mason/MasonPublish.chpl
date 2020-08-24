@@ -240,18 +240,13 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
     }
 
     const version = addPackageToBricks(packageLocation, safeDir, name, registryPath, isLocal);
-    var command : list(string);
     var  message = ' "Adding %s package to registry via mason publish"'.format(version);
-    var gitString = ("git commit -m").split();
-    command.append('git');
-    command.append('commit');
-    command.append('-m');
-    command.append('-q');
-    command.append(message);
+    var command = ['git', 'commit', '-q', '-m', message];
+
 
     if !isLocal {
       gitC(safeDir + "/mason-registry", "git add .");
-      commitSubProcess(safeDir + '/mason-registry', command.toArray());
+      commitSubProcess(safeDir + '/mason-registry', command);
       gitC(safeDir + "/mason-registry", 'git push --set-upstream origin ' + name, true);
       rmTree(safeDir + '/');
       writeln('--------------------------------------------------------------------');
@@ -259,7 +254,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
      }
     else {
       gitC(safeDir, 'git add Bricks/' + name);
-      commitSubProcess(safeDir, command.toArray());
+      commitSubProcess(safeDir, command);
       writeln('Successfully published package to ' + registryPath);
     }
 
@@ -273,7 +268,7 @@ proc publishPackage(username: string, registryPath : string, isLocal : bool) thr
  split by the MasonUtils runCommand()/
  */
 private proc commitSubProcess(dir: string, command: [] string) throws {
-  var spawnArgs = [cmd in command] cmd;
+  var spawnArgs = command;
   const oldDir = here.cwd();
   here.chdir(dir);
   var commitSpawn = spawn(spawnArgs, stdout=PIPE, stderr=PIPE);
