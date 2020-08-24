@@ -59,8 +59,8 @@ int cublas_drotm(c_void_ptr *handle, int n, double *x, int incX, double *y, int 
 //int cublas_crotm(c_void_ptr *handle, int n, complex float *x, int incX, complex float *y, int incY, complex float *param);
 //int cublas_zrotm(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY, complex double *param);
 
-int cublas_srotmg(c_void_ptr *handle, float d1, float d2, float x1, float y1, float *param);
-int cublas_drotmg(c_void_ptr *handle, double d1, double d2, double  x1, double  y1, float *param);
+int cublas_srotmg(c_void_ptr *handle, float *d1, float *d2, float *x1, float *y1, float *param);
+int cublas_drotmg(c_void_ptr *handle, double *d1, double *d2, double  *x1, double  *y1, float *param);
 //int cublas_crotmg(c_void_ptr *handle, complex float d1, complex float d2, float x1, float y1, float *param);
 //int cublas_zrotmg(c_void_ptr *handle, double d1, double d2, double  x1, double  y1, float *param);
 

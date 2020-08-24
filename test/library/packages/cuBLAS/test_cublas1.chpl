@@ -50,6 +50,7 @@ proc main() {
   test_rot();
   test_rotg();
   test_rotm();
+  //test_rotmg();
   test_scal();
   test_swap();
   //test_rotm();
@@ -116,10 +117,10 @@ proc test_nrm2() {
 proc test_rot() {
   test_curot_helper(real(32));
   test_curot_helper(real(64));
-  //test_cucrot_helper(complex(64));
-  //test_cuzrot_helper(complex(128));
-  //test_cuxrot_helper(complex(64));
-  //test_cuxrot_helper(complex(128));
+  test_cucrot_helper(complex(64));
+  test_cucsrot_helper(complex(64));
+  test_cuzrot_helper(complex(128));
+  test_cuzdrot_helper(complex(128));
 }
 
 proc test_rotg() {
@@ -136,7 +137,7 @@ proc test_rotm() {
 
 proc test_rotmg() {
   test_curotmg_helper(real(32));
-  test_curotmg_helper(real(64));
+  //test_curotmg_helper(real(64));
 }
 
 proc test_scal(){
@@ -721,10 +722,10 @@ proc test_cucrot_helper(type t) {
 
     for i in X.domain {
       err = abs(Xin[i] * c + Yin[i] * s - X[i]);
-      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
 
       err = abs(Yin[i] * c - Xin[i] * s - Y[i]);
-      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
     }
 
   }
@@ -761,7 +762,7 @@ proc test_cuzrot_helper(type t) {
     var cublas_handle = cublas_create_handle();
 
     select t {
-     when complex(64) do {
+     when complex(128) do {
         cu_zrot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c, s);
      }
     }
@@ -771,22 +772,22 @@ proc test_cuzrot_helper(type t) {
 
     for i in X.domain {
       err = abs(Xin[i] * c + Yin[i] * s - X[i]);
-      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
 
       err = abs(Yin[i] * c - Xin[i] * s - Y[i]);
-      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
     }
 
   }
   printErrors(name, passed, failed, tests);
 }
 
-proc test_cuxrot_helper(type t) {
+proc test_cucsrot_helper(type t) {
   var passed = 0,
       failed = 0,
       tests = 0;
   const errorThreshold = blasError(t);
-  var name = "%sxrot".format(blasPrefix(t));
+  var name = "%ssrot".format(blasPrefix(t));
 
   {
     var err: t;
@@ -794,9 +795,9 @@ proc test_cuxrot_helper(type t) {
     const D = {0..1};
 
     var X: [D] t = [4:t, 2:t],
-        Y: [D] t = [1:t, 3:t],
-        c = 2.0: t,
-        s = 2.0: t;
+        Y: [D] t = [1:t, 3:t];
+    var c = 2.0: real(32);
+    var s = 2.0: real(32);
 
     const Xin = X,
           Yin = Y;
@@ -814,6 +815,54 @@ proc test_cuxrot_helper(type t) {
      when complex(64) do {
         cu_csrot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c, s);
      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+    gpu_to_cpu(c_ptrTo(Y), gpu_ptr_Y, c_sizeof(t)*N:size_t);
+
+    for i in X.domain {
+
+      err = abs(Xin[i] * c  + Yin[i] * s - X[i]);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+
+      err = abs(Yin[i] * c - Xin[i] * s - Y[i]);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
+    }
+
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cuzdrot_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sdrot".format(blasPrefix(t));
+
+  {
+    var err: t;
+
+    const D = {0..1};
+
+    var X: [D] t = [4:t, 2:t],
+        Y: [D] t = [1:t, 3:t];
+    var c = 2.0: real(64);
+    var s = 2.0: real(64);
+
+    const Xin = X,
+          Yin = Y;
+
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
      when complex(128) do {
         cu_zdrot(cublas_handle, N, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), c, s);
      }
@@ -825,10 +874,10 @@ proc test_cuxrot_helper(type t) {
     for i in X.domain {
 
       err = abs(Xin[i] * c  + Yin[i] * s - X[i]);
-      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
 
       err = abs(Yin[i] * c - Xin[i] * s - Y[i]);
-      trackErrors(name, err, errorThreshold, passed, failed, tests);
+      trackErrors(name, abs(err), errorThreshold, passed, failed, tests);
 
     }
 
@@ -1099,6 +1148,91 @@ proc test_curotm_helper(type t) {
   printErrors(name, passed, failed, tests);
 }
 
+proc test_curotmg_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%srotmg".format(blasPrefix(t));
+
+  // Simple test
+  {
+    var err: t;
+
+    var d1 = 1.0: t,
+        d2 = 1.0: t,
+        b1 = 1.0: t,
+        b2 = 1.0: t;
+
+    var X1 = b1*sqrt(d1) : t;
+    var Y1 = b2*sqrt(d2) : t;
+
+    //writeln("X1: ", X1, "Y1: ", Y1);
+
+    // Param array
+    var P: [0..4] t;
+
+    var N = 1:int(32);
+
+    //Get pointer to X and Y and P allocated on GPU
+    //var gpu_ptr_X1 = cpu_to_gpu(c_ptrTo(X1), c_sizeof(t)*N:size_t);
+    //var gpu_ptr_Y1 = cpu_to_gpu(c_ptrTo(Y1), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when real(32) do {
+        cu_srotmg(cublas_handle, d1, d2, b1, b2, P);
+      }
+      when real(64) do {
+        cu_drotmg(cublas_handle, d1, d2, b1, b2, P);
+      }
+    }
+
+//    gpu_to_cpu(c_ptrTo(X1), gpu_ptr_X1, c_sizeof(t)*N:size_t);
+//    gpu_to_cpu(c_ptrTo(Y1), gpu_ptr_Y1, c_sizeof(t)*N:size_t);
+
+//    rotmg(d1, d2, b1, b2, P);
+
+    var flag = P[0],
+        h11 = P[1],
+        h21 = P[2],
+        h12 = P[3],
+        h22 = P[4];
+ 
+    writeln(P);
+    writeln("d1: ", d1, "d2: ", d2, "b1: ", b1, "b2: ", b2);
+    select flag {
+      when 0.0: t do {
+        h11 = 1.0: t;
+        h22 = 1.0: t;
+      }
+      when 1.0: t do {
+        h12 = 1.0: t;
+        h21 = -1.0: t;
+      }
+      when -2.0: t do {
+        h11 = 1.0: t;
+        h22 = 1.0: t;
+        h12 = 0.0: t;
+        h21 = 0.0: t;
+      }
+    }
+
+    var x1 = b1;
+
+    writeln("h11*X1 + h12*Y1 - x1, h11: ", h11, " X1: ", X1, " h12: ", h12, " Y1: ", Y1, " x1: ", x1);
+    writeln("h11*X1 + h12*Y1: ", h11*X1 + h12*Y1);
+    writeln("x1: ", x1);
+    err = abs((h11*x1 + h12*Y1) - x1);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+
+    err = abs(h21*X1 + h22*Y1);
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
+  }
+  printErrors(name, passed, failed, tests);
+}
 
 proc test_cuscal_helper(type t) {
   var passed = 0,

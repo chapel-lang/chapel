@@ -367,22 +367,43 @@ int cublas_drotm(cublasHandle_t *handle, int n, double *x, int incX, double *y, 
       param_host[i] = param[i];
     }
 
-    cublasDrotm(*handle, n, x, incX, y, incY, param);
+    cublasDrotm(*handle, n, x, incX, y, incY, param_host);
     cudaDeviceSynchronize();
     return 0;
 }
 
-int cublas_srotmg(cublasHandle_t *handle, float d1, float d2, float x1, float y1, float *param){
+int cublas_srotmg(cublasHandle_t *handle, float *d1, float *d2, float *x1, float *y1, float *param){
+    float param_host[5];
 
-    cublasSrotmg(*handle, &d1, &d2, &x1, &y1, param);
+    for(int i = 0; i < 5; i ++){
+      param_host[i] = param[i];
+    }
+
+    cublasSrotmg(*handle, d1, d2, x1, y1, param_host);
+
     cudaDeviceSynchronize();
+    for(int i = 0; i < 5; i ++){
+      param[i] = param_host[i];
+    }
+
     return 0;
 
 }
 
-int cublas_drotmg(cublasHandle_t *handle, double d1, double d2, double x1, double y1, double *param){
-    cublasDrotmg(*handle, &d1, &d2, &x1, &y1, param);
+int cublas_drotmg(cublasHandle_t *handle, double *d1, double *d2, double *x1, double *y1, double *param){
+    double param_host[5];
+
+    for(int i = 0; i < 5; i ++){
+      param_host[i] = param[i];
+    }
+
+    cublasDrotmg(*handle, d1, d2, x1, y1, param_host);
+
     cudaDeviceSynchronize();
+    for(int i = 0; i < 5; i ++){
+      param[i] = param_host[i];
+    }
+
     return 0;
 }
 
