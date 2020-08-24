@@ -792,7 +792,8 @@ static void getVisibleFunctionsImpl(const char*       name,
       getVisibleFunctionsImpl(name, call, // visit all POIs right away
                   instantiationPt, NULL, visited, visibleFns, inUseChain);
     else
-      // Overwrites instantiationPt from an outer scope, if any
+      // Executes after recursing to outer/enclosing scopes above.
+      // Overwrites instantiationPt from an outer scope, if already in nextPOI.
       visInfo->nextPOI = instantiationPt; // come back to it later
   }
 }
