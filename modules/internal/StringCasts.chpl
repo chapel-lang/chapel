@@ -191,7 +191,6 @@ module StringCasts {
 
   proc _cleanupStringForNumericCast(ref s: string) {
     param underscore = "_".toByte();
-    var len = s.size;
 
     var hasUnderscores = false;
     for bIdx in 1..<s.numBytes {
@@ -205,6 +204,7 @@ module StringCasts {
       s = s.strip();
       // don't remove anything and let it fail later on
       if _isSingleWord(s) {
+        var len = s.size;
         if len >= 2 {
           // Don't remove a leading underscore in the string number,
           // but remove the rest.
