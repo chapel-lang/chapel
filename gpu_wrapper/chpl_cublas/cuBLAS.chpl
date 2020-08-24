@@ -282,7 +282,7 @@ module cuBLAS {
 
   proc cu_zdscal(handle: c_void_ptr, n: c_int, alpha: c_double, x: c_ptr(complex(128)), incX: c_int = 1){
     require "c_cublas.h", "c_cublas.o";
-    cublas_zdcal(handle, n, alpha, x, incX);
+    cublas_zdscal(handle, n, alpha, x, incX);
   }
 
   proc cu_sswap(handle: c_void_ptr, n: c_int, x: c_ptr(c_float), y: c_ptr(c_float), incX: c_int = 1, incY: c_int = 1){

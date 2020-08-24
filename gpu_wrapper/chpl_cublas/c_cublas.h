@@ -67,7 +67,9 @@ int cublas_drotmg(c_void_ptr *handle, double *d1, double *d2, double  *x1, doubl
 int cublas_sscal(c_void_ptr *handle, int n, float alpha, float *x, int incX);
 int cublas_dscal(c_void_ptr *handle, int n, double alpha, double *x, int incX);
 int cublas_cscal(c_void_ptr *handle, int n, complex float alpha, complex float *x, int incX);
+int cublas_csscal(c_void_ptr *handle, int n, complex float alpha, float *x, int incX);
 int cublas_zscal(c_void_ptr *handle, int n, complex double alpha, complex double *x, int incX);
+int cublas_zdscal(c_void_ptr *handle, int n, complex double alpha, double *x, int incX);
 
 int cublas_sswap(c_void_ptr *handle, int n, float *x, int incX, float *y, int incY);
 int cublas_dswap(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY);

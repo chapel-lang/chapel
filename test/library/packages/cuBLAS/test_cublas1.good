@@ -43,7 +43,9 @@ drotm : 4 PASSED, 0 FAILED
 sscal : 3 PASSED, 0 FAILED
 dscal : 3 PASSED, 0 FAILED
 cscal : 3 PASSED, 0 FAILED
+csscal : 3 PASSED, 0 FAILED
 zscal : 3 PASSED, 0 FAILED
+zdscal : 3 PASSED, 0 FAILED
 sswap : 6 PASSED, 0 FAILED
 dswap : 6 PASSED, 0 FAILED
 cswap : 6 PASSED, 0 FAILED

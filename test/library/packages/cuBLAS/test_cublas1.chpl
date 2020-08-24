@@ -144,7 +144,9 @@ proc test_scal(){
   test_cuscal_helper(real(32));
   test_cuscal_helper(real(64));
   test_cuscal_helper(complex(64));
+  test_cucsscal_helper(complex(64));
   test_cuscal_helper(complex(128));
+  test_cuzdscal_helper(complex(128));
 }
 
 proc test_swap(){
@@ -1281,6 +1283,81 @@ proc test_cuscal_helper(type t) {
   printErrors(name, passed, failed, tests);
 }
 
+proc test_cucsscal_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%ssscal".format(blasPrefix(t));
+
+  {
+    const D = {0..2};
+
+    var a = 1.5: real(32);
+    var X: [D] t = [1: t, 2: t, 3: t];
+
+    const Xin = X;
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y and P allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when complex(64) do {
+        cu_csscal(cublas_handle, N, a, gpu_ptr_X:c_ptr(t));
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+
+    for i in D {
+      var err = abs(a * Xin[i] - X[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
+  }
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cuzdscal_helper(type t) {
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sdscal".format(blasPrefix(t));
+
+  {
+    const D = {0..2};
+
+    var a = 1.5: real(64);
+    var X: [D] t = [1: t, 2: t, 3: t];
+
+    const Xin = X;
+    var N = X.size:int(32);
+
+    //Get pointer to X and Y and P allocated on GPU
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*N:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    select t {
+      when complex(128) do {
+        cu_zdscal(cublas_handle, N, a, gpu_ptr_X:c_ptr(t));
+      }
+    }
+
+    gpu_to_cpu(c_ptrTo(X), gpu_ptr_X, c_sizeof(t)*N:size_t);
+
+    for i in D {
+      var err = abs(a * Xin[i] - X[i]);
+      trackErrors(name, err, errorThreshold, passed, failed, tests);
+    }
+  }
+  printErrors(name, passed, failed, tests);
+}
 
 proc test_cuswap_helper(type t) {
   var passed = 0,
