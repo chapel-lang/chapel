@@ -50,10 +50,9 @@ proc main() {
   test_rot();
   test_rotg();
   test_rotm();
-  //test_rotmg();
+  test_rotmg();
   test_scal();
   test_swap();
-  //test_rotm();
 
 }
 
@@ -137,7 +136,7 @@ proc test_rotm() {
 
 proc test_rotmg() {
   test_curotmg_helper(real(32));
-  //test_curotmg_helper(real(64));
+  test_curotmg_helper(real(64));
 }
 
 proc test_scal(){
@@ -1176,10 +1175,6 @@ proc test_curotmg_helper(type t) {
 
     var N = 1:int(32);
 
-    //Get pointer to X and Y and P allocated on GPU
-    //var gpu_ptr_X1 = cpu_to_gpu(c_ptrTo(X1), c_sizeof(t)*N:size_t);
-    //var gpu_ptr_Y1 = cpu_to_gpu(c_ptrTo(Y1), c_sizeof(t)*N:size_t);
-
     //Create cublas handle
     var cublas_handle = cublas_create_handle();
 
@@ -1192,19 +1187,12 @@ proc test_curotmg_helper(type t) {
       }
     }
 
-//    gpu_to_cpu(c_ptrTo(X1), gpu_ptr_X1, c_sizeof(t)*N:size_t);
-//    gpu_to_cpu(c_ptrTo(Y1), gpu_ptr_Y1, c_sizeof(t)*N:size_t);
-
-//    rotmg(d1, d2, b1, b2, P);
-
     var flag = P[0],
         h11 = P[1],
         h21 = P[2],
         h12 = P[3],
         h22 = P[4];
- 
-    writeln(P);
-    writeln("d1: ", d1, "d2: ", d2, "b1: ", b1, "b2: ", b2);
+
     select flag {
       when 0.0: t do {
         h11 = 1.0: t;
@@ -1224,10 +1212,7 @@ proc test_curotmg_helper(type t) {
 
     var x1 = b1;
 
-    writeln("h11*X1 + h12*Y1 - x1, h11: ", h11, " X1: ", X1, " h12: ", h12, " Y1: ", Y1, " x1: ", x1);
-    writeln("h11*X1 + h12*Y1: ", h11*X1 + h12*Y1);
-    writeln("x1: ", x1);
-    err = abs((h11*x1 + h12*Y1) - x1);
+    err = abs(h11*X1 + h12*Y1 - x1);
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
     err = abs(h21*X1 + h22*Y1);
