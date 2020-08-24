@@ -83,7 +83,7 @@ parser: FORCE
 modules: FORCE
 	@echo "Making the modules..."
 	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	echo "Making the modules for LLVM..."; \
 	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
@@ -91,7 +91,7 @@ modules: FORCE
 runtime: FORCE
 	@echo "Making the runtime..."
 	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	echo "Making the runtime for LLVM..."; \
 	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
