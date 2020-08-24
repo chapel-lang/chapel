@@ -82,29 +82,6 @@ module StringCasts {
                                               numCodepoints=len);
   }
 
-  private proc removeUnderscores(type t: integral, x: string) throws {
-    var localX = x.localize();
-    const hasUnderscores = localX.find("_") != -1;
-
-    if hasUnderscores {
-      localX = localX.strip();
-      // make sure the string only has one word
-      var numElements: int;
-      for localX.split() {
-        numElements += 1;
-        if numElements > 1 then break;
-      }
-      if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
-
-      // remove underscores everywhere but the first position
-      if localX.size >= 2 then
-        localX = localX[0] + localX[1..].replace("_", "");
-    }
-
-    return localX;
-  }
-
   inline proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
@@ -135,7 +112,8 @@ module StringCasts {
     var retVal: t;
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
-    const localX = removeUnderscores(t, x);
+    var localX = x.localize();
+    _cleanupStringForNumericCast(localX, t:string);
 
     if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
@@ -195,11 +173,12 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
+  proc _cleanupStringForNumericCast(ref s: string, typeName: string) throws {
     var len = s.size;
 
     if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           typeName);
 
     if len >= 2 && s[1..].find("_") != -1 {
       // Don't remove a leading underscore in the string number,
@@ -224,7 +203,7 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    _cleanupStringForNumericCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -250,7 +229,7 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    _cleanupStringForNumericCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
