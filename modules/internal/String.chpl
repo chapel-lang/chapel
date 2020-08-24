@@ -873,6 +873,26 @@ module String {
       return this:c_string; // folded out in resolution
     }
 
+
+    proc _cpIndexLenHelpNoAdjustment(ref start: int) {
+      const localThis: string = this.localize();
+      const i = start;
+
+      if localThis.isASCII() {
+        start += 1;
+        return (this.buff[i]:int(32), i:byteIndex, 1:int);
+
+      }
+      else {
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
+                                                   buffLen=localThis.buffLen,
+                                                   offset=i,
+                                                   allowEsc=true);
+        start += nBytes;
+        return (cp:int(32), i:byteIndex, nBytes:int);
+      }
+    }
+
     /*
       Iterates over the string Unicode character by Unicode character,
       and includes the byte index and byte length of each character.
@@ -881,26 +901,10 @@ module String {
       but the string is correctly encoded UTF-8.
     */
     iter _cpIndexLen(start = 0:byteIndex) {
-      var localThis: string = this.localize();
-
-      if localThis.isASCII() {
-        for (i,b) in zip(this.byteIndices, this.chpl_bytes()) {
-          yield(b:int(32), i:byteIndex, 1:int);
-        }
-      }
-      else {
-        var i = start:int;
-        if i > 0 then
-          while i < localThis.buffLen && !isInitialByte(localThis.buff[i]) do
-            i += 1; // in case `start` is in the middle of a multibyte character
-        while i < localThis.buffLen {
-          const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                     buffLen=localThis.buffLen,
-                                                     offset=i,
-                                                     allowEsc=true);
-          yield (cp:int(32), i:byteIndex, nBytes:int);
-          i += nBytes;
-        }
+      const localThis = this.localize();
+      var i = _findStartOfNextCodepointFromByte(this, start);
+      while i < localThis.buffLen {
+        yield _cpIndexLenHelpNoAdjustment(i);  // this increments i
       }
     }
 
@@ -944,12 +948,106 @@ module String {
       compilerError("not implemented: readThis");
     }
 
+    proc doSplitWSUTF8Help(const ref localThis, maxsplit: int, ref i: int,
+                           const splitCount: int, const noSplits: bool,
+                           const limitSplits: bool, const iEnd: byteIndex) {
+      // note: to improve performance, this code collapses several cases into a
+      //       single yield statement, which makes it confusing to read
+      var done : bool = false;
+      var yieldChunk : bool = false;
+      var chunk : string;
+
+      var inChunk : bool = false;
+      var chunkStart : byteIndex;
+
+      i = _findStartOfNextCodepointFromByte(this, i:byteIndex);
+
+      while i < localThis.buffLen {
+        const (decodeRet, c, nBytes) = decodeHelp(buff=localThis.buff,
+                                                  buffLen=localThis.buffLen,
+                                                  offset=i,
+                                                  allowEsc=true);
+        // emit whole string, unless all whitespace
+        if noSplits {
+          done = true;
+          if !localThis.isSpace() then {
+            chunk = localThis;
+            yieldChunk = true;
+          }
+        } else {
+          var cSpace = codepoint_isWhitespace(c);
+          // first char of a chunk
+          if !(inChunk || cSpace) {
+            chunkStart = i;
+            inChunk = true;
+            if i - 1 + nBytes > iEnd {
+              chunk = localThis[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            }
+          } else if inChunk {
+            // first char out of a chunk
+            if cSpace {
+              // last split under limit
+              if limitSplits && splitCount >= maxsplit {
+                chunk = localThis[chunkStart..];
+                yieldChunk = true;
+                done = true;
+              // no limit
+              } else {
+                chunk = localThis[chunkStart..(i-1):byteIndex];
+                yieldChunk = true;
+                inChunk = false;
+              }
+            // out of chars
+            } else if i - 1 + nBytes > iEnd {
+              chunk = localThis[chunkStart..];
+              yieldChunk = true;
+              done = true;
+            }
+          }
+        }
+
+        if done {
+          i = localThis.buffLen;
+        }
+        else {
+          i += nBytes;
+        }
+        if yieldChunk {
+          return chunk;
+        }
+      }
+      return "";
+    }
+
+    iter doSplitWSUTF8(maxsplit: int) {
+      if !this.isEmpty() {
+        const localThis = this.localize();
+        var splitCount = 0;
+
+        // this is passed to the helper as ref
+        var i = 0;
+
+        while i < localThis.buffLen {
+          const chunk =  doSplitWSUTF8Help(localThis, maxsplit, i, splitCount,
+                                           noSplits=(maxsplit==0),
+                                           limitSplits=(maxsplit>0),
+                                           iEnd=(localThis.buffLen-2):byteIndex);
+          if !chunk.isEmpty() {
+            yield chunk;
+            splitCount += 1;
+          }
+        }
+      }
+    }
+
     // Helper function that uses a param bool to toggle between count and find
     //TODO: this could be a much better string search
     //      (Boyer-Moore-Horspool|any thing other than brute force)
     //
-    inline proc doSearchUTF8(needle: string, region: range(?),
-                             param count: bool, param fromLeft: bool = true) {
+    proc doSearchUTF8(needle: string, region: range(?),
+                      param count: bool, param fromLeft: bool = true) {
       // needle.len is <= than this.buffLen, so go to the home locale
       var ret: int = -1;
       on __primitive("chpl_on_locale_num",
@@ -1296,21 +1394,10 @@ module String {
     Iterates over the string Unicode character by Unicode character.
   */
   iter string.codepoints(): int(32) {
-    var localThis: string = this.localize();
-
-    if this.isASCII() {
-      for b in this.chpl_bytes() do yield b;
-    }
-    else {
-      var i = 0;
-      while i < localThis.buffLen {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
-                                                   offset=i,
-                                                   allowEsc=true);
-        yield cp;
-        i += nBytes;
-      }
+    const localThis = this.localize();
+    var i = 0;
+    while i < localThis.buffLen {
+      yield _cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
     }
   }
 
@@ -1399,7 +1486,7 @@ module String {
   proc string.this(i: byteIndex) : string {
     var idx = i: int;
     if boundsChecking && (idx < 0 || idx >= this.buffLen)
-      then halt("index ", i, " out of bounds for string with ", this.buffLen, " bytes");
+      then halt("index ", i:int, " out of bounds for string with ", this.buffLen, " bytes");
 
     if this.isASCII() {
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
@@ -1449,12 +1536,12 @@ module String {
    */
   proc string.item(i: codepointIndex) : string {
     if boundsChecking && i < 0 then
-      halt("index ", i, " out of bounds for string");
+      halt("index ", i:int, " out of bounds for string");
 
     if this.isEmpty() then return "";
     if this.isASCII() {
       if boundsChecking && i >= this.numBytes then
-        halt("index ", i, " out of bounds for string with length ", this.size);
+        halt("index ", i:int, " out of bounds for string with length ", this.size);
       var (newBuff, allocSize) = bufferCopy(buf=this.buff, off=i:int,
                                             len=1, loc=this.locale_id);
       return chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
@@ -1470,7 +1557,7 @@ module String {
         charCount += 1;
       }
       if boundsChecking then
-        halt("index ", i, " out of bounds for string with length ", this.size);
+        halt("index ", i:int, " out of bounds for string with length ", this.size);
       return "";
     }
   }
@@ -1619,77 +1706,11 @@ module String {
                    indicate no limit.
    */
   iter string.split(maxsplit: int = -1) /* : string */ {
+    // TODO: specifying return type leads to un-inited string?
     if this.isASCII() {
       for s in doSplitWSNoEnc(this, maxsplit) do yield s;
     } else {
-      // note: to improve performance, this code collapses several cases into a
-      //       single yield statement, which makes it confusing to read
-      // TODO: specifying return type leads to un-inited string?
-      if !this.isEmpty() {
-        const localThis: string = this.localize();
-        var done : bool = false;
-        var yieldChunk : bool = false;
-        var chunk : string;
-
-        const noSplits : bool = maxsplit == 0;
-        const limitSplits : bool = maxsplit > 0;
-        var splitCount: int = 0;
-        const iEnd: byteIndex = localThis.buffLen - 2;
-
-        var inChunk : bool = false;
-        var chunkStart : byteIndex;
-
-        for (c, i, nBytes) in localThis._cpIndexLen() {
-          // emit whole string, unless all whitespace
-          if noSplits {
-            done = true;
-            if !localThis.isSpace() then {
-              chunk = localThis;
-              yieldChunk = true;
-            }
-          } else {
-            var cSpace = codepoint_isWhitespace(c);
-            // first char of a chunk
-            if !(inChunk || cSpace) {
-              chunkStart = i;
-              inChunk = true;
-              if i - 1 + nBytes > iEnd {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              }
-            } else if inChunk {
-              // first char out of a chunk
-              if cSpace {
-                splitCount += 1;
-                // last split under limit
-                if limitSplits && splitCount > maxsplit {
-                  chunk = localThis[chunkStart..];
-                  yieldChunk = true;
-                  done = true;
-                // no limit
-                } else {
-                  chunk = localThis[chunkStart..i-1];
-                  yieldChunk = true;
-                  inChunk = false;
-                }
-              // out of chars
-              } else if i - 1 + nBytes > iEnd {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              }
-            }
-          }
-
-          if yieldChunk {
-            yield chunk;
-            yieldChunk = false;
-          }
-          if done then
-            break;
-        }
-      }
+      for s in doSplitWSUTF8(maxsplit) do yield s;
     }
   }
 
