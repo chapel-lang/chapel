@@ -431,6 +431,18 @@ int cublas_zscal(cublasHandle_t *handle, int n, complex double alpha, complex do
     return 0;
 }
 
+int cublas_csscal(cublasHandle_t *handle, int n, float alpha, complex float *x, int incX){
+    cublasCsscal(*handle, n, &alpha, (cuFloatComplex*) x, incX);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zdscal(cublasHandle_t *handle, int n, double alpha, complex double *x, int incX){
+    cublasZdscal(*handle, n, &alpha, (cuDoubleComplex*) x, incX);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
 int cublas_sswap(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY){
     cublasSswap(*handle, n, x, incX, y, incY);
     cudaDeviceSynchronize();
