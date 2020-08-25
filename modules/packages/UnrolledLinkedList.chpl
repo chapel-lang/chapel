@@ -166,6 +166,8 @@ module UnrolledLinkedList {
       :type parSafe: `param bool`
     */
     proc init(other: list(?t), param parSafe=false, nodeCapacity: int = 32) {
+      _checkType(t);
+      _checkNodeCapacity(nodeCapacity);
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot construct unrolledLinkedList from list with "
         + "element type that cannot be copied");
@@ -189,6 +191,7 @@ module UnrolledLinkedList {
     */
     proc init(other: [?d] ?t, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);
+      _checkNodeCapacity(nodeCapacity);
       if !isCopyableType(t) then
         compilerError("Cannot construct unrolledLinkedList from array with element " +
                       "type that cannot be copied");
