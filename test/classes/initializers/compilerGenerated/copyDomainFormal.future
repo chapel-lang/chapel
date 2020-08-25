@@ -1,0 +1,9 @@
+Compiler-generated init doesn't copy domain formals
+#16290
+
+With this future, we are notest'ing
+
+  test/classes/initializers/compilerGenerated/modifyDomain-array-created-by-init
+
+because it causes invalid writes. Once this bug is fixed, that notest should be
+removed
