@@ -29,11 +29,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of llvm-9
+# Test performance of llvm-10
 GITHUB_USER=ronawho
-GITHUB_BRANCH=upgrade-llvm-9
-SHORT_NAME=llvm9
-START_DATE=07/23/20
+GITHUB_BRANCH=upgrade-llvm-10
+SHORT_NAME=llvm10
+START_DATE=08/25/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
