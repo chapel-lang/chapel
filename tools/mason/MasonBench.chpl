@@ -165,7 +165,8 @@ proc compileBenchTests(numBenchTests: int, benchTestNames: list(string), cwd, pr
         else benchTestPath = "".join(projectHome, "/benchmark/", benchTest);
         const benchTestName = basename(stripExt(benchTest, ".chpl"));
         const masonCompopts = getMasonDependencies(sourceList, benchTestName);
-        const allCompopts = "".join(" ".join(compopts.these()), masonCompopts);
+        const benchCompopts = getBenchMetadata(projectHome+"/benchmark/", stripExt(benchTest, ".chpl"), 'compopts');
+        const allCompopts = "".join(" ".join(compopts.these()), masonCompopts, benchCompopts);
         var benchTestTemp: string = benchTest;
         if cwd == projectHome && customTest then
           benchTestTemp = relPath(benchTestTemp, "benchmark/");
@@ -200,7 +201,9 @@ proc runBenchTestExecutables(benchTestNames: list(string), projectHome: string) 
     for benchTest in benchTestNames {
       const outputLoc = projectHome + "/target/benchmark/" + stripExt(benchTest, ".chpl");
       const benchTestName = basename(stripExt(benchTest, ".chpl"));
-      runAndLogBenchmarks(projectHome, outputLoc, benchTestName);
+      const benchTestTomlPath = projectHome + "/benchmark/";
+      // TODO: get bench execopts ?
+      runAndLogBenchmarks(projectHome, outputLoc, benchTestName, benchExecopts);
       writeln(separator);
     }
   }
@@ -210,9 +213,26 @@ proc runBenchTestExecutables(benchTestNames: list(string), projectHome: string) 
 }
 
 /* Execute benchmarks from target/ and log output */
-proc runAndLogBenchmarks(projectHome: string, outputLoc: string, benchTestName: string) {
+proc runAndLogBenchmarks(projectHome: string, outputLoc: string, benchTestName: string, benchExecopts: string) {
   var executable = outputLoc;
   var line: string;
   var exec = spawn([executable]);
   exec.wait();
+}
+
+/* Get Benchmark compopts from lockFile */
+proc getBenchMetadata(benchTomlPath: string, benchTestName: string, metadata: string) {
+  var opts: string;
+  const tomlFilePath = benchTomlPath + benchTestName + '.toml';
+  if isFile(tomlFilePath) {
+    const toParse = open(tomlFilePath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    const tableHeader = 'bench.'+benchTestName;
+    const checkMetadata = ".".join(tableHeader, metadata);
+    if tomlFile.pathExists(checkMetadata) {
+      opts = tomlFile[tableHeader]![metadata]!.s;
+    }
+  }
+  writeln(opts);
+  return opts;
 }
