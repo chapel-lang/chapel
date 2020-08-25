@@ -82,7 +82,7 @@ module UnrolledLinkedList {
   pragma "no doc"
   class _linkedNode {
     type eltType;
-    var capacity: int = 32;
+    const capacity: int = 32;
     var size: int = 0;
     var data: [0..#capacity] eltType;
     var next: unmanaged _linkedNode(eltType)? = nil;
