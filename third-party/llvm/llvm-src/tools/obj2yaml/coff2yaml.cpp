@@ -1,9 +1,8 @@
 //===------ utils/obj2yaml.cpp - obj2yaml conversion tool -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -57,8 +56,6 @@ COFFDumper::COFFDumper(const object::COFFObjectFile &Obj) : Obj(Obj) {
 
 template <typename T> void COFFDumper::dumpOptionalHeader(T OptionalHeader) {
   YAMLObj.OptionalHeader = COFFYAML::PEHeader();
-  YAMLObj.OptionalHeader->Header.AddressOfEntryPoint =
-      OptionalHeader->AddressOfEntryPoint;
   YAMLObj.OptionalHeader->Header.AddressOfEntryPoint =
       OptionalHeader->AddressOfEntryPoint;
   YAMLObj.OptionalHeader->Header.ImageBase = OptionalHeader->ImageBase;
@@ -123,7 +120,7 @@ initializeFileAndStringTable(const llvm::object::COFFObjectFile &Obj,
 
     const object::coff_section *COFFSection = Obj.getCOFFSection(S);
 
-    Obj.getSectionContents(COFFSection, sectionData);
+    cantFail(Obj.getSectionContents(COFFSection, sectionData));
 
     BinaryStreamReader Reader(sectionData, support::little);
     uint32_t Magic;
@@ -178,7 +175,7 @@ void COFFDumper::dumpSections(unsigned NumSections) {
 
     ArrayRef<uint8_t> sectionData;
     if (!ObjSection.isBSS())
-      Obj.getSectionContents(COFFSection, sectionData);
+      cantFail(Obj.getSectionContents(COFFSection, sectionData));
     NewYAMLSection.SectionData = yaml::BinaryRef(sectionData);
 
     if (NewYAMLSection.Name == ".debug$S")

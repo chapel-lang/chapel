@@ -1,9 +1,8 @@
 //===-- sancov.cpp --------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // This file is a command-line tool for reading and analyzing sanitizer
@@ -260,6 +259,10 @@ RawCoverage::read(const std::string &FileName) {
     return make_error_code(errc::illegal_byte_sequence);
   }
 
+  // Ignore slots that are zero, so a runtime implementation is not required
+  // to compactify the data.
+  Addrs->erase(0);
+
   return std::unique_ptr<RawCoverage>(new RawCoverage(std::move(Addrs)));
 }
 
@@ -298,7 +301,6 @@ public:
       OS << "{";
       W->Indent++;
     }
-    Object(const Object &) = delete;
     ~Object() {
       W->Indent--;
       OS << "\n";
@@ -322,13 +324,12 @@ public:
     int Index = -1;
   };
 
-  std::unique_ptr<Object> object() { return make_unique<Object>(this, OS); }
+  Object object() { return {this, OS}; }
 
   // Helper RAII class to output JSON arrays.
   class Array {
   public:
     Array(raw_ostream &OS) : OS(OS) { OS << "["; }
-    Array(const Array &) = delete;
     ~Array() { OS << "]"; }
     void next() {
       Index++;
@@ -341,7 +342,7 @@ public:
     int Index = -1;
   };
 
-  std::unique_ptr<Array> array() { return make_unique<Array>(OS); }
+  Array array() { return {OS}; }
 
 private:
   void indent() { OS.indent(Indent * 2); }
@@ -387,7 +388,7 @@ static void operator<<(JSONWriter &W,
 
   for (const auto &P : PointsByFile) {
     std::string FileName = P.first;
-    ByFile->key(FileName);
+    ByFile.key(FileName);
 
     // Group points by function.
     auto ByFn(W.object());
@@ -402,7 +403,7 @@ static void operator<<(JSONWriter &W,
       std::string FunctionName = P.first;
       std::set<std::string> WrittenIds;
 
-      ByFn->key(FunctionName);
+      ByFn.key(FunctionName);
 
       // Output <point_id> : "<line>:<col>".
       auto ById(W.object());
@@ -414,7 +415,7 @@ static void operator<<(JSONWriter &W,
             continue;
 
           WrittenIds.insert(Point->Id);
-          ById->key(Point->Id);
+          ById.key(Point->Id);
           W << (utostr(Loc.Line) + ":" + utostr(Loc.Column));
         }
       }
@@ -426,24 +427,24 @@ static void operator<<(JSONWriter &W, const SymbolizedCoverage &C) {
   auto O(W.object());
 
   {
-    O->key("covered-points");
+    O.key("covered-points");
     auto PointsArray(W.array());
 
-    for (const auto &P : C.CoveredIds) {
-      PointsArray->next();
+    for (const std::string &P : C.CoveredIds) {
+      PointsArray.next();
       W << P;
     }
   }
 
   {
     if (!C.BinaryHash.empty()) {
-      O->key("binary-hash");
+      O.key("binary-hash");
       W << C.BinaryHash;
     }
   }
 
   {
-    O->key("point-symbol-info");
+    O.key("point-symbol-info");
     W << C.Points;
   }
 }
@@ -622,10 +623,17 @@ getCoveragePoints(const std::string &ObjectFile,
   std::set<std::string> CoveredFiles;
   if (ClSkipDeadFiles) {
     for (auto Addr : CoveredAddrs) {
-      auto LineInfo = Symbolizer->symbolizeCode(ObjectFile, Addr);
+      // TODO: it would be neccessary to set proper section index here.
+      // object::SectionedAddress::UndefSection works for only absolute
+      // addresses.
+      object::SectionedAddress ModuleAddress = {
+          Addr, object::SectionedAddress::UndefSection};
+
+      auto LineInfo = Symbolizer->symbolizeCode(ObjectFile, ModuleAddress);
       failIfError(LineInfo);
       CoveredFiles.insert(LineInfo->FileName);
-      auto InliningInfo = Symbolizer->symbolizeInlinedCode(ObjectFile, Addr);
+      auto InliningInfo =
+          Symbolizer->symbolizeInlinedCode(ObjectFile, ModuleAddress);
       failIfError(InliningInfo);
       for (uint32_t I = 0; I < InliningInfo->getNumberOfFrames(); ++I) {
         auto FrameInfo = InliningInfo->getFrame(I);
@@ -637,7 +645,12 @@ getCoveragePoints(const std::string &ObjectFile,
   for (auto Addr : Addrs) {
     std::set<DILineInfo> Infos; // deduplicate debug info.
 
-    auto LineInfo = Symbolizer->symbolizeCode(ObjectFile, Addr);
+    // TODO: it would be neccessary to set proper section index here.
+    // object::SectionedAddress::UndefSection works for only absolute addresses.
+    object::SectionedAddress ModuleAddress = {
+        Addr, object::SectionedAddress::UndefSection};
+
+    auto LineInfo = Symbolizer->symbolizeCode(ObjectFile, ModuleAddress);
     failIfError(LineInfo);
     if (ClSkipDeadFiles &&
         CoveredFiles.find(LineInfo->FileName) == CoveredFiles.end())
@@ -651,7 +664,8 @@ getCoveragePoints(const std::string &ObjectFile,
     Infos.insert(*LineInfo);
     Point.Locs.push_back(*LineInfo);
 
-    auto InliningInfo = Symbolizer->symbolizeInlinedCode(ObjectFile, Addr);
+    auto InliningInfo =
+        Symbolizer->symbolizeInlinedCode(ObjectFile, ModuleAddress);
     failIfError(InliningInfo);
     for (uint32_t I = 0; I < InliningInfo->getNumberOfFrames(); ++I) {
       auto FrameInfo = InliningInfo->getFrame(I);
@@ -829,10 +843,9 @@ static void getObjectCoveragePoints(const object::ObjectFile &O,
     if (!SectSize)
       continue;
 
-    StringRef BytesStr;
-    failIfError(Section.getContents(BytesStr));
-    ArrayRef<uint8_t> Bytes(reinterpret_cast<const uint8_t *>(BytesStr.data()),
-                            BytesStr.size());
+    Expected<StringRef> BytesStr = Section.getContents();
+    failIfError(BytesStr);
+    ArrayRef<uint8_t> Bytes = arrayRefFromStringRef(*BytesStr);
 
     for (uint64_t Index = 0, Size = 0; Index < Section.getSize();
          Index += Size) {
@@ -958,7 +971,10 @@ symbolize(const RawCoverage &Data, const std::string ObjectFile) {
   auto Symbolizer(createSymbolizer());
 
   for (uint64_t Addr : *Data.Addrs) {
-    auto LineInfo = Symbolizer->symbolizeCode(ObjectFile, Addr);
+    // TODO: it would be neccessary to set proper section index here.
+    // object::SectionedAddress::UndefSection works for only absolute addresses.
+    auto LineInfo = Symbolizer->symbolizeCode(
+        ObjectFile, {Addr, object::SectionedAddress::UndefSection});
     failIfError(LineInfo);
     if (B.isBlacklisted(*LineInfo))
       continue;
@@ -1217,7 +1233,7 @@ int main(int Argc, char **Argv) {
   llvm::InitializeAllTargetMCs();
   llvm::InitializeAllDisassemblers();
 
-  cl::ParseCommandLineOptions(Argc, Argv, 
+  cl::ParseCommandLineOptions(Argc, Argv,
       "Sanitizer Coverage Processing Tool (sancov)\n\n"
       "  This tool can extract various coverage-related information from: \n"
       "  coverage-instrumented binary files, raw .sancov files and their "

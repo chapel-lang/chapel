@@ -1,12 +1,12 @@
 //===- unittests/Analysis/CFGTest.cpp - CFG tests -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
+#include "CFGBuildResult.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
 #include "clang/Analysis/CFG.h"
 #include "clang/Tooling/Tooling.h"
@@ -18,43 +18,6 @@ namespace clang {
 namespace analysis {
 namespace {
 
-enum BuildResult {
-  ToolFailed,
-  ToolRan,
-  SawFunctionBody,
-  BuiltCFG,
-};
-
-class CFGCallback : public ast_matchers::MatchFinder::MatchCallback {
-public:
-  BuildResult TheBuildResult = ToolRan;
-
-  void run(const ast_matchers::MatchFinder::MatchResult &Result) override {
-    const auto *Func = Result.Nodes.getNodeAs<FunctionDecl>("func");
-    Stmt *Body = Func->getBody();
-    if (!Body)
-      return;
-    TheBuildResult = SawFunctionBody;
-    CFG::BuildOptions Options;
-    Options.AddImplicitDtors = true;
-    if (CFG::buildCFG(nullptr, Body, Result.Context, Options))
-        TheBuildResult = BuiltCFG;
-  }
-};
-
-BuildResult BuildCFG(const char *Code) {
-  CFGCallback Callback;
-
-  ast_matchers::MatchFinder Finder;
-  Finder.addMatcher(ast_matchers::functionDecl().bind("func"), &Callback);
-  std::unique_ptr<tooling::FrontendActionFactory> Factory(
-      tooling::newFrontendActionFactory(&Finder));
-  std::vector<std::string> Args = {"-std=c++11", "-fno-delayed-template-parsing"};
-  if (!tooling::runToolOnCodeWithArgs(Factory->create(), Code, Args))
-    return ToolFailed;
-  return Callback.TheBuildResult;
-}
-
 // Constructing a CFG for a range-based for over a dependent type fails (but
 // should not crash).
 TEST(CFG, RangeBasedForOverDependentType) {
@@ -64,7 +27,7 @@ TEST(CFG, RangeBasedForOverDependentType) {
                      "  for (const Foo *TheFoo : Range) {\n"
                      "  }\n"
                      "}\n";
-  EXPECT_EQ(SawFunctionBody, BuildCFG(Code));
+  EXPECT_EQ(BuildResult::SawFunctionBody, BuildCFG(Code).getStatus());
 }
 
 // Constructing a CFG containing a delete expression on a dependent type should
@@ -74,7 +37,7 @@ TEST(CFG, DeleteExpressionOnDependentType) {
                      "void f(T t) {\n"
                      "  delete t;\n"
                      "}\n";
-  EXPECT_EQ(BuiltCFG, BuildCFG(Code));
+  EXPECT_EQ(BuildResult::BuiltCFG, BuildCFG(Code).getStatus());
 }
 
 // Constructing a CFG on a function template with a variable of incomplete type
@@ -84,7 +47,24 @@ TEST(CFG, VariableOfIncompleteType) {
                      "  class Undefined;\n"
                      "  Undefined u;\n"
                      "}\n";
-  EXPECT_EQ(BuiltCFG, BuildCFG(Code));
+  EXPECT_EQ(BuildResult::BuiltCFG, BuildCFG(Code).getStatus());
+}
+
+TEST(CFG, IsLinear) {
+  auto expectLinear = [](bool IsLinear, const char *Code) {
+    BuildResult B = BuildCFG(Code);
+    EXPECT_EQ(BuildResult::BuiltCFG, B.getStatus());
+    EXPECT_EQ(IsLinear, B.getCFG()->isLinear());
+  };
+
+  expectLinear(true,  "void foo() {}");
+  expectLinear(true,  "void foo() { if (true) return; }");
+  expectLinear(true,  "void foo() { if constexpr (false); }");
+  expectLinear(false, "void foo(bool coin) { if (coin) return; }");
+  expectLinear(false, "void foo() { for(;;); }");
+  expectLinear(false, "void foo() { do {} while (true); }");
+  expectLinear(true,  "void foo() { do {} while (false); }");
+  expectLinear(true,  "void foo() { foo(); }"); // Recursion is not our problem.
 }
 
 } // namespace

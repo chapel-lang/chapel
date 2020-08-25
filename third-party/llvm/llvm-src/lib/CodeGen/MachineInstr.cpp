@@ -1,9 +1,8 @@
 //===- lib/CodeGen/MachineInstr.cpp ---------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,6 +25,7 @@
 #include "llvm/Analysis/MemoryLocation.h"
 #include "llvm/CodeGen/GlobalISel/RegisterBank.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineInstrBundle.h"
@@ -50,9 +50,9 @@
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/ModuleSlotTracker.h"
+#include "llvm/IR/Operator.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
-#include "llvm/IR/Operator.h"
 #include "llvm/MC/MCInstrDesc.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSymbol.h"
@@ -316,27 +316,48 @@ void MachineInstr::RemoveOperand(unsigned OpNo) {
   --NumOperands;
 }
 
+void MachineInstr::setExtraInfo(MachineFunction &MF,
+                                ArrayRef<MachineMemOperand *> MMOs,
+                                MCSymbol *PreInstrSymbol,
+                                MCSymbol *PostInstrSymbol,
+                                MDNode *HeapAllocMarker) {
+  bool HasPreInstrSymbol = PreInstrSymbol != nullptr;
+  bool HasPostInstrSymbol = PostInstrSymbol != nullptr;
+  bool HasHeapAllocMarker = HeapAllocMarker != nullptr;
+  int NumPointers =
+      MMOs.size() + HasPreInstrSymbol + HasPostInstrSymbol + HasHeapAllocMarker;
+
+  // Drop all extra info if there is none.
+  if (NumPointers <= 0) {
+    Info.clear();
+    return;
+  }
+
+  // If more than one pointer, then store out of line. Store heap alloc markers
+  // out of line because PointerSumType cannot hold more than 4 tag types with
+  // 32-bit pointers.
+  // FIXME: Maybe we should make the symbols in the extra info mutable?
+  else if (NumPointers > 1 || HasHeapAllocMarker) {
+    Info.set<EIIK_OutOfLine>(MF.createMIExtraInfoWithMarker(
+        MMOs, PreInstrSymbol, PostInstrSymbol, HeapAllocMarker));
+    return;
+  }
+
+  // Otherwise store the single pointer inline.
+  if (HasPreInstrSymbol)
+    Info.set<EIIK_PreInstrSymbol>(PreInstrSymbol);
+  else if (HasPostInstrSymbol)
+    Info.set<EIIK_PostInstrSymbol>(PostInstrSymbol);
+  else
+    Info.set<EIIK_MMO>(MMOs[0]);
+}
+
 void MachineInstr::dropMemRefs(MachineFunction &MF) {
   if (memoperands_empty())
     return;
 
-  // See if we can just drop all of our extra info.
-  if (!getPreInstrSymbol() && !getPostInstrSymbol()) {
-    Info.clear();
-    return;
-  }
-  if (!getPostInstrSymbol()) {
-    Info.set<EIIK_PreInstrSymbol>(getPreInstrSymbol());
-    return;
-  }
-  if (!getPreInstrSymbol()) {
-    Info.set<EIIK_PostInstrSymbol>(getPostInstrSymbol());
-    return;
-  }
-
-  // Otherwise allocate a fresh extra info with just these symbols.
-  Info.set<EIIK_OutOfLine>(
-      MF.createMIExtraInfo({}, getPreInstrSymbol(), getPostInstrSymbol()));
+  setExtraInfo(MF, {}, getPreInstrSymbol(), getPostInstrSymbol(),
+               getHeapAllocMarker());
 }
 
 void MachineInstr::setMemRefs(MachineFunction &MF,
@@ -346,15 +367,8 @@ void MachineInstr::setMemRefs(MachineFunction &MF,
     return;
   }
 
-  // Try to store a single MMO inline.
-  if (MMOs.size() == 1 && !getPreInstrSymbol() && !getPostInstrSymbol()) {
-    Info.set<EIIK_MMO>(MMOs[0]);
-    return;
-  }
-
-  // Otherwise create an extra info struct with all of our info.
-  Info.set<EIIK_OutOfLine>(
-      MF.createMIExtraInfo(MMOs, getPreInstrSymbol(), getPostInstrSymbol()));
+  setExtraInfo(MF, MMOs, getPreInstrSymbol(), getPostInstrSymbol(),
+               getHeapAllocMarker());
 }
 
 void MachineInstr::addMemOperand(MachineFunction &MF,
@@ -376,7 +390,8 @@ void MachineInstr::cloneMemRefs(MachineFunction &MF, const MachineInstr &MI) {
   // instruction. We can do this whenever the pre- and post-instruction symbols
   // are the same (including null).
   if (getPreInstrSymbol() == MI.getPreInstrSymbol() &&
-      getPostInstrSymbol() == MI.getPostInstrSymbol()) {
+      getPostInstrSymbol() == MI.getPostInstrSymbol() &&
+      getHeapAllocMarker() == MI.getHeapAllocMarker()) {
     Info = MI.Info;
     return;
   }
@@ -450,67 +465,56 @@ void MachineInstr::cloneMergedMemRefs(MachineFunction &MF,
 }
 
 void MachineInstr::setPreInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
-  MCSymbol *OldSymbol = getPreInstrSymbol();
-  if (OldSymbol == Symbol)
+  // Do nothing if old and new symbols are the same.
+  if (Symbol == getPreInstrSymbol())
     return;
-  if (OldSymbol && !Symbol) {
-    // We're removing a symbol rather than adding one. Try to clean up any
-    // extra info carried around.
-    if (Info.is<EIIK_PreInstrSymbol>()) {
-      Info.clear();
-      return;
-    }
 
-    if (memoperands_empty()) {
-      assert(getPostInstrSymbol() &&
-             "Should never have only a single symbol allocated out-of-line!");
-      Info.set<EIIK_PostInstrSymbol>(getPostInstrSymbol());
-      return;
-    }
-
-    // Otherwise fallback on the generic update.
-  } else if (!Info || Info.is<EIIK_PreInstrSymbol>()) {
-    // If we don't have any other extra info, we can store this inline.
-    Info.set<EIIK_PreInstrSymbol>(Symbol);
+  // If there was only one symbol and we're removing it, just clear info.
+  if (!Symbol && Info.is<EIIK_PreInstrSymbol>()) {
+    Info.clear();
     return;
   }
 
-  // Otherwise, allocate a full new set of extra info.
-  // FIXME: Maybe we should make the symbols in the extra info mutable?
-  Info.set<EIIK_OutOfLine>(
-      MF.createMIExtraInfo(memoperands(), Symbol, getPostInstrSymbol()));
+  setExtraInfo(MF, memoperands(), Symbol, getPostInstrSymbol(),
+               getHeapAllocMarker());
 }
 
 void MachineInstr::setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol) {
-  MCSymbol *OldSymbol = getPostInstrSymbol();
-  if (OldSymbol == Symbol)
+  // Do nothing if old and new symbols are the same.
+  if (Symbol == getPostInstrSymbol())
     return;
-  if (OldSymbol && !Symbol) {
-    // We're removing a symbol rather than adding one. Try to clean up any
-    // extra info carried around.
-    if (Info.is<EIIK_PostInstrSymbol>()) {
-      Info.clear();
-      return;
-    }
 
-    if (memoperands_empty()) {
-      assert(getPreInstrSymbol() &&
-             "Should never have only a single symbol allocated out-of-line!");
-      Info.set<EIIK_PreInstrSymbol>(getPreInstrSymbol());
-      return;
-    }
-
-    // Otherwise fallback on the generic update.
-  } else if (!Info || Info.is<EIIK_PostInstrSymbol>()) {
-    // If we don't have any other extra info, we can store this inline.
-    Info.set<EIIK_PostInstrSymbol>(Symbol);
+  // If there was only one symbol and we're removing it, just clear info.
+  if (!Symbol && Info.is<EIIK_PostInstrSymbol>()) {
+    Info.clear();
     return;
   }
 
-  // Otherwise, allocate a full new set of extra info.
-  // FIXME: Maybe we should make the symbols in the extra info mutable?
-  Info.set<EIIK_OutOfLine>(
-      MF.createMIExtraInfo(memoperands(), getPreInstrSymbol(), Symbol));
+  setExtraInfo(MF, memoperands(), getPreInstrSymbol(), Symbol,
+               getHeapAllocMarker());
+}
+
+void MachineInstr::setHeapAllocMarker(MachineFunction &MF, MDNode *Marker) {
+  // Do nothing if old and new symbols are the same.
+  if (Marker == getHeapAllocMarker())
+    return;
+
+  setExtraInfo(MF, memoperands(), getPreInstrSymbol(), getPostInstrSymbol(),
+               Marker);
+}
+
+void MachineInstr::cloneInstrSymbols(MachineFunction &MF,
+                                     const MachineInstr &MI) {
+  if (this == &MI)
+    // Nothing to do for a self-clone!
+    return;
+
+  assert(&MF == MI.getMF() &&
+         "Invalid machine functions when cloning instruction symbols!");
+
+  setPreInstrSymbol(MF, MI.getPreInstrSymbol());
+  setPostInstrSymbol(MF, MI.getPostInstrSymbol());
+  setHeapAllocMarker(MF, MI.getHeapAllocMarker());
 }
 
 uint16_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
@@ -519,39 +523,46 @@ uint16_t MachineInstr::mergeFlagsWith(const MachineInstr &Other) const {
   return getFlags() | Other.getFlags();
 }
 
-void MachineInstr::copyIRFlags(const Instruction &I) {
+uint16_t MachineInstr::copyFlagsFromInstruction(const Instruction &I) {
+  uint16_t MIFlags = 0;
   // Copy the wrapping flags.
   if (const OverflowingBinaryOperator *OB =
           dyn_cast<OverflowingBinaryOperator>(&I)) {
     if (OB->hasNoSignedWrap())
-      setFlag(MachineInstr::MIFlag::NoSWrap);
+      MIFlags |= MachineInstr::MIFlag::NoSWrap;
     if (OB->hasNoUnsignedWrap())
-      setFlag(MachineInstr::MIFlag::NoUWrap);
+      MIFlags |= MachineInstr::MIFlag::NoUWrap;
   }
 
   // Copy the exact flag.
   if (const PossiblyExactOperator *PE = dyn_cast<PossiblyExactOperator>(&I))
     if (PE->isExact())
-      setFlag(MachineInstr::MIFlag::IsExact);
+      MIFlags |= MachineInstr::MIFlag::IsExact;
 
   // Copy the fast-math flags.
   if (const FPMathOperator *FP = dyn_cast<FPMathOperator>(&I)) {
     const FastMathFlags Flags = FP->getFastMathFlags();
     if (Flags.noNaNs())
-      setFlag(MachineInstr::MIFlag::FmNoNans);
+      MIFlags |= MachineInstr::MIFlag::FmNoNans;
     if (Flags.noInfs())
-      setFlag(MachineInstr::MIFlag::FmNoInfs);
+      MIFlags |= MachineInstr::MIFlag::FmNoInfs;
     if (Flags.noSignedZeros())
-      setFlag(MachineInstr::MIFlag::FmNsz);
+      MIFlags |= MachineInstr::MIFlag::FmNsz;
     if (Flags.allowReciprocal())
-      setFlag(MachineInstr::MIFlag::FmArcp);
+      MIFlags |= MachineInstr::MIFlag::FmArcp;
     if (Flags.allowContract())
-      setFlag(MachineInstr::MIFlag::FmContract);
+      MIFlags |= MachineInstr::MIFlag::FmContract;
     if (Flags.approxFunc())
-      setFlag(MachineInstr::MIFlag::FmAfn);
+      MIFlags |= MachineInstr::MIFlag::FmAfn;
     if (Flags.allowReassoc())
-      setFlag(MachineInstr::MIFlag::FmReassoc);
+      MIFlags |= MachineInstr::MIFlag::FmReassoc;
   }
+
+  return MIFlags;
+}
+
+void MachineInstr::copyIRFlags(const Instruction &I) {
+  Flags = copyFlagsFromInstruction(I);
 }
 
 bool MachineInstr::hasPropertyInBundle(uint64_t Mask, QueryType Type) const {
@@ -1158,7 +1169,7 @@ bool MachineInstr::isSafeToMove(AliasAnalysis *AA, bool &SawStore) const {
   }
 
   if (isPosition() || isDebugInstr() || isTerminator() ||
-      hasUnmodeledSideEffects())
+      mayRaiseFPException() || hasUnmodeledSideEffects())
     return false;
 
   // See if this instruction does a load.  If so, we have to guarantee that the
@@ -1174,8 +1185,8 @@ bool MachineInstr::isSafeToMove(AliasAnalysis *AA, bool &SawStore) const {
   return true;
 }
 
-bool MachineInstr::mayAlias(AliasAnalysis *AA, MachineInstr &Other,
-                            bool UseTBAA) {
+bool MachineInstr::mayAlias(AliasAnalysis *AA, const MachineInstr &Other,
+                            bool UseTBAA) const {
   const MachineFunction *MF = getMF();
   const TargetInstrInfo *TII = MF->getSubtarget().getInstrInfo();
   const MachineFrameInfo &MFI = MF->getFrameInfo();
@@ -1305,7 +1316,11 @@ bool MachineInstr::isDereferenceableInvariantLoad(AliasAnalysis *AA) const {
   const MachineFrameInfo &MFI = getParent()->getParent()->getFrameInfo();
 
   for (MachineMemOperand *MMO : memoperands()) {
-    if (MMO->isVolatile()) return false;
+    if (!MMO->isUnordered())
+      // If the memory operand has ordering side effects, we can't move the
+      // instruction.  Such an instruction is technically an invariant load,
+      // but the caller code would need updated to expect that.
+      return false;
     if (MMO->isStore()) return false;
     if (MMO->isInvariant() && MMO->isDereferenceable())
       continue;
@@ -1448,7 +1463,7 @@ void MachineInstr::print(raw_ostream &OS, bool IsStandalone, bool SkipOpers,
   ModuleSlotTracker MST(M);
   if (F)
     MST.incorporateFunction(*F);
-  print(OS, MST, IsStandalone, SkipOpers, SkipDebugLoc, TII);
+  print(OS, MST, IsStandalone, SkipOpers, SkipDebugLoc, AddNewLine, TII);
 }
 
 void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
@@ -1520,6 +1535,8 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     OS << "nsw ";
   if (getFlag(MachineInstr::IsExact))
     OS << "exact ";
+  if (getFlag(MachineInstr::FPExcept))
+    OS << "fpexcept ";
 
   // Print the opcode name.
   if (TII)
@@ -1680,6 +1697,13 @@ void MachineInstr::print(raw_ostream &OS, ModuleSlotTracker &MST,
     }
     OS << " post-instr-symbol ";
     MachineOperand::printSymbol(OS, *PostInstrSymbol);
+  }
+  if (MDNode *HeapAllocMarker = getHeapAllocMarker()) {
+    if (!FirstOp) {
+      FirstOp = false;
+      OS << ',';
+    }
+    OS << " heap-alloc-marker";
   }
 
   if (!SkipDebugLoc) {
@@ -1906,7 +1930,7 @@ void MachineInstr::setRegisterDefReadUndef(unsigned Reg, bool IsUndef) {
 void MachineInstr::addRegisterDefined(unsigned Reg,
                                       const TargetRegisterInfo *RegInfo) {
   if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
-    MachineOperand *MO = findRegisterDefOperand(Reg, false, RegInfo);
+    MachineOperand *MO = findRegisterDefOperand(Reg, false, false, RegInfo);
     if (MO)
       return;
   } else {
@@ -2051,7 +2075,7 @@ static const DIExpression *computeExprForSpill(const MachineInstr &MI) {
   const DIExpression *Expr = MI.getDebugExpression();
   if (MI.isIndirectDebugValue()) {
     assert(MI.getOperand(1).getImm() == 0 && "DBG_VALUE with nonzero offset");
-    Expr = DIExpression::prepend(Expr, DIExpression::WithDeref);
+    Expr = DIExpression::prepend(Expr, DIExpression::DerefBefore);
   }
   return Expr;
 }
@@ -2100,4 +2124,55 @@ void MachineInstr::changeDebugValuesDefReg(unsigned Reg) {
   // Propagate Reg to debug value instructions.
   for (auto *DBI : DbgValues)
     DBI->getOperand(0).setReg(Reg);
+}
+
+using MMOList = SmallVector<const MachineMemOperand *, 2>;
+
+static unsigned getSpillSlotSize(MMOList &Accesses,
+                                 const MachineFrameInfo &MFI) {
+  unsigned Size = 0;
+  for (auto A : Accesses)
+    if (MFI.isSpillSlotObjectIndex(
+            cast<FixedStackPseudoSourceValue>(A->getPseudoValue())
+                ->getFrameIndex()))
+      Size += A->getSize();
+  return Size;
+}
+
+Optional<unsigned>
+MachineInstr::getSpillSize(const TargetInstrInfo *TII) const {
+  int FI;
+  if (TII->isStoreToStackSlotPostFE(*this, FI)) {
+    const MachineFrameInfo &MFI = getMF()->getFrameInfo();
+    if (MFI.isSpillSlotObjectIndex(FI))
+      return (*memoperands_begin())->getSize();
+  }
+  return None;
+}
+
+Optional<unsigned>
+MachineInstr::getFoldedSpillSize(const TargetInstrInfo *TII) const {
+  MMOList Accesses;
+  if (TII->hasStoreToStackSlot(*this, Accesses))
+    return getSpillSlotSize(Accesses, getMF()->getFrameInfo());
+  return None;
+}
+
+Optional<unsigned>
+MachineInstr::getRestoreSize(const TargetInstrInfo *TII) const {
+  int FI;
+  if (TII->isLoadFromStackSlotPostFE(*this, FI)) {
+    const MachineFrameInfo &MFI = getMF()->getFrameInfo();
+    if (MFI.isSpillSlotObjectIndex(FI))
+      return (*memoperands_begin())->getSize();
+  }
+  return None;
+}
+
+Optional<unsigned>
+MachineInstr::getFoldedRestoreSize(const TargetInstrInfo *TII) const {
+  MMOList Accesses;
+  if (TII->hasLoadFromStackSlot(*this, Accesses))
+    return getSpillSlotSize(Accesses, getMF()->getFrameInfo());
+  return None;
 }

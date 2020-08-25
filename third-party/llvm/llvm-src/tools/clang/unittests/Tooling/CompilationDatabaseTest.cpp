@@ -1,19 +1,20 @@
 //===- unittest/Tooling/CompilationDatabaseTest.cpp -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Tooling/CompilationDatabase.h"
 #include "clang/Tooling/FileMatchTrie.h"
 #include "clang/Tooling/JSONCompilationDatabase.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/TargetSelect.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -89,10 +90,15 @@ TEST(JSONCompilationDatabase, GetAllFiles) {
   expected_files.push_back(PathStorage.str());
   llvm::sys::path::native("//net/dir/file2", PathStorage);
   expected_files.push_back(PathStorage.str());
+  llvm::sys::path::native("//net/file1", PathStorage);
+  expected_files.push_back(PathStorage.str());
   EXPECT_EQ(expected_files,
             getAllFiles("[{\"directory\":\"//net/dir\","
                         "\"command\":\"command\","
                         "\"file\":\"file1\"},"
+                        " {\"directory\":\"//net/dir\","
+                        "\"command\":\"command\","
+                        "\"file\":\"../file1\"},"
                         " {\"directory\":\"//net/dir\","
                         "\"command\":\"command\","
                         "\"file\":\"file2\"}]",
@@ -364,6 +370,33 @@ TEST(findCompileArgsInJsonDatabase, FindsEntry) {
   EXPECT_EQ("command4", FoundCommand.CommandLine[0]) << ErrorMessage;
 }
 
+TEST(findCompileArgsInJsonDatabase, ParsesCompilerWrappers) {
+  StringRef Directory("//net/dir");
+  StringRef FileName("//net/dir/filename");
+  std::vector<std::pair<std::string, std::string>> Cases = {
+      {"distcc gcc foo.c", "gcc foo.c"},
+      {"gomacc clang++ foo.c", "clang++ foo.c"},
+      {"ccache gcc foo.c", "gcc foo.c"},
+      {"ccache.exe gcc foo.c", "gcc foo.c"},
+      {"ccache g++.exe foo.c", "g++.exe foo.c"},
+      {"ccache distcc gcc foo.c", "gcc foo.c"},
+
+      {"distcc foo.c", "distcc foo.c"},
+      {"distcc -I/foo/bar foo.c", "distcc -I/foo/bar foo.c"},
+  };
+  std::string ErrorMessage;
+
+  for (const auto &Case : Cases) {
+    std::string DB =
+        R"([{"directory":"//net/dir", "file":"//net/dir/foo.c", "command":")" +
+        Case.first + "\"}]";
+    CompileCommand FoundCommand =
+        findCompileArgsInJsonDatabase("//net/dir/foo.c", DB, ErrorMessage);
+    EXPECT_EQ(Case.second, llvm::join(FoundCommand.CommandLine, " "))
+        << Case.first;
+  }
+}
+
 static std::vector<std::string> unescapeJsonCommandLine(StringRef Command) {
   std::string JsonDatabase =
     ("[{\"directory\":\"//net/root\", \"file\":\"test\", \"command\": \"" +
@@ -628,7 +661,7 @@ struct MemCDB : public CompilationDatabase {
   }
 };
 
-class InterpolateTest : public ::testing::Test {
+class MemDBTest : public ::testing::Test {
 protected:
   // Adds an entry to the underlying compilation database.
   // A flag is injected: -D <File>, so the command used can be identified.
@@ -654,6 +687,11 @@ protected:
     return Result.str();
   }
 
+  MemCDB::EntryMap Entries;
+};
+
+class InterpolateTest : public MemDBTest {
+protected:
   // Look up the command from a relative path, and return it in string form.
   // The input file is not included in the returned command.
   std::string getCommand(llvm::StringRef F) {
@@ -669,7 +707,26 @@ protected:
     return llvm::join(Results[0].CommandLine, " ");
   }
 
-  MemCDB::EntryMap Entries;
+  // Parse the file whose command was used out of the Heuristic string.
+  std::string getProxy(llvm::StringRef F) {
+    auto Results =
+        inferMissingCompileCommands(llvm::make_unique<MemCDB>(Entries))
+            ->getCompileCommands(path(F));
+    if (Results.empty())
+      return "none";
+    StringRef Proxy = Results.front().Heuristic;
+    if (!Proxy.consume_front("inferred from "))
+      return "";
+    // We have a proxy file, convert back to a unix relative path.
+    // This is a bit messy, but we do need to test these strings somehow...
+    llvm::SmallString<32> TempDir;
+    llvm::sys::path::system_temp_directory(false, TempDir);
+    Proxy.consume_front(TempDir);
+    Proxy.consume_front(llvm::sys::path::get_separator());
+    llvm::SmallString<32> Result = Proxy;
+    llvm::sys::path::native(Result, llvm::sys::path::Style::posix);
+    return Result.str();
+  }
 };
 
 TEST_F(InterpolateTest, Nearby) {
@@ -678,18 +735,16 @@ TEST_F(InterpolateTest, Nearby) {
   add("an/other/foo.cpp");
 
   // great: dir and name both match (prefix or full, case insensitive)
-  EXPECT_EQ(getCommand("dir/f.cpp"), "clang -D dir/foo.cpp");
-  EXPECT_EQ(getCommand("dir/FOO.cpp"), "clang -D dir/foo.cpp");
+  EXPECT_EQ(getProxy("dir/f.cpp"), "dir/foo.cpp");
+  EXPECT_EQ(getProxy("dir/FOO.cpp"), "dir/foo.cpp");
   // no name match. prefer matching dir, break ties by alpha
-  EXPECT_EQ(getCommand("dir/a.cpp"), "clang -D dir/bar.cpp");
+  EXPECT_EQ(getProxy("dir/a.cpp"), "dir/bar.cpp");
   // an exact name match beats one segment of directory match
-  EXPECT_EQ(getCommand("some/other/bar.h"),
-            "clang -D dir/bar.cpp -x c++-header");
+  EXPECT_EQ(getProxy("some/other/bar.h"), "dir/bar.cpp");
   // two segments of directory match beat a prefix name match
-  EXPECT_EQ(getCommand("an/other/b.cpp"), "clang -D an/other/foo.cpp");
+  EXPECT_EQ(getProxy("an/other/b.cpp"), "an/other/foo.cpp");
   // if nothing matches at all, we still get the closest alpha match
-  EXPECT_EQ(getCommand("below/some/obscure/path.cpp"),
-            "clang -D an/other/foo.cpp");
+  EXPECT_EQ(getProxy("below/some/obscure/path.cpp"), "an/other/foo.cpp");
 }
 
 TEST_F(InterpolateTest, Language) {
@@ -700,14 +755,17 @@ TEST_F(InterpolateTest, Language) {
   // .h is ambiguous, so we add explicit language flags
   EXPECT_EQ(getCommand("foo.h"),
             "clang -D dir/foo.cpp -x c++-header -std=c++17");
+  // Same thing if we have no extension. (again, we treat as header).
+  EXPECT_EQ(getCommand("foo"), "clang -D dir/foo.cpp -x c++-header -std=c++17");
+  // and invalid extensions.
+  EXPECT_EQ(getCommand("foo.cce"),
+            "clang -D dir/foo.cpp -x c++-header -std=c++17");
   // and don't add -x if the inferred language is correct.
   EXPECT_EQ(getCommand("foo.hpp"), "clang -D dir/foo.cpp -std=c++17");
   // respect -x if it's already there.
   EXPECT_EQ(getCommand("baz.h"), "clang -D dir/baz.cee -x c-header");
   // prefer a worse match with the right extension.
   EXPECT_EQ(getCommand("foo.c"), "clang -D dir/bar.c");
-  // make sure we don't crash on queries with invalid extensions.
-  EXPECT_EQ(getCommand("foo.cce"), "clang -D dir/foo.cpp");
   Entries.erase(path(StringRef("dir/bar.c")));
   // Now we transfer across languages, so drop -std too.
   EXPECT_EQ(getCommand("foo.c"), "clang -D dir/foo.cpp");
@@ -723,7 +781,7 @@ TEST_F(InterpolateTest, Case) {
   add("FOO/BAR/BAZ/SHOUT.cc");
   add("foo/bar/baz/quiet.cc");
   // Case mismatches are completely ignored, so we choose the name match.
-  EXPECT_EQ(getCommand("foo/bar/baz/shout.C"), "clang -D FOO/BAR/BAZ/SHOUT.cc");
+  EXPECT_EQ(getProxy("foo/bar/baz/shout.C"), "FOO/BAR/BAZ/SHOUT.cc");
 }
 
 TEST_F(InterpolateTest, Aliasing) {
@@ -776,6 +834,31 @@ TEST(CompileCommandTest, EqualityOperator) {
   CCTest.Output = "bonjour.o";
   EXPECT_FALSE(CCRef == CCTest);
   EXPECT_TRUE(CCRef != CCTest);
+}
+
+class TargetAndModeTest : public MemDBTest {
+public:
+  TargetAndModeTest() { llvm::InitializeAllTargetInfos(); }
+
+protected:
+  // Look up the command from a relative path, and return it in string form.
+  std::string getCommand(llvm::StringRef F) {
+    auto Results = inferTargetAndDriverMode(llvm::make_unique<MemCDB>(Entries))
+                       ->getCompileCommands(path(F));
+    if (Results.empty())
+      return "none";
+    return llvm::join(Results[0].CommandLine, " ");
+  }
+};
+
+TEST_F(TargetAndModeTest, TargetAndMode) {
+  add("foo.cpp", "clang-cl", "");
+  add("bar.cpp", "clang++", "");
+
+  EXPECT_EQ(getCommand("foo.cpp"),
+            "clang-cl --driver-mode=cl foo.cpp -D foo.cpp");
+  EXPECT_EQ(getCommand("bar.cpp"),
+            "clang++ --driver-mode=g++ bar.cpp -D bar.cpp");
 }
 
 } // end namespace tooling

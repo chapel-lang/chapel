@@ -4,6 +4,7 @@ static_library("Analysis") {
   deps = [
     "//clang/include/clang/AST:StmtDataCollectors",
     "//clang/lib/AST",
+    "//clang/lib/ASTMatchers",
     "//clang/lib/Basic",
     "//clang/lib/Lex",
     "//llvm/lib/Support",
@@ -27,6 +28,7 @@ static_library("Analysis") {
     "PostOrderCFGView.cpp",
     "ProgramPoint.cpp",
     "ReachableCode.cpp",
+    "RetainSummaryManager.cpp",
     "ThreadSafety.cpp",
     "ThreadSafetyCommon.cpp",
     "ThreadSafetyLogical.cpp",

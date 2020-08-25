@@ -22,6 +22,8 @@ add_llvm_target(ARMCodeGen
   ARMAsmPrinter.cpp
   ARMBaseInstrInfo.cpp
   ARMBaseRegisterInfo.cpp
+  ARMBasicBlockInfo.cpp
+  ARMCallingConv.cpp
   ARMCallLowering.cpp
   ARMCodeGenPrepare.cpp
   ARMConstantIslandPass.cpp
@@ -37,6 +39,7 @@ add_llvm_target(ARMCodeGen
   ARMLegalizerInfo.cpp
   ARMParallelDSP.cpp
   ARMLoadStoreOptimizer.cpp
+  ARMLowOverheadLoops.cpp
   ARMMCInstLower.cpp
   ARMMachineFunctionInfo.cpp
   ARMMacroFusion.cpp
@@ -55,12 +58,10 @@ add_llvm_target(ARMCodeGen
   Thumb2ITBlockPass.cpp
   Thumb2InstrInfo.cpp
   Thumb2SizeReduction.cpp
-  ARMComputeBlockSize.cpp
   )
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)
-add_subdirectory(InstPrinter)
 add_subdirectory(MCTargetDesc)
 add_subdirectory(TargetInfo)
 add_subdirectory(Utils)

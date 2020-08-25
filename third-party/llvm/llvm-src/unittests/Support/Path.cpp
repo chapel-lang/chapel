@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/Path.cpp - Path tests ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -579,6 +578,7 @@ TEST_F(FileSystemTest, TempFileKeepDiscard) {
   auto TempFileOrError = fs::TempFile::create(TestDirectory + "/test-%%%%");
   ASSERT_TRUE((bool)TempFileOrError);
   fs::TempFile File = std::move(*TempFileOrError);
+  ASSERT_EQ(-1, TempFileOrError->FD);
   ASSERT_FALSE((bool)File.keep(TestDirectory + "/keep"));
   ASSERT_FALSE((bool)File.discard());
   ASSERT_TRUE(fs::exists(TestDirectory + "/keep"));
@@ -590,6 +590,7 @@ TEST_F(FileSystemTest, TempFileDiscardDiscard) {
   auto TempFileOrError = fs::TempFile::create(TestDirectory + "/test-%%%%");
   ASSERT_TRUE((bool)TempFileOrError);
   fs::TempFile File = std::move(*TempFileOrError);
+  ASSERT_EQ(-1, TempFileOrError->FD);
   ASSERT_FALSE((bool)File.discard());
   ASSERT_FALSE((bool)File.discard());
   ASSERT_FALSE(fs::exists(TestDirectory + "/keep"));
@@ -701,10 +702,18 @@ TEST_F(FileSystemTest, TempFileCollisions) {
     }
   };
 
-  // We should be able to create exactly 16 temporary files.
-  for (int i = 0; i < 16; ++i)
-    EXPECT_TRUE(TryCreateTempFile());
-  EXPECT_FALSE(TryCreateTempFile());
+  // Our single-character template allows for 16 unique names. Check that
+  // calling TryCreateTempFile repeatedly results in 16 successes.
+  // Because the test depends on random numbers, it could theoretically fail.
+  // However, the probability of this happening is tiny: with 32 calls, each
+  // of which will retry up to 128 times, to not get a given digit we would
+  // have to fail at least 15 + 17 * 128 = 2191 attempts. The probability of
+  // 2191 attempts not producing a given hexadecimal digit is
+  // (1 - 1/16) ** 2191 or 3.88e-62.
+  int Successes = 0;
+  for (int i = 0; i < 32; ++i)
+    if (TryCreateTempFile()) ++Successes;
+  EXPECT_EQ(Successes, 16);
 
   for (fs::TempFile &T : TempFiles)
     cantFail(T.discard());
@@ -1075,7 +1084,7 @@ TEST_F(FileSystemTest, FileMapping) {
   std::error_code EC;
   StringRef Val("hello there");
   {
-    fs::mapped_file_region mfr(FileDescriptor,
+    fs::mapped_file_region mfr(fs::convertFDToNativeFile(FileDescriptor),
                                fs::mapped_file_region::readwrite, Size, 0, EC);
     ASSERT_NO_ERROR(EC);
     std::copy(Val.begin(), Val.end(), mfr.data());
@@ -1090,14 +1099,16 @@ TEST_F(FileSystemTest, FileMapping) {
     int FD;
     EC = fs::openFileForRead(Twine(TempPath), FD);
     ASSERT_NO_ERROR(EC);
-    fs::mapped_file_region mfr(FD, fs::mapped_file_region::readonly, Size, 0, EC);
+    fs::mapped_file_region mfr(fs::convertFDToNativeFile(FD),
+                               fs::mapped_file_region::readonly, Size, 0, EC);
     ASSERT_NO_ERROR(EC);
 
     // Verify content
     EXPECT_EQ(StringRef(mfr.const_data()), Val);
 
     // Unmap temp file
-    fs::mapped_file_region m(FD, fs::mapped_file_region::readonly, Size, 0, EC);
+    fs::mapped_file_region m(fs::convertFDToNativeFile(FD),
+                             fs::mapped_file_region::readonly, Size, 0, EC);
     ASSERT_NO_ERROR(EC);
     ASSERT_EQ(close(FD), 0);
   }
@@ -1493,6 +1504,85 @@ TEST_F(FileSystemTest, ReadWriteFileCanReadOrWrite) {
   verifyWrite(FD, "Buzz", true);
 }
 
+TEST_F(FileSystemTest, is_local) {
+  bool TestDirectoryIsLocal;
+  ASSERT_NO_ERROR(fs::is_local(TestDirectory, TestDirectoryIsLocal));
+  EXPECT_EQ(TestDirectoryIsLocal, fs::is_local(TestDirectory));
+
+  int FD;
+  SmallString<128> TempPath;
+  ASSERT_NO_ERROR(
+      fs::createUniqueFile(Twine(TestDirectory) + "/temp", FD, TempPath));
+  FileRemover Cleanup(TempPath);
+
+  // Make sure it exists.
+  ASSERT_TRUE(sys::fs::exists(Twine(TempPath)));
+
+  bool TempFileIsLocal;
+  ASSERT_NO_ERROR(fs::is_local(FD, TempFileIsLocal));
+  EXPECT_EQ(TempFileIsLocal, fs::is_local(FD));
+  ::close(FD);
+
+  // Expect that the file and its parent directory are equally local or equally
+  // remote.
+  EXPECT_EQ(TestDirectoryIsLocal, TempFileIsLocal);
+}
+
+TEST_F(FileSystemTest, getUmask) {
+#ifdef _WIN32
+  EXPECT_EQ(fs::getUmask(), 0U) << "Should always be 0 on Windows.";
+#else
+  unsigned OldMask = ::umask(0022);
+  unsigned CurrentMask = fs::getUmask();
+  EXPECT_EQ(CurrentMask, 0022U)
+      << "getUmask() didn't return previously set umask()";
+  EXPECT_EQ(::umask(OldMask), 0022U) << "getUmask() may have changed umask()";
+#endif
+}
+
+TEST_F(FileSystemTest, RespectUmask) {
+#ifndef _WIN32
+  unsigned OldMask = ::umask(0022);
+
+  int FD;
+  SmallString<128> TempPath;
+  ASSERT_NO_ERROR(fs::createTemporaryFile("prefix", "temp", FD, TempPath));
+
+  fs::perms AllRWE = static_cast<fs::perms>(0777);
+
+  ASSERT_NO_ERROR(fs::setPermissions(TempPath, AllRWE));
+
+  ErrorOr<fs::perms> Perms = fs::getPermissions(TempPath);
+  ASSERT_TRUE(!!Perms);
+  EXPECT_EQ(Perms.get(), AllRWE) << "Should have ignored umask by default";
+
+  ASSERT_NO_ERROR(fs::setPermissions(TempPath, AllRWE));
+
+  Perms = fs::getPermissions(TempPath);
+  ASSERT_TRUE(!!Perms);
+  EXPECT_EQ(Perms.get(), AllRWE) << "Should have ignored umask";
+
+  ASSERT_NO_ERROR(
+      fs::setPermissions(FD, static_cast<fs::perms>(AllRWE & ~fs::getUmask())));
+  Perms = fs::getPermissions(TempPath);
+  ASSERT_TRUE(!!Perms);
+  EXPECT_EQ(Perms.get(), static_cast<fs::perms>(0755))
+      << "Did not respect umask";
+
+  (void)::umask(0057);
+
+  ASSERT_NO_ERROR(
+      fs::setPermissions(FD, static_cast<fs::perms>(AllRWE & ~fs::getUmask())));
+  Perms = fs::getPermissions(TempPath);
+  ASSERT_TRUE(!!Perms);
+  EXPECT_EQ(Perms.get(), static_cast<fs::perms>(0720))
+      << "Did not respect umask";
+
+  (void)::umask(OldMask);
+  (void)::close(FD);
+#endif
+}
+
 TEST_F(FileSystemTest, set_current_path) {
   SmallString<128> path;
 
@@ -1665,9 +1755,10 @@ TEST_F(FileSystemTest, permissions) {
   EXPECT_TRUE(CheckPermissions(fs::set_gid_on_exe));
 
   // Modern BSDs require root to set the sticky bit on files.
-  // AIX without root will mask off (i.e., lose) the sticky bit on files.
+  // AIX and Solaris without root will mask off (i.e., lose) the sticky bit
+  // on files.
 #if !defined(__FreeBSD__) && !defined(__NetBSD__) && !defined(__OpenBSD__) &&  \
-    !defined(_AIX)
+    !defined(_AIX) && !(defined(__sun__) && defined(__svr4__))
   EXPECT_EQ(fs::setPermissions(TempPath, fs::sticky_bit), NoError);
   EXPECT_TRUE(CheckPermissions(fs::sticky_bit));
 

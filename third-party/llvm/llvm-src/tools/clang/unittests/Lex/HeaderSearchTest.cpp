@@ -1,9 +1,8 @@
 //===- unittests/Lex/HeaderSearchTest.cpp ------ HeaderSearch tests -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,12 +11,12 @@
 #include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/LangOptions.h"
-#include "clang/Basic/MemoryBufferCache.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
+#include "clang/Serialization/InMemoryModuleCache.h"
 #include "gtest/gtest.h"
 
 namespace clang {
@@ -60,36 +59,81 @@ protected:
 
 TEST_F(HeaderSearchTest, NoSearchDir) {
   EXPECT_EQ(Search.search_dir_size(), 0u);
-  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/x/y/z", /*WorkingDir=*/""),
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/x/y/z", /*WorkingDir=*/"",
+                                                   /*MainFile=*/""),
             "/x/y/z");
 }
 
 TEST_F(HeaderSearchTest, SimpleShorten) {
   addSearchDir("/x");
   addSearchDir("/x/y");
-  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/x/y/z", /*WorkingDir=*/""),
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/x/y/z", /*WorkingDir=*/"",
+                                                   /*MainFile=*/""),
             "z");
   addSearchDir("/a/b/");
-  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/a/b/c", /*WorkingDir=*/""),
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/a/b/c", /*WorkingDir=*/"",
+                                                   /*MainFile=*/""),
             "c");
 }
 
 TEST_F(HeaderSearchTest, ShortenWithWorkingDir) {
   addSearchDir("x/y");
   EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/a/b/c/x/y/z",
-                                                   /*WorkingDir=*/"/a/b/c"),
+                                                   /*WorkingDir=*/"/a/b/c",
+                                                   /*MainFile=*/""),
             "z");
 }
 
 TEST_F(HeaderSearchTest, Dots) {
   addSearchDir("/x/./y/");
   EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/x/y/./z",
-                                                   /*WorkingDir=*/""),
+                                                   /*WorkingDir=*/"",
+                                                   /*MainFile=*/""),
             "z");
   addSearchDir("a/.././c/");
   EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/m/n/./c/z",
-                                                   /*WorkingDir=*/"/m/n/"),
+                                                   /*WorkingDir=*/"/m/n/",
+                                                   /*MainFile=*/""),
             "z");
+}
+
+#ifdef _WIN32
+TEST_F(HeaderSearchTest, BackSlash) {
+  addSearchDir("C:\\x\\y\\");
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("C:\\x\\y\\z\\t",
+                                                   /*WorkingDir=*/"",
+                                                   /*MainFile=*/""),
+            "z/t");
+}
+
+TEST_F(HeaderSearchTest, BackSlashWithDotDot) {
+  addSearchDir("..\\y");
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("C:\\x\\y\\z\\t",
+                                                   /*WorkingDir=*/"C:/x/y/",
+                                                   /*MainFile=*/""),
+            "z/t");
+}
+#endif
+
+TEST_F(HeaderSearchTest, DotDotsWithAbsPath) {
+  addSearchDir("/x/../y/");
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/y/z",
+                                                   /*WorkingDir=*/"",
+                                                   /*MainFile=*/""),
+            "z");
+}
+
+TEST_F(HeaderSearchTest, IncludeFromSameDirectory) {
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/y/z/t.h",
+                                                   /*WorkingDir=*/"",
+                                                   /*MainFile=*/"/y/a.cc"),
+            "z/t.h");
+
+  addSearchDir("/");
+  EXPECT_EQ(Search.suggestPathToFileForDiagnostics("/y/z/t.h",
+                                                   /*WorkingDir=*/"",
+                                                   /*MainFile=*/"/y/a.cc"),
+            "y/z/t.h");
 }
 
 } // namespace

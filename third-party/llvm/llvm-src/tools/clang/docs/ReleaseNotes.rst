@@ -1,5 +1,5 @@
 =========================
-Clang 8.0.0 Release Notes
+Clang 9.0.0 Release Notes
 =========================
 
 .. contents::
@@ -8,23 +8,25 @@ Clang 8.0.0 Release Notes
 
 Written by the `LLVM Team <https://llvm.org/>`_
 
+
 Introduction
 ============
 
-This document contains the release notes for the Clang C/C++/Objective-C/OpenCL
-frontend, part of the LLVM Compiler Infrastructure, release 8.0.0. Here we
+This document contains the release notes for the Clang C/C++/Objective-C
+frontend, part of the LLVM Compiler Infrastructure, release 9.0.0. Here we
 describe the status of Clang in some detail, including major
 improvements from the previous release and new feature work. For the
 general LLVM release notes, see `the LLVM
 documentation <https://llvm.org/docs/ReleaseNotes.html>`_. All LLVM
-releases may be downloaded
-from the `LLVM releases web site <https://releases.llvm.org/>`_.
+releases may be downloaded from the `LLVM releases web
+site <https://llvm.org/releases/>`_.
 
 For more information about Clang or LLVM, including information about the
 latest release, please see the `Clang Web Site <https://clang.llvm.org>`_ or the
 `LLVM Web Site <https://llvm.org>`_.
 
-What's New in Clang 8.0.0?
+
+What's New in Clang 9.0.0?
 ==========================
 
 Some of the major new features and improvements to Clang are listed
@@ -35,375 +37,317 @@ sections with improvements to Clang's support for those languages.
 Major New Features
 ------------------
 
-- Clang supports use of a profile remapping file, which permits
-  profile data captured for one version of a program to be applied
-  when building another version where symbols have changed (for
-  example, due to renaming a class or namespace).
-  See the :ref:`UsersManual <profile_remapping>` for details.
-
-- Clang has new options to initialize automatic variables with a pattern. The default is still that automatic variables are uninitialized. This isn't meant to change the semantics of C and C++. Rather, it's meant to be a last resort when programmers inadvertently have some undefined behavior in their code. These options aim to make undefined behavior hurt less, which security-minded people will be very happy about. Notably, this means that there's no inadvertent information leak when:
-
-    * The compiler re-uses stack slots, and a value is used uninitialized.
-
-    * The compiler re-uses a register, and a value is used uninitialized.
-
-    * Stack structs / arrays / unions with padding are copied.
-
-  These options only address stack and register information leaks.
-
-  Caveats:
-
-    * Variables declared in unreachable code and used later aren't initialized. This affects goto statements, Duff's device, and other objectionable uses of switch statements. This should instead be a hard-error in any serious codebase.
-
-    * These options don't affect volatile stack variables.
-
-    * Padding isn't fully handled yet.
-
-  How to use it on the command line:
-
-    * ``-ftrivial-auto-var-init=uninitialized`` (the default)
-
-    * ``-ftrivial-auto-var-init=pattern``
-
-  There is also a new attribute to request a variable to not be initialized, mainly to disable initialization of large stack arrays when deemed too expensive:
-
-    * ``int dont_initialize_me __attribute((uninitialized));``
-
-
-Improvements to Clang's diagnostics
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- ``-Wextra-semi-stmt`` is a new diagnostic that diagnoses extra semicolons,
-  much like ``-Wextra-semi``. This new diagnostic diagnoses all *unnecessary*
-  null statements (expression statements without an expression), unless: the
-  semicolon directly follows a macro that was expanded to nothing or if the
-  semicolon is within the macro itself. This applies to macros defined in system
-  headers as well as user-defined macros.
-
-  .. code-block:: c++
-
-      #define MACRO(x) int x;
-      #define NULLMACRO(varname)
-
-      void test() {
-        ; // <- warning: ';' with no preceding expression is a null statement
-
-        while (true)
-          ; // OK, it is needed.
-
-        switch (my_enum) {
-        case E1:
-          // stuff
-          break;
-        case E2:
-          ; // OK, it is needed.
-        }
-
-        MACRO(v0;) // Extra semicolon, but within macro, so ignored.
-
-        MACRO(v1); // <- warning: ';' with no preceding expression is a null statement
-
-        NULLMACRO(v2); // ignored, NULLMACRO expanded to nothing.
-      }
-
-- ``-Wempty-init-stmt`` is a new diagnostic that diagnoses empty init-statements
-  of ``if``, ``switch``, ``range-based for``, unless: the semicolon directly
-  follows a macro that was expanded to nothing or if the semicolon is within the
-  macro itself (both macros from system headers, and normal macros). This
-  diagnostic is in the ``-Wextra-semi-stmt`` group and is enabled in
-  ``-Wextra``.
-
-  .. code-block:: c++
-
-      void test() {
-        if(; // <- warning: init-statement of 'if' is a null statement
-           true)
-          ;
-
-        switch (; // <- warning: init-statement of 'switch' is a null statement
-                x) {
-          ...
-        }
-
-        for (; // <- warning: init-statement of 'range-based for' is a null statement
-             int y : S())
-          ;
-      }
+- Experimental support for :ref:`C++ for OpenCL <openclcpp>` has been
+  added.
 
 
 Non-comprehensive list of changes in this release
 -------------------------------------------------
 
-- The experimental feature Pretokenized Headers (PTH) was removed in its
-  entirely from Clang. The feature did not properly work with about 1/3 of the
-  possible tokens available and was unmaintained.
+- The ``__VERSION__`` macro has been updated.
+  Previously this macro contained the string '4.2.1 Compatible' to achieve
+  compatibility with GCC 4.2.1, but that should no longer be necessary.
+  However, to retrieve Clang's version, please favor the one of the macro
+  defined in :ref:`clang namespaced version macros <languageextensions-builtin-macros>`.
 
-- The internals of libc++ include directory detection on MacOS have changed.
-  Instead of running a search based on the ``-resource-dir`` flag, the search
-  is now based on the path of the compiler in the filesystem. The default
-  behaviour should not change. However, if you override ``-resource-dir``
-  manually and rely on the old behaviour you will need to add appropriate
-  compiler flags for finding the corresponding libc++ include directory.
-
-- The integrated assembler is used now by default for all MIPS targets.
-
-- Improved support for MIPS N32 ABI and MIPS R6 target triples.
-
-- Clang now includes builtin functions for bitwise rotation of common value
-  sizes, such as: `__builtin_rotateleft32
-  <LanguageExtensions.html#builtin-rotateleft>`_
-
-- Improved optimization for the corresponding MSVC compatibility builtins such
-  as ``_rotl()``.
 
 New Compiler Flags
 ------------------
 
-- ``-mspeculative-load-hardening`` Clang now has an option to enable
-  Speculative Load Hardening.
+- ``-ftime-trace`` and ``ftime-trace-granularity=N``
+  Emits flame chart style compilation time report in chrome://tracing and
+  speedscope.app compatible format. A trace .json file is written next to the
+  compiled object file, containing hierarchical time information about frontend
+  activities (file parsing, template instantiation) and backend activities
+  (modules and functions being optimized, optimization passes).
 
-- ``-fprofile-filter-files=[regexes]`` and ``-fprofile-exclude-files=[regexes]``.
-
-  Clang has now options to filter or exclude some files when
-  instrumenting for gcov-based profiling.
-  See the `UsersManual <UsersManual.html#cmdoption-fprofile-filter-files>`_ for details.
-
-- When using a custom stack alignment, the ``stackrealign`` attribute is now
-  implicitly set on the main function.
-
-- Emission of ``R_MIPS_JALR`` and ``R_MICROMIPS_JALR`` relocations can now
-  be controlled by the ``-mrelax-pic-calls`` and ``-mno-relax-pic-calls``
-  options.
 
 Modified Compiler Flags
 -----------------------
 
-- As of clang 8, ``alignof`` and ``_Alignof`` return the ABI alignment of a type,
-  as opposed to the preferred alignment. ``__alignof`` still returns the
-  preferred alignment. ``-fclang-abi-compat=7`` (and previous) will make
-  ``alignof`` and ``_Alignof`` return preferred alignment again.
+- ``clang -dumpversion`` now returns the version of Clang itself.
 
-
-New Pragmas in Clang
---------------------
-
-- Clang now supports adding multiple `#pragma clang attribute` attributes into
-  a scope of pushed attributes.
-
-Attribute Changes in Clang
---------------------------
-
-* Clang now supports enabling/disabling speculative load hardening on a
-  per-function basis using the function attribute
-  ``speculative_load_hardening``/``no_speculative_load_hardening``.
 
 Windows Support
 ---------------
 
-- clang-cl now supports the use of the precompiled header options ``/Yc`` and ``/Yu``
-  without the filename argument. When these options are used without the
-  filename, a `#pragma hdrstop` inside the source marks the end of the
-  precompiled code.
+- clang-cl now treats non-existent files as possible typos for flags,
+  ``clang-cl /diagnostic:caret /c test.cc`` for example now produces
+  ``clang: error: no such file or directory: '/diagnostic:caret'; did you mean '/diagnostics:caret'?``
 
-- clang-cl has a new command-line option, ``/Zc:dllexportInlines-``, similar to
-  ``-fvisibility-inlines-hidden`` on non-Windows, that makes class-level
-  `dllexport` and `dllimport` attributes not apply to inline member functions.
-  This can significantly reduce compile and link times. See the `User's Manual
-  <UsersManual.html#the-zc-dllexportinlines-option>`_ for more info.
+- clang now parses the ``__declspec(allocator)`` specifier and generates debug
+  information, so that memory usage can be tracked in Visual Studio.
 
-- For MinGW, ``-municode`` now correctly defines ``UNICODE`` during
-  preprocessing.
+- The ``-print-search-dirs`` option now separates elements with semicolons,
+  as is the norm for path lists on Windows
 
-- For MinGW, clang now produces vtables and RTTI for dllexported classes
-  without key functions. This fixes building Qt in debug mode.
+- Improved handling of dllexport in conjunction with explicit template
+  instantiations for MinGW, to allow building a shared libc++ for MinGW
+  without ``--export-all-symbols`` to override the dllexport attributes
 
-- Allow using Address Sanitizer and Undefined Behaviour Sanitizer on MinGW.
 
-- Structured Exception Handling support for ARM64 Windows. The ARM64 Windows
-  target is in pretty good shape now.
+C Language Changes in Clang
+---------------------------
 
+- The ``__FILE_NAME__`` macro has been added as a Clang specific extension supported
+  in all C-family languages. This macro is similar to ``__FILE__`` except it
+  will always provide the last path component when possible.
+
+- Initial support for ``asm goto`` statements (a GNU C extension) has been
+  added for control flow from inline assembly to labels. The main consumers of
+  this construct are the Linux kernel (CONFIG_JUMP_LABEL=y) and glib. There are
+  still a few unsupported corner cases in Clang's integrated assembler and
+  IfConverter. Please file bugs for any issues you run into.
+
+
+C++ Language Changes in Clang
+-----------------------------
+
+- Support for the address space attribute in various C++ features was improved,
+  refer to :ref:`C++ for OpenCL <openclcpp>` for more details. The following
+  features deviated from OpenCL:
+
+  (1) Address spaces as method qualifiers are not accepted yet;
+
+  (2) There is no address space deduction.
+
+
+Objective-C Language Changes in Clang
+-------------------------------------
+
+- Fixed encoding of ObjC pointer types that are pointers to typedefs.
+
+  .. code-block:: objc
+
+      typedef NSArray<NSObject *> MyArray;
+
+      // clang used to encode this as "^{NSArray=#}" instead of "@".
+      const char *s0 = @encode(MyArray *);
 
 OpenCL Kernel Language Changes in Clang
 ---------------------------------------
 
-Misc:
+OpenCL C
+^^^^^^^^
 
-- Improved address space support with Clang builtins.
+- Enabled use of variadic macro as a Clang extension.
 
-- Improved various diagnostics for vectors with element types from extensions;
-  values used in attributes; duplicate address spaces.
+- Added initial support for implicitly including OpenCL builtin
+  fuctions using efficient trie lookup generated by TableGen.
+  A corresponding frontend-only flag ``-fdeclare-opencl-builtins``
+  has been added to enable trie during parsing.
 
-- Allow blocks to capture arrays.
+- Refactored header file to be used for common parts between
+  regular header added using ``-finclude-default-header`` and trie
+  based declarations added using ``-fdeclare-opencl-builtins``.
 
-- Allow zero assignment and comparisons between variables of ``queue_t`` type.
+- Improved string formatting diagnostics in printf for vector types.
 
-- Improved diagnostics of formatting specifiers and argument promotions for
-  vector types in ``printf``.
+- Simplified the internal representation of blocks, including their
+  generation in IR. Furthermore, indirect calls to block function
+  has been changed to direct function calls.
 
-- Fixed return type of enqueued kernel and pipe builtins.
+- Added diagnostics for conversions of nested pointers with
+  different address spaces.
 
-- Fixed address space of ``clk_event_t`` generated in the IR.
+- Added ``cl_arm_integer_dot_product`` extension.
 
-- Fixed address space when passing/returning structs.
+- Fixed global samplers in OpenCL v2.0.
 
-Header file fixes:
+- Improved math builtin functions with parameters of type ``long
+  long`` for x86.
 
-- Added missing extension guards around several builtin function overloads.
+.. _openclcpp:
 
-- Fixed serialization support when registering vendor extensions using pragmas.
+C++ for OpenCL
+^^^^^^^^^^^^^^
 
-- Fixed OpenCL version in declarations of builtin functions with sampler-less
-  image accesses.
+Experimental support for C++17 features in OpenCL has been added
+and backwards compatibility with OpenCL C v2.0 was enabled.
+The documentation has been added for supported language features
+into :doc:`LanguageExtensions` and :doc:`UsersManual`.
 
-New vendor extensions added:
+Implemented features are:
 
-- ``cl_intel_planar_yuv``
+- Address space behavior is improved in majority of C++ features:
 
-- ``cl_intel_device_side_avc_motion_estimation``
+  - Templates parameters and arguments;
 
+  - Reference types;
 
-C++ for OpenCL:
+  - Type deduction;
 
-- Added support of address space conversions in C style casts.
+  - Objects and member functions, including special member
+    functions;
 
-- Enabled address spaces for references.
+  - Builtin operators;
 
-- Fixed use of address spaces in templates: address space deduction and diagnostics.
+  - Method qualifiers now include address space;
 
-- Changed default address space to work with C++ specific concepts: class members,
-  template parameters, etc.
+  - Address space deduction has been extended for C++ use cases;
 
-- Added generic address space by default to the generated hidden 'this' parameter.
+  - Improved overload ranking rules;
 
-- Extend overload ranking rules for address spaces.
+  - All standard cast operators now prevent converting address
+    spaces (except for conversions allowed implicitly). They
+    can still be cast using C-style cast.
 
+- Vector types as in OpenCL C, including compound vector
+  initialization.
 
-ABI Changes in Clang
---------------------
+- OpenCL-specific types: images, samplers, events, pipes, are
+  accepted. Note that blocks are not supported yet.
 
-- ``_Alignof`` and ``alignof`` now return the ABI alignment of a type, as opposed
-  to the preferred alignment.
+- OpenCL standard header in Clang can be compiled in C++ mode.
 
-  - This is more in keeping with the language of the standards, as well as
-    being compatible with gcc
-  - ``__alignof`` and ``__alignof__`` still return the preferred alignment of
-    a type
-  - This shouldn't break any ABI except for things that explicitly ask for
-    ``alignas(alignof(T))``.
-  - If you have interfaces that break with this change, you may wish to switch
-    to ``alignas(__alignof(T))``, instead of using the ``-fclang-abi-compat``
-    switch.
+- Global constructors can be invoked from the host side using
+  a specific, compiler-generated kernel.
+
+- Overloads with generic address space are added to all atomic
+  builtin functions, including the ones prior to OpenCL v2.0.
+
 
 OpenMP Support in Clang
-----------------------------------
+-----------------------
 
-- OpenMP 5.0 features
+- Added emission of the debug information for NVPTX target devices.
 
-  - Support relational-op != (not-equal) as one of the canonical forms of random
-    access iterator.
-  - Added support for mapping of the lambdas in target regions.
-  - Added parsing/sema analysis for the requires directive.
-  - Support nested declare target directives.
-  - Make the `this` pointer implicitly mapped as `map(this[:1])`.
-  - Added the `close` *map-type-modifier*.
+CUDA Support in Clang
+---------------------
 
-- Various bugfixes and improvements.
+- Added emission of the debug information for the device code.
 
-New features supported for Cuda devices:
+Internal API Changes
+--------------------
 
-- Added support for the reductions across the teams.
+These are major API changes that have happened since the 8.0.0 release of
+Clang. If upgrading an external codebase that uses Clang as a library,
+this section should help get you past the largest hurdles of upgrading.
 
-- Extended number of constructs that can be executed in SPMD mode.
+Build System Changes
+--------------------
 
-- Fixed support for lastprivate/reduction variables in SPMD constructs.
+These are major changes to the build system that have happened since the 8.0.0
+release of Clang. Users of the build system should adjust accordingly.
 
-- New collapse clause scheme to avoid expensive remainder operations.
+- In 8.0.0 and below, the install-clang-headers target would install clang's
+  resource directory headers. This installation is now performed by the
+  install-clang-resource-headers target. Users of the old install-clang-headers
+  target should switch to the new install-clang-resource-headers target. The
+  install-clang-headers target now installs clang's API headers (corresponding
+  to its libraries), which is consistent with the install-llvm-headers target.
 
-- New default schedule for distribute and parallel constructs.
+- In 9.0.0 and later Clang added a new target on Linux/Unix systems, clang-cpp,
+  which generates a shared library comprised of all the clang component
+  libraries and exporting the clang C++ APIs. Additionally the build system
+  gained the new "CLANG_LINK_CLANG_DYLIB" option, which defaults Off, and when
+  set to On, will force clang (and clang-based tools) to link the clang-cpp
+  library instead of statically linking clang's components. This option will
+  reduce the size of binary distributions at the expense of compiler performance.
 
-- Simplified code generation for distribute and parallel in SPMD mode.
 
-- Flag (``-fopenmp_optimistic_collapse``) for user to limit collapsed
-  loop counter width when safe to do so.
+clang-format
+------------
 
-- General performance improvement.
+- Add language support for clang-formatting C# files.
+- Add Microsoft coding style to encapsulate default C# formatting style.
+- Added new option ``PPDIS_BeforeHash`` (in configuration: ``BeforeHash``) to
+  ``IndentPPDirectives`` which indents preprocessor directives before the hash.
+- Added new option ``AlignConsecutiveMacros`` to align the C/C++ preprocessor
+  macros of consecutive lines.
+
+libclang
+--------
+
+- When ``CINDEXTEST_INCLUDE_ATTRIBUTED_TYPES`` is not provided when making a
+  CXType, the equivalent type of the AttributedType is returned instead of the
+  modified type if the user does not want attribute sugar. The equivalent type
+  represents the minimally-desugared type which the AttributedType is
+  canonically equivalent to.
 
 
-.. _release-notes-ubsan:
+Static Analyzer
+---------------
 
-Undefined Behavior Sanitizer (UBSan)
-------------------------------------
+- Fixed a bug where an incorrect checker name would be displayed for a bug
+  report.
 
-* The Implicit Conversion Sanitizer (``-fsanitize=implicit-conversion``) group
-  was extended. One more type of issues is caught - implicit integer sign change.
-  (``-fsanitize=implicit-integer-sign-change``).
-  This makes the Implicit Conversion Sanitizer feature-complete,
-  with only missing piece being bitfield handling.
-  While there is a ``-Wsign-conversion`` diagnostic group that catches this kind
-  of issues, it is both noisy, and does not catch **all** the cases.
+- New checker: ``security.insecureAPI.DeprecatedOrUnsafeBufferHandling`` to detect
+  uses of unsafe/deprecated buffer handling functions for C code using the C11
+  standard or newer.
 
-  .. code-block:: c++
+- New checker: ``osx.MIGChecker`` to find violations of the Mach Interface
+  Generator calling convention
 
-      bool consume(unsigned int val);
+- New checker: ``optin.osx.OSObjectCStyleCast`` to find C-style casts of of XNU
+  libkern OSObjects
 
-      void test(int val) {
-        (void)consume(val); // If the value was negative, it is now large positive.
-        (void)consume((unsigned int)val); // OK, the conversion is explicit.
-      }
+- New package: ``apiModeling.llvm`` contains modeling checkers to improve the
+  accuracy of reports on LLVM's own codebase.
 
-  Like some other ``-fsanitize=integer`` checks, these issues are **not**
-  undefined behaviour. But they are not *always* intentional, and are somewhat
-  hard to track down. This group is **not** enabled by ``-fsanitize=undefined``,
-  but the ``-fsanitize=implicit-integer-sign-change`` check
-  is enabled by ``-fsanitize=integer``.
-  (as is ``-fsanitize=implicit-integer-truncation`` check)
+- The Static Analyzer received
+  :ref:`developer documentation <clang-static-analyzer-docs>`.
 
-* The Implicit Conversion Sanitizer (``-fsanitize=implicit-conversion``) has
-  learned to sanitize compound assignment operators.
+- The UninitializedObject checker is now considered as stable.
+  (moved from the ``alpha.cplusplus`` to the ``optin.cplusplus`` package)
 
-* ``alignment`` check has learned to sanitize the assume_aligned-like attributes:
+- New frontend flags: The list of available checkers are now split into 3
+  different frontend flags:
 
-  .. code-block:: c++
+  - ``-analyzer-checker-help``: The list of user-facing, stable checkers.
 
-      typedef char **__attribute__((align_value(1024))) aligned_char;
-      struct ac_struct {
-        aligned_char a;
-      };
-      char **load_from_ac_struct(struct ac_struct *x) {
-        return x->a; // <- check that loaded 'a' is aligned
-      }
+  - ``-analyzer-checker-help-alpha``: The list of in-development
+    checkers not yet advised to be turned on.
 
-      char **passthrough(__attribute__((align_value(1024))) char **x) {
-        return x; // <- check the pointer passed as function argument
-      }
+  - ``-analyzer-checker-help-developer``: Checkers never meant to be
+    enabled/disabled by hand + development checkers.
 
-      char **__attribute__((alloc_align(2)))
-      alloc_align(int size, unsigned long alignment);
+- New frontend flags: While they have always been around, for the first time,
+  checker and package options are listable:
 
-      char **caller(int size) {
-        return alloc_align(size, 1024); // <- check returned pointer
-      }
+  - ``-analyzer-checker-option-help``: The list of user-facing, stable checker
+    and package options.
 
-      char **__attribute__((assume_aligned(1024))) get_ptr();
+  - ``-analyzer-checker-option-help-alpha``: The list of in-development checker
+    options not yet advised to be used.
 
-      char **caller2() {
-        return get_ptr(); // <- check returned pointer
-      }
+  - ``-analyzer-checker-option-help-developer``: Options never meant to be
+    enabled/disabled by hand + development options.
 
-      void *caller3(char **x) {
-        return __builtin_assume_aligned(x, 1024);  // <- check returned pointer
-      }
+- New frontend flag: ``-analyzer-werror`` to turn analyzer warnings into errors.
 
-      void *caller4(char **x, unsigned long offset) {
-        return __builtin_assume_aligned(x, 1024, offset);  // <- check returned pointer accounting for the offest
-      }
+- Numerous fixes to increase the stability of the experimental cross translation
+  unit analysis (CTU).
 
-      void process(char *data, int width) {
-          #pragma omp for simd aligned(data : 1024) // <- aligned clause will be checked.
-          for (int x = 0; x < width; x++)
-          data[x] *= data[x];
-      }
+- CTU now handles virtual functions as well.
 
+
+Linux Kernel
+============
+
+With support for asm goto, the mainline Linux kernel for x86_64 is now buildable
+(and bootable) with Clang 9.  Other architectures that don't require
+CONFIG_JUMP_LABEL=y such as arm, aarch64, ppc32, ppc64le, (and possibly mips)
+have been supported with older releases of Clang (Clang 4 was first used with
+aarch64).
+
+The Android and ChromeOS Linux distributions have moved to building their Linux
+kernels with Clang, and Google is currently testing Clang built kernels for
+their production Linux kernels.
+
+Further, LLD, llvm-objcopy, llvm-ar, llvm-nm, llvm-objdump can all be used to
+build a working Linux kernel.
+
+More information about building Linux kernels with Clang can be found:
+
+- `ClangBuiltLinux web page <https://clangbuiltlinux.github.io/>`_.
+- `Issue Tracker <https://github.com/ClangBuiltLinux/linux/issues>`_.
+- `Wiki <https://github.com/ClangBuiltLinux/linux/wiki>`_.
+- `Mailing List <clang-built-linux@googlegroups.com>`_.
+- `Bi-weekly Meeting <https://calendar.google.com/calendar/embed?src=google.com_bbf8m6m4n8nq5p2bfjpele0n5s%40group.calendar.google.com>`_.
+- #clangbuiltlinux on Freenode.
+- `Clang Meta bug <https://bugs.llvm.org/show_bug.cgi?id=4068>`_.
+- `Continuous Integration <https://travis-ci.com/ClangBuiltLinux/continuous-integration>`_.
 
 Additional Information
 ======================

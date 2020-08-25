@@ -7,6 +7,8 @@ add_subdirectory(Core)
 add_subdirectory(Inclusions)
 add_subdirectory(Refactoring)
 add_subdirectory(ASTDiff)
+add_subdirectory(Syntax)
+add_subdirectory(DependencyScanning)
 
 add_clang_library(clangTooling
   AllTUsExecution.cpp
@@ -16,6 +18,7 @@ add_clang_library(clangTooling
   Execution.cpp
   FileMatchTrie.cpp
   FixIt.cpp
+  GuessTargetAndModeCompilationDatabase.cpp
   InterpolatingCompilationDatabase.cpp
   JSONCompilationDatabase.cpp
   Refactoring.cpp

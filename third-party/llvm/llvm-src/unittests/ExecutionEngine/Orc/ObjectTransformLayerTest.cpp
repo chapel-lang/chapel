@@ -1,9 +1,8 @@
 //===- ObjectTransformLayerTest.cpp - Unit tests for ObjectTransformLayer -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -183,17 +182,19 @@ TEST(LegacyObjectTransformLayerTest, Main) {
 
   // Create one object transform layer using a transform (as a functor)
   // that allocates new objects, and deals in unique pointers.
-  LegacyObjectTransformLayer<MockBaseLayer, AllocatingTransform> T1(M);
+  LegacyObjectTransformLayer<MockBaseLayer, AllocatingTransform> T1(
+      llvm::AcknowledgeORCv1Deprecation, M);
 
   // Create a second object transform layer using a transform (as a lambda)
   // that mutates objects in place, and deals in naked pointers
   LegacyObjectTransformLayer<MockBaseLayer,
-                         std::function<std::shared_ptr<MockObjectFile>(
-                           std::shared_ptr<MockObjectFile>)>>
-    T2(M, [](std::shared_ptr<MockObjectFile> Obj) {
-    ++(*Obj);
-    return Obj;
-  });
+                             std::function<std::shared_ptr<MockObjectFile>(
+                                 std::shared_ptr<MockObjectFile>)>>
+      T2(llvm::AcknowledgeORCv1Deprecation, M,
+         [](std::shared_ptr<MockObjectFile> Obj) {
+           ++(*Obj);
+           return Obj;
+         });
 
   // Test addObject with T1 (allocating)
   auto K1 = ES.allocateVModule();
@@ -282,22 +283,25 @@ TEST(LegacyObjectTransformLayerTest, Main) {
   };
 
   // Construct the jit layers.
-  LegacyRTDyldObjectLinkingLayer BaseLayer(ES, [](VModuleKey) {
-    return LegacyRTDyldObjectLinkingLayer::Resources{
-        std::make_shared<llvm::SectionMemoryManager>(),
-        std::make_shared<NullResolver>()};
-  });
+  LegacyRTDyldObjectLinkingLayer BaseLayer(
+      llvm::AcknowledgeORCv1Deprecation, ES, [](VModuleKey) {
+        return LegacyRTDyldObjectLinkingLayer::Resources{
+            std::make_shared<llvm::SectionMemoryManager>(),
+            std::make_shared<NullResolver>()};
+      });
 
   auto IdentityTransform = [](std::unique_ptr<llvm::MemoryBuffer> Obj) {
     return Obj;
   };
   LegacyObjectTransformLayer<decltype(BaseLayer), decltype(IdentityTransform)>
-      TransformLayer(BaseLayer, IdentityTransform);
+      TransformLayer(llvm::AcknowledgeORCv1Deprecation, BaseLayer,
+                     IdentityTransform);
   auto NullCompiler = [](llvm::Module &) {
     return std::unique_ptr<llvm::MemoryBuffer>(nullptr);
   };
   LegacyIRCompileLayer<decltype(TransformLayer), decltype(NullCompiler)>
-    CompileLayer(TransformLayer, NullCompiler);
+      CompileLayer(llvm::AcknowledgeORCv1Deprecation, TransformLayer,
+                   NullCompiler);
 
   // Make sure that the calls from LegacyIRCompileLayer to LegacyObjectTransformLayer
   // compile.
