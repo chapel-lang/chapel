@@ -12,9 +12,9 @@ use IO;
 //
 
 {
-  const Dom = {1..10},
-        MDom = {1..3, 1..3},
-        MDom2 = {1..4, 1..6};
+  const Dom = {0..<10},
+        MDom = {0..<3, 0..<3},
+        MDom2 = {0..<4, 0..<6};
 
   //
   // Vectors
@@ -28,7 +28,7 @@ use IO;
 
   /* Range */
   {
-    var v = Vector(1..10);
+    var v = Vector(0..<10);
     assertEqual(v.domain, Dom, "Vector(1..10)");
   }
   {
@@ -80,14 +80,14 @@ use IO;
 
   /* Range */
   {
-    var M = Matrix(1..3);
-    assertEqual(M.domain, MDom, "Matrix(1..3)");
+    var M = Matrix(0..<3);
+    assertEqual(M.domain, MDom, "Matrix(0..<3)");
   }
 
   /* Ranges */
   {
-    var M = Matrix(1..4, 1..6);
-    assertEqual(M.domain, MDom2, "Matrix(1..4, 1..6)");
+    var M = Matrix(0..<4, 0..<6);
+    assertEqual(M.domain, MDom2, "Matrix(0..<4, 0..<6)");
   }
 
   /* Domain */
@@ -144,7 +144,7 @@ use IO;
                    [4,5,6],
                    [7,8,9]);
     assertEqual(M.domain, MDom, "Matrix([1,2,3], [4,5,6], [7,8,9]).domain");
-    assertEqual(M[2,2], 5, "Matrix([1,2,3], [4,5,6], [7,8,9])[1,1]");
+    assertEqual(M[1,1], 5, "Matrix([1,2,3], [4,5,6], [7,8,9])[1,1]");
   }
 
   /* Identity - Dimensions */
@@ -338,7 +338,7 @@ use IO;
   v13 = 1;
   M = 1;
 
-  S[1, 1] =  inner(v13[1, ..], v31[.., 1]);
+  S[0, 0] =  inner(v13[0, ..], v31[.., 0]);
 
   // outer-product
   assertEqual(dot(v31, v13), M, "dot(Matrix(3, 1), Matrix(1, 3))");
@@ -351,10 +351,10 @@ use IO;
   var M = Matrix(3, 3);
   M = 1;
 
-  var slice = M[1..3, 1];
+  var slice = M[0..<3, 0];
 
   var result = dot(slice, slice);
-  assertEqual(result, 3, 'dot(M[1..3, 1], M[1..3, 1])');
+  assertEqual(result, 3, 'dot(M[0..<3, 0], M[0..<3, 0])');
 }
 
 /* outer */

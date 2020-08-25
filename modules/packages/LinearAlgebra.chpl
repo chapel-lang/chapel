@@ -225,10 +225,10 @@ class LinearAlgebraError : Error {
 // Matrix and Vector Initializers
 //
 
-/* Return a vector (1D array) over domain ``{1..length}``*/
+/* Return a vector (1D array) over domain ``{0..<length}``*/
 proc Vector(length, type eltType=real) {
   if (length <= 0) then halt("Vector length must be > 0");
-  return Vector(1..length, eltType);
+  return Vector(0..<length, eltType);
 }
 
 
@@ -268,29 +268,29 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
       compilerError("Vector() expected numeric arguments");
 
   // First element is x, and remaining elements are Scalars
-  var V: [1..n+1] eltType;
+  var V: [0..n] eltType;
 
-  V[1] = x: eltType;
+  V[0] = x: eltType;
 
-  forall i in 2..n+1 {
-    V[i] = Scalars[i-2]: eltType;
+  forall i in 1..n {
+    V[i] = Scalars[i-1]: eltType;
   }
 
   return V;
 }
 
 
-/* Return a square matrix (2D array) over domain ``{1..rows, 1..rows}``*/
+/* Return a square matrix (2D array) over domain ``{0..<rows, 0..<rows}``*/
 proc Matrix(rows, type eltType=real) where isIntegral(rows) {
   if rows <= 0 then halt("Matrix dimensions must be > 0");
-  return Matrix(1..rows, 1..rows, eltType);
+  return Matrix(0..<rows, 0..<rows, eltType);
 }
 
 
-/* Return a matrix (2D array) over domain ``{1..rows, 1..cols}``*/
+/* Return a matrix (2D array) over domain ``{0..<rows, 0..<cols}``*/
 proc Matrix(rows, cols, type eltType=real) where isIntegral(rows) && isIntegral(cols) {
   if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
-  return Matrix(1..rows, 1..cols, eltType);
+  return Matrix(0..<rows, 0..<cols, eltType);
 }
 
 
@@ -383,14 +383,14 @@ proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank
 
   if Arrays(0).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
-  const dim2 = 1..Arrays(0).domain.dim(0).size,
-        dim1 = 1..n;
+  const dim2 = 0..<Arrays(0).domain.dim(0).size,
+        dim1 = 0..<n;
 
   var M: [{dim1, dim2}] eltType;
 
   forall i in dim1 do {
-    if Arrays(i-1).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
-    M[i, ..] = Arrays(i-1)[..]: eltType;
+    if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+    M[i, ..] = Arrays(i): eltType;
   }
 
   return M;
@@ -404,17 +404,17 @@ private proc _eyeDiagonal(ref A: [?Dom] ?eltType) {
   for i in Dom.dim(idx) do A[i, i] = 1: eltType;
 }
 
-/* Return a square identity matrix over domain ``{1..m, 1..m}`` */
+/* Return a square identity matrix over domain ``{0..<m, 0..<m}`` */
 proc eye(m: integral, type eltType=real) {
-  var A: [{1..m, 1..m}] eltType;
+  var A: [{0..<m, 0..<m}] eltType;
   _eyeDiagonal(A);
   return A;
 }
 
 
-/* Return an identity matrix over domain ``{1..m, 1..n}`` */
+/* Return an identity matrix over domain ``{0..<m, 0..<n}`` */
 proc eye(m: integral, n: integral, type eltType=real) {
-  var A: [{1..m, 1..n}] eltType;
+  var A: [{0..<m, 0..<n}] eltType;
   _eyeDiagonal(A);
   return A;
 }
@@ -2035,8 +2035,8 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const (rowA, colA) = A.shape;
   const (rowB, colB) = B.shape;
 
-  const A1Dom = {1..rowA, 1..colA},
-        B1Dom = {1..rowB, 1..colB};
+  const A1Dom = {0..<rowA, 0..<colA},
+        B1Dom = {0..<rowB, 0..<colB};
 
   // Reindex to ensure 1-based indices
   ref A1 = A.reindex(A1Dom),
@@ -2045,8 +2045,8 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
 
   forall (i, j) in A1Dom {
-    const stR = (i-1)*rowB,
-          stC = (j-1)*colB;
+    const stR = (i)*rowB,
+          stC = (j)*colB;
     for (k, l) in B1Dom {
       C[stR+k, stC+l] = A1[i, j]*B1[k, l];
     }
