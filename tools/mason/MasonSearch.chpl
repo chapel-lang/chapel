@@ -163,12 +163,21 @@ proc rankResults(results: list(string), query: string): [] string {
   return res;
 }
 
+/* Creates an empty cache file if its not found in registry */
+proc touch(pathToReg: string) {
+  const fileWriter = open(pathToReg, iomode.cw).writer();
+  const contents = "# This cache file was created automatically by mason search";
+  fileWriter.write(contents);
+  fileWriter.close();
+}
+
 /* Returns a map of packages found in cache along with their scores */
 proc getPackageScores(res: list(string)) {
   use Map;
   const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
   var cacheExists: bool = false;
   if isFile(pathToReg) then cacheExists = true;
+  if !cacheExists then touch(pathToReg);
   const parse = open(pathToReg, iomode.r);
   const cacheFile = owned.create(parseToml(parse));
   var packageScores: map(string, int);

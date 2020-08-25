@@ -1,7 +1,7 @@
 MASON_HOME: $PWD/tempHome *
-MASON_REGISTRY: myRegistry|$PWD/tempHome/uncached/myRegistry *
+MASON_REGISTRY: mason-registry|$PWD/tempHome/uncached/mason-registry *
 MASON_OFFLINE: false
 SPACK_ROOT: $PWD/mason_home/spack *
-Updating myRegistry
-multiple (0.2.0)
+Updating mason-registry
 simple (0.1.0)
+multiple (0.2.0)

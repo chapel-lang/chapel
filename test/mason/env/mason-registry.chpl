@@ -73,8 +73,8 @@ proc main() {
 
   const tempHome = here.cwd() + "/tempHome";
   const uncached = "/uncached";
-  const altRegistry = tempHome + uncached + "/myRegistry";
-  const altRegistryName = "myRegistry";
+  const altRegistry = tempHome + uncached + "/mason-registry";
+  const altRegistryName = "mason-registry";
 
   mkdir(tempHome + uncached, parents=true);
 
