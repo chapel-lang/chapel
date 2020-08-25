@@ -1218,10 +1218,8 @@ module UnrolledLinkedList {
     if a.size != b.size then
       return false;
 
-    // TODO: Optimization here. This is O(N^3)
-    for i in 0..#(a.size) do
-      if a[i] != b[i] then
-        return false;
+    for (x, y) in zip(a, b) do
+      if x != y then return false;
 
     return true;
   }
