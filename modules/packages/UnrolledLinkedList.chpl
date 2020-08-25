@@ -87,11 +87,6 @@ module UnrolledLinkedList {
     var data: [0..#capacity] eltType;
     var next: unmanaged _linkedNode(eltType)? = nil;
 
-    proc deinit() {
-      if next != nil then
-        delete next;
-    }
-
     proc append(in x: eltType) lifetime this < x {
       _sanity(size != capacity);
       data[size] = x;
@@ -130,10 +125,22 @@ module UnrolledLinkedList {
     pragma "no doc"
     var _tail: unmanaged _linkedNode(eltType)? = nil;
 
+    /*
+      Delete all nodes in the list
+    */
+    pragma "no doc"
+    proc _destroy() {
+      var cur = _head;
+      while cur != nil {
+        var next = cur!.next;
+        delete cur;
+        cur = next;
+      }
+    }
+
     pragma "no doc"
     proc deinit() {
-      if _head != nil then
-        delete _head;
+      _destroy();
     }
 
     /*
@@ -941,7 +948,7 @@ module UnrolledLinkedList {
       on this {
         _enter();
 
-        delete _head;
+        _destroy();
         _head = nil;
         _tail = nil;
         _size = 0;
