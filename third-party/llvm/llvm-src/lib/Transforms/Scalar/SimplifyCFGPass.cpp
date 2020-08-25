@@ -27,7 +27,6 @@
 #include "llvm/Analysis/CFG.h"
 #include "llvm/Analysis/GlobalsModRef.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Constants.h"
@@ -35,10 +34,12 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/SimplifyCFG.h"
+#include "llvm/Transforms/Utils/Local.h"
 #include <utility>
 using namespace llvm;
 
@@ -102,6 +103,21 @@ static bool mergeEmptyReturnBlocks(Function &F) {
       RetBlock = &BB;
       continue;
     }
+
+    // Skip merging if this would result in a CallBr instruction with a
+    // duplicate destination. FIXME: See note in CodeGenPrepare.cpp.
+    bool SkipCallBr = false;
+    for (pred_iterator PI = pred_begin(&BB), E = pred_end(&BB);
+         PI != E && !SkipCallBr; ++PI) {
+      if (auto *CBI = dyn_cast<CallBrInst>((*PI)->getTerminator()))
+        for (unsigned i = 0, e = CBI->getNumSuccessors(); i != e; ++i)
+          if (RetBlock == CBI->getSuccessor(i)) {
+            SkipCallBr = true;
+            break;
+          }
+    }
+    if (SkipCallBr)
+      continue;
 
     // Otherwise, we found a duplicate return block.  Merge the two.
     Changed = true;

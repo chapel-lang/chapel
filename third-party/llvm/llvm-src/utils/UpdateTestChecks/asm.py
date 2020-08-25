@@ -53,9 +53,16 @@ ASM_FUNCTION_MIPS_RE = re.compile(
     r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n[^:]*?' # f: (name of func)
     r'(?:^[ \t]+\.(frame|f?mask|set).*?\n)+'  # Mips+LLVM standard asm prologue
     r'(?P<body>.*?)\n'                        # (body of the function)
-    r'(?:^[ \t]+\.(set|end).*?\n)+'           # Mips+LLVM standard asm epilogue
+    # Mips+LLVM standard asm epilogue
+    r'(?:(^[ \t]+\.set[^\n]*?\n)*^[ \t]+\.end.*?\n)'
     r'(\$|\.L)func_end[0-9]+:\n',             # $func_end0: (mips32 - O32) or
                                               # .Lfunc_end0: (mips64 - NewABI)
+    flags=(re.M | re.S))
+
+ASM_FUNCTION_MSP430_RE = re.compile(
+    r'^_?(?P<func>[^:]+):[ \t]*;+[ \t]*@(?P=func)\n[^:]*?'
+    r'(?P<body>.*?)\n'
+    r'(\$|\.L)func_end[0-9]+:\n',             # $func_end0:
     flags=(re.M | re.S))
 
 ASM_FUNCTION_PPC_RE = re.compile(
@@ -130,7 +137,7 @@ ASM_FUNCTION_ARM_IOS_RE = re.compile(
 ASM_FUNCTION_WASM32_RE = re.compile(
     r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n'
     r'(?P<body>.*?)\n'
-    r'.Lfunc_end[0-9]+:\n',
+    r'^\s*(\.Lfunc_end[0-9]+:\n|end_function)',
     flags=(re.M | re.S))
 
 
@@ -231,6 +238,16 @@ def scrub_asm_mips(asm, args):
   asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
   return asm
 
+def scrub_asm_msp430(asm, args):
+  # Scrub runs of whitespace out of the assembly, but leave the leading
+  # whitespace in place.
+  asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
+  # Expand the tabs used for indentation.
+  asm = string.expandtabs(asm, 2)
+  # Strip trailing whitespace.
+  asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
+  return asm
+
 def scrub_asm_riscv(asm, args):
   # Scrub runs of whitespace out of the assembly, but leave the leading
   # whitespace in place.
@@ -315,6 +332,7 @@ def build_function_body_dictionary_for_triple(args, raw_tool_output, triple, pre
       'thumbv5-macho': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_MACHO_RE),
       'thumbv7-apple-ios' : (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_IOS_RE),
       'mips': (scrub_asm_mips, ASM_FUNCTION_MIPS_RE),
+      'msp430': (scrub_asm_msp430, ASM_FUNCTION_MSP430_RE),
       'ppc32': (scrub_asm_powerpc, ASM_FUNCTION_PPC_RE),
       'powerpc': (scrub_asm_powerpc, ASM_FUNCTION_PPC_RE),
       'riscv32': (scrub_asm_riscv, ASM_FUNCTION_RISCV_RE),
@@ -337,11 +355,11 @@ def build_function_body_dictionary_for_triple(args, raw_tool_output, triple, pre
   scrubber, function_re = handler
   common.build_function_body_dictionary(
           function_re, scrubber, [args], raw_tool_output, prefixes,
-          func_dict, args.verbose)
+          func_dict, args.verbose, False)
 
 ##### Generator of assembly CHECK lines
 
 def add_asm_checks(output_lines, comment_marker, prefix_list, func_dict, func_name):
   # Label format is based on ASM string.
-  check_label_format = '{} %s-LABEL: %s:'.format(comment_marker)
+  check_label_format = '{} %s-LABEL: %s%s:'.format(comment_marker)
   common.add_checks(output_lines, comment_marker, prefix_list, func_dict, func_name, check_label_format, True, False)

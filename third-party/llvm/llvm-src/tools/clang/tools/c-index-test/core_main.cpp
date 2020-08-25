@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "clang/AST/Mangle.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/CodeGen/ObjectFilePCHContainerOperations.h"
 #include "clang/Frontend/ASTUnit.h"
@@ -15,7 +16,6 @@
 #include "clang/Index/IndexingAction.h"
 #include "clang/Index/IndexDataConsumer.h"
 #include "clang/Index/USRGeneration.h"
-#include "clang/Index/CodegenNameGenerator.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Serialization/ASTReader.h"
 #include "llvm/Support/CommandLine.h"
@@ -79,7 +79,7 @@ namespace {
 
 class PrintIndexDataConsumer : public IndexDataConsumer {
   raw_ostream &OS;
-  std::unique_ptr<CodegenNameGenerator> CGNameGen;
+  std::unique_ptr<ASTNameGenerator> ASTNameGen;
   std::shared_ptr<Preprocessor> PP;
 
 public:
@@ -87,16 +87,16 @@ public:
   }
 
   void initialize(ASTContext &Ctx) override {
-    CGNameGen.reset(new CodegenNameGenerator(Ctx));
+    ASTNameGen.reset(new ASTNameGenerator(Ctx));
   }
 
   void setPreprocessor(std::shared_ptr<Preprocessor> PP) override {
     this->PP = std::move(PP);
   }
 
-  bool handleDeclOccurence(const Decl *D, SymbolRoleSet Roles,
-                           ArrayRef<SymbolRelation> Relations,
-                           SourceLocation Loc, ASTNodeInfo ASTNode) override {
+  bool handleDeclOccurrence(const Decl *D, SymbolRoleSet Roles,
+                            ArrayRef<SymbolRelation> Relations,
+                            SourceLocation Loc, ASTNodeInfo ASTNode) override {
     ASTContext &Ctx = D->getASTContext();
     SourceManager &SM = Ctx.getSourceManager();
 
@@ -112,7 +112,7 @@ public:
     printSymbolNameAndUSR(D, Ctx, OS);
     OS << " | ";
 
-    if (CGNameGen->writeName(D, OS))
+    if (ASTNameGen->writeName(D, OS))
       OS << "<no-cgname>";
     OS << " | ";
 
@@ -132,9 +132,9 @@ public:
     return true;
   }
 
-  bool handleModuleOccurence(const ImportDecl *ImportD,
-                             const clang::Module *Mod,
-                             SymbolRoleSet Roles, SourceLocation Loc) override {
+  bool handleModuleOccurrence(const ImportDecl *ImportD,
+                              const clang::Module *Mod, SymbolRoleSet Roles,
+                              SourceLocation Loc) override {
     ASTContext &Ctx = ImportD->getASTContext();
     SourceManager &SM = Ctx.getSourceManager();
 
@@ -156,8 +156,8 @@ public:
     return true;
   }
 
-  bool handleMacroOccurence(const IdentifierInfo *Name, const MacroInfo *MI,
-                            SymbolRoleSet Roles, SourceLocation Loc) override {
+  bool handleMacroOccurrence(const IdentifierInfo *Name, const MacroInfo *MI,
+                             SymbolRoleSet Roles, SourceLocation Loc) override {
     assert(PP);
     SourceManager &SM = PP->getSourceManager();
 
@@ -221,9 +221,8 @@ static bool printSourceSymbols(const char *Executable,
   auto DataConsumer = std::make_shared<PrintIndexDataConsumer>(OS);
   IndexingOptions IndexOpts;
   IndexOpts.IndexFunctionLocals = indexLocals;
-  std::unique_ptr<FrontendAction> IndexAction;
-  IndexAction = createIndexingAction(DataConsumer, IndexOpts,
-                                     /*WrappedAction=*/nullptr);
+  std::unique_ptr<FrontendAction> IndexAction =
+      createIndexingAction(DataConsumer, IndexOpts);
 
   auto PCHContainerOps = std::make_shared<PCHContainerOperations>();
   std::unique_ptr<ASTUnit> Unit(ASTUnit::LoadFromCompilerInvocationAction(
@@ -251,7 +250,7 @@ static bool printSourceSymbolsFromModule(StringRef modulePath,
   FileSystemOptions FileSystemOpts;
   auto pchContOps = std::make_shared<PCHContainerOperations>();
   // Register the support for object-file-wrapped Clang modules.
-  pchContOps->registerReader(llvm::make_unique<ObjectFilePCHContainerReader>());
+  pchContOps->registerReader(std::make_unique<ObjectFilePCHContainerReader>());
   auto pchRdr = pchContOps->getReaderOrNull(format);
   if (!pchRdr) {
     errs() << "unknown module format: " << format << '\n';

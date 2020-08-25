@@ -32,13 +32,6 @@ TEST(HasNameDeathTest, DiesOnEmptyPattern) {
       EXPECT_TRUE(notMatches("class X {};", HasEmptyName));
     }, "");
 }
-
-TEST(IsDerivedFromDeathTest, DiesOnEmptyBaseName) {
-  ASSERT_DEBUG_DEATH({
-    DeclarationMatcher IsDerivedFromEmpty = cxxRecordDecl(isDerivedFrom(""));
-    EXPECT_TRUE(notMatches("class X {};", IsDerivedFromEmpty));
-  }, "");
-}
 #endif
 
 TEST(ConstructVariadic, MismatchedTypes_Regression) {
@@ -62,13 +55,13 @@ TEST(AstMatcherPMacro, Works) {
   DeclarationMatcher HasClassB = just(has(recordDecl(hasName("B")).bind("b")));
 
   EXPECT_TRUE(matchAndVerifyResultTrue("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class C {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 }
 
 AST_POLYMORPHIC_MATCHER_P(polymorphicHas,
@@ -85,13 +78,13 @@ TEST(AstPolymorphicMatcherPMacro, Works) {
       polymorphicHas(recordDecl(hasName("B")).bind("b"));
 
   EXPECT_TRUE(matchAndVerifyResultTrue("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class B {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("a")));
 
   EXPECT_TRUE(matchAndVerifyResultFalse("class A { class C {}; };",
-      HasClassB, llvm::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
+      HasClassB, std::make_unique<VerifyIdIsBoundTo<Decl>>("b")));
 
   StatementMatcher StatementHasClassB =
       polymorphicHas(recordDecl(hasName("B")));

@@ -40,6 +40,7 @@ do_openmp="yes"
 do_lld="yes"
 do_lldb="no"
 do_polly="yes"
+do_mlir="yes"
 BuildDir="`pwd`"
 ExtraConfigureFlags=""
 ExportBranch=""
@@ -72,6 +73,7 @@ function usage() {
     echo " -lldb                Enable check-out & build lldb"
     echo " -no-lldb             Disable check-out & build lldb (default)"
     echo " -no-polly            Disable check-out & build Polly"
+    echo " -no-mlir             Disable check-out & build MLIR"
 }
 
 while [ $# -gt 0 ]; do
@@ -167,6 +169,9 @@ while [ $# -gt 0 ]; do
         -no-polly )
             do_polly="no"
             ;;
+        -no-mlir )
+            do_mlir="no"
+            ;;
         -help | --help | -h | --h | -\? )
             usage
             exit 0
@@ -253,6 +258,9 @@ fi
 if [ $do_polly = "yes" ]; then
   projects="$projects polly"
 fi
+if [ $do_mlir = "yes" ]; then
+  projects="$projects mlir"
+fi
 
 # Go to the build directory (may be different from CWD)
 BuildDir=$BuildDir/$RC
@@ -289,8 +297,11 @@ function check_program_exists() {
   fi
 }
 
-if [ "$System" != "Darwin" ]; then
+if [ "$System" != "Darwin" -a "$System" != "SunOS" ]; then
   check_program_exists 'chrpath'
+fi
+
+if [ "$System" != "Darwin" ]; then
   check_program_exists 'file'
   check_program_exists 'objdump'
 fi
@@ -436,7 +447,7 @@ function test_llvmCore() {
 # Clean RPATH. Libtool adds the build directory to the search path, which is
 # not necessary --- and even harmful --- for the binary packages we release.
 function clean_RPATH() {
-  if [ "$System" = "Darwin" ]; then
+  if [ "$System" = "Darwin" -o "$System" = "SunOS" ]; then
     return
   fi
   local InstallPath="$1"

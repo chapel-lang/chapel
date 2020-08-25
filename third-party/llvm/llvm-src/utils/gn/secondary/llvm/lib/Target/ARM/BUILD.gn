@@ -57,6 +57,8 @@ static_library("LLVMARMCodeGen") {
     "//llvm/lib/MC",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
+    "//llvm/lib/Transforms/CFGuard",
+    "//llvm/lib/Transforms/Utils",
   ]
   include_dirs = [ "." ]
   sources = [
@@ -67,7 +69,6 @@ static_library("LLVMARMCodeGen") {
     "ARMBasicBlockInfo.cpp",
     "ARMCallLowering.cpp",
     "ARMCallingConv.cpp",
-    "ARMCodeGenPrepare.cpp",
     "ARMConstantIslandPass.cpp",
     "ARMConstantPoolValue.cpp",
     "ARMExpandPseudoInsts.cpp",
@@ -94,6 +95,9 @@ static_library("LLVMARMCodeGen") {
     "ARMTargetObjectFile.cpp",
     "ARMTargetTransformInfo.cpp",
     "MLxExpansionPass.cpp",
+    "MVEGatherScatterLowering.cpp",
+    "MVETailPredication.cpp",
+    "MVEVPTBlockPass.cpp",
     "Thumb1FrameLowering.cpp",
     "Thumb1InstrInfo.cpp",
     "Thumb2ITBlockPass.cpp",

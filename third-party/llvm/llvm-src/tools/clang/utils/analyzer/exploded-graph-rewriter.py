@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import sys
 
 
 #===-----------------------------------------------------------------------===#
@@ -67,12 +68,17 @@ class ProgramPoint(object):
         super(ProgramPoint, self).__init__()
         self.kind = json_pp['kind']
         self.tag = json_pp['tag']
+        self.node_id = json_pp['node_id']
+        self.is_sink = bool(json_pp['is_sink'])
+        self.has_report = bool(json_pp['has_report'])
         if self.kind == 'Edge':
             self.src_id = json_pp['src_id']
             self.dst_id = json_pp['dst_id']
         elif self.kind == 'Statement':
             logging.debug(json_pp)
             self.stmt_kind = json_pp['stmt_kind']
+            self.cast_kind = json_pp['cast_kind'] \
+                if 'cast_kind' in json_pp else None
             self.stmt_point_kind = json_pp['stmt_point_kind']
             self.stmt_id = json_pp['stmt_id']
             self.pointer = json_pp['pointer']
@@ -268,6 +274,16 @@ class ProgramState(object):
         super(ProgramState, self).__init__()
         logging.debug('Adding ProgramState ' + str(state_id))
 
+        if json_ps is None:
+            json_ps = {
+                'store': None,
+                'environment': None,
+                'constraints': None,
+                'dynamic_types': None,
+                'constructing_objects': None,
+                'checker_messages': None
+            }
+
         self.state_id = state_id
 
         self.store = Store(json_ps['store']) \
@@ -307,14 +323,12 @@ class ExplodedNode(object):
 
     def construct(self, node_id, json_node):
         logging.debug('Adding ' + node_id)
-        self.node_id = json_node['node_id']
-        self.ptr = json_node['pointer']
-        self.has_report = json_node['has_report']
-        self.is_sink = json_node['is_sink']
+        self.ptr = node_id[4:]
         self.points = [ProgramPoint(p) for p in json_node['program_points']]
+        self.node_id = self.points[-1].node_id
         self.state = ProgramState(json_node['state_id'],
-                                  json_node['program_state']) \
-            if json_node['program_state'] is not None else None
+                                  json_node['program_state']
+            if json_node['program_state'] is not None else None);
 
         assert self.node_name() == node_id
 
@@ -394,16 +408,28 @@ class ExplodedGraph(object):
 # A visitor that dumps the ExplodedGraph into a DOT file with fancy HTML-based
 # syntax highlighing.
 class DotDumpVisitor(object):
-    def __init__(self, do_diffs, dark_mode, gray_mode, topo_mode):
+    def __init__(self, do_diffs, dark_mode, gray_mode,
+                 topo_mode, dump_dot_only):
         super(DotDumpVisitor, self).__init__()
         self._do_diffs = do_diffs
         self._dark_mode = dark_mode
         self._gray_mode = gray_mode
         self._topo_mode = topo_mode
+        self._dump_dot_only = dump_dot_only
+        self._output = []
 
-    @staticmethod
-    def _dump_raw(s):
-        print(s, end='')
+    def _dump_raw(self, s):
+        if self._dump_dot_only:
+            print(s, end='')
+        else:
+            self._output.append(s)
+
+    def output(self):
+        assert not self._dump_dot_only
+        if sys.version_info[0] > 2 and sys.version_info[1] >= 5:
+            return ''.join(self._output).encode()
+        else:
+            return ''.join(self._output)
 
     def _dump(self, s):
         s = s.replace('&', '&amp;') \
@@ -477,45 +503,60 @@ class DotDumpVisitor(object):
         else:
             color = 'forestgreen'
 
+        self._dump('<tr><td align="left">%s.</td>' % p.node_id)
+
         if p.kind == 'Statement':
             # This avoids pretty-printing huge statements such as CompoundStmt.
             # Such statements show up only at [Pre|Post]StmtPurgeDeadSymbols
             skip_pretty = 'PurgeDeadSymbols' in p.stmt_point_kind
             stmt_color = 'cyan3'
-            self._dump('<tr><td align="left" width="0">%s:</td>'
+            self._dump('<td align="left" width="0">%s:</td>'
                        '<td align="left" width="0"><font color="%s">'
                        '%s</font> </td>'
                        '<td align="left"><i>S%s</i></td>'
                        '<td align="left"><font color="%s">%s</font></td>'
                        '<td align="left">%s</td></tr>'
-                       % (self._make_sloc(p.loc), color, p.stmt_kind,
+                       % (self._make_sloc(p.loc), color,
+                          '%s (%s)' % (p.stmt_kind, p.cast_kind)
+                          if p.cast_kind is not None else p.stmt_kind,
                           p.stmt_id, stmt_color, p.stmt_point_kind,
                           self._short_pretty(p.pretty)
                           if not skip_pretty else ''))
         elif p.kind == 'Edge':
-            self._dump('<tr><td width="0"></td>'
+            self._dump('<td width="0"></td>'
                        '<td align="left" width="0">'
                        '<font color="%s">%s</font></td><td align="left">'
                        '[B%d] -\\> [B%d]</td></tr>'
                        % (color, 'BlockEdge', p.src_id, p.dst_id))
         elif p.kind == 'BlockEntrance':
-            self._dump('<tr><td width="0"></td>'
+            self._dump('<td width="0"></td>'
                        '<td align="left" width="0">'
                        '<font color="%s">%s</font></td>'
                        '<td align="left">[B%d]</td></tr>'
                        % (color, p.kind, p.block_id))
         else:
             # TODO: Print more stuff for other kinds of points.
-            self._dump('<tr><td width="0"></td>'
+            self._dump('<td width="0"></td>'
                        '<td align="left" width="0" colspan="2">'
                        '<font color="%s">%s</font></td></tr>'
                        % (color, p.kind))
 
         if p.tag is not None:
-            self._dump('<tr><td width="0"></td>'
+            self._dump('<tr><td width="0"></td><td width="0"></td>'
                        '<td colspan="3" align="left">'
                        '<b>Tag: </b> <font color="crimson">'
                        '%s</font></td></tr>' % p.tag)
+
+        if p.has_report:
+            self._dump('<tr><td width="0"></td><td width="0"></td>'
+                       '<td colspan="3" align="left">'
+                       '<font color="red"><b>Bug Report Attached'
+                       '</b></font></td></tr>')
+        if p.is_sink:
+            self._dump('<tr><td width="0"></td><td width="0"></td>'
+                       '<td colspan="3" align="left">'
+                       '<font color="cornflowerblue"><b>Sink Node'
+                       '</b></font></td></tr>')
 
     def visit_environment(self, e, prev_e=None):
         self._dump('<table border="0">')
@@ -635,6 +676,10 @@ class DotDumpVisitor(object):
         if st is None:
             self._dump('<i> Nothing!</i>')
         else:
+            if self._dark_mode:
+                self._dump(' <font color="gray30">(%s)</font>' % st.ptr)
+            else:
+                self._dump(' <font color="gray">(%s)</font>' % st.ptr)
             if prev_st is not None:
                 if s.store.is_different(prev_st):
                     self._dump('</td></tr><tr><td align="left">')
@@ -751,7 +796,7 @@ class DotDumpVisitor(object):
 
     def visit_state(self, s, prev_s):
         self.visit_store_in_state(s, prev_s)
-        self.visit_environment_in_state('environment', 'Environment',
+        self.visit_environment_in_state('environment', 'Expressions',
                                         s, prev_s)
         self.visit_generic_map_in_state('constraints', 'Ranges',
                                         s, prev_s)
@@ -769,17 +814,10 @@ class DotDumpVisitor(object):
             self._dump('color="white",fontcolor="gray80",')
         self._dump('label=<<table border="0">')
 
-        self._dump('<tr><td bgcolor="%s"><b>Node %d (%s) - '
-                   'State %s</b></td></tr>'
-                   % ("gray20" if self._dark_mode else "gray",
-                      node.node_id, node.ptr, node.state.state_id
+        self._dump('<tr><td bgcolor="%s"><b>State %s</b></td></tr>'
+                   % ("gray20" if self._dark_mode else "gray70",
+                      node.state.state_id
                       if node.state is not None else 'Unspecified'))
-        if node.has_report:
-            self._dump('<tr><td><font color="red"><b>Bug Report Attached'
-                       '</b></font></td></tr>')
-        if node.is_sink:
-            self._dump('<tr><td><font color="cornflowerblue"><b>Sink Node'
-                       '</b></font></td></tr>')
         if not self._topo_mode:
             self._dump('<tr><td align="left" width="0">')
             if len(node.points) > 1:
@@ -812,6 +850,44 @@ class DotDumpVisitor(object):
     def visit_end_of_graph(self):
         self._dump_raw('}\n')
 
+        if not self._dump_dot_only:
+            import sys
+            import tempfile
+
+            def write_temp_file(suffix, data):
+                fd, filename = tempfile.mkstemp(suffix=suffix)
+                print('Writing "%s"...' % filename)
+                with os.fdopen(fd, 'w') as fp:
+                    fp.write(data)
+                print('Done! Please remember to remove the file.')
+                return filename
+
+            try:
+                import graphviz
+            except ImportError:
+                # The fallback behavior if graphviz is not installed!
+                print('Python graphviz not found. Please invoke')
+                print('  $ pip install graphviz')
+                print('in order to enable automatic conversion to HTML.')
+                print()
+                print('You may also convert DOT to SVG manually via')
+                print('  $ dot -Tsvg input.dot -o output.svg')
+                print()
+                write_temp_file('.dot', self.output())
+                return
+
+            svg = graphviz.pipe('dot', 'svg', self.output())
+
+            filename = write_temp_file(
+                '.html', '<html><body bgcolor="%s">%s</body></html>' % (
+                             '#1a1a1a' if self._dark_mode else 'white', svg))
+            if sys.platform == 'win32':
+                os.startfile(filename)
+            elif sys.platform == 'darwin':
+                os.system('open "%s"' % filename)
+            else:
+                os.system('xdg-open "%s"' % filename)
+
 
 #===-----------------------------------------------------------------------===#
 # Explorers know how to traverse the ExplodedGraph in a certain order.
@@ -835,37 +911,82 @@ class BasicExplorer(object):
         visitor.visit_end_of_graph()
 
 
-# SinglePathExplorer traverses only a single path - the leftmost path
-# from the root. Useful when the trimmed graph is still too large
-# due to a large amount of equivalent reports.
-class SinglePathExplorer(object):
+#===-----------------------------------------------------------------------===#
+# Trimmers cut out parts of the ExplodedGraph so that to focus on other parts.
+# Trimmers can be combined together by applying them sequentially.
+#===-----------------------------------------------------------------------===#
+
+
+# SinglePathTrimmer keeps only a single path - the leftmost path from the root.
+# Useful when the trimmed graph is still too large.
+class SinglePathTrimmer(object):
     def __init__(self):
-        super(SinglePathExplorer, self).__init__()
+        super(SinglePathTrimmer, self).__init__()
 
-    def explore(self, graph, visitor):
-        visitor.visit_begin_graph(graph)
-
-        # Keep track of visited nodes in order to avoid loops.
-        visited = set()
+    def trim(self, graph):
+        visited_nodes = set()
         node_id = graph.root_id
         while True:
-            visited.add(node_id)
+            visited_nodes.add(node_id)
             node = graph.nodes[node_id]
-            logging.debug('Visiting ' + node_id)
-            visitor.visit_node(node)
-            if len(node.successors) == 0:
+            if len(node.successors) > 0:
+                succ_id = node.successors[0]
+                succ = graph.nodes[succ_id]
+                node.successors = [succ_id]
+                succ.predecessors = [node_id]
+                if succ_id in visited_nodes:
+                    break
+                node_id = succ_id
+            else:
                 break
+        graph.nodes = {node_id: graph.nodes[node_id]
+                       for node_id in visited_nodes}
 
-            succ_id = node.successors[0]
-            succ = graph.nodes[succ_id]
-            logging.debug('Visiting edge: %s -> %s ' % (node_id, succ_id))
-            visitor.visit_edge(node, succ)
-            if succ_id in visited:
-                break
 
-            node_id = succ_id
+# TargetedTrimmer keeps paths that lead to specific nodes and discards all
+# other paths. Useful when you cannot use -trim-egraph (e.g. when debugging
+# a crash).
+class TargetedTrimmer(object):
+    def __init__(self, target_nodes):
+        super(TargetedTrimmer, self).__init__()
+        self._target_nodes = target_nodes
 
-        visitor.visit_end_of_graph()
+    @staticmethod
+    def parse_target_node(node, graph):
+        if node.startswith('0x'):
+            ret = 'Node' + node
+            assert ret in graph.nodes
+            return ret
+        else:
+            for other_id in graph.nodes:
+                other = graph.nodes[other_id]
+                if other.node_id == int(node):
+                    return other_id
+
+    @staticmethod
+    def parse_target_nodes(target_nodes, graph):
+        return [TargetedTrimmer.parse_target_node(node, graph)
+                for node in target_nodes.split(',')]
+
+    def trim(self, graph):
+        queue = self._target_nodes
+        visited_nodes = set()
+
+        while len(queue) > 0:
+            node_id = queue.pop()
+            visited_nodes.add(node_id)
+            node = graph.nodes[node_id]
+            for pred_id in node.predecessors:
+                if pred_id not in visited_nodes:
+                    queue.append(pred_id)
+        graph.nodes = {node_id: graph.nodes[node_id]
+                       for node_id in visited_nodes}
+        for node_id in graph.nodes:
+            node = graph.nodes[node_id]
+            node.successors = [succ_id for succ_id in node.successors
+                               if succ_id in visited_nodes]
+            node.predecessors = [succ_id for succ_id in node.predecessors
+                                 if succ_id in visited_nodes]
 
 
 #===-----------------------------------------------------------------------===#
@@ -874,8 +995,10 @@ class SinglePathExplorer(object):
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('filename', type=str)
+    parser = argparse.ArgumentParser(
+        description='Display and manipulate Exploded Graph dumps.')
+    parser.add_argument('filename', type=str,
+                        help='the .dot file produced by the Static Analyzer')
     parser.add_argument('-v', '--verbose', action='store_const',
                         dest='loglevel', const=logging.DEBUG,
                         default=logging.WARNING,
@@ -891,12 +1014,22 @@ def main():
                         help='only display the leftmost path in the graph '
                              '(useful for trimmed graphs that still '
                              'branch too much)')
+    parser.add_argument('--to', type=str, default=None,
+                        help='only display execution paths from the root '
+                             'to the given comma-separated list of nodes '
+                             'identified by a pointer or a stable ID; '
+                             'compatible with --single-path')
     parser.add_argument('--dark', action='store_const', dest='dark',
                         const=True, default=False,
                         help='dark mode')
     parser.add_argument('--gray', action='store_const', dest='gray',
                         const=True, default=False,
                         help='black-and-white mode')
+    parser.add_argument('--dump-dot-only', action='store_const',
+                        dest='dump_dot_only', const=True, default=False,
+                        help='instead of writing an HTML file and immediately '
+                             'displaying it, dump the rewritten dot file '
+                             'to stdout')
     args = parser.parse_args()
     logging.basicConfig(level=args.loglevel)
 
@@ -906,8 +1039,20 @@ def main():
             raw_line = raw_line.strip()
             graph.add_raw_line(raw_line)
 
-    explorer = SinglePathExplorer() if args.single_path else BasicExplorer()
-    visitor = DotDumpVisitor(args.diff, args.dark, args.gray, args.topology)
+    trimmers = []
+    if args.to is not None:
+        trimmers.append(TargetedTrimmer(
+            TargetedTrimmer.parse_target_nodes(args.to, graph)))
+    if args.single_path:
+        trimmers.append(SinglePathTrimmer())
+
+    explorer = BasicExplorer()
+
+    visitor = DotDumpVisitor(args.diff, args.dark, args.gray, args.topology,
+                             args.dump_dot_only)
+
+    for trimmer in trimmers:
+        trimmer.trim(graph)
 
     explorer.explore(graph, visitor)
 

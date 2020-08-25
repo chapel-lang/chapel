@@ -17,8 +17,9 @@ function(clang_tablegen)
     message(FATAL_ERROR "SOURCE source-file required by clang_tablegen")
   endif()
 
+  set( CLANG_TABLEGEN_ARGUMENTS -I ${CLANG_SOURCE_DIR}/include )
   set( LLVM_TARGET_DEFINITIONS ${CTG_SOURCE} )
-  tablegen(CLANG ${CTG_UNPARSED_ARGUMENTS})
+  tablegen(CLANG ${CTG_UNPARSED_ARGUMENTS} ${CLANG_TABLEGEN_ARGUMENTS})
 
   if(CTG_TARGET)
     add_public_tablegen_target(${CTG_TARGET})
@@ -86,9 +87,13 @@ macro(add_clang_library name)
     # llvm_add_library ignores BUILD_SHARED_LIBS if STATIC is explicitly set,
     # so we need to handle it here.
     if(BUILD_SHARED_LIBS)
-      set(LIBTYPE SHARED OBJECT)
+      set(LIBTYPE SHARED)
     else()
-      set(LIBTYPE STATIC OBJECT)
+      set(LIBTYPE STATIC)
+    endif()
+    if(NOT XCODE)
+      # The Xcode generator doesn't handle object libraries correctly.
+      list(APPEND LIBTYPE OBJECT)
     endif()
     set_property(GLOBAL APPEND PROPERTY CLANG_STATIC_LIBS ${name})
   endif()

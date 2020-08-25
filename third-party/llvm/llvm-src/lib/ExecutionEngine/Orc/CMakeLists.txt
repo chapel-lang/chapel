@@ -1,7 +1,8 @@
-add_llvm_library(LLVMOrcJIT
+add_llvm_component_library(LLVMOrcJIT
   CompileOnDemandLayer.cpp
   CompileUtils.cpp
   Core.cpp
+  DebugUtils.cpp
   ExecutionUtils.cpp
   IndirectionUtils.cpp
   IRCompileLayer.cpp
@@ -16,12 +17,11 @@ add_llvm_library(LLVMOrcJIT
   ObjectTransformLayer.cpp
   OrcABISupport.cpp
   OrcCBindings.cpp
-  OrcError.cpp
   OrcMCJITReplacement.cpp
-  RPCUtils.cpp
   RTDyldObjectLinkingLayer.cpp
   ThreadSafeModule.cpp
-
+  Speculation.cpp
+  SpeculateAnalyses.cpp
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/ExecutionEngine/Orc
 
@@ -31,6 +31,7 @@ add_llvm_library(LLVMOrcJIT
 
 target_link_libraries(LLVMOrcJIT
   PRIVATE
+  LLVMAnalysis
   LLVMBitReader
   LLVMBitWriter
   LLVMPasses

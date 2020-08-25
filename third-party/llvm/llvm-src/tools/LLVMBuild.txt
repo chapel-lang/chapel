@@ -32,6 +32,7 @@ subdirectories =
  llvm-dwarfdump
  llvm-dwp
  llvm-elfabi
+ llvm-ifs
  llvm-exegesis
  llvm-extract
  llvm-jitlistener
@@ -48,6 +49,7 @@ subdirectories =
  llvm-pdbutil
  llvm-profdata
  llvm-rc
+ llvm-reduce
  llvm-rtdyld
  llvm-size
  llvm-split

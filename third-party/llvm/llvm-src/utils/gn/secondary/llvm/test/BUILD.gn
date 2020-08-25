@@ -69,6 +69,7 @@ write_lit_config("lit_site_cfg") {
 
     # No bindings are implemented in the GN build.
     "LLVM_BINDINGS=",
+    "LLVM_BYE_LINK_INTO_TOOLS=0",
 
     "GO_EXECUTABLE=",
     "LLVM_INCLUDE_GO_TESTS=0",
@@ -215,6 +216,7 @@ group("test") {
     "//llvm/tools/llvm-elfabi",
     "//llvm/tools/llvm-exegesis",
     "//llvm/tools/llvm-extract",
+    "//llvm/tools/llvm-ifs",
     "//llvm/tools/llvm-isel-fuzzer",
     "//llvm/tools/llvm-jitlink",
     "//llvm/tools/llvm-link",
@@ -234,6 +236,7 @@ group("test") {
     "//llvm/tools/llvm-profdata",
     "//llvm/tools/llvm-rc",
     "//llvm/tools/llvm-readobj:symlinks",
+    "//llvm/tools/llvm-reduce",
     "//llvm/tools/llvm-rtdyld",
     "//llvm/tools/llvm-size",
     "//llvm/tools/llvm-split",

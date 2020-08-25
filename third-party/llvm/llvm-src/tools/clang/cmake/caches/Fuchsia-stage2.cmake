@@ -1,6 +1,6 @@
 # This file sets up a CMakeCache for the second stage of a Fuchsia toolchain build.
 
-set(LLVM_TARGETS_TO_BUILD X86;ARM;AArch64 CACHE STRING "")
+set(LLVM_TARGETS_TO_BUILD X86;ARM;AArch64;RISCV CACHE STRING "")
 
 set(PACKAGE_VENDOR Fuchsia CACHE STRING "")
 
@@ -11,10 +11,11 @@ endif()
 set(LLVM_ENABLE_LTO ON CACHE BOOL "")
 set(LLVM_ENABLE_PER_TARGET_RUNTIME_DIR ON CACHE BOOL "")
 set(LLVM_ENABLE_TERMINFO OFF CACHE BOOL "")
+set(LLVM_ENABLE_UNWIND_TABLES OFF CACHE BOOL "")
 set(LLVM_ENABLE_ZLIB ON CACHE BOOL "")
-set(LLVM_EXTERNALIZE_DEBUGINFO ON CACHE BOOL "")
-set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "")
 set(LLVM_INCLUDE_DOCS OFF CACHE BOOL "")
+set(LLVM_INCLUDE_EXAMPLES OFF CACHE BOOL "")
+set(LLVM_INCLUDE_GO_TESTS OFF CACHE BOOL "")
 set(LLVM_USE_RELATIVE_PATHS_IN_DEBUG_INFO ON CACHE BOOL "")
 
 set(CLANG_DEFAULT_CXX_STDLIB libc++ CACHE STRING "")
@@ -23,14 +24,18 @@ if(NOT APPLE)
   set(CLANG_DEFAULT_OBJCOPY llvm-objcopy CACHE STRING "")
 endif()
 set(CLANG_DEFAULT_RTLIB compiler-rt CACHE STRING "")
+set(CLANG_ENABLE_ARCMT OFF CACHE BOOL "")
+set(CLANG_ENABLE_STATIC_ANALYZER ON CACHE BOOL "")
 set(CLANG_PLUGIN_SUPPORT OFF CACHE BOOL "")
 
+set(ENABLE_EXPERIMENTAL_NEW_PASS_MANAGER ON CACHE BOOL "")
 set(ENABLE_LINKER_BUILD_ID ON CACHE BOOL "")
 set(ENABLE_X86_RELAX_RELOCATIONS ON CACHE BOOL "")
 
-set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -gline-tables-only" CACHE STRING "")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -gline-tables-only" CACHE STRING "")
+set(CMAKE_BUILD_TYPE Release CACHE STRING "")
+if (APPLE)
+  set(MACOSX_DEPLOYMENT_TARGET 10.7 CACHE STRING "")
+endif()
 
 if(APPLE)
   list(APPEND BUILTIN_TARGETS "default")
@@ -51,6 +56,10 @@ if(APPLE)
   set(LIBCXX_ENABLE_SHARED OFF CACHE BOOL "")
   set(LIBCXX_ENABLE_STATIC_ABI_LIBRARY ON CACHE BOOL "")
   set(LIBCXX_ABI_VERSION 2 CACHE STRING "")
+  set(DARWIN_ios_ARCHS armv7;armv7s;arm64 CACHE STRING "")
+  set(DARWIN_iossim_ARCHS i386;x86_64 CACHE STRING "")
+  set(DARWIN_osx_ARCHS x86_64 CACHE STRING "")
+  set(SANITIZER_MIN_OSX_VERSION 10.7 CACHE STRING "")
 endif()
 
 foreach(target aarch64-unknown-linux-gnu;armv7-unknown-linux-gnueabihf;i386-unknown-linux-gnu;x86_64-unknown-linux-gnu)
@@ -97,13 +106,14 @@ endforeach()
 if(FUCHSIA_SDK)
   set(FUCHSIA_aarch64_NAME arm64)
   set(FUCHSIA_x86_64_NAME x64)
-  foreach(target x86_64;aarch64)
+  set(FUCHSIA_riscv64_NAME riscv64)
+  foreach(target x86_64;aarch64;riscv64)
     set(FUCHSIA_${target}_COMPILER_FLAGS "-I${FUCHSIA_SDK}/pkg/fdio/include")
     set(FUCHSIA_${target}_LINKER_FLAGS "-L${FUCHSIA_SDK}/arch/${FUCHSIA_${target}_NAME}/lib")
     set(FUCHSIA_${target}_SYSROOT "${FUCHSIA_SDK}/arch/${FUCHSIA_${target}_NAME}/sysroot")
   endforeach()
 
-  foreach(target x86_64;aarch64)
+  foreach(target x86_64;aarch64;riscv64)
     # Set the per-target builtins options.
     list(APPEND BUILTIN_TARGETS "${target}-unknown-fuchsia")
     set(BUILTINS_${target}-unknown-fuchsia_CMAKE_SYSTEM_NAME Fuchsia CACHE STRING "")
@@ -115,7 +125,9 @@ if(FUCHSIA_SDK)
     set(BUILTINS_${target}-unknown-fuchsia_CMAKE_MODULE_LINKER_FLAGS ${FUCHSIA_${target}_LINKER_FLAGS} CACHE STRING "")
     set(BUILTINS_${target}-unknown-fuchsia_CMAKE_EXE_LINKER_FLAGS ${FUCHSIA_${target}_LINKER_FLAGS} CACHE STRING "")
     set(BUILTINS_${target}-unknown-fuchsia_CMAKE_SYSROOT ${FUCHSIA_${target}_SYSROOT} CACHE PATH "")
+  endforeach()
 
+  foreach(target x86_64;aarch64)
     # Set the per-target runtimes options.
     list(APPEND RUNTIME_TARGETS "${target}-unknown-fuchsia")
     set(RUNTIMES_${target}-unknown-fuchsia_CMAKE_SYSTEM_NAME Fuchsia CACHE STRING "")
@@ -178,7 +190,6 @@ set(LLVM_RUNTIME_BUILD_ID_LINK_TARGETS "${RUNTIME_BUILD_ID_LINK}" CACHE STRING "
 set(LLVM_INSTALL_TOOLCHAIN_ONLY ON CACHE BOOL "")
 set(LLVM_TOOLCHAIN_TOOLS
   dsymutil
-  llc
   llvm-ar
   llvm-cov
   llvm-cxxfilt
@@ -196,7 +207,6 @@ set(LLVM_TOOLCHAIN_TOOLS
   llvm-strip
   llvm-symbolizer
   llvm-xray
-  opt
   sancov
   CACHE STRING "")
 
@@ -210,6 +220,7 @@ set(LLVM_DISTRIBUTION_COMPONENTS
   clang-resource-headers
   clang-include-fixer
   clang-refactor
+  clang-scan-deps
   clang-tidy
   clangd
   builtins

@@ -41,8 +41,8 @@ void TestSelectionRangesInFile::dump(raw_ostream &OS) const {
 bool TestSelectionRangesInFile::foreachRange(
     const SourceManager &SM,
     llvm::function_ref<void(SourceRange)> Callback) const {
-  const FileEntry *FE = SM.getFileManager().getFile(Filename);
-  FileID FID = FE ? SM.translateFile(FE) : FileID();
+  auto FE = SM.getFileManager().getFile(Filename);
+  FileID FID = FE ? SM.translateFile(*FE) : FileID();
   if (!FE || FID.isInvalid()) {
     llvm::errs() << "error: -selection=test:" << Filename
                  << " : given file is not in the target TU";
@@ -74,7 +74,7 @@ bool areChangesSame(const tooling::AtomicChanges &LHS,
                     const tooling::AtomicChanges &RHS) {
   if (LHS.size() != RHS.size())
     return false;
-  for (const auto &I : llvm::zip(LHS, RHS)) {
+  for (auto I : llvm::zip(LHS, RHS)) {
     if (!(std::get<0>(I) == std::get<1>(I)))
       return false;
   }
@@ -256,7 +256,7 @@ bool TestRefactoringResultConsumer::handleAllResults() {
 
 std::unique_ptr<ClangRefactorToolConsumerInterface>
 TestSelectionRangesInFile::createConsumer() const {
-  return llvm::make_unique<TestRefactoringResultConsumer>(*this);
+  return std::make_unique<TestRefactoringResultConsumer>(*this);
 }
 
 /// Adds the \p ColumnOffset to file offset \p Offset, without going past a
@@ -303,9 +303,10 @@ findTestSelectionRanges(StringRef Filename) {
 
   // See the doc comment for this function for the explanation of this
   // syntax.
-  static Regex RangeRegex("range[[:blank:]]*([[:alpha:]_]*)?[[:blank:]]*=[[:"
-                          "blank:]]*(\\+[[:digit:]]+)?[[:blank:]]*(->[[:blank:]"
-                          "]*[\\+\\:[:digit:]]+)?");
+  static const Regex RangeRegex(
+      "range[[:blank:]]*([[:alpha:]_]*)?[[:blank:]]*=[[:"
+      "blank:]]*(\\+[[:digit:]]+)?[[:blank:]]*(->[[:blank:]"
+      "]*[\\+\\:[:digit:]]+)?");
 
   std::map<std::string, SmallVector<TestSelectionRange, 8>> GroupedRanges;
 
@@ -352,7 +353,7 @@ findTestSelectionRanges(StringRef Filename) {
     unsigned EndOffset;
 
     if (!Matches[3].empty()) {
-      static Regex EndLocRegex(
+      static const Regex EndLocRegex(
           "->[[:blank:]]*(\\+[[:digit:]]+):([[:digit:]]+)");
       SmallVector<StringRef, 4> EndLocMatches;
       if (!EndLocRegex.match(Matches[3], &EndLocMatches)) {

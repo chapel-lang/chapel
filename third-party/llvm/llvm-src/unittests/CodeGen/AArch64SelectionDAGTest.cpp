@@ -59,14 +59,14 @@ protected:
 
     MachineModuleInfo MMI(TM.get());
 
-    MF = make_unique<MachineFunction>(*F, *TM, *TM->getSubtargetImpl(*F), 0,
+    MF = std::make_unique<MachineFunction>(*F, *TM, *TM->getSubtargetImpl(*F), 0,
                                       MMI);
 
-    DAG = make_unique<SelectionDAG>(*TM, CodeGenOpt::None);
+    DAG = std::make_unique<SelectionDAG>(*TM, CodeGenOpt::None);
     if (!DAG)
       report_fatal_error("DAG?");
     OptimizationRemarkEmitter ORE(F);
-    DAG->init(*MF, ORE, nullptr, nullptr, nullptr);
+    DAG->init(*MF, ORE, nullptr, nullptr, nullptr, nullptr, nullptr);
   }
 
   LLVMContext Context;

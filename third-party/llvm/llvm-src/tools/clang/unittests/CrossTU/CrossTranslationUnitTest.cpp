@@ -28,13 +28,18 @@ public:
       : CTU(CI), Success(Success) {}
 
   void HandleTranslationUnit(ASTContext &Ctx) {
+    auto FindFInTU = [](const TranslationUnitDecl *TU) {
+      const FunctionDecl *FD = nullptr;
+      for (const Decl *D : TU->decls()) {
+        FD = dyn_cast<FunctionDecl>(D);
+        if (FD && FD->getName() == "f")
+          break;
+      }
+      return FD;
+    };
+
     const TranslationUnitDecl *TU = Ctx.getTranslationUnitDecl();
-    const FunctionDecl *FD = nullptr;
-    for (const Decl *D : TU->decls()) {
-      FD = dyn_cast<FunctionDecl>(D);
-      if (FD && FD->getName() == "f")
-        break;
-    }
+    const FunctionDecl *FD = FindFInTU(TU);
     assert(FD && FD->getName() == "f");
     bool OrigFDHasBody = FD->hasBody();
 
@@ -78,6 +83,28 @@ public:
     if (NewFDorError) {
       const FunctionDecl *NewFD = *NewFDorError;
       *Success = NewFD && NewFD->hasBody() && !OrigFDHasBody;
+
+      if (NewFD) {
+        // Check GetImportedFromSourceLocation.
+        llvm::Optional<std::pair<SourceLocation, ASTUnit *>> SLocResult =
+            CTU.getImportedFromSourceLocation(NewFD->getLocation());
+        EXPECT_TRUE(SLocResult);
+        if (SLocResult) {
+          SourceLocation OrigSLoc = (*SLocResult).first;
+          ASTUnit *OrigUnit = (*SLocResult).second;
+          // OrigUnit is created internally by CTU (is not the
+          // ASTWithDefinition).
+          TranslationUnitDecl *OrigTU =
+              OrigUnit->getASTContext().getTranslationUnitDecl();
+          const FunctionDecl *FDWithDefinition = FindFInTU(OrigTU);
+          EXPECT_TRUE(FDWithDefinition);
+          if (FDWithDefinition) {
+            EXPECT_EQ(FDWithDefinition->getName(), "f");
+            EXPECT_TRUE(FDWithDefinition->isThisDeclarationADefinition());
+            EXPECT_EQ(OrigSLoc, FDWithDefinition->getLocation());
+          }
+        }
+      }
     }
   }
 
@@ -95,7 +122,7 @@ protected:
   std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(clang::CompilerInstance &CI, StringRef) override {
     CI.getAnalyzerOpts()->CTUImportThreshold = OverrideLimit;
-    return llvm::make_unique<CTUASTConsumer>(CI, Success);
+    return std::make_unique<CTUASTConsumer>(CI, Success);
   }
 
 private:
@@ -107,15 +134,15 @@ private:
 
 TEST(CrossTranslationUnit, CanLoadFunctionDefinition) {
   bool Success = false;
-  EXPECT_TRUE(
-      tooling::runToolOnCode(new CTUAction(&Success, 1u), "int f(int);"));
+  EXPECT_TRUE(tooling::runToolOnCode(std::make_unique<CTUAction>(&Success, 1u),
+                                     "int f(int);"));
   EXPECT_TRUE(Success);
 }
 
 TEST(CrossTranslationUnit, RespectsLoadThreshold) {
   bool Success = false;
-  EXPECT_TRUE(
-      tooling::runToolOnCode(new CTUAction(&Success, 0u), "int f(int);"));
+  EXPECT_TRUE(tooling::runToolOnCode(std::make_unique<CTUAction>(&Success, 0u),
+                                     "int f(int);"));
   EXPECT_FALSE(Success);
 }
 

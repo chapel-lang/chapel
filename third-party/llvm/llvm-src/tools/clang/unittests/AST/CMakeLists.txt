@@ -11,9 +11,11 @@ add_clang_unittest(ASTTests
   ASTImporterFixtures.cpp
   ASTImporterTest.cpp
   ASTImporterGenericRedeclTest.cpp
+  ASTImporterODRStrategiesTest.cpp
   ASTImporterVisibilityTest.cpp
   ASTTraverserTest.cpp
   ASTTypeTraitsTest.cpp
+  ASTTraverserTest.cpp
   ASTVectorTest.cpp
   CommentLexer.cpp
   CommentParser.cpp
@@ -26,6 +28,7 @@ add_clang_unittest(ASTTests
   Language.cpp
   NamedDeclPrinterTest.cpp
   OMPStructuredBlockTest.cpp
+  RecursiveASTVisitorTest.cpp
   SourceLocationTest.cpp
   StmtPrinterTest.cpp
   StructuralEquivalenceTest.cpp

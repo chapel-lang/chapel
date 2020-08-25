@@ -10,7 +10,7 @@ Introduction
 
 This document aims to provide a high-level overview of the design and
 implementation of the ORC JIT APIs. Except where otherwise stated, all
-discussion applies to the design of the APIs as of LLVM verison 9 (ORCv2).
+discussion applies to the design of the APIs as of LLVM version 9 (ORCv2).
 
 Use-cases
 =========
@@ -19,7 +19,7 @@ ORC provides a modular API for building JIT compilers. There are a range
 of use cases for such an API. For example:
 
 1. The LLVM tutorials use a simple ORC-based JIT class to execute expressions
-compiled from a toy languge: Kaleidoscope.
+compiled from a toy language: Kaleidoscope.
 
 2. The LLVM debugger, LLDB, uses a cross-compiling JIT for expression
 evaluation. In this use case, cross compilation allows expressions compiled
@@ -31,7 +31,7 @@ optimizations within an existing JIT infrastructure.
 
 4. In interpreters and REPLs, e.g. Cling (C++) and the Swift interpreter.
 
-By adoping a modular, library-based design we aim to make ORC useful in as many
+By adopting a modular, library-based design we aim to make ORC useful in as many
 of these contexts as possible.
 
 Features
@@ -40,7 +40,7 @@ Features
 ORC provides the following features:
 
 - *JIT-linking* links relocatable object files (COFF, ELF, MachO) [1]_ into a
-  target process an runtime. The target process may be the same process that
+  target process at runtime. The target process may be the same process that
   contains the JIT session object and jit-linker, or may be another process
   (even one running on a different machine or architecture) that communicates
   with the JIT via RPC.
@@ -97,7 +97,7 @@ JIT API.
 
 LLJIT and LLLazyJIT instances can be created using their respective builder
 classes: LLJITBuilder and LLazyJITBuilder. For example, assuming you have a
-module ``M`` loaded on an ThreadSafeContext ``Ctx``:
+module ``M`` loaded on a ThreadSafeContext ``Ctx``:
 
 .. code-block:: c++
 
@@ -117,8 +117,10 @@ module ``M`` loaded on an ThreadSafeContext ``Ctx``:
   if (!EntrySym)
     return EntrySym.takeError();
 
+  // Cast the entry point address to a function pointer.
   auto *Entry = (void(*)())EntrySym.getAddress();
 
+  // Call into JIT'd code.
   Entry();
 
 The builder clasess provide a number of configuration options that can be
@@ -153,8 +155,8 @@ Design Overview
 ORC's JIT'd program model aims to emulate the linking and symbol resolution
 rules used by the static and dynamic linkers. This allows ORC to JIT
 arbitrary LLVM IR, including IR produced by an ordinary static compiler (e.g.
-clang) that uses constructs like symbol linkage and visibility, and weak and
-common symbol definitions.
+clang) that uses constructs like symbol linkage and visibility, and weak [3]_
+and common symbol definitions.
 
 To see how this works, imagine a program ``foo`` which links against a pair
 of dynamic libraries: ``libA`` and ``libB``. On the command line, building this
@@ -174,7 +176,7 @@ checking omitted for brevity) as:
 
   ExecutionSession ES;
   RTDyldObjectLinkingLayer ObjLinkingLayer(
-      ES, []() { return llvm::make_unique<SectionMemoryManager>(); });
+      ES, []() { return std::make_unique<SectionMemoryManager>(); });
   CXXCompileLayer CXXLayer(ES, ObjLinkingLayer);
 
   // Create JITDylib "A" and add code to it using the CXX layer.
@@ -235,7 +237,7 @@ but they may also wrap a jit-linker directly (if the program representation
 backing the definitions is an object file), or may even be a class that writes
 bits directly into memory (for example, if the definitions are
 stubs). Materialization is the blanket term for any actions (compiling, linking,
-splatting bits, registering with runtimes, etc.) that are requried to generate a
+splatting bits, registering with runtimes, etc.) that are required to generate a
 symbol definition that is safe to call or access.
 
 As each materializer completes its work it notifies the JITDylib, which in turn
@@ -326,7 +328,7 @@ prefix in LLVM 8.0, and have deprecation warnings attached in LLVM 9.0. In LLVM
 10.0 ORCv1 will be removed entirely.
 
 Transitioning from ORCv1 to ORCv2 should be easy for most clients. Most of the
-ORCv1 layers and utilities have ORCv2 counterparts[2]_ that can be directly
+ORCv1 layers and utilities have ORCv2 counterparts [2]_ that can be directly
 substituted. However there are some design differences between ORCv1 and ORCv2
 to be aware of:
 
@@ -441,7 +443,7 @@ ThreadSafeModule and ThreadSafeContext are wrappers around Modules and
 LLVMContexts respectively. A ThreadSafeModule is a pair of a
 std::unique_ptr<Module> and a (possibly shared) ThreadSafeContext value. A
 ThreadSafeContext is a pair of a std::unique_ptr<LLVMContext> and a lock.
-This design serves two purposes: providing both a locking scheme and lifetime
+This design serves two purposes: providing a locking scheme and lifetime
 management for LLVMContexts. The ThreadSafeContext may be locked to prevent
 accidental concurrent access by two Modules that use the same LLVMContext.
 The underlying LLVMContext is freed once all ThreadSafeContext values pointing
@@ -453,7 +455,7 @@ std::unique_ptr<LLVMContext>:
 
   .. code-block:: c++
 
-    ThreadSafeContext TSCtx(llvm::make_unique<LLVMContext>());
+    ThreadSafeContext TSCtx(std::make_unique<LLVMContext>());
 
 ThreadSafeModules can be constructed from a pair of a std::unique_ptr<Module>
 and a ThreadSafeContext value. ThreadSafeContext values may be shared between
@@ -462,43 +464,56 @@ multiple ThreadSafeModules:
   .. code-block:: c++
 
     ThreadSafeModule TSM1(
-      llvm::make_unique<Module>("M1", *TSCtx.getContext()), TSCtx);
+      std::make_unique<Module>("M1", *TSCtx.getContext()), TSCtx);
 
     ThreadSafeModule TSM2(
-      llvm::make_unique<Module>("M2", *TSCtx.getContext()), TSCtx);
+      std::make_unique<Module>("M2", *TSCtx.getContext()), TSCtx);
 
 Before using a ThreadSafeContext, clients should ensure that either the context
 is only accessible on the current thread, or that the context is locked. In the
 example above (where the context is never locked) we rely on the fact that both
 ``TSM1`` and ``TSM2``, and TSCtx are all created on one thread. If a context is
-going to be shared between threads then it must be locked before the context,
-or any Modules attached to it, are accessed. When code is added to in-tree IR
-layers this locking is is done automatically by the
-``BasicIRLayerMaterializationUnit::materialize`` method. In all other
-situations, for example when writing a custom IR materialization unit, or
-constructing a new ThreadSafeModule from higher-level program representations,
-locking must be done explicitly:
+going to be shared between threads then it must be locked before any accessing
+or creating any Modules attached to it. E.g.
 
   .. code-block:: c++
 
-    void HighLevelRepresentationLayer::emit(MaterializationResponsibility R,
-                                            HighLevelProgramRepresentation H) {
-      // Get or create a context value that may be shared between threads.
-      ThreadSafeContext TSCtx = getContext();
+    ThreadSafeContext TSCtx(std::make_unique<LLVMContext>());
 
-      // Lock the context to prevent concurrent access.
-      auto Lock = TSCtx.getLock();
+    ThreadPool TP(NumThreads);
+    JITStack J;
 
-      // IRGen a module onto the locked Context.
-      ThreadSafeModule TSM(IRGen(H, *TSCtx.getContext()), TSCtx);
-
-      // Emit the module to the base layer with the context still locked.
-      BaseIRLayer.emit(std::move(R), std::move(TSM));
+    for (auto &ModulePath : ModulePaths) {
+      TP.async(
+        [&]() {
+          auto Lock = TSCtx.getLock();
+          auto M = loadModuleOnContext(ModulePath, TSCtx.getContext());
+          J.addModule(ThreadSafeModule(std::move(M), TSCtx));
+        });
     }
 
+    TP.wait();
+
+To make exclusive access to Modules easier to manage the ThreadSafeModule class
+provides a convenience function, ``withModuleDo``, that implicitly (1) locks the
+associated context, (2) runs a given function object, (3) unlocks the context,
+and (3) returns the result generated by the function object. E.g.
+
+  .. code-block:: c++
+
+    ThreadSafeModule TSM = getModule(...);
+
+    // Dump the module:
+    size_t NumFunctionsInModule =
+      TSM.withModuleDo(
+        [](Module &M) { // <- Context locked before entering lambda.
+          return M.size();
+        } // <- Context unlocked after leaving.
+      );
+
 Clients wishing to maximize possibilities for concurrent compilation will want
-to create every new ThreadSafeModule on a new ThreadSafeContext. For this reason
-a convenience constructor for ThreadSafeModule is provided that implicitly
+to create every new ThreadSafeModule on a new ThreadSafeContext. For this
+reason a convenience constructor for ThreadSafeModule is provided that implicitly
 constructs a new ThreadSafeContext value from a std::unique_ptr<LLVMContext>:
 
   .. code-block:: c++
@@ -506,8 +521,8 @@ constructs a new ThreadSafeContext value from a std::unique_ptr<LLVMContext>:
     // Maximize concurrency opportunities by loading every module on a
     // separate context.
     for (const auto &IRPath : IRPaths) {
-      auto Ctx = llvm::make_unique<LLVMContext>();
-      auto M = llvm::make_unique<LLVMContext>("M", *Ctx);
+      auto Ctx = std::make_unique<LLVMContext>();
+      auto M = std::make_unique<LLVMContext>("M", *Ctx);
       CompileLayer.add(ES.getMainJITDylib(),
                        ThreadSafeModule(std::move(M), std::move(Ctx)));
     }
@@ -518,7 +533,7 @@ all modules on the same context:
   .. code-block:: c++
 
     // Save memory by using one context for all Modules:
-    ThreadSafeContext TSCtx(llvm::make_unique<LLVMContext>());
+    ThreadSafeContext TSCtx(std::make_unique<LLVMContext>());
     for (const auto &IRPath : IRPaths) {
       ThreadSafeModule TSM(parsePath(IRPath, *TSCtx.getContext()), TSCtx);
       CompileLayer.add(ES.getMainJITDylib(), ThreadSafeModule(std::move(TSM));
@@ -620,13 +635,7 @@ TBD: Speculative compilation. Object Caches.
        across processes, however this functionality appears not to have been
        used.
 
-.. [3] Sharing ThreadSafeModules in a concurrent compilation can be dangerous:
-       if interdependent modules are loaded on the same context, but compiled
-       on different threads a deadlock may occur (with each compile waiting for
-       the other(s) to complete, and the other(s) unable to proceed because the
-       context is locked).
-
-.. [4] Mostly. Weak definitions are handled correctly within dylibs, but if
-       multiple dylibs provide a weak definition of a symbol each will end up
-       with its own definition (similar to how weak symbols in Windows DLLs
-       behave). This will be fixed in the future.
+.. [3] Weak definitions are currently handled correctly within dylibs, but if
+       multiple dylibs provide a weak definition of a symbol then each will end
+       up with its own definition (similar to how weak definitions are handled
+       in Windows DLLs). This will be fixed in the future.

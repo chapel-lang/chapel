@@ -38,7 +38,7 @@ be moved across a volatile load freely, but not an Acquire load.
 
 This document is intended to provide a guide to anyone either writing a frontend
 for LLVM or working on optimization passes for LLVM with a guide for how to deal
-with instructions with special semantics in the presence of concurrency.  This
+with instructions with special semantics in the presence of concurrency. This
 is not intended to be a precise guide to the semantics; the details can get
 extremely complicated and unreadable, and are not usually necessary.
 
@@ -87,8 +87,10 @@ The following is equivalent in non-concurrent situations:
 
 However, LLVM is not allowed to transform the former to the latter: it could
 indirectly introduce undefined behavior if another thread can access ``x`` at
-the same time. (This example is particularly of interest because before the
-concurrency model was implemented, LLVM would perform this transformation.)
+the same time. That thread would read `undef` instead of the value it was
+expecting, which can lead to undefined behavior down the line. (This example is
+particularly of interest because before the concurrency model was implemented,
+LLVM would perform this transformation.)
 
 Note that speculative loads are allowed; a load which is part of a race returns
 ``undef``, but does not have undefined behavior.
@@ -290,7 +292,7 @@ Notes for frontends
 Notes for optimizers
   Optimizers not aware of atomics can treat this like a nothrow call.  It is
   also possible to move loads from after a Release store or read-modify-write
-  operation to before it, and move non-Release stores from after an Release
+  operation to before it, and move non-Release stores from after a Release
   operation to before it.
 
 Notes for code generation

@@ -15,6 +15,7 @@
 #define LLVM_TOOLS_LLVM_EXEGESIS_LATENCY_H
 
 #include "BenchmarkRunner.h"
+#include "Error.h"
 #include "MCInstrDescView.h"
 #include "SnippetGenerator.h"
 
@@ -23,11 +24,12 @@ namespace exegesis {
 
 class LatencySnippetGenerator : public SnippetGenerator {
 public:
-  LatencySnippetGenerator(const LLVMState &State) : SnippetGenerator(State) {}
+  using SnippetGenerator::SnippetGenerator;
   ~LatencySnippetGenerator() override;
 
-  llvm::Expected<std::vector<CodeTemplate>>
-  generateCodeTemplates(const Instruction &Instr) const override;
+  Expected<std::vector<CodeTemplate>>
+  generateCodeTemplates(const Instruction &Instr,
+                        const BitVector &ForbiddenRegisters) const override;
 };
 
 class LatencyBenchmarkRunner : public BenchmarkRunner {
@@ -37,7 +39,7 @@ public:
   ~LatencyBenchmarkRunner() override;
 
 private:
-  llvm::Expected<std::vector<BenchmarkMeasure>>
+  Expected<std::vector<BenchmarkMeasure>>
   runMeasurements(const FunctionExecutor &Executor) const override;
 };
 } // namespace exegesis

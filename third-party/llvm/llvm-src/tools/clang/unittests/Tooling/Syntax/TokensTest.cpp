@@ -40,6 +40,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Testing/Support/Annotations.h"
 #include "llvm/Testing/Support/SupportHelpers.h"
+#include "gmock/gmock.h"
 #include <cassert>
 #include <cstdlib>
 #include <gmock/gmock.h>
@@ -106,7 +107,7 @@ public:
 
       std::unique_ptr<ASTConsumer>
       CreateASTConsumer(CompilerInstance &CI, StringRef InFile) override {
-        return llvm::make_unique<ASTConsumer>();
+        return std::make_unique<ASTConsumer>();
       }
 
     private:
@@ -469,11 +470,28 @@ file './input.cpp'
   mappings:
     ['#'_0, 'int'_7) => ['int'_0, 'int'_0)
     ['FOO'_10, '<eof>'_11) => ['10'_3, '<eof>'_7)
-)"}};
+)"},
+      {R"cpp(
+         #define NUM 42
+         #define ID(a) a
+         #define M 1 + ID
+         M(NUM)
+       )cpp",
+       R"(expanded tokens:
+  1 + 42
+file './input.cpp'
+  spelled tokens:
+    # define NUM 42 # define ID ( a ) a # define M 1 + ID M ( NUM )
+  mappings:
+    ['#'_0, 'M'_17) => ['1'_0, '1'_0)
+    ['M'_17, '<eof>'_21) => ['1'_0, '<eof>'_3)
+)"},
+  };
 
-  for (auto &Test : TestCases)
-    EXPECT_EQ(Test.second, collectAndDump(Test.first))
-        << collectAndDump(Test.first);
+  for (auto &Test : TestCases) {
+    std::string Dump = collectAndDump(Test.first);
+    EXPECT_EQ(Test.second, Dump) << Dump;
+  }
 }
 
 TEST_F(TokenCollectorTest, SpecialTokens) {
@@ -663,6 +681,20 @@ TEST_F(TokenBufferTest, SpelledByExpanded) {
               ValueIs(SameRange(findSpelled("not_mapped"))));
 }
 
+TEST_F(TokenBufferTest, ExpandedTokensForRange) {
+  recordTokens(R"cpp(
+    #define SIGN(X) X##_washere
+    A SIGN(B) C SIGN(D) E SIGN(F) G
+  )cpp");
+
+  SourceRange R(findExpanded("C").front().location(),
+                findExpanded("F_washere").front().location());
+  // Sanity check: expanded and spelled tokens are stored separately.
+  EXPECT_THAT(Buffer.expandedTokens(R),
+              SameRange(findExpanded("C D_washere E F_washere")));
+  EXPECT_THAT(Buffer.expandedTokens(SourceRange()), testing::IsEmpty());
+}
+
 TEST_F(TokenBufferTest, ExpansionStartingAt) {
   // Object-like macro expansions.
   recordTokens(R"cpp(
@@ -753,6 +785,70 @@ TEST_F(TokenBufferTest, TokensToFileRange) {
             FileRange(SM.getMainFileID(), Code.range("all").Begin,
                       Code.range("all").End));
   // We don't test assertion failures because death tests are slow.
+}
+
+TEST_F(TokenBufferTest, MacroExpansions) {
+  llvm::Annotations Code(R"cpp(
+    #define FOO B
+    #define FOO2 BA
+    #define CALL(X) int X
+    #define G CALL(FOO2)
+    int B;
+    $macro[[FOO]];
+    $macro[[CALL]](A);
+    $macro[[G]];
+  )cpp");
+  recordTokens(Code.code());
+  auto &SM = *SourceMgr;
+  auto Expansions = Buffer.macroExpansions(SM.getMainFileID());
+  std::vector<FileRange> ExpectedMacroRanges;
+  for (auto Range : Code.ranges("macro"))
+    ExpectedMacroRanges.push_back(
+        FileRange(SM.getMainFileID(), Range.Begin, Range.End));
+  std::vector<FileRange> ActualMacroRanges;
+  for (auto Expansion : Expansions)
+    ActualMacroRanges.push_back(Expansion->range(SM));
+  EXPECT_EQ(ExpectedMacroRanges, ActualMacroRanges);
+}
+
+TEST_F(TokenBufferTest, Touching) {
+  llvm::Annotations Code("^i^nt^ ^a^b^=^1;^");
+  recordTokens(Code.code());
+
+  auto Touching = [&](int Index) {
+    SourceLocation Loc = SourceMgr->getComposedLoc(SourceMgr->getMainFileID(),
+                                                   Code.points()[Index]);
+    return spelledTokensTouching(Loc, Buffer);
+  };
+  auto Identifier = [&](int Index) {
+    SourceLocation Loc = SourceMgr->getComposedLoc(SourceMgr->getMainFileID(),
+                                                   Code.points()[Index]);
+    const syntax::Token *Tok = spelledIdentifierTouching(Loc, Buffer);
+    return Tok ? Tok->text(*SourceMgr) : "";
+  };
+
+  EXPECT_THAT(Touching(0), SameRange(findSpelled("int")));
+  EXPECT_EQ(Identifier(0), "");
+  EXPECT_THAT(Touching(1), SameRange(findSpelled("int")));
+  EXPECT_EQ(Identifier(1), "");
+  EXPECT_THAT(Touching(2), SameRange(findSpelled("int")));
+  EXPECT_EQ(Identifier(2), "");
+
+  EXPECT_THAT(Touching(3), SameRange(findSpelled("ab")));
+  EXPECT_EQ(Identifier(3), "ab");
+  EXPECT_THAT(Touching(4), SameRange(findSpelled("ab")));
+  EXPECT_EQ(Identifier(4), "ab");
+
+  EXPECT_THAT(Touching(5), SameRange(findSpelled("ab =")));
+  EXPECT_EQ(Identifier(5), "ab");
+
+  EXPECT_THAT(Touching(6), SameRange(findSpelled("= 1")));
+  EXPECT_EQ(Identifier(6), "");
+
+  EXPECT_THAT(Touching(7), SameRange(findSpelled(";")));
+  EXPECT_EQ(Identifier(7), "");
+
+  ASSERT_EQ(Code.points().size(), 8u);
 }
 
 } // namespace

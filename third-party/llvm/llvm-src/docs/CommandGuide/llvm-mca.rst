@@ -92,6 +92,11 @@ option specifies "``-``", then the output will also be sent to standard output.
  the AT&T (vic. Intel) assembly format for the code printed out by the tool in
  the analysis report.
 
+.. option:: -print-imm-hex
+
+ Prefer hex format for numeric literals in the output assembly printed as part
+ of the report.
+
 .. option:: -dispatch=<width>
 
  Specify a different dispatch width for the processor. The dispatch width
@@ -168,6 +173,10 @@ option specifies "``-``", then the output will also be sent to standard output.
 .. option:: -instruction-info
 
   Enable the instruction info view. This is enabled by default.
+
+.. option:: -show-encoding
+
+  Enable the printing of instruction encodings within the instruction info view.
 
 .. option:: -all-stats
 
@@ -368,17 +377,28 @@ overview of the performance throughput. Important performance indicators are
 **IPC**, **uOps Per Cycle**, and  **Block RThroughput** (Block Reciprocal
 Throughput).
 
+Field *DispatchWidth* is the maximum number of micro opcodes that are dispatched
+to the out-of-order backend every simulated cycle.
+
 IPC is computed dividing the total number of simulated instructions by the total
-number of cycles. In the absence of loop-carried data dependencies, the
-observed IPC tends to a theoretical maximum which can be computed by dividing
-the number of instructions of a single iteration by the *Block RThroughput*.
+number of cycles.
+
+Field *Block RThroughput* is the reciprocal of the block throughput. Block
+throuhgput is a theoretical quantity computed as the maximum number of blocks
+(i.e. iterations) that can be executed per simulated clock cycle in the absence
+of loop carried dependencies. Block throughput is is superiorly
+limited by the dispatch rate, and the availability of hardware resources.
+
+In the absence of loop-carried data dependencies, the observed IPC tends to a
+theoretical maximum which can be computed by dividing the number of instructions
+of a single iteration by the `Block RThroughput`.
 
 Field 'uOps Per Cycle' is computed dividing the total number of simulated micro
 opcodes by the total number of cycles. A delta between Dispatch Width and this
 field is an indicator of a performance issue. In the absence of loop-carried
 data dependencies, the observed 'uOps Per Cycle' should tend to a theoretical
 maximum throughput which can be computed by dividing the number of uOps of a
-single iteration by the *Block RThroughput*.
+single iteration by the `Block RThroughput`.
 
 Field *uOps Per Cycle* is bounded from above by the dispatch width. That is
 because the dispatch width limits the maximum size of a dispatch group. Both IPC
@@ -387,22 +407,54 @@ availability of hardware resources affects the resource pressure distribution,
 and it limits the number of instructions that can be executed in parallel every
 cycle.  A delta between Dispatch Width and the theoretical maximum uOps per
 Cycle (computed by dividing the number of uOps of a single iteration by the
-*Block RTrhoughput*) is an indicator of a performance bottleneck caused by the
+`Block RThroughput`) is an indicator of a performance bottleneck caused by the
 lack of hardware resources.
 In general, the lower the Block RThroughput, the better.
 
 In this example, ``uOps per iteration/Block RThroughput`` is 1.50. Since there
-are no loop-carried dependencies, the observed *uOps Per Cycle* is expected to
+are no loop-carried dependencies, the observed `uOps Per Cycle` is expected to
 approach 1.50 when the number of iterations tends to infinity. The delta between
 the Dispatch Width (2.00), and the theoretical maximum uOp throughput (1.50) is
 an indicator of a performance bottleneck caused by the lack of hardware
 resources, and the *Resource pressure view* can help to identify the problematic
 resource usage.
 
-The second section of the report shows the latency and reciprocal
-throughput of every instruction in the sequence. That section also reports
-extra information related to the number of micro opcodes, and opcode properties
-(i.e., 'MayLoad', 'MayStore', and 'HasSideEffects').
+The second section of the report is the `instruction info view`. It shows the
+latency and reciprocal throughput of every instruction in the sequence. It also
+reports extra information related to the number of micro opcodes, and opcode
+properties (i.e., 'MayLoad', 'MayStore', and 'HasSideEffects').
+
+Field *RThroughput* is the reciprocal of the instruction throughput. Throughput
+is computed as the maximum number of instructions of a same type that can be
+executed per clock cycle in the absence of operand dependencies. In this
+example, the reciprocal throughput of a vector float multiply is 1
+cycles/instruction.  That is because the FP multiplier JFPM is only available
+from pipeline JFPU1.
+
+Instruction encodings are displayed within the instruction info view when flag
+`-show-encoding` is specified.
+
+Below is an example of `-show-encoding` output for the dot-product kernel:
+
+.. code-block:: none
+
+  Instruction Info:
+  [1]: #uOps
+  [2]: Latency
+  [3]: RThroughput
+  [4]: MayLoad
+  [5]: MayStore
+  [6]: HasSideEffects (U)
+  [7]: Encoding Size
+
+  [1]    [2]    [3]    [4]    [5]    [6]    [7]    Encodings:                    Instructions:
+   1      2     1.00                         4     c5 f0 59 d0                   vmulps	%xmm0, %xmm1, %xmm2
+   1      4     1.00                         4     c5 eb 7c da                   vhaddps	%xmm2, %xmm2, %xmm3
+   1      4     1.00                         4     c5 e3 7c e3                   vhaddps	%xmm3, %xmm3, %xmm4
+
+The `Encoding Size` column shows the size in bytes of instructions.  The
+`Encodings` column shows the actual instruction encodings (byte sequences in
+hex).
 
 The third section is the *Resource pressure view*.  This view reports
 the average number of resource cycles consumed every iteration by instructions
@@ -471,6 +523,7 @@ Below is the timeline view for a subset of the dot-product example located in
   0.     3     1.0    1.0    3.3       vmulps	%xmm0, %xmm1, %xmm2
   1.     3     3.3    0.7    1.0       vhaddps	%xmm2, %xmm2, %xmm3
   2.     3     5.7    0.0    0.0       vhaddps	%xmm3, %xmm3, %xmm4
+         3     3.3    0.5    1.4       <total>
 
 The timeline view is interesting because it shows instruction state changes
 during execution.  It also gives an idea of how the tool processes instructions
@@ -522,7 +575,8 @@ and therefore consuming physical registers).
 
 Table *Average Wait times* helps diagnose performance issues that are caused by
 the presence of long latency instructions and potentially long data dependencies
-which may limit the ILP.  Note that :program:`llvm-mca`, by default, assumes at
+which may limit the ILP. Last row, ``<total>``, shows a global average over all
+instructions measured. Note that :program:`llvm-mca`, by default, assumes at
 least 1cy between the dispatch event and the issue event.
 
 When the performance is limited by data dependencies and/or long latency
@@ -534,6 +588,61 @@ instructions.  When performance is mostly limited by the lack of hardware
 resources, the delta between the two counters is small.  However, the number of
 cycles spent in the queue tends to be larger (i.e., more than 1-3cy),
 especially when compared to other low latency instructions.
+
+Bottleneck Analysis
+^^^^^^^^^^^^^^^^^^^
+The ``-bottleneck-analysis`` command line option enables the analysis of
+performance bottlenecks.
+
+This analysis is potentially expensive. It attempts to correlate increases in
+backend pressure (caused by pipeline resource pressure and data dependencies) to
+dynamic dispatch stalls.
+
+Below is an example of ``-bottleneck-analysis`` output generated by
+:program:`llvm-mca` for 500 iterations of the dot-product example on btver2.
+
+.. code-block:: none
+
+
+  Cycles with backend pressure increase [ 48.07% ]
+  Throughput Bottlenecks: 
+    Resource Pressure       [ 47.77% ]
+    - JFPA  [ 47.77% ]
+    - JFPU0  [ 47.77% ]
+    Data Dependencies:      [ 0.30% ]
+    - Register Dependencies [ 0.30% ]
+    - Memory Dependencies   [ 0.00% ]
+  
+  Critical sequence based on the simulation:
+  
+                Instruction                         Dependency Information
+   +----< 2.    vhaddps %xmm3, %xmm3, %xmm4
+   |
+   |    < loop carried > 
+   |
+   |      0.    vmulps  %xmm0, %xmm1, %xmm2
+   +----> 1.    vhaddps %xmm2, %xmm2, %xmm3         ## RESOURCE interference:  JFPA [ probability: 74% ]
+   +----> 2.    vhaddps %xmm3, %xmm3, %xmm4         ## REGISTER dependency:  %xmm3
+   |
+   |    < loop carried > 
+   |
+   +----> 1.    vhaddps %xmm2, %xmm2, %xmm3         ## RESOURCE interference:  JFPA [ probability: 74% ]
+
+
+According to the analysis, throughput is limited by resource pressure and not by
+data dependencies.  The analysis observed increases in backend pressure during
+48.07% of the simulated run. Almost all those pressure increase events were
+caused by contention on processor resources JFPA/JFPU0.
+
+The `critical sequence` is the most expensive sequence of instructions according
+to the simulation. It is annotated to provide extra information about critical
+register dependencies and resource interferences between instructions.
+
+Instructions from the critical sequence are expected to significantly impact
+performance. By construction, the accuracy of this analysis is strongly
+dependent on the simulation and (as always) by the quality of the processor
+model in llvm.
+
 
 Extra Statistics to Further Diagnose Performance Issues
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

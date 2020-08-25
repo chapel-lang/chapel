@@ -28,6 +28,7 @@
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -261,7 +262,7 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
 
   // Remember how big this blob of stack space is
   MFI.setLocalFrameSize(Offset);
-  MFI.setLocalFrameMaxAlign(MaxAlign);
+  MFI.setLocalFrameMaxAlign(assumeAligned(MaxAlign));
 }
 
 static inline bool
@@ -350,6 +351,14 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
     int FrameIdx = FR.getFrameIndex();
     assert(MFI.isObjectPreAllocated(FrameIdx) &&
            "Only pre-allocated locals expected!");
+
+    // We need to keep the references to the stack protector slot through frame
+    // index operands so that it gets resolved by PEI rather than this pass.
+    // This avoids accesses to the stack protector though virtual base
+    // registers, and forces PEI to address it using fp/sp/bp.
+    if (MFI.hasStackProtectorIndex() &&
+        FrameIdx == MFI.getStackProtectorIndex())
+      continue;
 
     LLVM_DEBUG(dbgs() << "Considering: " << MI);
 

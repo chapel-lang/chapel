@@ -476,13 +476,15 @@ TEST(ConstantsTest, BitcastToGEP) {
 }
 
 bool foldFuncPtrAndConstToNull(LLVMContext &Context, Module *TheModule,
-                               uint64_t AndValue, unsigned FunctionAlign = 0) {
+                               uint64_t AndValue,
+                               MaybeAlign FunctionAlign = llvm::None) {
   Type *VoidType(Type::getVoidTy(Context));
   FunctionType *FuncType(FunctionType::get(VoidType, false));
   Function *Func(Function::Create(
       FuncType, GlobalValue::ExternalLinkage, "", TheModule));
 
-  if (FunctionAlign) Func->setAlignment(FunctionAlign);
+  if (FunctionAlign)
+    Func->setAlignment(*FunctionAlign);
 
   IntegerType *ConstantIntType(Type::getInt32Ty(Context));
   ConstantInt *TheConstant(ConstantInt::get(ConstantIntType, AndValue));
@@ -547,21 +549,21 @@ TEST(ConstantsTest, FoldFunctionAlign4PtrAlignMultiple) {
   LLVMContext Context;
   Module TheModule("TestModule", Context);
   TheModule.setDataLayout("Fn8");
-  ASSERT_TRUE(foldFuncPtrAndConstToNull(Context, &TheModule, 2, 4));
+  ASSERT_TRUE(foldFuncPtrAndConstToNull(Context, &TheModule, 2, Align(4)));
 }
 
 TEST(ConstantsTest, DontFoldFunctionAlign4PtrAlignIndependent) {
   LLVMContext Context;
   Module TheModule("TestModule", Context);
   TheModule.setDataLayout("Fi8");
-  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, &TheModule, 2, 4));
+  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, &TheModule, 2, Align(4)));
 }
 
 TEST(ConstantsTest, DontFoldFunctionPtrIfNoModule) {
   LLVMContext Context;
   // Even though the function is explicitly 4 byte aligned, in the absence of a
   // DataLayout we can't assume that the function pointer is aligned.
-  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, nullptr, 2, 4));
+  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, nullptr, 2, Align(4)));
 }
 
 TEST(ConstantsTest, FoldGlobalVariablePtr) {
@@ -572,7 +574,7 @@ TEST(ConstantsTest, FoldGlobalVariablePtr) {
   std::unique_ptr<GlobalVariable> Global(
       new GlobalVariable(IntType, true, GlobalValue::ExternalLinkage));
 
-  Global->setAlignment(4);
+  Global->setAlignment(Align(4));
 
   ConstantInt *TheConstant(ConstantInt::get(IntType, 2));
 
@@ -581,6 +583,45 @@ TEST(ConstantsTest, FoldGlobalVariablePtr) {
 
   ASSERT_TRUE(ConstantExpr::get( \
       Instruction::And, TheConstantExpr, TheConstant)->isNullValue());
+}
+
+// Check that undefined elements in vector constants are matched
+// correctly for both integer and floating-point types.
+
+TEST(ConstantsTest, isElementWiseEqual) {
+  LLVMContext Context;
+
+  Type *Int32Ty = Type::getInt32Ty(Context);
+  Constant *CU = UndefValue::get(Int32Ty);
+  Constant *C1 = ConstantInt::get(Int32Ty, 1);
+  Constant *C2 = ConstantInt::get(Int32Ty, 2);
+
+  Constant *C1211 = ConstantVector::get({C1, C2, C1, C1});
+  Constant *C12U1 = ConstantVector::get({C1, C2, CU, C1});
+  Constant *C12U2 = ConstantVector::get({C1, C2, CU, C2});
+  Constant *C12U21 = ConstantVector::get({C1, C2, CU, C2, C1});
+
+  EXPECT_TRUE(C1211->isElementWiseEqual(C12U1));
+  EXPECT_TRUE(C12U1->isElementWiseEqual(C1211));
+  EXPECT_FALSE(C12U2->isElementWiseEqual(C12U1));
+  EXPECT_FALSE(C12U1->isElementWiseEqual(C12U2));
+  EXPECT_FALSE(C12U21->isElementWiseEqual(C12U2));
+
+/* FIXME: This will crash.
+  Type *FltTy = Type::getFloatTy(Context);
+  Constant *CFU = UndefValue::get(FltTy);
+  Constant *CF1 = ConstantFP::get(FltTy, 1.0);
+  Constant *CF2 = ConstantFP::get(FltTy, 2.0);
+
+  Constant *CF1211 = ConstantVector::get({CF1, CF2, CF1, CF1});
+  Constant *CF12U1 = ConstantVector::get({CF1, CF2, CFU, CF1});
+  Constant *CF12U2 = ConstantVector::get({CF1, CF2, CFU, CF2});
+
+  EXPECT_TRUE(CF1211->isElementWiseEqual(CF12U1));
+  EXPECT_TRUE(CF12U1->isElementWiseEqual(CF1211));
+  EXPECT_FALSE(CF12U2->isElementWiseEqual(CF12U1));
+  EXPECT_FALSE(CF12U1->isElementWiseEqual(CF12U2));
+*/
 }
 
 }  // end anonymous namespace

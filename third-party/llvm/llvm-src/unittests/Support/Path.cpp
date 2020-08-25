@@ -8,6 +8,7 @@
 
 #include "llvm/Support/Path.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/Magic.h"
@@ -20,8 +21,9 @@
 #include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
-#include "gtest/gtest.h"
+#include "llvm/Testing/Support/Error.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #ifdef _WIN32
 #include "llvm/ADT/ArrayRef.h"
@@ -185,10 +187,19 @@ TEST(Support, Path) {
     path::native(*i, temp_store);
   }
 
-  SmallString<32> Relative("foo.cpp");
-  sys::fs::make_absolute("/root", Relative);
-  Relative[5] = '/'; // Fix up windows paths.
-  ASSERT_EQ("/root/foo.cpp", Relative);
+  {
+    SmallString<32> Relative("foo.cpp");
+    sys::fs::make_absolute("/root", Relative);
+    Relative[5] = '/'; // Fix up windows paths.
+    ASSERT_EQ("/root/foo.cpp", Relative);
+  }
+
+  {
+    SmallString<32> Relative("foo.cpp");
+    sys::fs::make_absolute("//root", Relative);
+    Relative[6] = '/'; // Fix up windows paths.
+    ASSERT_EQ("//root/foo.cpp", Relative);
+  }
 }
 
 TEST(Support, FilenameParent) {
@@ -1021,7 +1032,7 @@ TEST_F(FileSystemTest, CarriageReturn) {
   path::append(FilePathname, "test");
 
   {
-    raw_fd_ostream File(FilePathname, EC, sys::fs::F_Text);
+    raw_fd_ostream File(FilePathname, EC, sys::fs::OF_Text);
     ASSERT_NO_ERROR(EC);
     File << '\n';
   }
@@ -1032,7 +1043,7 @@ TEST_F(FileSystemTest, CarriageReturn) {
   }
 
   {
-    raw_fd_ostream File(FilePathname, EC, sys::fs::F_None);
+    raw_fd_ostream File(FilePathname, EC, sys::fs::OF_None);
     ASSERT_NO_ERROR(EC);
     File << '\n';
   }
@@ -1219,7 +1230,9 @@ TEST(Support, RemoveDots) {
 TEST(Support, ReplacePathPrefix) {
   SmallString<64> Path1("/foo");
   SmallString<64> Path2("/old/foo");
+  SmallString<64> Path3("/oldnew/foo");
   SmallString<64> OldPrefix("/old");
+  SmallString<64> OldPrefixSep("/old/");
   SmallString<64> NewPrefix("/new");
   SmallString<64> NewPrefix2("/longernew");
   SmallString<64> EmptyPrefix("");
@@ -1239,6 +1252,39 @@ TEST(Support, ReplacePathPrefix) {
   Path = Path2;
   path::replace_path_prefix(Path, OldPrefix, EmptyPrefix);
   EXPECT_EQ(Path, "/foo");
+  Path = Path2;
+  path::replace_path_prefix(Path, OldPrefix, EmptyPrefix, path::Style::native,
+                            true);
+  EXPECT_EQ(Path, "foo");
+  Path = Path3;
+  path::replace_path_prefix(Path, OldPrefix, NewPrefix, path::Style::native,
+                            false);
+  EXPECT_EQ(Path, "/newnew/foo");
+  Path = Path3;
+  path::replace_path_prefix(Path, OldPrefix, NewPrefix, path::Style::native,
+                            true);
+  EXPECT_EQ(Path, "/oldnew/foo");
+  Path = Path3;
+  path::replace_path_prefix(Path, OldPrefixSep, NewPrefix, path::Style::native,
+                            true);
+  EXPECT_EQ(Path, "/oldnew/foo");
+  Path = Path1;
+  path::replace_path_prefix(Path, EmptyPrefix, NewPrefix);
+  EXPECT_EQ(Path, "/new/foo");
+  Path = OldPrefix;
+  path::replace_path_prefix(Path, OldPrefix, NewPrefix);
+  EXPECT_EQ(Path, "/new");
+  Path = OldPrefixSep;
+  path::replace_path_prefix(Path, OldPrefix, NewPrefix);
+  EXPECT_EQ(Path, "/new/");
+  Path = OldPrefix;
+  path::replace_path_prefix(Path, OldPrefixSep, NewPrefix, path::Style::native,
+                            false);
+  EXPECT_EQ(Path, "/old");
+  Path = OldPrefix;
+  path::replace_path_prefix(Path, OldPrefixSep, NewPrefix, path::Style::native,
+                            true);
+  EXPECT_EQ(Path, "/new");
 }
 
 TEST_F(FileSystemTest, OpenFileForRead) {
@@ -1418,7 +1464,7 @@ TEST_F(FileSystemTest, AppendSetsCorrectFileOffset) {
                                      fs::CD_OpenExisting};
 
   // Write some data and re-open it with every possible disposition (this is a
-  // hack that shouldn't work, but is left for compatibility.  F_Append
+  // hack that shouldn't work, but is left for compatibility.  OF_Append
   // overrides
   // the specified disposition.
   for (fs::CreationDisposition Disp : Disps) {
@@ -1502,6 +1548,49 @@ TEST_F(FileSystemTest, ReadWriteFileCanReadOrWrite) {
   FileDescriptorCloser Closer(FD);
   verifyRead(FD, "Fizz", true);
   verifyWrite(FD, "Buzz", true);
+}
+
+TEST_F(FileSystemTest, readNativeFile) {
+  createFileWithData(NonExistantFile, false, fs::CD_CreateNew, "01234");
+  FileRemover Cleanup(NonExistantFile);
+  const auto &Read = [&](size_t ToRead) -> Expected<std::string> {
+    std::string Buf(ToRead, '?');
+    Expected<fs::file_t> FD = fs::openNativeFileForRead(NonExistantFile);
+    if (!FD)
+      return FD.takeError();
+    auto Close = make_scope_exit([&] { fs::closeFile(*FD); });
+    if (Expected<size_t> BytesRead = fs::readNativeFile(
+            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size())))
+      return Buf.substr(0, *BytesRead);
+    else
+      return BytesRead.takeError();
+  };
+  EXPECT_THAT_EXPECTED(Read(5), HasValue("01234"));
+  EXPECT_THAT_EXPECTED(Read(3), HasValue("012"));
+  EXPECT_THAT_EXPECTED(Read(6), HasValue("01234"));
+}
+
+TEST_F(FileSystemTest, readNativeFileSlice) {
+  createFileWithData(NonExistantFile, false, fs::CD_CreateNew, "01234");
+  FileRemover Cleanup(NonExistantFile);
+  Expected<fs::file_t> FD = fs::openNativeFileForRead(NonExistantFile);
+  ASSERT_THAT_EXPECTED(FD, Succeeded());
+  auto Close = make_scope_exit([&] { fs::closeFile(*FD); });
+  const auto &Read = [&](size_t Offset,
+                         size_t ToRead) -> Expected<std::string> {
+    std::string Buf(ToRead, '?');
+    if (Expected<size_t> BytesRead = fs::readNativeFileSlice(
+            *FD, makeMutableArrayRef(&*Buf.begin(), Buf.size()), Offset))
+      return Buf.substr(0, *BytesRead);
+    else
+      return BytesRead.takeError();
+  };
+  EXPECT_THAT_EXPECTED(Read(0, 5), HasValue("01234"));
+  EXPECT_THAT_EXPECTED(Read(0, 3), HasValue("012"));
+  EXPECT_THAT_EXPECTED(Read(2, 3), HasValue("234"));
+  EXPECT_THAT_EXPECTED(Read(0, 6), HasValue("01234"));
+  EXPECT_THAT_EXPECTED(Read(2, 6), HasValue("234"));
+  EXPECT_THAT_EXPECTED(Read(5, 5), HasValue(""));
 }
 
 TEST_F(FileSystemTest, is_local) {

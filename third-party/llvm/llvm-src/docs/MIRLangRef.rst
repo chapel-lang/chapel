@@ -343,6 +343,10 @@ specified in brackets after the block's definition:
 .. TODO: Describe the way the reference to an unnamed LLVM IR block can be
    preserved.
 
+``Alignment`` is specified in bytes, and must be a power of two.
+
+.. _mir-instructions:
+
 Machine Instructions
 --------------------
 
@@ -404,6 +408,8 @@ The syntax for bundled instructions is the following:
 
 The first instruction is often a bundle header. The instructions between ``{``
 and ``}`` are bundled with the first instruction.
+
+.. _mir-registers:
 
 Registers
 ---------
@@ -614,9 +620,13 @@ following format is used:
         alignment:        <alignment>
         isTargetSpecific: <target-specific>
 
-where ``<index>`` is a 32-bit unsigned integer, ``<value>`` is a `LLVM IR Constant
-<https://www.llvm.org/docs/LangRef.html#constants>`_, alignment is a 32-bit
-unsigned integer, and ``<target-specific>`` is either true or false.
+where:
+  - ``<index>`` is a 32-bit unsigned integer;
+  - ``<value>`` is a `LLVM IR Constant
+    <https://www.llvm.org/docs/LangRef.html#constants>`_;
+  - ``<alignment>`` is a 32-bit unsigned integer specified in bytes, and must be
+    power of two;
+  - ``<target-specific>`` is either true or false.
 
 Example:
 

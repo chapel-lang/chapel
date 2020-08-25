@@ -5,6 +5,7 @@
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -63,10 +64,10 @@ std::unique_ptr<Module> parseMIR(LLVMContext &Context,
 
   M->setDataLayout(TM.createDataLayout());
 
-  MachineModuleInfo *MMI = new MachineModuleInfo(&TM);
-  if (MIR->parseMachineFunctions(*M, *MMI))
+  MachineModuleInfoWrapperPass *MMIWP = new MachineModuleInfoWrapperPass(&TM);
+  if (MIR->parseMachineFunctions(*M, MMIWP->getMMI()))
     return nullptr;
-  PM.add(MMI);
+  PM.add(MMIWP);
 
   return M;
 }
@@ -309,8 +310,8 @@ TEST(LiveIntervalTest, MoveUndefUse) {
 
 TEST(LiveIntervalTest, MoveUpValNos) {
   // handleMoveUp() had a bug where it would reuse the value number of the
-  // destination segment, even though we have no guarntee that this valno wasn't
-  // used in other segments.
+  // destination segment, even though we have no guarantee that this valno
+  // wasn't used in other segments.
   liveIntervalTest(R"MIR(
     successors: %bb.1, %bb.2
     %0 = IMPLICIT_DEF
@@ -421,6 +422,46 @@ TEST(LiveIntervalTest, DeadSubRegMoveUp) {
   });
 }
 
+TEST(LiveIntervalTest, TestMoveSubRegDefAcrossUseDef) {
+  liveIntervalTest(R"MIR(
+    %1:vreg_64 = IMPLICIT_DEF
+
+  bb.1:
+    %2:vgpr_32 = V_MOV_B32_e32 2, implicit $exec
+    %3:vgpr_32 = V_ADD_U32_e32 %2, %1.sub0, implicit $exec
+    undef %1.sub0:vreg_64 = V_ADD_U32_e32 %2, %2, implicit $exec
+    %1.sub1:vreg_64 = COPY %2
+    S_NOP 0, implicit %1.sub1
+    S_BRANCH %bb.1
+
+)MIR", [](MachineFunction &MF, LiveIntervals &LIS) {
+     MachineInstr &UndefSubregDef = getMI(MF, 2, 1);
+     // The scheduler clears undef from subregister defs before moving
+     UndefSubregDef.getOperand(0).setIsUndef(false);
+     testHandleMove(MF, LIS, 3, 1, 1);
+  });
+}
+
+TEST(LiveIntervalTest, TestMoveSubRegDefAcrossUseDefMulti) {
+  liveIntervalTest(R"MIR(
+    %1:vreg_96 = IMPLICIT_DEF
+
+  bb.1:
+    %2:vgpr_32 = V_MOV_B32_e32 2, implicit $exec
+    %3:vgpr_32 = V_ADD_U32_e32 %2, %1.sub0, implicit $exec
+    undef %1.sub0:vreg_96 = V_ADD_U32_e32 %2, %2, implicit $exec
+    %1.sub1:vreg_96 = COPY %2
+    %1.sub2:vreg_96 = COPY %2
+    S_NOP 0, implicit %1.sub1, implicit %1.sub2
+    S_BRANCH %bb.1
+
+)MIR", [](MachineFunction &MF, LiveIntervals &LIS) {
+     MachineInstr &UndefSubregDef = getMI(MF, 2, 1);
+     // The scheduler clears undef from subregister defs before moving
+     UndefSubregDef.getOperand(0).setIsUndef(false);
+     testHandleMove(MF, LIS, 4, 1, 1);
+  });
+}
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
   initLLVM();

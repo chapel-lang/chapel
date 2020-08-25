@@ -306,7 +306,7 @@ Compiled to LLVM, this function would be represented like this:
   ; Function Attrs: nounwind readnone
   declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
 
-  attributes #0 = { nounwind ssp uwtable "less-precise-fpmad"="false" "no-frame-pointer-elim"="true" "no-frame-pointer-elim-non-leaf" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
+  attributes #0 = { nounwind ssp uwtable "less-precise-fpmad"="false" "frame-pointer"="all" "no-infs-fp-math"="false" "no-nans-fp-math"="false" "stack-protector-buffer-size"="8" "unsafe-fp-math"="false" "use-soft-float"="false" }
   attributes #1 = { nounwind readnone }
 
   !llvm.dbg.cu = !{!0}
@@ -402,7 +402,7 @@ values through compilation, when objects are promoted to SSA values an
 ``llvm.dbg.value`` intrinsic is created for each assignment, recording the
 variable's new location. Compared with the ``llvm.dbg.declare`` intrinsic:
 
-* A dbg.value terminates the effect of any preceeding dbg.values for (any
+* A dbg.value terminates the effect of any preceding dbg.values for (any
   overlapping fragments of) the specified variable.
 * The dbg.value's position in the IR defines where in the instruction stream
   the variable's value changes.
@@ -471,7 +471,7 @@ perhaps, be optimized into the following code:
   }
 
 What ``llvm.dbg.value`` intrinsics should be placed to represent the original variable
-locations in this code? Unfortunately the the second, third and fourth
+locations in this code? Unfortunately the second, third and fourth
 dbg.values for ``!1`` in the source function have had their operands
 (%tval, %fval, %merge) optimized out. Assuming we cannot recover them, we
 might consider this placement of dbg.values:
@@ -714,7 +714,7 @@ Imagine that the SUB32rr were moved forward to give us the following MIR:
 
 In this circumstance LLVM would leave the MIR as shown above. Were we to move
 the DBG_VALUE of virtual register %7 upwards with the SUB32rr, we would re-order
-assignments and introduce a new state of the program. Wheras with the solution
+assignments and introduce a new state of the program. Whereas with the solution
 above, the debugger will see one fewer combination of variable values, because
 ``!3`` and ``!5`` will change value at the same time. This is preferred over
 misrepresenting the original program.
@@ -747,7 +747,7 @@ To avoid debug instructions interfering with the register allocator, the
 LiveDebugVariables pass extracts variable locations from a MIR function and
 deletes the corresponding DBG_VALUE instructions. Some localized copy
 propagation is performed within blocks. After register allocation, the
-VirtRegRewriter pass re-inserts DBG_VALUE instructions in their orignal
+VirtRegRewriter pass re-inserts DBG_VALUE instructions in their original
 positions, translating virtual register references into their physical
 machine locations. To avoid encoding incorrect variable locations, in this
 pass any DBG_VALUE of a virtual register that is not live, is replaced by
@@ -767,7 +767,7 @@ corresponding to a source-level assignment where the variable may change value,
 it asserts the location of a variable in a block, and loses effect outside the
 block. Propagating variable locations through copies and spills is
 straightforwards: determining the variable location in every basic block
-requries the consideraton of control flow. Consider the following IR, which
+requires the consideration of control flow. Consider the following IR, which
 presents several difficulties:
 
 .. code-block:: text
@@ -840,25 +840,25 @@ of variable ``!23`` should not flow "down" into the ``%exit`` block.
 C/C++ front-end specific debug information
 ==========================================
 
-The C and C++ front-ends represent information about the program in a format
-that is effectively identical to `DWARF 3.0
-<http://www.eagercon.com/dwarf/dwarf3std.htm>`_ in terms of information
-content.  This allows code generators to trivially support native debuggers by
-generating standard dwarf information, and contains enough information for
-non-dwarf targets to translate it as needed.
+The C and C++ front-ends represent information about the program in a
+format that is effectively identical to `DWARF <http://www.dwarfstd.org/>`_
+in terms of information content.  This allows code generators to
+trivially support native debuggers by generating standard dwarf
+information, and contains enough information for non-dwarf targets to
+translate it as needed.
 
 This section describes the forms used to represent C and C++ programs.  Other
 languages could pattern themselves after this (which itself is tuned to
-representing programs in the same way that DWARF 3 does), or they could choose
+representing programs in the same way that DWARF does), or they could choose
 to provide completely different forms if they don't fit into the DWARF model.
 As support for debugging information gets added to the various LLVM
 source-language front-ends, the information used should be documented here.
 
-The following sections provide examples of a few C/C++ constructs and the debug
-information that would best describe those constructs.  The canonical
-references are the ``DIDescriptor`` classes defined in
-``include/llvm/IR/DebugInfo.h`` and the implementations of the helper functions
-in ``lib/IR/DIBuilder.cpp``.
+The following sections provide examples of a few C/C++ constructs and
+the debug information that would best describe those constructs.  The
+canonical references are the ``DINode`` classes defined in
+``include/llvm/IR/DebugInfoMetadata.h`` and the implementations of the
+helper functions in ``lib/IR/DIBuilder.cpp``.
 
 C/C++ source file information
 -----------------------------
@@ -988,6 +988,39 @@ a C/C++ front-end would generate the following descriptors:
   define i32 @main(i32 %argc, i8** %argv) !dbg !4 {
   ...
   }
+
+C++ specific debug information
+==============================
+
+C++ special member functions information
+----------------------------------------
+
+DWARF v5 introduces attributes defined to enhance debugging information of C++ programs. LLVM can generate (or omit) these appropriate DWARF attributes. In C++ a special member function Ctors, Dtors, Copy/Move Ctors, assignment operators can be declared with C++11 keyword deleted. This is represented in LLVM using spFlags value DISPFlagDeleted.
+
+Given a class declaration with copy constructor declared as deleted:
+
+.. code-block:: c
+
+  class foo {
+   public:
+     foo(const foo&) = deleted;
+  };
+
+A C++ frontend would generate follwing:
+
+.. code-block:: text
+
+  !17 = !DISubprogram(name: "foo", scope: !11, file: !1, line: 5, type: !18, scopeLine: 5, flags: DIFlagPublic | DIFlagPrototyped, spFlags: DISPFlagDeleted)
+
+and this will produce an additional DWARF attibute as:
+
+.. code-block:: text
+
+  DW_TAG_subprogram [7] *
+    DW_AT_name [DW_FORM_strx1]    (indexed (00000006) string = "foo")
+    DW_AT_decl_line [DW_FORM_data1]       (5)
+    ...
+    DW_AT_deleted [DW_FORM_flag_present]  (true)
 
 Fortran specific debug information
 ==================================
@@ -1121,7 +1154,7 @@ directly.
 
 Also, it is common practice in ObjC to have different property declarations in
 the @interface and @implementation - e.g. to provide a read-only property in
-the interface,and a read-write interface in the implementation.  In that case,
+the interface, and a read-write interface in the implementation.  In that case,
 the compiler should emit whichever property declaration will be in force in the
 current translation unit.
 

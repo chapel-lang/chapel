@@ -7,7 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/RISCVFixupKinds.h"
+#include "MCTargetDesc/RISCVMCExpr.h"
 #include "MCTargetDesc/RISCVMCTargetDesc.h"
+#include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/MC/MCObjectWriter.h"
@@ -47,12 +49,14 @@ unsigned RISCVELFObjectWriter::getRelocType(MCContext &Ctx,
                                             const MCValue &Target,
                                             const MCFixup &Fixup,
                                             bool IsPCRel) const {
+  const MCExpr *Expr = Fixup.getValue();
   // Determine the type of the relocation
-  unsigned Kind = Fixup.getKind();
+  unsigned Kind = Fixup.getTargetKind();
   if (IsPCRel) {
     switch (Kind) {
     default:
-      llvm_unreachable("invalid fixup kind!");
+      Ctx.reportError(Fixup.getLoc(), "Unsupported relocation type");
+      return ELF::R_RISCV_NONE;
     case FK_Data_4:
     case FK_PCRel_4:
       return ELF::R_RISCV_32_PCREL;
@@ -85,8 +89,18 @@ unsigned RISCVELFObjectWriter::getRelocType(MCContext &Ctx,
 
   switch (Kind) {
   default:
-    llvm_unreachable("invalid fixup kind!");
+    Ctx.reportError(Fixup.getLoc(), "Unsupported relocation type");
+    return ELF::R_RISCV_NONE;
+  case FK_Data_1:
+    Ctx.reportError(Fixup.getLoc(), "1-byte data relocations not supported");
+    return ELF::R_RISCV_NONE;
+  case FK_Data_2:
+    Ctx.reportError(Fixup.getLoc(), "2-byte data relocations not supported");
+    return ELF::R_RISCV_NONE;
   case FK_Data_4:
+    if (Expr->getKind() == MCExpr::Target &&
+        cast<RISCVMCExpr>(Expr)->getKind() == RISCVMCExpr::VK_RISCV_32_PCREL)
+      return ELF::R_RISCV_32_PCREL;
     return ELF::R_RISCV_32;
   case FK_Data_8:
     return ELF::R_RISCV_64;
@@ -98,6 +112,8 @@ unsigned RISCVELFObjectWriter::getRelocType(MCContext &Ctx,
     return ELF::R_RISCV_ADD32;
   case FK_Data_Add_8:
     return ELF::R_RISCV_ADD64;
+  case FK_Data_Add_6b:
+    return ELF::R_RISCV_SET6;
   case FK_Data_Sub_1:
     return ELF::R_RISCV_SUB8;
   case FK_Data_Sub_2:
@@ -106,6 +122,8 @@ unsigned RISCVELFObjectWriter::getRelocType(MCContext &Ctx,
     return ELF::R_RISCV_SUB32;
   case FK_Data_Sub_8:
     return ELF::R_RISCV_SUB64;
+  case FK_Data_Sub_6b:
+    return ELF::R_RISCV_SUB6;
   case RISCV::fixup_riscv_hi20:
     return ELF::R_RISCV_HI20;
   case RISCV::fixup_riscv_lo12_i:
@@ -129,5 +147,5 @@ unsigned RISCVELFObjectWriter::getRelocType(MCContext &Ctx,
 
 std::unique_ptr<MCObjectTargetWriter>
 llvm::createRISCVELFObjectWriter(uint8_t OSABI, bool Is64Bit) {
-  return llvm::make_unique<RISCVELFObjectWriter>(OSABI, Is64Bit);
+  return std::make_unique<RISCVELFObjectWriter>(OSABI, Is64Bit);
 }

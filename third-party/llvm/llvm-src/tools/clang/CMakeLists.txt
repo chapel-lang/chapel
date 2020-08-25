@@ -114,6 +114,7 @@ if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
   include(TableGen)
   include(HandleLLVMOptions)
   include(VersionFromVCS)
+  include(LLVMDistributionSupport)
 
   set(PACKAGE_VERSION "${LLVM_PACKAGE_VERSION}")
 
@@ -235,6 +236,9 @@ set(ENABLE_X86_RELAX_RELOCATIONS OFF CACHE BOOL
 
 set(ENABLE_EXPERIMENTAL_NEW_PASS_MANAGER FALSE CACHE BOOL
   "Enable the experimental new pass manager by default.")
+
+set(CLANG_SPAWN_CC1 OFF CACHE BOOL
+    "Whether clang should use a new process for the CC1 invocation")
 
 # TODO: verify the values against LangStandards.def?
 set(CLANG_DEFAULT_STD_C "" CACHE STRING
@@ -441,9 +445,15 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
                              COMPONENT clang-headers)
   endif()
 
+  add_custom_target(bash-autocomplete DEPENDS utils/bash-autocomplete.sh)
   install(PROGRAMS utils/bash-autocomplete.sh
-    DESTINATION share/clang
-    )
+          DESTINATION share/clang
+          COMPONENT bash-autocomplete)
+  if(NOT LLVM_ENABLE_IDE)
+    add_llvm_install_targets(install-bash-autocomplete
+                             DEPENDS bash-autocomplete
+                             COMPONENT bash-autocomplete)
+  endif()
 endif()
 
 add_definitions( -D_GNU_SOURCE )
@@ -794,8 +804,8 @@ if (CLANG_ENABLE_BOOTSTRAP)
                 # We shouldn't need to set this here, but INSTALL_DIR doesn't
                 # seem to work, so instead I'm passing this through
                 -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
-                ${CLANG_BOOTSTRAP_CMAKE_ARGS}
                 ${PASSTHROUGH_VARIABLES}
+                ${CLANG_BOOTSTRAP_CMAKE_ARGS}
                  -DCLANG_STAGE=${NEXT_CLANG_STAGE}
                 ${COMPILER_OPTIONS}
                 ${${CLANG_STAGE}_CONFIG}
@@ -851,6 +861,11 @@ if (LLVM_ADD_NATIVE_VISUALIZERS_TO_SOLUTION)
   add_subdirectory(utils/ClangVisualizers)
 endif()
 add_subdirectory(utils/hmaptool)
+
+if(CLANG_BUILT_STANDALONE)
+  llvm_distribution_add_targets()
+  process_llvm_pass_plugins()
+endif()
 
 configure_file(
   ${CLANG_SOURCE_DIR}/include/clang/Config/config.h.cmake

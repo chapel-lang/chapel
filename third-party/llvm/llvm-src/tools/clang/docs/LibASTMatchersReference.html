@@ -2576,8 +2576,13 @@ class y;
 </pre></td></tr>
 
 
-<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom1')"><a name="isDerivedFrom1Anchor">isDerivedFrom</a></td><td>std::string BaseName</td></tr>
-<tr><td colspan="4" class="doc" id="isDerivedFrom1"><pre>Overloaded method as shortcut for isDerivedFrom(hasName(...)).
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom2')"><a name="isDerivedFrom2Anchor">isDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDerivedFrom2"><pre>Overloaded method as shortcut for isDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom2')"><a name="isDirectlyDerivedFrom2Anchor">isDirectlyDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom2"><pre>Overloaded method as shortcut for isDirectlyDerivedFrom(hasName(...)).
 </pre></td></tr>
 
 
@@ -2623,8 +2628,8 @@ decltype(x)
 </pre></td></tr>
 
 
-<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom1')"><a name="isSameOrDerivedFrom1Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
-<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom1"><pre>Overloaded method as shortcut for
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom2')"><a name="isSameOrDerivedFrom2Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom2"><pre>Overloaded method as shortcut for
 isSameOrDerivedFrom(hasName(...)).
 </pre></td></tr>
 
@@ -3001,6 +3006,23 @@ For example, the array bound of "Chars" in the following example is
 value-dependent.
   template&lt;int Size&gt; int f() { return Size; }
 expr(isValueDependent()) matches return Size
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;</td><td class="name" onclick="toggle('nullPointerConstant0')"><a name="nullPointerConstant0Anchor">nullPointerConstant</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="nullPointerConstant0"><pre>Matches expressions that resolve to a null pointer constant, such as
+GNU's __null, C++11's nullptr, or C's NULL macro.
+
+Given:
+  void *v1 = NULL;
+  void *v2 = nullptr;
+  void *v3 = __null; // GNU extension
+  char *cp = (char *)0;
+  int *ip = 0;
+  int i = 0;
+expr(nullPointerConstant())
+  matches the initializer for v1, v2, v3, cp, and ip. Does not match the
+  initializer for i.
 </pre></td></tr>
 
 
@@ -3588,6 +3610,22 @@ Given
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom3')"><a name="isDerivedFrom3Anchor">isDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDerivedFrom3"><pre>Overloaded method as shortcut for isDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom3')"><a name="isDirectlyDerivedFrom3Anchor">isDirectlyDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom3"><pre>Overloaded method as shortcut for isDirectlyDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom3')"><a name="isSameOrDerivedFrom3Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom3"><pre>Overloaded method as shortcut for
+isSameOrDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMessageExpr.html">ObjCMessageExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountIs2')"><a name="argumentCountIs2Anchor">argumentCountIs</a></td><td>unsigned N</td></tr>
 <tr><td colspan="4" class="doc" id="argumentCountIs2"><pre>Checks that a call expression or a constructor call expression has
 a specific number of arguments (including absent default arguments).
@@ -3740,6 +3778,18 @@ but not
 Example matches y (matcher = parmVarDecl(hasDefaultArgument()))
 void x(int val) {}
 void y(int val = 0) {}
+
+Deprecated. Use hasInitializer() instead to be able to
+match on the contents of the default argument.  For example:
+
+void x(int val = 7) {}
+void y(int val = 42) {}
+parmVarDecl(hasInitializer(integerLiteral(equals(42))))
+  matches the parameter of y
+
+A matcher such as
+  parmVarDecl(hasInitializer(anything()))
+is equivalent to parmVarDecl(hasDefaultArgument()).
 </pre></td></tr>
 
 
@@ -4458,23 +4508,6 @@ functionDecl(isInstantiated())
 </pre></td></tr>
 
 
-<tr><td>Matcher&lt;internal::Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;&gt;</td><td class="name" onclick="toggle('nullPointerConstant0')"><a name="nullPointerConstant0Anchor">nullPointerConstant</a></td><td></td></tr>
-<tr><td colspan="4" class="doc" id="nullPointerConstant0"><pre>Matches expressions that resolve to a null pointer constant, such as
-GNU's __null, C++11's nullptr, or C's NULL macro.
-
-Given:
-  void *v1 = NULL;
-  void *v2 = nullptr;
-  void *v3 = __null; // GNU extension
-  char *cp = (char *)0;
-  int *ip = 0;
-  int i = 0;
-expr(nullPointerConstant())
-  matches the initializer for v1, v2, v3, cp, and ip. Does not match the
-  initializer for i.
-</pre></td></tr>
-
-
 <tr><td>Matcher&lt;internal::Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt;&gt;</td><td class="name" onclick="toggle('hasAnyName0')"><a name="hasAnyName0Anchor">hasAnyName</a></td><td>StringRef, ..., StringRef</td></tr>
 <tr><td colspan="4" class="doc" id="hasAnyName0"><pre>Matches NamedDecl nodes that have any of the specified names.
 
@@ -4651,6 +4684,32 @@ matcher.
 Given
 void f() { for (;;) { int x = 42; if (true) { int x = 43; } } }
 compoundStmt(hasParent(ifStmt())) matches "{ int x = 43; }".
+
+Usable as: Any Matcher
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;*&gt;</td><td class="name" onclick="toggle('optionally0')"><a name="optionally0Anchor">optionally</a></td><td>Matcher&lt;*&gt;, ..., Matcher&lt;*&gt;</td></tr>
+<tr><td colspan="4" class="doc" id="optionally0"><pre>Matches any node regardless of the submatchers.
+
+However, optionally will generate a result binding for each matching
+submatcher.
+
+Useful when additional information which may or may not present about a
+main matching node is desired.
+
+For example, in:
+  class Foo {
+    int bar;
+  }
+The matcher:
+  cxxRecordDecl(
+    optionally(has(
+      fieldDecl(hasName("bar")).bind("var")
+  ))).bind("record")
+will produce a result binding for both "record" and "var".
+The matcher will produce a "record" binding for even if there is no data
+member named "bar" in that class.
 
 Usable as: Any Matcher
 </pre></td></tr>
@@ -5061,6 +5120,29 @@ with compoundStmt()
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXForRangeStmt.html">CXXForRangeStmt</a>&gt;</td><td class="name" onclick="toggle('hasInitStatement2')"><a name="hasInitStatement2Anchor">hasInitStatement</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasInitStatement2"><pre>Matches selection statements with initializer.
+
+Given:
+ void foo() {
+   if (int i = foobar(); i &gt; 0) {}
+   switch (int i = foobar(); i) {}
+   for (auto&amp; a = get_range(); auto&amp; x : a) {}
+ }
+ void bar() {
+   if (foobar() &gt; 0) {}
+   switch (foobar()) {}
+   for (auto&amp; x : get_range()) {}
+ }
+ifStmt(hasInitStatement(anything()))
+  matches the if statement in foo but not in bar.
+switchStmt(hasInitStatement(anything()))
+  matches the switch statement in foo but not in bar.
+cxxForRangeStmt(hasInitStatement(anything()))
+  matches the range for statement in foo but not in bar.
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXForRangeStmt.html">CXXForRangeStmt</a>&gt;</td><td class="name" onclick="toggle('hasLoopVariable0')"><a name="hasLoopVariable0Anchor">hasLoopVariable</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1VarDecl.html">VarDecl</a>&gt; InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="hasLoopVariable0"><pre>Matches the initialization statement of a for loop.
 
@@ -5191,7 +5273,7 @@ Example matches A() in the last line
 
 Given:
   MyClass *p1 = new MyClass[10];
-cxxNewExpr(hasArraySize(intgerLiteral(equals(10))))
+cxxNewExpr(hasArraySize(integerLiteral(equals(10))))
   matches the expression 'new MyClass[10]'.
 </pre></td></tr>
 
@@ -5243,12 +5325,40 @@ A but not B.
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom0')"><a name="isDerivedFrom0Anchor">isDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
-<tr><td colspan="4" class="doc" id="isDerivedFrom0"><pre>Matches C++ classes that are directly or indirectly derived from
-a class matching Base.
+<tr><td colspan="4" class="doc" id="isDerivedFrom0"><pre>Matches C++ classes that are directly or indirectly derived from a class
+matching Base, or Objective-C classes that directly or indirectly
+subclass a class matching Base.
 
 Note that a class is not considered to be derived from itself.
 
 Example matches Y, Z, C (Base == hasName("X"))
+  class X;
+  class Y : public X {};  // directly derived
+  class Z : public Y {};  // indirectly derived
+  typedef X A;
+  typedef A B;
+  class C : public B {};  // derived from a typedef of X
+
+In the following example, Bar matches isDerivedFrom(hasName("X")):
+  class Foo;
+  typedef Foo X;
+  class Bar : public Foo {};  // derived from a type that X is a typedef of
+
+In the following example, Bar matches isDerivedFrom(hasName("NSObject"))
+  @interface NSObject @end
+  @interface Bar : NSObject @end
+
+Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom0')"><a name="isDirectlyDerivedFrom0Anchor">isDirectlyDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom0"><pre>Matches C++ or Objective-C classes that are directly derived from a class
+matching Base.
+
+Note that a class is not considered to be derived from itself.
+
+Example matches Y, C (Base == hasName("X"))
   class X;
   class Y : public X {};  // directly derived
   class Z : public Y {};  // indirectly derived
@@ -5780,14 +5890,15 @@ Example matches x (matcher = expr(hasType(cxxRecordDecl(hasName("X")))))
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;</td><td class="name" onclick="toggle('ignoringElidableConstructorCall0')"><a name="ignoringElidableConstructorCall0Anchor">ignoringElidableConstructorCall</a></td><td>ast_matchers::Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="ignoringElidableConstructorCall0"><pre>Matches expressions that match InnerMatcher that are possibly wrapped in an
-elidable constructor.
+elidable constructor and other corresponding bookkeeping nodes.
 
-In C++17 copy elidable constructors are no longer being
-generated in the AST as it is not permitted by the standard. They are
-however part of the AST in C++14 and earlier. Therefore, to write a matcher
-that works in all language modes, the matcher has to skip elidable
-constructor AST nodes if they appear in the AST. This matcher can be used to
-skip those elidable constructors.
+In C++17, elidable copy constructors are no longer being generated in the
+AST as it is not permitted by the standard. They are, however, part of the
+AST in C++14 and earlier. So, a matcher must abstract over these differences
+to work in all language modes. This matcher skips elidable constructor-call
+AST nodes, `ExprWithCleanups` nodes wrapping elidable constructor-calls and
+various implicit nodes inside the constructor calls, all of which will not
+appear in the C++17 AST.
 
 Given
 
@@ -5797,10 +5908,8 @@ void f() {
   H D = G();
 }
 
-``varDecl(hasInitializer(any(
-      ignoringElidableConstructorCall(callExpr()),
-      exprWithCleanups(ignoringElidableConstructorCall(callExpr()))))``
-matches ``H D = G()``
+``varDecl(hasInitializer(ignoringElidableConstructorCall(callExpr())))``
+matches ``H D = G()`` in C++11 through C++17 (and beyond).
 </pre></td></tr>
 
 
@@ -6158,6 +6267,29 @@ Examples matches the if statement
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1IfStmt.html">IfStmt</a>&gt;</td><td class="name" onclick="toggle('hasInitStatement0')"><a name="hasInitStatement0Anchor">hasInitStatement</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasInitStatement0"><pre>Matches selection statements with initializer.
+
+Given:
+ void foo() {
+   if (int i = foobar(); i &gt; 0) {}
+   switch (int i = foobar(); i) {}
+   for (auto&amp; a = get_range(); auto&amp; x : a) {}
+ }
+ void bar() {
+   if (foobar() &gt; 0) {}
+   switch (foobar()) {}
+   for (auto&amp; x : get_range()) {}
+ }
+ifStmt(hasInitStatement(anything()))
+  matches the if statement in foo but not in bar.
+switchStmt(hasInitStatement(anything()))
+  matches the switch statement in foo but not in bar.
+cxxForRangeStmt(hasInitStatement(anything()))
+  matches the range for statement in foo but not in bar.
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1IfStmt.html">IfStmt</a>&gt;</td><td class="name" onclick="toggle('hasThen0')"><a name="hasThen0Anchor">hasThen</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="hasThen0"><pre>Matches the then-statement of an if statement.
 
@@ -6255,6 +6387,33 @@ Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Addr
   Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1TagType.html">TagType</a>&gt;, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1TemplateSpecializationType.html">TemplateSpecializationType</a>&gt;,
   Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1TemplateTypeParmType.html">TemplateTypeParmType</a>&gt;, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1TypedefType.html">TypedefType</a>&gt;,
   Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1UnresolvedUsingType.html">UnresolvedUsingType</a>&gt;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1LambdaExpr.html">LambdaExpr</a>&gt;</td><td class="name" onclick="toggle('hasAnyCapture1')"><a name="hasAnyCapture1Anchor">hasAnyCapture</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXThisExpr.html">CXXThisExpr</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasAnyCapture1"><pre>Matches any capture of 'this' in a lambda expression.
+
+Given
+  struct foo {
+    void bar() {
+      auto f = [this](){};
+    }
+  }
+lambdaExpr(hasAnyCapture(cxxThisExpr()))
+  matches [this](){};
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1LambdaExpr.html">LambdaExpr</a>&gt;</td><td class="name" onclick="toggle('hasAnyCapture0')"><a name="hasAnyCapture0Anchor">hasAnyCapture</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1VarDecl.html">VarDecl</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasAnyCapture0"><pre>Matches any capture of a lambda expression.
+
+Given
+  void foo() {
+    int x;
+    auto f = [x](){};
+  }
+lambdaExpr(hasAnyCapture(anything()))
+  matches [x](){};
 </pre></td></tr>
 
 
@@ -6441,6 +6600,61 @@ Given
    {}
 
 ``ompExecutableDirective(hasStructuredBlock(nullStmt()))`` will match ``;``
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom1')"><a name="isDerivedFrom1Anchor">isDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isDerivedFrom1"><pre>Matches C++ classes that are directly or indirectly derived from a class
+matching Base, or Objective-C classes that directly or indirectly
+subclass a class matching Base.
+
+Note that a class is not considered to be derived from itself.
+
+Example matches Y, Z, C (Base == hasName("X"))
+  class X;
+  class Y : public X {};  // directly derived
+  class Z : public Y {};  // indirectly derived
+  typedef X A;
+  typedef A B;
+  class C : public B {};  // derived from a typedef of X
+
+In the following example, Bar matches isDerivedFrom(hasName("X")):
+  class Foo;
+  typedef Foo X;
+  class Bar : public Foo {};  // derived from a type that X is a typedef of
+
+In the following example, Bar matches isDerivedFrom(hasName("NSObject"))
+  @interface NSObject @end
+  @interface Bar : NSObject @end
+
+Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom1')"><a name="isDirectlyDerivedFrom1Anchor">isDirectlyDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom1"><pre>Matches C++ or Objective-C classes that are directly derived from a class
+matching Base.
+
+Note that a class is not considered to be derived from itself.
+
+Example matches Y, C (Base == hasName("X"))
+  class X;
+  class Y : public X {};  // directly derived
+  class Z : public Y {};  // indirectly derived
+  typedef X A;
+  typedef A B;
+  class C : public B {};  // derived from a typedef of X
+
+In the following example, Bar matches isDerivedFrom(hasName("X")):
+  class Foo;
+  typedef Foo X;
+  class Bar : public Foo {};  // derived from a type that X is a typedef of
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom1')"><a name="isSameOrDerivedFrom1Anchor">isSameOrDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom1"><pre>Similar to isDerivedFrom(), but also matches classes that directly
+match Base.
 </pre></td></tr>
 
 
@@ -6794,7 +7008,7 @@ F&amp; operator=(const F&amp; o) {
 }
 returnStmt(forFunction(hasName("operator=")))
   matches 'return *this'
-  but does match 'return &gt; 0'
+  but does not match 'return v &gt; 0'
 </pre></td></tr>
 
 
@@ -6837,6 +7051,29 @@ switch statement or conditional operator.
 
 Example matches true (matcher = hasCondition(cxxBoolLiteral(equals(true))))
   if (true) {}
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1SwitchStmt.html">SwitchStmt</a>&gt;</td><td class="name" onclick="toggle('hasInitStatement1')"><a name="hasInitStatement1Anchor">hasInitStatement</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasInitStatement1"><pre>Matches selection statements with initializer.
+
+Given:
+ void foo() {
+   if (int i = foobar(); i &gt; 0) {}
+   switch (int i = foobar(); i) {}
+   for (auto&amp; a = get_range(); auto&amp; x : a) {}
+ }
+ void bar() {
+   if (foobar() &gt; 0) {}
+   switch (foobar()) {}
+   for (auto&amp; x : get_range()) {}
+ }
+ifStmt(hasInitStatement(anything()))
+  matches the if statement in foo but not in bar.
+switchStmt(hasInitStatement(anything()))
+  matches the switch statement in foo but not in bar.
+cxxForRangeStmt(hasInitStatement(anything()))
+  matches the range for statement in foo but not in bar.
 </pre></td></tr>
 
 
@@ -7064,6 +7301,26 @@ The matcher:
 will generate results for A, B and C.
 
 Usable as: Any Matcher
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;T&gt;</td><td class="name" onclick="toggle('traverse1')"><a name="traverse1Anchor">traverse</a></td><td>ast_type_traits::TraversalKind TK, const BindableMatcher&lt;T&gt;  InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="traverse1"><pre></pre></td></tr>
+
+
+<tr><td>Matcher&lt;T&gt;</td><td class="name" onclick="toggle('traverse0')"><a name="traverse0Anchor">traverse</a></td><td>ast_type_traits::TraversalKind TK, const Matcher&lt;T&gt;  InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="traverse0"><pre>Causes all nested matchers to be matched with the specified traversal kind.
+
+Given
+  void foo()
+  {
+      int i = 3.0;
+  }
+The matcher
+  traverse(ast_type_traits::TK_IgnoreImplicitCastsAndParentheses,
+    varDecl(hasInitializer(floatLiteral().bind("init")))
+  )
+matches the variable declaration with "init" bound to the "3.0".
 </pre></td></tr>
 
 

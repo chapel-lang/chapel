@@ -91,13 +91,13 @@ class VariableBindAction : public ASTFrontendAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &Compiler,
                                                  StringRef File) override {
-    return llvm::make_unique<VariableBindConsumer>(Compiler);
+    return std::make_unique<VariableBindConsumer>(Compiler);
   }
 };
 
 TEST(Store, VariableBind) {
-  EXPECT_TRUE(tooling::runToolOnCode(
-      new VariableBindAction, "void foo() { int x0, y0, z0, x1, y1; }"));
+  EXPECT_TRUE(tooling::runToolOnCode(std::make_unique<VariableBindAction>(),
+                                     "void foo() { int x0, y0, z0, x1, y1; }"));
 }
 
 } // namespace

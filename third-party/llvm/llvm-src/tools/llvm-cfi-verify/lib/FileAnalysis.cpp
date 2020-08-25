@@ -22,6 +22,7 @@
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/COFF.h"
 #include "llvm/Object/ELFObjectFile.h"
@@ -363,7 +364,7 @@ uint64_t FileAnalysis::indirectCFOperandClobber(const GraphResult &Graph) const 
 
 void FileAnalysis::printInstruction(const Instr &InstrMeta,
                                     raw_ostream &OS) const {
-  Printer->printInst(&InstrMeta.Instruction, OS, "", *SubtargetInfo.get());
+  Printer->printInst(&InstrMeta.Instruction, 0, "", *SubtargetInfo.get(), OS);
 }
 
 Error FileAnalysis::initialiseDisassemblyMembers() {
@@ -387,7 +388,9 @@ Error FileAnalysis::initialiseDisassemblyMembers() {
     return make_error<UnsupportedDisassembly>(
         "Failed to initialise RegisterInfo.");
 
-  AsmInfo.reset(ObjectTarget->createMCAsmInfo(*RegisterInfo, TripleName));
+  MCTargetOptions MCOptions;
+  AsmInfo.reset(
+      ObjectTarget->createMCAsmInfo(*RegisterInfo, TripleName, MCOptions));
   if (!AsmInfo)
     return make_error<UnsupportedDisassembly>("Failed to initialise AsmInfo.");
 
@@ -449,9 +452,10 @@ Error FileAnalysis::parseCodeSections() {
 
     // Avoid checking the PLT since it produces spurious failures on AArch64
     // when ignoring DWARF data.
-    StringRef SectionName;
-    if (!Section.getName(SectionName) && SectionName == ".plt")
+    Expected<StringRef> NameOrErr = Section.getName();
+    if (NameOrErr && *NameOrErr == ".plt")
       continue;
+    consumeError(NameOrErr.takeError());
 
     Expected<StringRef> Contents = Section.getContents();
     if (!Contents)
@@ -474,7 +478,7 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
   for (uint64_t Byte = 0; Byte < SectionBytes.size();) {
     bool ValidInstruction =
         Disassembler->getInstruction(Instruction, InstructionSize,
-                                     SectionBytes.drop_front(Byte), 0, nulls(),
+                                     SectionBytes.drop_front(Byte), 0,
                                      outs()) == MCDisassembler::Success;
 
     Byte += InstructionSize;
@@ -520,7 +524,7 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
         continue;
       }
 
-      if (LineInfo->FileName == "<invalid>")
+      if (LineInfo->FileName == DILineInfo::BadString)
         continue;
     }
 

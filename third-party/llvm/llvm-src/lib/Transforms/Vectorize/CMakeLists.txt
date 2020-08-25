@@ -1,4 +1,4 @@
-add_llvm_library(LLVMVectorize
+add_llvm_component_library(LLVMVectorize
   LoadStoreVectorizer.cpp
   LoopVectorizationLegality.cpp
   LoopVectorize.cpp
@@ -6,9 +6,9 @@ add_llvm_library(LLVMVectorize
   Vectorize.cpp
   VPlan.cpp
   VPlanHCFGBuilder.cpp
-  VPlanHCFGTransforms.cpp
   VPlanPredicator.cpp
   VPlanSLP.cpp
+  VPlanTransforms.cpp
   VPlanVerifier.cpp
 
   ADDITIONAL_HEADER_DIRS

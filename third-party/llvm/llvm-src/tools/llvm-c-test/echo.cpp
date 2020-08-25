@@ -29,8 +29,8 @@ using namespace llvm;
 template<typename T>
 struct CAPIDenseMap {};
 
-// The default DenseMapInfo require to know about pointer alignement.
-// Because the C API uses opaques pointer types, their alignement is unknown.
+// The default DenseMapInfo require to know about pointer alignment.
+// Because the C API uses opaques pointer types, their alignment is unknown.
 // As a result, we need to roll out our own implementation.
 template<typename T>
 struct CAPIDenseMap<T*> {
@@ -326,6 +326,13 @@ static LLVMValueRef clone_constant_impl(LLVMValueRef Cst, LLVMModuleRef M) {
                                     EltCount, LLVMIsPackedStruct(Ty));
   }
 
+  // Try ConstantPointerNull
+  if (LLVMIsAConstantPointerNull(Cst)) {
+    check_value_kind(Cst, LLVMConstantPointerNullValueKind);
+    LLVMTypeRef Ty = TypeCloner(M).Clone(Cst);
+    return LLVMConstNull(Ty);
+  }
+
   // Try undef
   if (LLVMIsUndef(Cst)) {
     check_value_kind(Cst, LLVMUndefValueValueKind);
@@ -576,6 +583,8 @@ struct FunCloner {
         LLVMValueRef Ptr = CloneValue(LLVMGetOperand(Src, 0));
         Dst = LLVMBuildLoad(Builder, Ptr, Name);
         LLVMSetAlignment(Dst, LLVMGetAlignment(Src));
+        LLVMSetOrdering(Dst, LLVMGetOrdering(Src));
+        LLVMSetVolatile(Dst, LLVMGetVolatile(Src));
         break;
       }
       case LLVMStore: {
@@ -583,6 +592,8 @@ struct FunCloner {
         LLVMValueRef Ptr = CloneValue(LLVMGetOperand(Src, 1));
         Dst = LLVMBuildStore(Builder, Val, Ptr);
         LLVMSetAlignment(Dst, LLVMGetAlignment(Src));
+        LLVMSetOrdering(Dst, LLVMGetOrdering(Src));
+        LLVMSetVolatile(Dst, LLVMGetVolatile(Src));
         break;
       }
       case LLVMGetElementPtr: {
@@ -597,6 +608,17 @@ struct FunCloner {
           Dst = LLVMBuildGEP(Builder, Ptr, Idx.data(), NumIdx, Name);
         break;
       }
+      case LLVMAtomicRMW: {
+        LLVMValueRef Ptr = CloneValue(LLVMGetOperand(Src, 0));
+        LLVMValueRef Val = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMAtomicRMWBinOp BinOp = LLVMGetAtomicRMWBinOp(Src);
+        LLVMAtomicOrdering Ord = LLVMGetOrdering(Src);
+        LLVMBool SingleThread = LLVMIsAtomicSingleThread(Src);
+        Dst = LLVMBuildAtomicRMW(Builder, BinOp, Ptr, Val, Ord, SingleThread);
+        LLVMSetVolatile(Dst, LLVMGetVolatile(Src));
+        LLVMSetValueName2(Dst, Name, NameLen);
+        break;
+      }
       case LLVMAtomicCmpXchg: {
         LLVMValueRef Ptr = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef Cmp = CloneValue(LLVMGetOperand(Src, 1));
@@ -607,7 +629,11 @@ struct FunCloner {
 
         Dst = LLVMBuildAtomicCmpXchg(Builder, Ptr, Cmp, New, Succ, Fail,
                                      SingleThread);
-      } break;
+        LLVMSetVolatile(Dst, LLVMGetVolatile(Src));
+        LLVMSetWeak(Dst, LLVMGetWeak(Src));
+        LLVMSetValueName2(Dst, Name, NameLen);
+        break;
+      }
       case LLVMBitCast: {
         LLVMValueRef V = CloneValue(LLVMGetOperand(Src, 0));
         Dst = LLVMBuildBitCast(Builder, V, CloneType(Src), Name);
@@ -727,6 +753,11 @@ struct FunCloner {
           report_fatal_error("Expected only one indice");
         auto I = LLVMGetIndices(Src)[0];
         Dst = LLVMBuildInsertValue(Builder, Agg, V, I, Name);
+        break;
+      }
+      case LLVMFreeze: {
+        LLVMValueRef Arg = CloneValue(LLVMGetOperand(Src, 0));
+        Dst = LLVMBuildFreeze(Builder, Arg, Name);
         break;
       }
       default:

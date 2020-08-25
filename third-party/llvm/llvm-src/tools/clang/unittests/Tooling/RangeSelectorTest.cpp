@@ -6,18 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/Tooling/Refactoring/RangeSelector.h"
+#include "clang/Tooling/Transformer/RangeSelector.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Frontend/ASTUnit.h"
-#include "clang/Tooling/FixIt.h"
 #include "clang/Tooling/Tooling.h"
+#include "clang/Tooling/Transformer/SourceCode.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Testing/Support/Error.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 using namespace clang;
-using namespace tooling;
+using namespace transformer;
 using namespace ast_matchers;
 
 namespace {
@@ -40,7 +40,7 @@ struct TestMatch {
 };
 
 template <typename M> TestMatch matchCode(StringRef Code, M Matcher) {
-  auto ASTUnit = buildASTFromCode(Code);
+  auto ASTUnit = tooling::buildASTFromCode(Code);
   assert(ASTUnit != nullptr && "AST construction failed");
 
   ASTContext &Context = ASTUnit->getASTContext();
@@ -59,7 +59,7 @@ Expected<StringRef> select(RangeSelector Selector, const TestMatch &Match) {
   Expected<CharSourceRange> Range = Selector(Match.Result);
   if (!Range)
     return Range.takeError();
-  return fixit::internal::getText(*Range, *Match.Result.Context);
+  return tooling::getText(*Range, *Match.Result.Context);
 }
 
 // Applies \p Selector to a trivial match with only a single bound node with id
@@ -520,6 +520,35 @@ TEST(RangeSelectorTest, ElementsOpErrors) {
                        Failed<StringError>(withTypeErrorMessage("stmt")));
 }
 
+TEST(RangeSelectorTest, ElseBranchOpSingleStatement) {
+  StringRef Code = R"cc(
+    int f() {
+      int x = 0;
+      if (true) x = 3;
+      else x = 4;
+      return x + 5;
+    }
+  )cc";
+  StringRef ID = "id";
+  TestMatch Match = matchCode(Code, ifStmt().bind(ID));
+  EXPECT_THAT_EXPECTED(select(elseBranch(ID), Match), HasValue("else x = 4;"));
+}
+
+TEST(RangeSelectorTest, ElseBranchOpCompoundStatement) {
+  StringRef Code = R"cc(
+    int f() {
+      int x = 0;
+      if (true) x = 3;
+      else { x = 4; }
+      return x + 5;
+    }
+  )cc";
+  StringRef ID = "id";
+  TestMatch Match = matchCode(Code, ifStmt().bind(ID));
+  EXPECT_THAT_EXPECTED(select(elseBranch(ID), Match),
+                       HasValue("else { x = 4; }"));
+}
+
 // Tests case where the matched node is the complete expanded text.
 TEST(RangeSelectorTest, ExpansionOp) {
   StringRef Code = R"cc(
@@ -544,6 +573,31 @@ TEST(RangeSelectorTest, ExpansionOpPartial) {
   TestMatch Match = matchCode(Code, returnStmt().bind(Ret));
   EXPECT_THAT_EXPECTED(select(expansion(node(Ret)), Match),
                        HasValue("BADDECL(x * x)"));
+}
+
+TEST(RangeSelectorTest, IfBoundOpBound) {
+  StringRef Code = R"cc(
+    int f() {
+      return 3 + 5;
+    }
+  )cc";
+  StringRef ID = "id", Op = "op";
+  TestMatch Match =
+      matchCode(Code, binaryOperator(hasLHS(expr().bind(ID))).bind(Op));
+  EXPECT_THAT_EXPECTED(select(ifBound(ID, node(ID), node(Op)), Match),
+                       HasValue("3"));
+}
+
+TEST(RangeSelectorTest, IfBoundOpUnbound) {
+  StringRef Code = R"cc(
+    int f() {
+      return 3 + 5;
+    }
+  )cc";
+  StringRef ID = "id", Op = "op";
+  TestMatch Match = matchCode(Code, binaryOperator().bind(Op));
+  EXPECT_THAT_EXPECTED(select(ifBound(ID, node(ID), node(Op)), Match),
+                       HasValue("3 + 5"));
 }
 
 } // namespace

@@ -13,7 +13,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "yaml2obj.h"
+#include "llvm/ObjectYAML/yaml2obj.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ObjectYAML/ObjectYAML.h"
 #include "llvm/Support/CommandLine.h"
@@ -21,6 +21,7 @@
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/ToolOutputFile.h"
+#include "llvm/Support/WithColor.h"
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/Support/raw_ostream.h"
 #include <system_error>
@@ -37,37 +38,6 @@ DocNum("docnum", cl::init(1),
 static cl::opt<std::string> OutputFilename("o", cl::desc("Output filename"),
                                            cl::value_desc("filename"));
 
-LLVM_ATTRIBUTE_NORETURN static void error(Twine Message) {
-  errs() << Message << "\n";
-  exit(1);
-}
-
-static int convertYAML(yaml::Input &YIn, raw_ostream &Out) {
-  unsigned CurDocNum = 0;
-  do {
-    if (++CurDocNum == DocNum) {
-      yaml::YamlObjectFile Doc;
-      YIn >> Doc;
-      if (YIn.error())
-        error("yaml2obj: Failed to parse YAML file!");
-      if (Doc.Elf)
-        return yaml2elf(*Doc.Elf, Out);
-      if (Doc.Coff)
-        return yaml2coff(*Doc.Coff, Out);
-      if (Doc.MachO || Doc.FatMachO)
-        return yaml2macho(Doc, Out);
-      if (Doc.Minidump)
-        return yaml2minidump(*Doc.Minidump, Out);
-      if (Doc.Wasm)
-        return yaml2wasm(*Doc.Wasm, Out);
-      error("yaml2obj: Unknown document type!");
-    }
-  } while (YIn.nextDocument());
-
-  error("yaml2obj: Cannot find the " + Twine(DocNum) +
-        llvm::getOrdinalSuffix(DocNum) + " document");
-}
-
 int main(int argc, char **argv) {
   InitLLVM X(argc, argv);
   cl::ParseCommandLineOptions(argc, argv);
@@ -75,11 +45,17 @@ int main(int argc, char **argv) {
   if (OutputFilename.empty())
     OutputFilename = "-";
 
+  auto ErrHandler = [](const Twine &Msg) {
+    WithColor::error(errs(), "yaml2obj") << Msg << "\n";
+  };
+
   std::error_code EC;
   std::unique_ptr<ToolOutputFile> Out(
-      new ToolOutputFile(OutputFilename, EC, sys::fs::F_None));
-  if (EC)
-    error("yaml2obj: Error opening '" + OutputFilename + "': " + EC.message());
+      new ToolOutputFile(OutputFilename, EC, sys::fs::OF_None));
+  if (EC) {
+    ErrHandler("failed to open '" + OutputFilename + "': " + EC.message());
+    return 1;
+  }
 
   ErrorOr<std::unique_ptr<MemoryBuffer>> Buf =
       MemoryBuffer::getFileOrSTDIN(Input);
@@ -87,10 +63,10 @@ int main(int argc, char **argv) {
     return 1;
 
   yaml::Input YIn(Buf.get()->getBuffer());
-  int Res = convertYAML(YIn, Out->os());
-  if (Res == 0)
-    Out->keep();
+  if (!convertYAML(YIn, Out->os(), ErrHandler, DocNum))
+    return 1;
 
+  Out->keep();
   Out->os().flush();
-  return Res;
+  return 0;
 }

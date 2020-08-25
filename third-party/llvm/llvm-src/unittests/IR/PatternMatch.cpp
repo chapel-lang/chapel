@@ -7,6 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/BasicBlock.h"
@@ -179,6 +180,29 @@ TEST_F(PatternMatchTest, SpecificIntUGT) {
   EXPECT_FALSE(
       m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_UGT, APInt(BitWidth, -1))
           .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, SignbitZeroChecks) {
+  Type *IntTy = IRB.getInt32Ty();
+
+  Value *Zero = ConstantInt::get(IntTy, 0);
+  Value *One = ConstantInt::get(IntTy, 1);
+  Value *NegOne = ConstantInt::get(IntTy, -1);
+
+  EXPECT_TRUE(m_Negative().match(NegOne));
+  EXPECT_FALSE(m_NonNegative().match(NegOne));
+  EXPECT_FALSE(m_StrictlyPositive().match(NegOne));
+  EXPECT_TRUE(m_NonPositive().match(NegOne));
+
+  EXPECT_FALSE(m_Negative().match(Zero));
+  EXPECT_TRUE(m_NonNegative().match(Zero));
+  EXPECT_FALSE(m_StrictlyPositive().match(Zero));
+  EXPECT_TRUE(m_NonPositive().match(Zero));
+
+  EXPECT_FALSE(m_Negative().match(One));
+  EXPECT_TRUE(m_NonNegative().match(One));
+  EXPECT_TRUE(m_StrictlyPositive().match(One));
+  EXPECT_FALSE(m_NonPositive().match(One));
 }
 
 TEST_F(PatternMatchTest, SpecificIntUGE) {
@@ -452,6 +476,78 @@ TEST_F(PatternMatchTest, SpecificIntSLE) {
   EXPECT_TRUE(
       m_SpecificInt_ICMP(ICmpInst::Predicate::ICMP_SLE, APInt(BitWidth, -1))
           .match(NegOne));
+}
+
+TEST_F(PatternMatchTest, Unless) {
+  Value *X = IRB.CreateAdd(IRB.getInt32(1), IRB.getInt32(0));
+
+  EXPECT_TRUE(m_Add(m_One(), m_Zero()).match(X));
+  EXPECT_FALSE(m_Add(m_Zero(), m_One()).match(X));
+
+  EXPECT_FALSE(m_Unless(m_Add(m_One(), m_Zero())).match(X));
+  EXPECT_TRUE(m_Unless(m_Add(m_Zero(), m_One())).match(X));
+
+  EXPECT_TRUE(m_c_Add(m_One(), m_Zero()).match(X));
+  EXPECT_TRUE(m_c_Add(m_Zero(), m_One()).match(X));
+
+  EXPECT_FALSE(m_Unless(m_c_Add(m_One(), m_Zero())).match(X));
+  EXPECT_FALSE(m_Unless(m_c_Add(m_Zero(), m_One())).match(X));
+}
+
+TEST_F(PatternMatchTest, ZExtSExtSelf) {
+  LLVMContext &Ctx = IRB.getContext();
+
+  Value *One32 = IRB.getInt32(1);
+  Value *One64Z = IRB.CreateZExt(One32, IntegerType::getInt64Ty(Ctx));
+  Value *One64S = IRB.CreateSExt(One32, IntegerType::getInt64Ty(Ctx));
+
+  EXPECT_TRUE(m_One().match(One32));
+  EXPECT_FALSE(m_One().match(One64Z));
+  EXPECT_FALSE(m_One().match(One64S));
+
+  EXPECT_FALSE(m_ZExt(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExt(m_One()).match(One64Z));
+  EXPECT_FALSE(m_ZExt(m_One()).match(One64S));
+
+  EXPECT_FALSE(m_SExt(m_One()).match(One32));
+  EXPECT_FALSE(m_SExt(m_One()).match(One64Z));
+  EXPECT_TRUE(m_SExt(m_One()).match(One64S));
+
+  EXPECT_TRUE(m_ZExtOrSelf(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExtOrSelf(m_One()).match(One64Z));
+  EXPECT_FALSE(m_ZExtOrSelf(m_One()).match(One64S));
+
+  EXPECT_TRUE(m_SExtOrSelf(m_One()).match(One32));
+  EXPECT_FALSE(m_SExtOrSelf(m_One()).match(One64Z));
+  EXPECT_TRUE(m_SExtOrSelf(m_One()).match(One64S));
+
+  EXPECT_FALSE(m_ZExtOrSExt(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExtOrSExt(m_One()).match(One64Z));
+  EXPECT_TRUE(m_ZExtOrSExt(m_One()).match(One64S));
+
+  EXPECT_TRUE(m_ZExtOrSExtOrSelf(m_One()).match(One32));
+  EXPECT_TRUE(m_ZExtOrSExtOrSelf(m_One()).match(One64Z));
+  EXPECT_TRUE(m_ZExtOrSExtOrSelf(m_One()).match(One64S));
+}
+
+TEST_F(PatternMatchTest, Power2) {
+  Value *C128 = IRB.getInt32(128);
+  Value *CNeg128 = ConstantExpr::getNeg(cast<Constant>(C128));
+
+  EXPECT_TRUE(m_Power2().match(C128));
+  EXPECT_FALSE(m_Power2().match(CNeg128));
+
+  EXPECT_FALSE(m_NegatedPower2().match(C128));
+  EXPECT_TRUE(m_NegatedPower2().match(CNeg128));
+
+  Value *CIntMin = IRB.getInt64(APSInt::getSignedMinValue(64).getSExtValue());
+  Value *CNegIntMin = ConstantExpr::getNeg(cast<Constant>(CIntMin));
+
+  EXPECT_TRUE(m_Power2().match(CIntMin));
+  EXPECT_TRUE(m_Power2().match(CNegIntMin));
+
+  EXPECT_TRUE(m_NegatedPower2().match(CIntMin));
+  EXPECT_TRUE(m_NegatedPower2().match(CNegIntMin));
 }
 
 TEST_F(PatternMatchTest, CommutativeDeferredValue) {
@@ -1006,6 +1102,137 @@ TEST_F(PatternMatchTest, FloatingPointFNeg) {
 
   // Test FAdd(-0.0, 1.0)
   EXPECT_FALSE(match(V3, m_FNeg(m_Value(Match))));
+}
+
+TEST_F(PatternMatchTest, CondBranchTest) {
+  BasicBlock *TrueBB = BasicBlock::Create(Ctx, "TrueBB", F);
+  BasicBlock *FalseBB = BasicBlock::Create(Ctx, "FalseBB", F);
+  Value *Br1 = IRB.CreateCondBr(IRB.getTrue(), TrueBB, FalseBB);
+
+  EXPECT_TRUE(match(Br1, m_Br(m_Value(), m_BasicBlock(), m_BasicBlock())));
+
+  BasicBlock *A, *B;
+  EXPECT_TRUE(match(Br1, m_Br(m_Value(), m_BasicBlock(A), m_BasicBlock(B))));
+  EXPECT_EQ(TrueBB, A);
+  EXPECT_EQ(FalseBB, B);
+
+  EXPECT_FALSE(
+      match(Br1, m_Br(m_Value(), m_SpecificBB(FalseBB), m_BasicBlock())));
+  EXPECT_FALSE(
+      match(Br1, m_Br(m_Value(), m_BasicBlock(), m_SpecificBB(TrueBB))));
+  EXPECT_FALSE(
+      match(Br1, m_Br(m_Value(), m_SpecificBB(FalseBB), m_BasicBlock(TrueBB))));
+  EXPECT_TRUE(
+      match(Br1, m_Br(m_Value(), m_SpecificBB(TrueBB), m_BasicBlock(FalseBB))));
+
+  // Check we can use m_Deferred with branches.
+  EXPECT_FALSE(match(Br1, m_Br(m_Value(), m_BasicBlock(A), m_Deferred(A))));
+  Value *Br2 = IRB.CreateCondBr(IRB.getTrue(), TrueBB, TrueBB);
+  A = nullptr;
+  EXPECT_TRUE(match(Br2, m_Br(m_Value(), m_BasicBlock(A), m_Deferred(A))));
+}
+
+TEST_F(PatternMatchTest, WithOverflowInst) {
+  Value *Add = IRB.CreateBinaryIntrinsic(Intrinsic::uadd_with_overflow,
+                                         IRB.getInt32(0), IRB.getInt32(0));
+  Value *Add0 = IRB.CreateExtractValue(Add, 0);
+  Value *Add1 = IRB.CreateExtractValue(Add, 1);
+
+  EXPECT_TRUE(match(Add0, m_ExtractValue<0>(m_Value())));
+  EXPECT_FALSE(match(Add0, m_ExtractValue<1>(m_Value())));
+  EXPECT_FALSE(match(Add1, m_ExtractValue<0>(m_Value())));
+  EXPECT_TRUE(match(Add1, m_ExtractValue<1>(m_Value())));
+  EXPECT_FALSE(match(Add, m_ExtractValue<1>(m_Value())));
+  EXPECT_FALSE(match(Add, m_ExtractValue<1>(m_Value())));
+
+  WithOverflowInst *WOI;
+  EXPECT_FALSE(match(Add0, m_WithOverflowInst(WOI)));
+  EXPECT_FALSE(match(Add1, m_WithOverflowInst(WOI)));
+  EXPECT_TRUE(match(Add, m_WithOverflowInst(WOI)));
+
+  EXPECT_TRUE(match(Add0, m_ExtractValue<0>(m_WithOverflowInst(WOI))));
+  EXPECT_EQ(Add, WOI);
+  EXPECT_TRUE(match(Add1, m_ExtractValue<1>(m_WithOverflowInst(WOI))));
+  EXPECT_EQ(Add, WOI);
+}
+
+TEST_F(PatternMatchTest, IntrinsicMatcher) {
+  Value *Name = IRB.CreateAlloca(IRB.getInt8Ty());
+  Value *Hash = IRB.getInt64(0);
+  Value *Num = IRB.getInt32(1);
+  Value *Index = IRB.getInt32(2);
+  Value *Step = IRB.getInt64(3);
+
+  Value *Ops[] = {Name, Hash, Num, Index, Step};
+  Module *M = BB->getParent()->getParent();
+  Function *TheFn =
+      Intrinsic::getDeclaration(M, Intrinsic::instrprof_increment_step);
+
+  Value *Intrinsic5 = CallInst::Create(TheFn, Ops, "", BB);
+
+  // Match without capturing.
+  EXPECT_TRUE(match(
+      Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                      m_Value(), m_Value(), m_Value(), m_Value(), m_Value())));
+  EXPECT_FALSE(match(
+      Intrinsic5, m_Intrinsic<Intrinsic::memmove>(
+                      m_Value(), m_Value(), m_Value(), m_Value(), m_Value())));
+
+  // Match with capturing.
+  Value *Arg1 = nullptr;
+  Value *Arg2 = nullptr;
+  Value *Arg3 = nullptr;
+  Value *Arg4 = nullptr;
+  Value *Arg5 = nullptr;
+  EXPECT_TRUE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(Arg1), m_Value(Arg2), m_Value(Arg3),
+                            m_Value(Arg4), m_Value(Arg5))));
+  EXPECT_EQ(Arg1, Name);
+  EXPECT_EQ(Arg2, Hash);
+  EXPECT_EQ(Arg3, Num);
+  EXPECT_EQ(Arg4, Index);
+  EXPECT_EQ(Arg5, Step);
+
+  // Match specific second argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_SpecificInt(0), m_Value(), m_Value(), m_Value())));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_SpecificInt(10), m_Value(), m_Value(),
+                            m_Value())));
+
+  // Match specific third argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_Value(), m_SpecificInt(1), m_Value(), m_Value())));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_Value(), m_SpecificInt(10), m_Value(),
+                            m_Value())));
+
+  // Match specific fourth argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_Value(), m_Value(), m_SpecificInt(2), m_Value())));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_Value(), m_Value(), m_SpecificInt(10),
+                            m_Value())));
+
+  // Match specific fifth argument.
+  EXPECT_TRUE(
+      match(Intrinsic5,
+            m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                m_Value(), m_Value(), m_Value(), m_Value(), m_SpecificInt(3))));
+  EXPECT_FALSE(
+      match(Intrinsic5, m_Intrinsic<Intrinsic::instrprof_increment_step>(
+                            m_Value(), m_Value(), m_Value(), m_Value(),
+                            m_SpecificInt(10))));
 }
 
 template <typename T> struct MutableConstTest : PatternMatchTest { };

@@ -59,7 +59,7 @@ std::unique_ptr<IRMutator> createISelMutator() {
       new InjectorIRStrategy(InjectorIRStrategy::getDefaultOps()));
   Strategies.emplace_back(new InstDeleterIRStrategy());
 
-  return llvm::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
+  return std::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
 }
 
 extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(
@@ -98,7 +98,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size) {
   TargetLibraryInfoImpl TLII(TM->getTargetTriple());
   PM.add(new TargetLibraryInfoWrapperPass(TLII));
   raw_null_ostream OS;
-  TM->addPassesToEmitFile(PM, OS, nullptr, TargetMachine::CGFT_Null);
+  TM->addPassesToEmitFile(PM, OS, nullptr, CGFT_Null);
   PM.run(*M);
 
   return 0;

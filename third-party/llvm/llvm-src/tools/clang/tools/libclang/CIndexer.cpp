@@ -18,11 +18,11 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/MD5.h"
-#include "llvm/Support/MutexGuard.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Program.h"
 #include "llvm/Support/YAMLParser.h"
 #include <cstdio>
+#include <mutex>
 
 #ifdef __CYGWIN__
 #include <cygwin/version.h>
@@ -52,7 +52,7 @@ void getClangResourcesPathImplAIX(LibClangPathType &LibClangPath) {
   size_t BufSize = 2048u;
   std::unique_ptr<char[]> Buf;
   while (true) {
-    Buf = llvm::make_unique<char []>(BufSize);
+    Buf = std::make_unique<char []>(BufSize);
     errno = 0;
     int Ret = loadquery(L_GETXINFO, Buf.get(), (unsigned int)BufSize);
     if (Ret != -1)
