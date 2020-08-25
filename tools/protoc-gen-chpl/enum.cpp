@@ -18,8 +18,6 @@
  * limitations under the License.
  */
 
-#include <google/protobuf/stubs/strutil.h>
-
 #include <enum.h>
 #include <helpers.h>
 
@@ -40,7 +38,7 @@ namespace chapel {
     for (int i = 0; i < descriptor_->value_count(); i++) {
       printer->Print("$name$ = $number$,\n",
                      "name", descriptor_->value(i)->name(),
-                     "number", StrCat(descriptor_->value(i)->number()));
+                     "number", std::to_string(descriptor_->value(i)->number()));
     }
 
     printer->Outdent();

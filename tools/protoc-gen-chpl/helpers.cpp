@@ -20,8 +20,6 @@
 
 #include <string>
 
-#include <google/protobuf/stubs/strutil.h>
-
 #include <helpers.h>
 #include <primitive_field.h>
 #include <repeated_primitive_field.h>

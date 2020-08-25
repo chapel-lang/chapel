@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-#include <google/protobuf/stubs/strutil.h>
 #include <google/protobuf/stubs/logging.h>
 
 #include <field_base.h>
@@ -134,7 +133,7 @@ namespace chapel {
   }
 
   string FieldGeneratorBase::number() {
-    return StrCat(descriptor_->number());
+    return std::to_string(descriptor_->number());
   }
 
 }  // namespace chapel

@@ -27,7 +27,6 @@
 #include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/io/zero_copy_stream.h>
-#include <google/protobuf/stubs/strutil.h>
 #include <google/protobuf/wire_format.h>
 #include <google/protobuf/wire_format_lite.h>
 
@@ -61,11 +60,11 @@ namespace chapel {
       FieldGeneratorBase* field_obj;
       
       vars[i]["field_name"] = GetFieldName(fieldDescriptor);
-      vars[i]["field_number"] = StrCat(fieldDescriptor->number());
+      vars[i]["field_number"] = std::to_string(fieldDescriptor->number());
       vars[i]["type_name"] = field_obj->type_name(fieldDescriptor);
       vars[i]["proto_field_type"] = field_obj->proto_type_name(fieldDescriptor);
-      vars[i]["wire_format"] = StrCat(WireFormat::WireTypeForField(fieldDescriptor));
-      vars[i]["is_repeated"] = StrCat(fieldDescriptor->is_repeated());
+      vars[i]["wire_format"] = std::to_string(WireFormat::WireTypeForField(fieldDescriptor));
+      vars[i]["is_repeated"] = std::to_string(fieldDescriptor->is_repeated());
     }
     
     printer->Print(
