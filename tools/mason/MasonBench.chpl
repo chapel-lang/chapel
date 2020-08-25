@@ -203,7 +203,7 @@ proc runBenchTestExecutables(benchTestNames: list(string), projectHome: string) 
       const benchTestName = basename(stripExt(benchTest, ".chpl"));
       const benchTestTomlPath = projectHome + "/benchmark/";
       // TODO: get bench execopts ?
-      runAndLogBenchmarks(projectHome, outputLoc, benchTestName, benchExecopts);
+      runAndLogBenchmarks(projectHome, outputLoc, benchTestName);
       writeln(separator);
     }
   }
@@ -213,7 +213,7 @@ proc runBenchTestExecutables(benchTestNames: list(string), projectHome: string) 
 }
 
 /* Execute benchmarks from target/ and log output */
-proc runAndLogBenchmarks(projectHome: string, outputLoc: string, benchTestName: string, benchExecopts: string) {
+proc runAndLogBenchmarks(projectHome: string, outputLoc: string, benchTestName: string) {
   var executable = outputLoc;
   var line: string;
   var exec = spawn([executable]);
@@ -233,6 +233,5 @@ proc getBenchMetadata(benchTomlPath: string, benchTestName: string, metadata: st
       opts = tomlFile[tableHeader]![metadata]!.s;
     }
   }
-  writeln(opts);
   return opts;
 }
