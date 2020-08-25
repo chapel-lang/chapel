@@ -102,10 +102,7 @@ static int illegalFirstUnsChar(char c) {
       *invalidCh = *str;                                                \
       return -1;                                                        \
     }                                                                   \
-    if (uns)                                                            \
-      val = (_type(base, width))strtoull(str, &endPtr, numberBase);  \
-    else                                                                \
-      val = (_type(base, width))strtoll(str, &endPtr, numberBase);   \
+    val = (_type(base, width))strtoull(str, &endPtr, numberBase);  \
     if (negative) {                                                     \
       val = -1*val;                                                     \
     }                                                                   \
