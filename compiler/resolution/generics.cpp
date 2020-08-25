@@ -313,7 +313,7 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
  * \param subs Type substitutions to be made during instantiation
  * \param call Call that is being resolved
  */
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs) {
+FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs) {
   FnSymbol* newFn = instantiateSignature(fn, subs, NULL);
 
   if (newFn != NULL) {
@@ -345,7 +345,9 @@ void instantiateBody(FnSymbol* fn) {
  */
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
-                               CallExpr*  call) {
+                               VisibilityInfo* visInfo) {
+  CallExpr* call = visInfo ? visInfo->call : NULL;
+
   //
   // Handle tuples explicitly
   // (_build_tuple, tuple type constructor, tuple default constructor)
@@ -379,7 +381,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
     determineAllSubs(fn, root, subs, allSubs);
 
     // use cached instantiation if possible
-    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+    if (FnSymbol* cached = checkCache(genericsCache, root, visInfo, &allSubs)) {
       if (cached != (FnSymbol*) gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
@@ -407,7 +409,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         // If we computed some substitutions based upon generic
         // arguments with defaults, also check the cache entry
         // with the complete list of substitutions.
-        if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+        if (FnSymbol* cached = checkCache(genericsCache, root, visInfo, &allSubs)) {
           if (cached != (FnSymbol*) gVoid) {
             checkInfiniteWhereInstantiation(cached);
 

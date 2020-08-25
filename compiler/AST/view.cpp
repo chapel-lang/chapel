@@ -878,7 +878,10 @@ Expr* debugParentExpr(BaseAST* ast) {
   }
 }
 
-// print minimal information about each statement in the block
+//
+// blockSummary: print minimal information about each statement in the block
+//
+
 void blockSummary(int id) {
   if (BaseAST* ast = aid09(id))
     blockSummary(ast);
@@ -946,10 +949,10 @@ void blockSummary(BlockStmt* block, Symbol* sym) {
     summarySymbolPrint(sym, "in ", "\n");
 }
 
-
 //
 // map_view: print the contents of a SymbolMap
 //
+
 void map_view(SymbolMap* map) {
   map_view(*map);
 }
@@ -986,9 +989,8 @@ void map_view(SymbolMap& map) {
   log_need_space = temp_log_need_space;
 }
 
-
 //
-// vec_view: print the contents of a Vec.
+// vec_view: print the contents of a Vec or a std::vector
 //
 
 static void showFnSymbol(FnSymbol* fn) {
@@ -1136,11 +1138,26 @@ void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v) {
   }
 }
 
+//
+// set_view: print the contents of a std::set
+//
 
+void set_view(std::set<BlockStmt*>* bss) {
+  set_view(*bss);
+}
+
+void set_view(std::set<BlockStmt*>& bss) {
+  printf("set<BlockStmt> %d elm(s)\n", (int)bss.size());
+  std::set<BlockStmt*>::iterator it = bss.begin();
+  while (it != bss.end()) {
+    debugSummary(*(it++));
+  }
+}
 
 //
 // fnsWithName: print all FnSymbols with the given name
 //
+
 void fnsWithName(const char* name) {
   fnsWithName(name, gFnSymbols);
 }
@@ -1163,6 +1180,7 @@ void fnsWithName(const char* name, Vec<FnSymbol*,VEC_INTEGRAL_SIZE>& fnVec) {
 //
 // whocalls: print all ways that the AST with the given 'id' is invoked
 //
+
 static void whocalls(int id, Symbol* sym);
 
 void whocalls(BaseAST* ast) {

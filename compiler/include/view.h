@@ -78,6 +78,9 @@ void        viewFlags(int id);
 void        map_view(SymbolMap* map);
 void        map_view(SymbolMap& map);
 
+void        set_view(std::set<BlockStmt*>* bss);
+void        set_view(std::set<BlockStmt*>& bss);
+
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
