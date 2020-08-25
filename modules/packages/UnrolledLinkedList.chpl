@@ -236,18 +236,6 @@ module UnrolledLinkedList {
         append(x);
     }
 
-    /*
-    pragma "no doc"
-    proc _firstTimeInitializeArrays() {
-      _sanity(_head == nil);
-      _sanity(_tail == nil);
-      _sanity(_size == 0);
-      _head = new unmanaged _linkedNode(eltType);
-      _tail = _head;
-    }
-    */
-
-    //
     // A helper function for getting a reference to a unrolledLinkedList element.
     //
     pragma "no doc"
