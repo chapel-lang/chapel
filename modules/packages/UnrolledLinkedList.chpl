@@ -248,9 +248,7 @@ module UnrolledLinkedList {
           ref result = cur!.data[idx - pos];
           return result;
         }
-        else {
-          pos += cur!.size;
-        }
+        pos += cur!.size;
         cur = cur!.next;
       }
       halt("unrolledLinkedList out of range");
@@ -299,36 +297,35 @@ module UnrolledLinkedList {
 
     /*
       If it's possible to merge this node and the next node, then do it
-      return if merged
+      Return whether it's merged
     */
     pragma "no doc"
     proc _merge(p: unmanaged _linkedNode(eltType)): bool {
       var result = false;
       if p.next == nil then return result;
       if p.next!.size + p.size <= nodeCapacity {
-        try! {
-          var next = p.next!;
-          for i in 0..#next.size {
-            p.data[p.size] = next.data[i];
-            p.size += 1;
-          }
-          p.next = next.next;
-
-          if next == _tail then _tail = p;
-
-          next.next = nil;
-          delete next;
-
-          result = true;
+        var next = p.next!;
+        for i in 0..#next.size {
+          p.data[p.size] = next.data[i];
+          p.size += 1;
         }
+        p.next = next.next;
+
+        if next == _tail then _tail = p;
+
+        next.next = nil;
+        delete next;
+
+        result = true;
       }
       return result;
     }
 
+    /*
+      Make sure there's enough space in _tail for one element
+    */
     pragma "no doc"
-    proc _append(x: eltType)
-    lifetime this < x { 
-      _size += 1;
+    proc _spareSpaceInTail() {
       if _tail == nil {
         _tail = new unmanaged _linkedNode(eltType, nodeCapacity);
         _head = _tail;
@@ -338,13 +335,18 @@ module UnrolledLinkedList {
 
       if _tail!.size == nodeCapacity {
         // the node is full, create new node
-
+        // This could change the value of _tail
         try! {
-          // This could change the value of _tail
-          _split(_tail: unmanaged _linkedNode(eltType));
+          _split(_tail!);
         }
       }
+    }
 
+    pragma "no doc"
+    proc _append(x: eltType)
+    lifetime this < x { 
+      _size += 1;
+      _spareSpaceInTail();
       _tail!.append(x);
     }
 
@@ -352,22 +354,7 @@ module UnrolledLinkedList {
     proc _append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x { 
       _size += 1;
-      if _tail == nil {
-        _tail = new unmanaged _linkedNode(eltType, nodeCapacity);
-        _head = _tail;
-      }
-
-      _sanity(_tail != nil);
-
-      if _tail!.size == nodeCapacity {
-        // the node is full, create new node
-
-        try! {
-          // This could change the value of _tail
-          _split(_tail: unmanaged _linkedNode(eltType));
-        }
-      }
-
+      _spareSpaceInTail();
       _tail!.append(x);
     }
 
@@ -579,7 +566,7 @@ module UnrolledLinkedList {
           if cur!.size == nodeCapacity {
             // The current node is full
             try! {
-              var newNode = _split(cur: unmanaged _linkedNode(eltType));
+              var newNode = _split(cur!);
               if i >= cur!.size {
                 dest = newNode;
                 i -= cur!.size;
@@ -852,7 +839,7 @@ module UnrolledLinkedList {
           }
 
         try! {
-          _merge(cur: unmanaged _linkedNode(eltType));
+          _merge(cur!);
         }
 
           return result;
