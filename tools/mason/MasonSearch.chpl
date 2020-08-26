@@ -24,7 +24,7 @@ use MasonEnv;
 use MasonUpdate;
 use MasonUtils;
 use TOML;
-
+use Sort;
 use FileSystem;
 use Regexp;
 use IO;
@@ -97,6 +97,7 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
+  sort(results.toArray()); 
   var res = rankResults(results, query);
   for package in res {
     const pkgName = splitNameVersion(package, true);
