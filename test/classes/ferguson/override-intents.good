@@ -7,12 +7,24 @@ override-intents.chpl:83: error: overriding method uses 'const in' intent
 override-intents.chpl:86: error: Child.in_blank conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:12: error: base method uses 'in' intent
 override-intents.chpl:86: error: overriding method uses default intent
+override-intents.chpl:90: error: Child.out_inout conflicting intent for argument 'arg' in overriding method
+override-intents.chpl:16: error: base method uses 'out' intent
+override-intents.chpl:90: error: overriding method uses 'inout' intent
 override-intents.chpl:93: error: Child.out_ref conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:19: error: base method uses 'out' intent
 override-intents.chpl:93: error: overriding method uses 'ref' intent
 override-intents.chpl:94: error: Child.out_const_ref conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:20: error: base method uses 'out' intent
 override-intents.chpl:94: error: overriding method uses 'const ref' intent
+override-intents.chpl:98: error: Child.inout_out conflicting intent for argument 'arg' in overriding method
+override-intents.chpl:24: error: base method uses 'inout' intent
+override-intents.chpl:98: error: overriding method uses 'out' intent
+override-intents.chpl:102: error: Child.inout_ref conflicting intent for argument 'arg' in overriding method
+override-intents.chpl:28: error: base method uses 'inout' intent
+override-intents.chpl:102: error: overriding method uses 'ref' intent
+override-intents.chpl:103: error: Child.inout_const_ref conflicting intent for argument 'arg' in overriding method
+override-intents.chpl:29: error: base method uses 'inout' intent
+override-intents.chpl:103: error: overriding method uses 'const ref' intent
 override-intents.chpl:106: error: Child.const_in conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:32: error: base method uses 'const' intent
 override-intents.chpl:106: error: overriding method uses 'in' intent
@@ -34,12 +46,18 @@ override-intents.chpl:122: error: overriding method uses default intent
 override-intents.chpl:125: error: Child.ref_out conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:51: error: base method uses 'ref' intent
 override-intents.chpl:125: error: overriding method uses 'out' intent
+override-intents.chpl:126: error: Child.ref_inout conflicting intent for argument 'arg' in overriding method
+override-intents.chpl:52: error: base method uses 'ref' intent
+override-intents.chpl:126: error: overriding method uses 'inout' intent
 override-intents.chpl:130: error: Child.ref_const_ref conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:56: error: base method uses 'ref' intent
 override-intents.chpl:130: error: overriding method uses 'const ref' intent
 override-intents.chpl:134: error: Child.const_ref_out conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:60: error: base method uses 'const ref' intent
 override-intents.chpl:134: error: overriding method uses 'out' intent
+override-intents.chpl:135: error: Child.const_ref_inout conflicting intent for argument 'arg' in overriding method
+override-intents.chpl:61: error: base method uses 'const ref' intent
+override-intents.chpl:135: error: overriding method uses 'inout' intent
 override-intents.chpl:138: error: Child.const_ref_ref conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:64: error: base method uses 'const ref' intent
 override-intents.chpl:138: error: overriding method uses 'ref' intent
@@ -72,10 +90,6 @@ override-intents.chpl:88: error: Child.out_in override keyword present but no su
 override-intents.chpl:88: error: Child.out_in conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:14: error: base method uses 'out' intent
 override-intents.chpl:88: error: overriding method uses 'in' intent
-override-intents.chpl:90: error: Child.out_inout override keyword present but no superclass method matches signature to override
-override-intents.chpl:90: error: Child.out_inout conflicting intent for argument 'arg' in overriding method
-override-intents.chpl:16: error: base method uses 'out' intent
-override-intents.chpl:90: error: overriding method uses 'inout' intent
 override-intents.chpl:91: error: Child.out_const override keyword present but no superclass method matches signature to override
 override-intents.chpl:91: error: Child.out_const conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:17: error: base method uses 'out' intent
@@ -92,10 +106,6 @@ override-intents.chpl:97: error: Child.inout_in override keyword present but no 
 override-intents.chpl:97: error: Child.inout_in conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:23: error: base method uses 'inout' intent
 override-intents.chpl:97: error: overriding method uses 'in' intent
-override-intents.chpl:98: error: Child.inout_out override keyword present but no superclass method matches signature to override
-override-intents.chpl:98: error: Child.inout_out conflicting intent for argument 'arg' in overriding method
-override-intents.chpl:24: error: base method uses 'inout' intent
-override-intents.chpl:98: error: overriding method uses 'out' intent
 override-intents.chpl:100: error: Child.inout_const override keyword present but no superclass method matches signature to override
 override-intents.chpl:100: error: Child.inout_const conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:26: error: base method uses 'inout' intent
@@ -104,14 +114,6 @@ override-intents.chpl:101: error: Child.inout_const_in override keyword present 
 override-intents.chpl:101: error: Child.inout_const_in conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:27: error: base method uses 'inout' intent
 override-intents.chpl:101: error: overriding method uses 'const in' intent
-override-intents.chpl:102: error: Child.inout_ref override keyword present but no superclass method matches signature to override
-override-intents.chpl:102: error: Child.inout_ref conflicting intent for argument 'arg' in overriding method
-override-intents.chpl:28: error: base method uses 'inout' intent
-override-intents.chpl:102: error: overriding method uses 'ref' intent
-override-intents.chpl:103: error: Child.inout_const_ref override keyword present but no superclass method matches signature to override
-override-intents.chpl:103: error: Child.inout_const_ref conflicting intent for argument 'arg' in overriding method
-override-intents.chpl:29: error: base method uses 'inout' intent
-override-intents.chpl:103: error: overriding method uses 'const ref' intent
 override-intents.chpl:104: error: Child.inout_blank override keyword present but no superclass method matches signature to override
 override-intents.chpl:104: error: Child.inout_blank conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:30: error: base method uses 'inout' intent
@@ -152,10 +154,6 @@ override-intents.chpl:124: error: Child.ref_in override keyword present but no s
 override-intents.chpl:124: error: Child.ref_in conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:50: error: base method uses 'ref' intent
 override-intents.chpl:124: error: overriding method uses 'in' intent
-override-intents.chpl:126: error: Child.ref_inout override keyword present but no superclass method matches signature to override
-override-intents.chpl:126: error: Child.ref_inout conflicting intent for argument 'arg' in overriding method
-override-intents.chpl:52: error: base method uses 'ref' intent
-override-intents.chpl:126: error: overriding method uses 'inout' intent
 override-intents.chpl:127: error: Child.ref_const override keyword present but no superclass method matches signature to override
 override-intents.chpl:127: error: Child.ref_const conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:53: error: base method uses 'ref' intent
@@ -172,10 +170,6 @@ override-intents.chpl:133: error: Child.const_ref_in override keyword present bu
 override-intents.chpl:133: error: Child.const_ref_in conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:59: error: base method uses 'const ref' intent
 override-intents.chpl:133: error: overriding method uses 'in' intent
-override-intents.chpl:135: error: Child.const_ref_inout override keyword present but no superclass method matches signature to override
-override-intents.chpl:135: error: Child.const_ref_inout conflicting intent for argument 'arg' in overriding method
-override-intents.chpl:61: error: base method uses 'const ref' intent
-override-intents.chpl:135: error: overriding method uses 'inout' intent
 override-intents.chpl:136: error: Child.const_ref_const override keyword present but no superclass method matches signature to override
 override-intents.chpl:136: error: Child.const_ref_const conflicting intent for argument 'arg' in overriding method
 override-intents.chpl:62: error: base method uses 'const ref' intent
