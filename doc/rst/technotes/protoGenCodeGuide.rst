@@ -28,7 +28,7 @@ that each ``.proto`` file begins with a declaration of:
   syntax = "proto3";
 
 Output Module Name
------------------
+------------------
 The name of the output file/module will be same as the ``package`` name. If the
 ``package`` name is not specified, the module takes the name of the proto
 file with all non-alphanumeric characters replaced by an ``underscore``.
