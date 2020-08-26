@@ -504,6 +504,11 @@ class AbstractJob(object):
         if self.submit_bin != 'qsub':
             raise RuntimeError('_launch_qsub called for non-pbs job type!')
 
+        # Quiet information from LMOD about module changes that would show up
+        # in our test output
+        logging.info('Setting LMOD_QUIET=1')
+        os.environ["LMOD_QUIET"] = "1"
+
         logging.info(
             'Starting {0} job "{1}" on {2} nodes with walltime {3} '
             'and output file: {4}'.format(
