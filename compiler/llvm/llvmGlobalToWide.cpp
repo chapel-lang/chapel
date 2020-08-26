@@ -2307,7 +2307,11 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     assert(t != eltType); // detect simple recursion
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
 
+#if HAVE_LLVM_VER >= 110
+    return VectorType::get(wideEltType, vecTy);
+#else
     return VectorType::get(wideEltType, vecTy->getNumElements());
+#endif
   }
 
   assert(0);
