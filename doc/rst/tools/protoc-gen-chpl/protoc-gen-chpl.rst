@@ -20,9 +20,8 @@ This project is comprised of two components:
 Installation Instructions
 =========================
 
-You should have the protocol buffer compiler installed on your system. For example,
-to install protobuf on an Ubuntu system, you might use ``apt-get install libprotobuf-dev``.
-Also please see the official installation `guide`_.
+You should have the protocol buffer compiler, ``v3.0.0`` or higher, installed on your system.
+Please see the official installation `guide`_.
 
 Once you have the compiler installed, in ``$CHPL_HOME`` run the following:
 
