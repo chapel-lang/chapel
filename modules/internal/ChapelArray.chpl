@@ -5070,6 +5070,7 @@ module ChapelArray {
     // instances
     // TODO: can we make this domain constant by passing an argument to the
     // initializer?
+    // MPPF: Should this shape be un-view'd?
     var shape = new _domain(ir._shape_);
 
     // Important: ir._shape_ points to a domain class for a domain
