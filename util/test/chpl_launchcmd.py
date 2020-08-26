@@ -201,7 +201,7 @@ class AbstractJob(object):
         logging.debug('Test command basname: {0}'.format(cmd_basename))
 
         job_name = '{0}-{1}'.format(prefix, cmd_basename)
-        logging.info('Job name is: {0}'.format(job_name))
+        logging.debug('Job name is: {0}'.format(job_name))
         return job_name
 
     @property
@@ -283,7 +283,7 @@ class AbstractJob(object):
             submit_command.append('{0}'.format(more_l))
 
 
-        logging.debug('qsub command: {0}'.format(submit_command))
+        logging.info('qsub command: "{0}"'.format(' '.join(submit_command)))
         return submit_command
 
 
@@ -545,7 +545,7 @@ class AbstractJob(object):
         :returns: subclass of AbstractJob based on environment
         """
         args, unparsed_args = cls._parse_args()
-        cls._setup_logging(args.verbose)
+        cls._setup_logging(args.verbose, args.info)
 
         logging.info('Num locales is: {0}'.format(args.numLocales))
         logging.info('Walltime is set to: {0}'.format(args.walltime))
@@ -653,6 +653,10 @@ class AbstractJob(object):
                             default=('CHPL_LAUNCHCMD_DEBUG' in os.environ),
                             help=('Verbose output. Setting CHPL_LAUNCHCMD_DEBUG '
                                   'in environment also enables verbose output.'))
+        parser.add_argument('--CHPL_LAUNCHCMD_INFO', action='store_true', dest='info',
+                            default=('CHPL_LAUNCHCMD_INFO' in os.environ),
+                            help=('Informational output. Setting CHPL_LAUNCHCMD_INFO '
+                                  'in environment also enables.'))
         parser.add_argument('-nl', '--numLocales', type=int, default=-1,
                             help='Number locales.')
         parser.add_argument('--n', help='Placeholder')
@@ -720,8 +724,11 @@ class AbstractJob(object):
             return stdout
 
     @classmethod
-    def _setup_logging(cls, verbose=False):
+    def _setup_logging(cls, verbose=False, info=False):
         """Setup logging to console.
+
+        :type info: bool
+        :arg info: if True, set log level to INFO
 
         :type verbose: bool
         :arg verbose: if True, set log level to DEBUG
@@ -737,6 +744,8 @@ class AbstractJob(object):
 
         if verbose:
             log_level = logging.DEBUG
+        elif info:
+            log_level = logging.INFO
         else:
             log_level = logging.WARN
         logging.basicConfig(
@@ -815,7 +824,7 @@ class PbsProJob(AbstractJob):
         """
         super_name = super(PbsProJob, self).job_name
         job_name = super_name[-15:]
-        logging.info('PBSPro job name is: {0}'.format(job_name))
+        logging.debug('PBSPro job name is: {0}'.format(job_name))
         return job_name
 
     @property
@@ -910,7 +919,7 @@ class PbsProJob(AbstractJob):
             select_stmt += self.select_suffix
             submit_command += ['-l', select_stmt]
 
-        logging.debug('qsub command: {0}'.format(submit_command))
+        logging.info('qsub command: "{0}"'.format(' '.join(submit_command)))
         return submit_command
 
     def submit_job(self, testing_dir, output_file, error_file, input_file):
