@@ -4,12 +4,6 @@ use FileSystem;
 var baseDir = "endToEnd/";
 var debug = false;
 
-var packages = listdir(baseDir);
-
-for package in packages {
-  endToEndTest(package);
-}
-
 proc endToEndTest(package: string) {
   var line1:string;
 
