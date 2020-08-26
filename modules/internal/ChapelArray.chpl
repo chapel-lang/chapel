@@ -5092,6 +5092,7 @@ module ChapelArray {
     return chpl__initCopy_shapeHelp(shape, ir);
   }
 
+  pragma "no copy returns owned"
   pragma "ignore transfer errors"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
