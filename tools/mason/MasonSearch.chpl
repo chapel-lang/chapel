@@ -97,7 +97,7 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
-  sort(results.toArray()); 
+
   var res = rankResults(results, query);
   for package in res {
     const pkgName = splitNameVersion(package, true);
@@ -152,7 +152,9 @@ proc splitNameVersion(ref package: string, original: bool) {
    are displayed first */
 proc rankResults(results: list(string), query: string): [] string {
   use Sort;
-  var res = rankOnScores(results);
+  var r = results.toArray();
+  sort(r);
+  var res = rankOnScores(r);
   record Comparator { }
   proc Comparator.compare(a, b) {
     if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
@@ -173,7 +175,7 @@ proc touch(pathToReg: string) {
 }
 
 /* Returns a map of packages found in cache along with their scores */
-proc getPackageScores(res: list(string)) {
+proc getPackageScores(res: [] string) {
   use Map;
   const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
   var cacheExists: bool = false;
@@ -198,7 +200,7 @@ proc getPackageScores(res: list(string)) {
 }
 
 /* Sort based on scores from cache file */
-proc rankOnScores(results: list(string)) {
+proc rankOnScores(results: [] string) {
   use Sort;
   var packageScores = getPackageScores(results);
   record Comparator { }
@@ -207,7 +209,7 @@ proc rankOnScores(results: list(string)) {
     else return 1;
   }
   var rankCmp : Comparator;
-  var res = results.toArray();
+  var res = results;
   sort(res, comparator=rankCmp);
   return res;
 }
