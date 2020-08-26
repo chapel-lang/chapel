@@ -1,6 +1,5 @@
 noAliasSets: no-aliases for function main:
   A no alias B
-  A no alias ret
 noAliasSets: no-aliases for function test:
   a no ref alias b
   a no ref alias return argument
