@@ -1664,8 +1664,10 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       // to allow passing in a single argument (otherwise, when we try
       // to do the write-back after the call, the value would be deinited
       // already).
-      if (inout)
+      if (inout) {
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+      }
 
       // Does this need to be here?
       if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {

@@ -611,38 +611,6 @@ static bool fits_in_uint(int width, Immediate* imm) {
   return false;
 }
 
-// Since an `inout` copy will be made at the call site, this function
-// looks for the original value before the copy in order to do correct
-// const-ness checking for passing to inout arguments.
-static SymExpr* findSourceOfInCopy(Symbol* sym) {
-  if (startsWith(sym->name, "_formal_tmp_in_")) {
-    for_SymbolSymExprs(se, sym) {
-      CallExpr* call = toCallExpr(se->getStmtExpr());
-      SymExpr* lhsSe = NULL;
-      CallExpr* initOrCtor = NULL;
-      if (isInitOrReturn(call, lhsSe, initOrCtor)) {
-        if (lhsSe->symbol() == sym) {
-          if (initOrCtor == NULL && call->isPrimitive()) {
-            // e.g. PRIM_MOVE lhs rhs
-            SymExpr* rhsSe = toSymExpr(call->get(2));
-            INT_ASSERT(rhsSe);
-            return rhsSe;
-          } else {
-            // assumes that the called function is init/coerce:
-            //   the last argument is definedConst
-            //   second to the last argument is the source
-            Expr* rhs = initOrCtor->get(initOrCtor->numActuals()-1);
-            SymExpr* rhsSe = toSymExpr(rhs);
-            INT_ASSERT(rhsSe);
-            return rhsSe;
-          }
-        }
-      }
-    }
-  }
-  return NULL;
-}
-
 // Is this a legal actual argument where an l-value is required?
 // I.e. for an out/inout/ref formal.
 //
@@ -692,15 +660,6 @@ isLegalLvalueActualArg(ArgSymbol* formal, Expr* actual,
       if (! (formal && formal->hasFlag(FLAG_ARG_THIS) &&
              calledFn && calledFn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)))
       {
-
-        if (formal->intent == INTENT_INOUT) {
-          // check for a formal temp to handle the `in` part; if we have
-          // it, look at the source of it.
-          if (SymExpr* sourceSe = findSourceOfInCopy(sym)) {
-            return isLegalLvalueActualArg(formal, sourceSe,
-                                          constnessErrorOut, exprTmpErrorOut);
-          }
-        }
         constnessErrorOut = constnessError;
         exprTmpErrorOut = exprTmpError;
         return false;
@@ -5903,20 +5862,24 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
                                              Expr** outActual,
                                              ArgSymbol** outFormal) {
   // Call is an assign from a temp
-  // Find an out argument call setting the temp
+  // Find an out/inout argument call setting the temp
   if (call->isNamed("=")) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
       if (SymExpr* rhs = toSymExpr(call->get(2))) {
-        if (SymExpr* defSe = rhs->symbol()->getSingleDef()) {
-          CallExpr* parentCall = toCallExpr(defSe->parentExpr);
-          if (parentCall->resolvedFunction() != NULL) {
-            for_formals_actuals(formal, actual, parentCall) {
-              if (actual == defSe) {
-                if (formal->intent == INTENT_OUT ||
-                    formal->originalIntent == INTENT_OUT) {
-                  *outActual = lhs;
-                  *outFormal = formal;
-                  return parentCall;
+        if (rhs->symbol()->hasFlag(FLAG_TEMP)) {
+          for_SymbolDefs(defSe, rhs->symbol()) {
+            CallExpr* parentCall = toCallExpr(defSe->parentExpr);
+            if (parentCall->resolvedFunction() != NULL) {
+              for_formals_actuals(formal, actual, parentCall) {
+                if (actual == defSe) {
+                  if (formal->intent == INTENT_OUT ||
+                      formal->originalIntent == INTENT_OUT ||
+                      formal->intent == INTENT_INOUT ||
+                      formal->originalIntent == INTENT_INOUT) {
+                    *outActual = lhs;
+                    *outFormal = formal;
+                    return parentCall;
+                  }
                 }
               }
             }
@@ -6028,7 +5991,13 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
           findOutIntentCallFromAssign(call, &outActual, &outFormal);
 
         if (outCall != NULL) {
-          lvalueCheckActual(outCall, outActual, INTENT_OUT, outFormal);
+
+          IntentTag intent = INTENT_OUT;
+          if (outFormal->intent == INTENT_INOUT ||
+              outFormal->originalIntent == INTENT_INOUT)
+            intent = INTENT_INOUT;
+
+          lvalueCheckActual(outCall, outActual, intent, outFormal);
           return;
         }
       }
