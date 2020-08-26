@@ -894,6 +894,8 @@ pragma "no doc"
 proc _matmatMult(A : [?Adom] ?eltType, B : [?Bdom] eltType, in window : int = -1)
   where isDistributed(A) || isDistributed(B)
 {
+  private use BlockDist;
+  
   ref targetLocales = A.targetLocales();
 
   if Adom.rank != 2 || Bdom.rank != 2 then
