@@ -6132,9 +6132,6 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
                         ref conv: qio_conv_t, ref gotConv: bool,
                         ref style: iostyle, ref err: syserr, origLocale: locale,
                         len: size_t) throws {
-  //var conv:qio_conv_t;
-  //var style:iostyle;
-
   gotConv = false;
 
   if j <= i {
@@ -6261,7 +6258,6 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
-    //var end:size_t;
     var argType:(k+5)*c_int;
 
     var r:unmanaged _channel_regexp_info?;
