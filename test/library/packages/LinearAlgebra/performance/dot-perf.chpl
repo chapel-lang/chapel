@@ -3,10 +3,11 @@ Dense dot product performance testing intended for manual usage.
 */
 
 use LinearAlgebra;
+use BlockDist;
 use Time;
 use Math;
 
-param const useBlockDist = false;
+config param useBlockDist = false;
 
 config const n=1024,
              iters=10,
