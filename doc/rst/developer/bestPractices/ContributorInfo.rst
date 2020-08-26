@@ -345,7 +345,8 @@ Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
 - the PR has been reviewed
-- the `contributor license agreement`_ (CLA) has been signed
+- the "signed-off-by" comments have been added in all commits to accept
+  `Developer Certificate of Origin`_ (DCO)
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
 
@@ -534,7 +535,10 @@ Committing staged changes:
 
 .. code-block:: bash
 
-    git commit [-m <message>]
+    # Accept the `Developer Certificate of Origin`_ (DCO) by adding a
+      `Signed-off-by` line to commit messages:
+
+    git commit -s [-m <message>]
 
     # similar to: svn commit [-m <message>]
 
@@ -703,7 +707,7 @@ How to open a PR:
   `Final merge message`_ for recommendations on what that commit message should
   look like.
 
-  You will have to have signed a `contributor license agreement`_ (CLA).
+  You will have to add "signed-off-by" in your commits to accept `Developer Certificate of Origin`_ (DCO)
 
   Your pull request will be available at a URL like:
 
@@ -711,7 +715,7 @@ How to open a PR:
 
   and you can discuss the patch with your reviewers there.
 
-.. _contributor license agreement: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
 
 .. _How to merge a PR:
 
