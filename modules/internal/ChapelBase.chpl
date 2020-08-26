@@ -1915,20 +1915,20 @@ module ChapelBase {
     lhs = lhs ^ rhs;
   }
 
-  inline proc >>=(ref lhs:int(?w), rhs:int(w)) {
+  inline proc >>=(ref lhs:int(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
-  inline proc >>=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline proc >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
   inline proc >>=(ref lhs, rhs) {
     lhs = lhs >> rhs;
   }
 
-  inline proc <<=(ref lhs:int(?w), rhs:int(w)) {
+  inline proc <<=(ref lhs:int(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
-  inline proc <<=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline proc <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
   inline proc <<=(ref lhs, rhs) {
