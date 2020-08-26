@@ -99,6 +99,7 @@ public:
   lookupPublicUnqualAccessSyms(const char* name,
                                BaseAST *context,
                                std::map<Symbol *, astlocT *>& renameLocs,
+                               std::map<Symbol*, VisibilityStmt*>& reexportPts,
                                bool followUses = false);
 
   // Support for UseStmt with only/except
