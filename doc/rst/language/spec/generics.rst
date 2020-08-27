@@ -1009,7 +1009,8 @@ continue after encountering a ``compilerWarning``.
       }
 
       proc foo(x) {
-        compilerWarning("1-argument version of foo called");
+        compilerWarning("1-argument version of foo called with type: ",
+                        x.type:string);
         writeln("In generic foo!");
       }
 
@@ -1040,17 +1041,17 @@ continue after encountering a ``compilerWarning``.
 
    .. code-block:: bash
 
-      foo.chpl:1: warning: 1-argument version of foo called with type: real
+      foo.chpl:1: warning: 1-argument version of foo called with type: real(64)
       foo.chpl:2: warning: 1-argument version of foo called with type: string
-      foo.chpl:6: error: foo() called with non-matching types: int != real
+      foo.chpl:6: error: foo() called with non-matching types: int(64) != real(64)
 
    
 
    .. BLOCK-test-chapeloutput
 
-      compilerDiagnostics.chpl:14: warning: 1-argument version of foo called
-      compilerDiagnostics.chpl:15: warning: 1-argument version of foo called
-      compilerDiagnostics.chpl:19: error: foo() called with non-matching types: int(64) != real(64)
+      compilerDiagnostics.chpl:15: warning: 1-argument version of foo called with type: real(64)
+      compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
+      compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
 
 .. _Creating_General_and_Specialized_Versions_of_a_Function:
 
