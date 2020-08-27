@@ -655,8 +655,9 @@ module OrderedMap {
          b: orderedMap(keyType, valueType, parSafe)) {
     var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
 
-    for e in a.items() do newMap.add(e[0], e[1]);
-    for e in b.items() do newMap.add(e[0], e[1]);
+    newMap |= a;
+    newMap |= b;
+
     return newMap;
   }
 
