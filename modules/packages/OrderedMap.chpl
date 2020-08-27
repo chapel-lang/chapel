@@ -149,7 +149,7 @@ module OrderedMap {
       :arg valType: The type of the values of this orderedMap.
       :arg parSafe: If `true`, this orderedMap will use parallel safe operations.
       :type parSafe: bool
-      :arg comparator: The comparator used to compare elements.
+      :arg comparator: The comparator used to compare keys.
     */
     proc init(type keyType, type valType, param parSafe = false,
               comparator: record = defaultComparator) {
@@ -237,18 +237,17 @@ module OrderedMap {
       Updates this orderedMap with the contents of the other, overwriting the values
       for already-existing keys.
 
-      :arg m: The other orderedMap
-      :type m: orderedMap(keyType, valType)
+      :arg other: The other orderedMap
     */
-    proc update(m: orderedMap(keyType, valType, parSafe)) {
+    proc update(other: orderedMap(keyType, valType, ?p)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
         compilerError("updating map with non-copyable type");
 
-      for key in m.keys() {
+      for key in other.keys() {
         _set.remove((key, nil));
-        _set.add((key, new shared _valueWrapper(m.getValue(key))?));
+        _set.add((key, new shared _valueWrapper(other.getValue(key))?));
       }
     }
 
@@ -446,7 +445,7 @@ module OrderedMap {
      :type k: keyType
 
      :arg v: The value that maps to ``k``
-     :type k: valueType
+     :type v: valueType
 
      :returns: `true` if `k` was not in the orderedMap and added with value `v`.
                `false` otherwise.
@@ -472,7 +471,7 @@ module OrderedMap {
      :type k: keyType
 
      :arg v: The desired value to the key ``k``
-     :type k: valueType
+     :type v: valueType
 
      :returns: `true` if `k` was in the orderedMap and its value is updated with `v`.
                `false` otherwise.
@@ -537,8 +536,8 @@ module OrderedMap {
     }
 
     /*
-      Returns a new 0-based array containing a copy of keys. Array is not
-      guaranteed to be in any particular order.
+      Returns a new 0-based array containing a copy of keys. Array is sorted using 
+      the comparator.
 
       :return: A new DefaultRectangular array.
       :rtype: [] keyType
@@ -604,10 +603,8 @@ module OrderedMap {
     Returns `true` if the contents of two orderedMaps are the same.
 
     :arg a: A orderedMap to compare.
-    :type a: orderedMap
 
     :arg b: A orderedMap to compare.
-    :type b: orderedMap (with same keyType and valType)
 
     :return: `true` if the contents of two orderedMaps are equal.
     :rtype: `bool`
@@ -624,10 +621,8 @@ module OrderedMap {
     Returns `true` if the contents of two orderedMaps are not the same.
 
     :arg a: A orderedMap to compare.
-    :type a: orderedMap
 
     :arg b: A orderedMap to compare.
-    :type b: orderedMap (with same keyType and valType)
 
     :return: `true` if the contents of two orderedMaps are not equal.
     :rtype: `bool`
