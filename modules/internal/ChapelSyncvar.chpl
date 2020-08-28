@@ -375,9 +375,6 @@ module ChapelSyncvar {
   *                                                                           *
   * Use of a class instance establishes the required identity property.       *
   *                                                                           *
-  * Potential future optimization: Some targets could rely on a class that    *
-  * omits the syncAux variable for sufficiently simple valType.               *
-  *                                                                           *
   ************************************* | ************************************/
 
   pragma "no doc"
@@ -396,7 +393,9 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc deinit() {
-      chpl_sync_destroyAux(syncAux);
+      on this {
+        chpl_sync_destroyAux(syncAux);
+      }
     }
 
     proc readFE() {
@@ -539,7 +538,9 @@ module ChapelSyncvar {
     proc deinit() {
       // There's no explicit destroy function, but qthreads reclaims memory
       // for full variables that have no pending operations
-      qthread_fill(alignedValue);
+      on this {
+        qthread_fill(alignedValue);
+      }
     }
 
     proc readFE() {
@@ -810,12 +811,7 @@ module ChapelSyncvar {
   *                                                                           *
   * Use of a class instance establishes the required identity property.       *
   *                                                                           *
-  * Potential future optimization: Some targets could rely on a class that    *
-  * omits the singleAux variable for sufficiently simple valType.             *
-  *                                                                           *
   ************************************* | ************************************/
-
-
 
   pragma "no doc"
   class _singlecls {
@@ -831,7 +827,9 @@ module ChapelSyncvar {
     }
 
     proc deinit() {
-      chpl_single_destroyAux(singleAux);
+      on this {
+        chpl_single_destroyAux(singleAux);
+      }
     }
 
     proc readFF() {
