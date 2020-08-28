@@ -18,8 +18,10 @@
  * limitations under the License.
  */
 
-#ifndef PB_MESSAGE_FIELD_HH
-#define PB_MESSAGE_FIELD_HH
+#ifndef PB_MAP_FIELD_HH
+#define PB_MAP_FIELD_HH
+
+#include <string>
 
 #include <google/protobuf/io/printer.h>
 #include <google/protobuf/descriptor.h>
@@ -31,22 +33,14 @@ namespace chapel {
   using namespace google::protobuf;
   using namespace google::protobuf::io;
   
-  class MessageFieldGenerator : public FieldGeneratorBase {
+  class MapFieldGenerator : public FieldGeneratorBase {
    public:
-    MessageFieldGenerator(const FieldDescriptor* descriptor);
-    ~MessageFieldGenerator();
+    MapFieldGenerator(const FieldDescriptor* descriptor);
+    ~MapFieldGenerator();
 
     void GenerateMembers(Printer* printer);
   };
 
-  class MessageOneofFieldGenerator : public FieldGeneratorBase {
-   public:
-    MessageOneofFieldGenerator(const FieldDescriptor* descriptor);
-    ~MessageOneofFieldGenerator();
+}  // namespace chapelespace chapel
 
-    void GenerateMembers(Printer* printer);
-  };
-
-}  // namespace chapel
-
-#endif /* PB_MESSAGE_FIELD_HH */
+#endif  // PB_MAP_FIELD_HH

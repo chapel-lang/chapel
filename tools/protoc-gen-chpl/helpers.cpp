@@ -27,6 +27,7 @@
 #include <repeated_enum_field.h>
 #include <message_field.h>
 #include <repeated_message_field.h>
+#include <map_field.h>
 #include <field_base.h>
 
 namespace chapel {
@@ -109,25 +110,45 @@ namespace chapel {
     return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
   }
 
+  string GetOneofName(const OneofDescriptor* descriptor) {
+    return GetNestedTypeName(descriptor->containing_type(), descriptor->name());
+  }  
+
   FieldGeneratorBase* CreateFieldGenerator(const FieldDescriptor* descriptor) {
     switch (descriptor->type()) {
       case FieldDescriptor::TYPE_MESSAGE:
         if (descriptor->is_repeated()) {
-          return new RepeatedMessageFieldGenerator(descriptor);
+          if (descriptor->is_map()) {
+            return new MapFieldGenerator(descriptor);
+          } else {
+            return new RepeatedMessageFieldGenerator(descriptor);
+          }
         } else {
-          return new MessageFieldGenerator(descriptor);
+          if (descriptor->real_containing_oneof()) {
+            return new MessageOneofFieldGenerator(descriptor);
+          } else {
+            return new MessageFieldGenerator(descriptor);
+          }
         }
       case FieldDescriptor::TYPE_ENUM:
         if (descriptor->is_repeated()) {
           return new RepeatedEnumFieldGenerator(descriptor);
         } else {
-          return new EnumFieldGenerator(descriptor);
+          if (descriptor->real_containing_oneof()) {
+            return new EnumOneofFieldGenerator(descriptor);
+          } else {
+            return new EnumFieldGenerator(descriptor);
+          }
         }
       default:
         if (descriptor->is_repeated()) {
           return new RepeatedPrimitiveFieldGenerator(descriptor);
         } else {
-          return new PrimitiveFieldGenerator(descriptor);
+          if (descriptor->real_containing_oneof()) {
+            return new PrimitiveOneofFieldGenerator(descriptor);
+          } else {
+            return new PrimitiveFieldGenerator(descriptor);
+          }
         }  
     }
   }
