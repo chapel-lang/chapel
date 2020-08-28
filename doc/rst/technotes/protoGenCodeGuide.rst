@@ -99,6 +99,18 @@ field initializers and serialization/parsing methods for wire-type encoding.
  .. code-block:: chpl
   
   record Foo {
+
+    /*
+      Returns the package name of the proto file. If not declared the method returns
+      an empty string.
+    */
+    proc packageName param { return "packageName"; }
+
+    /*
+      Returns the name of the proto message the record is derived from.
+    */
+    proc messageName param { return "Foo"; }
+
     /*
       Record fields will be generated corresponding to each proto message field.
     */
@@ -149,7 +161,19 @@ field initializers and serialization/parsing methods for wire-type encoding.
     proc _deserialize(binCh) throws { ... }
   
   }
+
+Any Message Type
+^^^^^^^^^^^^^^^^
+For Any messages, you can call ``packFrom`` to pack a specified message into the
+current Any message, or ``UnpackTo`` to unpack the current Any message to a specified
+message. Corresponding to an any message type field the plugin will generate a record
+field of ``Any`` type.
+
+.. code-block:: chpl
   
+  // Field "a"
+  var a: Any;
+
 Fields
 ------
 The protocol buffer compiler generates a Chapel record field for each field defined
@@ -225,6 +249,23 @@ string field ``a`` will generate a list of type ``string``:
   // Field "a"
   var a: list(string);
 
+Map Fields
+^^^^^^^^^^
+Given this message definition:
+
+.. code-block:: proto
+
+  message Foo {
+    map<int32, bool> mapfield = 1;
+  }
+
+The plugin will generate a Chapel ``map(int(32), bool)`` type field:
+
+.. code-block:: chpl
+
+  // Field "mapfield"
+  var mapfield: map(int(32), bool);
+
 Enumerations
 ------------
 Given an enumeration definition like:
@@ -249,6 +290,53 @@ The ``Color`` proto enum above would therefore become the following Chapel code:
     GREEN = 5,
     BLUE = 1234,
   }
+
+Oneof
+-----
+Given a message with a oneof:
+
+.. code-block:: proto
+
+  message Foo {
+    oneof test_oneof {
+       string name = 1;
+       int32 serial_number = 2;
+    }
+  }
+
+The Chapel record corresponding to ``Foo`` will have ``name_`` and ``serial_number_``
+fields along with explicit ``get/set`` type methods:
+
+.. code-block:: chpl
+
+  // Field "name"
+  var name_: string;
+  proc name {
+    ...
+  }
+  proc ref name ref {
+    ...
+  }
+
+  // Field "serial_number"
+  var serial_number_: int(32);
+  proc serial_number {
+    ...
+  }
+  proc ref serial_number ref {
+    ...
+  }
+
+The explicit methods are declared to allow the user toset at most one of the
+fields in a oneof at a time. For example:
+
+.. code-block:: chpl
+
+  messageObj.name = "chapel";
+  messageObj.serial_number = 23;
+
+Setting the value of ``serial_number`` after ``name`` will set ``name`` to its
+default value("" in case of string).
 
 Nested Types
 ------------
