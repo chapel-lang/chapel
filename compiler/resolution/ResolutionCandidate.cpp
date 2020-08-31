@@ -785,6 +785,10 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
                                       formal->getValType());
         return false;
 
+
+      // MPF TODO: one day, this should use actual/formal getValType,
+      // and canCoerce should be adjusted to consider intents,
+      // rather than depending on ref types at this stage in compilation.
       } else if (canDispatch(actual->type,
                              actual,
                              formal->type,
@@ -871,6 +875,9 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
 
+          // MPF TODO: one day, this should use actual/formal getValType,
+          // and canCoerce should be adjusted to consider intents,
+          // rather than depending on ref types at this stage in compilation.
           if (canDispatch(actual->type,
                           actual,
                           formal->type,

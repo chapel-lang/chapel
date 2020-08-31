@@ -1539,6 +1539,11 @@ bool canCoerce(Type*     actualType,
                bool*     paramNarrows) {
   bool tmpPromotes = false;
   bool tmpParamNarrows = false;
+
+  // MPF TODO: use the intent instead of whether or not `formalType`
+  // has a `ref` type in order to rule out coercions that would not
+  // be allowed (e.g. passing an `int(8)` argument to a `ref x: int(64)`).
+
   if (canParamCoerce(actualType, actualSym, formalType, &tmpParamNarrows)) {
     if (paramNarrows) *paramNarrows = tmpParamNarrows;
     return true;
