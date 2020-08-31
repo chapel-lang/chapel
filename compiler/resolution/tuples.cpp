@@ -937,7 +937,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 AggregateType* at,
                                                 const char*    copyWith,
                                                 BlockStmt*     testBlock,
-                                                bool borrowConvert) {
+                                                bool           forCopy) {
   INT_ASSERT(at->symbol->hasFlag(FLAG_TUPLE));
 
   // Construct tuple that would be used for a particular argument intent.
@@ -951,10 +951,16 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
     if (i != 0) { // skip size field
       Type* useType = field->type->getValType();
 
+      bool allowReference = true;
+      if (valueOnly)
+        allowReference = false;
+      else if (forCopy)
+        allowReference = isReferenceType(field->type);
+
       // Compute the result type of copying
       // (but don't apply this to references if !valueOnly)
       if (copyWith && typeNeedsCopyInitDeinit(useType) &&
-          (valueOnly || !isReferenceType(field->type))) {
+          allowReference==false) {
         VarSymbol* var = newTemp("test_copy", useType);
         CallExpr* copy = new CallExpr(copyWith, var, gFalse);
         testBlock->insertAtTail(copy);
@@ -969,9 +975,9 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         INT_ASSERT(useAt);
 
         useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
-                                            copyWith, testBlock, borrowConvert);
+                                            copyWith, testBlock, forCopy);
 
-        if (valueOnly == false) {
+        if (allowReference) {
           if (intent == INTENT_BLANK || intent == INTENT_CONST) {
             IntentTag concrete = concreteIntent(intent, useType);
             if ((concrete & INTENT_FLAG_REF) != 0) {
@@ -982,14 +988,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
         }
 
       } else if (shouldChangeTupleType(useType) == true) {
-        // Argument instantiated from any that is a tuple of owned
-        // -> tuple of borrow
-        if (isManagedPtrType(useType) && borrowConvert) {
-          if (intent == INTENT_CONST || intent == INTENT_BLANK)
-            useType = getManagedPtrBorrowType(useType);
-        }
-
-        if (valueOnly == false) {
+        if (allowReference) {
           // If the tuple is passed with blank intent
           // *and* the concrete intent for the element type
           // of the tuple is a type where blank-intent-means-ref,
@@ -1047,7 +1046,7 @@ AggregateType* computeNonRefTuple(AggregateType* t)
 
 AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
 {
-  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock, false);
+  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock, true);
 }
 
 
