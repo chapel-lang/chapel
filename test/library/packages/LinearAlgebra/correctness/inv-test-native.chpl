@@ -19,13 +19,5 @@ proc sinMatrix(n) {
   return A;
 }
 
-var A = sinMatrix(n);
-var invA = inv(A);
+var invA = inv(sinMatrix(n));
 writeln(invA);
-writeln();
-
-var I = dot(A, invA);
-writeln(I);
-writeln();
-
-writeln(isClose(I, eye(n)));
