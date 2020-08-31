@@ -19,11 +19,12 @@ proc sinMatrix(n) {
   return A;
 }
 
-var invA = inv(sinMatrix(n));
+var A = sinMatrix(n)
+var invA = inv(A);
 writeln(invA);
 writeln();
 
-var I = dot(sinMatrix(n), invA);
+var I = dot(A, invA);
 writeln(I);
 writeln();
 
