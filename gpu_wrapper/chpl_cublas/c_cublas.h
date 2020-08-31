@@ -56,13 +56,9 @@ int cublas_zrotg(c_void_ptr *handle, complex double a, complex double b, double 
 
 int cublas_srotm(c_void_ptr *handle, int n, float *x, int incX, float *y, int incY, float *param);
 int cublas_drotm(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY, double *param);
-//int cublas_crotm(c_void_ptr *handle, int n, complex float *x, int incX, complex float *y, int incY, complex float *param);
-//int cublas_zrotm(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY, complex double *param);
 
 int cublas_srotmg(c_void_ptr *handle, float *d1, float *d2, float *x1, float *y1, float *param);
 int cublas_drotmg(c_void_ptr *handle, double *d1, double *d2, double  *x1, double  *y1, float *param);
-//int cublas_crotmg(c_void_ptr *handle, complex float d1, complex float d2, float x1, float y1, float *param);
-//int cublas_zrotmg(c_void_ptr *handle, double d1, double d2, double  x1, double  y1, float *param);
 
 int cublas_sscal(c_void_ptr *handle, int n, float alpha, float *x, int incX);
 int cublas_dscal(c_void_ptr *handle, int n, double alpha, double *x, int incX);
@@ -75,5 +71,16 @@ int cublas_sswap(c_void_ptr *handle, int n, float *x, int incX, float *y, int in
 int cublas_dswap(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY);
 int cublas_cswap(c_void_ptr *handle, int n, complex float *x, int incX, complex float *y, int incY);
 int cublas_zswap(c_void_ptr *handle, int n, complex double *x, int incX, complex double *y, int incY);
+/*
+int cublas_sgbmv(cublasHandle_t *handle, int trans, int m, int n, int kl, int ku, float alpha, float *A, int lda, float *x, int incX, float beta, float *y, int incY)
+int cublas_dgbmv(cublasHandle_t *handle, int trans, int m, int n, int kl, int ku, double alpha, double *A, int lda, double *x, int incX, double beta, double *y, int incY)
+int cublas_cgbmv(cublasHandle_t *handle, int trans, int m, int n, int kl, int ku, complex float alpha, complex float *A, int lda, complex float *x, int incX, complex float beta, complex float *y, int incY)
+int cublas_zgbmv(cublasHandle_t *handle, int trans, int m, int n, int kl, int ku, complex double alpha, complex double *A, int lda, complex double *x, int incX, complex double beta, complex double *y, int incY)
+*/
+
+int cublas_sgemv(c_void_ptr *handle, int trans, int m, int n, float alpha, float *A, int lda, float *x, int incX, float beta, float *y, int incY);
+int cublas_dgemv(c_void_ptr *handle, int trans, int m, int n, double alpha, double *A, int lda, double *x, int incX, double beta, double *y, int incY);
+int cublas_cgemv(c_void_ptr *handle, int trans, int m, int n, complex float alpha, complex float *A, int lda, complex float *x, int incX, complex float beta, complex float *y, int incY);
+int cublas_zgemv(c_void_ptr *handle, int trans, int m, int n, complex double alpha, complex double *A, int lda, complex double *x, int incX, complex double beta, complex double *y, int incY);
 
 int cublas_sgemm(c_void_ptr *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc);
