@@ -1,0 +1,1 @@
+array-member-nil-error.chpl:4: error: cannot default-initialize the array Array because it has a non-nilable element type 'unmanaged C'

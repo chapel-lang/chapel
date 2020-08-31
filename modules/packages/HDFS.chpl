@@ -125,7 +125,7 @@ HDFS Support Types and Functions
  */
 module HDFS {
 
-  use IO, SysBasic, SysError;
+  use IO, SysBasic, SysError, Sys;
   public use SysCTypes;
 
   require "hdfs.h";

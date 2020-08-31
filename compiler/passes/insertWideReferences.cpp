@@ -954,7 +954,7 @@ static void addKnownWides() {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
 
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_ARRAY_GET) || rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
+        if (rhs->isPrimitive(PRIM_ARRAY_GET)) {
           SymExpr* cause = toSymExpr(rhs->get(1));
           if (getElementType(cause)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             if (lhs->isRefOrWideRef()) {
@@ -1046,7 +1046,6 @@ static void propagateVar(Symbol* sym) {
               case PRIM_ARRAY_GET:
               case PRIM_GET_MEMBER: // ??
               case PRIM_GET_MEMBER_VALUE:
-              case PRIM_ARRAY_GET_VALUE:
               case PRIM_STRING_COPY:
               case PRIM_CAST:
               case PRIM_DYNAMIC_CAST:
@@ -1693,8 +1692,7 @@ static void localizeCall(CallExpr* call) {
           }
           // TODO: insert a local temp for the lhs of this move
           break;
-        } else if (rhs->isPrimitive(PRIM_ARRAY_GET) ||
-                   rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
+        } else if (rhs->isPrimitive(PRIM_ARRAY_GET)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* lhs = toSymExpr(call->get(1));
             Expr* stmt = call->getStmtExpr();

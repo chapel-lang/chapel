@@ -1,3 +1,5 @@
+Parsing module files:
+  $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
 module search dirs:
   subdir
   .
@@ -12,7 +14,6 @@ module search dirs:
   $CHPL_HOME/modules/dists
   $CHPL_HOME/modules/dists/dims
 end of module search dirs
-Parsing module files:
   subdir/bar.chpl
   foo.chpl
   subdir/baz.chpl
@@ -21,7 +22,6 @@ Parsing module files:
   subdir2/bap.chpl
   subdir4/subdir/bax.chpl
   ./bah.chpl
-  $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
   $CHPL_HOME/modules/standard/HaltWrappers.chpl
   $CHPL_HOME/modules/standard/Builtins.chpl
   $CHPL_HOME/modules/standard/Types.chpl
@@ -29,8 +29,8 @@ Parsing module files:
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/Reflection.chpl
-  $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
+  $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/standard/SysError.chpl
   $CHPL_HOME/modules/packages/RangeChunk.chpl
   $CHPL_HOME/modules/packages/Sort.chpl

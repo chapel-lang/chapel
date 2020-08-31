@@ -152,9 +152,8 @@ class LocAccumStencilArr {
   const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
 
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myFluff] eltType;
 
   var locRADLock: chpl__processorAtomicType(bool); // only accessed locally
@@ -216,8 +215,6 @@ class LocAccumStencilArr {
     }
 
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
 
     if locRAD != nil then
       delete locRAD;
@@ -892,7 +889,15 @@ override proc AccumStencilArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc AccumStencilArr.dsiDestroyArr(param deinitElts:bool) {
+override proc AccumStencilArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc AccumStencilArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       var arr = locArr(localeIdx);
@@ -913,6 +918,7 @@ override proc AccumStencilArr.dsiDestroyArr(param deinitElts:bool) {
             }
           }
         }
+        arr.myElems.dsiElementDeinitializationComplete();
         delete arr;
       }
     }
@@ -1416,6 +1422,14 @@ private proc chopDim(D:domain, dim) {
   return {(...r)};
 }
 
+private proc accumWrapper(ref lhs, rhs) {
+  use Reflection;
+  if canResolve("accum", lhs, rhs) then
+    accum(lhs, rhs);
+  else
+    lhs += rhs;
+}
+
 private proc denseTo1D(idx, dims) {
   var blk : dims.size * int;
   blk(blk.size-1) = 1;
@@ -1448,7 +1462,7 @@ proc AccumStencilArr._unpackElements(srcBuf, destArr, dim, direction) {
 
   if rank == 1 {
     forall (elIdx, bufIdx) in (destDom, srcBuf.domain[1..destDom.size]) {
-      destArr.myElems[elIdx] += srcBuf[bufIdx];
+      accumWrapper(destArr.myElems[elIdx], srcBuf[bufIdx]);
     }
   } else {
     const chopped = chopDim(destDom, rank-1);
@@ -1459,7 +1473,7 @@ proc AccumStencilArr._unpackElements(srcBuf, destArr, dim, direction) {
       const bufSlice = low..#len;
       const tupIdx = chpl__tuplify(idx);
       for (el, buf) in zip(lastDim, bufSlice) {
-        destArr.myElems[(...idx), el] += srcBuf[buf];
+        accumWrapper(destArr.myElems[(...idx), el], srcBuf[buf]);
       }
     }
   }

@@ -47,7 +47,13 @@ if test "$CHPL_LLVM" = llvm; then
     if [ -f "${cmake_setup}" ] ; then
         source ${cmake_setup}
     else
-        echo "[Warning: llvm may not build correctly with cmake: $(which cmake)]"
+        # This is the path to look for on CS systems we have
+        cmake_setup=/cray/css/users/chapelu/setup_cmake39.bash
+        if [ -f "${cmake_setup}" ] ; then
+            source ${cmake_setup}
+        else
+            echo "[Warning: llvm may not build correctly with cmake: $(which cmake)]"
+        fi
     fi
 fi
 

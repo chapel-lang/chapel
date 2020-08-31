@@ -92,11 +92,12 @@
  */
 module FileSystem {
 
-  use SysError;
-  private use Path;
-  private use HaltWrappers;
-  private use SysCTypes;
+  public use SysError;
+  use Path;
+  use HaltWrappers;
+  use SysCTypes;
   use IO;
+  use SysBasic;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -867,6 +868,7 @@ proc getUID(out error: syserr, name: string): int {
 // of casting and error checking.
 //
 private module GlobWrappers {
+  import HaltWrappers;
   extern type glob_t;
   use SysCTypes;
 
@@ -875,10 +877,7 @@ private module GlobWrappers {
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
-    // want:
-    //  import FileSystem.unescape;
-    // but see issue #15308, so:
-    use FileSystem;
+    import FileSystem.unescape;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 

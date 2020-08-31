@@ -557,8 +557,16 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   }
 
   totalWidth = filenameWidth+numberWidth*4+descWidth+20;
-  for (i = 0; i < totalWidth; i++)
+  const int headerWidth = strlen(" Memory Leaks ");
+  const int leftHeaderWidth = (totalWidth-headerWidth)/2;
+  const int rightHeaderWidth = totalWidth-leftHeaderWidth-headerWidth;
+
+  for (i = 0; i < leftHeaderWidth; i++)
     fprintf(memLogFile, "=");
+  fprintf(memLogFile, "%s", " Memory Leaks ");
+  for (i = 0; i < rightHeaderWidth; i++)
+    fprintf(memLogFile, "=");
+
   fprintf(memLogFile, "\n");
   fprintf(memLogFile, "%-*s%-*s%-*s%-*s%-*s%-*s\n",
          filenameWidth+numberWidth, "Allocated Memory (Bytes)",

@@ -76,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/DynamicIters.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
+	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
 	standard/LinkedLists.chpl \
@@ -117,6 +118,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/OrderedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \

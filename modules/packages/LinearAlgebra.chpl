@@ -491,8 +491,6 @@ proc _array.T where this.domain.rank == 1 { return transpose(this); }
 proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
   if Dom.shape(0) == 1 then
     return reshape(A, transpose(Dom));
-  else if Dom.shape(0) == 1 then
-    return reshape(A, transpose(Dom));
   else {
     const rDom = {Dom.dim(1), Dom.dim(0)};
     var C: [rDom] eltType;
@@ -657,9 +655,25 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 }
 
 pragma "no doc"
-/* Returns ``true`` if the domain is distributed */
-private proc isDistributed(a) param {
-  return !isSubtype(a.domain.dist.type, DefaultDist);
+/* 
+   Returns ``true`` if the domain is distributed 
+
+   This is currently public only for unit testing purposes.
+*/
+proc isDistributed(a) param {
+  if chpl__isArrayView(a) {
+    // NOTE that this'll return true even if `a` is a slice of a distributed
+    // array that falls entirely in a single locale
+    return !chpl__getActualArray(a).isDefaultRectangular();
+  }
+  else if isSparseDom(a.domain) {
+    // TODO: is there a better way to check for distributed sparse domains?
+    use BlockDist;
+    return isSubtype(a.domain.dist.type, Block);
+  }
+  else {
+    return !isSubtype(a.domain.dist.type, DefaultDist);
+  }
 }
 
 /* Inner product of 2 vectors. */
@@ -763,14 +777,92 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 {
   if Adom.rank != 2 || Bdom.rank != 2 then
     compilerError("Ranks are not 2 and 2");
+  if Adom.shape(1) != Bdom.shape(0) then
+    halt("Mismatched shape in matrix-matrix multiplication");
+
+  private use RangeChunk;
 
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
 
-  // naive algorithm
-  forall (i,j) in C.domain do
-    C[i,j] = + reduce (A[i,..]*B[..,j]);
-
+  if hasNonStridedIndices(Adom) {
+    if hasNonStridedIndices(Bdom) then 
+      _matmatMultHelper(A, B, C);
+    else
+      _matmatMultHelper(A,
+                        B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+  } else {
+    if hasNonStridedIndices(Bdom) then 
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)), 
+                        B, 
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+    else
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)),
+                        B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
+                        C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
+  }
   return C;
+}
+
+pragma "no doc"
+/* Helper for Generic matrix-matrix multiplication */
+proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
+                       ref BMat : [?Bdom] eltType,
+                       ref CMat : [] eltType) 
+{
+  // TODO - Add logic to calculate blockSize 
+  // based on eltType and L1 cache size
+  const blockSize = 32;
+  const bVecRange = 0..#blockSize;
+  const blockDom = {bVecRange, bVecRange};
+  const (Adim0, Adim1) = Adom.dims();
+  const (Bdim0, Bdim1) = Bdom.dims();
+
+  const numTasks = min(here.maxTaskPar, Bdom.shape(1));
+  coforall tid in 0..#numTasks {
+    const myChunk = chunk(Bdim1, numTasks, tid);
+
+    var AA: [blockDom] eltType,
+        BB: [blockDom] eltType,
+        CC: [blockDom] eltType;
+
+    for (jj,kk) in {myChunk by blockSize, Bdim0 by blockSize} {
+      const jMax = min(jj+blockSize-1, myChunk.high);
+      const kMax = min(kk+blockSize-1, Bdim0.high);
+      const jRange = 0..jMax-jj;
+      const kRange = 0..kMax-kk;
+
+      for (jB, j) in zip(jj..jMax, 0..) do
+        for (kB, k) in zip(kk..kMax, 0..) do
+          BB[j,k] = BMat[kB,jB];
+
+      for ii in Adim0 by blockSize {
+        const iMax = min(ii+blockSize-1, Adim0.high);
+        const iRange = 0..iMax-ii;
+
+        for (iB, i) in zip(ii..iMax, 0..) do
+          for (kB, k) in zip(kk..kMax, 0..) do
+            AA[i,k] = AMat[iB, kB];
+
+        for cc in CC do
+          cc = 0;
+
+        for (k,j,i) in {kRange, jRange, iRange} do
+          CC[i,j] += AA[i,k] * BB[j,k];
+
+        for (iB, i) in zip(ii..iMax, 0..) do
+          for (jB, j) in zip(jj..jMax, 0..) do
+            CMat[iB,jB] += CC[i,j];
+      }
+    }
+  }
+}
+
+pragma "no doc"
+private inline proc hasNonStridedIndices(Adom : domain(2)) {
+  return (if Adom.stridable
+          then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1 
+          else true);
 }
 
 /*
@@ -783,6 +875,9 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
       compiler error if ``lapackImpl`` is ``off``.
 */
 proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+  if isDistributed(A) then
+    compilerError("inv does not support distributed vectors/matrices");
+
   use SysCTypes;
   if Adom.rank != 2 then
     halt("Wrong rank for matrix inverse");
@@ -885,6 +980,8 @@ where !usingLAPACK
 */
 proc matPow(A: [], b) where isNumeric(b) {
   // TODO -- flatten recursion into while-loop
+  if isDistributed(A) && A.rank == 2 then
+    compilerError("matPow does not support distributed matrices");
   if !isIntegral(b) then
     // TODO -- support all reals with Sylvester's formula
     compilerError("matPow only support powers of integers");
@@ -960,32 +1057,32 @@ proc diag(A: [?Adom] ?eltType, k=0) {
 
 private proc _diag_vec(A:[?Adom] ?eltType) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 0 else 1;
-  const dim = Adom.dim(d);
+  const diagSize = min(m, n);
 
-  var diagonal = Vector(dim, eltType);
-
-  forall i in dim do
-    diagonal[i] = A[i,i];
+  var diagonal : [0..#diagSize] eltType;
+  forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize, 
+                                 Adom.dim(1)#diagSize, 
+                                 0..) do
+    diagonal[diagInd] = A[i,j]; 
 
   return diagonal;
 }
 
 private proc _diag_vec(A:[?Adom] ?eltType, k) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 0 else 1;
-  const dim = Adom.dim(d);
 
   if k > 0 {
     // Upper diagonal
     if m < k then halt("k is out of range");
 
     var length = min(m, n - k);
-    const space = dim.first..#length;
-    var diagonal = Vector(space, eltType);
+    var diagonal = Vector(0..#length, eltType);
+    const offset = Adom.dim(1).stride * k;
 
-    forall i in space do
-      diagonal[i] = A[i, i+k];
+    forall (i, j, diagInd) in zip(Adom.dim(0)#length, 
+                                  Adom.dim(1)#length,
+                                  0..) do
+      diagonal[diagInd] = A[i, j+offset];
 
     return diagonal;
   }
@@ -995,11 +1092,13 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
     if m < K then halt("k is out of range");
 
     var length = min(n, m - K);
-    const space = dim.first..#length;
-    var diagonal = Vector(space, eltType);
+    var diagonal = Vector(0..#length, eltType);
+    const offset = Adom.dim(0).stride * K;
 
-    forall i in space do
-      diagonal[i] = A[i+K, i];
+    forall (i, j, diagInd) in zip(Adom.dim(0)#length,
+                                  Adom.dim(1)#length,
+                                  0..) do
+      diagonal[diagInd] = A[i+offset, j];
 
     return diagonal;
   }
@@ -1490,8 +1589,9 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
       compiler error if ``lapackImpl`` is ``off``.
  */
 proc cholesky(A: [] ?t, lower = true)
-  where A.rank == 2 && isLAPACKType(t) && usingLAPACK
-{
+  where A.rank == 2 && isLAPACKType(t) && usingLAPACK {
+  if isDistributed(A) then
+    compilerError("cholesky does not support distributed vectors/matrices");
   if !isSquare(A) then
     halt("Matrix passed to cholesky must be square");
 
@@ -1534,6 +1634,8 @@ proc cholesky(A: [] ?t, lower = true)
 
 */
 proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+  if isDistributed(A) then
+    compilerError("eigvalsh does not support distributed vectors/matrices");
   return eigh(A, lower=lower, overwrite=overwrite, eigvalsOnly=true);
 }
 
@@ -1562,6 +1664,9 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
 
 */
 proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+  if isDistributed(A) then
+    compilerError("eigh does not support distributed vectors/matrices");
+
   const (n,m) = A.shape;
   if n != m then throw new LinearAlgebraError("Non-square matrix passed to eigh");
   param nbits = numBits(t);
@@ -1604,6 +1709,8 @@ proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) 
 
 */
 proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
+  if isDistributed(A) then
+    compilerError("eigvals does not support distributed vectors/matrices");
   return eig(A, left=false, right=false);
 }
 
@@ -1633,6 +1740,8 @@ proc eigvals(A: [] ?t) where A.domain.rank == 2 && usingLAPACK {
  */
 proc eig(A: [] ?t, param left = false, param right = false)
   where A.domain.rank == 2 && usingLAPACK {
+  if isDistributed(A) then
+    compilerError("eig does not support distributed vectors/matrices");
 
   proc convertToCplx(wr: [] t, wi: [] t) {
     const n = wi.size;
@@ -1782,8 +1891,9 @@ proc eig(A: [] ?t, param left = false, param right = false)
     compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
-  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
-{
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2 {
+  if isDistributed(A) then
+    compilerError("svd does not support distributed vectors/matrices");
 
   const (m, n) = A.shape;
   var minDim = min(m, n);
@@ -1933,7 +2043,7 @@ proc isLocalArr(A: [?D]) param : bool {
 pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
-  return (D.dist.type == defaultDist.type || D.dist.type < ArrayViewRankChangeDist);
+  return D.dist.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually
@@ -2024,6 +2134,7 @@ A common usage of this interface might look like this:
 module Sparse {
 
   public use LayoutCS;
+  private use LinearAlgebra;
 
   /* Return an empty CSR domain over parent domain:
      ``{1..rows, 1..rows}``

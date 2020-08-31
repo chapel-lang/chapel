@@ -1,0 +1,2 @@
+bug: implicit 'this' does not work in certain methods
+#5979

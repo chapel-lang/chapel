@@ -6,7 +6,7 @@ module parent {
   }
 
   module sibling {
-    use child;
+    use super.child;
 
     proc main() {
       writeln(secretFunction(11));

@@ -1,3 +1,0 @@
-arg.chpl:3: In function 'foo':
-arg.chpl:7: error: cannot assign to const variable
-arg.chpl:3: error: Cannot initialize 'a' of type int(64) from a 'void'

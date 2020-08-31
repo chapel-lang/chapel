@@ -1,1 +1,2 @@
-CHPL_COMM==none
+CHPL_COMM == none
+CHPL_SANITIZE_EXE != none

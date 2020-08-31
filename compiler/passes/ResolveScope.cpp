@@ -139,6 +139,9 @@ ResolveScope::ResolveScope(ModuleSymbol*       modSymbol,
   INT_ASSERT(getScopeFor(modSymbol->block) == NULL);
   sScopeMap[modSymbol->block] = this;
 
+  // Give the import progress bar a default state.
+  progress = IUP_NOT_STARTED;
+
   canReexport = true;
 }
 
@@ -149,6 +152,9 @@ ResolveScope::ResolveScope(BaseAST*            ast,
 
   INT_ASSERT(getScopeFor(ast) == NULL);
   sScopeMap[ast] = this;
+
+  // Give the import progress bar a default state.
+  progress = IUP_NOT_STARTED;
 
   canReexport = true;
 }
@@ -429,6 +435,10 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
 bool ResolveScope::extend(VisibilityStmt* stmt) {
   mUseImportList.push_back(stmt);
 
+  if (progress == IUP_NOT_STARTED) {
+    progress = IUP_IN_PROGRESS;
+  }
+
   return true;
 }
 
@@ -661,7 +671,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
     ModuleSymbol* badCloserModule = NULL;
+    ModuleSymbol* thisMod = enclosingModule();
     for (ptr = start; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
+      ModuleSymbol* ptrMod = ptr->enclosingModule();
       // Check if the module is defined in this scope
       Symbol* sym = ptr->lookupNameLocallyForImport(name);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
@@ -672,6 +684,9 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
           // if we're not in the root module scope or using relative import,
           // this is an improper match
           badCloserModule = mod;
+          if (thisMod != ptrMod) {
+            continue;
+          }
           if (isUse) { // TODO: remove this to disable relative use
             retval = sym;
             break;
@@ -763,13 +778,42 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       }
       retval = symbol;
 
-    } else if (Symbol *symbol =
-        scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
-      retval = symbol;
-
     } else {
-      USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
-                      rhsName, outerMod->name);
+      if (scope->progress == IUP_NOT_STARTED) {
+        // Don't go into the unprocessed uses and imports now if the scope is in
+        // progress - this should only happen if we're currently in the scope
+        // being processed, or if there's a circular dependency.
+        //
+        // Otherwise, traverse this scope and trigger the resolution of the
+        // uses and imports now
+        for_alist(expr, scope->asBlockStmt()->body) {
+          if (UseStmt* useStmt = toUseStmt(expr)) {
+            BaseAST* astScope = getScope(useStmt);
+            ResolveScope* useScope = getScopeFor(astScope);
+            useStmt->scopeResolve(useScope);
+
+          } else if (ImportStmt* importStmt = toImportStmt(expr)) {
+            BaseAST* astScope = getScope(importStmt);
+            ResolveScope* importScope = getScopeFor(astScope);
+            importStmt->scopeResolve(importScope);
+          }
+          if (scope->progress == IUP_COMPLETED) {
+            // Don't bother continuing to traverse the block's stmts if we've
+            // found all the uses or imports we know about.
+            break;
+          }
+        }
+      }
+      if (Symbol* symbol = scope->lookupPublicVisStmts(rhsName)) {
+        retval = symbol;
+      } else if (Symbol *symbol =
+          scope->lookupPublicUnqualAccessSyms(rhsName, call)) {
+        retval = symbol;
+
+      } else {
+        USR_FATAL(call, "Cannot find symbol '%s' in module '%s'",
+                  rhsName, outerMod->name);
+      }
     }
 
     call = toCallExpr(call->parentExpr);

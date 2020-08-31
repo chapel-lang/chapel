@@ -2,7 +2,7 @@
     var global:int;
     proc setup(x) {
       writeln("in LibraryX.setup()");
-      global = x:int;
+      global = try! x:int;
     }
     proc run(x) {
       setup(x);

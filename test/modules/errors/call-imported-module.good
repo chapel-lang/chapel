@@ -1,0 +1,1 @@
+call-imported-module.chpl:4: error: modules (like 'M' here) cannot be called like procedures

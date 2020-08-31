@@ -1,0 +1,3 @@
+Vector.chpl:xxx: In initializer:
+Vector.chpl:xxx: error: Vector does not support an eltType that can't be default initialized, here: 2*shared T
+VectorTest.chpl:xxx: Initializer instantiated as: init(type eltType = 2*shared T, param parSafe = 0)

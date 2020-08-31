@@ -1,0 +1,5 @@
+perfkeys: Time:, Time:
+files: dgemmBLAS.dat, dgemmNative.dat
+graphkeys: BLAS (16 Locales), Native (16 Locales)
+ylabel: Time (seconds)
+graphtitle: PRK DGEMM - Distributed Matrix Multiplication (4096x4096 matrix)

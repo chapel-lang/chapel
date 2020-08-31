@@ -1,3 +1,0 @@
-(bar = 4, baz = true)
-I default initialized!
-(bar = 0, baz = false)

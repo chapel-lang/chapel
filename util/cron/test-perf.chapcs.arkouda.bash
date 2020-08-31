@@ -11,6 +11,5 @@ source $CWD/common-arkouda.bash
 # chapcs only has python 3.4, need newer one for arkouda
 source /cray/css/users/chapelu/setup_python36.bash
 
-test_release
 test_master
 sync_graphs
