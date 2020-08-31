@@ -799,9 +799,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
 
   AggregateType* ct = origCt;
 
-  if (valueOnly) {
-    ct = computeCopyTuple(origCt, valueOnly, copy_fun, fn->body);
-  }
+  ct = computeCopyTuple(origCt, valueOnly, copy_fun, fn->body);
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
