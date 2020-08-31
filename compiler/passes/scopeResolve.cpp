@@ -1548,12 +1548,11 @@ static void lookup(const char*           name,
                    std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
-static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
-                                    const char* nameUsed,
-                                    bool storeRenames,
-                                    std::map<Symbol*, astlocT*> renameLocs,
-                                    std::map<Symbol*,
-                                      VisibilityStmt*>& reexportPts)
+static void
+printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
+                        const char* nameUsed, bool storeRenames,
+                        std::map<Symbol*, astlocT*> renameLocs,
+                        std::map<Symbol*, VisibilityStmt*>& reexportPts)
 {
   Symbol* sampleFunction = NULL;
   for_vector(Symbol, another, symbols) if (another != sym)

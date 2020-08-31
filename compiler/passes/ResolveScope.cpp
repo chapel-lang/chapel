@@ -1093,12 +1093,9 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
 
 Symbol*
 ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                           BaseAST *context,
-                                           std::map<Symbol*,
-                                             astlocT*>& renameLocs,
-                                           std::map<Symbol*,
-                                             VisibilityStmt*>& reexportPts,
-                                           bool followUses) {
+              BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs,
+              std::map<Symbol*, VisibilityStmt*>& reexportPts,
+              bool followUses) {
   if (!this->canReexport) return NULL;
 
   std::vector<Symbol *> symbols;
