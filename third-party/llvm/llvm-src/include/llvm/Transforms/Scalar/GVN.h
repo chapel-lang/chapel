@@ -1,9 +1,8 @@
 //===- GVN.h - Eliminate redundant values and loads -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -121,6 +120,8 @@ public:
     uint32_t lookupOrAddCall(CallInst *C);
     uint32_t phiTranslateImpl(const BasicBlock *BB, const BasicBlock *PhiBlock,
                               uint32_t Num, GVN &Gvn);
+    bool areCallValsEqual(uint32_t Num, uint32_t NewNum, const BasicBlock *Pred,
+                          const BasicBlock *PhiBlock, GVN &Gvn);
     std::pair<uint32_t, bool> assignExpNewValueNum(Expression &exp);
     bool areAllValsInBB(uint32_t num, const BasicBlock *BB, GVN &Gvn);
 

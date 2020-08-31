@@ -16,6 +16,7 @@ unittest("ToolingTests") {
     "//clang/lib/Tooling/Refactoring",
     "//llvm/lib/Support",
     "//llvm/lib/Target:TargetsToBuild",
+    "//llvm/lib/Testing/Support",
   ]
   sources = [
     "ASTSelectionTest.cpp",
@@ -29,6 +30,7 @@ unittest("ToolingTests") {
     "LexicallyOrderedRecursiveASTVisitorTest.cpp",
     "LookupTest.cpp",
     "QualTypeNamesTest.cpp",
+    "RangeSelectorTest.cpp",
     "RecursiveASTVisitorTestDeclVisitor.cpp",
     "RecursiveASTVisitorTestPostOrderVisitor.cpp",
     "RecursiveASTVisitorTestTypeLocVisitor.cpp",
@@ -47,6 +49,7 @@ unittest("ToolingTests") {
     "RecursiveASTVisitorTests/IntegerLiteral.cpp",
     "RecursiveASTVisitorTests/LambdaDefaultCapture.cpp",
     "RecursiveASTVisitorTests/LambdaExpr.cpp",
+    "RecursiveASTVisitorTests/LambdaTemplateParams.cpp",
     "RecursiveASTVisitorTests/NestedNameSpecifiers.cpp",
     "RecursiveASTVisitorTests/ParenExpr.cpp",
     "RecursiveASTVisitorTests/TemplateArgumentLocTraverser.cpp",
@@ -56,6 +59,9 @@ unittest("ToolingTests") {
     "RefactoringTest.cpp",
     "ReplacementsYamlTest.cpp",
     "RewriterTest.cpp",
+    "SourceCodeTest.cpp",
+    "StencilTest.cpp",
     "ToolingTest.cpp",
+    "TransformerTest.cpp",
   ]
 }

@@ -191,6 +191,26 @@ An example of how to use ``alloc_size``
   other attributes, such as ``enable_if``.
 
 
+allocator
+---------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","``allocator``","","",""
+
+The ``__declspec(allocator)`` attribute is applied to functions that allocate
+memory, such as operator new in C++. When CodeView debug information is emitted
+(enabled by ``clang -gcodeview`` or ``clang-cl /Z7``), Clang will attempt to
+record the code offset of heap allocation call sites in the debug info. It will
+also record the type being allocated using some local heuristics. The Visual
+Studio debugger uses this information to `profile memory usage`_.
+
+.. _profile memory usage: https://docs.microsoft.com/en-us/visualstudio/profiling/memory-usage
+
+This attribute does not affect optimizations in any way, unlike GCC's
+``__attribute__((malloc))``.
+
+
 artificial
 ----------
 .. csv-table:: Supported Syntaxes
@@ -295,11 +315,14 @@ replacement=\ *string-literal*
   the deprecated declaration with the new declaration specified.
 
 Multiple availability attributes can be placed on a declaration, which may
-correspond to different platforms.  Only the availability attribute with the
-platform corresponding to the target platform will be used; any others will be
-ignored.  If no availability attribute specifies availability for the current
-target platform, the availability attributes are ignored.  Supported platforms
-are:
+correspond to different platforms. For most platforms, the availability
+attribute with the platform corresponding to the target platform will be used;
+any others will be ignored. However, the availability for ``watchOS`` and
+``tvOS`` can be implicitly inferred from an ``iOS`` availability attribute.
+Any explicit availability attributes for those platforms are still prefered over
+the implicitly inferred availability attributes. If no availability attribute
+specifies availability for the current target platform, the availability
+attributes are ignored. Supported platforms are:
 
 ``ios``
   Apple's iOS operating system.  The minimum deployment target is specified by
@@ -372,8 +395,116 @@ Starting with the macOS 10.12 SDK, the ``API_AVAILABLE`` macro from
   - (id)otherMethod API_AVAILABLE(macos(10.11), ios(11.0));
   @end
 
+Availability attributes can also be applied using a ``#pragma clang attribute``.
+Any explicit availability attribute whose platform corresponds to the target
+platform is applied to a declaration regardless of the availability attributes
+specified in the pragma. For example, in the code below,
+``hasExplicitAvailabilityAttribute`` will use the ``macOS`` availability
+attribute that is specified with the declaration, whereas
+``getsThePragmaAvailabilityAttribute`` will use the ``macOS`` availability
+attribute that is applied by the pragma.
+
+.. code-block:: c
+
+  #pragma clang attribute push (__attribute__((availability(macOS, introduced=10.12))), apply_to=function)
+  void getsThePragmaAvailabilityAttribute(void);
+  void hasExplicitAvailabilityAttribute(void) __attribute__((availability(macos,introduced=10.4)));
+  #pragma clang attribute pop
+
+For platforms like ``watchOS`` and ``tvOS``, whose availability attributes can
+be implicitly inferred from an ``iOS`` availability attribute, the logic is
+slightly more complex. The explicit and the pragma-applied availability
+attributes whose platform corresponds to the target platform are applied as
+described in the previous paragraph. However, the implicitly inferred attributes
+are applied to a declaration only when there is no explicit or pragma-applied
+availability attribute whose platform corresponds to the target platform. For
+example, the function below will receive the ``tvOS`` availability from the
+pragma rather than using the inferred ``iOS`` availability from the declaration:
+
+.. code-block:: c
+
+  #pragma clang attribute push (__attribute__((availability(tvOS, introduced=12.0))), apply_to=function)
+  void getsThePragmaTVOSAvailabilityAttribute(void) __attribute__((availability(iOS,introduced=11.0)));
+  #pragma clang attribute pop
+
+The compiler is also able to apply implicly inferred attributes from a pragma
+as well. For example, when targeting ``tvOS``, the function below will receive
+a ``tvOS`` availability attribute that is implicitly inferred from the ``iOS``
+availability attribute applied by the pragma:
+
+.. code-block:: c
+
+  #pragma clang attribute push (__attribute__((availability(iOS, introduced=12.0))), apply_to=function)
+  void infersTVOSAvailabilityFromPragma(void);
+  #pragma clang attribute pop
+
+The implicit attributes that are inferred from explicitly specified attributes
+whose platform corresponds to the target platform are applied to the declaration
+even if there is an availability attribute that can be inferred from a pragma.
+For example, the function below will receive the ``tvOS, introduced=11.0``
+availability that is inferred from the attribute on the declaration rather than
+inferring availability from the pragma:
+
+.. code-block:: c
+
+  #pragma clang attribute push (__attribute__((availability(iOS, unavailable))), apply_to=function)
+  void infersTVOSAvailabilityFromAttributeNextToDeclaration(void)
+    __attribute__((availability(iOS,introduced=11.0)));
+  #pragma clang attribute pop
+
 Also see the documentation for `@available
 <http://clang.llvm.org/docs/LanguageExtensions.html#objective-c-available>`_
+
+
+callback
+--------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``callback``","``clang::callback``","``clang::callback``","","","","Yes"
+
+The ``callback`` attribute specifies that the annotated function may invoke the
+specified callback zero or more times. The callback, as well as the passed
+arguments, are identified by their parameter name or position (starting with
+1!) in the annotated function. The first position in the attribute identifies
+the callback callee, the following positions declare describe its arguments.
+The callback callee is required to be callable with the number, and order, of
+the specified arguments. The index `0`, or the identifier `this`, is used to
+represent an implicit "this" pointer in class methods. If there is no implicit
+"this" pointer it shall not be referenced. The index '-1', or the name "__",
+represents an unknown callback callee argument. This can be a value which is
+not present in the declared parameter list, or one that is, but is potentially
+inspected, captured, or modified. Parameter names and indices can be mixed in
+the callback attribute.
+
+The ``callback`` attribute, which is directly translated to ``callback``
+metadata <http://llvm.org/docs/LangRef.html#callback-metadata>, make the
+connection between the call to the annotated function and the callback callee.
+This can enable interprocedural optimizations which were otherwise impossible.
+If a function parameter is mentioned in the ``callback`` attribute, through its
+position, it is undefined if that parameter is used for anything other than the
+actual callback. Inspected, captured, or modified parameters shall not be
+listed in the ``callback`` metadata.
+
+Example encodings for the callback performed by `pthread_create` are shown
+below. The explicit attribute annotation indicates that the third parameter
+(`start_routine`) is called zero or more times by the `pthread_create` function,
+and that the fourth parameter (`arg`) is passed along. Note that the callback
+behavior of `pthread_create` is automatically recognized by Clang. In addition,
+the declarations of `__kmpc_fork_teams` and `__kmpc_fork_call`, generated for 
+`#pragma omp target teams` and `#pragma omp parallel`, respectively, are also
+automatically recognized as broker functions. Further functions might be added
+in the future.
+
+  .. code-block:: c
+
+    __attribute__((callback (start_routine, arg)))
+    int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                       void *(*start_routine) (void *), void *arg);
+
+    __attribute__((callback (3, 4)))
+    int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+                       void *(*start_routine) (void *), void *arg);
 
 
 carries_dependency
@@ -768,31 +899,6 @@ name. The behavior of a program executing on a processor that doesn't satisfy
 any option of a multiversioned function is undefined.
 
 
-deprecated
-----------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``deprecated``","``gnu::deprecated`` |br| ``deprecated``","``deprecated``","``deprecated``","","",""
-
-The ``deprecated`` attribute can be applied to a function, a variable, or a
-type. This is useful when identifying functions, variables, or types that are
-expected to be removed in a future version of a program.
-
-Consider the function declaration for a hypothetical function ``f``:
-
-.. code-block:: c++
-
-  void f(void) __attribute__((deprecated("message", "replacement")));
-
-When spelled as `__attribute__((deprecated))`, the deprecated attribute can have
-two optional string arguments. The first one is the message to display when
-emitting the warning; the second one enables the compiler to provide a Fix-It
-to replace the deprecated name with a new name. Otherwise, when spelled as
-`[[gnu::deprecated]] or [[deprecated]]`, the attribute can have one optional
-string argument which is the message to display when emitting the warning.
-
-
 diagnose_if
 -----------
 .. csv-table:: Supported Syntaxes
@@ -1096,67 +1202,6 @@ TUs where it is used.
 This attribute can be used on static and non-static member functions of class
 templates, static data members of class templates and member classes of class
 templates.
-
-
-external_source_symbol
-----------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``external_source_symbol``","``clang::external_source_symbol``","``clang::external_source_symbol``","","","","Yes"
-
-The ``external_source_symbol`` attribute specifies that a declaration originates
-from an external source and describes the nature of that source.
-
-The fact that Clang is capable of recognizing declarations that were defined
-externally can be used to provide better tooling support for mixed-language
-projects or projects that rely on auto-generated code. For instance, an IDE that
-uses Clang and that supports mixed-language projects can use this attribute to
-provide a correct 'jump-to-definition' feature. For a concrete example,
-consider a protocol that's defined in a Swift file:
-
-.. code-block:: swift
-
-  @objc public protocol SwiftProtocol {
-    func method()
-  }
-
-This protocol can be used from Objective-C code by including a header file that
-was generated by the Swift compiler. The declarations in that header can use
-the ``external_source_symbol`` attribute to make Clang aware of the fact
-that ``SwiftProtocol`` actually originates from a Swift module:
-
-.. code-block:: objc
-
-  __attribute__((external_source_symbol(language="Swift",defined_in="module")))
-  @protocol SwiftProtocol
-  @required
-  - (void) method;
-  @end
-
-Consequently, when 'jump-to-definition' is performed at a location that
-references ``SwiftProtocol``, the IDE can jump to the original definition in
-the Swift source file rather than jumping to the Objective-C declaration in the
-auto-generated header file.
-
-The ``external_source_symbol`` attribute is a comma-separated list that includes
-clauses that describe the origin and the nature of the particular declaration.
-Those clauses can be:
-
-language=\ *string-literal*
-  The name of the source language in which this declaration was defined.
-
-defined_in=\ *string-literal*
-  The name of the source container in which the declaration was defined. The
-  exact definition of source container is language-specific, e.g. Swift's
-  source containers are modules, so ``defined_in`` should specify the Swift
-  module name.
-
-generated_declaration
-  This declaration was automatically generated by some tool.
-
-The clauses can be specified in any order. The clauses that are listed above are
-all optional, but the attribute has to have at least one clause.
 
 
 flatten
@@ -1576,6 +1621,30 @@ These attributes override the `-mmicromips` and `-mno-micromips` options
 on the command line.
 
 
+mig_server_routine
+------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``mig_server_routine``","``clang::mig_server_routine``","``clang::mig_server_routine``","","","","Yes"
+
+The Mach Interface Generator release-on-success convention dictates
+functions that follow it to only release arguments passed to them when they
+return "success" (a ``kern_return_t`` error code that indicates that
+no errors have occured). Otherwise the release is performed by the MIG client
+that called the function. The annotation ``__attribute__((mig_server_routine))``
+is applied in order to specify which functions are expected to follow the
+convention. This allows the Static Analyzer to find bugs caused by violations of
+that convention. The attribute would normally appear on the forward declaration
+of the actual server routine in the MIG server header, but it may also be
+added to arbitrary functions that need to follow the same convention - for
+example, a user can add them to auxiliary functions called by the server routine
+that have their return value of type ``kern_return_t`` unconditionally returned
+from the routine. The attribute can be applied to C++ methods, and in this case
+it will be automatically applied to overrides if the method is virtual. The
+attribute can also be written using C++11 syntax: ``[[mig::server_routine]]``.
+
+
 min_vector_width
 ----------------
 .. csv-table:: Supported Syntaxes
@@ -1702,6 +1771,45 @@ Use ``__attribute__((no_sanitize_thread))`` on a function declaration to
 specify that checks for data races on plain (non-atomic) memory accesses should
 not be inserted by ThreadSanitizer. The function is still instrumented by the
 tool to avoid false positives and provide meaningful stack traces.
+
+
+no_speculative_load_hardening
+-----------------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``no_speculative_load_hardening``","``clang::no_speculative_load_hardening``","``clang::no_speculative_load_hardening``","","","","Yes"
+
+This attribute can be applied to a function declaration in order to indicate
+  that `Speculative Load Hardening <https://llvm.org/docs/SpeculativeLoadHardening.html>`_
+  is *not* needed for the function body. This can also be applied to a method
+  in Objective C. This attribute will take precedence over the command line flag in
+  the case where `-mspeculative-load-hardening <https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mspeculative-load-hardening>`_ is specified.
+
+  Warning: This attribute may not prevent Speculative Load Hardening from being
+  enabled for a function which inlines a function that has the
+  'speculative_load_hardening' attribute. This is intended to provide a
+  maximally conservative model where the code that is marked with the
+  'speculative_load_hardening' attribute will always (even when inlined)
+  be hardened. A user of this attribute may want to mark functions called by
+  a function they do not want to be hardened with the 'noinline' attribute.
+
+  For example:
+
+  .. code-block:: c
+
+    __attribute__((speculative_load_hardening))
+    int foo(int i) {
+      return i;
+    }
+
+    // Note: bar() may still have speculative load hardening enabled if
+    // foo() is inlined into bar(). Mark foo() with __attribute__((noinline))
+    // to avoid this situation.
+    __attribute__((no_speculative_load_hardening))
+    int bar(int i) {
+      return foo(i);
+    }
 
 
 no_split_stack
@@ -2285,36 +2393,6 @@ Attributes ``X_consumed`` can be added to parameters of methods, functions,
 and Objective-C methods.
 
 
-objc_boxable
-------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``objc_boxable``","``clang::objc_boxable``","``clang::objc_boxable``","","","","Yes"
-
-Structs and unions marked with the ``objc_boxable`` attribute can be used
-with the Objective-C boxed expression syntax, ``@(...)``.
-
-**Usage**: ``__attribute__((objc_boxable))``. This attribute
-can only be placed on a declaration of a trivially-copyable struct or union:
-
-.. code-block:: objc
-
-  struct __attribute__((objc_boxable)) some_struct {
-    int i;
-  };
-  union __attribute__((objc_boxable)) some_union {
-    int i;
-    float f;
-  };
-  typedef struct __attribute__((objc_boxable)) _some_struct some_struct;
-
-  // ...
-
-  some_struct ss;
-  NSValue *boxed = @(ss);
-
-
 objc_method_family
 ------------------
 .. csv-table:: Supported Syntaxes
@@ -2391,39 +2469,6 @@ implementation of an override in a subclass does not call super.  For example:
    warning: method possibly missing a [super AnnotMeth] call
    - (void) AnnotMeth{};
                       ^
-
-
-objc_runtime_name
------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``objc_runtime_name``","``clang::objc_runtime_name``","``clang::objc_runtime_name``","","","","Yes"
-
-By default, the Objective-C interface or protocol identifier is used
-in the metadata name for that object. The `objc_runtime_name`
-attribute allows annotated interfaces or protocols to use the
-specified string argument in the object's metadata name instead of the
-default name.
-
-**Usage**: ``__attribute__((objc_runtime_name("MyLocalName")))``.  This attribute
-can only be placed before an @protocol or @interface declaration:
-
-.. code-block:: objc
-
-  __attribute__((objc_runtime_name("MyLocalName")))
-  @interface Message
-  @end
-
-
-objc_runtime_visible
---------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``objc_runtime_visible``","``clang::objc_runtime_visible``","``clang::objc_runtime_visible``","","","","Yes"
-
-This attribute specifies that the Objective-C class to which it applies is visible to the Objective-C runtime but not to the linker. Classes annotated with this attribute cannot be subclassed and cannot have categories defined for them.
 
 
 optnone
@@ -3064,7 +3109,8 @@ speculative_load_hardening
 This attribute can be applied to a function declaration in order to indicate
   that `Speculative Load Hardening <https://llvm.org/docs/SpeculativeLoadHardening.html>`_
   should be enabled for the function body. This can also be applied to a method
-  in Objective C.
+  in Objective C. This attribute will take precedence over the command line flag in
+  the case where `-mno-speculative-load-hardening <https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mspeculative-load-hardening>`_ is specified.
 
   Speculative Load Hardening is a best-effort mitigation against
   information leak attacks that make use of control flow
@@ -3276,6 +3322,39 @@ storage duration shouldn't have its exit-time destructor run. Annotating every
 static and thread duration variable with this attribute is equivalent to
 invoking clang with -fno-c++-static-destructors.
 
+If a variable is declared with this attribute, clang doesn't access check or
+generate the type's destructor. If you have a type that you only want to be
+annotated with ``no_destroy``, you can therefore declare the destructor private:
+
+.. code-block:: c++
+
+  struct only_no_destroy {
+    only_no_destroy();
+  private:
+    ~only_no_destroy();
+  };
+
+  [[clang::no_destroy]] only_no_destroy global; // fine!
+
+Note that destructors are still required for subobjects of aggregates annotated
+with this attribute. This is because previously constructed subobjects need to
+be destroyed if an exception gets thrown before the initialization of the
+complete object is complete. For instance:
+
+.. code-block::c++
+
+  void f() {
+    try {
+      [[clang::no_destroy]]
+      static only_no_destroy array[10]; // error, only_no_destroy has a private destructor.
+    } catch (...) {
+      // Handle the error
+    }
+  }
+
+Here, if the construction of `array[9]` fails with an exception, `array[0..8]`
+will be destroyed, so the element's destructor needs to be accessible.
+
 
 nodebug
 -------
@@ -3382,12 +3461,12 @@ Likewise, when applied to a strong local variable, that variable becomes
 When compiled without ``-fobjc-arc``, this attribute is ignored.
 
 
-pass_object_size
-----------------
+pass_object_size, pass_dynamic_object_size
+------------------------------------------
 .. csv-table:: Supported Syntaxes
    :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
 
-   "``pass_object_size``","``clang::pass_object_size``","``clang::pass_object_size``","","","","Yes"
+   "``pass_object_size`` |br| ``pass_dynamic_object_size``","``clang::pass_object_size`` |br| ``clang::pass_dynamic_object_size``","``clang::pass_object_size`` |br| ``clang::pass_dynamic_object_size``","","","","Yes"
 
 .. Note:: The mangling of functions with parameters that are annotated with
   ``pass_object_size`` is subject to change. You can get around this by
@@ -3480,6 +3559,14 @@ Currently, ``pass_object_size`` is a bit restricted in terms of its usage:
 * It is an error to apply the ``pass_object_size`` attribute to parameters that
   are not pointers. Additionally, any parameter that ``pass_object_size`` is
   applied to must be marked ``const`` at its function's definition.
+
+Clang also supports the ``pass_dynamic_object_size`` attribute, which behaves
+identically to ``pass_object_size``, but evaluates a call to
+``__builtin_dynamic_object_size`` at the callee instead of
+``__builtin_object_size``. ``__builtin_dynamic_object_size`` provides some extra
+runtime checks when the object size can't be determined at compile-time. You can
+read more about ``__builtin_dynamic_object_size`` `here
+<https://clang.llvm.org/docs/LanguageExtensions.html#evaluating-object-size-dynamically>`_.
 
 
 require_constant_initialization
@@ -3727,51 +3814,6 @@ model to use. It accepts the following strings:
 TLS models are mutually exclusive.
 
 
-trivial_abi
------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``trivial_abi``","``clang::trivial_abi``","","","","","Yes"
-
-The ``trivial_abi`` attribute can be applied to a C++ class, struct, or union.
-It instructs the compiler to pass and return the type using the C ABI for the
-underlying type when the type would otherwise be considered non-trivial for the
-purpose of calls.
-A class annotated with `trivial_abi` can have non-trivial destructors or copy/move constructors without automatically becoming non-trivial for the purposes of calls. For example:
-
-  .. code-block:: c++
-
-    // A is trivial for the purposes of calls because `trivial_abi` makes the
-    // user-provided special functions trivial.
-    struct __attribute__((trivial_abi)) A {
-      ~A();
-      A(const A &);
-      A(A &&);
-      int x;
-    };
-
-    // B's destructor and copy/move constructor are considered trivial for the
-    // purpose of calls because A is trivial.
-    struct B {
-      A a;
-    };
-
-If a type is trivial for the purposes of calls, has a non-trivial destructor,
-and is passed as an argument by value, the convention is that the callee will
-destroy the object before returning.
-
-Attribute ``trivial_abi`` has no effect in the following cases:
-
-- The class directly declares a virtual base or virtual methods.
-- The class has a base class that is non-trivial for the purposes of calls.
-- The class has a non-static data member whose type is non-trivial for the purposes of calls, which includes:
-
-  - classes that are non-trivial for the purposes of calls
-  - __weak-qualified types in Objective-C++
-  - arrays of any of the above
-
-
 uninitialized
 -------------
 .. csv-table:: Supported Syntaxes
@@ -3787,57 +3829,41 @@ semantic meaning in that using uninitialized values is undefined behavior,
 it rather documents the programmer's intent.
 
 
-Type Attributes
-===============
+Field Attributes
+================
 
 
-__single_inhertiance, __multiple_inheritance, __virtual_inheritance
--------------------------------------------------------------------
+no_unique_address
+-----------------
 .. csv-table:: Supported Syntaxes
    :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
 
-   "","","","","``__single_inheritance`` |br| ``__multiple_inheritance`` |br| ``__virtual_inheritance`` |br| ``__unspecified_inheritance``","",""
+   "","``no_unique_address``","","","","",""
 
-This collection of keywords is enabled under ``-fms-extensions`` and controls
-the pointer-to-member representation used on ``*-*-win32`` targets.
+The ``no_unique_address`` attribute allows tail padding in a non-static data
+member to overlap other members of the enclosing class (and in the special
+case when the type is empty, permits it to fully overlap other members).
+The field is laid out as if a base class were encountered at the corresponding
+point within the class (except that it does not share a vptr with the enclosing
+object).
 
-The ``*-*-win32`` targets utilize a pointer-to-member representation which
-varies in size and alignment depending on the definition of the underlying
-class.
-
-However, this is problematic when a forward declaration is only available and
-no definition has been made yet.  In such cases, Clang is forced to utilize the
-most general representation that is available to it.
-
-These keywords make it possible to use a pointer-to-member representation other
-than the most general one regardless of whether or not the definition will ever
-be present in the current translation unit.
-
-This family of keywords belong between the ``class-key`` and ``class-name``:
+Example usage:
 
 .. code-block:: c++
 
-  struct __single_inheritance S;
-  int S::*i;
-  struct S {};
+  template<typename T, typename Alloc> struct my_vector {
+    T *p;
+    [[no_unique_address]] Alloc alloc;
+    // ...
+  };
+  static_assert(sizeof(my_vector<int, std::allocator<int>>) == sizeof(int*));
 
-This keyword can be applied to class templates but only has an effect when used
-on full specializations:
+``[[no_unique_address]]`` is a standard C++20 attribute. Clang supports its use
+in C++11 onwards.
 
-.. code-block:: c++
 
-  template <typename T, typename U> struct __single_inheritance A; // warning: inheritance model ignored on primary template
-  template <typename T> struct __multiple_inheritance A<T, T>; // warning: inheritance model ignored on partial specialization
-  template <> struct __single_inheritance A<int, float>;
-
-Note that choosing an inheritance model less general than strictly necessary is
-an error:
-
-.. code-block:: c++
-
-  struct __multiple_inheritance S; // error: inheritance model does not match definition
-  int S::*i;
-  struct S {};
+Type Attributes
+===============
 
 
 align_value
@@ -3863,104 +3889,19 @@ If the pointer value does not have the specified alignment at runtime, the
 behavior of the program is undefined.
 
 
-empty_bases
------------
+hip_pinned_shadow
+-----------------
 .. csv-table:: Supported Syntaxes
    :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
 
-   "","","","``empty_bases``","","",""
+   "``hip_pinned_shadow``","","","``__hip_pinned_shadow__``","","","Yes"
 
-The empty_bases attribute permits the compiler to utilize the
-empty-base-optimization more frequently.
-This attribute only applies to struct, class, and union types.
-It is only supported when using the Microsoft C++ ABI.
-
-
-enum_extensibility
-------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``enum_extensibility``","``clang::enum_extensibility``","``clang::enum_extensibility``","","","","Yes"
-
-Attribute ``enum_extensibility`` is used to distinguish between enum definitions
-that are extensible and those that are not. The attribute can take either
-``closed`` or ``open`` as an argument. ``closed`` indicates a variable of the
-enum type takes a value that corresponds to one of the enumerators listed in the
-enum definition or, when the enum is annotated with ``flag_enum``, a value that
-can be constructed using values corresponding to the enumerators. ``open``
-indicates a variable of the enum type can take any values allowed by the
-standard and instructs clang to be more lenient when issuing warnings.
-
-.. code-block:: c
-
-  enum __attribute__((enum_extensibility(closed))) ClosedEnum {
-    A0, A1
-  };
-
-  enum __attribute__((enum_extensibility(open))) OpenEnum {
-    B0, B1
-  };
-
-  enum __attribute__((enum_extensibility(closed),flag_enum)) ClosedFlagEnum {
-    C0 = 1 << 0, C1 = 1 << 1
-  };
-
-  enum __attribute__((enum_extensibility(open),flag_enum)) OpenFlagEnum {
-    D0 = 1 << 0, D1 = 1 << 1
-  };
-
-  void foo1() {
-    enum ClosedEnum ce;
-    enum OpenEnum oe;
-    enum ClosedFlagEnum cfe;
-    enum OpenFlagEnum ofe;
-
-    ce = A1;           // no warnings
-    ce = 100;          // warning issued
-    oe = B1;           // no warnings
-    oe = 100;          // no warnings
-    cfe = C0 | C1;     // no warnings
-    cfe = C0 | C1 | 4; // warning issued
-    ofe = D0 | D1;     // no warnings
-    ofe = D0 | D1 | 4; // no warnings
-  }
-
-
-flag_enum
----------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``flag_enum``","``clang::flag_enum``","``clang::flag_enum``","","","","Yes"
-
-This attribute can be added to an enumerator to signal to the compiler that it
-is intended to be used as a flag type. This will cause the compiler to assume
-that the range of the type includes all of the values that you can get by
-manipulating bits of the enumerator when issuing warnings.
-
-
-layout_version
---------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "","","","``layout_version``","","",""
-
-The layout_version attribute requests that the compiler utilize the class
-layout rules of a particular compiler version.
-This attribute only applies to struct, class, and union types.
-It is only supported when using the Microsoft C++ ABI.
-
-
-lto_visibility_public
----------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``lto_visibility_public``","``clang::lto_visibility_public``","``clang::lto_visibility_public``","","","","Yes"
-
-See :doc:`LTOVisibility`.
+The GNU style attribute __attribute__((hip_pinned_shadow)) or MSVC style attribute
+__declspec(hip_pinned_shadow) can be added to the definition of a global variable
+to indicate it is a HIP pinned shadow variable. A HIP pinned shadow variable can
+be accessed on both device side and host side. It has external linkage and is
+not initialized on device side. It has internal linkage and is initialized by
+the initializer on host side.
 
 
 noderef
@@ -4023,65 +3964,26 @@ references or Objective-C object pointers.
   id __attribute__((noderef)) obj = [NSObject new]; // warning: 'noderef' can only be used on an array or pointer type
 
 
-novtable
---------
+objc_class_stub
+---------------
 .. csv-table:: Supported Syntaxes
    :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
 
-   "","","","``novtable``","","",""
+   "``objc_class_stub``","``clang::objc_class_stub``","``clang::objc_class_stub``","","","","Yes"
 
-This attribute can be added to a class declaration or definition to signal to
-the compiler that constructors and destructors will not reference the virtual
-function table. It is only supported when using the Microsoft C++ ABI.
+This attribute specifies that the Objective-C class to which it applies is
+instantiated at runtime.
 
+Unlike ``__attribute__((objc_runtime_visible))``, a class having this attribute
+still has a "class stub" that is visible to the linker. This allows categories
+to be defined. Static message sends with the class as a receiver use a special
+access pattern to ensure the class is lazily instantiated from the class stub.
 
-objc_subclassing_restricted
----------------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+Classes annotated with this attribute cannot be subclassed and cannot have
+implementations defined for them. This attribute is intended for use in
+Swift-generated headers for classes defined in Swift.
 
-   "``objc_subclassing_restricted``","``clang::objc_subclassing_restricted``","``clang::objc_subclassing_restricted``","","","","Yes"
-
-This attribute can be added to an Objective-C ``@interface`` declaration to
-ensure that this class cannot be subclassed.
-
-
-selectany
----------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``selectany``","``gnu::selectany``","","``selectany``","","",""
-
-This attribute appertains to a global symbol, causing it to have a weak
-definition (
-`linkonce <https://llvm.org/docs/LangRef.html#linkage-types>`_
-), allowing the linker to select any definition.
-
-For more information see
-`gcc documentation <https://gcc.gnu.org/onlinedocs/gcc-7.2.0/gcc/Microsoft-Windows-Variable-Attributes.html>`_
-or `msvc documentation <https://docs.microsoft.com/pl-pl/cpp/cpp/selectany>`_.
-
-
-transparent_union
------------------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "``transparent_union``","``gnu::transparent_union``","","","","",""
-
-This attribute can be applied to a union to change the behaviour of calls to
-functions that have an argument with a transparent union type. The compiler
-behaviour is changed in the following manner:
-
-- A value whose type is any member of the transparent union can be passed as an
-  argument without the need to cast that value.
-
-- The argument is passed to the function using the calling convention of the
-  first member of the transparent union. Consequently, all the members of the
-  transparent union should have the same calling convention as its first member.
-
-Transparent unions are not supported in C++.
+Adding or removing this attribute to a class is an ABI-breaking change.
 
 
 Statement Attributes
@@ -4305,6 +4207,528 @@ namespace scope.
 .. _`C++ Core Guidelines`: https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#inforce-enforcement
 
 
+Declaration Attributes
+======================
+
+
+__single_inhertiance, __multiple_inheritance, __virtual_inheritance
+-------------------------------------------------------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","","``__single_inheritance`` |br| ``__multiple_inheritance`` |br| ``__virtual_inheritance`` |br| ``__unspecified_inheritance``","",""
+
+This collection of keywords is enabled under ``-fms-extensions`` and controls
+the pointer-to-member representation used on ``*-*-win32`` targets.
+
+The ``*-*-win32`` targets utilize a pointer-to-member representation which
+varies in size and alignment depending on the definition of the underlying
+class.
+
+However, this is problematic when a forward declaration is only available and
+no definition has been made yet.  In such cases, Clang is forced to utilize the
+most general representation that is available to it.
+
+These keywords make it possible to use a pointer-to-member representation other
+than the most general one regardless of whether or not the definition will ever
+be present in the current translation unit.
+
+This family of keywords belong between the ``class-key`` and ``class-name``:
+
+.. code-block:: c++
+
+  struct __single_inheritance S;
+  int S::*i;
+  struct S {};
+
+This keyword can be applied to class templates but only has an effect when used
+on full specializations:
+
+.. code-block:: c++
+
+  template <typename T, typename U> struct __single_inheritance A; // warning: inheritance model ignored on primary template
+  template <typename T> struct __multiple_inheritance A<T, T>; // warning: inheritance model ignored on partial specialization
+  template <> struct __single_inheritance A<int, float>;
+
+Note that choosing an inheritance model less general than strictly necessary is
+an error:
+
+.. code-block:: c++
+
+  struct __multiple_inheritance S; // error: inheritance model does not match definition
+  int S::*i;
+  struct S {};
+
+
+deprecated
+----------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``deprecated``","``gnu::deprecated`` |br| ``deprecated``","``deprecated``","``deprecated``","","",""
+
+The ``deprecated`` attribute can be applied to a function, a variable, or a
+type. This is useful when identifying functions, variables, or types that are
+expected to be removed in a future version of a program.
+
+Consider the function declaration for a hypothetical function ``f``:
+
+.. code-block:: c++
+
+  void f(void) __attribute__((deprecated("message", "replacement")));
+
+When spelled as `__attribute__((deprecated))`, the deprecated attribute can have
+two optional string arguments. The first one is the message to display when
+emitting the warning; the second one enables the compiler to provide a Fix-It
+to replace the deprecated name with a new name. Otherwise, when spelled as
+`[[gnu::deprecated]] or [[deprecated]]`, the attribute can have one optional
+string argument which is the message to display when emitting the warning.
+
+
+empty_bases
+-----------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","``empty_bases``","","",""
+
+The empty_bases attribute permits the compiler to utilize the
+empty-base-optimization more frequently.
+This attribute only applies to struct, class, and union types.
+It is only supported when using the Microsoft C++ ABI.
+
+
+enum_extensibility
+------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``enum_extensibility``","``clang::enum_extensibility``","``clang::enum_extensibility``","","","","Yes"
+
+Attribute ``enum_extensibility`` is used to distinguish between enum definitions
+that are extensible and those that are not. The attribute can take either
+``closed`` or ``open`` as an argument. ``closed`` indicates a variable of the
+enum type takes a value that corresponds to one of the enumerators listed in the
+enum definition or, when the enum is annotated with ``flag_enum``, a value that
+can be constructed using values corresponding to the enumerators. ``open``
+indicates a variable of the enum type can take any values allowed by the
+standard and instructs clang to be more lenient when issuing warnings.
+
+.. code-block:: c
+
+  enum __attribute__((enum_extensibility(closed))) ClosedEnum {
+    A0, A1
+  };
+
+  enum __attribute__((enum_extensibility(open))) OpenEnum {
+    B0, B1
+  };
+
+  enum __attribute__((enum_extensibility(closed),flag_enum)) ClosedFlagEnum {
+    C0 = 1 << 0, C1 = 1 << 1
+  };
+
+  enum __attribute__((enum_extensibility(open),flag_enum)) OpenFlagEnum {
+    D0 = 1 << 0, D1 = 1 << 1
+  };
+
+  void foo1() {
+    enum ClosedEnum ce;
+    enum OpenEnum oe;
+    enum ClosedFlagEnum cfe;
+    enum OpenFlagEnum ofe;
+
+    ce = A1;           // no warnings
+    ce = 100;          // warning issued
+    oe = B1;           // no warnings
+    oe = 100;          // no warnings
+    cfe = C0 | C1;     // no warnings
+    cfe = C0 | C1 | 4; // warning issued
+    ofe = D0 | D1;     // no warnings
+    ofe = D0 | D1 | 4; // no warnings
+  }
+
+
+external_source_symbol
+----------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``external_source_symbol``","``clang::external_source_symbol``","``clang::external_source_symbol``","","","","Yes"
+
+The ``external_source_symbol`` attribute specifies that a declaration originates
+from an external source and describes the nature of that source.
+
+The fact that Clang is capable of recognizing declarations that were defined
+externally can be used to provide better tooling support for mixed-language
+projects or projects that rely on auto-generated code. For instance, an IDE that
+uses Clang and that supports mixed-language projects can use this attribute to
+provide a correct 'jump-to-definition' feature. For a concrete example,
+consider a protocol that's defined in a Swift file:
+
+.. code-block:: swift
+
+  @objc public protocol SwiftProtocol {
+    func method()
+  }
+
+This protocol can be used from Objective-C code by including a header file that
+was generated by the Swift compiler. The declarations in that header can use
+the ``external_source_symbol`` attribute to make Clang aware of the fact
+that ``SwiftProtocol`` actually originates from a Swift module:
+
+.. code-block:: objc
+
+  __attribute__((external_source_symbol(language="Swift",defined_in="module")))
+  @protocol SwiftProtocol
+  @required
+  - (void) method;
+  @end
+
+Consequently, when 'jump-to-definition' is performed at a location that
+references ``SwiftProtocol``, the IDE can jump to the original definition in
+the Swift source file rather than jumping to the Objective-C declaration in the
+auto-generated header file.
+
+The ``external_source_symbol`` attribute is a comma-separated list that includes
+clauses that describe the origin and the nature of the particular declaration.
+Those clauses can be:
+
+language=\ *string-literal*
+  The name of the source language in which this declaration was defined.
+
+defined_in=\ *string-literal*
+  The name of the source container in which the declaration was defined. The
+  exact definition of source container is language-specific, e.g. Swift's
+  source containers are modules, so ``defined_in`` should specify the Swift
+  module name.
+
+generated_declaration
+  This declaration was automatically generated by some tool.
+
+The clauses can be specified in any order. The clauses that are listed above are
+all optional, but the attribute has to have at least one clause.
+
+
+flag_enum
+---------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``flag_enum``","``clang::flag_enum``","``clang::flag_enum``","","","","Yes"
+
+This attribute can be added to an enumerator to signal to the compiler that it
+is intended to be used as a flag type. This will cause the compiler to assume
+that the range of the type includes all of the values that you can get by
+manipulating bits of the enumerator when issuing warnings.
+
+
+layout_version
+--------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","``layout_version``","","",""
+
+The layout_version attribute requests that the compiler utilize the class
+layout rules of a particular compiler version.
+This attribute only applies to struct, class, and union types.
+It is only supported when using the Microsoft C++ ABI.
+
+
+lto_visibility_public
+---------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``lto_visibility_public``","``clang::lto_visibility_public``","``clang::lto_visibility_public``","","","","Yes"
+
+See :doc:`LTOVisibility`.
+
+
+novtable
+--------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","``novtable``","","",""
+
+This attribute can be added to a class declaration or definition to signal to
+the compiler that constructors and destructors will not reference the virtual
+function table. It is only supported when using the Microsoft C++ ABI.
+
+
+objc_boxable
+------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``objc_boxable``","``clang::objc_boxable``","``clang::objc_boxable``","","","","Yes"
+
+Structs and unions marked with the ``objc_boxable`` attribute can be used
+with the Objective-C boxed expression syntax, ``@(...)``.
+
+**Usage**: ``__attribute__((objc_boxable))``. This attribute
+can only be placed on a declaration of a trivially-copyable struct or union:
+
+.. code-block:: objc
+
+  struct __attribute__((objc_boxable)) some_struct {
+    int i;
+  };
+  union __attribute__((objc_boxable)) some_union {
+    int i;
+    float f;
+  };
+  typedef struct __attribute__((objc_boxable)) _some_struct some_struct;
+
+  // ...
+
+  some_struct ss;
+  NSValue *boxed = @(ss);
+
+
+objc_nonlazy_class
+------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``objc_nonlazy_class``","``clang::objc_nonlazy_class``","``clang::objc_nonlazy_class``","","","","Yes"
+
+This attribute can be added to an Objective-C ``@interface`` or
+``@implementation`` declaration to add the class to the list of non-lazily
+initialized classes. A non-lazy class will be initialized eagerly when the
+Objective-C runtime is loaded. This is required for certain system classes which
+have instances allocated in non-standard ways, such as the classes for blocks
+and constant strings. Adding this attribute is essentially equivalent to
+providing a trivial `+load` method but avoids the (fairly small) load-time
+overheads associated with defining and calling such a method.
+
+
+objc_runtime_name
+-----------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``objc_runtime_name``","``clang::objc_runtime_name``","``clang::objc_runtime_name``","","","","Yes"
+
+By default, the Objective-C interface or protocol identifier is used
+in the metadata name for that object. The `objc_runtime_name`
+attribute allows annotated interfaces or protocols to use the
+specified string argument in the object's metadata name instead of the
+default name.
+
+**Usage**: ``__attribute__((objc_runtime_name("MyLocalName")))``.  This attribute
+can only be placed before an @protocol or @interface declaration:
+
+.. code-block:: objc
+
+  __attribute__((objc_runtime_name("MyLocalName")))
+  @interface Message
+  @end
+
+
+objc_runtime_visible
+--------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``objc_runtime_visible``","``clang::objc_runtime_visible``","``clang::objc_runtime_visible``","","","","Yes"
+
+This attribute specifies that the Objective-C class to which it applies is
+visible to the Objective-C runtime but not to the linker. Classes annotated
+with this attribute cannot be subclassed and cannot have categories defined for
+them.
+
+
+objc_subclassing_restricted
+---------------------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``objc_subclassing_restricted``","``clang::objc_subclassing_restricted``","``clang::objc_subclassing_restricted``","","","","Yes"
+
+This attribute can be added to an Objective-C ``@interface`` declaration to
+ensure that this class cannot be subclassed.
+
+
+selectany
+---------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``selectany``","``gnu::selectany``","","``selectany``","","",""
+
+This attribute appertains to a global symbol, causing it to have a weak
+definition (
+`linkonce <https://llvm.org/docs/LangRef.html#linkage-types>`_
+), allowing the linker to select any definition.
+
+For more information see
+`gcc documentation <https://gcc.gnu.org/onlinedocs/gcc-7.2.0/gcc/Microsoft-Windows-Variable-Attributes.html>`_
+or `msvc documentation <https://docs.microsoft.com/pl-pl/cpp/cpp/selectany>`_.
+
+
+transparent_union
+-----------------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``transparent_union``","``gnu::transparent_union``","","","","",""
+
+This attribute can be applied to a union to change the behaviour of calls to
+functions that have an argument with a transparent union type. The compiler
+behaviour is changed in the following manner:
+
+- A value whose type is any member of the transparent union can be passed as an
+  argument without the need to cast that value.
+
+- The argument is passed to the function using the calling convention of the
+  first member of the transparent union. Consequently, all the members of the
+  transparent union should have the same calling convention as its first member.
+
+Transparent unions are not supported in C++.
+
+
+trivial_abi
+-----------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "``trivial_abi``","``clang::trivial_abi``","","","","","Yes"
+
+The ``trivial_abi`` attribute can be applied to a C++ class, struct, or union.
+It instructs the compiler to pass and return the type using the C ABI for the
+underlying type when the type would otherwise be considered non-trivial for the
+purpose of calls.
+A class annotated with `trivial_abi` can have non-trivial destructors or copy/move constructors without automatically becoming non-trivial for the purposes of calls. For example:
+
+  .. code-block:: c++
+
+    // A is trivial for the purposes of calls because `trivial_abi` makes the
+    // user-provided special functions trivial.
+    struct __attribute__((trivial_abi)) A {
+      ~A();
+      A(const A &);
+      A(A &&);
+      int x;
+    };
+
+    // B's destructor and copy/move constructor are considered trivial for the
+    // purpose of calls because A is trivial.
+    struct B {
+      A a;
+    };
+
+If a type is trivial for the purposes of calls, has a non-trivial destructor,
+and is passed as an argument by value, the convention is that the callee will
+destroy the object before returning.
+
+Attribute ``trivial_abi`` has no effect in the following cases:
+
+- The class directly declares a virtual base or virtual methods.
+- The class has a base class that is non-trivial for the purposes of calls.
+- The class has a non-static data member whose type is non-trivial for the purposes of calls, which includes:
+
+  - classes that are non-trivial for the purposes of calls
+  - __weak-qualified types in Objective-C++
+  - arrays of any of the above
+
+
+OpenCL Address Spaces
+=====================
+The address space qualifier may be used to specify the region of memory that is
+used to allocate the object. OpenCL supports the following address spaces:
+__generic(generic), __global(global), __local(local), __private(private),
+__constant(constant).
+
+  .. code-block:: c
+
+    __constant int c = ...;
+
+    __generic int* foo(global int* g) {
+      __local int* l;
+      private int p;
+      ...
+      return l;
+    }
+
+More details can be found in the OpenCL C language Spec v2.0, Section 6.5.
+
+constant
+--------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","","``__constant`` |br| ``constant``","",""
+
+The constant address space attribute signals that an object is located in
+a constant (non-modifiable) memory region. It is available to all work items.
+Any type can be annotated with the constant address space attribute. Objects
+with the constant address space qualifier can be declared in any scope and must
+have an initializer.
+
+
+generic
+-------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","","``__generic`` |br| ``generic``","",""
+
+The generic address space attribute is only available with OpenCL v2.0 and later.
+It can be used with pointer types. Variables in global and local scope and
+function parameters in non-kernel functions can have the generic address space
+type attribute. It is intended to be a placeholder for any other address space
+except for '__constant' in OpenCL code which can be used with multiple address
+spaces.
+
+
+global
+------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","","``__global`` |br| ``global``","",""
+
+The global address space attribute specifies that an object is allocated in
+global memory, which is accessible by all work items. The content stored in this
+memory area persists between kernel executions. Pointer types to the global
+address space are allowed as function parameters or local variables. Starting
+with OpenCL v2.0, the global address space can be used with global (program
+scope) variables and static local variable as well.
+
+
+local
+-----
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","","``__local`` |br| ``local``","",""
+
+The local address space specifies that an object is allocated in the local (work
+group) memory area, which is accessible to all work items in the same work
+group. The content stored in this memory region is not accessible after
+the kernel execution ends. In a kernel function scope, any variable can be in
+the local address space. In other scopes, only pointer types to the local address
+space are allowed. Local address space variables cannot have an initializer.
+
+
+private
+-------
+.. csv-table:: Supported Syntaxes
+   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
+
+   "","","","","``__private`` |br| ``private``","",""
+
+The private address space specifies that an object is allocated in the private
+(work item) memory. Other work items cannot access the same memory area and its
+content is destroyed after work item execution ends. Local variables can be
+declared in the private address space. Function arguments are always in the
+private address space. Kernel function arguments of a pointer or an array type
+cannot point to the private address space.
+
+
 AMD GPU Attributes
 ==================
 
@@ -4451,100 +4875,6 @@ An error will be given if:
     attributes;
   - The AMDGPU target backend is unable to create machine code that can meet the
     request.
-
-
-OpenCL Address Spaces
-=====================
-The address space qualifier may be used to specify the region of memory that is
-used to allocate the object. OpenCL supports the following address spaces:
-__generic(generic), __global(global), __local(local), __private(private),
-__constant(constant).
-
-  .. code-block:: c
-
-    __constant int c = ...;
-
-    __generic int* foo(global int* g) {
-      __local int* l;
-      private int p;
-      ...
-      return l;
-    }
-
-More details can be found in the OpenCL C language Spec v2.0, Section 6.5.
-
-constant
---------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "","","","","``__constant`` |br| ``constant``","",""
-
-The constant address space attribute signals that an object is located in
-a constant (non-modifiable) memory region. It is available to all work items.
-Any type can be annotated with the constant address space attribute. Objects
-with the constant address space qualifier can be declared in any scope and must
-have an initializer.
-
-
-generic
--------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "","","","","``__generic`` |br| ``generic``","",""
-
-The generic address space attribute is only available with OpenCL v2.0 and later.
-It can be used with pointer types. Variables in global and local scope and
-function parameters in non-kernel functions can have the generic address space
-type attribute. It is intended to be a placeholder for any other address space
-except for '__constant' in OpenCL code which can be used with multiple address
-spaces.
-
-
-global
-------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "","","","","``__global`` |br| ``global``","",""
-
-The global address space attribute specifies that an object is allocated in
-global memory, which is accessible by all work items. The content stored in this
-memory area persists between kernel executions. Pointer types to the global
-address space are allowed as function parameters or local variables. Starting
-with OpenCL v2.0, the global address space can be used with global (program
-scope) variables and static local variable as well.
-
-
-local
------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "","","","","``__local`` |br| ``local``","",""
-
-The local address space specifies that an object is allocated in the local (work
-group) memory area, which is accessible to all work items in the same work
-group. The content stored in this memory region is not accessible after
-the kernel execution ends. In a kernel function scope, any variable can be in
-the local address space. In other scopes, only pointer types to the local address
-space are allowed. Local address space variables cannot have an initializer.
-
-
-private
--------
-.. csv-table:: Supported Syntaxes
-   :header: "GNU", "C++11", "C2x", "``__declspec``", "Keyword", "``#pragma``", "``#pragma clang attribute``"
-
-   "","","","","``__private`` |br| ``private``","",""
-
-The private address space specifies that an object is allocated in the private
-(work item) memory. Other work items cannot access the same memory area and its
-content is destroyed after work item execution ends. Local variables can be
-declared in the private address space. Function arguments are always in the
-private address space. Kernel function arguments of a pointer or an array type
-cannot point to the private address space.
 
 
 Calling Conventions

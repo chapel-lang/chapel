@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/StringRefTest.cpp - StringRef unit tests ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,10 +34,6 @@ std::ostream &operator<<(std::ostream &OS,
 // Check that we can't accidentally assign a temporary std::string to a
 // StringRef. (Unfortunately we can't make use of the same thing with
 // constructors.)
-//
-// Disable this check under MSVC; even MSVC 2015 isn't consistent between
-// std::is_assignable and actually writing such an assignment.
-#if !defined(_MSC_VER)
 static_assert(
     !std::is_assignable<StringRef&, std::string>::value,
     "Assigning from prvalue std::string");
@@ -57,8 +52,6 @@ static_assert(
 static_assert(
     std::is_assignable<StringRef&, const char * &>::value,
     "Assigning from lvalue C string");
-#endif
-
 
 namespace {
 TEST(StringRefTest, Construction) {
@@ -1061,5 +1054,7 @@ TEST(StringRefTest, StringLiteral) {
   EXPECT_EQ(StringRef("Foo"), Strings[0]);
   EXPECT_EQ(StringRef("Bar"), Strings[1]);
 }
+
+static_assert(is_trivially_copyable<StringRef>::value, "trivially copyable");
 
 } // end anonymous namespace

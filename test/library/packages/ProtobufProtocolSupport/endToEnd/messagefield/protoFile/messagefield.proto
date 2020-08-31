@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+message messageA {
+  messageB a = 1;
+  repeated messageC f = 2;
+  messageD g = 3;
+  repeated messageD h = 4;
+
+  message messageD {
+    int32 a = 1;
+  }
+}
+
+message messageB {
+  int64 b = 1;
+  string c = 2;
+}
+
+message messageC {
+  int32 d = 1;
+  bool e = 2;
+}

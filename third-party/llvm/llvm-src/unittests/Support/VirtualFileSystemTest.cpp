@@ -1,9 +1,8 @@
 //===- unittests/Support/VirtualFileSystem.cpp -------------- VFS tests ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -343,6 +342,57 @@ TEST(VirtualFileSystemTest, MergedDirPermissions) {
   EXPECT_EQ(0200, Status->getPermissions());
 }
 
+TEST(VirtualFileSystemTest, OverlayIterator) {
+  IntrusiveRefCntPtr<DummyFileSystem> Lower(new DummyFileSystem());
+  Lower->addRegularFile("/foo");
+  IntrusiveRefCntPtr<DummyFileSystem> Upper(new DummyFileSystem());
+
+  IntrusiveRefCntPtr<vfs::OverlayFileSystem> O(
+      new vfs::OverlayFileSystem(Lower));
+  O->pushOverlay(Upper);
+
+  ErrorOr<vfs::Status> Status((std::error_code()));
+  {
+    auto it = O->overlays_begin();
+    auto end = O->overlays_end();
+
+    EXPECT_NE(it, end);
+
+    Status = (*it)->status("/foo");
+    ASSERT_TRUE(Status.getError());
+
+    it++;
+    EXPECT_NE(it, end);
+
+    Status = (*it)->status("/foo");
+    ASSERT_FALSE(Status.getError());
+    EXPECT_TRUE(Status->exists());
+
+    it++;
+    EXPECT_EQ(it, end);
+  }
+
+  {
+    auto it = O->overlays_rbegin();
+    auto end = O->overlays_rend();
+
+    EXPECT_NE(it, end);
+
+    Status = (*it)->status("/foo");
+    ASSERT_FALSE(Status.getError());
+    EXPECT_TRUE(Status->exists());
+
+    it++;
+    EXPECT_NE(it, end);
+
+    Status = (*it)->status("/foo");
+    ASSERT_TRUE(Status.getError());
+
+    it++;
+    EXPECT_EQ(it, end);
+  }
+}
+
 namespace {
 struct ScopedDir {
   SmallString<128> Path;
@@ -350,13 +400,18 @@ struct ScopedDir {
     std::error_code EC;
     if (Unique) {
       EC = llvm::sys::fs::createUniqueDirectory(Name, Path);
+      if (!EC) {
+        // Resolve any symlinks in the new directory.
+        std::string UnresolvedPath = Path.str();
+        EC = llvm::sys::fs::real_path(UnresolvedPath, Path);
+      }
     } else {
       Path = Name.str();
       EC = llvm::sys::fs::create_directory(Twine(Path));
     }
     if (EC)
       Path = "";
-    EXPECT_FALSE(EC);
+    EXPECT_FALSE(EC) << EC.message();
   }
   ~ScopedDir() {
     if (Path != "") {
@@ -381,6 +436,26 @@ struct ScopedLink {
     }
   }
   operator StringRef() { return Path.str(); }
+};
+
+struct ScopedFile {
+  SmallString<128> Path;
+  ScopedFile(const Twine &Path, StringRef Contents) {
+    Path.toVector(this->Path);
+    std::error_code EC;
+    raw_fd_ostream OS(this->Path, EC);
+    EXPECT_FALSE(EC);
+    OS << Contents;
+    OS.flush();
+    EXPECT_FALSE(OS.error());
+    if (EC || OS.error())
+      this->Path = "";
+  }
+  ~ScopedFile() {
+    if (Path != "") {
+      EXPECT_FALSE(llvm::sys::fs::remove(Path.str()));
+    }
+  }
 };
 } // end anonymous namespace
 
@@ -412,6 +487,67 @@ TEST(VirtualFileSystemTest, BasicRealFSIteration) {
 }
 
 #ifdef LLVM_ON_UNIX
+TEST(VirtualFileSystemTest, MultipleWorkingDirs) {
+  // Our root contains a/aa, b/bb, c, where c is a link to a/.
+  // Run tests both in root/b/ and root/c/ (to test "normal" and symlink dirs).
+  // Interleave operations to show the working directories are independent.
+  ScopedDir Root("r", true), ADir(Root.Path + "/a"), BDir(Root.Path + "/b");
+  ScopedLink C(ADir.Path, Root.Path + "/c");
+  ScopedFile AA(ADir.Path + "/aa", "aaaa"), BB(BDir.Path + "/bb", "bbbb");
+  std::unique_ptr<vfs::FileSystem> BFS = vfs::createPhysicalFileSystem(),
+                                   CFS = vfs::createPhysicalFileSystem();
+
+  ASSERT_FALSE(BFS->setCurrentWorkingDirectory(BDir.Path));
+  ASSERT_FALSE(CFS->setCurrentWorkingDirectory(C.Path));
+  EXPECT_EQ(BDir.Path, *BFS->getCurrentWorkingDirectory());
+  EXPECT_EQ(C.Path, *CFS->getCurrentWorkingDirectory());
+
+  // openFileForRead(), indirectly.
+  auto BBuf = BFS->getBufferForFile("bb");
+  ASSERT_TRUE(BBuf);
+  EXPECT_EQ("bbbb", (*BBuf)->getBuffer());
+
+  auto ABuf = CFS->getBufferForFile("aa");
+  ASSERT_TRUE(ABuf);
+  EXPECT_EQ("aaaa", (*ABuf)->getBuffer());
+
+  // status()
+  auto BStat = BFS->status("bb");
+  ASSERT_TRUE(BStat);
+  EXPECT_EQ("bb", BStat->getName());
+
+  auto AStat = CFS->status("aa");
+  ASSERT_TRUE(AStat);
+  EXPECT_EQ("aa", AStat->getName()); // unresolved name
+
+  // getRealPath()
+  SmallString<128> BPath;
+  ASSERT_FALSE(BFS->getRealPath("bb", BPath));
+  EXPECT_EQ(BB.Path, BPath);
+
+  SmallString<128> APath;
+  ASSERT_FALSE(CFS->getRealPath("aa", APath));
+  EXPECT_EQ(AA.Path, APath); // Reports resolved name.
+
+  // dir_begin
+  std::error_code EC;
+  auto BIt = BFS->dir_begin(".", EC);
+  ASSERT_FALSE(EC);
+  ASSERT_NE(BIt, vfs::directory_iterator());
+  EXPECT_EQ((BDir.Path + "/./bb").str(), BIt->path());
+  BIt.increment(EC);
+  ASSERT_FALSE(EC);
+  ASSERT_EQ(BIt, vfs::directory_iterator());
+
+  auto CIt = CFS->dir_begin(".", EC);
+  ASSERT_FALSE(EC);
+  ASSERT_NE(CIt, vfs::directory_iterator());
+  EXPECT_EQ((ADir.Path + "/./aa").str(), CIt->path()); // Partly resolved name!
+  CIt.increment(EC); // Because likely to read through this path.
+  ASSERT_FALSE(EC);
+  ASSERT_EQ(CIt, vfs::directory_iterator());
+}
+
 TEST(VirtualFileSystemTest, BrokenSymlinkRealFSIteration) {
   ScopedDir TestDirectory("virtual-file-system-test", /*Unique*/ true);
   IntrusiveRefCntPtr<vfs::FileSystem> FS = vfs::getRealFileSystem();
@@ -777,7 +913,7 @@ TEST(ProxyFileSystemTest, Basic) {
 
   bool Local = true;
   ASSERT_FALSE(PFS.isLocal("/a", Local));
-  ASSERT_EQ(false, Local);
+  EXPECT_FALSE(Local);
 }
 
 class InMemoryFileSystemTest : public ::testing::Test {

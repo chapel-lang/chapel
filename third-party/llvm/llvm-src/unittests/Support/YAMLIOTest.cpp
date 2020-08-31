@@ -1,12 +1,12 @@
 //===- unittest/Support/YAMLIOTest.cpp ------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/ADT/BitmaskEnum.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -580,6 +580,90 @@ TEST(YAMLIO, TestReadWriteEndianTypes) {
   }
 }
 
+enum class Enum : uint16_t { One, Two };
+enum class BitsetEnum : uint16_t {
+  ZeroOne = 0x01,
+  OneZero = 0x10,
+  LLVM_MARK_AS_BITMASK_ENUM(/*LargestValue*/ OneZero),
+};
+LLVM_ENABLE_BITMASK_ENUMS_IN_NAMESPACE();
+struct EndianEnums {
+  llvm::support::little_t<Enum> LittleEnum;
+  llvm::support::big_t<Enum> BigEnum;
+  llvm::support::little_t<BitsetEnum> LittleBitset;
+  llvm::support::big_t<BitsetEnum> BigBitset;
+};
+namespace llvm {
+namespace yaml {
+template <> struct ScalarEnumerationTraits<Enum> {
+  static void enumeration(IO &io, Enum &E) {
+    io.enumCase(E, "One", Enum::One);
+    io.enumCase(E, "Two", Enum::Two);
+  }
+};
+
+template <> struct ScalarBitSetTraits<BitsetEnum> {
+  static void bitset(IO &io, BitsetEnum &E) {
+    io.bitSetCase(E, "ZeroOne", BitsetEnum::ZeroOne);
+    io.bitSetCase(E, "OneZero", BitsetEnum::OneZero);
+  }
+};
+
+template <> struct MappingTraits<EndianEnums> {
+  static void mapping(IO &io, EndianEnums &EE) {
+    io.mapRequired("LittleEnum", EE.LittleEnum);
+    io.mapRequired("BigEnum", EE.BigEnum);
+    io.mapRequired("LittleBitset", EE.LittleBitset);
+    io.mapRequired("BigBitset", EE.BigBitset);
+  }
+};
+} // namespace yaml
+} // namespace llvm
+
+TEST(YAMLIO, TestReadEndianEnums) {
+  EndianEnums map;
+  Input yin("---\n"
+            "LittleEnum:   One\n"
+            "BigEnum:      Two\n"
+            "LittleBitset: [ ZeroOne ]\n"
+            "BigBitset:    [ ZeroOne, OneZero ]\n"
+            "...\n");
+  yin >> map;
+
+  EXPECT_FALSE(yin.error());
+  EXPECT_EQ(Enum::One, map.LittleEnum);
+  EXPECT_EQ(Enum::Two, map.BigEnum);
+  EXPECT_EQ(BitsetEnum::ZeroOne, map.LittleBitset);
+  EXPECT_EQ(BitsetEnum::ZeroOne | BitsetEnum::OneZero, map.BigBitset);
+}
+
+TEST(YAMLIO, TestReadWriteEndianEnums) {
+  std::string intermediate;
+  {
+    EndianEnums map;
+    map.LittleEnum = Enum::Two;
+    map.BigEnum = Enum::One;
+    map.LittleBitset = BitsetEnum::OneZero | BitsetEnum::ZeroOne;
+    map.BigBitset = BitsetEnum::OneZero;
+
+    llvm::raw_string_ostream ostr(intermediate);
+    Output yout(ostr);
+    yout << map;
+  }
+
+  {
+    Input yin(intermediate);
+    EndianEnums map;
+    yin >> map;
+
+    EXPECT_FALSE(yin.error());
+    EXPECT_EQ(Enum::Two, map.LittleEnum);
+    EXPECT_EQ(Enum::One, map.BigEnum);
+    EXPECT_EQ(BitsetEnum::OneZero | BitsetEnum::ZeroOne, map.LittleBitset);
+    EXPECT_EQ(BitsetEnum::OneZero, map.BigBitset);
+  }
+}
+
 struct StringTypes {
   llvm::StringRef str1;
   llvm::StringRef str2;
@@ -604,6 +688,7 @@ struct StringTypes {
   std::string stdstr10;
   std::string stdstr11;
   std::string stdstr12;
+  std::string stdstr13;
 };
 
 namespace llvm {
@@ -634,6 +719,7 @@ namespace yaml {
       io.mapRequired("stdstr10",  st.stdstr10);
       io.mapRequired("stdstr11",  st.stdstr11);
       io.mapRequired("stdstr12",  st.stdstr12);
+      io.mapRequired("stdstr13",  st.stdstr13);
     }
   };
 }
@@ -666,6 +752,7 @@ TEST(YAMLIO, TestReadWriteStringTypes) {
     map.stdstr10 = "0.2e20";
     map.stdstr11 = "0x30";
     map.stdstr12 = "- match";
+    map.stdstr13.assign("\0a\0b\0", 5);
 
     llvm::raw_string_ostream ostr(intermediate);
     Output yout(ostr);
@@ -691,6 +778,7 @@ TEST(YAMLIO, TestReadWriteStringTypes) {
   EXPECT_NE(std::string::npos, flowOut.find("'@hhh'"));
   EXPECT_NE(std::string::npos, flowOut.find("''\n"));
   EXPECT_NE(std::string::npos, flowOut.find("'0000000004000000'\n"));
+  EXPECT_NE(std::string::npos, flowOut.find("\"\\0a\\0b\\0\""));
 
   {
     Input yin(intermediate);
@@ -710,6 +798,7 @@ TEST(YAMLIO, TestReadWriteStringTypes) {
     EXPECT_TRUE(map.stdstr4 == "@hhh");
     EXPECT_TRUE(map.stdstr5 == "");
     EXPECT_TRUE(map.stdstr6 == "0000000004000000");
+    EXPECT_EQ(std::string("\0a\0b\0", 5), map.stdstr13);
   }
 }
 
@@ -824,7 +913,7 @@ namespace yaml {
       io.mapRequired("f1", c.f1);
       io.mapRequired("f2", c.f2);
       io.mapRequired("f3", c.f3);
-      io.mapOptional("f4", c.f4, MyFlags(flagRound));
+      io.mapOptional("f4", c.f4, flagRound);
      }
   };
 }
@@ -1328,8 +1417,8 @@ namespace yaml {
     static void mapping(IO &io, TotalSeconds &secs) {
       MappingNormalization<NormalizedSeconds, TotalSeconds> keys(io, secs);
 
-      io.mapOptional("hours",    keys->hours,    (uint32_t)0);
-      io.mapOptional("minutes",  keys->minutes,  (uint8_t)0);
+      io.mapOptional("hours", keys->hours, 0);
+      io.mapOptional("minutes", keys->minutes, 0);
       io.mapRequired("seconds",  keys->seconds);
     }
   };
@@ -2439,7 +2528,7 @@ TEST(YAMLIO, TestMapWithContext) {
   ostr.flush();
   EXPECT_EQ(1, Context.A);
   EXPECT_EQ("---\n"
-            "Simple:          \n"
+            "Simple:\n"
             "  B:               0\n"
             "  C:               0\n"
             "  Context:         1\n"
@@ -2454,7 +2543,7 @@ TEST(YAMLIO, TestMapWithContext) {
   ostr.flush();
   EXPECT_EQ(2, Context.A);
   EXPECT_EQ("---\n"
-            "Simple:          \n"
+            "Simple:\n"
             "  B:               2\n"
             "  C:               3\n"
             "  Context:         2\n"
@@ -2467,13 +2556,22 @@ LLVM_YAML_IS_STRING_MAP(int)
 
 TEST(YAMLIO, TestCustomMapping) {
   std::map<std::string, int> x;
-  x["foo"] = 1;
-  x["bar"] = 2;
 
   std::string out;
   llvm::raw_string_ostream ostr(out);
   Output xout(ostr, nullptr, 0);
 
+  xout << x;
+  ostr.flush();
+  EXPECT_EQ("---\n"
+            "{}\n"
+            "...\n",
+            out);
+
+  x["foo"] = 1;
+  x["bar"] = 2;
+
+  out.clear();
   xout << x;
   ostr.flush();
   EXPECT_EQ("---\n"
@@ -2506,10 +2604,10 @@ TEST(YAMLIO, TestCustomMappingStruct) {
   xout << x;
   ostr.flush();
   EXPECT_EQ("---\n"
-            "bar:             \n"
+            "bar:\n"
             "  foo:             3\n"
             "  bar:             4\n"
-            "foo:             \n"
+            "foo:\n"
             "  foo:             1\n"
             "  bar:             2\n"
             "...\n",
@@ -2523,6 +2621,38 @@ TEST(YAMLIO, TestCustomMappingStruct) {
   EXPECT_EQ(2, y["foo"].bar);
   EXPECT_EQ(3, y["bar"].foo);
   EXPECT_EQ(4, y["bar"].bar);
+}
+
+struct FooBarMapMap {
+  std::map<std::string, FooBar> fbm;
+};
+
+namespace llvm {
+namespace yaml {
+template <> struct MappingTraits<FooBarMapMap> {
+  static void mapping(IO &io, FooBarMapMap &x) {
+    io.mapRequired("fbm", x.fbm);
+  }
+};
+}
+}
+
+TEST(YAMLIO, TestEmptyMapWrite) {
+  FooBarMapMap cont;
+  std::string str;
+  llvm::raw_string_ostream OS(str);
+  Output yout(OS);
+  yout << cont;
+  EXPECT_EQ(OS.str(), "---\nfbm:             {}\n...\n");
+}
+
+TEST(YAMLIO, TestEmptySequenceWrite) {
+  FooBarContainer cont;
+  std::string str;
+  llvm::raw_string_ostream OS(str);
+  Output yout(OS);
+  yout << cont;
+  EXPECT_EQ(OS.str(), "---\nfbs:             []\n...\n");
 }
 
 static void TestEscaped(llvm::StringRef Input, llvm::StringRef Expected) {

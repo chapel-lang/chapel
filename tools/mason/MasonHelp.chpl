@@ -433,6 +433,7 @@ proc masonPublishHelp(){
   writeln("Options:");
   writeln('    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry');
   writeln("    -h, --help                   Display this message");
+  writeln("    -c, --create-registry        Creates a local registry at path");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
   writeln('    --ci-check                   Same as --check, except omits git origin checks');

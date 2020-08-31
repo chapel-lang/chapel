@@ -23,8 +23,17 @@ class TestCDB(unittest.TestCase):
     def test_create_fail(self):
         """Check we fail loading a database with an assertion"""
         path = os.path.dirname(__file__)
+
+        # clang_CompilationDatabase_fromDirectory calls fprintf(stderr, ...)
+        # Suppress its output.
+        stderr = os.dup(2)
+        with open(os.devnull, 'wb') as null:
+            os.dup2(null.fileno(), 2)
         with self.assertRaises(CompilationDatabaseError) as cm:
             cdb = CompilationDatabase.fromDirectory(path)
+        os.dup2(stderr, 2)
+        os.close(stderr)
+
         e = cm.exception
         self.assertEqual(e.cdb_error,
             CompilationDatabaseError.ERROR_CANNOTLOADDATABASE)
@@ -54,15 +63,16 @@ class TestCDB(unittest.TestCase):
         expected = [
             { 'wd': '/home/john.doe/MyProject',
               'file': '/home/john.doe/MyProject/project.cpp',
-              'line': ['clang++', '-o', 'project.o', '-c',
+              'line': ['clang++', '--driver-mode=g++', '-o', 'project.o', '-c',
                        '/home/john.doe/MyProject/project.cpp']},
             { 'wd': '/home/john.doe/MyProjectA',
               'file': '/home/john.doe/MyProject/project2.cpp',
-              'line': ['clang++', '-o', 'project2.o', '-c',
+              'line': ['clang++', '--driver-mode=g++', '-o', 'project2.o', '-c',
                        '/home/john.doe/MyProject/project2.cpp']},
             { 'wd': '/home/john.doe/MyProjectB',
               'file': '/home/john.doe/MyProject/project2.cpp',
-              'line': ['clang++', '-DFEATURE=1', '-o', 'project2-feature.o', '-c',
+              'line': ['clang++', '--driver-mode=g++', '-DFEATURE=1', '-o',
+                       'project2-feature.o', '-c',
                        '/home/john.doe/MyProject/project2.cpp']},
 
             ]
@@ -80,7 +90,7 @@ class TestCDB(unittest.TestCase):
         self.assertEqual(len(cmds), 1)
         self.assertEqual(cmds[0].directory, os.path.dirname(file))
         self.assertEqual(cmds[0].filename, file)
-        expected = [ 'clang++', '-o', 'project.o', '-c',
+        expected = [ 'clang++', '--driver-mode=g++', '-o', 'project.o', '-c',
                      '/home/john.doe/MyProject/project.cpp']
         for arg, exp in zip(cmds[0].arguments, expected):
             self.assertEqual(arg, exp)
@@ -92,10 +102,11 @@ class TestCDB(unittest.TestCase):
         self.assertEqual(len(cmds), 2)
         expected = [
             { 'wd': '/home/john.doe/MyProjectA',
-              'line': ['clang++', '-o', 'project2.o', '-c',
+              'line': ['clang++', '--driver-mode=g++', '-o', 'project2.o', '-c',
                        '/home/john.doe/MyProject/project2.cpp']},
             { 'wd': '/home/john.doe/MyProjectB',
-              'line': ['clang++', '-DFEATURE=1', '-o', 'project2-feature.o', '-c',
+              'line': ['clang++', '--driver-mode=g++', '-DFEATURE=1', '-o',
+                       'project2-feature.o', '-c',
                        '/home/john.doe/MyProject/project2.cpp']}
             ]
         for i in range(len(cmds)):

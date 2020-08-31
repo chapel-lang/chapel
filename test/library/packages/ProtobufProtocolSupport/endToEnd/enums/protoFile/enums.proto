@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+enum color {
+  red = 0;
+  blue = 1;
+  green = 2; 
+}
+
+message enumTest {
+  color a = 1; 
+  int64 b = 2;
+  repeated color c = 3;
+  fruit d = 4;
+  repeated fruit e = 5;
+
+  enum fruit {
+    apple = 0;
+    orange = 1;
+  }
+}

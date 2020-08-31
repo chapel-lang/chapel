@@ -1,9 +1,8 @@
 //===-- MachOUtils.h - Mach-o specific helpers for dsymutil  --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #ifndef LLVM_TOOLS_DSYMUTIL_MACHOUTILS_H
@@ -26,14 +25,14 @@ namespace MachOUtils {
 
 struct ArchAndFile {
   std::string Arch;
-  // Optional because TempFile has no default constructor.
-  Optional<llvm::sys::fs::TempFile> File;
+  std::unique_ptr<llvm::sys::fs::TempFile> File;
 
   llvm::Error createTempFile();
   llvm::StringRef path() const;
 
   ArchAndFile(StringRef Arch) : Arch(Arch) {}
   ArchAndFile(ArchAndFile &&A) = default;
+  ArchAndFile &operator=(ArchAndFile &&A) = default;
   ~ArchAndFile();
 };
 
