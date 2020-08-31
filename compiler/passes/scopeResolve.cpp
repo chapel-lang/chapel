@@ -1562,8 +1562,7 @@ printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
     else {
       if (VisibilityStmt* reexport = reexportPts[another]) {
         USR_PRINT(another,
-                  "symbol '%s', defined here, was reexported at %s:%d, "
-                  "which impacts its closeness to the current scope",
+                  "symbol '%s', defined here, was reexported at %s:%d",
                   another->name, reexport->astloc.filename,
                   reexport->astloc.lineno);
       }
@@ -1603,8 +1602,7 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
 
         if (VisibilityStmt* reexport = reexportPts[sym]) {
-          USR_PRINT("'%s' was reexported at %s:%d, which impacts its "
-                    "closeness to the current scope", name,
+          USR_PRINT("'%s' was reexported at %s:%d", name,
                     reexport->astloc.filename, reexport->astloc.lineno);
         }
         astlocT* symRenameLoc = renameLocs[sym];
