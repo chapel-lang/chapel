@@ -152,7 +152,6 @@ void buildDefaultFunctions() {
         // for extern types that are simple (as far as we can tell), we build
         // definitions for those assignments here.
         if (type->hasFlag(FLAG_EXTERN)) {
-          //build_extern_init_function(type->type);
           buildExternAssignmentFunction(type->type);
         }
       }
@@ -217,9 +216,11 @@ static FnSymbol* functionExists(const char* name,
    case 0:  break;
   }
 
+  const char* nameAstr = astr(name);
+
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (strcmp(name, fn->name))
+    if (fn->name != nameAstr)
       continue;
 
     // numFormals must match exactly.
@@ -683,7 +684,7 @@ static void buildChplEntryPoints() {
 
   SET_LINENO(chplUserMain);
 
-  chplUserMain->cname = "chpl_user_main";
+  chplUserMain->cname = astr("chpl_user_main");
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.
@@ -694,7 +695,7 @@ static void buildChplEntryPoints() {
 
   chpl_gen_main          = new FnSymbol("chpl_gen_main");
   chpl_gen_main->retType = dtInt[INT_SIZE_64];
-  chpl_gen_main->cname   = "chpl_gen_main";
+  chpl_gen_main->cname   = astr("chpl_gen_main");
 
   chpl_gen_main->insertFormalAtTail(arg);
 

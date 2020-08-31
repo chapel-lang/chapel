@@ -168,6 +168,16 @@ proc masonModifyHelp() {
   writeln("Package names and versions are not validated upon adding");
 }
 
+proc masonUpdateHelp() {
+  writeln("Update registries and generate Mason.lock");
+  writeln("Usage:");
+  writeln("    mason update [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
+}
+
 proc masonEnvHelp() {
   writeln("Print environment variables recognized by mason");
   writeln();
@@ -423,6 +433,7 @@ proc masonPublishHelp(){
   writeln("Options:");
   writeln('    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry');
   writeln("    -h, --help                   Display this message");
+  writeln("    -c, --create-registry        Creates a local registry at path");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
   writeln('    --ci-check                   Same as --check, except omits git origin checks');

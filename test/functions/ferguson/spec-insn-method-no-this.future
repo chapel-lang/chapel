@@ -1,4 +1,5 @@
 bug: implicit this not working for method on specific instantiation 
+#5979
 
 Field and method accesses get an implicit `this` added during scopeResolve, but
 for specific instantiations, scopeResolve does not do its usual work because

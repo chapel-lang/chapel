@@ -1,5 +1,11 @@
 import("//llvm/utils/TableGen/tablegen.gni")
 
+tablegen("AArch64GenAsmMatcher") {
+  visibility = [ ":LLVMAArch64CodeGen" ]
+  args = [ "-gen-asm-matcher" ]
+  td_file = "AArch64.td"
+}
+
 tablegen("AArch64GenCallingConv") {
   visibility = [ ":LLVMAArch64CodeGen" ]
   args = [ "-gen-callingconv" ]
@@ -38,13 +44,13 @@ tablegen("AArch64GenRegisterBank") {
 
 static_library("LLVMAArch64CodeGen") {
   deps = [
+    ":AArch64GenAsmMatcher",
     ":AArch64GenCallingConv",
     ":AArch64GenDAGISel",
     ":AArch64GenFastISel",
     ":AArch64GenGlobalISel",
     ":AArch64GenMCPseudoLowering",
     ":AArch64GenRegisterBank",
-    "InstPrinter",
     "MCTargetDesc",
     "TargetInfo",
     "Utils",
@@ -67,6 +73,7 @@ static_library("LLVMAArch64CodeGen") {
     "AArch64AsmPrinter.cpp",
     "AArch64BranchTargets.cpp",
     "AArch64CallLowering.cpp",
+    "AArch64CallingConvention.cpp",
     "AArch64CleanupLocalDynamicTLSPass.cpp",
     "AArch64CollectLOH.cpp",
     "AArch64CompressJumpTables.cpp",
@@ -74,6 +81,7 @@ static_library("LLVMAArch64CodeGen") {
     "AArch64ConditionOptimizer.cpp",
     "AArch64ConditionalCompares.cpp",
     "AArch64DeadRegisterDefinitionsPass.cpp",
+    "AArch64ExpandImm.cpp",
     "AArch64ExpandPseudoInsts.cpp",
     "AArch64FalkorHWPFFix.cpp",
     "AArch64FastISel.cpp",
@@ -95,6 +103,7 @@ static_library("LLVMAArch64CodeGen") {
     "AArch64SIMDInstrOpt.cpp",
     "AArch64SelectionDAGInfo.cpp",
     "AArch64SpeculationHardening.cpp",
+    "AArch64StackTagging.cpp",
     "AArch64StorePairSuppress.cpp",
     "AArch64Subtarget.cpp",
     "AArch64TargetMachine.cpp",
@@ -114,7 +123,6 @@ group("AArch64") {
     ":LLVMAArch64CodeGen",
     "AsmParser",
     "Disassembler",
-    "InstPrinter",
     "MCTargetDesc",
     "TargetInfo",
     "Utils",

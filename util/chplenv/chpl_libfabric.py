@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 
-import chpl_comm, chpl_comm_debug, chpl_launcher, overrides, third_party_utils
+import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
 from utils import error, memoize
 
 
@@ -10,10 +10,17 @@ def get():
     comm_val = chpl_comm.get()
     if comm_val == 'ofi':
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
+        platform_val = chpl_platform.get('target')
         if not libfabric_val:
-            libfabric_val = 'libfabric'
+            if platform_val == 'cray-shasta':
+                libfabric_val = 'system'
+            else:
+                libfabric_val = 'libfabric'
         if libfabric_val == 'none':
-          error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
+            error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
+        if platform_val == 'cray-shasta' and libfabric_val != 'system':
+            sys.stderr.write('Warning: CHPL_LIBFABRIC!=system is discouraged '
+                             'on Shasta\n')
     else:
         libfabric_val = 'none'
 

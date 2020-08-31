@@ -24,9 +24,13 @@ esac
 
 # /Users/tvandoren/src/chapel/runtime/etc/Makefile.include:83: *** The runtime has not been built for this configuration. Check $CHPL_HOME/util/printchplenv and try (re)building runtime.  Stop.
 $compiler "${test_executable}.chpl" 2>&1 | \
-    grep 'runtime/etc/Makefile.include' | \
+    grep '^error\|runtime/etc/Makefile.include' | \
     grep -v 'Expected runtime library' | \
+    grep -v 'compiling generated source' | \
     sed "s:${CHPL_HOME}:\$CHPL_HOME:g" | \
     sed "s:'.*make':\$CHPL_MAKE:g" | \
-    sed "s/:[0-9]*:/:nnnnn:/g" \
+    sed "s/:[0-9]*:/:nnnnn:/g" | \
+    sed 's^\$CHPL_HOME/runtime/etc/Makefile.include:nnnnn: \*\*\* ^^g' | \
+    sed 's/  Stop.//g' | \
+    sed 's/error: //g' \
     > $output

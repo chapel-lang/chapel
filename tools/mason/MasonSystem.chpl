@@ -27,7 +27,7 @@ use MasonHelp;
 use Regexp;
 
 /* Entry point for mason system commands */
-proc masonSystem(args) {
+proc masonSystem(args: [] string) {
   try! {
     if args.size < 3 {
       masonSystemHelp();

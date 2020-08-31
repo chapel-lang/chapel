@@ -72,7 +72,7 @@ module ArrayViewRankChange {
         return downDistInst;
     }
 
-    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds) {
+    override proc dsiNewRectangularDom(param rank, type idxType, param stridable, inds){
       var newdom = new unmanaged ArrayViewRankChangeDom(rank=rank,
                                               idxType=idxType,
                                               stridable=stridable,
@@ -778,7 +778,7 @@ module ArrayViewRankChange {
       // no elements allocated here, so no action necessary
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       if ownsArrInstance {
         _delete_arr(_ArrInstance, _isPrivatized(_ArrInstance));
       }

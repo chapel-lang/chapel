@@ -1,11 +1,11 @@
-use BlockDist;
+use common;
 
 proc foo() {
-  var D = newBlockDom({1..10});
+  var D = createDom({1..10});
 
   var A: [D] real;
   var B: [D] real;
-  var C = newBlockArr({1..10}, int);
+  var C = createArr({1..10}, int);
 
   B = 3;
   C = 7;
@@ -18,7 +18,7 @@ proc foo() {
 }
 
 //{
-  //var D = newBlockDom({1..10});
+  //var D = createDom({1..10});
 
   //var A: [D] real;
   //var B: [D] real;

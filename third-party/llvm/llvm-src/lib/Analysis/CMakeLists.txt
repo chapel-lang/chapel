@@ -27,6 +27,7 @@ add_llvm_library(LLVMAnalysis
   DependenceAnalysis.cpp
   DivergenceAnalysis.cpp
   DomPrinter.cpp
+  DomTreeUpdater.cpp
   DominanceFrontier.cpp
   EHPersonalities.cpp
   GlobalsModRef.cpp
@@ -40,7 +41,6 @@ add_llvm_library(LLVMAnalysis
   InstructionSimplify.cpp
   Interval.cpp
   IntervalPartition.cpp
-  IteratedDominanceFrontier.cpp
   LazyBranchProbabilityInfo.cpp
   LazyBlockFrequencyInfo.cpp
   LazyCallGraph.cpp

@@ -2,8 +2,14 @@ include $(THIRD_PARTY_DIR)/llvm/Makefile.share-included
 
 # Enable RV and Polly if they are in the source directory
 LLVM_RV_FILE = $(LLVM_DIR)/$(LLVM_SUBDIR)/tools/rv/
+LLVM_RV_FILE2 = $(LLVM_DIR)/$(LLVM_SUBDIR)/../rv/
 LLVM_POLLY_FILE = $(LLVM_DIR)/$(LLVM_SUBDIR)/tools/polly/
+
 ifneq ("$(wildcard $(LLVM_RV_FILE))","")
+  CHPL_RV := 1
+endif
+
+ifneq ("$(wildcard $(LLVM_RV_FILE2))","")
   CHPL_RV := 1
 endif
 

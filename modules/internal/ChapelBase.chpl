@@ -27,8 +27,8 @@ module ChapelBase {
   pragma "locale private"
   var rootLocaleInitialized: bool = false;
 
-  use ChapelStandard;
-  private use ChapelEnv, SysCTypes;
+  public use ChapelStandard;
+  use ChapelEnv, SysCTypes;
 
   config param enablePostfixBangChecks = false;
 
@@ -71,20 +71,17 @@ module ChapelBase {
   inline proc =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline proc =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
-  inline proc =(ref a, b: a.type) where isBorrowedOrUnmanagedClassType(a.type)
-  {
-    __primitive("=", a, b);
-  }
-
-  pragma "compiler generated"
-  pragma "last resort" // so user-supplied assignment will override this one.
-    // The CG pragma is needed because this function interferes with
-    // assignments defined for sync and single class types.
-  inline proc =(ref a, b:_nilType)
-  where isBorrowedOrUnmanagedClassType(a.type) &&
-        !isNonNilableClassType(a.type) {
-    __primitive("=", a, nil);
-  }
+  // Need pragma "last resort" to allow assignments to sync/single vars.
+  // a.type in a formal's type is computed before instantiation vs.
+  // a.type in the where clause is computed after instantiation.
+  pragma "last resort"
+  inline proc =(ref a: borrowed class,   b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: borrowed class?,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: unmanaged class,  b: a.type) where b.type <= a.type { __primitive("=", a, b); }
+  pragma "last resort"
+  inline proc =(ref a: unmanaged class?, b: a.type) where b.type <= a.type { __primitive("=", a, b); }
 
   inline proc =(ref a: nothing, b: ?t) where t != nothing {
     compilerError("a nothing variable cannot be assigned");
@@ -715,8 +712,7 @@ module ChapelBase {
   inline proc chpl_statementLevelSymbol(a) { }
   inline proc chpl_statementLevelSymbol(a: sync)  { a.readFE(); }
   inline proc chpl_statementLevelSymbol(a: single) { a.readFF(); }
-  inline proc chpl_statementLevelSymbol(param a) param { return a; }
-  inline proc chpl_statementLevelSymbol(type a) type { return a; }
+  // param and type args are handled in the compiler
 
   //
   // If an iterator is called without capturing the result, iterate over it
@@ -725,7 +721,7 @@ module ChapelBase {
   inline proc chpl_statementLevelSymbol(ir: _iteratorRecord) {
     iter _ir_copy_recursive(ir) {
       for e in ir do
-        yield chpl__initCopy(e);
+        yield chpl__initCopy(e, definedConst=false);
     }
 
     pragma "no copy" var irc = _ir_copy_recursive(ir);
@@ -742,22 +738,23 @@ module ChapelBase {
 
   inline proc _cond_test(x: borrowed object?) return x != nil;
   inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: integral) return x != 0:x.type;
+  inline proc _cond_test(x: int) return x != 0;
+  inline proc _cond_test(x: uint) return x != 0;
 
   inline proc _cond_test(param x: bool) param return x;
   inline proc _cond_test(param x: integral) param return x != 0:x.type;
 
   inline proc _cond_test(x) {
+   if !( x.type <= _iteratorRecord ) then
     compilerError("type '", x.type:string, "' used in if or while condition");
-  }
-
-  inline proc _cond_test(x: _iteratorRecord) {
+   else
     compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
   }
 
-  proc _cond_invalid(x: borrowed object) param return false;
+  proc _cond_invalid(x: borrowed object?) param return false;
   proc _cond_invalid(x: bool) param return false;
-  proc _cond_invalid(x: integral) param return false;
+  proc _cond_invalid(x: int) param return false;
+  proc _cond_invalid(x: uint) param return false;
   proc _cond_invalid(x) param return true;
 
   //
@@ -883,50 +880,33 @@ module ChapelBase {
   proc init_elts_method(s, type t) {
     var initMethod = chpl_getArrayInitMethod();
 
-    // no need to init an array of zeros
-    // for uints, check that s > 0, so the `s-1` below doesn't overflow
-    if isIntegral(s) && s == 0 {
+    if s == 0 {
+      // Skip init for empty arrays. Needed for uints so that `s-1` in init_elts
+      // code doesn't overflow.
       initMethod = ArrayInit.noInit;
+    } else if  !rootLocaleInitialized {
+      // The parallel range iter uses 'here`/rootLocale, so fallback to serial
+      // initialization if the root locale hasn't been setup. Only used early
+      // in module initialization
+      initMethod = ArrayInit.serialInit;
     } else if initMethod == ArrayInit.heuristicInit {
       // Heuristically determine if we should do parallel initialization. The
-      // current heuristic really just checks that we have a POD array that's
-      // at least 2MB. This value was chosen experimentally: Any smaller and the
+      // current heuristic really just checks that we have an array that's at
+      // least 2MB. This value was chosen experimentally: Any smaller and the
       // cost of a forall (mostly the task creation) outweighs the benefit of
       // using multiple tasks. This was tested on a 2 core laptop, 8 core
       // workstation, and 24 core XC40.
-      //
-      // Ideally we want to be able to do parallel initialization for all types,
-      // but we're currently blocked by an issue with arrays of arrays and thus
-      // arrays of aggregate types where at one field is an array. The issue is
-      // basically that an array's domain stores a linked list of all its arrays
-      // and removal becomes expensive when addition and removal occur in
-      // different orders.
-      //
-      // Long term we probably want to store the domain's arrays as an
-      // associative domain or some data structure with < log(n) find/add/remove
-      // times. Currently we can't do that because the domain's arrays are part
-      // of the base domain, so we have a circular reference.
-      if !isPODType(t) {
-        initMethod = ArrayInit.serialInit;
+      const elemsizeInBytes = if isNumericType(t) then numBytes(t)
+                              else c_sizeof(t).safeCast(int);
+      const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
+      param heuristicThresh = 2 * 1024 * 1024;
+      const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
+
+      if heuristicWantsPar {
+        initMethod = ArrayInit.parallelInit;
       } else {
-        const elemsizeInBytes = if isNumericType(t) then numBytes(t)
-                                else c_sizeof(t).safeCast(int);
-        const arrsizeInBytes = s.safeCast(int) * elemsizeInBytes;
-        param heuristicThresh = 2 * 1024 * 1024;
-        const heuristicWantsPar = arrsizeInBytes > heuristicThresh;
-
-        if heuristicWantsPar {
-          initMethod = ArrayInit.parallelInit;
-        } else {
-          initMethod = ArrayInit.serialInit;
-        }
+        initMethod = ArrayInit.serialInit;
       }
-    }
-
-    // The parallel range iter uses 'here`/rootLocale, so fallback to serial
-    // initialization if the root locale hasn't been setup
-    if initMethod == ArrayInit.parallelInit && !rootLocaleInitialized {
-      initMethod = ArrayInit.serialInit;
     }
 
     return initMethod;
@@ -1644,7 +1624,7 @@ module ChapelBase {
     return if x != 0i then true else false;
 
   pragma "init copy fn"
-  inline proc chpl__initCopy(type t) type {
+  inline proc chpl__initCopy(type t, definedConst: bool)  type {
     compilerError("illegal assignment of type to value");
     return t;
   }
@@ -1652,7 +1632,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "last resort"
   pragma "init copy fn"
-  inline proc chpl__initCopy(x: _tuple) {
+  inline proc chpl__initCopy(x: _tuple, definedConst: bool) {
     // body inserted during generic instantiation
   }
 
@@ -1661,7 +1641,7 @@ module ChapelBase {
   pragma "last resort"
   pragma "init copy fn"
   pragma "suppress lvalue error"
-  inline proc chpl__initCopy(const x) {
+  inline proc chpl__initCopy(const x, definedConst: bool) {
     // body adjusted during generic instantiation
     return x;
   }
@@ -1669,7 +1649,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "last resort"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: _tuple) {
+  inline proc chpl__autoCopy(x: _tuple, definedConst: bool) {
     // body inserted during generic instantiation
   }
 
@@ -1683,7 +1663,7 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(ir: _iteratorRecord) {
+  inline proc chpl__autoCopy(ir: _iteratorRecord, definedConst: bool) {
     // body modified during call destructors pass
     return ir;
   }
@@ -1692,7 +1672,9 @@ module ChapelBase {
   pragma "last resort"
   pragma "auto copy fn"
   pragma "suppress lvalue error"
-  inline proc chpl__autoCopy(const x) return chpl__initCopy(x);
+  inline proc chpl__autoCopy(const x, definedConst: bool) {
+    return chpl__initCopy(x, definedConst);
+  }
 
   pragma "compiler generated"
   pragma "last resort"

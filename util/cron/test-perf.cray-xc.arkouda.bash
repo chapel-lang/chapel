@@ -12,9 +12,9 @@ source $CWD/common-arkouda.bash
 export ARKOUDA_NUMLOCALES=16
 
 # setup for XC perf (ugni, gnu, 28-core broadwell)
-module unload $(module list --terse 2>&1 | grep PrgEnv-)
+module unload $(module -t list 2>&1 | grep PrgEnv-)
 module load PrgEnv-gnu
-module unload $(module list --terse 2>&1 | grep craype-hugepages)
+module unload $(module -t list 2>&1 | grep craype-hugepages)
 module load craype-hugepages16M
 module unload perftools-base
 module unload atp
@@ -30,6 +30,5 @@ source /cray/css/users/chapelu/setup_python36.bash
 # Run on an elogin node, so we have to tunnel to the login
 export ARKOUDA_TUNNEL_SERVER=$EPROXY_LOGIN
 
-test_release
-test_master
+test_nightly
 sync_graphs

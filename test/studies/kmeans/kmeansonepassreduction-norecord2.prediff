@@ -1,8 +1,0 @@
-#!/bin/bash
-
-vgnd="Conditional jump or move depends on uninitialised value(s)"
-
-if grep -q "$vgnd" $2; then
-  echo "Found valgrind failure(s)"
-  echo "$vgnd" >| $2;
-fi

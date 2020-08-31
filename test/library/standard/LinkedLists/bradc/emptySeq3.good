@@ -1,4 +1,4 @@
-emptySeq3.chpl:3: error: unresolved call 'LinkedList(int(64)).init=(nil)'
+emptySeq3.chpl:3: error: could not find a copy initializer ('init=') for type 'LinkedList(int(64))' from type 'nil'
 $CHPL_HOME/modules/standard/LinkedLists.chpl:80: note: this candidate did not match: LinkedList.init=(l: this.type )
 emptySeq3.chpl:3: note: because call actual argument #1 with type nil
 $CHPL_HOME/modules/standard/LinkedLists.chpl:80: note: is passed to formal 'l: LinkedList'

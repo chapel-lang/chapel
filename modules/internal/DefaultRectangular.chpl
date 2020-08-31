@@ -28,11 +28,13 @@ module DefaultRectangular {
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
-  use DSIUtil, ChapelArray;
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
-  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative;
-  use ExternalArray;
+  use DSIUtil;
+  public use ChapelArray;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
+  use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
+  use DefaultSparse, DefaultAssociative;
+  public use ExternalArray; // OK: currently expected to be available by
+                            // default... though... why 'use' it here?
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
@@ -136,7 +138,8 @@ module DefaultRectangular {
       //
       // The code below is copied from the contents of the "proc =".
       const nd = new dmap(new unmanaged DefaultDist());
-      __primitive("move", defaultDist, chpl__autoCopy(nd.clone()));
+      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(),
+                                                      definedConst=false));
     }
   }
 
@@ -695,6 +698,9 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
+                                       /* this means consider elements
+                                          already initialized */
+                                       initElts=true,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
@@ -1026,6 +1032,7 @@ module DefaultRectangular {
     // should the comms post-alloc be called after initialization?
     var callPostAlloc: bool = true;
 
+    var deinitElts: bool = true;
     //var numelm: int = -1; // for correctness checking
 
     // fields end here
@@ -1047,6 +1054,7 @@ module DefaultRectangular {
       this.externArr = externArr;
       this._borrowed = _borrowed;
       this.callPostAlloc = false;
+      this.deinitElts = initElts;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
@@ -1080,9 +1088,15 @@ module DefaultRectangular {
         _ddata_allocate_postalloc(data, size);
         callPostAlloc = false;
       }
+
+      deinitElts = true;
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiElementDeinitializationComplete() {
+      deinitElts = false;
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
       }
@@ -1094,7 +1108,7 @@ module DefaultRectangular {
       } else {
         var numInd = dom.dsiNumIndices;
         var numElts:intIdxType = numInd;
-        if deinitElts && numInd > 0 {
+        if deinitElts && this.deinitElts && numInd > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
 
@@ -2213,6 +2227,30 @@ module DefaultRectangular {
     // Clean up and return
     delete op;
     return res;
+  }
+
+  // A helper routine that will perform a pointer swap on an array
+  // instead of doing a deep copy of that array. Returns true
+  // if used the optimized swap, false otherwise
+  proc DefaultRectangularArr.doiOptimizedSwap(other) {
+   // Get shape of array
+    var size1: rank*(this.dom.ranges(0).intIdxType);
+    for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
+      size1(i) = r.size;
+
+    // Get shape of array
+    var size2: rank*(other.dom.ranges(0).intIdxType);
+    for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
+      size2(i) = r.size;
+    
+    if(this.locale == other.locale &&
+       size1 == size2) {
+      this.data <=> other.data;
+      this.initShiftedData();
+      other.initShiftedData();
+      return true;
+    }
+    return false;
   }
 
   // A helper routine to take the first parallel scan over a vector

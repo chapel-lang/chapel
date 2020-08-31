@@ -1010,4 +1010,3 @@ SymExpr* findSourceOfYield(CallExpr* yield) {
 
   return foundSe;
 }
-

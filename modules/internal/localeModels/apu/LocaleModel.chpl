@@ -28,10 +28,10 @@
 //
 module LocaleModel {
 
-  use LocaleModelHelpAPU;
-  use LocaleModelHelpMem;
+  public use LocaleModelHelpAPU;
+  public use LocaleModelHelpMem;
 
-  private use IO;
+  use IO;
 
   //
   // The task layer calls these to convert between full sublocales and

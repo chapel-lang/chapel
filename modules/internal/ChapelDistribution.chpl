@@ -20,9 +20,9 @@
 
 module ChapelDistribution {
 
-  private use ChapelArray, ChapelRange;
-  public use ChapelLocks; // maybe make private when fields can be private?
-  public use ChapelHashtable; // maybe make private when fields can be private?
+  use ChapelArray, ChapelRange;
+  use ChapelLocks;
+  use ChapelHashtable;
 
   //
   // Abstract distribution class
@@ -107,7 +107,8 @@ module ChapelDistribution {
       }
     }
 
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+    proc dsiNewRectangularDom(param rank: int, type idxType,
+                              param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
@@ -155,6 +156,8 @@ module ChapelDistribution {
     var _arrsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
+
+    var definedConst: bool;
 
     proc init() {
     }
@@ -221,7 +224,7 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
-          if rmFromList then
+          if rmFromList && !this.definedConst then
             _arrs.remove(x);
           else
             _arrs_containing_dom -=1;
@@ -246,7 +249,7 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
-        if addToList then
+        if addToList && !this.definedConst then
           _arrs.add(x);
         else
           _arrs_containing_dom += 1;
@@ -702,7 +705,11 @@ module ChapelDistribution {
       halt("dsiElementInitializationComplete must be defined");
     }
 
-    proc dsiDestroyArr(param deinitElts:bool) {
+    proc dsiElementDeinitializationComplete() {
+      halt("dsiElementDeinitializationComplete must be defined");
+    }
+
+    proc dsiDestroyArr(deinitElts:bool) {
       halt("dsiDestroyArr must be defined");
     }
 
@@ -877,7 +884,7 @@ module ChapelDistribution {
   pragma "base array"
   class BaseSparseArrImpl: BaseSparseArr {
 
-    pragma "local field" pragma "unsafe" pragma "no auto destroy"
+    pragma "local field" pragma "unsafe"
     // may be initialized separately
     // always destroyed explicitly (to control deiniting elts)
     var data: [dom.nnzDom] eltType;
@@ -894,15 +901,17 @@ module ChapelDistribution {
 
     proc deinit() {
       // Elements in data are deinited in dsiDestroyArr if necessary.
-      // Here we need to clean up the rest of the array.
-      _do_destroy_array(data, deinitElts=false);
     }
 
     override proc dsiElementInitializationComplete() {
       data.dsiElementInitializationComplete();
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiElementDeinitializationComplete() {
+      data.dsiElementDeinitializationComplete();
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts then
         _deinitElements(data);
     }
@@ -985,7 +994,7 @@ module ChapelDistribution {
   }
 
   proc _delete_arr(arr: unmanaged BaseArr, param privatized:bool,
-                   param deinitElts=true) {
+                   deinitElts=true) {
     // array implementation can destroy data or other members
     arr.dsiDestroyArr(deinitElts=deinitElts);
 

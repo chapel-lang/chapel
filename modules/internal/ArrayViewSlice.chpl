@@ -387,7 +387,7 @@ module ArrayViewSlice {
       // no elements allocated here, so no action necessary
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       // no elements allocated here, so no action necessary
     }
 

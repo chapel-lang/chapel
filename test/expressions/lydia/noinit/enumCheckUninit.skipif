@@ -1,3 +1,0 @@
-CHPL_TEST_VGRND_EXE == on
-COMPOPTS <= --no-local
-CHPL_COMM != none

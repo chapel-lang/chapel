@@ -26,8 +26,8 @@ set python64_dir=C:\Users\%USERNAME%\AppData\Local\Programs\Python\Python36
 
 set revision=%1
 set branch=trunk
-set package_version=8.0.0-r%revision%
-set clang_format_vs_version=8.0.0.%revision%
+set package_version=9.0.1-r%revision%
+set clang_format_vs_version=9.0.1.%revision%
 set build_dir=llvm_package_%revision%
 
 echo Branch: %branch%
@@ -52,7 +52,17 @@ svn.exe export -r %revision% http://llvm.org/svn/llvm-project/lldb/%branch% llvm
 
 
 REM Setting CMAKE_CL_SHOWINCLUDES_PREFIX to work around PR27226.
-set cmake_flags=-DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=ON -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON -DCMAKE_INSTALL_UCRT_LIBRARIES=ON -DCLANG_FORMAT_VS_VERSION=%clang_format_vs_version% -DPACKAGE_VERSION=%package_version% -DLLDB_RELOCATABLE_PYTHON=1 -DLLDB_TEST_COMPILER=%cd%\build32_stage0\bin\clang.exe -DCMAKE_CL_SHOWINCLUDES_PREFIX="Note: including file: "
+set cmake_flags=^
+	-DCMAKE_BUILD_TYPE=Release ^
+	-DLLVM_ENABLE_ASSERTIONS=ON ^
+	-DLLVM_INSTALL_TOOLCHAIN_ONLY=ON ^
+	-DLLVM_BUILD_LLVM_C_DYLIB=ON ^
+	-DCMAKE_INSTALL_UCRT_LIBRARIES=ON ^
+	-DCLANG_FORMAT_VS_VERSION=%clang_format_vs_version% ^
+	-DPACKAGE_VERSION=%package_version% ^
+	-DLLDB_RELOCATABLE_PYTHON=1 ^
+	-DLLDB_TEST_COMPILER=%cd%\build32_stage0\bin\clang.exe ^
+	-DCMAKE_CL_SHOWINCLUDES_PREFIX="Note: including file: "
 
 REM TODO: Run the "check-all" tests.
 

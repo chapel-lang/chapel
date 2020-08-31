@@ -144,7 +144,7 @@ sub mysystem {
             print MAIL "=== Summary ===================================================\n";
             print MAIL "ERROR $_[1]: $status\n";
             print MAIL "(workspace left at $tmpdir)\n";
-            print MAIL "===============================================================\n";
+            print MAIL "=== End Summary ===============================================\n";
             close(MAIL);
         } else {
             print "CHPL_TEST_NOMAIL: No $mailcommand\n";

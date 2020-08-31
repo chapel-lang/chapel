@@ -19,12 +19,12 @@
  */
 
 module LocaleModelHelpNUMA {
-  private use SysCTypes;
+  use SysCTypes;
 
   param localeModelHasSublocales = true;
 
-  use LocaleModelHelpSetup;
-  use LocaleModelHelpRuntime;
+  public use LocaleModelHelpSetup;
+  public use LocaleModelHelpRuntime;
 
   //////////////////////////////////////////
   //

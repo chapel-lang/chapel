@@ -35,15 +35,15 @@ all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 depend:
 
 clean: clean.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 cleanall: cleanall.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 cleandeps: cleandeps.helpme
 
 clobber: clobber.helpme
-	rm -f tags TAGS
+	rm -f tags TAGS $(CHPL_ENV_HEADER)
 
 %.helpme:
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=0 CHPL_MAKE_RULE=$* $*
@@ -51,7 +51,7 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
 
-$(CHPL_ENV_HEADER):
+$(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/chplenv/*
 	@mkdir -p $(CHPL_ENV_HEADER_DIR)
 	@echo "Generating $(CHPL_ENV_HEADER)"
 	@cp $(CHPL_ENV_HEADER_TEMPLATE) $(CHPL_ENV_HEADER)

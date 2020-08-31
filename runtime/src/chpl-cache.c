@@ -585,6 +585,10 @@ struct rdcache_s {
   c_nodeid_t last_cache_miss_read_node;
   raddr_t last_cache_miss_read_addr;
 
+  // Since e.g. with ugni, a comm event can cause the implementation
+  // to switch tasks, only allow one task at a time to manipulate the cache.
+  int cacheInUse;
+
   // The variable names Ain Aout and Am come from the 2Q paper
 
   // Ain is a FIFO queue storing entries initially as they go into
@@ -766,6 +770,8 @@ struct rdcache_s* cache_create(void) {
 
   c->last_cache_miss_read_node = -1;
   c->last_cache_miss_read_addr = 0;
+
+  c->cacheInUse = 0;
 
   c->max_pages = cache_pages;
   c->max_entries = n_entries;
@@ -2003,6 +2009,7 @@ void cache_put(struct rdcache_s* cache,
     if( ! page ) {
       // get a page from the free list.
       page = allocate_page(cache);
+      assert(page != NULL);
     }
 
     if( entry ) use_entry(cache, entry);
@@ -2029,6 +2036,8 @@ void cache_put(struct rdcache_s* cache,
     // Set the minimum sequence number so an acquire fence before
     // the next read will cause this write to be disregarded.
     entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+    assert(page != NULL);
 
     // Copy the data into page.
     chpl_memcpy(page+(requested_start-ra_page),
@@ -2684,6 +2693,23 @@ struct rdcache_s* tls_cache_remote_data(void) {
   return cache;
 }
 
+// cache_lock and cache_unlock implement a "lock"
+// it's not a traditional lock because it only handles
+// the case of multiple tasks being multiplexed on one thread
+// (vs handling separate threads accessing the same data structure).
+static
+void cache_lock(struct rdcache_s* cache) {
+  while (cache->cacheInUse != 0) {
+    chpl_task_yield();
+  }
+  cache->cacheInUse = 1;
+}
+
+static
+void cache_unlock(struct rdcache_s* cache) {
+  cache->cacheInUse = 0;
+}
+
 static
 chpl_cache_taskPrvData_t* task_private_cache_data(void)
 {
@@ -2745,6 +2771,7 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   if( acquire == 0 && release == 0 ) return;
   if( chpl_cache_enabled() ) {
     struct rdcache_s* cache = tls_cache_remote_data();
+    cache_lock(cache);
     chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
 
     INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
@@ -2770,14 +2797,17 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
     DEBUG_PRINT(("%d: task %d after fence\n", chpl_nodeID, (int) chpl_task_getId()));
     chpl_cache_print();
 #endif
+    cache_unlock(cache);
   }
   // Do nothing if cache is not enabled.
 }
 
 // If a transfer is large enough we should directly initiate it to avoid
 // overheads of going through the cache
+//
+// This is not allowed to modify the cache
 static inline
-int size_merits_direct_comm(struct rdcache_s* cache, size_t size)
+int size_merits_direct_comm(const struct rdcache_s* cache, size_t size)
 {
   return size >= CACHEPAGE_SIZE;
 }
@@ -2788,10 +2818,13 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   if (size_merits_direct_comm(cache, size)) {
+    cache_lock(cache);
     cache_invalidate(cache, node, (raddr_t)raddr, size);
+    cache_unlock(cache);
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
     return;
   }
+  cache_lock(cache);
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
                "from %p\n",
@@ -2807,6 +2840,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   //task_local->last_op = seqn_max(cache, addr, node, raddr, size);
   cache_put(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
             commID, ln, fn);
+  cache_unlock(cache);
   return;
 }
 
@@ -2816,10 +2850,13 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   if (size_merits_direct_comm(cache, size)) {
+    cache_lock(cache);
     cache_invalidate(cache, node, (raddr_t)raddr, size);
+    cache_unlock(cache);
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
     return;
   }
+  cache_lock(cache);
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
                "%d:%p to %p\n",
@@ -2835,6 +2872,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   cache_get(cache, addr, node, (raddr_t)raddr, size, task_local->last_acquire,
             0, commID, ln, fn);
 
+  cache_unlock(cache);
   return;
 }
 
@@ -2842,6 +2880,7 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
                               size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
+  cache_lock(cache);
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
   chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
@@ -2849,6 +2888,7 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
   //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,
             0, CHPL_COMM_UNKNOWN_ID, ln, fn);
+  cache_unlock(cache);
 }
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
@@ -2893,16 +2933,19 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
                                    size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
+  cache_lock(cache);
   cache_invalidate(cache, node, (raddr_t)raddr, size);
+  cache_unlock(cache);
   chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
-
 }
 
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
                                    size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
+  cache_lock(cache);
   cache_invalidate(cache, node, (raddr_t)raddr, size);
+  cache_unlock(cache);
   chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
 }
 
@@ -2912,10 +2955,12 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
                                       size_t size, int32_t commID,
                                       int ln, int32_t fn)
 {
-    struct rdcache_s* cache = tls_cache_remote_data();
-    cache_invalidate(cache, srcnode, (raddr_t)srcaddr, size);
-    cache_invalidate(cache, dstnode, (raddr_t)dstaddr, size);
-    chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_lock(cache);
+  cache_invalidate(cache, srcnode, (raddr_t)srcaddr, size);
+  cache_invalidate(cache, dstnode, (raddr_t)dstaddr, size);
+  cache_unlock(cache);
+  chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
 }
 
 void chpl_cache_comm_getput_unordered_task_fence(void)

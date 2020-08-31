@@ -1,0 +1,4 @@
+parenless-call-segfault.chpl:9: In function 'main':
+parenless-call-segfault.chpl:12: error: This appears to be a first class function reference created using qualified access
+note: First class functions created using qualified access are not supported
+note: If this is not intended as a first class function, please report it to the Chapel team

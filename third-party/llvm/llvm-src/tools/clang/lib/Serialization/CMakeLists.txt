@@ -1,5 +1,6 @@
 set(LLVM_LINK_COMPONENTS
   BitReader
+  BitstreamReader
   Support
   )
 
@@ -14,6 +15,7 @@ add_clang_library(clangSerialization
   ASTWriterStmt.cpp
   GeneratePCH.cpp
   GlobalModuleIndex.cpp
+  InMemoryModuleCache.cpp
   Module.cpp
   ModuleFileExtension.cpp
   ModuleManager.cpp

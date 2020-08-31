@@ -687,6 +687,8 @@ UnresolvedSymExpr::verify() {
   Expr::verify(E_UnresolvedSymExpr);
   if (!unresolved)
     INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
+  if (unresolved != astr(unresolved))
+    INT_FATAL("unresolved is not an astr");
 }
 
 

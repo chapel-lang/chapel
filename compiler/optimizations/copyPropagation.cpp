@@ -402,7 +402,6 @@ static bool isUse(SymExpr* se)
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:
      case PRIM_ARRAY_GET:
-     case PRIM_ARRAY_GET_VALUE:
       // The first operand is treated like a reference.
       if (isFirstActual)
       {

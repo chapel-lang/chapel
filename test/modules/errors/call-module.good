@@ -1,0 +1,1 @@
+call-module.chpl:3: error: modules (like 'M' here) cannot be called like procedures

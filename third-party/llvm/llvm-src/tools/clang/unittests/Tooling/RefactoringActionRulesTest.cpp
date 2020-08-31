@@ -1,9 +1,8 @@
 //===- unittest/Tooling/RefactoringTestActionRulesTest.cpp ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -119,7 +118,7 @@ TEST_F(RefactoringActionRulesTest, MyFirstRefactoringRule) {
                  "Error:           ''\n"
                  "InsertedHeaders: []\n"
                  "RemovedHeaders:  []\n"
-                 "Replacements:    \n" // Extra whitespace here!
+                 "Replacements:\n"
                  "  - FilePath:        input.cpp\n"
                  "    Offset:          30\n"
                  "    Length:          1\n"

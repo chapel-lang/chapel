@@ -1,6 +1,8 @@
 lli - directly execute programs from LLVM bitcode
 =================================================
 
+.. program:: lli
+
 SYNOPSIS
 --------
 
@@ -212,4 +214,4 @@ Otherwise, it will return the exit code of the program it executes.
 SEE ALSO
 --------
 
-:program:`llc`
+:manpage:`llc(1)`

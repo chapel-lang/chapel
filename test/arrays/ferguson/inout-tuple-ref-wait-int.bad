@@ -1,0 +1,1 @@
+inout-tuple-ref-wait-int.chpl:6: error: inout varargs not currently supported
