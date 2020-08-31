@@ -1083,7 +1083,7 @@ private proc _dist_diag_matrix(A:[?Adom] ?eltType, distArray: [] eltType) {
   if distArray.shape != (diagSize, diagSize) then
     halt("Output array is not of correct size"); 
 
-  forall i in dim {
+  forall i in diagSize {
     distArray[i,i] = A[i];
   }
   return distArray;
