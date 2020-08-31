@@ -914,7 +914,7 @@ proc inv(ref A: [?Adom] ?eltType) throws
 where !usingLAPACK
 {
   if !isSquare(A) then
-    compilerError("Matrix inverse only supports square matrices");
+    halt("Matrix inverse only supports square matrices");
 
   const n = A.shape(0);
   var ACopy = A;
