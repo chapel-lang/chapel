@@ -380,6 +380,19 @@ TEST(STLExtrasTest, EmptyTest) {
   EXPECT_FALSE(llvm::empty(R1));
 }
 
+TEST(STLExtrasTest, DropBeginTest) {
+  SmallVector<int, 5> vec{0, 1, 2, 3, 4};
+
+  for (int n = 0; n < 5; ++n) {
+    int i = n;
+    for (auto &v : drop_begin(vec, n)) {
+      EXPECT_EQ(v, i);
+      i += 1;
+    }
+    EXPECT_EQ(i, 5);
+  }
+}
+
 TEST(STLExtrasTest, EarlyIncrementTest) {
   std::list<int> L = {1, 2, 3, 4};
 
@@ -451,7 +464,7 @@ TEST(STLExtrasTest, to_address) {
   EXPECT_EQ(V1, to_address(V1));
 
   // Check fancy pointer overload for unique_ptr
-  std::unique_ptr<int> V2 = make_unique<int>(0);
+  std::unique_ptr<int> V2 = std::make_unique<int>(0);
   EXPECT_EQ(V2.get(), to_address(V2));
 
   V2.reset(V1);

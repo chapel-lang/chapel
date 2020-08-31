@@ -242,9 +242,34 @@ C++ Checkers.
 
 .. _cplusplus-InnerPointer:
 
-cplusplus.InnerPointer
-""""""""""""""""""""""
+cplusplus.InnerPointer (C++)
+""""""""""""""""""""""""""""
 Check for inner pointers of C++ containers used after re/deallocation.
+
+Many container methods in the C++ standard library are known to invalidate
+"references" (including actual references, iterators and raw pointers) to
+elements of the container. Using such references after they are invalidated
+causes undefined behavior, which is a common source of memory errors in C++ that
+this checker is capable of finding.
+
+The checker is currently limited to ``std::string`` objects and doesn't
+recognize some of the more sophisticated approaches to passing unowned pointers
+around, such as ``std::string_view``.
+
+.. code-block:: cpp
+
+ void deref_after_assignment() {
+   std::string s = "llvm";
+   const char *c = s.data(); // note: pointer to inner buffer of 'std::string' obtained here
+   s = "clang"; // note: inner buffer of 'std::string' reallocated by call to 'operator='
+   consume(c); // warn: inner pointer of container used after re/deallocation
+ }
+
+ const char *return_temp(int x) {
+   return std::to_string(x).c_str(); // warn: inner pointer of container used after re/deallocation
+   // note: pointer to inner buffer of 'std::string' obtained here
+   // note: inner buffer of 'std::string' deallocated by call to destructor
+ }
 
 .. _cplusplus-NewDelete:
 
@@ -267,6 +292,20 @@ Check for memory leaks. Traces memory managed by new/delete.
    int *p = new int;
  } // warn
 
+.. _cplusplus-PlacementNewChecker:
+
+cplusplus.PlacementNewChecker (C++)
+"""""""""""""""""""""""""""""""""""
+Check if default placement new is provided with pointers to sufficient storage capacity.
+
+.. code-block:: cpp
+
+ #include <new>
+
+ void f() {
+   short s;
+   long *lp = ::new (&s) long; // warn
+ }
 
 .. _cplusplus-SelfAssignment:
 
@@ -293,6 +332,15 @@ Check for values stored to variables that are never read afterwards.
    int x;
    x = 1; // warn
  }
+
+The ``WarnForDeadNestedAssignments`` option enables the checker to emit
+warnings for nested dead assignments. You can disable with the
+``-analyzer-config deadcode.DeadStores:WarnForDeadNestedAssignments=false``.
+*Defaults to true*.
+
+Would warn for this e.g.:
+if ((y = make_int())) {
+}
 
 .. _nullability-checkers:
 
@@ -1301,6 +1349,31 @@ Warns if 'CFArray', 'CFDictionary', 'CFSet' are created with non-pointer-size va
                                 &kCFTypeArrayCallBacks); // warn
  }
 
+Fuchsia
+^^^^^^^
+
+Fuchsia is an open source capability-based operating system currently being
+developed by Google. This section describes checkers that can find various
+misuses of Fuchsia APIs.
+
+.. _fuchsia-HandleChecker:
+
+fuchsia.HandleChecker
+""""""""""""""""""""""""""""
+Handles identify resources. Similar to pointers they can be leaked,
+double freed, or use after freed. This check attempts to find such problems.
+
+.. code-block:: cpp
+
+ void checkLeak08(int tag) {
+   zx_handle_t sa, sb;
+   zx_channel_create(0, &sa, &sb);
+   if (tag)
+     zx_handle_close(sa);
+   use(sb); // Warn: Potential leak of handle
+   zx_handle_close(sb);
+ }
+
 
 .. _alpha-checkers:
 
@@ -1938,6 +2011,12 @@ Check for overflows in the arguments to malloc().
 
  void test(int n) {
    void *p = malloc(n * sizeof(int)); // warn
+ }
+
+ void test2(int n) {
+   if (n > 100) // gives an upper-bound
+     return;
+   void *p = malloc(n * sizeof(int)); // no warning
  }
 
 .. _alpha-security-MmapWriteExec:

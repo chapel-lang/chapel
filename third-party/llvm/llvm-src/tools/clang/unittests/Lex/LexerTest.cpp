@@ -11,9 +11,11 @@
 #include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
+#include "clang/Basic/TokenKinds.h"
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/HeaderSearchOptions.h"
 #include "clang/Lex/MacroArgs.h"
@@ -21,11 +23,13 @@
 #include "clang/Lex/ModuleLoader.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/PreprocessorOptions.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
-
-using namespace clang;
+#include <vector>
 
 namespace {
+using namespace clang;
+using testing::ElementsAre;
 
 // The test fixture.
 class LexerTest : public ::testing::Test {
@@ -49,7 +53,7 @@ protected:
 
     HeaderSearch HeaderInfo(std::make_shared<HeaderSearchOptions>(), SourceMgr,
                             Diags, LangOpts, Target.get());
-    std::unique_ptr<Preprocessor> PP = llvm::make_unique<Preprocessor>(
+    std::unique_ptr<Preprocessor> PP = std::make_unique<Preprocessor>(
         std::make_shared<PreprocessorOptions>(), Diags, LangOpts, SourceMgr,
         HeaderInfo, ModLoader,
         /*IILookup =*/nullptr,
@@ -401,18 +405,21 @@ TEST_F(LexerTest, DontOverallocateStringifyArgs) {
   auto MacroArgsDeleter = [&PP](MacroArgs *M) { M->destroy(*PP); };
   std::unique_ptr<MacroArgs, decltype(MacroArgsDeleter)> MA(
       MacroArgs::create(MI, ArgTokens, false, *PP), MacroArgsDeleter);
-  Token Result = MA->getStringifiedArgument(0, *PP, {}, {});
+  auto StringifyArg = [&](int ArgNo) {
+    return MA->StringifyArgument(MA->getUnexpArgument(ArgNo), *PP,
+                                 /*Charify=*/false, {}, {});
+  };
+  Token Result = StringifyArg(0);
   EXPECT_EQ(tok::string_literal, Result.getKind());
   EXPECT_STREQ("\"\\\"StrArg\\\"\"", Result.getLiteralData());
-  Result = MA->getStringifiedArgument(1, *PP, {}, {});
+  Result = StringifyArg(1);
   EXPECT_EQ(tok::string_literal, Result.getKind());
   EXPECT_STREQ("\"5\"", Result.getLiteralData());
-  Result = MA->getStringifiedArgument(2, *PP, {}, {});
+  Result = StringifyArg(2);
   EXPECT_EQ(tok::string_literal, Result.getKind());
   EXPECT_STREQ("\"'C'\"", Result.getLiteralData());
 #if !defined(NDEBUG) && GTEST_HAS_DEATH_TEST
-  EXPECT_DEATH(MA->getStringifiedArgument(3, *PP, {}, {}),
-               "Invalid argument number!");
+  EXPECT_DEATH(StringifyArg(3), "Invalid arg #");
 #endif
 }
 
@@ -532,4 +539,21 @@ TEST_F(LexerTest, CharRangeOffByOne) {
   EXPECT_EQ(Lexer::getSourceText(CR, SourceMgr, LangOpts), "MOO"); // Was "MO".
 }
 
+TEST_F(LexerTest, FindNextToken) {
+  Lex("int abcd = 0;\n"
+      "int xyz = abcd;\n");
+  std::vector<std::string> GeneratedByNextToken;
+  SourceLocation Loc =
+      SourceMgr.getLocForStartOfFile(SourceMgr.getMainFileID());
+  while (true) {
+    auto T = Lexer::findNextToken(Loc, SourceMgr, LangOpts);
+    ASSERT_TRUE(T.hasValue());
+    if (T->is(tok::eof))
+      break;
+    GeneratedByNextToken.push_back(getSourceText(*T, *T));
+    Loc = T->getLocation();
+  }
+  EXPECT_THAT(GeneratedByNextToken, ElementsAre("abcd", "=", "0", ";", "int",
+                                                "xyz", "=", "abcd", ";"));
+}
 } // anonymous namespace

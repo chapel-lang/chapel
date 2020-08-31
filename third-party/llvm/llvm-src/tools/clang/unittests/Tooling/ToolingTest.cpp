@@ -13,15 +13,18 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Frontend/FrontendActions.h"
+#include "clang/Tooling/ArgumentsAdjusters.h"
 #include "clang/Tooling/CompilationDatabase.h"
 #include "clang/Tooling/Tooling.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "gtest/gtest.h"
 #include <algorithm>
 #include <string>
+#include <vector>
 
 namespace clang {
 namespace tooling {
@@ -62,10 +65,10 @@ class FindTopLevelDeclConsumer : public clang::ASTConsumer {
 
 TEST(runToolOnCode, FindsNoTopLevelDeclOnEmptyCode) {
   bool FoundTopLevelDecl = false;
-  EXPECT_TRUE(
-      runToolOnCode(new TestAction(llvm::make_unique<FindTopLevelDeclConsumer>(
-                        &FoundTopLevelDecl)),
-                    ""));
+  EXPECT_TRUE(runToolOnCode(
+      std::make_unique<TestAction>(
+          std::make_unique<FindTopLevelDeclConsumer>(&FoundTopLevelDecl)),
+      ""));
   EXPECT_FALSE(FoundTopLevelDecl);
 }
 
@@ -102,17 +105,17 @@ bool FindClassDeclX(ASTUnit *AST) {
 
 TEST(runToolOnCode, FindsClassDecl) {
   bool FoundClassDeclX = false;
-  EXPECT_TRUE(
-      runToolOnCode(new TestAction(llvm::make_unique<FindClassDeclXConsumer>(
-                        &FoundClassDeclX)),
-                    "class X;"));
+  EXPECT_TRUE(runToolOnCode(
+      std::make_unique<TestAction>(
+          std::make_unique<FindClassDeclXConsumer>(&FoundClassDeclX)),
+      "class X;"));
   EXPECT_TRUE(FoundClassDeclX);
 
   FoundClassDeclX = false;
-  EXPECT_TRUE(
-      runToolOnCode(new TestAction(llvm::make_unique<FindClassDeclXConsumer>(
-                        &FoundClassDeclX)),
-                    "class Y;"));
+  EXPECT_TRUE(runToolOnCode(
+      std::make_unique<TestAction>(
+          std::make_unique<FindClassDeclXConsumer>(&FoundClassDeclX)),
+      "class Y;"));
   EXPECT_FALSE(FoundClassDeclX);
 }
 
@@ -135,7 +138,7 @@ TEST(newFrontendActionFactory, CreatesFrontendActionFactoryFromType) {
 
 struct IndependentFrontendActionCreator {
   std::unique_ptr<ASTConsumer> newASTConsumer() {
-    return llvm::make_unique<FindTopLevelDeclConsumer>(nullptr);
+    return std::make_unique<FindTopLevelDeclConsumer>(nullptr);
   }
 };
 
@@ -160,8 +163,8 @@ TEST(ToolInvocation, TestMapVirtualFile) {
   Args.push_back("-Idef");
   Args.push_back("-fsyntax-only");
   Args.push_back("test.cpp");
-  clang::tooling::ToolInvocation Invocation(Args, new SyntaxOnlyAction,
-                                            Files.get());
+  clang::tooling::ToolInvocation Invocation(
+      Args, std::make_unique<SyntaxOnlyAction>(), Files.get());
   InMemoryFileSystem->addFile(
       "test.cpp", 0, llvm::MemoryBuffer::getMemBuffer("#include <abc>\n"));
   InMemoryFileSystem->addFile("def/abc", 0,
@@ -186,8 +189,8 @@ TEST(ToolInvocation, TestVirtualModulesCompilation) {
   Args.push_back("-Idef");
   Args.push_back("-fsyntax-only");
   Args.push_back("test.cpp");
-  clang::tooling::ToolInvocation Invocation(Args, new SyntaxOnlyAction,
-                                            Files.get());
+  clang::tooling::ToolInvocation Invocation(
+      Args, std::make_unique<SyntaxOnlyAction>(), Files.get());
   InMemoryFileSystem->addFile(
       "test.cpp", 0, llvm::MemoryBuffer::getMemBuffer("#include <abc>\n"));
   InMemoryFileSystem->addFile("def/abc", 0,
@@ -207,7 +210,7 @@ struct VerifyEndCallback : public SourceFileCallbacks {
   }
   void handleEndSource() override { ++EndCalled; }
   std::unique_ptr<ASTConsumer> newASTConsumer() {
-    return llvm::make_unique<FindTopLevelDeclConsumer>(&Matched);
+    return std::make_unique<FindTopLevelDeclConsumer>(&Matched);
   }
   unsigned BeginCalled;
   unsigned EndCalled;
@@ -249,7 +252,7 @@ struct SkipBodyAction : public clang::ASTFrontendAction {
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &Compiler,
                                                  StringRef) override {
     Compiler.getFrontendOpts().SkipFunctionBodies = true;
-    return llvm::make_unique<SkipBodyConsumer>();
+    return std::make_unique<SkipBodyConsumer>();
   }
 };
 
@@ -257,61 +260,61 @@ TEST(runToolOnCode, TestSkipFunctionBody) {
   std::vector<std::string> Args = {"-std=c++11"};
   std::vector<std::string> Args2 = {"-fno-delayed-template-parsing"};
 
-  EXPECT_TRUE(runToolOnCode(new SkipBodyAction,
+  EXPECT_TRUE(runToolOnCode(std::make_unique<SkipBodyAction>(),
                             "int skipMe() { an_error_here }"));
-  EXPECT_FALSE(runToolOnCode(new SkipBodyAction,
+  EXPECT_FALSE(runToolOnCode(std::make_unique<SkipBodyAction>(),
                              "int skipMeNot() { an_error_here }"));
 
   // Test constructors with initializers
   EXPECT_TRUE(runToolOnCodeWithArgs(
-      new SkipBodyAction,
+      std::make_unique<SkipBodyAction>(),
       "struct skipMe { skipMe() : an_error() { more error } };", Args));
   EXPECT_TRUE(runToolOnCodeWithArgs(
-      new SkipBodyAction, "struct skipMe { skipMe(); };"
+      std::make_unique<SkipBodyAction>(), "struct skipMe { skipMe(); };"
                           "skipMe::skipMe() : an_error([](){;}) { more error }",
       Args));
   EXPECT_TRUE(runToolOnCodeWithArgs(
-      new SkipBodyAction, "struct skipMe { skipMe(); };"
+      std::make_unique<SkipBodyAction>(), "struct skipMe { skipMe(); };"
                           "skipMe::skipMe() : an_error{[](){;}} { more error }",
       Args));
   EXPECT_TRUE(runToolOnCodeWithArgs(
-      new SkipBodyAction,
+      std::make_unique<SkipBodyAction>(),
       "struct skipMe { skipMe(); };"
       "skipMe::skipMe() : a<b<c>(e)>>(), f{}, g() { error }",
       Args));
   EXPECT_TRUE(runToolOnCodeWithArgs(
-      new SkipBodyAction, "struct skipMe { skipMe() : bases()... { error } };",
+      std::make_unique<SkipBodyAction>(), "struct skipMe { skipMe() : bases()... { error } };",
       Args));
 
   EXPECT_FALSE(runToolOnCodeWithArgs(
-      new SkipBodyAction, "struct skipMeNot { skipMeNot() : an_error() { } };",
+      std::make_unique<SkipBodyAction>(), "struct skipMeNot { skipMeNot() : an_error() { } };",
       Args));
-  EXPECT_FALSE(runToolOnCodeWithArgs(new SkipBodyAction,
+  EXPECT_FALSE(runToolOnCodeWithArgs(std::make_unique<SkipBodyAction>(),
                                      "struct skipMeNot { skipMeNot(); };"
                                      "skipMeNot::skipMeNot() : an_error() { }",
                                      Args));
 
   // Try/catch
   EXPECT_TRUE(runToolOnCode(
-      new SkipBodyAction,
+      std::make_unique<SkipBodyAction>(),
       "void skipMe() try { an_error() } catch(error) { error };"));
   EXPECT_TRUE(runToolOnCode(
-      new SkipBodyAction,
+      std::make_unique<SkipBodyAction>(),
       "struct S { void skipMe() try { an_error() } catch(error) { error } };"));
   EXPECT_TRUE(
-      runToolOnCode(new SkipBodyAction,
+      runToolOnCode(std::make_unique<SkipBodyAction>(),
                     "void skipMe() try { an_error() } catch(error) { error; }"
                     "catch(error) { error } catch (error) { }"));
   EXPECT_FALSE(runToolOnCode(
-      new SkipBodyAction,
+      std::make_unique<SkipBodyAction>(),
       "void skipMe() try something;")); // don't crash while parsing
 
   // Template
   EXPECT_TRUE(runToolOnCode(
-      new SkipBodyAction, "template<typename T> int skipMe() { an_error_here }"
+      std::make_unique<SkipBodyAction>(), "template<typename T> int skipMe() { an_error_here }"
                           "int x = skipMe<int>();"));
   EXPECT_FALSE(runToolOnCodeWithArgs(
-      new SkipBodyAction,
+      std::make_unique<SkipBodyAction>(),
       "template<typename T> int skipMeNot() { an_error_here }", Args2));
 }
 
@@ -325,7 +328,7 @@ TEST(runToolOnCodeWithArgs, TestNoDepFile) {
   Args.push_back(DepFilePath.str());
   Args.push_back("-MF");
   Args.push_back(DepFilePath.str());
-  EXPECT_TRUE(runToolOnCodeWithArgs(new SkipBodyAction, "", Args));
+  EXPECT_TRUE(runToolOnCodeWithArgs(std::make_unique<SkipBodyAction>(), "", Args));
   EXPECT_FALSE(llvm::sys::fs::exists(DepFilePath.str()));
   EXPECT_FALSE(llvm::sys::fs::remove(DepFilePath.str()));
 }
@@ -340,7 +343,7 @@ struct CheckColoredDiagnosticsAction : public clang::ASTFrontendAction {
           Compiler.getDiagnostics().getCustomDiagID(
               DiagnosticsEngine::Fatal,
               "getDiagnosticOpts().ShowColors != ShouldShowColor"));
-    return llvm::make_unique<ASTConsumer>();
+    return std::make_unique<ASTConsumer>();
   }
 
 private:
@@ -348,24 +351,26 @@ private:
 };
 
 TEST(runToolOnCodeWithArgs, DiagnosticsColor) {
-
-  EXPECT_TRUE(runToolOnCodeWithArgs(new CheckColoredDiagnosticsAction(true), "",
-                                    {"-fcolor-diagnostics"}));
-  EXPECT_TRUE(runToolOnCodeWithArgs(new CheckColoredDiagnosticsAction(false),
-                                    "", {"-fno-color-diagnostics"}));
-  EXPECT_TRUE(
-      runToolOnCodeWithArgs(new CheckColoredDiagnosticsAction(true), "",
-                            {"-fno-color-diagnostics", "-fcolor-diagnostics"}));
-  EXPECT_TRUE(
-      runToolOnCodeWithArgs(new CheckColoredDiagnosticsAction(false), "",
-                            {"-fcolor-diagnostics", "-fno-color-diagnostics"}));
   EXPECT_TRUE(runToolOnCodeWithArgs(
-      new CheckColoredDiagnosticsAction(true), "",
+      std::make_unique<CheckColoredDiagnosticsAction>(true), "",
+      {"-fcolor-diagnostics"}));
+  EXPECT_TRUE(runToolOnCodeWithArgs(
+      std::make_unique<CheckColoredDiagnosticsAction>(false), "",
+      {"-fno-color-diagnostics"}));
+  EXPECT_TRUE(runToolOnCodeWithArgs(
+      std::make_unique<CheckColoredDiagnosticsAction>(true), "",
+      {"-fno-color-diagnostics", "-fcolor-diagnostics"}));
+  EXPECT_TRUE(runToolOnCodeWithArgs(
+      std::make_unique<CheckColoredDiagnosticsAction>(false), "",
+      {"-fcolor-diagnostics", "-fno-color-diagnostics"}));
+  EXPECT_TRUE(runToolOnCodeWithArgs(
+      std::make_unique<CheckColoredDiagnosticsAction>(true), "",
       {"-fno-color-diagnostics", "-fdiagnostics-color=always"}));
 
   // Check that this test would fail if ShowColors is not what it should.
-  EXPECT_FALSE(runToolOnCodeWithArgs(new CheckColoredDiagnosticsAction(false),
-                                     "", {"-fcolor-diagnostics"}));
+  EXPECT_FALSE(runToolOnCodeWithArgs(
+      std::make_unique<CheckColoredDiagnosticsAction>(false), "",
+      {"-fcolor-diagnostics"}));
 }
 
 TEST(ClangToolTest, ArgumentAdjusters) {
@@ -425,6 +430,37 @@ TEST(ClangToolTest, NoDoubleSyntaxOnly) {
   Tool.appendArgumentsAdjuster(CheckSyntaxOnlyAdjuster);
   Tool.run(Action.get());
   EXPECT_EQ(SyntaxOnlyCount, 1U);
+}
+
+TEST(ClangToolTest, NoOutputCommands) {
+  FixedCompilationDatabase Compilations("/", {"-save-temps", "-save-temps=cwd",
+                                              "--save-temps",
+                                              "--save-temps=somedir"});
+
+  ClangTool Tool(Compilations, std::vector<std::string>(1, "/a.cc"));
+  Tool.mapVirtualFile("/a.cc", "void a() {}");
+
+  std::unique_ptr<FrontendActionFactory> Action(
+      newFrontendActionFactory<SyntaxOnlyAction>());
+
+  const std::vector<llvm::StringRef> OutputCommands = {"-save-temps"};
+  bool Ran = false;
+  ArgumentsAdjuster CheckSyntaxOnlyAdjuster =
+      [&OutputCommands, &Ran](const CommandLineArguments &Args,
+                              StringRef /*unused*/) {
+        for (llvm::StringRef Arg : Args) {
+          for (llvm::StringRef OutputCommand : OutputCommands)
+            EXPECT_FALSE(Arg.contains(OutputCommand));
+        }
+        Ran = true;
+        return Args;
+      };
+
+  Tool.clearArgumentsAdjusters();
+  Tool.appendArgumentsAdjuster(getClangSyntaxOnlyAdjuster());
+  Tool.appendArgumentsAdjuster(CheckSyntaxOnlyAdjuster);
+  Tool.run(Action.get());
+  EXPECT_TRUE(Ran);
 }
 
 TEST(ClangToolTest, BaseVirtualFileSystemUsage) {
@@ -651,13 +687,13 @@ TEST(runToolOnCode, TestResetDiagnostics) {
           return true;
         }
       };
-      return llvm::make_unique<Consumer>();
+      return std::make_unique<Consumer>();
     }
   };
 
   // Should not crash
   EXPECT_FALSE(
-      runToolOnCode(new ResetDiagnosticAction,
+      runToolOnCode(std::make_unique<ResetDiagnosticAction>(),
                     "struct Foo { Foo(int); ~Foo(); struct Fwd _fwd; };"
                     "void func() { long x; Foo f(x); }"));
 }

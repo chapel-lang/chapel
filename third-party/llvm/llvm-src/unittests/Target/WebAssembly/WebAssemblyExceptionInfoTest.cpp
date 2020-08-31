@@ -1,4 +1,4 @@
-//=== WebAssemblyExceptionInfoTest.cpp - WebAssebmlyExceptionInfo unit tests =//
+//=== WebAssemblyExceptionInfoTest.cpp - WebAssemblyExceptionInfo unit tests =//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -132,7 +132,7 @@ body: |
   bb.7:
   ; predecessors: %bb.5, %bb.1
     liveins: $value_stack
-    RETURN_VOID implicit-def $arguments
+    RETURN implicit-def $arguments
 
   bb.8 (landing-pad):
   ; predecessors: %bb.4
@@ -307,7 +307,7 @@ body: |
   bb.9:
   ; predecessors: %bb.0, %bb.7
     liveins: $value_stack
-    RETURN_VOID implicit-def $arguments
+    RETURN implicit-def $arguments
 
   bb.10 (landing-pad):
   ; predecessors: %bb.4

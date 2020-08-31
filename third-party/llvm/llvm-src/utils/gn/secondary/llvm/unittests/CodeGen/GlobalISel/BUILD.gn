@@ -13,7 +13,10 @@ unittest("GlobalISelTests") {
   ]
   sources = [
     "CSETest.cpp",
+    "ConstantFoldingTest.cpp",
     "GISelMITest.cpp",
+    "KnownBitsTest.cpp",
+    "LegalizerTest.cpp",
     "LegalizerHelperTest.cpp",
     "LegalizerInfoTest.cpp",
     "MachineIRBuilderTest.cpp",

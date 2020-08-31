@@ -608,14 +608,15 @@ public:
     llvm::raw_fd_ostream OutStream(FD, true);
     OutStream << Content;
     OutStream.close();
-    const FileEntry *File = Context.Files.getFile(Path);
-    assert(File != nullptr);
+    auto File = Context.Files.getFile(Path);
+    assert(File);
 
     StringRef Found =
         TemporaryFiles.insert(std::make_pair(Name, Path.str())).first->second;
     assert(Found == Path);
     (void)Found;
-    return Context.Sources.createFileID(File, SourceLocation(), SrcMgr::C_User);
+    return Context.Sources.createFileID(*File, SourceLocation(),
+                                        SrcMgr::C_User);
   }
 
   std::string getFileContentFromDisk(llvm::StringRef Name) {
@@ -649,7 +650,7 @@ template <typename T>
 class TestVisitor : public clang::RecursiveASTVisitor<T> {
 public:
   bool runOver(StringRef Code) {
-    return runToolOnCode(new TestAction(this), Code);
+    return runToolOnCode(std::make_unique<TestAction>(this), Code);
   }
 
 protected:
@@ -679,7 +680,7 @@ private:
       Visitor->SM = &compiler.getSourceManager();
       Visitor->Context = &compiler.getASTContext();
       /// TestConsumer will be deleted by the framework calling us.
-      return llvm::make_unique<FindConsumer>(Visitor);
+      return std::make_unique<FindConsumer>(Visitor);
     }
 
   private:

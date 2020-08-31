@@ -15,6 +15,7 @@ add_clang_unittest(ToolingTests
   CastExprTest.cpp
   CommentHandlerTest.cpp
   CompilationDatabaseTest.cpp
+  DependencyScannerTest.cpp
   DiagnosticsYamlTest.cpp
   ExecutionTest.cpp
   FixItTest.cpp
@@ -28,9 +29,11 @@ add_clang_unittest(ToolingTests
   RecursiveASTVisitorTests/ConstructExpr.cpp
   RecursiveASTVisitorTests/CXXBoolLiteralExpr.cpp
   RecursiveASTVisitorTests/CXXMemberCall.cpp
+  RecursiveASTVisitorTests/CXXMethodDecl.cpp
   RecursiveASTVisitorTests/CXXOperatorCallExprTraverser.cpp
   RecursiveASTVisitorTests/DeclRefExpr.cpp
   RecursiveASTVisitorTests/ImplicitCtor.cpp
+  RecursiveASTVisitorTests/ImplicitCtorInitializer.cpp
   RecursiveASTVisitorTests/InitListExprPostOrder.cpp
   RecursiveASTVisitorTests/InitListExprPostOrderNoQueue.cpp
   RecursiveASTVisitorTests/InitListExprPreOrder.cpp
@@ -39,6 +42,7 @@ add_clang_unittest(ToolingTests
   RecursiveASTVisitorTests/LambdaDefaultCapture.cpp
   RecursiveASTVisitorTests/LambdaExpr.cpp
   RecursiveASTVisitorTests/LambdaTemplateParams.cpp
+  RecursiveASTVisitorTests/MemberPointerTypeLoc.cpp
   RecursiveASTVisitorTests/NestedNameSpecifiers.cpp
   RecursiveASTVisitorTests/ParenExpr.cpp
   RecursiveASTVisitorTests/TemplateArgumentLocTraverser.cpp
@@ -51,6 +55,7 @@ add_clang_unittest(ToolingTests
   RefactoringTest.cpp
   ReplacementsYamlTest.cpp
   RewriterTest.cpp
+  SourceCodeBuildersTest.cpp
   SourceCodeTest.cpp
   StencilTest.cpp
   ToolingTest.cpp
@@ -71,6 +76,7 @@ clang_target_link_libraries(ToolingTests
   clangToolingCore
   clangToolingInclusions
   clangToolingRefactoring
+  clangTransformer
   )
 
 target_link_libraries(ToolingTests

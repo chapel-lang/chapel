@@ -1,5 +1,3 @@
-:orphan:
-
 ==================================================
 Kaleidoscope: Extending the Language: Control Flow
 ==================================================
@@ -146,7 +144,7 @@ First we define a new parsing function:
       if (!Else)
         return nullptr;
 
-      return llvm::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
+      return std::make_unique<IfExprAST>(std::move(Cond), std::move(Then),
                                           std::move(Else));
     }
 
@@ -217,7 +215,7 @@ Kaleidoscope looks like this:
 To visualize the control flow graph, you can use a nifty feature of the
 LLVM '`opt <http://llvm.org/cmds/opt.html>`_' tool. If you put this LLVM
 IR into "t.ll" and run "``llvm-as < t.ll | opt -analyze -view-cfg``", `a
-window will pop up <../ProgrammersManual.html#viewing-graphs-while-debugging-code>`_ and you'll
+window will pop up <../../ProgrammersManual.html#viewing-graphs-while-debugging-code>`_ and you'll
 see this graph:
 
 .. figure:: LangImpl05-cfg.png
@@ -560,7 +558,7 @@ value to null in the AST node:
       if (!Body)
         return nullptr;
 
-      return llvm::make_unique<ForExprAST>(IdName, std::move(Start),
+      return std::make_unique<ForExprAST>(IdName, std::move(Start),
                                            std::move(End), std::move(Step),
                                            std::move(Body));
     }

@@ -23,6 +23,7 @@
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Object/COFF.h"
 #include "llvm/Object/MachO.h"
 #include "llvm/Object/ObjectFile.h"
@@ -31,8 +32,10 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Support/InitLLVM.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Timer.h"
 
 #include <list>
 #include <string>
@@ -52,6 +55,10 @@ static cl::opt<bool> NoExec("noexec", cl::desc("Do not execute loaded code"),
 static cl::list<std::string>
     CheckFiles("check", cl::desc("File containing verifier checks"),
                cl::ZeroOrMore);
+
+static cl::opt<std::string>
+    CheckName("check-name", cl::desc("Name of checks to match against"),
+              cl::init("jitlink-check"));
 
 static cl::opt<std::string>
     EntryPointName("entry", cl::desc("Symbol to call as main entry point"),
@@ -84,15 +91,26 @@ static cl::opt<bool> ShowAddrs(
     cl::desc("Print registered symbol, section, got and stub addresses"),
     cl::init(false));
 
-static cl::opt<bool> ShowAtomGraph(
+static cl::opt<bool> ShowLinkGraph(
     "show-graph",
-    cl::desc("Print the atom graph after fixups have been applied"),
+    cl::desc("Print the link graph after fixups have been applied"),
     cl::init(false));
 
 static cl::opt<bool> ShowSizes(
     "show-sizes",
     cl::desc("Show sizes pre- and post-dead stripping, and allocations"),
     cl::init(false));
+
+static cl::opt<bool> ShowTimes("show-times",
+                               cl::desc("Show times for llvm-jitlink phases"),
+                               cl::init(false));
+
+static cl::opt<std::string> SlabAllocateSizeString(
+    "slab-allocate",
+    cl::desc("Allocate from a slab of the given size "
+             "(allowable suffixes: Kb, Mb, Gb. default = "
+             "Kb)"),
+    cl::init(""));
 
 static cl::opt<bool> ShowRelocatedSectionContents(
     "show-relocated-section-contents",
@@ -138,17 +156,14 @@ operator<<(raw_ostream &OS, const Session::FileInfoMap &FIM) {
   return OS;
 }
 
-static uint64_t computeTotalAtomSizes(AtomGraph &G) {
+static uint64_t computeTotalBlockSizes(LinkGraph &G) {
   uint64_t TotalSize = 0;
-  for (auto *DA : G.defined_atoms())
-    if (DA->isZeroFill())
-      TotalSize += DA->getZeroFillSize();
-    else
-      TotalSize += DA->getContent().size();
+  for (auto *B : G.blocks())
+    TotalSize += B->getSize();
   return TotalSize;
 }
 
-static void dumpSectionContents(raw_ostream &OS, AtomGraph &G) {
+static void dumpSectionContents(raw_ostream &OS, LinkGraph &G) {
   constexpr JITTargetAddress DumpWidth = 16;
   static_assert(isPowerOf2_64(DumpWidth), "DumpWidth must be a power of two");
 
@@ -159,56 +174,55 @@ static void dumpSectionContents(raw_ostream &OS, AtomGraph &G) {
 
   std::sort(Sections.begin(), Sections.end(),
             [](const Section *LHS, const Section *RHS) {
-              if (LHS->atoms_empty() && RHS->atoms_empty())
+              if (llvm::empty(LHS->symbols()) && llvm::empty(RHS->symbols()))
                 return false;
-              if (LHS->atoms_empty())
+              if (llvm::empty(LHS->symbols()))
                 return false;
-              if (RHS->atoms_empty())
+              if (llvm::empty(RHS->symbols()))
                 return true;
-              return (*LHS->atoms().begin())->getAddress() <
-                     (*RHS->atoms().begin())->getAddress();
+              SectionRange LHSRange(*LHS);
+              SectionRange RHSRange(*RHS);
+              return LHSRange.getStart() < RHSRange.getStart();
             });
 
   for (auto *S : Sections) {
     OS << S->getName() << " content:";
-    if (S->atoms_empty()) {
+    if (llvm::empty(S->symbols())) {
       OS << "\n  section empty\n";
       continue;
     }
 
-    // Sort atoms into order, then render.
-    std::vector<DefinedAtom *> Atoms(S->atoms().begin(), S->atoms().end());
-    std::sort(Atoms.begin(), Atoms.end(),
-              [](const DefinedAtom *LHS, const DefinedAtom *RHS) {
-                return LHS->getAddress() < RHS->getAddress();
-              });
+    // Sort symbols into order, then render.
+    std::vector<Symbol *> Syms(S->symbols().begin(), S->symbols().end());
+    llvm::sort(Syms, [](const Symbol *LHS, const Symbol *RHS) {
+      return LHS->getAddress() < RHS->getAddress();
+    });
 
-    JITTargetAddress NextAddr = Atoms.front()->getAddress() & ~(DumpWidth - 1);
-    for (auto *DA : Atoms) {
-      bool IsZeroFill = DA->isZeroFill();
-      JITTargetAddress AtomStart = DA->getAddress();
-      JITTargetAddress AtomSize =
-          IsZeroFill ? DA->getZeroFillSize() : DA->getContent().size();
-      JITTargetAddress AtomEnd = AtomStart + AtomSize;
-      const uint8_t *AtomData =
-          IsZeroFill ? nullptr : DA->getContent().bytes_begin();
+    JITTargetAddress NextAddr = Syms.front()->getAddress() & ~(DumpWidth - 1);
+    for (auto *Sym : Syms) {
+      bool IsZeroFill = Sym->getBlock().isZeroFill();
+      JITTargetAddress SymStart = Sym->getAddress();
+      JITTargetAddress SymSize = Sym->getSize();
+      JITTargetAddress SymEnd = SymStart + SymSize;
+      const uint8_t *SymData =
+          IsZeroFill ? nullptr : Sym->getSymbolContent().bytes_begin();
 
-      // Pad any space before the atom starts.
-      while (NextAddr != AtomStart) {
+      // Pad any space before the symbol starts.
+      while (NextAddr != SymStart) {
         if (NextAddr % DumpWidth == 0)
           OS << formatv("\n{0:x16}:", NextAddr);
         OS << "   ";
         ++NextAddr;
       }
 
-      // Render the atom content.
-      while (NextAddr != AtomEnd) {
+      // Render the symbol content.
+      while (NextAddr != SymEnd) {
         if (NextAddr % DumpWidth == 0)
           OS << formatv("\n{0:x16}:", NextAddr);
         if (IsZeroFill)
           OS << " 00";
         else
-          OS << formatv(" {0:x-2}", AtomData[NextAddr - AtomStart]);
+          OS << formatv(" {0:x-2}", SymData[NextAddr - SymStart]);
         ++NextAddr;
       }
     }
@@ -216,7 +230,175 @@ static void dumpSectionContents(raw_ostream &OS, AtomGraph &G) {
   }
 }
 
-Session::Session(Triple TT) : ObjLayer(ES, MemMgr), TT(std::move(TT)) {
+class JITLinkSlabAllocator final : public JITLinkMemoryManager {
+public:
+  static Expected<std::unique_ptr<JITLinkSlabAllocator>>
+  Create(uint64_t SlabSize) {
+    Error Err = Error::success();
+    std::unique_ptr<JITLinkSlabAllocator> Allocator(
+        new JITLinkSlabAllocator(SlabSize, Err));
+    if (Err)
+      return std::move(Err);
+    return std::move(Allocator);
+  }
+
+  Expected<std::unique_ptr<JITLinkMemoryManager::Allocation>>
+  allocate(const SegmentsRequestMap &Request) override {
+
+    using AllocationMap = DenseMap<unsigned, sys::MemoryBlock>;
+
+    // Local class for allocation.
+    class IPMMAlloc : public Allocation {
+    public:
+      IPMMAlloc(AllocationMap SegBlocks) : SegBlocks(std::move(SegBlocks)) {}
+      MutableArrayRef<char> getWorkingMemory(ProtectionFlags Seg) override {
+        assert(SegBlocks.count(Seg) && "No allocation for segment");
+        return {static_cast<char *>(SegBlocks[Seg].base()),
+                SegBlocks[Seg].allocatedSize()};
+      }
+      JITTargetAddress getTargetMemory(ProtectionFlags Seg) override {
+        assert(SegBlocks.count(Seg) && "No allocation for segment");
+        return reinterpret_cast<JITTargetAddress>(SegBlocks[Seg].base());
+      }
+      void finalizeAsync(FinalizeContinuation OnFinalize) override {
+        OnFinalize(applyProtections());
+      }
+      Error deallocate() override {
+        for (auto &KV : SegBlocks)
+          if (auto EC = sys::Memory::releaseMappedMemory(KV.second))
+            return errorCodeToError(EC);
+        return Error::success();
+      }
+
+    private:
+      Error applyProtections() {
+        for (auto &KV : SegBlocks) {
+          auto &Prot = KV.first;
+          auto &Block = KV.second;
+          if (auto EC = sys::Memory::protectMappedMemory(Block, Prot))
+            return errorCodeToError(EC);
+          if (Prot & sys::Memory::MF_EXEC)
+            sys::Memory::InvalidateInstructionCache(Block.base(),
+                                                    Block.allocatedSize());
+        }
+        return Error::success();
+      }
+
+      AllocationMap SegBlocks;
+    };
+
+    AllocationMap Blocks;
+
+    for (auto &KV : Request) {
+      auto &Seg = KV.second;
+
+      if (Seg.getAlignment() > PageSize)
+        return make_error<StringError>("Cannot request higher than page "
+                                       "alignment",
+                                       inconvertibleErrorCode());
+
+      if (PageSize % Seg.getAlignment() != 0)
+        return make_error<StringError>("Page size is not a multiple of "
+                                       "alignment",
+                                       inconvertibleErrorCode());
+
+      uint64_t ZeroFillStart = Seg.getContentSize();
+      uint64_t SegmentSize = ZeroFillStart + Seg.getZeroFillSize();
+
+      // Round segment size up to page boundary.
+      SegmentSize = (SegmentSize + PageSize - 1) & ~(PageSize - 1);
+
+      // Take segment bytes from the front of the slab.
+      void *SlabBase = SlabRemaining.base();
+      uint64_t SlabRemainingSize = SlabRemaining.allocatedSize();
+
+      if (SegmentSize > SlabRemainingSize)
+        return make_error<StringError>("Slab allocator out of memory",
+                                       inconvertibleErrorCode());
+
+      sys::MemoryBlock SegMem(SlabBase, SegmentSize);
+      SlabRemaining =
+          sys::MemoryBlock(reinterpret_cast<char *>(SlabBase) + SegmentSize,
+                           SlabRemainingSize - SegmentSize);
+
+      // Zero out the zero-fill memory.
+      memset(static_cast<char *>(SegMem.base()) + ZeroFillStart, 0,
+             Seg.getZeroFillSize());
+
+      // Record the block for this segment.
+      Blocks[KV.first] = std::move(SegMem);
+    }
+    return std::unique_ptr<InProcessMemoryManager::Allocation>(
+        new IPMMAlloc(std::move(Blocks)));
+  }
+
+private:
+  JITLinkSlabAllocator(uint64_t SlabSize, Error &Err) {
+    ErrorAsOutParameter _(&Err);
+
+    PageSize = sys::Process::getPageSizeEstimate();
+
+    if (!isPowerOf2_64(PageSize)) {
+      Err = make_error<StringError>("Page size is not a power of 2",
+                                    inconvertibleErrorCode());
+      return;
+    }
+
+    // Round slab request up to page size.
+    SlabSize = (SlabSize + PageSize - 1) & ~(PageSize - 1);
+
+    const sys::Memory::ProtectionFlags ReadWrite =
+        static_cast<sys::Memory::ProtectionFlags>(sys::Memory::MF_READ |
+                                                  sys::Memory::MF_WRITE);
+
+    std::error_code EC;
+    SlabRemaining =
+        sys::Memory::allocateMappedMemory(SlabSize, nullptr, ReadWrite, EC);
+
+    if (EC) {
+      Err = errorCodeToError(EC);
+      return;
+    }
+  }
+
+  sys::MemoryBlock SlabRemaining;
+  uint64_t PageSize = 0;
+};
+
+Expected<uint64_t> getSlabAllocSize(StringRef SizeString) {
+  SizeString = SizeString.trim();
+
+  uint64_t Units = 1024;
+
+  if (SizeString.endswith_lower("kb"))
+    SizeString = SizeString.drop_back(2).rtrim();
+  else if (SizeString.endswith_lower("mb")) {
+    Units = 1024 * 1024;
+    SizeString = SizeString.drop_back(2).rtrim();
+  } else if (SizeString.endswith_lower("gb")) {
+    Units = 1024 * 1024 * 1024;
+    SizeString = SizeString.drop_back(2).rtrim();
+  }
+
+  uint64_t SlabSize = 0;
+  if (SizeString.getAsInteger(10, SlabSize))
+    return make_error<StringError>("Invalid numeric format for slab size",
+                                   inconvertibleErrorCode());
+
+  return SlabSize * Units;
+}
+
+static std::unique_ptr<jitlink::JITLinkMemoryManager> createMemoryManager() {
+  if (!SlabAllocateSizeString.empty()) {
+    auto SlabSize = ExitOnErr(getSlabAllocSize(SlabAllocateSizeString));
+    return ExitOnErr(JITLinkSlabAllocator::Create(SlabSize));
+  }
+  return std::make_unique<jitlink::InProcessMemoryManager>();
+}
+
+Session::Session(Triple TT)
+    : MainJD(ES.createJITDylib("<main>")), ObjLayer(ES, createMemoryManager()),
+      TT(std::move(TT)) {
 
   /// Local ObjectLinkingLayer::Plugin class to forward modifyPassConfig to the
   /// Session.
@@ -233,10 +415,10 @@ Session::Session(Triple TT) : ObjLayer(ES, MemMgr), TT(std::move(TT)) {
   };
 
   if (!NoExec && !TT.isOSWindows())
-    ObjLayer.addPlugin(llvm::make_unique<EHFrameRegistrationPlugin>(
+    ObjLayer.addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
         InProcessEHFrameRegistrar::getInstance()));
 
-  ObjLayer.addPlugin(llvm::make_unique<JITLinkSessionPlugin>(*this));
+  ObjLayer.addPlugin(std::make_unique<JITLinkSessionPlugin>(*this));
 }
 
 void Session::dumpSessionInfo(raw_ostream &OS) {
@@ -246,7 +428,7 @@ void Session::dumpSessionInfo(raw_ostream &OS) {
 void Session::modifyPassConfig(const Triple &FTT,
                                PassConfiguration &PassConfig) {
   if (!CheckFiles.empty())
-    PassConfig.PostFixupPasses.push_back([this](AtomGraph &G) {
+    PassConfig.PostFixupPasses.push_back([this](LinkGraph &G) {
       if (TT.getObjectFormat() == Triple::MachO)
         return registerMachOStubsAndGOT(*this, G);
       return make_error<StringError>("Unsupported object format for GOT/stub "
@@ -254,27 +436,26 @@ void Session::modifyPassConfig(const Triple &FTT,
                                      inconvertibleErrorCode());
     });
 
-  if (ShowAtomGraph)
-    PassConfig.PostFixupPasses.push_back([](AtomGraph &G) -> Error {
-      outs() << "Atom graph post-fixup:\n";
+  if (ShowLinkGraph)
+    PassConfig.PostFixupPasses.push_back([](LinkGraph &G) -> Error {
+      outs() << "Link graph post-fixup:\n";
       G.dump(outs());
       return Error::success();
     });
 
-
   if (ShowSizes) {
-    PassConfig.PrePrunePasses.push_back([this](AtomGraph &G) -> Error {
-        SizeBeforePruning += computeTotalAtomSizes(G);
-        return Error::success();
-      });
-    PassConfig.PostFixupPasses.push_back([this](AtomGraph &G) -> Error {
-        SizeAfterFixups += computeTotalAtomSizes(G);
-        return Error::success();
-      });
+    PassConfig.PrePrunePasses.push_back([this](LinkGraph &G) -> Error {
+      SizeBeforePruning += computeTotalBlockSizes(G);
+      return Error::success();
+    });
+    PassConfig.PostFixupPasses.push_back([this](LinkGraph &G) -> Error {
+      SizeAfterFixups += computeTotalBlockSizes(G);
+      return Error::success();
+    });
   }
 
   if (ShowRelocatedSectionContents)
-    PassConfig.PostFixupPasses.push_back([](AtomGraph &G) -> Error {
+    PassConfig.PostFixupPasses.push_back([](LinkGraph &G) -> Error {
       outs() << "Relocated section contents for " << G.getName() << ":\n";
       dumpSectionContents(outs(), G);
       return Error::success();
@@ -380,7 +561,7 @@ Error loadProcessSymbols(Session &S) {
   auto FilterMainEntryPoint = [InternedEntryPointName](SymbolStringPtr Name) {
     return Name != InternedEntryPointName;
   };
-  S.ES.getMainJITDylib().setGenerator(
+  S.MainJD.addGenerator(
       ExitOnErr(orc::DynamicLibrarySearchGenerator::GetForCurrentProcess(
           GlobalPrefix, FilterMainEntryPoint)));
 
@@ -409,10 +590,9 @@ Error loadObjects(Session &S) {
   LLVM_DEBUG(dbgs() << "Creating JITDylibs...\n");
   {
     // Create a "main" JITLinkDylib.
-    auto &MainJD = S.ES.getMainJITDylib();
-    IdxToJLD[0] = &MainJD;
-    S.JDSearchOrder.push_back(&MainJD);
-    LLVM_DEBUG(dbgs() << "  0: " << MainJD.getName() << "\n");
+    IdxToJLD[0] = &S.MainJD;
+    S.JDSearchOrder.push_back(&S.MainJD);
+    LLVM_DEBUG(dbgs() << "  0: " << S.MainJD.getName() << "\n");
 
     // Add any extra JITLinkDylibs from the command line.
     std::string JDNamePrefix("lib");
@@ -428,11 +608,12 @@ Error loadObjects(Session &S) {
 
     // Set every dylib to link against every other, in command line order.
     for (auto *JD : S.JDSearchOrder) {
-      JITDylibSearchList O;
+      auto LookupFlags = JITDylibLookupFlags::MatchExportedSymbolsOnly;
+      JITDylibSearchOrder O;
       for (auto *JD2 : S.JDSearchOrder) {
         if (JD2 == JD)
           continue;
-        O.push_back(std::make_pair(JD2, false));
+        O.push_back(std::make_pair(JD2, LookupFlags));
       }
       JD->setSearchOrder(std::move(O));
     }
@@ -518,7 +699,9 @@ Error runChecks(Session &S) {
                                           TripleName,
                                       inconvertibleErrorCode()));
 
-  std::unique_ptr<MCAsmInfo> MAI(TheTarget->createMCAsmInfo(*MRI, TripleName));
+  MCTargetOptions MCOptions;
+  std::unique_ptr<MCAsmInfo> MAI(
+      TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
   if (!MAI)
     ExitOnErr(make_error<StringError>("Unable to create target asm info " +
                                           TripleName,
@@ -563,10 +746,11 @@ Error runChecks(Session &S) {
       S.TT.isLittleEndian() ? support::little : support::big,
       Disassembler.get(), InstPrinter.get(), dbgs());
 
+  std::string CheckLineStart = "# " + CheckName + ":";
   for (auto &CheckFile : CheckFiles) {
     auto CheckerFileBuf =
         ExitOnErr(errorOrToExpected(MemoryBuffer::getFile(CheckFile)));
-    if (!Checker.checkAllRulesInBuffer("# jitlink-check:", &*CheckerFileBuf))
+    if (!Checker.checkAllRulesInBuffer(CheckLineStart, &*CheckerFileBuf))
       ExitOnErr(make_error<StringError>(
           "Some checks in " + CheckFile + " failed", inconvertibleErrorCode()));
   }
@@ -576,8 +760,8 @@ Error runChecks(Session &S) {
 
 static void dumpSessionStats(Session &S) {
   if (ShowSizes)
-    outs() << "Total size of all atoms before pruning: " << S.SizeBeforePruning
-           << "\nTotal size of all atoms after fixups: " << S.SizeAfterFixups
+    outs() << "Total size of all blocks before pruning: " << S.SizeBeforePruning
+           << "\nTotal size of all blocks after fixups: " << S.SizeAfterFixups
            << "\n";
 }
 
@@ -585,24 +769,12 @@ static Expected<JITEvaluatedSymbol> getMainEntryPoint(Session &S) {
   return S.ES.lookup(S.JDSearchOrder, EntryPointName);
 }
 
-Expected<int> runEntryPoint(Session &S, JITEvaluatedSymbol EntryPoint) {
-  assert(EntryPoint.getAddress() && "Entry point address should not be null");
-
-  constexpr const char *JITProgramName = "<llvm-jitlink jit'd code>";
-  auto PNStorage = llvm::make_unique<char[]>(strlen(JITProgramName) + 1);
-  strcpy(PNStorage.get(), JITProgramName);
-
-  std::vector<const char *> EntryPointArgs;
-  EntryPointArgs.push_back(PNStorage.get());
-  for (auto &InputArg : InputArgv)
-    EntryPointArgs.push_back(InputArg.data());
-  EntryPointArgs.push_back(nullptr);
-
-  using MainTy = int (*)(int, const char *[]);
-  MainTy EntryPointPtr = reinterpret_cast<MainTy>(EntryPoint.getAddress());
-
-  return EntryPointPtr(EntryPointArgs.size() - 1, EntryPointArgs.data());
-}
+struct JITLinkTimers {
+  TimerGroup JITLinkTG{"llvm-jitlink timers", "timers for llvm-jitlink phases"};
+  Timer LoadObjectsTimer{"load", "time to load/add object files", JITLinkTG};
+  Timer LinkTimer{"link", "time to link object files", JITLinkTG};
+  Timer RunTimer{"run", "time to execute jitlink'd code", JITLinkTG};
+};
 
 int main(int argc, char *argv[]) {
   InitLLVM X(argc, argv);
@@ -614,6 +786,10 @@ int main(int argc, char *argv[]) {
   cl::ParseCommandLineOptions(argc, argv, "llvm jitlink tool");
   ExitOnErr.setBanner(std::string(argv[0]) + ": ");
 
+  /// If timers are enabled, create a JITLinkTimers instance.
+  std::unique_ptr<JITLinkTimers> Timers =
+      ShowTimes ? std::make_unique<JITLinkTimers>() : nullptr;
+
   Session S(getFirstFileTriple());
 
   ExitOnErr(sanitizeArguments(S));
@@ -622,9 +798,17 @@ int main(int argc, char *argv[]) {
     ExitOnErr(loadProcessSymbols(S));
   ExitOnErr(loadDylibs());
 
-  ExitOnErr(loadObjects(S));
 
-  auto EntryPoint = ExitOnErr(getMainEntryPoint(S));
+  {
+    TimeRegion TR(Timers ? &Timers->LoadObjectsTimer : nullptr);
+    ExitOnErr(loadObjects(S));
+  }
+
+  JITEvaluatedSymbol EntryPoint = 0;
+  {
+    TimeRegion TR(Timers ? &Timers->LinkTimer : nullptr);
+    EntryPoint = ExitOnErr(getMainEntryPoint(S));
+  }
 
   if (ShowAddrs)
     S.dumpSessionInfo(outs());
@@ -636,5 +820,13 @@ int main(int argc, char *argv[]) {
   if (NoExec)
     return 0;
 
-  return ExitOnErr(runEntryPoint(S, EntryPoint));
+  int Result = 0;
+  {
+    using MainTy = int (*)(int, char *[]);
+    auto EntryFn = jitTargetAddressToFunction<MainTy>(EntryPoint.getAddress());
+    TimeRegion TR(Timers ? &Timers->RunTimer : nullptr);
+    Result = runAsMain(EntryFn, InputArgv, StringRef(InputFiles.front()));
+  }
+
+  return Result;
 }

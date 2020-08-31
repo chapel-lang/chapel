@@ -75,7 +75,9 @@ TEST(ArrayRefTest, AllocatorCopy) {
   EXPECT_NE(makeArrayRef(Array3Src).data(), Array3Copy.data());
 }
 
-TEST(ArrayRefTest, SizeTSizedOperations) {
+// This test is pure UB given the ArrayRef<> implementation.
+// You are not allowed to produce non-null pointers given null base pointer.
+TEST(ArrayRefTest, DISABLED_SizeTSizedOperations) {
   ArrayRef<char> AR(nullptr, std::numeric_limits<ptrdiff_t>::max());
 
   // Check that drop_back accepts size_t-sized numbers.
@@ -248,6 +250,16 @@ TEST(ArrayRefTest, OwningArrayRef) {
   OwningArrayRef<int> A(makeArrayRef(A1));
   OwningArrayRef<int> B(std::move(A));
   EXPECT_EQ(A.data(), nullptr);
+}
+
+TEST(ArrayRefTest, makeArrayRefFromStdArray) {
+  std::array<int, 5> A1{{42, -5, 0, 1000000, -1000000}};
+  ArrayRef<int> A2 = makeArrayRef(A1);
+
+  EXPECT_EQ(A1.size(), A2.size());
+  for (std::size_t i = 0; i < A1.size(); ++i) {
+    EXPECT_EQ(A1[i], A2[i]);
+  }
 }
 
 static_assert(is_trivially_copyable<ArrayRef<int>>::value,

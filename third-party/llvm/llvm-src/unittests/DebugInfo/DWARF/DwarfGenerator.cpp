@@ -262,7 +262,7 @@ MCSymbol *dwarfgen::LineTable::writeDefaultPrologue(AsmPrinter &Asm) const {
   MCSymbol *UnitStart = Asm.createTempSymbol("line_unit_start");
   MCSymbol *UnitEnd = Asm.createTempSymbol("line_unit_end");
   if (Format == DwarfFormat::DWARF64) {
-    Asm.emitInt32(0xffffffff);
+    Asm.emitInt32((int)dwarf::DW_LENGTH_DWARF64);
     Asm.EmitLabelDifference(UnitEnd, UnitStart, 8);
   } else {
     Asm.EmitLabelDifference(UnitEnd, UnitStart, 4);
@@ -288,7 +288,7 @@ MCSymbol *dwarfgen::LineTable::writeDefaultPrologue(AsmPrinter &Asm) const {
 
 void dwarfgen::LineTable::writePrologue(AsmPrinter &Asm) const {
   if (Format == DwarfFormat::DWARF64) {
-    Asm.emitInt32(0xffffffff);
+    Asm.emitInt32((int)dwarf::DW_LENGTH_DWARF64);
     Asm.emitInt64(Prologue->TotalLength);
   } else {
     Asm.emitInt32(Prologue->TotalLength);
@@ -376,8 +376,9 @@ void dwarfgen::LineTable::writeProloguePayload(
 //===----------------------------------------------------------------------===//
 
 dwarfgen::Generator::Generator()
-    : MAB(nullptr), MCE(nullptr), MS(nullptr), StringPool(nullptr),
-      Abbreviations(Allocator) {}
+    : MAB(nullptr), MCE(nullptr), MS(nullptr), TLOF(nullptr),
+      StringPool(nullptr), Abbreviations(Allocator),
+      StringOffsetsStartSym(nullptr), Version(0) {}
 dwarfgen::Generator::~Generator() = default;
 
 llvm::Expected<std::unique_ptr<dwarfgen::Generator>>
@@ -409,7 +410,8 @@ llvm::Error dwarfgen::Generator::init(Triple TheTriple, uint16_t V) {
                                        TripleName,
                                    inconvertibleErrorCode());
 
-  MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName));
+  MCTargetOptions MCOptions = InitMCTargetOptionsFromFlags();
+  MAI.reset(TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
   if (!MAI)
     return make_error<StringError>("no asm info for target " + TripleName,
                                    inconvertibleErrorCode());
@@ -419,7 +421,6 @@ llvm::Error dwarfgen::Generator::init(Triple TheTriple, uint16_t V) {
     return make_error<StringError>("no subtarget info for target " + TripleName,
                                    inconvertibleErrorCode());
 
-  MCTargetOptions MCOptions = InitMCTargetOptionsFromFlags();
   MAB = TheTarget->createMCAsmBackend(*MSTI, *MRI, MCOptions);
   if (!MAB)
     return make_error<StringError>("no asm backend for target " + TripleName,
@@ -446,7 +447,7 @@ llvm::Error dwarfgen::Generator::init(Triple TheTriple, uint16_t V) {
     return make_error<StringError>("no code emitter for target " + TripleName,
                                    inconvertibleErrorCode());
 
-  Stream = make_unique<raw_svector_ostream>(FileBytes);
+  Stream = std::make_unique<raw_svector_ostream>(FileBytes);
 
   MS = TheTarget->createMCObjectStreamer(
       TheTriple, *MC, std::unique_ptr<MCAsmBackend>(MAB),
@@ -469,7 +470,7 @@ llvm::Error dwarfgen::Generator::init(Triple TheTriple, uint16_t V) {
   MC->setDwarfVersion(Version);
   Asm->setDwarfVersion(Version);
 
-  StringPool = llvm::make_unique<DwarfStringPool>(Allocator, *Asm, StringRef());
+  StringPool = std::make_unique<DwarfStringPool>(Allocator, *Asm, StringRef());
   StringOffsetsStartSym = Asm->createTempSymbol("str_offsets_base");
 
   return Error::success();
@@ -531,7 +532,7 @@ bool dwarfgen::Generator::saveFile(StringRef Path) {
   if (FileBytes.empty())
     return false;
   std::error_code EC;
-  raw_fd_ostream Strm(Path, EC, sys::fs::F_None);
+  raw_fd_ostream Strm(Path, EC, sys::fs::OF_None);
   if (EC)
     return false;
   Strm.write(FileBytes.data(), FileBytes.size());
@@ -541,12 +542,12 @@ bool dwarfgen::Generator::saveFile(StringRef Path) {
 
 dwarfgen::CompileUnit &dwarfgen::Generator::addCompileUnit() {
   CompileUnits.push_back(
-      make_unique<CompileUnit>(*this, Version, Asm->getPointerSize()));
+      std::make_unique<CompileUnit>(*this, Version, Asm->getPointerSize()));
   return *CompileUnits.back();
 }
 
 dwarfgen::LineTable &dwarfgen::Generator::addLineTable(DwarfFormat Format) {
   LineTables.push_back(
-      make_unique<LineTable>(Version, Format, Asm->getPointerSize()));
+      std::make_unique<LineTable>(Version, Format, Asm->getPointerSize()));
   return *LineTables.back();
 }

@@ -30,7 +30,7 @@ class TestAction : public ASTFrontendAction {
     void FlushDiagnosticsImpl(std::vector<const PathDiagnostic *> &Diags,
                               FilesMade *filesMade) override {
       for (const auto *PD : Diags)
-        Output << PD->getCheckName() << ":" << PD->getShortDescription();
+        Output << PD->getCheckerName() << ":" << PD->getShortDescription();
     }
 
     StringRef getName() const override { return "Test"; }
@@ -46,7 +46,7 @@ public:
     std::unique_ptr<AnalysisASTConsumer> AnalysisConsumer =
         CreateAnalysisConsumer(Compiler);
     AnalysisConsumer->AddDiagnosticConsumer(new DiagConsumer(DiagsOutput));
-    Compiler.getAnalyzerOpts()->CheckersControlList = {
+    Compiler.getAnalyzerOpts()->CheckersAndPackages = {
         {"custom.CustomChecker", true}};
     AnalysisConsumer->AddCheckerRegistrationFn([](CheckerRegistry &Registry) {
       Registry.addChecker<CheckerT>("custom.CustomChecker", "Description", "");
@@ -58,7 +58,8 @@ public:
 template <typename CheckerT>
 bool runCheckerOnCode(const std::string &Code, std::string &Diags) {
   llvm::raw_string_ostream OS(Diags);
-  return tooling::runToolOnCode(new TestAction<CheckerT>(OS), Code);
+  return tooling::runToolOnCode(std::make_unique<TestAction<CheckerT>>(OS),
+                                Code);
 }
 template <typename CheckerT>
 bool runCheckerOnCode(const std::string &Code) {

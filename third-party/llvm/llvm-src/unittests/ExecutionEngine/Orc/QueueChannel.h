@@ -9,9 +9,10 @@
 #ifndef LLVM_UNITTESTS_EXECUTIONENGINE_ORC_QUEUECHANNEL_H
 #define LLVM_UNITTESTS_EXECUTIONENGINE_ORC_QUEUECHANNEL_H
 
-#include "llvm/ExecutionEngine/Orc/RawByteChannel.h"
+#include "llvm/ExecutionEngine/Orc/RPC/RawByteChannel.h"
 #include "llvm/Support/Error.h"
 
+#include <atomic>
 #include <condition_variable>
 #include <queue>
 
@@ -80,6 +81,30 @@ public:
   QueueChannel(QueueChannel&&) = delete;
   QueueChannel& operator=(QueueChannel&&) = delete;
 
+  template <typename FunctionIdT, typename SequenceIdT>
+  Error startSendMessage(const FunctionIdT &FnId, const SequenceIdT &SeqNo) {
+    ++InFlightOutgoingMessages;
+    return orc::rpc::RawByteChannel::startSendMessage(FnId, SeqNo);
+  }
+
+  Error endSendMessage() {
+    --InFlightOutgoingMessages;
+    ++CompletedOutgoingMessages;
+    return orc::rpc::RawByteChannel::endSendMessage();
+  }
+
+  template <typename FunctionIdT, typename SequenceNumberT>
+  Error startReceiveMessage(FunctionIdT &FnId, SequenceNumberT &SeqNo) {
+    ++InFlightIncomingMessages;
+    return orc::rpc::RawByteChannel::startReceiveMessage(FnId, SeqNo);
+  }
+
+  Error endReceiveMessage() {
+    --InFlightIncomingMessages;
+    ++CompletedIncomingMessages;
+    return orc::rpc::RawByteChannel::endReceiveMessage();
+  }
+
   Error readBytes(char *Dst, unsigned Size) override {
     std::unique_lock<std::mutex> Lock(InQueue->getMutex());
     while (Size) {
@@ -112,7 +137,10 @@ public:
     return Error::success();
   }
 
-  Error send() override { return Error::success(); }
+  Error send() override {
+    ++SendCalls;
+    return Error::success();
+  }
 
   void close() {
     auto ChannelClosed = []() { return make_error<QueueChannelClosedError>(); };
@@ -124,6 +152,11 @@ public:
 
   uint64_t NumWritten = 0;
   uint64_t NumRead = 0;
+  std::atomic<size_t> InFlightIncomingMessages{0};
+  std::atomic<size_t> CompletedIncomingMessages{0};
+  std::atomic<size_t> InFlightOutgoingMessages{0};
+  std::atomic<size_t> CompletedOutgoingMessages{0};
+  std::atomic<size_t> SendCalls{0};
 
 private:
 
@@ -135,8 +168,8 @@ inline std::pair<std::unique_ptr<QueueChannel>, std::unique_ptr<QueueChannel>>
 createPairedQueueChannels() {
   auto Q1 = std::make_shared<Queue>();
   auto Q2 = std::make_shared<Queue>();
-  auto C1 = llvm::make_unique<QueueChannel>(Q1, Q2);
-  auto C2 = llvm::make_unique<QueueChannel>(Q2, Q1);
+  auto C1 = std::make_unique<QueueChannel>(Q1, Q2);
+  auto C2 = std::make_unique<QueueChannel>(Q2, Q1);
   return std::make_pair(std::move(C1), std::move(C2));
 }
 

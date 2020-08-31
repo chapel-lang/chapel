@@ -92,7 +92,7 @@ The test are written in C based languages or in LLVM assembly language.
 
 These tests are compiled and run under a debugger. The debugger output
 is checked to validate of debugging information. See README.txt in the
-test suite for more information . This test suite is located in the
+test suite for more information. This test suite is located in the
 ``debuginfo-tests`` Subversion module.
 
 Quick start
@@ -548,6 +548,13 @@ RUN lines:
    ``i686-pc-win32`` target, ``%itanium_abi_triple`` will expand to
    ``i686-pc-mingw32``. This allows a test to run with a specific ABI without
    constraining it to a specific triple.
+
+**FileCheck-specific substitutions:**
+
+``%ProtectFileCheckOutput``
+   This should precede a ``FileCheck`` call if and only if the call's textual
+   output affects test results.  It's usually easy to tell: just look for
+   redirection or piping of the ``FileCheck`` call's stdout or stderr.
 
 To add more substituations, look at ``test/lit.cfg`` or ``lit.local.cfg``.
 

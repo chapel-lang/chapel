@@ -1,11 +1,13 @@
-add_llvm_library(LLVMTextAPI
+add_llvm_component_library(LLVMTextAPI
   ELF/ELFStub.cpp
   ELF/TBEHandler.cpp
   MachO/Architecture.cpp
   MachO/ArchitectureSet.cpp
   MachO/InterfaceFile.cpp
   MachO/PackedVersion.cpp
+  MachO/Platform.cpp
   MachO/Symbol.cpp
+  MachO/Target.cpp
   MachO/TextStub.cpp
   MachO/TextStubCommon.cpp
 

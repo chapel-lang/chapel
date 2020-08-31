@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "../lib/Transforms/Vectorize/VPlan.h"
-#include "../lib/Transforms/Vectorize/VPlanHCFGTransforms.h"
+#include "../lib/Transforms/Vectorize/VPlanTransforms.h"
 #include "VPlanTestBase.h"
 #include "gtest/gtest.h"
 
@@ -89,8 +89,8 @@ TEST_F(VPlanHCFGTest, testBuildHCFGInnerLoop) {
 
   LoopVectorizationLegality::InductionList Inductions;
   SmallPtrSet<Instruction *, 1> DeadInstructions;
-  VPlanHCFGTransforms::VPInstructionsToVPRecipes(Plan, &Inductions,
-                                                 DeadInstructions);
+  VPlanTransforms::VPInstructionsToVPRecipes(LI->getLoopFor(LoopHeader), Plan,
+                                             &Inductions, DeadInstructions);
 }
 
 TEST_F(VPlanHCFGTest, testVPInstructionToVPRecipesInner) {
@@ -119,8 +119,8 @@ TEST_F(VPlanHCFGTest, testVPInstructionToVPRecipesInner) {
 
   LoopVectorizationLegality::InductionList Inductions;
   SmallPtrSet<Instruction *, 1> DeadInstructions;
-  VPlanHCFGTransforms::VPInstructionsToVPRecipes(Plan, &Inductions,
-                                                 DeadInstructions);
+  VPlanTransforms::VPInstructionsToVPRecipes(LI->getLoopFor(LoopHeader), Plan,
+                                             &Inductions, DeadInstructions);
 
   VPBlockBase *Entry = Plan->getEntry()->getEntryBasicBlock();
   EXPECT_NE(nullptr, Entry->getSingleSuccessor());
@@ -136,7 +136,7 @@ TEST_F(VPlanHCFGTest, testVPInstructionToVPRecipesInner) {
   auto *Phi = dyn_cast<VPWidenPHIRecipe>(&*Iter++);
   EXPECT_NE(nullptr, Phi);
 
-  auto *Idx = dyn_cast<VPWidenRecipe>(&*Iter++);
+  auto *Idx = dyn_cast<VPWidenGEPRecipe>(&*Iter++);
   EXPECT_NE(nullptr, Idx);
 
   auto *Load = dyn_cast<VPWidenMemoryInstructionRecipe>(&*Iter++);

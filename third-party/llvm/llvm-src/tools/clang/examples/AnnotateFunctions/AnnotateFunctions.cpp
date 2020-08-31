@@ -14,6 +14,7 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/Attr.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/LexDiagnostic.h"
 using namespace clang;
@@ -41,7 +42,7 @@ class AnnotateFunctionsAction : public PluginASTAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  llvm::StringRef) override {
-    return llvm::make_unique<AnnotateFunctionsConsumer>();
+    return std::make_unique<AnnotateFunctionsConsumer>();
   }
 
   bool ParseArgs(const CompilerInstance &CI,

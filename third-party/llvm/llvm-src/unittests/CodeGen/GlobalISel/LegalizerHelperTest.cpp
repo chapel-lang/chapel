@@ -26,6 +26,7 @@ public:
 // Test CTTZ expansion when CTTZ_ZERO_UNDEF is legal or custom,
 // in which case it becomes CTTZ_ZERO_UNDEF with select.
 TEST_F(GISelMITest, LowerBitCountingCTTZ0) {
+  setUp();
   if (!TM)
     return;
 
@@ -57,6 +58,7 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ0) {
 
 // CTTZ expansion in terms of CTLZ
 TEST_F(GISelMITest, LowerBitCountingCTTZ1) {
+  setUp();
   if (!TM)
     return;
 
@@ -90,6 +92,7 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ1) {
 
 // CTTZ expansion in terms of CTPOP
 TEST_F(GISelMITest, LowerBitCountingCTTZ2) {
+  setUp();
   if (!TM)
     return;
 
@@ -185,6 +188,7 @@ TEST_F(GISelMITest, WidenBitCountingCTPOP2) {
 
 // CTTZ_ZERO_UNDEF expansion in terms of CTTZ
 TEST_F(GISelMITest, LowerBitCountingCTTZ3) {
+  setUp();
   if (!TM)
     return;
 
@@ -211,6 +215,7 @@ TEST_F(GISelMITest, LowerBitCountingCTTZ3) {
 
 // CTLZ expansion in terms of CTLZ_ZERO_UNDEF
 TEST_F(GISelMITest, LowerBitCountingCTLZ0) {
+  setUp();
   if (!TM)
     return;
 
@@ -241,6 +246,7 @@ TEST_F(GISelMITest, LowerBitCountingCTLZ0) {
 
 // CTLZ expansion in terms of CTLZ_ZERO_UNDEF if the latter is a libcall
 TEST_F(GISelMITest, LowerBitCountingCTLZLibcall) {
+  setUp();
   if (!TM)
     return;
 
@@ -271,6 +277,7 @@ TEST_F(GISelMITest, LowerBitCountingCTLZLibcall) {
 
 // CTLZ expansion
 TEST_F(GISelMITest, LowerBitCountingCTLZ1) {
+  setUp();
   if (!TM)
     return;
 
@@ -311,6 +318,7 @@ TEST_F(GISelMITest, LowerBitCountingCTLZ1) {
 
 // CTLZ widening.
 TEST_F(GISelMITest, WidenBitCountingCTLZ) {
+  setUp();
   if (!TM)
     return;
 
@@ -345,6 +353,7 @@ TEST_F(GISelMITest, WidenBitCountingCTLZ) {
 
 // CTLZ_ZERO_UNDEF widening.
 TEST_F(GISelMITest, WidenBitCountingCTLZZeroUndef) {
+  setUp();
   if (!TM)
     return;
 
@@ -380,6 +389,7 @@ TEST_F(GISelMITest, WidenBitCountingCTLZZeroUndef) {
 
 // CTPOP widening.
 TEST_F(GISelMITest, WidenBitCountingCTPOP) {
+  setUp();
   if (!TM)
     return;
 
@@ -412,6 +422,7 @@ TEST_F(GISelMITest, WidenBitCountingCTPOP) {
 
 // CTTZ_ZERO_UNDEF widening.
 TEST_F(GISelMITest, WidenBitCountingCTTZ_ZERO_UNDEF) {
+  setUp();
   if (!TM)
     return;
 
@@ -445,6 +456,7 @@ TEST_F(GISelMITest, WidenBitCountingCTTZ_ZERO_UNDEF) {
 
 // CTTZ widening.
 TEST_F(GISelMITest, WidenBitCountingCTTZ) {
+  setUp();
   if (!TM)
     return;
 
@@ -478,6 +490,7 @@ TEST_F(GISelMITest, WidenBitCountingCTTZ) {
 }
 // UADDO widening.
 TEST_F(GISelMITest, WidenUADDO) {
+  setUp();
   if (!TM)
     return;
 
@@ -516,6 +529,7 @@ TEST_F(GISelMITest, WidenUADDO) {
 
 // USUBO widening.
 TEST_F(GISelMITest, WidenUSUBO) {
+  setUp();
   if (!TM)
     return;
 
@@ -949,8 +963,7 @@ TEST_F(GISelMITest, LowerMergeValues) {
   for (int I = 0; I != 2; ++I)
     Merge2Ops.push_back(B.buildConstant(S8, I).getReg(0));
 
-    auto Merge2 = B.buildMerge(S16, Merge2Ops);
-
+  auto Merge2 = B.buildMerge(S16, Merge2Ops);
 
   EXPECT_EQ(LegalizerHelper::LegalizeResult::Legalized,
             Helper.widenScalar(*Merge0, 1, S9));
@@ -1004,5 +1017,166 @@ TEST_F(GISelMITest, LowerMergeValues) {
   )";
 
   EXPECT_TRUE(CheckMachineFunction(*MF, CheckStr)) << *MF;
+}
+
+TEST_F(GISelMITest, WidenScalarMergeValuesPointer) {
+  if (!TM)
+    return;
+
+  DefineLegalizerInfo(A, {});
+
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  B.setInsertPt(*EntryMBB, EntryMBB->end());
+
+  const LLT S32 = LLT::scalar(32);
+  const LLT S64 = LLT::scalar(64);
+  const LLT P0 = LLT::pointer(0, 64);
+
+  auto Lo = B.buildTrunc(S32, Copies[0]);
+  auto Hi = B.buildTrunc(S32, Copies[1]);
+
+  auto Merge = B.buildMerge(P0, {Lo.getReg(0), Hi.getReg(0)});
+
+  EXPECT_EQ(LegalizerHelper::LegalizeResult::Legalized,
+            Helper.widenScalar(*Merge, 1, S64));
+
+  auto CheckStr = R"(
+   CHECK: [[TRUNC0:%[0-9]+]]:_(s32) = G_TRUNC
+   CHECK: [[TRUNC1:%[0-9]+]]:_(s32) = G_TRUNC
+   CHECK: [[ZEXT_TRUNC0:%[0-9]+]]:_(s64) = G_ZEXT [[TRUNC0]]
+   CHECK: [[ZEXT_TRUNC1:%[0-9]+]]:_(s64) = G_ZEXT [[TRUNC1]]
+   CHECK: [[SHIFT_AMT:%[0-9]+]]:_(s64) = G_CONSTANT i64 32
+   CHECK: [[SHL:%[0-9]+]]:_(s64) = G_SHL [[ZEXT_TRUNC1]]:_, [[SHIFT_AMT]]
+   CHECK: [[OR:%[0-9]+]]:_(s64) = G_OR [[ZEXT_TRUNC0]]:_, [[SHL]]
+   CHECK: [[INTTOPTR:%[0-9]+]]:_(p0) = G_INTTOPTR [[OR]]:_(s64)
+  )";
+
+  EXPECT_TRUE(CheckMachineFunction(*MF, CheckStr)) << *MF;
+}
+
+TEST_F(GISelMITest, WidenSEXTINREG) {
+  if (!TM)
+    return;
+
+  // Declare your legalization info
+  DefineLegalizerInfo(A, {
+    getActionDefinitionsBuilder(G_SEXT_INREG).legalForTypeWithAnyImm({s64});
+  });
+  // Build Instr
+  auto MIB = B.buildInstr(
+      TargetOpcode::G_SEXT_INREG, {LLT::scalar(32)},
+      {B.buildInstr(TargetOpcode::G_TRUNC, {LLT::scalar(32)}, {Copies[0]}),
+       uint64_t(8)});
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  // Perform Legalization
+  ASSERT_TRUE(Helper.widenScalar(*MIB, 0, LLT::scalar(64)) ==
+              LegalizerHelper::LegalizeResult::Legalized);
+
+  auto CheckStr = R"(
+  CHECK: [[T0:%[0-9]+]]:_(s32) = G_TRUNC
+  CHECK: [[T1:%[0-9]+]]:_(s64) = G_ANYEXT [[T0]]:_(s32)
+  CHECK: [[T2:%[0-9]+]]:_(s64) = G_SEXT_INREG [[T1]]:_, 8
+  CHECK: [[T3:%[0-9]+]]:_(s32) = G_TRUNC [[T2]]:_(s64)
+  )";
+
+  // Check
+  ASSERT_TRUE(CheckMachineFunction(*MF, CheckStr));
+}
+
+TEST_F(GISelMITest, NarrowSEXTINREG) {
+  if (!TM)
+    return;
+
+  // Declare your legalization info, these aren't actually relevant to the test.
+  DefineLegalizerInfo(A, {
+    getActionDefinitionsBuilder(G_SEXT_INREG).legalForTypeWithAnyImm({s64});
+  });
+  // Build Instr
+  auto MIB = B.buildInstr(
+      TargetOpcode::G_SEXT_INREG, {LLT::scalar(16)},
+      {B.buildInstr(TargetOpcode::G_TRUNC, {LLT::scalar(16)}, {Copies[0]}),
+       uint64_t(8)});
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  // Perform Legalization
+  ASSERT_TRUE(Helper.narrowScalar(*MIB, 0, LLT::scalar(10)) ==
+              LegalizerHelper::LegalizeResult::Legalized);
+
+  auto CheckStr = R"(
+  CHECK: [[T0:%[0-9]+]]:_(s16) = G_TRUNC
+  CHECK: [[T1:%[0-9]+]]:_(s10) = G_TRUNC [[T0]]:_(s16)
+  CHECK: [[T2:%[0-9]+]]:_(s10) = G_SEXT_INREG [[T1]]:_, 8
+  CHECK: [[T3:%[0-9]+]]:_(s16) = G_SEXT [[T2]]:_(s10)
+  )";
+
+  // Check
+  ASSERT_TRUE(CheckMachineFunction(*MF, CheckStr));
+}
+
+TEST_F(GISelMITest, NarrowSEXTINREG2) {
+  if (!TM)
+    return;
+
+  // Declare your legalization info, these aren't actually relevant to the test.
+  DefineLegalizerInfo(
+      A, { getActionDefinitionsBuilder(G_SEXT_INREG).legalForTypeWithAnyImm({s64}); });
+  // Build Instr
+  auto MIB = B.buildInstr(
+      TargetOpcode::G_SEXT_INREG, {LLT::scalar(32)},
+      {B.buildInstr(TargetOpcode::G_TRUNC, {LLT::scalar(32)}, {Copies[0]}),
+       uint64_t(9)});
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  // Perform Legalization
+  ASSERT_TRUE(Helper.narrowScalar(*MIB, 0, LLT::scalar(8)) ==
+              LegalizerHelper::LegalizeResult::Legalized);
+
+  auto CheckStr = R"(
+  CHECK: [[T0:%[0-9]+]]:_(s32) = G_TRUNC
+  CHECK: [[T1:%[0-9]+]]:_(s8), [[T2:%[0-9]+]]:_(s8), [[T3:%[0-9]+]]:_(s8), [[T4:%[0-9]+]]:_(s8) = G_UNMERGE_VALUES [[T0]]:_(s32)
+  CHECK: [[CST2:%[0-9]+]]:_(s8) = G_CONSTANT i8 7
+  CHECK: [[T5:%[0-9]+]]:_(s8) = G_SEXT_INREG [[T2]]:_, 1
+  CHECK: [[T6:%[0-9]+]]:_(s8) = G_ASHR [[T5]]:_, [[CST2]]:_
+  CHECK: [[T7:%[0-9]+]]:_(s32) = G_MERGE_VALUES [[T1]]:_(s8), [[T5]]:_(s8), [[T6]]:_(s8), [[T6]]:_(s8)
+  )";
+
+  // Check
+  ASSERT_TRUE(CheckMachineFunction(*MF, CheckStr));
+}
+
+TEST_F(GISelMITest, LowerSEXTINREG) {
+  if (!TM)
+    return;
+
+  // Declare your legalization info, these aren't actually relevant to the test.
+  DefineLegalizerInfo(
+      A, { getActionDefinitionsBuilder(G_SEXT_INREG).legalForTypeWithAnyImm({s64}); });
+  // Build Instr
+  auto MIB = B.buildInstr(
+      TargetOpcode::G_SEXT_INREG, {LLT::scalar(32)},
+      {B.buildInstr(TargetOpcode::G_TRUNC, {LLT::scalar(32)}, {Copies[0]}),
+       uint64_t(8)});
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  // Perform Legalization
+  ASSERT_TRUE(Helper.lower(*MIB, 0, LLT()) ==
+              LegalizerHelper::LegalizeResult::Legalized);
+
+  auto CheckStr = R"(
+  CHECK: [[T1:%[0-9]+]]:_(s32) = G_TRUNC
+  CHECK: [[CST:%[0-9]+]]:_(s32) = G_CONSTANT i32 24
+  CHECK: [[T2:%[0-9]+]]:_(s32) = G_SHL [[T1]]:_, [[CST]]:_
+  CHECK: [[T3:%[0-9]+]]:_(s32) = G_ASHR [[T2]]:_, [[CST]]:_
+  )";
+
+  // Check
+  ASSERT_TRUE(CheckMachineFunction(*MF, CheckStr));
 }
 } // namespace

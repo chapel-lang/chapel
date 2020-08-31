@@ -23,6 +23,7 @@ add_public_tablegen_target(X86CommonTableGen)
 
 set(sources
   X86AsmPrinter.cpp
+  X86AvoidTrailingCall.cpp
   X86CallFrameOptimization.cpp
   X86CallingConv.cpp
   X86CallLowering.cpp
@@ -43,6 +44,7 @@ set(sources
   X86ISelDAGToDAG.cpp
   X86ISelLowering.cpp
   X86IndirectBranchTracking.cpp
+  X86IndirectThunks.cpp
   X86InterleavedAccess.cpp
   X86InsertPrefetch.cpp
   X86InstrFMA3Info.cpp
@@ -50,6 +52,8 @@ set(sources
   X86InstrInfo.cpp
   X86EvexToVex.cpp
   X86LegalizerInfo.cpp
+  X86LoadValueInjectionLoadHardening.cpp
+  X86LoadValueInjectionRetHardening.cpp
   X86MCInstLower.cpp
   X86MachineFunctionInfo.cpp
   X86MacroFusion.cpp
@@ -57,7 +61,6 @@ set(sources
   X86PadShortFunction.cpp
   X86RegisterBankInfo.cpp
   X86RegisterInfo.cpp
-  X86RetpolineThunks.cpp
   X86SelectionDAGInfo.cpp
   X86ShuffleDecodeConstantPool.cpp
   X86SpeculativeLoadHardening.cpp

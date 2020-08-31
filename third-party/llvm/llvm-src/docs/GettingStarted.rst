@@ -8,35 +8,30 @@ Getting Started with the LLVM System
 Overview
 ========
 
-Welcome to the LLVM project! In order to get started, you first need to know
-some basic information.
+Welcome to the LLVM project!
 
-First, the LLVM project has multiple components. The core of the project is
+The LLVM project has multiple components. The core of the project is
 itself called "LLVM". This contains all of the tools, libraries, and header
-files needed to process an intermediate representation and convert it into
-object files.  It contains an assembler, disassembler, bitcode analyzer and
+files needed to process intermediate representations and converts it into
+object files.  Tools include an assembler, disassembler, bitcode analyzer, and
 bitcode optimizer.  It also contains basic regression tests.
 
-Another piece is the `Clang <http://clang.llvm.org/>`_ front end.  This
+C-like languages use the `Clang <http://clang.llvm.org/>`_ front end.  This
 component compiles C, C++, Objective C, and Objective C++ code into LLVM bitcode
 -- and from there into object files, using LLVM.
 
-There are other components as well:
+Other components include:
 the `libc++ C++ standard library <https://libcxx.llvm.org>`_,
 the `LLD linker <https://lld.llvm.org>`_, and more.
 
-Getting Started Quickly (A Summary)
-===================================
+Getting the Source Code and Building LLVM
+=========================================
 
-The LLVM Getting Started documentation may be out of date.  So, the `Clang
-Getting Started <http://clang.llvm.org/get_started.html>`_ page might also be a
-good place to start.
+The LLVM Getting Started documentation may be out of date.  The `Clang
+Getting Started <http://clang.llvm.org/get_started.html>`_ page might have more
+accurate information.
 
-Here's the short story for getting up and running quickly with LLVM:
-
-#. Read the documentation.
-#. Read the documentation.
-#. Remember that you were warned twice about reading the documentation.
+This is an example workflow and configuration to get and build the LLVM source:
 
 #. Checkout LLVM (including related subprojects like Clang):
 
@@ -90,12 +85,12 @@ Here's the short story for getting up and running quickly with LLVM:
      * CMake will generate build targets for each tool and library, and most
        LLVM sub-projects generate their own ``check-<project>`` target.
 
-     * Running a serial build will be *slow*.  Make sure you run a parallel
-       build. That's already done by default in Ninja; for ``make``, use
-       ``make -j NNN`` (with an appropriate value of NNN, e.g. number of CPUs
-       you have.)
+     * Running a serial build will be *slow*.  To improve speed, try running a
+       parallel build. That's done by default in Ninja; for ``make``, use
+       ``make -j NNN`` (NNN is the number of parallel jobs, use e.g. number of
+       CPUs you have.)
 
-   * For more information see `CMake <CMake.html>`_
+   * For more information see `CMake <CMake.html>`__
 
    * If you get an "internal compiler error (ICE)" or test failures, see
      `below`_.
@@ -122,6 +117,7 @@ OS                 Arch                  Compilers
 Linux              x86\ :sup:`1`         GCC, Clang
 Linux              amd64                 GCC, Clang
 Linux              ARM                   GCC, Clang
+Linux              Mips                  GCC, Clang
 Linux              PowerPC               GCC, Clang
 Solaris            V9 (Ultrasparc)       GCC
 FreeBSD            x86\ :sup:`1`         GCC, Clang
@@ -169,10 +165,11 @@ uses the package and provides other details.
 =========================================================== ============ ==========================================
 Package                                                     Version      Notes
 =========================================================== ============ ==========================================
-`GNU Make <http://savannah.gnu.org/projects/make>`_         3.79, 3.79.1 Makefile/build processor
+`CMake <http://cmake.org/>`__                               >=3.4.3      Makefile/workspace generator
 `GCC <http://gcc.gnu.org/>`_                                >=5.1.0      C/C++ compiler\ :sup:`1`
 `python <http://www.python.org/>`_                          >=2.7        Automated test suite\ :sup:`2`
 `zlib <http://zlib.net>`_                                   >=1.2.3.4    Compression library\ :sup:`3`
+`GNU Make <http://savannah.gnu.org/projects/make>`_         3.79, 3.79.1 Makefile/build processor\ :sup:`4`
 =========================================================== ============ ==========================================
 
 .. note::
@@ -184,6 +181,7 @@ Package                                                     Version      Notes
       ``llvm/test`` directory.
    #. Optional, adds compression / uncompression capabilities to selected LLVM
       tools.
+   #. Optional, you can use any other build tool supported by CMake.
 
 Additionally, your compilation host is expected to have the usual plethora of
 Unix utilities. Specifically:
@@ -231,15 +229,6 @@ popular host toolchains for specific minimum versions in our build systems:
 * Clang 3.5
 * Apple Clang 6.0
 * GCC 5.1
-* Visual Studio 2017
-
-The below versions currently soft-error as we transition to the new compiler
-versions listed above. The LLVM codebase is currently known to compile correctly
-with the following compilers, though this will change in the near future:
-
-* Clang 3.1
-* Apple Clang 3.1
-* GCC 4.8
 * Visual Studio 2017
 
 Anything older than these toolchains *may* work, but will require forcing the
@@ -501,55 +490,31 @@ in order to update the last commit with all pending changes.
 For developers to commit changes from Git
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A helper script is provided in ``llvm/utils/git-svn/git-llvm``. After you add it
-to your path, you can push committed changes upstream with ``git llvm
-push``. While this creates a Subversion checkout and patches it under the hood,
-it does not require you to have interaction with it.
+Once a patch is reviewed, you should rebase it, re-test locally, and commit the
+changes to LLVM's master branch. This is done using `git push` if you have the
+required access rights. See `committing a change
+<Phabricator.html#committing-a-change>`_ for Phabricator based commits or
+`obtaining commit access <DeveloperPolicy.html#obtaining-commit-access>`_
+for commit access.
 
-.. code-block:: console
+LLVM currently has a linear-history policy, which means that merge commits are
+not allowed. The `llvm-project` repo on github is configured to reject pushes
+that include merges, so the `git rebase` step above is required.
 
-  % export PATH=$PATH:$TOP_LEVEL_DIR/llvm-project/llvm/utils/git-svn/
-  % git llvm push
+Reverting a change
+^^^^^^^^^^^^^^^^^^
 
-Within a couple minutes after pushing to subversion, the svn commit will have
-been converted back to a Git commit, and made its way into the official Git
-repository. At that point, ``git pull`` should get back the changes as they were
-committed.
-
-You'll likely want to ``git pull --rebase`` to get the official git commit
-downloaded back to your repository. The SVN revision numbers of each commit can
-be found at the end of the commit message, e.g. ``llvm-svn: 350914``.
-
-You may also find the ``-n`` flag useful, like ``git llvm push -n``. This runs
-through all the steps of committing _without_ actually doing the commit, and
-tell you what it would have done. That can be useful if you're unsure whether
-the right thing will happen.
-
-Reverting a change when using Git
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you're using Git and need to revert a patch, Git needs to be supplied a
-commit hash, not an svn revision. To make things easier, you can use
-``git llvm revert`` to revert with either an SVN revision or a Git hash instead.
-
-Additionally, you can first run with ``git llvm revert -n`` to print which Git
-commands will run, without doing anything.
-
-Running ``git llvm revert`` will only revert things in your local repository. To
-push the revert upstream, you still need to run ``git llvm push`` as described
-earlier.
-
-.. code-block:: console
-
-  % git llvm revert rNNNNNN       # Revert by SVN id
-  % git llvm revert abcdef123456  # Revert by Git commit hash
-  % git llvm revert -n rNNNNNN    # Print the commands without doing anything
+When reverting changes using git, the default message will say "This reverts
+commit XYZ". Leave this at the end of the commit message, but add some details
+before it as to why the commit is being reverted. A brief explanation and/or
+links to bots that demonstrate the problem are sufficient.
 
 Checkout via SVN (deprecated)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Until we have fully migrated to Git, you may also get a fresh copy of
-the code from the official Subversion repository.
+The SVN repository is no longer updated, but it is still available for now. If
+you need to check the code out of SVN rather than git for some reason, you can
+do it like so:
 
 * ``cd where-you-want-llvm-to-live``
 * Read-Only: ``svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm``
@@ -633,7 +598,8 @@ used by people developing LLVM.
 |                         | default set of LLVM components that can be         |
 |                         | overridden with ``LLVM_DYLIB_COMPONENTS``. The     |
 |                         | default contains most of LLVM and is defined in    |
-|                         | ``tools/llvm-shlib/CMakelists.txt``.               |
+|                         | ``tools/llvm-shlib/CMakelists.txt``. This option is|
+|                         | not avialable on Windows.                          |
 +-------------------------+----------------------------------------------------+
 | LLVM_OPTIMIZED_TABLEGEN | Builds a release tablegen that gets used during    |
 |                         | the LLVM build. This can dramatically speed up     |

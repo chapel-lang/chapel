@@ -16,6 +16,11 @@ external add_aggressive_dce
   : [< Llvm.PassManager.any ] Llvm.PassManager.t -> unit
   = "llvm_add_aggressive_dce"
 
+(** See the [llvm::createDCEPass] function. *)
+external add_dce
+  : [< Llvm.PassManager.any ] Llvm.PassManager.t -> unit
+  = "llvm_add_dce"
+
 (** See the [llvm::createAlignmentFromAssumptionsPass] function. *)
 external add_alignment_from_assumptions
   : [< Llvm.PassManager.any ] Llvm.PassManager.t -> unit
@@ -185,6 +190,11 @@ external add_early_cse
 external add_lower_expect_intrinsic
   : [< Llvm.PassManager.any ] Llvm.PassManager.t -> unit
   = "llvm_add_lower_expect_intrinsic"
+
+(** See the [llvm::createLowerConstantIntrinsicsPass] function. *)
+external add_lower_constant_intrinsics
+  : [< Llvm.PassManager.any ] Llvm.PassManager.t -> unit
+  = "llvm_add_lower_constant_intrinsics"
 
 (** See the [llvm::createTypeBasedAliasAnalysisPass] function. *)
 external add_type_based_alias_analysis

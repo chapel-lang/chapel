@@ -166,6 +166,8 @@ unix_toolchain("unix") {
   }
 }
 
+# This template defines a toolchain that uses just-built clang and lld
+# as compiler and linker.
 template("stage2_unix_toolchain") {
   unix_toolchain(target_name) {
     forward_variables_from(invoker, "*")
@@ -201,6 +203,15 @@ if (android_ndk_path != "") {
     toolchain_args = {
       current_os = "android"
       current_cpu = "arm64"
+      is_clang = true
+      use_lld = true
+    }
+  }
+
+  stage2_unix_toolchain("stage2_android_arm") {
+    toolchain_args = {
+      current_os = "android"
+      current_cpu = "arm"
       is_clang = true
       use_lld = true
     }
@@ -263,6 +274,7 @@ toolchain("win") {
       dllfile,
       libfile,
     ]
+    lib_switch = ""
     default_output_extension = ".dll"
     restat = true
 
@@ -285,6 +297,7 @@ toolchain("win") {
     outputs = [
       dllfile,
     ]
+    lib_switch = ""
     runtime_outputs = outputs
     default_output_extension = ".dll"
 
@@ -300,6 +313,7 @@ toolchain("win") {
     outputs = [
       outfile,
     ]
+    lib_switch = ""
     default_output_extension = ".exe"
 
     # Setting this allows targets to override the default executable output by

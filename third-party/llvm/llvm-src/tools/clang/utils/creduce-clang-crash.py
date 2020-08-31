@@ -30,6 +30,7 @@ def verbose_print(*args, **kwargs):
     print(*args, **kwargs)
 
 def check_file(fname):
+  fname = os.path.normpath(fname)
   if not os.path.isfile(fname):
     sys.exit("ERROR: %s does not exist" % (fname))
   return fname
@@ -40,6 +41,8 @@ def check_cmd(cmd_name, cmd_dir, cmd_path=None):
   or absolute path to cmd_dir/cmd_name.
   """
   if cmd_path:
+    # Make the path absolute so the creduce test can be run from any directory.
+    cmd_path = os.path.abspath(cmd_path)
     cmd = find_executable(cmd_path)
     if cmd:
       return cmd
@@ -130,7 +133,7 @@ class Reduce(object):
                r"fatal error: error in backend: (.+)",
                r"LLVM ERROR: (.+)",
                r"UNREACHABLE executed (at .+)?!",
-               r"LLVM IR generation of ceclaration '(.+)'",
+               r"LLVM IR generation of declaration '(.+)'",
                r"Generating code for declaration '(.+)'",
                r"\*\*\* Bad machine code: (.+) \*\*\*"]
     for msg_re in regexes:

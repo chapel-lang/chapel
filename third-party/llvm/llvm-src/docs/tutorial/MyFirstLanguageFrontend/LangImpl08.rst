@@ -1,5 +1,3 @@
-:orphan:
-
 ========================================
  Kaleidoscope: Compiling to Object Code
 ========================================
@@ -144,7 +142,7 @@ our file to:
 
   auto Filename = "output.o";
   std::error_code EC;
-  raw_fd_ostream dest(Filename, EC, sys::fs::F_None);
+  raw_fd_ostream dest(Filename, EC, sys::fs::OF_None);
 
   if (EC) {
     errs() << "Could not open file: " << EC.message();
@@ -157,9 +155,9 @@ pass:
 .. code-block:: c++
 
   legacy::PassManager pass;
-  auto FileType = TargetMachine::CGFT_ObjectFile;
+  auto FileType = CGFT_ObjectFile;
 
-  if (TargetMachine->addPassesToEmitFile(pass, dest, FileType)) {
+  if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
     errs() << "TargetMachine can't emit a file of this type";
     return 1;
   }

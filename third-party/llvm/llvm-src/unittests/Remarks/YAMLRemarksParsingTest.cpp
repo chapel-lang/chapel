@@ -14,12 +14,28 @@
 using namespace llvm;
 
 template <size_t N> void parseGood(const char (&Buf)[N]) {
-  Expected<std::unique_ptr<remarks::Parser>> MaybeParser =
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
       remarks::createRemarkParser(remarks::Format::YAML, {Buf, N - 1});
   EXPECT_FALSE(errorToBool(MaybeParser.takeError()));
   EXPECT_TRUE(*MaybeParser != nullptr);
 
-  remarks::Parser &Parser = **MaybeParser;
+  remarks::RemarkParser &Parser = **MaybeParser;
+  Expected<std::unique_ptr<remarks::Remark>> Remark = Parser.next();
+  EXPECT_FALSE(errorToBool(Remark.takeError())); // Check for parsing errors.
+  EXPECT_TRUE(*Remark != nullptr);               // At least one remark.
+  Remark = Parser.next();
+  Error E = Remark.takeError();
+  EXPECT_TRUE(E.isA<remarks::EndOfFileError>());
+  EXPECT_TRUE(errorToBool(std::move(E))); // Check for parsing errors.
+}
+
+void parseGoodMeta(StringRef Buf) {
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
+      remarks::createRemarkParserFromMeta(remarks::Format::YAML, Buf);
+  EXPECT_FALSE(errorToBool(MaybeParser.takeError()));
+  EXPECT_TRUE(*MaybeParser != nullptr);
+
+  remarks::RemarkParser &Parser = **MaybeParser;
   Expected<std::unique_ptr<remarks::Remark>> Remark = Parser.next();
   EXPECT_FALSE(errorToBool(Remark.takeError())); // Check for parsing errors.
   EXPECT_TRUE(*Remark != nullptr);               // At least one remark.
@@ -31,12 +47,12 @@ template <size_t N> void parseGood(const char (&Buf)[N]) {
 
 template <size_t N>
 bool parseExpectError(const char (&Buf)[N], const char *Error) {
-  Expected<std::unique_ptr<remarks::Parser>> MaybeParser =
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
       remarks::createRemarkParser(remarks::Format::YAML, {Buf, N - 1});
   EXPECT_FALSE(errorToBool(MaybeParser.takeError()));
   EXPECT_TRUE(*MaybeParser != nullptr);
 
-  remarks::Parser &Parser = **MaybeParser;
+  remarks::RemarkParser &Parser = **MaybeParser;
   Expected<std::unique_ptr<remarks::Remark>> Remark = Parser.next();
   EXPECT_FALSE(Remark); // Check for parsing errors.
 
@@ -45,6 +61,34 @@ bool parseExpectError(const char (&Buf)[N], const char *Error) {
   handleAllErrors(Remark.takeError(),
                   [&](const ErrorInfoBase &EIB) { EIB.log(Stream); });
   return StringRef(Stream.str()).contains(Error);
+}
+
+enum class CmpType {
+  Equal,
+  Contains
+};
+
+void parseExpectErrorMeta(StringRef Buf, const char *Error, CmpType Cmp,
+                          Optional<StringRef> ExternalFilePrependPath = None) {
+  std::string ErrorStr;
+  raw_string_ostream Stream(ErrorStr);
+
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
+      remarks::createRemarkParserFromMeta(remarks::Format::YAML, Buf,
+                                          /*StrTab=*/None,
+                                          std::move(ExternalFilePrependPath));
+  handleAllErrors(MaybeParser.takeError(),
+                  [&](const ErrorInfoBase &EIB) { EIB.log(Stream); });
+
+  // Use a case insensitive comparision due to case differences in error strings
+  // for different OSs.
+  if (Cmp == CmpType::Equal) {
+    EXPECT_EQ(StringRef(Stream.str()).lower(), StringRef(Error).lower());
+  }
+
+  if (Cmp == CmpType::Contains) {
+    EXPECT_TRUE(StringRef(Stream.str()).contains(StringRef(Error)));
+  }
 }
 
 TEST(YAMLRemarks, ParsingEmpty) {
@@ -354,12 +398,12 @@ TEST(YAMLRemarks, Contents) {
                   "  - String: ' because its definition is unavailable'\n"
                   "\n";
 
-  Expected<std::unique_ptr<remarks::Parser>> MaybeParser =
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
       remarks::createRemarkParser(remarks::Format::YAML, Buf);
   EXPECT_FALSE(errorToBool(MaybeParser.takeError()));
   EXPECT_TRUE(*MaybeParser != nullptr);
 
-  remarks::Parser &Parser = **MaybeParser;
+  remarks::RemarkParser &Parser = **MaybeParser;
   Expected<std::unique_ptr<remarks::Remark>> MaybeRemark = Parser.next();
   EXPECT_FALSE(
       errorToBool(MaybeRemark.takeError())); // Check for parsing errors.
@@ -525,12 +569,13 @@ TEST(YAMLRemarks, ContentsStrTab) {
                 115);
 
   remarks::ParsedStringTable StrTab(StrTabBuf);
-  Expected<std::unique_ptr<remarks::Parser>> MaybeParser =
-      remarks::createRemarkParser(remarks::Format::YAML, Buf, &StrTab);
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
+      remarks::createRemarkParser(remarks::Format::YAMLStrTab, Buf,
+                                  std::move(StrTab));
   EXPECT_FALSE(errorToBool(MaybeParser.takeError()));
   EXPECT_TRUE(*MaybeParser != nullptr);
 
-  remarks::Parser &Parser = **MaybeParser;
+  remarks::RemarkParser &Parser = **MaybeParser;
   Expected<std::unique_ptr<remarks::Remark>> MaybeRemark = Parser.next();
   EXPECT_FALSE(
       errorToBool(MaybeRemark.takeError())); // Check for parsing errors.
@@ -600,12 +645,13 @@ TEST(YAMLRemarks, ParsingBadStringTableIndex) {
   StringRef StrTabBuf = StringRef("inline");
 
   remarks::ParsedStringTable StrTab(StrTabBuf);
-  Expected<std::unique_ptr<remarks::Parser>> MaybeParser =
-      remarks::createRemarkParser(remarks::Format::YAML, Buf, &StrTab);
+  Expected<std::unique_ptr<remarks::RemarkParser>> MaybeParser =
+      remarks::createRemarkParser(remarks::Format::YAMLStrTab, Buf,
+                                  std::move(StrTab));
   EXPECT_FALSE(errorToBool(MaybeParser.takeError()));
   EXPECT_TRUE(*MaybeParser != nullptr);
 
-  remarks::Parser &Parser = **MaybeParser;
+  remarks::RemarkParser &Parser = **MaybeParser;
   Expected<std::unique_ptr<remarks::Remark>> MaybeRemark = Parser.next();
   EXPECT_FALSE(MaybeRemark); // Expect an error here.
 
@@ -616,4 +662,73 @@ TEST(YAMLRemarks, ParsingBadStringTableIndex) {
   EXPECT_TRUE(
       StringRef(Stream.str())
           .contains("String with index 50 is out of bounds (size = 1)."));
+}
+
+TEST(YAMLRemarks, ParsingGoodMeta) {
+  // No metadata should also work.
+  parseGoodMeta("--- !Missed\n"
+                "Pass: inline\n"
+                "Name: NoDefinition\n"
+                "Function: foo\n");
+
+  // No string table.
+  parseGoodMeta(StringRef("REMARKS\0"
+                          "\0\0\0\0\0\0\0\0"
+                          "\0\0\0\0\0\0\0\0"
+                          "--- !Missed\n"
+                          "Pass: inline\n"
+                          "Name: NoDefinition\n"
+                          "Function: foo\n",
+                          82));
+
+  // Use the string table from the metadata.
+  parseGoodMeta(StringRef("REMARKS\0"
+                          "\0\0\0\0\0\0\0\0"
+                          "\x02\0\0\0\0\0\0\0"
+                          "a\0"
+                          "--- !Missed\n"
+                          "Pass: 0\n"
+                          "Name: 0\n"
+                          "Function: 0\n",
+                          66));
+}
+
+TEST(YAMLRemarks, ParsingBadMeta) {
+  parseExpectErrorMeta(StringRef("REMARKSS", 9),
+                       "Expecting \\0 after magic number.", CmpType::Equal);
+
+  parseExpectErrorMeta(StringRef("REMARKS\0", 8), "Expecting version number.",
+                       CmpType::Equal);
+
+  parseExpectErrorMeta(StringRef("REMARKS\0"
+                                 "\x09\0\0\0\0\0\0\0",
+                                 16),
+                       "Mismatching remark version. Got 9, expected 0.",
+                       CmpType::Equal);
+
+  parseExpectErrorMeta(StringRef("REMARKS\0"
+                                 "\0\0\0\0\0\0\0\0",
+                                 16),
+                       "Expecting string table size.", CmpType::Equal);
+
+  parseExpectErrorMeta(StringRef("REMARKS\0"
+                                 "\0\0\0\0\0\0\0\0"
+                                 "\x01\0\0\0\0\0\0\0",
+                                 24),
+                       "Expecting string table.", CmpType::Equal);
+
+  parseExpectErrorMeta(StringRef("REMARKS\0"
+                                 "\0\0\0\0\0\0\0\0"
+                                 "\0\0\0\0\0\0\0\0"
+                                 "/path/",
+                                 30),
+                       "'/path/'", CmpType::Contains);
+
+  parseExpectErrorMeta(StringRef("REMARKS\0"
+                                 "\0\0\0\0\0\0\0\0"
+                                 "\0\0\0\0\0\0\0\0"
+                                 "/path/",
+                                 30),
+                       "'/baddir/path/'", CmpType::Contains,
+                       StringRef("/baddir/"));
 }

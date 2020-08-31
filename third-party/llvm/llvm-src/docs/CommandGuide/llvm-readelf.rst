@@ -28,9 +28,9 @@ OPTIONS
 
  Display the address-significance table.
 
-.. option:: --arm-attributes
+.. option:: --arch-specific, -A
 
- Display the ARM attributes section. Only applicable for ARM architectures.
+ Display architecture-specific information, e.g. the ARM attributes section on ARM.
 
 .. option:: --color
 
@@ -160,6 +160,12 @@ OPTIONS
 
  Display contents of the stackmap section.
 
+.. option:: --stack-sizes
+
+ Display the contents of the stack sizes section(s), i.e. pairs of function
+ names and the size of their stack frames. Currently only implemented for GNU
+ style output.
+
 .. option:: --string-dump=<section[,section,...]>, -p
 
  Display the specified section(s) as a list of strings. ``section`` may be a
@@ -175,7 +181,7 @@ OPTIONS
 
 .. option:: --version
 
- Display the version of this program.
+ Display the version of the :program:`llvm-readelf` executable.
 
 .. option:: --version-info, -V
 

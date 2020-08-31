@@ -19,10 +19,9 @@ set( LLVM_LINK_COMPONENTS
 
 option(CLANG_PLUGIN_SUPPORT "Build clang with plugin support" ON)
 
-# Support plugins. This must be before add_clang_executable as it reads
-# LLVM_NO_DEAD_STRIP.
+# Support plugins.
 if(CLANG_PLUGIN_SUPPORT)
-  set(LLVM_NO_DEAD_STRIP 1)
+  set(support_plugins SUPPORT_PLUGINS)
 endif()
 
 if(NOT CLANG_BUILT_STANDALONE)
@@ -37,6 +36,7 @@ add_clang_tool(clang
 
   DEPENDS
   ${tablegen_deps}
+  ${support_plugins}
   )
 
 clang_target_link_libraries(clang
@@ -122,7 +122,3 @@ if(CLANG_ORDER_FILE AND
     set_target_properties(clang PROPERTIES LINK_DEPENDS ${CLANG_ORDER_FILE})
   endif()
 endif()
-
-if(WITH_POLLY AND LINK_POLLY_INTO_TOOLS)
-  target_link_libraries(clang PRIVATE Polly)
-endif(WITH_POLLY AND LINK_POLLY_INTO_TOOLS)

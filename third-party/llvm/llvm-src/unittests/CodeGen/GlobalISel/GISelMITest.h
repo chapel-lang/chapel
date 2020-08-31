@@ -21,6 +21,7 @@
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetLowering.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/FileCheck.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -111,7 +112,7 @@ body: |
 )MIR") + Twine(MIRFunc) + Twine("...\n"))
                             .toNullTerminatedStringRef(S);
   std::unique_ptr<MIRParser> MIR;
-  auto MMI = make_unique<MachineModuleInfo>(&TM);
+  auto MMI = std::make_unique<MachineModuleInfo>(&TM);
   std::unique_ptr<Module> M =
       parseMIR(Context, MIR, TM, MIRString, "func", *MMI);
   return make_pair(std::move(M), std::move(MMI));
@@ -135,11 +136,12 @@ static void collectCopies(SmallVectorImpl<Register> &Copies,
 
 class GISelMITest : public ::testing::Test {
 protected:
-  GISelMITest() : ::testing::Test() {
+  GISelMITest() : ::testing::Test() {}
+  void setUp(StringRef ExtraAssembly = "") {
     TM = createTargetMachine();
     if (!TM)
       return;
-    ModuleMMIPair = createDummyModule(Context, *TM, "");
+    ModuleMMIPair = createDummyModule(Context, *TM, ExtraAssembly);
     MF = getMFFromMMI(ModuleMMIPair.first.get(), ModuleMMIPair.second.get());
     collectCopies(Copies, MF);
     EntryMBB = &*MF->begin();
@@ -194,12 +196,11 @@ static inline bool CheckMachineFunction(const MachineFunction &MF,
   SM.AddNewSourceBuffer(MemoryBuffer::getMemBuffer(CheckFileText, "CheckFile"),
                         SMLoc());
   Regex PrefixRE = FC.buildCheckPrefixRegex();
-  std::vector<FileCheckString> CheckStrings;
-  if (FC.ReadCheckFile(SM, CheckFileText, PrefixRE, CheckStrings))
+  if (FC.readCheckFile(SM, CheckFileText, PrefixRE))
     return false;
 
   auto OutBuffer = OutputBuf->getBuffer();
   SM.AddNewSourceBuffer(std::move(OutputBuf), SMLoc());
-  return FC.CheckInput(SM, OutBuffer, CheckStrings);
+  return FC.checkInput(SM, OutBuffer);
 }
 #endif

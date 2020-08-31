@@ -85,8 +85,8 @@ public:
   }
 
 protected:
-  virtual ASTFrontendAction* CreateTestAction() {
-    return new TestAction(this);
+  virtual std::unique_ptr<ASTFrontendAction> CreateTestAction() {
+    return std::make_unique<TestAction>(this);
   }
 
   class FindConsumer : public ASTConsumer {
@@ -109,7 +109,7 @@ protected:
     std::unique_ptr<clang::ASTConsumer>
     CreateASTConsumer(CompilerInstance &, llvm::StringRef dummy) override {
       /// TestConsumer will be deleted by the framework calling us.
-      return llvm::make_unique<FindConsumer>(Visitor);
+      return std::make_unique<FindConsumer>(Visitor);
     }
 
   protected:

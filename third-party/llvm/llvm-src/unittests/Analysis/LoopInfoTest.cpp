@@ -8,7 +8,6 @@
 
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/AssumptionCache.h"
-#include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/AsmParser/Parser.h"
@@ -33,9 +32,7 @@ runWithLoopInfo(Module &M, StringRef FuncName,
 /// Build the loop info and scalar evolution for the function and run the Test.
 static void runWithLoopInfoPlus(
     Module &M, StringRef FuncName,
-    function_ref<void(Function &F, LoopInfo &LI, ScalarEvolution &SE,
-                      PostDominatorTree &PDT)>
-        Test) {
+    function_ref<void(Function &F, LoopInfo &LI, ScalarEvolution &SE)> Test) {
   auto *F = M.getFunction(FuncName);
   ASSERT_NE(F, nullptr) << "Could not find " << FuncName;
 
@@ -45,9 +42,7 @@ static void runWithLoopInfoPlus(
   DominatorTree DT(*F);
   LoopInfo LI(DT);
   ScalarEvolution SE(*F, TLI, AC, DT, LI);
-
-  PostDominatorTree PDT(*F);
-  Test(*F, LI, SE, PDT);
+  Test(*F, LI, SE);
 }
 
 static std::unique_ptr<Module> makeLLVMModule(LLVMContext &Context,
@@ -263,9 +258,10 @@ TEST(LoopInfoTest, CanonicalLoop) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -287,6 +283,9 @@ TEST(LoopInfoTest, CanonicalLoop) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -318,9 +317,10 @@ TEST(LoopInfoTest, LoopWithInverseGuardSuccs) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -342,6 +342,9 @@ TEST(LoopInfoTest, LoopWithInverseGuardSuccs) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -373,9 +376,10 @@ TEST(LoopInfoTest, LoopWithSwappedGuardCmp) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -397,6 +401,9 @@ TEST(LoopInfoTest, LoopWithSwappedGuardCmp) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -428,9 +435,10 @@ TEST(LoopInfoTest, LoopWithInverseLatchSuccs) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -452,6 +460,9 @@ TEST(LoopInfoTest, LoopWithInverseLatchSuccs) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -483,9 +494,10 @@ TEST(LoopInfoTest, LoopWithLatchCmpNE) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -507,6 +519,9 @@ TEST(LoopInfoTest, LoopWithLatchCmpNE) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -539,9 +554,10 @@ TEST(LoopInfoTest, LoopWithGuardCmpSLE) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -563,6 +579,9 @@ TEST(LoopInfoTest, LoopWithGuardCmpSLE) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -594,9 +613,10 @@ TEST(LoopInfoTest, LoopNonConstantStep) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -615,6 +635,9 @@ TEST(LoopInfoTest, LoopNonConstantStep) {
         EXPECT_EQ(Bounds->getCanonicalPredicate(), ICmpInst::ICMP_SLT);
         EXPECT_EQ(Bounds->getDirection(), Loop::LoopBounds::Direction::Unknown);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -646,9 +669,10 @@ TEST(LoopInfoTest, LoopUnsignedBounds) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -670,6 +694,9 @@ TEST(LoopInfoTest, LoopUnsignedBounds) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -701,9 +728,10 @@ TEST(LoopInfoTest, DecreasingLoop) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -725,6 +753,9 @@ TEST(LoopInfoTest, DecreasingLoop) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Decreasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -754,32 +785,36 @@ TEST(LoopInfoTest, CannotFindDirection) {
   LLVMContext Context;
   std::unique_ptr<Module> M = makeLLVMModule(Context, ModuleStr);
 
-  runWithLoopInfoPlus(*M, "foo",
-                      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-                          PostDominatorTree &PDT) {
-                        Function::iterator FI = F.begin();
-                        // First two basic block are entry and for.preheader
-                        // - skip them.
-                        ++FI;
-                        BasicBlock *Header = &*(++FI);
-                        assert(Header->getName() == "for.body");
-                        Loop *L = LI.getLoopFor(Header);
-                        EXPECT_NE(L, nullptr);
+  runWithLoopInfoPlus(
+      *M, "foo",
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+        Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
+        // First two basic block are entry and for.preheader
+        // - skip them.
+        ++FI;
+        BasicBlock *Header = &*(++FI);
+        assert(Header->getName() == "for.body");
+        Loop *L = LI.getLoopFor(Header);
+        EXPECT_NE(L, nullptr);
 
-                        Optional<Loop::LoopBounds> Bounds = L->getBounds(SE);
-                        EXPECT_NE(Bounds, None);
-                        ConstantInt *InitialIVValue =
-                            dyn_cast<ConstantInt>(&Bounds->getInitialIVValue());
-                        EXPECT_TRUE(InitialIVValue && InitialIVValue->isZero());
-                        EXPECT_EQ(Bounds->getStepInst().getName(), "inc");
-                        EXPECT_EQ(Bounds->getStepValue()->getName(), "step");
-                        EXPECT_EQ(Bounds->getFinalIVValue().getName(), "ub");
-                        EXPECT_EQ(Bounds->getCanonicalPredicate(),
-                                  ICmpInst::BAD_ICMP_PREDICATE);
-                        EXPECT_EQ(Bounds->getDirection(),
-                                  Loop::LoopBounds::Direction::Unknown);
-                        EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
-                      });
+        Optional<Loop::LoopBounds> Bounds = L->getBounds(SE);
+        EXPECT_NE(Bounds, None);
+        ConstantInt *InitialIVValue =
+            dyn_cast<ConstantInt>(&Bounds->getInitialIVValue());
+        EXPECT_TRUE(InitialIVValue && InitialIVValue->isZero());
+        EXPECT_EQ(Bounds->getStepInst().getName(), "inc");
+        EXPECT_EQ(Bounds->getStepValue()->getName(), "step");
+        EXPECT_EQ(Bounds->getFinalIVValue().getName(), "ub");
+        EXPECT_EQ(Bounds->getCanonicalPredicate(),
+                  ICmpInst::BAD_ICMP_PREDICATE);
+        EXPECT_EQ(Bounds->getDirection(), Loop::LoopBounds::Direction::Unknown);
+        EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
+      });
 }
 
 TEST(LoopInfoTest, ZextIndVar) {
@@ -813,9 +848,10 @@ TEST(LoopInfoTest, ZextIndVar) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -837,6 +873,129 @@ TEST(LoopInfoTest, ZextIndVar) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "indvars.iv");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
+      });
+}
+
+TEST(LoopInfoTest, MultiExitingLoop) {
+  const char *ModuleStr =
+      "define void @foo(i32* %A, i32 %ub, i1 %cond) {\n"
+      "entry:\n"
+      "  %guardcmp = icmp slt i32 0, %ub\n"
+      "  br i1 %guardcmp, label %for.preheader, label %for.end\n"
+      "for.preheader:\n"
+      "  br label %for.body\n"
+      "for.body:\n"
+      "  %i = phi i32 [ 0, %for.preheader ], [ %inc, %for.body.1 ]\n"
+      "  br i1 %cond, label %for.body.1, label %for.exit\n"
+      "for.body.1:\n"
+      "  %idxprom = sext i32 %i to i64\n"
+      "  %arrayidx = getelementptr inbounds i32, i32* %A, i64 %idxprom\n"
+      "  store i32 %i, i32* %arrayidx, align 4\n"
+      "  %inc = add nsw i32 %i, 1\n"
+      "  %cmp = icmp slt i32 %inc, %ub\n"
+      "  br i1 %cmp, label %for.body, label %for.exit\n"
+      "for.exit:\n"
+      "  br label %for.end\n"
+      "for.end:\n"
+      "  ret void\n"
+      "}\n";
+
+  // Parse the module.
+  LLVMContext Context;
+  std::unique_ptr<Module> M = makeLLVMModule(Context, ModuleStr);
+
+  runWithLoopInfoPlus(
+      *M, "foo",
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+        Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
+        // First two basic block are entry and for.preheader - skip them.
+        ++FI;
+        BasicBlock *Header = &*(++FI);
+        assert(Header->getName() == "for.body");
+        Loop *L = LI.getLoopFor(Header);
+        EXPECT_NE(L, nullptr);
+
+        Optional<Loop::LoopBounds> Bounds = L->getBounds(SE);
+        EXPECT_NE(Bounds, None);
+        ConstantInt *InitialIVValue =
+            dyn_cast<ConstantInt>(&Bounds->getInitialIVValue());
+        EXPECT_TRUE(InitialIVValue && InitialIVValue->isZero());
+        EXPECT_EQ(Bounds->getStepInst().getName(), "inc");
+        ConstantInt *StepValue =
+            dyn_cast_or_null<ConstantInt>(Bounds->getStepValue());
+        EXPECT_TRUE(StepValue && StepValue->isOne());
+        EXPECT_EQ(Bounds->getFinalIVValue().getName(), "ub");
+        EXPECT_EQ(Bounds->getCanonicalPredicate(), ICmpInst::ICMP_SLT);
+        EXPECT_EQ(Bounds->getDirection(),
+                  Loop::LoopBounds::Direction::Increasing);
+        EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+      });
+}
+
+TEST(LoopInfoTest, MultiExitLoop) {
+  const char *ModuleStr =
+      "define void @foo(i32* %A, i32 %ub, i1 %cond) {\n"
+      "entry:\n"
+      "  %guardcmp = icmp slt i32 0, %ub\n"
+      "  br i1 %guardcmp, label %for.preheader, label %for.end\n"
+      "for.preheader:\n"
+      "  br label %for.body\n"
+      "for.body:\n"
+      "  %i = phi i32 [ 0, %for.preheader ], [ %inc, %for.body.1 ]\n"
+      "  br i1 %cond, label %for.body.1, label %for.exit\n"
+      "for.body.1:\n"
+      "  %idxprom = sext i32 %i to i64\n"
+      "  %arrayidx = getelementptr inbounds i32, i32* %A, i64 %idxprom\n"
+      "  store i32 %i, i32* %arrayidx, align 4\n"
+      "  %inc = add nsw i32 %i, 1\n"
+      "  %cmp = icmp slt i32 %inc, %ub\n"
+      "  br i1 %cmp, label %for.body, label %for.exit.1\n"
+      "for.exit:\n"
+      "  br label %for.end\n"
+      "for.exit.1:\n"
+      "  br label %for.end\n"
+      "for.end:\n"
+      "  ret void\n"
+      "}\n";
+
+  // Parse the module.
+  LLVMContext Context;
+  std::unique_ptr<Module> M = makeLLVMModule(Context, ModuleStr);
+
+  runWithLoopInfoPlus(
+      *M, "foo",
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+        Function::iterator FI = F.begin();
+        // First two basic block are entry and for.preheader - skip them.
+        ++FI;
+        BasicBlock *Header = &*(++FI);
+        assert(Header->getName() == "for.body");
+        Loop *L = LI.getLoopFor(Header);
+        EXPECT_NE(L, nullptr);
+
+        Optional<Loop::LoopBounds> Bounds = L->getBounds(SE);
+        EXPECT_NE(Bounds, None);
+        ConstantInt *InitialIVValue =
+            dyn_cast<ConstantInt>(&Bounds->getInitialIVValue());
+        EXPECT_TRUE(InitialIVValue && InitialIVValue->isZero());
+        EXPECT_EQ(Bounds->getStepInst().getName(), "inc");
+        ConstantInt *StepValue =
+            dyn_cast_or_null<ConstantInt>(Bounds->getStepValue());
+        EXPECT_TRUE(StepValue && StepValue->isOne());
+        EXPECT_EQ(Bounds->getFinalIVValue().getName(), "ub");
+        EXPECT_EQ(Bounds->getCanonicalPredicate(), ICmpInst::ICMP_SLT);
+        EXPECT_EQ(Bounds->getDirection(),
+                  Loop::LoopBounds::Direction::Increasing);
+        EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), nullptr);
+        EXPECT_FALSE(L->isGuarded());
       });
 }
 
@@ -865,8 +1024,7 @@ TEST(LoopInfoTest, UnguardedLoop) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
         // First basic block is entry - skip it.
         BasicBlock *Header = &*(++FI);
@@ -888,6 +1046,9 @@ TEST(LoopInfoTest, UnguardedLoop) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), nullptr);
+        EXPECT_FALSE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -918,9 +1079,10 @@ TEST(LoopInfoTest, UnguardedLoopWithControlFlow) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -942,6 +1104,9 @@ TEST(LoopInfoTest, UnguardedLoopWithControlFlow) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -984,13 +1149,15 @@ TEST(LoopInfoTest, LoopNest) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *OuterGuard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.outer.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
         assert(Header->getName() == "for.outer");
+        BranchInst *InnerGuard = dyn_cast<BranchInst>(Header->getTerminator());
         Loop *L = LI.getLoopFor(Header);
         EXPECT_NE(L, nullptr);
 
@@ -1008,6 +1175,9 @@ TEST(LoopInfoTest, LoopNest) {
         EXPECT_EQ(Bounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "j");
+        EXPECT_EQ(L->getLoopGuardBranch(), OuterGuard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
 
         // Next two basic blocks are for.outer and for.inner.preheader - skip
         // them.
@@ -1030,6 +1200,9 @@ TEST(LoopInfoTest, LoopNest) {
         EXPECT_EQ(InnerBounds->getDirection(),
                   Loop::LoopBounds::Direction::Increasing);
         EXPECT_EQ(L->getInductionVariable(SE)->getName(), "i");
+        EXPECT_EQ(L->getLoopGuardBranch(), InnerGuard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
       });
 }
 
@@ -1070,9 +1243,10 @@ TEST(LoopInfoTest, AuxiliaryIV) {
 
   runWithLoopInfoPlus(
       *M, "foo",
-      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE,
-          PostDominatorTree &PDT) {
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
         Function::iterator FI = F.begin();
+        BasicBlock *Entry = &*(FI);
+        BranchInst *Guard = dyn_cast<BranchInst>(Entry->getTerminator());
         // First two basic block are entry and for.preheader - skip them.
         ++FI;
         BasicBlock *Header = &*(++FI);
@@ -1108,6 +1282,94 @@ TEST(LoopInfoTest, AuxiliaryIV) {
         PHINode &Instruction_mulopcode = cast<PHINode>(*(++II));
         EXPECT_FALSE(
             L->isAuxiliaryInductionVariable(Instruction_mulopcode, SE));
+        EXPECT_EQ(L->getLoopGuardBranch(), Guard);
+        EXPECT_TRUE(L->isGuarded());
+        EXPECT_TRUE(L->isRotatedForm());
+      });
+}
+
+TEST(LoopInfoTest, LoopNotInSimplifyForm) {
+  const char *ModuleStr =
+      "define void @foo(i32 %n) {\n"
+      "entry:\n"
+      "  %guard.cmp = icmp sgt i32 %n, 0\n"
+      "  br i1 %guard.cmp, label %for.cond, label %for.end\n"
+      "for.cond:\n"
+      "  %i.0 = phi i32 [ 0, %entry ], [ %inc, %latch.1 ], [ %inc, %latch.2 ]\n"
+      "  %inc = add nsw i32 %i.0, 1\n"
+      "  %cmp = icmp slt i32 %i.0, %n\n"
+      "  br i1 %cmp, label %latch.1, label %for.end\n"
+      "latch.1:\n"
+      "  br i1 undef, label %for.cond, label %latch.2\n"
+      "latch.2:\n"
+      "  br label %for.cond\n"
+      "for.end:\n"
+      "  ret void\n"
+      "}\n";
+
+  // Parse the module.
+  LLVMContext Context;
+  std::unique_ptr<Module> M = makeLLVMModule(Context, ModuleStr);
+
+  runWithLoopInfo(*M, "foo", [&](Function &F, LoopInfo &LI) {
+    Function::iterator FI = F.begin();
+    // First basic block is entry - skip it.
+    BasicBlock *Header = &*(++FI);
+    assert(Header && "No header");
+    Loop *L = LI.getLoopFor(Header);
+    EXPECT_NE(L, nullptr);
+    EXPECT_FALSE(L->isLoopSimplifyForm());
+    // No loop guard because loop in not in simplify form.
+    EXPECT_EQ(L->getLoopGuardBranch(), nullptr);
+    EXPECT_FALSE(L->isGuarded());
+  });
+}
+
+TEST(LoopInfoTest, LoopLatchNotExiting) {
+  const char *ModuleStr =
+      "define void @foo(i32* %A, i32 %ub) {\n"
+      "entry:\n"
+      "  %guardcmp = icmp slt i32 0, %ub\n"
+      "  br i1 %guardcmp, label %for.preheader, label %for.end\n"
+      "for.preheader:\n"
+      "  br label %for.body\n"
+      "for.body:\n"
+      "  %i = phi i32 [ 0, %for.preheader ], [ %inc, %for.body ]\n"
+      "  %idxprom = sext i32 %i to i64\n"
+      "  %arrayidx = getelementptr inbounds i32, i32* %A, i64 %idxprom\n"
+      "  store i32 %i, i32* %arrayidx, align 4\n"
+      "  %inc = add nsw i32 %i, 1\n"
+      "  %cmp = icmp slt i32 %inc, %ub\n"
+      "  br i1 %cmp, label %for.latch, label %for.exit\n"
+      "for.latch:\n"
+      "  br label %for.body\n"
+      "for.exit:\n"
+      "  br label %for.end\n"
+      "for.end:\n"
+      "  ret void\n"
+      "}\n";
+
+  // Parse the module.
+  LLVMContext Context;
+  std::unique_ptr<Module> M = makeLLVMModule(Context, ModuleStr);
+
+  runWithLoopInfoPlus(
+      *M, "foo",
+      [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+        Function::iterator FI = F.begin();
+        // First two basic block are entry and for.preheader - skip them.
+        ++FI;
+        BasicBlock *Header = &*(++FI);
+        BasicBlock *Latch = &*(++FI);
+        assert(Header && "No header");
+        Loop *L = LI.getLoopFor(Header);
+        EXPECT_NE(L, nullptr);
+        EXPECT_TRUE(L->isLoopSimplifyForm());
+        EXPECT_EQ(L->getLoopLatch(), Latch);
+        EXPECT_FALSE(L->isLoopExiting(Latch));
+        // No loop guard becuase loop is not exiting on latch.
+        EXPECT_EQ(L->getLoopGuardBranch(), nullptr);
+        EXPECT_FALSE(L->isGuarded());
       });
 }
 
@@ -1197,5 +1459,44 @@ TEST(LoopInfoTest, LoopNonLatchUniqueExitBlocks) {
     Exits.clear();
     L->getUniqueNonLatchExitBlocks(Exits);
     EXPECT_TRUE(Exits.size() == 1);
+  });
+}
+
+// Test that a pointer-chasing loop is not rotated.
+TEST(LoopInfoTest, LoopNotRotated) {
+  const char *ModuleStr =
+      "target datalayout = \"e-m:o-i64:64-f80:128-n8:16:32:64-S128\"\n"
+      "define void @foo(i32* %elem) {\n"
+      "entry:\n"
+      "  br label %while.cond\n"
+      "while.cond:\n"
+      "  %elem.addr.0 = phi i32* [ %elem, %entry ], [ %incdec.ptr, %while.body "
+      "]\n"
+      "  %tobool = icmp eq i32* %elem.addr.0, null\n"
+      "  br i1 %tobool, label %while.end, label %while.body\n"
+      "while.body:\n"
+      "  %incdec.ptr = getelementptr inbounds i32, i32* %elem.addr.0, i64 1\n"
+      "  br label %while.cond\n"
+      "while.end:\n"
+      "  ret void\n"
+      "}\n";
+
+  // Parse the module.
+  LLVMContext Context;
+  std::unique_ptr<Module> M = makeLLVMModule(Context, ModuleStr);
+
+  runWithLoopInfo(*M, "foo", [&](Function &F, LoopInfo &LI) {
+    Function::iterator FI = F.begin();
+    // First basic block is entry - skip it.
+    BasicBlock *Header = &*(++FI);
+    assert(Header->getName() == "while.cond");
+    Loop *L = LI.getLoopFor(Header);
+    EXPECT_NE(L, nullptr);
+
+    // This loop is in simplified form.
+    EXPECT_TRUE(L->isLoopSimplifyForm());
+
+    // This loop is not rotated.
+    EXPECT_FALSE(L->isRotatedForm());
   });
 }

@@ -60,7 +60,9 @@ TEST(MinimizeSourceToDependencyDirectivesTest, AllTokens) {
                                            "#__include_macros <A>\n"
                                            "#import <A>\n"
                                            "@import A;\n"
-                                           "#pragma clang module import A\n",
+                                           "#pragma clang module import A\n"
+                                           "export module m;\n"
+                                           "import m;\n",
                                            Out, Tokens));
   EXPECT_EQ(pp_define, Tokens[0].K);
   EXPECT_EQ(pp_undef, Tokens[1].K);
@@ -76,7 +78,10 @@ TEST(MinimizeSourceToDependencyDirectivesTest, AllTokens) {
   EXPECT_EQ(pp_import, Tokens[11].K);
   EXPECT_EQ(decl_at_import, Tokens[12].K);
   EXPECT_EQ(pp_pragma_import, Tokens[13].K);
-  EXPECT_EQ(pp_eof, Tokens[14].K);
+  EXPECT_EQ(cxx_export_decl, Tokens[14].K);
+  EXPECT_EQ(cxx_module_decl, Tokens[15].K);
+  EXPECT_EQ(cxx_import_decl, Tokens[16].K);
+  EXPECT_EQ(pp_eof, Tokens[17].K);
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest, Define) {
@@ -182,7 +187,7 @@ TEST(MinimizeSourceToDependencyDirectivesTest, DefineMultilineArgs) {
                                            "        call((a),      \\\n"
                                            "             (b))",
                                            Out));
-  EXPECT_STREQ("#define MACRO(a,b) call((a),(b))\n", Out.data());
+  EXPECT_STREQ("#define MACRO(a,b) call((a), (b))\n", Out.data());
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest,
@@ -195,7 +200,17 @@ TEST(MinimizeSourceToDependencyDirectivesTest,
                                            "        call((a),      \\\r"
                                            "             (b))",
                                            Out));
-  EXPECT_STREQ("#define MACRO(a,b) call((a),(b))\n", Out.data());
+  EXPECT_STREQ("#define MACRO(a,b) call((a), (b))\n", Out.data());
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest, DefineMultilineArgsStringize) {
+  SmallVector<char, 128> Out;
+
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives("#define MACRO(a,b) \\\n"
+                                                    "                #a \\\n"
+                                                    "                #b",
+                                                    Out));
+  EXPECT_STREQ("#define MACRO(a,b) #a #b\n", Out.data());
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest,
@@ -208,7 +223,7 @@ TEST(MinimizeSourceToDependencyDirectivesTest,
                                            "        call((a),      \\\r\n"
                                            "             (b))",
                                            Out));
-  EXPECT_STREQ("#define MACRO(a,b) call((a),(b))\n", Out.data());
+  EXPECT_STREQ("#define MACRO(a,b) call((a), (b))\n", Out.data());
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest,
@@ -221,7 +236,7 @@ TEST(MinimizeSourceToDependencyDirectivesTest,
                                            "        call((a),      \\\n\r"
                                            "             (b))",
                                            Out));
-  EXPECT_STREQ("#define MACRO(a,b) call((a),(b))\n", Out.data());
+  EXPECT_STREQ("#define MACRO(a,b) call((a), (b))\n", Out.data());
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest, DefineNumber) {
@@ -313,12 +328,17 @@ TEST(MinimizeSourceToDependencyDirectivesTest, EmptyIfdef) {
   SmallVector<char, 128> Out;
 
   ASSERT_FALSE(minimizeSourceToDependencyDirectives("#ifdef A\n"
+                                                    "void skip();\n"
                                                     "#elif B\n"
                                                     "#elif C\n"
                                                     "#else D\n"
                                                     "#endif\n",
                                                     Out));
-  EXPECT_STREQ("", Out.data());
+  EXPECT_STREQ("#ifdef A\n"
+               "#elif B\n"
+               "#elif C\n"
+               "#endif\n",
+               Out.data());
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest, Pragma) {
@@ -461,6 +481,17 @@ TEST(MinimizeSourceToDependencyDirectivesTest, SplitIdentifier) {
   EXPECT_STREQ("#define GUA RD\n", Out.data());
 }
 
+TEST(MinimizeSourceToDependencyDirectivesTest,
+     WhitespaceAfterLineContinuationSlash) {
+  SmallVector<char, 128> Out;
+
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives("#define A 1 + \\  \n"
+                                                    "2 + \\\t\n"
+                                                    "3\n",
+                                                    Out));
+  EXPECT_STREQ("#define A 1 + 2 + 3\n", Out.data());
+}
+
 TEST(MinimizeSourceToDependencyDirectivesTest, PoundWarningAndError) {
   SmallVector<char, 128> Out;
 
@@ -481,6 +512,12 @@ TEST(MinimizeSourceToDependencyDirectivesTest, PoundWarningAndError) {
   for (auto Source : {
            "#warning \\\n#include <t.h>\n",
            "#error \\\n#include <t.h>\n",
+       }) {
+    ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+    EXPECT_STREQ("", Out.data());
+  }
+
+  for (auto Source : {
            "#if MACRO\n#warning '\n#endif\n",
            "#if MACRO\n#warning \"\n#endif\n",
            "#if MACRO\n#warning /*\n#endif\n",
@@ -489,7 +526,7 @@ TEST(MinimizeSourceToDependencyDirectivesTest, PoundWarningAndError) {
            "#if MACRO\n#error /*\n#endif\n",
        }) {
     ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
-    EXPECT_STREQ("", Out.data());
+    EXPECT_STREQ("#if MACRO\n#endif\n", Out.data());
   }
 }
 
@@ -517,7 +554,7 @@ TEST(MinimizeSourceToDependencyDirectivesTest, CharacterLiteralPrefixL) {
 #include <test.h>
 )";
   ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
-  EXPECT_STREQ("#include <test.h>\n", Out.data());
+  EXPECT_STREQ("#if DEBUG\n#endif\n#include <test.h>\n", Out.data());
 }
 
 TEST(MinimizeSourceToDependencyDirectivesTest, CharacterLiteralPrefixU) {
@@ -542,6 +579,160 @@ int z = 128'78;
 )";
   ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
   EXPECT_STREQ("#include <test.h>\n", Out.data());
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest, PragmaOnce) {
+  SmallVector<char, 128> Out;
+  SmallVector<Token, 4> Tokens;
+
+  StringRef Source = R"(// comment
+#pragma once
+// another comment
+#include <test.h>
+)";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out, Tokens));
+  EXPECT_STREQ("#pragma once\n#include <test.h>\n", Out.data());
+  ASSERT_EQ(Tokens.size(), 3u);
+  EXPECT_EQ(Tokens[0].K,
+            minimize_source_to_dependency_directives::pp_pragma_once);
+
+  Source = R"(// comment
+    #pragma once extra tokens
+    // another comment
+    #include <test.h>
+    )";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+  EXPECT_STREQ("#pragma once\n#include <test.h>\n", Out.data());
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest,
+     SkipLineStringCharLiteralsUntilNewline) {
+  SmallVector<char, 128> Out;
+
+  StringRef Source = R"(#if NEVER_ENABLED
+    #define why(fmt, ...) #error don't try me
+    #endif
+
+    void foo();
+)";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+  EXPECT_STREQ(
+      "#if NEVER_ENABLED\n#define why(fmt,...) #error don't try me\n#endif\n",
+      Out.data());
+
+  Source = R"(#if NEVER_ENABLED
+      #define why(fmt, ...) "quote dropped
+      #endif
+
+      void foo();
+  )";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+  EXPECT_STREQ(
+      "#if NEVER_ENABLED\n#define why(fmt,...) \"quote dropped\n#endif\n",
+      Out.data());
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest,
+     SupportWhitespaceBeforeLineContinuationInStringSkipping) {
+  SmallVector<char, 128> Out;
+
+  StringRef Source = "#define X '\\ \t\nx'\nvoid foo() {}";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+  EXPECT_STREQ("#define X '\\ \t\nx'\n", Out.data());
+
+  Source = "#define X \"\\ \r\nx\"\nvoid foo() {}";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+  EXPECT_STREQ("#define X \"\\ \r\nx\"\n", Out.data());
+
+  Source = "#define X \"\\ \r\nx\n#include <x>\n";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out));
+  EXPECT_STREQ("#define X \"\\ \r\nx\n#include <x>\n", Out.data());
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest, CxxModules) {
+  SmallVector<char, 128> Out;
+  SmallVector<Token, 4> Tokens;
+
+  StringRef Source = R"(
+    module;
+    #include "textual-header.h"
+
+    export module m;
+    exp\
+ort \
+      import \
+      :l [[rename]];
+
+    export void f();
+
+    void h() {
+      import.a = 3;
+      import = 3;
+      import <<= 3;
+      import->a = 3;
+      import();
+      import . a();
+
+      import a b d e d e f e;
+      import foo [[no_unique_address]];
+      import foo();
+      import f(:sefse);
+      import f(->a = 3);
+    }
+    )";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out, Tokens));
+  EXPECT_STREQ("#include \"textual-header.h\"\nexport module m;\n"
+               "export import :l [[rename]];\n"
+               "import <<= 3;\nimport a b d e d e f e;\n"
+               "import foo [[no_unique_address]];\nimport foo();\n"
+               "import f(:sefse);\nimport f(->a = 3);\n", Out.data());
+  ASSERT_EQ(Tokens.size(), 12u);
+  EXPECT_EQ(Tokens[0].K,
+            minimize_source_to_dependency_directives::pp_include);
+  EXPECT_EQ(Tokens[2].K,
+            minimize_source_to_dependency_directives::cxx_module_decl);
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest, SkippedPPRangesBasic) {
+  SmallString<128> Out;
+  SmallVector<Token, 32> Toks;
+  StringRef Source = "#ifndef GUARD\n"
+                     "#define GUARD\n"
+                     "void foo();\n"
+                     "#endif\n";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out, Toks));
+  SmallVector<SkippedRange, 4> Ranges;
+  ASSERT_FALSE(computeSkippedRanges(Toks, Ranges));
+  EXPECT_EQ(Ranges.size(), 1u);
+  EXPECT_EQ(Ranges[0].Offset, 0);
+  EXPECT_EQ(Ranges[0].Length, (int)Out.find("#endif"));
+}
+
+TEST(MinimizeSourceToDependencyDirectivesTest, SkippedPPRangesNested) {
+  SmallString<128> Out;
+  SmallVector<Token, 32> Toks;
+  StringRef Source = "#ifndef GUARD\n"
+                     "#define GUARD\n"
+                     "#if FOO\n"
+                     "#include hello\n"
+                     "#elif BAR\n"
+                     "#include bye\n"
+                     "#endif\n"
+                     "#else\n"
+                     "#include nothing\n"
+                     "#endif\n";
+  ASSERT_FALSE(minimizeSourceToDependencyDirectives(Source, Out, Toks));
+  SmallVector<SkippedRange, 4> Ranges;
+  ASSERT_FALSE(computeSkippedRanges(Toks, Ranges));
+  EXPECT_EQ(Ranges.size(), 4u);
+  EXPECT_EQ(Ranges[0].Offset, (int)Out.find("#if FOO"));
+  EXPECT_EQ(Ranges[0].Offset + Ranges[0].Length, (int)Out.find("#elif"));
+  EXPECT_EQ(Ranges[1].Offset, (int)Out.find("#elif BAR"));
+  EXPECT_EQ(Ranges[1].Offset + Ranges[1].Length, (int)Out.find("#endif"));
+  EXPECT_EQ(Ranges[2].Offset, 0);
+  EXPECT_EQ(Ranges[2].Length, (int)Out.find("#else"));
+  EXPECT_EQ(Ranges[3].Offset, (int)Out.find("#else"));
+  EXPECT_EQ(Ranges[3].Offset + Ranges[3].Length, (int)Out.rfind("#endif"));
 }
 
 } // end anonymous namespace

@@ -1,11 +1,5 @@
 import("//llvm/utils/TableGen/tablegen.gni")
 
-tablegen("AArch64GenAsmMatcher") {
-  visibility = [ ":LLVMAArch64CodeGen" ]
-  args = [ "-gen-asm-matcher" ]
-  td_file = "AArch64.td"
-}
-
 tablegen("AArch64GenCallingConv") {
   visibility = [ ":LLVMAArch64CodeGen" ]
   args = [ "-gen-callingconv" ]
@@ -30,6 +24,15 @@ tablegen("AArch64GenGlobalISel") {
   td_file = "AArch64.td"
 }
 
+tablegen("AArch64GenGICombiner") {
+  visibility = [ ":LLVMAArch64CodeGen" ]
+  args = [
+    "-gen-global-isel-combiner",
+    "-combiners=AArch64PreLegalizerCombinerHelper",
+  ]
+  td_file = "AArch64.td"
+}
+
 tablegen("AArch64GenMCPseudoLowering") {
   visibility = [ ":LLVMAArch64CodeGen" ]
   args = [ "-gen-pseudo-lowering" ]
@@ -44,13 +47,16 @@ tablegen("AArch64GenRegisterBank") {
 
 static_library("LLVMAArch64CodeGen") {
   deps = [
-    ":AArch64GenAsmMatcher",
     ":AArch64GenCallingConv",
     ":AArch64GenDAGISel",
     ":AArch64GenFastISel",
+    ":AArch64GenGICombiner",
     ":AArch64GenGlobalISel",
     ":AArch64GenMCPseudoLowering",
     ":AArch64GenRegisterBank",
+
+    # See https://reviews.llvm.org/D69130
+    "AsmParser:AArch64GenAsmMatcher",
     "MCTargetDesc",
     "TargetInfo",
     "Utils",
@@ -63,7 +69,9 @@ static_library("LLVMAArch64CodeGen") {
     "//llvm/lib/MC",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
+    "//llvm/lib/Transforms/CFGuard",
     "//llvm/lib/Transforms/Scalar",
+    "//llvm/lib/Transforms/Utils",
   ]
   include_dirs = [ "." ]
   sources = [
@@ -104,6 +112,7 @@ static_library("LLVMAArch64CodeGen") {
     "AArch64SelectionDAGInfo.cpp",
     "AArch64SpeculationHardening.cpp",
     "AArch64StackTagging.cpp",
+    "AArch64StackTaggingPreRA.cpp",
     "AArch64StorePairSuppress.cpp",
     "AArch64Subtarget.cpp",
     "AArch64TargetMachine.cpp",

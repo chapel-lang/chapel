@@ -1,4 +1,4 @@
-add_llvm_library(LLVMScalarOpts
+add_llvm_component_library(LLVMScalarOpts
   ADCE.cpp
   AlignmentFromAssumptions.cpp
   BDCE.cpp
@@ -44,8 +44,10 @@ add_llvm_library(LLVMScalarOpts
   LoopUnswitch.cpp
   LoopVersioningLICM.cpp
   LowerAtomic.cpp
+  LowerConstantIntrinsics.cpp
   LowerExpectIntrinsic.cpp
   LowerGuardIntrinsic.cpp
+  LowerMatrixIntrinsics.cpp
   LowerWidenableCondition.cpp
   MakeGuardsExplicit.cpp
   MemCpyOptimizer.cpp

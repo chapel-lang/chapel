@@ -44,7 +44,7 @@ const (
 	FlagProtected
 	FlagFwdDecl
 	FlagAppleBlock
-	FlagBlockByrefStruct
+	FlagReserved
 	FlagVirtual
 	FlagArtificial
 	FlagExplicit
@@ -54,7 +54,6 @@ const (
 	FlagVector
 	FlagStaticMember
 	FlagIndirectVariable
-	FlagArgumentNotModified
 )
 
 type DwarfLang uint32
@@ -505,6 +504,7 @@ type DITypedef struct {
 	File    Metadata
 	Line    int
 	Context Metadata
+  AlignInBits uint32
 }
 
 // CreateTypedef creates typedef type debug metadata.
@@ -519,6 +519,7 @@ func (d *DIBuilder) CreateTypedef(t DITypedef) Metadata {
 		t.File.C,
 		C.unsigned(t.Line),
 		t.Context.C,
+    C.uint32_t(t.AlignInBits),
 	)
 	return Metadata{C: result}
 }
@@ -583,6 +584,11 @@ func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugL
 
 func (v Value) SetSubprogram(sp Metadata) {
 	C.LLVMSetSubprogram(v.C, sp.C)
+}
+
+func (v Value) Subprogram() (md Metadata) {
+	md.C = C.LLVMGetSubprogram(v.C)
+	return
 }
 
 func boolToCInt(v bool) C.int {

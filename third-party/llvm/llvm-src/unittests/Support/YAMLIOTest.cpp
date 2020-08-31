@@ -2189,7 +2189,6 @@ TEST(YAMLIO, TestReadBuiltInTypesDoubleError) {
 //
 // Test error handling reading built-in Hex8 type
 //
-LLVM_YAML_IS_SEQUENCE_VECTOR(Hex8)
 TEST(YAMLIO, TestReadBuiltInTypesHex8Error) {
   std::vector<Hex8> seq;
   Input yin("---\n"
@@ -2200,15 +2199,26 @@ TEST(YAMLIO, TestReadBuiltInTypesHex8Error) {
             /*Ctxt=*/nullptr,
             suppressErrorMessages);
   yin >> seq;
-
   EXPECT_TRUE(!!yin.error());
+
+  std::vector<Hex8> seq2;
+  Input yin2("---\n"
+             "[ 0x12, 0xFE, 0x123 ]\n"
+             "...\n",
+             /*Ctxt=*/nullptr, suppressErrorMessages);
+  yin2 >> seq2;
+  EXPECT_TRUE(!!yin2.error());
+
+  EXPECT_TRUE(seq.size() == 3);
+  EXPECT_TRUE(seq.size() == seq2.size());
+  for (size_t i = 0; i < seq.size(); ++i)
+    EXPECT_TRUE(seq[i] == seq2[i]);
 }
 
 
 //
 // Test error handling reading built-in Hex16 type
 //
-LLVM_YAML_IS_SEQUENCE_VECTOR(Hex16)
 TEST(YAMLIO, TestReadBuiltInTypesHex16Error) {
   std::vector<Hex16> seq;
   Input yin("---\n"
@@ -2219,14 +2229,25 @@ TEST(YAMLIO, TestReadBuiltInTypesHex16Error) {
             /*Ctxt=*/nullptr,
             suppressErrorMessages);
   yin >> seq;
-
   EXPECT_TRUE(!!yin.error());
+
+  std::vector<Hex16> seq2;
+  Input yin2("---\n"
+             "[ 0x0012, 0xFEFF, 0x12345 ]\n"
+             "...\n",
+             /*Ctxt=*/nullptr, suppressErrorMessages);
+  yin2 >> seq2;
+  EXPECT_TRUE(!!yin2.error());
+
+  EXPECT_TRUE(seq.size() == 3);
+  EXPECT_TRUE(seq.size() == seq2.size());
+  for (size_t i = 0; i < seq.size(); ++i)
+    EXPECT_TRUE(seq[i] == seq2[i]);
 }
 
 //
 // Test error handling reading built-in Hex32 type
 //
-LLVM_YAML_IS_SEQUENCE_VECTOR(Hex32)
 TEST(YAMLIO, TestReadBuiltInTypesHex32Error) {
   std::vector<Hex32> seq;
   Input yin("---\n"
@@ -2239,12 +2260,24 @@ TEST(YAMLIO, TestReadBuiltInTypesHex32Error) {
   yin >> seq;
 
   EXPECT_TRUE(!!yin.error());
+
+  std::vector<Hex32> seq2;
+  Input yin2("---\n"
+             "[ 0x0012, 0xFEFF0000, 0x1234556789 ]\n"
+             "...\n",
+             /*Ctxt=*/nullptr, suppressErrorMessages);
+  yin2 >> seq2;
+  EXPECT_TRUE(!!yin2.error());
+
+  EXPECT_TRUE(seq.size() == 3);
+  EXPECT_TRUE(seq.size() == seq2.size());
+  for (size_t i = 0; i < seq.size(); ++i)
+    EXPECT_TRUE(seq[i] == seq2[i]);
 }
 
 //
 // Test error handling reading built-in Hex64 type
 //
-LLVM_YAML_IS_SEQUENCE_VECTOR(Hex64)
 TEST(YAMLIO, TestReadBuiltInTypesHex64Error) {
   std::vector<Hex64> seq;
   Input yin("---\n"
@@ -2255,8 +2288,20 @@ TEST(YAMLIO, TestReadBuiltInTypesHex64Error) {
             /*Ctxt=*/nullptr,
             suppressErrorMessages);
   yin >> seq;
-
   EXPECT_TRUE(!!yin.error());
+
+  std::vector<Hex64> seq2;
+  Input yin2("---\n"
+             "[ 0x0012, 0xFFEEDDCCBBAA9988, 0x12345567890ABCDEF0 ]\n"
+             "...\n",
+             /*Ctxt=*/nullptr, suppressErrorMessages);
+  yin2 >> seq2;
+  EXPECT_TRUE(!!yin2.error());
+
+  EXPECT_TRUE(seq.size() == 3);
+  EXPECT_TRUE(seq.size() == seq2.size());
+  for (size_t i = 0; i < seq.size(); ++i)
+    EXPECT_TRUE(seq[i] == seq2[i]);
 }
 
 TEST(YAMLIO, TestMalformedMapFailsGracefully) {
@@ -2841,19 +2886,19 @@ template <> struct PolymorphicTraits<std::unique_ptr<Poly>> {
 
   static Scalar &getAsScalar(std::unique_ptr<Poly> &N) {
     if (!N || !isa<Scalar>(*N))
-      N = llvm::make_unique<Scalar>();
+      N = std::make_unique<Scalar>();
     return *cast<Scalar>(N.get());
   }
 
   static Seq &getAsSequence(std::unique_ptr<Poly> &N) {
     if (!N || !isa<Seq>(*N))
-      N = llvm::make_unique<Seq>();
+      N = std::make_unique<Seq>();
     return *cast<Seq>(N.get());
   }
 
   static Map &getAsMap(std::unique_ptr<Poly> &N) {
     if (!N || !isa<Map>(*N))
-      N = llvm::make_unique<Map>();
+      N = std::make_unique<Map>();
     return *cast<Map>(N.get());
   }
 };
@@ -2932,7 +2977,7 @@ template <> struct SequenceTraits<Seq> {
 
 TEST(YAMLIO, TestReadWritePolymorphicScalar) {
   std::string intermediate;
-  std::unique_ptr<Poly> node = llvm::make_unique<Scalar>(true);
+  std::unique_ptr<Poly> node = std::make_unique<Scalar>(true);
 
   llvm::raw_string_ostream ostr(intermediate);
   Output yout(ostr);
@@ -2946,9 +2991,9 @@ TEST(YAMLIO, TestReadWritePolymorphicScalar) {
 TEST(YAMLIO, TestReadWritePolymorphicSeq) {
   std::string intermediate;
   {
-    auto seq = llvm::make_unique<Seq>();
-    seq->push_back(llvm::make_unique<Scalar>(true));
-    seq->push_back(llvm::make_unique<Scalar>(1.0));
+    auto seq = std::make_unique<Seq>();
+    seq->push_back(std::make_unique<Scalar>(true));
+    seq->push_back(std::make_unique<Scalar>(1.0));
     auto node = llvm::unique_dyn_cast<Poly>(seq);
 
     llvm::raw_string_ostream ostr(intermediate);
@@ -2978,9 +3023,9 @@ TEST(YAMLIO, TestReadWritePolymorphicSeq) {
 TEST(YAMLIO, TestReadWritePolymorphicMap) {
   std::string intermediate;
   {
-    auto map = llvm::make_unique<Map>();
-    (*map)["foo"] = llvm::make_unique<Scalar>(false);
-    (*map)["bar"] = llvm::make_unique<Scalar>(2.0);
+    auto map = std::make_unique<Map>();
+    (*map)["foo"] = std::make_unique<Scalar>(false);
+    (*map)["bar"] = std::make_unique<Scalar>(2.0);
     std::unique_ptr<Poly> node = llvm::unique_dyn_cast<Poly>(map);
 
     llvm::raw_string_ostream ostr(intermediate);
@@ -3004,4 +3049,56 @@ TEST(YAMLIO, TestReadWritePolymorphicMap) {
     EXPECT_EQ(bar->SKind, Scalar::SK_Double);
     EXPECT_EQ(bar->DoubleValue, 2.0);
   }
+}
+
+TEST(YAMLIO, TestAnchorMapError) {
+  Input yin("& & &: ");
+  yin.setCurrentDocument();
+  EXPECT_TRUE(yin.error());
+}
+
+TEST(YAMLIO, TestFlowSequenceTokenErrors) {
+  Input yin(",");
+  EXPECT_FALSE(yin.setCurrentDocument());
+  EXPECT_TRUE(yin.error());
+
+  Input yin2("]");
+  EXPECT_FALSE(yin2.setCurrentDocument());
+  EXPECT_TRUE(yin2.error());
+
+  Input yin3("}");
+  EXPECT_FALSE(yin3.setCurrentDocument());
+  EXPECT_TRUE(yin3.error());
+}
+
+TEST(YAMLIO, TestDirectiveMappingNoValue) {
+  Input yin("%YAML\n{5:");
+  EXPECT_FALSE(yin.setCurrentDocument());
+  EXPECT_TRUE(yin.error());
+
+  Input yin2("%TAG\n'\x98!< :\n");
+  yin2.setCurrentDocument();
+  EXPECT_TRUE(yin2.error());
+}
+
+TEST(YAMLIO, TestUnescapeInfiniteLoop) {
+  Input yin("\"\\u\\^#\\\\\"");
+  yin.setCurrentDocument();
+  EXPECT_TRUE(yin.error());
+}
+
+TEST(YAMLIO, TestScannerUnexpectedCharacter) {
+  Input yin("!<$\x9F.");
+  EXPECT_FALSE(yin.setCurrentDocument());
+  EXPECT_TRUE(yin.error());
+}
+
+TEST(YAMLIO, TestUnknownDirective) {
+  Input yin("%");
+  EXPECT_FALSE(yin.setCurrentDocument());
+  EXPECT_TRUE(yin.error());
+
+  Input yin2("%)");
+  EXPECT_FALSE(yin2.setCurrentDocument());
+  EXPECT_TRUE(yin2.error());
 }

@@ -203,6 +203,25 @@ TEST(MathExtras, PowerOf2Floor) {
   EXPECT_EQ(4U, PowerOf2Floor(7U));
 }
 
+TEST(MathExtras, CTLog2) {
+  EXPECT_EQ(CTLog2<1ULL << 0>(), 0U);
+  EXPECT_EQ(CTLog2<1ULL << 1>(), 1U);
+  EXPECT_EQ(CTLog2<1ULL << 2>(), 2U);
+  EXPECT_EQ(CTLog2<1ULL << 3>(), 3U);
+  EXPECT_EQ(CTLog2<1ULL << 4>(), 4U);
+  EXPECT_EQ(CTLog2<1ULL << 5>(), 5U);
+  EXPECT_EQ(CTLog2<1ULL << 6>(), 6U);
+  EXPECT_EQ(CTLog2<1ULL << 7>(), 7U);
+  EXPECT_EQ(CTLog2<1ULL << 8>(), 8U);
+  EXPECT_EQ(CTLog2<1ULL << 9>(), 9U);
+  EXPECT_EQ(CTLog2<1ULL << 10>(), 10U);
+  EXPECT_EQ(CTLog2<1ULL << 11>(), 11U);
+  EXPECT_EQ(CTLog2<1ULL << 12>(), 12U);
+  EXPECT_EQ(CTLog2<1ULL << 13>(), 13U);
+  EXPECT_EQ(CTLog2<1ULL << 14>(), 14U);
+  EXPECT_EQ(CTLog2<1ULL << 15>(), 15U);
+}
+
 TEST(MathExtras, ByteSwap_32) {
   EXPECT_EQ(0x44332211u, ByteSwap_32(0x11223344));
   EXPECT_EQ(0xDDCCBBAAu, ByteSwap_32(0xAABBCCDD));
@@ -466,6 +485,133 @@ TEST(MathExtras, IsShiftedInt) {
 
   EXPECT_TRUE((isShiftedInt<6, 10>(-(int64_t(1) << 15))));
   EXPECT_FALSE((isShiftedInt<6, 10>(int64_t(1) << 15)));
+}
+
+template <typename T>
+class OverflowTest : public ::testing::Test { };
+
+using OverflowTestTypes = ::testing::Types<signed char, short, int, long,
+                                           long long>;
+
+TYPED_TEST_CASE(OverflowTest, OverflowTestTypes);
+
+TYPED_TEST(OverflowTest, AddNoOverflow) {
+  TypeParam Result;
+  EXPECT_FALSE(AddOverflow<TypeParam>(1, 2, Result));
+  EXPECT_EQ(Result, TypeParam(3));
+}
+
+TYPED_TEST(OverflowTest, AddOverflowToNegative) {
+  TypeParam Result;
+  auto MaxValue = std::numeric_limits<TypeParam>::max();
+  EXPECT_TRUE(AddOverflow<TypeParam>(MaxValue, MaxValue, Result));
+  EXPECT_EQ(Result, TypeParam(-2));
+}
+
+TYPED_TEST(OverflowTest, AddOverflowToMin) {
+  TypeParam Result;
+  auto MaxValue = std::numeric_limits<TypeParam>::max();
+  EXPECT_TRUE(AddOverflow<TypeParam>(MaxValue, TypeParam(1), Result));
+  EXPECT_EQ(Result, std::numeric_limits<TypeParam>::min());
+}
+
+TYPED_TEST(OverflowTest, AddOverflowToZero) {
+  TypeParam Result;
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(AddOverflow<TypeParam>(MinValue, MinValue, Result));
+  EXPECT_EQ(Result, TypeParam(0));
+}
+
+TYPED_TEST(OverflowTest, AddOverflowToMax) {
+  TypeParam Result;
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(AddOverflow<TypeParam>(MinValue, TypeParam(-1), Result));
+  EXPECT_EQ(Result, std::numeric_limits<TypeParam>::max());
+}
+
+TYPED_TEST(OverflowTest, SubNoOverflow) {
+  TypeParam Result;
+  EXPECT_FALSE(SubOverflow<TypeParam>(1, 2, Result));
+  EXPECT_EQ(Result, TypeParam(-1));
+}
+
+TYPED_TEST(OverflowTest, SubOverflowToMax) {
+  TypeParam Result;
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(SubOverflow<TypeParam>(0, MinValue, Result));
+  EXPECT_EQ(Result, MinValue);
+}
+
+TYPED_TEST(OverflowTest, SubOverflowToMin) {
+  TypeParam Result;
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(SubOverflow<TypeParam>(0, MinValue, Result));
+  EXPECT_EQ(Result, MinValue);
+}
+
+TYPED_TEST(OverflowTest, SubOverflowToNegative) {
+  TypeParam Result;
+  auto MaxValue = std::numeric_limits<TypeParam>::max();
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(SubOverflow<TypeParam>(MaxValue, MinValue, Result));
+  EXPECT_EQ(Result, TypeParam(-1));
+}
+
+TYPED_TEST(OverflowTest, SubOverflowToPositive) {
+  TypeParam Result;
+  auto MaxValue = std::numeric_limits<TypeParam>::max();
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(SubOverflow<TypeParam>(MinValue, MaxValue, Result));
+  EXPECT_EQ(Result, TypeParam(1));
+}
+
+TYPED_TEST(OverflowTest, MulNoOverflow) {
+  TypeParam Result;
+  EXPECT_FALSE(MulOverflow<TypeParam>(1, 2, Result));
+  EXPECT_EQ(Result, 2);
+  EXPECT_FALSE(MulOverflow<TypeParam>(-1, 3, Result));
+  EXPECT_EQ(Result, -3);
+  EXPECT_FALSE(MulOverflow<TypeParam>(4, -2, Result));
+  EXPECT_EQ(Result, -8);
+  EXPECT_FALSE(MulOverflow<TypeParam>(-6, -5, Result));
+  EXPECT_EQ(Result, 30);
+}
+
+TYPED_TEST(OverflowTest, MulNoOverflowToMax) {
+  TypeParam Result;
+  auto MaxValue = std::numeric_limits<TypeParam>::max();
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_FALSE(MulOverflow<TypeParam>(MinValue + 1, -1, Result));
+  EXPECT_EQ(Result, MaxValue);
+}
+
+TYPED_TEST(OverflowTest, MulOverflowToMin) {
+  TypeParam Result;
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  EXPECT_TRUE(MulOverflow<TypeParam>(MinValue, -1, Result));
+  EXPECT_EQ(Result, MinValue);
+}
+
+TYPED_TEST(OverflowTest, MulOverflowMax) {
+  TypeParam Result;
+  auto MinValue = std::numeric_limits<TypeParam>::min();
+  auto MaxValue = std::numeric_limits<TypeParam>::max();
+  EXPECT_TRUE(MulOverflow<TypeParam>(MinValue, MinValue, Result));
+  EXPECT_EQ(Result, 0);
+  EXPECT_TRUE(MulOverflow<TypeParam>(MaxValue, MaxValue, Result));
+  EXPECT_EQ(Result, 1);
+}
+
+TYPED_TEST(OverflowTest, MulResultZero) {
+  TypeParam Result;
+  EXPECT_FALSE(MulOverflow<TypeParam>(4, 0, Result));
+  EXPECT_EQ(Result, TypeParam(0));
+  EXPECT_FALSE(MulOverflow<TypeParam>(-5, 0, Result));
+  EXPECT_EQ(Result, TypeParam(0));
+  EXPECT_FALSE(MulOverflow<TypeParam>(0, 5, Result));
+  EXPECT_EQ(Result, TypeParam(0));
+  EXPECT_FALSE(MulOverflow<TypeParam>(0, -5, Result));
+  EXPECT_EQ(Result, TypeParam(0));
 }
 
 } // namespace

@@ -76,7 +76,12 @@ void MapExtDefNamesConsumer::handleDecl(const Decl *D) {
 
 void MapExtDefNamesConsumer::addIfInMain(const DeclaratorDecl *DD,
                                          SourceLocation defStart) {
-  std::string LookupName = CrossTranslationUnitContext::getLookupName(DD);
+  llvm::Optional<std::string> LookupName =
+      CrossTranslationUnitContext::getLookupName(DD);
+  if (!LookupName)
+    return;
+  assert(!LookupName->empty() && "Lookup name should be non-empty.");
+
   if (CurrentFileName.empty()) {
     CurrentFileName =
         SM.getFileEntryForID(SM.getMainFileID())->tryGetRealPathName();
@@ -89,7 +94,7 @@ void MapExtDefNamesConsumer::addIfInMain(const DeclaratorDecl *DD,
   case VisibleNoLinkage:
   case UniqueExternalLinkage:
     if (SM.isInMainFile(defStart))
-      Index[LookupName] = CurrentFileName;
+      Index[*LookupName] = CurrentFileName;
     break;
   default:
     break;
@@ -100,7 +105,7 @@ class MapExtDefNamesAction : public ASTFrontendAction {
 protected:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  llvm::StringRef) {
-    return llvm::make_unique<MapExtDefNamesConsumer>(CI.getASTContext());
+    return std::make_unique<MapExtDefNamesConsumer>(CI.getASTContext());
   }
 };
 
