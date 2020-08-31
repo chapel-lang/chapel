@@ -817,7 +817,7 @@ where !usingLAPACK
     halt("Matrix inverse only supports square matrices");
 
   const n = A.shape(0);
-  var ACopy : [1..n, 1..n] real = [x in A] x;
+  var ACopy = A;
 
   private use Math;
 
