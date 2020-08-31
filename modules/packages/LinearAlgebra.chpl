@@ -993,7 +993,7 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType, distArray : [] eltType) {
   const d = if m < n then 0 else 1;
   const diagSize = Adom.dim(d).size;
 
-  if diagSize != distArray.size then halt("Output array is not of correct size")
+  if diagSize != distArray.size then halt("Output array is not of correct size");
 
   if hasDefaultIndices(Adom) then return _dist_diag_vec_helper(A, d, diagSize);
   else {
@@ -1025,7 +1025,7 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType,
 
   const diagSize = Adom.dim(d).size - K;
   if diagSize != distArray.size then 
-    halt("Output array is not of correct size")
+    halt("Output array is not of correct size");
 
   ref Aref = A.reindex(k..#Adom.shape(0), 0..#Adom.shape(1));
   return _dist_diag_vec_helper(Aref, diagSize, distArray);
