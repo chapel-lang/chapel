@@ -1,0 +1,3 @@
+multipleDef-multipleReexport.chpl:2: error: symbol x is multiply defined
+note: 'x' was reexported at multipleDef-multipleReexport.chpl:12
+multipleDef-multipleReexport.chpl:5: note: also defined here
