@@ -22,4 +22,4 @@ proc sinMatrix(n) {
 var invA = inv(sinMatrix(n));
 writeln(invA);
 
-writeln(isClose(dot(sinMatrix(n), invA), eye(I)));
+writeln(isClose(dot(sinMatrix(n), invA), eye(n)));
