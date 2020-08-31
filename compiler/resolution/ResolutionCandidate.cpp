@@ -785,17 +785,16 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
                                       formal->getValType());
         return false;
 
-      } else if (canDispatch(actual->getValType(),
+      } else if (canDispatch(actual->type,
                              actual,
-                             formal->getValType(),
+                             formal->type,
                              formal,
                              fn,
                              &promotes,
                              NULL,
                              formalIsParam) == false) {
         failingArgument = actual;
-        reason = classifyTypeMismatch(actual->getValType(),
-                                      formal->getValType());
+        reason = classifyTypeMismatch(actual->type, formal->type);
         return false;
 
       } else if (isInitThis || isNewTypeArg) {
