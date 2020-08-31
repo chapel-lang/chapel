@@ -1558,14 +1558,6 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
-  if (Type* copyType = canCoerceToCopyType(actualType, actualSym,
-                                           formalType, formalSym, fn)) {
-    if (copyType != actualType) {
-      return canDispatch(copyType, actualSym, formalType, formalSym, fn,
-                         promotes, paramNarrows);
-    }
-  }
-
   if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
     return true;
   }
@@ -1611,6 +1603,14 @@ bool canCoerce(Type*     actualType,
           break;
         actualParent = actualParent->dispatchParents.only();
       }
+    }
+  }
+
+  if (Type* copyType = canCoerceToCopyType(actualType, actualSym,
+                                           formalType, formalSym, fn)) {
+    if (copyType != actualType) {
+      return canDispatch(copyType, actualSym, formalType, formalSym, fn,
+                         promotes, paramNarrows);
     }
   }
 
