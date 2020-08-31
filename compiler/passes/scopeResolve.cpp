@@ -87,12 +87,14 @@ static astlocT*      resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                               Symbol* sym);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols,
-                                   std::map<Symbol*, astlocT*>& renameLocs,
-                                   bool storeRenames);
+static
+bool lookupThisScopeAndUses(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -1542,13 +1544,15 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
-                   bool storeRenames);
+                   bool storeRenames,
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
-static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
-                                    const char* nameUsed,
-                                    bool storeRenames,
-                                    std::map<Symbol*, astlocT*> renameLocs)
+static void
+printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
+                        const char* nameUsed, bool storeRenames,
+                        std::map<Symbol*, astlocT*> renameLocs,
+                        std::map<Symbol*, VisibilityStmt*>& reexportPts)
 {
   Symbol* sampleFunction = NULL;
   for_vector(Symbol, another, symbols) if (another != sym)
@@ -1556,6 +1560,12 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
     if (isFnSymbol(another))
       sampleFunction = another;
     else {
+      if (VisibilityStmt* reexport = reexportPts[another]) {
+        USR_PRINT(another,
+                  "symbol '%s', defined here, was reexported at %s:%d",
+                  another->name, reexport->astloc.filename,
+                  reexport->astloc.lineno);
+      }
       astlocT* renameLoc = renameLocs[another];
       if (storeRenames && renameLoc != NULL) {
         USR_PRINT(another,
@@ -1577,7 +1587,8 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs) {
+                             std::map<Symbol*, astlocT*>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
   // If they're all functions
   //   then      assume function resolution will be applied
@@ -1588,13 +1599,19 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                      failedUSymExprs.end(),
                      context) == 0) {
         failedUSymExprs.push_back(context);
-        astlocT* symRenameLoc = renameLocs[sym];
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+
+        if (VisibilityStmt* reexport = reexportPts[sym]) {
+          USR_PRINT("'%s' was reexported at %s:%d", name,
+                    reexport->astloc.filename, reexport->astloc.lineno);
+        }
+        astlocT* symRenameLoc = renameLocs[sym];
         if (storeRenames && symRenameLoc != NULL) {
           USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
                     name, symRenameLoc->filename, symRenameLoc->lineno);
         }
-        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
+        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs,
+                                reexportPts);
         break;
       }
     }
@@ -1611,9 +1628,10 @@ Symbol* lookupAndCount(const char*           name,
 
   std::vector<Symbol*> symbols;
   std::map<Symbol*, astlocT*> renameLocs;
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
   Symbol*              retval = NULL;
 
-  lookup(name, context, symbols, renameLocs, storeRenames);
+  lookup(name, context, symbols, renameLocs, reexportPts, storeRenames);
 
   nSymbolsFound = symbols.size();
 
@@ -1633,10 +1651,12 @@ Symbol* lookupAndCount(const char*           name,
     if (renameLocs.size() > 0) {
       // this can be the case when we resolved an urse through a public import
       // that renames the symbol
-      checkConflictingSymbols(symbols, name, context, true, renameLocs);
+      checkConflictingSymbols(symbols, name, context, true, renameLocs,
+                              reexportPts);
     }
     else {
-      checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
+      checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs,
+                              reexportPts);
     }
     retval = NULL;
   }
@@ -1653,10 +1673,12 @@ void lookup(const char*           name,
             BaseAST*              context,
             std::vector<Symbol*>& symbols,
             std::map<Symbol*, astlocT*>& renameLocs,
+            std::map<Symbol*, VisibilityStmt*>& reexportPts,
             bool storeRenames) {
   Vec<BaseAST*> visited;
 
-  lookup(name, context, context, visited, symbols, renameLocs, storeRenames);
+  lookup(name, context, context, visited, symbols, renameLocs, storeRenames,
+         reexportPts);
 }
 
 static void lookup(const char*           name,
@@ -1667,13 +1689,14 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
-                   bool storeRenames) {
+                   bool storeRenames,
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
 
     if (lookupThisScopeAndUses(name, context, scope, symbols, renameLocs,
-                               storeRenames) == true) {
+                               storeRenames, reexportPts) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1695,18 +1718,18 @@ static void lookup(const char*           name,
         if (outerScope->getModule() == rootModule ||
             outerScope->getModule() == theProgram) {
           lookup(name, context, outerScope, visited, symbols, renameLocs,
-                 storeRenames);
+                 storeRenames, reexportPts);
         } else {
           // if it's a nested module, don't look into the parent
           // module (a 'use' or 'import' is required to do that), but
           // do see if ChapelStandard or theProgram resolve things for
           // us that are not yet resolved.
           lookup(name, context, standardModule->block, visited, symbols,
-                 renameLocs, storeRenames);
+                 renameLocs, storeRenames, reexportPts);
           if (symbols.size() == 0) {
             
             lookup(name, context, theProgram->block, visited, symbols,
-                   renameLocs, storeRenames);
+                   renameLocs, storeRenames, reexportPts);
           }
         }
         // As a last ditch effort, see if this module's name happens to match.
@@ -1730,7 +1753,7 @@ static void lookup(const char*           name,
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols, renameLocs,
-                 storeRenames);
+                 storeRenames, reexportPts);
         }
       }
 
@@ -1739,7 +1762,7 @@ static void lookup(const char*           name,
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
         lookup(name, context, getScope(scope), visited, symbols, renameLocs,
-               storeRenames);
+               storeRenames, reexportPts);
       }
     }
   }
@@ -1773,12 +1796,14 @@ static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
 static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
                          ImportStmt* current);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols,
-                                   std::map<Symbol*, astlocT*>& renameLocs,
-                                   bool storeRenames) {
+static
+bool lookupThisScopeAndUses(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts) {
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
@@ -1843,7 +1868,8 @@ static bool lookupThisScopeAndUses(const char*           name,
               if (!sym && use->canReexport) {
                 if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
                   sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
-                                                         renameLocs);
+                                                         renameLocs,
+                                                         reexportPts, false);
                   // propagate this information to the UseStmt
                   if (!rs->canReexport) {
                     use->canReexport = false;

@@ -1085,17 +1085,17 @@ Symbol* ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
   if (!this->canReexport) return NULL;
 
   std::map<Symbol *, astlocT *> renameLocs;
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
   Symbol *retval = lookupPublicUnqualAccessSyms(name, context, renameLocs,
-                                                true);
+                                                reexportPts, true);
   return retval;
 }
 
 Symbol*
 ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
-                                           BaseAST *context,
-                                           std::map<Symbol*,
-                                             astlocT*>& renameLocs,
-                                           bool followUses) {
+              BaseAST *context, std::map<Symbol*, astlocT*>& renameLocs,
+              std::map<Symbol*, VisibilityStmt*>& reexportPts,
+              bool followUses) {
   if (!this->canReexport) return NULL;
 
   std::vector<Symbol *> symbols;
@@ -1124,6 +1124,9 @@ ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               ResolveScope *scope = ResolveScope::getScopeFor(ms->block);
               if (Symbol *retval = scope->lookupNameLocally(nameToUse)) {
                 symbols.push_back(retval);
+
+                reexportPts[retval] = visStmt;
+
                 if (isSymRenamed) {
                   renameLocs[retval] = &visStmt->astloc;
                   traversedRenames = true;
@@ -1157,7 +1160,7 @@ ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
 
     // likely start the error process here
     checkConflictingSymbols(symbols, name, context,
-                            traversedRenames, renameLocs);
+                            traversedRenames, renameLocs, reexportPts);
   }
   return NULL;
 }
