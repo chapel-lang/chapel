@@ -901,7 +901,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   return A;
 }
 
-pragma "/*
+/*
   Returns the inverse of ``A`` square matrix A.
 
 
@@ -909,7 +909,7 @@ pragma "/*
 
       This procedure is used when `lacpakImpl=off` is used and currently
       does not support inplace inversion of matrices
-*/"
+*/
 proc inv(ref A: [?Adom] ?eltType) throws
 where !usingLAPACK
 {
