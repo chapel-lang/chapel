@@ -23,4 +23,4 @@ var I = dot(sinMatrix(n), invA);
 writeln(I);
 writeln();
 
-assertEqual(I, eye(n))
+assertEqual(I, eye(n));
