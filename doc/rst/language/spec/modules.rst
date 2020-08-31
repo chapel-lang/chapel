@@ -299,7 +299,7 @@ Using Modules
 
 The ``use`` statement provides one of the two primary ways to access a module’s
 symbols from outside of the module, the other being the ``import`` statement.
-Use statements by default make both the module’s name and its public symbols
+By default, use statements make both the module’s name and its public symbols
 available for access within a given scope. For top-level modules, a ``use``
 or ``import`` statement is required before referring to the module’s name or the
 symbols it contains within a given lexical scope.
@@ -951,8 +951,7 @@ resembles the second example instead of the first.
         }
       }
 
-   This means that A could contain mentions like ``B.cSymbol`` and it would
-   access C's cSymbol.
+   Here, A's mention of ``B.cSymbol`` accesses ``cSymbol`` from C.
 
    .. BLOCK-test-chapeloutput
 
