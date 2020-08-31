@@ -21,3 +21,5 @@ proc sinMatrix(n) {
 
 var invA = inv(sinMatrix(n));
 writeln(invA);
+
+writlen(isClose(sinMatrix(n), invA));
