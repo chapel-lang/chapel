@@ -806,20 +806,23 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   return A;
 }
 
-pragma "no doc"
+pragma "/*
+  Returns the inverse of ``A`` square matrix A.
+
+
+    .. note::
+
+      This procedure is used when `lacpakImpl=off` is used and currently
+      does not support inplace inversion of matrices
+*/"
 proc inv(ref A: [?Adom] ?eltType) throws
 where !usingLAPACK
 {
-  if Adom.rank != 2 then
-    halt("Wrong rank for matrix inverse");
-
   if !isSquare(A) then
-    halt("Matrix inverse only supports square matrices");
+    compilerError("Matrix inverse only supports square matrices");
 
   const n = A.shape(0);
   var ACopy : [1..n, 1..n] real = [x in A] x;
-
-  private use Math;
 
   var i = 1;
   ref ident = eye(n);
