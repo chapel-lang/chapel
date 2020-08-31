@@ -1079,7 +1079,7 @@ private proc _dist_diag_matrix(A:[?Adom] ?eltType) {
 }
 
 private proc _dist_diag_matrix(A:[?Adom] ?eltType, distArray: [] eltType) {
-  const diagSize = A.size
+  const diagSize = A.size;
   if distArray.shape != (diagSize, diagSize) then
     halt("Output array is not of correct size"); 
 
