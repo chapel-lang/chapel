@@ -1752,7 +1752,7 @@ module ChapelBase {
 
   // implements 'delete' statement
   pragma "no borrow convert"
-  inline proc chpl__delete(arg) {
+  proc chpl__delete(arg) {
 
     if chpl_isDdata(arg.type) then
       compilerError("cannot delete data class");
@@ -1785,7 +1785,7 @@ module ChapelBase {
   }
 
   // delete two or more things
-  inline proc chpl__delete(arg, args...) {
+  proc chpl__delete(arg, args...) {
     chpl__delete(arg);
     for param i in 0..args.size-1 do
       chpl__delete(args(i));
