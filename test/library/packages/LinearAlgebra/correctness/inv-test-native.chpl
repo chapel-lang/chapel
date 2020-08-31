@@ -1,4 +1,5 @@
 use LinearAlgebra;
+use UnitTest;
 
 config const n=10;
 config const thresh=1.0e-10;
@@ -14,9 +15,12 @@ proc sinMatrix(n) {
   return A;
 }
 
-writeln(inv(sinMatrix(n)));
+var invA = inv(sinMatrix(n)
+writeln(invA);
 writeln();
 
-var A = sinMatrix(n);
-writeln(A);
+var I = dot(sinMatrix(n), invA);
+writeln(I);
 writeln();
+
+assertEqual(I, eye(n))
