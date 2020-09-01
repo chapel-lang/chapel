@@ -2,5 +2,7 @@ sgemv : 2 PASSED, 0 FAILED
 dgemv : 2 PASSED, 0 FAILED
 cgemv : 2 PASSED, 0 FAILED
 zgemv : 2 PASSED, 0 FAILED
+ sger : 1 PASSED, 0 FAILED
+ dger : 1 PASSED, 0 FAILED
 cgeru : 1 PASSED, 0 FAILED
 zgeru : 1 PASSED, 0 FAILED
