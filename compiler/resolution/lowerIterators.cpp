@@ -2499,9 +2499,6 @@ expandForLoop(ForLoop* forLoop) {
       Vec<BaseAST*> asts;
       collect_asts_postorder(iterFn, asts);
 
-      if (forLoop->id == 1885107)
-        gdbShouldBreakHere();
-
       // If the iterator cannot be inlined a re-entrant advance function will
       // be built. This function maintains state and must be called in order.
       // If inlined, the iterator's loop will be order independent if it was
@@ -2518,7 +2515,8 @@ expandForLoop(ForLoop* forLoop) {
     // The loop will be order independent if all the iters it zips are order
     // independent (all iters will be inlined and were all marked order
     // independent or the forLoop was marked independent prior zippering.)
-    forLoop->orderIndependentSet(allOrderIndependent);
+    if (forLoop->isOrderIndependent())
+      forLoop->orderIndependentSet(allOrderIndependent);
 
     // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call
