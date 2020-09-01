@@ -416,10 +416,11 @@ has no effect on its behavior. If a scope includes multiple ``use`` statements
 or a combination of ``use`` and ``import`` statements, then the newly-visible
 names are inserted in to a common enclosing scope.
 
-An error is signaled if multiple enumeration constants or public
-module-level symbols would be inserted into this enclosing scope with
-the same name, and that name is accessed by other statements in the
-same scope as the use.
+An error is signaled if multiple conflicting enumeration constants or public
+module-level symbols would be inserted into this enclosing scope with the same
+name, and that name is accessed by other statements in the same scope as the
+use.  Remember that this does not apply to functions unless they are also
+indistinguishable in other ways, see :ref:`Function_Overloading`.
 
 A module or enum being used may optionally be given a new name using the ``as``
 keyword.  This new name will be usable from the scope of the use in place of the
@@ -678,7 +679,9 @@ newly-visible names are inserted into a common enclosing scope.
 
 An error is signaled if multiple public module-level symbols would be inserted
 into this enclosing scope with the same name, and that name is mentioned by
-other statements in the same scope as the import.
+other statements in the same scope as the import.  Remember that this does not
+apply to functions unless they are also indistinguishable in other ways, see
+:ref:`Function_Overloading`.
 
 A module or a public module-level symbol being imported may optionally be given
 a new name using the ``as`` keyword.  This new name will be usable from the
