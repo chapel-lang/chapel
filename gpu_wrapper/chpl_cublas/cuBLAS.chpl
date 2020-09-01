@@ -347,8 +347,35 @@ module cuBLAS {
     cublas_zgemv(handle, trans, m, n, alpha, A, lda, x, incX, beta, y, incY);
 }
 
+  proc cu_sger(handle: c_void_ptr, m: c_int, n: c_int, ref alpha: c_float, x: c_ptr(c_float), y: c_ptr(c_float), A: c_ptr(c_float), lda: c_int, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_sger(handle, m, n, alpha, x, incX, y, incY, A, lda);
+}
 
+  proc cu_dger(handle: c_void_ptr, m: c_int, n: c_int, ref alpha: c_double, x: c_ptr(c_double), y: c_ptr(c_double), A: c_ptr(c_double), lda: c_int, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_dger(handle, m, n, alpha, x, incX, y, incY, A, lda);
+}
 
+  proc cu_cgeru(handle: c_void_ptr, m: c_int, n: c_int, ref alpha: complex(64), x: c_ptr(complex(64)), y: c_ptr(complex(64)), A: c_ptr(complex(64)), lda: c_int, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cgeru(handle, m, n, alpha, x, incX, y, incY, A, lda);
+}
+
+  proc cu_cgerc(handle: c_void_ptr, m: c_int, n: c_int, ref alpha: complex(64), x: c_ptr(complex(64)), y: c_ptr(complex(64)), A: c_ptr(complex(64)), lda: c_int, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_cgrec(handle, m, n, alpha, x, incX, y, incY, A, lda);
+}
+
+  proc cu_zgeru(handle: c_void_ptr, m: c_int, n: c_int, ref alpha: complex(128), x: c_ptr(complex(128)), y: c_ptr(complex(128)), A: c_ptr(complex(128)), lda: c_int, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zgeru(handle, m, n, alpha, x, incX, y, incY, A, lda);
+}
+
+  proc cu_zgerc(handle: c_void_ptr, m: c_int, n: c_int, ref alpha: complex(128), x: c_ptr(complex(128)), y: c_ptr(complex(128)), A: c_ptr(complex(128)), lda: c_int, incX: c_int = 1, incY: c_int = 1){
+    require "c_cublas.h", "c_cublas.o";
+    cublas_zgerc(handle, m, n, alpha, x, incX, y, incY, A, lda);
+}
 
   module C_CUBLAS {
     use SysCTypes;
@@ -439,6 +466,14 @@ module cuBLAS {
     extern proc cublas_dgemv(handle: c_void_ptr, trans: c_int, m: c_int, n: c_int, alpha: c_double, A: c_ptr(c_double), lda: c_int, x: c_ptr(c_double), incX: c_int, beta: c_double, y: c_ptr(c_double), incY: c_int);
     extern proc cublas_cgemv(handle: c_void_ptr, trans: c_int, m: c_int, n: c_int, alpha: complex(64), A: c_ptr(complex(64)), lda: c_int, x: c_ptr(complex(64)), incX: c_int, beta: complex(64), y: c_ptr(complex(64)), incY: c_int);
     extern proc cublas_zgemv(handle: c_void_ptr, trans: c_int, m: c_int, n: c_int, alpha: complex(128), A: c_ptr(complex(128)), lda: c_int, x: c_ptr(complex(128)), incX: c_int, beta: complex(128), y: c_ptr(complex(128)), incY: c_int);
+
+    extern proc cublas_sger(handle: c_void_ptr, m: c_int, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int, A: c_ptr(c_float), lda: c_int);
+    extern proc cublas_dger(handle: c_void_ptr, m: c_int, n: c_int, alpha: c_double, x: c_ptr(c_double), incX: c_int, y: c_ptr(c_double), incY: c_int, A: c_ptr(c_double), lda: c_int);
+    extern proc cublas_cgeru(handle: c_void_ptr, m: c_int, n: c_int, alpha: complex(64), x: c_ptr(complex(64)), incX: c_int, y: c_ptr(complex(64)), incY: c_int, A: c_ptr(complex(64)), lda: c_int);
+extern proc cublas_cgerc(handle: c_void_ptr, m: c_int, n: c_int, alpha: complex(64), x: c_ptr(complex(64)), incX: c_int, y: c_ptr(complex(64)), incY: c_int, A: c_ptr(complex(64)), lda: c_int);
+    extern proc cublas_zgeru(handle: c_void_ptr, m: c_int, n: c_int, alpha: complex(128), x: c_ptr(complex(128)), incX: c_int, y: c_ptr(complex(128)), incY: c_int, A: c_ptr(complex(128)), lda: c_int);
+    extern proc cublas_zgerc(handle: c_void_ptr, m: c_int, n: c_int, alpha: complex(128), x: c_ptr(complex(128)), incX: c_int, y: c_ptr(complex(128)), incY: c_int, A: c_ptr(complex(128)), lda: c_int);
+
 
     extern proc cublas_sgemm(handle: c_void_ptr, transa: c_int, transb: c_int, m: c_int, n: c_int, k: c_int, alpha: c_float, A: c_ptr(c_float), lda: c_int, B: c_ptr(c_float), ldb: c_int, beta: c_float, C: c_ptr(c_float), ldc: c_int);
   }
