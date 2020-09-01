@@ -1260,8 +1260,38 @@ void init_ofiFabricDomain(void) {
   }
 
   //
-  // Try to get a good provider that can do the transaction orderings
-  // we want.
+  // If we can find a good provider that supports FI_DELIVERY_COMPLETE,
+  // then use that.  In doing so, don't accept anything that includes
+  // the RxM utility provider unless the environment forces it on us,
+  // because RxM advertises delivery-complete but doesn't actually do
+  // it.
+  //
+  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+
+  struct fi_info* infoCmplt;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
+            ret, -FI_ENODATA);
+
+  if (ret == FI_SUCCESS
+      && ((ofi_info = findProvInList(infoCmplt,
+                                     prov_name == NULL /*skip_ungood_provs*/,
+                                     !forced_RxD /*skip_RxD_provs*/,
+                                     !forced_RxM /*skip_RxM_provs*/))
+          != NULL)) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "** found desirable provider with delivery-complete");
+    fi_freeinfo(infoCmplt);
+    goto haveProvider;
+  }
+
+  DBG_PRINTF_NODE0(DBG_CFGFAB,
+                   "** no desirable provider with delivery-complete");
+
+  hints->tx_attr->op_flags = FI_COMPLETION;
+
+  //
+  // If we can find a good provider that supports the transaction
+  // orderings we want, then use that.
   //
   uint64_t msg_order_more = (((hints->caps & FI_ATOMIC) == 0)
                              ? (FI_ORDER_RMA_RAW | FI_ORDER_SAW)
@@ -1295,57 +1325,9 @@ void init_ofiFabricDomain(void) {
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
 
   //
-  // We couldn't get the desired transaction orderings, so instead try
-  // to get FI_DELIVERY_COMPLETE.  Unless an environment setting forces
-  // use of the RxM utility provider, only accept providers that don't
-  // include RxM, because though it advertises delivery-complete it
-  // doesn't actually do it.
+  // We couldn't find a good provider that supports what we need, so now
+  // try to find _any_ provider that does so.
   //
-  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
-
-  struct fi_info* infoCmplt;
-  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
-            ret, -FI_ENODATA);
-
-  if (ret == FI_SUCCESS
-      && ((ofi_info = findProvInList(infoCmplt,
-                                     prov_name == NULL /*skip_ungood_provs*/,
-                                     !forced_RxD /*skip_RxD_provs*/,
-                                     !forced_RxM /*skip_RxM_provs*/))
-          != NULL)) {
-    DBG_PRINTF_NODE0(DBG_CFGFAB,
-                     "** found desirable provider with delivery-complete");
-    fi_freeinfo(infoCmplt);
-    goto haveProvider;
-  }
-
-  DBG_PRINTF_NODE0(DBG_CFGFAB,
-                   "** no desirable provider with delivery-complete");
-
-  hints->tx_attr->op_flags = FI_COMPLETION;
-
-  //
-  // We couldn't get FI_DELIVERY_COMPLETE in a desirable provider
-  // either.  Just use anything that matched and that we know how
-  // to work with.
-  //
-  if (infoTxOrd != NULL) {
-    ofi_info = findProvInList(infoTxOrd,
-                              false /*skip_ungood_provs*/,
-                              !forced_RxD /*skip_RxD_provs*/,
-                              false /*skip_RxM_provs*/);
-    fi_freeinfo(infoTxOrd);
-    if (ofi_info != NULL) {
-      DBG_PRINTF_NODE0(DBG_CFGFAB,
-                       "** found less-desirable provider with transaction "
-                       "orderings");
-      if (infoCmplt != NULL) {
-        fi_freeinfo(infoCmplt);
-      }
-      goto haveProvider;
-    }
-  }
-
   if (infoCmplt != NULL) {
     ofi_info = findProvInList(infoCmplt,
                               false /*skip_ungood_provs*/,
@@ -1356,6 +1338,23 @@ void init_ofiFabricDomain(void) {
       DBG_PRINTF_NODE0(DBG_CFGFAB,
                        "** found less-desirable provider with "
                        "delivery-complete");
+      if (infoTxOrd != NULL) {
+        fi_freeinfo(infoTxOrd);
+      }
+      goto haveProvider;
+    }
+  }
+
+  if (infoTxOrd != NULL) {
+    ofi_info = findProvInList(infoTxOrd,
+                              false /*skip_ungood_provs*/,
+                              !forced_RxD /*skip_RxD_provs*/,
+                              false /*skip_RxM_provs*/);
+    fi_freeinfo(infoTxOrd);
+    if (ofi_info != NULL) {
+      DBG_PRINTF_NODE0(DBG_CFGFAB,
+                       "** found less-desirable provider with transaction "
+                       "orderings");
       goto haveProvider;
     }
   }
