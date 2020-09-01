@@ -29,6 +29,9 @@ proc loop1(A, B) {
   loop1(A,B);
 }
 
+// Check that we don't generate llvm.access.group metadata in
+// loads/stores for stack local variables in the loop.
+
 // CHECK: void @loop2
 proc loop2() {
   for i in vectorizeOnly(0..n) {
