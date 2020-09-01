@@ -1,4 +1,4 @@
-vec-hint-ok-harder-zips.chpl:18: note: Vectorization hinted for CForLoop
-vec-hint-ok-harder-zips.chpl:24: note: Vectorization hinted for CForLoop
+vec-hint-ok-harder-zips.chpl:18: note: loop vectorization (with parallel access) hinted for CForLoop
+vec-hint-ok-harder-zips.chpl:24: note: loop vectorization (with parallel access) hinted for CForLoop
 2.0 10001.0
 3.0 10002.0
