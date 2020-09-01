@@ -1023,6 +1023,7 @@ module String {
       return "";
     }
 
+    pragma "not order independent yielding loops"
     iter doSplitWSUTF8(maxsplit: int) {
       if !this.isEmpty() {
         const localThis = this.localize();
