@@ -599,6 +599,9 @@ static ArgSymbol* newOuterVarArg(Symbol* ovar) {
   if (ovar->hasFlag(FLAG_TYPE_VARIABLE)) {
     ret->addFlag(FLAG_TYPE_VARIABLE);
   }
+  if (ArgSymbol* ovarArg = toArgSymbol(ovar))
+    if (ovarArg->intent == INTENT_PARAM)
+      ret->intent = INTENT_PARAM;
 
   return ret;
 }
