@@ -1,4 +1,5 @@
 use Random;
+use LinearAlgebra;
 use cuBLAS;
 use IO;
 
@@ -41,6 +42,7 @@ proc main() {
 
  // test_gbmv();
   test_gemv();
+  test_geru();
 }
 
 proc test_gbmv() {
@@ -55,6 +57,11 @@ proc test_gemv() {
   test_cugemv_helper(real(64));
   test_cugemv_helper(complex(64));
   test_cugemv_helper(complex(128));
+}
+
+proc test_geru() {
+  test_cugeru_helper(complex(64));
+  test_cugeru_helper(complex(128));
 }
 
 
@@ -169,6 +176,60 @@ proc test_cugemv_helper(type t){
 
     trackErrors(name, err, errorThreshold, passed, failed, tests);
 
+  }
+
+  printErrors(name, passed, failed, tests);
+}
+
+proc test_cugeru_helper(type t){
+  var passed = 0,
+      failed = 0,
+      tests = 0;
+  const errorThreshold = blasError(t);
+  var name = "%sgeru".format(blasPrefix(t));
+  // Simple test
+  {
+    // Square case
+    const m = 10 : c_int,
+          n = 10 : c_int;
+
+    var A : [{0.. #m, 0.. #n}] t,
+        X : [{0.. #m}]t,
+        Y : [{0.. #n}]t,
+        R : [{0.. #m, 0..#n}] t; // Result
+
+
+    // Populate values
+    var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
+    rng.fillRandom(A);
+    rng.fillRandom(X);
+    rng.fillRandom(Y);
+    var alpha = rng.getNext();
+
+    //Get pointer to X allocated on GPU
+    var gpu_ptr_A = cpu_to_gpu(c_ptrTo(A), c_sizeof(t)*(m*m):size_t);
+    var gpu_ptr_X = cpu_to_gpu(c_ptrTo(X), c_sizeof(t)*m:size_t);
+    var gpu_ptr_Y = cpu_to_gpu(c_ptrTo(Y), c_sizeof(t)*m:size_t);
+
+    //Create cublas handle
+    var cublas_handle = cublas_create_handle();
+
+    // Precompute result
+    for (i,j) in R.domain do R[i, j] = alpha*X[i]*Y[j] + A[j, i];
+
+    select t {
+      when complex(64) do {
+        cu_cgeru(cublas_handle, m, n, alpha, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), gpu_ptr_A:c_ptr(t), m);
+      }
+      when complex(128) do {
+        cu_zgeru(cublas_handle, m, n, alpha, gpu_ptr_X:c_ptr(t), gpu_ptr_Y:c_ptr(t), gpu_ptr_A:c_ptr(t), m);
+      }
+   }
+
+    gpu_to_cpu(c_ptrTo(A), gpu_ptr_A, c_sizeof(t)*(m*n):size_t);
+    var err = max reduce abs(transpose(A)-R);
+
+    trackErrors(name, err, errorThreshold, passed, failed, tests);
   }
 
   printErrors(name, passed, failed, tests);

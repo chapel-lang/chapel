@@ -83,4 +83,12 @@ int cublas_dgemv(c_void_ptr *handle, int trans, int m, int n, double alpha, doub
 int cublas_cgemv(c_void_ptr *handle, int trans, int m, int n, complex float alpha, complex float *A, int lda, complex float *x, int incX, complex float beta, complex float *y, int incY);
 int cublas_zgemv(c_void_ptr *handle, int trans, int m, int n, complex double alpha, complex double *A, int lda, complex double *x, int incX, complex double beta, complex double *y, int incY);
 
+int cublas_sger(c_void_ptr *handle, int m, int n, float alpha, float *x, int incX, float *y, int incY, float *A, int lda);
+int cublas_dger(c_void_ptr *handle, int m, int n, double alpha, double *x, int incX, double *y, int incY,double *A, int lda);
+int cublas_cgeru(c_void_ptr *handle, int m, int n, complex float alpha, complex float *x, int incX, complex float *y, int incY, complex float *A, int lda);
+int cublas_cgerc(c_void_ptr *handle, int m, int n, complex float alpha, complex float *x, int incX, complex float *y, int incY, complex float *A, int lda);
+int cublas_zgeru(c_void_ptr *handle, int m, int n, complex double alpha, complex double *x, int incX, complex double *y, int incY, complex double *A, int lda);
+int cublas_zgerc(c_void_ptr *handle, int m, int n, complex double alpha, complex double *x, int incX, complex double *y, int incY, complex double *A, int lda);
+
+
 int cublas_sgemm(c_void_ptr *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc);

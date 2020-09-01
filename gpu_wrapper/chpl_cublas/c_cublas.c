@@ -517,6 +517,42 @@ int cublas_zgemv(cublasHandle_t *handle, int trans, int m, int n, complex double
     return 0;
 }
 
+int cublas_sger(cublasHandle_t *handle, int m, int n, float alpha, float *x, int incX, float *y, int incY, float *A, int lda){
+    cublasSger(*handle, m, n, &alpha, x, incX, y, incY, A, lda);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_dger(cublasHandle_t *handle, int m, int n, double alpha, double *x, int incX, double *y, int incY, double *A, int lda){
+    cublasDger(*handle, m, n, &alpha, x, incX, y, incY, A, lda);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_cgeru(cublasHandle_t *handle, int m, int n, complex float alpha, complex float *x, int incX, complex float *y, int incY, complex float *A, int lda){
+    cublasCgeru(*handle, m, n, (cuFloatComplex*) &alpha, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY, (cuFloatComplex*) A, lda);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zgeru(cublasHandle_t *handle, int m, int n, complex double alpha, complex double *x, int incX, complex double *y, int incY, complex double *A, int lda){
+    cublasZgeru(*handle, m, n, (cuDoubleComplex*) &alpha, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY, (cuDoubleComplex*) A, lda);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_cgrec(cublasHandle_t *handle, int m, int n, complex float alpha, complex float *x, int incX, complex float *y, int incY, complex float *A, int lda){
+    cublasCgerc(*handle, m, n, (cuFloatComplex*) &alpha, (cuFloatComplex*) x, incX, (cuFloatComplex*) y, incY, (cuFloatComplex*) A, lda);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
+int cublas_zgrec(cublasHandle_t *handle, int m, int n, complex double alpha, complex double *x, int incX, complex double *y, int incY, complex double *A, int lda){
+    cublasZgerc(*handle, m, n, (cuDoubleComplex*) &alpha, (cuDoubleComplex*) x, incX, (cuDoubleComplex*) y, incY, (cuDoubleComplex*) A, lda);
+    cudaDeviceSynchronize();
+    return 0;
+}
+
 int cublas_sgemm(cublasHandle_t *handle, int transa, int transb, int m, int n, int k, float alpha, float *A, int lda, float *B, int ldb, float beta, float *C, int ldc){
 
     cublasSgemm(*handle, transa, transb, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc);
