@@ -4,55 +4,44 @@ config const n = 11;
 // CHECK: void @nestedLoops
 proc nestedLoops (A, B) {
   for i in 0..n {
-    // CHECK: [[LABELI:nestedLoops.*]]:
     for j in vectorizeOnly(0..n) {
-      // CHECK: [[LABELJ:nestedLoops.*]]:
       for k in 0..n {
-        // CHECK: [[LABELK:nestedLoops.*]]:
         for z in vectorizeOnly(0..n) {
-          // CHECK: [[LABELZ:nestedLoops.*]]:
-
           // CHECK: load i32,
           // CHECK-SAME: !llvm.access.group ![[GROUPZ:[0-9]+]]
+          // CHECK: mul nsw i32 %{{[^,]+}}, 11111
           // CHECK: store i32 %
           // CHECK-SAME: !llvm.access.group ![[GROUPZ]]
-
-          // CHECK: br i1
-          // CHECK-SAME: label %[[LABELZ]]
+          A[i,j,k,z] = B[i,j,k,z]*11111;
+          // CHECK: br i1 %{{[^,]+}}, label %[[LABELZ:[^,]+]],
           // CHECK-SAME: !llvm.loop ![[LOOPZ:[0-9]+]]
-          A[i,j,k,z] = B[i,j,k,z]*3;
         }
-
         // CHECK: load i32,
         // CHECK-SAME: !llvm.access.group ![[GROUPJ:[0-9]+]]
+        // CHECK: mul nsw i32 %{{[^,]+}}, 22222
         // CHECK: store i32 %
         // CHECK-SAME: !llvm.access.group ![[GROUPJ]]
-        A[i,j,k,0] = B[i,j,k,0]*66;
-
-        // CHECK: br i1
-        // CHECK-SAME: label %[[LABELK]]
+        A[i,j,k,0] = B[i,j,k,0]*22222;
+        // CHECK: br i1 %{{[^,]+}}, label %[[LABELK:[^,]+]],
       }
-
       // CHECK: load i32,
       // CHECK-SAME: !llvm.access.group ![[GROUPJ]]
+      // CHECK: mul nsw i32 %{{[^,]+}}, 33333
       // CHECK: store i32 %
       // CHECK-SAME: !llvm.access.group ![[GROUPJ]]
-      A[i,j,0,0] = B[i,j,0,0]*101;
-
-      // CHECK: br i1
-      // CHECK-SAME: label %[[LABELJ]]
+      A[i,j,0,0] = B[i,j,0,0]*33333;
+      // CHECK: br i1 %{{[^,]+}}, label %[[LABELJ:[^,]+]],
       // CHECK-SAME: !llvm.loop ![[LOOPJ:[0-9]+]]
     }
-
     // CHECK: load i32,
     // CHECK-NOT: !llvm.access.group
+    // CHECK: mul nsw i32 %{{[^,]+}}, 44444
     // CHECK: store i32 %
     // CHECK-NOT: !llvm.access.group
-    A[i,0,0,0] = B[i,0,0,0]*730;
-
-    // CHECK: br i1
-    // CHECK-SAME: label %[[LABELI]]
+    A[i,0,0,0] = B[i,0,0,0]*44444;
+    // CHECK: br i1 %{{[^,]+}}, label %[[LABELI:[^,]+]],
   }
+  // CHECK: ret void
 }
 
 // CHECK: !llvm.ident
