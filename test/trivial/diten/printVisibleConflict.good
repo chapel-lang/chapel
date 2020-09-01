@@ -9,6 +9,5 @@
   <internal>:0: chpl_warnUnstable
   modules/minimal/internal/ChapelLocale.chpl:27: chpl_sublocID_t
   printVisibleConflict.chpl:11: xyzSymbol
+  printVisibleConflict.chpl:2: zzzSymbol
 printVisibleConflict.chpl:12: Printing symbols visible from here:
-printVisibleConflict.chpl:2: error: symbol zzzSymbol is multiply defined
-printVisibleConflict.chpl:5: note: also defined here

@@ -1607,7 +1607,8 @@ Symbol* lookupAndCount(const char*           name,
                        BaseAST*              context,
                        int&                  nSymbolsFound,
                        bool storeRenames,
-                       astlocT** renameLoc) {
+                       astlocT** renameLoc,
+                       bool issueErrors) {
 
   std::vector<Symbol*> symbols;
   std::map<Symbol*, astlocT*> renameLocs;
@@ -1630,15 +1631,19 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    if (renameLocs.size() > 0) {
-      // this can be the case when we resolved an urse through a public import
-      // that renames the symbol
-      checkConflictingSymbols(symbols, name, context, true, renameLocs);
+    if (issueErrors) {
+      if (renameLocs.size() > 0) {
+        // this can be the case when we resolved an urse through a public import
+        // that renames the symbol
+        checkConflictingSymbols(symbols, name, context, true, renameLocs);
+      }
+      else {
+        checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
+      }
+      retval = NULL;
+    } else {
+      retval = symbols[0];
     }
-    else {
-      checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
-    }
-    retval = NULL;
   }
 
   return retval;
@@ -2725,7 +2730,9 @@ static void processGetVisibleSymbols() {
       // build a map from filename to set of visible symbols in that file
       std::map<const char*, std::set<Symbol*>*> visibleMap;
       forv_Vec(VarSymbol, sym, gVarSymbols) {
-        Symbol* found = lookup(sym->name, call);
+        int numSymbolsFound;
+        Symbol* found = lookupAndCount(sym->name, call, numSymbolsFound,
+                                       false, NULL, false);
         if (found != NULL && alreadyFound.count(found) == 0 &&
             !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
             !found->hasFlag(FLAG_COMPILER_GENERATED) &&
