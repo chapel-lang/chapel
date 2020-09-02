@@ -6,10 +6,12 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
-# Cray X* builds are cross-compilations.
+# Cray builds are cross-compilations.
 #
 ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_HWLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
+else ifneq (, $(filter cray-cs,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_HWLOC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
 endif
 
 #
