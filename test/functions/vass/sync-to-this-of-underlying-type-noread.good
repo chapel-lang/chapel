@@ -1,0 +1,4 @@
+sync-to-this-of-underlying-type-noread.chpl:15: error: unresolved call 'sync int(64).showme()'
+sync-to-this-of-underlying-type-noread.chpl:9: note: this candidate did not match: int.showme()
+sync-to-this-of-underlying-type-noread.chpl:15: note: because method call receiver with type sync int(64)
+sync-to-this-of-underlying-type-noread.chpl:9: note: is passed to formal 'this: int(64)'

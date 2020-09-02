@@ -45,7 +45,7 @@ proc doTest(type eltType) {
   forall x in s1 with (ref parcount) {
     var rd = lk$;
     parcount += 1;
-    lk$ = 0;
+    lk$.writeEF(0);
   }
 
   assert(parcount == s1.size);

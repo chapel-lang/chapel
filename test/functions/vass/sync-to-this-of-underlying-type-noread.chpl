@@ -12,7 +12,7 @@ var intSync: sync int;
 var intSingle: single int;
 
 cobegin {
-  intSync.readFE().showme();
-  intSingle.readFF().showme();
+  intSync.showme();
+  intSingle.showme();
   { sleep(3); exit(0); }  // quit after 3 seconds
 }

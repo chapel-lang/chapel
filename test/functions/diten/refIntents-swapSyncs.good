@@ -1,0 +1,3 @@
+refIntents-swapSyncs.chpl:1: In function 'swap':
+refIntents-swapSyncs.chpl:2: error: swapping sync variables is not supported
+refIntents-swapSyncs.chpl:112: Function 'swap' instantiated as: swap(l: sync int(64), r: sync int(64))

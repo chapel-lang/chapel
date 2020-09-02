@@ -46,7 +46,7 @@ blocking_loop_bool_waitfor();
 
 // sync and single
 proc blocking_sync_write() {
-  globalSync = 1;
+  globalSync.writeEF(1);
 }
 blocking_sync_write();
 
@@ -57,7 +57,7 @@ proc blocking_sync_read() {
 blocking_sync_read();
 
 proc blocking_single_write() {
-  globalSingle = 1;
+  globalSingle.writeEF(1);
 }
 blocking_single_write();
 
