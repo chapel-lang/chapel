@@ -427,14 +427,9 @@ keyword.  This new name will be usable from the scope of the use in place of the
 old name.  This new name does not affect uses or imports of that module from
 other contexts.
 
-The ``as`` keyword can also be used to disable accesses to the module name
-while still allowing accesses to the symbols within the module.  This is
-accomplished by providing ``_`` as the new name for the module.  When a module
-is renamed to ``_``, symbols within it will only be accessible without a module
-name prefix - no prefix will be useable to access the symbol.  For example,
-if a module A uses a module B in this manner and B defines a symbol bSymbol, A
-can contain accesses to ``bSymbol``, but cannot contain accesses to
-``B.bSymbol`` or ``_.bSymbol``.
+The ``as`` keyword can also be used to disable accesses to the module name while
+still allowing accesses to the symbols within the module.  See the
+:ref:`Disabling_Qualified` section for more information.
 
 Use statements may be explicitly declared ``public`` or ``private``.
 By default, uses are ``private``.  Making a use ``public`` causes its
@@ -813,6 +808,45 @@ disambiguate the symbols in this case.
    because it is defined in both M1 and M3. This will result in a
    compiler error. The call could be qualified via M1.printY() or
    M3.printY() to resolve this ambiguity.
+
+.. _Disabling_Qualified:
+
+Disabling Qualified Access
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While import statements are naturally set up to choose between enabling
+qualified or unqualified access, use statements by default always enable at
+least qualified access to a module's symbols.  This can be disabled for a
+particular use statement by providing ``_`` as the new name for the module.
+
+When a module is renamed to ``_``, symbols within it will only be accessible
+without a module name prefix - no prefix will be usable to access the symbol.
+For example:
+
+    *Example (use-no-qualified.chpl)*.
+
+    .. code-block:: chapel
+
+       module B {
+         var bSymbol = 3;
+       }
+
+       module A {
+         use B as _;
+
+         proc main() {
+           writeln(bSymbol);
+           // writeln(B.bSymbol); // Would not work
+         }
+       }
+
+    .. BLOCK-test-chapeloutput
+
+       3
+
+    In this code, module A uses a module B and renames B to ``_``.  B defines a
+    symbol ``bSymbol``, which means that A can contain accesses to ``bSymbol``,
+    but cannot contain accesses to ``B.bSymbol`` or ``_.bSymbol``.
 
 .. _Reexporting:
 
