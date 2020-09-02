@@ -1085,6 +1085,8 @@ initPrimitive() {
   prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
+  prim_def(PRIM_SET_ALIASING_ARRAY_ON_TYPE, "set aliasing array on type", returnInfoVoid, false, false);
+
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
 
   // if the argument is a value, mark it with "no auto destroy"

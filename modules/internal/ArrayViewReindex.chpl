@@ -394,6 +394,8 @@ module ArrayViewReindex {
       this._ArrInstance    = _ArrInstance;
       this.indexCache      = buildIndexCacheHelper(_ArrInstance, dom);
       this.ownsArrInstance = ownsArrInstance;
+      this.complete();
+      __primitive("set aliasing array on type", this.type, !ownsArrInstance);
     }
 
     forwarding arr except these,

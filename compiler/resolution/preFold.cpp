@@ -1734,6 +1734,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_SET_ALIASING_ARRAY_ON_TYPE: {
+    Expr* typeArg = call->get(1);
+    SymExpr* valArg = toSymExpr(call->get(2));
+
+    Type* t = canonicalClassType(typeArg->getValType());
+    if (valArg->symbol() == gTrue)
+      t->symbol->addFlag(FLAG_ALIASING_ARRAY);
+    else if (valArg->symbol() == gFalse)
+      t->symbol->removeFlag(FLAG_ALIASING_ARRAY);
+
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+    break;
+  }
+
   default:
     break;
 
