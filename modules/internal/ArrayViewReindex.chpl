@@ -382,11 +382,11 @@ module ArrayViewReindex {
     // through the array field above.
     const indexCache;
 
-    const ownsArrInstance;
+    param ownsArrInstance;
 
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
-              const ownsArrInstance : bool = false) {
+              param ownsArrInstance : bool = false) {
       super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
@@ -436,7 +436,7 @@ module ArrayViewReindex {
     // methods like this...
     //
     override proc isReindexArrayView() param {
-      return true;
+      return !ownsArrInstance;
     }
 
 
