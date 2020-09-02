@@ -9,7 +9,7 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 # Cray X* builds are cross-compilations.
 #
 ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_LIBFABRIC_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
+CHPL_LIBFABRIC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
 endif
 
 CHPL_LIBFABRIC_CFG_OPTIONS += --enable-static \
