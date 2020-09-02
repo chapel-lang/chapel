@@ -471,6 +471,9 @@ bool isRecordWrappedType(const Type* t);
 bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
+bool isAliasingArrayImplType(Type* t);
+bool isAliasingArrayType(Type* t);
+
 bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
 AggregateType* getManagedPtrManagerType(Type* t);

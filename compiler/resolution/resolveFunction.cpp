@@ -791,9 +791,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           call->insertAtTail(unrefCall);
 
-          // Relies on the ArrayView variant having
-          // the 'unref fn' flag in ChapelArray.
-          if (array && isAliasingArray(rhs->getValType()) == false) {
+          if (array && isAliasingArrayType(rhs->getValType()) == false) {
             // If the function does not have this flag, this must
             // be a non-view array. Remove the unref call.
             unrefCall->replace(rhs->copy());

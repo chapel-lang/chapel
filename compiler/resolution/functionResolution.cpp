@@ -392,28 +392,12 @@ FnSymbol* getAutoDestroy(Type* t) {
   return autoDestroyMap.get(t);
 }
 
-bool isAliasingArray(Type* t) {
-  if (t->symbol->hasFlag(FLAG_ARRAY)) {
-    AggregateType* at = toAggregateType(t);
-    INT_ASSERT(at);
-
-    Symbol* instanceField = at->getField("_instance", false);
-    if (instanceField) {
-      if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
 Type* getCopyTypeDuringResolution(Type* t) {
   if (isSyncType(t) || isSingleType(t)) {
     Type* baseType = t->getField("valType")->type;
     return baseType;
   }
-  if (isAliasingArray(t) || // avoid infinite loop in resolving array functions
+  if (isAliasingArrayType(t) || // avoid inf. loop in resolving array functions
       t->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     AggregateType* at = toAggregateType(t);
     INT_ASSERT(at);
@@ -441,7 +425,7 @@ static Type* canCoerceToCopyType(Type* actualType, Symbol* actualSym,
 
   if (isSyncType(actualValType) || isSingleType(actualValType)) {
     copyType = getCopyTypeDuringResolution(actualValType);
-  } else if (isAliasingArray(actualValType) ||
+  } else if (isAliasingArrayType(actualValType) ||
              actualValType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     // The conditions below avoid infinite loops and problems
     // relating to resolving initCopy for iterators when not needed.
@@ -6728,7 +6712,7 @@ void resolveInitVar(CallExpr* call) {
     // of the copy does need to be destroyed.
     if (SymExpr* rhsSe = toSymExpr(srcExpr))
       if (VarSymbol* rhsVar = toVarSymbol(rhsSe->symbol()))
-        if (isAliasingArray(rhsVar->getValType()))
+        if (isAliasingArrayType(rhsVar->getValType()))
           if (rhsVar->hasFlag(FLAG_NO_AUTO_DESTROY) == false)
             rhsVar->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
@@ -6756,7 +6740,7 @@ void resolveInitVar(CallExpr* call) {
       resolveMove(call);
     }
 
-    if (isAliasingArray(srcExpr->getValType()) || initCopyIter)
+    if (isAliasingArrayType(srcExpr->getValType()) || initCopyIter)
       if (FnSymbol* initCopyFn = initCopy->resolvedFunction())
         if (initCopyFn->retType == srcExpr->getValType())
           INT_FATAL("Expected different return type for this initCopy");

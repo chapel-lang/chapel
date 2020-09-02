@@ -325,8 +325,6 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 // in/out/inout but excluding formals to chpl__coerceMove etc
 bool inOrOutFormalNeedingCopyType(ArgSymbol* formal);
 
-bool isAliasingArray(Type* t);
-
 bool isCallExprTemporary(Symbol* fromSym);
 bool isTemporaryFromNoCopyReturn(Symbol* fromSym);
 
