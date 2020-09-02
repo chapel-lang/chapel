@@ -907,7 +907,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 
     .. note::
 
-      This procedure is used when `lacpakImpl=off` is used and currently
+      This procedure is used when `lapackImpl=off` is used and currently
       does not support inplace inversion of matrices
 */
 proc inv(ref A: [?Adom] ?eltType) throws
