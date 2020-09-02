@@ -385,7 +385,7 @@ module cuBLAS {
     extern proc cublas_create(): c_void_ptr;
     extern proc cublas_destroy(handle: c_void_ptr);
     extern proc cublas_array(size: size_t): c_ptr(c_float);
-    extern proc to_gpu(src_ptr: c_ptr, size: size_t): c_ptr(c_float);
+    extern proc to_gpu(src_ptr: c_void_ptr, size: size_t): c_ptr(c_float);
     extern proc to_cpu(dst_ptr: c_void_ptr, src_ptr: c_void_ptr, size: size_t): c_void_ptr;
  
     extern proc cublas_saxpy(handle: c_void_ptr, n: c_int, alpha: c_float, x: c_ptr(c_float), incX: c_int, y: c_ptr(c_float), incY: c_int);

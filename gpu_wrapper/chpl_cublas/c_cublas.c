@@ -4,16 +4,6 @@
 #include <complex.h>
 #include  "cublas_v2.h"
 
-float* cublas_array(size_t size){
-
-    float *ptr;
-    cudaError_t err = cudaMallocManaged(&ptr, size*sizeof(float), cudaMemAttachGlobal);
-    //printf("CUDA Error: %s\n", cudaGetErrorString(err));
-    cudaDeviceSynchronize();
-    return ptr;
-
-}
-
 void* to_gpu(void* src_ptr, size_t size){
     void *dst_ptr;
     cudaError_t malloc_err = cudaMalloc(&dst_ptr, size);
@@ -351,7 +341,8 @@ int cublas_zrotg(cublasHandle_t *handle, complex double a, complex double b, dou
 int cublas_srotm(cublasHandle_t *handle, int n, float *x, int incX, float *y, int incY, float *param){
     float param_host[5];
 
-    for(int i = 0; i < 5; i ++){
+    int i;
+    for(i = 0; i < 5; i ++){
       param_host[i] = param[i];
     }
 
@@ -363,7 +354,8 @@ int cublas_srotm(cublasHandle_t *handle, int n, float *x, int incX, float *y, in
 int cublas_drotm(cublasHandle_t *handle, int n, double *x, int incX, double *y, int incY, double *param){
     double param_host[5];
 
-    for(int i = 0; i < 5; i ++){
+    int i;
+    for(i = 0; i < 5; i ++){
       param_host[i] = param[i];
     }
 
@@ -375,14 +367,15 @@ int cublas_drotm(cublasHandle_t *handle, int n, double *x, int incX, double *y, 
 int cublas_srotmg(cublasHandle_t *handle, float *d1, float *d2, float *x1, float *y1, float *param){
     float param_host[5];
 
-    for(int i = 0; i < 5; i ++){
+    int i;
+    for(i = 0; i < 5; i ++){
       param_host[i] = param[i];
     }
 
     cublasSrotmg(*handle, d1, d2, x1, y1, param_host);
 
     cudaDeviceSynchronize();
-    for(int i = 0; i < 5; i ++){
+    for(i = 0; i < 5; i ++){
       param[i] = param_host[i];
     }
 
@@ -393,14 +386,15 @@ int cublas_srotmg(cublasHandle_t *handle, float *d1, float *d2, float *x1, float
 int cublas_drotmg(cublasHandle_t *handle, double *d1, double *d2, double *x1, double *y1, double *param){
     double param_host[5];
 
-    for(int i = 0; i < 5; i ++){
+    int i;
+    for(i = 0; i < 5; i ++){
       param_host[i] = param[i];
     }
 
     cublasDrotmg(*handle, d1, d2, x1, y1, param_host);
 
     cudaDeviceSynchronize();
-    for(int i = 0; i < 5; i ++){
+    for(i = 0; i < 5; i ++){
       param[i] = param_host[i];
     }
 
