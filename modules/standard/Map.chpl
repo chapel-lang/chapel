@@ -525,7 +525,7 @@ module Map {
      */
     proc addOrSet(in k: keyType, in v: valType) {
       _enter(); defer _leave();
-      var (found, slot) = findAvailableSlot(k);
+      var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
     }
 
