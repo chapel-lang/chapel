@@ -6939,11 +6939,25 @@ static FnSymbol* fixInstantiationPointAndTryResolveBody(AggregateType* at,
   if (FnSymbol* fn = call->resolvedFunction()) {
     if (fn->instantiatedFrom != NULL) {
       // it is a generic function, so make sure to set instantiationPoint
+      BlockStmt* point = NULL;
       if (at->symbol->instantiationPoint == NULL) {
-        fn->setInstantiationPoint(getInstantiationPoint(at->symbol->defPoint));
+        // If the type doesn't have an instantiation point, use its defPoint
+        point = getInstantiationPoint(at->symbol->defPoint);
+        // Unless it is an iterator record - in that case use the
+        // instantiation point for the iterator if there is one.
+        if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          IteratorInfo* ii = at->iteratorInfo;
+          if (ii != NULL && ii->iterator != NULL) {
+            BlockStmt* iterPt = ii->iterator->instantiationPoint();
+            if (iterPt != NULL)
+              point = iterPt;
+          }
+        }
       } else {
-        fn->setInstantiationPoint(at->symbol->instantiationPoint);
+        point = at->symbol->instantiationPoint;
       }
+      INT_ASSERT(point != NULL);
+      fn->setInstantiationPoint(point);
     }
 
     inTryResolve++;
