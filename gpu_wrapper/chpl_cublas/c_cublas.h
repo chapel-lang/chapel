@@ -39,8 +39,8 @@ int cublas_zdotc(c_void_ptr *handle, int n, complex double *x, int incX, complex
 
 int cublas_snrm2(c_void_ptr *handle, int n, float *x, int incX, float *results);
 int cublas_dnrm2(c_void_ptr *handle, int n, double *x, int incX, double *results);
-int cublas_scnrm2(c_void_ptr *handle, int n, complex float *x, int incX, complex float *results);
-int cublas_dznrm2(c_void_ptr *handle, int n, complex double *x, int incX, complex double *results);
+int cublas_scnrm2(c_void_ptr *handle, int n, complex float *x, int incX, float *results);
+int cublas_dznrm2(c_void_ptr *handle, int n, complex double *x, int incX, double *results);
 
 int cublas_srot(c_void_ptr *handle, int n, float *x, int incX, float *y, int incY, float c, float s);
 int cublas_drot(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY, double c, double s);
@@ -58,14 +58,14 @@ int cublas_srotm(c_void_ptr *handle, int n, float *x, int incX, float *y, int in
 int cublas_drotm(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY, double *param);
 
 int cublas_srotmg(c_void_ptr *handle, float *d1, float *d2, float *x1, float *y1, float *param);
-int cublas_drotmg(c_void_ptr *handle, double *d1, double *d2, double  *x1, double  *y1, float *param);
+int cublas_drotmg(c_void_ptr *handle, double *d1, double *d2, double  *x1, double  *y1, double *param);
 
 int cublas_sscal(c_void_ptr *handle, int n, float alpha, float *x, int incX);
 int cublas_dscal(c_void_ptr *handle, int n, double alpha, double *x, int incX);
 int cublas_cscal(c_void_ptr *handle, int n, complex float alpha, complex float *x, int incX);
-int cublas_csscal(c_void_ptr *handle, int n, complex float alpha, float *x, int incX);
+int cublas_csscal(c_void_ptr *handle, int n, float alpha, float *x, int incX);
 int cublas_zscal(c_void_ptr *handle, int n, complex double alpha, complex double *x, int incX);
-int cublas_zdscal(c_void_ptr *handle, int n, complex double alpha, double *x, int incX);
+int cublas_zdscal(c_void_ptr *handle, int n, double alpha, double *x, int incX);
 
 int cublas_sswap(c_void_ptr *handle, int n, float *x, int incX, float *y, int incY);
 int cublas_dswap(c_void_ptr *handle, int n, double *x, int incX, double *y, int incY);
