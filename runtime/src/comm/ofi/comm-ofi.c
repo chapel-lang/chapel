@@ -96,6 +96,8 @@ static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
 static int pollSetSize = 0;             // number of fids in the poll set
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 
+static int haveDeliveryComplete;        // delivery-complete? (vs. msg order)
+
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
@@ -1370,6 +1372,11 @@ haveProvider:
   //
   // If we get here, we have a provider in ofi_info.
   //
+  fi_freeinfo(hints);
+
+  haveDeliveryComplete =
+    (ofi_info->tx_attr->op_flags & FI_DELIVERY_COMPLETE) != 0;
+
   if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
     if (chpl_nodeID == 0) {
       DBG_PRINTF(DBG_CFGFABSALL,
@@ -1389,8 +1396,6 @@ haveProvider:
 
   DBG_PRINTF_NODE0(DBG_CFGFAB | DBG_CFGFABSALL,
                    "====================");
-
-  fi_freeinfo(hints);
 
   if (verbosity >= 2) {
     if (chpl_nodeID == 0) {
@@ -4034,16 +4039,25 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     OFI_RIDE_OUT_EAGAIN(tcip,
                         fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 mrRaddr, mrKey, ctx));
+                                 mrRaddr, mrKey,
+                                 haveDeliveryComplete ? ctx : NULL));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
 
     //
-    // Enforce Chapel MCM using synthesized delivery_complete completion
-    // level: do a release, to force the result of this PUT to appear in
-    // target memory.
+    // If we're using delivery-complete for MCM conformance we just
+    // write the data and wait for the CQ event.  But if we're using
+    // message ordering, instead we write the data, follow that with a
+    // read from the same node, and then wait for the event belonging to
+    // the read instead.  Since we have read-after-write and libfabric
+    // defaults to delivery-complete (locally) for reads, once the CQ
+    // event for the read arrives we assume the write is also visible.
     //
-    mcmReleaseOneNode(node, tcip, true /*useRMA*/, "PUT");
+    if (!haveDeliveryComplete) {
+      DBG_PRINTF(DBG_ORDER,
+                 "dummy GET from %d for PUT ordering", (int) node);
+      ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+    }
 
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
