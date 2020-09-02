@@ -10,11 +10,14 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 HOST_CC=$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_HOST_TARGET=--host make -f $(CHPL_MAKE_HOME)/make/Makefile.base printQ-CC)
 
 #
-# Cray X* builds are cross-compilations
+# Cray builds are cross-compilations
 #
 GMP_CROSS_COMPILED=no
 ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
+GMP_CROSS_COMPILED=yes
+else ifneq (, $(filter cray-cs,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
 GMP_CROSS_COMPILED=yes
 endif
 
