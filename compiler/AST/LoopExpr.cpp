@@ -563,8 +563,11 @@ static bool considerForOuter(Symbol* sym) {
       sym->hasFlag(FLAG_PARAM))
     return false;  // these will be eliminated anyway
 
-  if (isArgSymbol(sym))
-    return true;   // a formal is never a global var
+  // Do not consider type formals (detected above with FLAG_TYPE_VARIABLE)
+  // and param formals (detected below with INTENT_PARAM).
+
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    return !(arg->intent == INTENT_PARAM); // a formal is never a global var
 
   if (isGlobalVar(sym))
     return false;  // we do not need to handle globals
@@ -594,7 +597,7 @@ static ArgSymbol* newOuterVarArg(Symbol* ovar) {
 
   ArgSymbol* ret = new ArgSymbol(INTENT_BLANK, ovar->name, argType);
 
-  // An argument might need to be a type variable if the outer variable is
+  // An argument might need to be a type or param if the outer variable is
   // a type field.
   if (ovar->hasFlag(FLAG_TYPE_VARIABLE)) {
     ret->addFlag(FLAG_TYPE_VARIABLE);
