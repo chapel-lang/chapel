@@ -1490,10 +1490,6 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
     forIsOrderIndep = true;
   }
 
-  // testiter
-  //   ibody is some range iterator code
-  //   forLoop has the testiter cursor loop
-
   // If forLoop is not marked order independent, then
   // the yielding loops in the body should also not be marked
   // order independent.
@@ -1577,9 +1573,6 @@ expandIteratorInline(ForLoop* forLoop) {
 
     Symbol*       index = forLoop->indexGet()->symbol();
     BlockStmt*    ibody = iterator->body->copy();
-
-    if (forLoop->id == 207784 || forLoop->id == 1877648)
-      gdbShouldBreakHere();
 
     if (! preserveInlinedLineNumbers)
       reset_ast_loc(ibody, forLoop);
