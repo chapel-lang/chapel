@@ -24,7 +24,7 @@ use MasonEnv;
 use MasonUpdate;
 use MasonUtils;
 use TOML;
-
+use Sort;
 use FileSystem;
 use Regexp;
 use IO;
@@ -74,7 +74,6 @@ proc masonSearch(ref args: list(string)) {
   var packages: list(string);
   var versions: list(string);
   var registries: list(string);
-
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
@@ -98,8 +97,12 @@ proc masonSearch(ref args: list(string)) {
       }
     }
   }
+
   var res = rankResults(results, query);
-  for r in res do writeln(r);
+  for package in res {
+    const pkgName = splitNameVersion(package, true);
+    writeln(pkgName);
+  }
 
   // Handle --show flag
   if show {
@@ -128,11 +131,30 @@ proc masonSearch(ref args: list(string)) {
   }
 }
 
+/* Split pkg.0_1_0 to (pkg, 0.1.0) & viceversa */
+proc splitNameVersion(ref package: string, original: bool) {
+  if original {
+    var res = package.split('.');
+    var name = res[0];
+    var version = res[1];
+    version = version.replace('_', '.');
+    return name + ' (' + version + ')';
+  }
+  else {
+    package = package.replace('.', '_');
+    package = package.replace(' (', '.');
+    package = package.replace(')', '');
+    return package;
+  }
+}
 
 /* Sort the results in a order such that results that startWith needle
    are displayed first */
 proc rankResults(results: list(string), query: string): [] string {
   use Sort;
+  var r = results.toArray();
+  sort(r);
+  var res = rankOnScores(r);
   record Comparator { }
   proc Comparator.compare(a, b) {
     if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
@@ -140,9 +162,55 @@ proc rankResults(results: list(string), query: string): [] string {
     else return 1;
   }
   var cmp : Comparator;
-  var res = results.toArray();
-  if query == ".*" then sort(res);
-  else sort(res, comparator=cmp);
+  if query != ".*" then sort(res, comparator=cmp);
+  return res;
+}
+
+/* Creates an empty cache file if its not found in registry */
+proc touch(pathToReg: string) {
+  const fileWriter = open(pathToReg, iomode.cw).writer();
+  const contents = "# This cache file was created automatically by mason search";
+  fileWriter.write(contents);
+  fileWriter.close();
+}
+
+/* Returns a map of packages found in cache along with their scores */
+proc getPackageScores(res: [] string) {
+  use Map;
+  const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
+  var cacheExists: bool = false;
+  if isFile(pathToReg) then cacheExists = true;
+  if !cacheExists then touch(pathToReg);
+  const parse = open(pathToReg, iomode.r);
+  const cacheFile = owned.create(parseToml(parse));
+  var packageScores: map(string, int);
+  var packageName: string;
+  // defaultScore = (8/12 * 100) = 66
+  const defaultScore = 66;
+  var packageScore: int;
+  for r in res {
+    r = splitNameVersion(r, false);
+    packageName = r;
+    if cacheExists && cacheFile.pathExists(packageName) {
+      packageScore = cacheFile[r]!['score']!.s : int;
+      packageScores.add(packageName, packageScore);
+    } else packageScores.add(packageName, defaultScore);
+  }
+  return packageScores;
+}
+
+/* Sort based on scores from cache file */
+proc rankOnScores(results: [] string) {
+  use Sort;
+  var packageScores = getPackageScores(results);
+  record Comparator { }
+  proc Comparator.compare(a, b) {
+    if packageScores[a] > packageScores[b] then return -1;
+    else return 1;
+  }
+  var rankCmp : Comparator;
+  var res = results;
+  sort(res, comparator=rankCmp);
   return res;
 }
 
