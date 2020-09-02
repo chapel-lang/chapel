@@ -113,23 +113,12 @@ module StringCasts {
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find("_") != -1;
 
-    if hasUnderscores {
-      localX = localX.strip();
-      // make sure the string only has one word
-      var numElements: int;
-      for localX.split() {
-        numElements += 1;
-        if numElements > 1 then break;
-      }
-      if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
 
-      // remove underscores everywhere but the first position
-      if localX.size >= 2 then
-        localX = localX[0] + localX[1..].replace("_", "");
-    }
+    _cleanupStringForNumericCast(localX);
 
     if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
@@ -189,19 +178,42 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
-    var len = s.size;
+  proc _isSingleWord(const ref s: string) {
+    use BytesStringCommon only byte_isWhitespace;
 
-    if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
+    // here we assume that the string is all ASCII, if not, we'll get an error
+    // from the actual conversion function, anyways
+    for b in s.bytes() {
+      if byte_isWhitespace(b) then return false;
+    }
+    return true;
+  }
 
-    if len >= 2 && s[1..].find("_") != -1 {
-      // Don't remove a leading underscore in the string number,
-      // but remove the rest.
-      if len > 2 && s[0] == "_" {
-        s = s[0] + s[1..].replace("_", "");
-      } else {
-        s = s.replace("_", "");
+  proc _cleanupStringForNumericCast(ref s: string) {
+    param underscore = "_".toByte();
+
+    var hasUnderscores = false;
+    for bIdx in 1..<s.numBytes {
+      if s.byte[bIdx] == underscore then {
+        hasUnderscores = true;
+        break;
+      }
+    }
+
+    if hasUnderscores {
+      s = s.strip();
+      // don't remove anything and let it fail later on
+      if _isSingleWord(s) {
+        var len = s.size;
+        if len >= 2 {
+          // Don't remove a leading underscore in the string number,
+          // but remove the rest.
+          if len > 2 && s[0] == "_" {
+            s = s[0] + s[1..].replace("_", "");
+          } else {
+            s = s.replace("_", "");
+          }
+        }
       }
     }
   }
@@ -218,7 +230,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -244,7 +260,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
