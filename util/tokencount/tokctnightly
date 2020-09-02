@@ -4,7 +4,7 @@ use Cwd 'abs_path';
 use File::Basename;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com chapel+tests\@discoursemail.com";
+$failuremail = "chapel+tests\@discoursemail.com";
 $replymail = "";
 
 $tokctdir = abs_path(dirname(__FILE__));
