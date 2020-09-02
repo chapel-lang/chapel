@@ -583,6 +583,7 @@ module Bytes {
 
     :yields: 1-length :mod:`bytes <Bytes>`
    */
+  pragma "order independent yielding loops"
   iter bytes.items(): bytes {
     if this.isEmpty() then return;
     for i in this.indices do
