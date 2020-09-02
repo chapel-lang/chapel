@@ -1,9 +1,3 @@
-iterator-loop-vectorization.chpl:24: note: fn testiter hazard -- calls synchronizing function these
-iterator-loop-vectorization.chpl:36: note: Vectorization hazard -- calls synchronizing function _toFollower
-iterator-loop-vectorization.chpl:44: note: Vectorization hazard -- calls synchronizing function _toFollowerZip
-iterator-loop-vectorization.chpl:82: note: fn testveciter hazard -- calls synchronizing function these
-iterator-loop-vectorization.chpl:93: note: Vectorization hazard -- calls synchronizing function _toFollower
-iterator-loop-vectorization.chpl:101: note: Vectorization hazard -- calls synchronizing function _toFollowerZip
 iterator-loop-vectorization.chpl:93: note: loop vectorization (with parallel access) hinted for CForLoop
 iterator-loop-vectorization.chpl:93: note: loop vectorization (with parallel access) hinted for CForLoop
 iterator-loop-vectorization.chpl:101: note: loop vectorization (with parallel access) hinted for CForLoop
