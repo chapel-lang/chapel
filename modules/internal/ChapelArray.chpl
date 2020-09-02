@@ -4441,25 +4441,9 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where isRectangularDom(rhs) {
 
-    if isSubtype(rhs.dist._value.type, ArrayViewRankChangeDist) {
-      // Use the dist the view is over
-      var lhs = new _domain(_getDistribution(rhs.dist._value.downDist),
-                            rhs.rank, rhs.idxType, rhs.stridable,
-                            rhs.dims(), definedConst=definedConst);
-
-      return lhs;
-    } else if isSubtype(rhs.dist._value.type, ArrayViewReindexDist) {
-      // Use the dist the view is over
-      var lhs = new _domain(_getDistribution(rhs.dist._value.downDist),
-                            rhs.rank, rhs.idxType, rhs.stridable,
-                            rhs.dims(), definedConst=definedConst);
-
-      return lhs;
-    } else {
-      var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
-                            rhs.dims(), definedConst=definedConst);
-      return lhs;
-    }
+    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
+                          rhs.dims(), definedConst=definedConst);
+    return lhs;
   }
 
   pragma "init copy fn"
