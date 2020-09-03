@@ -5807,8 +5807,19 @@ proc channel._conv_helper(
     ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool,
     ref j:int,
-    ref argType)
+    argType: c_ptr(c_int),
+    argTypeLen: int)
 {
+  proc boundsCheckHelp() {
+    if boundsChecking {
+      if j >= argTypeLen {
+        halt("Index ", j, " is accessed on argType of length ", argTypeLen);
+      }
+    }
+  }
+
+  boundsCheckHelp();
+
   if error then return;
   if gotConv {
     // Perhaps we need to handle pre/post args
@@ -5817,14 +5828,17 @@ proc channel._conv_helper(
       argType(j) = conv.preArg1;
       j += 1;
     }
+    boundsCheckHelp();
     if conv.preArg2 != QIO_CONV_UNK {
       argType(j) = conv.preArg2;
       j += 1;
     }
+    boundsCheckHelp();
     if conv.preArg3 != QIO_CONV_UNK {
       argType(j) = conv.preArg3;
       j += 1;
     }
+    boundsCheckHelp();
     if conv.argType != QIO_CONV_UNK {
       if argType(j) == QIO_CONV_UNK {
         // Some regexp paths set it earlier..
@@ -6128,10 +6142,16 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 // for which we have already created and instantiation of this.
 proc channel._writefOne(fmtStr, ref arg, i: int,
                         ref cur: size_t, ref j: int,
-                        ref r: unmanaged _channel_regexp_info?, ref argType,
+                        ref r: unmanaged _channel_regexp_info?,
+                        argType: c_ptr(c_int), argTypeLen: int,
                         ref conv: qio_conv_t, ref gotConv: bool,
                         ref style: iostyle, ref err: syserr, origLocale: locale,
                         len: size_t) throws {
+  if boundsChecking {
+    if i >= argTypeLen {
+      halt("Index ", i, " is accessed on argType of length ", argTypeLen);
+    }
+  }
   gotConv = false;
 
   if j <= i {
@@ -6140,7 +6160,7 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
                    false);
   }
 
-  _conv_helper(err, conv, gotConv, j, argType);
+  _conv_helper(err, conv, gotConv, j, argType, argTypeLen);
 
   var domore = _conv_sethandler(err, argType(i), style, i,arg,false);
 
@@ -6258,7 +6278,11 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
-    var argType:(k+5)*c_int;
+
+    param argTypeLen = k+5;
+    // we don't use a tuple here so that we can pass this to writefOne as a
+    // c_ptr. This should reduce number of instantiations of writefOne
+    var argType: c_array(c_int, argTypeLen);
 
     var r:unmanaged _channel_regexp_info?;
     defer {
@@ -6272,8 +6296,8 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var j = 0;
 
     for param i in 0..k-1 {
-      _writefOne(fmtStr, args(i), i, cur, j, r, argType, conv, gotConv, style,
-                 err, origLocale, len);
+      _writefOne(fmtStr, args(i), i, cur, j, r, c_ptrTo(argType[0]), argTypeLen,
+                 conv, gotConv, style, err, origLocale, len);
     }
 
     if ! err {
@@ -6379,7 +6403,12 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     var gotConv:bool;
     var style:iostyle;
     var end:size_t;
-    var argType:(k+5)*c_int;
+
+    param argTypeLen = k+5;
+    // we don't use a tuple here for being able to use conv_helper. This will be
+    // more meaningful when we refactor the param loop's body out into a separate
+    // helper. See writef
+    var argType: c_array(c_int, argTypeLen);
 
     var r:unmanaged _channel_regexp_info?;
     defer {
@@ -6420,7 +6449,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
           }
         }
 
-        _conv_helper(err, conv, gotConv, j, argType);
+        _conv_helper(err, conv, gotConv, j, argType, argTypeLen=k+5);
 
         var domore = _conv_sethandler(err, argType(i),style,i,args(i),false);
 
