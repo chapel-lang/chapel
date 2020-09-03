@@ -8,7 +8,7 @@ var readingChannel = file.reader();
 
 messageObj.deserialize(readingChannel);
 
-messageObj.anyfield.unpackTo(obj);
+messageObj.anyfield.unpack(obj);
 
 writeln(messageObj.a == 123);
 writeln(obj.a == "chapel");

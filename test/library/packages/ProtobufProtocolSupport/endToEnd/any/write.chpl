@@ -11,6 +11,6 @@ messageObj.a = 123;
 
 obj.a = "chapel";
 obj.b = true;
-messageObj.anyfield.packFrom(obj);
+messageObj.anyfield.pack(obj);
 
 messageObj.serialize(writingChannel);

@@ -654,7 +654,7 @@ module ProtobufProtocolSupport {
       var typeUrl: string;
       var value: bytes;
 
-      proc packFrom(messageObj) throws {
+      proc pack(messageObj) throws {
         var s: bytes;
         var tmpMem = openmem();
         var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
@@ -669,7 +669,7 @@ module ProtobufProtocolSupport {
         this.typeUrl = getTypeUrl(messageObj);
       }
 
-      proc unpackTo(ref messageObj) throws {
+      proc unpack(ref messageObj) throws {
         var url = getTypeUrl(messageObj);
         if (url != this.typeUrl) {
           throw new owned IllegalArgumentError("input message type does not match destination message type");
