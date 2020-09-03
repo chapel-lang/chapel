@@ -1,6 +1,3 @@
 uncaught IllegalArgumentError: bad cast from string '3.14 _' to real(64)
   stringToFloatingUnderscoreError.chpl:2: thrown here
   stringToFloatingUnderscoreError.chpl:2: uncaught here
-Stacktrace
-
-chpl__init_stringToFloatingUnderscoreError() at stringToFloatingUnderscoreError.chpl:1
