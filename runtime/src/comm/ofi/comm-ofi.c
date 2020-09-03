@@ -2537,18 +2537,6 @@ void chpl_comm_impl_unordered_task_fence(void) {
 
 void chpl_comm_impl_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
-
-  //
-  // Enforce MCM: at the end of a task, make sure all the nonfetching
-  // AMOs we did using AMs have actually completed on the target nodes.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData != NULL && prvData->nfaBitmap != NULL) {
-    mcmReleaseAllNodes(prvData->nfaBitmap, NULL, false /*useRMA*/,
-                       "AM-mediated nonfetching AMO");
-    bitmapFree(prvData->nfaBitmap);
-    prvData->nfaBitmap = NULL;
-  }
 }
 
 
@@ -2794,17 +2782,6 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
       CHPL_FREE(req.xol.pPayload);
     }
   }
-
-  //
-  // A blocking executeOn will have forced to completion any previous
-  // nonblocking nonfetching-AMO AM on the same node.
-  //
-  if (blocking) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->nfaBitmap != NULL) {
-      bitmapClear(prvData->nfaBitmap, node);
-    }
-  }
 }
 
 
@@ -2819,15 +2796,6 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
                                .size = size, }, };
   amRequestCommon(node, &req, sizeof(req.rma),
                   &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
-
-  //
-  // This blocking RMA AM will have forced to completion any previous
-  // nonblocking nonfetching-AMO AM on the same node.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData != NULL && prvData->nfaBitmap != NULL) {
-    bitmapClear(prvData->nfaBitmap, node);
-  }
 }
 
 
@@ -2846,8 +2814,6 @@ void amRequestAMO(c_nodeid_t node, void* object,
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-  chpl_bool blocking = true;
-
   void* myResult = result;
   size_t resSize = size;
   if (myResult != NULL) {
@@ -2856,44 +2822,6 @@ void amRequestAMO(c_nodeid_t node, void* object,
       DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
                  "AMO result BB: %p", myResult);
       CHK_TRUE(mrGetLocalKey(myResult, resSize) == 0);
-    }
-  } else {
-    //
-    // This is a nonfetching AMO.  We start out using blocking AMs to
-    // make sure these are properly ordered with respect to regular RMA
-    // operations and task end, but if we're on a fixed thread with a
-    // bound tx context (thus fixed libfabric endpoint), our assertion
-    // of send-after-send transaction ordering during set-up means we
-    // can instead use nonblocking AMs for them and later do a blocking
-    // AM to ensure those nonblocking ones are complete.  Nonblocking
-    // AMO AMs are obviously quicker than blocking ones, but this is
-    // nevertheless only a win if there are multiple nfAMO AMs to do,
-    // because the final blocking no-op AM requires a full network round
-    // trip while an 'amDone' PUT needs less than that depending on the
-    // provider's default completion level.  We also need to take into
-    // account that using no-op AMs instead of 'amDone' PUTs effectively
-    // moves the overhead of MCM assurance from the AM handler to the
-    // program tasks, which is a good thing.  But for sure we also want
-    // to do at least 1 nfAMO AM with an 'amDone' PUT before switching
-    // to AMs, so that tasks whose only nfAMO is their downEndcount only
-    // do that one AMO-related AM.  Currently (2020-05-21) we switch to
-    // nonblocking nfAMO AMs after doing 3 blocking ones.
-    //
-    const int nfaCountB2NB = 3;
-    if (tcip->bound && chpl_task_isFixedThread()) {
-      chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-      if (prvData != NULL) {
-        if (prvData->nfaCount < UINT8_MAX) {
-          prvData->nfaCount++;
-        }
-        if (prvData->nfaCount > nfaCountB2NB) {
-          blocking = false;
-          if (prvData->nfaBitmap == NULL) {
-            prvData->nfaBitmap = bitmapAlloc(chpl_numNodes);
-          }
-          bitmapSet(prvData->nfaBitmap, node);
-        }
-      }
     }
   }
 
@@ -2912,25 +2840,13 @@ void amRequestAMO(c_nodeid_t node, void* object,
     memcpy(&req.amo.operand2, operand2, size);
   }
   amRequestCommon(node, &req, sizeof(req.amo),
-                  blocking ? &req.b.pAmDone : NULL,
-                  true /*yieldDuringTxnWait*/, tcip);
+                  &req.b.pAmDone, true /*yieldDuringTxnWait*/, tcip);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
   }
 
   tciFree(tcip);
-
-  //
-  // A blocking AM for an AMO will have forced to completion any
-  // previous nonblocking nonfetching-AMO AM on the same node.
-  //
-  if (blocking) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->nfaBitmap != NULL) {
-      bitmapClear(prvData->nfaBitmap, node);
-    }
-  }
 }
 
 
@@ -2961,18 +2877,6 @@ void amRequestShutdown(c_nodeid_t node) {
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
                   NULL, true /*yieldDuringTxnWait*/, NULL);
-
-  //
-  // If we sent a shutdown request, the MCM is moot and we no longer
-  // care about forcing to completion any previous nonblocking
-  // nonfetching-AMO AM on the same node.  Plus, the AM handler on
-  // the target node will have shut down anyway, so there is nobody
-  // there to talk to.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData != NULL && prvData->nfaBitmap != NULL) {
-    bitmapClear(prvData->nfaBitmap, node);
-  }
 }
 
 
@@ -4013,20 +3917,6 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-    //
-    // Enforce MCM: earlier AMOs (here, nonfetching ones done via AM)
-    // must be seen to complete before later regular stores.
-    //
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL
-        && prvData->nfaBitmap != NULL
-        && bitmapTest(prvData->nfaBitmap, node)) {
-      mcmReleaseOneNode(node, tcip, false /*useRMA*/,
-                        "nf AMO AM before store");
-      prvData->nfaCount = 0;
-      bitmapClear(prvData->nfaBitmap, node);
-    }
-
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
     void* ctx = (tcip->txCQ == NULL)
@@ -4314,20 +4204,6 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
-
-    //
-    // Enforce MCM: earlier AMOs (here, nonfetching ones done via AM)
-    // must be seen to complete before later regular loads.
-    //
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL
-        && prvData->nfaBitmap != NULL
-        && bitmapTest(prvData->nfaBitmap, node)) {
-      mcmReleaseOneNode(node, tcip, false /*useRMA*/,
-                         "nf AMO AM before load");
-      prvData->nfaCount = 0;
-      bitmapClear(prvData->nfaBitmap, node);
-    }
 
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
