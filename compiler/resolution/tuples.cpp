@@ -199,8 +199,10 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
     // or less the same now.
 
     Symbol* element = NULL;
-    if (isReferenceType(args[i]->type)) {
-      // If it is a reference, pass it through
+    if (isReferenceType(args[i]->type) ||
+        isTupleContainingAnyReferences(args[i]->type)) {
+      // If it is a reference, pass it through.
+      // insertCasts will handle reference level adjustments.
       element = arg;
     } else {
       // Otherwise, copy it
