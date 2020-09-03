@@ -293,6 +293,7 @@ buildFollowLoop(VarSymbol* iter,
                                        zippered,
                                        /*isLoweredForall*/ false,
                                        forallExpr);
+  followBody->orderIndependentSet(true);
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);

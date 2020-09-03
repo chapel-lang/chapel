@@ -55,18 +55,21 @@ module DefaultSparse {
                                             initElts=initElts);
     }
 
+    pragma "order independent yielding loops"
     iter dsiIndsIterSafeForRemoving() {
       for i in 1.._nnz by -1 {
         yield _indices(i);
       }
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       for i in 1.._nnz {
         yield _indices(i);
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       const numElems = _nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
@@ -105,6 +108,7 @@ module DefaultSparse {
           yield (this, chunk.first, chunk.last);
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
       var (followThisDom, startIx, endIx) = followThis;
 
@@ -483,10 +487,12 @@ module DefaultSparse {
         return irv;
     }
 
+    pragma "order independent yielding loops"
     iter these() ref {
       for i in 1..dom._nnz do yield data[i];
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const numElems = dom._nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
@@ -514,6 +520,7 @@ module DefaultSparse {
     }
 
     // same as DefaultSparseDom's follower, except here we index into 'data'
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis:(?,?,?)) ref where tag == iterKind.follower {
       var (followThisDom, startIx, endIx) = followThis;
 

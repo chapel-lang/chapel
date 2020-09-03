@@ -63,11 +63,11 @@ class LayeredValueTable;
 struct LoopData
 {
 #ifdef HAVE_LLVM
-  LoopData(llvm::MDNode *loopMetadata, bool parallel)
-    : loopMetadata(loopMetadata), parallel(parallel)
+  LoopData(llvm::MDNode *accessGroup, bool markMemoryOps)
+    : accessGroup(accessGroup), markMemoryOps(markMemoryOps)
   { }
-  llvm::MDNode* loopMetadata;
-  bool parallel; /* There is no dependency between loops */
+  llvm::MDNode* accessGroup;
+  bool markMemoryOps; // mark load/store with the access group
 #endif
 };
 
@@ -109,7 +109,7 @@ struct GenInfo {
   llvm::MDBuilder *mdBuilder;
   llvm::TargetMachine* targetMachine;
 
-  std::stack<LoopData> loopStack;
+  std::vector<LoopData> loopStack;
   std::vector<std::pair<llvm::Value*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 

@@ -25,18 +25,22 @@
 #include "symbol.h"
 
 #include "AstToText.h"
+#include "AstVisitorTraverse.h"
 #include "bb.h"
 #include "AstVisitor.h"
 #include "astutil.h"
 #include "build.h"
+#include "CForLoop.h"
 #include "clangUtil.h"
 #include "codegen.h"
 #include "CollapseBlocks.h"
 #include "docsDriver.h"
+#include "DoWhileStmt.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "fixupExports.h"
+#include "ForLoop.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "LayeredValueTable.h"
@@ -44,6 +48,7 @@
 #include "llvmDebug.h"
 #include "llvmExtractIR.h"
 #include "llvmUtil.h"
+#include "LoopStmt.h"
 #include "misc.h"
 #include "optimizations.h"
 #include "passes.h"
@@ -53,6 +58,7 @@
 #include "type.h"
 #include "resolution.h"
 #include "wellknown.h"
+#include "WhileDoStmt.h"
 
 #include <algorithm>
 #include <cstdlib>
@@ -645,8 +651,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         got.val = info->irBuilder->CreateStructGEP(NULL, got.val, 0);
         got.isLVPtr = GEN_VAL;
       }
-      if (got.val)
+      if (got.val) {
         return got;
+      }
     }
 
     if(isImmediate()) {
@@ -2165,6 +2172,114 @@ void FnSymbol::codegenPrototype() {
   return;
 }
 
+namespace {
+  /* This little analysis helps with llvm.loop.parallel_accesses
+     metadata.
+
+     It identifies references that are defined inside an order-independent
+     loop. If it can show that these references refer to something outside
+     of any order-independent loop in the function, it marks them with
+     FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP.
+
+     The goal here is to avoid hinting llvm.loop.parallel_accesses
+     for load/store to temporary variables that are declared inside
+     of an order independent loop. The reason for that is that the LLVM
+     optimizers do not yet handle vectorizing allocas. By not marking
+     load/store with allocas for variables within the loop as
+     parallel_accesses, vectorization will be inhibited unless these
+     are all promoted to registers (or the LLVM vectorization pass can
+     prove it is OK for some other reason).
+   */
+  struct MarkNonStackVisitor : public AstVisitorTraverse {
+    LoopStmt* outermostOrderIndependentLoop;
+    MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
+    void handleLoopStmt(LoopStmt* loop);
+    bool exprPointsToNonStack(Expr* e);
+    bool enterCallExpr(CallExpr* call);
+    bool enterWhileDoStmt(WhileDoStmt* loop);
+    bool enterDoWhileStmt(DoWhileStmt* loop);
+    bool enterCForLoop(CForLoop* loop);
+    bool enterForLoop(ForLoop* loop);
+  };
+}
+
+void MarkNonStackVisitor::handleLoopStmt(LoopStmt* loop) {
+  if (loop->isOrderIndependent() && outermostOrderIndependentLoop == NULL) {
+    outermostOrderIndependentLoop = loop;
+  }
+}
+
+bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
+  if (SymExpr* se = toSymExpr(e)) {
+    Symbol* sym = se->symbol();
+
+    if (sym->hasFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP))
+      return true; // already marked
+
+    if (outermostOrderIndependentLoop != NULL &&
+        !outermostOrderIndependentLoop->contains(sym->defPoint)) {
+      // defined outside the outermost independent loop
+      // (could be a global variable or argument, too)
+      return true;
+    }
+  }
+
+  if (CallExpr* call = toCallExpr(e)) {
+    FnSymbol* fn = call->resolvedOrVirtualFunction();
+    if (call->isPrimitive(PRIM_GET_MEMBER) ||
+        call->isPrimitive(PRIM_GET_SVEC_MEMBER) ||
+        call->isPrimitive(PRIM_ARRAY_GET) ||
+        call->isPrimitive(PRIM_SET_REFERENCE) ||
+        (fn && fn->hasFlag(FLAG_STAR_TUPLE_ACCESSOR))) {
+      if (isHeapAllocatedType(call->get(1)->getValType()))
+        return true;
+      else
+        return exprPointsToNonStack(call->get(1));
+    }
+  }
+
+  return false;
+}
+
+bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
+  if (call->isPrimitive(PRIM_MOVE) ||
+      call->isPrimitive(PRIM_ASSIGN)) {
+    if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+      Symbol* lhs = lhsSe->symbol();
+      Type* lhsType = lhs->typeInfo();
+      TypeSymbol* ts = lhsType->symbol;
+      bool isRef = lhs->isRefOrWideRef() && call->isPrimitive(PRIM_MOVE);
+      bool isPtr = ts->hasFlag(FLAG_C_PTR_CLASS) ||
+                   ts->hasFlag(FLAG_DATA_CLASS);
+      if (isRef || isPtr)
+        if (isVarSymbol(lhs))
+          // Only variables within a vectorized-loop are relevant
+          // for llvm.loop.parallel_accesses
+          if (outermostOrderIndependentLoop &&
+              outermostOrderIndependentLoop->contains(lhs->defPoint))
+            if (exprPointsToNonStack(call->get(2)))
+              lhs->addFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP);
+    }
+  }
+  return false;
+}
+
+bool MarkNonStackVisitor::enterWhileDoStmt(WhileDoStmt* loop) {
+  handleLoopStmt(loop);
+  return true;
+}
+bool MarkNonStackVisitor::enterDoWhileStmt(DoWhileStmt* loop) {
+  handleLoopStmt(loop);
+  return true;
+}
+bool MarkNonStackVisitor::enterCForLoop(CForLoop* loop) {
+  handleLoopStmt(loop);
+  return true;
+}
+bool MarkNonStackVisitor::enterForLoop(ForLoop* loop) {
+  handleLoopStmt(loop);
+  return true;
+}
 
 void FnSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
@@ -2199,6 +2314,14 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
+    // Mark local reference/ptr variables that must refer to
+    // memory outside of all order-independent loops.
+    // (This is necessary for llvm.loop.parallel_accesses metadata).
+    {
+      MarkNonStackVisitor visitor;
+      this->accept(&visitor);
+    }
+
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
     llvm::LLVMContext &ctx = info->llvmContext;

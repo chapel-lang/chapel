@@ -206,6 +206,7 @@ module DefaultAssociative {
       return table.table[slot].isFull();
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       for slot in table.allSlots() {
         ref aSlot = table.table[slot];
@@ -215,6 +216,7 @@ module DefaultAssociative {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       if debugDefaultAssoc {
         writeln("*** In associative domain standalone iterator");
@@ -236,6 +238,7 @@ module DefaultAssociative {
         yield (chunk, this);
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -402,6 +405,7 @@ module DefaultAssociative {
       }
     }
 
+    pragma "order independent yielding loops"
     iter dsiSorted(comparator) {
       use Sort;
 
@@ -414,6 +418,7 @@ module DefaultAssociative {
         yield ind;
     }
 
+    pragma "order independent yielding loops"
     iter _fullSlots() {
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
@@ -574,6 +579,7 @@ module DefaultAssociative {
       return dsiAccess(i);
 
 
+    pragma "order independent yielding loops"
     iter these() ref {
       for slot in dom.table.allSlots() {
         if dom._isSlotFull(slot) {
@@ -582,6 +588,7 @@ module DefaultAssociative {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       if debugDefaultAssoc {
         writeln("*** In associative array standalone iterator");
@@ -599,6 +606,7 @@ module DefaultAssociative {
         yield followThis;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
       var (chunk, followThisDom) = followThis;
 
@@ -708,6 +716,7 @@ module DefaultAssociative {
     // Associative array interface
     //
 
+    pragma "order independent yielding loops"
     iter dsiSorted(comparator) {
       use Sort;
 

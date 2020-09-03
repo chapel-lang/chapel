@@ -991,6 +991,7 @@ proc BlockCyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -1001,6 +1002,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield yieldThis;
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
 
@@ -1059,6 +1061,7 @@ proc BlockCyclicDom.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
+pragma "order independent yielding loops"
 private
 iter do_dsiLocalSubdomains(indexDom) {
   param rank = indexDom.rank;

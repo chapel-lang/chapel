@@ -1069,6 +1069,21 @@ bool isClass(Type* t) {
   return false;
 }
 
+bool isHeapAllocatedType(Type* t) {
+  if (AggregateType* ct = toAggregateType(t)) {
+    TypeSymbol* ts = ct->symbol;
+    if (ts->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF))
+      return false;
+    if (ts->hasFlag(FLAG_C_ARRAY))
+      return false;
+
+    return (ts->hasFlag(FLAG_DATA_CLASS) ||
+            ts->hasFlag(FLAG_WIDE_CLASS) ||
+            ct->isClass());
+  }
+  return false;
+}
+
 bool isClassOrNil(Type* t) {
   if (t == dtNil) return true;
   return isClass(t);

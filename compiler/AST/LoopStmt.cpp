@@ -27,6 +27,7 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mContinueLabel    = 0;
   mOrderIndependent = false;
   mVectorizationHazard = false;
+  mParallelAccessVectorizationHazard = false;
 }
 
 LoopStmt::~LoopStmt()
@@ -79,9 +80,28 @@ void LoopStmt::setHasVectorizationHazard(bool v)
   mVectorizationHazard = v;
 }
 
+bool LoopStmt::hasParallelAccessVectorizationHazard() const
+{
+  return mParallelAccessVectorizationHazard;
+}
+
+void LoopStmt::setHasParallelAccessVectorizationHazard(bool v)
+{
+  mParallelAccessVectorizationHazard = v;
+}
+
+
 bool LoopStmt::isVectorizable() const
 {
-  return mOrderIndependent && !mVectorizationHazard;
+  return mOrderIndependent &&
+         !mVectorizationHazard;
+}
+
+bool LoopStmt::isParallelAccessVectorizable() const
+{
+  return mOrderIndependent &&
+         !mVectorizationHazard &&
+         !mParallelAccessVectorizationHazard;
 }
 
 // what if the nearest enclosing loop is a forall?

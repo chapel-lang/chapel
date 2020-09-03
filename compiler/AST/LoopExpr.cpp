@@ -390,10 +390,17 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
                                        Expr* cond,
                                        Expr* indices,
                                        bool zippered,
+                                       bool forall,
                                        Expr*& stmt)
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  if (forall) {
+    sifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+    sifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
+  } else {
+    sifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  }
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -460,10 +467,17 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 
 static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
                                          bool zippered,
+                                         bool forall,
                                          VarSymbol*& followerIterator)
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
+  if (forall) {
+    fifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+    fifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
+  } else {
+    fifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  }
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
@@ -782,14 +796,16 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   FnSymbol* fifn = NULL;
 
   Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
-  sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices, zippered, stmt);
+  sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices,
+                               zippered, forall, stmt);
 
   if (forall) {
     lifn = buildLeaderIteratorFn(iteratorName, zippered);
     addOuterVariableFormals(lifn, outerVars);
 
     VarSymbol* followerIterator; // Initialized by buildFollowerIteratorFn.
-    fifn = buildFollowerIteratorFn(iteratorName, zippered, followerIterator);
+    fifn = buildFollowerIteratorFn(iteratorName, zippered, forall,
+                                   followerIterator);
 
     // do we need to use this map since symbols have not been resolved?
     SymbolMap map;

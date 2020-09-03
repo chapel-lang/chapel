@@ -382,6 +382,7 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
+    pragma "order independent yielding loops"
     iter keys() const ref {
       for slot in table.allSlots() {
         if table.isSlotFull(slot) then
@@ -395,6 +396,7 @@ module Map {
       :yields: A tuple of references to one of the key-value pairs contained in
                this map.
     */
+    pragma "order independent yielding loops"
     iter items() const ref {
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
@@ -405,6 +407,7 @@ module Map {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter items() const ref where isNonNilableClass(valType) {
       try! {
         for slot in table.allSlots() {
@@ -421,6 +424,7 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
+    pragma "order independent yielding loops"
     iter values() ref
     where !isNonNilableClass(valType) {
       for slot in table.allSlots() {
@@ -430,6 +434,7 @@ module Map {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter values() const where isNonNilableClass(valType) {
       try! {
         for slot in table.allSlots() {

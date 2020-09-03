@@ -160,6 +160,8 @@ GenRet SymExpr::codegen() {
     if(isVarSymbol(var)) {
       ret = toVarSymbol(var)->codegen();
       addNoAliasMetadata(ret, var);
+      if (var->hasFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP))
+        ret.mustPointOutsideOrderIndependentLoop = true;
     } else if(isArgSymbol(var)) {
       ret = info->lvt->getValue(var->cname);
       addNoAliasMetadata(ret, var);
@@ -489,7 +491,8 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                   llvm::MDNode* aliasScope = NULL,
                                   llvm::MDNode* noalias = NULL,
-                                  bool addInvariantStart = false)
+                                  bool addInvariantStart = false,
+                                  bool isStoreOfLocalVar = true)
 {
   GenInfo *info = gGenInfo;
   llvm::StoreInst* ret = info->irBuilder->CreateStore(val, ptr);
@@ -505,21 +508,18 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
       tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
-  if( tbaa )
+  if (tbaa)
     ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
-  if( aliasScope )
+  if (aliasScope)
     ret->setMetadata(llvm::LLVMContext::MD_alias_scope, aliasScope);
-  if( noalias )
+  if (noalias)
     ret->setMetadata(llvm::LLVMContext::MD_noalias, noalias);
 
 
-  if(!info->loopStack.empty()) {
-    const auto &loopData = info->loopStack.top();
-    // Currently, the parallel_loop_access metadata refers to the
-    // innermost loop the instruction is in, while for some cases
-    // this could refer to the group of loops it is in.
-    if(loopData.parallel)
-      ret->setMetadata("llvm.mem.parallel_loop_access", loopData.loopMetadata);
+  if (isStoreOfLocalVar == false && !info->loopStack.empty()) {
+    const auto &loopData = info->loopStack.back();
+    if (loopData.markMemoryOps)
+      ret->setMetadata("llvm.access.group", loopData.accessGroup);
   }
 
   if(addInvariantStart)
@@ -560,7 +560,8 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
                           ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
                           ptr.aliasScope,
                           ptr.noalias,
-                          ptr.canBeMarkedAsConstAfterStore);
+                          ptr.canBeMarkedAsConstAfterStore,
+                          !ptr.mustPointOutsideOrderIndependentLoop);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
@@ -572,7 +573,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                 llvm::MDNode* aliasScope = NULL,
                                 llvm::MDNode* noalias = NULL,
-                                bool isConst = false)
+                                bool isConst = false,
+                                bool isLoadOfLocalVar = true)
 {
   GenInfo* info = gGenInfo;
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
@@ -585,22 +587,22 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                surroundingStruct->symbol->llvmTbaaAggTypeDescriptor,
                fieldTbaaTypeDescriptor, fieldOffset, isConst);
     } else {
-      if( isConst ) tbaa = valType->symbol->llvmConstTbaaAccessTag;
+      if (isConst) tbaa = valType->symbol->llvmConstTbaaAccessTag;
       else tbaa = valType->symbol->llvmTbaaAccessTag;
     }
   }
 
-  if(!info->loopStack.empty()) {
-    const auto &loopData = info->loopStack.top();
-    if(loopData.parallel)
-      ret->setMetadata(llvm::StringRef("llvm.mem.parallel_loop_access"), loopData.loopMetadata);
+  if (isLoadOfLocalVar == false && !info->loopStack.empty()) {
+    const auto &loopData = info->loopStack.back();
+    if (loopData.markMemoryOps)
+      ret->setMetadata("llvm.access.group", loopData.accessGroup);
   }
 
-  if( tbaa )
+  if (tbaa)
     ret->setMetadata(llvm::LLVMContext::MD_tbaa, tbaa);
-  if( aliasScope )
+  if (aliasScope)
     ret->setMetadata(llvm::LLVMContext::MD_alias_scope, aliasScope);
-  if( noalias )
+  if (noalias)
     ret->setMetadata(llvm::LLVMContext::MD_noalias, noalias);
   return ret;
 }
@@ -619,7 +621,8 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
                          ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
                          ptr.aliasScope,
                          ptr.noalias,
-                         isConst);
+                         isConst,
+                         !ptr.mustPointOutsideOrderIndependentLoop);
 }
 
 #endif
@@ -4552,8 +4555,15 @@ DEFINE_PRIM(PRIM_SET_MEMBER) {
     if (call->get(2)->isRef() && !call->get(3)->isRef())
       INT_FATAL("Invalid PRIM_SET_MEMBER ref field with value");
 
-    GenRet ptr = codegenFieldPtr(call->get(1), call->get(2));
+    GenRet obj = call->get(1);
+    GenRet ptr = codegenFieldPtr(obj, call->get(2));
     GenRet val = call->get(3);
+
+    if (isHeapAllocatedType(call->get(1)->getValType()))
+      ptr.mustPointOutsideOrderIndependentLoop = true;
+    else
+      ptr.mustPointOutsideOrderIndependentLoop =
+        obj.mustPointOutsideOrderIndependentLoop;
 
     if (call->get(3)->isRefOrWideRef() && !call->get(2)->isRefOrWideRef()) {
       val = codegenDeref(val);
@@ -5440,6 +5450,8 @@ GenRet CallExpr::codegenPrimMove() {
   const bool LHSRef = get(1)->isRef() || get(1)->isWideRef();
   const bool RHSRef = get(2)->isRef() || get(2)->isWideRef();
 
+  bool mustPointOutsideOrderIndependentLoop = false;
+
   GenRet specRet;
   if (get(1)->typeInfo() == dtNothing) {
     ret = get(2)->codegen();
@@ -5469,6 +5481,9 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(get(1), specRet);
     }
 
+    mustPointOutsideOrderIndependentLoop =
+      specRet.mustPointOutsideOrderIndependentLoop;
+
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false ) {
     GenRet rhs = get(2);
@@ -5477,18 +5492,27 @@ GenRet CallExpr::codegenPrimMove() {
     }
     // At this point, RHS should be a class type.
     INT_ASSERT(isClassOrNil(rhs.chplType));
-    codegenAssign(get(1), codegenWideHere(rhs));
+    GenRet from = codegenWideHere(rhs);
+    codegenAssign(get(1), from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isWideRef() == true &&
              get(2)->isRef() == true) {
-    codegenAssign(get(1), codegenAddrOf(codegenWideHere(get(2))));
+    GenRet from = codegenAddrOf(codegenWideHere(get(2)));
+    codegenAssign(get(1), from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isWideRef() == true  &&
              get(2)->isWideRef() == false &&
              get(2)->isRef()     == false) {
     GenRet to_ptr = codegenDeref(get(1));
+    GenRet from = get(2);
 
-    codegenAssign(to_ptr, get(2));
+    codegenAssign(to_ptr, from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isRef()       == true  &&
              get(2)->isWideRef()   == true)  {
@@ -5496,27 +5520,47 @@ GenRet CallExpr::codegenPrimMove() {
       GenRet narrowRef   = codegenRaddr(get(2));
       GenRet wideThing   = codegenDeref(narrowRef);
       GenRet narrowThing = codegenWideThingField(wideThing, WIDE_GEP_ADDR);
+      GenRet from = codegenAddrOf(narrowThing);
 
-      codegenAssign(get(1), codegenAddrOf(narrowThing));
+      codegenAssign(get(1), from);
+      mustPointOutsideOrderIndependentLoop =
+        from.mustPointOutsideOrderIndependentLoop;
     } else {
       GenRet genWide = get(2);
-      codegenAssign(get(1), codegenRaddr(genWide));
+      GenRet from = codegenRaddr(genWide);
+      codegenAssign(get(1), from);
+      mustPointOutsideOrderIndependentLoop =
+        from.mustPointOutsideOrderIndependentLoop;
     }
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
              get(1)->isRef()                                      == false &&
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true)  {
-    codegenAssign(get(1), codegenRaddr(get(2)));
+    GenRet from = codegenRaddr(get(2));
+    codegenAssign(get(1), from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isRef()        == true  &&
              get(2)->isRef()        == false) {
-    codegenAssign(codegenDeref(get(1)), get(2));
+    GenRet from = get(2);
+    codegenAssign(codegenDeref(get(1)), from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
   } else if(!LHSRef && RHSRef) {
-    codegenAssign(get(1), codegenDeref(get(2)));
+    GenRet from = codegenDeref(get(2));
+    codegenAssign(get(1), from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
   } else {
-    codegenAssign(get(1), get(2));
+    GenRet from = get(2);
+    codegenAssign(get(1), from);
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
   }
 
+  ret.mustPointOutsideOrderIndependentLoop =
+    mustPointOutsideOrderIndependentLoop;
   return ret;
 }
 
@@ -5607,31 +5651,30 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     }
 
     case PRIM_GET_MEMBER_VALUE: {
+      GenRet obj = call->get(1);
       SymExpr* se = toSymExpr(call->get(2));
-
 
       if (target && call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
           // We're getting the super class pointer.
-          GenRet srcwide  = call->get(1);
           Type*  addrType = target->typeInfo()->getField("addr")->type;
-          GenRet addr     = codegenCast(addrType, codegenRaddr(srcwide));
-          GenRet ref      = codegenWideAddrWithAddr(srcwide, addr);
+          GenRet addr     = codegenCast(addrType, codegenRaddr(obj));
+          GenRet ref      = codegenWideAddrWithAddr(obj, addr);
 
           ret = ref;
         } else {
-          ret = codegenFieldPtr(call->get(1), se);
+          ret = codegenFieldPtr(obj, se);
         }
 
       } else if (call->get(1)->isWideRef()) {
-        ret = codegenFieldPtr(call->get(1), se);
+        ret = codegenFieldPtr(obj, se);
 
       } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-        ret = codegenFieldPtr(call->get(1), se);
+        ret = codegenFieldPtr(obj, se);
 
       } else if (se->symbol()->hasFlag(FLAG_SUPER_CLASS)) {
         // We're getting the super class pointer.
-        GenRet ref = codegenFieldPtr(call->get(1), se);
+        GenRet ref = codegenFieldPtr(obj, se);
 
         // Now we have a field pointer to object->super, but
         // the pointer to super *is* actually the value of
@@ -5641,8 +5684,13 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = ref;
 
       } else {
-        ret = codegenFieldPtr(call->get(1), se);
+        ret = codegenFieldPtr(obj, se);
       }
+      if (isHeapAllocatedType(call->get(1)->getValType()))
+        ret.mustPointOutsideOrderIndependentLoop = true;
+      else
+        ret.mustPointOutsideOrderIndependentLoop =
+          obj.mustPointOutsideOrderIndependentLoop;
 
       retval = true;
       break;
@@ -5650,6 +5698,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
     case PRIM_GET_MEMBER: {
       /* Get a pointer to a member */
+      GenRet obj = call->get(1);
       SymExpr* se = toSymExpr(call->get(2));
 
       // Invalid AST to use PRIM_GET_MEMBER with a ref field
@@ -5659,49 +5708,57 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
           call->get(1)->isWideRef()   ||
           call->typeInfo()->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
-        ret = codegenAddrOf(codegenFieldPtr(call->get(1), se));
+        ret = codegenAddrOf(codegenFieldPtr(obj, se));
 
         retval = true;
       } else if (target && ((target->isRef() && call->get(2)->isRef()) ||
                  (target->isWideRef() && call->get(2)->isWideRef()))) {
-        ret = codegenFieldPtr(call->get(1), se);
+        ret = codegenFieldPtr(obj, se);
         retval = true;
 
       } else if (target && (target->getValType() != call->get(2)->typeInfo())) {
         // get a narrow reference to the actual 'addr' field
         // of the wide pointer
-        GenRet getField = codegenFieldPtr(call->get(1), se);
+        GenRet getField = codegenFieldPtr(obj, se);
 
         ret = codegenAddrOf(codegenWideThingField(getField, WIDE_GEP_ADDR));
 
         retval = true;
       }
+      if (isHeapAllocatedType(call->get(1)->getValType()))
+        ret.mustPointOutsideOrderIndependentLoop = true;
+      else
+        ret.mustPointOutsideOrderIndependentLoop =
+          obj.mustPointOutsideOrderIndependentLoop;
 
       break;
     }
 
     case PRIM_GET_SVEC_MEMBER: {
+      GenRet tup = call->get(1);
+
       if (call->get(1)->isWideRef()) {
         /* Get a pointer to the i'th element of a homogeneous tuple */
-        GenRet elemPtr = codegenElementPtr(call->get(1), call->get(2));
+        GenRet elemPtr = codegenElementPtr(tup, call->get(2));
 
         INT_ASSERT( elemPtr.isLVPtr == GEN_WIDE_PTR );
 
         elemPtr = codegenAddrOf(elemPtr);
 
-        //codegenAssign(get(1), elemPtr);
         ret = elemPtr;
 
         retval = true;
 
       } else if (target && (target->getValType() != call->getValType())) {
-        GenRet getElem = codegenElementPtr(call->get(1), call->get(2));
+        GenRet getElem = codegenElementPtr(tup, call->get(2));
 
 
         ret =  codegenAddrOf(codegenWideThingField(getElem, WIDE_GEP_ADDR));
 
         retval = true;
       }
+      ret.mustPointOutsideOrderIndependentLoop =
+        tup.mustPointOutsideOrderIndependentLoop;
 
       break;
     }
@@ -5709,9 +5766,8 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_GET_SVEC_MEMBER_VALUE: {
       /* Get the i'th value from a homogeneous tuple */
 
-      //there was an if/else block checking if call->get(1) is wide or narrow,
-      //however if/else blocks were identical. It may not be in the future.
-      ret =  codegenElementPtr(call->get(1), call->get(2));
+      GenRet tup = call->get(1);
+      ret =  codegenElementPtr(tup, call->get(2));
 
       retval = true;
       break;
@@ -5720,7 +5776,8 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
     case PRIM_ARRAY_GET: {
       /* Get a pointer to the i'th array element */
       // ('_array_get' array idx)
-      GenRet elem = codegenElementPtr(call->get(1), call->get(2));
+      GenRet aPtr = call->get(1);
+      GenRet elem = codegenElementPtr(aPtr, call->get(2));
       GenRet ref  = codegenAddrOf(elem);
 
       TypeSymbol* arrTS = call->get(1)->typeInfo()->symbol;
@@ -5740,6 +5797,11 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       } else {
         ret = ref;
       }
+      if (isHeapAllocatedType(arrTS->getValType()))
+        ret.mustPointOutsideOrderIndependentLoop = true;
+      else
+        ret.mustPointOutsideOrderIndependentLoop =
+          aPtr.mustPointOutsideOrderIndependentLoop;
 
       retval = true;
       break;

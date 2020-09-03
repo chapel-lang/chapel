@@ -348,6 +348,7 @@ module Heap {
       Iterate over the elements of this heap in order, 
       while removing the yielded elements.
     */
+    pragma "not order independent yielding loops"
     iter consume() {
       var h = this;
       while !h.isEmpty() {

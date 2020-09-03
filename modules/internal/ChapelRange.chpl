@@ -2022,6 +2022,7 @@ proc _cast(type t: range(?), r: range(?)) {
 
   // An unbounded range iterator (for all strides)
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these() where boundedType != BoundedRangeType.bounded {
 
     if boundedType == BoundedRangeType.boundedNone then
@@ -2052,6 +2053,7 @@ proc _cast(type t: range(?), r: range(?)) {
 
   // A bounded and strided range iterator
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == true {
     if (useOptimizedRangeIterators) {
@@ -2080,6 +2082,7 @@ proc _cast(type t: range(?), r: range(?)) {
 
   // A bounded and non-strided (stride = 1) range iterator
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == false {
     if (useOptimizedRangeIterators) {
@@ -2120,6 +2123,7 @@ proc _cast(type t: range(?), r: range(?)) {
   // int(64) and uint(64) but it's hard to see a case where those could ever be
   // desired.
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.generalIterator() {
     if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
@@ -2142,6 +2146,7 @@ proc _cast(type t: range(?), r: range(?)) {
   //#
 
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
                                               !localeModelHasSublocales
   {

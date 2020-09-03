@@ -188,6 +188,7 @@ module ArrayViewSlice {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;

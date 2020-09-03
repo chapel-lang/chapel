@@ -234,6 +234,7 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these() ref
   {
 
@@ -284,6 +285,7 @@ module ChapelTuple {
 
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
@@ -314,11 +316,13 @@ module ChapelTuple {
   // for good performance
   //
   inline proc _cast(type t: complex(64), x: (?,?)) {
+    pragma "fn synchronization free"
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
     return _chpl_complex64(x(0):real(32),x(1):real(32));
   }
 
   inline proc _cast(type t: complex(128), x: (?,?)) {
+    pragma "fn synchronization free"
     extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
     return _chpl_complex128(x(0):real(64),x(1):real(64));
   }

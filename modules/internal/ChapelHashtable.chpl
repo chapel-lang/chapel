@@ -243,6 +243,7 @@ module ChapelHashtable {
     }
   }
 
+  pragma "order independent yielding loops"
   private iter _allSlots(size: int, followThis, param tag: iterKind)
     where tag == iterKind.follower {
 
@@ -392,6 +393,7 @@ module ChapelHashtable {
       return (false, -1);
     }
 
+    pragma "order independent yielding loops"
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(key):uint;
       if numSlots == 0 then return;
@@ -693,6 +695,7 @@ module ChapelHashtable {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       for slot in table.allSlots() do
         if table.isSlotFull(slot) then

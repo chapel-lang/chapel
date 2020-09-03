@@ -938,7 +938,7 @@ proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
-
+pragma "order independent yielding loops"
 iter CyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -965,6 +965,7 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");

@@ -284,11 +284,20 @@ symbolFlag( FLAG_NO_IMPLICIT_COPY , ypr, "no implicit copy" , "function does not
 symbolFlag( FLAG_NO_INIT , ypr, "no init", "Do not initialize this variable" )
 
 symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
+
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
+
+// do not warn for an unnecessary FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS
+symbolFlag( FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING , ypr, "no redundant order independent pragma warning" , "do not warn if an 'order independent yielding loops' pragma is unnecessary")
+
+
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
 symbolFlag( FLAG_NO_RENAME, npr, "no rename", ncm)
 symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
 symbolFlag( FLAG_NO_WIDE_CLASS , ypr, "no wide class" , ncm )
+
+// See FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS below
+symbolFlag( FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "not order independent yielding loops", "yielding loops in iterator itself are not order independent" )
 
 // See FLAG_POD below
 symbolFlag( FLAG_NOT_POD , ypr, "not plain old data" , "bit copy overridden")
@@ -323,6 +332,24 @@ symbolFlag( FLAG_OVERRIDE , npr, "method overrides" , ncm )
 // variables added by flatten functions
 symbolFlag( FLAG_OUTER_VARIABLE , npr, "outer variable" , ncm )
 
+// This means that the yielding loops themselves within an iterator
+// are order independent. It does not mean that all uses of the iterator
+// are order independent. And, it does not assert that iterators invoked
+// by this iterator are also order independent.
+//
+//  for x in myIter()  // still not order independent
+//
+// if myIter contains
+//    for i in otherIterator()
+//
+// then the resulting for loop is only order independent if otherIterator
+// is as well.
+//
+// So this applies only to code within this specific iterator.
+// It should generally be set on serial, standalone, and follower iterators.
+// Not setting it implies that the loop has a vectorization hazard.
+symbolFlag( FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "order independent yielding loops", "yielding loops in iterator itself are order independent" )
+
 symbolFlag( FLAG_OWNED , ypr, "owned", "owned class instance for lifetime checking" )
 
 symbolFlag( FLAG_PARAM , npr, "param" , "parameter (compile-time constant)" )
@@ -341,6 +368,13 @@ symbolFlag( FLAG_PARTIAL_TUPLE, npr, "partial tuple", ncm)
 //  * use isPOD()
 symbolFlag( FLAG_POD , ypr, "plain old data" , "data can be bit copied")
 
+// This flag is used to identify variables to which accesses within
+// an order-independent loop can be vectorized by the LLVM loop vectorizer.
+// The LLVM loop vectorizer has problems with loop-local stack variables.
+// These will be allocated outside of the loop in the IR (with an alloca
+// instruction). So, it should mark all variables other than those that
+// are loop-local stack variables inside of an order-independent loop.
+symbolFlag( FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP , npr, "points outside order independent loop" , "points to memory other than local variables inside order indpendent loop")
 
 symbolFlag( FLAG_PRIMITIVE_TYPE , ypr, "primitive type" , "attached to primitive types to keep them from being deleted" )
 symbolFlag( FLAG_PRINT_MODULE_INIT_FN , ypr, "print module init fn" , ncm )

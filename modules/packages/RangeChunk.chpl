@@ -60,6 +60,7 @@ module RangeChunk {
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a range. The remainders will be distributed according to ``remPol``.
   */
+  pragma "order independent yielding loops"
   iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
               remPol: RemElems = Thru): range(RT, bounded, S) {
     for (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
@@ -138,6 +139,7 @@ module RangeChunk {
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */
+  pragma "order independent yielding loops"
   iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
     if r.size == 0 || numChunks <= 0 then

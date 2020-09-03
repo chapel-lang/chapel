@@ -675,6 +675,7 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
+pragma "order independent yielding loops"
 iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -1116,6 +1117,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
 proc BlockArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
+pragma "order independent yielding loops"
 iter BlockArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -1152,6 +1154,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable

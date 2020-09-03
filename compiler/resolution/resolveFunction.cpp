@@ -558,37 +558,70 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isFollowerIterator(FnSymbol* fn);
-static bool isVecIterator(FnSymbol* fn);
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
+static bool isLoopBodyJustYield(LoopStmt* loop);
 
 static void markIterator(FnSymbol* fn) {
-  //
-  // Mark serial loops that yield inside of follower, standalone, and
-  // explicitly vectorized iterators as order independent. By using a
-  // forall loop or a loop over a vectorized iterator, a user is asserting
-  // that the loop can be executed in any iteration order.
+  /* Marks loops in iterators as order-independent:
+       * if a pragma says to do so
+       * or, if the body of the loop is just a yield
+   */
+  bool markOrderIndep = fn->hasFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  bool markAllYieldingLoops = fn->hasFlag(FLAG_PROMOTION_WRAPPER) ||
+                              fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
+                              markOrderIndep;
 
-  // Here we just mark the iterator's yielding loops as order independent
-  // as they are ones that will actually execute the body of the loop that
-  // invoked the iterator. Note that for nested loops with a single yield,
-  // only the inner most loop is marked.
-  //
-  if (isFollowerIterator(fn)   == true ||
-      isStandaloneIterator(fn) == true ||
-      isVecIterator(fn)        == true) {
-    std::vector<CallExpr*> callExprs;
+  bool allYieldingLoopsJustYield = true;
+  bool anyNotMarked = false;
+  bool anyMarked = false;
 
-    collectCallExprs(fn->body, callExprs);
+  std::vector<CallExpr*> callExprs;
 
-    for_vector(CallExpr, call, callExprs) {
-      if (call->isPrimitive(PRIM_YIELD) == true) {
-        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
-          if (loop->isCoforallLoop() == false) {
+  collectCallExprs(fn->body, callExprs);
+
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_YIELD) == true) {
+      if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+        if (loop->isCoforallLoop() == false) {
+          bool justYield = isLoopBodyJustYield(loop);
+          allYieldingLoopsJustYield = allYieldingLoopsJustYield && justYield;
+          if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
+            anyMarked = true;
+          } else {
+            anyNotMarked = true;
           }
         }
       }
+    }
+  }
+
+  if (fVerify) {
+    ModuleSymbol *mod = toModuleSymbol(fn->getModule());
+    if (mod->modTag != MOD_USER) {
+      if (markOrderIndep && allYieldingLoopsJustYield && anyMarked &&
+          !fn->hasFlag(FLAG_INSTANTIATED_GENERIC) &&
+          !fn->hasFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING)) {
+        // can't do this check for instantiated generics because
+        // other instantiations of the generic might have a different
+        // outcome.
+        USR_WARN(fn, "order independent pragma unnecessary");
+      }
+      if (anyNotMarked &&
+          !fn->hasFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS) &&
+          !isLeaderIterator(fn)) {
+        USR_WARN(fn, "add pragma \"not order independent yielding loops\" "
+                     "or pragma \"order independent yielding loops\"");
+      }
+    }
+  }
+  if (anyNotMarked && fReportVectorizedLoops && fExplainVerbose) {
+    if (!isLeaderIterator(fn)) {
+      ModuleSymbol *mod = toModuleSymbol(fn->getModule());
+      if (developer || mod->modTag == MOD_USER)
+        USR_WARN(fn,
+                 "should iterator %s be marked order independent?",
+                 fn->name);
     }
   }
 
@@ -608,20 +641,6 @@ bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
 }
 
-static bool isFollowerIterator(FnSymbol* fn) {
-  return isIteratorOfType(fn, gFollowerTag);
-}
-
-static bool isVecIterator(FnSymbol* fn) {
-  bool retval = false;
-
-  if (fn->isIterator() == true) {
-    retval = fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS);
-  }
-
-  return retval;
-}
-
 // Simple wrappers to check if a function is a specific type of iterator
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   bool retval = false;
@@ -636,6 +655,60 @@ static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag) {
   }
 
   return retval;
+}
+
+static bool isLoopBodyJustYield(AList body, int& numYields) {
+  for_alist(expr, body) {
+    if (DefExpr* def = toDefExpr(expr))
+      if (def->sym->hasFlag(FLAG_TEMP) ||
+          def->sym->hasFlag(FLAG_INDEX_VAR) ||
+          isLabelSymbol(def->sym))
+        continue;
+
+    if (CallExpr* call = toCallExpr(expr)) {
+      // PRIM_MOVE / PRIM_ASSIGN with primitive/symexpr RHS is OK
+      // (but not if RHS is a user call)
+      if (call->isPrimitive(PRIM_MOVE) ||
+          call->isPrimitive(PRIM_ASSIGN)) {
+        if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+          if (rhsCall->isPrimitive())
+            continue;
+        } else {
+          continue;
+        }
+      }
+      if (call->isPrimitive(PRIM_YIELD)) {
+        numYields++;
+
+        if (CallExpr* yCall = toCallExpr(call->get(1))) {
+          if (yCall->isPrimitive())
+            continue;
+        } else {
+          continue;
+        }
+      }
+      if (call->isPrimitive(PRIM_END_OF_STATEMENT))
+        continue;
+    }
+
+    if (BlockStmt* block = toBlockStmt(expr)) {
+      if (block->isRealBlockStmt())
+        if (isLoopBodyJustYield(block->body, numYields))
+          continue;
+    }
+
+    // if we haven't continued above, not a simple just-yield loop.
+    return false;
+  }
+
+  // If we get here, everything is OK
+  return true;
+}
+
+static bool isLoopBodyJustYield(LoopStmt* loop) {
+  int numYields = 0;
+  bool ok = isLoopBodyJustYield(loop->body, numYields);
+  return ok && numYields == 1;
 }
 
 // leader or standalone
