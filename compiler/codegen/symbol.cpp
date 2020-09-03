@@ -2191,8 +2191,8 @@ namespace {
      prove it is OK for some other reason).
    */
   struct MarkNonStackVisitor : public AstVisitorTraverse {
-    LoopStmt* outerMostOrderIndependentLoop;
-    MarkNonStackVisitor() : outerMostOrderIndependentLoop(NULL) { }
+    LoopStmt* outermostOrderIndependentLoop;
+    MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
     void handleLoopStmt(LoopStmt* loop);
     bool exprPointsToNonStack(Expr* e);
     bool enterCallExpr(CallExpr* call);
@@ -2204,8 +2204,8 @@ namespace {
 }
 
 void MarkNonStackVisitor::handleLoopStmt(LoopStmt* loop) {
-  if (loop->isOrderIndependent() && outerMostOrderIndependentLoop == NULL) {
-    outerMostOrderIndependentLoop = loop;
+  if (loop->isOrderIndependent() && outermostOrderIndependentLoop == NULL) {
+    outermostOrderIndependentLoop = loop;
   }
 }
 
@@ -2216,8 +2216,8 @@ bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
     if (sym->hasFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP))
       return true; // already marked
 
-    if (outerMostOrderIndependentLoop != NULL &&
-        !outerMostOrderIndependentLoop->contains(sym->defPoint)) {
+    if (outermostOrderIndependentLoop != NULL &&
+        !outermostOrderIndependentLoop->contains(sym->defPoint)) {
       // defined outside the outermost independent loop
       // (could be a global variable or argument, too)
       return true;
@@ -2255,8 +2255,8 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
         if (isVarSymbol(lhs))
           // Only variables within a vectorized-loop are relevant
           // for llvm.loop.parallel_accesses
-          if (outerMostOrderIndependentLoop &&
-              outerMostOrderIndependentLoop->contains(lhs->defPoint))
+          if (outermostOrderIndependentLoop &&
+              outermostOrderIndependentLoop->contains(lhs->defPoint))
             if (exprPointsToNonStack(call->get(2)))
               lhs->addFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP);
     }
@@ -2298,7 +2298,6 @@ void FnSymbol::codegenDef() {
 
   info->cStatements.clear();
   info->cLocalDecls.clear();
-
 
   if( outfile ) {
     if (strcmp(saveCDir, "")) {
