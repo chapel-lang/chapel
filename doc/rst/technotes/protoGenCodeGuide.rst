@@ -164,8 +164,8 @@ field initializers and serialization/parsing methods for wire-type encoding.
 
 Any Message Type
 ^^^^^^^^^^^^^^^^
-For Any messages, you can call ``packFrom`` to pack a specified message into the
-current Any message, or ``UnpackTo`` to unpack the current Any message to a specified
+For Any messages, you can call ``pack`` to pack a specified message into the
+current Any message, or ``unpack`` to unpack the current Any message to a specified
 message. Corresponding to an any message type field the plugin will generate a record
 field of ``Any`` type.
 
