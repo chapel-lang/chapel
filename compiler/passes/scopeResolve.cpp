@@ -2746,6 +2746,33 @@ static void detectUserDefinedBorrowMethods() {
   }
 }
 
+
+/* Look up the symbol named 'name' and add it to the map and set of visible
+   symbols in a given file. The map maps from a filename to a set of visible
+   symbols.
+ */
+static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
+  std::map<std::string, std::set<Symbol*>*>& visibleMap,
+  std::set<Symbol*>& alreadyFound) {
+
+  int numSymbolsFound;
+  Symbol* found = lookupAndCount(name, call, numSymbolsFound,
+                                 false, NULL, false);
+  if (found != NULL && alreadyFound.count(found) == 0 &&
+      !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
+      !found->hasFlag(FLAG_COMPILER_GENERATED) &&
+      !found->hasFlag(FLAG_TEMP) &&
+      strcmp(found->defPoint->fname(), "<internal>") != 0) {
+    const char* fname = found->defPoint->fname();
+    alreadyFound.insert(found);
+    if (visibleMap.count(fname) == 0) {
+      visibleMap.insert({fname, new std::set<Symbol*>()});
+    }
+    visibleMap[(std::string)fname]->insert(found);
+  }
+}
+
+
 /* Find any "get visible symbols" primitive calls and print out all
    symbols that are visible from that point.
  */
@@ -2754,37 +2781,51 @@ static void processGetVisibleSymbols() {
     if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
       std::set<Symbol*> alreadyFound;
       // build a map from filename to set of visible symbols in that file
-      std::map<const char*, std::set<Symbol*>*> visibleMap;
+      std::map<std::string, std::set<Symbol*>*> visibleMap;
       forv_Vec(VarSymbol, sym, gVarSymbols) {
-        int numSymbolsFound;
-        Symbol* found = lookupAndCount(sym->name, call, numSymbolsFound,
-                                       false, NULL, false);
-        if (found != NULL && alreadyFound.count(found) == 0 &&
-            !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
-            !found->hasFlag(FLAG_COMPILER_GENERATED) &&
-            !found->hasFlag(FLAG_TEMP)) {
-          const char* fname = found->defPoint->fname();
-          alreadyFound.insert(found);
-          if (visibleMap.count(fname) == 0) {
-            visibleMap.insert({fname, new std::set<Symbol*>()});
-          }
-          visibleMap[fname]->insert(found);
-        }
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
       }
+      forv_Vec(FnSymbol, sym, gFnSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+
+      // create and sort a vector of all the filenames in the map
+      std::vector<std::string> sortedFilenames;
+      std::map<std::string, std::set<Symbol*>*>::iterator mapIdx;
+
+      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
+        sortedFilenames.push_back((std::string)(mapIdx->first));
+      }
+      std::sort(sortedFilenames.begin(), sortedFilenames.end());
 
       printf("%s:%d: Printing symbols visible from here:\n",
              call->fname(), call->linenum());
-      // now walk the map printing visible symbols from each file
-      std::map<const char*, std::set<Symbol*>*>::iterator mapIdx;
-      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
+      // now walk the sorted vector printing visible symbols from each file
+      for (std::vector<std::string>::iterator it = sortedFilenames.begin();
+           it != sortedFilenames.end(); it++) {
+        // create and sort a vector of <lineNumber, Symbol*> pairs
+        // for the current file by line number
         std::set<Symbol*>::iterator setIdx;
-        for (setIdx = mapIdx->second->begin();
-             setIdx != mapIdx->second->end(); setIdx++) {
+        std::vector<std::pair<int, Symbol*>> sortedSymbols;
+        for (setIdx = visibleMap[it->c_str()]->begin();
+             setIdx != visibleMap[it->c_str()]->end(); setIdx++) {
           Symbol* sym = *setIdx;
+          sortedSymbols.push_back(std::make_pair(sym->defPoint->linenum(),
+                                                 sym));
+        }
+        std::sort(sortedSymbols.begin(), sortedSymbols.end());
+
+        // walk the sorted vector of symbols to print information on each
+        for (std::vector<std::pair<int, Symbol*>>::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
+          Symbol* sym = symPair->second;
           printf("  %s:%d: %s\n", sym->defPoint->fname(),
                  sym->defPoint->linenum(), sym->name); 
         }
-        delete mapIdx->second;
+
+        delete visibleMap[it->c_str()];
       }
       call->remove();
     }

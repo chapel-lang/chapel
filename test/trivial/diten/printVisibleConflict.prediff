@@ -3,6 +3,6 @@ baseName=$1
 outputName=$2
 
 # Remove $CHPL_HOME/ from paths and sort the output
-sed -e "s;$CHPL_HOME/;;g" $outputName | sort > $outputName.tmp
+sed -e "s;$CHPL_HOME/;;g" $outputName > $outputName.tmp
 mv $outputName.tmp $outputName
 
