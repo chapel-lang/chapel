@@ -47,6 +47,15 @@ clean:
 	@echo "Removing protoc-gen-chpl..."
 	rm -f $(bdir)/protoc-gen-chpl
 
+check:
+	@echo "checking the compatibility of the plugin with the installed protoc version"
+	@echo "syntax = 'proto3';" >> a.proto
+	@echo "message A {int32 a = 1;}" >> a.proto
+	@protoc --chpl_out=. a.proto || (echo "make check failed $?"; rm -rf a.proto; exit 1)
+	@echo "make check passed"
+	@rm -rf a.proto
+	@rm -rf a.chpl
+
 clobber: clean FORCE
 
 FORCE:
