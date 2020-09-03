@@ -30,6 +30,7 @@ link=../../tools/protoc-gen-chpl/protoc-gen-chpl
 linkFile=$(bdir)/protoc-gen-chpl
 
 SOURCES=$(wildcard *.cpp)
+HEADERS=$(wildcard *.h)
 LDFLAGS = -lprotobuf -lprotoc
 CPPFLAGS = -I.
 
@@ -39,7 +40,7 @@ protoc-gen-chpl: $(bdir)/protoc-gen-chpl FORCE
 
 install: $(bdir)/protoc-gen-chpl FORCE
 
-$(bdir)/protoc-gen-chpl:	$(OBJ)
+$(bdir)/protoc-gen-chpl:	$(SOURCES)	$(HEADERS)
 	@echo "Building protoc-gen-chpl.."
 	$(CC) $(CPPFLAGS) -o $@ $(SOURCES) $(LDFLAGS) -lstdc++
 
