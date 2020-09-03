@@ -652,7 +652,9 @@ static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
 
   return isRecord(valType) &&
          (formal->originalIntent == INTENT_BLANK ||
-          formal->originalIntent == INTENT_CONST);
+          formal->originalIntent == INTENT_CONST ||
+          formal->originalIntent == INTENT_INOUT ||
+          formal->originalIntent == INTENT_OUT);
 }
 
 
@@ -662,12 +664,22 @@ static void externExportIntentError(FnSymbol* fn, ArgSymbol* arg) {
 
   bool isExtern = fn->hasFlag(FLAG_EXTERN);
 
-  USR_FATAL_CONT(arg, "a concrete intent is required for the "
-                      "%s function formal %s "
-                      "which has record type %s",
-                      isExtern ? "extern" : "exported",
-                      arg->name,
-                      toString(arg->getValType()));
+  IntentTag intent = arg->originalIntent;
+
+  if (intent == INTENT_BLANK || intent == INTENT_CONST) {
+    USR_FATAL_CONT(arg, "a concrete intent is required for the "
+                        "%s function formal '%s' "
+                        "which has record type '%s'",
+                        isExtern ? "extern" : "exported",
+                        arg->name,
+                        toString(arg->getValType()));
+  } else if (intent == INTENT_INOUT || intent == INTENT_OUT) {
+    USR_FATAL_CONT(arg, "%s is not yet supported for %s functions - "
+                        "consider changing formal '%s' to use 'ref' intent",
+                        intentDescrString(intent),
+                        isExtern ? "extern" : "exported",
+                        arg->name);
+  }
 }
 
 static void checkExternProcs() {
