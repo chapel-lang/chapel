@@ -34,6 +34,10 @@ Compile and run a test program::
 
     chpl /usr/local/Cellar/chapel/<chapel-version>/libexec/hello.chpl
     ./hello
+
+If you're new to Chapel, refer to the `What's Next?
+<https://chapel-lang.org/docs/usingchapel/QUICKSTART.html#what-s-next>`_
+section of :ref:`chapelhome-quickstart` for next steps.
     
 .. note::
 
@@ -41,7 +45,7 @@ Compile and run a test program::
    for users to explore and test the language.  Of the omitted
    features, :ref:`multilocale <readme-multilocale>` support is most
    notable.  Users interested in utilizing Chapel's complete set of
-   features should build Chapel from source (option 1 above).
+   features should build Chapel from source (option 2 above).
 
 .. note::
 
@@ -53,5 +57,4 @@ Compile and run a test program::
 
 
 .. _Homebrew: https://brew.sh/
-.. _repository: https://github.com/chapel-lang/chapel
-.. _release: https://github.com/chapel-lang/chapel/releases
+.. _whatsnext: 
