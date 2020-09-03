@@ -1662,7 +1662,7 @@ Symbol* lookupAndCount(const char*           name,
       }
       retval = NULL;
     } else {
-      retval = symbols[0]
+      retval = symbols[0];
     }
   }
 
