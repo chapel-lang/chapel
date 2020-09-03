@@ -160,8 +160,6 @@ GenRet CForLoop::codegen()
     std::string incr      = codegenCForLoopHeader(incrBlock->copy());
     std::string hdr       = "for (" + init + "; " + test + "; " + incr + ") ";
 
-    codegenVectorHint();
-
     info->cStatements.push_back(hdr);
 
     if (this != getFunction()->body)

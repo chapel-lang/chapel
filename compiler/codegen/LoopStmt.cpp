@@ -53,18 +53,3 @@ void LoopStmt::reportVectorizable()
     }
   }
 }
-
-// If vectorization is enabled and this loop is marked for vectorization,
-// codegen CHPL_PRAGMA_IVDEP.
-// This method is a no-op if vectorization is off, or the
-// loop is not marked for vectorization.
-void LoopStmt::codegenVectorHint()
-{
-  if (fNoVectorize == false && isParallelAccessVectorizable())
-  {
-    GenInfo* info = gGenInfo;
-
-    // Note: This *must* match the macro definitions provided in the runtime
-    info->cStatements.push_back("CHPL_PRAGMA_IVDEP\n");
-  }
-}
