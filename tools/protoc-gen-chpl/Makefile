@@ -39,7 +39,7 @@ protoc-gen-chpl: $(bdir)/protoc-gen-chpl FORCE
 
 install: $(bdir)/protoc-gen-chpl FORCE
 
-$(bdir)/protoc-gen-chpl:	$(OBJ)
+$(bdir)/protoc-gen-chpl:	$(SOURCES)
 	@echo "Building protoc-gen-chpl.."
 	$(CC) $(CPPFLAGS) -o $@ $(SOURCES) $(LDFLAGS) -lstdc++
 
