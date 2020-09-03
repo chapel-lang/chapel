@@ -32,5 +32,26 @@ namespace chapel {
   void EnumFieldGenerator::GenerateMembers(Printer* printer) {
     printer->Print(variables_, "var $name$: $type_name$;\n");
   }
+  
+  EnumOneofFieldGenerator::EnumOneofFieldGenerator(const FieldDescriptor* descriptor)
+      : FieldGeneratorBase(descriptor) {
+    SetCommonOneofFieldVariables(&variables_);
+  }
+
+  EnumOneofFieldGenerator::~EnumOneofFieldGenerator() {
+  }
+
+  void EnumOneofFieldGenerator::GenerateMembers(Printer* printer) {
+    printer->Print(variables_,
+      "var $property_name$: $type_name$;\n"
+      "proc $name$ {\n"
+      "  if $oneof_name$SetVal == $oneof_name$.$name$ then return $property_name$;\n"
+      "  else return $default_value$;\n"
+      "}\n"
+      "proc ref $name$ ref {\n"
+      "  $oneof_name$SetVal = $oneof_name$.$name$;\n"
+      "  return $property_name$;\n"
+      "}\n");
+  }
 
 }  // namespace chapel

@@ -24,6 +24,7 @@
 #include <string>
 
 #include <google/protobuf/descriptor.h>
+#include <google/protobuf/descriptor.pb.h>
 #include <google/protobuf/compiler/code_generator.h>
 
 namespace chapel {
@@ -46,6 +47,14 @@ namespace chapel {
   string GetMessageName(const Descriptor* descriptor);
 
   string GetEnumName(const EnumDescriptor* descriptor);
+  
+  string GetPackageName(const FileDescriptor* descriptor);
+
+  string GetOneofName(const OneofDescriptor* descriptor);
+  
+  inline bool IsMapEntryMessage(const Descriptor* descriptor) {
+    return descriptor->options().map_entry();
+  }
 
 } // namespace chapel
 

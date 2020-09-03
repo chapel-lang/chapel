@@ -18,35 +18,26 @@
  * limitations under the License.
  */
 
-#ifndef PB_MESSAGE_FIELD_HH
-#define PB_MESSAGE_FIELD_HH
-
-#include <google/protobuf/io/printer.h>
-#include <google/protobuf/descriptor.h>
-
-#include <field_base.h>
+#include <map_field.h>
 
 namespace chapel {
-  
-  using namespace google::protobuf;
-  using namespace google::protobuf::io;
-  
-  class MessageFieldGenerator : public FieldGeneratorBase {
-   public:
-    MessageFieldGenerator(const FieldDescriptor* descriptor);
-    ~MessageFieldGenerator();
 
-    void GenerateMembers(Printer* printer);
-  };
+  MapFieldGenerator::MapFieldGenerator(const FieldDescriptor* descriptor)
+      : FieldGeneratorBase(descriptor) {
+  }
 
-  class MessageOneofFieldGenerator : public FieldGeneratorBase {
-   public:
-    MessageOneofFieldGenerator(const FieldDescriptor* descriptor);
-    ~MessageOneofFieldGenerator();
+  MapFieldGenerator::~MapFieldGenerator() {
+  }
 
-    void GenerateMembers(Printer* printer);
-  };
+  void MapFieldGenerator::GenerateMembers(Printer* printer) {
+    const FieldDescriptor* key_descriptor =
+        descriptor_->message_type()->FindFieldByName("key");
+    const FieldDescriptor* value_descriptor =
+        descriptor_->message_type()->FindFieldByName("value");
+    variables_["key_type_name"] = type_name(key_descriptor);
+    variables_["value_type_name"] = type_name(value_descriptor);
+    printer->Print(variables_,
+      "var $name$: map($key_type_name$, $value_type_name$);\n");
+  }
 
 }  // namespace chapel
-
-#endif /* PB_MESSAGE_FIELD_HH */

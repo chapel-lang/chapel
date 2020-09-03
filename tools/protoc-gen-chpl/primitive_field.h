@@ -39,6 +39,14 @@ namespace chapel {
     void GenerateMembers(Printer* printer);
   };
 
+  class PrimitiveOneofFieldGenerator : public FieldGeneratorBase {
+   public:
+    PrimitiveOneofFieldGenerator(const FieldDescriptor* descriptor);
+    ~PrimitiveOneofFieldGenerator();
+
+    void GenerateMembers(Printer* printer);
+  };
+
 }  // namespace chapel
 
 #endif /* PB_PRIMITIVE_FIELD_HH */

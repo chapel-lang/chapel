@@ -41,6 +41,14 @@ namespace chapel {
     void GenerateMembers(Printer* printer);
   };
 
+  class EnumOneofFieldGenerator : public FieldGeneratorBase {
+   public:
+    EnumOneofFieldGenerator(const FieldDescriptor* descriptor);
+    ~EnumOneofFieldGenerator();
+
+    void GenerateMembers(Printer* printer);
+  };
+
 }  // namespace chapel
 
 #endif  // PB_ENUM_FIELD_HH

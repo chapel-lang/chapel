@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+import "google/protobuf/any.proto";
+package any;
+
+message anyTest {
+  int32 a = 1;
+  google.protobuf.Any anyfield = 2;
+}
+
+message test{
+  string a = 1;
+  bool b = 2;
+}

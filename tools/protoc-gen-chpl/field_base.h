@@ -49,6 +49,10 @@ namespace chapel {
     const FieldDescriptor* descriptor_;
     map<string, string> variables_;
 
+   protected:
+     void SetCommonOneofFieldVariables(std::map<string, string>* variables);
+     string oneof_name(const OneofDescriptor* descriptor);
+
    private:
      void SetCommonFieldVariables(map<string, string>* variables);
   };

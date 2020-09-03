@@ -65,13 +65,35 @@ namespace chapel {
       vars[i]["proto_field_type"] = field_obj->proto_type_name(fieldDescriptor);
       vars[i]["wire_format"] = std::to_string(WireFormat::WireTypeForField(fieldDescriptor));
       vars[i]["is_repeated"] = std::to_string(fieldDescriptor->is_repeated());
+
+      // key and value types for Map
+      if(vars[i]["proto_field_type"] == "map") {
+        const FieldDescriptor* keyDescriptor = \
+          fieldDescriptor->message_type()->FindFieldByName("key");
+        const FieldDescriptor* valueDescriptor = \
+          fieldDescriptor->message_type()->FindFieldByName("value");
+        vars[i]["key_proto_type"] = field_obj->proto_type_name(keyDescriptor);
+        vars[i]["key_chapel_type"] = field_obj->type_name(keyDescriptor);
+        vars[i]["value_proto_type"] = field_obj->proto_type_name(valueDescriptor);
+        vars[i]["value_chapel_type"] = field_obj->type_name(valueDescriptor);
+      }
     }
-    
+
     printer->Print(
       "record $record_name$ {\n",
       "record_name", record_name());
     printer->Print("\n");
     printer->Indent();
+
+    printer->Print(
+      "proc packageName param { return \"$package_name$\"; }\n",
+      "package_name", GetPackageName(descriptor_->file()));
+    printer->Print("\n");
+
+    printer->Print(
+      "proc messageName param { return \"$record_name$\"; }\n",
+      "record_name", record_name());
+    printer->Print("\n");
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
       const FieldDescriptor* fieldDescriptor = descriptor_->field(i);
@@ -98,7 +120,10 @@ namespace chapel {
     printer->Indent();
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
-      if(vars[i]["proto_field_type"] == "message") {
+      if(vars[i]["proto_field_type"] == "map") {
+        printer->Print(vars[i],
+          "$proto_field_type$Append($field_name$, $field_number$, \"$key_proto_type$\", \"$value_proto_type$\", binCh);\n");
+      } else if(vars[i]["proto_field_type"] == "message") {
         if(vars[i]["is_repeated"] == "0") {
           printer->Print(vars[i],
             "$proto_field_type$Append($field_name$, $field_number$, binCh);\n");
@@ -148,7 +173,10 @@ namespace chapel {
     for (int i = 0; i < descriptor_->field_count(); i++) {
       printer->Print(vars[i],
         "when $field_number$ {\n");
-        if(vars[i]["proto_field_type"] == "message") {
+        if(vars[i]["proto_field_type"] == "map") {
+          printer->Print(vars[i],
+            "  $proto_field_type$Consume(binCh, $field_name$, \"$key_proto_type$\", \"$value_proto_type$\", $key_chapel_type$, $value_chapel_type$);\n");
+        } else if(vars[i]["proto_field_type"] == "message") {
           if(vars[i]["is_repeated"] == "0") {
             printer->Print(vars[i],
               "  $field_name$ = $proto_field_type$Consume(binCh, $type_name$);\n");
