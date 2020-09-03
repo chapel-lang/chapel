@@ -672,11 +672,11 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 8.0.
+   Chapel currently supports LLVM 10.0.
 
    .. note::
 
-       We have had success with this procedure to install LLVM 8.0
+       We have had success with this procedure to install LLVM 10.0
        dependencies on Ubuntu.
 
        First, follow the instructions at ``https://apt.llvm.org`` that
@@ -686,7 +686,7 @@ CHPL_LLVM
 
         .. code-block:: sh
 
-            apt-get install llvm-8-dev llvm-8 llvm-8-tools clang-8 libclang-8-dev libedit-dev
+            apt-get install llvm-10-dev llvm-10 llvm-10-tools clang-10 libclang-10-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 

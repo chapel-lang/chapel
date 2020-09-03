@@ -1,9 +1,8 @@
 //===-- MSP430ELFObjectWriter.cpp - MSP430 ELF Writer ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,7 +31,7 @@ protected:
   unsigned getRelocType(MCContext &Ctx, const MCValue &Target,
                         const MCFixup &Fixup, bool IsPCRel) const override {
     // Translate fixup kind to ELF relocation type.
-    switch ((unsigned)Fixup.getKind()) {
+    switch (Fixup.getTargetKind()) {
     case FK_Data_1:                   return ELF::R_MSP430_8;
     case FK_Data_2:                   return ELF::R_MSP430_16_BYTE;
     case FK_Data_4:                   return ELF::R_MSP430_32;
@@ -55,5 +54,5 @@ protected:
 
 std::unique_ptr<MCObjectTargetWriter>
 llvm::createMSP430ELFObjectWriter(uint8_t OSABI) {
-  return llvm::make_unique<MSP430ELFObjectWriter>(OSABI);
+  return std::make_unique<MSP430ELFObjectWriter>(OSABI);
 }

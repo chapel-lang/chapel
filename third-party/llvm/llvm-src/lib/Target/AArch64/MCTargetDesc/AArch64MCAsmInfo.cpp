@@ -1,9 +1,8 @@
 //===-- AArch64MCAsmInfo.cpp - AArch64 asm properties ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,7 +30,7 @@ static cl::opt<AsmWriterVariantTy> AsmWriterVariant(
     cl::values(clEnumValN(Generic, "generic", "Emit generic NEON assembly"),
                clEnumValN(Apple, "apple", "Emit Apple-style NEON assembly")));
 
-AArch64MCAsmInfoDarwin::AArch64MCAsmInfoDarwin() {
+AArch64MCAsmInfoDarwin::AArch64MCAsmInfoDarwin(bool IsILP32) {
   // We prefer NEON instructions to be printed in the short, Apple-specific
   // form when targeting Darwin.
   AssemblerDialect = AsmWriterVariant == Default ? Apple : AsmWriterVariant;
@@ -40,7 +39,8 @@ AArch64MCAsmInfoDarwin::AArch64MCAsmInfoDarwin() {
   PrivateLabelPrefix = "L";
   SeparatorString = "%%";
   CommentString = ";";
-  CodePointerSize = CalleeSaveStackSlotSize = 8;
+  CalleeSaveStackSlotSize = 8;
+  CodePointerSize = IsILP32 ? 4 : 8;
 
   AlignmentIsInBytes = false;
   UsesELFSectionDirectiveForBSS = true;
@@ -131,8 +131,6 @@ AArch64MCAsmInfoGNUCOFF::AArch64MCAsmInfoGNUCOFF() {
   CodePointerSize = 8;
 
   CommentString = "//";
-  ExceptionsType = ExceptionHandling::DwarfCFI;
-  // The default is dwarf, but WinEH can be enabled optionally, which requires
-  // WinEHEncodingType to be set.
+  ExceptionsType = ExceptionHandling::WinEH;
   WinEHEncodingType = WinEH::EncodingType::Itanium;
 }

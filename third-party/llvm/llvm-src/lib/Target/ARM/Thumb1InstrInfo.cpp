@@ -1,9 +1,8 @@
 //===-- Thumb1InstrInfo.cpp - Thumb-1 Instruction Information -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,8 +37,8 @@ unsigned Thumb1InstrInfo::getUnindexedOpcode(unsigned Opc) const {
 
 void Thumb1InstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator I,
-                                  const DebugLoc &DL, unsigned DestReg,
-                                  unsigned SrcReg, bool KillSrc) const {
+                                  const DebugLoc &DL, MCRegister DestReg,
+                                  MCRegister SrcReg, bool KillSrc) const {
   // Need to check the arch.
   MachineFunction &MF = *MBB.getParent();
   const ARMSubtarget &st = MF.getSubtarget<ARMSubtarget>();
@@ -81,12 +80,11 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                     const TargetRegisterClass *RC,
                     const TargetRegisterInfo *TRI) const {
   assert((RC == &ARM::tGPRRegClass ||
-          (TargetRegisterInfo::isPhysicalRegister(SrcReg) &&
-           isARMLowRegister(SrcReg))) && "Unknown regclass!");
+          (Register::isPhysicalRegister(SrcReg) && isARMLowRegister(SrcReg))) &&
+         "Unknown regclass!");
 
   if (RC == &ARM::tGPRRegClass ||
-      (TargetRegisterInfo::isPhysicalRegister(SrcReg) &&
-       isARMLowRegister(SrcReg))) {
+      (Register::isPhysicalRegister(SrcReg) && isARMLowRegister(SrcReg))) {
     DebugLoc DL;
     if (I != MBB.end()) DL = I->getDebugLoc();
 
@@ -109,13 +107,13 @@ loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                      unsigned DestReg, int FI,
                      const TargetRegisterClass *RC,
                      const TargetRegisterInfo *TRI) const {
-  assert((RC->hasSuperClassEq(&ARM::tGPRRegClass) ||
-          (TargetRegisterInfo::isPhysicalRegister(DestReg) &&
-           isARMLowRegister(DestReg))) && "Unknown regclass!");
+  assert(
+      (RC->hasSuperClassEq(&ARM::tGPRRegClass) ||
+       (Register::isPhysicalRegister(DestReg) && isARMLowRegister(DestReg))) &&
+      "Unknown regclass!");
 
   if (RC->hasSuperClassEq(&ARM::tGPRRegClass) ||
-      (TargetRegisterInfo::isPhysicalRegister(DestReg) &&
-       isARMLowRegister(DestReg))) {
+      (Register::isPhysicalRegister(DestReg) && isARMLowRegister(DestReg))) {
     DebugLoc DL;
     if (I != MBB.end()) DL = I->getDebugLoc();
 

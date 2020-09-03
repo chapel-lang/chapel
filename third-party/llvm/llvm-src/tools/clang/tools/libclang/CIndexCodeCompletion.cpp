@@ -1,9 +1,8 @@
 //===- CIndexCodeCompletion.cpp - Code Completion API hooks ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -569,9 +568,8 @@ namespace {
     CaptureCompletionResults(const CodeCompleteOptions &Opts,
                              AllocatedCXCodeCompleteResults &Results,
                              CXTranslationUnit *TranslationUnit)
-      : CodeCompleteConsumer(Opts, false), 
-        AllocatedResults(Results), CCTUInfo(Results.CodeCompletionAllocator),
-        TU(TranslationUnit) { }
+        : CodeCompleteConsumer(Opts), AllocatedResults(Results),
+          CCTUInfo(Results.CodeCompletionAllocator), TU(TranslationUnit) {}
     ~CaptureCompletionResults() override { Finish(); }
 
     void ProcessCodeCompleteResults(Sema &S, 
@@ -805,8 +803,8 @@ clang_codeCompleteAt_Impl(CXTranslationUnit TU, const char *complete_filename,
           os << arg << ".pth";
         }
         pchName.push_back('\0');
-        struct stat stat_results;
-        if (stat(pchName.str().c_str(), &stat_results) == 0)
+        llvm::sys::fs::file_status stat_results;
+        if (!llvm::sys::fs::status(pchName, stat_results))
           usesPCH = true;
         continue;
       }

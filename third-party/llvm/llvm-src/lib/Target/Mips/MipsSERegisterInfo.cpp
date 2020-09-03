@@ -1,9 +1,8 @@
 //===-- MipsSERegisterInfo.cpp - MIPS32/64 Register Information -== -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -213,11 +212,9 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
     // element size), otherwise it is a 16-bit signed immediate.
     unsigned OffsetBitSize =
         getLoadStoreOffsetSizeInBits(MI.getOpcode(), MI.getOperand(OpNo - 1));
-    unsigned OffsetAlign = getLoadStoreOffsetAlign(MI.getOpcode());
-
+    const Align OffsetAlign(getLoadStoreOffsetAlign(MI.getOpcode()));
     if (OffsetBitSize < 16 && isInt<16>(Offset) &&
-        (!isIntN(OffsetBitSize, Offset) ||
-         OffsetToAlignment(Offset, OffsetAlign) != 0)) {
+        (!isIntN(OffsetBitSize, Offset) || !isAligned(OffsetAlign, Offset))) {
       // If we have an offset that needs to fit into a signed n-bit immediate
       // (where n < 16) and doesn't, but does fit into 16-bits then use an ADDiu
       MachineBasicBlock &MBB = *MI.getParent();
@@ -225,7 +222,7 @@ void MipsSERegisterInfo::eliminateFI(MachineBasicBlock::iterator II,
       const TargetRegisterClass *PtrRC =
           ABI.ArePtrs64bit() ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
       MachineRegisterInfo &RegInfo = MBB.getParent()->getRegInfo();
-      unsigned Reg = RegInfo.createVirtualRegister(PtrRC);
+      Register Reg = RegInfo.createVirtualRegister(PtrRC);
       const MipsSEInstrInfo &TII =
           *static_cast<const MipsSEInstrInfo *>(
               MBB.getParent()->getSubtarget().getInstrInfo());

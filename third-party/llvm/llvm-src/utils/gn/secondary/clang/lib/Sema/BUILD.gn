@@ -1,7 +1,16 @@
+import("//clang/utils/TableGen/clang_tablegen.gni")
+
+clang_tablegen("OpenCLBuiltins") {
+  args = [ "-gen-clang-opencl-builtins" ]
+}
+
 static_library("Sema") {
   output_name = "clangSema"
   configs += [ "//llvm/utils/gn/build:clang_code" ]
   deps = [
+    ":OpenCLBuiltins",
+    "//clang/include/clang/Basic:arm_mve_builtin_aliases",
+    "//clang/include/clang/Basic:arm_mve_builtin_sema",
     "//clang/include/clang/Sema:AttrParsedAttrImpl",
     "//clang/include/clang/Sema:AttrParsedAttrKinds",
     "//clang/include/clang/Sema:AttrParsedAttrList",
@@ -12,6 +21,7 @@ static_library("Sema") {
     "//clang/lib/Basic",
     "//clang/lib/Edit",
     "//clang/lib/Lex",
+    "//llvm/lib/Frontend/OpenMP",
     "//llvm/lib/Support",
   ]
   sources = [
@@ -33,6 +43,7 @@ static_library("Sema") {
     "SemaCast.cpp",
     "SemaChecking.cpp",
     "SemaCodeComplete.cpp",
+    "SemaConcept.cpp",
     "SemaConsumer.cpp",
     "SemaCoroutine.cpp",
     "SemaDecl.cpp",
@@ -48,6 +59,7 @@ static_library("Sema") {
     "SemaInit.cpp",
     "SemaLambda.cpp",
     "SemaLookup.cpp",
+    "SemaModule.cpp",
     "SemaObjCProperty.cpp",
     "SemaOpenMP.cpp",
     "SemaOverload.cpp",

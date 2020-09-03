@@ -8,8 +8,9 @@ iter willthrow() throws {
 }
 
 // the behavior should not change when adding this pragma:
+// NOTE: we need the second argument to satisfy compiler assertions
 pragma "init copy fn"
-proc driver(ARG) {
+proc driver(ARG, definedConst: bool) {
   writeln("driver start");
 
   for idx1 in willthrow() do
@@ -29,6 +30,6 @@ proc driver(ARG) {
 
 proc main throws {
   writeln("main start");
-  var BBB = driver(willthrow());
+  var BBB = driver(willthrow(), definedConst=false);
   writeln("main finish");
 }

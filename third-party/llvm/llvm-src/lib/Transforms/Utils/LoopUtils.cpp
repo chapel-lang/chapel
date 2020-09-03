@@ -1,9 +1,8 @@
 //===-- LoopUtils.cpp - Loop Utility functions -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,25 +14,27 @@
 #include "llvm/ADT/ScopeExit.h"
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/BasicAliasAnalysis.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/Analysis/GlobalsModRef.h"
 #include "llvm/Analysis/InstructionSimplify.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
+#include "llvm/Analysis/MemorySSA.h"
+#include "llvm/Analysis/MemorySSAUpdater.h"
 #include "llvm/Analysis/MustExecute.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionAliasAnalysis.h"
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/DIBuilder.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PatternMatch.h"
 #include "llvm/IR/ValueHandle.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/KnownBits.h"
@@ -45,8 +46,10 @@ using namespace llvm::PatternMatch;
 #define DEBUG_TYPE "loop-utils"
 
 static const char *LLVMLoopDisableNonforced = "llvm.loop.disable_nonforced";
+static const char *LLVMLoopDisableLICM = "llvm.licm.disable";
 
 bool llvm::formDedicatedExitBlocks(Loop *L, DominatorTree *DT, LoopInfo *LI,
+                                   MemorySSAUpdater *MSSAU,
                                    bool PreserveLCSSA) {
   bool Changed = false;
 
@@ -66,6 +69,9 @@ bool llvm::formDedicatedExitBlocks(Loop *L, DominatorTree *DT, LoopInfo *LI,
         if (isa<IndirectBrInst>(PredBB->getTerminator()))
           // We cannot rewrite exiting edges from an indirectbr.
           return false;
+        if (isa<CallBrInst>(PredBB->getTerminator()))
+          // We cannot rewrite exiting edges from a callbr.
+          return false;
 
         InLoopPredecessors.push_back(PredBB);
       } else {
@@ -79,7 +85,7 @@ bool llvm::formDedicatedExitBlocks(Loop *L, DominatorTree *DT, LoopInfo *LI,
       return false;
 
     auto *NewExitBB = SplitBlockPredecessors(
-        BB, InLoopPredecessors, ".loopexit", DT, LI, nullptr, PreserveLCSSA);
+        BB, InLoopPredecessors, ".loopexit", DT, LI, MSSAU, PreserveLCSSA);
 
     if (!NewExitBB)
       LLVM_DEBUG(
@@ -165,6 +171,8 @@ void llvm::getLoopAnalysisUsage(AnalysisUsage &AU) {
   AU.addPreserved<SCEVAAWrapperPass>();
   AU.addRequired<ScalarEvolutionWrapperPass>();
   AU.addPreserved<ScalarEvolutionWrapperPass>();
+  // FIXME: When all loop passes preserve MemorySSA, it can be required and
+  // preserved here instead of the individual handling in each pass.
 }
 
 /// Manually defined generic "LoopPass" dependency initialization. This is used
@@ -185,6 +193,54 @@ void llvm::initializeLoopPassPass(PassRegistry &Registry) {
   INITIALIZE_PASS_DEPENDENCY(GlobalsAAWrapperPass)
   INITIALIZE_PASS_DEPENDENCY(SCEVAAWrapperPass)
   INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
+  INITIALIZE_PASS_DEPENDENCY(MemorySSAWrapperPass)
+}
+
+/// Create MDNode for input string.
+static MDNode *createStringMetadata(Loop *TheLoop, StringRef Name, unsigned V) {
+  LLVMContext &Context = TheLoop->getHeader()->getContext();
+  Metadata *MDs[] = {
+      MDString::get(Context, Name),
+      ConstantAsMetadata::get(ConstantInt::get(Type::getInt32Ty(Context), V))};
+  return MDNode::get(Context, MDs);
+}
+
+/// Set input string into loop metadata by keeping other values intact.
+/// If the string is already in loop metadata update value if it is
+/// different.
+void llvm::addStringMetadataToLoop(Loop *TheLoop, const char *StringMD,
+                                   unsigned V) {
+  SmallVector<Metadata *, 4> MDs(1);
+  // If the loop already has metadata, retain it.
+  MDNode *LoopID = TheLoop->getLoopID();
+  if (LoopID) {
+    for (unsigned i = 1, ie = LoopID->getNumOperands(); i < ie; ++i) {
+      MDNode *Node = cast<MDNode>(LoopID->getOperand(i));
+      // If it is of form key = value, try to parse it.
+      if (Node->getNumOperands() == 2) {
+        MDString *S = dyn_cast<MDString>(Node->getOperand(0));
+        if (S && S->getString().equals(StringMD)) {
+          ConstantInt *IntMD =
+              mdconst::extract_or_null<ConstantInt>(Node->getOperand(1));
+          if (IntMD && IntMD->getSExtValue() == V)
+            // It is already in place. Do nothing.
+            return;
+          // We need to update the value, so just skip it here and it will
+          // be added after copying other existed nodes.
+          continue;
+        }
+      }
+      MDs.push_back(Node);
+    }
+  }
+  // Add new metadata.
+  MDs.push_back(createStringMetadata(TheLoop, StringMD, V));
+  // Replace current metadata node with new one.
+  LLVMContext &Context = TheLoop->getHeader()->getContext();
+  MDNode *NewLoopID = MDNode::get(Context, MDs);
+  // Set operand 0 to refer to the loop id itself.
+  NewLoopID->replaceOperandWith(0, NewLoopID);
+  TheLoop->setLoopID(NewLoopID);
 }
 
 /// Find string metadata for loop
@@ -326,6 +382,10 @@ Optional<MDNode *> llvm::makeFollowupLoopID(
 
 bool llvm::hasDisableAllTransformsHint(const Loop *L) {
   return getBooleanLoopAttribute(L, LLVMLoopDisableNonforced);
+}
+
+bool llvm::hasDisableLICMTransformsHint(const Loop *L) {
+  return getBooleanLoopAttribute(L, LLVMLoopDisableLICM);
 }
 
 TransformationMode llvm::hasUnrollTransformation(Loop *L) {
@@ -531,10 +591,9 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT = nullptr,
   DomTreeUpdater DTU(DT, DomTreeUpdater::UpdateStrategy::Eager);
   if (DT) {
     // Update the dominator tree by informing it about the new edge from the
-    // preheader to the exit.
-    DTU.insertEdge(Preheader, ExitBlock);
-    // Inform the dominator tree about the removed edge.
-    DTU.deleteEdge(Preheader, L->getHeader());
+    // preheader to the exit and the removed edge.
+    DTU.applyUpdates({{DominatorTree::Insert, Preheader, ExitBlock},
+                      {DominatorTree::Delete, Preheader, L->getHeader()}});
   }
 
   // Use a map to unique and a vector to guarantee deterministic ordering.
@@ -581,10 +640,14 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT = nullptr,
   // dbg.value truncates the range of any dbg.value before the loop where the
   // loop used to be. This is particularly important for constant values.
   DIBuilder DIB(*ExitBlock->getModule());
+  Instruction *InsertDbgValueBefore = ExitBlock->getFirstNonPHI();
+  assert(InsertDbgValueBefore &&
+         "There should be a non-PHI instruction in exit block, else these "
+         "instructions will have no parent.");
   for (auto *DVI : DeadDebugInst)
-    DIB.insertDbgValueIntrinsic(
-        UndefValue::get(Builder.getInt32Ty()), DVI->getVariable(),
-        DVI->getExpression(), DVI->getDebugLoc(), ExitBlock->getFirstNonPHI());
+    DIB.insertDbgValueIntrinsic(UndefValue::get(Builder.getInt32Ty()),
+                                DVI->getVariable(), DVI->getExpression(),
+                                DVI->getDebugLoc(), InsertDbgValueBefore);
 
   // Remove the block from the reference counting scheme, so that we can
   // delete it freely later.
@@ -609,41 +672,61 @@ void llvm::deleteDeadLoop(Loop *L, DominatorTree *DT = nullptr,
       LI->removeBlock(BB);
 
     // The last step is to update LoopInfo now that we've eliminated this loop.
-    LI->erase(L);
+    // Note: LoopInfo::erase remove the given loop and relink its subloops with
+    // its parent. While removeLoop/removeChildLoop remove the given loop but
+    // not relink its subloops, which is what we want.
+    if (Loop *ParentLoop = L->getParentLoop()) {
+      Loop::iterator I = find(ParentLoop->begin(), ParentLoop->end(), L);
+      assert(I != ParentLoop->end() && "Couldn't find loop");
+      ParentLoop->removeChildLoop(I);
+    } else {
+      Loop::iterator I = find(LI->begin(), LI->end(), L);
+      assert(I != LI->end() && "Couldn't find loop");
+      LI->removeLoop(I);
+    }
+    LI->destroy(L);
   }
 }
 
 Optional<unsigned> llvm::getLoopEstimatedTripCount(Loop *L) {
-  // Only support loops with a unique exiting block, and a latch.
-  if (!L->getExitingBlock())
-    return None;
+  // Support loops with an exiting latch and other existing exists only
+  // deoptimize.
 
   // Get the branch weights for the loop's backedge.
-  BranchInst *LatchBR =
-      dyn_cast<BranchInst>(L->getLoopLatch()->getTerminator());
-  if (!LatchBR || LatchBR->getNumSuccessors() != 2)
+  BasicBlock *Latch = L->getLoopLatch();
+  if (!Latch)
+    return None;
+  BranchInst *LatchBR = dyn_cast<BranchInst>(Latch->getTerminator());
+  if (!LatchBR || LatchBR->getNumSuccessors() != 2 || !L->isLoopExiting(Latch))
     return None;
 
   assert((LatchBR->getSuccessor(0) == L->getHeader() ||
           LatchBR->getSuccessor(1) == L->getHeader()) &&
          "At least one edge out of the latch must go to the header");
 
+  SmallVector<BasicBlock *, 4> ExitBlocks;
+  L->getUniqueNonLatchExitBlocks(ExitBlocks);
+  if (any_of(ExitBlocks, [](const BasicBlock *EB) {
+        return !EB->getTerminatingDeoptimizeCall();
+      }))
+    return None;
+
   // To estimate the number of times the loop body was executed, we want to
   // know the number of times the backedge was taken, vs. the number of times
   // we exited the loop.
-  uint64_t TrueVal, FalseVal;
-  if (!LatchBR->extractProfMetadata(TrueVal, FalseVal))
+  uint64_t BackedgeTakenWeight, LatchExitWeight;
+  if (!LatchBR->extractProfMetadata(BackedgeTakenWeight, LatchExitWeight))
     return None;
 
-  if (!TrueVal || !FalseVal)
+  if (LatchBR->getSuccessor(0) != L->getHeader())
+    std::swap(BackedgeTakenWeight, LatchExitWeight);
+
+  if (!BackedgeTakenWeight || !LatchExitWeight)
     return 0;
 
   // Divide the count of the backedge by the count of the edge exiting the loop,
   // rounding to nearest.
-  if (LatchBR->getSuccessor(0) == L->getHeader())
-    return (TrueVal + (FalseVal / 2)) / FalseVal;
-  else
-    return (FalseVal + (TrueVal / 2)) / TrueVal;
+  return llvm::divideNearest(BackedgeTakenWeight, LatchExitWeight);
 }
 
 bool llvm::hasIterationCountInvariantInParent(Loop *InnerLoop,
@@ -666,16 +749,6 @@ bool llvm::hasIterationCountInvariantInParent(Loop *InnerLoop,
     return false;
 
   return true;
-}
-
-/// Adds a 'fast' flag to floating point operations.
-static Value *addFastMathFlag(Value *V) {
-  if (isa<FPMathOperator>(V)) {
-    FastMathFlags Flags;
-    Flags.setFast();
-    cast<Instruction>(V)->setFastMathFlags(Flags);
-  }
-  return V;
 }
 
 Value *llvm::createMinMaxOp(IRBuilder<> &Builder,
@@ -781,9 +854,9 @@ llvm::getShuffleReduction(IRBuilder<> &Builder, Value *Src, unsigned Op,
         ConstantVector::get(ShuffleMask), "rdx.shuf");
 
     if (Op != Instruction::ICmp && Op != Instruction::FCmp) {
-      // Floating point operations had to be 'fast' to enable the reduction.
-      TmpVec = addFastMathFlag(Builder.CreateBinOp((Instruction::BinaryOps)Op,
-                                                   TmpVec, Shuf, "bin.rdx"));
+      // The builder propagates its fast-math-flags setting.
+      TmpVec = Builder.CreateBinOp((Instruction::BinaryOps)Op, TmpVec, Shuf,
+                                   "bin.rdx");
     } else {
       assert(MinMaxKind != RecurrenceDescriptor::MRK_Invalid &&
              "Invalid min/max");
@@ -804,13 +877,9 @@ Value *llvm::createSimpleTargetReduction(
     ArrayRef<Value *> RedOps) {
   assert(isa<VectorType>(Src->getType()) && "Type must be a vector");
 
-  Value *ScalarUdf = UndefValue::get(Src->getType()->getVectorElementType());
   std::function<Value *()> BuildFunc;
   using RD = RecurrenceDescriptor;
   RD::MinMaxRecurrenceKind MinMaxKind = RD::MRK_Invalid;
-  // TODO: Support creating ordered reductions.
-  FastMathFlags FMFFast;
-  FMFFast.setFast();
 
   switch (Opcode) {
   case Instruction::Add:
@@ -830,15 +899,15 @@ Value *llvm::createSimpleTargetReduction(
     break;
   case Instruction::FAdd:
     BuildFunc = [&]() {
-      auto Rdx = Builder.CreateFAddReduce(ScalarUdf, Src);
-      cast<CallInst>(Rdx)->setFastMathFlags(FMFFast);
+      auto Rdx = Builder.CreateFAddReduce(
+          Constant::getNullValue(Src->getType()->getVectorElementType()), Src);
       return Rdx;
     };
     break;
   case Instruction::FMul:
     BuildFunc = [&]() {
-      auto Rdx = Builder.CreateFMulReduce(ScalarUdf, Src);
-      cast<CallInst>(Rdx)->setFastMathFlags(FMFFast);
+      Type *Ty = Src->getType()->getVectorElementType();
+      auto Rdx = Builder.CreateFMulReduce(ConstantFP::get(Ty, 1.0), Src);
       return Rdx;
     };
     break;
@@ -883,6 +952,12 @@ Value *llvm::createTargetReduction(IRBuilder<> &B,
   RD::RecurrenceKind RecKind = Desc.getRecurrenceKind();
   TargetTransformInfo::ReductionFlags Flags;
   Flags.NoNaN = NoNaN;
+
+  // All ops in the reduction inherit fast-math-flags from the recurrence
+  // descriptor.
+  IRBuilder<>::FastMathFlagGuard FMFGuard(B);
+  B.setFastMathFlags(Desc.getFastMathFlags());
+
   switch (RecKind) {
   case RD::RK_FloatAdd:
     return createSimpleTargetReduction(B, TTI, Instruction::FAdd, Src, Flags);

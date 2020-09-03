@@ -1,9 +1,8 @@
 //===-- X86MachineFunctionInfo.h - X86 machine function info ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,6 +35,10 @@ class X86MachineFunctionInfo : public MachineFunctionInfo {
   /// displacement from the frame pointer to a slot where the base pointer
   /// is stashed.
   signed char RestoreBasePointerOffset = 0;
+
+  /// WinEHXMMSlotInfo - Slot information of XMM registers in the stack frame
+  /// in bytes.
+  DenseMap<int, unsigned> WinEHXMMSlotInfo;
 
   /// CalleeSavedFrameSize - Size of the callee-saved register portion of the
   /// stack frame in bytes.
@@ -120,6 +123,10 @@ public:
   bool getRestoreBasePointer() const { return RestoreBasePointerOffset!=0; }
   void setRestoreBasePointer(const MachineFunction *MF);
   int getRestoreBasePointerOffset() const {return RestoreBasePointerOffset; }
+
+  DenseMap<int, unsigned>& getWinEHXMMSlotInfo() { return WinEHXMMSlotInfo; }
+  const DenseMap<int, unsigned>& getWinEHXMMSlotInfo() const {
+    return WinEHXMMSlotInfo; }
 
   unsigned getCalleeSavedFrameSize() const { return CalleeSavedFrameSize; }
   void setCalleeSavedFrameSize(unsigned bytes) { CalleeSavedFrameSize = bytes; }

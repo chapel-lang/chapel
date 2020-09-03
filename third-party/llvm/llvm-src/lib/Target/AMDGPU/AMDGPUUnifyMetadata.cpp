@@ -1,9 +1,8 @@
 //===- AMDGPUUnifyMetadata.cpp - Unify OpenCL metadata --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,7 +61,7 @@ namespace {
         return false;
       MDNode *MaxMD = nullptr;
       auto MaxVer = 0U;
-      for (const auto &VersionMD : NamedMD->operands()) {
+      for (auto VersionMD : NamedMD->operands()) {
         assert(VersionMD->getNumOperands() == 2);
         auto CMajor = mdconst::extract<ConstantInt>(VersionMD->getOperand(0));
         auto VersionMajor = CMajor->getZExtValue();
@@ -95,7 +94,7 @@ namespace {
       return false;
 
     SmallVector<Metadata *, 4> All;
-    for (const auto &MD : NamedMD->operands())
+    for (auto MD : NamedMD->operands())
       for (const auto &Op : MD->operands())
         if (std::find(All.begin(), All.end(), Op.get()) == All.end())
           All.push_back(Op.get());

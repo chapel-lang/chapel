@@ -1,9 +1,8 @@
 //===- CallGraph.cpp - Build a Module's call graph ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -11,11 +10,11 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Config/llvm-config.h"
-#include "llvm/IR/CallSite.h"
-#include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
@@ -31,7 +30,7 @@ using namespace llvm;
 
 CallGraph::CallGraph(Module &M)
     : M(M), ExternalCallingNode(getOrInsertFunction(nullptr)),
-      CallsExternalNode(llvm::make_unique<CallGraphNode>(nullptr)) {
+      CallsExternalNode(std::make_unique<CallGraphNode>(nullptr)) {
   // Add every function to the call graph.
   for (Function &F : M)
     addToCallGraph(&F);
@@ -64,25 +63,25 @@ void CallGraph::addToCallGraph(Function *F) {
   // If this function has external linkage or has its address taken, anything
   // could call it.
   if (!F->hasLocalLinkage() || F->hasAddressTaken())
-    ExternalCallingNode->addCalledFunction(CallSite(), Node);
+    ExternalCallingNode->addCalledFunction(nullptr, Node);
 
   // If this function is not defined in this translation unit, it could call
   // anything.
   if (F->isDeclaration() && !F->isIntrinsic())
-    Node->addCalledFunction(CallSite(), CallsExternalNode.get());
+    Node->addCalledFunction(nullptr, CallsExternalNode.get());
 
   // Look for calls by this function.
   for (BasicBlock &BB : *F)
     for (Instruction &I : BB) {
-      if (auto CS = CallSite(&I)) {
-        const Function *Callee = CS.getCalledFunction();
+      if (auto *Call = dyn_cast<CallBase>(&I)) {
+        const Function *Callee = Call->getCalledFunction();
         if (!Callee || !Intrinsic::isLeaf(Callee->getIntrinsicID()))
           // Indirect calls of intrinsics are not allowed so no need to check.
           // We can be more precise here by using TargetArg returned by
           // Intrinsic::isLeaf.
-          Node->addCalledFunction(CS, CallsExternalNode.get());
+          Node->addCalledFunction(Call, CallsExternalNode.get());
         else if (!Callee->isIntrinsic())
-          Node->addCalledFunction(CS, getOrInsertFunction(Callee));
+          Node->addCalledFunction(Call, getOrInsertFunction(Callee));
       }
     }
 }
@@ -152,7 +151,7 @@ CallGraphNode *CallGraph::getOrInsertFunction(const Function *F) {
     return CGN.get();
 
   assert((!F || F->getParent() == &M) && "Function not in current module!");
-  CGN = llvm::make_unique<CallGraphNode>(const_cast<Function *>(F));
+  CGN = std::make_unique<CallGraphNode>(const_cast<Function *>(F));
   return CGN.get();
 }
 
@@ -185,10 +184,10 @@ LLVM_DUMP_METHOD void CallGraphNode::dump() const { print(dbgs()); }
 /// removeCallEdgeFor - This method removes the edge in the node for the
 /// specified call site.  Note that this method takes linear time, so it
 /// should be used sparingly.
-void CallGraphNode::removeCallEdgeFor(CallSite CS) {
+void CallGraphNode::removeCallEdgeFor(CallBase &Call) {
   for (CalledFunctionsVector::iterator I = CalledFunctions.begin(); ; ++I) {
     assert(I != CalledFunctions.end() && "Cannot find callsite to remove!");
-    if (I->first == CS.getInstruction()) {
+    if (I->first == &Call) {
       I->second->DropRef();
       *I = CalledFunctions.back();
       CalledFunctions.pop_back();
@@ -228,13 +227,13 @@ void CallGraphNode::removeOneAbstractEdgeTo(CallGraphNode *Callee) {
 /// replaceCallEdge - This method replaces the edge in the node for the
 /// specified call site with a new one.  Note that this method takes linear
 /// time, so it should be used sparingly.
-void CallGraphNode::replaceCallEdge(CallSite CS,
-                                    CallSite NewCS, CallGraphNode *NewNode){
+void CallGraphNode::replaceCallEdge(CallBase &Call, CallBase &NewCall,
+                                    CallGraphNode *NewNode) {
   for (CalledFunctionsVector::iterator I = CalledFunctions.begin(); ; ++I) {
     assert(I != CalledFunctions.end() && "Cannot find callsite to remove!");
-    if (I->first == CS.getInstruction()) {
+    if (I->first == &Call) {
       I->second->DropRef();
-      I->first = NewCS.getInstruction();
+      I->first = &NewCall;
       I->second = NewNode;
       NewNode->AddRef();
       return;

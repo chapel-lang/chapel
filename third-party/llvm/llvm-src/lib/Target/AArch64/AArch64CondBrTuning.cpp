@@ -1,9 +1,8 @@
 //===-- AArch64CondBrTuning.cpp --- Conditional branch tuning for AArch64 -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -79,7 +78,7 @@ void AArch64CondBrTuning::getAnalysisUsage(AnalysisUsage &AU) const {
 }
 
 MachineInstr *AArch64CondBrTuning::getOperandDef(const MachineOperand &MO) {
-  if (!TargetRegisterInfo::isVirtualRegister(MO.getReg()))
+  if (!Register::isVirtualRegister(MO.getReg()))
     return nullptr;
   return MRI->getUniqueVRegDef(MO.getReg());
 }
@@ -99,7 +98,7 @@ MachineInstr *AArch64CondBrTuning::convertToFlagSetting(MachineInstr &MI,
   }
   bool Is64Bit;
   unsigned NewOpc = TII->convertToFlagSettingOpc(MI.getOpcode(), Is64Bit);
-  unsigned NewDestReg = MI.getOperand(0).getReg();
+  Register NewDestReg = MI.getOperand(0).getReg();
   if (MRI->hasOneNonDBGUse(MI.getOperand(0).getReg()))
     NewDestReg = Is64Bit ? AArch64::XZR : AArch64::WZR;
 

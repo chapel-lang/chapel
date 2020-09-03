@@ -1,9 +1,8 @@
 //== llvm/CodeGen/GlobalISel/Localizer.h - Localizer -------------*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,12 +21,14 @@
 #ifndef LLVM_CODEGEN_GLOBALISEL_LOCALIZER_H
 #define LLVM_CODEGEN_GLOBALISEL_LOCALIZER_H
 
+#include "llvm/ADT/SetVector.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 
 namespace llvm {
 // Forward declarations.
 class MachineRegisterInfo;
+class TargetTransformInfo;
 
 /// This pass implements the localization mechanism described at the
 /// top of this file. One specificity of the implementation is that
@@ -41,12 +42,18 @@ public:
   static char ID;
 
 private:
+  /// An input function to decide if the pass should run or not
+  /// on the given MachineFunction.
+  std::function<bool(const MachineFunction &)> DoNotRunPass;
+
   /// MRI contains all the register class/bank information that this
   /// pass uses and updates.
   MachineRegisterInfo *MRI;
+  /// TTI used for getting remat costs for instructions.
+  TargetTransformInfo *TTI;
 
   /// Check whether or not \p MI needs to be moved close to its uses.
-  static bool shouldLocalize(const MachineInstr &MI);
+  bool shouldLocalize(const MachineInstr &MI);
 
   /// Check if \p MOUse is used in the same basic block as \p Def.
   /// If the use is in the same block, we say it is local.
@@ -58,8 +65,18 @@ private:
   /// Initialize the field members using \p MF.
   void init(MachineFunction &MF);
 
+  typedef SmallSetVector<MachineInstr *, 32> LocalizedSetVecT;
+
+  /// Do inter-block localization from the entry block.
+  bool localizeInterBlock(MachineFunction &MF,
+                          LocalizedSetVecT &LocalizedInstrs);
+
+  /// Do intra-block localization of already localized instructions.
+  bool localizeIntraBlock(LocalizedSetVecT &LocalizedInstrs);
+
 public:
   Localizer();
+  Localizer(std::function<bool(const MachineFunction &)>);
 
   StringRef getPassName() const override { return "Localizer"; }
 

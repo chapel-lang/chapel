@@ -1,9 +1,8 @@
 //===- llvm/Bitcode/BitcodeWriter.h - Bitcode writers -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,6 +17,7 @@
 #include "llvm/IR/ModuleSummaryIndex.h"
 #include "llvm/MC/StringTableBuilder.h"
 #include "llvm/Support/Allocator.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include <map>
 #include <memory>
 #include <string>
@@ -151,6 +151,11 @@ class raw_ostream;
   void WriteIndexToFile(const ModuleSummaryIndex &Index, raw_ostream &Out,
                         const std::map<std::string, GVSummaryMapTy>
                             *ModuleToSummariesForIndex = nullptr);
+
+  /// Save a copy of the llvm IR as data in the __LLVM,__bitcode section.
+  void EmbedBitcodeInModule(Module &M, MemoryBufferRef Buf, bool EmbedBitcode,
+                            bool EmbedMarker,
+                            const std::vector<uint8_t> *CmdArgs);
 
 } // end namespace llvm
 

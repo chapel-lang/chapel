@@ -1,9 +1,8 @@
 //===--- Extract.cpp - Clang refactoring library --------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -14,12 +13,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/Tooling/Refactoring/Extract/Extract.h"
-#include "SourceExtraction.h"
 #include "clang/AST/ASTContext.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/Expr.h"
 #include "clang/AST/ExprObjC.h"
 #include "clang/Rewrite/Core/Rewriter.h"
+#include "clang/Tooling/Refactoring/Extract/SourceExtraction.h"
 
 namespace clang {
 namespace tooling {

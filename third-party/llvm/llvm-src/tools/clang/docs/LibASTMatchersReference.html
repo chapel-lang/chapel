@@ -194,6 +194,16 @@ Example matches the operator.
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl.html">Decl</a>&gt;</td><td class="name" onclick="toggle('cxxDeductionGuideDecl0')"><a name="cxxDeductionGuideDecl0Anchor">cxxDeductionGuideDecl</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXDeductionGuideDecl.html">CXXDeductionGuideDecl</a>&gt;...</td></tr>
+<tr><td colspan="4" class="doc" id="cxxDeductionGuideDecl0"><pre>Matches user-defined and implicitly generated deduction guide.
+
+Example matches the deduction guide.
+  template&lt;typename T&gt;
+  class X { X(int) };
+  X(int) -&gt; X&lt;int&gt;;
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl.html">Decl</a>&gt;</td><td class="name" onclick="toggle('cxxDestructorDecl0')"><a name="cxxDestructorDecl0Anchor">cxxDestructorDecl</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXDestructorDecl.html">CXXDestructorDecl</a>&gt;...</td></tr>
 <tr><td colspan="4" class="doc" id="cxxDestructorDecl0"><pre>Matches explicit C++ destructor declarations.
 
@@ -645,6 +655,19 @@ nestedNameSpecifier()
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPClause.html">OMPClause</a>&gt;</td><td class="name" onclick="toggle('ompDefaultClause0')"><a name="ompDefaultClause0Anchor">ompDefaultClause</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPDefaultClause.html">OMPDefaultClause</a>&gt;...</td></tr>
+<tr><td colspan="4" class="doc" id="ompDefaultClause0"><pre>Matches OpenMP ``default`` clause.
+
+Given
+
+  #pragma omp parallel default(none)
+  #pragma omp parallel default(shared)
+  #pragma omp parallel
+
+``ompDefaultClause()`` matches ``default(none)`` and ``default(shared)``.
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1QualType.html">QualType</a>&gt;</td><td class="name" onclick="toggle('qualType0')"><a name="qualType0Anchor">qualType</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1QualType.html">QualType</a>&gt;...</td></tr>
 <tr><td colspan="4" class="doc" id="qualType0"><pre>Matches QualTypes in the clang AST.
 </pre></td></tr>
@@ -785,6 +808,11 @@ though.
 Example matches 'a', L'a'
   char ch = 'a';
   wchar_t chw = L'a';
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt;</td><td class="name" onclick="toggle('chooseExpr0')"><a name="chooseExpr0Anchor">chooseExpr</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ChooseExpr.html">ChooseExpr</a>&gt;...</td></tr>
+<tr><td colspan="4" class="doc" id="chooseExpr0"><pre>Matches GNU __builtin_choose_expr.
 </pre></td></tr>
 
 
@@ -1367,6 +1395,20 @@ Example matches @throw obj;
 Example matches @try
   @try {}
   @catch (...) {}
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt;</td><td class="name" onclick="toggle('ompExecutableDirective0')"><a name="ompExecutableDirective0Anchor">ompExecutableDirective</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPExecutableDirective.html">OMPExecutableDirective</a>&gt;...</td></tr>
+<tr><td colspan="4" class="doc" id="ompExecutableDirective0"><pre>Matches any ``#pragma omp`` executable directive.
+
+Given
+
+  #pragma omp parallel
+  #pragma omp parallel default(none)
+  #pragma omp taskyield
+
+``ompExecutableDirective()`` matches ``omp parallel``,
+``omp parallel default(none)`` and ``omp taskyield``.
 </pre></td></tr>
 
 
@@ -2190,18 +2232,26 @@ cxxConstructorDecl(isDelegatingConstructor()) will match #3 and #4, but not
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXConstructorDecl.html">CXXConstructorDecl</a>&gt;</td><td class="name" onclick="toggle('isExplicit0')"><a name="isExplicit0Anchor">isExplicit</a></td><td></td></tr>
-<tr><td colspan="4" class="doc" id="isExplicit0"><pre>Matches constructor and conversion declarations that are marked with
-the explicit keyword.
+<tr><td colspan="4" class="doc" id="isExplicit0"><pre>Matches constructor, conversion function, and deduction guide declarations
+that have an explicit specifier if this explicit specifier is resolved to
+true.
 
 Given
+  template&lt;bool b&gt;
   struct S {
     S(int); // #1
     explicit S(double); // #2
     operator int(); // #3
     explicit operator bool(); // #4
+    explicit(false) S(bool) // # 7
+    explicit(true) S(char) // # 8
+    explicit(b) S(S) // # 9
   };
-cxxConstructorDecl(isExplicit()) will match #2, but not #1.
+  S(int) -&gt; S&lt;true&gt; // #5
+  explicit S(double) -&gt; S&lt;false&gt; // #6
+cxxConstructorDecl(isExplicit()) will match #2 and #8, but not #1, #7 or #9.
 cxxConversionDecl(isExplicit()) will match #4, but not #3.
+cxxDeductionGuideDecl(isExplicit()) will match #6, but not #5.
 </pre></td></tr>
 
 
@@ -2219,18 +2269,26 @@ cxxConstructorDecl(isMoveConstructor()) will match #3, but not #1 or #2.
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXConversionDecl.html">CXXConversionDecl</a>&gt;</td><td class="name" onclick="toggle('isExplicit1')"><a name="isExplicit1Anchor">isExplicit</a></td><td></td></tr>
-<tr><td colspan="4" class="doc" id="isExplicit1"><pre>Matches constructor and conversion declarations that are marked with
-the explicit keyword.
+<tr><td colspan="4" class="doc" id="isExplicit1"><pre>Matches constructor, conversion function, and deduction guide declarations
+that have an explicit specifier if this explicit specifier is resolved to
+true.
 
 Given
+  template&lt;bool b&gt;
   struct S {
     S(int); // #1
     explicit S(double); // #2
     operator int(); // #3
     explicit operator bool(); // #4
+    explicit(false) S(bool) // # 7
+    explicit(true) S(char) // # 8
+    explicit(b) S(S) // # 9
   };
-cxxConstructorDecl(isExplicit()) will match #2, but not #1.
+  S(int) -&gt; S&lt;true&gt; // #5
+  explicit S(double) -&gt; S&lt;false&gt; // #6
+cxxConstructorDecl(isExplicit()) will match #2 and #8, but not #1, #7 or #9.
 cxxConversionDecl(isExplicit()) will match #4, but not #3.
+cxxDeductionGuideDecl(isExplicit()) will match #6, but not #5.
 </pre></td></tr>
 
 
@@ -2282,6 +2340,30 @@ Given
   };
 cxxConstructorDecl(hasAnyConstructorInitializer(isWritten()))
   will match Foo(int), but not Foo()
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXDeductionGuideDecl.html">CXXDeductionGuideDecl</a>&gt;</td><td class="name" onclick="toggle('isExplicit2')"><a name="isExplicit2Anchor">isExplicit</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isExplicit2"><pre>Matches constructor, conversion function, and deduction guide declarations
+that have an explicit specifier if this explicit specifier is resolved to
+true.
+
+Given
+  template&lt;bool b&gt;
+  struct S {
+    S(int); // #1
+    explicit S(double); // #2
+    operator int(); // #3
+    explicit operator bool(); // #4
+    explicit(false) S(bool) // # 7
+    explicit(true) S(char) // # 8
+    explicit(b) S(S) // # 9
+  };
+  S(int) -&gt; S&lt;true&gt; // #5
+  explicit S(double) -&gt; S&lt;false&gt; // #6
+cxxConstructorDecl(isExplicit()) will match #2 and #8, but not #1, #7 or #9.
+cxxConversionDecl(isExplicit()) will match #4, but not #3.
+cxxDeductionGuideDecl(isExplicit()) will match #6, but not #5.
 </pre></td></tr>
 
 
@@ -2494,8 +2576,13 @@ class y;
 </pre></td></tr>
 
 
-<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom1')"><a name="isDerivedFrom1Anchor">isDerivedFrom</a></td><td>std::string BaseName</td></tr>
-<tr><td colspan="4" class="doc" id="isDerivedFrom1"><pre>Overloaded method as shortcut for isDerivedFrom(hasName(...)).
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom2')"><a name="isDerivedFrom2Anchor">isDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDerivedFrom2"><pre>Overloaded method as shortcut for isDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom2')"><a name="isDirectlyDerivedFrom2Anchor">isDirectlyDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom2"><pre>Overloaded method as shortcut for isDirectlyDerivedFrom(hasName(...)).
 </pre></td></tr>
 
 
@@ -2541,8 +2628,8 @@ decltype(x)
 </pre></td></tr>
 
 
-<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom1')"><a name="isSameOrDerivedFrom1Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
-<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom1"><pre>Overloaded method as shortcut for
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom2')"><a name="isSameOrDerivedFrom2Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom2"><pre>Overloaded method as shortcut for
 isSameOrDerivedFrom(hasName(...)).
 </pre></td></tr>
 
@@ -2608,6 +2695,9 @@ Example matches y(x) but not y(42) or NS::y(x).
 Example: matches the implicit cast around 0
 (matcher = castExpr(hasCastKind(CK_NullToPointer)))
   int *p = 0;
+
+If the matcher is use from clang-query, CastKind parameter
+should be passed as a quoted string. e.g., ofKind("CK_NullToPointer").
 </pre></td></tr>
 
 
@@ -2738,7 +2828,7 @@ Decl has pointer identity in the AST.
 Given
   __attribute__((device)) void f() { ... }
 decl(hasAttr(clang::attr::CUDADevice)) matches the function declaration of
-f. If the matcher is use from clang-query, attr::Kind parameter should be
+f. If the matcher is used from clang-query, attr::Kind parameter should be
 passed as a quoted string. e.g., hasAttr("attr::CUDADevice").
 </pre></td></tr>
 
@@ -2789,6 +2879,29 @@ Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl.html">Decl</a>&gt;</td><td class="name" onclick="toggle('isImplicit0')"><a name="isImplicit0Anchor">isImplicit</a></td><td></td></tr>
 <tr><td colspan="4" class="doc" id="isImplicit0"><pre>Matches a declaration that has been implicitly added
 by the compiler (eg. implicit default/copy constructors).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl.html">Decl</a>&gt;</td><td class="name" onclick="toggle('isInStdNamespace0')"><a name="isInStdNamespace0Anchor">isInStdNamespace</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isInStdNamespace0"><pre>Matches declarations in the namespace `std`, but not in nested namespaces.
+
+Given
+  class vector {};
+  namespace foo {
+    class vector {};
+    namespace std {
+      class vector {};
+    }
+  }
+  namespace std {
+    inline namespace __1 {
+      class vector {}; // #1
+      namespace experimental {
+        class vector {};
+      }
+    }
+  }
+cxxRecordDecl(hasName("vector"), isInStdNamespace()) will match only #1.
 </pre></td></tr>
 
 
@@ -2893,6 +3006,23 @@ For example, the array bound of "Chars" in the following example is
 value-dependent.
   template&lt;int Size&gt; int f() { return Size; }
 expr(isValueDependent()) matches return Size
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;</td><td class="name" onclick="toggle('nullPointerConstant0')"><a name="nullPointerConstant0Anchor">nullPointerConstant</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="nullPointerConstant0"><pre>Matches expressions that resolve to a null pointer constant, such as
+GNU's __null, C++11's nullptr, or C's NULL macro.
+
+Given:
+  void *v1 = NULL;
+  void *v2 = nullptr;
+  void *v3 = __null; // GNU extension
+  char *cp = (char *)0;
+  int *ip = 0;
+  int i = 0;
+expr(nullPointerConstant())
+  matches the initializer for v1, v2, v3, cp, and ip. Does not match the
+  initializer for i.
 </pre></td></tr>
 
 
@@ -3420,6 +3550,82 @@ namespaceDecl(isInline()) will match n::m.
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPDefaultClause.html">OMPDefaultClause</a>&gt;</td><td class="name" onclick="toggle('isNoneKind0')"><a name="isNoneKind0Anchor">isNoneKind</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isNoneKind0"><pre>Matches if the OpenMP ``default`` clause has ``none`` kind specified.
+
+Given
+
+  #pragma omp parallel
+  #pragma omp parallel default(none)
+  #pragma omp parallel default(shared)
+
+``ompDefaultClause(isNoneKind())`` matches only ``default(none)``.
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPDefaultClause.html">OMPDefaultClause</a>&gt;</td><td class="name" onclick="toggle('isSharedKind0')"><a name="isSharedKind0Anchor">isSharedKind</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isSharedKind0"><pre>Matches if the OpenMP ``default`` clause has ``shared`` kind specified.
+
+Given
+
+  #pragma omp parallel
+  #pragma omp parallel default(none)
+  #pragma omp parallel default(shared)
+
+``ompDefaultClause(isSharedKind())`` matches only ``default(shared)``.
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPExecutableDirective.html">OMPExecutableDirective</a>&gt;</td><td class="name" onclick="toggle('isAllowedToContainClauseKind0')"><a name="isAllowedToContainClauseKind0Anchor">isAllowedToContainClauseKind</a></td><td>OpenMPClauseKind CKind</td></tr>
+<tr><td colspan="4" class="doc" id="isAllowedToContainClauseKind0"><pre>Matches if the OpenMP directive is allowed to contain the specified OpenMP
+clause kind.
+
+Given
+
+  #pragma omp parallel
+  #pragma omp parallel for
+  #pragma omp          for
+
+`ompExecutableDirective(isAllowedToContainClause(OMPC_default))`` matches
+``omp parallel`` and ``omp parallel for``.
+
+If the matcher is use from clang-query, ``OpenMPClauseKind`` parameter
+should be passed as a quoted string. e.g.,
+``isAllowedToContainClauseKind("OMPC_default").``
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPExecutableDirective.html">OMPExecutableDirective</a>&gt;</td><td class="name" onclick="toggle('isStandaloneDirective0')"><a name="isStandaloneDirective0Anchor">isStandaloneDirective</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isStandaloneDirective0"><pre>Matches standalone OpenMP directives,
+i.e., directives that can't have a structured block.
+
+Given
+
+  #pragma omp parallel
+  {}
+  #pragma omp taskyield
+
+``ompExecutableDirective(isStandaloneDirective()))`` matches
+``omp taskyield``.
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom3')"><a name="isDerivedFrom3Anchor">isDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDerivedFrom3"><pre>Overloaded method as shortcut for isDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom3')"><a name="isDirectlyDerivedFrom3Anchor">isDirectlyDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom3"><pre>Overloaded method as shortcut for isDirectlyDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom3')"><a name="isSameOrDerivedFrom3Anchor">isSameOrDerivedFrom</a></td><td>std::string BaseName</td></tr>
+<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom3"><pre>Overloaded method as shortcut for
+isSameOrDerivedFrom(hasName(...)).
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMessageExpr.html">ObjCMessageExpr</a>&gt;</td><td class="name" onclick="toggle('argumentCountIs2')"><a name="argumentCountIs2Anchor">argumentCountIs</a></td><td>unsigned N</td></tr>
 <tr><td colspan="4" class="doc" id="argumentCountIs2"><pre>Checks that a call expression or a constructor call expression has
 a specific number of arguments (including absent default arguments).
@@ -3472,11 +3678,24 @@ represent an error condition in the tree!
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMessageExpr.html">ObjCMessageExpr</a>&gt;</td><td class="name" onclick="toggle('isClassMessage0')"><a name="isClassMessage0Anchor">isClassMessage</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isClassMessage0"><pre>Returns true when the Objective-C message is sent to a class.
+
+Example
+matcher = objcMessageExpr(isClassMessage())
+matches
+  [NSString stringWithFormat:@"format"];
+but not
+  NSString *x = @"hello";
+  [x containsString:@"h"];
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMessageExpr.html">ObjCMessageExpr</a>&gt;</td><td class="name" onclick="toggle('isInstanceMessage0')"><a name="isInstanceMessage0Anchor">isInstanceMessage</a></td><td></td></tr>
 <tr><td colspan="4" class="doc" id="isInstanceMessage0"><pre>Returns true when the Objective-C message is sent to an instance.
 
 Example
-matcher = objcMessagaeExpr(isInstanceMessage())
+matcher = objcMessageExpr(isInstanceMessage())
 matches
   NSString *x = @"hello";
   [x containsString:@"h"];
@@ -3507,6 +3726,18 @@ a substring matched by the given RegExp.
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMethodDecl.html">ObjCMethodDecl</a>&gt;</td><td class="name" onclick="toggle('isClassMethod0')"><a name="isClassMethod0Anchor">isClassMethod</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isClassMethod0"><pre>Returns true when the Objective-C method declaration is a class method.
+
+Example
+matcher = objcMethodDecl(isClassMethod())
+matches
+@interface I + (void)foo; @end
+but not
+@interface I - (void)bar; @end
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMethodDecl.html">ObjCMethodDecl</a>&gt;</td><td class="name" onclick="toggle('isDefinition2')"><a name="isDefinition2Anchor">isDefinition</a></td><td></td></tr>
 <tr><td colspan="4" class="doc" id="isDefinition2"><pre>Matches if a declaration has a body attached.
 
@@ -3529,12 +3760,36 @@ Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1TagD
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCMethodDecl.html">ObjCMethodDecl</a>&gt;</td><td class="name" onclick="toggle('isInstanceMethod0')"><a name="isInstanceMethod0Anchor">isInstanceMethod</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isInstanceMethod0"><pre>Returns true when the Objective-C method declaration is an instance method.
+
+Example
+matcher = objcMethodDecl(isInstanceMethod())
+matches
+@interface I - (void)bar; @end
+but not
+@interface I + (void)foo; @end
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ParmVarDecl.html">ParmVarDecl</a>&gt;</td><td class="name" onclick="toggle('hasDefaultArgument0')"><a name="hasDefaultArgument0Anchor">hasDefaultArgument</a></td><td></td></tr>
 <tr><td colspan="4" class="doc" id="hasDefaultArgument0"><pre>Matches a declaration that has default arguments.
 
 Example matches y (matcher = parmVarDecl(hasDefaultArgument()))
 void x(int val) {}
 void y(int val = 0) {}
+
+Deprecated. Use hasInitializer() instead to be able to
+match on the contents of the default argument.  For example:
+
+void x(int val = 7) {}
+void y(int val = 42) {}
+parmVarDecl(hasInitializer(integerLiteral(equals(42))))
+  matches the parameter of y
+
+A matcher such as
+  parmVarDecl(hasInitializer(anything()))
+is equivalent to parmVarDecl(hasDefaultArgument()).
 </pre></td></tr>
 
 
@@ -3790,6 +4045,19 @@ Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt;</td><td class="name" onclick="toggle('isOMPStructuredBlock0')"><a name="isOMPStructuredBlock0Anchor">isOMPStructuredBlock</a></td><td></td></tr>
+<tr><td colspan="4" class="doc" id="isOMPStructuredBlock0"><pre>Matches the Stmt AST node that is marked as being the structured-block
+of an OpenMP executable directive.
+
+Given
+
+   #pragma omp parallel
+   {}
+
+``stmt(isOMPStructuredBlock()))`` matches ``{}``.
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1StringLiteral.html">StringLiteral</a>&gt;</td><td class="name" onclick="toggle('hasSize1')"><a name="hasSize1Anchor">hasSize</a></td><td>unsigned N</td></tr>
 <tr><td colspan="4" class="doc" id="hasSize1"><pre>Matches nodes that have the specified size.
 
@@ -3981,6 +4249,9 @@ Given
   int s = sizeof(x) + alignof(x)
 unaryExprOrTypeTraitExpr(ofKind(UETT_SizeOf))
   matches sizeof(x)
+
+If the matcher is use from clang-query, UnaryExprOrTypeTrait parameter
+should be passed as a quoted string. e.g., ofKind("UETT_SizeOf").
 </pre></td></tr>
 
 
@@ -4237,23 +4508,6 @@ functionDecl(isInstantiated())
 </pre></td></tr>
 
 
-<tr><td>Matcher&lt;internal::Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;&gt;</td><td class="name" onclick="toggle('nullPointerConstant0')"><a name="nullPointerConstant0Anchor">nullPointerConstant</a></td><td></td></tr>
-<tr><td colspan="4" class="doc" id="nullPointerConstant0"><pre>Matches expressions that resolve to a null pointer constant, such as
-GNU's __null, C++11's nullptr, or C's NULL macro.
-
-Given:
-  void *v1 = NULL;
-  void *v2 = nullptr;
-  void *v3 = __null; // GNU extension
-  char *cp = (char *)0;
-  int *ip = 0;
-  int i = 0;
-expr(nullPointerConstant())
-  matches the initializer for v1, v2, v3, cp, and ip. Does not match the
-  initializer for i.
-</pre></td></tr>
-
-
 <tr><td>Matcher&lt;internal::Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt;&gt;</td><td class="name" onclick="toggle('hasAnyName0')"><a name="hasAnyName0Anchor">hasAnyName</a></td><td>StringRef, ..., StringRef</td></tr>
 <tr><td colspan="4" class="doc" id="hasAnyName0"><pre>Matches NamedDecl nodes that have any of the specified names.
 
@@ -4430,6 +4684,32 @@ matcher.
 Given
 void f() { for (;;) { int x = 42; if (true) { int x = 43; } } }
 compoundStmt(hasParent(ifStmt())) matches "{ int x = 43; }".
+
+Usable as: Any Matcher
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;*&gt;</td><td class="name" onclick="toggle('optionally0')"><a name="optionally0Anchor">optionally</a></td><td>Matcher&lt;*&gt;, ..., Matcher&lt;*&gt;</td></tr>
+<tr><td colspan="4" class="doc" id="optionally0"><pre>Matches any node regardless of the submatchers.
+
+However, optionally will generate a result binding for each matching
+submatcher.
+
+Useful when additional information which may or may not present about a
+main matching node is desired.
+
+For example, in:
+  class Foo {
+    int bar;
+  }
+The matcher:
+  cxxRecordDecl(
+    optionally(has(
+      fieldDecl(hasName("bar")).bind("var")
+  ))).bind("record")
+will produce a result binding for both "record" and "var".
+The matcher will produce a "record" binding for even if there is no data
+member named "bar" in that class.
 
 Usable as: Any Matcher
 </pre></td></tr>
@@ -4810,16 +5090,20 @@ with withInitializer matching (1)
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXDependentScopeMemberExpr.html">CXXDependentScopeMemberExpr</a>&gt;</td><td class="name" onclick="toggle('hasObjectExpression2')"><a name="hasObjectExpression2Anchor">hasObjectExpression</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
-<tr><td colspan="4" class="doc" id="hasObjectExpression2"><pre>Matches a member expression where the object expression is
-matched by a given matcher.
+<tr><td colspan="4" class="doc" id="hasObjectExpression2"><pre>Matches a member expression where the object expression is matched by a
+given matcher. Implicit object expressions are included; that is, it matches
+use of implicit `this`.
 
 Given
-  struct X { int m; };
-  void f(X x) { x.m; m; }
-memberExpr(hasObjectExpression(hasType(cxxRecordDecl(hasName("X")))))))
-  matches "x.m" and "m"
-with hasObjectExpression(...)
-  matching "x" and the implicit object expression of "m" which has type X*.
+  struct X {
+    int m;
+    int f(X x) { x.m; return m; }
+  };
+memberExpr(hasObjectExpression(hasType(cxxRecordDecl(hasName("X")))))
+  matches `x.m`, but not `m`; however,
+memberExpr(hasObjectExpression(hasType(pointsTo(
+     cxxRecordDecl(hasName("X"))))))
+  matches `m` (aka. `this-&gt;m`), but not `x.m`.
 </pre></td></tr>
 
 
@@ -4833,6 +5117,29 @@ hasBody(compoundStmt())
   matches 'for (;;) {}'
 with compoundStmt()
   matching '{}'
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXForRangeStmt.html">CXXForRangeStmt</a>&gt;</td><td class="name" onclick="toggle('hasInitStatement2')"><a name="hasInitStatement2Anchor">hasInitStatement</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasInitStatement2"><pre>Matches selection statements with initializer.
+
+Given:
+ void foo() {
+   if (int i = foobar(); i &gt; 0) {}
+   switch (int i = foobar(); i) {}
+   for (auto&amp; a = get_range(); auto&amp; x : a) {}
+ }
+ void bar() {
+   if (foobar() &gt; 0) {}
+   switch (foobar()) {}
+   for (auto&amp; x : get_range()) {}
+ }
+ifStmt(hasInitStatement(anything()))
+  matches the if statement in foo but not in bar.
+switchStmt(hasInitStatement(anything()))
+  matches the switch statement in foo but not in bar.
+cxxForRangeStmt(hasInitStatement(anything()))
+  matches the range for statement in foo but not in bar.
 </pre></td></tr>
 
 
@@ -4857,16 +5164,39 @@ matches 'a' in
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXMemberCallExpr.html">CXXMemberCallExpr</a>&gt;</td><td class="name" onclick="toggle('onImplicitObjectArgument0')"><a name="onImplicitObjectArgument0Anchor">onImplicitObjectArgument</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
-<tr><td colspan="4" class="doc" id="onImplicitObjectArgument0"><pre></pre></td></tr>
+<tr><td colspan="4" class="doc" id="onImplicitObjectArgument0"><pre>Matches on the implicit object argument of a member call expression. Unlike
+`on`, matches the argument directly without stripping away anything.
+
+Given
+  class Y { public: void m(); };
+  Y g();
+  class X : public Y { void g(); };
+  void z(Y y, X x) { y.m(); x.m(); x.g(); (g()).m(); }
+cxxMemberCallExpr(onImplicitObjectArgument(hasType(
+    cxxRecordDecl(hasName("Y")))))
+  matches `y.m()`, `x.m()` and (g()).m(), but not `x.g()`.
+cxxMemberCallExpr(on(callExpr()))
+  does not match `(g()).m()`, because the parens are not ignored.
+
+FIXME: Overload to allow directly matching types?
+</pre></td></tr>
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXMemberCallExpr.html">CXXMemberCallExpr</a>&gt;</td><td class="name" onclick="toggle('on0')"><a name="on0Anchor">on</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
-<tr><td colspan="4" class="doc" id="on0"><pre>Matches on the implicit object argument of a member call expression.
+<tr><td colspan="4" class="doc" id="on0"><pre>Matches on the implicit object argument of a member call expression, after
+stripping off any parentheses or implicit casts.
 
-Example matches y.x()
-  (matcher = cxxMemberCallExpr(on(hasType(cxxRecordDecl(hasName("Y"))))))
-  class Y { public: void x(); };
-  void z() { Y y; y.x(); }
+Given
+  class Y { public: void m(); };
+  Y g();
+  class X : public Y {};
+  void z(Y y, X x) { y.m(); (g()).m(); x.m(); }
+cxxMemberCallExpr(on(hasType(cxxRecordDecl(hasName("Y")))))
+  matches `y.m()` and `(g()).m()`.
+cxxMemberCallExpr(on(hasType(cxxRecordDecl(hasName("X")))))
+  matches `x.m()`.
+cxxMemberCallExpr(on(callExpr()))
+  matches `(g()).m()`.
 
 FIXME: Overload to allow directly matching types?
 </pre></td></tr>
@@ -4878,8 +5208,20 @@ FIXME: Overload to allow directly matching types?
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXMemberCallExpr.html">CXXMemberCallExpr</a>&gt;</td><td class="name" onclick="toggle('thisPointerType0')"><a name="thisPointerType0Anchor">thisPointerType</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1QualType.html">QualType</a>&gt; InnerMatcher</td></tr>
-<tr><td colspan="4" class="doc" id="thisPointerType0"><pre>Matches if the expression's type either matches the specified
-matcher, or is a pointer to a type that matches the InnerMatcher.
+<tr><td colspan="4" class="doc" id="thisPointerType0"><pre>Matches if the type of the expression's implicit object argument either
+matches the InnerMatcher, or is a pointer to a type that matches the
+InnerMatcher.
+
+Given
+  class Y { public: void m(); };
+  class X : public Y { void g(); };
+  void z() { Y y; y.m(); Y *p; p-&gt;m(); X x; x.m(); x.g(); }
+cxxMemberCallExpr(thisPointerType(hasDeclaration(
+    cxxRecordDecl(hasName("Y")))))
+  matches `y.m()`, `p-&gt;m()` and `x.m()`.
+cxxMemberCallExpr(thisPointerType(hasDeclaration(
+    cxxRecordDecl(hasName("X")))))
+  matches `x.g()`.
 </pre></td></tr>
 
 
@@ -4931,7 +5273,7 @@ Example matches A() in the last line
 
 Given:
   MyClass *p1 = new MyClass[10];
-cxxNewExpr(hasArraySize(intgerLiteral(equals(10))))
+cxxNewExpr(hasArraySize(integerLiteral(equals(10))))
   matches the expression 'new MyClass[10]'.
 </pre></td></tr>
 
@@ -4983,12 +5325,40 @@ A but not B.
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom0')"><a name="isDerivedFrom0Anchor">isDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
-<tr><td colspan="4" class="doc" id="isDerivedFrom0"><pre>Matches C++ classes that are directly or indirectly derived from
-a class matching Base.
+<tr><td colspan="4" class="doc" id="isDerivedFrom0"><pre>Matches C++ classes that are directly or indirectly derived from a class
+matching Base, or Objective-C classes that directly or indirectly
+subclass a class matching Base.
 
 Note that a class is not considered to be derived from itself.
 
 Example matches Y, Z, C (Base == hasName("X"))
+  class X;
+  class Y : public X {};  // directly derived
+  class Z : public Y {};  // indirectly derived
+  typedef X A;
+  typedef A B;
+  class C : public B {};  // derived from a typedef of X
+
+In the following example, Bar matches isDerivedFrom(hasName("X")):
+  class Foo;
+  typedef Foo X;
+  class Bar : public Foo {};  // derived from a type that X is a typedef of
+
+In the following example, Bar matches isDerivedFrom(hasName("NSObject"))
+  @interface NSObject @end
+  @interface Bar : NSObject @end
+
+Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom0')"><a name="isDirectlyDerivedFrom0Anchor">isDirectlyDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom0"><pre>Matches C++ or Objective-C classes that are directly derived from a class
+matching Base.
+
+Note that a class is not considered to be derived from itself.
+
+Example matches Y, C (Base == hasName("X"))
   class X;
   class Y : public X {};  // directly derived
   class Z : public Y {};  // indirectly derived
@@ -5518,6 +5888,31 @@ Example matches x (matcher = expr(hasType(cxxRecordDecl(hasName("X")))))
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;</td><td class="name" onclick="toggle('ignoringElidableConstructorCall0')"><a name="ignoringElidableConstructorCall0Anchor">ignoringElidableConstructorCall</a></td><td>ast_matchers::Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="ignoringElidableConstructorCall0"><pre>Matches expressions that match InnerMatcher that are possibly wrapped in an
+elidable constructor and other corresponding bookkeeping nodes.
+
+In C++17, elidable copy constructors are no longer being generated in the
+AST as it is not permitted by the standard. They are, however, part of the
+AST in C++14 and earlier. So, a matcher must abstract over these differences
+to work in all language modes. This matcher skips elidable constructor-call
+AST nodes, `ExprWithCleanups` nodes wrapping elidable constructor-calls and
+various implicit nodes inside the constructor calls, all of which will not
+appear in the C++17 AST.
+
+Given
+
+struct H {};
+H G();
+void f() {
+  H D = G();
+}
+
+``varDecl(hasInitializer(ignoringElidableConstructorCall(callExpr())))``
+matches ``H D = G()`` in C++11 through C++17 (and beyond).
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt;</td><td class="name" onclick="toggle('ignoringImpCasts0')"><a name="ignoringImpCasts0Anchor">ignoringImpCasts</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="ignoringImpCasts0"><pre>Matches expressions that match InnerMatcher after any implicit casts
 are stripped off.
@@ -5771,6 +6166,29 @@ with compoundStmt()
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1FunctionDecl.html">FunctionDecl</a>&gt;</td><td class="name" onclick="toggle('hasExplicitSpecifier0')"><a name="hasExplicitSpecifier0Anchor">hasExplicitSpecifier</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasExplicitSpecifier0"><pre>Matches the expression in an explicit specifier if present in the given
+declaration.
+
+Given
+  template&lt;bool b&gt;
+  struct S {
+    S(int); // #1
+    explicit S(double); // #2
+    operator int(); // #3
+    explicit operator bool(); // #4
+    explicit(false) S(bool) // # 7
+    explicit(true) S(char) // # 8
+    explicit(b) S(S) // # 9
+  };
+  S(int) -&gt; S&lt;true&gt; // #5
+  explicit S(double) -&gt; S&lt;false&gt; // #6
+cxxConstructorDecl(hasExplicitSpecifier(constantExpr())) will match #7, #8 and #9, but not #1 or #2.
+cxxConversionDecl(hasExplicitSpecifier(constantExpr())) will not match #3 or #4.
+cxxDeductionGuideDecl(hasExplicitSpecifier(constantExpr())) will not match #5 or #6.
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1FunctionDecl.html">FunctionDecl</a>&gt;</td><td class="name" onclick="toggle('hasParameter0')"><a name="hasParameter0Anchor">hasParameter</a></td><td>unsigned N, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ParmVarDecl.html">ParmVarDecl</a>&gt; InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="hasParameter0"><pre>Matches the n'th parameter of a function or an ObjC method
 declaration or a block.
@@ -5846,6 +6264,29 @@ hasConditionVariableStatement(...)
 Examples matches the if statement
   (matcher = ifStmt(hasElse(cxxBoolLiteral(equals(true)))))
   if (false) false; else true;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1IfStmt.html">IfStmt</a>&gt;</td><td class="name" onclick="toggle('hasInitStatement0')"><a name="hasInitStatement0Anchor">hasInitStatement</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasInitStatement0"><pre>Matches selection statements with initializer.
+
+Given:
+ void foo() {
+   if (int i = foobar(); i &gt; 0) {}
+   switch (int i = foobar(); i) {}
+   for (auto&amp; a = get_range(); auto&amp; x : a) {}
+ }
+ void bar() {
+   if (foobar() &gt; 0) {}
+   switch (foobar()) {}
+   for (auto&amp; x : get_range()) {}
+ }
+ifStmt(hasInitStatement(anything()))
+  matches the if statement in foo but not in bar.
+switchStmt(hasInitStatement(anything()))
+  matches the switch statement in foo but not in bar.
+cxxForRangeStmt(hasInitStatement(anything()))
+  matches the range for statement in foo but not in bar.
 </pre></td></tr>
 
 
@@ -5949,6 +6390,33 @@ Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Addr
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1LambdaExpr.html">LambdaExpr</a>&gt;</td><td class="name" onclick="toggle('hasAnyCapture1')"><a name="hasAnyCapture1Anchor">hasAnyCapture</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXThisExpr.html">CXXThisExpr</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasAnyCapture1"><pre>Matches any capture of 'this' in a lambda expression.
+
+Given
+  struct foo {
+    void bar() {
+      auto f = [this](){};
+    }
+  }
+lambdaExpr(hasAnyCapture(cxxThisExpr()))
+  matches [this](){};
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1LambdaExpr.html">LambdaExpr</a>&gt;</td><td class="name" onclick="toggle('hasAnyCapture0')"><a name="hasAnyCapture0Anchor">hasAnyCapture</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1VarDecl.html">VarDecl</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasAnyCapture0"><pre>Matches any capture of a lambda expression.
+
+Given
+  void foo() {
+    int x;
+    auto f = [x](){};
+  }
+lambdaExpr(hasAnyCapture(anything()))
+  matches [x](){};
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1MemberExpr.html">MemberExpr</a>&gt;</td><td class="name" onclick="toggle('hasDeclaration7')"><a name="hasDeclaration7Anchor">hasDeclaration</a></td><td>const Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Decl.html">Decl</a>&gt;  InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="hasDeclaration7"><pre>Matches a node if the declaration associated with that node
 matches the given matcher.
@@ -5984,16 +6452,20 @@ Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Addr
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1MemberExpr.html">MemberExpr</a>&gt;</td><td class="name" onclick="toggle('hasObjectExpression0')"><a name="hasObjectExpression0Anchor">hasObjectExpression</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
-<tr><td colspan="4" class="doc" id="hasObjectExpression0"><pre>Matches a member expression where the object expression is
-matched by a given matcher.
+<tr><td colspan="4" class="doc" id="hasObjectExpression0"><pre>Matches a member expression where the object expression is matched by a
+given matcher. Implicit object expressions are included; that is, it matches
+use of implicit `this`.
 
 Given
-  struct X { int m; };
-  void f(X x) { x.m; m; }
-memberExpr(hasObjectExpression(hasType(cxxRecordDecl(hasName("X")))))))
-  matches "x.m" and "m"
-with hasObjectExpression(...)
-  matching "x" and the implicit object expression of "m" which has type X*.
+  struct X {
+    int m;
+    int f(X x) { x.m; return m; }
+  };
+memberExpr(hasObjectExpression(hasType(cxxRecordDecl(hasName("X")))))
+  matches `x.m`, but not `m`; however,
+memberExpr(hasObjectExpression(hasType(pointsTo(
+     cxxRecordDecl(hasName("X"))))))
+  matches `m` (aka. `this-&gt;m`), but not `x.m`.
 </pre></td></tr>
 
 
@@ -6098,6 +6570,91 @@ nestedNameSpecifier(specifiesType(
   hasDeclaration(cxxRecordDecl(hasName("A")))
 ))
   matches "A::"
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPExecutableDirective.html">OMPExecutableDirective</a>&gt;</td><td class="name" onclick="toggle('hasAnyClause0')"><a name="hasAnyClause0Anchor">hasAnyClause</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPClause.html">OMPClause</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasAnyClause0"><pre>Matches any clause in an OpenMP directive.
+
+Given
+
+  #pragma omp parallel
+  #pragma omp parallel default(none)
+
+``ompExecutableDirective(hasAnyClause(anything()))`` matches
+``omp parallel default(none)``.
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1OMPExecutableDirective.html">OMPExecutableDirective</a>&gt;</td><td class="name" onclick="toggle('hasStructuredBlock0')"><a name="hasStructuredBlock0Anchor">hasStructuredBlock</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasStructuredBlock0"><pre>Matches the structured-block of the OpenMP executable directive
+
+Prerequisite: the executable directive must not be standalone directive.
+If it is, it will never match.
+
+Given
+
+   #pragma omp parallel
+   ;
+   #pragma omp parallel
+   {}
+
+``ompExecutableDirective(hasStructuredBlock(nullStmt()))`` will match ``;``
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDerivedFrom1')"><a name="isDerivedFrom1Anchor">isDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isDerivedFrom1"><pre>Matches C++ classes that are directly or indirectly derived from a class
+matching Base, or Objective-C classes that directly or indirectly
+subclass a class matching Base.
+
+Note that a class is not considered to be derived from itself.
+
+Example matches Y, Z, C (Base == hasName("X"))
+  class X;
+  class Y : public X {};  // directly derived
+  class Z : public Y {};  // indirectly derived
+  typedef X A;
+  typedef A B;
+  class C : public B {};  // derived from a typedef of X
+
+In the following example, Bar matches isDerivedFrom(hasName("X")):
+  class Foo;
+  typedef Foo X;
+  class Bar : public Foo {};  // derived from a type that X is a typedef of
+
+In the following example, Bar matches isDerivedFrom(hasName("NSObject"))
+  @interface NSObject @end
+  @interface Bar : NSObject @end
+
+Usable as: Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1CXXRecordDecl.html">CXXRecordDecl</a>&gt;, Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isDirectlyDerivedFrom1')"><a name="isDirectlyDerivedFrom1Anchor">isDirectlyDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isDirectlyDerivedFrom1"><pre>Matches C++ or Objective-C classes that are directly derived from a class
+matching Base.
+
+Note that a class is not considered to be derived from itself.
+
+Example matches Y, C (Base == hasName("X"))
+  class X;
+  class Y : public X {};  // directly derived
+  class Z : public Y {};  // indirectly derived
+  typedef X A;
+  typedef A B;
+  class C : public B {};  // derived from a typedef of X
+
+In the following example, Bar matches isDerivedFrom(hasName("X")):
+  class Foo;
+  typedef Foo X;
+  class Bar : public Foo {};  // derived from a type that X is a typedef of
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1ObjCInterfaceDecl.html">ObjCInterfaceDecl</a>&gt;</td><td class="name" onclick="toggle('isSameOrDerivedFrom1')"><a name="isSameOrDerivedFrom1Anchor">isSameOrDerivedFrom</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1NamedDecl.html">NamedDecl</a>&gt; Base</td></tr>
+<tr><td colspan="4" class="doc" id="isSameOrDerivedFrom1"><pre>Similar to isDerivedFrom(), but also matches classes that directly
+match Base.
 </pre></td></tr>
 
 
@@ -6451,7 +7008,7 @@ F&amp; operator=(const F&amp; o) {
 }
 returnStmt(forFunction(hasName("operator=")))
   matches 'return *this'
-  but does match 'return &gt; 0'
+  but does not match 'return v &gt; 0'
 </pre></td></tr>
 
 
@@ -6494,6 +7051,29 @@ switch statement or conditional operator.
 
 Example matches true (matcher = hasCondition(cxxBoolLiteral(equals(true))))
   if (true) {}
+</pre></td></tr>
+
+
+<tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1SwitchStmt.html">SwitchStmt</a>&gt;</td><td class="name" onclick="toggle('hasInitStatement1')"><a name="hasInitStatement1Anchor">hasInitStatement</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Stmt.html">Stmt</a>&gt; InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="hasInitStatement1"><pre>Matches selection statements with initializer.
+
+Given:
+ void foo() {
+   if (int i = foobar(); i &gt; 0) {}
+   switch (int i = foobar(); i) {}
+   for (auto&amp; a = get_range(); auto&amp; x : a) {}
+ }
+ void bar() {
+   if (foobar() &gt; 0) {}
+   switch (foobar()) {}
+   for (auto&amp; x : get_range()) {}
+ }
+ifStmt(hasInitStatement(anything()))
+  matches the if statement in foo but not in bar.
+switchStmt(hasInitStatement(anything()))
+  matches the switch statement in foo but not in bar.
+cxxForRangeStmt(hasInitStatement(anything()))
+  matches the range for statement in foo but not in bar.
 </pre></td></tr>
 
 
@@ -6724,6 +7304,26 @@ Usable as: Any Matcher
 </pre></td></tr>
 
 
+<tr><td>Matcher&lt;T&gt;</td><td class="name" onclick="toggle('traverse1')"><a name="traverse1Anchor">traverse</a></td><td>ast_type_traits::TraversalKind TK, const BindableMatcher&lt;T&gt;  InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="traverse1"><pre></pre></td></tr>
+
+
+<tr><td>Matcher&lt;T&gt;</td><td class="name" onclick="toggle('traverse0')"><a name="traverse0Anchor">traverse</a></td><td>ast_type_traits::TraversalKind TK, const Matcher&lt;T&gt;  InnerMatcher</td></tr>
+<tr><td colspan="4" class="doc" id="traverse0"><pre>Causes all nested matchers to be matched with the specified traversal kind.
+
+Given
+  void foo()
+  {
+      int i = 3.0;
+  }
+The matcher
+  traverse(ast_type_traits::TK_IgnoreImplicitCastsAndParentheses,
+    varDecl(hasInitializer(floatLiteral().bind("init")))
+  )
+matches the variable declaration with "init" bound to the "3.0".
+</pre></td></tr>
+
+
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1TypedefNameDecl.html">TypedefNameDecl</a>&gt;</td><td class="name" onclick="toggle('hasType2')"><a name="hasType2Anchor">hasType</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1QualType.html">QualType</a>&gt; InnerMatcher</td></tr>
 <tr><td colspan="4" class="doc" id="hasType2"><pre>Matches if the expression's or declaration's type matches a type
 matcher.
@@ -6805,16 +7405,20 @@ Example matches true (matcher = hasUnaryOperand(
 
 
 <tr><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1UnresolvedMemberExpr.html">UnresolvedMemberExpr</a>&gt;</td><td class="name" onclick="toggle('hasObjectExpression1')"><a name="hasObjectExpression1Anchor">hasObjectExpression</a></td><td>Matcher&lt;<a href="https://clang.llvm.org/doxygen/classclang_1_1Expr.html">Expr</a>&gt; InnerMatcher</td></tr>
-<tr><td colspan="4" class="doc" id="hasObjectExpression1"><pre>Matches a member expression where the object expression is
-matched by a given matcher.
+<tr><td colspan="4" class="doc" id="hasObjectExpression1"><pre>Matches a member expression where the object expression is matched by a
+given matcher. Implicit object expressions are included; that is, it matches
+use of implicit `this`.
 
 Given
-  struct X { int m; };
-  void f(X x) { x.m; m; }
-memberExpr(hasObjectExpression(hasType(cxxRecordDecl(hasName("X")))))))
-  matches "x.m" and "m"
-with hasObjectExpression(...)
-  matching "x" and the implicit object expression of "m" which has type X*.
+  struct X {
+    int m;
+    int f(X x) { x.m; return m; }
+  };
+memberExpr(hasObjectExpression(hasType(cxxRecordDecl(hasName("X")))))
+  matches `x.m`, but not `m`; however,
+memberExpr(hasObjectExpression(hasType(pointsTo(
+     cxxRecordDecl(hasName("X"))))))
+  matches `m` (aka. `this-&gt;m`), but not `x.m`.
 </pre></td></tr>
 
 

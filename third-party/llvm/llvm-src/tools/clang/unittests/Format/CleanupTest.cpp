@@ -1,9 +1,8 @@
 //===- unittest/Format/CleanupTest.cpp - Code cleanup unit tests ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -184,10 +183,15 @@ TEST_F(CleanupTest, TrailingCommaInParens) {
   std::string Code = "int main() { f(,1,,2,3,f(1,2,),4,,);}";
   std::string Expected = "int main() { f(1,2,3,f(1,2),4);}";
   EXPECT_EQ(Expected, cleanupAroundOffsets({15, 18, 29, 33}, Code));
+
+  // Lambda contents are also checked for trailing commas.
+  Code = "int main() { [](){f(,1,,2,3,f(1,2,),4,,);}();}";
+  Expected = "int main() { [](){f(1,2,3,f(1,2),4);}();}";
+  EXPECT_EQ(Expected, cleanupAroundOffsets({20, 23, 34, 38}, Code));
 }
 
 TEST_F(CleanupTest, TrailingCommaInBraces) {
-  // Trainling comma is allowed in brace list.
+  // Trailing comma is allowed in brace list.
   // If there was trailing comma in the original code, then trailing comma is
   // preserved. In this example, element between the last two commas is deleted
   // causing the second-last comma to be redundant.
@@ -195,7 +199,7 @@ TEST_F(CleanupTest, TrailingCommaInBraces) {
   std::string Expected = "void f() { std::vector<int> v = {1,2,3,}; }";
   EXPECT_EQ(Expected, cleanupAroundOffsets({39}, Code));
 
-  // If there was no trailing comma in the original code, then trainling comma
+  // If there was no trailing comma in the original code, then trailing comma
   // introduced by replacements should be cleaned up. In this example, the
   // element after the last comma is deleted causing the last comma to be
   // redundant.
@@ -421,8 +425,10 @@ TEST_F(CleanUpReplacementsTest, InsertMultipleNewHeadersAndSortLLVM) {
 TEST_F(CleanUpReplacementsTest, InsertMultipleNewHeadersAndSortGoogle) {
   std::string Code = "\nint x;";
   std::string Expected = "\n#include \"fix.h\"\n"
+                         "\n"
                          "#include <list>\n"
                          "#include <vector>\n"
+                         "\n"
                          "#include \"a.h\"\n"
                          "#include \"b.h\"\n"
                          "#include \"c.h\"\n"

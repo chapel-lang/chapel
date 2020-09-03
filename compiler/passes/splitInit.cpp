@@ -496,8 +496,11 @@ static bool findCopyElisionCandidate(CallExpr* call,
             rhsCall->isNamedAstr(astr_autoCopy) ||
             rhsCall->isNamedAstr(astr_coerceCopy)) {
           int nActuals = rhsCall->numActuals();
-          if (nActuals >= 1) {
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals))) {
+          if (nActuals >= 2) {  // definedConst argument is the second arg
+            // note that errorLowering can add an argument
+            int rhsIdx = rhsCall->isNamedAstr(astr_coerceCopy) ? 2 : 1;
+            sanityCheckDefinedConstArg(rhsCall->get(rhsIdx+1));
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(rhsIdx))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
                 rhs = rhsSe->symbol();
@@ -516,8 +519,11 @@ static bool findCopyElisionCandidate(CallExpr* call,
       call->isNamedAstr(astr_coerceCopy)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       int nActuals = call->numActuals();
-      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 2) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-1))) {
+      // as this is function that returns via RVV, we have something like:
+      // initCopy(rhs, definedConst, retArg)
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
+          sanityCheckDefinedConstArg(call->get(nActuals-1));
           if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();

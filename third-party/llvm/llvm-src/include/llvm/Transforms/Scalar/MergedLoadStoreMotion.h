@@ -1,9 +1,8 @@
 //===- MergedLoadStoreMotion.h - merge and hoist/sink load/stores ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -28,12 +27,28 @@
 #include "llvm/IR/PassManager.h"
 
 namespace llvm {
-class MergedLoadStoreMotionPass
-    : public PassInfoMixin<MergedLoadStoreMotionPass> {
-public:
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+struct MergedLoadStoreMotionOptions {
+  bool SplitFooterBB;
+  MergedLoadStoreMotionOptions(bool SplitFooterBB = false)
+      : SplitFooterBB(SplitFooterBB) {}
+
+  MergedLoadStoreMotionOptions &splitFooterBB(bool SFBB) {
+    SplitFooterBB = SFBB;
+    return *this;
+  }
 };
 
+class MergedLoadStoreMotionPass
+    : public PassInfoMixin<MergedLoadStoreMotionPass> {
+  MergedLoadStoreMotionOptions Options;
+
+public:
+  MergedLoadStoreMotionPass()
+      : MergedLoadStoreMotionPass(MergedLoadStoreMotionOptions()) {}
+  MergedLoadStoreMotionPass(const MergedLoadStoreMotionOptions &PassOptions)
+      : Options(PassOptions) {}
+  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+};
 }
 
 #endif // LLVM_TRANSFORMS_SCALAR_MERGEDLOADSTOREMOTION_H

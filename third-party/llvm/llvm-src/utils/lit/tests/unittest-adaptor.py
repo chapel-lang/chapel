@@ -6,13 +6,12 @@
 # CHECK-DAG: unittest-adaptor :: test-two.txt ... FAIL
 # CHECK-DAG: unittest-adaptor :: test-one.txt ... ok
 
-import unittest
 import sys
+import unittest
 
-import lit
-import lit.discovery
+import lit.LitTestCase
 
 input_path = sys.argv[1]
-unittest_suite = lit.discovery.load_test_suite([input_path])
+unittest_suite = lit.LitTestCase.load_test_suite([input_path])
 runner = unittest.TextTestRunner(verbosity=2)
 runner.run(unittest_suite)

@@ -1,9 +1,8 @@
 //=== UndefBranchChecker.cpp -----------------------------------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -97,7 +96,8 @@ void UndefBranchChecker::checkBranchCondition(const Stmt *Condition,
       Ex = FindIt.FindExpr(Ex);
 
       // Emit the bug report.
-      auto R = llvm::make_unique<BugReport>(*BT, BT->getDescription(), N);
+      auto R = std::make_unique<PathSensitiveBugReport>(
+          *BT, BT->getDescription(), N);
       bugreporter::trackExpressionValue(N, Ex, *R);
       R->addRange(Ex->getSourceRange());
 
@@ -108,4 +108,8 @@ void UndefBranchChecker::checkBranchCondition(const Stmt *Condition,
 
 void ento::registerUndefBranchChecker(CheckerManager &mgr) {
   mgr.registerChecker<UndefBranchChecker>();
+}
+
+bool ento::shouldRegisterUndefBranchChecker(const LangOptions &LO) {
+  return true;
 }

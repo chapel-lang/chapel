@@ -1,9 +1,8 @@
 //===-- R600Instructions.td - R600 Instruction defs  -------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -294,6 +293,49 @@ class VTX_READ <string name, dag outs, list<dag> pattern>
   // Inst{127-96} = 0;
 
   let VTXInst = 1;
+}
+
+// Legacy.
+def atomic_cmp_swap_global_noret : PatFrag<
+  (ops node:$ptr, node:$cmp, node:$value),
+  (atomic_cmp_swap node:$ptr, node:$cmp, node:$value),
+  [{return cast<MemSDNode>(N)->getAddressSpace() == AMDGPUAS::GLOBAL_ADDRESS && (SDValue(N, 0).use_empty());}]>;
+
+def atomic_cmp_swap_global_ret : PatFrag<
+  (ops node:$ptr, node:$cmp, node:$value),
+  (atomic_cmp_swap node:$ptr, node:$cmp, node:$value),
+  [{return cast<MemSDNode>(N)->getAddressSpace() == AMDGPUAS::GLOBAL_ADDRESS && (!SDValue(N, 0).use_empty());}]>;
+
+def mskor_global : PatFrag<(ops node:$val, node:$ptr),
+                            (AMDGPUstore_mskor node:$val, node:$ptr), [{
+  return cast<MemSDNode>(N)->getAddressSpace() == AMDGPUAS::GLOBAL_ADDRESS;
+}]>;
+
+// FIXME: These are deprecated
+class AZExtLoadBase <SDPatternOperator ld_node>: PatFrag<(ops node:$ptr),
+                                              (ld_node node:$ptr), [{
+  LoadSDNode *L = cast<LoadSDNode>(N);
+  return L->getExtensionType() == ISD::ZEXTLOAD ||
+         L->getExtensionType() == ISD::EXTLOAD;
+}]>;
+
+def az_extload : AZExtLoadBase <unindexedload>;
+
+def az_extloadi8 : PatFrag<(ops node:$ptr), (az_extload node:$ptr), [{
+  return cast<LoadSDNode>(N)->getMemoryVT() == MVT::i8;
+}]>;
+
+def az_extloadi16 : PatFrag<(ops node:$ptr), (az_extload node:$ptr), [{
+  return cast<LoadSDNode>(N)->getMemoryVT() == MVT::i16;
+}]>;
+
+def az_extloadi32 : PatFrag<(ops node:$ptr), (az_extload node:$ptr), [{
+  return cast<LoadSDNode>(N)->getMemoryVT() == MVT::i32;
+}]>;
+
+let AddressSpaces = LoadAddress_local.AddrSpaces in {
+def az_extloadi8_local : PatFrag<(ops node:$ptr), (az_extloadi8 node:$ptr)>;
+def az_extloadi16_local : PatFrag<(ops node:$ptr), (az_extloadi16 node:$ptr)>;
 }
 
 class LoadParamFrag <PatFrag load_type> : PatFrag <
@@ -1191,6 +1233,11 @@ def : R600Pat<
 def : RcpPat<recip_ieee, f32>;
 }
 
+class SqrtPat<Instruction RsqInst, Instruction RecipInst> : R600Pat <
+  (fsqrt f32:$src),
+  (RecipInst (RsqInst $src))
+>;
+
 //===----------------------------------------------------------------------===//
 // R600 / R700 Instructions
 //===----------------------------------------------------------------------===//
@@ -1230,8 +1277,8 @@ let Predicates = [isR600] in {
   defm DIV_r600 : DIV_Common<RECIP_IEEE_r600>;
   def : POW_Common <LOG_IEEE_r600, EXP_IEEE_r600, MUL>;
 
-  def : R600Pat<(fsqrt f32:$src), (MUL $src, (RECIPSQRT_CLAMPED_r600 $src))>;
   def : RsqPat<RECIPSQRT_IEEE_r600, f32>;
+  def : SqrtPat<RECIPSQRT_IEEE_r600, RECIP_IEEE_r600>;
 
   def R600_ExportSwz : ExportSwzInst {
     let Word1{20-17} = 0; // BURST_COUNT

@@ -1,9 +1,8 @@
 //===- AnnotateFunctions.cpp ----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #include "clang/Frontend/FrontendPluginRegistry.h"
 #include "clang/AST/AST.h"
 #include "clang/AST/ASTConsumer.h"
+#include "clang/AST/Attr.h"
 #include "clang/Lex/Preprocessor.h"
 #include "clang/Lex/LexDiagnostic.h"
 using namespace clang;
@@ -42,7 +42,7 @@ class AnnotateFunctionsAction : public PluginASTAction {
 public:
   std::unique_ptr<ASTConsumer> CreateASTConsumer(CompilerInstance &CI,
                                                  llvm::StringRef) override {
-    return llvm::make_unique<AnnotateFunctionsConsumer>();
+    return std::make_unique<AnnotateFunctionsConsumer>();
   }
 
   bool ParseArgs(const CompilerInstance &CI,
@@ -59,7 +59,7 @@ class PragmaAnnotateHandler : public PragmaHandler {
 public:
   PragmaAnnotateHandler() : PragmaHandler("enable_annotate") { }
 
-  void HandlePragma(Preprocessor &PP, PragmaIntroducerKind Introducer,
+  void HandlePragma(Preprocessor &PP, PragmaIntroducer Introducer,
                     Token &PragmaTok) override {
 
     Token Tok;

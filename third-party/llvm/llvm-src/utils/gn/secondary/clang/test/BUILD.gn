@@ -2,6 +2,7 @@ import("//clang/lib/ARCMigrate/enable.gni")
 import("//clang/lib/StaticAnalyzer/Frontend/enable.gni")
 import("//llvm/lib/Target/targets.gni")
 import("//llvm/triples.gni")
+import("//llvm/utils/gn/build/libs/pthread/enable.gni")
 import("//llvm/utils/gn/build/libs/zlib/enable.gni")
 import("//llvm/utils/gn/build/write_cmake_config.gni")
 import("clang_lit_site_cfg_files.gni")
@@ -39,7 +40,7 @@ write_lit_config("lit_site_cfg") {
   output = clang_lit_site_cfg_file
 
   extra_values = [
-    "CLANG_ANALYZER_WITH_Z3=",  # Must be empty, not 0.
+    "LLVM_WITH_Z3=",  # Must be empty, not 0.
     "CLANG_BUILD_EXAMPLES=0",
     "CLANG_DEFAULT_CXX_STDLIB=",  # Empty string means "default value" here.
     "CLANG_TOOLS_DIR=" + rebase_path("$root_out_dir/bin"),
@@ -52,6 +53,7 @@ write_lit_config("lit_site_cfg") {
     # builds exist, to make sure it's a toolchain var.
     "CMAKE_CXX_COMPILER=c++",
     "ENABLE_BACKTRACES=1",
+    "ENABLE_EXPERIMENTAL_NEW_PASS_MANAGER=0",
     "LLVM_HOST_TRIPLE=$llvm_current_triple",
     "LLVM_LIT_TOOLS_DIR=",  # Intentionally empty, matches cmake build.
     "LLVM_USE_SANITIZER=",
@@ -79,6 +81,8 @@ write_lit_config("lit_site_cfg") {
 
   if (host_cpu == "x64") {
     extra_values += [ "HOST_ARCH=x86_64" ]
+  } else if (host_cpu == "ppc64") {
+    extra_values += [ "HOST_ARCH=powerpc64le" ]
   } else {
     assert(false, "unimplemented host_cpu " + host_cpu)
   }
@@ -89,6 +93,19 @@ write_lit_config("lit_site_cfg") {
     extra_values += [ "LLVM_PLUGIN_EXT=.dll" ]
   } else {
     extra_values += [ "LLVM_PLUGIN_EXT=.so" ]
+  }
+
+  if (host_os == "win") {
+    extra_values += [ "LLVM_ENABLE_PLUGINS=0" ]
+  } else {
+    # FIXME: Analysis/plugins need global -fPIC
+    extra_values += [ "LLVM_ENABLE_PLUGINS=0" ]
+  }
+
+  if (llvm_enable_threads) {
+    extra_values += [ "LLVM_ENABLE_THREADS=1" ]
+  } else {
+    extra_values += [ "LLVM_ENABLE_THREADS=0" ]  # Must be 0.
   }
 }
 
@@ -114,20 +131,26 @@ group("test") {
     "//clang/tools/clang-offload-bundler",
     "//clang/tools/clang-refactor",
     "//clang/tools/clang-rename",
+    "//clang/tools/clang-scan-deps",
     "//clang/tools/diagtool",
     "//clang/tools/driver:symlinks",
     "//clang/unittests",
     "//clang/utils/TableGen:clang-tblgen",
     "//clang/utils/hmaptool",
     "//llvm/tools/llc",
+    "//llvm/tools/llvm-as",
     "//llvm/tools/llvm-bcanalyzer",
     "//llvm/tools/llvm-cat",
     "//llvm/tools/llvm-config",
+    "//llvm/tools/llvm-cxxfilt",
     "//llvm/tools/llvm-dis",
+    "//llvm/tools/llvm-dwarfdump",
+    "//llvm/tools/llvm-ifs",
     "//llvm/tools/llvm-lto",
     "//llvm/tools/llvm-lto2",
     "//llvm/tools/llvm-modextract",
     "//llvm/tools/llvm-nm:symlinks",
+    "//llvm/tools/llvm-objcopy:symlinks",
     "//llvm/tools/llvm-objdump:symlinks",
     "//llvm/tools/llvm-profdata",
     "//llvm/tools/llvm-readobj:symlinks",

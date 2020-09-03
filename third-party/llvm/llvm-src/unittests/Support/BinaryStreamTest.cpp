@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/BinaryStreamTest.cpp -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -145,8 +144,8 @@ protected:
 
     for (uint32_t I = 0; I < NumEndians; ++I) {
       auto InByteStream =
-          llvm::make_unique<BinaryByteStream>(InputData, Endians[I]);
-      auto InBrokenStream = llvm::make_unique<BrokenStream>(
+          std::make_unique<BinaryByteStream>(InputData, Endians[I]);
+      auto InBrokenStream = std::make_unique<BrokenStream>(
           BrokenInputData, Endians[I], Align);
 
       Streams[I * 2].Input = std::move(InByteStream);
@@ -160,8 +159,8 @@ protected:
 
     for (uint32_t I = 0; I < NumEndians; ++I) {
       Streams[I * 2].Output =
-          llvm::make_unique<MutableBinaryByteStream>(OutputData, Endians[I]);
-      Streams[I * 2 + 1].Output = llvm::make_unique<BrokenStream>(
+          std::make_unique<MutableBinaryByteStream>(OutputData, Endians[I]);
+      Streams[I * 2 + 1].Output = std::make_unique<BrokenStream>(
           BrokenOutputData, Endians[I], Align);
     }
   }
@@ -169,8 +168,8 @@ protected:
   void initializeOutputFromInput(uint32_t Align) {
     for (uint32_t I = 0; I < NumEndians; ++I) {
       Streams[I * 2].Output =
-          llvm::make_unique<MutableBinaryByteStream>(InputData, Endians[I]);
-      Streams[I * 2 + 1].Output = llvm::make_unique<BrokenStream>(
+          std::make_unique<MutableBinaryByteStream>(InputData, Endians[I]);
+      Streams[I * 2 + 1].Output = std::make_unique<BrokenStream>(
           BrokenInputData, Endians[I], Align);
     }
   }
@@ -178,8 +177,8 @@ protected:
   void initializeInputFromOutput(uint32_t Align) {
     for (uint32_t I = 0; I < NumEndians; ++I) {
       Streams[I * 2].Input =
-          llvm::make_unique<BinaryByteStream>(OutputData, Endians[I]);
-      Streams[I * 2 + 1].Input = llvm::make_unique<BrokenStream>(
+          std::make_unique<BinaryByteStream>(OutputData, Endians[I]);
+      Streams[I * 2 + 1].Input = std::make_unique<BrokenStream>(
           BrokenOutputData, Endians[I], Align);
     }
   }
@@ -608,6 +607,77 @@ TEST_F(BinaryStreamTest, StreamReaderEnum) {
       EXPECT_EQ(Enums[I], Value);
     }
     ASSERT_EQ(0U, Reader.bytesRemaining());
+  }
+}
+
+TEST_F(BinaryStreamTest, StreamReaderULEB128) {
+  std::vector<uint64_t> TestValues = {
+      0,                  // Zero
+      0x7F,               // One byte
+      0xFF,               // One byte, all-ones
+      0xAAAA,             // Two bytes
+      0xAAAAAAAA,         // Four bytes
+      0xAAAAAAAAAAAAAAAA, // Eight bytes
+      0xffffffffffffffff  // Eight bytess, all-ones
+  };
+
+  // Conservatively assume a 10-byte encoding for each of our LEB128s, with no
+  // alignment requirement.
+  initializeOutput(10 * TestValues.size(), 1);
+  initializeInputFromOutput(1);
+
+  for (auto &Stream : Streams) {
+    // Write fields.
+    BinaryStreamWriter Writer(*Stream.Output);
+    for (const auto &Value : TestValues)
+      ASSERT_THAT_ERROR(Writer.writeULEB128(Value), Succeeded());
+
+    // Read fields.
+    BinaryStreamReader Reader(*Stream.Input);
+    std::vector<uint64_t> Results;
+    Results.resize(TestValues.size());
+    for (unsigned I = 0; I != TestValues.size(); ++I)
+      ASSERT_THAT_ERROR(Reader.readULEB128(Results[I]), Succeeded());
+
+    for (unsigned I = 0; I != TestValues.size(); ++I)
+      EXPECT_EQ(TestValues[I], Results[I]);
+  }
+}
+
+TEST_F(BinaryStreamTest, StreamReaderSLEB128) {
+  std::vector<int64_t> TestValues = {
+      0,                  // Zero
+      0x7F,               // One byte
+      -0x7F,              // One byte, negative
+      0xFF,               // One byte, all-ones
+      0xAAAA,             // Two bytes
+      -0xAAAA,            // Two bytes, negative
+      0xAAAAAAAA,         // Four bytes
+      -0xAAAAAAAA,        // Four bytes, negative
+      0x2AAAAAAAAAAAAAAA, // Eight bytes
+      -0x7ffffffffffffff  // Eight bytess, negative
+  };
+
+  // Conservatively assume a 10-byte encoding for each of our LEB128s, with no
+  // alignment requirement.
+  initializeOutput(10 * TestValues.size(), 1);
+  initializeInputFromOutput(1);
+
+  for (auto &Stream : Streams) {
+    // Write fields.
+    BinaryStreamWriter Writer(*Stream.Output);
+    for (const auto &Value : TestValues)
+      ASSERT_THAT_ERROR(Writer.writeSLEB128(Value), Succeeded());
+
+    // Read fields.
+    BinaryStreamReader Reader(*Stream.Input);
+    std::vector<int64_t> Results;
+    Results.resize(TestValues.size());
+    for (unsigned I = 0; I != TestValues.size(); ++I)
+      ASSERT_THAT_ERROR(Reader.readSLEB128(Results[I]), Succeeded());
+
+    for (unsigned I = 0; I != TestValues.size(); ++I)
+      EXPECT_EQ(TestValues[I], Results[I]);
   }
 }
 

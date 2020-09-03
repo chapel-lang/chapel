@@ -1,9 +1,8 @@
 //== ObjCSelfInitChecker.cpp - Checker for 'self' initialization -*- C++ -*--=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -160,7 +159,7 @@ void ObjCSelfInitChecker::checkForInvalidSelf(const Expr *E, CheckerContext &C,
   if (!BT)
     BT.reset(new BugType(this, "Missing \"self = [(super or self) init...]\"",
                          categories::CoreFoundationObjectiveC));
-  C.emitReport(llvm::make_unique<BugReport>(*BT, errorStr, N));
+  C.emitReport(std::make_unique<PathSensitiveBugReport>(*BT, errorStr, N));
 }
 
 void ObjCSelfInitChecker::checkPostObjCMessage(const ObjCMethodCall &Msg,
@@ -436,4 +435,8 @@ static bool isInitMessage(const ObjCMethodCall &Call) {
 
 void ento::registerObjCSelfInitChecker(CheckerManager &mgr) {
   mgr.registerChecker<ObjCSelfInitChecker>();
+}
+
+bool ento::shouldRegisterObjCSelfInitChecker(const LangOptions &LO) {
+  return true;
 }

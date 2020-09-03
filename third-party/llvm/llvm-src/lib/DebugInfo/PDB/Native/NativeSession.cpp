@@ -1,9 +1,8 @@
 //===- NativeSession.cpp - Native implementation of IPDBSession -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,6 +13,7 @@
 #include "llvm/DebugInfo/PDB/IPDBEnumChildren.h"
 #include "llvm/DebugInfo/PDB/IPDBSourceFile.h"
 #include "llvm/DebugInfo/PDB/Native/NativeCompilandSymbol.h"
+#include "llvm/DebugInfo/PDB/Native/NativeEnumInjectedSources.h"
 #include "llvm/DebugInfo/PDB/Native/NativeEnumTypes.h"
 #include "llvm/DebugInfo/PDB/Native/NativeExeSymbol.h"
 #include "llvm/DebugInfo/PDB/Native/NativeTypeBuiltin.h"
@@ -59,18 +59,18 @@ NativeSession::~NativeSession() = default;
 Error NativeSession::createFromPdb(std::unique_ptr<MemoryBuffer> Buffer,
                                    std::unique_ptr<IPDBSession> &Session) {
   StringRef Path = Buffer->getBufferIdentifier();
-  auto Stream = llvm::make_unique<MemoryBufferByteStream>(
+  auto Stream = std::make_unique<MemoryBufferByteStream>(
       std::move(Buffer), llvm::support::little);
 
-  auto Allocator = llvm::make_unique<BumpPtrAllocator>();
-  auto File = llvm::make_unique<PDBFile>(Path, std::move(Stream), *Allocator);
+  auto Allocator = std::make_unique<BumpPtrAllocator>();
+  auto File = std::make_unique<PDBFile>(Path, std::move(Stream), *Allocator);
   if (auto EC = File->parseFileHeaders())
     return EC;
   if (auto EC = File->parseStreamData())
     return EC;
 
   Session =
-      llvm::make_unique<NativeSession>(std::move(File), std::move(Allocator));
+      std::make_unique<NativeSession>(std::move(File), std::move(Allocator));
 
   return Error::success();
 }
@@ -192,7 +192,17 @@ std::unique_ptr<IPDBEnumTables> NativeSession::getEnumTables() const {
 
 std::unique_ptr<IPDBEnumInjectedSources>
 NativeSession::getInjectedSources() const {
-  return nullptr;
+  auto ISS = Pdb->getInjectedSourceStream();
+  if (!ISS) {
+    consumeError(ISS.takeError());
+    return nullptr;
+  }
+  auto Strings = Pdb->getStringTable();
+  if (!Strings) {
+    consumeError(Strings.takeError());
+    return nullptr;
+  }
+  return std::make_unique<NativeEnumInjectedSources>(*Pdb, *ISS, *Strings);
 }
 
 std::unique_ptr<IPDBEnumSectionContribs>

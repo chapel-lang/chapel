@@ -1,9 +1,8 @@
 //===--- DIBuilder.cpp - Debug Information Builder ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,21 +11,22 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/IR/DIBuilder.h"
-#include "llvm/IR/IRBuilder.h"
 #include "LLVMContextImpl.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DebugInfo.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 
 using namespace llvm;
 using namespace llvm::dwarf;
 
-cl::opt<bool>
+static cl::opt<bool>
     UseDbgAddr("use-dbg-addr",
                llvm::cl::desc("Use llvm.dbg.addr for all local variables"),
                cl::init(false), cl::Hidden);
@@ -167,8 +167,8 @@ createImportedModule(LLVMContext &C, dwarf::Tag Tag, DIScope *Context,
   if (Line)
     assert(File && "Source location has line number but no file");
   unsigned EntitiesCount = C.pImpl->DIImportedEntitys.size();
-  auto *M =
-      DIImportedEntity::get(C, Tag, Context, DINodeRef(NS), File, Line, Name);
+  auto *M = DIImportedEntity::get(C, Tag, Context, cast_or_null<DINode>(NS),
+                                  File, Line, Name);
   if (EntitiesCount < C.pImpl->DIImportedEntitys.size())
     // A new Imported Entity was just added to the context.
     // Add it to the Imported Modules list.
@@ -306,10 +306,11 @@ DIDerivedType *DIBuilder::createReferenceType(
 
 DIDerivedType *DIBuilder::createTypedef(DIType *Ty, StringRef Name,
                                         DIFile *File, unsigned LineNo,
-                                        DIScope *Context) {
+                                        DIScope *Context,
+                                        uint32_t AlignInBits) {
   return DIDerivedType::get(VMContext, dwarf::DW_TAG_typedef, Name, File,
-                            LineNo, getNonCompileUnitScope(Context), Ty, 0, 0,
-                            0, None, DINode::FlagZero);
+                            LineNo, getNonCompileUnitScope(Context), Ty, 0,
+                            AlignInBits, 0, None, DINode::FlagZero);
 }
 
 DIDerivedType *DIBuilder::createFriend(DIType *Ty, DIType *FriendTy) {
@@ -639,14 +640,15 @@ static void checkGlobalVariableScope(DIScope *Context) {
 
 DIGlobalVariableExpression *DIBuilder::createGlobalVariableExpression(
     DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *F,
-    unsigned LineNumber, DIType *Ty, bool isLocalToUnit, DIExpression *Expr,
-    MDNode *Decl, MDTuple *templateParams, uint32_t AlignInBits) {
+    unsigned LineNumber, DIType *Ty, bool IsLocalToUnit,
+    bool isDefined, DIExpression *Expr,
+    MDNode *Decl, MDTuple *TemplateParams, uint32_t AlignInBits) {
   checkGlobalVariableScope(Context);
 
   auto *GV = DIGlobalVariable::getDistinct(
       VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
-      LineNumber, Ty, isLocalToUnit, true, cast_or_null<DIDerivedType>(Decl),
-      templateParams, AlignInBits);
+      LineNumber, Ty, IsLocalToUnit, isDefined, cast_or_null<DIDerivedType>(Decl),
+      TemplateParams, AlignInBits);
   if (!Expr)
     Expr = createExpression();
   auto *N = DIGlobalVariableExpression::get(VMContext, GV, Expr);
@@ -656,14 +658,14 @@ DIGlobalVariableExpression *DIBuilder::createGlobalVariableExpression(
 
 DIGlobalVariable *DIBuilder::createTempGlobalVariableFwdDecl(
     DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *F,
-    unsigned LineNumber, DIType *Ty, bool isLocalToUnit, MDNode *Decl,
-    MDTuple *templateParams, uint32_t AlignInBits) {
+    unsigned LineNumber, DIType *Ty, bool IsLocalToUnit, MDNode *Decl,
+    MDTuple *TemplateParams, uint32_t AlignInBits) {
   checkGlobalVariableScope(Context);
 
   return DIGlobalVariable::getTemporary(
              VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
-             LineNumber, Ty, isLocalToUnit, false,
-             cast_or_null<DIDerivedType>(Decl), templateParams, AlignInBits)
+             LineNumber, Ty, IsLocalToUnit, false,
+             cast_or_null<DIDerivedType>(Decl), TemplateParams, AlignInBits)
       .release();
 }
 
@@ -806,6 +808,13 @@ DISubprogram *DIBuilder::createMethod(
   return SP;
 }
 
+DICommonBlock *DIBuilder::createCommonBlock(
+    DIScope *Scope, DIGlobalVariable *Decl, StringRef Name, DIFile *File,
+    unsigned LineNo) {
+  return DICommonBlock::get(
+      VMContext, Scope, Decl, Name, File, LineNo);
+}
+
 DINamespace *DIBuilder::createNameSpace(DIScope *Scope, StringRef Name,
                                         bool ExportSymbols) {
 
@@ -821,9 +830,9 @@ DINamespace *DIBuilder::createNameSpace(DIScope *Scope, StringRef Name,
 DIModule *DIBuilder::createModule(DIScope *Scope, StringRef Name,
                                   StringRef ConfigurationMacros,
                                   StringRef IncludePath,
-                                  StringRef ISysRoot) {
+                                  StringRef SysRoot) {
  return DIModule::get(VMContext, getNonCompileUnitScope(Scope), Name,
-                      ConfigurationMacros, IncludePath, ISysRoot);
+                      ConfigurationMacros, IncludePath, SysRoot);
 }
 
 DILexicalBlockFile *DIBuilder::createLexicalBlockFile(DIScope *Scope,

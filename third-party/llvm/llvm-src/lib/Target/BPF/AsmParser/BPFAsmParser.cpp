@@ -1,13 +1,13 @@
 //===-- BPFAsmParser.cpp - Parse BPF assembly to MCInst instructions --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/BPFMCTargetDesc.h"
+#include "TargetInfo/BPFTargetInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/MC/MCContext.h"
@@ -126,7 +126,7 @@ public:
   bool isMem() const override { return false; }
 
   bool isConstantImm() const {
-    return isImm() && dyn_cast<MCConstantExpr>(getImm());
+    return isImm() && isa<MCConstantExpr>(getImm());
   }
 
   int64_t getConstantImm() const {
@@ -194,7 +194,7 @@ public:
   }
 
   static std::unique_ptr<BPFOperand> createToken(StringRef Str, SMLoc S) {
-    auto Op = make_unique<BPFOperand>(Token);
+    auto Op = std::make_unique<BPFOperand>(Token);
     Op->Tok = Str;
     Op->StartLoc = S;
     Op->EndLoc = S;
@@ -203,7 +203,7 @@ public:
 
   static std::unique_ptr<BPFOperand> createReg(unsigned RegNo, SMLoc S,
                                                SMLoc E) {
-    auto Op = make_unique<BPFOperand>(Register);
+    auto Op = std::make_unique<BPFOperand>(Register);
     Op->Reg.RegNum = RegNo;
     Op->StartLoc = S;
     Op->EndLoc = E;
@@ -212,7 +212,7 @@ public:
 
   static std::unique_ptr<BPFOperand> createImm(const MCExpr *Val, SMLoc S,
                                                SMLoc E) {
-    auto Op = make_unique<BPFOperand>(Immediate);
+    auto Op = std::make_unique<BPFOperand>(Immediate);
     Op->Imm.Val = Val;
     Op->StartLoc = S;
     Op->EndLoc = E;
@@ -493,7 +493,7 @@ bool BPFAsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name,
 
 bool BPFAsmParser::ParseDirective(AsmToken DirectiveID) { return true; }
 
-extern "C" void LLVMInitializeBPFAsmParser() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeBPFAsmParser() {
   RegisterMCAsmParser<BPFAsmParser> X(getTheBPFTarget());
   RegisterMCAsmParser<BPFAsmParser> Y(getTheBPFleTarget());
   RegisterMCAsmParser<BPFAsmParser> Z(getTheBPFbeTarget());

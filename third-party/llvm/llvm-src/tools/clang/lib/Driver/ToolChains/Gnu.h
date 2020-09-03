@@ -1,9 +1,8 @@
 //===--- Gnu.h - Gnu Tool and ToolChain Implementations ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -301,6 +300,11 @@ protected:
   Tool *buildAssembler() const override;
   Tool *buildLinker() const override;
 
+  virtual std::string getMultiarchTriple(const Driver &D,
+                                         const llvm::Triple &TargetTriple,
+                                         StringRef SysRoot) const
+  { return TargetTriple.str(); }
+
   /// \name ToolChain Implementation Helper Functions
   /// @{
 
@@ -321,6 +325,10 @@ protected:
                         llvm::opt::ArgStringList &CC1Args) const;
   virtual void
   addLibStdCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
+                           llvm::opt::ArgStringList &CC1Args) const;
+
+  bool
+  addGCCLibStdCxxIncludePaths(const llvm::opt::ArgList &DriverArgs,
                            llvm::opt::ArgStringList &CC1Args) const;
 
   bool addLibStdCXXIncludePaths(Twine Base, Twine Suffix, StringRef GCCTriple,
@@ -348,6 +356,12 @@ public:
   void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
                              llvm::opt::ArgStringList &CC1Args,
                              Action::OffloadKind DeviceOffloadKind) const override;
+
+  virtual std::string getDynamicLinker(const llvm::opt::ArgList &Args) const {
+    return {};
+  }
+
+  virtual void addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const {}
 };
 
 } // end namespace toolchains

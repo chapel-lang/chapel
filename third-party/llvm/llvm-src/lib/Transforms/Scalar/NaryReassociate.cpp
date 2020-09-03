@@ -1,9 +1,8 @@
 //===- NaryReassociate.cpp - Reassociate n-ary expressions ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -83,7 +82,6 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -102,10 +100,12 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
 #include "llvm/IR/ValueHandle.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Utils/Local.h"
 #include <cassert>
 #include <cstdint>
 
@@ -171,7 +171,7 @@ bool NaryReassociateLegacyPass::runOnFunction(Function &F) {
   auto *AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
   auto *DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   auto *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-  auto *TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+  auto *TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
   auto *TTI = &getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
 
   return Impl.runImpl(F, AC, DT, SE, TLI, TTI);
@@ -427,8 +427,8 @@ NaryReassociatePass::tryReassociateGEPAtIndex(GetElementPtrInst *GEP,
     RHS = Builder.CreateMul(
         RHS, ConstantInt::get(IntPtrTy, IndexedSize / ElementSize));
   }
-  GetElementPtrInst *NewGEP =
-      cast<GetElementPtrInst>(Builder.CreateGEP(Candidate, RHS));
+  GetElementPtrInst *NewGEP = cast<GetElementPtrInst>(
+      Builder.CreateGEP(GEP->getResultElementType(), Candidate, RHS));
   NewGEP->setIsInBounds(GEP->isInBounds());
   NewGEP->takeName(GEP);
   return NewGEP;

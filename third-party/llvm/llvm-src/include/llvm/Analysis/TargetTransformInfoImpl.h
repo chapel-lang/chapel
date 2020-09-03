@@ -1,9 +1,8 @@
 //===- TargetTransformInfoImpl.h --------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -115,7 +114,11 @@ public:
   }
 
   unsigned getEstimatedNumberOfCaseClusters(const SwitchInst &SI,
-                                            unsigned &JTSize) {
+                                            unsigned &JTSize,
+                                            ProfileSummaryInfo *PSI,
+                                            BlockFrequencyInfo *BFI) {
+    (void)PSI;
+    (void)BFI;
     JTSize = 0;
     return SI.getNumCases();
   }
@@ -124,7 +127,7 @@ public:
     return TTI::TCC_Basic;
   }
 
-  unsigned getCallCost(FunctionType *FTy, int NumArgs) {
+  unsigned getCallCost(FunctionType *FTy, int NumArgs, const User *U) {
     assert(FTy && "FunctionType must be provided to this routine.");
 
     // The target-independent implementation just measures the size of the
@@ -141,45 +144,10 @@ public:
 
   unsigned getInliningThresholdMultiplier() { return 1; }
 
-  unsigned getIntrinsicCost(Intrinsic::ID IID, Type *RetTy,
-                            ArrayRef<Type *> ParamTys) {
-    switch (IID) {
-    default:
-      // Intrinsics rarely (if ever) have normal argument setup constraints.
-      // Model them as having a basic instruction cost.
-      // FIXME: This is wrong for libc intrinsics.
-      return TTI::TCC_Basic;
+  int getInlinerVectorBonusPercent() { return 150; }
 
-    case Intrinsic::annotation:
-    case Intrinsic::assume:
-    case Intrinsic::sideeffect:
-    case Intrinsic::dbg_declare:
-    case Intrinsic::dbg_value:
-    case Intrinsic::dbg_label:
-    case Intrinsic::invariant_start:
-    case Intrinsic::invariant_end:
-    case Intrinsic::launder_invariant_group:
-    case Intrinsic::strip_invariant_group:
-    case Intrinsic::is_constant:
-    case Intrinsic::lifetime_start:
-    case Intrinsic::lifetime_end:
-    case Intrinsic::objectsize:
-    case Intrinsic::ptr_annotation:
-    case Intrinsic::var_annotation:
-    case Intrinsic::experimental_gc_result:
-    case Intrinsic::experimental_gc_relocate:
-    case Intrinsic::coro_alloc:
-    case Intrinsic::coro_begin:
-    case Intrinsic::coro_free:
-    case Intrinsic::coro_end:
-    case Intrinsic::coro_frame:
-    case Intrinsic::coro_size:
-    case Intrinsic::coro_suspend:
-    case Intrinsic::coro_param:
-    case Intrinsic::coro_subfn_addr:
-      // These intrinsics don't actually represent code after lowering.
-      return TTI::TCC_Free;
-    }
+  unsigned getMemcpyCost(const Instruction *I) {
+    return TTI::TCC_Expensive;
   }
 
   bool hasBranchDivergence() { return false; }
@@ -190,6 +158,16 @@ public:
 
   unsigned getFlatAddressSpace () {
     return -1;
+  }
+
+  bool collectFlatAddressOperands(SmallVectorImpl<int> &OpIndexes,
+                                  Intrinsic::ID IID) const {
+    return false;
+  }
+
+  bool rewriteIntrinsicWithAddressSpace(IntrinsicInst *II,
+                                        Value *OldV, Value *NewV) const {
+    return false;
   }
 
   bool isLoweredToCall(const Function *F) {
@@ -228,6 +206,20 @@ public:
     return true;
   }
 
+  bool isHardwareLoopProfitable(Loop *L, ScalarEvolution &SE,
+                                AssumptionCache &AC,
+                                TargetLibraryInfo *LibInfo,
+                                HardwareLoopInfo &HWLoopInfo) {
+    return false;
+  }
+
+  bool preferPredicateOverEpilogue(Loop *L, LoopInfo *LI, ScalarEvolution &SE,
+                                   AssumptionCache &AC, TargetLibraryInfo *TLI,
+                                   DominatorTree *DT,
+                                   const LoopAccessInfo *LAI) const {
+    return false;
+  }
+
   void getUnrollingPreferences(Loop *, ScalarEvolution &,
                                TTI::UnrollingPreferences &) {}
 
@@ -252,15 +244,45 @@ public:
 
   bool canMacroFuseCmp() { return false; }
 
+  bool canSaveCmp(Loop *L, BranchInst **BI, ScalarEvolution *SE, LoopInfo *LI,
+                  DominatorTree *DT, AssumptionCache *AC,
+                  TargetLibraryInfo *LibInfo) {
+    return false;
+  }
+
   bool shouldFavorPostInc() const { return false; }
 
-  bool isLegalMaskedStore(Type *DataType) { return false; }
+  bool shouldFavorBackedgeIndex(const Loop *L) const { return false; }
 
-  bool isLegalMaskedLoad(Type *DataType) { return false; }
+  bool isLegalMaskedStore(Type *DataType, MaybeAlign Alignment) { return false; }
 
-  bool isLegalMaskedScatter(Type *DataType) { return false; }
+  bool isLegalMaskedLoad(Type *DataType, MaybeAlign Alignment) { return false; }
 
-  bool isLegalMaskedGather(Type *DataType) { return false; }
+  bool isLegalNTStore(Type *DataType, Align Alignment) {
+    // By default, assume nontemporal memory stores are available for stores
+    // that are aligned and have a size that is a power of 2.
+    unsigned DataSize = DL.getTypeStoreSize(DataType);
+    return Alignment >= DataSize && isPowerOf2_32(DataSize);
+  }
+
+  bool isLegalNTLoad(Type *DataType, Align Alignment) {
+    // By default, assume nontemporal memory loads are available for loads that
+    // are aligned and have a size that is a power of 2.
+    unsigned DataSize = DL.getTypeStoreSize(DataType);
+    return Alignment >= DataSize && isPowerOf2_32(DataSize);
+  }
+
+  bool isLegalMaskedScatter(Type *DataType, MaybeAlign Alignment) {
+    return false;
+  }
+
+  bool isLegalMaskedGather(Type *DataType, MaybeAlign Alignment) {
+    return false;
+  }
+
+  bool isLegalMaskedCompressStore(Type *DataType) { return false; }
+
+  bool isLegalMaskedExpandLoad(Type *DataType) { return false; }
 
   bool hasDivRemOp(Type *DataType, bool IsSigned) { return false; }
 
@@ -287,10 +309,6 @@ public:
 
   bool isTypeLegal(Type *Ty) { return false; }
 
-  unsigned getJumpBufAlignment() { return 0; }
-
-  unsigned getJumpBufSize() { return 0; }
-
   bool shouldBuildLookupTables() { return true; }
   bool shouldBuildLookupTablesForConstant(Constant *C) { return true; }
 
@@ -307,9 +325,9 @@ public:
 
   bool enableAggressiveInterleaving(bool LoopHasReductions) { return false; }
 
-  const TTI::MemCmpExpansionOptions *enableMemCmpExpansion(
-      bool IsZeroCmp) const {
-    return nullptr;
+  TTI::MemCmpExpansionOptions enableMemCmpExpansion(bool OptSize,
+                                                    bool IsZeroCmp) const {
+    return {};
   }
 
   bool enableInterleavedAccessVectorization() { return false; }
@@ -341,17 +359,30 @@ public:
 
   unsigned getIntImmCost(const APInt &Imm, Type *Ty) { return TTI::TCC_Basic; }
 
-  unsigned getIntImmCost(unsigned Opcode, unsigned Idx, const APInt &Imm,
-                         Type *Ty) {
+  unsigned getIntImmCostInst(unsigned Opcode, unsigned Idx, const APInt &Imm,
+                             Type *Ty) {
     return TTI::TCC_Free;
   }
 
-  unsigned getIntImmCost(Intrinsic::ID IID, unsigned Idx, const APInt &Imm,
-                         Type *Ty) {
+  unsigned getIntImmCostIntrin(Intrinsic::ID IID, unsigned Idx,
+                               const APInt &Imm, Type *Ty) {
     return TTI::TCC_Free;
   }
 
-  unsigned getNumberOfRegisters(bool Vector) { return 8; }
+  unsigned getNumberOfRegisters(unsigned ClassID) const { return 8; }
+
+  unsigned getRegisterClassForType(bool Vector, Type *Ty = nullptr) const {
+    return Vector ? 1 : 0;
+  };
+
+  const char* getRegisterClassName(unsigned ClassID) const {
+    switch (ClassID) {
+      default:
+        return "Generic::Unknown Register Class";
+      case 0: return "Generic::ScalarRC";
+      case 1: return "Generic::VectorRC";
+    }
+  }
 
   unsigned getRegisterBitWidth(bool Vector) const { return 32; }
 
@@ -368,21 +399,20 @@ public:
     return false;
   }
 
-  unsigned getCacheLineSize() { return 0; }
+  unsigned getCacheLineSize() const { return 0; }
 
-  llvm::Optional<unsigned> getCacheSize(TargetTransformInfo::CacheLevel Level) {
+  llvm::Optional<unsigned> getCacheSize(TargetTransformInfo::CacheLevel Level) const {
     switch (Level) {
     case TargetTransformInfo::CacheLevel::L1D:
       LLVM_FALLTHROUGH;
     case TargetTransformInfo::CacheLevel::L2D:
       return llvm::Optional<unsigned>();
     }
-
     llvm_unreachable("Unknown TargetTransformInfo::CacheLevel");
   }
 
   llvm::Optional<unsigned> getCacheAssociativity(
-    TargetTransformInfo::CacheLevel Level) {
+    TargetTransformInfo::CacheLevel Level) const {
     switch (Level) {
     case TargetTransformInfo::CacheLevel::L1D:
       LLVM_FALLTHROUGH;
@@ -393,11 +423,9 @@ public:
     llvm_unreachable("Unknown TargetTransformInfo::CacheLevel");
   }
 
-  unsigned getPrefetchDistance() { return 0; }
-
-  unsigned getMinPrefetchStride() { return 1; }
-
-  unsigned getMaxPrefetchIterationsAhead() { return UINT_MAX; }
+  unsigned getPrefetchDistance() const { return 0; }
+  unsigned getMinPrefetchStride() const { return 1; }
+  unsigned getMaxPrefetchIterationsAhead() const { return UINT_MAX; }
 
   unsigned getMaxInterleaveFactor(unsigned VF) { return 1; }
 
@@ -406,7 +434,8 @@ public:
                                   TTI::OperandValueKind Opd2Info,
                                   TTI::OperandValueProperties Opd1PropInfo,
                                   TTI::OperandValueProperties Opd2PropInfo,
-                                  ArrayRef<const Value *> Args) {
+                                  ArrayRef<const Value *> Args,
+                                  const Instruction *CxtI = nullptr) {
     return 1;
   }
 
@@ -434,7 +463,7 @@ public:
     return 1;
   }
 
-  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, unsigned Alignment,
+  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, MaybeAlign Alignment,
                            unsigned AddressSpace, const Instruction *I) {
     return 1;
   }
@@ -583,6 +612,10 @@ public:
     return true;
   }
 
+  unsigned getGISelRematGlobalCost() const {
+    return 1;
+  }
+
 protected:
   // Obtain the minimum required size to hold the value (without the sign)
   // In case of a vector it returns the min required size for one element.
@@ -679,7 +712,7 @@ protected:
 public:
   using BaseT::getCallCost;
 
-  unsigned getCallCost(const Function *F, int NumArgs) {
+  unsigned getCallCost(const Function *F, int NumArgs, const User *U) {
     assert(F && "A concrete function must be provided to this routine.");
 
     if (NumArgs < 0)
@@ -691,35 +724,34 @@ public:
       FunctionType *FTy = F->getFunctionType();
       SmallVector<Type *, 8> ParamTys(FTy->param_begin(), FTy->param_end());
       return static_cast<T *>(this)
-          ->getIntrinsicCost(IID, FTy->getReturnType(), ParamTys);
+          ->getIntrinsicCost(IID, FTy->getReturnType(), ParamTys, U);
     }
 
     if (!static_cast<T *>(this)->isLoweredToCall(F))
       return TTI::TCC_Basic; // Give a basic cost if it will be lowered
                              // directly.
 
-    return static_cast<T *>(this)->getCallCost(F->getFunctionType(), NumArgs);
+    return static_cast<T *>(this)->getCallCost(F->getFunctionType(), NumArgs, U);
   }
 
-  unsigned getCallCost(const Function *F, ArrayRef<const Value *> Arguments) {
+  unsigned getCallCost(const Function *F, ArrayRef<const Value *> Arguments,
+                       const User *U) {
     // Simply delegate to generic handling of the call.
     // FIXME: We should use instsimplify or something else to catch calls which
     // will constant fold with these arguments.
-    return static_cast<T *>(this)->getCallCost(F, Arguments.size());
+    return static_cast<T *>(this)->getCallCost(F, Arguments.size(), U);
   }
 
   using BaseT::getGEPCost;
 
   int getGEPCost(Type *PointeeType, const Value *Ptr,
                  ArrayRef<const Value *> Operands) {
-    const GlobalValue *BaseGV = nullptr;
-    if (Ptr != nullptr) {
-      // TODO: will remove this when pointers have an opaque type.
-      assert(Ptr->getType()->getScalarType()->getPointerElementType() ==
-                 PointeeType &&
-             "explicit pointee type doesn't match operand's pointee type");
-      BaseGV = dyn_cast<GlobalValue>(Ptr->stripPointerCasts());
-    }
+    assert(PointeeType && Ptr && "can't get GEPCost of nullptr");
+    // TODO: will remove this when pointers have an opaque type.
+    assert(Ptr->getType()->getScalarType()->getPointerElementType() ==
+               PointeeType &&
+           "explicit pointee type doesn't match operand's pointee type");
+    auto *BaseGV = dyn_cast<GlobalValue>(Ptr->stripPointerCasts());
     bool HasBaseReg = (BaseGV == nullptr);
 
     auto PtrSizeBits = DL.getPointerTypeSizeInBits(Ptr->getType());
@@ -762,21 +794,60 @@ public:
       }
     }
 
-    // Assumes the address space is 0 when Ptr is nullptr.
-    unsigned AS =
-        (Ptr == nullptr ? 0 : Ptr->getType()->getPointerAddressSpace());
-
     if (static_cast<T *>(this)->isLegalAddressingMode(
             TargetType, const_cast<GlobalValue *>(BaseGV),
-            BaseOffset.sextOrTrunc(64).getSExtValue(), HasBaseReg, Scale, AS))
+            BaseOffset.sextOrTrunc(64).getSExtValue(), HasBaseReg, Scale,
+            Ptr->getType()->getPointerAddressSpace()))
       return TTI::TCC_Free;
     return TTI::TCC_Basic;
   }
 
-  using BaseT::getIntrinsicCost;
+  unsigned getIntrinsicCost(Intrinsic::ID IID, Type *RetTy,
+                            ArrayRef<Type *> ParamTys, const User *U) {
+    switch (IID) {
+    default:
+      // Intrinsics rarely (if ever) have normal argument setup constraints.
+      // Model them as having a basic instruction cost.
+      return TTI::TCC_Basic;
+
+    // TODO: other libc intrinsics.
+    case Intrinsic::memcpy:
+      return static_cast<T *>(this)->getMemcpyCost(dyn_cast<Instruction>(U));
+
+    case Intrinsic::annotation:
+    case Intrinsic::assume:
+    case Intrinsic::sideeffect:
+    case Intrinsic::dbg_declare:
+    case Intrinsic::dbg_value:
+    case Intrinsic::dbg_label:
+    case Intrinsic::invariant_start:
+    case Intrinsic::invariant_end:
+    case Intrinsic::launder_invariant_group:
+    case Intrinsic::strip_invariant_group:
+    case Intrinsic::is_constant:
+    case Intrinsic::lifetime_start:
+    case Intrinsic::lifetime_end:
+    case Intrinsic::objectsize:
+    case Intrinsic::ptr_annotation:
+    case Intrinsic::var_annotation:
+    case Intrinsic::experimental_gc_result:
+    case Intrinsic::experimental_gc_relocate:
+    case Intrinsic::coro_alloc:
+    case Intrinsic::coro_begin:
+    case Intrinsic::coro_free:
+    case Intrinsic::coro_end:
+    case Intrinsic::coro_frame:
+    case Intrinsic::coro_size:
+    case Intrinsic::coro_suspend:
+    case Intrinsic::coro_param:
+    case Intrinsic::coro_subfn_addr:
+      // These intrinsics don't actually represent code after lowering.
+      return TTI::TCC_Free;
+    }
+  }
 
   unsigned getIntrinsicCost(Intrinsic::ID IID, Type *RetTy,
-                            ArrayRef<const Value *> Arguments) {
+                            ArrayRef<const Value *> Arguments, const User *U) {
     // Delegate to the generic intrinsic handling code. This mostly provides an
     // opportunity for targets to (for example) special case the cost of
     // certain intrinsics based on constants used as arguments.
@@ -784,12 +855,15 @@ public:
     ParamTys.reserve(Arguments.size());
     for (unsigned Idx = 0, Size = Arguments.size(); Idx != Size; ++Idx)
       ParamTys.push_back(Arguments[Idx]->getType());
-    return static_cast<T *>(this)->getIntrinsicCost(IID, RetTy, ParamTys);
+    return static_cast<T *>(this)->getIntrinsicCost(IID, RetTy, ParamTys, U);
   }
 
   unsigned getUserCost(const User *U, ArrayRef<const Value *> Operands) {
     if (isa<PHINode>(U))
       return TTI::TCC_Free; // Model all PHI nodes as free.
+
+    if (isa<ExtractValueInst>(U))
+      return TTI::TCC_Free; // Model all ExtractValue nodes as free.
 
     // Static alloca doesn't generate target instructions.
     if (auto *A = dyn_cast<AllocaInst>(U))
@@ -808,22 +882,18 @@ public:
         // Just use the called value type.
         Type *FTy = CS.getCalledValue()->getType()->getPointerElementType();
         return static_cast<T *>(this)
-            ->getCallCost(cast<FunctionType>(FTy), CS.arg_size());
+            ->getCallCost(cast<FunctionType>(FTy), CS.arg_size(), U);
       }
 
       SmallVector<const Value *, 8> Arguments(CS.arg_begin(), CS.arg_end());
-      return static_cast<T *>(this)->getCallCost(F, Arguments);
+      return static_cast<T *>(this)->getCallCost(F, Arguments, U);
     }
 
-    if (const CastInst *CI = dyn_cast<CastInst>(U)) {
-      // Result of a cmp instruction is often extended (to be used by other
-      // cmp instructions, logical or return instructions). These are usually
-      // nop on most sane targets.
-      if (isa<CmpInst>(CI->getOperand(0)))
-        return TTI::TCC_Free;
-      if (isa<SExtInst>(CI) || isa<ZExtInst>(CI) || isa<FPExtInst>(CI))
-        return static_cast<T *>(this)->getExtCost(CI, Operands.back());
-    }
+    if (isa<SExtInst>(U) || isa<ZExtInst>(U) || isa<FPExtInst>(U))
+      // The old behaviour of generally treating extensions of icmp to be free
+      // has been removed. A target that needs it should override getUserCost().
+      return static_cast<T *>(this)->getExtCost(cast<Instruction>(U),
+                                                Operands.back());
 
     return static_cast<T *>(this)->getOperationCost(
         Operator::getOpcode(U), U->getType(),

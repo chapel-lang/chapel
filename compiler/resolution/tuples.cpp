@@ -206,7 +206,7 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
       // Otherwise, copy it
       element = new VarSymbol(astr("elt_", name), args[i]->type);
       ctor->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr(astr_autoCopy, arg);
+      CallExpr* copy = new CallExpr(astr_autoCopy, arg, new SymExpr(gFalse));
       ctor->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
 
@@ -439,7 +439,12 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   // Adjust any formals for blank-intent tuple behavior now
   resolveSignature(fn);
 
-  INT_ASSERT(fn->numFormals() == 1); // expected of the original function
+  if (fn->name == astr_initCopy || fn->name == astr_autoCopy) {
+    INT_ASSERT(fn->numFormals() == 2); // expected of the original function
+  }
+  else {
+    INT_ASSERT(fn->numFormals() == 1); // expected of the original function
+  }
   arg = fn->getFormal(1);
   ct = toAggregateType(arg->type);
   if (isReferenceType(ct))
@@ -617,7 +622,8 @@ static VarSymbol* generateCoerce(Symbol* fromField, Symbol* toField,
       insertBefore->insertBefore(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
+      Symbol *definedConst = toField->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+      CallExpr* copy = new CallExpr(astr_autoCopy, readF, definedConst);
       insertBefore->insertBefore(new CallExpr(PRIM_MOVE, element, copy));
 
       resolveCallAndCallee(copy, true);
@@ -767,7 +773,8 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
       block->insertAtTail(new DefExpr(element));
 
       // otherwise copy construct it
-      CallExpr* copy = new CallExpr(astr_autoCopy, readF);
+      Symbol *definedConst = toField->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+      CallExpr* copy = new CallExpr(astr_autoCopy, readF, definedConst);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
     }
     // Expecting insertCasts to fix any type mismatch in the last MOVE added
@@ -818,7 +825,7 @@ instantiate_tuple_initCopy_or_autoCopy(FnSymbol* fn,
       // otherwise copy construct it
       element = new VarSymbol(astr("elt_", name), toField->type);
       block->insertAtTail(new DefExpr(element));
-      CallExpr* copy = new CallExpr(copy_fun, read);
+      CallExpr* copy = new CallExpr(copy_fun, read, gFalse);
       block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       if (recordContainingCopyMutatesField(toField->type))
         arg->intent = INTENT_REF;
@@ -888,7 +895,7 @@ instantiate_tuple_unref(FnSymbol* fn)
         // If it is a reference, copy construct it
         element = new VarSymbol(astr("elt_", name), toField->type);
         block->insertAtTail(new DefExpr(element));
-        CallExpr* copy = new CallExpr(useCopy, read);
+        CallExpr* copy = new CallExpr(useCopy, read, gFalse);
         block->insertAtTail(new CallExpr(PRIM_MOVE, element, copy));
       } else {
         // Otherwise, bit copy it
@@ -951,7 +958,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
       if (copyWith && typeNeedsCopyInitDeinit(useType) &&
           (valueOnly || !isReferenceType(field->type))) {
         VarSymbol* var = newTemp("test_copy", useType);
-        CallExpr* copy = new CallExpr(copyWith, var);
+        CallExpr* copy = new CallExpr(copyWith, var, gFalse);
         testBlock->insertAtTail(copy);
         resolveCallAndCallee(copy);
 

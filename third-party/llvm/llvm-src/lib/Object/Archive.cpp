@@ -1,9 +1,8 @@
 //===- Archive.cpp - ar File Format implementation ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -224,8 +223,8 @@ Expected<StringRef> ArchiveMemberHeader::getName(uint64_t Size) const {
   return Name.drop_back(1);
 }
 
-Expected<uint32_t> ArchiveMemberHeader::getSize() const {
-  uint32_t Ret;
+Expected<uint64_t> ArchiveMemberHeader::getSize() const {
+  uint64_t Ret;
   if (StringRef(ArMemHdr->Size,
                 sizeof(ArMemHdr->Size)).rtrim(" ").getAsInteger(10, Ret)) {
     std::string Buf;
@@ -512,7 +511,7 @@ Expected<MemoryBufferRef> Archive::Child::getMemoryBufferRef() const {
   StringRef Name = NameOrErr.get();
   Expected<StringRef> Buf = getBuffer();
   if (!Buf)
-    return Buf.takeError();
+    return createFileError(Name, Buf.takeError());
   return MemoryBufferRef(*Buf, Name);
 }
 
@@ -551,7 +550,7 @@ Archive::Archive(MemoryBufferRef Source, Error &Err)
   } else if (Buffer.startswith(Magic)) {
     IsThin = false;
   } else {
-    Err = make_error<GenericBinaryError>("File too small to be an archive",
+    Err = make_error<GenericBinaryError>("file too small to be an archive",
                                          object_error::invalid_file_type);
     return;
   }
@@ -779,19 +778,18 @@ Archive::child_iterator Archive::child_begin(Error &Err,
     return child_end();
 
   if (SkipInternal)
-    return child_iterator(Child(this, FirstRegularData,
-                                FirstRegularStartOfFile),
-                          &Err);
+    return child_iterator::itr(
+        Child(this, FirstRegularData, FirstRegularStartOfFile), Err);
 
   const char *Loc = Data.getBufferStart() + strlen(Magic);
   Child C(this, Loc, &Err);
   if (Err)
     return child_end();
-  return child_iterator(C, &Err);
+  return child_iterator::itr(C, Err);
 }
 
 Archive::child_iterator Archive::child_end() const {
-  return child_iterator(Child(nullptr, nullptr, nullptr), nullptr);
+  return child_iterator::end(Child(nullptr, nullptr, nullptr));
 }
 
 StringRef Archive::Symbol::getName() const {

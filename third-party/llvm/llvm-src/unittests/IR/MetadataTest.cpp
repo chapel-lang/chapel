@@ -1,13 +1,13 @@
 //===- unittests/IR/MetadataTest.cpp - Metadata unit tests ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/IR/Metadata.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DebugInfo.h"
@@ -35,7 +35,7 @@ TEST(ContextAndReplaceableUsesTest, FromContext) {
 
 TEST(ContextAndReplaceableUsesTest, FromReplaceableUses) {
   LLVMContext Context;
-  ContextAndReplaceableUses CRU(make_unique<ReplaceableMetadataImpl>(Context));
+  ContextAndReplaceableUses CRU(std::make_unique<ReplaceableMetadataImpl>(Context));
   EXPECT_EQ(&Context, &CRU.getContext());
   EXPECT_TRUE(CRU.hasReplaceableUses());
   EXPECT_TRUE(CRU.getReplaceableUses());
@@ -44,7 +44,7 @@ TEST(ContextAndReplaceableUsesTest, FromReplaceableUses) {
 TEST(ContextAndReplaceableUsesTest, makeReplaceable) {
   LLVMContext Context;
   ContextAndReplaceableUses CRU(Context);
-  CRU.makeReplaceable(make_unique<ReplaceableMetadataImpl>(Context));
+  CRU.makeReplaceable(std::make_unique<ReplaceableMetadataImpl>(Context));
   EXPECT_EQ(&Context, &CRU.getContext());
   EXPECT_TRUE(CRU.hasReplaceableUses());
   EXPECT_TRUE(CRU.getReplaceableUses());
@@ -52,7 +52,7 @@ TEST(ContextAndReplaceableUsesTest, makeReplaceable) {
 
 TEST(ContextAndReplaceableUsesTest, takeReplaceableUses) {
   LLVMContext Context;
-  auto ReplaceableUses = make_unique<ReplaceableMetadataImpl>(Context);
+  auto ReplaceableUses = std::make_unique<ReplaceableMetadataImpl>(Context);
   auto *Ptr = ReplaceableUses.get();
   ContextAndReplaceableUses CRU(std::move(ReplaceableUses));
   ReplaceableUses = CRU.takeReplaceableUses();
@@ -118,8 +118,9 @@ protected:
         32, 32, 0, DINode::FlagZero, nullptr, 0, nullptr, nullptr, "");
   }
   Function *getFunction(StringRef Name) {
-    return cast<Function>(M.getOrInsertFunction(
-        Name, FunctionType::get(Type::getVoidTy(Context), None, false)));
+    return Function::Create(
+        FunctionType::get(Type::getVoidTy(Context), None, false),
+        Function::ExternalLinkage, Name, M);
   }
 };
 typedef MetadataTest MDStringTest;
@@ -164,7 +165,7 @@ TEST_F(MDStringTest, PrintingComplex) {
   std::string Str;
   raw_string_ostream oss(Str);
   s->print(oss);
-  EXPECT_STREQ("!\"\\00\\0A\\22\\5C\\FF\"", oss.str().c_str());
+  EXPECT_STREQ("!\"\\00\\0A\\22\\\\\\FF\"", oss.str().c_str());
 }
 
 typedef MetadataTest MDNodeTest;
@@ -1050,35 +1051,41 @@ TEST_F(DILocationTest, discriminatorSpecialCases) {
   EXPECT_EQ(0U, L1->getBaseDiscriminator());
   EXPECT_EQ(1U, L1->getDuplicationFactor());
 
-  auto L2 = L1->setBaseDiscriminator(1).getValue();
+  EXPECT_EQ(L1, L1->cloneWithBaseDiscriminator(0).getValue());
+  EXPECT_EQ(L1, L1->cloneByMultiplyingDuplicationFactor(0).getValue());
+  EXPECT_EQ(L1, L1->cloneByMultiplyingDuplicationFactor(1).getValue());
+
+  auto L2 = L1->cloneWithBaseDiscriminator(1).getValue();
   EXPECT_EQ(0U, L1->getBaseDiscriminator());
   EXPECT_EQ(1U, L1->getDuplicationFactor());
 
   EXPECT_EQ(1U, L2->getBaseDiscriminator());
   EXPECT_EQ(1U, L2->getDuplicationFactor());
 
-  auto L3 = L2->cloneWithDuplicationFactor(2).getValue();
+  auto L3 = L2->cloneByMultiplyingDuplicationFactor(2).getValue();
   EXPECT_EQ(1U, L3->getBaseDiscriminator());
   EXPECT_EQ(2U, L3->getDuplicationFactor());
 
-  auto L4 = L3->cloneWithDuplicationFactor(4).getValue();
+  EXPECT_EQ(L2, L2->cloneByMultiplyingDuplicationFactor(1).getValue());
+
+  auto L4 = L3->cloneByMultiplyingDuplicationFactor(4).getValue();
   EXPECT_EQ(1U, L4->getBaseDiscriminator());
   EXPECT_EQ(8U, L4->getDuplicationFactor());
 
-  auto L5 = L4->setBaseDiscriminator(2).getValue();
+  auto L5 = L4->cloneWithBaseDiscriminator(2).getValue();
   EXPECT_EQ(2U, L5->getBaseDiscriminator());
-  EXPECT_EQ(1U, L5->getDuplicationFactor());
+  EXPECT_EQ(8U, L5->getDuplicationFactor());
 
   // Check extreme cases
-  auto L6 = L1->setBaseDiscriminator(0xfff).getValue();
+  auto L6 = L1->cloneWithBaseDiscriminator(0xfff).getValue();
   EXPECT_EQ(0xfffU, L6->getBaseDiscriminator());
-  EXPECT_EQ(
-      0xfffU,
-      L6->cloneWithDuplicationFactor(0xfff).getValue()->getDuplicationFactor());
+  EXPECT_EQ(0xfffU, L6->cloneByMultiplyingDuplicationFactor(0xfff)
+                        .getValue()
+                        ->getDuplicationFactor());
 
   // Check we return None for unencodable cases.
-  EXPECT_EQ(None, L4->setBaseDiscriminator(0x1000));
-  EXPECT_EQ(None, L4->cloneWithDuplicationFactor(0x1000));
+  EXPECT_EQ(None, L4->cloneWithBaseDiscriminator(0x1000));
+  EXPECT_EQ(None, L4->cloneByMultiplyingDuplicationFactor(0x1000));
 }
 
 
@@ -2052,7 +2059,7 @@ TEST_F(DIModuleTest, get) {
   EXPECT_EQ(Name, N->getName());
   EXPECT_EQ(ConfigMacro, N->getConfigurationMacros());
   EXPECT_EQ(Includes, N->getIncludePath());
-  EXPECT_EQ(Sysroot, N->getISysRoot());
+  EXPECT_EQ(Sysroot, N->getSysRoot());
   EXPECT_EQ(N, DIModule::get(Context, Scope, Name,
                              ConfigMacro, Includes, Sysroot));
   EXPECT_NE(N, DIModule::get(Context, getFile(), Name,
@@ -2329,7 +2336,11 @@ TEST_F(DIExpressionTest, get) {
   // Test DIExpression::prepend().
   uint64_t Elts0[] = {dwarf::DW_OP_LLVM_fragment, 0, 32};
   auto *N0 = DIExpression::get(Context, Elts0);
-  auto *N0WithPrependedOps = DIExpression::prepend(N0, true, 64, true, true);
+  uint8_t DIExprFlags = DIExpression::ApplyOffset;
+  DIExprFlags |= DIExpression::DerefBefore;
+  DIExprFlags |= DIExpression::DerefAfter;
+  DIExprFlags |= DIExpression::StackValue;
+  auto *N0WithPrependedOps = DIExpression::prepend(N0, DIExprFlags, 64);
   uint64_t Elts1[] = {dwarf::DW_OP_deref,
                       dwarf::DW_OP_plus_uconst, 64,
                       dwarf::DW_OP_deref,
@@ -2382,6 +2393,49 @@ TEST_F(DIExpressionTest, isValid) {
 
 #undef EXPECT_VALID
 #undef EXPECT_INVALID
+}
+
+TEST_F(DIExpressionTest, createFragmentExpression) {
+#define EXPECT_VALID_FRAGMENT(Offset, Size, ...)                               \
+  do {                                                                         \
+    uint64_t Elements[] = {__VA_ARGS__};                                       \
+    DIExpression* Expression = DIExpression::get(Context, Elements);           \
+    EXPECT_TRUE(DIExpression::createFragmentExpression(                        \
+      Expression, Offset, Size).hasValue());                                   \
+  } while (false)
+#define EXPECT_INVALID_FRAGMENT(Offset, Size, ...)                             \
+  do {                                                                         \
+    uint64_t Elements[] = {__VA_ARGS__};                                       \
+    DIExpression* Expression = DIExpression::get(Context, Elements);           \
+    EXPECT_FALSE(DIExpression::createFragmentExpression(                       \
+      Expression, Offset, Size).hasValue());                                   \
+  } while (false)
+
+  // createFragmentExpression adds correct ops.
+  Optional<DIExpression*> R = DIExpression::createFragmentExpression(
+    DIExpression::get(Context, {}), 0, 32);
+  EXPECT_EQ(R.hasValue(), true);
+  EXPECT_EQ(3u, (*R)->getNumElements());
+  EXPECT_EQ(dwarf::DW_OP_LLVM_fragment, (*R)->getElement(0));
+  EXPECT_EQ(0u, (*R)->getElement(1));
+  EXPECT_EQ(32u, (*R)->getElement(2));
+
+  // Valid fragment expressions.
+  EXPECT_VALID_FRAGMENT(0, 32, {});
+  EXPECT_VALID_FRAGMENT(0, 32, dwarf::DW_OP_deref);
+  EXPECT_VALID_FRAGMENT(0, 32, dwarf::DW_OP_LLVM_fragment, 0, 32);
+  EXPECT_VALID_FRAGMENT(16, 16, dwarf::DW_OP_LLVM_fragment, 0, 32);
+
+  // Invalid fragment expressions (incompatible ops).
+  EXPECT_INVALID_FRAGMENT(0, 32, dwarf::DW_OP_constu, 6, dwarf::DW_OP_plus);
+  EXPECT_INVALID_FRAGMENT(0, 32, dwarf::DW_OP_constu, 14, dwarf::DW_OP_minus);
+  EXPECT_INVALID_FRAGMENT(0, 32, dwarf::DW_OP_constu, 16, dwarf::DW_OP_shr);
+  EXPECT_INVALID_FRAGMENT(0, 32, dwarf::DW_OP_constu, 16, dwarf::DW_OP_shl);
+  EXPECT_INVALID_FRAGMENT(0, 32, dwarf::DW_OP_constu, 16, dwarf::DW_OP_shra);
+  EXPECT_INVALID_FRAGMENT(0, 32, dwarf::DW_OP_plus_uconst, 6);
+
+#undef EXPECT_VALID_FRAGMENT
+#undef EXPECT_INVALID_FRAGMENT
 }
 
 typedef MetadataTest DIObjCPropertyTest;
@@ -2746,7 +2800,7 @@ TEST_F(FunctionAttachmentTest, EntryCount) {
   F = getFunction("bar");
   EXPECT_FALSE(F->getEntryCount().hasValue());
   F->setEntryCount(123, Function::PCT_Synthetic);
-  Count = F->getEntryCount();
+  Count = F->getEntryCount(true /*allow synthetic*/);
   EXPECT_TRUE(Count.hasValue());
   EXPECT_EQ(123u, Count.getCount());
   EXPECT_EQ(Function::PCT_Synthetic, Count.getType());
@@ -2843,5 +2897,42 @@ TEST_F(DistinctMDOperandPlaceholderTest, TrackingMDRefAndDistinctMDNode) {
   }
 }
 #endif
+
+typedef MetadataTest DebugVariableTest;
+TEST_F(DebugVariableTest, DenseMap) {
+  DenseMap<DebugVariable, uint64_t> DebugVariableMap;
+
+  DILocalScope *Scope = getSubprogram();
+  DIFile *File = getFile();
+  DIType *Type = getDerivedType();
+  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
+
+  DILocation *InlinedLoc = DILocation::get(Context, 2, 7, Scope);
+
+  DILocalVariable *VarA =
+      DILocalVariable::get(Context, Scope, "A", File, 5, Type, 2, Flags, 8);
+  DILocalVariable *VarB =
+      DILocalVariable::get(Context, Scope, "B", File, 7, Type, 3, Flags, 8);
+
+  DebugVariable DebugVariableA(VarA, NoneType(), nullptr);
+  DebugVariable DebugVariableInlineA(VarA, NoneType(), InlinedLoc);
+  DebugVariable DebugVariableB(VarB, NoneType(), nullptr);
+  DebugVariable DebugVariableFragB(VarB, {{16, 16}}, nullptr);
+
+  DebugVariableMap.insert({DebugVariableA, 2});
+  DebugVariableMap.insert({DebugVariableInlineA, 3});
+  DebugVariableMap.insert({DebugVariableB, 6});
+  DebugVariableMap.insert({DebugVariableFragB, 12});
+
+  EXPECT_EQ(DebugVariableMap.count(DebugVariableA), 1u);
+  EXPECT_EQ(DebugVariableMap.count(DebugVariableInlineA), 1u);
+  EXPECT_EQ(DebugVariableMap.count(DebugVariableB), 1u);
+  EXPECT_EQ(DebugVariableMap.count(DebugVariableFragB), 1u);
+
+  EXPECT_EQ(DebugVariableMap.find(DebugVariableA)->second, 2u);
+  EXPECT_EQ(DebugVariableMap.find(DebugVariableInlineA)->second, 3u);
+  EXPECT_EQ(DebugVariableMap.find(DebugVariableB)->second, 6u);
+  EXPECT_EQ(DebugVariableMap.find(DebugVariableFragB)->second, 12u);
+}
 
 } // end namespace

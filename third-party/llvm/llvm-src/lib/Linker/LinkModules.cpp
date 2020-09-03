@@ -1,9 +1,8 @@
 //===- lib/Linker/LinkModules.cpp - Module Linker Implementation ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -352,7 +351,8 @@ bool ModuleLinker::linkIfNeeded(GlobalValue &GV) {
         SGVar->setConstant(false);
       }
       if (DGVar->hasCommonLinkage() && SGVar->hasCommonLinkage()) {
-        unsigned Align = std::max(DGVar->getAlignment(), SGVar->getAlignment());
+        MaybeAlign Align(
+            std::max(DGVar->getAlignment(), SGVar->getAlignment()));
         SGVar->setAlignment(Align);
         DGVar->setAlignment(Align);
       }

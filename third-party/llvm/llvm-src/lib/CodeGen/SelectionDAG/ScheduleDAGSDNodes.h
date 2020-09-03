@@ -1,9 +1,8 @@
 //===---- ScheduleDAGSDNodes.h - SDNode Scheduling --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,6 +26,7 @@
 
 namespace llvm {
 
+class AAResults;
 class InstrItineraryData;
 
   /// ScheduleDAGSDNodes - A ScheduleDAG for scheduling SDNode-based DAGs.
@@ -94,7 +94,7 @@ class InstrItineraryData;
     /// are input.  This SUnit graph is similar to the SelectionDAG, but
     /// excludes nodes that aren't interesting to scheduling, and represents
     /// flagged together nodes with a single SUnit.
-    void BuildSchedGraph(AliasAnalysis *AA);
+    void BuildSchedGraph(AAResults *AA);
 
     /// InitNumRegDefsLeft - Determine the # of regs defined by this node.
     ///

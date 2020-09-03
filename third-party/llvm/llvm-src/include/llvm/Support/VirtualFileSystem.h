@@ -1,9 +1,8 @@
 //===- VirtualFileSystem.h - Virtual File System Layer ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -59,15 +58,15 @@ public:
 
   Status() = default;
   Status(const llvm::sys::fs::file_status &Status);
-  Status(StringRef Name, llvm::sys::fs::UniqueID UID,
+  Status(const Twine &Name, llvm::sys::fs::UniqueID UID,
          llvm::sys::TimePoint<> MTime, uint32_t User, uint32_t Group,
          uint64_t Size, llvm::sys::fs::file_type Type,
          llvm::sys::fs::perms Perms);
 
   /// Get a copy of a Status with a different name.
-  static Status copyWithNewName(const Status &In, StringRef NewName);
+  static Status copyWithNewName(const Status &In, const Twine &NewName);
   static Status copyWithNewName(const llvm::sys::fs::file_status &In,
-                                StringRef NewName);
+                                const Twine &NewName);
 
   /// Returns the name that should be used for this file or directory.
   StringRef getName() const { return Name; }
@@ -127,7 +126,7 @@ public:
 /// Only information available on most platforms is included.
 class directory_entry {
   std::string Path;
-  llvm::sys::fs::file_type Type;
+  llvm::sys::fs::file_type Type = llvm::sys::fs::file_type::type_unknown;
 
 public:
   directory_entry() = default;
@@ -294,12 +293,20 @@ public:
   /// \param Path A path that is modified to be an absolute path.
   /// \returns success if \a path has been made absolute, otherwise a
   ///          platform-specific error_code.
-  std::error_code makeAbsolute(SmallVectorImpl<char> &Path) const;
+  virtual std::error_code makeAbsolute(SmallVectorImpl<char> &Path) const;
 };
 
 /// Gets an \p vfs::FileSystem for the 'real' file system, as seen by
 /// the operating system.
+/// The working directory is linked to the process's working directory.
+/// (This is usually thread-hostile).
 IntrusiveRefCntPtr<FileSystem> getRealFileSystem();
+
+/// Create an \p vfs::FileSystem for the 'real' file system, as seen by
+/// the operating system.
+/// It has its own working directory, independent of (but initially equal to)
+/// that of the process.
+std::unique_ptr<FileSystem> createPhysicalFileSystem();
 
 /// A file system that allows overlaying one \p AbstractFileSystem on top
 /// of another.
@@ -336,15 +343,24 @@ public:
 
   using iterator = FileSystemList::reverse_iterator;
   using const_iterator = FileSystemList::const_reverse_iterator;
+  using reverse_iterator = FileSystemList::iterator;
+  using const_reverse_iterator = FileSystemList::const_iterator;
 
   /// Get an iterator pointing to the most recently added file system.
   iterator overlays_begin() { return FSList.rbegin(); }
   const_iterator overlays_begin() const { return FSList.rbegin(); }
 
-  /// Get an iterator pointing one-past the least recently added file
-  /// system.
+  /// Get an iterator pointing one-past the least recently added file system.
   iterator overlays_end() { return FSList.rend(); }
   const_iterator overlays_end() const { return FSList.rend(); }
+
+  /// Get an iterator pointing to the least recently added file system.
+  reverse_iterator overlays_rbegin() { return FSList.begin(); }
+  const_reverse_iterator overlays_rbegin() const { return FSList.begin(); }
+
+  /// Get an iterator pointing one-past the most recently added file system.
+  reverse_iterator overlays_rend() { return FSList.end(); }
+  const_reverse_iterator overlays_rend() const { return FSList.end(); }
 };
 
 /// By default, this delegates all calls to the underlying file system. This
@@ -516,7 +532,7 @@ class RedirectingFileSystemParser;
 /// \endverbatim
 ///
 /// All configuration options are optional.
-///   'case-sensitive': <boolean, default=true>
+///   'case-sensitive': <boolean, default=(true for Posix, false for Windows)>
 ///   'use-external-names': <boolean, default=true>
 ///   'overlay-relative': <boolean, default=false>
 ///   'fallthrough': <boolean, default=true>
@@ -631,8 +647,29 @@ private:
   friend class VFSFromYamlDirIterImpl;
   friend class RedirectingFileSystemParser;
 
+  bool shouldUseExternalFS() const {
+    return ExternalFSValidWD && IsFallthrough;
+  }
+
+  // In a RedirectingFileSystem, keys can be specified in Posix or Windows
+  // style (or even a mixture of both), so this comparison helper allows
+  // slashes (representing a root) to match backslashes (and vice versa).  Note
+  // that, other than the root, patch components should not contain slashes or
+  // backslashes.
+  bool pathComponentMatches(llvm::StringRef lhs, llvm::StringRef rhs) const {
+    if ((CaseSensitive ? lhs.equals(rhs) : lhs.equals_lower(rhs)))
+      return true;
+    return (lhs == "/" && rhs == "\\") || (lhs == "\\" && rhs == "/");
+  }
+
   /// The root(s) of the virtual file system.
   std::vector<std::unique_ptr<Entry>> Roots;
+
+  /// The current working directory of the file system.
+  std::string WorkingDirectory;
+
+  /// Whether the current working directory is valid for the external FS.
+  bool ExternalFSValidWD = false;
 
   /// The file system to use for external references.
   IntrusiveRefCntPtr<FileSystem> ExternalFS;
@@ -648,7 +685,12 @@ private:
   /// Whether to perform case-sensitive comparisons.
   ///
   /// Currently, case-insensitive matching only works correctly with ASCII.
-  bool CaseSensitive = true;
+  bool CaseSensitive =
+#ifdef _WIN32
+      false;
+#else
+      true;
+#endif
 
   /// IsRelativeOverlay marks whether a ExternalContentsPrefixDir path must
   /// be prefixed in every 'external-contents' when reading from YAML files.
@@ -673,8 +715,7 @@ private:
       true;
 #endif
 
-  RedirectingFileSystem(IntrusiveRefCntPtr<FileSystem> ExternalFS)
-      : ExternalFS(std::move(ExternalFS)) {}
+  RedirectingFileSystem(IntrusiveRefCntPtr<FileSystem> ExternalFS);
 
   /// Looks up the path <tt>[Start, End)</tt> in \p From, possibly
   /// recursing into the contents of \p From if it is a directory.
@@ -708,15 +749,18 @@ public:
 
   std::error_code isLocal(const Twine &Path, bool &Result) override;
 
+  std::error_code makeAbsolute(SmallVectorImpl<char> &Path) const override;
+
   directory_iterator dir_begin(const Twine &Dir, std::error_code &EC) override;
 
   void setExternalContentsPrefixDir(StringRef PrefixDir);
 
   StringRef getExternalContentsPrefixDir() const;
 
+  void dump(raw_ostream &OS) const;
+  void dumpEntry(raw_ostream &OS, Entry *E, int NumSpaces = 0) const;
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   LLVM_DUMP_METHOD void dump() const;
-  LLVM_DUMP_METHOD void dumpEntry(Entry *E, int NumSpaces = 0) const;
 #endif
 };
 

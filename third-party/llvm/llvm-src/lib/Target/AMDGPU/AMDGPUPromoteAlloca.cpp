@@ -1,9 +1,8 @@
 //===-- AMDGPUPromoteAlloca.cpp - Promote Allocas -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,6 +37,8 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsAMDGPU.h"
+#include "llvm/IR/IntrinsicsR600.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
@@ -163,12 +164,16 @@ bool AMDGPUPromoteAlloca::runOnFunction(Function &F) {
   bool SufficientLDS = hasSufficientLocalMem(F);
   bool Changed = false;
   BasicBlock &EntryBB = *F.begin();
-  for (auto I = EntryBB.begin(), E = EntryBB.end(); I != E; ) {
-    AllocaInst *AI = dyn_cast<AllocaInst>(I);
 
-    ++I;
-    if (AI)
-      Changed |= handleAlloca(*AI, SufficientLDS);
+  SmallVector<AllocaInst *, 16> Allocas;
+  for (Instruction &I : EntryBB) {
+    if (AllocaInst *AI = dyn_cast<AllocaInst>(&I))
+      Allocas.push_back(AI);
+  }
+
+  for (AllocaInst *AI : Allocas) {
+    if (handleAlloca(*AI, SufficientLDS))
+      Changed = true;
   }
 
   return Changed;
@@ -245,11 +250,11 @@ AMDGPUPromoteAlloca::getLocalSizeYZ(IRBuilder<> &Builder) {
   // We could do a single 64-bit load here, but it's likely that the basic
   // 32-bit and extract sequence is already present, and it is probably easier
   // to CSE this. The loads should be mergable later anyway.
-  Value *GEPXY = Builder.CreateConstInBoundsGEP1_64(CastDispatchPtr, 1);
-  LoadInst *LoadXY = Builder.CreateAlignedLoad(GEPXY, 4);
+  Value *GEPXY = Builder.CreateConstInBoundsGEP1_64(I32Ty, CastDispatchPtr, 1);
+  LoadInst *LoadXY = Builder.CreateAlignedLoad(I32Ty, GEPXY, 4);
 
-  Value *GEPZU = Builder.CreateConstInBoundsGEP1_64(CastDispatchPtr, 2);
-  LoadInst *LoadZU = Builder.CreateAlignedLoad(GEPZU, 4);
+  Value *GEPZU = Builder.CreateConstInBoundsGEP1_64(I32Ty, CastDispatchPtr, 2);
+  LoadInst *LoadZU = Builder.CreateAlignedLoad(I32Ty, GEPZU, 4);
 
   MDNode *MD = MDNode::get(Mod->getContext(), None);
   LoadXY->setMetadata(LLVMContext::MD_invariant_load, MD);
@@ -265,21 +270,21 @@ AMDGPUPromoteAlloca::getLocalSizeYZ(IRBuilder<> &Builder) {
 Value *AMDGPUPromoteAlloca::getWorkitemID(IRBuilder<> &Builder, unsigned N) {
   const AMDGPUSubtarget &ST =
       AMDGPUSubtarget::get(*TM, *Builder.GetInsertBlock()->getParent());
-  Intrinsic::ID IntrID = Intrinsic::ID::not_intrinsic;
+  Intrinsic::ID IntrID = Intrinsic::not_intrinsic;
 
   switch (N) {
   case 0:
-    IntrID = IsAMDGCN ? Intrinsic::amdgcn_workitem_id_x
-      : Intrinsic::r600_read_tidig_x;
+    IntrID = IsAMDGCN ? (Intrinsic::ID)Intrinsic::amdgcn_workitem_id_x
+                      : (Intrinsic::ID)Intrinsic::r600_read_tidig_x;
     break;
   case 1:
-    IntrID = IsAMDGCN ? Intrinsic::amdgcn_workitem_id_y
-      : Intrinsic::r600_read_tidig_y;
+    IntrID = IsAMDGCN ? (Intrinsic::ID)Intrinsic::amdgcn_workitem_id_y
+                      : (Intrinsic::ID)Intrinsic::r600_read_tidig_y;
     break;
 
   case 2:
-    IntrID = IsAMDGCN ? Intrinsic::amdgcn_workitem_id_z
-      : Intrinsic::r600_read_tidig_z;
+    IntrID = IsAMDGCN ? (Intrinsic::ID)Intrinsic::amdgcn_workitem_id_z
+                      : (Intrinsic::ID)Intrinsic::r600_read_tidig_z;
     break;
   default:
     llvm_unreachable("invalid dimension");
@@ -427,7 +432,7 @@ static bool tryPromoteAllocaToVector(AllocaInst *Alloca) {
       Value *Index = calculateVectorIndex(Ptr, GEPVectorIdx);
 
       Value *BitCast = Builder.CreateBitCast(Alloca, VecPtrTy);
-      Value *VecValue = Builder.CreateLoad(BitCast);
+      Value *VecValue = Builder.CreateLoad(VectorTy, BitCast);
       Value *ExtractElement = Builder.CreateExtractElement(VecValue, Index);
       Inst->replaceAllUsesWith(ExtractElement);
       Inst->eraseFromParent();
@@ -442,7 +447,7 @@ static bool tryPromoteAllocaToVector(AllocaInst *Alloca) {
       Value *Ptr = SI->getPointerOperand();
       Value *Index = calculateVectorIndex(Ptr, GEPVectorIdx);
       Value *BitCast = Builder.CreateBitCast(Alloca, VecPtrTy);
-      Value *VecValue = Builder.CreateLoad(BitCast);
+      Value *VecValue = Builder.CreateLoad(VectorTy, BitCast);
       Value *NewVecValue = Builder.CreateInsertElement(VecValue,
                                                        SI->getValueOperand(),
                                                        Index);
@@ -645,7 +650,7 @@ bool AMDGPUPromoteAlloca::hasSufficientLocalMem(const Function &F) {
   // Check how much local memory is being used by global objects
   CurrentLocalMemUsage = 0;
   for (GlobalVariable &GV : Mod->globals()) {
-    if (GV.getType()->getAddressSpace() != AMDGPUAS::LOCAL_ADDRESS)
+    if (GV.getAddressSpace() != AMDGPUAS::LOCAL_ADDRESS)
       continue;
 
     for (const User *U : GV.users()) {
@@ -798,7 +803,7 @@ bool AMDGPUPromoteAlloca::handleAlloca(AllocaInst &I, bool SufficientLDS) {
       GlobalVariable::NotThreadLocal,
       AMDGPUAS::LOCAL_ADDRESS);
   GV->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
-  GV->setAlignment(I.getAlignment());
+  GV->setAlignment(MaybeAlign(I.getAlignment()));
 
   Value *TCntY, *TCntZ;
 
@@ -879,25 +884,25 @@ bool AMDGPUPromoteAlloca::handleAlloca(AllocaInst &I, bool SufficientLDS) {
       continue;
     case Intrinsic::memcpy: {
       MemCpyInst *MemCpy = cast<MemCpyInst>(Intr);
-      Builder.CreateMemCpy(MemCpy->getRawDest(), MemCpy->getDestAlignment(),
-                           MemCpy->getRawSource(), MemCpy->getSourceAlignment(),
+      Builder.CreateMemCpy(MemCpy->getRawDest(), MemCpy->getDestAlign(),
+                           MemCpy->getRawSource(), MemCpy->getSourceAlign(),
                            MemCpy->getLength(), MemCpy->isVolatile());
       Intr->eraseFromParent();
       continue;
     }
     case Intrinsic::memmove: {
       MemMoveInst *MemMove = cast<MemMoveInst>(Intr);
-      Builder.CreateMemMove(MemMove->getRawDest(), MemMove->getDestAlignment(),
-                            MemMove->getRawSource(), MemMove->getSourceAlignment(),
+      Builder.CreateMemMove(MemMove->getRawDest(), MemMove->getDestAlign(),
+                            MemMove->getRawSource(), MemMove->getSourceAlign(),
                             MemMove->getLength(), MemMove->isVolatile());
       Intr->eraseFromParent();
       continue;
     }
     case Intrinsic::memset: {
       MemSetInst *MemSet = cast<MemSetInst>(Intr);
-      Builder.CreateMemSet(MemSet->getRawDest(), MemSet->getValue(),
-                           MemSet->getLength(), MemSet->getDestAlignment(),
-                           MemSet->isVolatile());
+      Builder.CreateMemSet(
+          MemSet->getRawDest(), MemSet->getValue(), MemSet->getLength(),
+          MaybeAlign(MemSet->getDestAlignment()), MemSet->isVolatile());
       Intr->eraseFromParent();
       continue;
     }
@@ -919,7 +924,8 @@ bool AMDGPUPromoteAlloca::handleAlloca(AllocaInst &I, bool SufficientLDS) {
       );
 
       CallInst *NewCall = Builder.CreateCall(
-          ObjectSize, {Src, Intr->getOperand(1), Intr->getOperand(2)});
+          ObjectSize,
+          {Src, Intr->getOperand(1), Intr->getOperand(2), Intr->getOperand(3)});
       Intr->replaceAllUsesWith(NewCall);
       Intr->eraseFromParent();
       continue;

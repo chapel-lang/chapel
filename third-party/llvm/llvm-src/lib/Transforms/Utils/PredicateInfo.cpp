@@ -1,9 +1,8 @@
 //===-- PredicateInfo.cpp - PredicateInfo Builder--------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------===//
 //
@@ -31,6 +30,7 @@
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/DebugCounter.h"
 #include "llvm/Support/FormattedStream.h"
@@ -126,8 +126,10 @@ static bool valueComesBefore(OrderedInstructions &OI, const Value *A,
 // necessary to compare uses/defs in the same block.  Doing so allows us to walk
 // the minimum number of instructions necessary to compute our def/use ordering.
 struct ValueDFS_Compare {
+  DominatorTree &DT;
   OrderedInstructions &OI;
-  ValueDFS_Compare(OrderedInstructions &OI) : OI(OI) {}
+  ValueDFS_Compare(DominatorTree &DT, OrderedInstructions &OI)
+      : DT(DT), OI(OI) {}
 
   bool operator()(const ValueDFS &A, const ValueDFS &B) const {
     if (&A == &B)
@@ -137,7 +139,9 @@ struct ValueDFS_Compare {
     // comesbefore to see what the real ordering is, because they are in the
     // same basic block.
 
-    bool SameBlock = std::tie(A.DFSIn, A.DFSOut) == std::tie(B.DFSIn, B.DFSOut);
+    assert((A.DFSIn != B.DFSIn || A.DFSOut == B.DFSOut) &&
+           "Equal DFS-in numbers imply equal out numbers");
+    bool SameBlock = A.DFSIn == B.DFSIn;
 
     // We want to put the def that will get used for a given set of phi uses,
     // before those phi uses.
@@ -146,9 +150,11 @@ struct ValueDFS_Compare {
     if (SameBlock && A.LocalNum == LN_Last && B.LocalNum == LN_Last)
       return comparePHIRelated(A, B);
 
+    bool isADef = A.Def;
+    bool isBDef = B.Def;
     if (!SameBlock || A.LocalNum != LN_Middle || B.LocalNum != LN_Middle)
-      return std::tie(A.DFSIn, A.DFSOut, A.LocalNum, A.Def, A.U) <
-             std::tie(B.DFSIn, B.DFSOut, B.LocalNum, B.Def, B.U);
+      return std::tie(A.DFSIn, A.LocalNum, isADef) <
+             std::tie(B.DFSIn, B.LocalNum, isBDef);
     return localComesBefore(A, B);
   }
 
@@ -165,10 +171,35 @@ struct ValueDFS_Compare {
 
   // For two phi related values, return the ordering.
   bool comparePHIRelated(const ValueDFS &A, const ValueDFS &B) const {
-    auto &ABlockEdge = getBlockEdge(A);
-    auto &BBlockEdge = getBlockEdge(B);
-    // Now sort by block edge and then defs before uses.
-    return std::tie(ABlockEdge, A.Def, A.U) < std::tie(BBlockEdge, B.Def, B.U);
+    BasicBlock *ASrc, *ADest, *BSrc, *BDest;
+    std::tie(ASrc, ADest) = getBlockEdge(A);
+    std::tie(BSrc, BDest) = getBlockEdge(B);
+
+#ifndef NDEBUG
+    // This function should only be used for values in the same BB, check that.
+    DomTreeNode *DomASrc = DT.getNode(ASrc);
+    DomTreeNode *DomBSrc = DT.getNode(BSrc);
+    assert(DomASrc->getDFSNumIn() == (unsigned)A.DFSIn &&
+           "DFS numbers for A should match the ones of the source block");
+    assert(DomBSrc->getDFSNumIn() == (unsigned)B.DFSIn &&
+           "DFS numbers for B should match the ones of the source block");
+    assert(A.DFSIn == B.DFSIn && "Values must be in the same block");
+#endif
+    (void)ASrc;
+    (void)BSrc;
+
+    // Use DFS numbers to compare destination blocks, to guarantee a
+    // deterministic order.
+    DomTreeNode *DomADest = DT.getNode(ADest);
+    DomTreeNode *DomBDest = DT.getNode(BDest);
+    unsigned AIn = DomADest->getDFSNumIn();
+    unsigned BIn = DomBDest->getDFSNumIn();
+    bool isADef = A.Def;
+    bool isBDef = B.Def;
+    assert((!A.Def || !A.U) && (!B.Def || !B.U) &&
+           "Def and U cannot be set at the same time");
+    // Now sort by edge destination and then defs before uses.
+    return std::tie(AIn, isADef) < std::tie(BIn, isBDef);
   }
 
   // Get the definition of an instruction that occurs in the middle of a block.
@@ -307,10 +338,11 @@ void collectCmpOps(CmpInst *Comparison, SmallVectorImpl<Value *> &CmpOperands) {
 }
 
 // Add Op, PB to the list of value infos for Op, and mark Op to be renamed.
-void PredicateInfo::addInfoFor(SmallPtrSetImpl<Value *> &OpsToRename, Value *Op,
+void PredicateInfo::addInfoFor(SmallVectorImpl<Value *> &OpsToRename, Value *Op,
                                PredicateBase *PB) {
-  OpsToRename.insert(Op);
   auto &OperandInfo = getOrCreateValueInfo(Op);
+  if (OperandInfo.Infos.empty())
+    OpsToRename.push_back(Op);
   AllInfos.push_back(PB);
   OperandInfo.Infos.push_back(PB);
 }
@@ -318,7 +350,7 @@ void PredicateInfo::addInfoFor(SmallPtrSetImpl<Value *> &OpsToRename, Value *Op,
 // Process an assume instruction and place relevant operations we want to rename
 // into OpsToRename.
 void PredicateInfo::processAssume(IntrinsicInst *II, BasicBlock *AssumeBB,
-                                  SmallPtrSetImpl<Value *> &OpsToRename) {
+                                  SmallVectorImpl<Value *> &OpsToRename) {
   // See if we have a comparison we support
   SmallVector<Value *, 8> CmpOperands;
   SmallVector<Value *, 2> ConditionsToProcess;
@@ -358,7 +390,7 @@ void PredicateInfo::processAssume(IntrinsicInst *II, BasicBlock *AssumeBB,
 // Process a block terminating branch, and place relevant operations to be
 // renamed into OpsToRename.
 void PredicateInfo::processBranch(BranchInst *BI, BasicBlock *BranchBB,
-                                  SmallPtrSetImpl<Value *> &OpsToRename) {
+                                  SmallVectorImpl<Value *> &OpsToRename) {
   BasicBlock *FirstBB = BI->getSuccessor(0);
   BasicBlock *SecondBB = BI->getSuccessor(1);
   SmallVector<BasicBlock *, 2> SuccsToProcess;
@@ -428,7 +460,7 @@ void PredicateInfo::processBranch(BranchInst *BI, BasicBlock *BranchBB,
 // Process a block terminating switch, and place relevant operations to be
 // renamed into OpsToRename.
 void PredicateInfo::processSwitch(SwitchInst *SI, BasicBlock *BranchBB,
-                                  SmallPtrSetImpl<Value *> &OpsToRename) {
+                                  SmallVectorImpl<Value *> &OpsToRename) {
   Value *Op = SI->getCondition();
   if ((!isa<Instruction>(Op) && !isa<Argument>(Op)) || Op->hasOneUse())
     return;
@@ -458,7 +490,7 @@ void PredicateInfo::buildPredicateInfo() {
   DT.updateDFSNumbers();
   // Collect operands to rename from all conditional branch terminators, as well
   // as assume statements.
-  SmallPtrSet<Value *, 8> OpsToRename;
+  SmallVector<Value *, 8> OpsToRename;
   for (auto DTN : depth_first(DT.getRootNode())) {
     BasicBlock *BranchBB = DTN->getBlock();
     if (auto *BI = dyn_cast<BranchInst>(BranchBB->getTerminator())) {
@@ -474,7 +506,8 @@ void PredicateInfo::buildPredicateInfo() {
   }
   for (auto &Assume : AC.assumptions()) {
     if (auto *II = dyn_cast_or_null<IntrinsicInst>(Assume))
-      processAssume(II, II->getParent(), OpsToRename);
+      if (DT.isReachableFromEntry(II->getParent()))
+        processAssume(II, II->getParent(), OpsToRename);
   }
   // Now rename all our operations.
   renameUses(OpsToRename);
@@ -489,8 +522,10 @@ void PredicateInfo::buildPredicateInfo() {
 // tricky (FIXME).
 static Function *getCopyDeclaration(Module *M, Type *Ty) {
   std::string Name = "llvm.ssa.copy." + utostr((uintptr_t) Ty);
-  return cast<Function>(M->getOrInsertFunction(
-      Name, getType(M->getContext(), Intrinsic::ssa_copy, Ty)));
+  return cast<Function>(
+      M->getOrInsertFunction(Name,
+                             getType(M->getContext(), Intrinsic::ssa_copy, Ty))
+          .getCallee());
 }
 
 // Given the renaming stack, make all the operands currently on the stack real
@@ -522,7 +557,7 @@ Value *PredicateInfo::materializeStack(unsigned int &Counter,
     if (isa<PredicateWithEdge>(ValInfo)) {
       IRBuilder<> B(getBranchTerminator(ValInfo));
       Function *IF = getCopyDeclaration(F.getParent(), Op->getType());
-      if (empty(IF->users()))
+      if (IF->users().empty())
         CreatedDeclarations.insert(IF);
       CallInst *PIC =
           B.CreateCall(IF, Op, Op->getName() + "." + Twine(Counter++));
@@ -534,7 +569,7 @@ Value *PredicateInfo::materializeStack(unsigned int &Counter,
              "Should not have gotten here without it being an assume");
       IRBuilder<> B(PAssume->AssumeInst);
       Function *IF = getCopyDeclaration(F.getParent(), Op->getType());
-      if (empty(IF->users()))
+      if (IF->users().empty())
         CreatedDeclarations.insert(IF);
       CallInst *PIC = B.CreateCall(IF, Op);
       PredicateMap.insert({PIC, ValInfo});
@@ -563,14 +598,8 @@ Value *PredicateInfo::materializeStack(unsigned int &Counter,
 //
 // TODO: Use this algorithm to perform fast single-variable renaming in
 // promotememtoreg and memoryssa.
-void PredicateInfo::renameUses(SmallPtrSetImpl<Value *> &OpSet) {
-  // Sort OpsToRename since we are going to iterate it.
-  SmallVector<Value *, 8> OpsToRename(OpSet.begin(), OpSet.end());
-  auto Comparator = [&](const Value *A, const Value *B) {
-    return valueComesBefore(OI, A, B);
-  };
-  llvm::sort(OpsToRename, Comparator);
-  ValueDFS_Compare Compare(OI);
+void PredicateInfo::renameUses(SmallVectorImpl<Value *> &OpsToRename) {
+  ValueDFS_Compare Compare(DT, OI);
   // Compute liveness, and rename in O(uses) per Op.
   for (auto *Op : OpsToRename) {
     LLVM_DEBUG(dbgs() << "Visiting " << *Op << "\n");
@@ -633,7 +662,7 @@ void PredicateInfo::renameUses(SmallPtrSetImpl<Value *> &OpSet) {
     // uses in the same instruction do not have a strict sort order
     // currently and will be considered equal. We could get rid of the
     // stable sort by creating one if we wanted.
-    std::stable_sort(OrderedUses.begin(), OrderedUses.end(), Compare);
+    llvm::stable_sort(OrderedUses, Compare);
     SmallVector<ValueDFS, 8> RenameStack;
     // For each use, sorted into dfs order, push values and replaces uses with
     // top of stack, which will represent the reaching def.
@@ -770,7 +799,7 @@ static void replaceCreatedSSACopys(PredicateInfo &PredInfo, Function &F) {
 bool PredicateInfoPrinterLegacyPass::runOnFunction(Function &F) {
   auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   auto &AC = getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
-  auto PredInfo = make_unique<PredicateInfo>(F, DT, AC);
+  auto PredInfo = std::make_unique<PredicateInfo>(F, DT, AC);
   PredInfo->print(dbgs());
   if (VerifyPredicateInfo)
     PredInfo->verifyPredicateInfo();
@@ -784,7 +813,7 @@ PreservedAnalyses PredicateInfoPrinterPass::run(Function &F,
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
   OS << "PredicateInfo for function: " << F.getName() << "\n";
-  auto PredInfo = make_unique<PredicateInfo>(F, DT, AC);
+  auto PredInfo = std::make_unique<PredicateInfo>(F, DT, AC);
   PredInfo->print(OS);
 
   replaceCreatedSSACopys(*PredInfo, F);
@@ -843,7 +872,7 @@ PreservedAnalyses PredicateInfoVerifierPass::run(Function &F,
                                                  FunctionAnalysisManager &AM) {
   auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
   auto &AC = AM.getResult<AssumptionAnalysis>(F);
-  make_unique<PredicateInfo>(F, DT, AC)->verifyPredicateInfo();
+  std::make_unique<PredicateInfo>(F, DT, AC)->verifyPredicateInfo();
 
   return PreservedAnalyses::all();
 }

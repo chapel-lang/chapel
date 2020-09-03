@@ -1,9 +1,8 @@
 //===- MachineVerifier.cpp - Machine Code Verifier ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,7 +22,6 @@
 // the verifier errors.
 //===----------------------------------------------------------------------===//
 
-#include "LiveRangeCalc.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
@@ -38,6 +36,7 @@
 #include "llvm/CodeGen/GlobalISel/RegisterBank.h"
 #include "llvm/CodeGen/LiveInterval.h"
 #include "llvm/CodeGen/LiveIntervals.h"
+#include "llvm/CodeGen/LiveRangeCalc.h"
 #include "llvm/CodeGen/LiveStacks.h"
 #include "llvm/CodeGen/LiveVariables.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
@@ -60,6 +59,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/MC/LaneBitmask.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCInstrDesc.h"
@@ -123,9 +123,9 @@ namespace {
     // Add Reg and any sub-registers to RV
     void addRegWithSubRegs(RegVector &RV, unsigned Reg) {
       RV.push_back(Reg);
-      if (TargetRegisterInfo::isPhysicalRegister(Reg))
-        for (MCSubRegIterator SubRegs(Reg, TRI); SubRegs.isValid(); ++SubRegs)
-          RV.push_back(*SubRegs);
+      if (Register::isPhysicalRegister(Reg))
+        for (const MCPhysReg &SubReg : TRI->subregs(Reg))
+          RV.push_back(SubReg);
     }
 
     struct BBInfo {
@@ -160,7 +160,7 @@ namespace {
       // Add register to vregsPassed if it belongs there. Return true if
       // anything changed.
       bool addPassed(unsigned Reg) {
-        if (!TargetRegisterInfo::isVirtualRegister(Reg))
+        if (!Register::isVirtualRegister(Reg))
           return false;
         if (regsKilled.count(Reg) || regsLiveOut.count(Reg))
           return false;
@@ -179,7 +179,7 @@ namespace {
       // Add register to vregsRequired if it belongs there. Return true if
       // anything changed.
       bool addRequired(unsigned Reg) {
-        if (!TargetRegisterInfo::isVirtualRegister(Reg))
+        if (!Register::isVirtualRegister(Reg))
           return false;
         if (regsLiveOut.count(Reg))
           return false;
@@ -219,7 +219,7 @@ namespace {
 
     bool isAllocatable(unsigned Reg) const {
       return Reg < TRI->getNumRegs() && TRI->isInAllocatableClass(Reg) &&
-        !regsReserved.test(Reg);
+             !regsReserved.test(Reg);
     }
 
     // Analysis information if available
@@ -231,6 +231,9 @@ namespace {
     void visitMachineFunctionBefore();
     void visitMachineBasicBlockBefore(const MachineBasicBlock *MBB);
     void visitMachineBundleBefore(const MachineInstr *MI);
+
+    bool verifyVectorElementMatch(LLT Ty0, LLT Ty1, const MachineInstr *MI);
+    void verifyPreISelGenericInstruction(const MachineInstr *MI);
     void visitMachineInstrBefore(const MachineInstr *MI);
     void visitMachineOperand(const MachineOperand *MO, unsigned MONum);
     void visitMachineInstrAfter(const MachineInstr *MI);
@@ -550,7 +553,7 @@ void MachineVerifier::report_context_vreg(unsigned VReg) const {
 }
 
 void MachineVerifier::report_context_vreg_regunit(unsigned VRegOrUnit) const {
-  if (TargetRegisterInfo::isVirtualRegister(VRegOrUnit)) {
+  if (Register::isVirtualRegister(VRegOrUnit)) {
     report_context_vreg(VRegOrUnit);
   } else {
     errs() << "- regunit:     " << printRegUnit(VRegOrUnit, TRI) << '\n';
@@ -795,22 +798,20 @@ MachineVerifier::visitMachineBasicBlockBefore(const MachineBasicBlock *MBB) {
   regsLive.clear();
   if (MRI->tracksLiveness()) {
     for (const auto &LI : MBB->liveins()) {
-      if (!TargetRegisterInfo::isPhysicalRegister(LI.PhysReg)) {
+      if (!Register::isPhysicalRegister(LI.PhysReg)) {
         report("MBB live-in list contains non-physical register", MBB);
         continue;
       }
-      for (MCSubRegIterator SubRegs(LI.PhysReg, TRI, /*IncludeSelf=*/true);
-           SubRegs.isValid(); ++SubRegs)
-        regsLive.insert(*SubRegs);
+      for (const MCPhysReg &SubReg : TRI->subregs_inclusive(LI.PhysReg))
+        regsLive.insert(SubReg);
     }
   }
 
   const MachineFrameInfo &MFI = MF->getFrameInfo();
   BitVector PR = MFI.getPristineRegs(*MF);
   for (unsigned I : PR.set_bits()) {
-    for (MCSubRegIterator SubRegs(I, TRI, /*IncludeSelf=*/true);
-         SubRegs.isValid(); ++SubRegs)
-      regsLive.insert(*SubRegs);
+    for (const MCPhysReg &SubReg : TRI->subregs_inclusive(I))
+      regsLive.insert(SubReg);
   }
 
   regsKilled.clear();
@@ -838,7 +839,7 @@ void MachineVerifier::visitMachineBundleBefore(const MachineInstr *MI) {
   if (MI->isTerminator() && !TII->isPredicated(*MI)) {
     if (!FirstTerminator)
       FirstTerminator = MI;
-  } else if (FirstTerminator) {
+  } else if (FirstTerminator && !MI->isDebugEntryValue()) {
     report("Non-terminator instruction after the first terminator", MI);
     errs() << "First terminator was:\t" << *FirstTerminator;
   }
@@ -886,6 +887,579 @@ void MachineVerifier::verifyInlineAsm(const MachineInstr *MI) {
     const MachineOperand &MO = MI->getOperand(OpNo);
     if (!MO.isReg() || !MO.isImplicit())
       report("Expected implicit register after groups", &MO, OpNo);
+  }
+}
+
+/// Check that types are consistent when two operands need to have the same
+/// number of vector elements.
+/// \return true if the types are valid.
+bool MachineVerifier::verifyVectorElementMatch(LLT Ty0, LLT Ty1,
+                                               const MachineInstr *MI) {
+  if (Ty0.isVector() != Ty1.isVector()) {
+    report("operand types must be all-vector or all-scalar", MI);
+    // Generally we try to report as many issues as possible at once, but in
+    // this case it's not clear what should we be comparing the size of the
+    // scalar with: the size of the whole vector or its lane. Instead of
+    // making an arbitrary choice and emitting not so helpful message, let's
+    // avoid the extra noise and stop here.
+    return false;
+  }
+
+  if (Ty0.isVector() && Ty0.getNumElements() != Ty1.getNumElements()) {
+    report("operand types must preserve number of vector elements", MI);
+    return false;
+  }
+
+  return true;
+}
+
+void MachineVerifier::verifyPreISelGenericInstruction(const MachineInstr *MI) {
+  if (isFunctionSelected)
+    report("Unexpected generic instruction in a Selected function", MI);
+
+  const MCInstrDesc &MCID = MI->getDesc();
+  unsigned NumOps = MI->getNumOperands();
+
+  // Check types.
+  SmallVector<LLT, 4> Types;
+  for (unsigned I = 0, E = std::min(MCID.getNumOperands(), NumOps);
+       I != E; ++I) {
+    if (!MCID.OpInfo[I].isGenericType())
+      continue;
+    // Generic instructions specify type equality constraints between some of
+    // their operands. Make sure these are consistent.
+    size_t TypeIdx = MCID.OpInfo[I].getGenericTypeIndex();
+    Types.resize(std::max(TypeIdx + 1, Types.size()));
+
+    const MachineOperand *MO = &MI->getOperand(I);
+    if (!MO->isReg()) {
+      report("generic instruction must use register operands", MI);
+      continue;
+    }
+
+    LLT OpTy = MRI->getType(MO->getReg());
+    // Don't report a type mismatch if there is no actual mismatch, only a
+    // type missing, to reduce noise:
+    if (OpTy.isValid()) {
+      // Only the first valid type for a type index will be printed: don't
+      // overwrite it later so it's always clear which type was expected:
+      if (!Types[TypeIdx].isValid())
+        Types[TypeIdx] = OpTy;
+      else if (Types[TypeIdx] != OpTy)
+        report("Type mismatch in generic instruction", MO, I, OpTy);
+    } else {
+      // Generic instructions must have types attached to their operands.
+      report("Generic instruction is missing a virtual register type", MO, I);
+    }
+  }
+
+  // Generic opcodes must not have physical register operands.
+  for (unsigned I = 0; I < MI->getNumOperands(); ++I) {
+    const MachineOperand *MO = &MI->getOperand(I);
+    if (MO->isReg() && Register::isPhysicalRegister(MO->getReg()))
+      report("Generic instruction cannot have physical register", MO, I);
+  }
+
+  // Avoid out of bounds in checks below. This was already reported earlier.
+  if (MI->getNumOperands() < MCID.getNumOperands())
+    return;
+
+  StringRef ErrorInfo;
+  if (!TII->verifyInstruction(*MI, ErrorInfo))
+    report(ErrorInfo.data(), MI);
+
+  // Verify properties of various specific instruction types
+  switch (MI->getOpcode()) {
+  case TargetOpcode::G_CONSTANT:
+  case TargetOpcode::G_FCONSTANT: {
+    if (MI->getNumOperands() < MCID.getNumOperands())
+      break;
+
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    if (DstTy.isVector())
+      report("Instruction cannot use a vector result type", MI);
+
+    if (MI->getOpcode() == TargetOpcode::G_CONSTANT) {
+      if (!MI->getOperand(1).isCImm()) {
+        report("G_CONSTANT operand must be cimm", MI);
+        break;
+      }
+
+      const ConstantInt *CI = MI->getOperand(1).getCImm();
+      if (CI->getBitWidth() != DstTy.getSizeInBits())
+        report("inconsistent constant size", MI);
+    } else {
+      if (!MI->getOperand(1).isFPImm()) {
+        report("G_FCONSTANT operand must be fpimm", MI);
+        break;
+      }
+      const ConstantFP *CF = MI->getOperand(1).getFPImm();
+
+      if (APFloat::getSizeInBits(CF->getValueAPF().getSemantics()) !=
+          DstTy.getSizeInBits()) {
+        report("inconsistent constant size", MI);
+      }
+    }
+
+    break;
+  }
+  case TargetOpcode::G_LOAD:
+  case TargetOpcode::G_STORE:
+  case TargetOpcode::G_ZEXTLOAD:
+  case TargetOpcode::G_SEXTLOAD: {
+    LLT ValTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT PtrTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!PtrTy.isPointer())
+      report("Generic memory instruction must access a pointer", MI);
+
+    // Generic loads and stores must have a single MachineMemOperand
+    // describing that access.
+    if (!MI->hasOneMemOperand()) {
+      report("Generic instruction accessing memory must have one mem operand",
+             MI);
+    } else {
+      const MachineMemOperand &MMO = **MI->memoperands_begin();
+      if (MI->getOpcode() == TargetOpcode::G_ZEXTLOAD ||
+          MI->getOpcode() == TargetOpcode::G_SEXTLOAD) {
+        if (MMO.getSizeInBits() >= ValTy.getSizeInBits())
+          report("Generic extload must have a narrower memory type", MI);
+      } else if (MI->getOpcode() == TargetOpcode::G_LOAD) {
+        if (MMO.getSize() > ValTy.getSizeInBytes())
+          report("load memory size cannot exceed result size", MI);
+      } else if (MI->getOpcode() == TargetOpcode::G_STORE) {
+        if (ValTy.getSizeInBytes() < MMO.getSize())
+          report("store memory size cannot exceed value size", MI);
+      }
+    }
+
+    break;
+  }
+  case TargetOpcode::G_PHI: {
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    if (!DstTy.isValid() ||
+        !std::all_of(MI->operands_begin() + 1, MI->operands_end(),
+                     [this, &DstTy](const MachineOperand &MO) {
+                       if (!MO.isReg())
+                         return true;
+                       LLT Ty = MRI->getType(MO.getReg());
+                       if (!Ty.isValid() || (Ty != DstTy))
+                         return false;
+                       return true;
+                     }))
+      report("Generic Instruction G_PHI has operands with incompatible/missing "
+             "types",
+             MI);
+    break;
+  }
+  case TargetOpcode::G_BITCAST: {
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!DstTy.isValid() || !SrcTy.isValid())
+      break;
+
+    if (SrcTy.isPointer() != DstTy.isPointer())
+      report("bitcast cannot convert between pointers and other types", MI);
+
+    if (SrcTy.getSizeInBits() != DstTy.getSizeInBits())
+      report("bitcast sizes must match", MI);
+    break;
+  }
+  case TargetOpcode::G_INTTOPTR:
+  case TargetOpcode::G_PTRTOINT:
+  case TargetOpcode::G_ADDRSPACE_CAST: {
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!DstTy.isValid() || !SrcTy.isValid())
+      break;
+
+    verifyVectorElementMatch(DstTy, SrcTy, MI);
+
+    DstTy = DstTy.getScalarType();
+    SrcTy = SrcTy.getScalarType();
+
+    if (MI->getOpcode() == TargetOpcode::G_INTTOPTR) {
+      if (!DstTy.isPointer())
+        report("inttoptr result type must be a pointer", MI);
+      if (SrcTy.isPointer())
+        report("inttoptr source type must not be a pointer", MI);
+    } else if (MI->getOpcode() == TargetOpcode::G_PTRTOINT) {
+      if (!SrcTy.isPointer())
+        report("ptrtoint source type must be a pointer", MI);
+      if (DstTy.isPointer())
+        report("ptrtoint result type must not be a pointer", MI);
+    } else {
+      assert(MI->getOpcode() == TargetOpcode::G_ADDRSPACE_CAST);
+      if (!SrcTy.isPointer() || !DstTy.isPointer())
+        report("addrspacecast types must be pointers", MI);
+      else {
+        if (SrcTy.getAddressSpace() == DstTy.getAddressSpace())
+          report("addrspacecast must convert different address spaces", MI);
+      }
+    }
+
+    break;
+  }
+  case TargetOpcode::G_PTR_ADD: {
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT PtrTy = MRI->getType(MI->getOperand(1).getReg());
+    LLT OffsetTy = MRI->getType(MI->getOperand(2).getReg());
+    if (!DstTy.isValid() || !PtrTy.isValid() || !OffsetTy.isValid())
+      break;
+
+    if (!PtrTy.getScalarType().isPointer())
+      report("gep first operand must be a pointer", MI);
+
+    if (OffsetTy.getScalarType().isPointer())
+      report("gep offset operand must not be a pointer", MI);
+
+    // TODO: Is the offset allowed to be a scalar with a vector?
+    break;
+  }
+  case TargetOpcode::G_SEXT:
+  case TargetOpcode::G_ZEXT:
+  case TargetOpcode::G_ANYEXT:
+  case TargetOpcode::G_TRUNC:
+  case TargetOpcode::G_FPEXT:
+  case TargetOpcode::G_FPTRUNC: {
+    // Number of operands and presense of types is already checked (and
+    // reported in case of any issues), so no need to report them again. As
+    // we're trying to report as many issues as possible at once, however, the
+    // instructions aren't guaranteed to have the right number of operands or
+    // types attached to them at this point
+    assert(MCID.getNumOperands() == 2 && "Expected 2 operands G_*{EXT,TRUNC}");
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!DstTy.isValid() || !SrcTy.isValid())
+      break;
+
+    LLT DstElTy = DstTy.getScalarType();
+    LLT SrcElTy = SrcTy.getScalarType();
+    if (DstElTy.isPointer() || SrcElTy.isPointer())
+      report("Generic extend/truncate can not operate on pointers", MI);
+
+    verifyVectorElementMatch(DstTy, SrcTy, MI);
+
+    unsigned DstSize = DstElTy.getSizeInBits();
+    unsigned SrcSize = SrcElTy.getSizeInBits();
+    switch (MI->getOpcode()) {
+    default:
+      if (DstSize <= SrcSize)
+        report("Generic extend has destination type no larger than source", MI);
+      break;
+    case TargetOpcode::G_TRUNC:
+    case TargetOpcode::G_FPTRUNC:
+      if (DstSize >= SrcSize)
+        report("Generic truncate has destination type no smaller than source",
+               MI);
+      break;
+    }
+    break;
+  }
+  case TargetOpcode::G_SELECT: {
+    LLT SelTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT CondTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!SelTy.isValid() || !CondTy.isValid())
+      break;
+
+    // Scalar condition select on a vector is valid.
+    if (CondTy.isVector())
+      verifyVectorElementMatch(SelTy, CondTy, MI);
+    break;
+  }
+  case TargetOpcode::G_MERGE_VALUES: {
+    // G_MERGE_VALUES should only be used to merge scalars into a larger scalar,
+    // e.g. s2N = MERGE sN, sN
+    // Merging multiple scalars into a vector is not allowed, should use
+    // G_BUILD_VECTOR for that.
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
+    if (DstTy.isVector() || SrcTy.isVector())
+      report("G_MERGE_VALUES cannot operate on vectors", MI);
+
+    const unsigned NumOps = MI->getNumOperands();
+    if (DstTy.getSizeInBits() != SrcTy.getSizeInBits() * (NumOps - 1))
+      report("G_MERGE_VALUES result size is inconsistent", MI);
+
+    for (unsigned I = 2; I != NumOps; ++I) {
+      if (MRI->getType(MI->getOperand(I).getReg()) != SrcTy)
+        report("G_MERGE_VALUES source types do not match", MI);
+    }
+
+    break;
+  }
+  case TargetOpcode::G_UNMERGE_VALUES: {
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(MI->getNumOperands()-1).getReg());
+    // For now G_UNMERGE can split vectors.
+    for (unsigned i = 0; i < MI->getNumOperands()-1; ++i) {
+      if (MRI->getType(MI->getOperand(i).getReg()) != DstTy)
+        report("G_UNMERGE_VALUES destination types do not match", MI);
+    }
+    if (SrcTy.getSizeInBits() !=
+        (DstTy.getSizeInBits() * (MI->getNumOperands() - 1))) {
+      report("G_UNMERGE_VALUES source operand does not cover dest operands",
+             MI);
+    }
+    break;
+  }
+  case TargetOpcode::G_BUILD_VECTOR: {
+    // Source types must be scalars, dest type a vector. Total size of scalars
+    // must match the dest vector size.
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcEltTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!DstTy.isVector() || SrcEltTy.isVector()) {
+      report("G_BUILD_VECTOR must produce a vector from scalar operands", MI);
+      break;
+    }
+
+    if (DstTy.getElementType() != SrcEltTy)
+      report("G_BUILD_VECTOR result element type must match source type", MI);
+
+    if (DstTy.getNumElements() != MI->getNumOperands() - 1)
+      report("G_BUILD_VECTOR must have an operand for each elemement", MI);
+
+    for (unsigned i = 2; i < MI->getNumOperands(); ++i) {
+      if (MRI->getType(MI->getOperand(1).getReg()) !=
+          MRI->getType(MI->getOperand(i).getReg()))
+        report("G_BUILD_VECTOR source operand types are not homogeneous", MI);
+    }
+
+    break;
+  }
+  case TargetOpcode::G_BUILD_VECTOR_TRUNC: {
+    // Source types must be scalars, dest type a vector. Scalar types must be
+    // larger than the dest vector elt type, as this is a truncating operation.
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcEltTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!DstTy.isVector() || SrcEltTy.isVector())
+      report("G_BUILD_VECTOR_TRUNC must produce a vector from scalar operands",
+             MI);
+    for (unsigned i = 2; i < MI->getNumOperands(); ++i) {
+      if (MRI->getType(MI->getOperand(1).getReg()) !=
+          MRI->getType(MI->getOperand(i).getReg()))
+        report("G_BUILD_VECTOR_TRUNC source operand types are not homogeneous",
+               MI);
+    }
+    if (SrcEltTy.getSizeInBits() <= DstTy.getElementType().getSizeInBits())
+      report("G_BUILD_VECTOR_TRUNC source operand types are not larger than "
+             "dest elt type",
+             MI);
+    break;
+  }
+  case TargetOpcode::G_CONCAT_VECTORS: {
+    // Source types should be vectors, and total size should match the dest
+    // vector size.
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
+    if (!DstTy.isVector() || !SrcTy.isVector())
+      report("G_CONCAT_VECTOR requires vector source and destination operands",
+             MI);
+    for (unsigned i = 2; i < MI->getNumOperands(); ++i) {
+      if (MRI->getType(MI->getOperand(1).getReg()) !=
+          MRI->getType(MI->getOperand(i).getReg()))
+        report("G_CONCAT_VECTOR source operand types are not homogeneous", MI);
+    }
+    if (DstTy.getNumElements() !=
+        SrcTy.getNumElements() * (MI->getNumOperands() - 1))
+      report("G_CONCAT_VECTOR num dest and source elements should match", MI);
+    break;
+  }
+  case TargetOpcode::G_ICMP:
+  case TargetOpcode::G_FCMP: {
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(2).getReg());
+
+    if ((DstTy.isVector() != SrcTy.isVector()) ||
+        (DstTy.isVector() && DstTy.getNumElements() != SrcTy.getNumElements()))
+      report("Generic vector icmp/fcmp must preserve number of lanes", MI);
+
+    break;
+  }
+  case TargetOpcode::G_EXTRACT: {
+    const MachineOperand &SrcOp = MI->getOperand(1);
+    if (!SrcOp.isReg()) {
+      report("extract source must be a register", MI);
+      break;
+    }
+
+    const MachineOperand &OffsetOp = MI->getOperand(2);
+    if (!OffsetOp.isImm()) {
+      report("extract offset must be a constant", MI);
+      break;
+    }
+
+    unsigned DstSize = MRI->getType(MI->getOperand(0).getReg()).getSizeInBits();
+    unsigned SrcSize = MRI->getType(SrcOp.getReg()).getSizeInBits();
+    if (SrcSize == DstSize)
+      report("extract source must be larger than result", MI);
+
+    if (DstSize + OffsetOp.getImm() > SrcSize)
+      report("extract reads past end of register", MI);
+    break;
+  }
+  case TargetOpcode::G_INSERT: {
+    const MachineOperand &SrcOp = MI->getOperand(2);
+    if (!SrcOp.isReg()) {
+      report("insert source must be a register", MI);
+      break;
+    }
+
+    const MachineOperand &OffsetOp = MI->getOperand(3);
+    if (!OffsetOp.isImm()) {
+      report("insert offset must be a constant", MI);
+      break;
+    }
+
+    unsigned DstSize = MRI->getType(MI->getOperand(0).getReg()).getSizeInBits();
+    unsigned SrcSize = MRI->getType(SrcOp.getReg()).getSizeInBits();
+
+    if (DstSize <= SrcSize)
+      report("inserted size must be smaller than total register", MI);
+
+    if (SrcSize + OffsetOp.getImm() > DstSize)
+      report("insert writes past end of register", MI);
+
+    break;
+  }
+  case TargetOpcode::G_JUMP_TABLE: {
+    if (!MI->getOperand(1).isJTI())
+      report("G_JUMP_TABLE source operand must be a jump table index", MI);
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    if (!DstTy.isPointer())
+      report("G_JUMP_TABLE dest operand must have a pointer type", MI);
+    break;
+  }
+  case TargetOpcode::G_BRJT: {
+    if (!MRI->getType(MI->getOperand(0).getReg()).isPointer())
+      report("G_BRJT src operand 0 must be a pointer type", MI);
+
+    if (!MI->getOperand(1).isJTI())
+      report("G_BRJT src operand 1 must be a jump table index", MI);
+
+    const auto &IdxOp = MI->getOperand(2);
+    if (!IdxOp.isReg() || MRI->getType(IdxOp.getReg()).isPointer())
+      report("G_BRJT src operand 2 must be a scalar reg type", MI);
+    break;
+  }
+  case TargetOpcode::G_INTRINSIC:
+  case TargetOpcode::G_INTRINSIC_W_SIDE_EFFECTS: {
+    // TODO: Should verify number of def and use operands, but the current
+    // interface requires passing in IR types for mangling.
+    const MachineOperand &IntrIDOp = MI->getOperand(MI->getNumExplicitDefs());
+    if (!IntrIDOp.isIntrinsicID()) {
+      report("G_INTRINSIC first src operand must be an intrinsic ID", MI);
+      break;
+    }
+
+    bool NoSideEffects = MI->getOpcode() == TargetOpcode::G_INTRINSIC;
+    unsigned IntrID = IntrIDOp.getIntrinsicID();
+    if (IntrID != 0 && IntrID < Intrinsic::num_intrinsics) {
+      AttributeList Attrs
+        = Intrinsic::getAttributes(MF->getFunction().getContext(),
+                                   static_cast<Intrinsic::ID>(IntrID));
+      bool DeclHasSideEffects = !Attrs.hasFnAttribute(Attribute::ReadNone);
+      if (NoSideEffects && DeclHasSideEffects) {
+        report("G_INTRINSIC used with intrinsic that accesses memory", MI);
+        break;
+      }
+      if (!NoSideEffects && !DeclHasSideEffects) {
+        report("G_INTRINSIC_W_SIDE_EFFECTS used with readnone intrinsic", MI);
+        break;
+      }
+    }
+    switch (IntrID) {
+    case Intrinsic::memcpy:
+      if (MI->getNumOperands() != 5)
+        report("Expected memcpy intrinsic to have 5 operands", MI);
+      break;
+    case Intrinsic::memmove:
+      if (MI->getNumOperands() != 5)
+        report("Expected memmove intrinsic to have 5 operands", MI);
+      break;
+    case Intrinsic::memset:
+      if (MI->getNumOperands() != 5)
+        report("Expected memset intrinsic to have 5 operands", MI);
+      break;
+    }
+    break;
+  }
+  case TargetOpcode::G_SEXT_INREG: {
+    if (!MI->getOperand(2).isImm()) {
+      report("G_SEXT_INREG expects an immediate operand #2", MI);
+      break;
+    }
+
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
+    verifyVectorElementMatch(DstTy, SrcTy, MI);
+
+    int64_t Imm = MI->getOperand(2).getImm();
+    if (Imm <= 0)
+      report("G_SEXT_INREG size must be >= 1", MI);
+    if (Imm >= SrcTy.getScalarSizeInBits())
+      report("G_SEXT_INREG size must be less than source bit width", MI);
+    break;
+  }
+  case TargetOpcode::G_SHUFFLE_VECTOR: {
+    const MachineOperand &MaskOp = MI->getOperand(3);
+    if (!MaskOp.isShuffleMask()) {
+      report("Incorrect mask operand type for G_SHUFFLE_VECTOR", MI);
+      break;
+    }
+
+    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
+    LLT Src0Ty = MRI->getType(MI->getOperand(1).getReg());
+    LLT Src1Ty = MRI->getType(MI->getOperand(2).getReg());
+
+    if (Src0Ty != Src1Ty)
+      report("Source operands must be the same type", MI);
+
+    if (Src0Ty.getScalarType() != DstTy.getScalarType())
+      report("G_SHUFFLE_VECTOR cannot change element type", MI);
+
+    // Don't check that all operands are vector because scalars are used in
+    // place of 1 element vectors.
+    int SrcNumElts = Src0Ty.isVector() ? Src0Ty.getNumElements() : 1;
+    int DstNumElts = DstTy.isVector() ? DstTy.getNumElements() : 1;
+
+    ArrayRef<int> MaskIdxes = MaskOp.getShuffleMask();
+
+    if (static_cast<int>(MaskIdxes.size()) != DstNumElts)
+      report("Wrong result type for shufflemask", MI);
+
+    for (int Idx : MaskIdxes) {
+      if (Idx < 0)
+        continue;
+
+      if (Idx >= 2 * SrcNumElts)
+        report("Out of bounds shuffle index", MI);
+    }
+
+    break;
+  }
+  case TargetOpcode::G_DYN_STACKALLOC: {
+    const MachineOperand &DstOp = MI->getOperand(0);
+    const MachineOperand &AllocOp = MI->getOperand(1);
+    const MachineOperand &AlignOp = MI->getOperand(2);
+
+    if (!DstOp.isReg() || !MRI->getType(DstOp.getReg()).isPointer()) {
+      report("dst operand 0 must be a pointer type", MI);
+      break;
+    }
+
+    if (!AllocOp.isReg() || !MRI->getType(AllocOp.getReg()).isScalar()) {
+      report("src operand 1 must be a scalar reg type", MI);
+      break;
+    }
+
+    if (!AlignOp.isImm()) {
+      report("src operand 2 must be an immediate type", MI);
+      break;
+    }
+    break;
+  }
+  default:
+    break;
   }
 }
 
@@ -938,42 +1512,8 @@ void MachineVerifier::visitMachineInstrBefore(const MachineInstr *MI) {
   }
 
   if (isPreISelGenericOpcode(MCID.getOpcode())) {
-    if (isFunctionSelected)
-      report("Unexpected generic instruction in a Selected function", MI);
-
-    // Check types.
-    SmallVector<LLT, 4> Types;
-    for (unsigned I = 0; I < MCID.getNumOperands(); ++I) {
-      if (!MCID.OpInfo[I].isGenericType())
-        continue;
-      // Generic instructions specify type equality constraints between some of
-      // their operands. Make sure these are consistent.
-      size_t TypeIdx = MCID.OpInfo[I].getGenericTypeIndex();
-      Types.resize(std::max(TypeIdx + 1, Types.size()));
-
-      const MachineOperand *MO = &MI->getOperand(I);
-      LLT OpTy = MRI->getType(MO->getReg());
-      // Don't report a type mismatch if there is no actual mismatch, only a
-      // type missing, to reduce noise:
-      if (OpTy.isValid()) {
-        // Only the first valid type for a type index will be printed: don't
-        // overwrite it later so it's always clear which type was expected:
-        if (!Types[TypeIdx].isValid())
-          Types[TypeIdx] = OpTy;
-        else if (Types[TypeIdx] != OpTy)
-          report("Type mismatch in generic instruction", MO, I, OpTy);
-      } else {
-        // Generic instructions must have types attached to their operands.
-        report("Generic instruction is missing a virtual register type", MO, I);
-      }
-    }
-
-    // Generic opcodes must not have physical register operands.
-    for (unsigned I = 0; I < MI->getNumOperands(); ++I) {
-      const MachineOperand *MO = &MI->getOperand(I);
-      if (MO->isReg() && TargetRegisterInfo::isPhysicalRegister(MO->getReg()))
-        report("Generic instruction cannot have physical register", MO, I);
-    }
+    verifyPreISelGenericInstruction(MI);
+    return;
   }
 
   StringRef ErrorInfo;
@@ -981,169 +1521,7 @@ void MachineVerifier::visitMachineInstrBefore(const MachineInstr *MI) {
     report(ErrorInfo.data(), MI);
 
   // Verify properties of various specific instruction types
-  switch(MI->getOpcode()) {
-  default:
-    break;
-  case TargetOpcode::G_LOAD:
-  case TargetOpcode::G_STORE:
-    // Generic loads and stores must have a single MachineMemOperand
-    // describing that access.
-    if (!MI->hasOneMemOperand())
-      report("Generic instruction accessing memory must have one mem operand",
-             MI);
-    break;
-  case TargetOpcode::G_PHI: {
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    if (!DstTy.isValid() ||
-        !std::all_of(MI->operands_begin() + 1, MI->operands_end(),
-                     [this, &DstTy](const MachineOperand &MO) {
-                       if (!MO.isReg())
-                         return true;
-                       LLT Ty = MRI->getType(MO.getReg());
-                       if (!Ty.isValid() || (Ty != DstTy))
-                         return false;
-                       return true;
-                     }))
-      report("Generic Instruction G_PHI has operands with incompatible/missing "
-             "types",
-             MI);
-    break;
-  }
-  case TargetOpcode::G_SEXT:
-  case TargetOpcode::G_ZEXT:
-  case TargetOpcode::G_ANYEXT:
-  case TargetOpcode::G_TRUNC:
-  case TargetOpcode::G_FPEXT:
-  case TargetOpcode::G_FPTRUNC: {
-    // Number of operands and presense of types is already checked (and
-    // reported in case of any issues), so no need to report them again. As
-    // we're trying to report as many issues as possible at once, however, the
-    // instructions aren't guaranteed to have the right number of operands or
-    // types attached to them at this point
-    assert(MCID.getNumOperands() == 2 && "Expected 2 operands G_*{EXT,TRUNC}");
-    if (MI->getNumOperands() < MCID.getNumOperands())
-      break;
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
-    if (!DstTy.isValid() || !SrcTy.isValid())
-      break;
-
-    LLT DstElTy = DstTy.isVector() ? DstTy.getElementType() : DstTy;
-    LLT SrcElTy = SrcTy.isVector() ? SrcTy.getElementType() : SrcTy;
-    if (DstElTy.isPointer() || SrcElTy.isPointer())
-      report("Generic extend/truncate can not operate on pointers", MI);
-
-    if (DstTy.isVector() != SrcTy.isVector()) {
-      report("Generic extend/truncate must be all-vector or all-scalar", MI);
-      // Generally we try to report as many issues as possible at once, but in
-      // this case it's not clear what should we be comparing the size of the
-      // scalar with: the size of the whole vector or its lane. Instead of
-      // making an arbitrary choice and emitting not so helpful message, let's
-      // avoid the extra noise and stop here.
-      break;
-    }
-    if (DstTy.isVector() && DstTy.getNumElements() != SrcTy.getNumElements())
-      report("Generic vector extend/truncate must preserve number of lanes",
-             MI);
-    unsigned DstSize = DstElTy.getSizeInBits();
-    unsigned SrcSize = SrcElTy.getSizeInBits();
-    switch (MI->getOpcode()) {
-    default:
-      if (DstSize <= SrcSize)
-        report("Generic extend has destination type no larger than source", MI);
-      break;
-    case TargetOpcode::G_TRUNC:
-    case TargetOpcode::G_FPTRUNC:
-      if (DstSize >= SrcSize)
-        report("Generic truncate has destination type no smaller than source",
-               MI);
-      break;
-    }
-    break;
-  }
-  case TargetOpcode::G_MERGE_VALUES: {
-    // G_MERGE_VALUES should only be used to merge scalars into a larger scalar,
-    // e.g. s2N = MERGE sN, sN
-    // Merging multiple scalars into a vector is not allowed, should use
-    // G_BUILD_VECTOR for that.
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
-    if (DstTy.isVector() || SrcTy.isVector())
-      report("G_MERGE_VALUES cannot operate on vectors", MI);
-    break;
-  }
-  case TargetOpcode::G_UNMERGE_VALUES: {
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    LLT SrcTy = MRI->getType(MI->getOperand(MI->getNumOperands()-1).getReg());
-    // For now G_UNMERGE can split vectors.
-    for (unsigned i = 0; i < MI->getNumOperands()-1; ++i) {
-      if (MRI->getType(MI->getOperand(i).getReg()) != DstTy)
-        report("G_UNMERGE_VALUES destination types do not match", MI);
-    }
-    if (SrcTy.getSizeInBits() !=
-        (DstTy.getSizeInBits() * (MI->getNumOperands() - 1))) {
-      report("G_UNMERGE_VALUES source operand does not cover dest operands",
-             MI);
-    }
-    break;
-  }
-  case TargetOpcode::G_BUILD_VECTOR: {
-    // Source types must be scalars, dest type a vector. Total size of scalars
-    // must match the dest vector size.
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    LLT SrcEltTy = MRI->getType(MI->getOperand(1).getReg());
-    if (!DstTy.isVector() || SrcEltTy.isVector())
-      report("G_BUILD_VECTOR must produce a vector from scalar operands", MI);
-    for (unsigned i = 2; i < MI->getNumOperands(); ++i) {
-      if (MRI->getType(MI->getOperand(1).getReg()) !=
-          MRI->getType(MI->getOperand(i).getReg()))
-        report("G_BUILD_VECTOR source operand types are not homogeneous", MI);
-    }
-    if (DstTy.getSizeInBits() !=
-        SrcEltTy.getSizeInBits() * (MI->getNumOperands() - 1))
-      report("G_BUILD_VECTOR src operands total size don't match dest "
-             "size.",
-             MI);
-    break;
-  }
-  case TargetOpcode::G_BUILD_VECTOR_TRUNC: {
-    // Source types must be scalars, dest type a vector. Scalar types must be
-    // larger than the dest vector elt type, as this is a truncating operation.
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    LLT SrcEltTy = MRI->getType(MI->getOperand(1).getReg());
-    if (!DstTy.isVector() || SrcEltTy.isVector())
-      report("G_BUILD_VECTOR_TRUNC must produce a vector from scalar operands",
-             MI);
-    for (unsigned i = 2; i < MI->getNumOperands(); ++i) {
-      if (MRI->getType(MI->getOperand(1).getReg()) !=
-          MRI->getType(MI->getOperand(i).getReg()))
-        report("G_BUILD_VECTOR_TRUNC source operand types are not homogeneous",
-               MI);
-    }
-    if (SrcEltTy.getSizeInBits() <= DstTy.getElementType().getSizeInBits())
-      report("G_BUILD_VECTOR_TRUNC source operand types are not larger than "
-             "dest elt type",
-             MI);
-    break;
-  }
-  case TargetOpcode::G_CONCAT_VECTORS: {
-    // Source types should be vectors, and total size should match the dest
-    // vector size.
-    LLT DstTy = MRI->getType(MI->getOperand(0).getReg());
-    LLT SrcTy = MRI->getType(MI->getOperand(1).getReg());
-    if (!DstTy.isVector() || !SrcTy.isVector())
-      report("G_CONCAT_VECTOR requires vector source and destination operands",
-             MI);
-    for (unsigned i = 2; i < MI->getNumOperands(); ++i) {
-      if (MRI->getType(MI->getOperand(1).getReg()) !=
-          MRI->getType(MI->getOperand(i).getReg()))
-        report("G_CONCAT_VECTOR source operand types are not homogeneous", MI);
-    }
-    if (DstTy.getNumElements() !=
-        SrcTy.getNumElements() * (MI->getNumOperands() - 1))
-      report("G_CONCAT_VECTOR num dest and source elements should match", MI);
-    break;
-  }
+  switch (MI->getOpcode()) {
   case TargetOpcode::COPY: {
     if (foundErrors)
       break;
@@ -1193,7 +1571,8 @@ void MachineVerifier::visitMachineInstrBefore(const MachineInstr *MI) {
     VerifyStackMapConstant(VarStart + StatepointOpers::NumDeoptOperandsOffset);
 
     // TODO: verify we have properly encoded deopt arguments
-  };
+    break;
+  }
 }
 
 void
@@ -1216,13 +1595,23 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
   } else if (MONum < MCID.getNumOperands()) {
     const MCOperandInfo &MCOI = MCID.OpInfo[MONum];
     // Don't check if it's the last operand in a variadic instruction. See,
-    // e.g., LDM_RET in the arm back end.
-    if (MO->isReg() &&
-        !(MI->isVariadic() && MONum == MCID.getNumOperands()-1)) {
-      if (MO->isDef() && !MCOI.isOptionalDef())
-        report("Explicit operand marked as def", MO, MONum);
-      if (MO->isImplicit())
-        report("Explicit operand marked as implicit", MO, MONum);
+    // e.g., LDM_RET in the arm back end. Check non-variadic operands only.
+    bool IsOptional = MI->isVariadic() && MONum == MCID.getNumOperands() - 1;
+    if (!IsOptional) {
+      if (MO->isReg()) {
+        if (MO->isDef() && !MCOI.isOptionalDef())
+          report("Explicit operand marked as def", MO, MONum);
+        if (MO->isImplicit())
+          report("Explicit operand marked as implicit", MO, MONum);
+      }
+
+      // Check that an instruction has register operands only as expected.
+      if (MCOI.OperandType == MCOI::OPERAND_REGISTER &&
+          !MO->isReg() && !MO->isFI())
+        report("Expected a register operand.", MO, MONum);
+      if ((MCOI.OperandType == MCOI::OPERAND_IMMEDIATE ||
+           MCOI.OperandType == MCOI::OPERAND_PCREL) && MO->isReg())
+        report("Expected a non-register operand.", MO, MONum);
     }
 
     int TiedTo = MCID.getOperandConstraint(MONum, MCOI::TIED_TO);
@@ -1233,11 +1622,11 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
         report("Operand should be tied", MO, MONum);
       else if (unsigned(TiedTo) != MI->findTiedOperandIdx(MONum))
         report("Tied def doesn't match MCInstrDesc", MO, MONum);
-      else if (TargetRegisterInfo::isPhysicalRegister(MO->getReg())) {
+      else if (Register::isPhysicalRegister(MO->getReg())) {
         const MachineOperand &MOTied = MI->getOperand(TiedTo);
         if (!MOTied.isReg())
           report("Tied counterpart must be a register", &MOTied, TiedTo);
-        else if (TargetRegisterInfo::isPhysicalRegister(MOTied.getReg()) &&
+        else if (Register::isPhysicalRegister(MOTied.getReg()) &&
                  MO->getReg() != MOTied.getReg())
           report("Tied physical registers must match.", &MOTied, TiedTo);
       }
@@ -1251,7 +1640,7 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
 
   switch (MO->getType()) {
   case MachineOperand::MO_Register: {
-    const unsigned Reg = MO->getReg();
+    const Register Reg = MO->getReg();
     if (!Reg)
       return;
     if (MRI->tracksLiveness() && !MI->isDebugValue())
@@ -1289,7 +1678,7 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
     // Check register classes.
     unsigned SubIdx = MO->getSubReg();
 
-    if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
+    if (Register::isPhysicalRegister(Reg)) {
       if (SubIdx) {
         report("Illegal subregister index for physical register", MO, MONum);
         return;
@@ -1356,7 +1745,7 @@ MachineVerifier::visitMachineOperand(const MachineOperand *MO, unsigned MONum) {
           return;
         }
         if (SubIdx)  {
-          report("Generic virtual register does not subregister index", MO,
+          report("Generic virtual register does not allow subregister index", MO,
                  MONum);
           return;
         }
@@ -1525,7 +1914,7 @@ void MachineVerifier::checkLivenessAtDef(const MachineOperand *MO,
   if (MO->isDead()) {
     LiveQueryResult LRQ = LR.Query(DefIdx);
     if (!LRQ.isDeadDef()) {
-      assert(TargetRegisterInfo::isVirtualRegister(VRegOrUnit) &&
+      assert(Register::isVirtualRegister(VRegOrUnit) &&
              "Expecting a virtual register.");
       // A dead subreg def only tells us that the specific subreg is dead. There
       // could be other non-dead defs of other subregs, or we could have other
@@ -1553,8 +1942,7 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
       addRegWithSubRegs(regsKilled, Reg);
 
     // Check that LiveVars knows this kill.
-    if (LiveVars && TargetRegisterInfo::isVirtualRegister(Reg) &&
-        MO->isKill()) {
+    if (LiveVars && Register::isVirtualRegister(Reg) && MO->isKill()) {
       LiveVariables::VarInfo &VI = LiveVars->getVarInfo(Reg);
       if (!is_contained(VI.Kills, MI))
         report("Kill missing from LiveVariables", MO, MONum);
@@ -1564,7 +1952,7 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
     if (LiveInts && !LiveInts->isNotInMIMap(*MI)) {
       SlotIndex UseIdx = LiveInts->getInstructionIndex(*MI);
       // Check the cached regunit intervals.
-      if (TargetRegisterInfo::isPhysicalRegister(Reg) && !isReserved(Reg)) {
+      if (Register::isPhysicalRegister(Reg) && !isReserved(Reg)) {
         for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units) {
           if (MRI->isReservedRegUnit(*Units))
             continue;
@@ -1573,7 +1961,7 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
         }
       }
 
-      if (TargetRegisterInfo::isVirtualRegister(Reg)) {
+      if (Register::isVirtualRegister(Reg)) {
         if (LiveInts->hasInterval(Reg)) {
           // This is a virtual register interval.
           const LiveInterval &LI = LiveInts->getInterval(Reg);
@@ -1608,14 +1996,14 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
 
     // Use of a dead register.
     if (!regsLive.count(Reg)) {
-      if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
+      if (Register::isPhysicalRegister(Reg)) {
         // Reserved registers may be used even when 'dead'.
         bool Bad = !isReserved(Reg);
         // We are fine if just any subregister has a defined value.
         if (Bad) {
-          for (MCSubRegIterator SubRegs(Reg, TRI); SubRegs.isValid();
-               ++SubRegs) {
-            if (regsLive.count(*SubRegs)) {
+
+          for (const MCPhysReg &SubReg : TRI->subregs(Reg)) {
+            if (regsLive.count(SubReg)) {
               Bad = false;
               break;
             }
@@ -1630,12 +2018,11 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
             if (!MOP.isReg() || !MOP.isImplicit())
               continue;
 
-            if (!TargetRegisterInfo::isPhysicalRegister(MOP.getReg()))
+            if (!Register::isPhysicalRegister(MOP.getReg()))
               continue;
 
-            for (MCSubRegIterator SubRegs(MOP.getReg(), TRI); SubRegs.isValid();
-                 ++SubRegs) {
-              if (*SubRegs == Reg) {
+            for (const MCPhysReg &SubReg : TRI->subregs(MOP.getReg())) {
+              if (SubReg == Reg) {
                 Bad = false;
                 break;
               }
@@ -1668,7 +2055,7 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
       addRegWithSubRegs(regsDefined, Reg);
 
     // Verify SSA form.
-    if (MRI->isSSA() && TargetRegisterInfo::isVirtualRegister(Reg) &&
+    if (MRI->isSSA() && Register::isVirtualRegister(Reg) &&
         std::next(MRI->def_begin(Reg)) != MRI->def_end())
       report("Multiple virtual register defs in SSA form", MO, MONum);
 
@@ -1677,7 +2064,7 @@ void MachineVerifier::checkLiveness(const MachineOperand *MO, unsigned MONum) {
       SlotIndex DefIdx = LiveInts->getInstructionIndex(*MI);
       DefIdx = DefIdx.getRegSlot(MO->isEarlyClobber());
 
-      if (TargetRegisterInfo::isVirtualRegister(Reg)) {
+      if (Register::isVirtualRegister(Reg)) {
         if (LiveInts->hasInterval(Reg)) {
           const LiveInterval &LI = LiveInts->getInterval(Reg);
           checkLivenessAtDef(MO, MONum, DefIdx, LI, Reg);
@@ -1715,7 +2102,7 @@ void MachineVerifier::visitMachineBundleAfter(const MachineInstr *MI) {
   while (!regMasks.empty()) {
     const uint32_t *Mask = regMasks.pop_back_val();
     for (RegSet::iterator I = regsLive.begin(), E = regsLive.end(); I != E; ++I)
-      if (TargetRegisterInfo::isPhysicalRegister(*I) &&
+      if (Register::isPhysicalRegister(*I) &&
           MachineOperand::clobbersPhysReg(Mask, *I))
         regsDead.push_back(*I);
   }
@@ -1827,8 +2214,8 @@ void MachineVerifier::checkPHIOps(const MachineBasicBlock &MBB) {
     if (MODef.isTied() || MODef.isImplicit() || MODef.isInternalRead() ||
         MODef.isEarlyClobber() || MODef.isDebug())
       report("Unexpected flag on PHI operand", &MODef, 0);
-    unsigned DefReg = MODef.getReg();
-    if (!TargetRegisterInfo::isVirtualRegister(DefReg))
+    Register DefReg = MODef.getReg();
+    if (!Register::isVirtualRegister(DefReg))
       report("Expected first PHI operand to be a virtual register", &MODef, 0);
 
     for (unsigned I = 1, E = Phi.getNumOperands(); I != E; I += 2) {
@@ -1911,12 +2298,42 @@ void MachineVerifier::visitMachineFunctionAfter() {
     verifyLiveVariables();
   if (LiveInts)
     verifyLiveIntervals();
+
+  // Check live-in list of each MBB. If a register is live into MBB, check
+  // that the register is in regsLiveOut of each predecessor block. Since
+  // this must come from a definition in the predecesssor or its live-in
+  // list, this will catch a live-through case where the predecessor does not
+  // have the register in its live-in list.  This currently only checks
+  // registers that have no aliases, are not allocatable and are not
+  // reserved, which could mean a condition code register for instance.
+  if (MRI->tracksLiveness())
+    for (const auto &MBB : *MF)
+      for (MachineBasicBlock::RegisterMaskPair P : MBB.liveins()) {
+        MCPhysReg LiveInReg = P.PhysReg;
+        bool hasAliases = MCRegAliasIterator(LiveInReg, TRI, false).isValid();
+        if (hasAliases || isAllocatable(LiveInReg) || isReserved(LiveInReg))
+          continue;
+        for (const MachineBasicBlock *Pred : MBB.predecessors()) {
+          BBInfo &PInfo = MBBInfoMap[Pred];
+          if (!PInfo.regsLiveOut.count(LiveInReg)) {
+            report("Live in register not found to be live out from predecessor.",
+                   &MBB);
+            errs() << TRI->getName(LiveInReg)
+                   << " not found to be live out from "
+                   << printMBBReference(*Pred) << "\n";
+          }
+        }
+      }
+
+  for (auto CSInfo : MF->getCallSitesInfo())
+    if (!CSInfo.first->isCall())
+      report("Call site info referencing instruction that is not call", MF);
 }
 
 void MachineVerifier::verifyLiveVariables() {
   assert(LiveVars && "Don't call verifyLiveVariables without LiveVars");
   for (unsigned i = 0, e = MRI->getNumVirtRegs(); i != e; ++i) {
-    unsigned Reg = TargetRegisterInfo::index2VirtReg(i);
+    unsigned Reg = Register::index2VirtReg(i);
     LiveVariables::VarInfo &VI = LiveVars->getVarInfo(Reg);
     for (const auto &MBB : *MF) {
       BBInfo &MInfo = MBBInfoMap[&MBB];
@@ -1942,7 +2359,7 @@ void MachineVerifier::verifyLiveVariables() {
 void MachineVerifier::verifyLiveIntervals() {
   assert(LiveInts && "Don't call verifyLiveIntervals without LiveInts");
   for (unsigned i = 0, e = MRI->getNumVirtRegs(); i != e; ++i) {
-    unsigned Reg = TargetRegisterInfo::index2VirtReg(i);
+    unsigned Reg = Register::index2VirtReg(i);
 
     // Spilling and splitting may leave unused registers around. Skip them.
     if (MRI->reg_nodbg_empty(Reg))
@@ -2019,11 +2436,11 @@ void MachineVerifier::verifyLiveRangeValue(const LiveRange &LR,
     for (ConstMIBundleOperands MOI(*MI); MOI.isValid(); ++MOI) {
       if (!MOI->isReg() || !MOI->isDef())
         continue;
-      if (TargetRegisterInfo::isVirtualRegister(Reg)) {
+      if (Register::isVirtualRegister(Reg)) {
         if (MOI->getReg() != Reg)
           continue;
       } else {
-        if (!TargetRegisterInfo::isPhysicalRegister(MOI->getReg()) ||
+        if (!Register::isPhysicalRegister(MOI->getReg()) ||
             !TRI->hasRegUnit(MOI->getReg(), Reg))
           continue;
       }
@@ -2106,7 +2523,7 @@ void MachineVerifier::verifyLiveRangeSegment(const LiveRange &LR,
     return;
 
   // RegUnit intervals are allowed dead phis.
-  if (!TargetRegisterInfo::isVirtualRegister(Reg) && VNI->isPHIDef() &&
+  if (!Register::isVirtualRegister(Reg) && VNI->isPHIDef() &&
       S.start == VNI->def && S.end == VNI->def.getDeadSlot())
     return;
 
@@ -2150,7 +2567,7 @@ void MachineVerifier::verifyLiveRangeSegment(const LiveRange &LR,
 
   // The following checks only apply to virtual registers. Physreg liveness
   // is too weird to check.
-  if (TargetRegisterInfo::isVirtualRegister(Reg)) {
+  if (Register::isVirtualRegister(Reg)) {
     // A live segment can end with either a redefinition, a kill flag on a
     // use, or a dead flag on a def.
     bool hasRead = false;
@@ -2223,8 +2640,7 @@ void MachineVerifier::verifyLiveRangeSegment(const LiveRange &LR,
   while (true) {
     assert(LiveInts->isLiveInToMBB(LR, &*MFI));
     // We don't know how to track physregs into a landing pad.
-    if (!TargetRegisterInfo::isVirtualRegister(Reg) &&
-        MFI->isEHPad()) {
+    if (!Register::isVirtualRegister(Reg) && MFI->isEHPad()) {
       if (&*MFI == EndMBB)
         break;
       ++MFI;
@@ -2284,7 +2700,7 @@ void MachineVerifier::verifyLiveRange(const LiveRange &LR, unsigned Reg,
 
 void MachineVerifier::verifyLiveInterval(const LiveInterval &LI) {
   unsigned Reg = LI.reg;
-  assert(TargetRegisterInfo::isVirtualRegister(Reg));
+  assert(Register::isVirtualRegister(Reg));
   verifyLiveRange(LI, Reg);
 
   LaneBitmask Mask;

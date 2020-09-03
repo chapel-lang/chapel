@@ -1,9 +1,8 @@
 //===-- HexagonISelDAGToDAG.cpp - A dag to dag inst selector for Hexagon --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,8 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Hexagon.h"
 #include "HexagonISelDAGToDAG.h"
+#include "Hexagon.h"
 #include "HexagonISelLowering.h"
 #include "HexagonMachineFunctionInfo.h"
 #include "HexagonTargetMachine.h"
@@ -20,6 +19,7 @@
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsHexagon.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 using namespace llvm;
@@ -698,7 +698,7 @@ void HexagonDAGToDAGISel::SelectIntrinsicWOChain(SDNode *N) {
 //
 void HexagonDAGToDAGISel::SelectConstantFP(SDNode *N) {
   SDLoc dl(N);
-  ConstantFPSDNode *CN = dyn_cast<ConstantFPSDNode>(N);
+  auto *CN = cast<ConstantFPSDNode>(N);
   APInt A = CN->getValueAPF().bitcastToAPInt();
   if (N->getValueType(0) == MVT::f32) {
     SDValue V = CurDAG->getTargetConstant(A.getZExtValue(), dl, MVT::i32);
@@ -849,6 +849,9 @@ void HexagonDAGToDAGISel::SelectD2P(SDNode *N) {
 void HexagonDAGToDAGISel::SelectV2Q(SDNode *N) {
   const SDLoc &dl(N);
   MVT ResTy = N->getValueType(0).getSimpleVT();
+  // The argument to V2Q should be a single vector.
+  MVT OpTy = N->getOperand(0).getValueType().getSimpleVT(); (void)OpTy;
+  assert(HST->getVectorLength() * 8 == OpTy.getSizeInBits());
 
   SDValue C = CurDAG->getTargetConstant(-1, dl, MVT::i32);
   SDNode *R = CurDAG->getMachineNode(Hexagon::A2_tfrsi, dl, MVT::i32, C);
@@ -860,6 +863,8 @@ void HexagonDAGToDAGISel::SelectV2Q(SDNode *N) {
 void HexagonDAGToDAGISel::SelectQ2V(SDNode *N) {
   const SDLoc &dl(N);
   MVT ResTy = N->getValueType(0).getSimpleVT();
+  // The result of V2Q should be a single vector.
+  assert(HST->getVectorLength() * 8 == ResTy.getSizeInBits());
 
   SDValue C = CurDAG->getTargetConstant(-1, dl, MVT::i32);
   SDNode *R = CurDAG->getMachineNode(Hexagon::A2_tfrsi, dl, MVT::i32, C);
@@ -911,7 +916,6 @@ SelectInlineAsmMemoryOperand(const SDValue &Op, unsigned ConstraintID,
   switch (ConstraintID) {
   default:
     return true;
-  case InlineAsm::Constraint_i:
   case InlineAsm::Constraint_o: // Offsetable.
   case InlineAsm::Constraint_v: // Not offsetable.
   case InlineAsm::Constraint_m: // Memory.
@@ -1257,7 +1261,7 @@ void HexagonDAGToDAGISel::PreprocessISelDAG() {
 }
 
 void HexagonDAGToDAGISel::EmitFunctionEntryCode() {
-  auto &HST = static_cast<const HexagonSubtarget&>(MF->getSubtarget());
+  auto &HST = MF->getSubtarget<HexagonSubtarget>();
   auto &HFI = *HST.getFrameLowering();
   if (!HFI.needsAligna(*MF))
     return;
@@ -1265,10 +1269,21 @@ void HexagonDAGToDAGISel::EmitFunctionEntryCode() {
   MachineFrameInfo &MFI = MF->getFrameInfo();
   MachineBasicBlock *EntryBB = &MF->front();
   unsigned AR = FuncInfo->CreateReg(MVT::i32);
-  unsigned MaxA = MFI.getMaxAlignment();
+  unsigned EntryMaxA = MFI.getMaxAlignment();
   BuildMI(EntryBB, DebugLoc(), HII->get(Hexagon::PS_aligna), AR)
-      .addImm(MaxA);
+      .addImm(EntryMaxA);
   MF->getInfo<HexagonMachineFunctionInfo>()->setStackAlignBaseVReg(AR);
+}
+
+void HexagonDAGToDAGISel::updateAligna() {
+  auto &HFI = *MF->getSubtarget<HexagonSubtarget>().getFrameLowering();
+  if (!HFI.needsAligna(*MF))
+    return;
+  auto *AlignaI = const_cast<MachineInstr*>(HFI.getAlignaInstr(*MF));
+  assert(AlignaI != nullptr);
+  unsigned MaxA = MF->getFrameInfo().getMaxAlignment();
+  if (AlignaI->getOperand(1).getImm() < MaxA)
+    AlignaI->getOperand(1).setImm(MaxA);
 }
 
 // Match a frame index that can be used in an addressing mode.

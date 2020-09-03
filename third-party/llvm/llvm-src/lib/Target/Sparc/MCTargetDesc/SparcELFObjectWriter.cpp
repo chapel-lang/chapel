@@ -1,9 +1,8 @@
 //===-- SparcELFObjectWriter.cpp - Sparc ELF Writer -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -50,7 +49,7 @@ unsigned SparcELFObjectWriter::getRelocType(MCContext &Ctx,
   }
 
   if (IsPCRel) {
-    switch((unsigned)Fixup.getKind()) {
+    switch(Fixup.getTargetKind()) {
     default:
       llvm_unreachable("Unimplemented fixup -> relocation");
     case FK_Data_1:                  return ELF::R_SPARC_DISP8;
@@ -66,7 +65,7 @@ unsigned SparcELFObjectWriter::getRelocType(MCContext &Ctx,
     }
   }
 
-  switch((unsigned)Fixup.getKind()) {
+  switch(Fixup.getTargetKind()) {
   default:
     llvm_unreachable("Unimplemented fixup -> relocation");
   case FK_Data_1:                return ELF::R_SPARC_8;
@@ -136,5 +135,5 @@ bool SparcELFObjectWriter::needsRelocateWithSymbol(const MCSymbol &Sym,
 
 std::unique_ptr<MCObjectTargetWriter>
 llvm::createSparcELFObjectWriter(bool Is64Bit, uint8_t OSABI) {
-  return llvm::make_unique<SparcELFObjectWriter>(Is64Bit, OSABI);
+  return std::make_unique<SparcELFObjectWriter>(Is64Bit, OSABI);
 }

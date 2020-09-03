@@ -1,9 +1,8 @@
 //===- SourceLocation.h - Compact identifier for Source Files ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,7 +25,6 @@
 namespace llvm {
 
 template <typename T> struct DenseMapInfo;
-template <typename T> struct isPodLike;
 
 } // namespace llvm
 
@@ -190,8 +188,19 @@ inline bool operator!=(const SourceLocation &LHS, const SourceLocation &RHS) {
   return !(LHS == RHS);
 }
 
+// Ordering is meaningful only if LHS and RHS have the same FileID!
+// Otherwise use SourceManager::isBeforeInTranslationUnit().
 inline bool operator<(const SourceLocation &LHS, const SourceLocation &RHS) {
   return LHS.getRawEncoding() < RHS.getRawEncoding();
+}
+inline bool operator>(const SourceLocation &LHS, const SourceLocation &RHS) {
+  return LHS.getRawEncoding() > RHS.getRawEncoding();
+}
+inline bool operator<=(const SourceLocation &LHS, const SourceLocation &RHS) {
+  return LHS.getRawEncoding() <= RHS.getRawEncoding();
+}
+inline bool operator>=(const SourceLocation &LHS, const SourceLocation &RHS) {
+  return LHS.getRawEncoding() >= RHS.getRawEncoding();
 }
 
 /// A trivial tuple used to represent a source range.
@@ -219,6 +228,11 @@ public:
 
   bool operator!=(const SourceRange &X) const {
     return B != X.B || E != X.E;
+  }
+
+  // Returns true iff other is wholly contained within this range.
+  bool fullyContains(const SourceRange &other) const {
+    return B <= other.B && E >= other.E;
   }
 
   void print(raw_ostream &OS, const SourceManager &SM) const;
@@ -284,13 +298,15 @@ public:
 /// You can get a PresumedLoc from a SourceLocation with SourceManager.
 class PresumedLoc {
   const char *Filename = nullptr;
+  FileID ID;
   unsigned Line, Col;
   SourceLocation IncludeLoc;
 
 public:
   PresumedLoc() = default;
-  PresumedLoc(const char *FN, unsigned Ln, unsigned Co, SourceLocation IL)
-      : Filename(FN), Line(Ln), Col(Co), IncludeLoc(IL) {}
+  PresumedLoc(const char *FN, FileID FID, unsigned Ln, unsigned Co,
+              SourceLocation IL)
+      : Filename(FN), ID(FID), Line(Ln), Col(Co), IncludeLoc(IL) {}
 
   /// Return true if this object is invalid or uninitialized.
   ///
@@ -305,6 +321,11 @@ public:
   const char *getFilename() const {
     assert(isValid());
     return Filename;
+  }
+
+  FileID getFileID() const {
+    assert(isValid());
+    return ID;
   }
 
   /// Return the presumed line number of this location.
@@ -457,11 +478,6 @@ namespace llvm {
       return LHS == RHS;
     }
   };
-
-  template <>
-  struct isPodLike<clang::SourceLocation> { static const bool value = true; };
-  template <>
-  struct isPodLike<clang::FileID> { static const bool value = true; };
 
   // Teach SmallPtrSet how to handle SourceLocation.
   template<>

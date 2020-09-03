@@ -129,8 +129,7 @@ class OptionalPrinter(Iterator):
     self.val = None
     if not val['Storage']['hasVal']:
       raise StopIteration
-    return ('value', val['Storage']['storage']['buffer'].address.cast(
-        val.type.template_argument(0).pointer()).dereference())
+    return ('value', val['Storage']['value'])
 
   def to_string(self):
     return 'llvm::Optional{}'.format('' if self.val['Storage']['hasVal'] else ' is not initialized')
@@ -320,7 +319,7 @@ pp = gdb.printing.RegexpCollectionPrettyPrinter("LLVMSupport")
 pp.add_printer('llvm::SmallString', '^llvm::SmallString<.*>$', SmallStringPrinter)
 pp.add_printer('llvm::StringRef', '^llvm::StringRef$', StringRefPrinter)
 pp.add_printer('llvm::SmallVectorImpl', '^llvm::SmallVector(Impl)?<.*>$', SmallVectorPrinter)
-pp.add_printer('llvm::ArrayRef', '^llvm::(Const)?ArrayRef<.*>$', ArrayRefPrinter)
+pp.add_printer('llvm::ArrayRef', '^llvm::(Mutable)?ArrayRef<.*>$', ArrayRefPrinter)
 pp.add_printer('llvm::Expected', '^llvm::Expected<.*>$', ExpectedPrinter)
 pp.add_printer('llvm::Optional', '^llvm::Optional<.*>$', OptionalPrinter)
 pp.add_printer('llvm::DenseMap', '^llvm::DenseMap<.*>$', DenseMapPrinter)

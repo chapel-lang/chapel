@@ -1,9 +1,8 @@
 //===--- RAIIObjectsForParser.h - RAII helpers for the parser ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -286,6 +285,25 @@ namespace clang {
     ~ColonProtectionRAIIObject() {
       restore();
     }
+  };
+
+  /// Activates OpenMP parsing mode to preseve OpenMP specific annotation
+  /// tokens.
+  class ParsingOpenMPDirectiveRAII {
+    Parser &P;
+    bool OldVal;
+
+  public:
+    ParsingOpenMPDirectiveRAII(Parser &P)
+        : P(P), OldVal(P.OpenMPDirectiveParsing) {
+      P.OpenMPDirectiveParsing = true;
+    }
+
+    /// This can be used to restore the state early, before the dtor
+    /// is run.
+    void restore() { P.OpenMPDirectiveParsing = OldVal; }
+
+    ~ParsingOpenMPDirectiveRAII() { restore(); }
   };
 
   /// RAII object that makes '>' behave either as an operator

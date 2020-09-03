@@ -1,9 +1,8 @@
 //=- AArch64/AArch64MCCodeEmitter.cpp - Convert AArch64 code to machine code-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -188,9 +187,10 @@ public:
                                      const MCSubtargetInfo &STI) const;
 
 private:
-  uint64_t computeAvailableFeatures(const FeatureBitset &FB) const;
-  void verifyInstructionPredicates(const MCInst &MI,
-                                   uint64_t AvailableFeatures) const;
+  FeatureBitset computeAvailableFeatures(const FeatureBitset &FB) const;
+  void
+  verifyInstructionPredicates(const MCInst &MI,
+                              const FeatureBitset &AvailableFeatures) const;
 };
 
 } // end anonymous namespace
@@ -601,8 +601,12 @@ void AArch64MCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
     MCFixupKind Fixup = MCFixupKind(AArch64::fixup_aarch64_tlsdesc_call);
     Fixups.push_back(MCFixup::create(0, MI.getOperand(0).getExpr(), Fixup));
     return;
-  } else if (MI.getOpcode() == AArch64::CompilerBarrier) {
-    // This just prevents the compiler from reordering accesses, no actual code.
+  }
+
+  if (MI.getOpcode() == AArch64::CompilerBarrier ||
+      MI.getOpcode() == AArch64::SPACE) {
+    // CompilerBarrier just prevents the compiler from reordering accesses, and
+    // SPACE just increases basic block size, in both cases no actual code.
     return;
   }
 

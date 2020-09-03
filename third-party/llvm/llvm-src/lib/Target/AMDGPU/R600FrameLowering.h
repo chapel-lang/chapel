@@ -1,9 +1,8 @@
 //===--------------------- R600FrameLowering.h ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,9 +15,9 @@ namespace llvm {
 
 class R600FrameLowering : public AMDGPUFrameLowering {
 public:
-  R600FrameLowering(StackDirection D, unsigned StackAl, int LAO,
-                    unsigned TransAl = 1) :
-    AMDGPUFrameLowering(D, StackAl, LAO, TransAl) {}
+  R600FrameLowering(StackDirection D, Align StackAl, int LAO,
+                    Align TransAl = Align::None())
+      : AMDGPUFrameLowering(D, StackAl, LAO, TransAl) {}
   ~R600FrameLowering() override;
 
   void emitPrologue(MachineFunction &MF,

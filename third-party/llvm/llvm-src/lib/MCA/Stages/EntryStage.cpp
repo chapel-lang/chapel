@@ -1,9 +1,8 @@
 //===---------------------- EntryStage.cpp ----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -19,7 +18,9 @@
 namespace llvm {
 namespace mca {
 
-bool EntryStage::hasWorkToComplete() const { return CurrentInstruction; }
+bool EntryStage::hasWorkToComplete() const {
+  return static_cast<bool>(CurrentInstruction);
+}
 
 bool EntryStage::isAvailable(const InstRef & /* unused */) const {
   if (CurrentInstruction)
@@ -32,7 +33,7 @@ void EntryStage::getNextInstruction() {
   if (!SM.hasNext())
     return;
   SourceRef SR = SM.peekNext();
-  std::unique_ptr<Instruction> Inst = llvm::make_unique<Instruction>(SR.second);
+  std::unique_ptr<Instruction> Inst = std::make_unique<Instruction>(SR.second);
   CurrentInstruction = InstRef(SR.first, Inst.get());
   Instructions.emplace_back(std::move(Inst));
   SM.updateNext();

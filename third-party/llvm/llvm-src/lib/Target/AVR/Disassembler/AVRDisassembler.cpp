@@ -1,9 +1,8 @@
 //===- AVRDisassembler.cpp - Disassembler for AVR ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #include "AVRRegisterInfo.h"
 #include "AVRSubtarget.h"
 #include "MCTargetDesc/AVRMCTargetDesc.h"
+#include "TargetInfo/AVRTargetInfo.h"
 
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
@@ -40,7 +40,6 @@ public:
 
   DecodeStatus getInstruction(MCInst &Instr, uint64_t &Size,
                               ArrayRef<uint8_t> Bytes, uint64_t Address,
-                              raw_ostream &VStream,
                               raw_ostream &CStream) const override;
 };
 }
@@ -52,7 +51,7 @@ static MCDisassembler *createAVRDisassembler(const Target &T,
 }
 
 
-extern "C" void LLVMInitializeAVRDisassembler() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAVRDisassembler() {
   // Register the disassembler.
   TargetRegistry::RegisterMCDisassembler(getTheAVRTarget(),
                                          createAVRDisassembler);
@@ -114,7 +113,6 @@ static const uint8_t *getDecoderTable(uint64_t Size) {
 DecodeStatus AVRDisassembler::getInstruction(MCInst &Instr, uint64_t &Size,
                                              ArrayRef<uint8_t> Bytes,
                                              uint64_t Address,
-                                             raw_ostream &VStream,
                                              raw_ostream &CStream) const {
   uint32_t Insn;
 

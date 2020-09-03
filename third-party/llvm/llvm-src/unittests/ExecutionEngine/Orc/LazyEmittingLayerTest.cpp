@@ -1,9 +1,8 @@
 //===- LazyEmittingLayerTest.cpp - Unit tests for the lazy emitting layer -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,7 +22,8 @@ struct MockBaseLayer {
 
 TEST(LazyEmittingLayerTest, Empty) {
   MockBaseLayer M;
-  llvm::orc::LazyEmittingLayer<MockBaseLayer> L(M);
+  llvm::orc::LazyEmittingLayer<MockBaseLayer> L(
+      llvm::AcknowledgeORCv1Deprecation, M);
   cantFail(
       L.addModule(llvm::orc::VModuleKey(), std::unique_ptr<llvm::Module>()));
 }

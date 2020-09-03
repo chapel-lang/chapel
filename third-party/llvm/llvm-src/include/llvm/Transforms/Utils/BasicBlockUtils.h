@@ -1,9 +1,8 @@
 //===- Transform/Utils/BasicBlockUtils.h - BasicBlock Utils -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,9 +17,9 @@
 // FIXME: Move to this file: BasicBlock::removePredecessor, BB::splitBasicBlock
 
 #include "llvm/ADT/ArrayRef.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/CFG.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/InstrTypes.h"
 #include <cassert>
 
@@ -36,19 +35,38 @@ class LoopInfo;
 class MDNode;
 class MemoryDependenceResults;
 class MemorySSAUpdater;
+class PostDominatorTree;
 class ReturnInst;
 class TargetLibraryInfo;
 class Value;
 
+/// Replace contents of every block in \p BBs with single unreachable
+/// instruction. If \p Updates is specified, collect all necessary DT updates
+/// into this vector. If \p KeepOneInputPHIs is true, one-input Phis in
+/// successors of blocks being deleted will be preserved.
+void DetatchDeadBlocks(ArrayRef <BasicBlock *> BBs,
+                       SmallVectorImpl<DominatorTree::UpdateType> *Updates,
+                       bool KeepOneInputPHIs = false);
+
 /// Delete the specified block, which must have no predecessors.
-void DeleteDeadBlock(BasicBlock *BB, DomTreeUpdater *DTU = nullptr);
+void DeleteDeadBlock(BasicBlock *BB, DomTreeUpdater *DTU = nullptr,
+                     bool KeepOneInputPHIs = false);
 
 /// Delete the specified blocks from \p BB. The set of deleted blocks must have
 /// no predecessors that are not being deleted themselves. \p BBs must have no
 /// duplicating blocks. If there are loops among this set of blocks, all
 /// relevant loop info updates should be done before this function is called.
-void DeleteDeadBlocks(SmallVectorImpl <BasicBlock *> &BBs,
-                      DomTreeUpdater *DTU = nullptr);
+/// If \p KeepOneInputPHIs is true, one-input Phis in successors of blocks
+/// being deleted will be preserved.
+void DeleteDeadBlocks(ArrayRef <BasicBlock *> BBs,
+                      DomTreeUpdater *DTU = nullptr,
+                      bool KeepOneInputPHIs = false);
+
+/// Delete all basic blocks from \p F that are not reachable from its entry
+/// node. If \p KeepOneInputPHIs is true, one-input Phis in successors of
+/// blocks being deleted will be preserved.
+bool EliminateUnreachableBlocks(Function &F, DomTreeUpdater *DTU = nullptr,
+                                bool KeepOneInputPHIs = false);
 
 /// We know that BB has one predecessor. If there are any single-entry PHI nodes
 /// in it, fold them away. This handles the case when all entries to the PHI
@@ -65,10 +83,20 @@ bool DeleteDeadPHIs(BasicBlock *BB, const TargetLibraryInfo *TLI = nullptr);
 
 /// Attempts to merge a block into its predecessor, if possible. The return
 /// value indicates success or failure.
+/// By default do not merge blocks if BB's predecessor has multiple successors.
+/// If PredecessorWithTwoSuccessors = true, the blocks can only be merged
+/// if BB's Pred has a branch to BB and to AnotherBB, and BB has a single
+/// successor Sing. In this case the branch will be updated with Sing instead of
+/// BB, and BB will still be merged into its predecessor and removed.
 bool MergeBlockIntoPredecessor(BasicBlock *BB, DomTreeUpdater *DTU = nullptr,
                                LoopInfo *LI = nullptr,
                                MemorySSAUpdater *MSSAU = nullptr,
-                               MemoryDependenceResults *MemDep = nullptr);
+                               MemoryDependenceResults *MemDep = nullptr,
+                               bool PredecessorWithTwoSuccessors = false);
+
+/// Try to remove redundant dbg.value instructions from given basic block.
+/// Returns true if at least one instruction was removed.
+bool RemoveRedundantDbgInstrs(BasicBlock *BB);
 
 /// Replace all uses of an instruction (specified by BI) with a value, then
 /// remove and delete the original instruction.
@@ -92,29 +120,37 @@ void ReplaceInstWithInst(Instruction *From, Instruction *To);
 /// during critical edge splitting.
 struct CriticalEdgeSplittingOptions {
   DominatorTree *DT;
+  PostDominatorTree *PDT;
   LoopInfo *LI;
   MemorySSAUpdater *MSSAU;
   bool MergeIdenticalEdges = false;
-  bool DontDeleteUselessPHIs = false;
+  bool KeepOneInputPHIs = false;
   bool PreserveLCSSA = false;
+  bool IgnoreUnreachableDests = false;
 
   CriticalEdgeSplittingOptions(DominatorTree *DT = nullptr,
                                LoopInfo *LI = nullptr,
-                               MemorySSAUpdater *MSSAU = nullptr)
-      : DT(DT), LI(LI), MSSAU(MSSAU) {}
+                               MemorySSAUpdater *MSSAU = nullptr,
+                               PostDominatorTree *PDT = nullptr)
+      : DT(DT), PDT(PDT), LI(LI), MSSAU(MSSAU) {}
 
   CriticalEdgeSplittingOptions &setMergeIdenticalEdges() {
     MergeIdenticalEdges = true;
     return *this;
   }
 
-  CriticalEdgeSplittingOptions &setDontDeleteUselessPHIs() {
-    DontDeleteUselessPHIs = true;
+  CriticalEdgeSplittingOptions &setKeepOneInputPHIs() {
+    KeepOneInputPHIs = true;
     return *this;
   }
 
   CriticalEdgeSplittingOptions &setPreserveLCSSA() {
     PreserveLCSSA = true;
+    return *this;
+  }
+
+  CriticalEdgeSplittingOptions &setIgnoreUnreachableDests() {
+    IgnoreUnreachableDests = true;
     return *this;
   }
 };
@@ -196,7 +232,8 @@ BasicBlock *SplitEdge(BasicBlock *From, BasicBlock *To,
 /// info is updated.
 BasicBlock *SplitBlock(BasicBlock *Old, Instruction *SplitPt,
                        DominatorTree *DT = nullptr, LoopInfo *LI = nullptr,
-                       MemorySSAUpdater *MSSAU = nullptr);
+                       MemorySSAUpdater *MSSAU = nullptr,
+                       const Twine &BBName = "");
 
 /// This method introduces at least one new basic block into the function and
 /// moves some of the predecessors of BB to be predecessors of the new block.
@@ -259,7 +296,8 @@ ReturnInst *FoldReturnIntoUncondBranch(ReturnInst *RI, BasicBlock *BB,
 ///   SplitBefore
 ///   Tail
 ///
-/// If Unreachable is true, then ThenBlock ends with
+/// If \p ThenBlock is not specified, a new block will be created for it.
+/// If \p Unreachable is true, the newly created block will end with
 /// UnreachableInst, otherwise it branches to Tail.
 /// Returns the NewBasicBlock's terminator.
 ///
@@ -268,7 +306,8 @@ Instruction *SplitBlockAndInsertIfThen(Value *Cond, Instruction *SplitBefore,
                                        bool Unreachable,
                                        MDNode *BranchWeights = nullptr,
                                        DominatorTree *DT = nullptr,
-                                       LoopInfo *LI = nullptr);
+                                       LoopInfo *LI = nullptr,
+                                       BasicBlock *ThenBlock = nullptr);
 
 /// SplitBlockAndInsertIfThenElse is similar to SplitBlockAndInsertIfThen,
 /// but also creates the ElseBlock.

@@ -1,9 +1,8 @@
 //===--- Cuda.h - Cuda ToolChain Implementations ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,6 +30,8 @@ private:
   const Driver &D;
   bool IsValid = false;
   CudaVersion Version = CudaVersion::UNKNOWN;
+  std::string DetectedVersion;
+  bool DetectedVersionIsNotSupported = false;
   std::string InstallPath;
   std::string BinPath;
   std::string LibPath;
@@ -76,6 +77,10 @@ public:
   std::string getLibDeviceFile(StringRef Gpu) const {
     return LibDeviceMap.lookup(Gpu);
   }
+  void WarnIfUnsupportedVersion();
+
+private:
+  void ParseCudaVersionFile(llvm::StringRef V);
 };
 
 namespace tools {

@@ -1,9 +1,8 @@
 //===- NameAnonGlobals.cpp - ThinLTO Support: Name Unnamed Globals --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,9 +12,9 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Utils/NameAnonGlobals.h"
-
 #include "llvm/ADT/SmallString.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/MD5.h"
 #include "llvm/Transforms/Utils/ModuleUtils.h"
 

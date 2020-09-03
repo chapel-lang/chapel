@@ -1,9 +1,8 @@
 //===-- MipsNaClELFStreamer.cpp - ELF Object Output for Mips NaCl ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -144,8 +143,8 @@ private:
 public:
   /// This function is the one used to emit instruction data into the ELF
   /// streamer.  We override it to mask dangerous instructions.
-  void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                       bool) override {
+  void EmitInstruction(const MCInst &Inst,
+                       const MCSubtargetInfo &STI) override {
     // Sandbox indirect jumps.
     if (isIndirectJump(Inst)) {
       if (PendingCall)
@@ -155,8 +154,8 @@ public:
     }
 
     // Sandbox loads, stores and SP changes.
-    unsigned AddrIdx;
-    bool IsStore;
+    unsigned AddrIdx = 0;
+    bool IsStore = false;
     bool IsMemAccess = isBasePlusOffsetMemoryAccess(Inst.getOpcode(), &AddrIdx,
                                                     &IsStore);
     bool IsSPFirstOperand = isStackPointerFirstOperand(Inst);
@@ -271,7 +270,7 @@ MCELFStreamer *createMipsNaClELFStreamer(MCContext &Context,
     S->getAssembler().setRelaxAll(true);
 
   // Set bundle-alignment as required by the NaCl ABI for the target.
-  S->EmitBundleAlignMode(MIPS_NACL_BUNDLE_ALIGN);
+  S->EmitBundleAlignMode(Log2(MIPS_NACL_BUNDLE_ALIGN));
 
   return S;
 }

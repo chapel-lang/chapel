@@ -1,9 +1,8 @@
 //===-- MipsAsmBackend.h - Mips Asm Backend  ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -67,9 +66,9 @@ public:
 
   /// fixupNeedsRelaxation - Target specific predicate for whether a given
   /// fixup requires the associated instruction to be relaxed.
-   bool fixupNeedsRelaxation(const MCFixup &Fixup, uint64_t Value,
-                             const MCRelaxableFragment *DF,
-                             const MCAsmLayout &Layout) const override {
+  bool fixupNeedsRelaxation(const MCFixup &Fixup, uint64_t Value,
+                            const MCRelaxableFragment *DF,
+                            const MCAsmLayout &Layout) const override {
     // FIXME.
     llvm_unreachable("RelaxInstruction() unimplemented");
     return false;

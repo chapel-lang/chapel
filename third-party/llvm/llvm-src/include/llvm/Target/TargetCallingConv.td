@@ -1,9 +1,8 @@
 //===- TargetCallingConv.td - Target Calling Conventions ---*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -52,6 +51,11 @@ class CCIfSwiftSelf<CCAction A> : CCIf<"ArgFlags.isSwiftSelf()", A> {
 class CCIfSwiftError<CCAction A> : CCIf<"ArgFlags.isSwiftError()", A> {
 }
 
+/// CCIfCFGuardTarget - If the current argument has cfguardtarget parameter
+/// attribute, apply Action A.
+class CCIfCFGuardTarget<CCAction A> : CCIf<"ArgFlags.isCFGuardTarget()", A> {
+}
+
 /// CCIfConsecutiveRegs - If the current argument has InConsecutiveRegs
 /// parameter attribute, apply Action A.
 class CCIfConsecutiveRegs<CCAction A> : CCIf<"ArgFlags.isInConsecutiveRegs()", A> {
@@ -82,6 +86,15 @@ class CCIfVarArg<CCAction A> : CCIf<"State.isVarArg()", A> {}
 
 /// CCIfNotVarArg - If the current function is not vararg - apply the action
 class CCIfNotVarArg<CCAction A> : CCIf<"!State.isVarArg()", A> {}
+
+/// CCIfPtrAddrSpace - If the top-level parent of the current argument has
+/// pointer type in the specified address-space.
+class CCIfPtrAddrSpace<int AS, CCAction A>
+    : CCIf<"(ArgFlags.isPointer() && ArgFlags.getPointerAddrSpace() == " # AS # ")", A> {}
+
+/// CCIfPtr - If the top-level parent of the current argument had
+/// pointer type in some address-space.
+class CCIfPtr<CCAction A> : CCIf<"ArgFlags.isPointer()", A> {}
 
 /// CCAssignToReg - This action matches if there is a register in the specified
 /// list that is still available.  If so, it assigns the value to the first
@@ -144,6 +157,12 @@ class CCBitConvertToType<ValueType destTy> : CCAction {
   ValueType DestTy = destTy;
 }
 
+/// CCTruncToType - If applied, this truncates the specified current value to
+/// the specified type.
+class CCTruncToType<ValueType destTy> : CCAction {
+  ValueType DestTy = destTy;
+}
+
 /// CCPassIndirect - If applied, this stores the value to stack and passes the pointer
 /// as normal argument.
 class CCPassIndirect<ValueType destTy> : CCAction {
@@ -160,6 +179,11 @@ class CCDelegateTo<CallingConv cc> : CCAction {
 /// that the target supports.
 class CallingConv<list<CCAction> actions> {
   list<CCAction> Actions = actions;
+
+  /// If true, this calling convention will be emitted as externally visible in
+  /// the llvm namespaces instead of as a static function.
+  bit Entry = 0;
+
   bit Custom = 0;
 }
 

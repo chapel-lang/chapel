@@ -1,9 +1,8 @@
 //===- DwarfEHPrepare - Prepare exception handling for code generation ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,7 +17,6 @@
 #include "llvm/Analysis/CFG.h"
 #include "llvm/Analysis/EHPersonalities.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/CodeGen/RuntimeLibcalls.h"
 #include "llvm/CodeGen/TargetLowering.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
@@ -31,9 +29,11 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/Utils/Local.h"
 #include <cstddef>
 
 using namespace llvm;
@@ -46,7 +46,7 @@ namespace {
 
   class DwarfEHPrepare : public FunctionPass {
     // RewindFunction - _Unwind_Resume or the target equivalent.
-    Constant *RewindFunction = nullptr;
+    FunctionCallee RewindFunction = nullptr;
 
     DominatorTree *DT = nullptr;
     const TargetLowering *TLI = nullptr;
@@ -146,7 +146,7 @@ size_t DwarfEHPrepare::pruneUnreachableResumes(
   size_t ResumeIndex = 0;
   for (auto *RI : Resumes) {
     for (auto *LP : CleanupLPads) {
-      if (isPotentiallyReachable(LP, RI, DT)) {
+      if (isPotentiallyReachable(LP, RI, nullptr, DT)) {
         ResumeReachable.set(ResumeIndex);
         break;
       }

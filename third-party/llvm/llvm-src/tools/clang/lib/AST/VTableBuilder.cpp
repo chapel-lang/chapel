@@ -1,9 +1,8 @@
 //===--- VTableBuilder.cpp - C++ vtable layout builder --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -271,8 +270,8 @@ static BaseOffset
 ComputeReturnAdjustmentBaseOffset(ASTContext &Context,
                                   const CXXMethodDecl *DerivedMD,
                                   const CXXMethodDecl *BaseMD) {
-  const FunctionType *BaseFT = BaseMD->getType()->getAs<FunctionType>();
-  const FunctionType *DerivedFT = DerivedMD->getType()->getAs<FunctionType>();
+  const auto *BaseFT = BaseMD->getType()->castAs<FunctionType>();
+  const auto *DerivedFT = DerivedMD->getType()->castAs<FunctionType>();
 
   // Canonicalize the return types.
   CanQualType CanDerivedReturnType =
@@ -480,7 +479,7 @@ static bool HasSameVirtualSignature(const CXXMethodDecl *LHS,
   // Force the signatures to match.  We can't rely on the overrides
   // list here because there isn't necessarily an inheritance
   // relationship between the two methods.
-  if (LT->getTypeQuals() != RT->getTypeQuals())
+  if (LT->getMethodQuals() != RT->getMethodQuals())
     return false;
   return LT->getParamTypes() == RT->getParamTypes();
 }
@@ -847,6 +846,8 @@ private:
       : BaseOffset(CharUnits::Zero()),
       BaseOffsetInLayoutClass(CharUnits::Zero()),
       VTableIndex(0) { }
+
+    MethodInfo(MethodInfo const&) = default;
   };
 
   typedef llvm::DenseMap<const CXXMethodDecl *, MethodInfo> MethodInfoMapTy;
@@ -1061,8 +1062,7 @@ void ItaniumVTableBuilder::AddThunk(const CXXMethodDecl *MD,
   SmallVectorImpl<ThunkInfo> &ThunksVector = Thunks[MD];
 
   // Check if we have this thunk already.
-  if (std::find(ThunksVector.begin(), ThunksVector.end(), Thunk) !=
-      ThunksVector.end())
+  if (llvm::find(ThunksVector, Thunk) != ThunksVector.end())
     return;
 
   ThunksVector.push_back(Thunk);
@@ -1272,7 +1272,7 @@ ThisAdjustment ItaniumVTableBuilder::ComputeThisAdjustment(
       // We don't have vcall offsets for this virtual base, go ahead and
       // build them.
       VCallAndVBaseOffsetBuilder Builder(MostDerivedClass, MostDerivedClass,
-                                         /*FinalOverriders=*/nullptr,
+                                         /*Overriders=*/nullptr,
                                          BaseSubobject(Offset.VirtualBase,
                                                        CharUnits::Zero()),
                                          /*BaseIsVirtual=*/true,
@@ -2245,7 +2245,7 @@ ItaniumVTableContext::getVirtualBaseOffsetOffset(const CXXRecordDecl *RD,
   if (I != VirtualBaseClassOffsetOffsets.end())
     return I->second;
 
-  VCallAndVBaseOffsetBuilder Builder(RD, RD, /*FinalOverriders=*/nullptr,
+  VCallAndVBaseOffsetBuilder Builder(RD, RD, /*Overriders=*/nullptr,
                                      BaseSubobject(RD, CharUnits::Zero()),
                                      /*BaseIsVirtual=*/false,
                                      /*OffsetInLayoutClass=*/CharUnits::Zero());
@@ -2268,7 +2268,7 @@ CreateVTableLayout(const ItaniumVTableBuilder &Builder) {
   SmallVector<VTableLayout::VTableThunkTy, 1>
     VTableThunks(Builder.vtable_thunks_begin(), Builder.vtable_thunks_end());
 
-  return llvm::make_unique<VTableLayout>(
+  return std::make_unique<VTableLayout>(
       Builder.VTableIndices, Builder.vtable_components(), VTableThunks,
       Builder.getAddressPoints());
 }
@@ -2451,8 +2451,7 @@ private:
     SmallVector<ThunkInfo, 1> &ThunksVector = Thunks[MD];
 
     // Check if we have this thunk already.
-    if (std::find(ThunksVector.begin(), ThunksVector.end(), Thunk) !=
-        ThunksVector.end())
+    if (llvm::find(ThunksVector, Thunk) != ThunksVector.end())
       return;
 
     ThunksVector.push_back(Thunk);
@@ -3189,8 +3188,8 @@ void VFTableBuilder::dumpLayout(raw_ostream &Out) {
       const CXXMethodDecl *MD = MethodNameAndDecl.second;
 
       ThunkInfoVectorTy ThunksVector = Thunks[MD];
-      std::stable_sort(ThunksVector.begin(), ThunksVector.end(),
-                       [](const ThunkInfo &LHS, const ThunkInfo &RHS) {
+      llvm::stable_sort(ThunksVector, [](const ThunkInfo &LHS,
+                                         const ThunkInfo &RHS) {
         // Keep different thunks with the same adjustments in the order they
         // were put into the vector.
         return std::tie(LHS.This, LHS.Return) < std::tie(RHS.This, RHS.Return);
@@ -3254,7 +3253,7 @@ void MicrosoftVTableContext::computeVTablePaths(bool ForVBTables,
 
   // Base case: this subobject has its own vptr.
   if (ForVBTables ? Layout.hasOwnVBPtr() : Layout.hasOwnVFPtr())
-    Paths.push_back(llvm::make_unique<VPtrInfo>(RD));
+    Paths.push_back(std::make_unique<VPtrInfo>(RD));
 
   // Recursive case: get all the vbtables from our bases and remove anything
   // that shares a virtual base.
@@ -3277,7 +3276,7 @@ void MicrosoftVTableContext::computeVTablePaths(bool ForVBTables,
         continue;
 
       // Copy the path and adjust it as necessary.
-      auto P = llvm::make_unique<VPtrInfo>(*BaseInfo);
+      auto P = std::make_unique<VPtrInfo>(*BaseInfo);
 
       // We mangle Base into the path if the path would've been ambiguous and it
       // wasn't already extended with Base.
@@ -3563,7 +3562,7 @@ void MicrosoftVTableContext::computeVTableRelatedInformation(
   const VTableLayout::AddressPointsMapTy EmptyAddressPointsMap;
 
   {
-    auto VFPtrs = llvm::make_unique<VPtrInfoVector>();
+    auto VFPtrs = std::make_unique<VPtrInfoVector>();
     computeVTablePaths(/*ForVBTables=*/false, RD, *VFPtrs);
     computeFullPathsForVFTables(Context, RD, *VFPtrs);
     VFPtrLocations[RD] = std::move(VFPtrs);
@@ -3577,7 +3576,7 @@ void MicrosoftVTableContext::computeVTableRelatedInformation(
     assert(VFTableLayouts.count(id) == 0);
     SmallVector<VTableLayout::VTableThunkTy, 1> VTableThunks(
         Builder.vtable_thunks_begin(), Builder.vtable_thunks_end());
-    VFTableLayouts[id] = llvm::make_unique<VTableLayout>(
+    VFTableLayouts[id] = std::make_unique<VTableLayout>(
         ArrayRef<size_t>{0}, Builder.vtable_components(), VTableThunks,
         EmptyAddressPointsMap);
     Thunks.insert(Builder.thunks_begin(), Builder.thunks_end());
@@ -3669,7 +3668,7 @@ const VirtualBaseInfo &MicrosoftVTableContext::computeVBTableRelatedInformation(
     std::unique_ptr<VirtualBaseInfo> &Entry = VBaseInfo[RD];
     if (Entry)
       return *Entry;
-    Entry = llvm::make_unique<VirtualBaseInfo>();
+    Entry = std::make_unique<VirtualBaseInfo>();
     VBI = Entry.get();
   }
 

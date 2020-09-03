@@ -1,9 +1,8 @@
 //===-- RandomNumberGenerator.cpp - Implement RNG class -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,7 +17,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #ifdef _WIN32
-#include "Windows/WindowsSupport.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
 #else
 #include "Unix/Unix.h"
 #endif
@@ -27,13 +26,9 @@ using namespace llvm;
 
 #define DEBUG_TYPE "rng"
 
-// Tracking BUG: 19665
-// http://llvm.org/bugs/show_bug.cgi?id=19665
-//
-// Do not change to cl::opt<uint64_t> since this silently breaks argument parsing.
-static cl::opt<unsigned long long>
-    Seed("rng-seed", cl::value_desc("seed"), cl::Hidden,
-         cl::desc("Seed for the random number generator"), cl::init(0));
+static cl::opt<uint64_t> Seed("rng-seed", cl::value_desc("seed"), cl::Hidden,
+                              cl::desc("Seed for the random number generator"),
+                              cl::init(0));
 
 RandomNumberGenerator::RandomNumberGenerator(StringRef Salt) {
   LLVM_DEBUG(if (Seed == 0) dbgs()

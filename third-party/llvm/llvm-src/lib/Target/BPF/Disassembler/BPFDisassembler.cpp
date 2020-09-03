@@ -1,9 +1,8 @@
 //===- BPFDisassembler.cpp - Disassembler for BPF ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/BPFMCTargetDesc.h"
+#include "TargetInfo/BPFTargetInfo.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCContext.h"
@@ -40,7 +40,7 @@ public:
     BPF_STX = 0x3,
     BPF_ALU = 0x4,
     BPF_JMP = 0x5,
-    BPF_RES = 0x6,
+    BPF_JMP32 = 0x6,
     BPF_ALU64 = 0x7
   };
 
@@ -67,7 +67,6 @@ public:
 
   DecodeStatus getInstruction(MCInst &Instr, uint64_t &Size,
                               ArrayRef<uint8_t> Bytes, uint64_t Address,
-                              raw_ostream &VStream,
                               raw_ostream &CStream) const override;
 
   uint8_t getInstClass(uint64_t Inst) const { return (Inst >> 56) & 0x7; };
@@ -84,7 +83,7 @@ static MCDisassembler *createBPFDisassembler(const Target &T,
 }
 
 
-extern "C" void LLVMInitializeBPFDisassembler() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeBPFDisassembler() {
   // Register the disassembler.
   TargetRegistry::RegisterMCDisassembler(getTheBPFTarget(),
                                          createBPFDisassembler);
@@ -162,7 +161,6 @@ static DecodeStatus readInstruction64(ArrayRef<uint8_t> Bytes, uint64_t Address,
 DecodeStatus BPFDisassembler::getInstruction(MCInst &Instr, uint64_t &Size,
                                              ArrayRef<uint8_t> Bytes,
                                              uint64_t Address,
-                                             raw_ostream &VStream,
                                              raw_ostream &CStream) const {
   bool IsLittleEndian = getContext().getAsmInfo()->isLittleEndian();
   uint64_t Insn, Hi;
@@ -172,9 +170,10 @@ DecodeStatus BPFDisassembler::getInstruction(MCInst &Instr, uint64_t &Size,
   if (Result == MCDisassembler::Fail) return MCDisassembler::Fail;
 
   uint8_t InstClass = getInstClass(Insn);
+  uint8_t InstMode = getInstMode(Insn);
   if ((InstClass == BPF_LDX || InstClass == BPF_STX) &&
       getInstSize(Insn) != BPF_DW &&
-      getInstMode(Insn) == BPF_MEM &&
+      (InstMode == BPF_MEM || InstMode == BPF_XADD) &&
       STI.getFeatureBits()[BPF::ALU32])
     Result = decodeInstruction(DecoderTableBPFALU3264, Instr, Insn, Address,
                                this, STI);

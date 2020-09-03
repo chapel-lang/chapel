@@ -22,6 +22,9 @@ static_library("Support") {
 
     # public_dep because public header TargetSelect.h includes these .def files.
     "//llvm/include/llvm/Config:write_target_def_files",
+
+    # public_dep because random targets assume its output exists.
+    "//llvm/include/llvm/Support:write_extension_def",
   ]
   include_dirs = [
     "Unix",
@@ -29,6 +32,7 @@ static_library("Support") {
   ]
   sources = [
     "AArch64TargetParser.cpp",
+    "ABIBreak.cpp",
     "AMDGPUMetadata.cpp",
     "APFloat.cpp",
     "APInt.cpp",
@@ -46,6 +50,7 @@ static_library("Support") {
     "BranchProbability.cpp",
     "BuryPointer.cpp",
     "COM.cpp",
+    "CRC.cpp",
     "CachePruning.cpp",
     "Chrono.cpp",
     "CodeGenCoverage.cpp",
@@ -63,6 +68,7 @@ static_library("Support") {
     "Error.cpp",
     "ErrorHandling.cpp",
     "FileCheck.cpp",
+    "FileCollector.cpp",
     "FileOutputBuffer.cpp",
     "FileUtilities.cpp",
     "FoldingSet.cpp",
@@ -76,7 +82,6 @@ static_library("Support") {
     "IntervalMap.cpp",
     "ItaniumManglingCanonicalizer.cpp",
     "JSON.cpp",
-    "JamCRC.cpp",
     "KnownBits.cpp",
     "LEB128.cpp",
     "LineIterator.cpp",
@@ -88,15 +93,17 @@ static_library("Support") {
     "MathExtras.cpp",
     "MemoryBuffer.cpp",
     "NativeFormatting.cpp",
-    "Options.cpp",
+    "Optional.cpp",
     "Parallel.cpp",
     "PluginLoader.cpp",
     "PrettyStackTrace.cpp",
+    "RWMutex.cpp",
     "RandomNumberGenerator.cpp",
     "Regex.cpp",
     "SHA1.cpp",
     "ScaledNumber.cpp",
     "ScopedPrinter.cpp",
+    "Signposts.cpp",
     "SmallPtrSet.cpp",
     "SmallVector.cpp",
     "SourceMgr.cpp",
@@ -112,6 +119,7 @@ static_library("Support") {
     "TarWriter.cpp",
     "TargetParser.cpp",
     "ThreadPool.cpp",
+    "TimeProfiler.cpp",
     "Timer.cpp",
     "ToolOutputFile.cpp",
     "TrigramIndex.cpp",
@@ -123,6 +131,7 @@ static_library("Support") {
     "WithColor.cpp",
     "YAMLParser.cpp",
     "YAMLTraits.cpp",
+    "Z3Solver.cpp",
     "circular_raw_ostream.cpp",
     "raw_os_ostream.cpp",
     "raw_ostream.cpp",
@@ -139,11 +148,9 @@ static_library("Support") {
     "Errno.cpp",
     "Host.cpp",
     "Memory.cpp",
-    "Mutex.cpp",
     "Path.cpp",
     "Process.cpp",
     "Program.cpp",
-    "RWMutex.cpp",
     "Signals.cpp",
     "TargetRegistry.cpp",
     "ThreadLocal.cpp",
@@ -155,7 +162,17 @@ static_library("Support") {
 
   libs = []
 
+  # FIXME: llvm/Config/BUILD.gn currently always sets LLVM_WITH_Z3
+  # to false. If that changes we need to link to Z3 libs here.
+
   if (current_os == "linux" || current_os == "android") {
     libs += [ "dl" ]
+  } else if (current_os == "win") {
+    # Delay load shell32.dll if possible to speed up process startup.
+    libs += [ "delayimp.lib" ]
+    ldflags = [
+      "-delayload:ole32.dll",
+      "-delayload:shell32.dll",
+    ]
   }
 }

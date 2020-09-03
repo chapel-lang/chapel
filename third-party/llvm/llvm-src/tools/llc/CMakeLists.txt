@@ -1,5 +1,8 @@
 set(LLVM_LINK_COMPONENTS
-  ${LLVM_TARGETS_TO_BUILD}
+  AllTargetsAsmParsers
+  AllTargetsCodeGens
+  AllTargetsDescs
+  AllTargetsInfos
   Analysis
   AsmPrinter
   CodeGen
@@ -7,6 +10,7 @@ set(LLVM_LINK_COMPONENTS
   IRReader
   MC
   MIRParser
+  Remarks
   ScalarOpts
   SelectionDAG
   Support
@@ -15,13 +19,11 @@ set(LLVM_LINK_COMPONENTS
   Vectorize
   )
 
-# Support plugins.
-set(LLVM_NO_DEAD_STRIP 1)
-
 add_llvm_tool(llc
   llc.cpp
 
   DEPENDS
   intrinsics_gen
+  SUPPORT_PLUGINS
   )
 export_executable_symbols(llc)

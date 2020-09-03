@@ -1,9 +1,8 @@
 //===--- Execution.h - Executing clang frontend actions -*- C++ ---------*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -115,13 +114,6 @@ public:
 
   /// Returns the name of a specific executor.
   virtual StringRef getExecutorName() const = 0;
-
-  /// Should return true iff executor runs all actions in a single process.
-  /// Clients can use this signal to find out if they can collect results
-  /// in-memory (e.g. to avoid serialization costs of using ToolResults).
-  /// The single-process executors can still run multiple threads, but all
-  /// executions are guaranteed to share the same memory.
-  virtual bool isSingleProcess() const = 0;
 
   /// Executes each action with a corresponding arguments adjuster.
   virtual llvm::Error

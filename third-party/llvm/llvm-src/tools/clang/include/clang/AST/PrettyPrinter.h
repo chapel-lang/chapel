@@ -1,13 +1,12 @@
 //===--- PrettyPrinter.h - Classes for aiding with AST printing -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
-//  This file defines the PrinterHelper interface.
+//  This file defines helper types for AST pretty-printing.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,6 +27,16 @@ class PrinterHelper {
 public:
   virtual ~PrinterHelper();
   virtual bool handledStmt(Stmt* E, raw_ostream& OS) = 0;
+};
+
+/// Callbacks to use to customize the behavior of the pretty-printer.
+class PrintingCallbacks {
+protected:
+  ~PrintingCallbacks() = default;
+
+public:
+  /// Remap a path to a form suitable for printing.
+  virtual std::string remapPath(StringRef Path) const { return Path; }
 };
 
 /// Describes how types, statements, expressions, and declarations should be
@@ -51,7 +60,7 @@ struct PrintingPolicy {
         MSWChar(LO.MicrosoftExt && !LO.WChar), IncludeNewlines(true),
         MSVCFormatting(false), ConstantsAsWritten(false),
         SuppressImplicitBase(false), FullyQualifiedName(false),
-        RemapFilePaths(false), PrintCanonicalTypes(false) {}
+        PrintCanonicalTypes(false) {}
 
   /// Adjust this printing policy for cases where it's known that we're
   /// printing C++ code (for instance, if AST dumping reaches a C++-only
@@ -225,14 +234,11 @@ struct PrintingPolicy {
   /// This is the opposite of SuppressScope and thus overrules it.
   unsigned FullyQualifiedName : 1;
 
-  /// Whether to apply -fdebug-prefix-map to any file paths.
-  unsigned RemapFilePaths : 1;
-
   /// Whether to print types as written or canonically.
   unsigned PrintCanonicalTypes : 1;
 
-  /// When RemapFilePaths is true, this function performs the action.
-  std::function<std::string(StringRef)> remapPath;
+  /// Callbacks to use to allow the behavior of printing to be customized.
+  const PrintingCallbacks *Callbacks = nullptr;
 };
 
 } // end namespace clang

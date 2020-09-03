@@ -1,9 +1,8 @@
 //===-- IPO.cpp -----------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -44,8 +43,9 @@ void llvm::initializeIPO(PassRegistry &Registry) {
   initializeBlockExtractorPass(Registry);
   initializeSingleLoopExtractorPass(Registry);
   initializeLowerTypeTestsPass(Registry);
-  initializeMergeFunctionsPass(Registry);
+  initializeMergeFunctionsLegacyPassPass(Registry);
   initializePartialInlinerLegacyPassPass(Registry);
+  initializeAttributorLegacyPassPass(Registry);
   initializePostOrderFunctionAttrsLegacyPassPass(Registry);
   initializeReversePostOrderFunctionAttrsLegacyPassPass(Registry);
   initializePruneEHPass(Registry);
@@ -114,11 +114,24 @@ void LLVMAddIPSCCPPass(LLVMPassManagerRef PM) {
   unwrap(PM)->add(createIPSCCPPass());
 }
 
+void LLVMAddMergeFunctionsPass(LLVMPassManagerRef PM) {
+  unwrap(PM)->add(createMergeFunctionsPass());
+}
+
 void LLVMAddInternalizePass(LLVMPassManagerRef PM, unsigned AllButMain) {
   auto PreserveMain = [=](const GlobalValue &GV) {
     return AllButMain && GV.getName() == "main";
   };
   unwrap(PM)->add(createInternalizePass(PreserveMain));
+}
+
+void LLVMAddInternalizePassWithMustPreservePredicate(
+    LLVMPassManagerRef PM,
+    void *Context,
+    LLVMBool (*Pred)(LLVMValueRef, void *)) {
+  unwrap(PM)->add(createInternalizePass([=](const GlobalValue &GV) {
+    return Pred(wrap(&GV), Context) == 0 ? false : true;
+  }));
 }
 
 void LLVMAddStripDeadPrototypesPass(LLVMPassManagerRef PM) {

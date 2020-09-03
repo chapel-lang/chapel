@@ -1,9 +1,8 @@
 //===-- Instrumentation.cpp - TransformUtils Infrastructure ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,10 +24,12 @@ using namespace llvm;
 /// Moves I before IP. Returns new insert point.
 static BasicBlock::iterator moveBeforeInsertPoint(BasicBlock::iterator I, BasicBlock::iterator IP) {
   // If I is IP, move the insert point down.
-  if (I == IP)
-    return ++IP;
-  // Otherwise, move I before IP and return IP.
-  I->moveBefore(&*IP);
+  if (I == IP) {
+    ++IP;
+  } else {
+    // Otherwise, move I before IP and return IP.
+    I->moveBefore(&*IP);
+  }
   return IP;
 }
 
@@ -67,7 +68,8 @@ GlobalVariable *llvm::createPrivateGlobalForString(Module &M, StringRef Str,
                          GlobalValue::PrivateLinkage, StrConst, NamePrefix);
   if (AllowMerging)
     GV->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
-  GV->setAlignment(1);  // Strings may not be merged w/o setting align 1.
+  GV->setAlignment(Align::None()); // Strings may not be merged w/o setting
+                                   // alignment explicitly.
   return GV;
 }
 
@@ -101,8 +103,8 @@ Comdat *llvm::GetOrCreateFunctionComdat(Function &F, Triple &T,
 /// initializeInstrumentation - Initialize all passes in the TransformUtils
 /// library.
 void llvm::initializeInstrumentation(PassRegistry &Registry) {
-  initializeAddressSanitizerPass(Registry);
-  initializeAddressSanitizerModulePass(Registry);
+  initializeAddressSanitizerLegacyPassPass(Registry);
+  initializeModuleAddressSanitizerLegacyPassPass(Registry);
   initializeBoundsCheckingLegacyPassPass(Registry);
   initializeControlHeightReductionLegacyPassPass(Registry);
   initializeGCOVProfilerLegacyPassPass(Registry);
@@ -110,13 +112,13 @@ void llvm::initializeInstrumentation(PassRegistry &Registry) {
   initializePGOInstrumentationUseLegacyPassPass(Registry);
   initializePGOIndirectCallPromotionLegacyPassPass(Registry);
   initializePGOMemOPSizeOptLegacyPassPass(Registry);
+  initializeInstrOrderFileLegacyPassPass(Registry);
   initializeInstrProfilingLegacyPassPass(Registry);
   initializeMemorySanitizerLegacyPassPass(Registry);
-  initializeHWAddressSanitizerPass(Registry);
+  initializeHWAddressSanitizerLegacyPassPass(Registry);
   initializeThreadSanitizerLegacyPassPass(Registry);
-  initializeSanitizerCoverageModulePass(Registry);
+  initializeModuleSanitizerCoverageLegacyPassPass(Registry);
   initializeDataFlowSanitizerPass(Registry);
-  initializeEfficiencySanitizerPass(Registry);
 }
 
 /// LLVMInitializeInstrumentation - C binding for

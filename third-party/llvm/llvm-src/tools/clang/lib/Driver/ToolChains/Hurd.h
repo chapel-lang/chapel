@@ -1,9 +1,8 @@
 //===--- Hurd.h - Hurd ToolChain Implementations ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,15 +27,21 @@ public:
   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
                             llvm::opt::ArgStringList &CC1Args) const override;
 
-  virtual std::string computeSysRoot() const;
+  std::string computeSysRoot() const;
 
-  virtual std::string getDynamicLinker(const llvm::opt::ArgList &Args) const;
+  std::string getDynamicLinker(const llvm::opt::ArgList &Args) const override;
+
+  void addExtraOpts(llvm::opt::ArgStringList &CmdArgs) const override;
 
   std::vector<std::string> ExtraOpts;
 
 protected:
   Tool *buildAssembler() const override;
   Tool *buildLinker() const override;
+
+  std::string getMultiarchTriple(const Driver &D,
+                                 const llvm::Triple &TargetTriple,
+                                 StringRef SysRoot) const override;
 };
 
 } // end namespace toolchains

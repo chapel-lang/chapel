@@ -1,9 +1,8 @@
 //===-- WebAssemblyTargetTransformInfo.cpp - WebAssembly-specific TTI -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -26,10 +25,11 @@ WebAssemblyTTIImpl::getPopcntSupport(unsigned TyWidth) const {
   return TargetTransformInfo::PSK_FastHardware;
 }
 
-unsigned WebAssemblyTTIImpl::getNumberOfRegisters(bool Vector) {
-  unsigned Result = BaseT::getNumberOfRegisters(Vector);
+unsigned WebAssemblyTTIImpl::getNumberOfRegisters(unsigned ClassID) const {
+  unsigned Result = BaseT::getNumberOfRegisters(ClassID);
 
   // For SIMD, use at least 16 registers, as a rough guess.
+  bool Vector = (ClassID == 1);
   if (Vector)
     Result = std::max(Result, 16u);
 
@@ -46,12 +46,13 @@ unsigned WebAssemblyTTIImpl::getRegisterBitWidth(bool Vector) const {
 unsigned WebAssemblyTTIImpl::getArithmeticInstrCost(
     unsigned Opcode, Type *Ty, TTI::OperandValueKind Opd1Info,
     TTI::OperandValueKind Opd2Info, TTI::OperandValueProperties Opd1PropInfo,
-    TTI::OperandValueProperties Opd2PropInfo, ArrayRef<const Value *> Args) {
+    TTI::OperandValueProperties Opd2PropInfo, ArrayRef<const Value *> Args,
+    const Instruction *CxtI) {
 
   unsigned Cost = BasicTTIImplBase<WebAssemblyTTIImpl>::getArithmeticInstrCost(
       Opcode, Ty, Opd1Info, Opd2Info, Opd1PropInfo, Opd2PropInfo);
 
-  if (VectorType *VTy = dyn_cast<VectorType>(Ty)) {
+  if (auto *VTy = dyn_cast<VectorType>(Ty)) {
     switch (Opcode) {
     case Instruction::LShr:
     case Instruction::AShr:

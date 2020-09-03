@@ -31,15 +31,21 @@ class CallInfo;
 class Expr;
 class FnSymbol;
 
+class VisibilityInfo {
+public:
+  BlockStmt* currStart;
+  BlockStmt* nextPOI;
+  VisibilityInfo() : currStart(NULL), nextPOI(NULL) {}
+};
+
 void       findVisibleFunctions(CallInfo&       info,
                                 Vec<FnSymbol*>& visibleFns);
 
-void       findVisibleFunctions(CallInfo&       info,
-                                std::set<BlockStmt*>*    visited,
-                                std::vector<BlockStmt*>* currentScopes,
-                                std::vector<BlockStmt*>* nextScopes,
-                                int*            numVisitedP,
-                                Vec<FnSymbol*>& visibleFns);
+void       findVisibleFunctions(CallInfo&             info,
+                                VisibilityInfo*       visInfo,
+                                std::set<BlockStmt*>* visited,
+                                int*                  numVisitedP,
+                                Vec<FnSymbol*>&       visibleFns);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,

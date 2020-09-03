@@ -1,9 +1,8 @@
 //===- Symbolize.h ----------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "llvm/DebugInfo/Symbolize/SymbolizableModule.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/ObjectFile.h"
+#include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Support/Error.h"
 #include <algorithm>
 #include <cstdint>
@@ -36,35 +36,37 @@ using FunctionNameKind = DILineInfoSpecifier::FunctionNameKind;
 class LLVMSymbolizer {
 public:
   struct Options {
-    FunctionNameKind PrintFunctions;
-    bool UseSymbolTable : 1;
-    bool Demangle : 1;
-    bool RelativeAddresses : 1;
+    FunctionNameKind PrintFunctions = FunctionNameKind::LinkageName;
+    bool UseSymbolTable = true;
+    bool Demangle = true;
+    bool RelativeAddresses = false;
+    bool UntagAddresses = false;
     std::string DefaultArch;
     std::vector<std::string> DsymHints;
-
-    Options(FunctionNameKind PrintFunctions = FunctionNameKind::LinkageName,
-            bool UseSymbolTable = true, bool Demangle = true,
-            bool RelativeAddresses = false, std::string DefaultArch = "")
-        : PrintFunctions(PrintFunctions), UseSymbolTable(UseSymbolTable),
-          Demangle(Demangle), RelativeAddresses(RelativeAddresses),
-          DefaultArch(std::move(DefaultArch)) {}
+    std::string FallbackDebugPath;
+    std::string DWPName;
+    std::vector<std::string> DebugFileDirectory;
   };
 
-  LLVMSymbolizer(const Options &Opts = Options()) : Opts(Opts) {}
+  LLVMSymbolizer() = default;
+  LLVMSymbolizer(const Options &Opts) : Opts(Opts) {}
 
   ~LLVMSymbolizer() {
     flush();
   }
 
+  Expected<DILineInfo> symbolizeCode(const ObjectFile &Obj,
+                                     object::SectionedAddress ModuleOffset);
   Expected<DILineInfo> symbolizeCode(const std::string &ModuleName,
-                                     uint64_t ModuleOffset,
-                                     StringRef DWPName = "");
-  Expected<DIInliningInfo> symbolizeInlinedCode(const std::string &ModuleName,
-                                                uint64_t ModuleOffset,
-                                                StringRef DWPName = "");
+                                     object::SectionedAddress ModuleOffset);
+  Expected<DIInliningInfo>
+  symbolizeInlinedCode(const std::string &ModuleName,
+                       object::SectionedAddress ModuleOffset);
   Expected<DIGlobal> symbolizeData(const std::string &ModuleName,
-                                   uint64_t ModuleOffset);
+                                   object::SectionedAddress ModuleOffset);
+  Expected<std::vector<DILocal>>
+  symbolizeFrame(const std::string &ModuleName,
+                 object::SectionedAddress ModuleOffset);
   void flush();
 
   static std::string
@@ -74,14 +76,23 @@ public:
 private:
   // Bundles together object file with code/data and object file with
   // corresponding debug info. These objects can be the same.
-  using ObjectPair = std::pair<ObjectFile *, ObjectFile *>;
+  using ObjectPair = std::pair<const ObjectFile *, const ObjectFile *>;
+
+  Expected<DILineInfo>
+  symbolizeCodeCommon(SymbolizableModule *Info,
+                      object::SectionedAddress ModuleOffset);
 
   /// Returns a SymbolizableModule or an error if loading debug info failed.
   /// Only one attempt is made to load a module, and errors during loading are
   /// only reported once. Subsequent calls to get module info for a module that
   /// failed to load will return nullptr.
   Expected<SymbolizableModule *>
-  getOrCreateModuleInfo(const std::string &ModuleName, StringRef DWPName = "");
+  getOrCreateModuleInfo(const std::string &ModuleName);
+
+  Expected<SymbolizableModule *>
+  createModuleInfo(const ObjectFile *Obj,
+                   std::unique_ptr<DIContext> Context,
+                   StringRef ModuleName);
 
   ObjectFile *lookUpDsymFile(const std::string &Path,
                              const MachOObjectFile *ExeObj,
@@ -89,6 +100,9 @@ private:
   ObjectFile *lookUpDebuglinkObject(const std::string &Path,
                                     const ObjectFile *Obj,
                                     const std::string &ArchName);
+  ObjectFile *lookUpBuildIDObject(const std::string &Path,
+                                  const ELFObjectFileBase *Obj,
+                                  const std::string &ArchName);
 
   /// Returns pair of pointers to object and debug object.
   Expected<ObjectPair> getOrCreateObjectPair(const std::string &Path,

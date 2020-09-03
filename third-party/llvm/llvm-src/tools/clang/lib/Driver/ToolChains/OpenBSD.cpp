@@ -1,9 +1,8 @@
 //===--- OpenBSD.cpp - OpenBSD ToolChain Implementations --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -90,7 +89,7 @@ void openbsd::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(II.getFilename());
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
@@ -189,11 +188,11 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         CmdArgs.push_back("-lm");
     }
     if (NeedsSanitizerDeps) {
-      CmdArgs.push_back(ToolChain.getCompilerRTArgString(Args, "builtins", false));
+      CmdArgs.push_back(ToolChain.getCompilerRTArgString(Args, "builtins"));
       linkSanitizerRuntimeDeps(ToolChain, CmdArgs);
     }
     if (NeedsXRayDeps) {
-      CmdArgs.push_back(ToolChain.getCompilerRTArgString(Args, "builtins", false));
+      CmdArgs.push_back(ToolChain.getCompilerRTArgString(Args, "builtins"));
       linkXRayRuntimeDeps(ToolChain, CmdArgs);
     }
     // FIXME: For some reason GCC passes -lgcc before adding
@@ -228,7 +227,7 @@ void openbsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   const char *Exec = Args.MakeArgString(ToolChain.GetLinkerPath());
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 SanitizerMask OpenBSD::getSupportedSanitizers() const {
@@ -268,3 +267,12 @@ Tool *OpenBSD::buildAssembler() const {
 }
 
 Tool *OpenBSD::buildLinker() const { return new tools::openbsd::Linker(*this); }
+
+void OpenBSD::addClangTargetOptions(const ArgList &DriverArgs,
+                                    ArgStringList &CC1Args,
+                                    Action::OffloadKind) const {
+  // Support for .init_array is still new (Aug 2016).
+  if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
+                          options::OPT_fno_use_init_array, false))
+    CC1Args.push_back("-fno-use-init-array");
+}

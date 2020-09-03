@@ -1,9 +1,8 @@
 //===- NewPMDriver.cpp - Driver for opt with new PM -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -14,7 +13,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "NewPMDriver.h"
-#include "Debugify.h"
 #include "PassPrinters.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -36,6 +34,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO/ThinLTOBitcodeWriter.h"
 #include "llvm/Transforms/Scalar/LoopPassManager.h"
+#include "llvm/Transforms/Utils/Debugify.h"
 
 using namespace llvm;
 using namespace opt_tool;
@@ -101,19 +100,11 @@ static cl::opt<std::string> OptimizerLastEPPipeline(
              "the OptimizerLast extension point into default pipelines"),
     cl::Hidden);
 
-enum PGOKind { NoPGO, InstrGen, InstrUse, SampleUse };
-static cl::opt<PGOKind> PGOKindFlag(
-    "pgo-kind", cl::init(NoPGO), cl::Hidden,
-    cl::desc("The kind of profile guided optimization"),
-    cl::values(clEnumValN(NoPGO, "nopgo", "Do not use PGO."),
-               clEnumValN(InstrGen, "new-pm-pgo-instr-gen-pipeline",
-                          "Instrument the IR to generate profile."),
-               clEnumValN(InstrUse, "new-pm-pgo-instr-use-pipeline",
-                          "Use instrumented profile to guide PGO."),
-               clEnumValN(SampleUse, "new-pm-pgo-sample-use-pipeline",
-                          "Use sampled profile to guide PGO.")));
-static cl::opt<std::string> ProfileFile(
-    "profile-file", cl::desc("Path to the profile."), cl::Hidden);
+extern cl::opt<PGOKind> PGOKindFlag;
+extern cl::opt<std::string> ProfileFile;
+extern cl::opt<CSPGOKind> CSPGOKindFlag;
+extern cl::opt<std::string> CSProfileGenFile;
+
 static cl::opt<std::string>
     ProfileRemappingFile("profile-remapping-file",
                          cl::desc("Path to the profile remapping file."),
@@ -211,11 +202,9 @@ static void registerEPCallbacks(PassBuilder &PB, bool VerifyEachPass,
         });
 }
 
-#ifdef LINK_POLLY_INTO_TOOLS
-namespace polly {
-void RegisterPollyPasses(PassBuilder &);
-}
-#endif
+#define HANDLE_EXTENSION(Ext)                                                  \
+  llvm::PassPluginLibraryInfo get##Ext##PluginInfo();
+#include "llvm/Support/Extension.def"
 
 bool llvm::runPassPipeline(StringRef Arg0, Module &M, TargetMachine *TM,
                            ToolOutputFile *Out, ToolOutputFile *ThinLTOLinkOut,
@@ -231,25 +220,46 @@ bool llvm::runPassPipeline(StringRef Arg0, Module &M, TargetMachine *TM,
   Optional<PGOOptions> P;
   switch (PGOKindFlag) {
     case InstrGen:
-      P = PGOOptions(ProfileFile, "", "", "", true);
+      P = PGOOptions(ProfileFile, "", "", PGOOptions::IRInstr);
       break;
     case InstrUse:
-      P = PGOOptions("", ProfileFile, "", ProfileRemappingFile, false);
+      P = PGOOptions(ProfileFile, "", ProfileRemappingFile, PGOOptions::IRUse);
       break;
     case SampleUse:
-      P = PGOOptions("", "", ProfileFile, ProfileRemappingFile, false);
+      P = PGOOptions(ProfileFile, "", ProfileRemappingFile,
+                     PGOOptions::SampleUse);
       break;
     case NoPGO:
       if (DebugInfoForProfiling)
-        P = PGOOptions("", "", "", "", false, true);
+        P = PGOOptions("", "", "", PGOOptions::NoAction, PGOOptions::NoCSAction,
+                       true);
       else
         P = None;
-  }
+    }
+    if (CSPGOKindFlag != NoCSPGO) {
+      if (P && (P->Action == PGOOptions::IRInstr ||
+                P->Action == PGOOptions::SampleUse))
+        errs() << "CSPGOKind cannot be used with IRInstr or SampleUse";
+      if (CSPGOKindFlag == CSInstrGen) {
+        if (CSProfileGenFile.empty())
+          errs() << "CSInstrGen needs to specify CSProfileGenFile";
+        if (P) {
+          P->CSAction = PGOOptions::CSIRInstr;
+          P->CSProfileGenFile = CSProfileGenFile;
+        } else
+          P = PGOOptions("", CSProfileGenFile, ProfileRemappingFile,
+                         PGOOptions::NoAction, PGOOptions::CSIRInstr);
+      } else /* CSPGOKindFlag == CSInstrUse */ {
+        if (!P)
+          errs() << "CSInstrUse needs to be together with InstrUse";
+        P->CSAction = PGOOptions::CSIRUse;
+      }
+    }
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI;
   SI.registerCallbacks(PIC);
 
-  PassBuilder PB(TM, P, &PIC);
+  PassBuilder PB(TM, PipelineTuningOptions(), P, &PIC);
   registerEPCallbacks(PB, VerifyEachPass, DebugPM);
 
   // Load requested pass plugins and let them register pass builder callbacks
@@ -278,9 +288,9 @@ bool llvm::runPassPipeline(StringRef Arg0, Module &M, TargetMachine *TM,
         return false;
       });
 
-#ifdef LINK_POLLY_INTO_TOOLS
-  polly::RegisterPollyPasses(PB);
-#endif
+#define HANDLE_EXTENSION(Ext)                                                  \
+  get##Ext##PluginInfo().RegisterPassBuilderCallbacks(PB);
+#include "llvm/Support/Extension.def"
 
   // Specially handle the alias analysis manager so that we can register
   // a custom pipeline of AA passes with it.

@@ -1,9 +1,8 @@
 //===- TailDuplication.cpp - Duplicate blocks into predecessors' tails ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,12 +12,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Analysis/ProfileSummaryInfo.h"
+#include "llvm/CodeGen/LazyMachineBlockFrequencyInfo.h"
 #include "llvm/CodeGen/MachineBranchProbabilityInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TailDuplicator.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 
 using namespace llvm;
@@ -38,6 +40,8 @@ public:
 
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<MachineBranchProbabilityInfo>();
+    AU.addRequired<LazyMachineBlockFrequencyInfoPass>();
+    AU.addRequired<ProfileSummaryInfoWrapperPass>();
     MachineFunctionPass::getAnalysisUsage(AU);
   }
 };
@@ -55,6 +59,11 @@ public:
   static char ID;
   EarlyTailDuplicate() : TailDuplicateBase(ID, true) {
     initializeEarlyTailDuplicatePass(*PassRegistry::getPassRegistry());
+  }
+
+  MachineFunctionProperties getClearedProperties() const override {
+    return MachineFunctionProperties()
+      .set(MachineFunctionProperties::Property::NoPHIs);
   }
 };
 
@@ -75,7 +84,11 @@ bool TailDuplicateBase::runOnMachineFunction(MachineFunction &MF) {
     return false;
 
   auto MBPI = &getAnalysis<MachineBranchProbabilityInfo>();
-  Duplicator.initMF(MF, PreRegAlloc, MBPI, /*LayoutMode=*/false);
+  auto *PSI = &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
+  auto *MBFI = (PSI && PSI->hasProfileSummary()) ?
+               &getAnalysis<LazyMachineBlockFrequencyInfoPass>().getBFI() :
+               nullptr;
+  Duplicator.initMF(MF, PreRegAlloc, MBPI, MBFI, PSI, /*LayoutMode=*/false);
 
   bool MadeChange = false;
   while (Duplicator.tailDuplicateBlocks())

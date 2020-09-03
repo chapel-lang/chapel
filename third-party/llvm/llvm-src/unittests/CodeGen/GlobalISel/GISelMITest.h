@@ -1,10 +1,8 @@
-//===- GISelMITest.h
-//-----------------------------------------------===//
+//===- GISelMITest.h --------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #ifndef LLVM_UNITTEST_CODEGEN_GLOBALISEL_GISELMI_H
@@ -23,6 +21,7 @@
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetLowering.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/FileCheck.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -43,6 +42,15 @@ static inline void initLLVM() {
   PassRegistry *Registry = PassRegistry::getPassRegistry();
   initializeCore(*Registry);
   initializeCodeGen(*Registry);
+}
+
+// Define a printers to help debugging when things go wrong.
+namespace llvm {
+std::ostream &
+operator<<(std::ostream &OS, const LLT Ty);
+
+std::ostream &
+operator<<(std::ostream &OS, const MachineFunction &MF);
 }
 
 /// Create a TargetMachine. As we lack a dedicated always available target for
@@ -104,7 +112,7 @@ body: |
 )MIR") + Twine(MIRFunc) + Twine("...\n"))
                             .toNullTerminatedStringRef(S);
   std::unique_ptr<MIRParser> MIR;
-  auto MMI = make_unique<MachineModuleInfo>(&TM);
+  auto MMI = std::make_unique<MachineModuleInfo>(&TM);
   std::unique_ptr<Module> M =
       parseMIR(Context, MIR, TM, MIRString, "func", *MMI);
   return make_pair(std::move(M), std::move(MMI));
@@ -117,7 +125,7 @@ static MachineFunction *getMFFromMMI(const Module *M,
   return MF;
 }
 
-static void collectCopies(SmallVectorImpl<unsigned> &Copies,
+static void collectCopies(SmallVectorImpl<Register> &Copies,
                           MachineFunction *MF) {
   for (auto &MBB : *MF)
     for (MachineInstr &MI : MBB) {
@@ -128,11 +136,12 @@ static void collectCopies(SmallVectorImpl<unsigned> &Copies,
 
 class GISelMITest : public ::testing::Test {
 protected:
-  GISelMITest() : ::testing::Test() {
+  GISelMITest() : ::testing::Test() {}
+  void setUp(StringRef ExtraAssembly = "") {
     TM = createTargetMachine();
     if (!TM)
       return;
-    ModuleMMIPair = createDummyModule(Context, *TM, "");
+    ModuleMMIPair = createDummyModule(Context, *TM, ExtraAssembly);
     MF = getMFFromMMI(ModuleMMIPair.first.get(), ModuleMMIPair.second.get());
     collectCopies(Copies, MF);
     EntryMBB = &*MF->begin();
@@ -145,7 +154,7 @@ protected:
   MachineFunction *MF;
   std::pair<std::unique_ptr<Module>, std::unique_ptr<MachineModuleInfo>>
       ModuleMMIPair;
-  SmallVector<unsigned, 4> Copies;
+  SmallVector<Register, 4> Copies;
   MachineBasicBlock *EntryMBB;
   MachineIRBuilder B;
   MachineRegisterInfo *MRI;
@@ -187,10 +196,11 @@ static inline bool CheckMachineFunction(const MachineFunction &MF,
   SM.AddNewSourceBuffer(MemoryBuffer::getMemBuffer(CheckFileText, "CheckFile"),
                         SMLoc());
   Regex PrefixRE = FC.buildCheckPrefixRegex();
-  std::vector<FileCheckString> CheckStrings;
-  FC.ReadCheckFile(SM, CheckFileText, PrefixRE, CheckStrings);
+  if (FC.readCheckFile(SM, CheckFileText, PrefixRE))
+    return false;
+
   auto OutBuffer = OutputBuf->getBuffer();
   SM.AddNewSourceBuffer(std::move(OutputBuf), SMLoc());
-  return FC.CheckInput(SM, OutBuffer, CheckStrings);
+  return FC.checkInput(SM, OutBuffer);
 }
 #endif

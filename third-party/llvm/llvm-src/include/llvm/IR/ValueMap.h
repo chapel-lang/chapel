@@ -1,9 +1,8 @@
 //===- ValueMap.h - Safe map from Values to data ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -34,11 +33,11 @@
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Mutex.h"
-#include "llvm/Support/UniqueLock.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iterator>
+#include <mutex>
 #include <type_traits>
 #include <utility>
 
@@ -94,7 +93,6 @@ class ValueMap {
   MapT Map;
   Optional<MDMapT> MDMap;
   ExtraData Data;
-  bool MayMapMetadata = true;
 
 public:
   using key_type = KeyT;
@@ -120,10 +118,6 @@ public:
     return *MDMap;
   }
   Optional<MDMapT> &getMDMap() { return MDMap; }
-
-  bool mayMapMetadata() const { return MayMapMetadata; }
-  void enableMapMetadata() { MayMapMetadata = true; }
-  void disableMapMetadata() { MayMapMetadata = false; }
 
   /// Get the mapped metadata, if it's in the map.
   Optional<Metadata *> getMappedMD(const Metadata *MD) const {
@@ -267,9 +261,9 @@ public:
     // Make a copy that won't get changed even when *this is destroyed.
     ValueMapCallbackVH Copy(*this);
     typename Config::mutex_type *M = Config::getMutex(Copy.Map->Data);
-    unique_lock<typename Config::mutex_type> Guard;
+    std::unique_lock<typename Config::mutex_type> Guard;
     if (M)
-      Guard = unique_lock<typename Config::mutex_type>(*M);
+      Guard = std::unique_lock<typename Config::mutex_type>(*M);
     Config::onDelete(Copy.Map->Data, Copy.Unwrap());  // May destroy *this.
     Copy.Map->Map.erase(Copy);  // Definitely destroys *this.
   }
@@ -280,9 +274,9 @@ public:
     // Make a copy that won't get changed even when *this is destroyed.
     ValueMapCallbackVH Copy(*this);
     typename Config::mutex_type *M = Config::getMutex(Copy.Map->Data);
-    unique_lock<typename Config::mutex_type> Guard;
+    std::unique_lock<typename Config::mutex_type> Guard;
     if (M)
-      Guard = unique_lock<typename Config::mutex_type>(*M);
+      Guard = std::unique_lock<typename Config::mutex_type>(*M);
 
     KeyT typed_new_key = cast<KeySansPointerT>(new_key);
     // Can destroy *this:

@@ -1,24 +1,25 @@
 //===- FrontendOptions.h ----------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef LLVM_CLANG_FRONTEND_FRONTENDOPTIONS_H
 #define LLVM_CLANG_FRONTEND_FRONTENDOPTIONS_H
 
+#include "clang/AST/ASTDumperUtils.h"
+#include "clang/Basic/LangStandard.h"
 #include "clang/Frontend/CommandLineSourceLoc.h"
-#include "clang/Serialization/ModuleFileExtension.h"
 #include "clang/Sema/CodeCompleteOptions.h"
+#include "clang/Serialization/ModuleFileExtension.h"
 #include "llvm/ADT/StringRef.h"
 #include <cassert>
 #include <memory>
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 namespace llvm {
 
@@ -88,6 +89,9 @@ enum ActionKind {
   /// Generate pre-compiled header.
   GeneratePCH,
 
+  /// Generate Interface Stub Files.
+  GenerateInterfaceIfsExpV1,
+
   /// Only execute frontend initialization.
   InitOnly,
 
@@ -128,7 +132,10 @@ enum ActionKind {
   MigrateSource,
 
   /// Just lex, no output.
-  RunPreprocessorOnly
+  RunPreprocessorOnly,
+
+  /// Print the output of the dependency directives source minimizer.
+  PrintDependencyDirectivesSourceMinimizerOutput
 };
 
 } // namespace frontend
@@ -136,35 +143,11 @@ enum ActionKind {
 /// The kind of a file that we've been handed as an input.
 class InputKind {
 private:
-  unsigned Lang : 4;
+  Language Lang;
   unsigned Fmt : 3;
   unsigned Preprocessed : 1;
 
 public:
-  /// The language for the input, used to select and validate the language
-  /// standard and possible actions.
-  enum Language {
-    Unknown,
-
-    /// Assembly: we accept this only so that we can preprocess it.
-    Asm,
-
-    /// LLVM IR: we accept this so that we can run the optimizer on it,
-    /// and compile it to assembly or object code.
-    LLVM_IR,
-
-    ///@{ Languages that the frontend can parse and compile.
-    C,
-    CXX,
-    ObjC,
-    ObjCXX,
-    OpenCL,
-    CUDA,
-    RenderScript,
-    HIP,
-    ///@}
-  };
-
   /// The input file format.
   enum Format {
     Source,
@@ -172,7 +155,7 @@ public:
     Precompiled
   };
 
-  constexpr InputKind(Language L = Unknown, Format F = Source,
+  constexpr InputKind(Language L = Language::Unknown, Format F = Source,
                       bool PP = false)
       : Lang(L), Fmt(F), Preprocessed(PP) {}
 
@@ -181,10 +164,12 @@ public:
   bool isPreprocessed() const { return Preprocessed; }
 
   /// Is the input kind fully-unknown?
-  bool isUnknown() const { return Lang == Unknown && Fmt == Source; }
+  bool isUnknown() const { return Lang == Language::Unknown && Fmt == Source; }
 
   /// Is the language of the input some dialect of Objective-C?
-  bool isObjectiveC() const { return Lang == ObjC || Lang == ObjCXX; }
+  bool isObjectiveC() const {
+    return Lang == Language::ObjC || Lang == Language::ObjCXX;
+  }
 
   InputKind getPreprocessed() const {
     return InputKind(getLanguage(), getFormat(), true);
@@ -203,7 +188,7 @@ class FrontendInputFile {
   /// The input, if it comes from a buffer rather than a file. This object
   /// does not own the buffer, and the caller is responsible for ensuring
   /// that it outlives any users.
-  llvm::MemoryBuffer *Buffer = nullptr;
+  const llvm::MemoryBuffer *Buffer = nullptr;
 
   /// The kind of input, e.g., C source, AST file, LLVM IR.
   InputKind Kind;
@@ -215,7 +200,7 @@ public:
   FrontendInputFile() = default;
   FrontendInputFile(StringRef File, InputKind Kind, bool IsSystem = false)
       : File(File.str()), Kind(Kind), IsSystem(IsSystem) {}
-  FrontendInputFile(llvm::MemoryBuffer *Buffer, InputKind Kind,
+  FrontendInputFile(const llvm::MemoryBuffer *Buffer, InputKind Kind,
                     bool IsSystem = false)
       : Buffer(Buffer), Kind(Kind), IsSystem(IsSystem) {}
 
@@ -232,7 +217,7 @@ public:
     return File;
   }
 
-  llvm::MemoryBuffer *getBuffer() const {
+  const llvm::MemoryBuffer *getBuffer() const {
     assert(isBuffer());
     return Buffer;
   }
@@ -256,6 +241,12 @@ public:
 
   /// Show timers for individual actions.
   unsigned ShowTimers : 1;
+
+  /// print the supported cpus for the current target
+  unsigned PrintSupportedCPUs : 1;
+
+  /// Output time trace profile.
+  unsigned TimeTrace : 1;
 
   /// Show the -version text.
   unsigned ShowVersion : 1;
@@ -303,7 +294,13 @@ public:
   /// Whether timestamps should be written to the produced PCH file.
   unsigned IncludeTimestamps : 1;
 
+  /// Should a temporary file be used during compilation.
+  unsigned UseTemporary : 1;
+
   CodeCompleteOptions CodeCompleteOpts;
+
+  /// Specifies the output format of the AST.
+  ASTDumpOutputFormat ASTDumpFormat = ADOF_Default;
 
   enum {
     ARCMT_None,
@@ -372,7 +369,7 @@ public:
   std::string ARCMTMigrateReportOut;
 
   /// The input files and their types.
-  std::vector<FrontendInputFile> Inputs;
+  SmallVector<FrontendInputFile, 0> Inputs;
 
   /// When the input is a module map, the original module map file from which
   /// that map was inferred, if any (for umbrella modules).
@@ -435,21 +432,25 @@ public:
   /// Filename to write statistics to.
   std::string StatsFile;
 
+  /// Minimum time granularity (in microseconds) traced by time profiler.
+  unsigned TimeTraceGranularity;
+
 public:
   FrontendOptions()
       : DisableFree(false), RelocatablePCH(false), ShowHelp(false),
-        ShowStats(false), ShowTimers(false), ShowVersion(false),
-        FixWhatYouCan(false), FixOnlyWarnings(false), FixAndRecompile(false),
-        FixToTemporaries(false), ARCMTMigrateEmitARCErrors(false),
-        SkipFunctionBodies(false), UseGlobalModuleIndex(true),
-        GenerateGlobalModuleIndex(true), ASTDumpDecls(false),
-        ASTDumpLookups(false), BuildingImplicitModule(false),
-        ModulesEmbedAllFiles(false), IncludeTimestamps(true) {}
+        ShowStats(false), ShowTimers(false), TimeTrace(false),
+        ShowVersion(false), FixWhatYouCan(false), FixOnlyWarnings(false),
+        FixAndRecompile(false), FixToTemporaries(false),
+        ARCMTMigrateEmitARCErrors(false), SkipFunctionBodies(false),
+        UseGlobalModuleIndex(true), GenerateGlobalModuleIndex(true),
+        ASTDumpDecls(false), ASTDumpLookups(false),
+        BuildingImplicitModule(false), ModulesEmbedAllFiles(false),
+        IncludeTimestamps(true), UseTemporary(true), TimeTraceGranularity(500) {}
 
   /// getInputKindForExtension - Return the appropriate input kind for a file
-  /// extension. For example, "c" would return InputKind::C.
+  /// extension. For example, "c" would return Language::C.
   ///
-  /// \return The input kind for the extension, or InputKind::Unknown if the
+  /// \return The input kind for the extension, or Language::Unknown if the
   /// extension is not recognized.
   static InputKind getInputKindForExtension(StringRef Extension);
 };

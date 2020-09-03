@@ -1,14 +1,15 @@
 //===- llvm/unittest/Support/CrashRecoveryTest.cpp ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/CrashRecoveryContext.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Signals.h"
 #include "gtest/gtest.h"
 
 #ifdef _WIN32
@@ -24,6 +25,7 @@ static int GlobalInt = 0;
 static void nullDeref() { *(volatile int *)0x10 = 0; }
 static void incrementGlobal() { ++GlobalInt; }
 static void llvmTrap() { LLVM_BUILTIN_TRAP; }
+static void incrementGlobalWithParam(void *) { ++GlobalInt; }
 
 TEST(CrashRecoveryTest, Basic) {
   llvm::CrashRecoveryContext::Enable();
@@ -59,6 +61,33 @@ TEST(CrashRecoveryTest, Cleanup) {
     EXPECT_FALSE(CRC.RunSafely(nullDeref));
   } // run cleanups
   EXPECT_EQ(1, GlobalInt);
+  llvm::CrashRecoveryContext::Disable();
+}
+
+TEST(CrashRecoveryTest, DumpStackCleanup) {
+  SmallString<128> Filename;
+  std::error_code EC = sys::fs::createTemporaryFile("crash", "test", Filename);
+  EXPECT_FALSE(EC);
+  sys::RemoveFileOnSignal(Filename);
+  llvm::sys::AddSignalHandler(incrementGlobalWithParam, nullptr);
+  GlobalInt = 0;
+  llvm::CrashRecoveryContext::Enable();
+  {
+    CrashRecoveryContext CRC;
+    CRC.DumpStackAndCleanupOnFailure = true;
+    EXPECT_TRUE(CRC.RunSafely(noop));
+  }
+  EXPECT_TRUE(sys::fs::exists(Filename));
+  EXPECT_EQ(GlobalInt, 0);
+  {
+    CrashRecoveryContext CRC;
+    CRC.DumpStackAndCleanupOnFailure = true;
+    EXPECT_FALSE(CRC.RunSafely(nullDeref));
+    EXPECT_NE(CRC.RetCode, 0);
+  }
+  EXPECT_FALSE(sys::fs::exists(Filename));
+  EXPECT_EQ(GlobalInt, 1);
+  llvm::CrashRecoveryContext::Disable();
 }
 
 #ifdef _WIN32

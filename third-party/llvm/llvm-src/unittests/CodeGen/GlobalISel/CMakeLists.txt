@@ -10,8 +10,13 @@ set(LLVM_LINK_COMPONENTS
   )
 
 add_llvm_unittest(GlobalISelTests
-        LegalizerInfoTest.cpp
-        PatternMatchTest.cpp
-        LegalizerHelperTest.cpp
-        CSETest.cpp
-        )
+  ConstantFoldingTest.cpp
+  CSETest.cpp
+  LegalizerTest.cpp
+  LegalizerHelperTest.cpp
+  LegalizerInfoTest.cpp
+  MachineIRBuilderTest.cpp
+  GISelMITest.cpp
+  PatternMatchTest.cpp
+  KnownBitsTest.cpp
+  )

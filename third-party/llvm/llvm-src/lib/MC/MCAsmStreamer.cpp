@@ -1,9 +1,8 @@
 //===- lib/MC/MCAsmStreamer.cpp - Text Assembly Output ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +11,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/DebugInfo/CodeView/SymbolRecord.h"
 #include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCAssembler.h"
@@ -24,6 +24,7 @@
 #include "llvm/MC/MCInstPrinter.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCObjectWriter.h"
+#include "llvm/MC/MCRegister.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
@@ -67,7 +68,7 @@ public:
                 std::unique_ptr<MCAsmBackend> asmbackend, bool showInst)
       : MCStreamer(Context), OSOwner(std::move(os)), OS(*OSOwner),
         MAI(Context.getAsmInfo()), InstPrinter(printer),
-        Assembler(llvm::make_unique<MCAssembler>(
+        Assembler(std::make_unique<MCAssembler>(
             Context, std::move(asmbackend), std::move(emitter),
             (asmbackend) ? asmbackend->createObjectWriter(NullStream)
                          : nullptr)),
@@ -76,6 +77,8 @@ public:
     assert(InstPrinter);
     if (IsVerboseAsm)
         InstPrinter->setCommentStream(CommentStream);
+    if (Assembler->getBackendPtr())
+      setAllowAutoPadding(Assembler->getBackend().allowAutoPadding());
   }
 
   MCAssembler &getAssembler() { return *Assembler; }
@@ -108,10 +111,7 @@ public:
   void AddComment(const Twine &T, bool EOL = true) override;
 
   /// Add a comment showing the encoding of an instruction.
-  /// If PrintSchedInfo is true, then the comment sched:[x:y] will be added to
-  /// the output if supported by the target.
-  void AddEncodingComment(const MCInst &Inst, const MCSubtargetInfo &,
-                          bool PrintSchedInfo);
+  void AddEncodingComment(const MCInst &Inst, const MCSubtargetInfo &);
 
   /// Return a raw_ostream that comments can be written to.
   /// Unlike AddComment, you are required to terminate comments with \n if you
@@ -166,6 +166,9 @@ public:
   void EmitCOFFSectionIndex(MCSymbol const *Symbol) override;
   void EmitCOFFSecRel32(MCSymbol const *Symbol, uint64_t Offset) override;
   void EmitCOFFImgRel32(MCSymbol const *Symbol, int64_t Offset) override;
+  void EmitXCOFFLocalCommonSymbol(MCSymbol *LabelSym, uint64_t Size,
+                                  MCSymbol *CsectSym,
+                                  unsigned ByteAlign) override;
   void emitELFSize(MCSymbol *Symbol, const MCExpr *Value) override;
   void EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                         unsigned ByteAlignment) override;
@@ -192,6 +195,7 @@ public:
   void EmitValueImpl(const MCExpr *Value, unsigned Size,
                      SMLoc Loc = SMLoc()) override;
   void EmitIntValue(uint64_t Value, unsigned Size) override;
+  void EmitIntValueInHex(uint64_t Value, unsigned Size) override;
 
   void EmitULEB128Value(const MCExpr *Value) override;
 
@@ -227,11 +231,11 @@ public:
   Expected<unsigned> tryEmitDwarfFileDirective(unsigned FileNo,
                                                StringRef Directory,
                                                StringRef Filename,
-                                               MD5::MD5Result *Checksum = 0,
+                                               Optional<MD5::MD5Result> Checksum = None,
                                                Optional<StringRef> Source = None,
                                                unsigned CUID = 0) override;
   void emitDwarfFile0Directive(StringRef Directory, StringRef Filename,
-                               MD5::MD5Result *Checksum,
+                               Optional<MD5::MD5Result> Checksum,
                                Optional<StringRef> Source,
                                unsigned CUID = 0) override;
   void EmitDwarfLocDirective(unsigned FileNo, unsigned Line,
@@ -257,9 +261,26 @@ public:
                                       unsigned SourceLineNum,
                                       const MCSymbol *FnStartSym,
                                       const MCSymbol *FnEndSym) override;
+
+  void PrintCVDefRangePrefix(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges);
+
   void EmitCVDefRangeDirective(
       ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
-      StringRef FixedSizePortion) override;
+      codeview::DefRangeRegisterRelHeader DRHdr) override;
+
+  void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeSubfieldRegisterHeader DRHdr) override;
+
+  void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeRegisterHeader DRHdr) override;
+
+  void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeFramePointerRelHeader DRHdr) override;
+
   void EmitCVStringTableDirective() override;
   void EmitCVFileChecksumsDirective() override;
   void EmitCVFileChecksumOffsetDirective(unsigned FileNo) override;
@@ -294,13 +315,13 @@ public:
   void EmitWinCFIFuncletOrFuncEnd(SMLoc Loc) override;
   void EmitWinCFIStartChained(SMLoc Loc) override;
   void EmitWinCFIEndChained(SMLoc Loc) override;
-  void EmitWinCFIPushReg(unsigned Register, SMLoc Loc) override;
-  void EmitWinCFISetFrame(unsigned Register, unsigned Offset,
+  void EmitWinCFIPushReg(MCRegister Register, SMLoc Loc) override;
+  void EmitWinCFISetFrame(MCRegister Register, unsigned Offset,
                           SMLoc Loc) override;
   void EmitWinCFIAllocStack(unsigned Size, SMLoc Loc) override;
-  void EmitWinCFISaveReg(unsigned Register, unsigned Offset,
+  void EmitWinCFISaveReg(MCRegister Register, unsigned Offset,
                          SMLoc Loc) override;
-  void EmitWinCFISaveXMM(unsigned Register, unsigned Offset,
+  void EmitWinCFISaveXMM(MCRegister Register, unsigned Offset,
                          SMLoc Loc) override;
   void EmitWinCFIPushFrame(bool Code, SMLoc Loc) override;
   void EmitWinCFIEndProlog(SMLoc Loc) override;
@@ -312,8 +333,7 @@ public:
   void emitCGProfileEntry(const MCSymbolRefExpr *From,
                           const MCSymbolRefExpr *To, uint64_t Count) override;
 
-  void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                       bool PrintSchedInfo) override;
+  void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI) override;
 
   void EmitBundleAlignMode(unsigned AlignPow2) override;
   void EmitBundleLock(bool AlignToEnd) override;
@@ -546,6 +566,7 @@ static const char *getPlatformName(MachO::PlatformType Type) {
   case MachO::PLATFORM_TVOS:             return "tvos";
   case MachO::PLATFORM_WATCHOS:          return "watchos";
   case MachO::PLATFORM_BRIDGEOS:         return "bridgeos";
+  case MachO::PLATFORM_MACCATALYST:      return "macCatalyst";
   case MachO::PLATFORM_IOSSIMULATOR:     return "iossimulator";
   case MachO::PLATFORM_TVOSSIMULATOR:    return "tvossimulator";
   case MachO::PLATFORM_WATCHOSSIMULATOR: return "watchossimulator";
@@ -633,6 +654,7 @@ bool MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol,
   case MCSA_Global: // .globl/.global
     OS << MAI->getGlobalDirective();
     break;
+  case MCSA_LGlobal:        OS << "\t.lglobl\t";          break;
   case MCSA_Hidden:         OS << "\t.hidden\t";          break;
   case MCSA_IndirectSymbol: OS << "\t.indirect_symbol\t"; break;
   case MCSA_Internal:       OS << "\t.internal\t";        break;
@@ -657,6 +679,9 @@ bool MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol,
       // .weak_reference
   case MCSA_WeakReference:  OS << MAI->getWeakRefDirective(); break;
   case MCSA_WeakDefAutoPrivate: OS << "\t.weak_def_can_be_hidden\t"; break;
+  case MCSA_Cold:
+    // Assemblers currently do not support a .cold directive.
+    return false;
   }
 
   Symbol->print(OS, MAI);
@@ -737,6 +762,26 @@ void MCAsmStreamer::EmitCOFFImgRel32(MCSymbol const *Symbol, int64_t Offset) {
     OS << '+' << Offset;
   else if (Offset < 0)
     OS << '-' << -Offset;
+  EmitEOL();
+}
+
+// We need an XCOFF-specific version of this directive as the AIX syntax
+// requires a QualName argument identifying the csect name and storage mapping
+// class to appear before the alignment if we are specifying it.
+void MCAsmStreamer::EmitXCOFFLocalCommonSymbol(MCSymbol *LabelSym,
+                                               uint64_t Size,
+                                               MCSymbol *CsectSym,
+                                               unsigned ByteAlignment) {
+  assert(MAI->getLCOMMDirectiveAlignmentType() == LCOMM::Log2Alignment &&
+         "We only support writing log base-2 alignment format with XCOFF.");
+  assert(isPowerOf2_32(ByteAlignment) && "Alignment must be a power of 2.");
+
+  OS << "\t.lcomm\t";
+  LabelSym->print(OS, MAI);
+  OS << ',' << Size << ',';
+  CsectSym->print(OS, MAI);
+  OS << ',' << Log2_32(ByteAlignment);
+
   EmitEOL();
 }
 
@@ -924,6 +969,10 @@ void MCAsmStreamer::EmitIntValue(uint64_t Value, unsigned Size) {
   EmitValue(MCConstantExpr::create(Value, getContext()), Size);
 }
 
+void MCAsmStreamer::EmitIntValueInHex(uint64_t Value, unsigned Size) {
+  EmitValue(MCConstantExpr::create(Value, getContext(), true), Size);
+}
+
 void MCAsmStreamer::EmitValueImpl(const MCExpr *Value, unsigned Size,
                                   SMLoc Loc) {
   assert(Size <= 8 && "Invalid size");
@@ -1078,6 +1127,16 @@ void MCAsmStreamer::emitFill(const MCExpr &NumValues, int64_t Size,
 void MCAsmStreamer::EmitValueToAlignment(unsigned ByteAlignment, int64_t Value,
                                          unsigned ValueSize,
                                          unsigned MaxBytesToEmit) {
+  if (MAI->useDotAlignForAlignment()) {
+    if (!isPowerOf2_32(ByteAlignment))
+      report_fatal_error("Only power-of-two alignments are supported "
+                         "with .align.");
+    OS << "\t.align\t";
+    OS << Log2_32(ByteAlignment);
+    EmitEOL();
+    return;
+  }
+
   // Some assemblers don't support non-power of two alignments, so we always
   // emit alignments as a power of two if possible.
   if (isPowerOf2_32(ByteAlignment)) {
@@ -1153,7 +1212,7 @@ void MCAsmStreamer::EmitFileDirective(StringRef Filename) {
 
 static void printDwarfFileDirective(unsigned FileNo, StringRef Directory,
                                     StringRef Filename,
-                                    MD5::MD5Result *Checksum,
+                                    Optional<MD5::MD5Result> Checksum,
                                     Optional<StringRef> Source,
                                     bool UseDwarfDirectory,
                                     raw_svector_ostream &OS) {
@@ -1186,13 +1245,14 @@ static void printDwarfFileDirective(unsigned FileNo, StringRef Directory,
 
 Expected<unsigned> MCAsmStreamer::tryEmitDwarfFileDirective(
     unsigned FileNo, StringRef Directory, StringRef Filename,
-    MD5::MD5Result *Checksum, Optional<StringRef> Source, unsigned CUID) {
+    Optional<MD5::MD5Result> Checksum, Optional<StringRef> Source, unsigned CUID) {
   assert(CUID == 0 && "multiple CUs not supported by MCAsmStreamer");
 
   MCDwarfLineTable &Table = getContext().getMCDwarfLineTable(CUID);
   unsigned NumFiles = Table.getMCDwarfFiles().size();
   Expected<unsigned> FileNoOrErr =
-      Table.tryGetFile(Directory, Filename, Checksum, Source, FileNo);
+      Table.tryGetFile(Directory, Filename, Checksum, Source,
+                       getContext().getDwarfVersion(), FileNo);
   if (!FileNoOrErr)
     return FileNoOrErr.takeError();
   FileNo = FileNoOrErr.get();
@@ -1214,7 +1274,7 @@ Expected<unsigned> MCAsmStreamer::tryEmitDwarfFileDirective(
 
 void MCAsmStreamer::emitDwarfFile0Directive(StringRef Directory,
                                             StringRef Filename,
-                                            MD5::MD5Result *Checksum,
+                                            Optional<MD5::MD5Result> Checksum,
                                             Optional<StringRef> Source,
                                             unsigned CUID) {
   assert(CUID == 0);
@@ -1371,9 +1431,8 @@ void MCAsmStreamer::EmitCVInlineLinetableDirective(unsigned PrimaryFunctionId,
       PrimaryFunctionId, SourceFileId, SourceLineNum, FnStartSym, FnEndSym);
 }
 
-void MCAsmStreamer::EmitCVDefRangeDirective(
-    ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
-    StringRef FixedSizePortion) {
+void MCAsmStreamer::PrintCVDefRangePrefix(
+    ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges) {
   OS << "\t.cv_def_range\t";
   for (std::pair<const MCSymbol *, const MCSymbol *> Range : Ranges) {
     OS << ' ';
@@ -1381,10 +1440,43 @@ void MCAsmStreamer::EmitCVDefRangeDirective(
     OS << ' ';
     Range.second->print(OS, MAI);
   }
-  OS << ", ";
-  PrintQuotedString(FixedSizePortion, OS);
+}
+
+void MCAsmStreamer::EmitCVDefRangeDirective(
+    ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+    codeview::DefRangeRegisterRelHeader DRHdr) {
+  PrintCVDefRangePrefix(Ranges);
+  OS << ", reg_rel, ";
+  OS << DRHdr.Register << ", " << DRHdr.Flags << ", "
+     << DRHdr.BasePointerOffset;
   EmitEOL();
-  this->MCStreamer::EmitCVDefRangeDirective(Ranges, FixedSizePortion);
+}
+
+void MCAsmStreamer::EmitCVDefRangeDirective(
+    ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+    codeview::DefRangeSubfieldRegisterHeader DRHdr) {
+  PrintCVDefRangePrefix(Ranges);
+  OS << ", subfield_reg, ";
+  OS << DRHdr.Register << ", " << DRHdr.OffsetInParent;
+  EmitEOL();
+}
+
+void MCAsmStreamer::EmitCVDefRangeDirective(
+    ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+    codeview::DefRangeRegisterHeader DRHdr) {
+  PrintCVDefRangePrefix(Ranges);
+  OS << ", reg, ";
+  OS << DRHdr.Register;
+  EmitEOL();
+}
+
+void MCAsmStreamer::EmitCVDefRangeDirective(
+    ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+    codeview::DefRangeFramePointerRelHeader DRHdr) {
+  PrintCVDefRangePrefix(Ranges);
+  OS << ", frame_ptr_rel, ";
+  OS << DRHdr.Offset;
+  EmitEOL();
 }
 
 void MCAsmStreamer::EmitCVStringTableDirective() {
@@ -1448,9 +1540,8 @@ void MCAsmStreamer::EmitRegisterName(int64_t Register) {
     // just ones that map to LLVM register numbers and have known names.
     // Fall back to using the original number directly if no name is known.
     const MCRegisterInfo *MRI = getContext().getRegisterInfo();
-    int LLVMRegister = MRI->getLLVMRegNumFromEH(Register);
-    if (LLVMRegister != -1) {
-      InstPrinter->printRegName(OS, LLVMRegister);
+    if (Optional<unsigned> LLVMRegister = MRI->getLLVMRegNum(Register, true)) {
+      InstPrinter->printRegName(OS, *LLVMRegister);
       return;
     }
   }
@@ -1663,6 +1754,12 @@ void MCAsmStreamer::EmitWinEHHandlerData(SMLoc Loc) {
   // We only do this so the section switch that terminates the handler
   // data block is visible.
   WinEH::FrameInfo *CurFrame = getCurrentWinFrameInfo();
+
+  // Do nothing if no frame is open. MCStreamer should've already reported an
+  // error.
+  if (!CurFrame)
+    return;
+
   MCSection *TextSec = &CurFrame->Function->getSection();
   MCSection *XData = getAssociatedXDataSection(TextSec);
   SwitchSectionNoChange(XData);
@@ -1671,18 +1768,21 @@ void MCAsmStreamer::EmitWinEHHandlerData(SMLoc Loc) {
   EmitEOL();
 }
 
-void MCAsmStreamer::EmitWinCFIPushReg(unsigned Register, SMLoc Loc) {
+void MCAsmStreamer::EmitWinCFIPushReg(MCRegister Register, SMLoc Loc) {
   MCStreamer::EmitWinCFIPushReg(Register, Loc);
 
-  OS << "\t.seh_pushreg " << Register;
+  OS << "\t.seh_pushreg ";
+  InstPrinter->printRegName(OS, Register);
   EmitEOL();
 }
 
-void MCAsmStreamer::EmitWinCFISetFrame(unsigned Register, unsigned Offset,
+void MCAsmStreamer::EmitWinCFISetFrame(MCRegister Register, unsigned Offset,
                                        SMLoc Loc) {
   MCStreamer::EmitWinCFISetFrame(Register, Offset, Loc);
 
-  OS << "\t.seh_setframe " << Register << ", " << Offset;
+  OS << "\t.seh_setframe ";
+  InstPrinter->printRegName(OS, Register);
+  OS << ", " << Offset;
   EmitEOL();
 }
 
@@ -1693,19 +1793,23 @@ void MCAsmStreamer::EmitWinCFIAllocStack(unsigned Size, SMLoc Loc) {
   EmitEOL();
 }
 
-void MCAsmStreamer::EmitWinCFISaveReg(unsigned Register, unsigned Offset,
+void MCAsmStreamer::EmitWinCFISaveReg(MCRegister Register, unsigned Offset,
                                       SMLoc Loc) {
   MCStreamer::EmitWinCFISaveReg(Register, Offset, Loc);
 
-  OS << "\t.seh_savereg " << Register << ", " << Offset;
+  OS << "\t.seh_savereg ";
+  InstPrinter->printRegName(OS, Register);
+  OS << ", " << Offset;
   EmitEOL();
 }
 
-void MCAsmStreamer::EmitWinCFISaveXMM(unsigned Register, unsigned Offset,
+void MCAsmStreamer::EmitWinCFISaveXMM(MCRegister Register, unsigned Offset,
                                       SMLoc Loc) {
   MCStreamer::EmitWinCFISaveXMM(Register, Offset, Loc);
 
-  OS << "\t.seh_savexmm " << Register << ", " << Offset;
+  OS << "\t.seh_savexmm ";
+  InstPrinter->printRegName(OS, Register);
+  OS << ", " << Offset;
   EmitEOL();
 }
 
@@ -1737,8 +1841,7 @@ void MCAsmStreamer::emitCGProfileEntry(const MCSymbolRefExpr *From,
 }
 
 void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
-                                       const MCSubtargetInfo &STI,
-                                       bool PrintSchedInfo) {
+                                       const MCSubtargetInfo &STI) {
   raw_ostream &OS = GetCommentOS();
   SmallString<256> Code;
   SmallVector<MCFixup, 4> Fixups;
@@ -1817,11 +1920,7 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
       }
     }
   }
-  OS << "]";
-  // If we are not going to add fixup or schedule comments after this point
-  // then we have to end the current comment line with "\n".
-  if (Fixups.size() || !PrintSchedInfo)
-    OS << "\n";
+  OS << "]\n";
 
   for (unsigned i = 0, e = Fixups.size(); i != e; ++i) {
     MCFixup &F = Fixups[i];
@@ -1833,32 +1932,23 @@ void MCAsmStreamer::AddEncodingComment(const MCInst &Inst,
 }
 
 void MCAsmStreamer::EmitInstruction(const MCInst &Inst,
-                                    const MCSubtargetInfo &STI,
-                                    bool PrintSchedInfo) {
+                                    const MCSubtargetInfo &STI) {
   assert(getCurrentSectionOnly() &&
          "Cannot emit contents before setting section!");
 
   // Show the encoding in a comment if we have a code emitter.
-  AddEncodingComment(Inst, STI, PrintSchedInfo);
+  AddEncodingComment(Inst, STI);
 
   // Show the MCInst if enabled.
   if (ShowInst) {
-    if (PrintSchedInfo)
-      GetCommentOS() << "\n";
     Inst.dump_pretty(GetCommentOS(), InstPrinter.get(), "\n ");
     GetCommentOS() << "\n";
   }
 
   if(getTargetStreamer())
-    getTargetStreamer()->prettyPrintAsm(*InstPrinter, OS, Inst, STI);
+    getTargetStreamer()->prettyPrintAsm(*InstPrinter, 0, Inst, STI, OS);
   else
-    InstPrinter->printInst(&Inst, OS, "", STI);
-
-  if (PrintSchedInfo) {
-    std::string SI = STI.getSchedInfoStr(Inst);
-    if (!SI.empty())
-      GetCommentOS() << SI;
-  }
+    InstPrinter->printInst(&Inst, 0, "", STI, OS);
 
   StringRef Comments = CommentToEmit;
   if (Comments.size() && Comments.back() != '\n')
@@ -1927,7 +2017,7 @@ void MCAsmStreamer::FinishImpl() {
   // Emit the label for the line table, if requested - since the rest of the
   // line table will be defined by .loc/.file directives, and not emitted
   // directly, the label is the only work required here.
-  auto &Tables = getContext().getMCDwarfLineTables();
+  const auto &Tables = getContext().getMCDwarfLineTables();
   if (!Tables.empty()) {
     assert(Tables.size() == 1 && "asm output only supports one line table");
     if (auto *Label = Tables.begin()->second.getLabel()) {

@@ -1,9 +1,8 @@
 //===- FileAnalysis.cpp -----------------------------------------*- C++ -*-===//
 //
-//                      The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,6 +22,7 @@
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCTargetOptions.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/COFF.h"
 #include "llvm/Object/ELFObjectFile.h"
@@ -255,7 +255,8 @@ FileAnalysis::getDirectControlFlowXRefs(const Instr &InstrMeta) const {
   return CFCrossReferences;
 }
 
-const std::set<uint64_t> &FileAnalysis::getIndirectInstructions() const {
+const std::set<object::SectionedAddress> &
+FileAnalysis::getIndirectInstructions() const {
   return IndirectInstructions;
 }
 
@@ -269,8 +270,10 @@ const MCInstrAnalysis *FileAnalysis::getMCInstrAnalysis() const {
   return MIA.get();
 }
 
-Expected<DIInliningInfo> FileAnalysis::symbolizeInlinedCode(uint64_t Address) {
+Expected<DIInliningInfo>
+FileAnalysis::symbolizeInlinedCode(object::SectionedAddress Address) {
   assert(Symbolizer != nullptr && "Symbolizer is invalid.");
+
   return Symbolizer->symbolizeInlinedCode(Object->getFileName(), Address);
 }
 
@@ -361,7 +364,7 @@ uint64_t FileAnalysis::indirectCFOperandClobber(const GraphResult &Graph) const 
 
 void FileAnalysis::printInstruction(const Instr &InstrMeta,
                                     raw_ostream &OS) const {
-  Printer->printInst(&InstrMeta.Instruction, OS, "", *SubtargetInfo.get());
+  Printer->printInst(&InstrMeta.Instruction, 0, "", *SubtargetInfo.get(), OS);
 }
 
 Error FileAnalysis::initialiseDisassemblyMembers() {
@@ -385,7 +388,9 @@ Error FileAnalysis::initialiseDisassemblyMembers() {
     return make_error<UnsupportedDisassembly>(
         "Failed to initialise RegisterInfo.");
 
-  AsmInfo.reset(ObjectTarget->createMCAsmInfo(*RegisterInfo, TripleName));
+  MCTargetOptions MCOptions;
+  AsmInfo.reset(
+      ObjectTarget->createMCAsmInfo(*RegisterInfo, TripleName, MCOptions));
   if (!AsmInfo)
     return make_error<UnsupportedDisassembly>("Failed to initialise AsmInfo.");
 
@@ -447,24 +452,24 @@ Error FileAnalysis::parseCodeSections() {
 
     // Avoid checking the PLT since it produces spurious failures on AArch64
     // when ignoring DWARF data.
-    StringRef SectionName;
-    if (!Section.getName(SectionName) && SectionName == ".plt")
+    Expected<StringRef> NameOrErr = Section.getName();
+    if (NameOrErr && *NameOrErr == ".plt")
       continue;
+    consumeError(NameOrErr.takeError());
 
-    StringRef SectionContents;
-    if (Section.getContents(SectionContents))
-      return make_error<StringError>("Failed to retrieve section contents",
-                                     inconvertibleErrorCode());
+    Expected<StringRef> Contents = Section.getContents();
+    if (!Contents)
+      return Contents.takeError();
+    ArrayRef<uint8_t> SectionBytes = arrayRefFromStringRef(*Contents);
 
-    ArrayRef<uint8_t> SectionBytes((const uint8_t *)SectionContents.data(),
-                                   Section.getSize());
-    parseSectionContents(SectionBytes, Section.getAddress());
+    parseSectionContents(SectionBytes,
+                         {Section.getAddress(), Section.getIndex()});
   }
   return Error::success();
 }
 
 void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
-                                        uint64_t SectionAddress) {
+                                        object::SectionedAddress Address) {
   assert(Symbolizer && "Symbolizer is uninitialised.");
   MCInst Instruction;
   Instr InstrMeta;
@@ -473,12 +478,12 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
   for (uint64_t Byte = 0; Byte < SectionBytes.size();) {
     bool ValidInstruction =
         Disassembler->getInstruction(Instruction, InstructionSize,
-                                     SectionBytes.drop_front(Byte), 0, nulls(),
+                                     SectionBytes.drop_front(Byte), 0,
                                      outs()) == MCDisassembler::Success;
 
     Byte += InstructionSize;
 
-    uint64_t VMAddress = SectionAddress + Byte - InstructionSize;
+    uint64_t VMAddress = Address.Address + Byte - InstructionSize;
     InstrMeta.Instruction = Instruction;
     InstrMeta.VMAddress = VMAddress;
     InstrMeta.InstructionSize = InstructionSize;
@@ -510,8 +515,8 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
 
     // Check if this instruction exists in the range of the DWARF metadata.
     if (!IgnoreDWARFFlag) {
-      auto LineInfo =
-          Symbolizer->symbolizeCode(Object->getFileName(), VMAddress);
+      auto LineInfo = Symbolizer->symbolizeCode(
+          Object->getFileName(), {VMAddress, Address.SectionIndex});
       if (!LineInfo) {
         handleAllErrors(LineInfo.takeError(), [](const ErrorInfoBase &E) {
           errs() << "Symbolizer failed to get line: " << E.message() << "\n";
@@ -519,11 +524,11 @@ void FileAnalysis::parseSectionContents(ArrayRef<uint8_t> SectionBytes,
         continue;
       }
 
-      if (LineInfo->FileName == "<invalid>")
+      if (LineInfo->FileName == DILineInfo::BadString)
         continue;
     }
 
-    IndirectInstructions.insert(VMAddress);
+    IndirectInstructions.insert({VMAddress, Address.SectionIndex});
   }
 }
 

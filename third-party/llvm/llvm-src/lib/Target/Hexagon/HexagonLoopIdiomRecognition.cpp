@@ -1,13 +1,10 @@
 //===- HexagonLoopIdiomRecognition.cpp ------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-
-#define DEBUG_TYPE "hexagon-lir"
 
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/DenseMap.h"
@@ -26,7 +23,6 @@
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
@@ -43,11 +39,13 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsHexagon.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/PatternMatch.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/User.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -58,6 +56,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils.h"
+#include "llvm/Transforms/Utils/Local.h"
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -70,6 +69,8 @@
 #include <set>
 #include <utility>
 #include <vector>
+
+#define DEBUG_TYPE "hexagon-lir"
 
 using namespace llvm;
 
@@ -94,9 +95,9 @@ static cl::opt<bool> OnlyNonNestedMemmove("only-nonnested-memmove-idiom",
   cl::Hidden, cl::init(true),
   cl::desc("Only enable generating memmove in non-nested loops"));
 
-cl::opt<bool> HexagonVolatileMemcpy("disable-hexagon-volatile-memcpy",
-  cl::Hidden, cl::init(false),
-  cl::desc("Enable Hexagon-specific memcpy for volatile destination."));
+static cl::opt<bool> HexagonVolatileMemcpy(
+    "disable-hexagon-volatile-memcpy", cl::Hidden, cl::init(false),
+    cl::desc("Enable Hexagon-specific memcpy for volatile destination."));
 
 static cl::opt<unsigned> SimplifyLimit("hlir-simplify-limit", cl::init(10000),
   cl::Hidden, cl::desc("Maximum number of simplification steps in HLIR"));
@@ -633,9 +634,9 @@ Value *PolynomialMultiplyRecognize::getCountIV(BasicBlock *BB) {
     if (!isa<ConstantInt>(InitV) || !cast<ConstantInt>(InitV)->isZero())
       continue;
     Value *IterV = PN->getIncomingValueForBlock(BB);
-    if (!isa<BinaryOperator>(IterV))
-      continue;
     auto *BO = dyn_cast<BinaryOperator>(IterV);
+    if (!BO)
+      continue;
     if (BO->getOpcode() != Instruction::Add)
       continue;
     Value *IncV = nullptr;
@@ -1001,6 +1002,7 @@ bool PolynomialMultiplyRecognize::isPromotableTo(Value *Val,
 void PolynomialMultiplyRecognize::promoteTo(Instruction *In,
       IntegerType *DestTy, BasicBlock *LoopB) {
   Type *OrigTy = In->getType();
+  assert(!OrigTy->isVoidTy() && "Invalid instruction to promote");
 
   // Leave boolean values alone.
   if (!In->getType()->isIntegerTy(1))
@@ -1081,7 +1083,8 @@ bool PolynomialMultiplyRecognize::promoteTypes(BasicBlock *LoopB,
   std::transform(LoopB->begin(), LoopB->end(), std::back_inserter(LoopIns),
                  [](Instruction &In) { return &In; });
   for (Instruction *In : LoopIns)
-    promoteTo(In, DestTy, LoopB);
+    if (!In->isTerminator())
+      promoteTo(In, DestTy, LoopB);
 
   // Fix up the PHI nodes in the exit block.
   Instruction *EndI = ExitB->getFirstNonPHI();
@@ -1522,7 +1525,7 @@ Value *PolynomialMultiplyRecognize::generate(BasicBlock::iterator At,
       ParsedValues &PV) {
   IRBuilder<> B(&*At);
   Module *M = At->getParent()->getParent()->getParent();
-  Value *PMF = Intrinsic::getDeclaration(M, Intrinsic::hexagon_M4_pmpyw);
+  Function *PMF = Intrinsic::getDeclaration(M, Intrinsic::hexagon_M4_pmpyw);
 
   Value *P = PV.P, *Q = PV.Q, *P0 = P;
   unsigned IC = PV.IterCount;
@@ -2019,7 +2022,7 @@ bool HexagonLoopIdiomRecognize::processCopyingStore(Loop *CurLoop,
   // See if the pointer expression is an AddRec like {base,+,1} on the current
   // loop, which indicates a strided load.  If we have something else, it's a
   // random load we can't handle.
-  LoadInst *LI = dyn_cast<LoadInst>(SI->getValueOperand());
+  auto *LI = cast<LoadInst>(SI->getValueOperand());
   auto *LoadEv = cast<SCEVAddRecExpr>(SE->getSCEV(LI->getPointerOperand()));
 
   // The trip count of the loop and the base pointer of the addrec SCEV is
@@ -2252,10 +2255,8 @@ CleanupAndExit:
       Type *Int32PtrTy = Type::getInt32PtrTy(Ctx);
       Type *VoidTy = Type::getVoidTy(Ctx);
       Module *M = Func->getParent();
-      Constant *CF = M->getOrInsertFunction(HexagonVolatileMemcpyName, VoidTy,
-                                            Int32PtrTy, Int32PtrTy, Int32Ty);
-      Function *Fn = cast<Function>(CF);
-      Fn->setLinkage(Function::ExternalLinkage);
+      FunctionCallee Fn = M->getOrInsertFunction(
+          HexagonVolatileMemcpyName, VoidTy, Int32PtrTy, Int32PtrTy, Int32Ty);
 
       const SCEV *OneS = SE->getConstant(Int32Ty, 1);
       const SCEV *BECount32 = SE->getTruncateOrZeroExtend(BECount, Int32Ty);
@@ -2274,14 +2275,12 @@ CleanupAndExit:
                       : CondBuilder.CreateBitCast(LoadBasePtr, Int32PtrTy);
       NewCall = CondBuilder.CreateCall(Fn, {Op0, Op1, NumWords});
     } else {
-      NewCall = CondBuilder.CreateMemMove(StoreBasePtr, SI->getAlignment(),
-                                          LoadBasePtr, LI->getAlignment(),
-                                          NumBytes);
+      NewCall = CondBuilder.CreateMemMove(
+          StoreBasePtr, SI->getAlign(), LoadBasePtr, LI->getAlign(), NumBytes);
     }
   } else {
-    NewCall = Builder.CreateMemCpy(StoreBasePtr, SI->getAlignment(),
-                                   LoadBasePtr, LI->getAlignment(),
-                                   NumBytes);
+    NewCall = Builder.CreateMemCpy(StoreBasePtr, SI->getAlign(), LoadBasePtr,
+                                   LI->getAlign(), NumBytes);
     // Okay, the memcpy has been formed.  Zap the original store and
     // anything that feeds into it.
     RecursivelyDeleteTriviallyDeadInstructions(SI, TLI);
@@ -2336,7 +2335,7 @@ bool HexagonLoopIdiomRecognize::coverLoop(Loop *L,
         continue;
       if (!Worklist.count(&In) && In.mayHaveSideEffects())
         return false;
-      for (const auto &K : In.users()) {
+      for (auto K : In.users()) {
         Instruction *UseI = dyn_cast<Instruction>(K);
         if (!UseI)
           continue;
@@ -2427,7 +2426,8 @@ bool HexagonLoopIdiomRecognize::runOnLoop(Loop *L, LPPassManager &LPM) {
   DL = &L->getHeader()->getModule()->getDataLayout();
   DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   LF = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
-  TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+  TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(
+      *L->getHeader()->getParent());
   SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 
   HasMemcpy = TLI->has(LibFunc_memcpy);

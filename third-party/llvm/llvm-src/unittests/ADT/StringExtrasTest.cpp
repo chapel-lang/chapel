@@ -1,9 +1,8 @@
 //===- StringExtrasTest.cpp - Unit tests for String extras ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -110,7 +109,7 @@ TEST(StringExtrasTest, printEscapedString) {
   std::string str;
   raw_string_ostream OS(str);
   printEscapedString("ABCdef123&<>\\\"'\t", OS);
-  EXPECT_EQ("ABCdef123&<>\\5C\\22'\\09", OS.str());
+  EXPECT_EQ("ABCdef123&<>\\\\\\22'\\09", OS.str());
 }
 
 TEST(StringExtrasTest, printHTMLEscaped) {

@@ -1,9 +1,8 @@
 //==- llvm/Analysis/MemoryBuiltins.h - Calls to memory builtins --*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/Analysis/TargetFolder.h"
+#include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstVisitor.h"
@@ -58,6 +58,9 @@ class Value;
 /// like).
 bool isAllocationFn(const Value *V, const TargetLibraryInfo *TLI,
                     bool LookThroughBitCast = false);
+bool isAllocationFn(const Value *V,
+                    function_ref<const TargetLibraryInfo &(Function &)> GetTLI,
+                    bool LookThroughBitCast = false);
 
 /// Tests if a value is a call or invoke to a function that returns a
 /// NoAlias pointer (including malloc/calloc/realloc/strdup-like functions).
@@ -67,6 +70,9 @@ bool isNoAliasFn(const Value *V, const TargetLibraryInfo *TLI,
 /// Tests if a value is a call or invoke to a library function that
 /// allocates uninitialized memory (such as malloc).
 bool isMallocLikeFn(const Value *V, const TargetLibraryInfo *TLI,
+                    bool LookThroughBitCast = false);
+bool isMallocLikeFn(const Value *V,
+                    function_ref<const TargetLibraryInfo &(Function &)> GetTLI,
                     bool LookThroughBitCast = false);
 
 /// Tests if a value is a call or invoke to a library function that
@@ -84,6 +90,25 @@ bool isMallocOrCallocLikeFn(const Value *V, const TargetLibraryInfo *TLI,
 bool isAllocLikeFn(const Value *V, const TargetLibraryInfo *TLI,
                    bool LookThroughBitCast = false);
 
+/// Tests if a value is a call or invoke to a library function that
+/// reallocates memory (e.g., realloc).
+bool isReallocLikeFn(const Value *V, const TargetLibraryInfo *TLI,
+                     bool LookThroughBitCast = false);
+
+/// Tests if a function is a call or invoke to a library function that
+/// reallocates memory (e.g., realloc).
+bool isReallocLikeFn(const Function *F, const TargetLibraryInfo *TLI);
+
+/// Tests if a value is a call or invoke to a library function that
+/// allocates memory and throws if an allocation failed (e.g., new).
+bool isOpNewLikeFn(const Value *V, const TargetLibraryInfo *TLI,
+                     bool LookThroughBitCast = false);
+
+/// Tests if a value is a call or invoke to a library function that
+/// allocates memory (strdup, strndup).
+bool isStrdupLikeFn(const Value *V, const TargetLibraryInfo *TLI,
+                     bool LookThroughBitCast = false);
+
 //===----------------------------------------------------------------------===//
 //  malloc Call Utility Functions.
 //
@@ -91,9 +116,13 @@ bool isAllocLikeFn(const Value *V, const TargetLibraryInfo *TLI,
 /// extractMallocCall - Returns the corresponding CallInst if the instruction
 /// is a malloc call.  Since CallInst::CreateMalloc() only creates calls, we
 /// ignore InvokeInst here.
-const CallInst *extractMallocCall(const Value *I, const TargetLibraryInfo *TLI);
-inline CallInst *extractMallocCall(Value *I, const TargetLibraryInfo *TLI) {
-  return const_cast<CallInst*>(extractMallocCall((const Value*)I, TLI));
+const CallInst *
+extractMallocCall(const Value *I,
+                  function_ref<const TargetLibraryInfo &(Function &)> GetTLI);
+inline CallInst *
+extractMallocCall(Value *I,
+                  function_ref<const TargetLibraryInfo &(Function &)> GetTLI) {
+  return const_cast<CallInst *>(extractMallocCall((const Value *)I, GetTLI));
 }
 
 /// getMallocType - Returns the PointerType resulting from the malloc call.
@@ -134,6 +163,9 @@ inline CallInst *extractCallocCall(Value *I, const TargetLibraryInfo *TLI) {
 //===----------------------------------------------------------------------===//
 //  free Call Utility Functions.
 //
+
+/// isLibFreeFunction - Returns true if the function is a builtin free()
+bool isLibFreeFunction(const Function *F, const LibFunc TLIFn);
 
 /// isFreeCall - Returns non-null if the value is a call to the builtin free()
 const CallInst *isFreeCall(const Value *I, const TargetLibraryInfo *TLI);
@@ -178,14 +210,13 @@ bool getObjectSize(const Value *Ptr, uint64_t &Size, const DataLayout &DL,
                    const TargetLibraryInfo *TLI, ObjectSizeOpts Opts = {});
 
 /// Try to turn a call to \@llvm.objectsize into an integer value of the given
-/// Type. Returns null on failure.
-/// If MustSucceed is true, this function will not return null, and may return
-/// conservative values governed by the second argument of the call to
-/// objectsize.
-ConstantInt *lowerObjectSizeCall(IntrinsicInst *ObjectSize,
-                                 const DataLayout &DL,
-                                 const TargetLibraryInfo *TLI,
-                                 bool MustSucceed);
+/// Type. Returns null on failure. If MustSucceed is true, this function will
+/// not return null, and may return conservative values governed by the second
+/// argument of the call to objectsize.
+Value *lowerObjectSizeCall(IntrinsicInst *ObjectSize, const DataLayout &DL,
+                           const TargetLibraryInfo *TLI, bool MustSucceed);
+
+
 
 using SizeOffsetType = std::pair<APInt, APInt>;
 
@@ -252,7 +283,7 @@ using SizeOffsetEvalType = std::pair<Value *, Value *>;
 /// May create code to compute the result at run-time.
 class ObjectSizeOffsetEvaluator
   : public InstVisitor<ObjectSizeOffsetEvaluator, SizeOffsetEvalType> {
-  using BuilderTy = IRBuilder<TargetFolder>;
+  using BuilderTy = IRBuilder<TargetFolder, IRBuilderCallbackInserter>;
   using WeakEvalType = std::pair<WeakTrackingVH, WeakTrackingVH>;
   using CacheMapTy = DenseMap<const Value *, WeakEvalType>;
   using PtrSetTy = SmallPtrSet<const Value *, 8>;
@@ -265,17 +296,18 @@ class ObjectSizeOffsetEvaluator
   Value *Zero;
   CacheMapTy CacheMap;
   PtrSetTy SeenVals;
-  bool RoundToAlign;
-
-  SizeOffsetEvalType unknown() {
-    return std::make_pair(nullptr, nullptr);
-  }
+  ObjectSizeOpts EvalOpts;
+  SmallPtrSet<Instruction *, 8> InsertedInstructions;
 
   SizeOffsetEvalType compute_(Value *V);
 
 public:
+  static SizeOffsetEvalType unknown() {
+    return std::make_pair(nullptr, nullptr);
+  }
+
   ObjectSizeOffsetEvaluator(const DataLayout &DL, const TargetLibraryInfo *TLI,
-                            LLVMContext &Context, bool RoundToAlign = false);
+                            LLVMContext &Context, ObjectSizeOpts EvalOpts = {});
 
   SizeOffsetEvalType compute(Value *V);
 

@@ -1,9 +1,8 @@
 //==- WebAssemblyDisassembler.cpp - Disassembler for WebAssembly -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -15,7 +14,9 @@
 ///
 //===----------------------------------------------------------------------===//
 
+#include "MCTargetDesc/WebAssemblyInstPrinter.h"
 #include "MCTargetDesc/WebAssemblyMCTargetDesc.h"
+#include "TargetInfo/WebAssemblyTargetInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCFixedLenDisassembler.h"
@@ -23,6 +24,7 @@
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCSymbol.h"
+#include "llvm/MC/MCSymbolWasm.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/LEB128.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -43,8 +45,10 @@ class WebAssemblyDisassembler final : public MCDisassembler {
 
   DecodeStatus getInstruction(MCInst &Instr, uint64_t &Size,
                               ArrayRef<uint8_t> Bytes, uint64_t Address,
-                              raw_ostream &VStream,
                               raw_ostream &CStream) const override;
+  DecodeStatus onSymbolStart(StringRef Name, uint64_t &Size,
+                             ArrayRef<uint8_t> Bytes, uint64_t Address,
+                             raw_ostream &CStream) const override;
 
 public:
   WebAssemblyDisassembler(const MCSubtargetInfo &STI, MCContext &Ctx,
@@ -60,7 +64,8 @@ static MCDisassembler *createWebAssemblyDisassembler(const Target &T,
   return new WebAssemblyDisassembler(STI, Ctx, std::move(MCII));
 }
 
-extern "C" void LLVMInitializeWebAssemblyDisassembler() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void
+LLVMInitializeWebAssemblyDisassembler() {
   // Register the disassembler for each target.
   TargetRegistry::RegisterMCDisassembler(getTheWebAssemblyTarget32(),
                                          createWebAssemblyDisassembler);
@@ -77,7 +82,7 @@ static int nextByte(ArrayRef<uint8_t> Bytes, uint64_t &Size) {
 }
 
 static bool nextLEB(int64_t &Val, ArrayRef<uint8_t> Bytes, uint64_t &Size,
-                    bool Signed = false) {
+                    bool Signed) {
   unsigned N = 0;
   const char *Error = nullptr;
   Val = Signed ? decodeSLEB128(Bytes.data() + Size, &N,
@@ -104,9 +109,8 @@ template <typename T>
 bool parseImmediate(MCInst &MI, uint64_t &Size, ArrayRef<uint8_t> Bytes) {
   if (Size + sizeof(T) > Bytes.size())
     return false;
-  T Val;
-  memcpy(&Val, Bytes.data() + Size, sizeof(T));
-  support::endian::byte_swap<T, support::endianness::little>(Val);
+  T Val = support::endian::read<T, support::endianness::little, 1>(
+      Bytes.data() + Size);
   Size += sizeof(T);
   if (std::is_floating_point<T>::value) {
     MI.addOperand(MCOperand::createFPImm(static_cast<double>(Val)));
@@ -116,9 +120,44 @@ bool parseImmediate(MCInst &MI, uint64_t &Size, ArrayRef<uint8_t> Bytes) {
   return true;
 }
 
+MCDisassembler::DecodeStatus WebAssemblyDisassembler::onSymbolStart(
+    StringRef Name, uint64_t &Size, ArrayRef<uint8_t> Bytes, uint64_t Address,
+    raw_ostream &CStream) const {
+  Size = 0;
+  if (Address == 0) {
+    // Start of a code section: we're parsing only the function count.
+    int64_t FunctionCount;
+    if (!nextLEB(FunctionCount, Bytes, Size, false))
+      return MCDisassembler::Fail;
+    outs() << "        # " << FunctionCount << " functions in section.";
+  } else {
+    // Parse the start of a single function.
+    int64_t BodySize, LocalEntryCount;
+    if (!nextLEB(BodySize, Bytes, Size, false) ||
+        !nextLEB(LocalEntryCount, Bytes, Size, false))
+      return MCDisassembler::Fail;
+    if (LocalEntryCount) {
+      outs() << "        .local ";
+      for (int64_t I = 0; I < LocalEntryCount; I++) {
+        int64_t Count, Type;
+        if (!nextLEB(Count, Bytes, Size, false) ||
+            !nextLEB(Type, Bytes, Size, false))
+          return MCDisassembler::Fail;
+        for (int64_t J = 0; J < Count; J++) {
+          if (I || J)
+            outs() << ", ";
+          outs() << WebAssembly::anyTypeToString(Type);
+        }
+      }
+    }
+  }
+  outs() << "\n";
+  return MCDisassembler::Success;
+}
+
 MCDisassembler::DecodeStatus WebAssemblyDisassembler::getInstruction(
     MCInst &MI, uint64_t &Size, ArrayRef<uint8_t> Bytes, uint64_t /*Address*/,
-    raw_ostream & /*OS*/, raw_ostream &CS) const {
+    raw_ostream &CS) const {
   CommentStream = &CS;
   Size = 0;
   int Opc = nextByte(Bytes, Size);
@@ -138,7 +177,7 @@ MCDisassembler::DecodeStatus WebAssemblyDisassembler::getInstruction(
     if (!WasmInst)
       return MCDisassembler::Fail;
     int64_t PrefixedOpc;
-    if (!nextLEB(PrefixedOpc, Bytes, Size))
+    if (!nextLEB(PrefixedOpc, Bytes, Size, false))
       return MCDisassembler::Fail;
     if (PrefixedOpc < 0 || PrefixedOpc >= WebAssemblyInstructionTableSize)
       return MCDisassembler::Fail;
@@ -161,6 +200,7 @@ MCDisassembler::DecodeStatus WebAssemblyDisassembler::getInstruction(
     case WebAssembly::OPERAND_OFFSET32:
     case WebAssembly::OPERAND_P2ALIGN:
     case WebAssembly::OPERAND_TYPEINDEX:
+    case WebAssembly::OPERAND_EVENT:
     case MCOI::OPERAND_IMMEDIATE: {
       if (!parseLEBImmediate(MI, Size, Bytes, false))
         return MCDisassembler::Fail;
@@ -173,10 +213,29 @@ MCDisassembler::DecodeStatus WebAssemblyDisassembler::getInstruction(
         return MCDisassembler::Fail;
       break;
     }
-    // block_type operands (uint8_t).
+    // block_type operands:
     case WebAssembly::OPERAND_SIGNATURE: {
-      if (!parseImmediate<uint8_t>(MI, Size, Bytes))
+      int64_t Val;
+      uint64_t PrevSize = Size;
+      if (!nextLEB(Val, Bytes, Size, true))
         return MCDisassembler::Fail;
+      if (Val < 0) {
+        // Negative values are single septet value types or empty types
+        if (Size != PrevSize + 1) {
+          MI.addOperand(
+              MCOperand::createImm(int64_t(WebAssembly::BlockType::Invalid)));
+        } else {
+          MI.addOperand(MCOperand::createImm(Val & 0x7f));
+        }
+      } else {
+        // We don't have access to the signature, so create a symbol without one
+        MCSymbol *Sym = getContext().createTempSymbol("typeindex", true);
+        auto *WasmSym = cast<MCSymbolWasm>(Sym);
+        WasmSym->setType(wasm::WASM_SYMBOL_TYPE_FUNCTION);
+        const MCExpr *Expr = MCSymbolRefExpr::create(
+            WasmSym, MCSymbolRefExpr::VK_WASM_TYPEINDEX, getContext());
+        MI.addOperand(MCOperand::createExpr(Expr));
+      }
       break;
     }
     // FP operands.

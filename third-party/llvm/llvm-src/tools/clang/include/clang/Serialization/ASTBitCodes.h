@@ -1,9 +1,8 @@
 //===- ASTBitCodes.h - Enum values for the PCH bitcode format ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,7 +23,7 @@
 #include "clang/Basic/OperatorKinds.h"
 #include "clang/Basic/SourceLocation.h"
 #include "llvm/ADT/DenseMapInfo.h"
-#include "llvm/Bitcode/BitCodes.h"
+#include "llvm/Bitstream/BitCodes.h"
 #include <cassert>
 #include <cstdint>
 
@@ -42,7 +41,7 @@ namespace serialization {
     /// Version 4 of AST files also requires that the version control branch and
     /// revision match exactly, since there is no backward compatibility of
     /// AST files at this time.
-    const unsigned VERSION_MAJOR = 7;
+    const unsigned VERSION_MAJOR = 8;
 
     /// AST file minor version number supported by this version of
     /// Clang.
@@ -383,7 +382,10 @@ namespace serialization {
     /// inside the control block.
     enum InputFileRecordTypes {
       /// An input file.
-      INPUT_FILE = 1
+      INPUT_FILE = 1,
+
+      /// The input file content hash
+      INPUT_FILE_HASH
     };
 
     /// Record types that occur within the AST block itself.
@@ -1019,6 +1021,9 @@ namespace serialization {
 #define EXT_OPAQUE_TYPE(ExtType, Id, Ext) \
       PREDEF_TYPE_##Id##_ID,
 #include "clang/Basic/OpenCLExtensionTypes.def"
+      // \brief SVE types with auto numeration
+#define SVE_TYPE(Name, Id, SingletonId) PREDEF_TYPE_##Id##_ID,
+#include "clang/Basic/AArch64SVEACLETypes.def"
     };
 
     /// The number of predefined type IDs that are reserved for
@@ -1035,146 +1040,12 @@ namespace serialization {
     /// constant describes a record for a specific type class in the
     /// AST. Note that DeclCode values share this code space.
     enum TypeCode {
+#define TYPE_BIT_CODE(CLASS_ID, CODE_ID, CODE_VALUE) \
+      TYPE_##CODE_ID = CODE_VALUE,
+#include "clang/Serialization/TypeBitCodes.def"
+
       /// An ExtQualType record.
-      TYPE_EXT_QUAL = 1,
-
-      /// A ComplexType record.
-      TYPE_COMPLEX = 3,
-
-      /// A PointerType record.
-      TYPE_POINTER = 4,
-
-      /// A BlockPointerType record.
-      TYPE_BLOCK_POINTER = 5,
-
-      /// An LValueReferenceType record.
-      TYPE_LVALUE_REFERENCE = 6,
-
-      /// An RValueReferenceType record.
-      TYPE_RVALUE_REFERENCE = 7,
-
-      /// A MemberPointerType record.
-      TYPE_MEMBER_POINTER = 8,
-
-      /// A ConstantArrayType record.
-      TYPE_CONSTANT_ARRAY = 9,
-
-      /// An IncompleteArrayType record.
-      TYPE_INCOMPLETE_ARRAY = 10,
-
-      /// A VariableArrayType record.
-      TYPE_VARIABLE_ARRAY = 11,
-
-      /// A VectorType record.
-      TYPE_VECTOR = 12,
-
-      /// An ExtVectorType record.
-      TYPE_EXT_VECTOR = 13,
-
-      /// A FunctionNoProtoType record.
-      TYPE_FUNCTION_NO_PROTO = 14,
-
-      /// A FunctionProtoType record.
-      TYPE_FUNCTION_PROTO = 15,
-
-      /// A TypedefType record.
-      TYPE_TYPEDEF = 16,
-
-      /// A TypeOfExprType record.
-      TYPE_TYPEOF_EXPR = 17,
-
-      /// A TypeOfType record.
-      TYPE_TYPEOF = 18,
-
-      /// A RecordType record.
-      TYPE_RECORD = 19,
-
-      /// An EnumType record.
-      TYPE_ENUM = 20,
-
-      /// An ObjCInterfaceType record.
-      TYPE_OBJC_INTERFACE = 21,
-
-      /// An ObjCObjectPointerType record.
-      TYPE_OBJC_OBJECT_POINTER = 22,
-
-      /// a DecltypeType record.
-      TYPE_DECLTYPE = 23,
-
-      /// An ElaboratedType record.
-      TYPE_ELABORATED = 24,
-
-      /// A SubstTemplateTypeParmType record.
-      TYPE_SUBST_TEMPLATE_TYPE_PARM = 25,
-
-      /// An UnresolvedUsingType record.
-      TYPE_UNRESOLVED_USING = 26,
-
-      /// An InjectedClassNameType record.
-      TYPE_INJECTED_CLASS_NAME = 27,
-
-      /// An ObjCObjectType record.
-      TYPE_OBJC_OBJECT = 28,
-
-      /// An TemplateTypeParmType record.
-      TYPE_TEMPLATE_TYPE_PARM = 29,
-
-      /// An TemplateSpecializationType record.
-      TYPE_TEMPLATE_SPECIALIZATION = 30,
-
-      /// A DependentNameType record.
-      TYPE_DEPENDENT_NAME = 31,
-
-      /// A DependentTemplateSpecializationType record.
-      TYPE_DEPENDENT_TEMPLATE_SPECIALIZATION = 32,
-
-      /// A DependentSizedArrayType record.
-      TYPE_DEPENDENT_SIZED_ARRAY = 33,
-
-      /// A ParenType record.
-      TYPE_PAREN = 34,
-
-      /// A PackExpansionType record.
-      TYPE_PACK_EXPANSION = 35,
-
-      /// An AttributedType record.
-      TYPE_ATTRIBUTED = 36,
-
-      /// A SubstTemplateTypeParmPackType record.
-      TYPE_SUBST_TEMPLATE_TYPE_PARM_PACK = 37,
-
-      /// A AutoType record.
-      TYPE_AUTO = 38,
-
-      /// A UnaryTransformType record.
-      TYPE_UNARY_TRANSFORM = 39,
-
-      /// An AtomicType record.
-      TYPE_ATOMIC = 40,
-
-      /// A DecayedType record.
-      TYPE_DECAYED = 41,
-
-      /// An AdjustedType record.
-      TYPE_ADJUSTED = 42,
-
-      /// A PipeType record.
-      TYPE_PIPE = 43,
-
-      /// An ObjCTypeParamType record.
-      TYPE_OBJC_TYPE_PARAM = 44,
-
-      /// A DeducedTemplateSpecializationType record.
-      TYPE_DEDUCED_TEMPLATE_SPECIALIZATION = 45,
-
-      /// A DependentSizedExtVectorType record.
-      TYPE_DEPENDENT_SIZED_EXT_VECTOR = 46,
-
-      /// A DependentAddressSpaceType record.
-      TYPE_DEPENDENT_ADDRESS_SPACE = 47,
-
-      /// A dependentSizedVectorType record.
-      TYPE_DEPENDENT_SIZED_VECTOR = 48
+      TYPE_EXT_QUAL = 1
     };
 
     /// The type IDs for special types constructed by semantic
@@ -1439,9 +1310,6 @@ namespace serialization {
       /// A CXXConstructorDecl record.
       DECL_CXX_CONSTRUCTOR,
 
-      /// A CXXConstructorDecl record for an inherited constructor.
-      DECL_CXX_INHERITED_CONSTRUCTOR,
-
       /// A CXXDestructorDecl record.
       DECL_CXX_DESTRUCTOR,
 
@@ -1490,7 +1358,10 @@ namespace serialization {
       /// A TypeAliasTemplateDecl record.
       DECL_TYPE_ALIAS_TEMPLATE,
 
-      /// A StaticAssertDecl record.
+      /// \brief A ConceptDecl record.
+      DECL_CONCEPT,
+
+      /// \brief A StaticAssertDecl record.
       DECL_STATIC_ASSERT,
 
       /// A record containing CXXBaseSpecifiers.
@@ -1522,9 +1393,18 @@ namespace serialization {
 
       /// An OMPRequiresDecl record.
       DECL_OMP_REQUIRES,
-	 
+
+      /// An OMPAllocateDcl record.
+      DECL_OMP_ALLOCATE,
+
       /// An EmptyDecl record.
       DECL_EMPTY,
+
+      /// An LifetimeExtendedTemporaryDecl record.
+      DECL_LIFETIME_EXTENDED_TEMPORARY,
+
+      /// A RequiresExprBodyDecl record.
+      DECL_REQUIRES_EXPR_BODY,
 
       /// An ObjCTypeParamDecl record.
       DECL_OBJC_TYPE_PARAM,
@@ -1537,6 +1417,9 @@ namespace serialization {
 
       /// A PragmaDetectMismatchDecl record.
       DECL_PRAGMA_DETECT_MISMATCH,
+
+      /// An OMPDeclareMapperDecl record.
+      DECL_OMP_DECLARE_MAPPER,
 
       /// An OMPDeclareReductionDecl record.
       DECL_OMP_DECLARE_REDUCTION,
@@ -1727,6 +1610,9 @@ namespace serialization {
       /// A GNUNullExpr record.
       EXPR_GNU_NULL,
 
+      /// A SourceLocExpr record.
+      EXPR_SOURCE_LOC,
+
       /// A ShuffleVectorExpr record.
       EXPR_SHUFFLE_VECTOR,
 
@@ -1828,6 +1714,9 @@ namespace serialization {
       /// A CXXMemberCallExpr record.
       EXPR_CXX_MEMBER_CALL,
 
+      /// A CXXRewrittenBinaryOperator record.
+      EXPR_CXX_REWRITTEN_BINARY_OPERATOR,
+
       /// A CXXConstructExpr record.
       EXPR_CXX_CONSTRUCT,
 
@@ -1898,6 +1787,8 @@ namespace serialization {
       EXPR_FUNCTION_PARM_PACK,    // FunctionParmPackExpr
       EXPR_MATERIALIZE_TEMPORARY, // MaterializeTemporaryExpr
       EXPR_CXX_FOLD,              // CXXFoldExpr
+      EXPR_CONCEPT_SPECIALIZATION,// ConceptSpecializationExpr
+      EXPR_REQUIRES,              // RequiresExpr
 
       // CUDA
       EXPR_CUDA_KERNEL_CALL,       // CUDAKernelCallExpr
@@ -1927,6 +1818,7 @@ namespace serialization {
       STMT_OMP_CRITICAL_DIRECTIVE,
       STMT_OMP_PARALLEL_FOR_DIRECTIVE,
       STMT_OMP_PARALLEL_FOR_SIMD_DIRECTIVE,
+      STMT_OMP_PARALLEL_MASTER_DIRECTIVE,
       STMT_OMP_PARALLEL_SECTIONS_DIRECTIVE,
       STMT_OMP_TASK_DIRECTIVE,
       STMT_OMP_TASKYIELD_DIRECTIVE,
@@ -1947,6 +1839,10 @@ namespace serialization {
       STMT_OMP_CANCEL_DIRECTIVE,
       STMT_OMP_TASKLOOP_DIRECTIVE,
       STMT_OMP_TASKLOOP_SIMD_DIRECTIVE,
+      STMT_OMP_MASTER_TASKLOOP_DIRECTIVE,
+      STMT_OMP_MASTER_TASKLOOP_SIMD_DIRECTIVE,
+      STMT_OMP_PARALLEL_MASTER_TASKLOOP_DIRECTIVE,
+      STMT_OMP_PARALLEL_MASTER_TASKLOOP_SIMD_DIRECTIVE,
       STMT_OMP_DISTRIBUTE_DIRECTIVE,
       STMT_OMP_TARGET_UPDATE_DIRECTIVE,
       STMT_OMP_DISTRIBUTE_PARALLEL_FOR_DIRECTIVE,

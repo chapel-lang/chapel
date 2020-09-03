@@ -1,9 +1,8 @@
 //===---------- PPCTLSDynamicCall.cpp - TLS Dynamic Call Fixup ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -28,16 +27,13 @@
 #include "llvm/CodeGen/LiveIntervals.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace llvm;
 
 #define DEBUG_TYPE "ppc-tls-dynamic-call"
-
-namespace llvm {
-  void initializePPCTLSDynamicCallPass(PassRegistry&);
-}
 
 namespace {
   struct PPCTLSDynamicCall : public MachineFunctionPass {
@@ -79,8 +75,8 @@ protected:
 
         LLVM_DEBUG(dbgs() << "TLS Dynamic Call Fixup:\n    " << MI);
 
-        unsigned OutReg = MI.getOperand(0).getReg();
-        unsigned InReg = MI.getOperand(1).getReg();
+        Register OutReg = MI.getOperand(0).getReg();
+        Register InReg = MI.getOperand(1).getReg();
         DebugLoc DL = MI.getDebugLoc();
         unsigned GPR3 = Is64Bit ? PPC::X3 : PPC::R3;
         unsigned Opc1, Opc2;

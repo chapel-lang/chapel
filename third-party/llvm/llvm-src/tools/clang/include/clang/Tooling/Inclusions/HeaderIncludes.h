@@ -1,9 +1,8 @@
 //===--- HeaderIncludes.h - Insert/Delete #includes for C++ code--*- C++-*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +32,7 @@ public:
   /// 0. Otherwise, returns the priority of the matching category or INT_MAX.
   /// NOTE: this API is not thread-safe!
   int getIncludePriority(StringRef IncludeName, bool CheckMainHeader) const;
+  int getSortIncludePriority(StringRef IncludeName, bool CheckMainHeader) const;
 
 private:
   bool isMainHeader(StringRef IncludeName) const;
@@ -42,8 +42,7 @@ private:
   std::string FileName;
   // This refers to a substring in FileName.
   StringRef FileStem;
-  // Regex is not thread-safe.
-  mutable SmallVector<llvm::Regex, 4> CategoryRegexs;
+  SmallVector<llvm::Regex, 4> CategoryRegexs;
 };
 
 /// Generates replacements for inserting or deleting #include directives in a

@@ -1,9 +1,8 @@
 //===--- Fuchsia.cpp - Fuchsia ToolChain Implementations --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,13 +15,17 @@
 #include "clang/Driver/Options.h"
 #include "clang/Driver/SanitizerArgs.h"
 #include "llvm/Option/ArgList.h"
+#include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/VirtualFileSystem.h"
 
 using namespace clang::driver;
 using namespace clang::driver::toolchains;
 using namespace clang::driver::tools;
 using namespace clang;
 using namespace llvm::opt;
+
+using tools::addMultilibFlag;
 
 void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                                    const InputInfo &Output,
@@ -43,11 +46,16 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   // handled somewhere else.
   Args.ClaimAllArgs(options::OPT_w);
 
+  CmdArgs.push_back("-z");
+  CmdArgs.push_back("now");
+
   const char *Exec = Args.MakeArgString(ToolChain.GetLinkerPath());
   if (llvm::sys::path::filename(Exec).equals_lower("ld.lld") ||
       llvm::sys::path::stem(Exec).equals_lower("ld.lld")) {
     CmdArgs.push_back("-z");
     CmdArgs.push_back("rodynamic");
+    CmdArgs.push_back("-z");
+    CmdArgs.push_back("separate-loadable-segments");
   }
 
   if (!D.SysRoot.empty())
@@ -99,8 +107,6 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   Args.AddAllArgs(CmdArgs, options::OPT_L);
   Args.AddAllArgs(CmdArgs, options::OPT_u);
 
-  addSanitizerPathLibArgs(ToolChain, Args, CmdArgs);
-
   ToolChain.AddFilePathLibArgs(Args, CmdArgs);
 
   if (D.isUsingLTO()) {
@@ -149,10 +155,11 @@ void fuchsia::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (Args.hasArg(options::OPT_fsplit_stack))
       CmdArgs.push_back("--wrap=pthread_create");
 
-    CmdArgs.push_back("-lc");
+    if (!Args.hasArg(options::OPT_nolibc))
+      CmdArgs.push_back("-lc");
   }
 
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 /// Fuchsia - Fuchsia tool chain which can call as(1) and ld(1) directly.
@@ -169,12 +176,58 @@ Fuchsia::Fuchsia(const Driver &D, const llvm::Triple &Triple,
     llvm::sys::path::append(P, "lib");
     getFilePaths().push_back(P.str());
   }
+
+  auto FilePaths = [&](const Multilib &M) -> std::vector<std::string> {
+    std::vector<std::string> FP;
+    if (D.CCCIsCXX()) {
+      if (auto CXXStdlibPath = getCXXStdlibPath()) {
+        SmallString<128> P(*CXXStdlibPath);
+        llvm::sys::path::append(P, M.gccSuffix());
+        FP.push_back(P.str());
+      }
+    }
+    return FP;
+  };
+
+  Multilibs.push_back(Multilib());
+  // Use the noexcept variant with -fno-exceptions to avoid the extra overhead.
+  Multilibs.push_back(Multilib("noexcept", {}, {}, 1)
+                          .flag("-fexceptions")
+                          .flag("+fno-exceptions"));
+  // ASan has higher priority because we always want the instrumentated version.
+  Multilibs.push_back(Multilib("asan", {}, {}, 2)
+                          .flag("+fsanitize=address"));
+  // Use the asan+noexcept variant with ASan and -fno-exceptions.
+  Multilibs.push_back(Multilib("asan+noexcept", {}, {}, 3)
+                          .flag("+fsanitize=address")
+                          .flag("-fexceptions")
+                          .flag("+fno-exceptions"));
+  Multilibs.FilterOut([&](const Multilib &M) {
+    std::vector<std::string> RD = FilePaths(M);
+    return std::all_of(RD.begin(), RD.end(), [&](std::string P) {
+      return !getVFS().exists(P);
+    });
+  });
+
+  Multilib::flags_list Flags;
+  addMultilibFlag(
+      Args.hasFlag(options::OPT_fexceptions, options::OPT_fno_exceptions, true),
+      "fexceptions", Flags);
+  addMultilibFlag(getSanitizerArgs().needsAsanRt(), "fsanitize=address", Flags);
+  Multilibs.setFilePathsCallback(FilePaths);
+
+  if (Multilibs.select(Flags, SelectedMultilib))
+    if (!SelectedMultilib.isDefault())
+      if (const auto &PathsCallback = Multilibs.filePathsCallback())
+        for (const auto &Path : PathsCallback(SelectedMultilib))
+          // Prepend the multilib path to ensure it takes the precedence.
+          getFilePaths().insert(getFilePaths().begin(), Path);
 }
 
 std::string Fuchsia::ComputeEffectiveClangTriple(const ArgList &Args,
                                                  types::ID InputType) const {
   llvm::Triple Triple(ComputeLLVMTriple(Args, InputType));
-  return (Triple.getArchName() + "-" + Triple.getOSName()).str();
+  return Triple.str();
 }
 
 Tool *Fuchsia::buildLinker() const {
@@ -208,9 +261,9 @@ Fuchsia::GetCXXStdlibType(const ArgList &Args) const {
 void Fuchsia::addClangTargetOptions(const ArgList &DriverArgs,
                                     ArgStringList &CC1Args,
                                     Action::OffloadKind) const {
-  if (DriverArgs.hasFlag(options::OPT_fuse_init_array,
-                         options::OPT_fno_use_init_array, true))
-    CC1Args.push_back("-fuse-init-array");
+  if (!DriverArgs.hasFlag(options::OPT_fuse_init_array,
+                          options::OPT_fno_use_init_array, true))
+    CC1Args.push_back("-fno-use-init-array");
 }
 
 void Fuchsia::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
@@ -257,8 +310,8 @@ void Fuchsia::AddClangCXXStdlibIncludeArgs(const ArgList &DriverArgs,
 
   switch (GetCXXStdlibType(DriverArgs)) {
   case ToolChain::CST_Libcxx: {
-    SmallString<128> P(getDriver().ResourceDir);
-    llvm::sys::path::append(P, "include", "c++", "v1");
+    SmallString<128> P(getDriver().Dir);
+    llvm::sys::path::append(P, "..", "include", "c++", "v1");
     addSystemInclude(DriverArgs, CC1Args, P.str());
     break;
   }
@@ -283,6 +336,8 @@ void Fuchsia::AddCXXStdlibLibArgs(const ArgList &Args,
 SanitizerMask Fuchsia::getSupportedSanitizers() const {
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
+  Res |= SanitizerKind::PointerCompare;
+  Res |= SanitizerKind::PointerSubtract;
   Res |= SanitizerKind::Fuzzer;
   Res |= SanitizerKind::FuzzerNoLink;
   Res |= SanitizerKind::SafeStack;
@@ -291,5 +346,17 @@ SanitizerMask Fuchsia::getSupportedSanitizers() const {
 }
 
 SanitizerMask Fuchsia::getDefaultSanitizers() const {
-  return SanitizerKind::SafeStack;
+  SanitizerMask Res;
+  switch (getTriple().getArch()) {
+  case llvm::Triple::aarch64:
+    Res |= SanitizerKind::ShadowCallStack;
+    break;
+  case llvm::Triple::x86_64:
+    Res |= SanitizerKind::SafeStack;
+    break;
+  default:
+    // TODO: Enable SafeStack on RISC-V once tested.
+    break;
+  }
+  return Res;
 }

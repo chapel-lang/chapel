@@ -1,9 +1,8 @@
 //===- NoFolder.h - Constant folding helper ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -197,11 +196,15 @@ public:
   }
 
   Instruction *CreateFNeg(Constant *C) const {
-    return BinaryOperator::CreateFNeg(C);
+    return UnaryOperator::CreateFNeg(C);
   }
 
   Instruction *CreateNot(Constant *C) const {
     return BinaryOperator::CreateNot(C);
+  }
+
+  Instruction *CreateUnOp(Instruction::UnaryOps Opc, Constant *C) const {
+    return UnaryOperator::Create(Opc, C);
   }
 
   //===--------------------------------------------------------------------===//

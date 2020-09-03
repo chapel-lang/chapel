@@ -1,9 +1,8 @@
 //===-- AnalysisManager.cpp -------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,7 +13,7 @@ using namespace ento;
 
 void AnalysisManager::anchor() { }
 
-AnalysisManager::AnalysisManager(ASTContext &ASTCtx, DiagnosticsEngine &diags,
+AnalysisManager::AnalysisManager(ASTContext &ASTCtx,
                                  const PathDiagnosticConsumers &PDC,
                                  StoreManagerCreator storemgr,
                                  ConstraintManagerCreator constraintmgr,
@@ -24,7 +23,7 @@ AnalysisManager::AnalysisManager(ASTContext &ASTCtx, DiagnosticsEngine &diags,
     : AnaCtxMgr(
           ASTCtx, Options.UnoptimizedCFG,
           Options.ShouldIncludeImplicitDtorsInCFG,
-          /*AddInitializers=*/true,
+          /*addInitializers=*/true,
           Options.ShouldIncludeTemporaryDtorsInCFG,
           Options.ShouldIncludeLifetimeInCFG,
           // Adding LoopExit elements to the CFG is a requirement for loop
@@ -36,12 +35,17 @@ AnalysisManager::AnalysisManager(ASTContext &ASTCtx, DiagnosticsEngine &diags,
           Options.ShouldConditionalizeStaticInitializers,
           /*addCXXNewAllocator=*/true,
           Options.ShouldIncludeRichConstructorsInCFG,
-          Options.ShouldElideConstructors, injector),
-      Ctx(ASTCtx), Diags(diags), LangOpts(ASTCtx.getLangOpts()),
+          Options.ShouldElideConstructors,
+          /*addVirtualBaseBranches=*/true,
+          injector),
+      Ctx(ASTCtx), LangOpts(ASTCtx.getLangOpts()),
       PathConsumers(PDC), CreateStoreMgr(storemgr),
       CreateConstraintMgr(constraintmgr), CheckerMgr(checkerMgr),
       options(Options) {
   AnaCtxMgr.getCFGBuildOptions().setAllAlwaysAdd();
+  AnaCtxMgr.getCFGBuildOptions().OmitImplicitValueInitializers = true;
+  AnaCtxMgr.getCFGBuildOptions().AddCXXDefaultInitExprInAggregates =
+      Options.ShouldIncludeDefaultInitForAggregates;
 }
 
 AnalysisManager::~AnalysisManager() {

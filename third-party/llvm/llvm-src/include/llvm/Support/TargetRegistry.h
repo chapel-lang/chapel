@@ -1,9 +1,8 @@
 //===- Support/TargetRegistry.h - Target Registration -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -101,6 +100,11 @@ MCStreamer *createWasmStreamer(MCContext &Ctx,
                                std::unique_ptr<MCObjectWriter> &&OW,
                                std::unique_ptr<MCCodeEmitter> &&CE,
                                bool RelaxAll);
+MCStreamer *createXCOFFStreamer(MCContext &Ctx,
+                                std::unique_ptr<MCAsmBackend> &&TAB,
+                                std::unique_ptr<MCObjectWriter> &&OW,
+                                std::unique_ptr<MCCodeEmitter> &&CE,
+                                bool RelaxAll);
 
 MCRelocationInfo *createMCRelocationInfo(const Triple &TT, MCContext &Ctx);
 
@@ -124,7 +128,8 @@ public:
   using ArchMatchFnTy = bool (*)(Triple::ArchType Arch);
 
   using MCAsmInfoCtorFnTy = MCAsmInfo *(*)(const MCRegisterInfo &MRI,
-                                           const Triple &TT);
+                                           const Triple &TT,
+                                           const MCTargetOptions &Options);
   using MCInstrInfoCtorFnTy = MCInstrInfo *(*)();
   using MCInstrAnalysisCtorFnTy = MCInstrAnalysis *(*)(const MCInstrInfo *Info);
   using MCRegInfoCtorFnTy = MCRegisterInfo *(*)(const Triple &TT);
@@ -331,11 +336,11 @@ public:
   /// feature set; it should always be provided. Generally this should be
   /// either the target triple from the module, or the target triple of the
   /// host if that does not exist.
-  MCAsmInfo *createMCAsmInfo(const MCRegisterInfo &MRI,
-                             StringRef TheTriple) const {
+  MCAsmInfo *createMCAsmInfo(const MCRegisterInfo &MRI, StringRef TheTriple,
+                             const MCTargetOptions &Options) const {
     if (!MCAsmInfoCtorFn)
       return nullptr;
-    return MCAsmInfoCtorFn(MRI, Triple(TheTriple));
+    return MCAsmInfoCtorFn(MRI, Triple(TheTriple), Options);
   }
 
   /// createMCInstrInfo - Create a MCInstrInfo implementation.
@@ -469,9 +474,9 @@ public:
                                      const MCSubtargetInfo &STI, bool RelaxAll,
                                      bool IncrementalLinkerCompatible,
                                      bool DWARFMustBeAtTheEnd) const {
-    MCStreamer *S;
+    MCStreamer *S = nullptr;
     switch (T.getObjectFormat()) {
-    default:
+    case Triple::UnknownObjectFormat:
       llvm_unreachable("Unknown object format");
     case Triple::COFF:
       assert(T.isOSWindows() && "only Windows COFF is supported");
@@ -504,6 +509,10 @@ public:
       else
         S = createWasmStreamer(Ctx, std::move(TAB), std::move(OW),
                                std::move(Emitter), RelaxAll);
+      break;
+    case Triple::XCOFF:
+      S = createXCOFFStreamer(Ctx, std::move(TAB), std::move(OW),
+                              std::move(Emitter), RelaxAll);
       break;
     }
     if (ObjectTargetStreamerCtorFn)
@@ -940,9 +949,9 @@ template <class MCAsmInfoImpl> struct RegisterMCAsmInfo {
   }
 
 private:
-  static MCAsmInfo *Allocator(const MCRegisterInfo & /*MRI*/,
-                              const Triple &TT) {
-    return new MCAsmInfoImpl(TT);
+  static MCAsmInfo *Allocator(const MCRegisterInfo & /*MRI*/, const Triple &TT,
+                              const MCTargetOptions &Options) {
+    return new MCAsmInfoImpl(TT, Options);
   }
 };
 

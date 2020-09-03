@@ -1,9 +1,8 @@
 //===-- X86InstrControl.td - Control Flow Instructions -----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -71,35 +70,40 @@ let isBarrier = 1, isBranch = 1, isTerminator = 1, SchedRW = [WriteJump] in {
 }
 
 // Conditional Branches.
-let isBranch = 1, isTerminator = 1, Uses = [EFLAGS], SchedRW = [WriteJump] in {
-  multiclass ICBr<bits<8> opc1, bits<8> opc4, string asm, PatFrag Cond> {
-    def _1 : Ii8PCRel <opc1, RawFrm, (outs), (ins brtarget8:$dst), asm,
-                       [(X86brcond bb:$dst, Cond, EFLAGS)]>;
-    let hasSideEffects = 0, isCodeGenOnly = 1, ForceDisassemble = 1 in {
-      def _2 : Ii16PCRel<opc4, RawFrm, (outs), (ins brtarget16:$dst), asm,
-                         []>, OpSize16, TB;
-      def _4 : Ii32PCRel<opc4, RawFrm, (outs), (ins brtarget32:$dst), asm,
-                         []>, TB, OpSize32;
-    }
+let isBranch = 1, isTerminator = 1, Uses = [EFLAGS], SchedRW = [WriteJump],
+    isCodeGenOnly = 1, ForceDisassemble = 1 in {
+  def JCC_1 : Ii8PCRel <0x70, AddCCFrm, (outs),
+                        (ins brtarget8:$dst, ccode:$cond),
+                        "j${cond}\t$dst",
+                        [(X86brcond bb:$dst, timm:$cond, EFLAGS)]>;
+  let hasSideEffects = 0 in {
+    def JCC_2 : Ii16PCRel<0x80, AddCCFrm, (outs),
+                          (ins brtarget16:$dst, ccode:$cond),
+                          "j${cond}\t$dst",
+                          []>, OpSize16, TB;
+    def JCC_4 : Ii32PCRel<0x80, AddCCFrm, (outs),
+                          (ins brtarget32:$dst, ccode:$cond),
+                          "j${cond}\t$dst",
+                          []>, TB, OpSize32;
   }
 }
 
-defm JO  : ICBr<0x70, 0x80, "jo\t$dst" , X86_COND_O>;
-defm JNO : ICBr<0x71, 0x81, "jno\t$dst", X86_COND_NO>;
-defm JB  : ICBr<0x72, 0x82, "jb\t$dst" , X86_COND_B>;
-defm JAE : ICBr<0x73, 0x83, "jae\t$dst", X86_COND_AE>;
-defm JE  : ICBr<0x74, 0x84, "je\t$dst" , X86_COND_E>;
-defm JNE : ICBr<0x75, 0x85, "jne\t$dst", X86_COND_NE>;
-defm JBE : ICBr<0x76, 0x86, "jbe\t$dst", X86_COND_BE>;
-defm JA  : ICBr<0x77, 0x87, "ja\t$dst" , X86_COND_A>;
-defm JS  : ICBr<0x78, 0x88, "js\t$dst" , X86_COND_S>;
-defm JNS : ICBr<0x79, 0x89, "jns\t$dst", X86_COND_NS>;
-defm JP  : ICBr<0x7A, 0x8A, "jp\t$dst" , X86_COND_P>;
-defm JNP : ICBr<0x7B, 0x8B, "jnp\t$dst", X86_COND_NP>;
-defm JL  : ICBr<0x7C, 0x8C, "jl\t$dst" , X86_COND_L>;
-defm JGE : ICBr<0x7D, 0x8D, "jge\t$dst", X86_COND_GE>;
-defm JLE : ICBr<0x7E, 0x8E, "jle\t$dst", X86_COND_LE>;
-defm JG  : ICBr<0x7F, 0x8F, "jg\t$dst" , X86_COND_G>;
+def : InstAlias<"jo\t$dst",  (JCC_1 brtarget8:$dst,  0), 0>;
+def : InstAlias<"jno\t$dst", (JCC_1 brtarget8:$dst,  1), 0>;
+def : InstAlias<"jb\t$dst",  (JCC_1 brtarget8:$dst,  2), 0>;
+def : InstAlias<"jae\t$dst", (JCC_1 brtarget8:$dst,  3), 0>;
+def : InstAlias<"je\t$dst",  (JCC_1 brtarget8:$dst,  4), 0>;
+def : InstAlias<"jne\t$dst", (JCC_1 brtarget8:$dst,  5), 0>;
+def : InstAlias<"jbe\t$dst", (JCC_1 brtarget8:$dst,  6), 0>;
+def : InstAlias<"ja\t$dst",  (JCC_1 brtarget8:$dst,  7), 0>;
+def : InstAlias<"js\t$dst",  (JCC_1 brtarget8:$dst,  8), 0>;
+def : InstAlias<"jns\t$dst", (JCC_1 brtarget8:$dst,  9), 0>;
+def : InstAlias<"jp\t$dst",  (JCC_1 brtarget8:$dst, 10), 0>;
+def : InstAlias<"jnp\t$dst", (JCC_1 brtarget8:$dst, 11), 0>;
+def : InstAlias<"jl\t$dst",  (JCC_1 brtarget8:$dst, 12), 0>;
+def : InstAlias<"jge\t$dst", (JCC_1 brtarget8:$dst, 13), 0>;
+def : InstAlias<"jle\t$dst", (JCC_1 brtarget8:$dst, 14), 0>;
+def : InstAlias<"jg\t$dst",  (JCC_1 brtarget8:$dst, 15), 0>;
 
 // jcx/jecx/jrcx instructions.
 let isBranch = 1, isTerminator = 1, hasSideEffects = 0, SchedRW = [WriteJump] in {
@@ -140,6 +144,17 @@ let isBranch = 1, isTerminator = 1, isBarrier = 1, isIndirectBranch = 1 in {
   def JMP64m     : I<0xFF, MRM4m, (outs), (ins i64mem:$dst), "jmp{q}\t{*}$dst",
                      [(brind (loadi64 addr:$dst))]>, Requires<[In64BitMode]>,
                      Sched<[WriteJumpLd]>;
+
+  // Win64 wants indirect jumps leaving the function to have a REX_W prefix.
+  // These are switched from TAILJMPr/m64_REX in MCInstLower.
+  let isCodeGenOnly = 1, hasREX_WPrefix = 1 in {
+    def JMP64r_REX : I<0xFF, MRM4r, (outs), (ins GR64:$dst),
+                       "rex64 jmp{q}\t{*}$dst", []>, Sched<[WriteJump]>;
+    let mayLoad = 1 in
+    def JMP64m_REX : I<0xFF, MRM4m, (outs), (ins i64mem:$dst),
+                       "rex64 jmp{q}\t{*}$dst", []>, Sched<[WriteJumpLd]>;
+
+  }
 
   // Non-tracking jumps for IBT, use with caution.
   let isCodeGenOnly = 1 in {
@@ -205,12 +220,12 @@ let isCall = 1 in
   // registers are added manually.
   let Uses = [ESP, SSP] in {
     def CALLpcrel32 : Ii32PCRel<0xE8, RawFrm,
-                           (outs), (ins i32imm_pcrel:$dst),
+                           (outs), (ins i32imm_brtarget:$dst),
                            "call{l}\t$dst", []>, OpSize32,
                       Requires<[Not64BitMode]>, Sched<[WriteJump]>;
     let hasSideEffects = 0 in
       def CALLpcrel16 : Ii16PCRel<0xE8, RawFrm,
-                             (outs), (ins i16imm_pcrel:$dst),
+                             (outs), (ins i16imm_brtarget:$dst),
                              "call{w}\t$dst", []>, OpSize16,
                         Sched<[WriteJump]>;
     def CALL16r     : I<0xFF, MRM2r, (outs), (ins GR16:$dst),
@@ -222,13 +237,13 @@ let isCall = 1 in
                         Sched<[WriteJumpLd]>;
     def CALL32r     : I<0xFF, MRM2r, (outs), (ins GR32:$dst),
                         "call{l}\t{*}$dst", [(X86call GR32:$dst)]>, OpSize32,
-                        Requires<[Not64BitMode,NotUseRetpolineIndirectCalls]>,
+                        Requires<[Not64BitMode,NotUseIndirectThunkCalls]>,
                         Sched<[WriteJump]>;
     def CALL32m     : I<0xFF, MRM2m, (outs), (ins i32mem:$dst),
                         "call{l}\t{*}$dst", [(X86call (loadi32 addr:$dst))]>,
                         OpSize32,
                         Requires<[Not64BitMode,FavorMemIndirectCall,
-                                  NotUseRetpolineIndirectCalls]>,
+                                  NotUseIndirectThunkCalls]>,
                         Sched<[WriteJumpLd]>;
 
     // Non-tracking calls for IBT, use with caution.
@@ -269,39 +284,36 @@ let isCall = 1 in
 
 // Tail call stuff.
 let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1,
-    isCodeGenOnly = 1, SchedRW = [WriteJumpLd] in
-  let Uses = [ESP, SSP] in {
-  def TCRETURNdi : PseudoI<(outs),
-                     (ins i32imm_pcrel:$dst, i32imm:$offset), []>, NotMemoryFoldable;
-  def TCRETURNri : PseudoI<(outs),
-                     (ins ptr_rc_tailcall:$dst, i32imm:$offset), []>, NotMemoryFoldable;
+    isCodeGenOnly = 1, Uses = [ESP, SSP] in {
+  def TCRETURNdi : PseudoI<(outs), (ins i32imm_brtarget:$dst, i32imm:$offset),
+                           []>, Sched<[WriteJump]>, NotMemoryFoldable;
+  def TCRETURNri : PseudoI<(outs), (ins ptr_rc_tailcall:$dst, i32imm:$offset),
+                           []>, Sched<[WriteJump]>, NotMemoryFoldable;
   let mayLoad = 1 in
-  def TCRETURNmi : PseudoI<(outs),
-                     (ins i32mem_TC:$dst, i32imm:$offset), []>;
+  def TCRETURNmi : PseudoI<(outs), (ins i32mem_TC:$dst, i32imm:$offset),
+                           []>, Sched<[WriteJumpLd]>;
 
-  // FIXME: The should be pseudo instructions that are lowered when going to
-  // mcinst.
-  def TAILJMPd : Ii32PCRel<0xE9, RawFrm, (outs),
-                           (ins i32imm_pcrel:$dst), "jmp\t$dst", []>;
+  def TAILJMPd : PseudoI<(outs), (ins i32imm_brtarget:$dst),
+                         []>, Sched<[WriteJump]>;
 
-  def TAILJMPr : I<0xFF, MRM4r, (outs), (ins ptr_rc_tailcall:$dst),
-                   "", []>;  // FIXME: Remove encoding when JIT is dead.
+  def TAILJMPr : PseudoI<(outs), (ins ptr_rc_tailcall:$dst),
+                         []>, Sched<[WriteJump]>;
   let mayLoad = 1 in
-  def TAILJMPm : I<0xFF, MRM4m, (outs), (ins i32mem_TC:$dst),
-                   "jmp{l}\t{*}$dst", []>;
+  def TAILJMPm : PseudoI<(outs), (ins i32mem_TC:$dst),
+                         []>, Sched<[WriteJumpLd]>;
 }
 
 // Conditional tail calls are similar to the above, but they are branches
 // rather than barriers, and they use EFLAGS.
 let isCall = 1, isTerminator = 1, isReturn = 1, isBranch = 1,
-    isCodeGenOnly = 1, SchedRW = [WriteJumpLd] in
+    isCodeGenOnly = 1, SchedRW = [WriteJump] in
   let Uses = [ESP, EFLAGS, SSP] in {
   def TCRETURNdicc : PseudoI<(outs),
-                     (ins i32imm_pcrel:$dst, i32imm:$offset, i32imm:$cond), []>;
+                     (ins i32imm_brtarget:$dst, i32imm:$offset, i32imm:$cond),
+                     []>;
 
   // This gets substituted to a conditional jump instruction in MC lowering.
-  def TAILJMPd_CC : Ii32PCRel<0x80, RawFrm, (outs),
-                           (ins i32imm_pcrel:$dst, i32imm:$cond), "", []>;
+  def TAILJMPd_CC : PseudoI<(outs), (ins i32imm_brtarget:$dst, i32imm:$cond), []>;
 }
 
 
@@ -317,16 +329,16 @@ let isCall = 1, Uses = [RSP, SSP], SchedRW = [WriteJump] in {
   // that the offset between an arbitrary immediate and the call will fit in
   // the 32-bit pcrel field that we have.
   def CALL64pcrel32 : Ii32PCRel<0xE8, RawFrm,
-                        (outs), (ins i64i32imm_pcrel:$dst),
+                        (outs), (ins i64i32imm_brtarget:$dst),
                         "call{q}\t$dst", []>, OpSize32,
                       Requires<[In64BitMode]>;
   def CALL64r       : I<0xFF, MRM2r, (outs), (ins GR64:$dst),
                         "call{q}\t{*}$dst", [(X86call GR64:$dst)]>,
-                      Requires<[In64BitMode,NotUseRetpolineIndirectCalls]>;
+                      Requires<[In64BitMode,NotUseIndirectThunkCalls]>;
   def CALL64m       : I<0xFF, MRM2m, (outs), (ins i64mem:$dst),
                         "call{q}\t{*}$dst", [(X86call (loadi64 addr:$dst))]>,
                       Requires<[In64BitMode,FavorMemIndirectCall,
-                                NotUseRetpolineIndirectCalls]>;
+                                NotUseIndirectThunkCalls]>;
 
   // Non-tracking calls for IBT, use with caution.
   let isCodeGenOnly = 1 in {
@@ -344,34 +356,36 @@ let isCall = 1, Uses = [RSP, SSP], SchedRW = [WriteJump] in {
 }
 
 let isCall = 1, isTerminator = 1, isReturn = 1, isBarrier = 1,
-    isCodeGenOnly = 1, Uses = [RSP, SSP], SchedRW = [WriteJump] in {
+    isCodeGenOnly = 1, Uses = [RSP, SSP] in {
   def TCRETURNdi64   : PseudoI<(outs),
-                        (ins i64i32imm_pcrel:$dst, i32imm:$offset),
-                        []>;
+                               (ins i64i32imm_brtarget:$dst, i32imm:$offset),
+                               []>, Sched<[WriteJump]>;
   def TCRETURNri64   : PseudoI<(outs),
-                        (ins ptr_rc_tailcall:$dst, i32imm:$offset), []>, NotMemoryFoldable;
+                               (ins ptr_rc_tailcall:$dst, i32imm:$offset),
+                               []>, Sched<[WriteJump]>, NotMemoryFoldable;
   let mayLoad = 1 in
   def TCRETURNmi64   : PseudoI<(outs),
-                        (ins i64mem_TC:$dst, i32imm:$offset), []>, NotMemoryFoldable;
+                               (ins i64mem_TC:$dst, i32imm:$offset),
+                               []>, Sched<[WriteJumpLd]>, NotMemoryFoldable;
 
-  def TAILJMPd64 : Ii32PCRel<0xE9, RawFrm, (outs), (ins i64i32imm_pcrel:$dst),
-                   "jmp\t$dst", []>;
+  def TAILJMPd64 : PseudoI<(outs), (ins i64i32imm_brtarget:$dst),
+                           []>, Sched<[WriteJump]>;
 
-  def TAILJMPr64 : I<0xFF, MRM4r, (outs), (ins ptr_rc_tailcall:$dst),
-                     "jmp{q}\t{*}$dst", []>;
+  def TAILJMPr64 : PseudoI<(outs), (ins ptr_rc_tailcall:$dst),
+                           []>, Sched<[WriteJump]>;
 
   let mayLoad = 1 in
-  def TAILJMPm64 : I<0xFF, MRM4m, (outs), (ins i64mem_TC:$dst),
-                     "jmp{q}\t{*}$dst", []>;
+  def TAILJMPm64 : PseudoI<(outs), (ins i64mem_TC:$dst),
+                           []>, Sched<[WriteJumpLd]>;
 
   // Win64 wants indirect jumps leaving the function to have a REX_W prefix.
   let hasREX_WPrefix = 1 in {
-    def TAILJMPr64_REX : I<0xFF, MRM4r, (outs), (ins ptr_rc_tailcall:$dst),
-                           "rex64 jmp{q}\t{*}$dst", []>;
+    def TAILJMPr64_REX : PseudoI<(outs), (ins ptr_rc_tailcall:$dst),
+                                 []>, Sched<[WriteJump]>;
 
     let mayLoad = 1 in
-    def TAILJMPm64_REX : I<0xFF, MRM4m, (outs), (ins i64mem_TC:$dst),
-                           "rex64 jmp{q}\t{*}$dst", []>;
+    def TAILJMPm64_REX : PseudoI<(outs), (ins i64mem_TC:$dst),
+                                 []>, Sched<[WriteJumpLd]>;
   }
 }
 
@@ -379,19 +393,19 @@ let isPseudo = 1, isCall = 1, isCodeGenOnly = 1,
     Uses = [RSP, SSP],
     usesCustomInserter = 1,
     SchedRW = [WriteJump] in {
-  def RETPOLINE_CALL32 :
+  def INDIRECT_THUNK_CALL32 :
     PseudoI<(outs), (ins GR32:$dst), [(X86call GR32:$dst)]>,
-            Requires<[Not64BitMode,UseRetpolineIndirectCalls]>;
+            Requires<[Not64BitMode,UseIndirectThunkCalls]>;
 
-  def RETPOLINE_CALL64 :
+  def INDIRECT_THUNK_CALL64 :
     PseudoI<(outs), (ins GR64:$dst), [(X86call GR64:$dst)]>,
-            Requires<[In64BitMode,UseRetpolineIndirectCalls]>;
+            Requires<[In64BitMode,UseIndirectThunkCalls]>;
 
-  // Retpoline variant of indirect tail calls.
+  // Indirect thunk variant of indirect tail calls.
   let isTerminator = 1, isReturn = 1, isBarrier = 1 in {
-    def RETPOLINE_TCRETURN64 :
+    def INDIRECT_THUNK_TCRETURN64 :
       PseudoI<(outs), (ins GR64:$dst, i32imm:$offset), []>;
-    def RETPOLINE_TCRETURN32 :
+    def INDIRECT_THUNK_TCRETURN32 :
       PseudoI<(outs), (ins GR32:$dst, i32imm:$offset), []>;
   }
 }
@@ -399,13 +413,13 @@ let isPseudo = 1, isCall = 1, isCodeGenOnly = 1,
 // Conditional tail calls are similar to the above, but they are branches
 // rather than barriers, and they use EFLAGS.
 let isCall = 1, isTerminator = 1, isReturn = 1, isBranch = 1,
-    isCodeGenOnly = 1, SchedRW = [WriteJumpLd] in
+    isCodeGenOnly = 1, SchedRW = [WriteJump] in
   let Uses = [RSP, EFLAGS, SSP] in {
   def TCRETURNdi64cc : PseudoI<(outs),
-                           (ins i64i32imm_pcrel:$dst, i32imm:$offset,
+                           (ins i64i32imm_brtarget:$dst, i32imm:$offset,
                             i32imm:$cond), []>;
 
   // This gets substituted to a conditional jump instruction in MC lowering.
-  def TAILJMPd64_CC : Ii32PCRel<0x80, RawFrm, (outs),
-                           (ins i64i32imm_pcrel:$dst, i32imm:$cond), "", []>;
+  def TAILJMPd64_CC : PseudoI<(outs),
+                              (ins i64i32imm_brtarget:$dst, i32imm:$cond), []>;
 }

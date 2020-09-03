@@ -1,9 +1,8 @@
 //===- llvm/MC/MCWinCOFFStreamer.cpp --------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -89,7 +88,19 @@ void MCWinCOFFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc) {
 }
 
 void MCWinCOFFStreamer::EmitAssemblerFlag(MCAssemblerFlag Flag) {
-  llvm_unreachable("not implemented");
+  // Let the target do whatever target specific stuff it needs to do.
+  getAssembler().getBackend().handleAssemblerFlag(Flag);
+
+  switch (Flag) {
+  // None of these require COFF specific handling.
+  case MCAF_SyntaxUnified:
+  case MCAF_Code16:
+  case MCAF_Code32:
+  case MCAF_Code64:
+    break;
+  case MCAF_SubsectionsViaSymbols:
+    llvm_unreachable("COFF doesn't support .subsections_via_symbols");
+  }
 }
 
 void MCWinCOFFStreamer::EmitThumbFunc(MCSymbol *Func) {
@@ -181,7 +192,7 @@ void MCWinCOFFStreamer::EmitCOFFSafeSEH(MCSymbol const *Symbol) {
   MCSection *SXData = getContext().getObjectFileInfo()->getSXDataSection();
   getAssembler().registerSection(*SXData);
   if (SXData->getAlignment() < 4)
-    SXData->setAlignment(4);
+    SXData->setAlignment(Align(4));
 
   new MCSymbolIdFragment(Symbol, SXData);
 
@@ -198,7 +209,7 @@ void MCWinCOFFStreamer::EmitCOFFSymbolIndex(MCSymbol const *Symbol) {
   MCSection *Sec = getCurrentSectionOnly();
   getAssembler().registerSection(*Sec);
   if (Sec->getAlignment() < 4)
-    Sec->setAlignment(4);
+    Sec->setAlignment(Align(4));
 
   new MCSymbolIdFragment(Symbol, getCurrentSectionOnly());
 
@@ -256,7 +267,7 @@ void MCWinCOFFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   auto *Symbol = cast<MCSymbolCOFF>(S);
 
   const Triple &T = getContext().getObjectFileInfo()->getTargetTriple();
-  if (T.isKnownWindowsMSVCEnvironment()) {
+  if (T.isWindowsMSVCEnvironment()) {
     if (ByteAlignment > 32)
       report_fatal_error("alignment is limited to 32-bytes");
 
@@ -268,7 +279,7 @@ void MCWinCOFFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
   Symbol->setExternal(true);
   Symbol->setCommon(Size, ByteAlignment);
 
-  if (!T.isKnownWindowsMSVCEnvironment() && ByteAlignment > 1) {
+  if (!T.isWindowsMSVCEnvironment() && ByteAlignment > 1) {
     SmallString<128> Directive;
     raw_svector_ostream OS(Directive);
     const MCObjectFileInfo *MFI = getContext().getObjectFileInfo();

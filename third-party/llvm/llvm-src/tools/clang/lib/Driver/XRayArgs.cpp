@@ -1,9 +1,8 @@
 //===--- XRayArgs.cpp - Arguments for XRay --------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #include "clang/Driver/XRayArgs.h"
@@ -53,7 +52,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     } else if (Triple.isOSFreeBSD() ||
                Triple.isOSOpenBSD() ||
                Triple.isOSNetBSD() ||
-               Triple.getOS() == llvm::Triple::Darwin) {
+               Triple.isMacOSX()) {
       if (Triple.getArch() != llvm::Triple::x86_64) {
         D.Diag(diag::err_drv_clang_unsupported)
             << (std::string(XRayInstrumentOption) + " on " + Triple.str());
@@ -71,6 +70,13 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
       D.Diag(diag::err_drv_clang_unsupported)
           << (std::string(XRayInstrumentOption) + " on " + Triple.str());
     }
+
+    // Both XRay and -fpatchable-function-entry use
+    // TargetOpcode::PATCHABLE_FUNCTION_ENTER.
+    if (Arg *A = Args.getLastArg(options::OPT_fpatchable_function_entry_EQ))
+      D.Diag(diag::err_drv_argument_not_allowed_with)
+          << "-fxray-instrument" << A->getSpelling();
+
     XRayInstrument = true;
     if (const Arg *A =
             Args.getLastArg(options::OPT_fxray_instruction_threshold_,
@@ -130,7 +136,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
     // are treated as actual dependencies.
     for (const auto &Filename :
          Args.getAllArgValues(options::OPT_fxray_always_instrument)) {
-      if (llvm::sys::fs::exists(Filename)) {
+      if (D.getVFS().exists(Filename)) {
         AlwaysInstrumentFiles.push_back(Filename);
         ExtraDeps.push_back(Filename);
       } else
@@ -139,7 +145,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
 
     for (const auto &Filename :
          Args.getAllArgValues(options::OPT_fxray_never_instrument)) {
-      if (llvm::sys::fs::exists(Filename)) {
+      if (D.getVFS().exists(Filename)) {
         NeverInstrumentFiles.push_back(Filename);
         ExtraDeps.push_back(Filename);
       } else
@@ -148,7 +154,7 @@ XRayArgs::XRayArgs(const ToolChain &TC, const ArgList &Args) {
 
     for (const auto &Filename :
          Args.getAllArgValues(options::OPT_fxray_attr_list)) {
-      if (llvm::sys::fs::exists(Filename)) {
+      if (D.getVFS().exists(Filename)) {
         AttrListFiles.push_back(Filename);
         ExtraDeps.push_back(Filename);
       } else

@@ -1,9 +1,8 @@
 //=- MicroMips32r6InstrInfo.td - MicroMips r6 Instruction Information -*- tablegen -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -246,6 +245,7 @@ class MADDF_D_MMR6_ENC : POOL32F_ARITHF_FM_MMR6<"maddf.d", 1, 0b110111000>;
 class MSUBF_S_MMR6_ENC : POOL32F_ARITHF_FM_MMR6<"msubf.s", 0, 0b111111000>;
 class MSUBF_D_MMR6_ENC : POOL32F_ARITHF_FM_MMR6<"msubf.d", 1, 0b111111000>;
 class FMOV_S_MMR6_ENC : POOL32F_MOV_NEG_FM_MMR6<"mov.s", 0, 0b0000001>;
+class FMOV_D_MMR6_ENC : POOL32F_MOV_NEG_FM_MMR6<"mov.d", 1, 0b0000001>;
 class FNEG_S_MMR6_ENC : POOL32F_MOV_NEG_FM_MMR6<"neg.s", 0, 0b0101101>;
 class MAX_S_MMR6_ENC : POOL32F_MINMAX_FM<"max.s", 0, 0b000001011>;
 class MAX_D_MMR6_ENC : POOL32F_MINMAX_FM<"max.d", 1, 0b000001011>;
@@ -341,7 +341,8 @@ class BNEC_MMR6_DESC : CMP_CBR_2R_MMR6_DESC_BASE<"bnec", brtarget_lsl2_mm,
                                                  GPR32Opnd>;
 
 class ADD_MMR6_DESC : ArithLogicR<"add", GPR32Opnd, 1, II_ADD>;
-class ADDIU_MMR6_DESC : ArithLogicI<"addiu", simm16, GPR32Opnd, II_ADDIU, immSExt16, add>;
+class ADDIU_MMR6_DESC
+    : ArithLogicI<"addiu", simm16, GPR32Opnd, II_ADDIU, immSExt16, add>;
 class ADDU_MMR6_DESC : ArithLogicR<"addu", GPR32Opnd, 1, II_ADDU>;
 class MUL_MMR6_DESC : ArithLogicR<"mul", GPR32Opnd, 1, II_MUL, mul>;
 class MUH_MMR6_DESC : ArithLogicR<"muh", GPR32Opnd, 1, II_MUH, mulhs>;
@@ -890,6 +891,8 @@ class FMOV_FNEG_MMR6_DESC_BASE<string instr_asm, RegisterOperand DstRC,
 }
 class FMOV_S_MMR6_DESC
   : FMOV_FNEG_MMR6_DESC_BASE<"mov.s", FGR32Opnd, FGR32Opnd, II_MOV_S>;
+class FMOV_D_MMR6_DESC
+  : FMOV_FNEG_MMR6_DESC_BASE<"mov.d", FGR64Opnd, FGR64Opnd, II_MOV_D>;
 class FNEG_S_MMR6_DESC
   : FMOV_FNEG_MMR6_DESC_BASE<"neg.s", FGR32Opnd, FGR32Opnd, II_NEG, fneg>;
 
@@ -1040,11 +1043,11 @@ class TRUNC_L_D_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"trunc.l.d", FGR64Opnd,
 class TRUNC_W_S_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"trunc.w.s", FGR32Opnd,
                                                     FGR32Opnd, II_TRUNC>;
 class TRUNC_W_D_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"trunc.w.d", FGR32Opnd,
-                                                    AFGR64Opnd, II_TRUNC>;
+                                                    FGR64Opnd, II_TRUNC>;
 class SQRT_S_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"sqrt.s", FGR32Opnd, FGR32Opnd,
                                                  II_SQRT_S, fsqrt>;
-class SQRT_D_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"sqrt.d", AFGR64Opnd, AFGR64Opnd,
-                                                 II_SQRT_D, fsqrt>;
+class SQRT_D_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"sqrt.d", AFGR64Opnd,
+                                                AFGR64Opnd, II_SQRT_D, fsqrt>;
 class ROUND_L_S_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"round.l.s", FGR64Opnd,
                                                    FGR32Opnd, II_ROUND>;
 class ROUND_L_D_MMR6_DESC : ABSS_FT_MMR6_DESC_BASE<"round.l.d", FGR64Opnd,
@@ -1099,14 +1102,16 @@ class SLL16_MMR6_DESC : ShiftIMM16<"sll16", uimm3_shift, GPRMM16Opnd, II_SLL>,
       MMR6Arch<"sll16">;
 class SRL16_MMR6_DESC : ShiftIMM16<"srl16", uimm3_shift, GPRMM16Opnd, II_SRL>,
       MMR6Arch<"srl16">;
-class BREAK16_MMR6_DESC : BrkSdbbp16MM<"break16", II_BREAK>, MMR6Arch<"break16">;
+class BREAK16_MMR6_DESC : BrkSdbbp16MM<"break16", II_BREAK>,
+                          MMR6Arch<"break16">;
 class LI16_MMR6_DESC : LoadImmMM16<"li16", li16_imm, GPRMM16Opnd>,
       MMR6Arch<"li16">, IsAsCheapAsAMove;
 class MOVE16_MMR6_DESC : MoveMM16<"move16", GPR32Opnd>, MMR6Arch<"move16">;
 class MOVEP_MMR6_DESC : MovePMM16<"movep", GPRMM16OpndMovePPairFirst,
                                   GPRMM16OpndMovePPairSecond, GPRMM16OpndMoveP>,
                         MMR6Arch<"movep">;
-class SDBBP16_MMR6_DESC : BrkSdbbp16MM<"sdbbp16", II_SDBBP>, MMR6Arch<"sdbbp16">;
+class SDBBP16_MMR6_DESC : BrkSdbbp16MM<"sdbbp16", II_SDBBP>,
+                          MMR6Arch<"sdbbp16">;
 class SUBU16_MMR6_DESC : ArithRMM16<"subu16", GPRMM16Opnd, 0, II_SUBU, sub>,
       MMR6Arch<"subu16"> {
   int AddedComplexity = 1;
@@ -1211,7 +1216,7 @@ class SW16_MMR6_DESC : SB16_MMR6_DESC_BASE<"sw16", GPRMM16OpndZero, GPRMM16Opnd,
 class SWSP_MMR6_DESC
     : MicroMipsInst16<(outs), (ins GPR32Opnd:$rt, mem_mm_sp_imm5_lsl2:$offset),
                       !strconcat("sw", "\t$rt, $offset"), [], II_SW, FrmI>,
-      MMR6Arch<"sw"> {
+      MMR6Arch<"swsp"> {
   let DecoderMethod = "DecodeMemMMSPImm5Lsl2";
   let mayStore = 1;
 }
@@ -1437,7 +1442,8 @@ def SYNCI_MMR6 : StdMMR6Rel, SYNCI_MMR6_DESC, SYNCI_MMR6_ENC, ISA_MICROMIPS32R6;
 def RDPGPR_MMR6 : R6MMR6Rel, RDPGPR_MMR6_DESC, RDPGPR_MMR6_ENC,
                   ISA_MICROMIPS32R6;
 def SDBBP_MMR6 : R6MMR6Rel, SDBBP_MMR6_DESC, SDBBP_MMR6_ENC, ISA_MICROMIPS32R6;
-def SIGRIE_MMR6 : R6MMR6Rel, SIGRIE_MMR6_DESC, SIGRIE_MMR6_ENC, ISA_MICROMIPS32R6;
+def SIGRIE_MMR6 : R6MMR6Rel, SIGRIE_MMR6_DESC, SIGRIE_MMR6_ENC,
+                  ISA_MICROMIPS32R6;
 def XOR_MMR6 : StdMMR6Rel, XOR_MMR6_DESC, XOR_MMR6_ENC, ISA_MICROMIPS32R6;
 def XORI_MMR6 : StdMMR6Rel, XORI_MMR6_DESC, XORI_MMR6_ENC, ISA_MICROMIPS32R6;
 let DecoderMethod = "DecodeMemMMImm16" in {
@@ -1461,6 +1467,8 @@ def MSUBF_S_MMR6 : R6MMR6Rel, MSUBF_S_MMR6_ENC, MSUBF_S_MMR6_DESC,
 def MSUBF_D_MMR6 : R6MMR6Rel, MSUBF_D_MMR6_ENC, MSUBF_D_MMR6_DESC,
                    ISA_MICROMIPS32R6;
 def FMOV_S_MMR6 : StdMMR6Rel, FMOV_S_MMR6_ENC, FMOV_S_MMR6_DESC,
+                  ISA_MICROMIPS32R6;
+def FMOV_D_MMR6 : StdMMR6Rel, FMOV_D_MMR6_ENC, FMOV_D_MMR6_DESC,
                   ISA_MICROMIPS32R6;
 def FNEG_S_MMR6 : StdMMR6Rel, FNEG_S_MMR6_ENC, FNEG_S_MMR6_DESC,
                   ISA_MICROMIPS32R6;
@@ -1553,7 +1561,8 @@ def INS_MMR6 : StdMMR6Rel, INS_MMR6_ENC, INS_MMR6_DESC, ISA_MICROMIPS32R6;
 def JALRC_MMR6 : R6MMR6Rel, JALRC_MMR6_ENC, JALRC_MMR6_DESC, ISA_MICROMIPS32R6;
 def RINT_S_MMR6 : StdMMR6Rel, RINT_S_MMR6_ENC, RINT_S_MMR6_DESC,
                   ISA_MICROMIPS32R6;
-def RINT_D_MMR6 : StdMMR6Rel, RINT_D_MMR6_ENC, RINT_D_MMR6_DESC, ISA_MICROMIPS32R6;
+def RINT_D_MMR6 : StdMMR6Rel, RINT_D_MMR6_ENC, RINT_D_MMR6_DESC,
+                  ISA_MICROMIPS32R6;
 def ROUND_L_S_MMR6 : StdMMR6Rel, ROUND_L_S_MMR6_ENC, ROUND_L_S_MMR6_DESC,
                      ISA_MICROMIPS32R6;
 def ROUND_L_D_MMR6 : StdMMR6Rel, ROUND_L_D_MMR6_ENC, ROUND_L_D_MMR6_DESC,
@@ -1747,9 +1756,12 @@ defm S_MMR6 : Cmp_Pats<f32, NOR_MMR6, ZERO>, ISA_MICROMIPS32R6;
 defm D_MMR6 : Cmp_Pats<f64, NOR_MMR6, ZERO>, ISA_MICROMIPS32R6;
 
 def : MipsPat<(f32 fpimm0), (MTC1_MMR6 ZERO)>, ISA_MICROMIPS32R6;
-def : MipsPat<(f32 fpimm0neg), (FNEG_S_MMR6 (MTC1_MMR6 ZERO))>, ISA_MICROMIPS32R6;
+def : MipsPat<(f32 fpimm0neg), (FNEG_S_MMR6(MTC1_MMR6 ZERO))>,
+      ISA_MICROMIPS32R6;
 def : MipsPat<(MipsTruncIntFP FGR64Opnd:$src),
               (TRUNC_W_D_MMR6 FGR64Opnd:$src)>, ISA_MICROMIPS32R6;
+def : MipsPat<(MipsTruncIntFP FGR32Opnd:$src),
+              (TRUNC_W_S_MMR6 FGR32Opnd:$src)>, ISA_MICROMIPS32R6;
 
 def : MipsPat<(and GPRMM16:$src, immZExtAndi16:$imm),
               (ANDI16_MMR6 GPRMM16:$src, immZExtAndi16:$imm)>,
@@ -1767,6 +1779,19 @@ let AddedComplexity = 41 in {
   def : LoadRegImmPat<LDC1_D64_MMR6, f64, load>, FGR_64, ISA_MICROMIPS32R6;
   def : StoreRegImmPat<SDC1_D64_MMR6, f64>, FGR_64, ISA_MICROMIPS32R6;
 }
+
+let isCall=1, hasDelaySlot=0, isCTI=1, Defs = [RA] in {
+  class JumpLinkMMR6<Instruction JumpInst, DAGOperand Opnd> :
+    PseudoSE<(outs), (ins calltarget:$target), [], II_JAL>,
+    PseudoInstExpansion<(JumpInst Opnd:$target)>;
+}
+
+def JAL_MMR6 : JumpLinkMMR6<BALC_MMR6, brtarget26_mm>, ISA_MICROMIPS32R6;
+
+def : MipsPat<(MipsJmpLink (i32 texternalsym:$dst)),
+              (JAL_MMR6 texternalsym:$dst)>, ISA_MICROMIPS32R6;
+def : MipsPat<(MipsJmpLink (iPTR tglobaladdr:$dst)),
+              (JAL_MMR6 tglobaladdr:$dst)>, ISA_MICROMIPS32R6;
 
 def TAILCALL_MMR6 : TailCall<BC_MMR6, brtarget26_mm>, ISA_MICROMIPS32R6;
 

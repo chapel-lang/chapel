@@ -1,9 +1,8 @@
 //===- InstCombineWorklist.h - Worklist for InstCombine pass ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,8 +24,8 @@ namespace llvm {
 /// InstCombineWorklist - This is the worklist management logic for
 /// InstCombine.
 class InstCombineWorklist {
-  SmallVector<Instruction*, 256> Worklist;
-  DenseMap<Instruction*, unsigned> WorklistMap;
+  SmallVector<Instruction *, 256> Worklist;
+  DenseMap<Instruction *, unsigned> WorklistMap;
 
 public:
   InstCombineWorklist() = default;
@@ -39,6 +38,9 @@ public:
   /// Add - Add the specified instruction to the worklist if it isn't already
   /// in it.
   void Add(Instruction *I) {
+    assert(I);
+    assert(I->getParent() && "Instruction not inserted yet?");
+
     if (WorklistMap.insert(std::make_pair(I, Worklist.size())).second) {
       LLVM_DEBUG(dbgs() << "IC: ADD: " << *I << '\n');
       Worklist.push_back(I);

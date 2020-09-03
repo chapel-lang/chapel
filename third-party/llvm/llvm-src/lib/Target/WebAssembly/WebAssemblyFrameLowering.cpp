@@ -1,9 +1,8 @@
 //===-- WebAssemblyFrameLowering.cpp - WebAssembly Frame Lowering ----------==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -131,7 +130,7 @@ void WebAssemblyFrameLowering::writeSPToGlobal(
   const char *ES = "__stack_pointer";
   auto *SPSymbol = MF.createExternalSymbolName(ES);
   BuildMI(MBB, InsertStore, DL, TII->get(WebAssembly::GLOBAL_SET_I32))
-      .addExternalSymbol(SPSymbol, WebAssemblyII::MO_SYMBOL_GLOBAL)
+      .addExternalSymbol(SPSymbol)
       .addReg(SrcReg);
 }
 
@@ -165,7 +164,8 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   auto &MRI = MF.getRegInfo();
 
   auto InsertPt = MBB.begin();
-  while (InsertPt != MBB.end() && WebAssembly::isArgument(*InsertPt))
+  while (InsertPt != MBB.end() &&
+         WebAssembly::isArgument(InsertPt->getOpcode()))
     ++InsertPt;
   DebugLoc DL;
 
@@ -178,19 +178,19 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
   const char *ES = "__stack_pointer";
   auto *SPSymbol = MF.createExternalSymbolName(ES);
   BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::GLOBAL_GET_I32), SPReg)
-      .addExternalSymbol(SPSymbol, WebAssemblyII::MO_SYMBOL_GLOBAL);
+      .addExternalSymbol(SPSymbol);
 
   bool HasBP = hasBP(MF);
   if (HasBP) {
     auto FI = MF.getInfo<WebAssemblyFunctionInfo>();
-    unsigned BasePtr = MRI.createVirtualRegister(PtrRC);
+    Register BasePtr = MRI.createVirtualRegister(PtrRC);
     FI->setBasePointerVreg(BasePtr);
     BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::COPY), BasePtr)
         .addReg(SPReg);
   }
   if (StackSize) {
     // Subtract the frame size
-    unsigned OffsetReg = MRI.createVirtualRegister(PtrRC);
+    Register OffsetReg = MRI.createVirtualRegister(PtrRC);
     BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::CONST_I32), OffsetReg)
         .addImm(StackSize);
     BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::SUB_I32),
@@ -199,7 +199,7 @@ void WebAssemblyFrameLowering::emitPrologue(MachineFunction &MF,
         .addReg(OffsetReg);
   }
   if (HasBP) {
-    unsigned BitmaskReg = MRI.createVirtualRegister(PtrRC);
+    Register BitmaskReg = MRI.createVirtualRegister(PtrRC);
     unsigned Alignment = MFI.getMaxAlignment();
     assert((1u << countTrailingZeros(Alignment)) == Alignment &&
            "Alignment must be a power of 2");
@@ -244,7 +244,7 @@ void WebAssemblyFrameLowering::emitEpilogue(MachineFunction &MF,
   } else if (StackSize) {
     const TargetRegisterClass *PtrRC =
         MRI.getTargetRegisterInfo()->getPointerRegClass(MF);
-    unsigned OffsetReg = MRI.createVirtualRegister(PtrRC);
+    Register OffsetReg = MRI.createVirtualRegister(PtrRC);
     BuildMI(MBB, InsertPt, DL, TII->get(WebAssembly::CONST_I32), OffsetReg)
         .addImm(StackSize);
     // In the epilog we don't need to write the result back to the SP32 physreg

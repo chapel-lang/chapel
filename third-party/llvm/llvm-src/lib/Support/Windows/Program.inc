@@ -1,9 +1,8 @@
 //===- Win32/Program.cpp - Win32 Program Implementation ------- -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "WindowsSupport.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/Errc.h"
@@ -198,7 +197,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
     // An environment block consists of a null-terminated block of
     // null-terminated strings. Convert the array of environment variables to
     // an environment block by concatenating them.
-    for (const auto E : *Env) {
+    for (StringRef E : *Env) {
       SmallVector<wchar_t, MAX_PATH> EnvString;
       if (std::error_code ec = windows::UTF8ToUTF16(E, EnvString)) {
         SetLastError(ec.value());
@@ -471,7 +470,7 @@ std::error_code
 llvm::sys::writeFileWithEncoding(StringRef FileName, StringRef Contents,
                                  WindowsEncodingMethod Encoding) {
   std::error_code EC;
-  llvm::raw_fd_ostream OS(FileName, EC, llvm::sys::fs::F_Text);
+  llvm::raw_fd_ostream OS(FileName, EC, llvm::sys::fs::OF_Text);
   if (EC)
     return EC;
 

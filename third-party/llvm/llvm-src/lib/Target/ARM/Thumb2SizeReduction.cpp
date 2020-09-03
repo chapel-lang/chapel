@@ -1,9 +1,8 @@
 //===-- Thumb2SizeReduction.cpp - Thumb2 code size reduction pass -*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -301,7 +300,7 @@ Thumb2SizeReduce::canAddPseudoFlagDep(MachineInstr *Use, bool FirstInSelfLoop) {
   for (const MachineOperand &MO : CPSRDef->operands()) {
     if (!MO.isReg() || MO.isUndef() || MO.isUse())
       continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0 || Reg == ARM::CPSR)
       continue;
     Defs.insert(Reg);
@@ -310,7 +309,7 @@ Thumb2SizeReduce::canAddPseudoFlagDep(MachineInstr *Use, bool FirstInSelfLoop) {
   for (const MachineOperand &MO : Use->operands()) {
     if (!MO.isReg() || MO.isUndef() || MO.isDef())
       continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Defs.count(Reg))
       return false;
   }
@@ -381,7 +380,7 @@ static bool VerifyLowRegs(MachineInstr *MI) {
     const MachineOperand &MO = MI->getOperand(i);
     if (!MO.isReg() || MO.isImplicit())
       continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0 || Reg == ARM::CPSR)
       continue;
     if (isPCOk && Reg == ARM::PC)
@@ -454,7 +453,7 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
     break;
   case ARM::t2LDR_POST:
   case ARM::t2STR_POST: {
-    if (!MBB.getParent()->getFunction().optForMinSize())
+    if (!MinimizeSize)
       return false;
 
     if (!MI->hasOneMemOperand() ||
@@ -465,11 +464,11 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
     // For this reason we can't reuse the logic at the end of this function; we
     // have to implement the MI building here.
     bool IsStore = Entry.WideOpc == ARM::t2STR_POST;
-    unsigned Rt = MI->getOperand(IsStore ? 1 : 0).getReg();
-    unsigned Rn = MI->getOperand(IsStore ? 0 : 1).getReg();
+    Register Rt = MI->getOperand(IsStore ? 1 : 0).getReg();
+    Register Rn = MI->getOperand(IsStore ? 0 : 1).getReg();
     unsigned Offset = MI->getOperand(3).getImm();
     unsigned PredImm = MI->getOperand(4).getImm();
-    unsigned PredReg = MI->getOperand(5).getReg();
+    Register PredReg = MI->getOperand(5).getReg();
     assert(isARMLowRegister(Rt));
     assert(isARMLowRegister(Rn));
 
@@ -497,7 +496,7 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
     return true;
   }
   case ARM::t2LDMIA: {
-    unsigned BaseReg = MI->getOperand(0).getReg();
+    Register BaseReg = MI->getOperand(0).getReg();
     assert(isARMLowRegister(BaseReg));
 
     // For the non-writeback version (this one), the base register must be
@@ -525,7 +524,7 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
 
     break;
   case ARM::t2LDMIA_RET: {
-    unsigned BaseReg = MI->getOperand(1).getReg();
+    Register BaseReg = MI->getOperand(1).getReg();
     if (BaseReg != ARM::SP)
       return false;
     Opc = Entry.NarrowOpc2; // tPOP_RET
@@ -538,7 +537,7 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
   case ARM::t2STMDB_UPD: {
     OpNum = 0;
 
-    unsigned BaseReg = MI->getOperand(1).getReg();
+    Register BaseReg = MI->getOperand(1).getReg();
     if (BaseReg == ARM::SP &&
         (Entry.WideOpc == ARM::t2LDMIA_UPD ||
          Entry.WideOpc == ARM::t2STMDB_UPD)) {
@@ -744,11 +743,11 @@ Thumb2SizeReduce::ReduceTo2Addr(MachineBasicBlock &MBB, MachineInstr *MI,
     // are optimizing for size.
     return false;
 
-  unsigned Reg0 = MI->getOperand(0).getReg();
-  unsigned Reg1 = MI->getOperand(1).getReg();
+  Register Reg0 = MI->getOperand(0).getReg();
+  Register Reg1 = MI->getOperand(1).getReg();
   // t2MUL is "special". The tied source operand is second, not first.
   if (MI->getOpcode() == ARM::t2MUL) {
-    unsigned Reg2 = MI->getOperand(2).getReg();
+    Register Reg2 = MI->getOperand(2).getReg();
     // Early exit if the regs aren't all low regs.
     if (!isARMLowRegister(Reg0) || !isARMLowRegister(Reg1)
         || !isARMLowRegister(Reg2))
@@ -783,7 +782,7 @@ Thumb2SizeReduce::ReduceTo2Addr(MachineBasicBlock &MBB, MachineInstr *MI,
     if (Imm > Limit)
       return false;
   } else {
-    unsigned Reg2 = MI->getOperand(2).getReg();
+    Register Reg2 = MI->getOperand(2).getReg();
     if (Entry.LowRegs2 && !isARMLowRegister(Reg2))
       return false;
   }
@@ -869,7 +868,7 @@ Thumb2SizeReduce::ReduceToNarrow(MachineBasicBlock &MBB, MachineInstr *MI,
       continue;
     const MachineOperand &MO = MI->getOperand(i);
     if (MO.isReg()) {
-      unsigned Reg = MO.getReg();
+      Register Reg = MO.getReg();
       if (!Reg || Reg == ARM::CPSR)
         continue;
       if (Entry.LowRegs1 && !isARMLowRegister(Reg))
@@ -1128,8 +1127,8 @@ bool Thumb2SizeReduce::runOnMachineFunction(MachineFunction &MF) {
   TII = static_cast<const Thumb2InstrInfo *>(STI->getInstrInfo());
 
   // Optimizing / minimizing size? Minimizing size implies optimizing for size.
-  OptimizeSize = MF.getFunction().optForSize();
-  MinimizeSize = MF.getFunction().optForMinSize();
+  OptimizeSize = MF.getFunction().hasOptSize();
+  MinimizeSize = STI->hasMinSize();
 
   BlockInfo.clear();
   BlockInfo.resize(MF.getNumBlockIDs());

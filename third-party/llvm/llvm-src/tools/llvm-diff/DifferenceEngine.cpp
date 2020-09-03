@@ -1,9 +1,8 @@
 //===-- DifferenceEngine.cpp - Structural function/module comparison ------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -68,7 +67,7 @@ public:
     unsigned NewSize = Storage.size() - 1;
     if (NewSize) {
       // Move the slot at the end to the beginning.
-      if (isPodLike<T>::value)
+      if (is_trivially_copyable<T>::value)
         Storage[0] = Storage[NewSize];
       else
         std::swap(Storage[0], Storage[NewSize]);
@@ -733,5 +732,14 @@ void DifferenceEngine::diff(Module *L, Module *R) {
 
 bool DifferenceEngine::equivalentAsOperands(GlobalValue *L, GlobalValue *R) {
   if (globalValueOracle) return (*globalValueOracle)(L, R);
+
+  if (isa<GlobalVariable>(L) && isa<GlobalVariable>(R)) {
+    GlobalVariable *GVL = cast<GlobalVariable>(L);
+    GlobalVariable *GVR = cast<GlobalVariable>(R);
+    if (GVL->hasLocalLinkage() && GVL->hasUniqueInitializer() &&
+        GVR->hasLocalLinkage() && GVR->hasUniqueInitializer())
+      return GVL->getInitializer() == GVR->getInitializer();
+  }
+
   return L->getName() == R->getName();
 }

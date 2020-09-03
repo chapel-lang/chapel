@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/DwarfExpression.h - Dwarf Compile Unit ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,6 +13,7 @@
 #ifndef LLVM_LIB_CODEGEN_ASMPRINTER_DWARFEXPRESSION_H
 #define LLVM_LIB_CODEGEN_ASMPRINTER_DWARFEXPRESSION_H
 
+#include "ByteStreamer.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/None.h"
 #include "llvm/ADT/Optional.h"
@@ -27,8 +27,7 @@ namespace llvm {
 
 class AsmPrinter;
 class APInt;
-class ByteStreamer;
-class DwarfUnit;
+class DwarfCompileUnit;
 class DIELoc;
 class TargetRegisterInfo;
 
@@ -96,6 +95,13 @@ public:
 /// Base class containing the logic for constructing DWARF expressions
 /// independently of whether they are emitted into a DIE or into a .debug_loc
 /// entry.
+///
+/// Some DWARF operations, e.g. DW_OP_entry_value, need to calculate the size
+/// of a succeeding DWARF block before the latter is emitted to the output.
+/// To handle such cases, data can conditionally be emitted to a temporary
+/// buffer, which can later on be committed to the main output. The size of the
+/// temporary buffer is queryable, allowing for the size of the data to be
+/// emitted before the data is committed.
 class DwarfExpression {
 protected:
   /// Holds information about all subregisters comprising a register location.
@@ -105,23 +111,63 @@ protected:
     const char *Comment;
   };
 
+  /// Whether we are currently emitting an entry value operation.
+  bool IsEmittingEntryValue = false;
+
+  DwarfCompileUnit &CU;
+
   /// The register location, if any.
   SmallVector<Register, 2> DwarfRegs;
 
   /// Current Fragment Offset in Bits.
   uint64_t OffsetInBits = 0;
-  unsigned DwarfVersion;
 
   /// Sometimes we need to add a DW_OP_bit_piece to describe a subregister.
-  unsigned SubRegisterSizeInBits = 0;
-  unsigned SubRegisterOffsetInBits = 0;
+  unsigned SubRegisterSizeInBits : 16;
+  unsigned SubRegisterOffsetInBits : 16;
 
   /// The kind of location description being produced.
-  enum { Unknown = 0, Register, Memory, Implicit } LocationKind = Unknown;
+  enum { Unknown = 0, Register, Memory, Implicit };
 
+  /// The flags of location description being produced.
+  enum { EntryValue = 1, CallSiteParamValue };
+
+  unsigned LocationKind : 3;
+  unsigned LocationFlags : 2;
+  unsigned DwarfVersion : 4;
+
+public:
+  bool isUnknownLocation() const {
+    return LocationKind == Unknown;
+  }
+
+  bool isMemoryLocation() const {
+    return LocationKind == Memory;
+  }
+
+  bool isRegisterLocation() const {
+    return LocationKind == Register;
+  }
+
+  bool isImplicitLocation() const {
+    return LocationKind == Implicit;
+  }
+
+  bool isEntryValue() const {
+    return LocationFlags & EntryValue;
+  }
+
+  bool isParameterValue() {
+    return LocationFlags & CallSiteParamValue;
+  }
+
+  Optional<uint8_t> TagOffset;
+
+protected:
   /// Push a DW_OP_piece / DW_OP_bit_piece for emitting later, if one is needed
   /// to represent a subregister.
   void setSubRegisterPiece(unsigned SizeInBits, unsigned OffsetInBits) {
+    assert(SizeInBits < 65536 && OffsetInBits < 65536);
     SubRegisterSizeInBits = SizeInBits;
     SubRegisterOffsetInBits = OffsetInBits;
   }
@@ -137,6 +183,26 @@ protected:
 
   /// Emit a raw unsigned value.
   virtual void emitUnsigned(uint64_t Value) = 0;
+
+  virtual void emitData1(uint8_t Value) = 0;
+
+  virtual void emitBaseTypeRef(uint64_t Idx) = 0;
+
+  /// Start emitting data to the temporary buffer. The data stored in the
+  /// temporary buffer can be committed to the main output using
+  /// commitTemporaryBuffer().
+  virtual void enableTemporaryBuffer() = 0;
+
+  /// Disable emission to the temporary buffer. This does not commit data
+  /// in the temporary buffer to the main output.
+  virtual void disableTemporaryBuffer() = 0;
+
+  /// Return the emitted size, in number of bytes, for the data stored in the
+  /// temporary buffer.
+  virtual unsigned getTemporaryBufferSize() = 0;
+
+  /// Commit the data stored in the temporary buffer to the main output.
+  virtual void commitTemporaryBuffer() = 0;
 
   /// Emit a normalized unsigned constant.
   void emitConstu(uint64_t Value);
@@ -197,10 +263,17 @@ protected:
   /// expression.  See PR21176 for more details.
   void addStackValue();
 
+  /// Finalize an entry value by emitting its size operand, and committing the
+  /// DWARF block which has been emitted to the temporary buffer.
+  void finalizeEntryValue();
+
   ~DwarfExpression() = default;
 
 public:
-  DwarfExpression(unsigned DwarfVersion) : DwarfVersion(DwarfVersion) {}
+  DwarfExpression(unsigned DwarfVersion, DwarfCompileUnit &CU)
+      : CU(CU), SubRegisterSizeInBits(0), SubRegisterOffsetInBits(0),
+        LocationKind(Unknown), LocationFlags(Unknown),
+        DwarfVersion(DwarfVersion) {}
 
   /// This needs to be called last to commit any pending changes.
   void finalize();
@@ -214,13 +287,20 @@ public:
   /// Emit an unsigned constant.
   void addUnsignedConstant(const APInt &Value);
 
-  bool isMemoryLocation() const { return LocationKind == Memory; }
-  bool isUnknownLocation() const { return LocationKind == Unknown; }
-
   /// Lock this down to become a memory location description.
   void setMemoryLocationKind() {
-    assert(LocationKind == Unknown);
+    assert(isUnknownLocation());
     LocationKind = Memory;
+  }
+
+  /// Lock this down to become an entry value location.
+  void setEntryValueFlag() {
+    LocationFlags |= EntryValue;
+  }
+
+  /// Lock this down to become a call site parameter location.
+  void setCallSiteParamValueFlag() {
+    LocationFlags |= CallSiteParamValue;
   }
 
   /// Emit a machine register location. As an optimization this may also consume
@@ -237,6 +317,12 @@ public:
                                DIExpressionCursor &Expr, unsigned MachineReg,
                                unsigned FragmentOffsetInBits = 0);
 
+  /// Begin emission of an entry value dwarf operation. The entry value's
+  /// first operand is the size of the DWARF block (its second operand),
+  /// which needs to be calculated at time of emission, so we don't emit
+  /// any operands here.
+  void beginEntryValueExpression(DIExpressionCursor &ExprCursor);
+
   /// Emit all remaining operations in the DIExpressionCursor.
   ///
   /// \param FragmentOffsetInBits     If this is one fragment out of multiple
@@ -248,40 +334,81 @@ public:
   /// If applicable, emit an empty DW_OP_piece / DW_OP_bit_piece to advance to
   /// the fragment described by \c Expr.
   void addFragmentOffset(const DIExpression *Expr);
+
+  void emitLegacySExt(unsigned FromBits);
+  void emitLegacyZExt(unsigned FromBits);
+
+  /// Emit location information expressed via WebAssembly location + offset
+  /// The Index is an identifier for locals, globals or operand stack.
+  void addWasmLocation(unsigned Index, int64_t Offset);
 };
 
 /// DwarfExpression implementation for .debug_loc entries.
 class DebugLocDwarfExpression final : public DwarfExpression {
-  ByteStreamer &BS;
+
+  struct TempBuffer {
+    SmallString<32> Bytes;
+    std::vector<std::string> Comments;
+    BufferByteStreamer BS;
+
+    TempBuffer(bool GenerateComments) : BS(Bytes, Comments, GenerateComments) {}
+  };
+
+  std::unique_ptr<TempBuffer> TmpBuf;
+  BufferByteStreamer &OutBS;
+  bool IsBuffering = false;
+
+  /// Return the byte streamer that currently is being emitted to.
+  ByteStreamer &getActiveStreamer() { return IsBuffering ? TmpBuf->BS : OutBS; }
 
   void emitOp(uint8_t Op, const char *Comment = nullptr) override;
   void emitSigned(int64_t Value) override;
   void emitUnsigned(uint64_t Value) override;
+  void emitData1(uint8_t Value) override;
+  void emitBaseTypeRef(uint64_t Idx) override;
+
+  void enableTemporaryBuffer() override;
+  void disableTemporaryBuffer() override;
+  unsigned getTemporaryBufferSize() override;
+  void commitTemporaryBuffer() override;
+
   bool isFrameRegister(const TargetRegisterInfo &TRI,
                        unsigned MachineReg) override;
-
 public:
-  DebugLocDwarfExpression(unsigned DwarfVersion, ByteStreamer &BS)
-      : DwarfExpression(DwarfVersion), BS(BS) {}
+  DebugLocDwarfExpression(unsigned DwarfVersion, BufferByteStreamer &BS,
+                          DwarfCompileUnit &CU)
+      : DwarfExpression(DwarfVersion, CU), OutBS(BS) {}
 };
 
 /// DwarfExpression implementation for singular DW_AT_location.
 class DIEDwarfExpression final : public DwarfExpression {
-const AsmPrinter &AP;
-  DwarfUnit &DU;
-  DIELoc &DIE;
+  const AsmPrinter &AP;
+  DIELoc &OutDIE;
+  DIELoc TmpDIE;
+  bool IsBuffering = false;
+
+  /// Return the DIE that currently is being emitted to.
+  DIELoc &getActiveDIE() { return IsBuffering ? TmpDIE : OutDIE; }
 
   void emitOp(uint8_t Op, const char *Comment = nullptr) override;
   void emitSigned(int64_t Value) override;
   void emitUnsigned(uint64_t Value) override;
+  void emitData1(uint8_t Value) override;
+  void emitBaseTypeRef(uint64_t Idx) override;
+
+  void enableTemporaryBuffer() override;
+  void disableTemporaryBuffer() override;
+  unsigned getTemporaryBufferSize() override;
+  void commitTemporaryBuffer() override;
+
   bool isFrameRegister(const TargetRegisterInfo &TRI,
                        unsigned MachineReg) override;
 public:
-  DIEDwarfExpression(const AsmPrinter &AP, DwarfUnit &DU, DIELoc &DIE);
+  DIEDwarfExpression(const AsmPrinter &AP, DwarfCompileUnit &CU, DIELoc &DIE);
 
   DIELoc *finalize() {
     DwarfExpression::finalize();
-    return &DIE;
+    return &OutDIE;
   }
 };
 

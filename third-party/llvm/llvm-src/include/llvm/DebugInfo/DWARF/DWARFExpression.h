@@ -1,9 +1,8 @@
 //===--- DWARFExpression.h - DWARF Expression handling ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -42,7 +41,8 @@ public:
       SizeAddr = 5,
       SizeRefAddr = 6,
       SizeBlock = 7, ///< Preceding operand contains block size
-      SignBit = 0x8,
+      BaseTypeRef = 8,
+      SignBit = 0x80,
       SignedSize1 = SignBit | Size1,
       SignedSize2 = SignBit | Size2,
       SignedSize4 = SignBit | Size4,
@@ -55,7 +55,8 @@ public:
       DwarfNA, ///< Serves as a marker for unused entries
       Dwarf2 = 2,
       Dwarf3,
-      Dwarf4
+      Dwarf4,
+      Dwarf5
     };
 
     /// Description of the encoding of one expression Op.
@@ -76,19 +77,22 @@ public:
     uint8_t Opcode; ///< The Op Opcode, DW_OP_<something>.
     Description Desc;
     bool Error;
-    uint32_t EndOffset;
+    uint64_t EndOffset;
     uint64_t Operands[2];
+    uint64_t OperandEndOffsets[2];
 
   public:
     Description &getDescription() { return Desc; }
     uint8_t getCode() { return Opcode; }
     uint64_t getRawOperand(unsigned Idx) { return Operands[Idx]; }
-    uint32_t getEndOffset() { return EndOffset; }
+    uint64_t getOperandEndOffset(unsigned Idx) { return OperandEndOffsets[Idx]; }
+    uint64_t getEndOffset() { return EndOffset; }
     bool extract(DataExtractor Data, uint16_t Version, uint8_t AddressSize,
-                 uint32_t Offset);
+                 uint64_t Offset);
     bool isError() { return Error; }
-    bool print(raw_ostream &OS, const DWARFExpression *U,
-               const MCRegisterInfo *RegInfo, bool isEH);
+    bool print(raw_ostream &OS, const DWARFExpression *Expr,
+               const MCRegisterInfo *RegInfo, DWARFUnit *U, bool isEH);
+    bool verify(DWARFUnit *U);
   };
 
   /// An iterator to go through the expression operations.
@@ -97,9 +101,9 @@ public:
                                     Operation> {
     friend class DWARFExpression;
     const DWARFExpression *Expr;
-    uint32_t Offset;
+    uint64_t Offset;
     Operation Op;
-    iterator(const DWARFExpression *Expr, uint32_t Offset)
+    iterator(const DWARFExpression *Expr, uint64_t Offset)
         : Expr(Expr), Offset(Offset) {
       Op.Error =
           Offset >= Expr->Data.getData().size() ||
@@ -125,14 +129,16 @@ public:
 
   DWARFExpression(DataExtractor Data, uint16_t Version, uint8_t AddressSize)
       : Data(Data), Version(Version), AddressSize(AddressSize) {
-    assert(AddressSize == 8 || AddressSize == 4);
+    assert(AddressSize == 8 || AddressSize == 4 || AddressSize == 2);
   }
 
   iterator begin() const { return iterator(this, 0); }
   iterator end() const { return iterator(this, Data.getData().size()); }
 
-  void print(raw_ostream &OS, const MCRegisterInfo *RegInfo,
+  void print(raw_ostream &OS, const MCRegisterInfo *RegInfo, DWARFUnit *U,
              bool IsEH = false) const;
+
+  bool verify(DWARFUnit *U);
 
 private:
   DataExtractor Data;

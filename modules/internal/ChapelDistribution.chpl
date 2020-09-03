@@ -107,7 +107,8 @@ module ChapelDistribution {
       }
     }
 
-    proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+    proc dsiNewRectangularDom(param rank: int, type idxType,
+                              param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
@@ -155,6 +156,8 @@ module ChapelDistribution {
     var _arrsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_arrs: bool;
     var pid:int = nullPid; // privatized ID, if privatization is supported
+
+    var definedConst: bool;
 
     proc init() {
     }
@@ -221,7 +224,7 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
-          if rmFromList then
+          if rmFromList && !this.definedConst then
             _arrs.remove(x);
           else
             _arrs_containing_dom -=1;
@@ -246,7 +249,7 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
-        if addToList then
+        if addToList && !this.definedConst then
           _arrs.add(x);
         else
           _arrs_containing_dom += 1;

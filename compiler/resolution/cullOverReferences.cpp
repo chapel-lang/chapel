@@ -510,6 +510,8 @@ void markNotConst(GraphNode node)
   if (at && containsReferenceFields(at)) {
     createFieldQualifiersIfNeeded(sym);
 
+    INT_ASSERT(fieldIndex <= at->numFields());
+
     if (fieldIndex == 0) {
       // mark all fields
       int nFields = at->numFields();
@@ -1046,7 +1048,15 @@ bool CullRefCtx::checkAccessorLikeCall(SymExpr* se, CallExpr* call,
             QualifiedType::qualifierIsConst(lhsSymbol->qual)) {
           return false;
         } else {
-          GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
+
+          // Use 0 to indicate that we care about the constness of the entire
+          // LHS, not the receiver's field index (the LHS is almost
+          // guaranteed to be a different type, in which case the receiver
+          // fieldIndex makes no sense to use).
+          // TODO: If (in the future) the call returns an aggregate type that
+          // is also a tuple of references, then this code may have to be
+          // adjusted to be aware of the field index of the LHS.
+          GraphNode srcNode = makeNode(lhsSymbol, 0);
           collectedSymbols.push_back(srcNode);
           addDependency(revisitGraph, srcNode, node);
           revisit = true;

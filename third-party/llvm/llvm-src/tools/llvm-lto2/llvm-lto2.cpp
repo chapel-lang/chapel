@@ -1,9 +1,8 @@
 //===-- llvm-lto2: test harness for the resolution-based LTO interface ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -92,18 +91,39 @@ static cl::opt<std::string> DefaultTriple(
     cl::desc(
         "Replace unspecified target triples in input files with this triple"));
 
-static cl::opt<std::string>
-    OptRemarksOutput("pass-remarks-output",
-                     cl::desc("YAML output file for optimization remarks"));
-
-static cl::opt<bool> OptRemarksWithHotness(
+static cl::opt<bool> RemarksWithHotness(
     "pass-remarks-with-hotness",
-    cl::desc("Whether to include hotness informations in the remarks.\n"
-             "Has effect only if -pass-remarks-output is specified."));
+    cl::desc("With PGO, include profile count in optimization remarks"),
+    cl::Hidden);
+
+static cl::opt<std::string>
+    RemarksFilename("pass-remarks-output",
+                    cl::desc("Output filename for pass remarks"),
+                    cl::value_desc("filename"));
+
+static cl::opt<std::string>
+    RemarksPasses("pass-remarks-filter",
+                  cl::desc("Only record optimization remarks from passes whose "
+                           "names match the given regular expression"),
+                  cl::value_desc("regex"));
+
+static cl::opt<std::string> RemarksFormat(
+    "pass-remarks-format",
+    cl::desc("The format used for serializing remarks (default: YAML)"),
+    cl::value_desc("format"), cl::init("yaml"));
 
 static cl::opt<std::string>
     SamplePGOFile("lto-sample-profile-file",
                   cl::desc("Specify a SamplePGO profile file"));
+
+static cl::opt<std::string>
+    CSPGOFile("lto-cspgo-profile-file",
+              cl::desc("Specify a context sensitive PGO profile file"));
+
+static cl::opt<bool>
+    RunCSIRInstr("lto-cspgo-gen",
+                 cl::desc("Run PGO context sensitive IR instrumentation"),
+                 cl::init(false), cl::Hidden);
 
 static cl::opt<bool>
     UseNewPM("use-new-pm",
@@ -211,10 +231,14 @@ static int run(int argc, char **argv) {
           "Config::addSaveTemps failed");
 
   // Optimization remarks.
-  Conf.RemarksFilename = OptRemarksOutput;
-  Conf.RemarksWithHotness = OptRemarksWithHotness;
+  Conf.RemarksFilename = RemarksFilename;
+  Conf.RemarksPasses = RemarksPasses;
+  Conf.RemarksWithHotness = RemarksWithHotness;
+  Conf.RemarksFormat = RemarksFormat;
 
   Conf.SampleProfile = SamplePGOFile;
+  Conf.CSIRProfile = CSPGOFile;
+  Conf.RunCSIRInstr = RunCSIRInstr;
 
   // Run a custom pipeline, if asked for.
   Conf.OptPipeline = OptPipeline;
@@ -246,6 +270,8 @@ static int run(int argc, char **argv) {
   Conf.OverrideTriple = OverrideTriple;
   Conf.DefaultTriple = DefaultTriple;
   Conf.StatsFile = StatsFile;
+  Conf.PTO.LoopVectorization = Conf.OptLevel > 1;
+  Conf.PTO.SLPVectorization = Conf.OptLevel > 1;
 
   ThinBackend Backend;
   if (ThinLTODistributedIndexes)
@@ -267,6 +293,14 @@ static int run(int argc, char **argv) {
     std::vector<SymbolResolution> Res;
     for (const InputFile::Symbol &Sym : Input->symbols()) {
       auto I = CommandLineResolutions.find({F, Sym.getName()});
+      // If it isn't found, look for "$", which would have been added
+      // (followed by a hash) when the symbol was promoted during module
+      // splitting if it was defined in one part and used in the other.
+      // Try looking up the symbol name before the "$".
+      if (I == CommandLineResolutions.end()) {
+        auto SplitName = Sym.getName().rsplit("$");
+        I = CommandLineResolutions.find({F, SplitName.first});
+      }
       if (I == CommandLineResolutions.end()) {
         llvm::errs() << argv[0] << ": missing symbol resolution for " << F
                      << ',' << Sym.getName() << '\n';
@@ -301,9 +335,9 @@ static int run(int argc, char **argv) {
     std::string Path = OutputFilename + "." + utostr(Task);
 
     std::error_code EC;
-    auto S = llvm::make_unique<raw_fd_ostream>(Path, EC, sys::fs::F_None);
+    auto S = std::make_unique<raw_fd_ostream>(Path, EC, sys::fs::OF_None);
     check(EC, Path);
-    return llvm::make_unique<lto::NativeObjectStream>(std::move(S));
+    return std::make_unique<lto::NativeObjectStream>(std::move(S));
   };
 
   auto AddBuffer = [&](size_t Task, std::unique_ptr<MemoryBuffer> MB) {
@@ -342,6 +376,13 @@ static int dumpSymtab(int argc, char **argv) {
 
     if (TT.isOSBinFormatCOFF())
       outs() << "linker opts: " << Input->getCOFFLinkerOpts() << '\n';
+
+    if (TT.isOSBinFormatELF()) {
+      outs() << "dependent libraries:";
+      for (auto L : Input->getDependentLibraries())
+        outs() << " \"" << L << "\"";
+      outs() << '\n';
+    }
 
     std::vector<StringRef> ComdatTable = Input->getComdatTable();
     for (const InputFile::Symbol &Sym : Input->symbols()) {

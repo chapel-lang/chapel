@@ -1,9 +1,8 @@
 //===---- HexagonFixupHwLoops.cpp - Fixup HW loops too far from LOOPn. ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 // The loop start address in the LOOPn instruction is encoded as a distance
 // from the LOOPn instruction itself. If the start address is too far from
@@ -115,12 +114,11 @@ bool HexagonFixupHwLoops::fixupLoopInstrs(MachineFunction &MF) {
 
   // First pass - compute the offset of each basic block.
   for (const MachineBasicBlock &MBB : MF) {
-    if (MBB.getAlignment()) {
+    if (MBB.getAlignment() != Align::None()) {
       // Although we don't know the exact layout of the final code, we need
       // to account for alignment padding somehow. This heuristic pads each
       // aligned basic block according to the alignment value.
-      int ByteAlign = (1u << MBB.getAlignment()) - 1;
-      InstOffset = (InstOffset + ByteAlign) & ~(ByteAlign);
+      InstOffset = alignTo(InstOffset, MBB.getAlignment());
     }
 
     BlockToInstOffset[&MBB] = InstOffset;

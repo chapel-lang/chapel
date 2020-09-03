@@ -1,9 +1,8 @@
 //===-- AVRInstrInfo.td - AVR Instruction Formats ----------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,8 +42,8 @@ class AVRInst32<dag outs, dag ins, string asmstr, list<dag> pattern>
 }
 
 // A class for pseudo instructions.
-// Psuedo instructions are not real AVR instructions. The DAG stores
-// psuedo instructions which are replaced by real AVR instructions by
+// Pseudo instructions are not real AVR instructions. The DAG stores
+// pseudo instructions which are replaced by real AVR instructions by
 // AVRExpandPseudoInsts.cpp.
 //
 // For example, the ADDW (add wide, as in add 16 bit values) instruction

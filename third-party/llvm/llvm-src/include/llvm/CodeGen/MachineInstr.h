@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/MachineInstr.h - MachineInstr class ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,7 +20,6 @@
 #include "llvm/ADT/ilist.h"
 #include "llvm/ADT/ilist_node.h"
 #include "llvm/ADT/iterator_range.h"
-#include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
@@ -38,6 +36,7 @@
 
 namespace llvm {
 
+class AAResults;
 template <typename T> class ArrayRef;
 class DIExpression;
 class DILocalVariable;
@@ -103,8 +102,10 @@ public:
                                         // no unsigned wrap.
     NoSWrap      = 1 << 12,             // Instruction supports binary operator
                                         // no signed wrap.
-    IsExact      = 1 << 13              // Instruction supports division is
+    IsExact      = 1 << 13,             // Instruction supports division is
                                         // known to be exact.
+    NoFPExcept   = 1 << 14,             // Instruction does not raise
+                                        // floatint-point exceptions.
   };
 
 private:
@@ -135,19 +136,23 @@ private:
   /// This has to be defined eagerly due to the implementation constraints of
   /// `PointerSumType` where it is used.
   class ExtraInfo final
-      : TrailingObjects<ExtraInfo, MachineMemOperand *, MCSymbol *> {
+      : TrailingObjects<ExtraInfo, MachineMemOperand *, MCSymbol *, MDNode *> {
   public:
     static ExtraInfo *create(BumpPtrAllocator &Allocator,
                              ArrayRef<MachineMemOperand *> MMOs,
                              MCSymbol *PreInstrSymbol = nullptr,
-                             MCSymbol *PostInstrSymbol = nullptr) {
+                             MCSymbol *PostInstrSymbol = nullptr,
+                             MDNode *HeapAllocMarker = nullptr) {
       bool HasPreInstrSymbol = PreInstrSymbol != nullptr;
       bool HasPostInstrSymbol = PostInstrSymbol != nullptr;
+      bool HasHeapAllocMarker = HeapAllocMarker != nullptr;
       auto *Result = new (Allocator.Allocate(
-          totalSizeToAlloc<MachineMemOperand *, MCSymbol *>(
-              MMOs.size(), HasPreInstrSymbol + HasPostInstrSymbol),
+          totalSizeToAlloc<MachineMemOperand *, MCSymbol *, MDNode *>(
+              MMOs.size(), HasPreInstrSymbol + HasPostInstrSymbol,
+              HasHeapAllocMarker),
           alignof(ExtraInfo)))
-          ExtraInfo(MMOs.size(), HasPreInstrSymbol, HasPostInstrSymbol);
+          ExtraInfo(MMOs.size(), HasPreInstrSymbol, HasPostInstrSymbol,
+                    HasHeapAllocMarker);
 
       // Copy the actual data into the trailing objects.
       std::copy(MMOs.begin(), MMOs.end(),
@@ -158,6 +163,8 @@ private:
       if (HasPostInstrSymbol)
         Result->getTrailingObjects<MCSymbol *>()[HasPreInstrSymbol] =
             PostInstrSymbol;
+      if (HasHeapAllocMarker)
+        Result->getTrailingObjects<MDNode *>()[0] = HeapAllocMarker;
 
       return Result;
     }
@@ -176,6 +183,10 @@ private:
                  : nullptr;
     }
 
+    MDNode *getHeapAllocMarker() const {
+      return HasHeapAllocMarker ? getTrailingObjects<MDNode *>()[0] : nullptr;
+    }
+
   private:
     friend TrailingObjects;
 
@@ -187,6 +198,7 @@ private:
     const int NumMMOs;
     const bool HasPreInstrSymbol;
     const bool HasPostInstrSymbol;
+    const bool HasHeapAllocMarker;
 
     // Implement the `TrailingObjects` internal API.
     size_t numTrailingObjects(OverloadToken<MachineMemOperand *>) const {
@@ -195,12 +207,17 @@ private:
     size_t numTrailingObjects(OverloadToken<MCSymbol *>) const {
       return HasPreInstrSymbol + HasPostInstrSymbol;
     }
+    size_t numTrailingObjects(OverloadToken<MDNode *>) const {
+      return HasHeapAllocMarker;
+    }
 
     // Just a boring constructor to allow us to initialize the sizes. Always use
     // the `create` routine above.
-    ExtraInfo(int NumMMOs, bool HasPreInstrSymbol, bool HasPostInstrSymbol)
+    ExtraInfo(int NumMMOs, bool HasPreInstrSymbol, bool HasPostInstrSymbol,
+              bool HasHeapAllocMarker)
         : NumMMOs(NumMMOs), HasPreInstrSymbol(HasPreInstrSymbol),
-          HasPostInstrSymbol(HasPostInstrSymbol) {}
+          HasPostInstrSymbol(HasPostInstrSymbol),
+          HasHeapAllocMarker(HasHeapAllocMarker) {}
   };
 
   /// Enumeration of the kinds of inline extra info available. It is important
@@ -425,6 +442,22 @@ public:
     return getNumExplicitDefs() + MCID->getNumImplicitDefs();
   }
 
+  /// Returns true if the instruction has implicit definition.
+  bool hasImplicitDef() const {
+    for (unsigned I = getNumExplicitOperands(), E = getNumOperands();
+      I != E; ++I) {
+      const MachineOperand &MO = getOperand(I);
+      if (MO.isDef() && MO.isImplicit())
+        return true;
+    }
+    return false;
+  }
+
+  /// Returns the implicit operands number.
+  unsigned getNumImplicitOperands() const {
+    return getNumOperands() - getNumExplicitOperands();
+  }
+
   /// Return true if operand \p OpIdx is a subregister index.
   bool isOperandSubregIdx(unsigned OpIdx) const {
     assert(getOperand(OpIdx).getType() == MachineOperand::MO_Immediate &&
@@ -575,6 +608,16 @@ public:
     return nullptr;
   }
 
+  /// Helper to extract a heap alloc marker if one has been added.
+  MDNode *getHeapAllocMarker() const {
+    if (!Info)
+      return nullptr;
+    if (ExtraInfo *EI = Info.get<EIIK_OutOfLine>())
+      return EI->getHeapAllocMarker();
+
+    return nullptr;
+  }
+
   /// API for querying MachineInstr properties. They are the same as MCInstrDesc
   /// queries but they are bundle aware.
 
@@ -598,6 +641,12 @@ public:
 
     // If this is the first instruction in a bundle, take the slow path.
     return hasPropertyInBundle(1ULL << MCFlag, Type);
+  }
+
+  /// Return true if this is an instruction that should go through the usual
+  /// legalization steps.
+  bool isPreISelOpcode(QueryType Type = IgnoreBundle) const {
+    return hasProperty(MCID::PreISelOpcode, Type);
   }
 
   /// Return true if this instruction can have a variable number of operands.
@@ -669,7 +718,7 @@ public:
   /// block.  The TargetInstrInfo::AnalyzeBranch method can be used to get more
   /// information about this branch.
   bool isConditionalBranch(QueryType Type = AnyInBundle) const {
-    return isBranch(Type) & !isBarrier(Type) & !isIndirectBranch(Type);
+    return isBranch(Type) && !isBarrier(Type) && !isIndirectBranch(Type);
   }
 
   /// Return true if this is a branch which always
@@ -677,7 +726,7 @@ public:
   /// TargetInstrInfo::AnalyzeBranch method can be used to get more information
   /// about this branch.
   bool isUnconditionalBranch(QueryType Type = AnyInBundle) const {
-    return isBranch(Type) & isBarrier(Type) & !isIndirectBranch(Type);
+    return isBranch(Type) && isBarrier(Type) && !isIndirectBranch(Type);
   }
 
   /// Return true if this instruction has a predicate operand that
@@ -829,6 +878,17 @@ public:
   /// Return true if this instruction could possibly read or modify memory.
   bool mayLoadOrStore(QueryType Type = AnyInBundle) const {
     return mayLoad(Type) || mayStore(Type);
+  }
+
+  /// Return true if this instruction could possibly raise a floating-point
+  /// exception.  This is the case if the instruction is a floating-point
+  /// instruction that can in principle raise an exception, as indicated
+  /// by the MCID::MayRaiseFPException property, *and* at the same time,
+  /// the instruction is used in a context where we expect floating-point
+  /// exceptions are not disabled, as indicated by the NoFPExcept MI flag.
+  bool mayRaiseFPException() const {
+    return hasProperty(MCID::MayRaiseFPException) &&
+           !getFlag(MachineInstr::MIFlag::NoFPExcept);
   }
 
   //===--------------------------------------------------------------------===//
@@ -1006,16 +1066,31 @@ public:
       && getOperand(1).isImm();
   }
 
+  /// A DBG_VALUE is an entry value iff its debug expression contains the
+  /// DW_OP_LLVM_entry_value operation.
+  bool isDebugEntryValue() const;
+
+  /// Return true if the instruction is a debug value which describes a part of
+  /// a variable as unavailable.
+  bool isUndefDebugValue() const {
+    return isDebugValue() && getOperand(0).isReg() && !getOperand(0).getReg().isValid();
+  }
+
   bool isPHI() const {
     return getOpcode() == TargetOpcode::PHI ||
            getOpcode() == TargetOpcode::G_PHI;
   }
   bool isKill() const { return getOpcode() == TargetOpcode::KILL; }
   bool isImplicitDef() const { return getOpcode()==TargetOpcode::IMPLICIT_DEF; }
-  bool isInlineAsm() const { return getOpcode() == TargetOpcode::INLINEASM; }
+  bool isInlineAsm() const {
+    return getOpcode() == TargetOpcode::INLINEASM ||
+           getOpcode() == TargetOpcode::INLINEASM_BR;
+  }
 
+  /// FIXME: Seems like a layering violation that the AsmDialect, which is X86
+  /// specific, be attached to a generic MachineInstr.
   bool isMSInlineAsm() const {
-    return getOpcode() == TargetOpcode::INLINEASM && getInlineAsmDialect();
+    return isInlineAsm() && getInlineAsmDialect() == InlineAsm::AD_Intel;
   }
 
   bool isStackAligningInlineAsm() const;
@@ -1110,7 +1185,7 @@ public:
   /// is a read of a super-register.
   /// This does not count partial redefines of virtual registers as reads:
   ///   %reg1024:6 = OP.
-  bool readsRegister(unsigned Reg,
+  bool readsRegister(Register Reg,
                      const TargetRegisterInfo *TRI = nullptr) const {
     return findRegisterUseOperandIdx(Reg, false, TRI) != -1;
   }
@@ -1118,20 +1193,20 @@ public:
   /// Return true if the MachineInstr reads the specified virtual register.
   /// Take into account that a partial define is a
   /// read-modify-write operation.
-  bool readsVirtualRegister(unsigned Reg) const {
+  bool readsVirtualRegister(Register Reg) const {
     return readsWritesVirtualRegister(Reg).first;
   }
 
   /// Return a pair of bools (reads, writes) indicating if this instruction
   /// reads or writes Reg. This also considers partial defines.
   /// If Ops is not null, all operand indices for Reg are added.
-  std::pair<bool,bool> readsWritesVirtualRegister(unsigned Reg,
+  std::pair<bool,bool> readsWritesVirtualRegister(Register Reg,
                                 SmallVectorImpl<unsigned> *Ops = nullptr) const;
 
   /// Return true if the MachineInstr kills the specified register.
   /// If TargetRegisterInfo is passed, then it also checks if there is
   /// a kill of a super-register.
-  bool killsRegister(unsigned Reg,
+  bool killsRegister(Register Reg,
                      const TargetRegisterInfo *TRI = nullptr) const {
     return findRegisterUseOperandIdx(Reg, true, TRI) != -1;
   }
@@ -1140,7 +1215,7 @@ public:
   /// If TargetRegisterInfo is passed, then it also checks
   /// if there is a def of a super-register.
   /// NOTE: It's ignoring subreg indices on virtual registers.
-  bool definesRegister(unsigned Reg,
+  bool definesRegister(Register Reg,
                        const TargetRegisterInfo *TRI = nullptr) const {
     return findRegisterDefOperandIdx(Reg, false, false, TRI) != -1;
   }
@@ -1148,38 +1223,38 @@ public:
   /// Return true if the MachineInstr modifies (fully define or partially
   /// define) the specified register.
   /// NOTE: It's ignoring subreg indices on virtual registers.
-  bool modifiesRegister(unsigned Reg, const TargetRegisterInfo *TRI) const {
+  bool modifiesRegister(Register Reg, const TargetRegisterInfo *TRI) const {
     return findRegisterDefOperandIdx(Reg, false, true, TRI) != -1;
   }
 
   /// Returns true if the register is dead in this machine instruction.
   /// If TargetRegisterInfo is passed, then it also checks
   /// if there is a dead def of a super-register.
-  bool registerDefIsDead(unsigned Reg,
+  bool registerDefIsDead(Register Reg,
                          const TargetRegisterInfo *TRI = nullptr) const {
     return findRegisterDefOperandIdx(Reg, true, false, TRI) != -1;
   }
 
   /// Returns true if the MachineInstr has an implicit-use operand of exactly
   /// the given register (not considering sub/super-registers).
-  bool hasRegisterImplicitUseOperand(unsigned Reg) const;
+  bool hasRegisterImplicitUseOperand(Register Reg) const;
 
   /// Returns the operand index that is a use of the specific register or -1
   /// if it is not found. It further tightens the search criteria to a use
   /// that kills the register if isKill is true.
-  int findRegisterUseOperandIdx(unsigned Reg, bool isKill = false,
+  int findRegisterUseOperandIdx(Register Reg, bool isKill = false,
                                 const TargetRegisterInfo *TRI = nullptr) const;
 
   /// Wrapper for findRegisterUseOperandIdx, it returns
   /// a pointer to the MachineOperand rather than an index.
-  MachineOperand *findRegisterUseOperand(unsigned Reg, bool isKill = false,
+  MachineOperand *findRegisterUseOperand(Register Reg, bool isKill = false,
                                       const TargetRegisterInfo *TRI = nullptr) {
     int Idx = findRegisterUseOperandIdx(Reg, isKill, TRI);
     return (Idx == -1) ? nullptr : &getOperand(Idx);
   }
 
   const MachineOperand *findRegisterUseOperand(
-    unsigned Reg, bool isKill = false,
+    Register Reg, bool isKill = false,
     const TargetRegisterInfo *TRI = nullptr) const {
     return const_cast<MachineInstr *>(this)->
       findRegisterUseOperand(Reg, isKill, TRI);
@@ -1191,16 +1266,26 @@ public:
   /// overlap the specified register. If TargetRegisterInfo is non-null,
   /// then it also checks if there is a def of a super-register.
   /// This may also return a register mask operand when Overlap is true.
-  int findRegisterDefOperandIdx(unsigned Reg,
+  int findRegisterDefOperandIdx(Register Reg,
                                 bool isDead = false, bool Overlap = false,
                                 const TargetRegisterInfo *TRI = nullptr) const;
 
   /// Wrapper for findRegisterDefOperandIdx, it returns
   /// a pointer to the MachineOperand rather than an index.
-  MachineOperand *findRegisterDefOperand(unsigned Reg, bool isDead = false,
-                                      const TargetRegisterInfo *TRI = nullptr) {
-    int Idx = findRegisterDefOperandIdx(Reg, isDead, false, TRI);
+  MachineOperand *
+  findRegisterDefOperand(Register Reg, bool isDead = false,
+                         bool Overlap = false,
+                         const TargetRegisterInfo *TRI = nullptr) {
+    int Idx = findRegisterDefOperandIdx(Reg, isDead, Overlap, TRI);
     return (Idx == -1) ? nullptr : &getOperand(Idx);
+  }
+
+  const MachineOperand *
+  findRegisterDefOperand(Register Reg, bool isDead = false,
+                         bool Overlap = false,
+                         const TargetRegisterInfo *TRI = nullptr) const {
+    return const_cast<MachineInstr *>(this)->findRegisterDefOperand(
+        Reg, isDead, Overlap, TRI);
   }
 
   /// Find the index of the first operand in the
@@ -1243,7 +1328,7 @@ public:
   ///
   /// \pre CurRC must not be NULL.
   const TargetRegisterClass *getRegClassConstraintEffectForVReg(
-      unsigned Reg, const TargetRegisterClass *CurRC,
+      Register Reg, const TargetRegisterClass *CurRC,
       const TargetInstrInfo *TII, const TargetRegisterInfo *TRI,
       bool ExploreBundle = false) const;
 
@@ -1306,39 +1391,39 @@ public:
 
   /// Replace all occurrences of FromReg with ToReg:SubIdx,
   /// properly composing subreg indices where necessary.
-  void substituteRegister(unsigned FromReg, unsigned ToReg, unsigned SubIdx,
+  void substituteRegister(Register FromReg, Register ToReg, unsigned SubIdx,
                           const TargetRegisterInfo &RegInfo);
 
   /// We have determined MI kills a register. Look for the
   /// operand that uses it and mark it as IsKill. If AddIfNotFound is true,
   /// add a implicit operand if it's not found. Returns true if the operand
   /// exists / is added.
-  bool addRegisterKilled(unsigned IncomingReg,
+  bool addRegisterKilled(Register IncomingReg,
                          const TargetRegisterInfo *RegInfo,
                          bool AddIfNotFound = false);
 
   /// Clear all kill flags affecting Reg.  If RegInfo is provided, this includes
   /// all aliasing registers.
-  void clearRegisterKills(unsigned Reg, const TargetRegisterInfo *RegInfo);
+  void clearRegisterKills(Register Reg, const TargetRegisterInfo *RegInfo);
 
   /// We have determined MI defined a register without a use.
   /// Look for the operand that defines it and mark it as IsDead. If
   /// AddIfNotFound is true, add a implicit operand if it's not found. Returns
   /// true if the operand exists / is added.
-  bool addRegisterDead(unsigned Reg, const TargetRegisterInfo *RegInfo,
+  bool addRegisterDead(Register Reg, const TargetRegisterInfo *RegInfo,
                        bool AddIfNotFound = false);
 
   /// Clear all dead flags on operands defining register @p Reg.
-  void clearRegisterDeads(unsigned Reg);
+  void clearRegisterDeads(Register Reg);
 
   /// Mark all subregister defs of register @p Reg with the undef flag.
   /// This function is used when we determined to have a subregister def in an
   /// otherwise undefined super register.
-  void setRegisterDefReadUndef(unsigned Reg, bool IsUndef = true);
+  void setRegisterDefReadUndef(Register Reg, bool IsUndef = true);
 
   /// We have determined MI defines a register. Make sure there is an operand
   /// defining Reg.
-  void addRegisterDefined(unsigned Reg,
+  void addRegisterDefined(Register Reg,
                           const TargetRegisterInfo *RegInfo = nullptr);
 
   /// Mark every physreg used by this instruction as
@@ -1346,13 +1431,13 @@ public:
   ///
   /// On instructions with register mask operands, also add implicit-def
   /// operands for all registers in UsedRegs.
-  void setPhysRegsDeadExcept(ArrayRef<unsigned> UsedRegs,
+  void setPhysRegsDeadExcept(ArrayRef<Register> UsedRegs,
                              const TargetRegisterInfo &TRI);
 
   /// Return true if it is safe to move this instruction. If
   /// SawStore is set to true, it means that there is a store (or call) between
   /// the instruction's location and its intended destination.
-  bool isSafeToMove(AliasAnalysis *AA, bool &SawStore) const;
+  bool isSafeToMove(AAResults *AA, bool &SawStore) const;
 
   /// Returns true if this instruction's memory access aliases the memory
   /// access of Other.
@@ -1364,7 +1449,7 @@ public:
   /// @param AA Optional alias analysis, used to compare memory operands.
   /// @param Other MachineInstr to check aliasing against.
   /// @param UseTBAA Whether to pass TBAA information to alias analysis.
-  bool mayAlias(AliasAnalysis *AA, MachineInstr &Other, bool UseTBAA);
+  bool mayAlias(AAResults *AA, const MachineInstr &Other, bool UseTBAA) const;
 
   /// Return true if this instruction may have an ordered
   /// or volatile memory reference, or if the information describing the memory
@@ -1379,7 +1464,7 @@ public:
   /// argument area of a function (if it does not change).  If the instruction
   /// does multiple loads, this returns true only if all of the loads are
   /// dereferenceable and invariant.
-  bool isDereferenceableInvariantLoad(AliasAnalysis *AA) const;
+  bool isDereferenceableInvariantLoad(AAResults *AA) const;
 
   /// If the specified instruction is a PHI that always merges together the
   /// same virtual register, return the register, otherwise return 0.
@@ -1399,6 +1484,19 @@ public:
 
   /// Return true if all the defs of this instruction are dead.
   bool allDefsAreDead() const;
+
+  /// Return a valid size if the instruction is a spill instruction.
+  Optional<unsigned> getSpillSize(const TargetInstrInfo *TII) const;
+
+  /// Return a valid size if the instruction is a folded spill instruction.
+  Optional<unsigned> getFoldedSpillSize(const TargetInstrInfo *TII) const;
+
+  /// Return a valid size if the instruction is a restore instruction.
+  Optional<unsigned> getRestoreSize(const TargetInstrInfo *TII) const;
+
+  /// Return a valid size if the instruction is a folded restore instruction.
+  Optional<unsigned>
+  getFoldedRestoreSize(const TargetInstrInfo *TII) const;
 
   /// Copy implicit register operands from specified
   /// instruction to this instruction.
@@ -1521,10 +1619,22 @@ public:
   /// FIXME: This is not fully implemented yet.
   void setPostInstrSymbol(MachineFunction &MF, MCSymbol *Symbol);
 
+  /// Clone another MachineInstr's pre- and post- instruction symbols and
+  /// replace ours with it.
+  void cloneInstrSymbols(MachineFunction &MF, const MachineInstr &MI);
+
+  /// Set a marker on instructions that denotes where we should create and emit
+  /// heap alloc site labels. This waits until after instruction selection and
+  /// optimizations to create the label, so it should still work if the
+  /// instruction is removed or duplicated.
+  void setHeapAllocMarker(MachineFunction &MF, MDNode *MD);
+
   /// Return the MIFlags which represent both MachineInstrs. This
   /// should be used when merging two MachineInstrs into one. This routine does
   /// not modify the MIFlags of this MachineInstr.
   uint16_t mergeFlagsWith(const MachineInstr& Other) const;
+
+  static uint16_t copyFlagsFromInstruction(const Instruction &I);
 
   /// Copy all flags to MachineInst MIFlags
   void copyIRFlags(const Instruction &I);
@@ -1541,12 +1651,19 @@ public:
   /// Add all implicit def and use operands to this instruction.
   void addImplicitDefUseOperands(MachineFunction &MF);
 
-  /// Scan instructions following MI and collect any matching DBG_VALUEs.
+  /// Scan instructions immediately following MI and collect any matching
+  /// DBG_VALUEs.
   void collectDebugValues(SmallVectorImpl<MachineInstr *> &DbgValues);
 
-  /// Find all DBG_VALUEs immediately following this instruction that point
-  /// to a register def in this instruction and point them to \p Reg instead.
-  void changeDebugValuesDefReg(unsigned Reg);
+  /// Find all DBG_VALUEs that point to the register def in this instruction
+  /// and point them to \p Reg instead.
+  void changeDebugValuesDefReg(Register Reg);
+
+  /// Returns the Intrinsic::ID for this instruction.
+  /// \pre Must have an intrinsic ID operand.
+  unsigned getIntrinsicID() const {
+    return getOperand(getNumExplicitDefs()).getIntrinsicID();
+  }
 
 private:
   /// If this instruction is embedded into a MachineFunction, return the
@@ -1571,8 +1688,14 @@ private:
   /// this MI and the given operand index \p OpIdx.
   /// If the related operand does not constrained Reg, this returns CurRC.
   const TargetRegisterClass *getRegClassConstraintEffectForVRegImpl(
-      unsigned OpIdx, unsigned Reg, const TargetRegisterClass *CurRC,
+      unsigned OpIdx, Register Reg, const TargetRegisterClass *CurRC,
       const TargetInstrInfo *TII, const TargetRegisterInfo *TRI) const;
+
+  /// Stores extra instruction information inline or allocates as ExtraInfo
+  /// based on the number of pointers.
+  void setExtraInfo(MachineFunction &MF, ArrayRef<MachineMemOperand *> MMOs,
+                    MCSymbol *PreInstrSymbol, MCSymbol *PostInstrSymbol,
+                    MDNode *HeapAllocMarker);
 };
 
 /// Special DenseMapInfo traits to compare MachineInstr* by *value* of the

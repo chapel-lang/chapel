@@ -1,9 +1,8 @@
 //===-- RISCVTargetMachine.h - Define TargetMachine for RISCV ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,7 +22,7 @@
 namespace llvm {
 class RISCVTargetMachine : public LLVMTargetMachine {
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
-  RISCVSubtarget Subtarget;
+  mutable StringMap<std::unique_ptr<RISCVSubtarget>> SubtargetMap;
 
 public:
   RISCVTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
@@ -31,15 +30,19 @@ public:
                      Optional<Reloc::Model> RM, Optional<CodeModel::Model> CM,
                      CodeGenOpt::Level OL, bool JIT);
 
-  const RISCVSubtarget *getSubtargetImpl(const Function &) const override {
-    return &Subtarget;
-  }
+  const RISCVSubtarget *getSubtargetImpl(const Function &F) const override;
+  // DO NOT IMPLEMENT: There is no such thing as a valid default subtarget,
+  // subtargets are per-function entities based on the target-specific
+  // attributes of each function.
+  const RISCVSubtarget *getSubtargetImpl() const = delete;
 
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
 
   TargetLoweringObjectFile *getObjFileLowering() const override {
     return TLOF.get();
   }
+
+  TargetTransformInfo getTargetTransformInfo(const Function &F) override;
 };
 }
 

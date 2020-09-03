@@ -20,7 +20,7 @@ Introduction
 This document describes the language extensions provided by Clang.  In addition
 to the language extensions listed here, Clang aims to support a broad range of
 GCC extensions.  Please see the `GCC manual
-<http://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html>`_ for more information on
+<https://gcc.gnu.org/onlinedocs/gcc/C-Extensions.html>`_ for more information on
 these extensions.
 
 .. _langext-feature_check:
@@ -38,7 +38,9 @@ version checks".
 -----------------
 
 This function-like macro takes a single identifier argument that is the name of
-a builtin function.  It evaluates to 1 if the builtin is supported or 0 if not.
+a builtin function, a builtin pseudo-function (taking one or more type
+arguments), or a builtin template.
+It evaluates to 1 if the builtin is supported or 0 if not.
 It can be used like this:
 
 .. code-block:: c++
@@ -54,6 +56,14 @@ It can be used like this:
     abort();
   #endif
   ...
+
+.. note::
+
+  Prior to Clang 10, ``__has_builtin`` could not be used to detect most builtin
+  pseudo-functions.
+
+  ``__has_builtin`` should not be used to detect support for a builtin macro;
+  use ``#ifdef`` instead.
 
 .. _langext-__has_feature-__has_extension:
 
@@ -112,7 +122,7 @@ of ``cxx_rvalue_references``.
 ``__has_cpp_attribute``
 -----------------------
 
-This function-like macro is available in C++2a by default, and is provided as an
+This function-like macro is available in C++20 by default, and is provided as an
 extension in earlier language standards. It takes a single argument that is the
 name of a double-square-bracket-style attribute. The argument can either be a
 single identifier or a scoped identifier. If the attribute is supported, a
@@ -324,12 +334,19 @@ option for a warning and returns true if that is a valid warning option.
   ...
   #endif
 
+.. _languageextensions-builtin-macros:
+
 Builtin Macros
 ==============
 
 ``__BASE_FILE__``
   Defined to a string that contains the name of the main input file passed to
   Clang.
+
+``__FILE_NAME__``
+  Clang-specific extension that functions similar to ``__FILE__`` but only
+  renders the last path component (the filename) instead of an invocation
+  dependent full path to that file.
 
 ``__COUNTER__``
   Defined to an integer value that starts at zero and is incremented each time
@@ -372,8 +389,8 @@ Vectors and Extended Vectors
 
 Supports the GCC, OpenCL, AltiVec and NEON vector extensions.
 
-OpenCL vector types are created using ``ext_vector_type`` attribute.  It
-support for ``V.xyzw`` syntax and other tidbits as seen in OpenCL.  An example
+OpenCL vector types are created using the ``ext_vector_type`` attribute.  It
+supports the ``V.xyzw`` syntax and other tidbits as seen in OpenCL.  An example
 is:
 
 .. code-block:: c++
@@ -388,7 +405,7 @@ is:
     return c;
   }
 
-Query for this feature with ``__has_extension(attribute_ext_vector_type)``.
+Query for this feature with ``__has_attribute(ext_vector_type)``.
 
 Giving ``-maltivec`` option to clang enables support for AltiVec vector syntax
 and functions.  For example:
@@ -448,27 +465,32 @@ The table below shows the support for each operation by vector extension.  A
 dash indicates that an operation is not accepted according to a corresponding
 specification.
 
-============================== ======= ======= ======= =======
-         Operator              OpenCL  AltiVec   GCC    NEON
-============================== ======= ======= ======= =======
-[]                               yes     yes     yes     --
-unary operators +, --            yes     yes     yes     --
-++, -- --                        yes     yes     yes     --
-+,--,*,/,%                       yes     yes     yes     --
-bitwise operators &,|,^,~        yes     yes     yes     --
->>,<<                            yes     yes     yes     --
-!, &&, ||                        yes     --      --      --
-==, !=, >, <, >=, <=             yes     yes     --      --
-=                                yes     yes     yes     yes
-:?                               yes     --      --      --
-sizeof                           yes     yes     yes     yes
-C-style cast                     yes     yes     yes     no
-reinterpret_cast                 yes     no      yes     no
-static_cast                      yes     no      yes     no
-const_cast                       no      no      no      no
-============================== ======= ======= ======= =======
+============================== ======= ======= ============= =======
+         Operator              OpenCL  AltiVec     GCC        NEON
+============================== ======= ======= ============= =======
+[]                               yes     yes       yes         --
+unary operators +, --            yes     yes       yes         --
+++, -- --                        yes     yes       yes         --
++,--,*,/,%                       yes     yes       yes         --
+bitwise operators &,|,^,~        yes     yes       yes         --
+>>,<<                            yes     yes       yes         --
+!, &&, ||                        yes     --        yes [#]_    --
+==, !=, >, <, >=, <=             yes     yes       yes         --
+=                                yes     yes       yes         yes
+:? [#]_                          yes     --        yes         --
+sizeof                           yes     yes       yes         yes
+C-style cast                     yes     yes       yes         no
+reinterpret_cast                 yes     no        yes         no
+static_cast                      yes     no        yes         no
+const_cast                       no      no        no          no
+============================== ======= ======= ============= =======
 
 See also :ref:`langext-__builtin_shufflevector`, :ref:`langext-__builtin_convertvector`.
+
+.. [#] unary operator ! is not implemented, however && and || are.
+.. [#] While OpenCL and GCC vectors both implement the comparison operator(?:) as a
+  'select', they operate somewhat differently. OpenCL selects based on signedness of
+  the condition operands, but GCC vectors use normal bool conversions (that is, != 0).
 
 Half-Precision Floating Point
 =============================
@@ -479,9 +501,11 @@ Clang supports two half-precision (16-bit) floating point types: ``__fp16`` and
 ``__fp16`` is supported on every target, as it is purely a storage format; see below.
 ``_Float16`` is currently only supported on the following targets, with further
 targets pending ABI standardization:
-- 32-bit ARM
-- 64-bit ARM (AArch64)
-- SPIR
+
+* 32-bit ARM
+* 64-bit ARM (AArch64)
+* SPIR
+
 ``_Float16`` will be supported on more targets as they define ABIs for it.
 
 ``__fp16`` is a storage and interchange format only.  This means that values of
@@ -514,10 +538,8 @@ Because ``__fp16`` operands are always immediately promoted to ``float``, the
 common real type of ``__fp16`` and ``_Float16`` for the purposes of the usual
 arithmetic conversions is ``float``.
 
-A literal can be given ``_Float16`` type using the suffix ``f16``; for example:
-```
-3.14f16
-```
+A literal can be given ``_Float16`` type using the suffix ``f16``. For example,
+``3.14f16``.
 
 Because default argument promotion only applies to the standard floating-point
 types, ``_Float16`` values are not promoted to ``double`` when passed as variadic
@@ -1034,8 +1056,8 @@ For example, compiling code with ``-fmodules`` enables the use of Modules.
 
 More information could be found `here <https://clang.llvm.org/docs/Modules.html>`_.
 
-Checks for Type Trait Primitives
-================================
+Type Trait Primitives
+=====================
 
 Type trait primitives are special builtin constant expressions that can be used
 by the standard C++ library to facilitate or simplify the implementation of
@@ -1050,21 +1072,172 @@ the supported set of system headers, currently:
 * The Microsoft standard C++ library
 
 Clang supports the `GNU C++ type traits
-<http://gcc.gnu.org/onlinedocs/gcc/Type-Traits.html>`_ and a subset of the
-`Microsoft Visual C++ Type traits
-<http://msdn.microsoft.com/en-us/library/ms177194(v=VS.100).aspx>`_.
+<https://gcc.gnu.org/onlinedocs/gcc/Type-Traits.html>`_ and a subset of the
+`Microsoft Visual C++ type traits
+<https://msdn.microsoft.com/en-us/library/ms177194(v=VS.100).aspx>`_,
+as well as nearly all of the
+`Embarcadero C++ type traits
+<http://docwiki.embarcadero.com/RADStudio/Rio/en/Type_Trait_Functions_(C%2B%2B11)_Index>`_.
 
-Feature detection is supported only for some of the primitives at present. User
-code should not use these checks because they bear no direct relation to the
-actual set of type traits supported by the C++ standard library.
+The following type trait primitives are supported by Clang. Those traits marked
+(C++) provide implementations for type traits specified by the C++ standard;
+``__X(...)`` has the same semantics and constraints as the corresponding
+``std::X_t<...>`` or ``std::X_v<...>`` type trait.
 
-For type trait ``__X``, ``__has_extension(X)`` indicates the presence of the
-type trait primitive in the compiler. A simplistic usage example as might be
-seen in standard C++ headers follows:
+* ``__array_rank(type)`` (Embarcadero):
+  Returns the number of levels of array in the type ``type``:
+  ``0`` if ``type`` is not an array type, and
+  ``__array_rank(element) + 1`` if ``type`` is an array of ``element``.
+* ``__array_extent(type, dim)`` (Embarcadero):
+  The ``dim``'th array bound in the type ``type``, or ``0`` if
+  ``dim >= __array_rank(type)``.
+* ``__has_nothrow_assign`` (GNU, Microsoft, Embarcadero):
+  Deprecated, use ``__is_nothrow_assignable`` instead.
+* ``__has_nothrow_move_assign`` (GNU, Microsoft):
+  Deprecated, use ``__is_nothrow_assignable`` instead.
+* ``__has_nothrow_copy`` (GNU, Microsoft):
+  Deprecated, use ``__is_nothrow_constructible`` instead.
+* ``__has_nothrow_constructor`` (GNU, Microsoft):
+  Deprecated, use ``__is_nothrow_constructible`` instead.
+* ``__has_trivial_assign`` (GNU, Microsoft, Embarcadero):
+  Deprecated, use ``__is_trivially_assignable`` instead.
+* ``__has_trivial_move_assign`` (GNU, Microsoft):
+  Deprecated, use ``__is_trivially_assignable`` instead.
+* ``__has_trivial_copy`` (GNU, Microsoft):
+  Deprecated, use ``__is_trivially_constructible`` instead.
+* ``__has_trivial_constructor`` (GNU, Microsoft):
+  Deprecated, use ``__is_trivially_constructible`` instead.
+* ``__has_trivial_move_constructor`` (GNU, Microsoft):
+  Deprecated, use ``__is_trivially_constructible`` instead.
+* ``__has_trivial_destructor`` (GNU, Microsoft, Embarcadero):
+  Deprecated, use ``__is_trivially_destructible`` instead.
+* ``__has_unique_object_representations`` (C++, GNU)
+* ``__has_virtual_destructor`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_abstract`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_aggregate`` (C++, GNU, Microsoft)
+* ``__is_arithmetic`` (C++, Embarcadero)
+* ``__is_array`` (C++, Embarcadero)
+* ``__is_assignable`` (C++, MSVC 2015)
+* ``__is_base_of`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_class`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_complete_type(type)`` (Embarcadero):
+  Return ``true`` if ``type`` is a complete type.
+  Warning: this trait is dangerous because it can return different values at
+  different points in the same program.
+* ``__is_compound`` (C++, Embarcadero)
+* ``__is_const`` (C++, Embarcadero)
+* ``__is_constructible`` (C++, MSVC 2013)
+* ``__is_convertible`` (C++, Embarcadero)
+* ``__is_convertible_to`` (Microsoft):
+  Synonym for ``__is_convertible``.
+* ``__is_destructible`` (C++, MSVC 2013):
+  Only available in ``-fms-extensions`` mode.
+* ``__is_empty`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_enum`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_final`` (C++, GNU, Microsoft)
+* ``__is_floating_point`` (C++, Embarcadero)
+* ``__is_function`` (C++, Embarcadero)
+* ``__is_fundamental`` (C++, Embarcadero)
+* ``__is_integral`` (C++, Embarcadero)
+* ``__is_interface_class`` (Microsoft):
+  Returns ``false``, even for types defined with ``__interface``.
+* ``__is_literal`` (Clang):
+  Synonym for ``__is_literal_type``.
+* ``__is_literal_type`` (C++, GNU, Microsoft):
+  Note, the corresponding standard trait was deprecated in C++17
+  and removed in C++20.
+* ``__is_lvalue_reference`` (C++, Embarcadero)
+* ``__is_member_object_pointer`` (C++, Embarcadero)
+* ``__is_member_function_pointer`` (C++, Embarcadero)
+* ``__is_member_pointer`` (C++, Embarcadero)
+* ``__is_nothrow_assignable`` (C++, MSVC 2013)
+* ``__is_nothrow_constructible`` (C++, MSVC 2013)
+* ``__is_nothrow_destructible`` (C++, MSVC 2013)
+  Only available in ``-fms-extensions`` mode.
+* ``__is_object`` (C++, Embarcadero)
+* ``__is_pod`` (C++, GNU, Microsoft, Embarcadero):
+  Note, the corresponding standard trait was deprecated in C++20.
+* ``__is_pointer`` (C++, Embarcadero)
+* ``__is_polymorphic`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_reference`` (C++, Embarcadero)
+* ``__is_rvalue_reference`` (C++, Embarcadero)
+* ``__is_same`` (C++, Embarcadero)
+* ``__is_same_as`` (GCC): Synonym for ``__is_same``.
+* ``__is_scalar`` (C++, Embarcadero)
+* ``__is_sealed`` (Microsoft):
+  Synonym for ``__is_final``.
+* ``__is_signed`` (C++, Embarcadero):
+  Returns false for enumeration types, and returns true for floating-point types. Note, before Clang 10, returned true for enumeration types if the underlying type was signed, and returned false for floating-point types.
+* ``__is_standard_layout`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_trivial`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_trivially_assignable`` (C++, GNU, Microsoft)
+* ``__is_trivially_constructible`` (C++, GNU, Microsoft)
+* ``__is_trivially_copyable`` (C++, GNU, Microsoft)
+* ``__is_trivially_destructible`` (C++, MSVC 2013)
+* ``__is_union`` (C++, GNU, Microsoft, Embarcadero)
+* ``__is_unsigned`` (C++, Embarcadero)
+  Note that this currently returns true for enumeration types if the underlying
+  type is unsigned, in violation of the requirements for ``std::is_unsigned``.
+  This behavior is likely to change in a future version of Clang.
+* ``__is_void`` (C++, Embarcadero)
+* ``__is_volatile`` (C++, Embarcadero)
+* ``__reference_binds_to_temporary(T, U)`` (Clang):  Determines whether a
+  reference of type ``T`` bound to an expression of type ``U`` would bind to a
+  materialized temporary object. If ``T`` is not a reference type the result
+  is false. Note this trait will also return false when the initialization of
+  ``T`` from ``U`` is ill-formed.
+* ``__underlying_type`` (C++, GNU, Microsoft)
+
+In addition, the following expression traits are supported:
+
+* ``__is_lvalue_expr(e)`` (Embarcadero):
+  Returns true if ``e`` is an lvalue expression.
+  Deprecated, use ``__is_lvalue_reference(decltype((e)))`` instead.
+* ``__is_rvalue_expr(e)`` (Embarcadero):
+  Returns true if ``e`` is a prvalue expression.
+  Deprecated, use ``!__is_reference(decltype((e)))`` instead.
+
+There are multiple ways to detect support for a type trait ``__X`` in the
+compiler, depending on the oldest version of Clang you wish to support.
+
+* From Clang 10 onwards, ``__has_builtin(__X)`` can be used.
+* From Clang 6 onwards, ``!__is_identifier(__X)`` can be used.
+* From Clang 3 onwards, ``__has_feature(X)`` can be used, but only supports
+  the following traits:
+
+  * ``__has_nothrow_assign``
+  * ``__has_nothrow_copy``
+  * ``__has_nothrow_constructor``
+  * ``__has_trivial_assign``
+  * ``__has_trivial_copy``
+  * ``__has_trivial_constructor``
+  * ``__has_trivial_destructor``
+  * ``__has_virtual_destructor``
+  * ``__is_abstract``
+  * ``__is_base_of``
+  * ``__is_class``
+  * ``__is_constructible``
+  * ``__is_convertible_to``
+  * ``__is_empty``
+  * ``__is_enum``
+  * ``__is_final``
+  * ``__is_literal``
+  * ``__is_standard_layout``
+  * ``__is_pod``
+  * ``__is_polymorphic``
+  * ``__is_sealed``
+  * ``__is_trivial``
+  * ``__is_trivially_assignable``
+  * ``__is_trivially_constructible``
+  * ``__is_trivially_copyable``
+  * ``__is_union``
+  * ``__underlying_type``
+
+A simplistic usage example as might be seen in standard C++ headers follows:
 
 .. code-block:: c++
 
-  #if __has_extension(is_convertible_to)
+  #if __has_builtin(__is_convertible_to)
   template<typename From, typename To>
   struct is_convertible_to {
     static const bool value = __is_convertible_to(From, To);
@@ -1072,54 +1245,6 @@ seen in standard C++ headers follows:
   #else
   // Emulate type trait for compatibility with other compilers.
   #endif
-
-The following type trait primitives are supported by Clang:
-
-* ``__has_nothrow_assign`` (GNU, Microsoft)
-* ``__has_nothrow_copy`` (GNU, Microsoft)
-* ``__has_nothrow_constructor`` (GNU, Microsoft)
-* ``__has_trivial_assign`` (GNU, Microsoft)
-* ``__has_trivial_copy`` (GNU, Microsoft)
-* ``__has_trivial_constructor`` (GNU, Microsoft)
-* ``__has_trivial_destructor`` (GNU, Microsoft)
-* ``__has_virtual_destructor`` (GNU, Microsoft)
-* ``__is_abstract`` (GNU, Microsoft)
-* ``__is_aggregate`` (GNU, Microsoft)
-* ``__is_base_of`` (GNU, Microsoft)
-* ``__is_class`` (GNU, Microsoft)
-* ``__is_convertible_to`` (Microsoft)
-* ``__is_empty`` (GNU, Microsoft)
-* ``__is_enum`` (GNU, Microsoft)
-* ``__is_interface_class`` (Microsoft)
-* ``__is_pod`` (GNU, Microsoft)
-* ``__is_polymorphic`` (GNU, Microsoft)
-* ``__is_union`` (GNU, Microsoft)
-* ``__is_literal(type)``: Determines whether the given type is a literal type
-* ``__is_final``: Determines whether the given type is declared with a
-  ``final`` class-virt-specifier.
-* ``__underlying_type(type)``: Retrieves the underlying type for a given
-  ``enum`` type.  This trait is required to implement the C++11 standard
-  library.
-* ``__is_trivially_assignable(totype, fromtype)``: Determines whether a value
-  of type ``totype`` can be assigned to from a value of type ``fromtype`` such
-  that no non-trivial functions are called as part of that assignment.  This
-  trait is required to implement the C++11 standard library.
-* ``__is_trivially_constructible(type, argtypes...)``: Determines whether a
-  value of type ``type`` can be direct-initialized with arguments of types
-  ``argtypes...`` such that no non-trivial functions are called as part of
-  that initialization.  This trait is required to implement the C++11 standard
-  library.
-* ``__is_destructible`` (MSVC 2013)
-* ``__is_nothrow_destructible`` (MSVC 2013)
-* ``__is_nothrow_assignable`` (MSVC 2013, clang)
-* ``__is_constructible`` (MSVC 2013, clang)
-* ``__is_nothrow_constructible`` (MSVC 2013, clang)
-* ``__is_assignable`` (MSVC 2015, clang)
-* ``__reference_binds_to_temporary(T, U)`` (Clang):  Determines whether a
-  reference of type ``T`` bound to an expression of type ``U`` would bind to a
-  materialized temporary object. If ``T`` is not a reference type the result
-  is false. Note this trait will also return false when the initialization of
-  ``T`` from ``U`` is ill-formed.
 
 Blocks
 ======
@@ -1367,8 +1492,8 @@ Objective-C retaining behavior attributes
 -----------------------------------------
 
 In Objective-C, functions and methods are generally assumed to follow the
-`Cocoa Memory Management 
-<http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html>`_
+`Cocoa Memory Management
+<https://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/MemoryMgmt/Articles/mmRules.html>`_
 conventions for ownership of object arguments and
 return values. However, there are exceptions, and so Clang provides attributes
 to allow these exceptions to be documented. This are used by ARC and the
@@ -1784,14 +1909,14 @@ the bitpattern of an integer value; for example ``0b10110110`` becomes
 **Description**:
 
 The '``__builtin_rotateleft``' family of builtins is used to rotate
-the bits in the first argument by the amount in the second argument. 
+the bits in the first argument by the amount in the second argument.
 For example, ``0b10000110`` rotated left by 11 becomes ``0b00110100``.
 The shift value is treated as an unsigned amount modulo the size of
 the arguments. Both arguments and the result have the bitwidth specified
 by the name of the builtin.
 
 ``__builtin_rotateright``
-_------------------------
+-------------------------
 
 * ``__builtin_rotateright8``
 * ``__builtin_rotateright16``
@@ -1816,7 +1941,7 @@ _------------------------
 **Description**:
 
 The '``__builtin_rotateright``' family of builtins is used to rotate
-the bits in the first argument by the amount in the second argument. 
+the bits in the first argument by the amount in the second argument.
 For example, ``0b10000110`` rotated right by 3 becomes ``0b11010000``.
 The shift value is treated as an unsigned amount modulo the size of
 the arguments. Both arguments and the result have the bitwidth specified
@@ -1944,6 +2069,38 @@ form of ``__builtin_operator_delete`` is currently available.
 
 These builtins are intended for use in the implementation of ``std::allocator``
 and other similar allocation libraries, and are only available in C++.
+
+``__builtin_preserve_access_index``
+-----------------------------------
+
+``__builtin_preserve_access_index`` specifies a code section where
+array subscript access and structure/union member access are relocatable
+under bpf compile-once run-everywhere framework. Debuginfo (typically
+with ``-g``) is needed, otherwise, the compiler will exit with an error.
+The return type for the intrinsic is the same as the type of the
+argument.
+
+**Syntax**:
+
+.. code-block:: c
+
+  type __builtin_preserve_access_index(type arg)
+
+**Example of Use**:
+
+.. code-block:: c
+
+  struct t {
+    int i;
+    int j;
+    union {
+      int a;
+      int b;
+    } c[4];
+  };
+  struct t *v = ...;
+  int *pb =__builtin_preserve_access_index(&v->c[3].b);
+  __builtin_preserve_access_index(v->j);
 
 Multiprecision Arithmetic Builtins
 ----------------------------------
@@ -2109,8 +2266,8 @@ Atomic Min/Max builtins with memory ordering
 There are two atomic builtins with min/max in-memory comparison and swap.
 The syntax and semantics are similar to GCC-compatible __atomic_* builtins.
 
-* ``__atomic_fetch_min`` 
-* ``__atomic_fetch_max`` 
+* ``__atomic_fetch_min``
+* ``__atomic_fetch_max``
 
 The builtins work with signed and unsigned integers and require to specify memory ordering.
 The return value is the original value that was stored in memory before comparison.
@@ -2155,6 +2312,8 @@ the corresponding C11 operations, are:
 * ``__c11_atomic_fetch_and``
 * ``__c11_atomic_fetch_or``
 * ``__c11_atomic_fetch_xor``
+* ``__c11_atomic_fetch_max``
+* ``__c11_atomic_fetch_min``
 
 The macros ``__ATOMIC_RELAXED``, ``__ATOMIC_CONSUME``, ``__ATOMIC_ACQUIRE``,
 ``__ATOMIC_RELEASE``, ``__ATOMIC_ACQ_REL``, and ``__ATOMIC_SEQ_CST`` are
@@ -2228,11 +2387,11 @@ C++ Coroutines support builtins
 --------------------------------
 
 .. warning::
-  This is a work in progress. Compatibility across Clang/LLVM releases is not 
+  This is a work in progress. Compatibility across Clang/LLVM releases is not
   guaranteed.
 
 Clang provides experimental builtins to support C++ Coroutines as defined by
-http://wg21.link/P0057. The following four are intended to be used by the
+https://wg21.link/P0057. The following four are intended to be used by the
 standard library to implement `std::experimental::coroutine_handle` type.
 
 **Syntax**:
@@ -2276,7 +2435,7 @@ Other coroutine builtins are either for internal clang use or for use during
 development of the coroutine feature. See `Coroutines in LLVM
 <https://llvm.org/docs/Coroutines.html#intrinsics>`_ for
 more information on their semantics. Note that builtins matching the intrinsics
-that take token as the first parameter (llvm.coro.begin, llvm.coro.alloc, 
+that take token as the first parameter (llvm.coro.begin, llvm.coro.alloc,
 llvm.coro.free and llvm.coro.suspend) omit the token parameter and fill it to
 an appropriate value during the emission.
 
@@ -2300,6 +2459,134 @@ automatically will insert one if the first argument to `llvm.coro.suspend` is
 token `none`. If a user calls `__builin_suspend`, clang will insert `token none`
 as the first argument to the intrinsic.
 
+Source location builtins
+------------------------
+
+Clang provides experimental builtins to support C++ standard library implementation
+of ``std::experimental::source_location`` as specified in  http://wg21.link/N4600.
+With the exception of ``__builtin_COLUMN``, these builtins are also implemented by
+GCC.
+
+**Syntax**:
+
+.. code-block:: c
+
+  const char *__builtin_FILE();
+  const char *__builtin_FUNCTION();
+  unsigned    __builtin_LINE();
+  unsigned    __builtin_COLUMN(); // Clang only
+
+**Example of use**:
+
+.. code-block:: c++
+
+  void my_assert(bool pred, int line = __builtin_LINE(), // Captures line of caller
+                 const char* file = __builtin_FILE(),
+                 const char* function = __builtin_FUNCTION()) {
+    if (pred) return;
+    printf("%s:%d assertion failed in function %s\n", file, line, function);
+    std::abort();
+  }
+
+  struct MyAggregateType {
+    int x;
+    int line = __builtin_LINE(); // captures line where aggregate initialization occurs
+  };
+  static_assert(MyAggregateType{42}.line == __LINE__);
+
+  struct MyClassType {
+    int line = __builtin_LINE(); // captures line of the constructor used during initialization
+    constexpr MyClassType(int) { assert(line == __LINE__); }
+  };
+
+**Description**:
+
+The builtins ``__builtin_LINE``, ``__builtin_FUNCTION``, and ``__builtin_FILE`` return
+the values, at the "invocation point", for ``__LINE__``, ``__FUNCTION__``, and
+``__FILE__`` respectively. These builtins are constant expressions.
+
+When the builtins appear as part of a default function argument the invocation
+point is the location of the caller. When the builtins appear as part of a
+default member initializer, the invocation point is the location of the
+constructor or aggregate initialization used to create the object. Otherwise
+the invocation point is the same as the location of the builtin.
+
+When the invocation point of ``__builtin_FUNCTION`` is not a function scope the
+empty string is returned.
+
+Alignment builtins
+------------------
+Clang provides builtins to support checking and adjusting alignment of
+pointers and integers.
+These builtins can be used to avoid relying on implementation-defined behavior
+of arithmetic on integers derived from pointers.
+Additionally, these builtins retain type information and, unlike bitwise
+arithmentic, they can perform semantic checking on the alignment value.
+
+**Syntax**:
+
+.. code-block:: c
+
+  Type __builtin_align_up(Type value, size_t alignment);
+  Type __builtin_align_down(Type value, size_t alignment);
+  bool __builtin_is_aligned(Type value, size_t alignment);
+
+
+**Example of use**:
+
+.. code-block:: c++
+
+  char* global_alloc_buffer;
+  void* my_aligned_allocator(size_t alloc_size, size_t alignment) {
+    char* result = __builtin_align_up(global_alloc_buffer, alignment);
+    // result now contains the value of global_alloc_buffer rounded up to the
+    // next multiple of alignment.
+    global_alloc_buffer = result + alloc_size;
+    return result;
+  }
+
+  void* get_start_of_page(void* ptr) {
+    return __builtin_align_down(ptr, PAGE_SIZE);
+  }
+
+  void example(char* buffer) {
+     if (__builtin_is_aligned(buffer, 64)) {
+       do_fast_aligned_copy(buffer);
+     } else {
+       do_unaligned_copy(buffer);
+     }
+  }
+
+  // In addition to pointers, the builtins can also be used on integer types
+  // and are evaluatable inside constant expressions.
+  static_assert(__builtin_align_up(123, 64) == 128, "");
+  static_assert(__builtin_align_down(123u, 64) == 64u, "");
+  static_assert(!__builtin_is_aligned(123, 64), "");
+
+
+**Description**:
+
+The builtins ``__builtin_align_up``, ``__builtin_align_down``, return their
+first argument aligned up/down to the next multiple of the second argument.
+If the value is already sufficiently aligned, it is returned unchanged.
+The builtin ``__builtin_is_aligned`` returns whether the first argument is
+aligned to a multiple of the second argument.
+All of these builtins expect the alignment to be expressed as a number of bytes.
+
+These builtins can be used for all integer types as well as (non-function)
+pointer types. For pointer types, these builtins operate in terms of the integer
+address of the pointer and return a new pointer of the same type (including
+qualifiers such as ``const``) with an adjusted address.
+When aligning pointers up or down, the resulting value must be within the same
+underlying allocation or one past the end (see C17 6.5.6p8, C++ [expr.add]).
+This means that arbitrary integer values stored in pointer-type variables must
+not be passed to these builtins. For those use cases, the builtins can still be
+used, but the operation must be performed on the pointer cast to ``uintptr_t``.
+
+If Clang can determine that the alignment is not a power of two at compile time,
+it will result in a compilation failure. If the alignment argument is not a
+power of two at run time, the behavior of these builtins is undefined.
+
 Non-standard C++11 Attributes
 =============================
 
@@ -2310,10 +2597,10 @@ Clang supports GCC's ``gnu`` attribute namespace. All GCC attributes which
 are accepted with the ``__attribute__((foo))`` syntax are also accepted as
 ``[[gnu::foo]]``. This only extends to attributes which are specified by GCC
 (see the list of `GCC function attributes
-<http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html>`_, `GCC variable
-attributes <http://gcc.gnu.org/onlinedocs/gcc/Variable-Attributes.html>`_, and
+<https://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html>`_, `GCC variable
+attributes <https://gcc.gnu.org/onlinedocs/gcc/Variable-Attributes.html>`_, and
 `GCC type attributes
-<http://gcc.gnu.org/onlinedocs/gcc/Type-Attributes.html>`_). As with the GCC
+<https://gcc.gnu.org/onlinedocs/gcc/Type-Attributes.html>`_). As with the GCC
 implementation, these attributes must appertain to the *declarator-id* in a
 declaration, which means they must go either at the start of the declaration or
 immediately after the name being declared.
@@ -2375,6 +2662,59 @@ Which compiles to (on X86-32):
           movl    4(%esp), %eax
           movl    %gs:(%eax), %eax
           ret
+
+You can also use the GCC compatibility macros ``__seg_fs`` and ``__seg_gs`` for
+the same purpose. The preprocessor symbols ``__SEG_FS`` and ``__SEG_GS``
+indicate their support.
+
+PowerPC Language Extensions
+------------------------------
+
+Set the Floating Point Rounding Mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PowerPC64/PowerPC64le supports the builtin function ``__builtin_setrnd`` to set
+the floating point rounding mode. This function will use the least significant
+two bits of integer argument to set the floating point rounding mode.
+
+.. code-block:: c++
+
+  double __builtin_setrnd(int mode);
+
+The effective values for mode are:
+
+    - 0 - round to nearest
+    - 1 - round to zero
+    - 2 - round to +infinity
+    - 3 - round to -infinity
+
+Note that the mode argument will modulo 4, so if the integer argument is greater
+than 3, it will only use the least significant two bits of the mode.
+Namely, ``__builtin_setrnd(102))`` is equal to ``__builtin_setrnd(2)``.
+
+PowerPC cache builtins
+^^^^^^^^^^^^^^^^^^^^^^
+
+The PowerPC architecture specifies instructions implementing cache operations.
+Clang provides builtins that give direct programmer access to these cache
+instructions.
+
+Currently the following builtins are implemented in clang:
+
+``__builtin_dcbf`` copies the contents of a modified block from the data cache
+to main memory and flushes the copy from the data cache.
+
+**Syntax**:
+
+.. code-block:: c
+
+  void __dcbf(const void* addr); /* Data Cache Block Flush */
+
+**Example of Use**:
+
+.. code-block:: c
+
+  int a = 1;
+  __builtin_dcbf (&a);
 
 Extensions for Static Analysis
 ==============================
@@ -2485,12 +2825,20 @@ Extensions for loop hint optimizations
 
 The ``#pragma clang loop`` directive is used to specify hints for optimizing the
 subsequent for, while, do-while, or c++11 range-based for loop. The directive
-provides options for vectorization, interleaving, unrolling and
+provides options for vectorization, interleaving, predication, unrolling and
 distribution. Loop hints can be specified before any loop and will be ignored if
 the optimization is not safe to apply.
 
-Vectorization and Interleaving
-------------------------------
+There are loop hints that control transformations (e.g. vectorization, loop
+unrolling) and there are loop hints that set transformation options (e.g.
+``vectorize_width``, ``unroll_count``).  Pragmas setting transformation options
+imply the transformation is enabled, as if it was enabled via the corresponding
+transformation pragma (e.g. ``vectorize(enable)``). If the transformation is
+disabled  (e.g. ``vectorize(disable)``), that takes precedence over
+transformations option pragmas implying that transformation.
+
+Vectorization, Interleaving, and Predication
+--------------------------------------------
 
 A vectorized loop performs multiple iterations of the original loop
 in parallel using vector instructions. The instruction set of the target
@@ -2532,6 +2880,21 @@ width/count of the set of target architectures supported by your application.
 
 Specifying a width/count of 1 disables the optimization, and is equivalent to
 ``vectorize(disable)`` or ``interleave(disable)``.
+
+Vector predication is enabled by ``vectorize_predicate(enable)``, for example:
+
+.. code-block:: c++
+
+  #pragma clang loop vectorize(enable)
+  #pragma clang loop vectorize_predicate(enable)
+  for(...) {
+    ...
+  }
+
+This predicates (masks) all instructions in the loop, which allows the scalar
+remainder loop (the tail) to be folded into the main vectorized loop. This
+might be more efficient when vector predication is efficiently supported by the
+target platform.
 
 Loop Unrolling
 --------------
@@ -2884,14 +3247,14 @@ The section names can be specified as:
 
 .. code-block:: c++
 
-  #pragma clang section bss="myBSS" data="myData" rodata="myRodata" text="myText"
+  #pragma clang section bss="myBSS" data="myData" rodata="myRodata" relro="myRelro" text="myText"
 
 The section names can be reverted back to default name by supplying an empty
 string to the section kind, for example:
 
 .. code-block:: c++
 
-  #pragma clang section bss="" data="" text="" rodata=""
+  #pragma clang section bss="" data="" text="" rodata="" relro=""
 
 The ``#pragma clang section`` directive obeys the following rules:
 
@@ -2922,3 +3285,29 @@ Specifying Linker Options on ELF Targets
 The ``#pragma comment(lib, ...)`` directive is supported on all ELF targets.
 The second parameter is the library name (without the traditional Unix prefix of
 ``lib``).  This allows you to provide an implicit link of dependent libraries.
+
+Evaluating Object Size Dynamically
+==================================
+
+Clang supports the builtin ``__builtin_dynamic_object_size``, the semantics are
+the same as GCC's ``__builtin_object_size`` (which Clang also supports), but
+``__builtin_dynamic_object_size`` can evaluate the object's size at runtime.
+``__builtin_dynamic_object_size`` is meant to be used as a drop-in replacement
+for ``__builtin_object_size`` in libraries that support it.
+
+For instance, here is a program that ``__builtin_dynamic_object_size`` will make
+safer:
+
+.. code-block:: c
+
+  void copy_into_buffer(size_t size) {
+    char* buffer = malloc(size);
+    strlcpy(buffer, "some string", strlen("some string"));
+    // Previous line preprocesses to:
+    // __builtin___strlcpy_chk(buffer, "some string", strlen("some string"), __builtin_object_size(buffer, 0))
+  }
+
+Since the size of ``buffer`` can't be known at compile time, Clang will fold
+``__builtin_object_size(buffer, 0)`` into ``-1``. However, if this was written
+as ``__builtin_dynamic_object_size(buffer, 0)``, Clang will fold it into
+``size``, providing some extra runtime safety.

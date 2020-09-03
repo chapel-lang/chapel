@@ -1,9 +1,8 @@
 // UndefCapturedBlockVarChecker.cpp - Uninitialized captured vars -*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -84,11 +83,12 @@ UndefCapturedBlockVarChecker::checkPostStmt(const BlockExpr *BE,
         os << "Variable '" << VD->getName()
            << "' is uninitialized when captured by block";
 
-        auto R = llvm::make_unique<BugReport>(*BT, os.str(), N);
+        auto R = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
         if (const Expr *Ex = FindBlockDeclRefExpr(BE->getBody(), VD))
           R->addRange(Ex->getSourceRange());
-        R->addVisitor(llvm::make_unique<FindLastStoreBRVisitor>(
-            *V, VR, /*EnableNullFPSuppression*/ false));
+        R->addVisitor(std::make_unique<FindLastStoreBRVisitor>(
+            *V, VR, /*EnableNullFPSuppression*/ false,
+            bugreporter::TrackingKind::Thorough));
         R->disablePathPruning();
         // need location of block
         C.emitReport(std::move(R));
@@ -99,4 +99,8 @@ UndefCapturedBlockVarChecker::checkPostStmt(const BlockExpr *BE,
 
 void ento::registerUndefCapturedBlockVarChecker(CheckerManager &mgr) {
   mgr.registerChecker<UndefCapturedBlockVarChecker>();
+}
+
+bool ento::shouldRegisterUndefCapturedBlockVarChecker(const LangOptions &LO) {
+  return true;
 }

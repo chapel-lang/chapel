@@ -1,9 +1,8 @@
 //===-- MSP430RegisterInfo.cpp - MSP430 Register Information --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -140,7 +139,7 @@ MSP430RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
       return;
 
     // We need to materialize the offset via add instruction.
-    unsigned DstReg = MI.getOperand(0).getReg();
+    Register DstReg = MI.getOperand(0).getReg();
     if (Offset < 0)
       BuildMI(MBB, std::next(II), dl, TII.get(MSP430::SUB16ri), DstReg)
         .addReg(DstReg).addImm(-Offset);
@@ -155,7 +154,7 @@ MSP430RegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
 }
 
-unsigned MSP430RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+Register MSP430RegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const MSP430FrameLowering *TFI = getFrameLowering(MF);
   return TFI->hasFP(MF) ? MSP430::FP : MSP430::SP;
 }

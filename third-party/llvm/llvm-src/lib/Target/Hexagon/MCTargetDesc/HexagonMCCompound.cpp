@@ -1,9 +1,8 @@
 //=== HexagonMCCompound.cpp - Hexagon Compound checker  -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,7 +10,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "Hexagon.h"
 #include "MCTargetDesc/HexagonBaseInfo.h"
 #include "MCTargetDesc/HexagonMCInstrInfo.h"
 #include "MCTargetDesc/HexagonMCShuffler.h"
@@ -94,7 +92,7 @@ static unsigned getCompoundCandidateGroup(MCInst const &MI, bool IsExtended) {
   case Hexagon::C2_cmpgt:
   case Hexagon::C2_cmpgtu:
     if (IsExtended)
-      return false;
+      return HexagonII::HCG_None;
     DstReg = MI.getOperand(0).getReg();
     Src1Reg = MI.getOperand(1).getReg();
     Src2Reg = MI.getOperand(2).getReg();
@@ -107,7 +105,7 @@ static unsigned getCompoundCandidateGroup(MCInst const &MI, bool IsExtended) {
   case Hexagon::C2_cmpgti:
   case Hexagon::C2_cmpgtui:
     if (IsExtended)
-      return false;
+      return HexagonII::HCG_None;
     // P0 = cmp.eq(Rs,#u2)
     DstReg = MI.getOperand(0).getReg();
     SrcReg = MI.getOperand(1).getReg();
@@ -119,7 +117,7 @@ static unsigned getCompoundCandidateGroup(MCInst const &MI, bool IsExtended) {
     break;
   case Hexagon::A2_tfr:
     if (IsExtended)
-      return false;
+      return HexagonII::HCG_None;
     // Rd = Rs
     DstReg = MI.getOperand(0).getReg();
     SrcReg = MI.getOperand(1).getReg();
@@ -129,7 +127,7 @@ static unsigned getCompoundCandidateGroup(MCInst const &MI, bool IsExtended) {
     break;
   case Hexagon::A2_tfrsi:
     if (IsExtended)
-      return false;
+      return HexagonII::HCG_None;
     // Rd = #u6
     DstReg = MI.getOperand(0).getReg();
     if (HexagonMCInstrInfo::minConstant(MI, 1) <= 63 &&
@@ -139,7 +137,7 @@ static unsigned getCompoundCandidateGroup(MCInst const &MI, bool IsExtended) {
     break;
   case Hexagon::S2_tstbit_i:
     if (IsExtended)
-      return false;
+      return HexagonII::HCG_None;
     DstReg = MI.getOperand(0).getReg();
     Src1Reg = MI.getOperand(1).getReg();
     if ((Hexagon::P0 == DstReg || Hexagon::P1 == DstReg) &&

@@ -1,13 +1,12 @@
 //===----------- RPCUtilsTest.cpp - Unit tests the Orc RPC utils ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
-#include "llvm/ExecutionEngine/Orc/RPCUtils.h"
+#include "llvm/ExecutionEngine/Orc/RPC/RPCUtils.h"
 #include "QueueChannel.h"
 #include "gtest/gtest.h"
 
@@ -216,6 +215,17 @@ TEST(DummyRPC, TestCallAsyncVoidBool) {
   }
 
   ServerThread.join();
+
+  // The client should have made two calls to send: One implicit call to
+  // negotiate the VoidBool function key, and a second to make the VoidBool
+  // call.
+  EXPECT_EQ(Channels.first->SendCalls, 2U)
+      << "Expected one send call to have been made by client";
+
+  // The server should have made two calls to send: One to send the response to
+  // the negotiate call, and another to send the response to the VoidBool call.
+  EXPECT_EQ(Channels.second->SendCalls, 2U)
+      << "Expected two send calls to have been made by server";
 }
 
 TEST(DummyRPC, TestCallAsyncIntInt) {

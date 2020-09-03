@@ -18,7 +18,7 @@
 # CHECK-NEXT: line 2: failed test output on stdout
 # CHECK: Command Output (stderr):
 # CHECK-NEXT: --
-# CHECK-NEXT: cat{{(\.exe)?}}: does-not-exist: No such file or directory
+# CHECK-NEXT: cat{{(\.exe)?}}: {{cannot open does-not-exist|does-not-exist: No such file or directory}}
 # CHECK: --
 
 # CHECK: FAIL: shtest-format :: external_shell/fail_with_bad_encoding.txt
@@ -49,8 +49,6 @@
 
 # CHECK: UNRESOLVED: shtest-format :: no-test-line.txt
 # CHECK: PASS: shtest-format :: pass.txt
-# CHECK: UNSUPPORTED: shtest-format :: requires-any-missing.txt
-# CHECK: PASS: shtest-format :: requires-any-present.txt
 # CHECK: UNSUPPORTED: shtest-format :: requires-missing.txt
 # CHECK: PASS: shtest-format :: requires-present.txt
 # CHECK: UNRESOLVED: shtest-format :: requires-star.txt
@@ -82,7 +80,7 @@
 
 # CHECK: Expected Passes    : 7
 # CHECK: Expected Failures  : 4
-# CHECK: Unsupported Tests  : 5
+# CHECK: Unsupported Tests  : 4
 # CHECK: Unresolved Tests   : 3
 # CHECK: Unexpected Passes  : 1
 # CHECK: Unexpected Failures: 3
@@ -90,7 +88,7 @@
 
 # XUNIT: <?xml version="1.0" encoding="UTF-8" ?>
 # XUNIT-NEXT: <testsuites>
-# XUNIT-NEXT: <testsuite name="shtest-format" tests="23" failures="7" skipped="5">
+# XUNIT-NEXT: <testsuite name="shtest-format" tests="22" failures="7" skipped="4">
 
 # XUNIT: <testcase classname="shtest-format.shtest-format" name="argv0.txt" time="{{[0-9]+\.[0-9]+}}"/>
 
@@ -118,11 +116,6 @@
 # XUNIT-NEXT: </testcase>
 
 # XUNIT: <testcase classname="shtest-format.shtest-format" name="pass.txt" time="{{[0-9]+\.[0-9]+}}"/>
-
-# XUNIT: <testcase classname="shtest-format.shtest-format" name="requires-any-missing.txt" time="{{[0-9]+\.[0-9]+}}">
-# XUNIT-NEXT:<skipped message="Skipping because of: a-missing-feature || a-missing-feature-2" />
-
-# XUNIT: <testcase classname="shtest-format.shtest-format" name="requires-any-present.txt" time="{{[0-9]+\.[0-9]+}}"/>
 
 # XUNIT: <testcase classname="shtest-format.shtest-format" name="requires-missing.txt" time="{{[0-9]+\.[0-9]+}}">
 # XUNIT-NEXT:<skipped message="Skipping because of: a-missing-feature" />

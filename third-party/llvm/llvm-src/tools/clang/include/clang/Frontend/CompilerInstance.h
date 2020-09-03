@@ -1,9 +1,8 @@
 //===-- CompilerInstance.h - Clang Compiler Instance ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,7 +44,7 @@ class ExternalASTSource;
 class FileEntry;
 class FileManager;
 class FrontendAction;
-class MemoryBufferCache;
+class InMemoryModuleCache;
 class Module;
 class Preprocessor;
 class Sema;
@@ -83,9 +82,6 @@ class CompilerInstance : public ModuleLoader {
   /// Auxiliary Target info.
   IntrusiveRefCntPtr<TargetInfo> AuxTarget;
 
-  /// The virtual file system.
-  IntrusiveRefCntPtr<llvm::vfs::FileSystem> VirtualFileSystem;
-
   /// The file manager.
   IntrusiveRefCntPtr<FileManager> FileMgr;
 
@@ -93,7 +89,7 @@ class CompilerInstance : public ModuleLoader {
   IntrusiveRefCntPtr<SourceManager> SourceMgr;
 
   /// The cache of PCM files.
-  IntrusiveRefCntPtr<MemoryBufferCache> PCMCache;
+  IntrusiveRefCntPtr<InMemoryModuleCache> ModuleCache;
 
   /// The preprocessor.
   std::shared_ptr<Preprocessor> PP;
@@ -120,7 +116,7 @@ class CompilerInstance : public ModuleLoader {
   std::unique_ptr<llvm::Timer> FrontendTimer;
 
   /// The ASTReader, if one exists.
-  IntrusiveRefCntPtr<ASTReader> ModuleManager;
+  IntrusiveRefCntPtr<ASTReader> TheASTReader;
 
   /// The module dependency collector for crashdumps
   std::shared_ptr<ModuleDependencyCollector> ModuleDepCollector;
@@ -128,14 +124,7 @@ class CompilerInstance : public ModuleLoader {
   /// The module provider.
   std::shared_ptr<PCHContainerOperations> ThePCHContainerOperations;
 
-  /// The dependency file generator.
-  std::unique_ptr<DependencyFileGenerator> TheDependencyFileGenerator;
-
   std::vector<std::shared_ptr<DependencyCollector>> DependencyCollectors;
-
-  /// The set of top-level modules that has already been loaded,
-  /// along with the module map
-  llvm::DenseMap<const IdentifierInfo *, Module *> KnownModules;
 
   /// The set of top-level modules that has already been built on the
   /// fly as part of this overall compilation action.
@@ -161,6 +150,12 @@ class CompilerInstance : public ModuleLoader {
 
   /// One or more modules failed to build.
   bool ModuleBuildFailed = false;
+
+  /// The stream for verbose output if owned, otherwise nullptr.
+  std::unique_ptr<raw_ostream> OwnedVerboseOutputStream;
+
+  /// The stream for verbose output.
+  raw_ostream *VerboseOutputStream = &llvm::errs();
 
   /// Holds information about the output file.
   ///
@@ -193,7 +188,7 @@ public:
   explicit CompilerInstance(
       std::shared_ptr<PCHContainerOperations> PCHContainerOps =
           std::make_shared<PCHContainerOperations>(),
-      MemoryBufferCache *SharedPCMCache = nullptr);
+      InMemoryModuleCache *SharedModuleCache = nullptr);
   ~CompilerInstance() override;
 
   /// @name High-Level Operations
@@ -223,9 +218,6 @@ public:
   ///
   /// \param Act - The action to execute.
   /// \return - True on success.
-  //
-  // FIXME: This function should take the stream to write any debugging /
-  // verbose output to as an argument.
   //
   // FIXME: Eliminate the llvm_shutdown requirement, that should either be part
   // of the context or else not CompilerInstance specific.
@@ -357,6 +349,21 @@ public:
   }
 
   /// }
+  /// @name VerboseOutputStream
+  /// }
+
+  /// Replace the current stream for verbose output.
+  void setVerboseOutputStream(raw_ostream &Value);
+
+  /// Replace the current stream for verbose output.
+  void setVerboseOutputStream(std::unique_ptr<raw_ostream> Value);
+
+  /// Get the current stream for verbose output.
+  raw_ostream &getVerboseOutputStream() {
+    return *VerboseOutputStream;
+  }
+
+  /// }
   /// @name Target Info
   /// {
 
@@ -383,20 +390,8 @@ public:
   /// @name Virtual File System
   /// {
 
-  bool hasVirtualFileSystem() const { return VirtualFileSystem != nullptr; }
-
   llvm::vfs::FileSystem &getVirtualFileSystem() const {
-    assert(hasVirtualFileSystem() &&
-           "Compiler instance has no virtual file system");
-    return *VirtualFileSystem;
-  }
-
-  /// Replace the current virtual file system.
-  ///
-  /// \note Most clients should use setFileManager, which will implicitly reset
-  /// the virtual file system to the one contained in the file manager.
-  void setVirtualFileSystem(IntrusiveRefCntPtr<llvm::vfs::FileSystem> FS) {
-    VirtualFileSystem = std::move(FS);
+    return getFileManager().getVirtualFileSystem();
   }
 
   /// }
@@ -519,7 +514,7 @@ public:
   /// @name Module Management
   /// {
 
-  IntrusiveRefCntPtr<ASTReader> getModuleManager() const;
+  IntrusiveRefCntPtr<ASTReader> getASTReader() const;
   void setModuleManager(IntrusiveRefCntPtr<ASTReader> Reader);
 
   std::shared_ptr<ModuleDependencyCollector> getModuleDepCollector() const;
@@ -646,7 +641,8 @@ public:
   /// Create the file manager and replace any existing one with it.
   ///
   /// \return The new file manager on success, or null on failure.
-  FileManager *createFileManager();
+  FileManager *
+  createFileManager(IntrusiveRefCntPtr<llvm::vfs::FileSystem> VFS = nullptr);
 
   /// Create the source manager and replace any existing one with it.
   void createSourceManager(FileManager &FileMgr);
@@ -672,10 +668,10 @@ public:
   /// \return - The new object on success, or null on failure.
   static IntrusiveRefCntPtr<ASTReader> createPCHExternalASTSource(
       StringRef Path, StringRef Sysroot, bool DisablePCHValidation,
-      bool AllowPCHWithCompilerErrors, Preprocessor &PP, ASTContext &Context,
+      bool AllowPCHWithCompilerErrors, Preprocessor &PP,
+      InMemoryModuleCache &ModuleCache, ASTContext &Context,
       const PCHContainerReader &PCHContainerRdr,
       ArrayRef<std::shared_ptr<ModuleFileExtension>> Extensions,
-      DependencyFileGenerator *DependencyFile,
       ArrayRef<std::shared_ptr<DependencyCollector>> DependencyCollectors,
       void *DeserializationListener, bool OwnDeserializationListener,
       bool Preamble, bool UseGlobalModuleIndex);
@@ -786,16 +782,34 @@ public:
   }
 
   // Create module manager.
-  void createModuleManager();
+  void createASTReader();
 
   bool loadModuleFile(StringRef FileName);
 
+private:
+  /// Find a module, potentially compiling it, before reading its AST.  This is
+  /// the guts of loadModule.
+  ///
+  /// For prebuilt modules, the Module is not expected to exist in
+  /// HeaderSearch's ModuleMap.  If a ModuleFile by that name is in the
+  /// ModuleManager, then it will be loaded and looked up.
+  ///
+  /// For implicit modules, the Module is expected to already be in the
+  /// ModuleMap.  First attempt to load it from the given path on disk.  If that
+  /// fails, defer to compileModuleAndReadAST, which will first build and then
+  /// load it.
+  ModuleLoadResult findOrCompileModuleAndReadAST(StringRef ModuleName,
+                                                 SourceLocation ImportLoc,
+                                                 SourceLocation ModuleNameLoc,
+                                                 bool IsInclusionDirective);
+
+public:
   ModuleLoadResult loadModule(SourceLocation ImportLoc, ModuleIdPath Path,
                               Module::NameVisibilityKind Visibility,
                               bool IsInclusionDirective) override;
 
-  void loadModuleFromSource(SourceLocation ImportLoc, StringRef ModuleName,
-                            StringRef Source) override;
+  void createModuleFromSource(SourceLocation ImportLoc, StringRef ModuleName,
+                              StringRef Source) override;
 
   void makeModuleVisible(Module *Mod, Module::NameVisibilityKind Visibility,
                          SourceLocation ImportLoc) override;
@@ -814,7 +828,7 @@ public:
 
   void setExternalSemaSource(IntrusiveRefCntPtr<ExternalSemaSource> ESS);
 
-  MemoryBufferCache &getPCMCache() const { return *PCMCache; }
+  InMemoryModuleCache &getModuleCache() const { return *ModuleCache; }
 };
 
 } // end namespace clang

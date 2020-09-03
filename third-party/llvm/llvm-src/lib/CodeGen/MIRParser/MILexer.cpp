@@ -1,9 +1,8 @@
 //===- MILexer.cpp - Machine instructions lexer implementation ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -205,6 +204,7 @@ static MIToken::TokenKind getIdentifierKind(StringRef Identifier) {
       .Case("nuw" , MIToken::kw_nuw)
       .Case("nsw" , MIToken::kw_nsw)
       .Case("exact" , MIToken::kw_exact)
+      .Case("nofpexcept", MIToken::kw_nofpexcept)
       .Case("debug-location", MIToken::kw_debug_location)
       .Case("same_value", MIToken::kw_cfi_same_value)
       .Case("offset", MIToken::kw_cfi_offset)
@@ -242,6 +242,7 @@ static MIToken::TokenKind getIdentifierKind(StringRef Identifier) {
       .Case("jump-table", MIToken::kw_jump_table)
       .Case("constant-pool", MIToken::kw_constant_pool)
       .Case("call-entry", MIToken::kw_call_entry)
+      .Case("custom", MIToken::kw_custom)
       .Case("liveout", MIToken::kw_liveout)
       .Case("address-taken", MIToken::kw_address_taken)
       .Case("landing-pad", MIToken::kw_landing_pad)
@@ -249,8 +250,10 @@ static MIToken::TokenKind getIdentifierKind(StringRef Identifier) {
       .Case("successors", MIToken::kw_successors)
       .Case("floatpred", MIToken::kw_floatpred)
       .Case("intpred", MIToken::kw_intpred)
+      .Case("shufflemask", MIToken::kw_shufflemask)
       .Case("pre-instr-symbol", MIToken::kw_pre_instr_symbol)
       .Case("post-instr-symbol", MIToken::kw_post_instr_symbol)
+      .Case("heap-alloc-marker", MIToken::kw_heap_alloc_marker)
       .Case("unknown-size", MIToken::kw_unknown_size)
       .Default(MIToken::Identifier);
 }
@@ -581,8 +584,8 @@ static MIToken::TokenKind getMetadataKeywordKind(StringRef Identifier) {
       .Default(MIToken::Error);
 }
 
-static Cursor maybeLexExlaim(Cursor C, MIToken &Token,
-                             ErrorCallbackType ErrorCallback) {
+static Cursor maybeLexExclaim(Cursor C, MIToken &Token,
+                              ErrorCallbackType ErrorCallback) {
   if (C.peek() != '!')
     return None;
   auto Range = C;
@@ -718,7 +721,7 @@ StringRef llvm::lexMIToken(StringRef Source, MIToken &Token,
     return R.remaining();
   if (Cursor R = maybeLexNumericalLiteral(C, Token))
     return R.remaining();
-  if (Cursor R = maybeLexExlaim(C, Token, ErrorCallback))
+  if (Cursor R = maybeLexExclaim(C, Token, ErrorCallback))
     return R.remaining();
   if (Cursor R = maybeLexSymbol(C, Token))
     return R.remaining();

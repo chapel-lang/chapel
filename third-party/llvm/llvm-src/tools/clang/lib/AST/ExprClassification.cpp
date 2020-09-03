@@ -1,9 +1,8 @@
 //===- ExprClassification.cpp - Expression AST Node Implementation --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -192,6 +191,9 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::ArrayInitIndexExprClass:
   case Expr::NoInitExprClass:
   case Expr::DesignatedInitUpdateExprClass:
+  case Expr::SourceLocExprClass:
+  case Expr::ConceptSpecializationExprClass:
+  case Expr::RequiresExprClass:
     return Cl::CL_PRValue;
 
   case Expr::ConstantExprClass:
@@ -306,6 +308,10 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::CUDAKernelCallExprClass:
     return ClassifyUnnamed(Ctx, cast<CallExpr>(E)->getCallReturnType(Ctx));
 
+  case Expr::CXXRewrittenBinaryOperatorClass:
+    return ClassifyInternal(
+        Ctx, cast<CXXRewrittenBinaryOperator>(E)->getSemanticForm());
+
     // __builtin_choose_expr is equivalent to the chosen expression.
   case Expr::ChooseExprClass:
     return ClassifyInternal(Ctx, cast<ChooseExpr>(E)->getChosenSubExpr());
@@ -343,6 +349,7 @@ static Cl::Kinds ClassifyInternal(ASTContext &Ctx, const Expr *E) {
   case Expr::CXXReinterpretCastExprClass:
   case Expr::CXXConstCastExprClass:
   case Expr::ObjCBridgedCastExprClass:
+  case Expr::BuiltinBitCastExprClass:
     // Only in C++ can casts be interesting at all.
     if (!Lang.CPlusPlus) return Cl::CL_PRValue;
     return ClassifyUnnamed(Ctx, cast<ExplicitCastExpr>(E)->getTypeAsWritten());

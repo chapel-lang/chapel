@@ -1,6 +1,7 @@
-add_llvm_library(LLVMSparcDesc
+add_llvm_component_library(LLVMSparcDesc
   SparcAsmBackend.cpp
   SparcELFObjectWriter.cpp
+  SparcInstPrinter.cpp
   SparcMCAsmInfo.cpp
   SparcMCCodeEmitter.cpp
   SparcMCTargetDesc.cpp

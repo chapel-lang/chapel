@@ -1,9 +1,8 @@
 //===-- MipsELFObjectWriter.cpp - Mips ELF Writer -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -220,10 +219,10 @@ unsigned MipsELFObjectWriter::getRelocType(MCContext &Ctx,
                                            const MCFixup &Fixup,
                                            bool IsPCRel) const {
   // Determine the type of the relocation.
-  unsigned Kind = (unsigned)Fixup.getKind();
+  unsigned Kind = Fixup.getTargetKind();
 
   switch (Kind) {
-  case Mips::fixup_Mips_NONE:
+  case FK_NONE:
     return ELF::R_MIPS_NONE;
   case FK_Data_1:
     Ctx.reportError(Fixup.getLoc(),
@@ -691,6 +690,6 @@ llvm::createMipsELFObjectWriter(const Triple &TT, bool IsN32) {
   uint8_t OSABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
   bool IsN64 = TT.isArch64Bit() && !IsN32;
   bool HasRelocationAddend = TT.isArch64Bit();
-  return llvm::make_unique<MipsELFObjectWriter>(OSABI, HasRelocationAddend,
+  return std::make_unique<MipsELFObjectWriter>(OSABI, HasRelocationAddend,
                                                 IsN64);
 }
