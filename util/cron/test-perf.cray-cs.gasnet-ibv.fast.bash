@@ -14,6 +14,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.gasnet-ibv.fast"
 source $CWD/common-cray-cs.bash y
 source $CWD/common-perf-cray-cs.bash
 
+# Keep long running tests as a performance issue instead of being reported as a
+# correctness timeout -- https://github.com/Cray/chapel-private/issues/443
+export CHPL_TEST_TIMEOUT=1800
+
 export CHPL_GASNET_SEGMENT=fast
 export GASNET_PHYSMEM_MAX=83G
 export CHPL_GASNET_MORE_CFG_OPTIONS=--disable-ibv-odp
