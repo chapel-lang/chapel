@@ -25,9 +25,6 @@
 
 void LoopStmt::reportVectorizable()
 {
-  if (!this->isVectorizable())
-    return; // nothing more to do!
-
   if (fReportVectorizedLoops) {
     ModuleSymbol *mod = toModuleSymbol(this->getModule());
     INT_ASSERT(mod);
