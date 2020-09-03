@@ -2179,7 +2179,7 @@ namespace {
      It identifies references that are defined inside an order-independent
      loop. If it can show that these references refer to something outside
      of any order-independent loop in the function, it marks them with
-     FLAG_POINTS_NON_STACK.
+     FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP.
 
      The goal here is to avoid hinting llvm.loop.parallel_accesses
      for load/store to temporary variables that are declared inside
@@ -2213,7 +2213,7 @@ bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
   if (SymExpr* se = toSymExpr(e)) {
     Symbol* sym = se->symbol();
 
-    if (sym->hasFlag(FLAG_POINTS_NON_STACK))
+    if (sym->hasFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP))
       return true; // already marked
 
     if (outerMostOrderIndependentLoop != NULL &&
@@ -2258,7 +2258,7 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
           if (outerMostOrderIndependentLoop &&
               outerMostOrderIndependentLoop->contains(lhs->defPoint))
             if (exprPointsToNonStack(call->get(2)))
-              lhs->addFlag(FLAG_POINTS_NON_STACK);
+              lhs->addFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP);
     }
   }
   return false;

@@ -160,8 +160,8 @@ GenRet SymExpr::codegen() {
     if(isVarSymbol(var)) {
       ret = toVarSymbol(var)->codegen();
       addNoAliasMetadata(ret, var);
-      if (var->hasFlag(FLAG_POINTS_NON_STACK))
-        ret.mustPointToNonStack = true;
+      if (var->hasFlag(FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP))
+        ret.mustPointOutsideOrderIndependentLoop = true;
     } else if(isArgSymbol(var)) {
       ret = info->lvt->getValue(var->cname);
       addNoAliasMetadata(ret, var);
@@ -561,7 +561,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
                           ptr.aliasScope,
                           ptr.noalias,
                           ptr.canBeMarkedAsConstAfterStore,
-                          !ptr.mustPointToNonStack);
+                          !ptr.mustPointOutsideOrderIndependentLoop);
 }
 // Create an LLVM load instruction possibly adding
 // appropriate metadata based upon the Chapel type of ptr.
@@ -622,7 +622,7 @@ llvm::LoadInst* codegenLoadLLVM(GenRet ptr,
                          ptr.aliasScope,
                          ptr.noalias,
                          isConst,
-                         !ptr.mustPointToNonStack);
+                         !ptr.mustPointOutsideOrderIndependentLoop);
 }
 
 #endif
@@ -4560,9 +4560,10 @@ DEFINE_PRIM(PRIM_SET_MEMBER) {
     GenRet val = call->get(3);
 
     if (isHeapType(call->get(1)->getValType()))
-      ptr.mustPointToNonStack = true;
+      ptr.mustPointOutsideOrderIndependentLoop = true;
     else
-      ptr.mustPointToNonStack = obj.mustPointToNonStack;
+      ptr.mustPointOutsideOrderIndependentLoop =
+        obj.mustPointOutsideOrderIndependentLoop;
 
     if (call->get(3)->isRefOrWideRef() && !call->get(2)->isRefOrWideRef()) {
       val = codegenDeref(val);
@@ -5449,7 +5450,7 @@ GenRet CallExpr::codegenPrimMove() {
   const bool LHSRef = get(1)->isRef() || get(1)->isWideRef();
   const bool RHSRef = get(2)->isRef() || get(2)->isWideRef();
 
-  bool mustPointToNonStack = false;
+  bool mustPointOutsideOrderIndependentLoop = false;
 
   GenRet specRet;
   if (get(1)->typeInfo() == dtNothing) {
@@ -5480,7 +5481,8 @@ GenRet CallExpr::codegenPrimMove() {
       codegenAssign(get(1), specRet);
     }
 
-    mustPointToNonStack = specRet.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      specRet.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true  &&
              get(2)->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS) == false ) {
@@ -5492,13 +5494,15 @@ GenRet CallExpr::codegenPrimMove() {
     INT_ASSERT(isClassOrNil(rhs.chplType));
     GenRet from = codegenWideHere(rhs);
     codegenAssign(get(1), from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isWideRef() == true &&
              get(2)->isRef() == true) {
     GenRet from = codegenAddrOf(codegenWideHere(get(2)));
     codegenAssign(get(1), from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isWideRef() == true  &&
              get(2)->isWideRef() == false &&
@@ -5507,7 +5511,8 @@ GenRet CallExpr::codegenPrimMove() {
     GenRet from = get(2);
 
     codegenAssign(to_ptr, from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isRef()       == true  &&
              get(2)->isWideRef()   == true)  {
@@ -5518,12 +5523,14 @@ GenRet CallExpr::codegenPrimMove() {
       GenRet from = codegenAddrOf(narrowThing);
 
       codegenAssign(get(1), from);
-      mustPointToNonStack = from.mustPointToNonStack;
+      mustPointOutsideOrderIndependentLoop =
+        from.mustPointOutsideOrderIndependentLoop;
     } else {
       GenRet genWide = get(2);
       GenRet from = codegenRaddr(genWide);
       codegenAssign(get(1), from);
-      mustPointToNonStack = from.mustPointToNonStack;
+      mustPointOutsideOrderIndependentLoop =
+        from.mustPointOutsideOrderIndependentLoop;
     }
 
   } else if (get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == false &&
@@ -5531,24 +5538,29 @@ GenRet CallExpr::codegenPrimMove() {
              get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) == true)  {
     GenRet from = codegenRaddr(get(2));
     codegenAssign(get(1), from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
 
   } else if (get(1)->isRef()        == true  &&
              get(2)->isRef()        == false) {
     GenRet from = get(2);
     codegenAssign(codegenDeref(get(1)), from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
   } else if(!LHSRef && RHSRef) {
     GenRet from = codegenDeref(get(2));
     codegenAssign(get(1), from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
   } else {
     GenRet from = get(2);
     codegenAssign(get(1), from);
-    mustPointToNonStack = from.mustPointToNonStack;
+    mustPointOutsideOrderIndependentLoop =
+      from.mustPointOutsideOrderIndependentLoop;
   }
 
-  ret.mustPointToNonStack = mustPointToNonStack;
+  ret.mustPointOutsideOrderIndependentLoop =
+    mustPointOutsideOrderIndependentLoop;
   return ret;
 }
 
@@ -5675,9 +5687,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = codegenFieldPtr(obj, se);
       }
       if (isHeapType(call->get(1)->getValType()))
-        ret.mustPointToNonStack = true;
+        ret.mustPointOutsideOrderIndependentLoop = true;
       else
-        ret.mustPointToNonStack = obj.mustPointToNonStack;
+        ret.mustPointOutsideOrderIndependentLoop =
+          obj.mustPointOutsideOrderIndependentLoop;
 
       retval = true;
       break;
@@ -5713,9 +5726,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         retval = true;
       }
       if (isHeapType(call->get(1)->getValType()))
-        ret.mustPointToNonStack = true;
+        ret.mustPointOutsideOrderIndependentLoop = true;
       else
-        ret.mustPointToNonStack = obj.mustPointToNonStack;
+        ret.mustPointOutsideOrderIndependentLoop =
+          obj.mustPointOutsideOrderIndependentLoop;
 
       break;
     }
@@ -5743,7 +5757,8 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
         retval = true;
       }
-      ret.mustPointToNonStack = tup.mustPointToNonStack;
+      ret.mustPointOutsideOrderIndependentLoop =
+        tup.mustPointOutsideOrderIndependentLoop;
 
       break;
     }
@@ -5783,9 +5798,10 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
         ret = ref;
       }
       if (isHeapType(arrTS->getValType()))
-        ret.mustPointToNonStack = true;
+        ret.mustPointOutsideOrderIndependentLoop = true;
       else
-        ret.mustPointToNonStack = aPtr.mustPointToNonStack;
+        ret.mustPointOutsideOrderIndependentLoop =
+          aPtr.mustPointOutsideOrderIndependentLoop;
 
       retval = true;
       break;
