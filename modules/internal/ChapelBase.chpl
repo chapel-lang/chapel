@@ -1372,6 +1372,10 @@ module ChapelBase {
     if t == string {
       return str;
     } else {
+      // we need to do an iteration over a range variable before casting a
+      // string to a type. Otherwise, we can't resolve chpl_debug_writeln in
+      // `range.these`
+      { var dummyRange = 1..0; for i in dummyRange {} }
       return str:t;
     }
   }
