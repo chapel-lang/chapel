@@ -47,8 +47,6 @@ GenRet DoWhileStmt::codegen()
 
   if (outfile)
   {
-    codegenVectorHint();
-
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)

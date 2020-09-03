@@ -796,7 +796,7 @@ module ChapelIteratorSupport {
 
      .. code-block:: c
 
-         CHPL_PRAGMA_IVDEP
+         // this loop hinted as order-independent
          for (i=0; i<=10; i+=1) {}
 
      The ``vectorizeOnly`` iterator  automatically handles zippering, so the

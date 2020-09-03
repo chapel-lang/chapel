@@ -66,7 +66,6 @@
 #include "chpltimers.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "chpl-vector-macros.h"
 #include "chpl-visual-debug.h"
 #include "error.h"
 

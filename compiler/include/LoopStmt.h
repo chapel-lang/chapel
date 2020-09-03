@@ -66,7 +66,6 @@ protected:
   bool                   mVectorizationHazard;
   bool                   mParallelAccessVectorizationHazard;
 
-  void                   codegenVectorHint();
   void                   reportVectorizable();
 
 

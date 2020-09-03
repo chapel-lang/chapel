@@ -48,8 +48,6 @@ GenRet WhileDoStmt::codegen()
 
   if (outfile)
   {
-    codegenVectorHint();
-
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);
