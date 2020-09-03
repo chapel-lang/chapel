@@ -2231,7 +2231,7 @@ bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
         call->isPrimitive(PRIM_ARRAY_GET) ||
         call->isPrimitive(PRIM_SET_REFERENCE) ||
         (fn && fn->hasFlag(FLAG_STAR_TUPLE_ACCESSOR))) {
-      if (isHeapType(call->get(1)->getValType()))
+      if (isHeapAllocatedType(call->get(1)->getValType()))
         return true;
       else
         return exprPointsToNonStack(call->get(1));

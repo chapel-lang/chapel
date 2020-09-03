@@ -1069,7 +1069,7 @@ bool isClass(Type* t) {
   return false;
 }
 
-bool isHeapType(Type* t) {
+bool isHeapAllocatedType(Type* t) {
   if (AggregateType* ct = toAggregateType(t)) {
     TypeSymbol* ts = ct->symbol;
     if (ts->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF))

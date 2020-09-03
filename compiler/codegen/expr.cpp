@@ -4559,7 +4559,7 @@ DEFINE_PRIM(PRIM_SET_MEMBER) {
     GenRet ptr = codegenFieldPtr(obj, call->get(2));
     GenRet val = call->get(3);
 
-    if (isHeapType(call->get(1)->getValType()))
+    if (isHeapAllocatedType(call->get(1)->getValType()))
       ptr.mustPointOutsideOrderIndependentLoop = true;
     else
       ptr.mustPointOutsideOrderIndependentLoop =
@@ -5686,7 +5686,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       } else {
         ret = codegenFieldPtr(obj, se);
       }
-      if (isHeapType(call->get(1)->getValType()))
+      if (isHeapAllocatedType(call->get(1)->getValType()))
         ret.mustPointOutsideOrderIndependentLoop = true;
       else
         ret.mustPointOutsideOrderIndependentLoop =
@@ -5725,7 +5725,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
 
         retval = true;
       }
-      if (isHeapType(call->get(1)->getValType()))
+      if (isHeapAllocatedType(call->get(1)->getValType()))
         ret.mustPointOutsideOrderIndependentLoop = true;
       else
         ret.mustPointOutsideOrderIndependentLoop =
@@ -5797,7 +5797,7 @@ static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret) {
       } else {
         ret = ref;
       }
-      if (isHeapType(arrTS->getValType()))
+      if (isHeapAllocatedType(arrTS->getValType()))
         ret.mustPointOutsideOrderIndependentLoop = true;
       else
         ret.mustPointOutsideOrderIndependentLoop =
