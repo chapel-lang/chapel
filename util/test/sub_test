@@ -1705,6 +1705,15 @@ for testname in testsrc:
             printTestVariation(compoptsnum, compoptslist);
             sys.stdout.write(']\n')
 
+            # If there was a prediff it may have hidden the compilation
+            # failure, so print out the full log. Note that we don't check
+            # systemPrediffs since they shouldn't be filtering all output
+            # anyways, and it could create noise for configs that use them.
+            if result != 0:
+                if prediff or globalPrediff:
+                    sys.stdout.write('[Compiler output before prediff was as follows:]\n')
+                    sys.stdout.write(origoutput)
+
             if (result != 0 and futuretest != ''):
                 badfile=test_filename+'.bad'
                 if os.access(badfile, os.R_OK):
