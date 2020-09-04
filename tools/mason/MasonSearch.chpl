@@ -169,8 +169,7 @@ proc rankResults(results: list(string), query: string): [] string {
 /* Creates an empty cache file if its not found in registry */
 proc touch(pathToReg: string) {
   const fileWriter = open(pathToReg, iomode.cw).writer();
-  const contents = "# This cache file was created automatically by mason search";
-  fileWriter.write(contents);
+  fileWriter.write("");
   fileWriter.close();
 }
 
