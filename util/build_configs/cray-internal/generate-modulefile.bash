@@ -86,9 +86,9 @@ setenv MPICH_GNI_DYNAMIC_CONN disabled
 if { [string match aries $network] } {
     set CHPL_HOST_PLATFORM cray-xc
 } elseif { [string match ofi $network] } {
-    set CHPL_HOST_PLATFORM cray-shasta
+    set CHPL_HOST_PLATFORM hpe-cray-ex
 } elseif { [string match slingshot* $network] } {
-    set CHPL_HOST_PLATFORM cray-shasta
+    set CHPL_HOST_PLATFORM hpe-cray-ex
 }
 if { ! [info exists CHPL_HOST_PLATFORM] } {
     puts stderr "Cannot determine host platform"
@@ -97,7 +97,7 @@ if { ! [info exists CHPL_HOST_PLATFORM] } {
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
-    # Cray-XC/Shasta
+    # Cray-XC/HPE Cray EX
 
     # Load/unload cray-mpich if not previously loaded
 
@@ -142,10 +142,10 @@ if { ! [ info exists env(PE_ENV) ] } {
 }
 
 
-if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
-    # Interim settings for Shasta systems.
+if { [string match hpe-cray-ex $CHPL_HOST_PLATFORM] } {
+    # Interim settings for HPE Cray EX systems.
 
-    # So far we only have gnu-based Chapel for Shasta.
+    # So far we only have gnu-based Chapel for EX.
     if { [string equal -nocase cray $compiler] } {
         module swap PrgEnv-cray PrgEnv-gnu
     } elseif { [string equal -nocase intel $compiler] } {

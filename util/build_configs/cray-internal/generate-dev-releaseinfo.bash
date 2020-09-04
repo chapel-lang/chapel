@@ -114,7 +114,7 @@ Dependencies:
 -------------
 
     Chapel $major.$minor is supported on the following Cray systems:
-    * Cray Shasta systems with CLE based on SLES15 or later
+    * HPE Cray EX systems with COS based on SLES15 or later
     * Cray XC systems with CLE 5.2UP04 or later
     * Cray CS systems running Red Hat, CentOS, or SuSE Linux
 
@@ -131,7 +131,7 @@ Installation instructions:
     Copy the Chapel RPM file to the current directory and execute
     the appropriate one of the following commands:
 
-      #On Cray Shasta systems (x86_64):
+      #On HPE Cray EX systems (x86_64):
       rpm -ivh chapel-$pkg_version-$rpm_release.x86_64.rpm
 
       #On Cray XC systems (x86_64):

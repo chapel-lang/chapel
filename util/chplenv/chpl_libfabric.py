@@ -12,15 +12,15 @@ def get():
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
         platform_val = chpl_platform.get('target')
         if not libfabric_val:
-            if platform_val == 'cray-shasta':
+            if platform_val == 'hpe-cray-ex':
                 libfabric_val = 'system'
             else:
                 libfabric_val = 'libfabric'
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
-        if platform_val == 'cray-shasta' and libfabric_val != 'system':
+        if platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
             sys.stderr.write('Warning: CHPL_LIBFABRIC!=system is discouraged '
-                             'on Shasta\n')
+                             'on HPE Cray EX\n')
     else:
         libfabric_val = 'none'
 

@@ -51,7 +51,7 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 # linker option for static linking with it. While it's not always
 # used with Chapel programs, it is expected to be the common case
 # when running on a Cray X*, so just always linking it is acceptable.
-# (We don't add it for Cray Shasta systems, where it's not needed.)
+# (We don't add it for HPE Cray EX systems, where it's not needed.)
 #
 # Note that the GCC option -### causes the compiler to not actually
 # compile anything but just print out what it would do to stderr.
@@ -62,7 +62,7 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 # -lchpl_lib_token allows the Chapel compiler to know
 # where to put additional arguments (they replace that argument).
 LHUGETLBFS="-lhugetlbfs"
-if [[ "$2" == "cray-shasta" ]] ; then
+if [[ "$2" == "hpe-cray-ex" ]] ; then
   LHUGETLBFS=""
 fi
 

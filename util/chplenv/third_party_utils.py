@@ -96,7 +96,7 @@ def pkgconfig_get_compile_args(pkg, ucp='', system=True):
 # if system=True, searches for a system-installed package.
 # if static=True, uses --static (suitable for static linking)
 @memoize
-def pkgconfig_get_link_args(pkg, ucp='', system=True, static=(chpl_platform.get('target')!='cray-shasta')):
+def pkgconfig_get_link_args(pkg, ucp='', system=True, static=(chpl_platform.get('target')!='hpe-cray-ex')):
   havePcFile = pkg.endswith('.pc')
   pcArg = pkg
   if not havePcFile:

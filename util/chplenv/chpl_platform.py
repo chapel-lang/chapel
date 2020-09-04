@@ -40,7 +40,7 @@ def get(flag='host'):
     if not platform_val:
         network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
         if network.startswith("slingshot") or network == "ofi":
-            platform_val = 'cray-shasta'
+            platform_val = 'hpe-cray-ex'
 
     if not platform_val:
         # uname() -> (system, node, release, version, machine, processor)
