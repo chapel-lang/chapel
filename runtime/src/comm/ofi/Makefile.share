@@ -33,7 +33,7 @@ ifneq (, $(findstring $(CHPL_COMM_OFI_OOB), mpi pmi sockets slurm-pmi2))
   COMM_SRCS += comm-ofi-oob-$(CHPL_COMM_OFI_OOB).c
 else ifneq (, $(findstring cray-x,$(CHPL_MAKE_TARGET_PLATFORM)))
   COMM_SRCS += comm-ofi-oob-pmi.c
-else ifneq (, $(findstring cray-,$(CHPL_MAKE_TARGET_PLATFORM)))
+else ifneq (, $(filter cray-% hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
   COMM_SRCS += comm-ofi-oob-mpi.c
 else ifneq (, $(findstring mpi,$(CHPL_MAKE_LAUNCHER)))
   COMM_SRCS += comm-ofi-oob-mpi.c

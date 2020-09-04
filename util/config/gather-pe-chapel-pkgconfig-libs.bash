@@ -17,7 +17,7 @@ fi
 pe_chapel_pkgconfig_libs="$PE_CHAPEL_PKGCONFIG_LIBS"
 
 if [[ "$chpl_comm" != none ]]; then
-  if [[ "$chpl_target_platform" != cray-shasta ]]; then
+  if [[ "$chpl_target_platform" != hpe-cray-ex ]]; then
     pe_chapel_pkgconfig_libs="cray-pmi:$pe_chapel_pkgconfig_libs"
   fi
 
