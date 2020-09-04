@@ -18,9 +18,9 @@ QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 #
 # Cray builds are cross-compilations
 #
-ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
-else ifneq (, $(filter cray-cs,$(CHPL_MAKE_TARGET_PLATFORM)))
+else ifneq (, $(filter cray-cs hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
 endif
 

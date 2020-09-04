@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# setenv script to build a standard Chapel Cray-Shasta module for release
+# setenv script to build a standard Chapel HPE Cray EX module for release
 
 set +x -e
 
@@ -81,8 +81,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 ##  # by build_configs.py cmdline arguments), Chapel make will determine
 ##  # the appropriate default value for the platform / environment it finds.
 
-    export CHPL_HOST_PLATFORM=cray-shasta
-    export CHPL_TARGET_PLATFORM=cray-shasta
+    export CHPL_HOST_PLATFORM=hpe-cray-ex
+    export CHPL_TARGET_PLATFORM=hpe-cray-ex
     export CHPL_REGEXP=re2      # re2 required for mason
     export CHPL_LOCAL_MODEL=flat
     export CHPL_COMM=none
