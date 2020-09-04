@@ -2779,7 +2779,7 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
 static void processGetVisibleSymbols() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
-      bool ignoreInternalModules = false;
+      bool ignoreInternalModules = true;
       // look for a single NamedExpr argument ignoreInternals=true|false
       if (call->numActuals() == 1) {
         NamedExpr* ne = toNamedExpr(call->get(1));
