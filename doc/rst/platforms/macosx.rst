@@ -6,7 +6,7 @@ Using Chapel on Mac OS X
 
 There are two main approaches for using Chapel on Mac OS X:
 
-1) Install via Homebrew_.  For existing Homebrew users, this is the
+1) Install via Homebrew_.  For Homebrew users, this is the
    quickest way to get up and running, but it results in a copy of
    Chapel that only supports shared-memory (single-locale) executions.
 
