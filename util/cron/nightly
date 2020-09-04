@@ -24,6 +24,10 @@ $failuremail = "chapel+tests\@discoursemail.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
+# these two are determined by the -chapcs flag
+$paratestscript = "";
+$paratestargs = "";
+
 $valgrind = 0;
 $interpret = 0;
 $printusage = 1;
@@ -64,6 +68,7 @@ $numtrials = "";
 $cronrecipient = "";
 $junit_xml = 0;
 $mason_build = 0;
+$chapcs = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -152,6 +157,8 @@ while (@ARGV) {
         $asserts = 1;
     } elsif ($flag eq "-mason") {
         $mason_build = 1;
+    } elsif ($flag eq "-chapcs") {
+        $chapcs = 1;
     } else {
         $printusage = 1;
         last;
@@ -160,6 +167,18 @@ while (@ARGV) {
 
 
 print localtime() . "  host: " . hostname . "\n";
+
+# set the paratest script and args if needed
+if ($chapcs == 1) {
+  $paratestscript = "../util/test/paratest.chapcs";
+  $paratestargs = "-nightly";
+}
+else {
+  if ($parnodefile ne "") {
+    $paratestscript = "../util/test/paratest.server";
+    $paratestargs = "-nodefile $parnodefile";
+  }
+}
 
 # If this is running in jenkins, link to the job in the email.
 $crontab = "Unknown origin for this job...";
@@ -743,8 +762,8 @@ if ($runtests == 0) {
         $rawsummary = $permsum;
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
-        print "about to execute: cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags\n";
-        $status = mysystem("cd $testdir && ../util/test/paratest.server -nodefile $parnodefile $testflags", "running parallel tests", 0, 0);
+        print "about to execute: cd $testdir && $paratestscript $paratestargs $testflags\n";
+        $status = mysystem("cd $testdir && $paratestscript $paratestargs $testflags", "running parallel tests", 0, 0);
     }
 
 
