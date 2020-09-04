@@ -2788,10 +2788,10 @@ static void processGetVisibleSymbols() {
           if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
             ignoreInternalModules = se->symbol() == gTrue;
           } else {
-            USR_FATAL(se, "get visible symbols only argument must be a literal 'true' or 'false'");
+            USR_FATAL(se, "the argument to get visible symbols must be a literal 'true' or 'false'");
           }
         } else {
-          USR_FATAL(call, "get visible symbols only argument must be a named expression named ignoreInternalModules");
+          USR_FATAL(call, "the argument to get visible symbols must be a named expression named ignoreInternalModules");
         }
       } else {
         if (call->numActuals() != 0)
