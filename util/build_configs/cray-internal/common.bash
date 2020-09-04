@@ -41,9 +41,9 @@ case "${rc_prefix:-}" in
 ( "" )
     # default: strip out dashes from $chpl_platform (e.g. cray-xc -> crayxc)
     rc_prefix=${chpl_platform//-}
-    if [ "$chpl_platform" = cray-shasta ]; then
+    if [ "$chpl_platform" = hpe-cray-ex ]; then
         #
-        # For Shasta, need timestamp and SHA before (dashless) platform,
+        # For HPE Cray EX, need timestamp and SHA before (dashless) platform,
         # and no release candidate number.
         #
         if [ -n "$rel_name" ]; then

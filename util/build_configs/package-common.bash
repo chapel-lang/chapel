@@ -29,7 +29,7 @@ fi
 #                   e.g. "1.17.1.20181016" for a nightly build
 # release_type  : nightly or release or developer
 # chpl_platform : linux64, cray-xc, etc             # as in, $CHPL_HOME/bin/$chpl_platform
-# rel_name      : Shasta RPM release name, synthesized if not given
+# rel_name      : HPE Cray EX RPM release name, synthesized if not given
 # rc_number     : Release candidate number (0,1,2..); something to distinguish different instances of
 #                 otherwise-identical packages. May be applied in different ways dep. on package-format.
 # date_ymd,

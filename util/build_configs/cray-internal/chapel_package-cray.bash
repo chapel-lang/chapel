@@ -24,13 +24,13 @@ Usage $( basename "${BASH_SOURCE[0]}" )" '[options]
     -b release_type     : Build/release type (required)
                           == "nightly", "release", or "developer".
     -p chpl_platform    : Chpl target platform, as in $CHPL_HOME/bin/$chpl_platform
-                          ("cray-xc" or "cray-shasta")
+                          ("cray-xc" or "hpe-cray-ex")
                           Default: cray-xc
     -T version_tag      : If given, version_tag will become part of the Chapel
                             package version string to be generated in this script.
                           Alphanumeric/underscore chars only.
                           Default value: current hostname. See NOTES below.
-    -R rel_name         : Shasta RPM release name, synthesized if not given
+    -R rel_name         : HPE Cray EX RPM release name, synthesized if not given
     -r rc_number        : Release candidate number (0,1,2,...9)
                           Default: 0
     -o outputs  : Where to deliver the Chapel RPM file created by this script.
