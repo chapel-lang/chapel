@@ -1,7 +1,7 @@
 var i: int = 2;
 
 proc foo(s: sync int) {
-  s = i;
+  s.writeEF(i);
   i += 1;
 }
 

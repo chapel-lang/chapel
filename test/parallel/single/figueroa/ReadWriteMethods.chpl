@@ -9,7 +9,7 @@ proc foo(type t, v: t, s) {
     begin {
       writeln("2: got ", d.readFF());
       writeln("2: got ", d.readFF());
-      done = true;
+      done.writeEF(true);
     }
     if done then // wait until all prior invocations have finished
       writeln("1: going to sleep with ", v, " of type ", s);

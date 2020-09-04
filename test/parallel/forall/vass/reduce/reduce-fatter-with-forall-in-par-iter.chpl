@@ -34,7 +34,7 @@ iter myiter(param tag: iterKind) where tag == iterKind.standalone {
       yield current * 100 + jjj;
     }
     writef("myiter done  %t\n", current);
-    cnt$.writeEFcurrent + 1);
+    cnt$.writeEF(current + 1);
   }
 }
 

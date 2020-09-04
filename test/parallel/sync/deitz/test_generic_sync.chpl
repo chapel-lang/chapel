@@ -1,7 +1,7 @@
 proc foo(s: sync) {
   var x = s;
   writeln(x);
-  s = (x+1):x.type;
+  s.writeEF((x+1):x.type);
 }
 
 proc bar(type t) {

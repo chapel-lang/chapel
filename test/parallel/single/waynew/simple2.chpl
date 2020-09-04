@@ -12,4 +12,4 @@ begin {
 sleep( 3);
 write( "First we have A, followed by ");
 sleep( 2);
-s = 1;
+s.writeEF(1);

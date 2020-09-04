@@ -20,7 +20,7 @@ sync {
     j = 0;
     while (j < ITERATIONS) {
       sleep( 1);
-      r = c.s;
+      r = c.s.readFE();
       writeln( "2: got ", r);
       j += 1;
     }
