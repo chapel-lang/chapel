@@ -29,6 +29,7 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 import chpl_comm
 import utils
 
+debug = True
 
 def run_command_wrapper(command):
     """
@@ -133,17 +134,27 @@ def get_good_nodepara():
     return nodepara
 
 
-def run_paratest(args):
+def run_paratest(paratest_args, nightly=False):
     """
     Run paratest inside an salloc using all nodes that are not reserved
     exclusively on the chapel partition. Throw `--oversubscribe --nice` and
     turn off affinity and limit how many executables can run at once so we play
     nice with other testing going on.
     """
-    nodepara = get_good_nodepara()
-    num_free_nodes = get_num_non_exclusive_nodes()
-    para_env = ['-env', 'CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes', '-env',
-                'CHPL_RT_OVERSUBSCRIBED=yes']
+    if not debug:
+        nodepara = get_good_nodepara()
+        num_free_nodes = get_num_non_exclusive_nodes()
+    else:
+        print('Running in debug mode')
+        print('paratest_args: {}'.format(paratest_args))
+        print('nightly: {}'.format(nightly))
+        nodepara = 1
+        num_free_nodes = 1
+
+    para_env = ['-env', 'CHPL_RT_OVERSUBSCRIBED=yes']
+    # we run exclusively with nightly, so no need to limit
+    if not nightly:
+        para_env.extend(['-env', 'CHPL_TEST_LIMIT_RUNNING_EXECUTABLES=yes'])
 
     salloc_cmd = ['salloc',
                   '--nodes={0}'.format(num_free_nodes),
@@ -152,21 +163,23 @@ def run_paratest(args):
                   '--oversubscribe',
                   '--nice']
 
-    exclude_set = get_exclusive_nodes()[1]
-    if exclude_set:
-        salloc_cmd.append('--exclude={0}'.format(','.join(exclude_set)))
+    if not debug:
+        exclude_set = get_exclusive_nodes()[1]
+        if exclude_set:
+            salloc_cmd.append('--exclude={0}'.format(','.join(exclude_set)))
 
     paratest_path = os.path.join(os.path.dirname(__file__), 'paratest.server')
 
     paratest_cmd = salloc_cmd + [paratest_path] + para_env
-    paratest_cmd += ['-nodepara', str(nodepara)] + args
+    paratest_cmd += ['-nodepara', str(nodepara)] + paratest_args
     print('running "{0}"'.format(' '.join(paratest_cmd)))
 
 
     start_time = timeit.default_timer()
-    for line in utils.run_live_command(paratest_cmd):
-        sys.stdout.write(line)
-        sys.stdout.flush()
+    if not debug:
+        for line in utils.run_live_command(paratest_cmd):
+            sys.stdout.write(line)
+            sys.stdout.flush()
     elapsed = int(timeit.default_timer() - start_time)
     minutes, seconds = divmod(elapsed, 60)
     print('paratest took {0} minutes and {1} seconds'.format(minutes, seconds))
@@ -184,13 +197,19 @@ def running_during_nightly():
     return nightly_start_exclusive <= now <= nightly_end_exclusive
 
 
-def main(paratest_args):
+def main(args):
     """ Just run paratest with the user's args """
-    if running_during_nightly():
-        print('Please avoid running when nightly has exclusive access')
-        exit(1)
 
-    run_paratest(paratest_args)
+    if '-nightly' in args:
+        args.remove('-nightly')
+        nightly = True
+    else:
+        if running_during_nightly():
+            print('Please avoid running when nightly has exclusive access')
+            exit(1)
+        nightly = False
+
+    run_paratest(paratest_args=args, nightly=nightly)
 
 
 if __name__ == '__main__':
