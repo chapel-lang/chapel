@@ -2779,6 +2779,24 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
 static void processGetVisibleSymbols() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
+      bool ignoreInternalModules = false;
+      // look for a single NamedExpr argument ignoreInternals=true|false
+      if (call->numActuals() == 1) {
+        NamedExpr* ne = toNamedExpr(call->get(1));
+        if (ne && !strcmp(ne->name, "ignoreInternalModules")) {
+          SymExpr* se = toSymExpr(ne->actual);
+          if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
+            ignoreInternalModules = se->symbol() == gTrue;
+          } else {
+            USR_FATAL(se, "get visible symbols only argument must be a literal 'true' or 'false'");
+          }
+        } else {
+          USR_FATAL(call, "get visible symbols only argument must be a named expression named ignoreInternalModules");
+        }
+      } else {
+        if (call->numActuals() != 0)
+          USR_FATAL(call, "get visible symbols may only have 0 or 1 arguments");
+      }
       std::set<Symbol*> alreadyFound;
       // build a map from filename to set of visible symbols in that file
       std::map<std::string, std::set<Symbol*>*> visibleMap;
@@ -2821,6 +2839,9 @@ static void processGetVisibleSymbols() {
         // walk the sorted vector of symbols to print information on each
         for (std::vector<std::pair<int, Symbol*>>::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
           Symbol* sym = symPair->second;
+          if (ignoreInternalModules &&
+              sym->getModule()->modTag == MOD_INTERNAL)
+            continue;
           printf("  %s:%d: %s\n", sym->defPoint->fname(),
                  sym->defPoint->linenum(), sym->name); 
         }
