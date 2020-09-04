@@ -24,9 +24,10 @@ $failuremail = "chapel+tests\@discoursemail.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
-# these two are determined by the -chapcs flag
-$paratestscript = "";
-$paratestargs = "";
+# these two are used to select one from start_test, paratest.server and
+# paratest.chapcs
+$script = "";
+$scriptflags = "";
 
 $valgrind = 0;
 $interpret = 0;
@@ -168,16 +169,16 @@ while (@ARGV) {
 
 print localtime() . "  host: " . hostname . "\n";
 
-# set the paratest script and args if needed
+# set the testing script and args
 if ($chapcs == 1) {
-  $paratestscript = "../util/test/paratest.chapcs";
-  $paratestargs = "-nightly";
-}
-else {
-  if ($parnodefile ne "") {
-    $paratestscript = "../util/test/paratest.server";
-    $paratestargs = "-nodefile $parnodefile";
-  }
+  $script = "../util/test/paratest.chapcs";
+  $scriptflags = "-nightly";
+} elsif ($parnodefile ne "") {
+  $script = "../util/test/paratest.server";
+  $scriptflags = "-nodefile $parnodefile";
+} else {
+  $script = "../util/start_test";
+  $scriptflags = "";
 }
 
 # If this is running in jenkins, link to the job in the email.
@@ -752,8 +753,8 @@ if ($runtests == 0) {
         mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
     }
 
+    $testcommand = "cd $testdir && $script $scriptflags $testflags";
     if ($parnodefile eq "") {
-        $testcommand = "cd $testdir && ../util/start_test $testflags";
         print "Executing $testcommand\n";
         $status = mysystem($testcommand, "running standard tests", 0, 0);
         print "Moving the log and summary files\n";
@@ -762,8 +763,8 @@ if ($runtests == 0) {
         $rawsummary = $permsum;
     } else {
         mysystem("cp $parnodefile $testdir/", "copying parallel node file", 1, 1);
-        print "about to execute: cd $testdir && $paratestscript $paratestargs $testflags\n";
-        $status = mysystem("cd $testdir && $paratestscript $paratestargs $testflags", "running parallel tests", 0, 0);
+        print "about to execute: $testcommand\n";
+        $status = mysystem($testcommand, "running parallel tests", 0, 0);
     }
 
 
