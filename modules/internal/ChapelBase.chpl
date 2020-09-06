@@ -1157,8 +1157,14 @@ module ChapelBase {
     const dptpl = if dataParTasksPerLocale==0 then here.maxTaskPar
                   else dataParTasksPerLocale;
 
-    if numTasks >= dptpl then
+    if numTasks >= dptpl {
       chpl_rt_reset_task_spawn();
+    } else if numTasks == 1 {
+      // Don't create a task for local single iteration coforalls
+      use ChapelTaskData;
+      var tls = chpl_task_getInfoChapel();
+      chpl_task_data_setNextCoStmtSerial(tls, true);
+    }
   }
 
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
@@ -1250,7 +1256,9 @@ module ChapelBase {
     e.i.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
-      here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+      if numTasks > 1 {
+        here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+      }
     } else {
       here.runningTaskCntSub(1);
     }
@@ -1321,7 +1329,9 @@ module ChapelBase {
     e.i.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
-      here.runningTaskCntSub(numTasks:int-1);
+      if numTasks > 1 {
+        here.runningTaskCntSub(numTasks:int-1);
+      }
     } else {
       here.runningTaskCntAdd(1);
     }
