@@ -199,8 +199,13 @@ module Map {
     */
     inline proc const size {
       _enter(); defer _leave();
-      var result = table.tableNumFullSlots;
-      return result;
+      return _size;
+    }
+
+    /* As above, but the parSafe lock must be held on entry */
+    pragma "no doc"
+    inline proc const _size {
+      return table.tableNumFullSlots;
     }
 
     /*
@@ -567,7 +572,7 @@ module Map {
       if !isCopyableType(keyType) || !isCopyableType(valType) then
         compilerError("toArray requires copyable key and value types");
 
-      var A: [0..#size] (keyType, valType);
+      var A: [0..#_size] (keyType, valType);
 
       for (a, item) in zip(A, items()) {
         a = item;
@@ -589,7 +594,7 @@ module Map {
       if !isCopyableType(keyType) then
         compilerError("keysToArray requires a copyable key type");
 
-      var A: [0..#size] keyType;
+      var A: [0..#_size] keyType;
       for (a, k) in zip(A, keys()) {
         a = k;
       }
@@ -609,7 +614,7 @@ module Map {
       if !isCopyableType(valType) then
         compilerError("valuesToArray requires a copyable value type");
 
-      var A: [0..#size] valType;
+      var A: [0..#_size] valType;
       for (a, v) in zip(A, values()) {
         a = v;
       }
