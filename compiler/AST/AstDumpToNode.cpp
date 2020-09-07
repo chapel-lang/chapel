@@ -946,6 +946,19 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
   return false;
 }
 
+bool AstDumpToNode::enterInterfaceSym(InterfaceSymbol* node) {
+  enterNode(node);
+  fprintf(mFP, " %s", node->name);
+  mOffset = mOffset + 2;
+  newline(); fprintf(mFP, "ifcFormals:");
+  for_alist(formal, node->ifcFormals) formal->accept(this);
+  newline(); fprintf(mFP, "ifcBody:");
+  node->ifcBody->accept(this);
+  mOffset = mOffset - 2;
+  exitNode(node);
+  return false;
+}
+
 //
 //
 //
@@ -1043,6 +1056,23 @@ void AstDumpToNode::exitNamedExpr(NamedExpr* node)
   if (!compact)
     write(")");
   exitNode(node);
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterIfcConstraint(IfcConstraint* node) {
+  enterNode(node);
+  fprintf(mFP, " implements");
+  mOffset = mOffset + 2;
+  newline(); fprintf(mFP, "interfaceExpr:");
+  node->interfaceExpr->accept(this);
+  newline(); fprintf(mFP, "consActuals:");
+  for_alist(actual, node->consActuals) actual->accept(this);
+  mOffset = mOffset - 2;
+  exitNode(node);
+  return false;
 }
 
 //
@@ -1380,6 +1410,18 @@ bool AstDumpToNode::enterDeferStmt(DeferStmt* node)
   return false;
 }
 
+bool AstDumpToNode::enterImplementsStmt(ImplementsStmt* node) {
+  enterNode(node);
+  fprintf(mFP, " implements iConstraint:");
+  mOffset = mOffset + 2;
+  node->iConstraint->accept(this);
+  newline(); fprintf(mFP, "implBody:");
+  node->implBody->accept(this);
+  mOffset = mOffset - 2;
+  exitNode(node);
+  return false;
+}
+
 //
 //
 //
@@ -1468,6 +1510,13 @@ bool AstDumpToNode::enterEnumType(EnumType* node)
 //
 
 void AstDumpToNode::visitPrimType(PrimitiveType* node)
+{
+  enterNode(node);
+  fprintf(mFP, " %s", node->symbol->name);
+  exitNode(node);
+}
+
+void AstDumpToNode::visitConstrainedType(ConstrainedType* node)
 {
   enterNode(node);
   fprintf(mFP, " %s", node->symbol->name);

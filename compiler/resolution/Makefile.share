@@ -30,6 +30,7 @@ RESOLUTION_SRCS =                                              \
                   generics.cpp                                 \
                   implementForallIntents.cpp                   \
                   initializerResolution.cpp                    \
+                  interfaceResolution.cpp                      \
                   lateConstCheck.cpp                           \
                   lifetime.cpp                                 \
                   loopDetails.cpp                              \

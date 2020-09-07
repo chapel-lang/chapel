@@ -176,6 +176,7 @@ static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
+static void resolveForResolutionPoint(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
@@ -790,6 +791,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtAny) {
+    return true;
+  }
+
+  if (isConstrainedType(formalType)) {
+    INT_ASSERT(formalType->symbol->hasFlag(FLAG_GENERIC)); //CG TODO: remove?
     return true;
   }
 
@@ -2604,6 +2610,10 @@ void resolveCall(CallExpr* call) {
 
     case PRIM_NEW:
       resolveNew(call);
+      break;
+
+    case PRIM_RESOLUTION_POINT:
+      resolveForResolutionPoint(call);
       break;
 
     default:
@@ -4489,6 +4499,8 @@ static void findVisibleFunctionsAndCandidates(
     return;
   }
 
+  // CG TODO: pull all visible interface functions, if within a CG context
+
   // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
   // so that we can revisit them for error reporting.
   // Keep track in 'numVisited*' of where we left off with the previous POI
@@ -4500,6 +4512,7 @@ static void findVisibleFunctionsAndCandidates(
   INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
 
   do {
+    // CG TODO: no POI for CG functions
     visInfo.poiDepth++;
 
     findVisibleFunctions(info, &visInfo, &visited,
@@ -7979,6 +7992,18 @@ static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void resolveForResolutionPoint(CallExpr* call) {
+  INT_ASSERT(call->numActuals() == 1);
+  resolveConstrainedGenericSymbol(toSymExpr(call->get(1))->symbol(), true);
+  call->convertToNoop();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
 }
@@ -8344,6 +8369,8 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
+    resolveConstrainedGenericSymbol(def->sym, false);
+
     retval = foldTryCond(postFold(def));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
@@ -8374,6 +8401,10 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
     retval = foldTryCond(postFold(expr));
+
+  } else if (ImplementsStmt* istm = toImplementsStmt(expr)) {
+    resolveImplementsStmt(istm);
+    retval = istm;
 
   } else {
     retval = foldTryCond(postFold(expr));

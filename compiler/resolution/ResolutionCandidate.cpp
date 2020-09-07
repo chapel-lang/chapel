@@ -67,6 +67,8 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
   if (tagResult == TGR_TAGGING_ABORTED)
     return false;
 
+  resolveConstrainedGenericFun(fn);
+
   if (! fn->isGeneric()) {
     retval = isApplicableConcrete(info, visInfo);
   } else {
@@ -125,6 +127,11 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
     return false;
   }
 
+  if (fn->isConstrainedGeneric() && ! isApplicableCG(info, visInfo)) {
+    reason = RESOLUTION_CANDIDATE_INTERFACE_CONSTRAINTS_NOT_SATISFIED;
+    return false;
+  }
+
   /*
    * Instantiate enough of the generic to get through the rest of the
    * filtering and disambiguation processes.
@@ -141,8 +148,29 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
   if (fn == oldFn)
     return true;
 
+  if (! witnesses.empty()) // i.e. when CG
+    cleanupInstantiatedCGfun(fn, witnesses);
+
   return isApplicable(info, visInfo);
 }
+
+// Computes whether fn's interface constraints are satisfied at the call site.
+// Stores witnesses in this->witnesses, if yes.
+// Should this be entirely in interfaceResolution.cpp ?
+bool ResolutionCandidate::isApplicableCG(CallInfo& info,
+                                         VisibilityInfo* visInfo) {
+  for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
+    IfcConstraint* icon = toIfcConstraint(iconExpr);
+    if (ImplementsStmt* istm =
+          constraintIsSatisfiedAtCallSite(info.call, icon, substitutions))
+      witnesses.push_back(istm); // success
+    else
+      return false;
+  }
+
+  return true; // all constraints are satisfied
+}
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -282,6 +310,10 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
         computeSubstitutionForDefaultExpr(formal, ctx);
         nDefault++;
       }
+
+      if (isConstrainedType(formal->type)) {
+        substitutions.put(formal->type->symbol, substitutions.get(formal));
+      }
     }
     i++;
   }
@@ -349,19 +381,8 @@ void ResolutionCandidate::computeSubstitution(ArgSymbol* formal,
         substitutions.put(formal, dtStringC->symbol);
 
       } else {
-        if (formal->type == type && false) {
-          // This error is a workaround to avoid infinite loops.
-          // ... but it is no longer necessary?
-          fPrintCallStackOnError = true;
-          USR_FATAL_CONT(ctx,
-                         "this pattern of passing a generic type "
-                         "is not yet supported");
-          USR_PRINT(ctx, "the generic type %s is passed", toString(type));
-          printUndecoratedClassTypeNote(actual->defPoint, type);
-          USR_STOP();
-        }
-
         substitutions.put(formal, type->symbol);
+
       }
     }
   }
@@ -869,6 +890,14 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
         return false;
       }
 
+      if (Type* cat = toConstrainedType(actual->getValType()))
+        // a CT actual matches only against itself
+        if (cat != formal->type) {
+          failingArgument = actual;
+          reason = RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL;
+          return false;
+        }
+
       // type dependent checks
       if (formal->type != dtUnknown) {
         if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
@@ -1063,6 +1092,18 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       break;
     case RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED:
       USR_PRINT(fn, "because an argument was incompatible");
+      break;
+    case RESOLUTION_CANDIDATE_INTERFACE_CONSTRAINTS_NOT_SATISFIED:
+      // CG TODO: show more information about the constrains
+      USR_PRINT(fn, "because interface constraint(s) were not satisfied");
+      break;
+    case RESOLUTION_CANDIDATE_INTERFACE_FORMAL_AS_ACTUAL:
+      USR_PRINT(call, "because %s of an interface type %s",
+                    failingActualDesc,
+                    toString(failingActual->getValType()));
+      USR_PRINT(failingFormal, "is passed to a generic formal");
+      USR_PRINT(failingFormal, "passing a constrained-generic formal"
+                " to a non-constrained-generic function is not allowed");
       break;
     case RESOLUTION_CANDIDATE_NOT_PARAM:
       USR_PRINT(call, "because non-param %s", failingActualDesc);

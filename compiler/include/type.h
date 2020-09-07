@@ -366,6 +366,31 @@ private:
 
 /************************************* | **************************************
 *                                                                             *
+* a ConstrainedType is the type of:                                           *
+* (1) a formal of a CG function if it is subject to interface constraint(s)   *
+*     ex. T in: proc cgFun(arg: ?T) where T implements IFC {....}             *
+* (2) a formal of an InterfaceSymbol                                          *
+*     ex. Q in: interface IFC(Q) {....}                                       *
+*                                                                             *
+************************************** | *************************************/
+
+class ConstrainedType : public Type {
+public:
+  ConstrainedType();
+  void verify();
+  virtual void accept(AstVisitor* visitor);
+  DECLARE_COPY(ConstrainedType);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegenDef();
+
+  static TypeSymbol* build(const char* name);
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+};
+
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/

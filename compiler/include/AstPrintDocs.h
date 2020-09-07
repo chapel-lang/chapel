@@ -39,6 +39,7 @@ public:
   virtual void   visitPrimType    (PrimitiveType*     node);
 
   virtual bool   enterFnSym       (FnSymbol*          node);
+  virtual bool   enterInterfaceSym(InterfaceSymbol*   node);
   virtual bool   enterModSym      (ModuleSymbol*      node);
   virtual void   exitModSym       (ModuleSymbol*      node);
   virtual void   visitVarSym      (VarSymbol*         node);

@@ -1,0 +1,7 @@
+in cgFun()
+in reqFun1/real*int(2.3, 101)
+in IFC1.dfltImplS()
+in IFC1.dfltImplD()
+in reqFun2/int*int(4, 201)
+in IFC2.dfltImplS()
+in IFC2.dfltImplD()

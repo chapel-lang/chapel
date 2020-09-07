@@ -1,0 +1,3 @@
+error-implements-constraint.chpl:25: error: unresolved call 'cgFun("hello", 4)'
+error-implements-constraint.chpl:15: note: this candidate did not match: cgFun(cgArg: ?Q, arg2: int)
+error-implements-constraint.chpl:15: note: because interface constraint(s) were not satisfied

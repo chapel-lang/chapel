@@ -1,0 +1,4 @@
+error-two-ifc-one-arg-dfltImpl.chpl:31: In function 'cgFun':
+error-two-ifc-one-arg-dfltImpl.chpl:37: error: ambiguous call 'dfltImplB(Q, real(64))'
+error-two-ifc-one-arg-dfltImpl.chpl:12: note: candidates are: dfltImplB(cgFormal: Q, formal2: real(64))
+error-two-ifc-one-arg-dfltImpl.chpl:23: note:                 dfltImplB(cgFormal: Q, formal2: real(64))

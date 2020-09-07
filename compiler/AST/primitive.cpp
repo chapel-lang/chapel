@@ -997,6 +997,11 @@ initPrimitive() {
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
 
+  // A marker that goes into a module init function. Indicates that
+  // its argument symbol, defined directly in the module scope,
+  // needs to be resolved at this point during resolution of the init function.
+  prim_def(PRIM_RESOLUTION_POINT, "resolution point", returnInfoVoid, false);
+
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
   prim_def(PRIM_IS_TUPLE_TYPE, "is tuple type", returnInfoBool);

@@ -116,6 +116,12 @@ void checkTypeParamTaskIntent(SymExpr* outerSE);
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
+// interfaces.cpp
+void  introduceConstrainedTypes(FnSymbol* fn);
+Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
+                             InterfaceSymbol* isym);
+void  wrapImplementsStatements();
+
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
                                  bool fromForExpr);

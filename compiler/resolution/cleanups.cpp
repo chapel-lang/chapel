@@ -228,6 +228,28 @@ static void removeRandomPrimitives() {
 }
 
 
+static void removeInterfaceCode() {
+  forv_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
+    isym->defPoint->remove();
+
+  forv_Vec(ImplementsStmt, istm, gImplementsStmts) {
+    FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
+    INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
+    Expr* wrapFnDef = wrapFn->defPoint;
+    // We will remove istm and wrapFn. Preserve the implementation fns.
+    for_alist(impl, istm->implBody->body)
+      wrapFnDef->insertBefore(impl->remove());
+    wrapFnDef->remove();
+  }
+
+  forv_Vec(ConstrainedType, ct, gConstrainedTypes) {
+    ct->symbol->defPoint->remove();
+    if (Type* ctRef = ct->refType)
+      ctRef->symbol->defPoint->remove();
+  }
+}
+
+
 static void replaceTypeArgsWithFormalTypeTemps() {
   compute_call_sites();
 
@@ -887,9 +909,11 @@ static void cleanupVoidVarsAndFields() {
 
 
 void pruneResolvedTree() {
-  removeUnusedFunctions();
+  removeInterfaceCode();
 
   removeTiMarks();
+
+  removeUnusedFunctions();
 
   if (fRemoveUnreachableBlocks) {
     deadBlockElimination();
