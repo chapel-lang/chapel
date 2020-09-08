@@ -1,5 +1,5 @@
-$CHPL_HOME/modules/packages/OrderedMap.chpl:155: In initializer:
-$CHPL_HOME/modules/packages/OrderedMap.chpl:158: warning: creating a orderedMap with value type C
-$CHPL_HOME/modules/packages/OrderedMap.chpl:158: warning: which now means class type with generic management
-$CHPL_HOME/modules/packages/OrderedMap.chpl:158: error: orderedMap value type cannot currently be generic
+$CHPL_HOME/modules/packages/OrderedMap.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/packages/OrderedMap.chpl:nnnn: warning: creating a orderedMap with value type C
+$CHPL_HOME/modules/packages/OrderedMap.chpl:nnnn: warning: which now means class type with generic management
+$CHPL_HOME/modules/packages/OrderedMap.chpl:nnnn: error: orderedMap value type cannot currently be generic
 testInitGenericError2.chpl:9: Initializer instantiated as: init(type keyType = int(64), type valType = C, param parSafe = 0, comparator: DefaultComparator)
