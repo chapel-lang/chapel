@@ -127,9 +127,10 @@ var testStrings = [
 
   ];
 
-
-// Test driver loop
-for i in testStrings.indices {
-  writeln(testStrings[i]);
-  writeln('---');
+proc main() {
+  // Test driver loop
+  for i in testStrings.indices {
+    writeln(testStrings[i]);
+    writeln('---');
+  }
 }

@@ -1798,51 +1798,22 @@ module String {
       return doPartition(this, sep);
     }
 
-    /* */
+
+    /* TODO */
     proc string.dedent(columns=0, ignoreFirst=true) {
       // Find longest leading string of spaces and tabs common to all lines
-      var slice = if ignoreFirst then 1.. else 0..;
       var ret = '';
+      var low = if ignoreFirst then 1 else 0;
+      var lines = this.split('\n');
 
       if columns <= 0 {
-        var margin = '';
+        // Ignore lines containing only white space for finding common indent
         var filteredText = removeWhitespaceOnlyLines(this);
-        var filteredLines = filteredText.split('\n');
+        var margin = computeMargin(filteredText, low);
 
-        for line in filteredLines[slice] {
-          var indent = leadingWhitespace(line);
-
-          if line.size == 0 {
-            continue;
-          }
-          else if indent.size == 0 {
-            // no dedent if an un-indented line is found
-            margin = '';
-            break;
-          } else if margin == '' {
-            // Initialize margin
-            margin = indent;
-          } else if indent.startsWith(margin) {
-            // Current indent is deeper than margin, continue
-            continue;
-          } else if margin.startsWith(indent) {
-            // Current indent is shallower than margin, change margin
-            margin = indent;
-          } else {
-            // Find largest common whitespace between current line and previous margin
-            for i in margin.indices {
-              if margin[i] != indent[i] {
-                margin = margin[..<i];
-                break;
-              }
-            }
-          }
-        } // indents loop
-
-        var lines = this.split('\n');
         // Replace margins
         if margin != '' {
-          for line in lines[slice] {
+          for line in lines[low..] {
             if !isWhitespaceOnly(line) {
               line = line[margin.size..];
             }
@@ -1851,13 +1822,11 @@ module String {
         } else {
           ret = this;
         }
-
       } else {
-        var lines = this.split('\n');
         if ignoreFirst {
           ret = lines[0] + '\n';
         }
-        for line in lines[slice] {
+        for line in lines[low..] {
           if isWhitespaceOnly(line) {
             ret += line + '\n';
           } else {
@@ -1866,10 +1835,12 @@ module String {
             const strippedLine = line.strip(' ', trailing=false);
             const indent = line.size - strippedLine.size;
             const offset = min(indent, columns);
+
             ret += line[offset..] + '\n';
           }
         }
 
+        // Remove leftover newline
         if ret.endsWith('\n') then
           ret = ret[..<ret.size-1];
       }
@@ -1877,10 +1848,49 @@ module String {
       return ret;
     }
 
-    private proc _
+    /* Compute margin of common leading white space across lines in a string.
+       Spaces and tabs are respected.
+     */
+    private proc computeMargin(s: string, low: int): string {
+      var margin = '';
+
+      var lines = s.split('\n');
+
+      for line in lines[low..] {
+        const indent = leadingWhitespace(line);
+
+        if line.size == 0 {
+          // Skip empty lines
+          continue;
+        }
+        else if indent.size == 0 {
+          // If a completely unindented line exists, there is no margin
+          margin = '';
+          break;
+        } else if margin == '' {
+          // Initialize margin
+          margin = indent;
+        } else if indent.startsWith(margin) {
+          // Current indent is deeper than margin, continue
+          continue;
+        } else if margin.startsWith(indent) {
+          // Current indent is shallower than margin, update margin
+          margin = indent;
+        } else {
+          // Find largest common whitespace between current line and previous margin
+          for i in margin.indices {
+            if margin[i] != indent[i] {
+              margin = margin[..<i];
+              break;
+            }
+          }
+        }
+      }
+      return margin;
+    }
 
     /* Return leading whitespace in string */
-    private proc _leadingWhitespace(s: string) {
+    private proc leadingWhitespace(s: string): string {
       var ret = '';
 
       for char in s {
@@ -1891,7 +1901,7 @@ module String {
     }
 
     /* Return true if string only contains spaces and tabs */
-    private proc isWhitespaceOnly(s: string) {
+    private proc isWhitespaceOnly(s: string): bool {
       for char in s {
         if char != ' ' && char != '	' then
           return false;
@@ -1899,8 +1909,8 @@ module String {
       return true;
     }
 
-    // Find lines with nothing but whitespace
-    private proc removeWhitespaceOnlyLines(s: string) {
+    // Remove lines with nothing but whitespace and return resulting string
+    private proc removeWhitespaceOnlyLines(s: string): string {
       var ret: string;
 
       for line in s.split('\n') {
