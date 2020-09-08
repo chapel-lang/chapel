@@ -1798,6 +1798,134 @@ module String {
       return doPartition(this, sep);
     }
 
+    /* */
+    proc string.dedent(columns=0, ignoreFirst=true) {
+      // Find longest leading string of spaces and tabs common to all lines
+      var slice = if ignoreFirst then 1.. else 0..;
+      var ret = '';
+
+      if columns <= 0 {
+        var margin = '';
+        var filteredText = removeWhitespaceOnlyLines(this);
+        var filteredLines = filteredText.split('\n');
+
+        for line in filteredLines[slice] {
+          var indent = leadingWhitespace(line);
+
+          if line.size == 0 {
+            continue;
+          }
+          else if indent.size == 0 {
+            // no dedent if an un-indented line is found
+            margin = '';
+            break;
+          } else if margin == '' {
+            // Initialize margin
+            margin = indent;
+          } else if indent.startsWith(margin) {
+            // Current indent is deeper than margin, continue
+            continue;
+          } else if margin.startsWith(indent) {
+            // Current indent is shallower than margin, change margin
+            margin = indent;
+          } else {
+            // Find largest common whitespace between current line and previous margin
+            for i in margin.indices {
+              if margin[i] != indent[i] {
+                margin = margin[..<i];
+                break;
+              }
+            }
+          }
+        } // indents loop
+
+        var lines = this.split('\n');
+        // Replace margins
+        if margin != '' {
+          for line in lines[slice] {
+            if !isWhitespaceOnly(line) {
+              line = line[margin.size..];
+            }
+          }
+          ret = '\n'.join(lines);
+        } else {
+          ret = this;
+        }
+
+      } else {
+        var lines = this.split('\n');
+        if ignoreFirst {
+          ret = lines[0] + '\n';
+        }
+        for line in lines[slice] {
+          if isWhitespaceOnly(line) {
+            ret += line + '\n';
+          } else {
+            var leadingColumns = 0;
+            // Note: We only consider spaces (not tabs) for columns > 0
+            const strippedLine = line.strip(' ', trailing=false);
+            const indent = line.size - strippedLine.size;
+            const offset = min(indent, columns);
+            ret += line[offset..] + '\n';
+          }
+        }
+
+        if ret.endsWith('\n') then
+          ret = ret[..<ret.size-1];
+      }
+
+      return ret;
+    }
+
+    private proc _
+
+    /* Return leading whitespace in string */
+    private proc _leadingWhitespace(s: string) {
+      var ret = '';
+
+      for char in s {
+        if char != ' ' && char != '	' then break;
+        else ret += char;
+      }
+      return ret;
+    }
+
+    /* Return true if string only contains spaces and tabs */
+    private proc isWhitespaceOnly(s: string) {
+      for char in s {
+        if char != ' ' && char != '	' then
+          return false;
+      }
+      return true;
+    }
+
+    // Find lines with nothing but whitespace
+    private proc removeWhitespaceOnlyLines(s: string) {
+      var ret: string;
+
+      for line in s.split('\n') {
+        var lineEmpty = true;
+        for char in line {
+          if !isWhitespaceOnly(line) {
+            lineEmpty = false;
+            break;
+          }
+        }
+
+        if lineEmpty then
+          ret += '\n';
+        else
+          ret += line + '\n';
+      }
+
+      // Remove extra newline at the end
+      if ret.endsWith('\n') then
+        ret = ret[..<ret.size-1];
+
+      return ret;
+    }
+
+
     /*
      Checks if all the characters in the string are either uppercase (A-Z) or
      uncased (not a letter).
