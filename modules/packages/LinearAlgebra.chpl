@@ -1098,12 +1098,11 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType, distArray : [] eltType) {
 
 private proc _dist_diag_vec(A:[?Adom] ?eltType, k : int) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 0 else 1;
   const K = abs(k);
 
   if (m < K) then halt("k is out of range");
 
-  const diagSize = Adom.dim(d).size - K;
+  const diagSize = if k > 0 then min(m, n - k) else min(b, m-k);
   ref Aref = A.reindex(k..#Adom.shape(0), 0..#Adom.shape(1));
   return _dist_diag_vec_helper(Aref, diagSize);
 }
@@ -1112,12 +1111,11 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType,
                             k : int, 
                             distArray : [] eltType) {
   const (m, n) = Adom.shape;
-  const d = if m < n then 0 else 1;
   const K = abs(k);
 
   if (m < K) then halt("k is out of range");
 
-  const diagSize = Adom.dim(d).size - K;
+  const diagSize = if k > 0 then min(m, n - k) else min(b, m-k);
   if diagSize != distArray.size then 
     halt("Output array is not of correct size");
 
