@@ -150,4 +150,5 @@ Future Directions
 
 Over time, we will be improving the support for first-class functions
 and their syntax.  If you have specific feature requests or
-suggestions, please let us know at: :disguise:`chapel_info@cray.com`.
+suggestions, please let us know on the Chapel GitHub issues page or
+community forums.

@@ -5,7 +5,7 @@ use File::Basename;
 
 $user = `whoami`;
 chomp($user);
-$mailcommand = "| mail -s \"Cron Nightly TAB check\" $user\@cray.com";
+$mailcommand = "| mail -s \"Cron Nightly TAB check\" $user\@hpe.com";
 $cwd = abs_path(dirname(__FILE__));
 $chplhomedir = abs_path("$cwd/../..");
 

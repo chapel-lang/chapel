@@ -36,7 +36,7 @@ hard-drive (``/cygdrive/c/``) to create ``/cygdrive/c/chapel`` tends to
 work well. Currently, our compiler-generated Makefiles break when the
 compiler or runtime use an absolute path that contains spaces. If any
 Cygwin experts have tips on addressing this issue in a portable way,
-please let us know at :disguise:`chapel_info@cray.com`.
+please let us know.
 
 
 Required Packages

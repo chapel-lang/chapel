@@ -997,6 +997,6 @@ Future Directions
 =================
 
 We intend to continue improving these capabilities to provide richer
-and richer support for external types and functions over time.  If you
-have specific requests for improvement, please let us know at:
-:disguise:`chapel_info@cray.com`.
+support for external types and functions over time.  If you
+have specific requests for improvement, please let us know on the
+Chapel GitHub issue page or community forums.

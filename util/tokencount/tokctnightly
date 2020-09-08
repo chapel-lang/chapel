@@ -47,7 +47,7 @@ $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
 if ($debugmail eq "") {
-    $debugmail = "$user\@cray.com";
+    $debugmail = "$user\@hpe.com";
     if ($debug == 1) {
         $replymail = $debugemail;
     }
