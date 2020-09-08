@@ -1132,7 +1132,7 @@ private proc _dist_diag_vec_helper(A:[?Adom] ?eltType, diagSize:int) {
   const diagDim = Adom.dim(0)#diagSize;
   var diagDom = {diagDim} dmapped Block({diagDim}, 
                                               targetLocales=targetLocales);
-  var diagonal : [diagDom] eltType = [i in Adom.low(0)..#diagSize] A[i,i];
+  var diagonal : [diagDom] eltType = [i in Adom.low(1)..#diagSize] A[i,i];
   return diagonal;
 }
 
