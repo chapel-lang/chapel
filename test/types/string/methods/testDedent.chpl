@@ -1,179 +1,135 @@
-/* Temporary dummy method to make sure I can compile this test */
-use Regexp;
-
-// Using (?m: .. ) as a work-around for multiLine not working (#15689)
-const reWhitespaceOnly = compile('''(?m:^[ \t]+$)''');
-// Using (?m: .. ) as a work-around for multiLine not working (#15689)
-//const reLeadingWhitespace = compile('''(^[\s\t]*)(?:[\s\t\n])''', multiLine=true);
-const reLeadingWhitespace = compile('''(?m:^[ \t]+)''');
-
-proc string.dedent(columns=0, ignoreFirst=true) {
-  //writeln('[DEBUG]: string = \n', this);
-  var margin = '';
-  var text = reWhitespaceOnly.sub('', this);
-  var indents = reLeadingWhitespace.matches(text);
-
-  // Find longest leading string of spaces and tabs common to all lines
-  for indent in indents {
-    var match = text[indent[0].offset..#indent[0].size];
-    //writeln('[DEBUG]: match = "', match, '"');
-
-    if margin == '' {
-      // Initialize margin
-      margin = match;
-    } else if match.startsWith(margin) {
-      // Current indent is deeper than margin, continue
-      continue;
-    } else if margin.startsWith(match) {
-      // Current indent is shallower than margin, change margin
-      margin = match;
-    }
-    else {
-      // Find largest common whitespace between current line and previous margin
-      for i in margin.indices {
-        if margin[i] != match[i] {
-          margin = margin[..<i];
-          break;
-        }
-      }
-    }
-  }
-
-  if margin != '' {
-    text = text.replace(margin, '');
-  }
-
-  return text;
-}
-
+/* Test string.dedent() */
 
 var testStrings = [
 
-  // [0] Common use-case
-  """[0]
-     b
-     c""".dedent(),
+  // 0 Common use-case
+  """0a
+     0b
+     0c""".dedent(),
 
-  // [1] Newlines before/after
+  // 1 Newlines before/after
   """
-  [1]
-  b
-  c
-  """.dedent(),
+  1a
+  1b
+  1c""".dedent(),
 
-  // [2] Note there is trailing whitespace in this example:
+  // 2 Note there is trailing whitespace in this example:
   """  
-  [2]
+  2a
     
-  b
-  c
-  """.dedent(),
+  2b
+  2c""".dedent(),
 
-  // [3] Remove 4 columns of indentation (there are 5 columns before b and c)
-  """[3]
-     b
-     c""".dedent(columns=4),
+  // 3 Remove 4 columns of indentation (there are 5 columns before b and c)
+  """3a
+     3b
+     3c""".dedent(columns=4),
 
-  // [4] removing (up to) 10 columns (ignoring first line though)
-  """ [4]
-        b
-         c
-          d
-           e""".dedent(columns=10),
+  // 4 removing (up to) 10 columns (ignoring first line though)
+  """ 4a
+        4b
+         4c
+          4d
+           4e""".dedent(columns=10),
 
 
-  // [5] Don't ignore the indentation level of the first line
-  """[5]
-     b
-     c""".dedent(ignoreFirst=false),
+  // 5 Don't ignore the indentation level of the first line
+  """5a
+     5b
+     5c""".dedent(ignoreFirst=false),
 
-  // [6] Mixing tabs and whitespace
-  """[6]
-    b
-  		c
-  	 d
-   	e
-  """.dedent(),
+  // 6 Mixing tabs and whitespace
+  """6a
+    6b
+  		6c
+  	 6d
+   	6e""".dedent(),
 
-  // [7]
+  // 7
   """
-      [7]
-    b
-  c
-    d
-      e
-  """.dedent(),
+      7a
+    7b
+  7c
+    7d
+      7e""".dedent(),
 
-  // [8]
-  """ [8]
-      b
-      c""".dedent(),
+  // 8
+  """ 8a
+      8b
+      8c""".dedent(),
 
-  // [9]
-  """ [9]
-      b
-      c""".dedent(ignoreFirst=false),
+  // 9 - ignoreFirst test
+  """ 9a
+      9b
+      9c""".dedent(ignoreFirst=false),
 
-  // [10]
-  """ [10]
-      b
-      c""".dedent(ignoreFirst=false, columns=2),
+  // 10 ignoreFirst + columns test
+  """ 10a
+      10b
+      10c""".dedent(ignoreFirst=false, columns=2),
 
-  // [11]
-  """ [11]
-      b
-      c""".dedent(ignoreFirst=true, columns=2),
+  // 11
+  """ 11a
+      11b
+      11c""".dedent(ignoreFirst=true, columns=2),
 
-  // [12]
-  """ [12]
-        b
-         c
-          d
-           e""".dedent(),
+  // 12
+  """ 12a
+        12b
+         12c
+          12d
+           12e""".dedent(),
 
-  // [13]
-  """      [13]
-          b
-         c
-        d
-       e""".dedent(),
+  // 13
+  """      13a
+          13b
+         13c
+        13d
+       13e""".dedent(),
 
-  // [14]
+  // 14
   """
-   [14]
-    b
- c
-  """.dedent(),
+   14a
+    14b
+ 14c""".dedent(),
 
-  // [15] Empty lines
+  // 15 Empty lines
   """
-  [15]
+  15a
 
-  b
-  c
-  """.dedent(),
+  15b
+  15c""".dedent(),
 
-  // [16] Note there is trailing white space in this string
+  // 16 Note there is trailing white space in this string
   """
-  [16]
+  16a
  
-  b
-  c
-  """.dedent(),
+  16b
+  16c""".dedent(),
 
-  // [17] Note there is trailing white space in this string
+  // 17 Note there is trailing white space in this string
   """
-  [17]
+  17a
   
-  b
-  c
-  """.dedent(),
+  17b
+  17c""".dedent(columns=2),
+
+
+  // 18 - Ignore tabs when columns>0
+  """
+   18a
+  	18b
+  		18c""".dedent(ignoreFirst=false, columns=3),
+
+  // 19 - no-op
+  "19a 19b".dedent(ignoreFirst=false),
+
+
   ];
 
 
 // Test driver loop
 for i in testStrings.indices {
-  //writeln('[%i]'.format(i));
   writeln(testStrings[i]);
   writeln('---');
 }
