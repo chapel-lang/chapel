@@ -110,7 +110,7 @@ bool isAddrOfWideRefVar(Expr* e)
     if (call->isPrimitive(PRIM_ADDR_OF))
       if (SymExpr* se = toSymExpr(call->get(1)))
         if (se->symbol()->qualType().isWideRef())
-          return true;
+	return true;
 
   return false;
 }
