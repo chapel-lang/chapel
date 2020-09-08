@@ -77,6 +77,9 @@ module UnrolledLinkedList {
     if cap < 2 {
       halt("nodeCapacity can't be less than 2");
     }
+    if cap % 2 == 1 {
+      halt("nodeCapacity can't be odd");
+    }
   }
 
   pragma "no doc"
@@ -297,14 +300,19 @@ module UnrolledLinkedList {
 
     /*
       If it's possible to merge this node and the next node, then do it
+      If it's not possible to merge nodes, then fill the previous node to half
       Return whether it's merged
     */
     pragma "no doc"
     proc _merge(p: unmanaged _linkedNode(eltType)): bool {
       var result = false;
+
+      // Nothing to do
       if p.next == nil then return result;
+
+      var next = p.next!;
+      // It's possible to merge
       if p.next!.size + p.size <= nodeCapacity {
-        var next = p.next!;
         for i in 0..#next.size {
           p.data[p.size] = next.data[i];
           p.size += 1;
@@ -317,6 +325,24 @@ module UnrolledLinkedList {
         delete next;
 
         result = true;
+      }
+      else {
+        // Not possible to merge
+        // So p.size + p.next.size > nodeCapacity
+        if p.size < nodeCapacity/2 {
+          // Fill p to half
+          var toFill = nodeCapacity/2 - p.size;
+          for i in 0..#toFill {
+            p.data[p.size] = next.data[i];
+            p.size += 1;
+          }
+
+          // Shift the next node
+          next.size -= toFill;
+          for i in 0..#next.size {
+            next.data[i] = next.data[i + toFill];
+          }
+        }
       }
       return result;
     }
@@ -838,9 +864,9 @@ module UnrolledLinkedList {
             cur!.data[i] = cur!.data[i+1];
           }
 
-        try! {
-          _merge(cur!);
-        }
+          try! {
+            _merge(cur!);
+          }
 
           return result;
         }

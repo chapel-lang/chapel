@@ -5,7 +5,7 @@ config param listLock = true;
 
 config const stop = 31;
 
-var lst = new unrolledLinkedList(listType, listLock, 5);
+var lst = new unrolledLinkedList(listType, listLock, 6);
 
 for i in 1..stop do {
   var x = i:listType;
