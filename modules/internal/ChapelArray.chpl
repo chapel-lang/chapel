@@ -2835,8 +2835,13 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
+      // as we are making this a "no copy", we won't get chpl__initCopy, and
+      // thus no chance to adjust constness. So, define the variable var, but
+      // set its constness manually
       pragma "no copy"
-      const rcdom = this.domain[(...args)];
+      var rcdom = this.domain[(...args)];
+      rcdom.definedConst = true;
+
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
