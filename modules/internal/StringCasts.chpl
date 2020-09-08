@@ -33,7 +33,7 @@ module StringCasts {
   // Bool
   //
 
-  inline proc _cast(type t:string, x: bool) {
+  proc _cast(type t:string, x: bool) {
     if (x) {
       return "true";
     } else {
@@ -82,7 +82,7 @@ module StringCasts {
                                               numCodepoints=len);
   }
 
-  inline proc _cast(type t:integral, x: string) throws {
+  proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -150,7 +150,7 @@ module StringCasts {
   //
   // real & imag
   //
-  inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
+  proc _real_cast_helper(x: real(64), param isImag: bool) : string {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
@@ -165,7 +165,7 @@ module StringCasts {
                                               numCodepoints=len);
   }
 
-  proc _cast(type t:string, x:chpl_anyreal) {
+  inline proc _cast(type t:string, x:chpl_anyreal) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
@@ -218,7 +218,7 @@ module StringCasts {
     }
   }
 
-  inline proc _cast(type t:chpl_anyreal, x: string) throws {
+  proc _cast(type t:chpl_anyreal, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -248,7 +248,7 @@ module StringCasts {
     return retVal;
   }
 
-  inline proc _cast(type t:chpl_anyimag, x: string) throws {
+  proc _cast(type t:chpl_anyimag, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -305,7 +305,7 @@ module StringCasts {
   }
 
 
-  inline proc _cast(type t:chpl_anycomplex, x: string) throws {
+  proc _cast(type t:chpl_anycomplex, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
