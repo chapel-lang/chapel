@@ -35,6 +35,7 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "view.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -637,6 +638,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->getValType());
 
   bool copiesToNoDestroy = false;
+  bool isDomain = false;
+  bool isRhsInitOrAutoCopy = false;
 
   // Determine if
   //   a) current call is not a PRIMOP
@@ -658,6 +661,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
+            isRhsInitOrAutoCopy = true;
             SymExpr* copiedSe = toSymExpr(rhsCall->get(1));
             INT_ASSERT(copiedSe);
             SymExpr* dstSe = toSymExpr(callNext->get(1));
@@ -670,6 +674,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               Type*      formalType = formalArg->type;
               Type*      actualType = copiedSe->symbol()->getValType();
               Type*      returnType = rhsFn->retType->getValType();
+
+              isDomain = actualType->symbol->hasFlag(FLAG_DOMAIN);
 
               // Skip this transformation if
               //  * the type differs
@@ -711,6 +717,46 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
     copyExpr->replace(copyExpr->get(1)->remove());
+    if (isDomain) {
+      if (isRhsInitOrAutoCopy) {
+        // we removed the first argument already, so definedConst is the first
+        // argument now
+        Expr *secondArg = copyExpr->get(1)->remove();
+
+        if (SymExpr *se = toSymExpr(secondArg)) {
+          if (se->symbol()->type == dtBool) {  // must be definedConst
+            AggregateType *lhsAggType = toAggregateType(useLhs->type);
+            Symbol *domInstanceField = lhsAggType->getField("_instance");
+            VarSymbol *domInstance = newTemp("dom_instance_tmp",
+                                             domInstanceField->type);
+            nextExpr->insertBefore(new DefExpr(domInstance));
+            CallExpr *getInstance = new CallExpr(PRIM_MOVE, domInstance,
+                                                 new CallExpr(PRIM_GET_MEMBER,
+                                                              useLhs,
+                                                              domInstanceField));
+
+            AggregateType *domInstAggType = toDecoratedClassType(domInstance->type)->getCanonicalClass();
+            
+            Symbol *definedConstField = domInstAggType->getField("definedConst");
+            VarSymbol *definedConstRef = newTemp("defined_const_tmp",
+                                                 definedConstField->type->getRefType());
+            nextExpr->insertBefore(new DefExpr(definedConstRef));
+
+            CallExpr *getDefinedConstRef = new CallExpr(PRIM_MOVE, definedConstRef,
+                                                        new CallExpr(PRIM_GET_MEMBER,
+                                                                     domInstance,
+                                                                     definedConstField));
+            CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, 
+                                                     definedConstRef,
+                                                     secondArg);
+
+            nextExpr->insertAfter(getInstance);
+            getInstance->insertAfter(getDefinedConstRef);
+            getDefinedConstRef->insertAfter(setDefinedConst);
+          }
+        }
+      }
+    }
 
     if (copiesToNoDestroy) {
       useLhs->addFlag(FLAG_NO_AUTO_DESTROY);
