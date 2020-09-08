@@ -1089,7 +1089,7 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType, distArray : [] eltType) {
 
   if diagSize != distArray.size then halt("Output array is not of correct size");
 
-  if hasDefaultIndices(Adom) then return _dist_diag_vec_helper(A, diagSize);
+  if hasDefaultIndices(Adom) then return _dist_diag_vec_helper(A, diagSize, distArray);
   else {
     ref Aref = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
     return _dist_diag_vec_helper(Aref, diagSize, distArray);
