@@ -769,13 +769,13 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
                            isTupleContainingAnyReferences(rhsType);
 
         if ((handleArray || handleDomain || handleTuple) &&
-            !isTypeExpr(call->get(2))) {
+            !isTypeExpr(fromExpr)) {
 
           FnSymbol* initCopyFn = getInitCopyDuringResolution(rhsType);
           INT_ASSERT(initCopyFn);
 
           SET_LINENO(call);
-          Expr*      rhs       = call->get(2)->remove();
+          Expr*      rhs       = fromExpr->remove();
           VarSymbol* tmp       = newTemp("copy_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
           Symbol* definedConst = gFalse;

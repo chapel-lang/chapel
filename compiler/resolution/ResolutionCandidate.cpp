@@ -466,8 +466,8 @@ void clearCoercibleCache() {
   actualFormalCoercible.clear();
 }
 
-//
-// in a way that is appropriate for uses when resolving arguments
+// Uses formalSym and actualSym to compute allowCoercion, implicitBang, and
+// inOutCopy in a way that is appropriate for uses when resolving arguments
 static
 Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
   bool allowCoercions = shouldAllowCoercions(actual, formal);

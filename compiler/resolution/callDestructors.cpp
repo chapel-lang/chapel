@@ -763,14 +763,18 @@ bool isTemporaryFromNoCopyReturn(Symbol* fromSym) {
       if (isInitOrReturn(call, lhsSe, initOrCtor)) {
         if (lhsSe == se) {
           if (initOrCtor != NULL) {
-            if (FnSymbol* calledFn = initOrCtor->resolvedOrVirtualFunction())
-              if (calledFn->hasFlag(FLAG_NO_COPY_RETURN))
+            if (FnSymbol* calledFn = initOrCtor->resolvedOrVirtualFunction()) {
+              if (calledFn->hasFlag(FLAG_NO_COPY_RETURN)) {
                 anyNoCopyReturn = true;
+              }
+            }
           } else {
             // Track moving from another temp.
-            if (SymExpr* rhsSe = toSymExpr(call->get(2)))
-              if (isTemporaryFromNoCopyReturn(rhsSe->symbol()))
+            if (SymExpr* rhsSe = toSymExpr(call->get(2))) {
+              if (isTemporaryFromNoCopyReturn(rhsSe->symbol())) {
                 anyNoCopyReturn = true;
+              }
+            }
           }
         }
       }
@@ -795,6 +799,7 @@ bool doesCopyInitializationRequireCopy(Expr* initFrom) {
 
     // Is it the result of a call returning by value?
     SymExpr* fromSe = toSymExpr(initFrom);
+    INT_ASSERT(fromSe != NULL); // assuming normalized AST
     if (isCallExprTemporary(fromSe->symbol())) {
       // check for the sub-expression being a function marked with
       //  pragma "no copy return"
