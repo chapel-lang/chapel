@@ -96,16 +96,7 @@ void addNoAliasSetForFormal(ArgSymbol* arg,
 
 static
 bool isNonAliasingArrayImplType(Type* t) {
-  // Array views are marked with this flag because they
-  // can alias other arrays.
-  if (t->symbol->hasFlag(FLAG_ALIASING_ARRAY))
-    return false;
-
-  // Non-array view array classes
-  if (isArrayImplType(t))
-    return true;
-
-  return false;
+  return isArrayImplType(t) && !isAliasingArrayImplType(t);
 }
 
 static

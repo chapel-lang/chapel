@@ -1236,6 +1236,24 @@ bool isDistImplType(Type* type)
   return isDerivedType(type, FLAG_BASE_DIST);
 }
 
+bool isAliasingArrayImplType(Type* t) {
+  return t->symbol->hasFlag(FLAG_ALIASING_ARRAY);
+}
+
+bool isAliasingArrayType(Type* t) {
+  if (t->symbol->hasFlag(FLAG_ARRAY)) {
+    AggregateType* at = toAggregateType(t);
+    INT_ASSERT(at);
+
+    Symbol* instanceField = at->getField("_instance", false);
+    if (instanceField) {
+      return isAliasingArrayImplType(instanceField->type);
+    }
+  }
+
+  return false;
+}
+
 static bool isDerivedType(Type* type, Flag flag)
 {
   AggregateType* at     =  NULL;

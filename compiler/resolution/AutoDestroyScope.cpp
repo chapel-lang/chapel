@@ -98,16 +98,14 @@ void AutoDestroyScope::addFormalTemps() {
   if (fn->hasFlag(FLAG_EXTERN))
     return;
 
-  bool anyOutInout = false;
+  bool anyOut = false;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_OUT ||
-        formal->originalIntent == INTENT_OUT ||
-        formal->intent == INTENT_INOUT ||
-        formal->originalIntent == INTENT_INOUT) {
-      anyOutInout = true;
+        formal->originalIntent == INTENT_OUT) {
+      anyOut = true;
     }
   }
-  if (anyOutInout) {
+  if (anyOut) {
     // Go through the function epilogue looking for
     // write-backs to args from FORMAL_TEMP variables
     LabelSymbol* epilogue = fn->getEpilogueLabel();
@@ -118,8 +116,7 @@ void AutoDestroyScope::addFormalTemps() {
       next = cur->next;
       if (VarSymbol* var = findFormalTempAssignBack(cur)) {
         CallExpr* call = toCallExpr(cur);
-        INT_ASSERT(var->hasFlag(FLAG_FORMAL_TEMP_INOUT) ||
-                   var->hasFlag(FLAG_FORMAL_TEMP_OUT));
+        INT_ASSERT(var->hasFlag(FLAG_FORMAL_TEMP_OUT));
         INT_ASSERT(call);
         mFormalTempActions.push_back(call);
         call->remove(); // will be added back in just before destroying
@@ -437,8 +434,7 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
       if (var != NULL && var != excludeVar && ignored.count(var) == 0) {
         if (startingScope->isVariableInitialized(var)) {
           bool outIntentFormalReturn = forErrorReturn == false &&
-                                       (var->hasFlag(FLAG_FORMAL_TEMP_OUT) ||
-                                        var->hasFlag(FLAG_FORMAL_TEMP_INOUT));
+                                       var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
           if (outIntentFormalReturn == false)
             deinitialize(insertBeforeStmt, NULL, var);

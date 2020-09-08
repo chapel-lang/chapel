@@ -63,8 +63,6 @@ static void        makeExportWrapper(FnSymbol* fn);
 
 static void        fixupArrayFormals(FnSymbol* fn);
 
-static void        fixupInoutFormals(FnSymbol* fn);
-
 static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
@@ -171,8 +169,6 @@ void normalize() {
         updateInitMethod(fn);
       }
     }
-
-    fixupInoutFormals(fn);
   }
 
   normalizeBase(theProgram, true);
@@ -3014,8 +3010,7 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
       var->hasFlag(FLAG_PARAM)           == false && // Note 1.
       var->hasFlag(FLAG_REF_VAR)         == false &&
 
-      fn->_this                          != var   && // Note 2.
-      fn->hasFlag(FLAG_INIT_COPY_FN)     == false) { // Note 3.
+      fn->_this                          != var) {   // Note 2.
 
     // Note that if the DefExpr is at module scope, the auto-destroy
     // for it will end up in the module deinit function.
@@ -3030,19 +3025,6 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 
 // Note 2: "this" should be passed by reference.  Then, no constructor call
 // is made, and therefore no autodestroy call is needed.
-
-// Note 3: If a record arg to an init copy function is passed by value,
-// infinite recursion would ensue.  This is an unreachable case (assuming that
-// magic conversions from R -> ref R are removed and all existing
-// implementations of chpl__initCopy are rewritten using "ref" or "const ref"
-// intent on the record argument).
-
-
-// Note 4: These two cases should be regularized.  Either the copy constructor
-// should *always* be called (and the corresponding destructor always called),
-// or we should ensure that the destructor is called only if a constructor is
-// called on the same variable.  The latter case is an optimization, so the
-// simplest implementation calls the copy-constructor in both cases.
 
 /************************************* | **************************************
 *                                                                             *
@@ -3555,36 +3537,6 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
   }
 }
 
-/************************************* | **************************************
-*                                                                             *
-* Add a second formal for each inout formal so that later parts of            *
-* compilation can handle the `in` and `out` parts separately.                 *
-*                                                                             *
-************************************** | *************************************/
-static void fixupInoutFormals(FnSymbol* fn) {
-  for_formals(formal, fn) {
-    if (formal->intent == INTENT_INOUT) {
-      if (fn->hasFlag(FLAG_EXTERN)) {
-        formal->originalIntent = INTENT_REF;
-        formal->intent = INTENT_REF;
-      } else if (formal->variableExpr != NULL) {
-        USR_FATAL_CONT(formal, "inout varargs not currently supported");
-        formal->originalIntent = INTENT_REF;
-        formal->intent = INTENT_REF;
-      } else {
-        // Add a hidden out formal after the inout one.
-        ArgSymbol* outFormal = formal->copy();
-        outFormal->name = astr(outFormal->name, "_out");
-        outFormal->originalIntent = INTENT_OUT;
-        outFormal->intent = INTENT_OUT;
-        outFormal->addFlag(FLAG_HIDDEN_FORMAL_INOUT);
-        outFormal->defaultExpr = new BlockStmt(new SymExpr(formal));
-        DefExpr* def = new DefExpr(outFormal);
-        formal->defPoint->insertAfter(def);
-      }
-    }
-  }
-}
 
 /************************************* | **************************************
 *                                                                             *

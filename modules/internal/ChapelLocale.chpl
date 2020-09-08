@@ -118,6 +118,7 @@ module ChapelLocale {
   pragma "no doc"
   var dummyLocale = new locale(localeKind.dummy);
 
+  // record locale - defines the locale record - called _locale to aid parsing
   pragma "no doc"
   pragma "always RVF"
   record _locale {

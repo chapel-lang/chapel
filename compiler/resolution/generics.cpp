@@ -571,9 +571,7 @@ static void fixupUntypedOutArgRTTs(FnSymbol* fn,
   // This argument passes the runtime type from the call site
   // to the function for use when constructing the out value.
   for_formals(formal, newFn) {
-    bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
     if (formal->typeExpr == NULL &&
-        inout == false &&
         (formal->intent == INTENT_OUT ||
          formal->originalIntent == INTENT_OUT)) {
       Type* formalType = formal->type->getValType();
@@ -691,12 +689,14 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       } else {
         Type* defType = tail->typeInfo();
 
+        bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
         if (defType == dtTypeDefaultToken)
           val = dtTypeDefaultToken->symbol;
         else if (Type* type = getInstantiationType(defType, NULL,
                                                    newFormal->type, NULL,
                                                    call,
-                                                   true, false)) {
+                                                   true, false,
+                                                   inOutCopy)) {
           val = type->symbol;
         }
       }

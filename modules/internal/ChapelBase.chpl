@@ -1682,28 +1682,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "unalias fn"
-  inline proc chpl__unalias(x) {
-    pragma "no copy" var ret = x;
-    return ret;
-  }
-
-  // Returns an array storing the result of the iterator
-  pragma "unalias fn"
-  inline proc chpl__unalias(x:_iteratorClass) {
-    pragma "no copy" var ret = x;
-    return ret;
-  }
-
-  // Returns an array storing the result of the iterator
-  pragma "unalias fn"
-  inline proc chpl__unalias(const ref x:_iteratorRecord) {
-    pragma "no copy" var ret = x;
-    return ret;
-  }
-
-  pragma "compiler generated"
-  pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
@@ -1937,20 +1915,20 @@ module ChapelBase {
     lhs = lhs ^ rhs;
   }
 
-  inline proc >>=(ref lhs:int(?w), rhs:int(w)) {
+  inline proc >>=(ref lhs:int(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
-  inline proc >>=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline proc >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
   inline proc >>=(ref lhs, rhs) {
     lhs = lhs >> rhs;
   }
 
-  inline proc <<=(ref lhs:int(?w), rhs:int(w)) {
+  inline proc <<=(ref lhs:int(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
-  inline proc <<=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline proc <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
   inline proc <<=(ref lhs, rhs) {

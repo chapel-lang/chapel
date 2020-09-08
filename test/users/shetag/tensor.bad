@@ -1,6 +1,0 @@
-tensor.chpl:67: In function 'getslice':
-tensor.chpl:69: error: unresolved call 'Vector.init(int(64), [domain(1,int(64),false)] real(64))'
-tensor.chpl:17: note: this candidate did not match: Vector.init(n: int(64), a: [domain(1,int(64),false)] real(64))
-tensor.chpl:69: note: because call actual argument #2 with type [domain(1,int(64),false)] real(64)
-tensor.chpl:19: note: is passed to formal 'in a: [domain(1,int(64),false)] real(64)'
-tensor.chpl:220: Function 'getslice' instantiated as: getslice(lo: int(64), hi: int(64))
