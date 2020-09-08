@@ -1075,11 +1075,9 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType) {
   const (m, n) = Adom.shape;
   const d = if m < n then 0 else 1;
   const diagSize = Adom.dim(d).size;
-  if hasDefaultIndices(Adom) then return _dist_diag_vec_helper(A, diagSize);
-  else {
-    ref Aref = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
-    return _dist_diag_vec_helper(Aref, diagSize);
-  } 
+
+  ref Aref = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
+  return _dist_diag_vec_helper(Aref, diagSize);
 }
 
 private proc _dist_diag_vec(A:[?Adom] ?eltType, distArray : [] eltType) {
@@ -1089,11 +1087,8 @@ private proc _dist_diag_vec(A:[?Adom] ?eltType, distArray : [] eltType) {
 
   if diagSize != distArray.size then halt("Output array is not of correct size");
 
-  if hasDefaultIndices(Adom) then return _dist_diag_vec_helper(A, diagSize, distArray);
-  else {
-    ref Aref = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
-    return _dist_diag_vec_helper(Aref, diagSize, distArray);
-  } 
+  ref Aref = A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1));
+  return _dist_diag_vec_helper(Aref, diagSize, distArray);
 }
 
 private proc _dist_diag_vec(A:[?Adom] ?eltType, k : int) {
@@ -1130,14 +1125,14 @@ private proc _dist_diag_vec_helper(A:[?Adom] ?eltType, diagSize:int) {
   const diagDim = Adom.dim(0)#diagSize;
   var diagDom = {diagDim} dmapped Block({diagDim}, 
                                               targetLocales=targetLocales);
-  var diagonal : [diagDom] eltType = [i in max(Adom.low(0),0)..#diagSize] A[i,i];
+  var diagonal : [diagDom] eltType = [i in 0..#diagSize] A[i,i];
   return diagonal;
 }
 
 private proc _dist_diag_vec_helper(A:[?Adom] ?eltType, 
                                    diagSize:int, 
                                    distArray: [] eltType) {
-  distArray = [i in max(Adom.low(0),0)..#diagSize] A[i,i];
+  distArray = [i in 0..#diagSize] A[i,i];
   return distArray;
 }
 
@@ -1150,13 +1145,6 @@ private inline proc _containsDiag(ref array, ref loc) {
     if dim0.high >= dim1.low && dim1.high >= dim0.low then retBool = true;
   }
   return retBool;
-}
-
-private inline proc hasDefaultIndices(Adom) {
-  return Adom.low(0) == Adom.low(1) && 
-                          (if Adom.stridable 
-                           then Adom.stride == 1
-                           else true);
 }
 
 private proc _dist_diag_matrix(A:[?Adom] ?eltType) {
