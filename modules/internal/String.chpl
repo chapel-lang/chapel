@@ -1799,8 +1799,40 @@ module String {
     }
 
 
-    /* TODO */
-    proc string.dedent(columns=0, ignoreFirst=true) {
+    /* Remove indentation from lines of string.
+
+       This can be useful when applied to multi-line strings that are indented
+       in the source code, but should not be indented in the output.
+
+       When ``columns == 0``, determine the level of indentation to remove by finding
+       the common leading whitespace across all lines. Tabs and spaces are
+       considered whitespace, but are not treated as the same characters when
+       determining common whitespace.
+
+       When ``columns > 0``, remove ``columns`` leading whitespace characters
+       from each line. Tabs are not considered whitespace when ``columns > 0``,
+       so only leading spaces are removed.
+
+       :arg columns: The number of columns of indentation to remove. Infer
+                     common leading whitespace if ``columns == 0``.
+       :type columns: `int`
+
+       :arg ignoreFirst: When ``true``, ignore first line when determining the
+                         common leading whitespace, and make no changes to the first line.
+       :type ignoreFirst: `bool`
+
+       :returns: A new `string` with indentation removed.
+
+
+       .. warning::
+
+          ``string.dedent`` is not considered stable and is subject to change in
+          future Chapel releases.
+    */
+    proc string.dedent(columns=0, ignoreFirst=true): string {
+      if chpl_warnUnstable {
+        compilerWarning("string.dedent is subject to change in the future.");
+      }
       // Find longest leading string of spaces and tabs common to all lines
       var ret = '';
       var low = if ignoreFirst then 1 else 0;
