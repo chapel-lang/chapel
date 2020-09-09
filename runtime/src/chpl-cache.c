@@ -330,6 +330,10 @@ typedef int8_t line_per_page_t;
 // What type for a number of lines to read ahead?
 typedef int16_t readahead_distance_t;
 
+// used to compress top_index_list / bottom_index arrays
+// the entry pointer is entry_base + idx*sizeof(entry type)
+typedef int16_t entry_id_t;
+
 // When prefetching, what is the maximum number of pages
 // we are willing to prefetch? This is also the maximum
 // readahead window size for sequential access.
@@ -565,7 +569,7 @@ static int count_valid_lines_at_after(uint64_t* valid, uintptr_t at)
 struct top_entry_s {
   struct cache_entry_base_s base; // contains what we hashed to...
   size_t num_entries;
-  struct cache_entry_s* bottom_index[BOTTOM_SIZE];
+  entry_id_t bottom_index[BOTTOM_SIZE];
 };
 
 struct rdcache_s {
@@ -666,15 +670,41 @@ struct rdcache_s {
   chpl_comm_nb_handle_t *pending;
   cache_seqn_t *pending_sequence_numbers;
 
+  // Used to compute entry ptr from index
+  struct cache_entry_s* bot_entries_base;
+  struct top_entry_s* top_entries_base;
+
   // space for mid-level entries
   int max_top_entries;
   struct cache_entry_base_s* free_top_nodes_head; // a linked list.
 
   // The entry into the 'pointer tree' hashtable structure.
-  struct top_entry_s* top_index_list[TOP_SIZE];
+  entry_id_t top_index_list[TOP_SIZE];
 };
 
 static void validate_cache(struct rdcache_s* tree);
+
+// these methods handle using 2-byte ids instead of full pointers
+// for some of the bigger tables
+static
+struct cache_entry_s* bot_entry_ptr(struct rdcache_s* tree, entry_id_t idx) {
+  return (idx>=0)?(tree->bot_entries_base + idx):(NULL);
+}
+
+static
+entry_id_t bot_entry_id(struct rdcache_s* tree, struct cache_entry_s* entry) {
+  return (entry!=NULL)?(entry - tree->bot_entries_base):(-1);
+}
+
+static
+struct top_entry_s* top_entry_ptr(struct rdcache_s* tree, entry_id_t idx) {
+  return (idx>=0)?(tree->top_entries_base + idx):(NULL);
+}
+
+static
+entry_id_t top_entry_id(struct rdcache_s* tree, struct top_entry_s* top_entry) {
+  return (top_entry!=NULL)?(top_entry - tree->top_entries_base):(-1);
+}
 
 
 static
@@ -739,6 +769,7 @@ struct rdcache_s* cache_create(void) {
   // entries
   entries = (struct cache_entry_s*) (buffer + total_size);
   total_size += sizeof(struct cache_entry_s) * n_entries;
+  c->bot_entries_base = entries;
   // dirty entries
   dirty_nodes = (struct dirty_entry_s*) (buffer + total_size);
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
@@ -751,6 +782,7 @@ struct rdcache_s* cache_create(void) {
   // and the top entries
   top_nodes = (struct top_entry_s*) (buffer + total_size);
   total_size += sizeof(struct top_entry_s) * top_entries;
+  c->top_entries_base = top_nodes;
   // Now, page-align the page allocations.
   offset = (((uintptr_t) buffer) + total_size) % CACHEPAGE_SIZE;
   if( offset != 0 ) offset = CACHEPAGE_SIZE - offset;
@@ -853,7 +885,9 @@ struct rdcache_s* cache_create(void) {
   }
 
   // clear top_index_list.
-  memset(&c->top_index_list[0], 0, sizeof(struct top_entry_s*) * TOP_SIZE);
+  for( i = 0; i < TOP_SIZE; i++ ) {
+    c->top_index_list[i] = top_entry_id(c, NULL);
+  }
 
   if( VERIFY ) validate_cache(c);
 
@@ -1037,9 +1071,11 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 {
   struct cache_entry_base_s *prev;
   struct cache_entry_base_s *prev_top;
-  struct top_entry_s **head;
+  entry_id_t *head_id_ptr;
+  struct top_entry_s *head;
   struct top_entry_s *match;
-  struct cache_entry_s **bottom;
+  entry_id_t *bottom_id_ptr;
+  struct cache_entry_s *bottom;
   struct cache_entry_s *bottom_match;
   int top_idx, bottom_idx;
   uint32_t high_bits, low_bits;
@@ -1053,16 +1089,17 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
   high_bits = get_high_bits(element->raddr);
   low_bits = get_low_bits(element->raddr);
 
-  head = &tree->top_index_list[top_idx];
+  head_id_ptr = &tree->top_index_list[top_idx];
+  head = top_entry_ptr(tree, *head_id_ptr);
 
-  match = top_list_search(*head, high_bits, node, &prev_top);
+  match = top_list_search(head, high_bits, node, &prev_top);
 
   assert( match );
-  assert(match->bottom_index);
 
   prev = NULL;
-  bottom = &match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &prev);
+  bottom_id_ptr = &match->bottom_index[bottom_idx];
+  bottom = bot_entry_ptr(tree, *bottom_id_ptr);
+  bottom_match = bottom_list_search(bottom, low_bits, node, &prev);
 
   assert( bottom_match );
   assert( bottom_match == element );
@@ -1072,12 +1109,13 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
     prev->next = bottom_match->base.next;
   } else {
     // no prev means we are the list head.
-    *bottom = (struct cache_entry_s*) bottom_match->base.next;
+    bottom = (struct cache_entry_s*) bottom_match->base.next;
+    *bottom_id_ptr = bot_entry_id(tree, bottom);
   }
 
   match->num_entries--; // net loss of one element.
 
-  if( *bottom == NULL ) {
+  if( bottom == NULL ) {
     // If there are no entries left in the bottom bucket, and
     // there are no entries left in the top bucket, remove that
     // top bucket.
@@ -1087,7 +1125,8 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
         prev_top->next = match->base.next;
       } else {
         // No prev means we are the list head.
-        *head = (struct top_entry_s*) match->base.next;
+        head = (struct top_entry_s*) match->base.next;
+        *head_id_ptr = top_entry_id(tree, head);
       }
       // Put the newly free top node into the free list
       top_entry_free(tree, match);
@@ -1423,8 +1462,10 @@ struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
   int top_idx, bottom_idx;
   uint32_t high_bits;
   uint32_t low_bits;
-  struct top_entry_s **head, *top_match;
-  struct cache_entry_s **bottom, *bottom_match;
+  struct top_entry_s *head;
+  struct top_entry_s *top_match;
+  struct cache_entry_s *bottom;
+  struct cache_entry_s *bottom_match;
   struct cache_entry_base_s* bottom_prev;
 
   assert(raddr != 0);
@@ -1434,11 +1475,11 @@ struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
   high_bits = get_high_bits(raddr);
   low_bits = get_low_bits(raddr);
 
-  head = &tree->top_index_list[top_idx];
-  top_match = top_list_search(*head, high_bits, node, NULL);
+  head = top_entry_ptr(tree, tree->top_index_list[top_idx]);
+  top_match = top_list_search(head, high_bits, node, NULL);
   if (!top_match) return NULL;
-  bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
+  bottom = bot_entry_ptr(tree, top_match->bottom_index[bottom_idx]);
+  bottom_match = bottom_list_search(bottom, low_bits, node, &bottom_prev);
   return bottom_match;
 }
 
@@ -1528,12 +1569,12 @@ void validate_cache(struct rdcache_s* tree)
   // 0: All tree entries must be in either Ain, Aout, or Am,
   //    and num_entries is correct for each top entry.
   for(top = 0; top < TOP_SIZE; top++) {
-    top_cur = tree->top_index_list[top];
+    top_cur = top_entry_ptr(tree, tree->top_index_list[top]);
     while (top_cur) {
       num_used_top_nodes++;
       count = 0;
       for( bottom = 0; bottom < BOTTOM_SIZE; bottom++ ) {
-        bottom_cur = top_cur->bottom_index[bottom];
+        bottom_cur = bot_entry_ptr(tree, top_cur->bottom_index[bottom]);
         while(bottom_cur) {
           // Check that it is in ain, aout, or am.
           in_ain = find_in_queue(tree->ain_head, bottom_cur);
@@ -1838,8 +1879,12 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   int top_idx, bottom_idx;
   uint32_t high_bits;
   uint32_t low_bits;
-  struct top_entry_s **head, *top_match, *top_tmp;
-  struct cache_entry_s **bottom, *bottom_match, *bottom_tmp;
+  entry_id_t *head_id_ptr;
+  struct top_entry_s *head;
+  struct top_entry_s *top_match, *top_tmp;
+  entry_id_t *bottom_id_ptr;
+  struct cache_entry_s *bottom;
+  struct cache_entry_s *bottom_match, *bottom_tmp;
   struct cache_entry_base_s* bottom_prev;
 
   assert(raddr != 0);
@@ -1849,24 +1894,29 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   high_bits = get_high_bits(raddr);
   low_bits = get_low_bits(raddr);
 
-  head = &tree->top_index_list[top_idx];
-  top_match = top_list_search(*head, high_bits, node, NULL);
+  head_id_ptr = &tree->top_index_list[top_idx];
+  head = top_entry_ptr(tree, *head_id_ptr);
+  top_match = top_list_search(head, high_bits, node, NULL);
   if (!top_match) {
     // create a new entry
     top_tmp = top_entry_allocate(tree);
     top_tmp->base.index_bits = high_bits;
     top_tmp->base.node = node;
-    top_tmp->base.next = (struct cache_entry_base_s*)*head;
+    top_tmp->base.next = (struct cache_entry_base_s*)head;
     top_tmp->num_entries = 0;
-    memset(top_tmp->bottom_index, 0, BOTTOM_SIZE*sizeof(struct cache_entry_s*));
+    for (int i = 0; i < BOTTOM_SIZE; i++) {
+      top_tmp->bottom_index[i] = bot_entry_id(tree, NULL);
+    }
 
-    *head = top_tmp;
-    top_match = *head;
+    head = top_tmp;
+    *head_id_ptr = top_entry_id(tree, head);
+    top_match = head;
     DEBUG_PRINT(("  added a new top_index_entry: %p\n", top_match));
   }
 
-  bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
+  bottom_id_ptr = &top_match->bottom_index[bottom_idx];
+  bottom = bot_entry_ptr(tree, *bottom_id_ptr);
+  bottom_match = bottom_list_search(bottom, low_bits, node, &bottom_prev);
 
   if( bottom_match ) {
   // If X is in A1out then find space for X and add it to the head of Am
@@ -1905,7 +1955,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_tmp->base.index_bits = low_bits;
     bottom_tmp->base.node = node;
     // Link to next hashtable element, adding not replacing.
-    bottom_tmp->base.next = (struct cache_entry_base_s*) *bottom;
+    bottom_tmp->base.next = (struct cache_entry_base_s*) bottom;
 
     bottom_tmp->raddr = raddr;
     bottom_tmp->queue = QUEUE_AIN;
@@ -1926,8 +1976,9 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     tree->ain_current++;
 
     // Put it as the first element in the appropriate hashtable bucket.
-    *bottom = bottom_tmp;
-    bottom_match = bottom_tmp;
+    bottom = bottom_tmp;
+    *bottom_id_ptr = bot_entry_id(tree, bottom);
+    bottom_match = bottom;
     top_match->num_entries++; // adding an element.
     DEBUG_PRINT(("  added a new bottom_index_entry: %p\n", bottom_match));
   }
