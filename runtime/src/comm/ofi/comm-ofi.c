@@ -5197,15 +5197,8 @@ void doAMO(c_nodeid_t node, void* object,
 
   uint64_t mrKey;
   uint64_t mrRaddr;
-  if (isAtomicValid(ofiType)
-      && mrGetKey(&mrKey, &mrRaddr, node, object, size) == 0) {
-    //
-    // The type is supported for network atomics and the object address
-    // is remotely accessible.  Do the AMO natively.
-    //
-    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
-            ofiOp, ofiType, size);
-  } else {
+  if (!isAtomicValid(ofiType)
+      || mrGetKey(&mrKey, &mrRaddr, node, object, size) != 0) {
     //
     // We can't do the AMO on the network, so do it on the CPU.  If the
     // object is on this node do it directly; otherwise, use an AM.
@@ -5216,6 +5209,13 @@ void doAMO(c_nodeid_t node, void* object,
       amRequestAMO(node, object, operand1, operand2, result,
                    ofiOp, ofiType, size);
     }
+  } else {
+    //
+    // The type is supported for network atomics and the object address
+    // is remotely accessible.  Do the AMO natively.
+    //
+    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
+            ofiOp, ofiType, size);
   }
 }
 
@@ -5419,17 +5419,22 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
   //
   // "Unordered" is possible only for actual network atomic ops.
   //
+  if (chpl_numNodes <= 1) {
+    doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    return;
+  }
+
   retireDelayedAmDone(false /*taskIsEnding*/);
 
   uint64_t mrKey;
   uint64_t mrRaddr;
-  if (chpl_numNodes <= 1
-      || !isAtomicValid(ofiType)
+  if (!isAtomicValid(ofiType)
       || mrGetKey(&mrKey, &mrRaddr, node, object, size) != 0) {
     if (node == chpl_nodeID) {
       doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
     } else {
-      amRequestAMO(node, object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+      amRequestAMO(node, object, opnd1, NULL, NULL,
+                   ofiOp, ofiType, size);
     }
     return;
   }
