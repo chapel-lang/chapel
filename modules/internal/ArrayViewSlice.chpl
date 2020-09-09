@@ -54,7 +54,7 @@ module ArrayViewSlice {
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
     const _DomPid;
-    const dom; // Seems like the compiler requires a field called 'dom'...
+    var dom; // Seems like the compiler requires a field called 'dom'...
 
     // the representation of the sliced array
     const _ArrPid;
@@ -75,6 +75,8 @@ module ArrayViewSlice {
       this._ArrInstance = _ArrInstance;
 
       this.indexCache = buildIndexCacheHelper(_ArrInstance, dom);
+
+      this.dom.definedConst = true;
     }
 
     forwarding arr except these,

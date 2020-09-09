@@ -26,6 +26,7 @@
 #include "passes.h"
 #include "stlUtil.h"
 #include "stmt.h"
+#include "view.h"
 
 // We can remove the calls to chpl__initCopy (should actually be chpl__autoCopy)
 // and corresponding calls to chpl__autoDestroy for Plain-Old-Data (POD) types.
@@ -86,7 +87,14 @@ static void removePODinitDestroy()
           if (lhsType->getValType() != rhsType->getValType()) {
             INT_FATAL(actual, "Type mismatch in updateAutoCopy");
           } else {
-            call->replace(actual->remove());
+            //Expr *parentExpr = call->parentExpr;
+
+            //std::cout << "Before removal\n";
+            //nprint_view(parentExpr);
+            removeInitOrAutoCopyPostResolution(call);
+            //std::cout << "After removal\n";
+            //nprint_view(parentExpr);
+            //call->replace(actual->remove());
           }
         }
       }
