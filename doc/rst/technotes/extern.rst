@@ -999,4 +999,6 @@ Future Directions
 We intend to continue improving these capabilities to provide richer
 support for external types and functions over time.  If you
 have specific requests for improvement, please let us know on the
-Chapel GitHub issue page or community forums.
+`Chapel GitHub issues page`_ or community forums.
+
+.. _Chapel GitHub issues page: https://github.com/chapel-lang/chapel/issues
