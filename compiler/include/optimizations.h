@@ -39,6 +39,7 @@
 class BaseAST;
 class BitVec;
 class BlockStmt;
+class CallExpr;
 class FnSymbol;
 class ForallStmt;
 class Symbol;
@@ -73,5 +74,7 @@ void remoteValueForwarding();
 void inferConstRefs();
 
 void computeNoAliasSets();
+
+void removeInitOrAutoCopyPostResolution(CallExpr *call);
 
 #endif

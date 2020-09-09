@@ -29,6 +29,7 @@
 #include "iterator.h"
 #include "lateConstCheck.h"
 #include "lifetime.h"
+#include "optimizations.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -716,46 +717,11 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // the copyExpr might be a copy added when normalizing initialization
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
-    copyExpr->replace(copyExpr->get(1)->remove());
-    if (isDomain) {
-      if (isRhsInitOrAutoCopy) {
-        // we removed the first argument already, so definedConst is the first
-        // argument now
-        Expr *secondArg = copyExpr->get(1)->remove();
-
-        if (SymExpr *se = toSymExpr(secondArg)) {
-          if (se->symbol()->type == dtBool) {  // must be definedConst
-            AggregateType *lhsAggType = toAggregateType(useLhs->type);
-            Symbol *domInstanceField = lhsAggType->getField("_instance");
-            VarSymbol *domInstance = newTemp("dom_instance_tmp",
-                                             domInstanceField->type);
-            nextExpr->insertBefore(new DefExpr(domInstance));
-            CallExpr *getInstance = new CallExpr(PRIM_MOVE, domInstance,
-                                                 new CallExpr(PRIM_GET_MEMBER,
-                                                              useLhs,
-                                                              domInstanceField));
-
-            AggregateType *domInstAggType = toDecoratedClassType(domInstance->type)->getCanonicalClass();
-            
-            Symbol *definedConstField = domInstAggType->getField("definedConst");
-            VarSymbol *definedConstRef = newTemp("defined_const_tmp",
-                                                 definedConstField->type->getRefType());
-            nextExpr->insertBefore(new DefExpr(definedConstRef));
-
-            CallExpr *getDefinedConstRef = new CallExpr(PRIM_MOVE, definedConstRef,
-                                                        new CallExpr(PRIM_GET_MEMBER,
-                                                                     domInstance,
-                                                                     definedConstField));
-            CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, 
-                                                     definedConstRef,
-                                                     secondArg);
-
-            nextExpr->insertAfter(getInstance);
-            getInstance->insertAfter(getDefinedConstRef);
-            getDefinedConstRef->insertAfter(setDefinedConst);
-          }
-        }
-      }
+    if (isRhsInitOrAutoCopy) {
+      removeInitOrAutoCopyPostResolution(copyExpr);
+    }
+    else {
+      copyExpr->replace(copyExpr->get(1)->remove());
     }
 
     if (copiesToNoDestroy) {
