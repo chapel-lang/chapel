@@ -698,10 +698,8 @@ module ChapelDistribution {
       rm_dom = dom.remove_arr(_to_unmanaged(this), rmFromList);
 
 
-      if rm_dom {
-        printf("setting ret_dom\n");
+      if rm_dom then
         ret_dom = dom;
-      }
 
       return (ret_arr, ret_dom);
     }

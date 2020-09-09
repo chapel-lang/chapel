@@ -41,11 +41,10 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   INT_ASSERT(argType);
 
   bool isDomainRecord = argType->symbol->hasFlag(FLAG_DOMAIN);
-  bool isDomainInstance = isDomainClass(argType);
 
   call->replace(call->get(1)->remove());
 
-  if (isDomainRecord || isDomainInstance) {
+  if (isDomainRecord) {
 
     Symbol *lhs = NULL;
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
@@ -69,31 +68,26 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
 
         VarSymbol *domInstance;
 
-        if (isDomainRecord) {
-          AggregateType *lhsAggType = toAggregateType(lhs->type);
-          Symbol *domInstanceField = lhsAggType->getField("_instance");
-          domInstance = newTemp("dom_instance_tmp",
-                                domInstanceField->type);
-          nextExpr->insertBefore(new DefExpr(domInstance));
-          CallExpr *getInstance = new CallExpr(PRIM_MOVE, domInstance,
-                                               new CallExpr(PRIM_GET_MEMBER,
-                                                            lhs,
-                                                            domInstanceField));
-          nextExpr->insertAfter(getInstance);
-          anchor = getInstance;
-        }
-        else {
-          std::cout << "Not touching domain class\n";
-          nprint_view(lhs);
-          return;
-          //domInstance = toVarSymbol(lhs);
-        }
+        AggregateType *lhsAggType = toAggregateType(lhs->type);
+        Symbol *domInstanceField = lhsAggType->getField("_instance");
+        domInstance = newTemp("dom_instance_tmp",
+                              domInstanceField->type);
+        nextExpr->insertBefore(new DefExpr(domInstance));
+        CallExpr *getInstance = new CallExpr(PRIM_MOVE, domInstance,
+                                             new CallExpr(PRIM_GET_MEMBER,
+                                                          lhs,
+                                                          domInstanceField));
+        nextExpr->insertAfter(getInstance);
+        anchor = getInstance;
 
         VarSymbol *nonnilInst = newTemp("nonnil_instance_tmp", dtBool);
         nextExpr->insertBefore(new DefExpr(nonnilInst));
+        CallExpr *setNonNil = new CallExpr(PRIM_MOVE, nonnilInst,
+                                           new CallExpr(PRIM_NOTEQUAL,
+                                                        domInstance, gNil));
+        anchor->insertAfter(setNonNil);
+        anchor = setNonNil;
 
-        anchor->insertAfter(new CallExpr(PRIM_MOVE, nonnilInst,
-                     new CallExpr(PRIM_NOTEQUAL, domInstance, gNil)));
 
         BlockStmt *thenBlock = new BlockStmt();
 
@@ -117,7 +111,7 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
                                                  definedConstRef,
                                                  secondArg);
 
-        nprint_view(getDefinedConstRef);
+        //nprint_view(getDefinedConstRef);
 
         thenBlock->insertAtTail(getDefinedConstRef);
         thenBlock->insertAtTail(setDefinedConst);
