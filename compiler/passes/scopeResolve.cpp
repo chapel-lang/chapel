@@ -2766,7 +2766,7 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
     const char* fname = found->defPoint->fname();
     alreadyFound.insert(found);
     if (visibleMap.count(fname) == 0) {
-      visibleMap.insert({fname, new std::set<Symbol*>()});
+      visibleMap.insert(make_pair(fname, new std::set<Symbol*>()));
     }
     visibleMap[(std::string)fname]->insert(found);
   }
@@ -2827,7 +2827,7 @@ static void processGetVisibleSymbols() {
         // create and sort a vector of <lineNumber, Symbol*> pairs
         // for the current file by line number
         std::set<Symbol*>::iterator setIdx;
-        std::vector<std::pair<int, Symbol*>> sortedSymbols;
+        std::vector<std::pair<int, Symbol*> > sortedSymbols;
         for (setIdx = visibleMap[it->c_str()]->begin();
              setIdx != visibleMap[it->c_str()]->end(); setIdx++) {
           Symbol* sym = *setIdx;
@@ -2837,7 +2837,7 @@ static void processGetVisibleSymbols() {
         std::sort(sortedSymbols.begin(), sortedSymbols.end());
 
         // walk the sorted vector of symbols to print information on each
-        for (std::vector<std::pair<int, Symbol*>>::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
+        for (std::vector<std::pair<int, Symbol*> >::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
           Symbol* sym = symPair->second;
           if (ignoreInternalModules &&
               sym->getModule()->modTag == MOD_INTERNAL)
