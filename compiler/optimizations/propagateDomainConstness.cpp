@@ -21,11 +21,37 @@
 #include "optimizations.h"
 
 #include "astutil.h"
-#include "stmt.h"
 #include "CallExpr.h"
 #include "DecoratedClassType.h"
 #include "expr.h"
+#include "stmt.h"
 #include "view.h"
+
+static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
+                                 Expr *insBefore, Expr *&insAfter,
+                                 bool asRef) {
+  Type *receiverType = receiver->type;
+
+  AggregateType *aggType = toAggregateType(receiverType);
+  if (aggType == NULL) {
+    aggType = toDecoratedClassType(receiverType)->getCanonicalClass();
+  }
+  INT_ASSERT(aggType);
+
+  Symbol *fieldSym = aggType->getField(fieldName);
+  Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
+  VarSymbol *fieldRef = newTemp(fieldName, fieldType);
+  insBefore->insertBefore(new DefExpr(fieldRef));
+
+  CallExpr *getFieldRef = new CallExpr(PRIM_MOVE, fieldRef,
+                                       new CallExpr(PRIM_GET_MEMBER,
+                                                    receiver,
+                                                    fieldSym));
+  insAfter->insertAfter(getFieldRef);
+  insAfter = getFieldRef;
+
+  return fieldRef;
+}
 
 void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
@@ -40,12 +66,9 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   INT_ASSERT(argSym);
   INT_ASSERT(argType);
 
-  bool isDomainRecord = argType->symbol->hasFlag(FLAG_DOMAIN);
-
   call->replace(call->get(1)->remove());
 
-  if (isDomainRecord) {
-
+  if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
     Symbol *lhs = NULL;
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
       if (parentCall->isPrimitive(PRIM_MOVE)) {
@@ -54,70 +77,24 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
         }
       }
     }
-
     INT_ASSERT(lhs);
 
     // we removed the first argument already, so definedConst is the first
     // argument now
     Expr *secondArg = call->get(1)->remove();
+    SymExpr *se = toSymExpr(secondArg);
+    INT_ASSERT(se);
+    INT_ASSERT(se->symbol()->type == dtBool);
 
-    if (SymExpr *se = toSymExpr(secondArg)) {
-      if (se->symbol()->type == dtBool) {  // must be definedConst
+    Expr *anchor = nextExpr;
 
-        Expr *anchor = nextExpr;
-
-        VarSymbol *domInstance;
-
-        AggregateType *lhsAggType = toAggregateType(lhs->type);
-        Symbol *domInstanceField = lhsAggType->getField("_instance");
-        domInstance = newTemp("dom_instance_tmp",
-                              domInstanceField->type);
-        nextExpr->insertBefore(new DefExpr(domInstance));
-        CallExpr *getInstance = new CallExpr(PRIM_MOVE, domInstance,
-                                             new CallExpr(PRIM_GET_MEMBER,
-                                                          lhs,
-                                                          domInstanceField));
-        nextExpr->insertAfter(getInstance);
-        anchor = getInstance;
-
-        VarSymbol *nonnilInst = newTemp("nonnil_instance_tmp", dtBool);
-        nextExpr->insertBefore(new DefExpr(nonnilInst));
-        CallExpr *setNonNil = new CallExpr(PRIM_MOVE, nonnilInst,
-                                           new CallExpr(PRIM_NOTEQUAL,
-                                                        domInstance, gNil));
-        anchor->insertAfter(setNonNil);
-        anchor = setNonNil;
-
-
-        BlockStmt *thenBlock = new BlockStmt();
-
-        AggregateType *domInstAggType = toAggregateType(domInstance->type);
-        if (domInstAggType == NULL) {
-          domInstAggType = toDecoratedClassType(domInstance->type)->getCanonicalClass();
-        }
-
-        INT_ASSERT(domInstAggType);
-
-        Symbol *definedConstField = domInstAggType->getField("definedConst");
-        VarSymbol *definedConstRef = newTemp("defined_const_tmp",
-                                             definedConstField->type->getRefType());
-        thenBlock->insertAtTail(new DefExpr(definedConstRef));
-
-        CallExpr *getDefinedConstRef = new CallExpr(PRIM_MOVE, definedConstRef,
-                                                    new CallExpr(PRIM_GET_MEMBER,
-                                                                 domInstance,
-                                                                 definedConstField));
-        CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, 
-                                                 definedConstRef,
-                                                 secondArg);
-
-        //nprint_view(getDefinedConstRef);
-
-        thenBlock->insertAtTail(getDefinedConstRef);
-        thenBlock->insertAtTail(setDefinedConst);
-
-        anchor->insertAfter(new CondStmt(new SymExpr(nonnilInst), thenBlock));
-      }
-    }
+    VarSymbol *domInstance = addFieldAccess(lhs, "_instance", nextExpr, anchor,
+                                            /*asRef=*/ false);
+    VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
+                                                  nextExpr, anchor,
+                                                  /*asRef=*/ true);
+    CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
+                                             secondArg);
+    anchor->insertAfter(setDefinedConst);
   }
 }
