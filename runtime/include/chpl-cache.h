@@ -93,6 +93,8 @@ void chpl_cache_comm_getput_unordered_task_fence(void);
 // For debugging.
 void chpl_cache_print(void);
 void chpl_cache_assert_released(void);
+// just stores 0s in the cache; here to exercise the data structures
+void chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size);
 
 #endif
 // ifdef HAS_CHPL_CACHE_FNS
