@@ -2596,6 +2596,207 @@ void cache_get(struct rdcache_s* cache,
 #endif
 }
 
+// This is intended to match cache_get but
+//  * it will never prefetch
+//  * it doesn't actually GET; just memsets to 0 instead  
+static
+void mock_get(struct rdcache_s* cache,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              cache_seqn_t last_acquire,
+              int sequential_readahead_length,
+              int32_t commID, int ln, int32_t fn)
+{
+  struct cache_entry_s* entry;
+  raddr_t ra_first_page;
+  raddr_t ra_last_page;
+  raddr_t ra_page;
+  raddr_t requested_start, requested_end, requested_size;
+  raddr_t ra_first_line;
+  raddr_t ra_last_line;
+  raddr_t ra_next_line;
+  raddr_t ra_line;
+  raddr_t ra_line_end;
+  int has_data;
+  unsigned char* page;
+  cache_seqn_t sn = NO_SEQUENCE_NUMBER;
+  int entry_after_acquire;
+#ifdef TIME
+  struct timespec start_get1, start_get2, wait1, wait2;
+#endif
+
+  INFO_PRINT(("%i mock_get addr %p from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+
+  if (chpl_nodeID == node)
+    return;
+
+  // And don't do anything if it's a zero-length 
+  if( size == 0 ) {
+    return;
+  }
+
+  // first_page = raddr of start of first needed page
+  ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+  // last_page = raddr of start of last needed page
+  ra_last_page = round_down_to_mask(raddr+size-1, CACHEPAGE_MASK);
+  // first_line = raddr of start of first needed line
+  ra_first_line = round_down_to_mask(raddr, CACHELINE_MASK);
+  // last_line = raddr of start of last needed line
+  ra_last_line = round_down_to_mask(raddr+size-1, CACHELINE_MASK);
+  ra_next_line = ra_last_line + CACHELINE_SIZE;
+
+  // Try to find it in the cache. Go through one page at a time.
+  for( ra_page = ra_first_page, ra_line = ra_first_line;
+       ra_page <= ra_last_page;
+       ra_page += CACHEPAGE_SIZE, ra_line = ra_page ) {
+    
+    // We will need from ra_line to ra_line_end.
+    ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
+    // Compute the portion of the page that was requested
+    requested_start = raddr_max(raddr,ra_page);
+    requested_end = raddr_min(raddr+size,ra_line_end);
+    requested_size = requested_end - requested_start;
+
+    // Is the page in the tree?
+    entry = find_in_tree(cache, node, ra_page);
+    page = NULL;
+
+    // Ignore entries in Aout for now.
+    if( entry && ! entry->page ) {
+      entry = NULL;
+    }
+
+    if( entry ) {
+      // Is this cache line available for use, based on when we
+      // last ran an acquire fence?
+      entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
+     
+      // Is the relevant data available in the cache line?
+      has_data = check_valid_lines(entry->valid_lines,
+                                   (ra_line - ra_page) >> CACHELINE_BITS,
+                                   (ra_line_end - ra_line) >> CACHELINE_BITS);
+    } else {
+      entry_after_acquire = 1;
+      has_data = 0;
+    }
+
+    //printf("%i entry is %p after_acquire %i has_data %i\n", chpl_nodeID, entry, entry_after_acquire, has_data);
+
+    if( entry ) {
+      page = entry->page;
+
+      // Check for data in the dirty region
+      if( !has_data && entry->dirty ) {
+        has_data = all_set_for_skip_len(entry->dirty->dirty,
+                                        requested_start & CACHEPAGE_MASK,
+                                        requested_size,
+                                        CACHEPAGE_BITMASK_WORDS);
+      }
+
+      if( entry_after_acquire && has_data ) {
+        // Data is already in cache...  but to do a 'get' for previously
+        // prefetched data, we might have to wait for it.
+        {
+          if( entry->max_prefetch_sequence_number > cache->completed_request_number ) {
+#ifdef TIME
+            clock_gettime(CLOCK_REALTIME, &wait1);
+#endif
+
+            wait_for(cache, entry->max_prefetch_sequence_number);
+
+#ifdef TIME
+            clock_gettime(CLOCK_REALTIME, &wait2);
+
+            printf("%li ns waiting for %p\n", time_duration(&wait1, &wait2), (void*) ra_page);
+#endif
+          }
+        }
+        // If the cache line is in Am, move it to the front of Am.
+        use_entry(cache, entry);
+        // Would copy the data out here, but not in mock get
+        continue; // Move on to the next page.
+      }
+   
+      // Get ready to start a get !
+
+      // If there was an intervening acquire fence preventing
+      // us from using this cache line, we need to mark everything
+      // as invalid and clear the min and max request numbers.
+      // We also need to wait for pending puts using that data...
+
+      // If the cache line contains any overlapping writes or prefetches,
+      // we must wait for them to complete before we request new data.
+      // Prefetches might not yet have filled in the data according
+      // to the promised valid bits. GETs and PUTs must not have
+      // their buffers changed during operation.
+      flush_entry(cache, entry,
+                  entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
+                  ra_line, ra_line_end-ra_line);
+    }
+
+    // Otherwise -- start a get !
+
+    if( ! page ) {
+      // get a page from the free list.
+      page = allocate_page(cache);
+    }
+
+    // Now we need to start a get into page.
+    // If we don't have entry set, we will also need to plumb
+    // it into the tree while we are awaiting our get.
+    // We'll get within ra_page from ra_line to ra_line_end.
+    INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
+                 (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
+                 (int) (ra_line_end - ra_line)));
+
+    memset(page+(ra_line-ra_page), /*local addr*/
+           0,
+           ra_line_end - ra_line /*size*/);
+
+    if( entry ) {
+      use_entry(cache, entry);
+    } else {
+      entry = make_entry(cache, node, ra_page, page);
+    }
+
+    // Set the valid lines
+    set_valid_lines(entry->valid_lines,
+                    (ra_line - ra_page) >> CACHELINE_BITS,
+                    (ra_line_end - ra_line) >> CACHELINE_BITS);
+
+    {
+      // This will increment next request number so cache events are recorded.
+      sn = cache->next_request_number;
+      cache->next_request_number++;
+    }
+
+    // Set the minimum sequence number
+    entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+    // Update the last read location on a miss
+    // (as long as there was not an intervening acquire)
+    if( entry_after_acquire && sequential_readahead_length == 0 ) {
+      cache->last_cache_miss_read_node = node;
+      cache->last_cache_miss_read_addr = ra_line;
+    }
+
+    // Make sure that there is an available page for next time,
+    // but do it without evicting entry (that we are working with).
+    // This could happen if entry is the last element of Ain..
+    ensure_free_page(cache, entry);
+
+    // would copy the data out here, but not in mock get
+  }
+
+  if( VERIFY ) validate_cache(cache);
+
+#ifdef DUMP
+  printf("After mock_get cache is:\n");
+  rdcache_print(cache);
+#endif
+}
+
+
 
 static
 void cache_invalidate(struct rdcache_s* cache,
@@ -2998,15 +3199,26 @@ void chpl_cache_assert_released(void)
   }
 }
 
-/*
-// Turn the cache on or off for debug purposes.
-void chpl_cache_set_enabled(int enabled)
+void chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
 {
-  chpl_cache_fence(1,1, -1, NULL);
-  if( CHPL_CACHE_REMOTE == 0 && enabled == 1 ) chpl_cache_do_init();
-  CHPL_CACHE_REMOTE = enabled;
+  struct rdcache_s* cache = tls_cache_remote_data();
+  cache_lock(cache);
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p to %p\n",
+               chpl_nodeID, (int)chpl_task_getId(), node, (void*)raddr, addr));
+
+#ifdef DUMP
+  chpl_cache_print();
+#endif
+
+  mock_get(cache, node, (raddr_t)raddr, size,
+           task_local->last_acquire,
+           0, 0, 0, 0);
+
+  cache_unlock(cache);
+  return;
 }
-*/
+
 
 #endif
 // end ifdef HAS_CHPL_CACHE_FNS
