@@ -693,10 +693,7 @@ module ChapelDistribution {
       var dom = dsiGetBaseDom();
       // Remove the array from the domain
       // and find out if the domain should be removed.
-      extern proc printf(s...);
-      if dom == nil then printf("nil dom\n");
       rm_dom = dom.remove_arr(_to_unmanaged(this), rmFromList);
-
 
       if rm_dom then
         ret_dom = dom;

@@ -36,7 +36,6 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "view.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -639,7 +638,6 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->getValType());
 
   bool copiesToNoDestroy = false;
-  bool isDomain = false;
   bool isRhsInitOrAutoCopy = false;
 
   // Determine if
@@ -675,8 +673,6 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               Type*      formalType = formalArg->type;
               Type*      actualType = copiedSe->symbol()->getValType();
               Type*      returnType = rhsFn->retType->getValType();
-
-              isDomain = actualType->symbol->hasFlag(FLAG_DOMAIN);
 
               // Skip this transformation if
               //  * the type differs
