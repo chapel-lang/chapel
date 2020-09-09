@@ -386,7 +386,7 @@ module ArrayViewReindex {
 
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
-              param ownsArrInstance : bool = false) {
+              param ownsArrInstance : bool) {
       super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
@@ -598,7 +598,8 @@ module ArrayViewReindex {
                                      _DomPid=privatizeData(0),
                                      dom=privatizeData(1),
                                      _ArrPid=privatizeData(2),
-                                     _ArrInstance=privatizeData(3));
+                                     _ArrInstance=privatizeData(3),
+                                     ownsArrInstance=this.ownsArrInstance);
     }
 
     //

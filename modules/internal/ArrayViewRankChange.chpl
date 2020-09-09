@@ -481,7 +481,7 @@ module ArrayViewRankChange {
     proc init(type eltType, const _DomPid, const dom,
               const _ArrPid, const _ArrInstance,
               const collapsedDim, const idx,
-              param ownsArrInstance : bool = false) {
+              param ownsArrInstance : bool) {
       super.init(eltType = eltType);
       this._DomPid         = _DomPid;
       this.dom             = dom;
@@ -704,7 +704,8 @@ module ArrayViewRankChange {
                                         _ArrPid=privatizeData(2),
                                         _ArrInstance=privatizeData(3),
                                         collapsedDim=privatizeData(4),
-                                        idx=privatizeData(5));
+                                        idx=privatizeData(5),
+                                        ownsArrInstance=this.ownsArrInstance);
     }
 
     //

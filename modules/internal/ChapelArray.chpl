@@ -2851,7 +2851,8 @@ module ChapelArray {
                                          // TODO: Should the array really store
                                          // these redundantly?
                                          collapsedDim=rcdom._value.collapsedDim,
-                                         idx=rcdom._value.idx);
+                                         idx=rcdom._value.idx,
+                                         ownsArrInstance=false);
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);
@@ -3099,7 +3100,8 @@ module ChapelArray {
                                       _DomPid = newDom._pid,
                                       dom = newDom._instance,
                                       _ArrPid=arrpid,
-                                      _ArrInstance=arr);
+                                      _ArrInstance=arr,
+                                      ownsArrInstance=false);
       // this doesn't need to lock since we just created the domain d
       newDom._value.add_arr(x, locking=false);
       return _newArray(x);
