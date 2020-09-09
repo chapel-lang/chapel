@@ -207,7 +207,8 @@ static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
-                              void*, size_t, void*, struct perTxCtxInfo_t*);
+                              void*, size_t, void*, struct perTxCtxInfo_t*,
+                              chpl_bool);
 static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
 static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                             void*, size_t);
@@ -3426,11 +3427,13 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
   }
 
   //
-  // Send the 'done' indicator without waiting for the completion.
-  // Either we or someone else will consume that completion later.
+  // Send the 'done' indicator.  Try to just inject it, thus generating
+  // no completion event.  If we can't do that we'll send it the normal
+  // way, but consume the completion later rather than waiting for it
+  // now.
   //
   ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
-             txnTrkEncode(txnTrkNone, NULL), amTcip);
+             txnTrkEncode(txnTrkNone, NULL), amTcip, true /*useInject*/);
 }
 
 
@@ -3981,11 +3984,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
                 void* raddr, size_t size, void* ctx,
-                struct perTxCtxInfo_t* tcip) {
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "PUT LL %d:%p <= %p, size %zd",
-             (int) node, raddr, addr, size);
-
+                struct perTxCtxInfo_t* tcip, chpl_bool useInject) {
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
@@ -3999,19 +3998,30 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
     CHK_TRUE((myTcip = tciAlloc()) != NULL);
   }
 
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
-             (int) node, raddr, myAddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(myTcip,
-                      fi_write(myTcip->txCtx, myAddr, size,
-                               mrDesc, rxRmaAddr(myTcip, node),
-                               mrRaddr, mrKey, ctx));
-  myTcip->numTxnsOut++;
-  myTcip->numTxnsSent++;
+  if (!useInject || ofi_info->tx_attr->inject_size == 0) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+               (int) node, raddr, myAddr, size, mrKey, ctx);
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_write(myTcip->txCtx, myAddr, size,
+                                 mrDesc, rxRmaAddr(myTcip, node),
+                                 mrRaddr, mrKey, ctx));
+    myTcip->numTxnsOut++;
+  } else {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write ll inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+               (int) node, raddr, myAddr, size, mrKey);
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_inject_write(myTcip->txCtx, myAddr, size,
+                                        rxRmaAddr(myTcip, node),
+                                        mrRaddr, mrKey));
+    //
+    // This won't generate a CQ event, so don't count it as outstanding
+    // because we won't un-count it later.
+    //
+  }
 
-  //
-  // We don't do an MCM release.  That's the caller's responsibility.
-  //
+  myTcip->numTxnsSent++;
 
   if (myTcip != tcip) {
     tciFree(myTcip);
