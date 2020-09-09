@@ -35,6 +35,8 @@
 
 typedef struct {
   chpl_cache_taskPrvData_t cache_data;
+  void* pAmDone;
+  chpl_bool amDonePending;
   void* amo_nf_buff;
   void* get_buff;
   void* put_buff;

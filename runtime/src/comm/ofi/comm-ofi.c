@@ -2469,6 +2469,7 @@ int mrGetLocalKey(void* addr, size_t size) {
 //
 
 static inline void amRequestNop(c_nodeid_t, chpl_bool);
+static inline void retireDelayedAmDone(chpl_bool);
 
 static inline
 void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
@@ -2538,6 +2539,7 @@ void chpl_comm_impl_unordered_task_fence(void) {
 
 void chpl_comm_impl_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
+  retireDelayedAmDone(true /*taskIsEnding*/);
 }
 
 
@@ -2650,6 +2652,7 @@ static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
+static inline void amWaitForDone(amDone_t*);
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -2732,6 +2735,8 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
   assert(!isAmHandler);
   CHK_TRUE(!(fast && !blocking)); // handler doesn't expect fast nonblocking
 
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   arg->comm = (chpl_comm_bundleData_t) { .fast = fast,
                                          .fid = fid,
                                          .node = chpl_nodeID,
@@ -2795,6 +2800,7 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
                                .addr = raddr,
                                .raddr = addr,
                                .size = size, }, };
+  retireDelayedAmDone(false /*taskIsEnding*/);
   amRequestCommon(node, &req, sizeof(req.rma),
                   &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
 }
@@ -2817,7 +2823,25 @@ void amRequestAMO(c_nodeid_t node, void* object,
 
   void* myResult = result;
   size_t resSize = size;
-  if (myResult != NULL) {
+
+  //
+  // Do a normal blocking AM unless this is a non-fetching atomic and
+  // we can arrange to delay the blocking until sometime later, when
+  // the next thing with MCM implications comes along.
+  //
+  chpl_bool delayBlocking = false;
+  chpl_comm_taskPrvData_t* prvData = NULL;
+  if (myResult == NULL && (prvData = get_comm_taskPrvdata()) != NULL) {
+    if (prvData->pAmDone == NULL) {
+      prvData->pAmDone = allocBounceBuf(sizeof(amDone_t));
+    }
+    *(amDone_t*) prvData->pAmDone = 0;
+    chpl_atomic_thread_fence(memory_order_release);
+    prvData->amDonePending = true;
+    delayBlocking = true;
+  }
+
+  if (!delayBlocking) {
     if (mrGetLocalKey(myResult, resSize) != 0) {
       myResult = allocBounceBuf(resSize);
       DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
@@ -2827,7 +2851,10 @@ void amRequestAMO(c_nodeid_t node, void* object,
   }
 
   amRequest_t req = { .amo = { .b = { .op = am_opAMO,
-                                      .node = chpl_nodeID, },
+                                      .node = chpl_nodeID,
+                                      .pAmDone = delayBlocking
+                                                 ? prvData->pAmDone
+                                                 : NULL, },
                                .ofiOp = ofiOp,
                                .ofiType = ofiType,
                                .size = size,
@@ -2841,7 +2868,8 @@ void amRequestAMO(c_nodeid_t node, void* object,
     memcpy(&req.amo.operand2, operand2, size);
   }
   amRequestCommon(node, &req, sizeof(req.amo),
-                  &req.b.pAmDone, true /*yieldDuringTxnWait*/, tcip);
+                  delayBlocking ? NULL : &req.b.pAmDone,
+                  true /*yieldDuringTxnWait*/, tcip);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
     freeBounceBuf(myResult);
@@ -2974,15 +3002,7 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   if (pAmDone != NULL) {
-    //
-    // Wait for completion indicator.
-    //
-    DBG_PRINTF(DBG_AM | DBG_AMSEND,
-               "waiting for amDone indication in %p", pAmDone);
-    while (!*(volatile amDone_t*) pAmDone) {
-      local_yield();
-    }
-    DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw amDone indication in %p", pAmDone);
+    amWaitForDone(pAmDone);
     if (pAmDone != &amDone) {
       freeBounceBuf(pAmDone);
     }
@@ -2990,9 +3010,41 @@ void amRequestCommon(c_nodeid_t node,
 }
 
 
+static inline
+void amWaitForDone(amDone_t* pAmDone) {
+  //
+  // Wait for completion indicator.
+  //
+  DBG_PRINTF(DBG_AM | DBG_AMSEND,
+             "waiting for amDone indication in %p", pAmDone);
+  while (!*(volatile amDone_t*) pAmDone) {
+    local_yield();
+  }
+  DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw amDone indication in %p", pAmDone);
+}
+
+
+static inline
+void retireDelayedAmDone(chpl_bool taskIsEnding) {
+  //
+  // Wait for the completion of any delayed-blocking AM.
+  //
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData != NULL) {
+    if (prvData->amDonePending) {
+      amWaitForDone((amDone_t*) prvData->pAmDone);
+      prvData->amDonePending = false;
+    }
+    if (taskIsEnding) {
+      freeBounceBuf(prvData->pAmDone);
+    }
+  }
+}
+
+
 ////////////////////////////////////////
 //
-// Internal active message support
+// Handler-side active message support
 //
 
 static int numAmHandlersActive;
@@ -3543,6 +3595,8 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t commID, int ln, int32_t fn) {
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   //
   // Sanity checks, self-communication.
   //
@@ -3575,6 +3629,8 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t commID, int ln, int32_t fn) {
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   //
   // Sanity checks, self-communication.
   //
@@ -3649,6 +3705,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
     return;
 
   if (dstnode == chpl_nodeID && srcnode == chpl_nodeID) {
+    retireDelayedAmDone(false /*taskIsEnding*/);
     memmove(dstaddr, srcaddr, size);
     return;
   }
@@ -3679,6 +3736,8 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_get_unordered(%p, %d, %p, %zd, %d)",
              addr, (int) node, raddr, size, (int) commID);
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
 
   //
   // Sanity checks, self-communication.
@@ -3715,6 +3774,8 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_put_unordered(%p, %d, %p, %zd, %d)",
              addr, (int) node, raddr, size, (int) commID);
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
 
   //
   // Sanity checks, self-communication.
@@ -5132,6 +5193,8 @@ void doAMO(c_nodeid_t node, void* object,
     return;
   }
 
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   uint64_t mrKey;
   uint64_t mrRaddr;
   if (isAtomicValid(ofiType)
@@ -5356,6 +5419,8 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
   //
   // "Unordered" is possible only for actual network atomic ops.
   //
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   uint64_t mrKey;
   uint64_t mrRaddr;
   if (chpl_numNodes <= 1
