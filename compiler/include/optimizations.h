@@ -33,6 +33,9 @@
 #include "map.h"
 #include "vec.h"
 
+#include "flags.h"
+
+#include <set>
 #include <map>
 #include <vector>
 
@@ -40,6 +43,7 @@ class BaseAST;
 class BitVec;
 class BlockStmt;
 class CallExpr;
+class DefExpr;
 class FnSymbol;
 class ForallStmt;
 class Symbol;
@@ -76,5 +80,5 @@ void inferConstRefs();
 void computeNoAliasSets();
 
 void removeInitOrAutoCopyPostResolution(CallExpr *call);
-
+void establishDefinedConstIfApplicable(DefExpr* defExpr, std::set<Flag>* flags);
 #endif
