@@ -289,16 +289,7 @@ use.
 
 #ifdef HAS_CHPL_CACHE_FNS
 
-// This is now just set at compile time.
-//int CHPL_CACHE_REMOTE = 1;
 #define VERIFY 0
-
-// We try to auto-size the cache so that we
-// can have CACHE_PAGES_PER_NODE cache pages per locale, but we
-// do so within the below bounds.
-#define CACHE_PAGES_PER_NODE 4
-#define MIN_CACHE_DATA_SIZE (1024*1024)
-#define MAX_CACHE_DATA_SIZE (256*1024*1024)
 
 // How many pending operations can we have at once?
 #define MAX_PENDING 32
@@ -728,20 +719,27 @@ struct rdcache_s* cache_create(void) {
   unsigned char* buffer;
   unsigned char* pages;
 
-  cache_pages = CACHE_PAGES_PER_NODE * chpl_numNodes;
-  if( cache_pages < MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
-    cache_pages = MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE;
-  if( cache_pages > MAX_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
-    cache_pages = MAX_CACHE_DATA_SIZE/CACHEPAGE_SIZE;
+  // This used to grow based on the number of locales, but that
+  // can have unintended consequences, besides increasing memory usage.
+  cache_pages = 1024;
 
-  ain_pages = cache_pages / 4; // 2Q: "Kin should be 25% of page slots"
+  ain_pages = cache_pages / 8; // 2Q: "Kin should be 25% of page slots"
+                               // but here we set it smaller so that
+                               // we can have #top_entries == ain
+                               // and still have limited overhead.
   aout_pages = cache_pages / 2; // 2Q: "Kout should hold identifiers for as
                                 // many pages as would fit in 50% of the
                                 // buffer"
   // How many pages can be dirty at once?
-  dirty_pages = 16 + cache_pages / 64; 
-  // How many mid-level elements can we have in our tree? Note each is 8k in the current config..
-  top_entries = cache_pages / 16;
+  // Here we set this to a fixed 64 pages to keep the task completion
+  // overhead to a constant.
+  dirty_pages = 64;
+  // How many mid-level elements can we have in our tree?
+  // Note each is 2k in the current config. Make sure that there
+  // are as many top entries as would fit into Ain to keep random
+  // accesses working well in that setting.
+  top_entries = 64 + ain_pages;
+
   // How many cache entries do we need? 
   n_entries = cache_pages + aout_pages;
 
