@@ -28,6 +28,7 @@
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "initializerRules.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "ResolutionCandidate.h"
@@ -687,6 +688,8 @@ static void resolveInitializerBody(FnSymbol* fn) {
   fixPrimInitsAndAddCasts(fn);
 
   ensureInMethodList(fn);
+
+  setConstnessOfDomainFieldsInInitializer(fn);
 }
 
 /************************************* | **************************************

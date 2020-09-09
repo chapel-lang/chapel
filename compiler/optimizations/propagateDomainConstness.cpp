@@ -106,6 +106,66 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   return fieldRef;
 }
 
+static void setDefinedConstFieldHelp(Symbol *thisSym, Symbol *fieldSym,
+                                     Expr *parentExpr,
+                                     Expr *nextExpr, Symbol *isConst) {
+
+    Expr *anchor = nextExpr;
+
+    VarSymbol *domRecField = addFieldAccess(thisSym, fieldSym->name,
+                                            nextExpr, anchor, /*asRef=*/false);
+    VarSymbol *domInstance = addFieldAccess(domRecField, "_instance",
+                                            nextExpr, anchor, /*asRef=*/ false);
+    VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
+                                                  nextExpr, anchor,
+                                                  /*asRef=*/ true);
+    CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
+                                             isConst);
+    anchor->insertAfter(setDefinedConst);
+}
+
+void setDefinedConstField(CallExpr *call) {
+  Expr *parentExpr = call->parentExpr;
+  Expr *nextExpr = call->next;
+  // 1: this
+  // 2: field
+  // 3: src
+
+  INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
+
+
+  Symbol *thisSym = NULL;
+  if (SymExpr *se = toSymExpr(call->get(1))) {
+    thisSym = se->symbol();
+  }
+
+  Symbol *fieldSym = NULL;
+  Type *fieldType = NULL;
+  if (SymExpr *se = toSymExpr(call->get(2))) {
+    fieldSym = se->symbol();
+    fieldType = fieldSym->getValType();
+  }
+  INT_ASSERT(fieldSym);
+  INT_ASSERT(fieldType);
+
+  if (fieldType->symbol->hasFlag(FLAG_DOMAIN)) {
+    Symbol *isConst = fieldSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+    setDefinedConstFieldHelp(thisSym, fieldSym, parentExpr, nextExpr, isConst);
+  }
+}
+
+void setConstnessOfDomainFieldsInInitializer(FnSymbol *fn) {
+  std::vector<CallExpr *> calls;
+  collectCallExprs(fn->body, calls);
+  for_vector(CallExpr, call, calls) {
+    if(call->isPrimitive(PRIM_SET_MEMBER)) {
+      if (fn->_this == toSymExpr(call->get(1))->symbol()) {
+        setDefinedConstField(call);
+      }
+    }
+  }
+}
+
 void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
   Expr *nextExpr = parentExpr->next;
@@ -121,6 +181,13 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
 
   call->replace(call->get(1)->remove());
 
+  // we removed the first argument already, so definedConst is the first
+  // argument now
+  Expr *secondArg = call->get(1)->remove();
+  SymExpr *se = toSymExpr(secondArg);
+  INT_ASSERT(se);
+  INT_ASSERT(se->symbol()->type == dtBool);
+
   if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
     Symbol *lhs = NULL;
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
@@ -131,13 +198,6 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
       }
     }
     INT_ASSERT(lhs);
-
-    // we removed the first argument already, so definedConst is the first
-    // argument now
-    Expr *secondArg = call->get(1)->remove();
-    SymExpr *se = toSymExpr(secondArg);
-    INT_ASSERT(se);
-    INT_ASSERT(se->symbol()->type == dtBool);
 
     Expr *anchor = nextExpr;
 

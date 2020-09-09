@@ -183,7 +183,7 @@ static void removeRandomPrimitive(CallExpr* call) {
       } else {
         // Confirm that this is already a correct field Symbol.
         sym = memberSE->symbol();
-        INT_ASSERT(sym->defPoint->parentSymbol == baseType->symbol);
+        //INT_ASSERT(sym->defPoint->parentSymbol == baseType->symbol);
       }
 
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
