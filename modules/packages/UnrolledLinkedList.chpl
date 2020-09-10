@@ -479,7 +479,7 @@ module UnrolledLinkedList {
         boundsCheckHalt("Called \"unrolledLinkedList.last\" on an empty unrolledLinkedList.");
       }
      
-      ref result = _getRef(_size-1);
+      ref result = _tail!.data[_tail!.size-1];
       _leave();
 
       return result;  
