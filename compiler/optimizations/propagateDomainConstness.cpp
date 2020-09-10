@@ -106,34 +106,39 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   return fieldRef;
 }
 
-static void setDefinedConstFieldHelp(Symbol *thisSym, Symbol *fieldSym,
-                                     Expr *parentExpr,
-                                     Expr *nextExpr, Symbol *isConst) {
+static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
+                                           Expr *anchor, Symbol *isConst) {
+  VarSymbol *domInstance = addFieldAccess(domainSym, "_instance",
+                                          nextExpr, anchor, /*asRef=*/ false);
 
-    Expr *anchor = nextExpr;
+  VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
+                                                nextExpr, anchor,
+                                                /*asRef=*/ true);
 
-    VarSymbol *domRecField = addFieldAccess(thisSym, fieldSym->name,
-                                            nextExpr, anchor, /*asRef=*/false);
-    VarSymbol *domInstance = addFieldAccess(domRecField, "_instance",
-                                            nextExpr, anchor, /*asRef=*/ false);
-    VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
-                                                  nextExpr, anchor,
-                                                  /*asRef=*/ true);
-    CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
-                                             isConst);
-    anchor->insertAfter(setDefinedConst);
+  CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
+                                           isConst);
+
+  anchor->insertAfter(setDefinedConst);
 }
 
-void setDefinedConstField(CallExpr *call) {
-  Expr *parentExpr = call->parentExpr;
+static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
+                                          Expr *nextExpr, Symbol *isConst) {
+    Expr *anchor = nextExpr;
+    VarSymbol *domSym = addFieldAccess(thisSym, fieldSym->name,
+                                       nextExpr, anchor, /*asRef=*/false);
+    setDefinedConstForDomainSymbol(domSym, nextExpr, anchor, isConst);
+}
+
+
+void setDefinedConstForFieldIfApplicable(CallExpr *call) {
+  INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
+
   Expr *nextExpr = call->next;
+
+  // PRIM_SET_MEMBER args:
   // 1: this
   // 2: field
   // 3: src
-
-  INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
-
-
   Symbol *thisSym = NULL;
   if (SymExpr *se = toSymExpr(call->get(1))) {
     thisSym = se->symbol();
@@ -150,17 +155,17 @@ void setDefinedConstField(CallExpr *call) {
 
   if (fieldType->symbol->hasFlag(FLAG_DOMAIN)) {
     Symbol *isConst = fieldSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
-    setDefinedConstFieldHelp(thisSym, fieldSym, parentExpr, nextExpr, isConst);
+    setDefinedConstForDomainField(thisSym, fieldSym, nextExpr, isConst);
   }
 }
 
-void setConstnessOfDomainFieldsInInitializer(FnSymbol *fn) {
+void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
   std::vector<CallExpr *> calls;
   collectCallExprs(fn->body, calls);
   for_vector(CallExpr, call, calls) {
     if(call->isPrimitive(PRIM_SET_MEMBER)) {
       if (fn->_this == toSymExpr(call->get(1))->symbol()) {
-        setDefinedConstField(call);
+        setDefinedConstForFieldIfApplicable(call);
       }
     }
   }
@@ -183,10 +188,11 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
 
   // we removed the first argument already, so definedConst is the first
   // argument now
-  Expr *secondArg = call->get(1)->remove();
-  SymExpr *se = toSymExpr(secondArg);
-  INT_ASSERT(se);
-  INT_ASSERT(se->symbol()->type == dtBool);
+  SymExpr *secondArg = toSymExpr(call->get(1)->remove());
+  INT_ASSERT(secondArg);
+
+  Symbol *isConst = secondArg->symbol();
+  INT_ASSERT(isConst->type == dtBool);
 
   if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
     Symbol *lhs = NULL;
@@ -201,13 +207,7 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
 
     Expr *anchor = nextExpr;
 
-    VarSymbol *domInstance = addFieldAccess(lhs, "_instance", nextExpr, anchor,
-                                            /*asRef=*/ false);
-    VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
-                                                  nextExpr, anchor,
-                                                  /*asRef=*/ true);
-    CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
-                                             secondArg);
-    anchor->insertAfter(setDefinedConst);
+    setDefinedConstForDomainSymbol(lhs, nextExpr, anchor, isConst);
   }
 }
+

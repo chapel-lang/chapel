@@ -81,6 +81,7 @@ void computeNoAliasSets();
 
 void removeInitOrAutoCopyPostResolution(CallExpr *call);
 void establishDefinedConstIfApplicable(DefExpr* defExpr, std::set<Flag>* flags);
-void setDefinedConstField(CallExpr *call);
-void setConstnessOfDomainFieldsInInitializer(FnSymbol *fn);
+void setDefinedConstForFieldIfApplicable(CallExpr *call);
+void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
+
 #endif

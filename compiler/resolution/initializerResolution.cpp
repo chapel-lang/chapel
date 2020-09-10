@@ -689,7 +689,7 @@ static void resolveInitializerBody(FnSymbol* fn) {
 
   ensureInMethodList(fn);
 
-  setConstnessOfDomainFieldsInInitializer(fn);
+  setDefinedConstForFieldsInInitializer(fn);
 }
 
 /************************************* | **************************************

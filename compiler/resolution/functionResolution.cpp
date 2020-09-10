@@ -6461,7 +6461,7 @@ static void resolveInitField(CallExpr* call) {
 
   call->primitive = primitives[PRIM_SET_MEMBER];
 
-  setDefinedConstField(call);
+  setDefinedConstForFieldIfApplicable(call);
 
   resolveSetMember(call); // Can we remove some of the above with this?
 }
