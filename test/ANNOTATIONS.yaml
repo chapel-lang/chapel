@@ -1532,6 +1532,8 @@ ra.ml-perf:
 ra-atomics.ml-perf:
   10/03/17:
     - Increase the number of updates for RA to stabilize performance timings (#7522)
+  09/06/20:
+    - Improve LLVM vectorization support (#16152)
 
 RBC:
   02/22/17:
@@ -1626,6 +1628,8 @@ revcomp-submitted:
 ri-a2-AoA:
   06/05/20:
     - Remove unnecessary array temporaries for arrays-of-arrays (#15767)
+  08/24/20:
+    - Propagate constness of domain variables into the instance implementation (#16218)
 
 sad:
   05/03/16:
@@ -1656,10 +1660,14 @@ search:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
   12/10/19:
     - Allow messages in new Errors (#14545)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
 
 search-throughput:
   07/29/20:
     - Optimize ASCII strings (#16092)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
 
 spectralnorm:
   01/21/15:
@@ -1676,6 +1684,8 @@ split-whitespace-perf:
     - fix bugs when reading null bytes (#4806)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
 
 SSCA2_main:
   06/12/13:
