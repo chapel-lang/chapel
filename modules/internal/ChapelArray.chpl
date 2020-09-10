@@ -2805,6 +2805,10 @@ module ChapelArray {
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
 
+      // this domain is not exposed to the user in any way, so it is actually
+      // constant
+      d._value.definedConst = true;
+
       //
       // If this is already a slice array view, we can short-circuit
       // down to the underlying array.

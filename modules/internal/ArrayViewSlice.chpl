@@ -76,7 +76,7 @@ module ArrayViewSlice {
 
       this.indexCache = buildIndexCacheHelper(_ArrInstance, dom);
 
-      this.dom.definedConst = true;
+      this.dom.definedConst = dom.definedConst;
     }
 
     forwarding arr except these,

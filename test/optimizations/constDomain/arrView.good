@@ -6,8 +6,8 @@ Slice with domain literal
 true
 true
 Slice with var domain
-true
-true
+false
+false
 Reindex with tuple of ranges
 true
 true
