@@ -684,6 +684,12 @@ module OrderedMap {
   }
 
   /* Sets the left-hand side orderedMap to contain the keys that are in both a and b.
+
+    .. warning::
+
+      This will invalidate any references to elements previously contained in
+      `lhs`.
+
    */
   proc &=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
           b: orderedMap(keyType, valueType, parSafe)) {
