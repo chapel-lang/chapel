@@ -2976,22 +2976,39 @@ void amRequestCommon(c_nodeid_t node,
     memcpy(myReq, req, reqSize);
   }
 
-  atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-  void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+  //
+  // Inject the message if it's small enough and we're not going to wait
+  // for it anyway.  Otherwise, do a regular send.  Don't count injected
+  // messages as "outstanding", because they won't generate CQ events.
+  //
+  if (pAmDone == NULL && reqSize <= ofi_info->tx_attr->inject_size) {
+    if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND)
+        || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+      DBG_DO_PRINTF("tx AM req inject to %d: %s",
+                    (int) node, am_reqStr(node, myReq, reqSize));
+    }
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_inject(myTcip->txCtx, myReq, reqSize,
+                                  rxMsgAddr(myTcip, node)));
+    myTcip->numTxnsSent++;
+  } else {
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
 
-  if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND)
-      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
-    DBG_DO_PRINTF("tx AM req to %d: %s, ctx %p",
-                  (int) node, am_reqStr(node, myReq, reqSize), ctx);
+    if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND)
+        || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+      DBG_DO_PRINTF("tx AM req to %d: %s, ctx %p",
+                    (int) node, am_reqStr(node, myReq, reqSize), ctx);
+    }
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_send(myTcip->txCtx, myReq, reqSize,
+                                mrDesc, rxMsgAddr(myTcip, node), ctx));
+    myTcip->numTxnsOut++;
+    myTcip->numTxnsSent++;
+    waitForTxnComplete(myTcip, ctx);
+    atomic_destroy_bool(&txnDone);
   }
-  OFI_RIDE_OUT_EAGAIN(myTcip,
-                      fi_send(myTcip->txCtx, myReq, reqSize,
-                              mrDesc, rxMsgAddr(myTcip, node), ctx));
-  myTcip->numTxnsOut++;
-  myTcip->numTxnsSent++;
-  waitForTxnComplete(myTcip, ctx);
-  atomic_destroy_bool(&txnDone);
 
   if (tcip == NULL) {
     tciFree(myTcip);
@@ -4059,7 +4076,20 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
     CHK_TRUE((myTcip = tciAlloc()) != NULL);
   }
 
-  if (!useInject || ofi_info->tx_attr->inject_size == 0) {
+  //
+  // Inject if we can, otherwise do a regular write.  Don't count inject
+  // as an outstanding operation, because it won't generate a CQ event.
+  //
+  if (useInject && size <= ofi_info->tx_attr->inject_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write ll inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+               (int) node, raddr, myAddr, size, mrKey);
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_inject_write(myTcip->txCtx, myAddr, size,
+                                        rxRmaAddr(myTcip, node),
+                                        mrRaddr, mrKey));
+    myTcip->numTxnsSent++;
+  } else {
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
                (int) node, raddr, myAddr, size, mrKey, ctx);
@@ -4068,21 +4098,8 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
                                  mrDesc, rxRmaAddr(myTcip, node),
                                  mrRaddr, mrKey, ctx));
     myTcip->numTxnsOut++;
-  } else {
-    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-               "tx write ll inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
-               (int) node, raddr, myAddr, size, mrKey);
-    OFI_RIDE_OUT_EAGAIN(myTcip,
-                        fi_inject_write(myTcip->txCtx, myAddr, size,
-                                        rxRmaAddr(myTcip, node),
-                                        mrRaddr, mrKey));
-    //
-    // This won't generate a CQ event, so don't count it as outstanding
-    // because we won't un-count it later.
-    //
+    myTcip->numTxnsSent++;
   }
-
-  myTcip->numTxnsSent++;
 
   if (myTcip != tcip) {
     tciFree(myTcip);
