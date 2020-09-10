@@ -143,8 +143,14 @@ var testStrings = [
  22b
  22c
   """.dedent(),
-
-
+  // 23 mixed tabs and spaces on empty lines
+  """
+  23a
+  23b
+ 	
+	 
+   23c
+  	23d""".dedent(),
   ];
 
 proc main() {

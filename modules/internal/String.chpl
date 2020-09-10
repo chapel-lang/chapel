@@ -1843,24 +1843,25 @@ module String {
         var filteredText = removeWhitespaceOnlyLines(this);
         var margin = computeMargin(filteredText, low);
 
-        // Replace margins
+        // Remove margins
         if margin == '' {
           ret = this;
         } else {
           for line in lines[low..] {
+            // Compute offset
+            var offset = 0;
             if !isWhitespaceOnly(line) {
-              line = line[margin.size..];
+              offset = margin.size;
             } else {
-              var offset = 0;
+              // Remove margin as long as it matches for empty lines
               for i in 0..<min(margin.size, line.size) {
-                if line[i] == margin[i] {
-                  offset = i;
-                }
+                if line[i] != margin[i] then
+                  break;
+                offset += 1;
               }
-              offset += 1;
-              line = line[offset..];
             }
-
+            // Remove margin from line
+            line = line[offset..];
           }
           ret = '\n'.join(lines);
         }
@@ -1953,18 +1954,12 @@ module String {
       var ret: string;
 
       for line in s.split('\n') {
-        var lineEmpty = true;
-        for char in line {
-          if !isWhitespaceOnly(line) {
-            lineEmpty = false;
-            break;
-          }
-        }
-
-        if lineEmpty then
+        if isWhitespaceOnly(line) {
           ret += '\n';
-        else
+        }
+        else {
           ret += line + '\n';
+        }
       }
 
       // Remove extra newline at the end
