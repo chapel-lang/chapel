@@ -191,7 +191,7 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   }
   INT_ASSERT(aggType);
 
-  Symbol *fieldSym = aggType->getField(fieldName);
+  Symbol *fieldSym = aggType->getValType()->getField(fieldName);
   Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
   VarSymbol *fieldRef = newTemp(fieldName, fieldType);
   insBefore->insertBefore(new DefExpr(fieldRef));
