@@ -1899,7 +1899,7 @@ module String {
       for line in lines[low..] {
         const indent = leadingWhitespace(line);
 
-        if line.size == 0 {
+        if line.size == 1 {
           // Skip empty lines
           continue;
         }
@@ -1934,7 +1934,7 @@ module String {
       var ret = '';
 
       for char in s {
-        if char != ' ' && char != '	' then break;
+        if char != ' ' && char != '\t' then break;
         else ret += char;
       }
       return ret;
@@ -1943,7 +1943,7 @@ module String {
     /* Return true if string only contains spaces and tabs */
     private proc isWhitespaceOnly(s: string): bool {
       for char in s {
-        if char != ' ' && char != '	' then
+        if char != ' ' && char != '\t' then
           return false;
       }
       return true;
