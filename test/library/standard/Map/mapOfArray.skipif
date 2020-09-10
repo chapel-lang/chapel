@@ -8,7 +8,7 @@ import os
 sanitize = os.getenv('CHPL_SANITIZE_EXE', 'none')
 vgrnd = os.getenv('CHPL_TEST_VGRND_EXE', 'none')
 
-if 'address' == sanitize or 'on' == vgrnd:
+if 'address' in sanitize or 'on' == vgrnd:
 	  print(False)
 else:
     print(True)
