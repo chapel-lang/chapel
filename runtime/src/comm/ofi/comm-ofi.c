@@ -1154,8 +1154,9 @@ void init_ofiFabricDomain(void) {
   //   - send-after-send ordering
   // - rx endpoints same as tx
   // - RDM endpoints
-  // - table-style address vectors
+  // - domain threading model, since we manage thread contention ourselves
   // - resource management, to improve the odds we hear about exhaustion
+  // - table-style address vectors
   // - in addition, include the memory registration modes we can support
   //
   const char* prov_name = getProviderName();
@@ -1175,8 +1176,9 @@ void init_ofiFabricDomain(void) {
   hints->tx_attr->msg_order = FI_ORDER_SAS;
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
   hints->ep_attr->type = FI_EP_RDM;
-  hints->domain_attr->av_type = FI_AV_TABLE;
+  hints->domain_attr->threading = FI_THREAD_DOMAIN;
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
+  hints->domain_attr->av_type = FI_AV_TABLE;
 
   hints->domain_attr->mr_mode = (  FI_MR_LOCAL
                                  | FI_MR_VIRT_ADDR
