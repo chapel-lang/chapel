@@ -1008,7 +1008,7 @@ static inline
 uint32_t get_top_index_bits(raddr_t raddr, int32_t node) {
   uint64_t val = raddr;
   uint32_t ret = (val >> (HALF_BITS + CACHEPAGE_BITS));
-  ret ^= (node & 0xaaaaaaaa); // spread node variation between top and bottom
+  ret ^= node;
   ret &= HALF_SIZE-1;
   return ret;
 }
@@ -1017,7 +1017,6 @@ static inline
 uint32_t get_bottom_index_bits(raddr_t raddr, int32_t node) {
   uint64_t val = raddr;
   uint32_t ret = val >> CACHEPAGE_BITS;
-  ret ^= (node & 0x55555555); // spread node variation between top and bottom
   ret &= HALF_SIZE-1;
   return ret;
 }
