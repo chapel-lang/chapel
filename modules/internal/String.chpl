@@ -1844,32 +1844,39 @@ module String {
         var margin = computeMargin(filteredText, low);
 
         // Replace margins
-        if margin != '' {
+        if margin == '' {
+          ret = this;
+        } else {
           for line in lines[low..] {
             if !isWhitespaceOnly(line) {
               line = line[margin.size..];
+            } else {
+              var offset = 0;
+              for i in 0..<min(margin.size, line.size) {
+                if line[i] == margin[i] {
+                  offset = i;
+                }
+              }
+              offset += 1;
+              line = line[offset..];
             }
+
           }
           ret = '\n'.join(lines);
-        } else {
-          ret = this;
         }
+
       } else {
         if ignoreFirst {
           ret = lines[0] + '\n';
         }
         for line in lines[low..] {
-          if isWhitespaceOnly(line) {
-            ret += line + '\n';
-          } else {
-            var leadingColumns = 0;
-            // Note: We only consider spaces (not tabs) for columns > 0
-            const strippedLine = line.strip(' ', trailing=false);
-            const indent = line.size - strippedLine.size;
-            const offset = min(indent, columns);
+          var leadingColumns = 0;
+          // Note: We only consider spaces (not tabs) for columns > 0
+          const strippedLine = line.strip(' ', trailing=false);
+          const indent = line.size - strippedLine.size;
+          const offset = min(indent, columns);
 
-            ret += line[offset..] + '\n';
-          }
+          ret += line[offset..] + '\n';
         }
 
         // Remove leftover newline

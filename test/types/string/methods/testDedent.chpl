@@ -115,14 +115,34 @@ var testStrings = [
   17c""".dedent(columns=2),
 
 
-  // 18 - Ignore tabs when columns>0
+  // 18 Ignore tabs when columns>0
   """
    18a
   	18b
   		18c""".dedent(ignoreFirst=false, columns=3),
 
-  // 19 - no-op
+  // 19 no-op
   "19a 19b".dedent(ignoreFirst=false),
+
+  // 20 ensure no whitespace on final newline
+  """
+  20a
+  20b
+  20c
+  """.dedent(),
+
+  // 21 ensure no whitespace on final newline
+  """
+     21a
+     21b
+     21c
+  """.dedent(),
+  // 22 ensure 1 space removed on final newline
+  """
+ 22a
+ 22b
+ 22c
+  """.dedent(),
 
 
   ];
