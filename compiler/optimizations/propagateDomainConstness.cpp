@@ -46,31 +46,9 @@ static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
 // and changes pertinent arguments in the CallExprs as necessary
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags) {
-
   if (defExpr->init != NULL) {
-    if (flags->size() == 1 && flags->count(FLAG_CONST)) {
+    if (flags->count(FLAG_CONST) == 0) {
       setDefinedConstForDefExprWithIfExprs(defExpr->init);
-    }
-  }
-
-  if (defExpr->exprType != NULL) {
-    if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
-      if (initType->isNamed("chpl__distributed")) {
-        initType->get(3)->replace(new SymExpr(gTrue));
-        return;
-      }
-      else if (initType->isNamed("chpl__buildArrayRuntimeType")) {
-        if (CallExpr *typeCall = toCallExpr(initType->get(1))) {
-          if (typeCall->isNamed("chpl__ensureDomainExpr")) {
-            if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
-              if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
-                buildDomExpr->argList.last()->replace(new SymExpr(gTrue));
-                return;
-              }
-            }
-          }
-        }
-      }
     }
   }
 }
@@ -164,11 +142,11 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
 static void setDefinedConstForDefExprWithIfExprs(Expr* e) {
   if (CallExpr *initCall = toCallExpr(e)) {
     if (initCall->isNamed("chpl__buildDomainExpr")) {
-      initCall->argList.last()->replace(new SymExpr(gTrue));
+      initCall->argList.last()->replace(new SymExpr(gFalse));
       return;
     }
     else if (initCall->isNamed("chpl__distributed")) {
-      initCall->get(3)->replace(new SymExpr(gTrue));
+      initCall->get(3)->replace(new SymExpr(gFalse));
       return;
     }
   }
@@ -228,5 +206,4 @@ static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
                                        nextExpr, anchor, /*asRef=*/false);
     setDefinedConstForDomainSymbol(domSym, nextExpr, anchor, isConst);
 }
-
 
