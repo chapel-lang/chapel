@@ -243,6 +243,7 @@ module Set {
     /*
      As above, but parSafe lock must be held and must be called "on this".
     */
+    pragma "no doc"
     proc const _contains(const ref x: eltType): bool {
       var (hasFoundSlot, _) = _htb.findFullSlot(x);
       return hasFoundSlot;
