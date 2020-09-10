@@ -30,29 +30,26 @@
 
 #include <set>
 
-static void establishDefinedConstWithIfExprs(Expr* e) {
-  if (CallExpr *initCall = toCallExpr(e)) {
-    if (initCall->isNamed("chpl__buildDomainExpr")) {
-      initCall->argList.last()->replace(new SymExpr(gTrue));
-      return;
-    }
-    else if (initCall->isNamed("chpl__distributed")) {
-      initCall->get(3)->replace(new SymExpr(gTrue));
-      return;
-    }
-  }
-  else if (IfExpr *initIf = toIfExpr(e)) {
-    establishDefinedConstWithIfExprs(initIf->getThenStmt()->body.head);
-    establishDefinedConstWithIfExprs(initIf->getElseStmt()->body.head);
-  }
-}
+static void setDefinedConstForDefExprWithIfExprs(Expr* e);
+static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
+                                 Expr *insBefore, Expr *&insAfter,
+                                 bool asRef);
+static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
+                                 Expr *insBefore, Expr *&insAfter,
+                                 bool asRef);
+static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
+                                           Expr *anchor, Symbol *isConst);
+static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
+                                          Expr *nextExpr, Symbol *isConst);
 
-void establishDefinedConstIfApplicable(DefExpr* defExpr,
-                                       std::set<Flag>* flags) {
+// tries to determine if the DefExpr looks like a constant domain definition,
+// and changes pertinent arguments in the CallExprs as necessary
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           std::set<Flag>* flags) {
 
   if (defExpr->init != NULL) {
     if (flags->size() == 1 && flags->count(FLAG_CONST)) {
-      establishDefinedConstWithIfExprs(defExpr->init);
+      setDefinedConstForDefExprWithIfExprs(defExpr->init);
     }
   }
 
@@ -77,7 +74,110 @@ void establishDefinedConstIfApplicable(DefExpr* defExpr,
     }
   }
 }
+
+// Add code right after a PRIM_SET_MEMBER, if it is setting a const domain
+// member in an aggregate type
+void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {
+  INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
+
+  Expr *nextExpr = call->next;
+
+  // PRIM_SET_MEMBER args:
+  // 1: this
+  // 2: field
+  // 3: src
+  Symbol *thisSym = NULL;
+  if (SymExpr *se = toSymExpr(call->get(1))) {
+    thisSym = se->symbol();
+  }
+
+  Symbol *fieldSym = NULL;
+  Type *fieldType = NULL;
+  if (SymExpr *se = toSymExpr(call->get(2))) {
+    fieldSym = se->symbol();
+    fieldType = fieldSym->getValType();
+  }
+  INT_ASSERT(fieldSym);
+  INT_ASSERT(fieldType);
+
+  if (fieldType->symbol->hasFlag(FLAG_DOMAIN)) {
+    Symbol *isConst = fieldSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+    setDefinedConstForDomainField(thisSym, fieldSym, nextExpr, isConst);
+  }
+}
+
+// go through all PRIM_SET_MEMBER in an initializer, and adjust them if needed
+void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
+  std::vector<CallExpr *> calls;
+  collectCallExprs(fn->body, calls);
+  for_vector(CallExpr, call, calls) {
+    if(call->isPrimitive(PRIM_SET_MEMBER)) {
+      if (fn->_this == toSymExpr(call->get(1))->symbol()) {
+        setDefinedConstForPrimSetMemberIfApplicable(call);
+      }
+    }
+  }
+}
+
+// help removing chpl__initCopy and chpl__autoCopy after resolution while
+// retaining constness information therein
+void removeInitOrAutoCopyPostResolution(CallExpr *call) {
+  Expr *parentExpr = call->parentExpr;
+  Expr *nextExpr = parentExpr->next;
+
+  Symbol *argSym = NULL;
+  Type *argType = NULL;
+  if (SymExpr *se = toSymExpr(call->get(1))) {
+    argSym = se->symbol();
+    argType = argSym->getValType();
+  }
+  INT_ASSERT(argSym);
+  INT_ASSERT(argType);
+
+  call->replace(call->get(1)->remove());
+
+  // we removed the first argument already, so definedConst is the first
+  // argument now
+  SymExpr *secondArg = toSymExpr(call->get(1)->remove());
+  INT_ASSERT(secondArg);
+
+  Symbol *isConst = secondArg->symbol();
+  INT_ASSERT(isConst->type == dtBool);
+
+  if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
+    Symbol *lhs = NULL;
+    if (CallExpr *parentCall = toCallExpr(parentExpr)) {
+      if (parentCall->isPrimitive(PRIM_MOVE)) {
+        if (SymExpr *lhsSE = toSymExpr(parentCall->get(1))) {
+          lhs = lhsSE->symbol();
+        }
+      }
+    }
+    INT_ASSERT(lhs);
+
+    Expr *anchor = nextExpr;
+
+    setDefinedConstForDomainSymbol(lhs, nextExpr, anchor, isConst);
+  }
+}
                 
+static void setDefinedConstForDefExprWithIfExprs(Expr* e) {
+  if (CallExpr *initCall = toCallExpr(e)) {
+    if (initCall->isNamed("chpl__buildDomainExpr")) {
+      initCall->argList.last()->replace(new SymExpr(gTrue));
+      return;
+    }
+    else if (initCall->isNamed("chpl__distributed")) {
+      initCall->get(3)->replace(new SymExpr(gTrue));
+      return;
+    }
+  }
+  else if (IfExpr *initIf = toIfExpr(e)) {
+    setDefinedConstForDefExprWithIfExprs(initIf->getThenStmt()->body.head);
+    setDefinedConstForDefExprWithIfExprs(initIf->getElseStmt()->body.head);
+  }
+}
+
 
 
 static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
@@ -129,85 +229,4 @@ static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
     setDefinedConstForDomainSymbol(domSym, nextExpr, anchor, isConst);
 }
 
-
-void setDefinedConstForFieldIfApplicable(CallExpr *call) {
-  INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
-
-  Expr *nextExpr = call->next;
-
-  // PRIM_SET_MEMBER args:
-  // 1: this
-  // 2: field
-  // 3: src
-  Symbol *thisSym = NULL;
-  if (SymExpr *se = toSymExpr(call->get(1))) {
-    thisSym = se->symbol();
-  }
-
-  Symbol *fieldSym = NULL;
-  Type *fieldType = NULL;
-  if (SymExpr *se = toSymExpr(call->get(2))) {
-    fieldSym = se->symbol();
-    fieldType = fieldSym->getValType();
-  }
-  INT_ASSERT(fieldSym);
-  INT_ASSERT(fieldType);
-
-  if (fieldType->symbol->hasFlag(FLAG_DOMAIN)) {
-    Symbol *isConst = fieldSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
-    setDefinedConstForDomainField(thisSym, fieldSym, nextExpr, isConst);
-  }
-}
-
-void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
-  std::vector<CallExpr *> calls;
-  collectCallExprs(fn->body, calls);
-  for_vector(CallExpr, call, calls) {
-    if(call->isPrimitive(PRIM_SET_MEMBER)) {
-      if (fn->_this == toSymExpr(call->get(1))->symbol()) {
-        setDefinedConstForFieldIfApplicable(call);
-      }
-    }
-  }
-}
-
-void removeInitOrAutoCopyPostResolution(CallExpr *call) {
-  Expr *parentExpr = call->parentExpr;
-  Expr *nextExpr = parentExpr->next;
-
-  Symbol *argSym = NULL;
-  Type *argType = NULL;
-  if (SymExpr *se = toSymExpr(call->get(1))) {
-    argSym = se->symbol();
-    argType = argSym->getValType();
-  }
-  INT_ASSERT(argSym);
-  INT_ASSERT(argType);
-
-  call->replace(call->get(1)->remove());
-
-  // we removed the first argument already, so definedConst is the first
-  // argument now
-  SymExpr *secondArg = toSymExpr(call->get(1)->remove());
-  INT_ASSERT(secondArg);
-
-  Symbol *isConst = secondArg->symbol();
-  INT_ASSERT(isConst->type == dtBool);
-
-  if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
-    Symbol *lhs = NULL;
-    if (CallExpr *parentCall = toCallExpr(parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_MOVE)) {
-        if (SymExpr *lhsSE = toSymExpr(parentCall->get(1))) {
-          lhs = lhsSE->symbol();
-        }
-      }
-    }
-    INT_ASSERT(lhs);
-
-    Expr *anchor = nextExpr;
-
-    setDefinedConstForDomainSymbol(lhs, nextExpr, anchor, isConst);
-  }
-}
 

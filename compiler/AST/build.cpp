@@ -1594,7 +1594,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           if (cnameExpr != NULL && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
 
-          establishDefinedConstIfApplicable(defExpr, flags);
+          setDefinedConstForDefExprIfApplicable(defExpr, flags);
 
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);

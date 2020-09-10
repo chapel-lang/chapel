@@ -80,8 +80,9 @@ void inferConstRefs();
 void computeNoAliasSets();
 
 void removeInitOrAutoCopyPostResolution(CallExpr *call);
-void establishDefinedConstIfApplicable(DefExpr* defExpr, std::set<Flag>* flags);
-void setDefinedConstForFieldIfApplicable(CallExpr *call);
+void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
+                                           std::set<Flag>* flags);
+void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
 #endif
