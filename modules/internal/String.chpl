@@ -1799,15 +1799,16 @@ module String {
     }
 
 
-    /* Remove indentation from lines of string.
+    /* Remove indentation from each line of string.
 
        This can be useful when applied to multi-line strings that are indented
        in the source code, but should not be indented in the output.
 
-       When ``columns == 0``, determine the level of indentation to remove by finding
-       the common leading whitespace across all lines. Tabs and spaces are
-       considered whitespace, but are not treated as the same characters when
-       determining common whitespace.
+       When ``columns == 0``, determine the level of indentation to remove from
+       all lines by finding the common leading whitespace across all non-empty
+       lines. Empty lines are lines containing only whitespace. Tabs and spaces
+       are considered whitespace, but are not treated as the same characters
+       when determining common whitespace.
 
        When ``columns > 0``, remove ``columns`` leading whitespace characters
        from each line. Tabs are not considered whitespace when ``columns > 0``,
@@ -1818,11 +1819,11 @@ module String {
        :type columns: `int`
 
        :arg ignoreFirst: When ``true``, ignore first line when determining the
-                         common leading whitespace, and make no changes to the first line.
+                         common leading whitespace, and make no changes to the
+                         first line.
        :type ignoreFirst: `bool`
 
        :returns: A new `string` with indentation removed.
-
 
        .. warning::
 
@@ -1830,23 +1831,19 @@ module String {
           future Chapel releases.
     */
     proc string.dedent(columns=0, ignoreFirst=true): string {
-      if chpl_warnUnstable {
+      if chpl_warnUnstable then
         compilerWarning("string.dedent is subject to change in the future.");
-      }
-      // Find longest leading string of spaces and tabs common to all lines
-      var ret = '';
-      var low = if ignoreFirst then 1 else 0;
+
+      const low = if ignoreFirst then 1 else 0;
       var lines = this.split('\n');
+      var ret = '';
 
       if columns <= 0 {
-        // Ignore lines containing only white space for finding common indent
-        var filteredText = removeWhitespaceOnlyLines(this);
-        var margin = computeMargin(filteredText, low);
+        // Find common leading whitespace across all non-empty lines
+        const margin = computeMargin(lines[low..]);
 
-        // Remove margins
-        if margin == '' {
-          ret = this;
-        } else {
+        // Remove margins from all lines if it's not empty
+        if margin.size > 0 {
           for line in lines[low..] {
             // Compute offset
             var offset = 0;
@@ -1855,56 +1852,47 @@ module String {
             } else {
               // Remove margin as long as it matches for empty lines
               for i in 0..<min(margin.size, line.size) {
-                if line[i] != margin[i] then
-                  break;
+                if line[i] != margin[i] then break;
                 offset += 1;
               }
             }
             // Remove margin from line
             line = line[offset..];
           }
-          ret = '\n'.join(lines);
         }
-
       } else {
-        if ignoreFirst {
-          ret = lines[0] + '\n';
-        }
+        // Remove up to `columns` number of spaces from each line
         for line in lines[low..] {
-          var leadingColumns = 0;
           // Note: We only consider spaces (not tabs) for columns > 0
-          const strippedLine = line.strip(' ', trailing=false);
-          const indent = line.size - strippedLine.size;
+          const indent = line.size - line.strip(' ', trailing=false).size;
           const offset = min(indent, columns);
-
-          ret += line[offset..] + '\n';
+          line = line[offset..];
         }
-
-        // Remove leftover newline
-        if ret.endsWith('\n') then
-          ret = ret[..<ret.size-1];
       }
 
+      ret = '\n'.join(lines);
       return ret;
     }
 
     /* Compute margin of common leading white space across lines in a string.
        Spaces and tabs are respected.
      */
-    private proc computeMargin(s: string, low: int): string {
+    private proc computeMargin(lines: [] string): string {
       var margin = '';
 
-      var lines = s.split('\n');
+      for line in lines {
+        // Determine leading whitespace (spaces and tabs) in line
+        var indent = '';
+        for char in line {
+          if char != ' ' && char != '\t' then break;
+          else indent += char;
+        }
 
-      for line in lines[low..] {
-        const indent = leadingWhitespace(line);
-
-        if line.size == 1 {
+        if isWhitespaceOnly(line) {
           // Skip empty lines
           continue;
-        }
-        else if indent.size == 0 {
-          // If a completely unindented line exists, there is no margin
+        } else if indent.size == 0 {
+          // An unindented non-empty line means no margin exists, return early
           margin = '';
           break;
         } else if margin == '' {
@@ -1917,7 +1905,7 @@ module String {
           // Current indent is shallower than margin, update margin
           margin = indent;
         } else {
-          // Find largest common whitespace between current line and previous margin
+          // Find largest common whitespace between current and previous margin
           for i in margin.indices {
             if margin[i] != indent[i] {
               margin = margin[..<i];
@@ -1929,17 +1917,6 @@ module String {
       return margin;
     }
 
-    /* Return leading whitespace in string */
-    private proc leadingWhitespace(s: string): string {
-      var ret = '';
-
-      for char in s {
-        if char != ' ' && char != '\t' then break;
-        else ret += char;
-      }
-      return ret;
-    }
-
     /* Return true if string only contains spaces and tabs */
     private proc isWhitespaceOnly(s: string): bool {
       for char in s {
@@ -1948,27 +1925,6 @@ module String {
       }
       return true;
     }
-
-    // Remove lines with nothing but whitespace and return resulting string
-    private proc removeWhitespaceOnlyLines(s: string): string {
-      var ret: string;
-
-      for line in s.split('\n') {
-        if isWhitespaceOnly(line) {
-          ret += '\n';
-        }
-        else {
-          ret += line + '\n';
-        }
-      }
-
-      // Remove extra newline at the end
-      if ret.endsWith('\n') then
-        ret = ret[..<ret.size-1];
-
-      return ret;
-    }
-
 
     /*
      Checks if all the characters in the string are either uppercase (A-Z) or
