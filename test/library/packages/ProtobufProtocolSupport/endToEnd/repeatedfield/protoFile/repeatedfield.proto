@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+message repeatedField {
+  repeated uint64 ui64 = 2;
+  repeated uint32 ui32 = 3;
+  repeated int64 i64 = 4;
+  repeated int32 i32 = 5;
+  repeated bool bo = 6;
+  repeated sint64 si64 = 7;
+  repeated sint32 si32 = 8;
+  repeated fixed32 fi32 = 9;
+  repeated fixed64 fi64 = 10;
+  repeated float fl = 11;
+  repeated double db = 12;
+  repeated sfixed32 sfi32 = 13;
+  repeated sfixed64 sfi64 = 14;
+  repeated bytes byt = 15;
+  repeated string st = 16;
+}

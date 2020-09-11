@@ -1,9 +1,8 @@
 //===-- AVRExpandPseudoInsts.cpp - Expand pseudo instructions -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -53,6 +52,8 @@ private:
 
   /// The register to be used for temporary storage.
   const unsigned SCRATCH_REGISTER = AVR::R0;
+  /// The register that will always contain zero.
+  const unsigned ZERO_REGISTER = AVR::R1;
   /// The IO address of the status register.
   const unsigned SREG_ADDR = 0x3f;
 
@@ -141,8 +142,8 @@ bool AVRExpandPseudo::
 expandArith(unsigned OpLo, unsigned OpHi, Block &MBB, BlockIt MBBI) {
   MachineInstr &MI = *MBBI;
   unsigned SrcLoReg, SrcHiReg, DstLoReg, DstHiReg;
-  unsigned DstReg = MI.getOperand(0).getReg();
-  unsigned SrcReg = MI.getOperand(2).getReg();
+  Register DstReg = MI.getOperand(0).getReg();
+  Register SrcReg = MI.getOperand(2).getReg();
   bool DstIsDead = MI.getOperand(0).isDead();
   bool DstIsKill = MI.getOperand(1).isKill();
   bool SrcIsKill = MI.getOperand(2).isKill();
@@ -174,8 +175,8 @@ bool AVRExpandPseudo::
 expandLogic(unsigned Op, Block &MBB, BlockIt MBBI) {
   MachineInstr &MI = *MBBI;
   unsigned SrcLoReg, SrcHiReg, DstLoReg, DstHiReg;
-  unsigned DstReg = MI.getOperand(0).getReg();
-  unsigned SrcReg = MI.getOperand(2).getReg();
+  Register DstReg = MI.getOperand(0).getReg();
+  Register SrcReg = MI.getOperand(2).getReg();
   bool DstIsDead = MI.getOperand(0).isDead();
   bool DstIsKill = MI.getOperand(1).isKill();
   bool SrcIsKill = MI.getOperand(2).isKill();
@@ -221,7 +222,7 @@ bool AVRExpandPseudo::
 expandLogicImm(unsigned Op, Block &MBB, BlockIt MBBI) {
   MachineInstr &MI = *MBBI;
   unsigned DstLoReg, DstHiReg;
-  unsigned DstReg = MI.getOperand(0).getReg();
+  Register DstReg = MI.getOperand(0).getReg();
   bool DstIsDead = MI.getOperand(0).isDead();
   bool SrcIsKill = MI.getOperand(1).isKill();
   bool ImpIsDead = MI.getOperand(3).isDead();
@@ -583,8 +584,8 @@ bool AVRExpandPseudo::expand<AVR::LDWRdPtr>(Block &MBB, BlockIt MBBI) {
   unsigned TmpReg = 0; // 0 for no temporary register
   unsigned SrcReg = MI.getOperand(1).getReg();
   bool SrcIsKill = MI.getOperand(1).isKill();
-  OpLo = AVR::LDRdPtrPi;
-  OpHi = AVR::LDRdPtr;
+  OpLo = AVR::LDRdPtr;
+  OpHi = AVR::LDDRdPtrQ;
   TRI->splitReg(DstReg, DstLoReg, DstHiReg);
 
   // Use a temporary register if src and dst registers are the same.
@@ -597,8 +598,7 @@ bool AVRExpandPseudo::expand<AVR::LDWRdPtr>(Block &MBB, BlockIt MBBI) {
   // Load low byte.
   auto MIBLO = buildMI(MBB, MBBI, OpLo)
     .addReg(CurDstLoReg, RegState::Define)
-    .addReg(SrcReg, RegState::Define)
-    .addReg(SrcReg);
+    .addReg(SrcReg, RegState::Define);
 
   // Push low byte onto stack if necessary.
   if (TmpReg)
@@ -607,7 +607,8 @@ bool AVRExpandPseudo::expand<AVR::LDWRdPtr>(Block &MBB, BlockIt MBBI) {
   // Load high byte.
   auto MIBHI = buildMI(MBB, MBBI, OpHi)
     .addReg(CurDstHiReg, RegState::Define)
-    .addReg(SrcReg, getKillRegState(SrcIsKill));
+    .addReg(SrcReg, getKillRegState(SrcIsKill))
+    .addImm(1);
 
   if (TmpReg) {
     // Move the high byte into the final destination.
@@ -875,7 +876,7 @@ unsigned AVRExpandPseudo::scavengeGPR8(MachineInstr &MI) {
   // Exclude all the registers being used by the instruction.
   for (MachineOperand &MO : MI.operands()) {
     if (MO.isReg() && MO.getReg() != 0 && !MO.isDef() &&
-        !TargetRegisterInfo::isVirtualRegister(MO.getReg()))
+        !Register::isVirtualRegister(MO.getReg()))
       Candidates.reset(MO.getReg());
   }
 
@@ -1244,6 +1245,93 @@ bool AVRExpandPseudo::expand<AVR::POPWRd>(Block &MBB, BlockIt MBBI) {
 }
 
 template <>
+bool AVRExpandPseudo::expand<AVR::ROLBRd>(Block &MBB, BlockIt MBBI) {
+  // In AVR, the rotate instructions behave quite unintuitively. They rotate
+  // bits through the carry bit in SREG, effectively rotating over 9 bits,
+  // instead of 8. This is useful when we are dealing with numbers over
+  // multiple registers, but when we actually need to rotate stuff, we have
+  // to explicitly add the carry bit.
+
+  MachineInstr &MI = *MBBI;
+  unsigned OpShift, OpCarry;
+  unsigned DstReg = MI.getOperand(0).getReg();
+  bool DstIsDead = MI.getOperand(0).isDead();
+  OpShift = AVR::ADDRdRr;
+  OpCarry = AVR::ADCRdRr;
+
+  // add r16, r16
+  // adc r16, r1
+
+  // Shift part
+  buildMI(MBB, MBBI, OpShift)
+    .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
+    .addReg(DstReg)
+    .addReg(DstReg);
+
+  // Add the carry bit
+  auto MIB = buildMI(MBB, MBBI, OpCarry)
+    .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
+    .addReg(DstReg)
+    .addReg(ZERO_REGISTER);
+
+  // SREG is always implicitly killed
+  MIB->getOperand(2).setIsKill();
+
+  MI.eraseFromParent();
+  return true;
+}
+
+template <>
+bool AVRExpandPseudo::expand<AVR::RORBRd>(Block &MBB, BlockIt MBBI) {
+  // In AVR, the rotate instructions behave quite unintuitively. They rotate
+  // bits through the carry bit in SREG, effectively rotating over 9 bits,
+  // instead of 8. This is useful when we are dealing with numbers over
+  // multiple registers, but when we actually need to rotate stuff, we have
+  // to explicitly add the carry bit.
+
+  MachineInstr &MI = *MBBI;
+  unsigned OpShiftOut, OpLoad, OpShiftIn, OpAdd;
+  unsigned DstReg = MI.getOperand(0).getReg();
+  bool DstIsDead = MI.getOperand(0).isDead();
+  OpShiftOut = AVR::LSRRd;
+  OpLoad = AVR::LDIRdK;
+  OpShiftIn = AVR::RORRd;
+  OpAdd = AVR::ORRdRr;
+
+  // lsr r16
+  // ldi r0, 0
+  // ror r0
+  // or r16, r17
+
+  // Shift out
+  buildMI(MBB, MBBI, OpShiftOut)
+    .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
+    .addReg(DstReg);
+
+  // Put 0 in temporary register
+  buildMI(MBB, MBBI, OpLoad)
+    .addReg(SCRATCH_REGISTER, RegState::Define | getDeadRegState(true))
+    .addImm(0x00);
+
+  // Shift in
+  buildMI(MBB, MBBI, OpShiftIn)
+    .addReg(SCRATCH_REGISTER, RegState::Define | getDeadRegState(true))
+    .addReg(SCRATCH_REGISTER);
+
+  // Add the results together using an or-instruction
+  auto MIB = buildMI(MBB, MBBI, OpAdd)
+    .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
+    .addReg(DstReg)
+    .addReg(SCRATCH_REGISTER);
+
+  // SREG is always implicitly killed
+  MIB->getOperand(2).setIsKill();
+
+  MI.eraseFromParent();
+  return true;
+}
+
+template <>
 bool AVRExpandPseudo::expand<AVR::LSLWRd>(Block &MBB, BlockIt MBBI) {
   MachineInstr &MI = *MBBI;
   unsigned OpLo, OpHi, DstLoReg, DstHiReg;
@@ -1563,6 +1651,8 @@ bool AVRExpandPseudo::expandMI(Block &MBB, BlockIt MBBI) {
     EXPAND(AVR::OUTWARr);
     EXPAND(AVR::PUSHWRr);
     EXPAND(AVR::POPWRd);
+    EXPAND(AVR::ROLBRd);
+    EXPAND(AVR::RORBRd);
     EXPAND(AVR::LSLWRd);
     EXPAND(AVR::LSRWRd);
     EXPAND(AVR::RORWRd);

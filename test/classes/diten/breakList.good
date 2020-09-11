@@ -1,7 +1,7 @@
-breakList.chpl:21: In function 'bar':
-breakList.chpl:24: error: multiple overload sets are applicable to this call
-breakList.chpl:4: note: the best-matching candidate is here
-breakList.chpl:2: note: ... defined in this module
+breakList.chpl:23: In function 'bar':
+breakList.chpl:26: error: multiple overload sets are applicable to this call
+breakList.chpl:6: note: the best-matching candidate is here
+breakList.chpl:3: note: ... defined in this module
 $CHPL_HOME/modules/standard/LinkedLists.chpl:nnnn: note: even though the candidate here is also available
 $CHPL_HOME/modules/standard/LinkedLists.chpl:nnnn: note: ... defined in this module
-breakList.chpl:24: note: use --no-overload-sets-checks to disable overload sets errors
+breakList.chpl:26: note: use --no-overload-sets-checks to disable overload sets errors

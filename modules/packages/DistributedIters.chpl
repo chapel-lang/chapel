@@ -31,7 +31,8 @@
 module DistributedIters
 {
 use DynamicIters,
-    Time;
+    Time,
+    DSIUtil;
 
 /*
   Toggle debugging output.

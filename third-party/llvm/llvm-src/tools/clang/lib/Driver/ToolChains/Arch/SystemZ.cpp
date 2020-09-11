@@ -1,24 +1,35 @@
 //===--- SystemZ.cpp - SystemZ Helpers for Tools ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "SystemZ.h"
 #include "clang/Driver/Options.h"
 #include "llvm/Option/ArgList.h"
+#include "llvm/Support/Host.h"
 
 using namespace clang::driver;
 using namespace clang::driver::tools;
 using namespace clang;
 using namespace llvm::opt;
 
-const char *systemz::getSystemZTargetCPU(const ArgList &Args) {
-  if (const Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ))
-    return A->getValue();
+std::string systemz::getSystemZTargetCPU(const ArgList &Args) {
+  if (const Arg *A = Args.getLastArg(clang::driver::options::OPT_march_EQ)) {
+    llvm::StringRef CPUName = A->getValue();
+
+    if (CPUName == "native") {
+      std::string CPU = llvm::sys::getHostCPUName();
+      if (!CPU.empty() && CPU != "generic")
+        return CPU;
+      else
+        return "";
+    }
+
+    return CPUName;
+  }
   return "z10";
 }
 

@@ -21,7 +21,6 @@
 #include "preFold.h"
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
@@ -31,6 +30,7 @@
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -39,6 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+#include "../main/version_num.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -1707,6 +1708,47 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_VERSION_MAJOR: {
+    retval = new SymExpr(new_IntSymbol(MAJOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_MINOR: {
+    retval = new SymExpr(new_IntSymbol(MINOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_UPDATE: {
+    retval = new SymExpr(new_IntSymbol(UPDATE_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_SHA: {
+    retval = (officialRelease ?
+              new SymExpr(new_StringSymbol("")) :
+              new SymExpr(new_StringSymbol(BUILD_VERSION)));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_SET_ALIASING_ARRAY_ON_TYPE: {
+    Expr* typeArg = call->get(1);
+    SymExpr* valArg = toSymExpr(call->get(2));
+
+    Type* t = canonicalClassType(typeArg->getValType());
+    if (valArg->symbol() == gTrue)
+      t->symbol->addFlag(FLAG_ALIASING_ARRAY);
+    else if (valArg->symbol() == gFalse)
+      t->symbol->removeFlag(FLAG_ALIASING_ARRAY);
+
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+    break;
+  }
+
   default:
     break;
 
@@ -1985,7 +2027,7 @@ static Expr* preFoldNamed(CallExpr* call) {
 
   } else if (call->isNamedAstr(astr_initCopy) ||
              call->isNamedAstr(astr_autoCopy)) {
-    if (call->numActuals() == 1) {
+    if (call->numActuals() == 2) {  // 2nd arg is `definedConst`
       if (SymExpr* symExpr = toSymExpr(call->get(1))) {
         if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
           if (var->immediate != NULL) {
@@ -2210,6 +2252,45 @@ static Expr* preFoldNamed(CallExpr* call) {
         !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
 
       retval = unrollHetTupleLoop(call, tupExpr, iterType);
+    }
+
+  } else if (call->numActuals() == 1) {
+    // Implement the common case of a boolean argument here,
+    // to avoid full-blown call resolution.
+    if (SymExpr* argSE = toSymExpr(call->get(1))) {
+      Symbol* argSym = argSE->symbol();
+      Type* argType = argSym->type;
+
+      if (call->isNamed("_cond_test") || call->isNamed("isTrue")) {
+        if (argType == dtBool) {
+          // use the argument directly
+          retval = argSE->remove();
+
+        } else if (argType == dtBool->refType) {
+          // dereference it so later passes get a value
+          Expr* stmt = call->getStmtExpr();
+          VarSymbol* repl = newTempConst(dtBool);
+          stmt->insertBefore(new DefExpr(repl));
+          stmt->insertBefore("'move'(%S,'deref'(%E))", repl, argSE->remove());
+          retval = new SymExpr(repl);
+
+        } // otherwise resolve the call normally
+
+      } else if (call->isNamed("_cond_invalid")) {
+        if (argType == dtBool || argType == dtBool->refType)
+          retval = new SymExpr(gFalse);
+
+      } else if (call->isNamed("chpl_statementLevelSymbol")) {
+        // Would be nice to eliminate other chpl_statementLevelSymbol calls.
+        // However, they are used in the code to avoid split-init.
+        if (givesType(argSym) || argSym->isImmediate()) {
+          // replace with the argument
+          retval = argSE->remove();
+        }
+      }
+
+      if (retval != NULL)
+        call->replace(retval);
     }
   }
 

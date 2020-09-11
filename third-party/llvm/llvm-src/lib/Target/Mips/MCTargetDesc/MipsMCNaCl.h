@@ -1,9 +1,8 @@
 //===-- MipsMCNaCl.h - NaCl-related declarations --------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -11,11 +10,12 @@
 #define LLVM_LIB_TARGET_MIPS_MCTARGETDESC_MIPSMCNACL_H
 
 #include "llvm/MC/MCELFStreamer.h"
+#include "llvm/Support/Alignment.h"
 
 namespace llvm {
 
-// Log2 of the NaCl MIPS sandbox's instruction bundle size.
-static const unsigned MIPS_NACL_BUNDLE_ALIGN = 4u;
+// NaCl MIPS sandbox's instruction bundle size.
+static const Align MIPS_NACL_BUNDLE_ALIGN = Align(16);
 
 bool isBasePlusOffsetMemoryAccess(unsigned Opcode, unsigned *AddrIdx,
                                   bool *IsStore = nullptr);

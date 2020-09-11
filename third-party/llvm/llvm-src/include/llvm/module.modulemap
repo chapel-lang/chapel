@@ -5,6 +5,7 @@ module LLVM_Analysis {
 
   // This is intended for (repeated) textual inclusion.
   textual header "Analysis/TargetLibraryInfo.def"
+  textual header "Analysis/VecFuncs.def"
 }
 
 module LLVM_AsmParser {
@@ -53,6 +54,7 @@ module LLVM_BinaryFormat {
     textual header "BinaryFormat/Dwarf.def"
     textual header "BinaryFormat/DynamicTags.def"
     textual header "BinaryFormat/MachO.def"
+    textual header "BinaryFormat/MinidumpConstants.def"
     textual header "BinaryFormat/ELFRelocs/AArch64.def"
     textual header "BinaryFormat/ELFRelocs/AMDGPU.def"
     textual header "BinaryFormat/ELFRelocs/ARM.def"
@@ -150,6 +152,13 @@ module LLVM_DebugInfo_CodeView {
   textual header "DebugInfo/CodeView/CodeViewSymbols.def"
 }
 
+module LLVM_DWARFLinker {
+  requires cplusplus
+
+  umbrella "DWARFLinker"
+  module * { export * }
+}
+
 module LLVM_ExecutionEngine {
   requires cplusplus
 
@@ -167,12 +176,31 @@ module LLVM_ExecutionEngine {
 
   // FIXME: These exclude directives were added as a workaround for
   //        <rdar://problem/29247092> and should be removed once it is fixed.
-  exclude header "ExecutionEngine/Orc/RawByteChannel.h"
-  exclude header "ExecutionEngine/Orc/RPCUtils.h"
   exclude header "ExecutionEngine/Orc/OrcRemoteTargetRPCAPI.h"
   exclude header "ExecutionEngine/Orc/OrcRemoteTargetClient.h"
   exclude header "ExecutionEngine/Orc/OrcRemoteTargetServer.h"
   exclude header "ExecutionEngine/Orc/RemoteObjectLayer.h"
+
+  // Exclude headers from LLVM_OrcSupport.
+  exclude header "ExecutionEngine/Orc/OrcError.h"
+  exclude header "ExecutionEngine/Orc/RPC/RPCUtils.h"
+  exclude header "ExecutionEngine/Orc/RPC/RPCSerialization.h"
+  exclude header "ExecutionEngine/Orc/RPC/RawByteChannel.h"
+
+}
+
+// Orc utilities that don't depend only on Support (not ExecutionEngine or
+// IR). This is a workaround for ExecutionEngine's broken layering, and will
+// be removed in the future.
+module LLVM_OrcSupport {
+  requires cplusplus
+
+  header "ExecutionEngine/Orc/OrcError.h"
+  header "ExecutionEngine/Orc/RPC/RPCUtils.h"
+  header "ExecutionEngine/Orc/RPC/RPCSerialization.h"
+  header "ExecutionEngine/Orc/RPC/RawByteChannel.h"
+
+  export *
 }
 
 module LLVM_Pass {
@@ -220,7 +248,7 @@ module LLVM_intrinsic_gen {
   module IR_ConstantRange { header "IR/ConstantRange.h" export * }
   module IR_Dominators { header "IR/Dominators.h" export * }
   module Analysis_PostDominators { header "Analysis/PostDominators.h" export * }
-  module IR_DomTreeUpdater { header "IR/DomTreeUpdater.h" export * }
+  module Analysis_DomTreeUpdater { header "Analysis/DomTreeUpdater.h" export * }
   module IR_IRBuilder { header "IR/IRBuilder.h" export * }
   module IR_PassManager { header "IR/PassManager.h" export * }
   module IR_PredIteratorCache { header "IR/PredIteratorCache.h" export * }
@@ -235,6 +263,7 @@ module LLVM_intrinsic_gen {
   }
   module IR_IntrinsicInst { header "IR/IntrinsicInst.h" export * }
   module IR_PatternMatch { header "IR/PatternMatch.h" export * }
+  module IR_SafepointIRVerifier { header "IR/SafepointIRVerifier.h" export * }
   module IR_Statepoint { header "IR/Statepoint.h" export * }
 
   export *
@@ -247,9 +276,11 @@ module LLVM_IR {
   module * { export * }
 
   // These are intended for (repeated) textual inclusion.
+  textual header "IR/ConstrainedOps.def"
   textual header "IR/DebugInfoFlags.def"
   textual header "IR/Instruction.def"
   textual header "IR/Metadata.def"
+  textual header "IR/FixedMetadataKinds.def"
   textual header "IR/Value.def"
   textual header "IR/RuntimeLibcalls.def"
 }
@@ -328,6 +359,7 @@ module LLVM_TableGen {
 module LLVM_Transforms {
   requires cplusplus
   umbrella "Transforms"
+
   module * { export * }
 }
 
@@ -348,6 +380,9 @@ module LLVM_Utils {
 
     umbrella "Support"
     module * { export * }
+    
+    // Exclude this; it should only be used on Windows.
+    exclude header "Support/Windows/WindowsSupport.h"
 
     // Exclude these; they are fundamentally non-modular.
     exclude header "Support/PluginLoader.h"

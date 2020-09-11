@@ -1,9 +1,8 @@
 //===-- TargetInfo/AMDGPUTargetInfo.cpp - TargetInfo for AMDGPU -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,7 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "AMDGPUTargetMachine.h"
+#include "TargetInfo/AMDGPUTargetInfo.h"
 #include "llvm/Support/TargetRegistry.h"
 
 using namespace llvm;
@@ -29,7 +28,7 @@ Target &llvm::getTheGCNTarget() {
 }
 
 /// Extern function to initialize the targets for the AMDGPU backend
-extern "C" void LLVMInitializeAMDGPUTargetInfo() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAMDGPUTargetInfo() {
   RegisterTarget<Triple::r600, false> R600(getTheAMDGPUTarget(), "r600",
                                            "AMD GPUs HD2XXX-HD6XXX", "AMDGPU");
   RegisterTarget<Triple::amdgcn, false> GCN(getTheGCNTarget(), "amdgcn",

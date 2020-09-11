@@ -1,10 +1,9 @@
 //===- SyncDependenceAnalysis.cpp - Divergent Branch Dependence Calculation
 //--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -222,10 +221,7 @@ struct DivergencePropagator {
                     SuccessorIterable NodeSuccessors, const Loop *ParentLoop) {
     assert(JoinBlocks);
 
-    // immediate post dominator (no join block beyond that block)
-    const auto *PdNode = PDT.getNode(const_cast<BasicBlock *>(&RootBlock));
-    const auto *IpdNode = PdNode->getIDom();
-    const auto *PdBoundBlock = IpdNode ? IpdNode->getBlock() : nullptr;
+    LLVM_DEBUG(dbgs() << "SDA:computeJoinPoints. Parent loop: " << (ParentLoop ? ParentLoop->getName() : "<null>") << "\n" );
 
     // bootstrap with branch targets
     for (const auto *SuccBlock : NodeSuccessors) {
@@ -234,12 +230,18 @@ struct DivergencePropagator {
       if (ParentLoop && !ParentLoop->contains(SuccBlock)) {
         // immediate loop exit from node.
         ReachedLoopExits.insert(SuccBlock);
-        continue;
       } else {
         // regular successor
         PendingUpdates.insert(SuccBlock);
       }
     }
+
+    LLVM_DEBUG(
+      dbgs() << "SDA: rpo order:\n";
+      for (const auto * RpoBlock : FuncRPOT) {
+        dbgs() << "- " << RpoBlock->getName() << "\n";
+      }
+    );
 
     auto ItBeginRPO = FuncRPOT.begin();
 
@@ -251,16 +253,18 @@ struct DivergencePropagator {
 
     // propagate definitions at the immediate successors of the node in RPO
     auto ItBlockRPO = ItBeginRPO;
-    while (++ItBlockRPO != ItEndRPO && *ItBlockRPO != PdBoundBlock) {
+    while ((++ItBlockRPO != ItEndRPO) &&
+           !PendingUpdates.empty()) {
       const auto *Block = *ItBlockRPO;
+      LLVM_DEBUG(dbgs() << "SDA::joins. visiting " << Block->getName() << "\n");
 
-      // skip @block if not pending update
+      // skip Block if not pending update
       auto ItPending = PendingUpdates.find(Block);
       if (ItPending == PendingUpdates.end())
         continue;
       PendingUpdates.erase(ItPending);
 
-      // propagate definition at @block to its successors
+      // propagate definition at Block to its successors
       auto ItDef = DefMap.find(Block);
       const auto *DefBlock = ItDef->second;
       assert(DefBlock);
@@ -284,6 +288,8 @@ struct DivergencePropagator {
       }
     }
 
+    LLVM_DEBUG(dbgs() << "SDA::joins. After propagation:\n"; printDefs(dbgs()));
+
     // We need to know the definition at the parent loop header to decide
     // whether the definition at the header is different from the definition at
     // the loop exits, which would indicate a divergent loop exits.
@@ -298,24 +304,17 @@ struct DivergencePropagator {
     // |
     // proper exit from both loops
     //
-    // D post-dominates B as it is the only proper exit from the "A loop".
-    // If C has a divergent branch, propagation will therefore stop at D.
-    // That implies that B will never receive a definition.
-    // But that definition can only be the same as at D (D itself in thise case)
-    // because all paths to anywhere have to pass through D.
-    //
-    const BasicBlock *ParentLoopHeader =
-        ParentLoop ? ParentLoop->getHeader() : nullptr;
-    if (ParentLoop && ParentLoop->contains(PdBoundBlock)) {
-      DefMap[ParentLoopHeader] = DefMap[PdBoundBlock];
-    }
-
     // analyze reached loop exits
     if (!ReachedLoopExits.empty()) {
+      const BasicBlock *ParentLoopHeader =
+          ParentLoop ? ParentLoop->getHeader() : nullptr;
+
       assert(ParentLoop);
-      const auto *HeaderDefBlock = DefMap[ParentLoopHeader];
+      auto ItHeaderDef = DefMap.find(ParentLoopHeader);
+      const auto *HeaderDefBlock = (ItHeaderDef == DefMap.end()) ? nullptr : ItHeaderDef->second;
+
       LLVM_DEBUG(printDefs(dbgs()));
-      assert(HeaderDefBlock && "no definition in header of carrying loop");
+      assert(HeaderDefBlock && "no definition at header of carrying loop");
 
       for (const auto *ExitBlock : ReachedLoopExits) {
         auto ItExitDef = DefMap.find(ExitBlock);
@@ -341,8 +340,9 @@ const ConstBlockSet &SyncDependenceAnalysis::join_blocks(const Loop &Loop) {
 
   // already available in cache?
   auto ItCached = CachedLoopExitJoins.find(&Loop);
-  if (ItCached != CachedLoopExitJoins.end())
+  if (ItCached != CachedLoopExitJoins.end()) {
     return *ItCached->second;
+  }
 
   // compute all join points
   DivergencePropagator Propagator{FuncRPOT, DT, PDT, LI};

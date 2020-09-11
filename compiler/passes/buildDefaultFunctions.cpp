@@ -152,7 +152,6 @@ void buildDefaultFunctions() {
         // for extern types that are simple (as far as we can tell), we build
         // definitions for those assignments here.
         if (type->hasFlag(FLAG_EXTERN)) {
-          //build_extern_init_function(type->type);
           buildExternAssignmentFunction(type->type);
         }
       }
@@ -217,9 +216,11 @@ static FnSymbol* functionExists(const char* name,
    case 0:  break;
   }
 
+  const char* nameAstr = astr(name);
+
   forv_Vec(FnSymbol, fn, gFnSymbols)
   {
-    if (strcmp(name, fn->name))
+    if (fn->name != nameAstr)
       continue;
 
     // numFormals must match exactly.
@@ -683,18 +684,18 @@ static void buildChplEntryPoints() {
 
   SET_LINENO(chplUserMain);
 
-  chplUserMain->cname = "chpl_user_main";
+  chplUserMain->cname = astr("chpl_user_main");
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.
   // It invokes the user's code.
   //
 
-  ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "_arg", dtMainArgument);
+  ArgSymbol* arg = new ArgSymbol(INTENT_CONST_REF, "_arg", dtMainArgument);
 
   chpl_gen_main          = new FnSymbol("chpl_gen_main");
   chpl_gen_main->retType = dtInt[INT_SIZE_64];
-  chpl_gen_main->cname   = "chpl_gen_main";
+  chpl_gen_main->cname   = astr("chpl_gen_main");
 
   chpl_gen_main->insertFormalAtTail(arg);
 
@@ -706,10 +707,9 @@ static void buildChplEntryPoints() {
   mainModule->block->insertAtTail(new DefExpr(chpl_gen_main));
 
   VarSymbol* main_ret = newTemp("_main_ret", dtInt[INT_SIZE_64]);
-  VarSymbol* endCount = newTemp("_endCount");
+  VarSymbol* endCount = NULL;
 
   chpl_gen_main->insertAtTail(new DefExpr(main_ret));
-  chpl_gen_main->insertAtTail(new DefExpr(endCount));
 
   //
   // In --minimal-modules compilation mode, we won't have any
@@ -717,6 +717,8 @@ static void buildChplEntryPoints() {
   // support them).
   //
   if (fMinimalModules == false) {
+    endCount = newTemp("_endCount");
+    chpl_gen_main->insertAtTail(new DefExpr(endCount));
     chpl_gen_main->insertAtTail(new CallExpr(PRIM_MOVE,
                                              endCount,
                                              new CallExpr("_endCountAlloc",
@@ -1706,6 +1708,11 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // This is a workaround - want Error objects to overload message()
   // to build their own description.
   if (inheritsFromError(ct))
+    return;
+
+  // Similarly, Chapel arrays are written out using their own
+  // dsiSerialRead/Write() routines, so don't create functions for them.
+  if (isArrayImplType(ct))
     return;
 
   // If we have a readWriteThis, we'll call it from readThis/writeThis.

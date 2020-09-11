@@ -1,8 +1,0 @@
-bug: writeln() called with a writeln as an argument leads to unexpected output.
-
-This test currently fails compilation with the following message:
-
-   funcPtr3.chpl:1: error: 'writeln' undeclared (first use this function)
-
-It should probably be illegal and give the same compile-time error as
-the other funcPtr*.chpl programs.

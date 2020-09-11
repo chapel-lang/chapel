@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of getting arrays to use copy init
-GITHUB_USER=mppf
-GITHUB_BRANCH=array-coerce
-SHORT_NAME=array-coerce
-START_DATE=05/18/20
+# Test performance of llvm-10
+GITHUB_USER=ronawho
+GITHUB_BRANCH=rm-1-task-opt
+SHORT_NAME=rm-1-task-opt
+START_DATE=09/06/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

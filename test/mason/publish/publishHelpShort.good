@@ -1,0 +1,15 @@
+Publish a package to the mason-registry repository
+
+Usage:
+    mason publish [options] <registry>
+
+Options:
+    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry
+    -h, --help                   Display this message
+    -c, --create-registry        Creates a local registry at path
+    --dry-run                    Check to see if package is ready to be published
+    --check                      Runs check to see if package can be published successfully to <registry>
+    --ci-check                   Same as --check, except omits git origin checks
+    --[no-]update                [Do not] Prevent registries from being updated when a package is published.
+
+Publishing requires the mason-registry to be forked and the package to have a remote origin.

@@ -1,0 +1,2 @@
+testGetValueBadValType.chpl:3: In function 'test':
+testGetValueBadValType.chpl:9: error: getValue can only be called when a map value type is a non-nilable class

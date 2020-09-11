@@ -21,6 +21,7 @@
 module StringCasts {
   private use ChapelStandard;
   private use SysCTypes;
+  private use String.NVStringFactory;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
@@ -32,7 +33,7 @@ module StringCasts {
   // Bool
   //
 
-  inline proc _cast(type t:string, x: bool) {
+  proc _cast(type t:string, x: bool) {
     if (x) {
       return "true";
     } else {
@@ -74,15 +75,14 @@ module StringCasts {
       }
     }
 
-    var ret: string;
-    ret.buff = csc:c_ptr(uint(8));
-    ret.buffLen = strlen(csc).safeCast(int);
-    ret.buffSize = ret.buffLen+1;
-
-    return ret;
+    const len = strlen(csc).safeCast(int);
+    return chpl_createStringWithOwnedBufferNV(x=csc:c_ptr(uint(8)),
+                                              length=len,
+                                              size=len+1,
+                                              numCodepoints=len);
   }
 
-  inline proc _cast(type t:integral, x: string) throws {
+  proc _cast(type t:integral, x: string) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -113,23 +113,12 @@ module StringCasts {
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find("_") != -1;
 
-    if hasUnderscores {
-      localX = localX.strip();
-      // make sure the string only has one word
-      var numElements: int;
-      for localX.split() {
-        numElements += 1;
-        if numElements > 1 then break;
-      }
-      if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
 
-      // remove underscores everywhere but the first position
-      if localX.size >= 2 then
-        localX = localX[0] + localX[1..].replace("_", "");
-    }
+    _cleanupStringForNumericCast(localX);
 
     if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
@@ -161,7 +150,7 @@ module StringCasts {
   //
   // real & imag
   //
-  inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
+  proc _real_cast_helper(x: real(64), param isImag: bool) : string {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
@@ -169,15 +158,14 @@ module StringCasts {
 
     var csc = real_to_c_string(x:real(64), isImag);
 
-    var ret: string;
-    ret.buff = csc:c_ptr(uint(8));
-    ret.buffLen = strlen(csc).safeCast(int);
-    ret.buffSize = ret.buffLen+1;
-
-    return ret;
+    const len = strlen(csc).safeCast(int);
+    return chpl_createStringWithOwnedBufferNV(x=csc:c_ptr(uint(8)),
+                                              length=len,
+                                              size=len+1,
+                                              numCodepoints=len);
   }
 
-  proc _cast(type t:string, x:chpl_anyreal) {
+  inline proc _cast(type t:string, x:chpl_anyreal) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
@@ -190,24 +178,47 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
-    var len = s.size;
+  proc _isSingleWord(const ref s: string) {
+    use BytesStringCommon only byte_isWhitespace;
 
-    if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
+    // here we assume that the string is all ASCII, if not, we'll get an error
+    // from the actual conversion function, anyways
+    for b in s.bytes() {
+      if byte_isWhitespace(b) then return false;
+    }
+    return true;
+  }
 
-    if len >= 2 && s[1..].find("_") != -1 {
-      // Don't remove a leading underscore in the string number,
-      // but remove the rest.
-      if len > 2 && s[0] == "_" {
-        s = s[0] + s[1..].replace("_", "");
-      } else {
-        s = s.replace("_", "");
+  proc _cleanupStringForNumericCast(ref s: string) {
+    param underscore = "_".toByte();
+
+    var hasUnderscores = false;
+    for bIdx in 1..<s.numBytes {
+      if s.byte[bIdx] == underscore then {
+        hasUnderscores = true;
+        break;
+      }
+    }
+
+    if hasUnderscores {
+      s = s.strip();
+      // don't remove anything and let it fail later on
+      if _isSingleWord(s) {
+        var len = s.size;
+        if len >= 2 {
+          // Don't remove a leading underscore in the string number,
+          // but remove the rest.
+          if len > 2 && s[0] == "_" {
+            s = s[0] + s[1..].replace("_", "");
+          } else {
+            s = s.replace("_", "");
+          }
+        }
       }
     }
   }
 
-  inline proc _cast(type t:chpl_anyreal, x: string) throws {
+  proc _cast(type t:chpl_anyreal, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -219,7 +230,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -233,7 +248,7 @@ module StringCasts {
     return retVal;
   }
 
-  inline proc _cast(type t:chpl_anyimag, x: string) throws {
+  proc _cast(type t:chpl_anyimag, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -245,7 +260,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupStringForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
@@ -286,7 +305,7 @@ module StringCasts {
   }
 
 
-  inline proc _cast(type t:chpl_anycomplex, x: string) throws {
+  proc _cast(type t:chpl_anycomplex, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);

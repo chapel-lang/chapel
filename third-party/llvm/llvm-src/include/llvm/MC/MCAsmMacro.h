@@ -1,9 +1,8 @@
 //===- MCAsmMacro.h - Assembly Macros ---------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -125,7 +124,6 @@ public:
   }
 
   void dump(raw_ostream &OS) const;
-  void dump() const { dump(dbgs()); }
 };
 
 struct MCAsmMacroParameter {
@@ -134,10 +132,10 @@ struct MCAsmMacroParameter {
   bool Required = false;
   bool Vararg = false;
 
-  MCAsmMacroParameter() = default;
-
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   void dump() const { dump(dbgs()); }
-  void dump(raw_ostream &OS) const;
+  LLVM_DUMP_METHOD void dump(raw_ostream &OS) const;
+#endif
 };
 
 typedef std::vector<MCAsmMacroParameter> MCAsmMacroParameters;
@@ -150,8 +148,10 @@ public:
   MCAsmMacro(StringRef N, StringRef B, MCAsmMacroParameters P)
       : Name(N), Body(B), Parameters(std::move(P)) {}
 
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
   void dump() const { dump(dbgs()); }
-  void dump(raw_ostream &OS) const;
+  LLVM_DUMP_METHOD void dump(raw_ostream &OS) const;
+#endif
 };
 } // namespace llvm
 

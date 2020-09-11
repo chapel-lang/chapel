@@ -1,9 +1,8 @@
 //===- BasicTTIImpl.h -------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -191,17 +190,19 @@ private:
 protected:
   explicit BasicTTIImplBase(const TargetMachine *TM, const DataLayout &DL)
       : BaseT(DL) {}
+  virtual ~BasicTTIImplBase() = default;
 
   using TargetTransformInfoImplBase::DL;
 
 public:
   /// \name Scalar TTI Implementations
   /// @{
-  bool allowsMisalignedMemoryAccesses(LLVMContext &Context,
-                                      unsigned BitWidth, unsigned AddressSpace,
-                                      unsigned Alignment, bool *Fast) const {
+  bool allowsMisalignedMemoryAccesses(LLVMContext &Context, unsigned BitWidth,
+                                      unsigned AddressSpace, unsigned Alignment,
+                                      bool *Fast) const {
     EVT E = EVT::getIntegerVT(Context, BitWidth);
-    return getTLI()->allowsMisalignedMemoryAccesses(E, AddressSpace, Alignment, Fast);
+    return getTLI()->allowsMisalignedMemoryAccesses(
+        E, AddressSpace, Alignment, MachineMemOperand::MONone, Fast);
   }
 
   bool hasBranchDivergence() { return false; }
@@ -213,6 +214,16 @@ public:
   unsigned getFlatAddressSpace() {
     // Return an invalid address space.
     return -1;
+  }
+
+  bool collectFlatAddressOperands(SmallVectorImpl<int> &OpIndexes,
+                                  Intrinsic::ID IID) const {
+    return false;
+  }
+
+  bool rewriteIntrinsicWithAddressSpace(IntrinsicInst *II,
+                                        Value *OldV, Value *NewV) const {
+    return false;
   }
 
   bool isLegalAddImmediate(int64_t imm) {
@@ -293,12 +304,12 @@ public:
   }
 
   unsigned getIntrinsicCost(Intrinsic::ID IID, Type *RetTy,
-                            ArrayRef<const Value *> Arguments) {
-    return BaseT::getIntrinsicCost(IID, RetTy, Arguments);
+                            ArrayRef<const Value *> Arguments, const User *U) {
+    return BaseT::getIntrinsicCost(IID, RetTy, Arguments, U);
   }
 
   unsigned getIntrinsicCost(Intrinsic::ID IID, Type *RetTy,
-                            ArrayRef<Type *> ParamTys) {
+                            ArrayRef<Type *> ParamTys, const User *U) {
     if (IID == Intrinsic::cttz) {
       if (getTLI()->isCheapToSpeculateCttz())
         return TargetTransformInfo::TCC_Basic;
@@ -311,13 +322,15 @@ public:
       return TargetTransformInfo::TCC_Expensive;
     }
 
-    return BaseT::getIntrinsicCost(IID, RetTy, ParamTys);
+    return BaseT::getIntrinsicCost(IID, RetTy, ParamTys, U);
   }
 
   unsigned getEstimatedNumberOfCaseClusters(const SwitchInst &SI,
-                                            unsigned &JumpTableSize) {
+                                            unsigned &JumpTableSize,
+                                            ProfileSummaryInfo *PSI,
+                                            BlockFrequencyInfo *BFI) {
     /// Try to find the estimated number of clusters. Note that the number of
-    /// clusters identified in this function could be different from the actural
+    /// clusters identified in this function could be different from the actual
     /// numbers found in lowering. This function ignore switches that are
     /// lowered with a mix of jump table / bit test / BTree. This function was
     /// initially intended to be used when estimating the cost of switch in
@@ -363,17 +376,13 @@ public:
           (MaxCaseVal - MinCaseVal)
               .getLimitedValue(std::numeric_limits<uint64_t>::max() - 1) + 1;
       // Check whether a range of clusters is dense enough for a jump table
-      if (TLI->isSuitableForJumpTable(&SI, N, Range)) {
+      if (TLI->isSuitableForJumpTable(&SI, N, Range, PSI, BFI)) {
         JumpTableSize = Range;
         return 1;
       }
     }
     return N;
   }
-
-  unsigned getJumpBufAlignment() { return getTLI()->getJumpBufAlignment(); }
-
-  unsigned getJumpBufSize() { return getTLI()->getJumpBufSize(); }
 
   bool shouldBuildLookupTables() {
     const TargetLoweringBase *TLI = getTLI();
@@ -414,12 +423,20 @@ public:
       if (TLI->isZExtFree(OpTy, Ty))
         return TargetTransformInfo::TCC_Free;
       return TargetTransformInfo::TCC_Basic;
+
+    case Instruction::AddrSpaceCast:
+      if (TLI->isFreeAddrSpaceCast(OpTy->getPointerAddressSpace(),
+                                   Ty->getPointerAddressSpace()))
+        return TargetTransformInfo::TCC_Free;
+      return TargetTransformInfo::TCC_Basic;
     }
 
     return BaseT::getOperationCost(Opcode, Ty, OpTy);
   }
 
   unsigned getInliningThresholdMultiplier() { return 1; }
+
+  int getInlinerVectorBonusPercent() { return 150; }
 
   void getUnrollingPreferences(Loop *L, ScalarEvolution &SE,
                                TTI::UnrollingPreferences &UP) {
@@ -486,6 +503,20 @@ public:
     UP.BEInsns = 2;
   }
 
+  bool isHardwareLoopProfitable(Loop *L, ScalarEvolution &SE,
+                                AssumptionCache &AC,
+                                TargetLibraryInfo *LibInfo,
+                                HardwareLoopInfo &HWLoopInfo) {
+    return BaseT::isHardwareLoopProfitable(L, SE, AC, LibInfo, HWLoopInfo);
+  }
+
+  bool preferPredicateOverEpilogue(Loop *L, LoopInfo *LI, ScalarEvolution &SE,
+                                   AssumptionCache &AC, TargetLibraryInfo *TLI,
+                                   DominatorTree *DT,
+                                   const LoopAccessInfo *LAI) {
+    return BaseT::preferPredicateOverEpilogue(L, LI, SE, AC, TLI, DT, LAI);
+  }
+
   int getInstructionLatency(const Instruction *I) {
     if (isa<LoadInst>(I))
       return getST()->getSchedModel().DefaultLoadLatency;
@@ -493,12 +524,43 @@ public:
     return BaseT::getInstructionLatency(I);
   }
 
+  virtual Optional<unsigned>
+  getCacheSize(TargetTransformInfo::CacheLevel Level) const {
+    return Optional<unsigned>(
+      getST()->getCacheSize(static_cast<unsigned>(Level)));
+  }
+
+  virtual Optional<unsigned>
+  getCacheAssociativity(TargetTransformInfo::CacheLevel Level) const {
+    Optional<unsigned> TargetResult =
+        getST()->getCacheAssociativity(static_cast<unsigned>(Level));
+
+    if (TargetResult)
+      return TargetResult;
+
+    return BaseT::getCacheAssociativity(Level);
+  }
+
+  virtual unsigned getCacheLineSize() const {
+    return getST()->getCacheLineSize();
+  }
+
+  virtual unsigned getPrefetchDistance() const {
+    return getST()->getPrefetchDistance();
+  }
+
+  virtual unsigned getMinPrefetchStride() const {
+    return getST()->getMinPrefetchStride();
+  }
+
+  virtual unsigned getMaxPrefetchIterationsAhead() const {
+    return getST()->getMaxPrefetchIterationsAhead();
+  }
+
   /// @}
 
   /// \name Vector TTI Implementations
   /// @{
-
-  unsigned getNumberOfRegisters(bool Vector) { return Vector ? 0 : 1; }
 
   unsigned getRegisterBitWidth(bool Vector) const { return 32; }
 
@@ -571,7 +633,8 @@ public:
       TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
       TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
       TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-      ArrayRef<const Value *> Args = ArrayRef<const Value *>()) {
+      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      const Instruction *CxtI = nullptr) {
     // Check if any of the operands are vector operands.
     const TargetLoweringBase *TLI = getTLI();
     int ISD = TLI->InstructionOpcodeToISD(Opcode);
@@ -657,7 +720,7 @@ public:
       return 0;
 
     if (Opcode == Instruction::AddrSpaceCast &&
-        TLI->isNoopAddrSpaceCast(Src->getPointerAddressSpace(),
+        TLI->isFreeAddrSpaceCast(Src->getPointerAddressSpace(),
                                  Dst->getPointerAddressSpace()))
       return 0;
 
@@ -719,9 +782,10 @@ public:
       // cost of the split itself. Count that as 1, to be consistent with
       // TLI->getTypeLegalizationCost().
       if ((TLI->getTypeAction(Src->getContext(), TLI->getValueType(DL, Src)) ==
-           TargetLowering::TypeSplitVector) ||
-          (TLI->getTypeAction(Dst->getContext(), TLI->getValueType(DL, Dst)) ==
-           TargetLowering::TypeSplitVector)) {
+               TargetLowering::TypeSplitVector ||
+           TLI->getTypeAction(Dst->getContext(), TLI->getValueType(DL, Dst)) ==
+               TargetLowering::TypeSplitVector) &&
+          Src->getVectorNumElements() > 1 && Dst->getVectorNumElements() > 1) {
         Type *SplitDst = VectorType::get(Dst->getVectorElementType(),
                                          Dst->getVectorNumElements() / 2);
         Type *SplitSrc = VectorType::get(Src->getVectorElementType(),
@@ -816,8 +880,9 @@ public:
     return LT.first;
   }
 
-  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, unsigned Alignment,
-                       unsigned AddressSpace, const Instruction *I = nullptr) {
+  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, MaybeAlign Alignment,
+                           unsigned AddressSpace,
+                           const Instruction *I = nullptr) {
     assert(!Src->isVoidTy() && "Invalid type");
     std::pair<unsigned, MVT> LT = getTLI()->getTypeLegalizationCost(DL, Src);
 
@@ -868,8 +933,8 @@ public:
       Cost = static_cast<T *>(this)->getMaskedMemoryOpCost(
           Opcode, VecTy, Alignment, AddressSpace);
     else
-      Cost = static_cast<T *>(this)->getMemoryOpCost(Opcode, VecTy, Alignment,
-                                                     AddressSpace);
+      Cost = static_cast<T *>(this)->getMemoryOpCost(
+          Opcode, VecTy, MaybeAlign(Alignment), AddressSpace);
 
     // Legalize the vector type, and get the legalized and unlegalized type
     // sizes.
@@ -997,7 +1062,7 @@ public:
     // inside the loop.
     if (UseMaskForGaps)
       Cost += static_cast<T *>(this)->getArithmeticInstrCost(
-          BinaryOperator::And, MaskVT); 
+          BinaryOperator::And, MaskVT);
 
     return Cost;
   }
@@ -1058,8 +1123,8 @@ public:
     case Intrinsic::experimental_vector_reduce_and:
     case Intrinsic::experimental_vector_reduce_or:
     case Intrinsic::experimental_vector_reduce_xor:
-    case Intrinsic::experimental_vector_reduce_fadd:
-    case Intrinsic::experimental_vector_reduce_fmul:
+    case Intrinsic::experimental_vector_reduce_v2_fadd:
+    case Intrinsic::experimental_vector_reduce_v2_fmul:
     case Intrinsic::experimental_vector_reduce_smax:
     case Intrinsic::experimental_vector_reduce_smin:
     case Intrinsic::experimental_vector_reduce_fmax:
@@ -1096,9 +1161,7 @@ public:
                                                     OpPropsBW);
       // For non-rotates (X != Y) we must add shift-by-zero handling costs.
       if (X != Y) {
-        Type *CondTy = Type::getInt1Ty(RetTy->getContext());
-        if (RetVF > 1)
-          CondTy = VectorType::get(CondTy, RetVF);
+        Type *CondTy = RetTy->getWithNewBitWidth(1);
         Cost += ConcreteTTI->getCmpSelInstrCost(BinaryOperator::ICmp, RetTy,
                                                 CondTy, nullptr);
         Cost += ConcreteTTI->getCmpSelInstrCost(BinaryOperator::Select, RetTy,
@@ -1116,6 +1179,8 @@ public:
   unsigned getIntrinsicInstrCost(
       Intrinsic::ID IID, Type *RetTy, ArrayRef<Type *> Tys, FastMathFlags FMF,
       unsigned ScalarizationCostPassed = std::numeric_limits<unsigned>::max()) {
+    auto *ConcreteTTI = static_cast<T *>(this);
+
     SmallVector<unsigned, 2> ISDs;
     unsigned SingleCallCost = 10; // Library call cost. Make it expensive.
     switch (IID) {
@@ -1144,8 +1209,8 @@ public:
       if (ScalarCalls == 1)
         return 1; // Return cost of a scalar intrinsic. Assume it to be cheap.
 
-      unsigned ScalarCost = static_cast<T *>(this)->getIntrinsicInstrCost(
-          IID, ScalarRetTy, ScalarTys, FMF);
+      unsigned ScalarCost =
+          ConcreteTTI->getIntrinsicInstrCost(IID, ScalarRetTy, ScalarTys, FMF);
 
       return ScalarCalls * ScalarCost + ScalarizationCost;
     }
@@ -1227,44 +1292,173 @@ public:
     case Intrinsic::sideeffect:
       return 0;
     case Intrinsic::masked_store:
-      return static_cast<T *>(this)
-          ->getMaskedMemoryOpCost(Instruction::Store, Tys[0], 0, 0);
+      return ConcreteTTI->getMaskedMemoryOpCost(Instruction::Store, Tys[0], 0,
+                                                0);
     case Intrinsic::masked_load:
-      return static_cast<T *>(this)
-          ->getMaskedMemoryOpCost(Instruction::Load, RetTy, 0, 0);
+      return ConcreteTTI->getMaskedMemoryOpCost(Instruction::Load, RetTy, 0, 0);
     case Intrinsic::experimental_vector_reduce_add:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::Add, Tys[0], /*IsPairwiseForm=*/false);
+      return ConcreteTTI->getArithmeticReductionCost(Instruction::Add, Tys[0],
+                                                     /*IsPairwiseForm=*/false);
     case Intrinsic::experimental_vector_reduce_mul:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::Mul, Tys[0], /*IsPairwiseForm=*/false);
+      return ConcreteTTI->getArithmeticReductionCost(Instruction::Mul, Tys[0],
+                                                     /*IsPairwiseForm=*/false);
     case Intrinsic::experimental_vector_reduce_and:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::And, Tys[0], /*IsPairwiseForm=*/false);
+      return ConcreteTTI->getArithmeticReductionCost(Instruction::And, Tys[0],
+                                                     /*IsPairwiseForm=*/false);
     case Intrinsic::experimental_vector_reduce_or:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::Or, Tys[0], /*IsPairwiseForm=*/false);
+      return ConcreteTTI->getArithmeticReductionCost(Instruction::Or, Tys[0],
+                                                     /*IsPairwiseForm=*/false);
     case Intrinsic::experimental_vector_reduce_xor:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::Xor, Tys[0], /*IsPairwiseForm=*/false);
-    case Intrinsic::experimental_vector_reduce_fadd:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::FAdd, Tys[0], /*IsPairwiseForm=*/false);
-    case Intrinsic::experimental_vector_reduce_fmul:
-      return static_cast<T *>(this)->getArithmeticReductionCost(
-          Instruction::FMul, Tys[0], /*IsPairwiseForm=*/false);
+      return ConcreteTTI->getArithmeticReductionCost(Instruction::Xor, Tys[0],
+                                                     /*IsPairwiseForm=*/false);
+    case Intrinsic::experimental_vector_reduce_v2_fadd:
+      return ConcreteTTI->getArithmeticReductionCost(
+          Instruction::FAdd, Tys[0],
+          /*IsPairwiseForm=*/false); // FIXME: Add new flag for cost of strict
+                                     // reductions.
+    case Intrinsic::experimental_vector_reduce_v2_fmul:
+      return ConcreteTTI->getArithmeticReductionCost(
+          Instruction::FMul, Tys[0],
+          /*IsPairwiseForm=*/false); // FIXME: Add new flag for cost of strict
+                                     // reductions.
     case Intrinsic::experimental_vector_reduce_smax:
     case Intrinsic::experimental_vector_reduce_smin:
     case Intrinsic::experimental_vector_reduce_fmax:
     case Intrinsic::experimental_vector_reduce_fmin:
-      return static_cast<T *>(this)->getMinMaxReductionCost(
+      return ConcreteTTI->getMinMaxReductionCost(
           Tys[0], CmpInst::makeCmpResultType(Tys[0]), /*IsPairwiseForm=*/false,
-          /*IsSigned=*/true);
+          /*IsUnsigned=*/true);
     case Intrinsic::experimental_vector_reduce_umax:
     case Intrinsic::experimental_vector_reduce_umin:
-      return static_cast<T *>(this)->getMinMaxReductionCost(
+      return ConcreteTTI->getMinMaxReductionCost(
           Tys[0], CmpInst::makeCmpResultType(Tys[0]), /*IsPairwiseForm=*/false,
-          /*IsSigned=*/false);
+          /*IsUnsigned=*/false);
+    case Intrinsic::sadd_sat:
+    case Intrinsic::ssub_sat: {
+      Type *CondTy = RetTy->getWithNewBitWidth(1);
+
+      Type *OpTy = StructType::create({RetTy, CondTy});
+      Intrinsic::ID OverflowOp = IID == Intrinsic::sadd_sat
+                                     ? Intrinsic::sadd_with_overflow
+                                     : Intrinsic::ssub_with_overflow;
+
+      // SatMax -> Overflow && SumDiff < 0
+      // SatMin -> Overflow && SumDiff >= 0
+      unsigned Cost = 0;
+      Cost += ConcreteTTI->getIntrinsicInstrCost(
+          OverflowOp, OpTy, {RetTy, RetTy}, FMF, ScalarizationCostPassed);
+      Cost += ConcreteTTI->getCmpSelInstrCost(BinaryOperator::ICmp, RetTy,
+                                              CondTy, nullptr);
+      Cost += 2 * ConcreteTTI->getCmpSelInstrCost(BinaryOperator::Select, RetTy,
+                                                  CondTy, nullptr);
+      return Cost;
+    }
+    case Intrinsic::uadd_sat:
+    case Intrinsic::usub_sat: {
+      Type *CondTy = RetTy->getWithNewBitWidth(1);
+
+      Type *OpTy = StructType::create({RetTy, CondTy});
+      Intrinsic::ID OverflowOp = IID == Intrinsic::uadd_sat
+                                     ? Intrinsic::uadd_with_overflow
+                                     : Intrinsic::usub_with_overflow;
+
+      unsigned Cost = 0;
+      Cost += ConcreteTTI->getIntrinsicInstrCost(
+          OverflowOp, OpTy, {RetTy, RetTy}, FMF, ScalarizationCostPassed);
+      Cost += ConcreteTTI->getCmpSelInstrCost(BinaryOperator::Select, RetTy,
+                                              CondTy, nullptr);
+      return Cost;
+    }
+    case Intrinsic::smul_fix:
+    case Intrinsic::umul_fix: {
+      unsigned ExtSize = RetTy->getScalarSizeInBits() * 2;
+      Type *ExtTy = RetTy->getWithNewBitWidth(ExtSize);
+
+      unsigned ExtOp =
+          IID == Intrinsic::smul_fix ? Instruction::SExt : Instruction::ZExt;
+
+      unsigned Cost = 0;
+      Cost += 2 * ConcreteTTI->getCastInstrCost(ExtOp, ExtTy, RetTy);
+      Cost += ConcreteTTI->getArithmeticInstrCost(Instruction::Mul, ExtTy);
+      Cost +=
+          2 * ConcreteTTI->getCastInstrCost(Instruction::Trunc, RetTy, ExtTy);
+      Cost += ConcreteTTI->getArithmeticInstrCost(Instruction::LShr, RetTy,
+                                                  TTI::OK_AnyValue,
+                                                  TTI::OK_UniformConstantValue);
+      Cost += ConcreteTTI->getArithmeticInstrCost(Instruction::Shl, RetTy,
+                                                  TTI::OK_AnyValue,
+                                                  TTI::OK_UniformConstantValue);
+      Cost += ConcreteTTI->getArithmeticInstrCost(Instruction::Or, RetTy);
+      return Cost;
+    }
+    case Intrinsic::sadd_with_overflow:
+    case Intrinsic::ssub_with_overflow: {
+      Type *SumTy = RetTy->getContainedType(0);
+      Type *OverflowTy = RetTy->getContainedType(1);
+      unsigned Opcode = IID == Intrinsic::sadd_with_overflow
+                            ? BinaryOperator::Add
+                            : BinaryOperator::Sub;
+
+      //   LHSSign -> LHS >= 0
+      //   RHSSign -> RHS >= 0
+      //   SumSign -> Sum >= 0
+      //
+      //   Add:
+      //   Overflow -> (LHSSign == RHSSign) && (LHSSign != SumSign)
+      //   Sub:
+      //   Overflow -> (LHSSign != RHSSign) && (LHSSign != SumSign)
+      unsigned Cost = 0;
+      Cost += ConcreteTTI->getArithmeticInstrCost(Opcode, SumTy);
+      Cost += 3 * ConcreteTTI->getCmpSelInstrCost(BinaryOperator::ICmp, SumTy,
+                                                  OverflowTy, nullptr);
+      Cost += 2 * ConcreteTTI->getCmpSelInstrCost(
+                      BinaryOperator::ICmp, OverflowTy, OverflowTy, nullptr);
+      Cost +=
+          ConcreteTTI->getArithmeticInstrCost(BinaryOperator::And, OverflowTy);
+      return Cost;
+    }
+    case Intrinsic::uadd_with_overflow:
+    case Intrinsic::usub_with_overflow: {
+      Type *SumTy = RetTy->getContainedType(0);
+      Type *OverflowTy = RetTy->getContainedType(1);
+      unsigned Opcode = IID == Intrinsic::uadd_with_overflow
+                            ? BinaryOperator::Add
+                            : BinaryOperator::Sub;
+
+      unsigned Cost = 0;
+      Cost += ConcreteTTI->getArithmeticInstrCost(Opcode, SumTy);
+      Cost += ConcreteTTI->getCmpSelInstrCost(BinaryOperator::ICmp, SumTy,
+                                              OverflowTy, nullptr);
+      return Cost;
+    }
+    case Intrinsic::smul_with_overflow:
+    case Intrinsic::umul_with_overflow: {
+      Type *MulTy = RetTy->getContainedType(0);
+      Type *OverflowTy = RetTy->getContainedType(1);
+      unsigned ExtSize = MulTy->getScalarSizeInBits() * 2;
+      Type *ExtTy = MulTy->getWithNewBitWidth(ExtSize);
+
+      unsigned ExtOp =
+          IID == Intrinsic::smul_fix ? Instruction::SExt : Instruction::ZExt;
+
+      unsigned Cost = 0;
+      Cost += 2 * ConcreteTTI->getCastInstrCost(ExtOp, ExtTy, MulTy);
+      Cost += ConcreteTTI->getArithmeticInstrCost(Instruction::Mul, ExtTy);
+      Cost +=
+          2 * ConcreteTTI->getCastInstrCost(Instruction::Trunc, MulTy, ExtTy);
+      Cost += ConcreteTTI->getArithmeticInstrCost(Instruction::LShr, MulTy,
+                                                  TTI::OK_AnyValue,
+                                                  TTI::OK_UniformConstantValue);
+
+      if (IID == Intrinsic::smul_with_overflow)
+        Cost += ConcreteTTI->getArithmeticInstrCost(
+            Instruction::AShr, MulTy, TTI::OK_AnyValue,
+            TTI::OK_UniformConstantValue);
+
+      Cost += ConcreteTTI->getCmpSelInstrCost(BinaryOperator::ICmp, MulTy,
+                                              OverflowTy, nullptr);
+      return Cost;
+    }
     case Intrinsic::ctpop:
       ISDs.push_back(ISD::CTPOP);
       // In case of legalization use TCC_Expensive. This is cheaper than a
@@ -1305,17 +1499,16 @@ public:
     if (MinLegalCostI != LegalCost.end())
       return *MinLegalCostI;
 
-    auto MinCustomCostI = std::min_element(CustomCost.begin(), CustomCost.end());
+    auto MinCustomCostI =
+        std::min_element(CustomCost.begin(), CustomCost.end());
     if (MinCustomCostI != CustomCost.end())
       return *MinCustomCostI;
 
     // If we can't lower fmuladd into an FMA estimate the cost as a floating
     // point mul followed by an add.
     if (IID == Intrinsic::fmuladd)
-      return static_cast<T *>(this)
-                 ->getArithmeticInstrCost(BinaryOperator::FMul, RetTy) +
-             static_cast<T *>(this)
-                 ->getArithmeticInstrCost(BinaryOperator::FAdd, RetTy);
+      return ConcreteTTI->getArithmeticInstrCost(BinaryOperator::FMul, RetTy) +
+             ConcreteTTI->getArithmeticInstrCost(BinaryOperator::FAdd, RetTy);
 
     // Else, assume that we need to scalarize this intrinsic. For math builtins
     // this will emit a costly libcall, adding call overhead and spills. Make it
@@ -1333,7 +1526,7 @@ public:
           Ty = Ty->getScalarType();
         ScalarTys.push_back(Ty);
       }
-      unsigned ScalarCost = static_cast<T *>(this)->getIntrinsicInstrCost(
+      unsigned ScalarCost = ConcreteTTI->getIntrinsicInstrCost(
           IID, RetTy->getScalarType(), ScalarTys, FMF);
       for (unsigned i = 0, ie = Tys.size(); i != ie; ++i) {
         if (Tys[i]->isVectorTy()) {

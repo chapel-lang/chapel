@@ -1,9 +1,8 @@
 //===--- X86.cpp - X86 Helpers for Tools ------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,6 +13,7 @@
 #include "clang/Driver/Options.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Option/ArgList.h"
+#include "llvm/Support/Host.h"
 
 using namespace clang::driver;
 using namespace clang::driver::tools;
@@ -63,8 +63,7 @@ const char *x86::getX86TargetCPU(const ArgList &Args,
 
   // Select the default CPU if none was given (or detection failed).
 
-  if (Triple.getArch() != llvm::Triple::x86_64 &&
-      Triple.getArch() != llvm::Triple::x86)
+  if (!Triple.isX86())
     return nullptr; // This routine is only handling x86 targets.
 
   bool Is64Bit = Triple.getArch() == llvm::Triple::x86_64;
@@ -136,6 +135,7 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
     if (ArchType == llvm::Triple::x86_64) {
       Features.push_back("+sse4.2");
       Features.push_back("+popcnt");
+      Features.push_back("+cx16");
     } else
       Features.push_back("+ssse3");
   }
@@ -146,6 +146,7 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
   // flags). This is a bit hacky but keeps existing usages working. We should
   // consider deprecating this and instead warn if the user requests external
   // retpoline thunks and *doesn't* request some form of retpolines.
+  auto SpectreOpt = clang::driver::options::ID::OPT_INVALID;
   if (Args.hasArgNoClaim(options::OPT_mretpoline, options::OPT_mno_retpoline,
                          options::OPT_mspeculative_load_hardening,
                          options::OPT_mno_speculative_load_hardening)) {
@@ -153,12 +154,14 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
                      false)) {
       Features.push_back("+retpoline-indirect-calls");
       Features.push_back("+retpoline-indirect-branches");
+      SpectreOpt = options::OPT_mretpoline;
     } else if (Args.hasFlag(options::OPT_mspeculative_load_hardening,
                             options::OPT_mno_speculative_load_hardening,
                             false)) {
       // On x86, speculative load hardening relies on at least using retpolines
       // for indirect calls.
       Features.push_back("+retpoline-indirect-calls");
+      SpectreOpt = options::OPT_mspeculative_load_hardening;
     }
   } else if (Args.hasFlag(options::OPT_mretpoline_external_thunk,
                           options::OPT_mno_retpoline_external_thunk, false)) {
@@ -166,6 +169,26 @@ void x86::getX86TargetFeatures(const Driver &D, const llvm::Triple &Triple,
     // eventually switch to an error here.
     Features.push_back("+retpoline-indirect-calls");
     Features.push_back("+retpoline-indirect-branches");
+    SpectreOpt = options::OPT_mretpoline_external_thunk;
+  }
+
+  auto LVIOpt = clang::driver::options::ID::OPT_INVALID;
+  if (Args.hasFlag(options::OPT_mlvi_hardening, options::OPT_mno_lvi_hardening,
+                   false)) {
+    Features.push_back("+lvi-load-hardening");
+    Features.push_back("+lvi-cfi"); // load hardening implies CFI protection
+    LVIOpt = options::OPT_mlvi_hardening;
+  } else if (Args.hasFlag(options::OPT_mlvi_cfi, options::OPT_mno_lvi_cfi,
+                          false)) {
+    Features.push_back("+lvi-cfi");
+    LVIOpt = options::OPT_mlvi_cfi;
+  }
+
+  if (SpectreOpt != clang::driver::options::ID::OPT_INVALID &&
+      LVIOpt != clang::driver::options::ID::OPT_INVALID) {
+    D.Diag(diag::err_drv_argument_not_allowed_with)
+        << D.getOpts().getOptionName(SpectreOpt)
+        << D.getOpts().getOptionName(LVIOpt);
   }
 
   // Now add any that the user explicitly requested on the command line,

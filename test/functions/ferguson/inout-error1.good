@@ -1,0 +1,4 @@
+inout-error1.chpl:4: error: unresolved call 'f(int(64), int(64))'
+inout-error1.chpl:1: note: this candidate did not match: f(inout x: int)
+inout-error1.chpl:4: note: because call includes 2 arguments
+inout-error1.chpl:1: note: but function can only accept 1 arguments

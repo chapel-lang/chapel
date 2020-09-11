@@ -1,9 +1,8 @@
 //===-- OrderedInstructions.cpp - Instruction dominance function ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,7 +21,7 @@ bool OrderedInstructions::localDominates(const Instruction *InstA,
   const BasicBlock *IBB = InstA->getParent();
   auto OBB = OBBMap.find(IBB);
   if (OBB == OBBMap.end())
-    OBB = OBBMap.insert({IBB, make_unique<OrderedBasicBlock>(IBB)}).first;
+    OBB = OBBMap.insert({IBB, std::make_unique<OrderedBasicBlock>(IBB)}).first;
   return OBB->second->dominates(InstA, InstB);
 }
 

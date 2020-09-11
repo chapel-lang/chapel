@@ -21,9 +21,9 @@ module LocaleModelHelpAPU {
 
   param localeModelHasSublocales = true;
 
-  use LocaleModelHelpSetup;
-  use LocaleModelHelpRuntime;
-  private use SysCTypes;
+  public use LocaleModelHelpSetup;
+  public use LocaleModelHelpRuntime;
+  use SysCTypes;
 
   pragma "no doc"
   config param debugAPULocale = false;

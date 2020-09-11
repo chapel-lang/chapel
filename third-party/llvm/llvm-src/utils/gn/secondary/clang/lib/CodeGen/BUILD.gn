@@ -2,6 +2,7 @@ static_library("CodeGen") {
   output_name = "clangCodeGen"
   configs += [ "//llvm/utils/gn/build:clang_code" ]
   deps = [
+    "//clang/include/clang/Basic:arm_mve_builtin_cg",
     "//clang/lib/AST",
     "//clang/lib/Analysis",
     "//clang/lib/Basic",
@@ -80,6 +81,7 @@ static_library("CodeGen") {
     "MicrosoftCXXABI.cpp",
     "ModuleBuilder.cpp",
     "ObjectFilePCHContainerOperations.cpp",
+    "PatternInit.cpp",
     "SanitizerMetadata.cpp",
     "SwiftCallingConv.cpp",
     "TargetInfo.cpp",

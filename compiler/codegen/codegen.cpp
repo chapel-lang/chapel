@@ -40,6 +40,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
 
@@ -1190,13 +1191,13 @@ static const char* sCfgFname = "chpl_compilation_config";
 static void codegen_header_compilation_config() {
   const bool usingLauncher = 0 != strcmp(CHPL_LAUNCHER, "none");
   // Generate C code only when not in LLVM mode or when using a launcher
-  const bool genCCode = usingLauncher || !llvmCodegen;
+  const bool genCCode = usingLauncher || !fLlvmCodegen;
 
   GenInfo* info = gGenInfo;
   FILE* save_cfile = info->cfile;
   fileinfo cfgfile = { NULL, NULL, NULL };
 
-  if (llvmCodegen) {
+  if (fLlvmCodegen) {
     info->cfile = NULL;
     genConfigGlobalsAndAbout();
     genFunctionTables();
@@ -1655,7 +1656,7 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
 
 #ifdef HAVE_LLVM
     //include generated extern C header file
-    if (externC && gAllExternCode.filename != NULL) {
+    if (fAllowExternC && gAllExternCode.filename != NULL) {
       fprintf(hdrfile, "%s", astr("#include \"", gAllExternCode.filename, "\"\n"));
       // If we wanted to, here is where we would re-enable
       // the memory warning macros.
@@ -1955,7 +1956,7 @@ codegen_config() {
   }
 
 
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     llvm::FunctionType *createConfigType;
     llvm::Function *createConfigFunc;
@@ -2101,23 +2102,28 @@ adjustArgSymbolTypesForIntent(void)
   }
 }
 
+
+static void convertSymbolToRefType(Symbol* sym) {
+  QualifiedType q = sym->qualType();
+  Type* type      = q.type();
+  if (q.isRef() && !q.isRefType()) {
+    type = getOrMakeRefTypeDuringCodegen(type);
+  } else if (q.isWideRef() && !q.isWideRefType()) {
+    type = getOrMakeRefTypeDuringCodegen(type);
+    type = getOrMakeWideTypeDuringCodegen(type);
+  }
+  sym->type = type;
+  if (type->symbol->hasFlag(FLAG_REF)) {
+    sym->qual = QUAL_REF;
+  } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) {
+    sym->qual = QUAL_WIDE_REF;
+  }
+}
+
 static void convertToRefTypes() {
 #define updateSymbols(SymType) \
   forv_Vec(SymType, sym, g##SymType##s) { \
-    QualifiedType q = sym->qualType(); \
-    Type* type      = q.type(); \
-    if (q.isRef() && !q.isRefType()) { \
-      type = getOrMakeRefTypeDuringCodegen(type); \
-    } else if (q.isWideRef() && !q.isWideRefType()) { \
-      type = getOrMakeRefTypeDuringCodegen(type); \
-      type = getOrMakeWideTypeDuringCodegen(type); \
-    } \
-    sym->type = type; \
-    if (type->symbol->hasFlag(FLAG_REF)) { \
-      sym->qual = QUAL_REF; \
-    } else if (type->symbol->hasFlag(FLAG_WIDE_REF)) { \
-      sym->qual = QUAL_WIDE_REF; \
-    } \
+    convertSymbolToRefType(sym); \
   }
 
   updateSymbols(VarSymbol);
@@ -2243,6 +2249,52 @@ static void setupDefaultFilenames() {
   }
 }
 
+static std::map<const char*, Type*> cnameToTypeMap;
+
+void gatherTypesForCodegen(void) {
+  // A reasonable alternative to this code might be to
+  // map types like c_int to Clang types and query Clang for their sizes.
+  // See for example addMinMax in clangUtil.cpp.
+
+  // Gather type cnames for use in code generation
+  // must be run before clang parses macros
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->hasFlag(FLAG_EXTERN) && var->hasFlag(FLAG_TYPE_VARIABLE)) {
+      Type* t = NULL;
+      if (var->type != dtUnknown) {
+        t = var->type;
+      } else {
+        // handle extern type c_int = int(32) e.g. before normalize
+        DefExpr* def = var->defPoint;
+        if (CallExpr* call = toCallExpr(def->init)) {
+          t = typeForTypeSpecifier(call, false);
+        }
+      }
+
+      if (t != NULL)
+        cnameToTypeMap[var->cname] = t;
+    }
+  }
+
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->type != dtUnknown)
+      cnameToTypeMap[ts->cname] = ts->type;
+  }
+}
+
+Type* getNamedTypeDuringCodegen(const char* name) {
+  std::map<const char*, Type*>::iterator it;
+
+  name = astr(name);
+
+  it = cnameToTypeMap.find(name);
+  if (it != cnameToTypeMap.end()) {
+    return it->second;
+  }
+
+  return NULL;
+}
+
 
 void codegen() {
   if (no_codegen)
@@ -2251,15 +2303,16 @@ void codegen() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
-    if (!llvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+    if (!fLlvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
   }
 
   // Prepare primitives for codegen
   CallExpr::registerPrimitivesForCodegen();
 
+  gatherTypesForCodegen();
   setupDefaultFilenames();
 
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
 #else
@@ -2288,7 +2341,7 @@ void codegen() {
   convertToRefTypes();
 
   // Wrap calls to chosen functions from c library
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
@@ -2299,13 +2352,13 @@ void codegen() {
 #endif
   }
 
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
 
     if(fIncrementalCompilation)
       USR_FATAL("Incremental compilation is not yet supported with LLVM");
 
-    if(printCppLineno || debugCCode)
+    if(debugCCode)
     {
       debug_info = new debug_data(*info->module);
     }
@@ -2386,7 +2439,7 @@ void codegen() {
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
-  if( llvmCodegen ) {
+  if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();
     forv_Vec(ModuleSymbol, currentModule, allModules) {
@@ -2444,7 +2497,7 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
-  if(llvmCodegen) {
+  if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
     makeBinaryLLVM();
 #endif
@@ -2468,6 +2521,7 @@ GenInfo::GenInfo()
              ,
              lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
              loopStack(), currentStackVariables(),
+             currentFunctionABI(NULL),
              llvmContext(),
              tbaaRootNode(NULL),
              tbaaUnionsNode(NULL),

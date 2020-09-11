@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# Each platform directory will have different .good files
+# so includes a symlink to this shared file.
+
+FNS=`cat export-vs-c.chpl | grep --only-matching -e '[a-zA-Z0-9_]*_\(c_____\|chapel\)(' | sed 's/(//g' | sort -u`
+FNS=`echo $FNS | sed 's/ /,/g'`
+
+echo --ccflags -fdiscard-value-names --llvm --llvm-print-ir-stage basic --llvm-print-ir $FNS

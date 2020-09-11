@@ -1,9 +1,8 @@
 //===-- SparcInstrInfo.td - Target Description for Sparc Target -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -517,9 +516,9 @@ let DecoderMethod = "DecodeLoadQFP" in
   defm LDQF  : LoadA<"ldq", 0b100010, 0b110010, load, QFPRegs, f128>,
                Requires<[HasV9, HasHardQuad]>;
 
-let DecoderMethod = "DecodeLoadCP" in 
-  defm LDC   : Load<"ld", 0b110000, load, CoprocRegs, i32>; 
-let DecoderMethod = "DecodeLoadCPPair" in 
+let DecoderMethod = "DecodeLoadCP" in
+  defm LDC   : Load<"ld", 0b110000, load, CoprocRegs, i32>;
+let DecoderMethod = "DecodeLoadCPPair" in
   defm LDDC   : Load<"ldd", 0b110011, load, CoprocPair, v2i32, IIC_ldd>;
 
 let DecoderMethod = "DecodeLoadCP", Defs = [CPSR] in {
@@ -1509,7 +1508,7 @@ let rs1 = 0 in
   def POPCrr : F3_1<2, 0b101110,
                     (outs IntRegs:$rd), (ins IntRegs:$rs2),
                     "popc $rs2, $rd", []>, Requires<[HasV9]>;
-def : Pat<(ctpop i32:$src),
+def : Pat<(i32 (ctpop i32:$src)),
           (POPCrr (SRLri $src, 0))>;
 
 let Predicates = [HasV9], hasSideEffects = 1, rd = 0, rs1 = 0b01111 in
@@ -1677,7 +1676,10 @@ def : Pat<(store (i32 0), ADDRri:$dst), (STri ADDRri:$dst, (i32 G0))>;
 
 // store bar for all atomic_fence in V8.
 let Predicates = [HasNoV9] in
-  def : Pat<(atomic_fence imm, imm), (STBAR)>;
+  def : Pat<(atomic_fence timm, timm), (STBAR)>;
+
+let Predicates = [HasV9] in
+  def : Pat<(atomic_fence timm, timm), (MEMBARi 0xf)>;
 
 // atomic_load addr -> load addr
 def : Pat<(i32 (atomic_load_8 ADDRrr:$src)), (LDUBrr ADDRrr:$src)>;

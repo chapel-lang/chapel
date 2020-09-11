@@ -1,9 +1,8 @@
 //===---- ParseStmtAsm.cpp - Assembly Statement Parser --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -145,8 +144,8 @@ void ClangAsmParserCallback::findTokensForString(
 
   // Try to find a token whose offset matches the first token.
   unsigned FirstCharOffset = Str.begin() - AsmString.begin();
-  const unsigned *FirstTokOffset = std::lower_bound(
-      AsmTokOffsets.begin(), AsmTokOffsets.end(), FirstCharOffset);
+  const unsigned *FirstTokOffset =
+      llvm::lower_bound(AsmTokOffsets, FirstCharOffset);
 
   // For now, assert that the start of the string exactly
   // corresponds to the start of a token.
@@ -175,8 +174,7 @@ ClangAsmParserCallback::translateLocation(const llvm::SourceMgr &LSM,
   unsigned Offset = SMLoc.getPointer() - LBuf->getBufferStart();
 
   // Figure out which token that offset points into.
-  const unsigned *TokOffsetPtr =
-      std::lower_bound(AsmTokOffsets.begin(), AsmTokOffsets.end(), Offset);
+  const unsigned *TokOffsetPtr = llvm::lower_bound(AsmTokOffsets, Offset);
   unsigned TokIndex = TokOffsetPtr - AsmTokOffsets.begin();
   unsigned TokOffset = *TokOffsetPtr;
 
@@ -214,7 +212,8 @@ ExprResult Parser::ParseMSAsmIdentifier(llvm::SmallVectorImpl<Token> &LineToks,
   // Also copy the current token over.
   LineToks.push_back(Tok);
 
-  PP.EnterTokenStream(LineToks, /*DisableMacroExpansions*/ true);
+  PP.EnterTokenStream(LineToks, /*DisableMacroExpansions*/ true,
+                      /*IsReinject*/ true);
 
   // Clear the current token and advance to the first token in LineToks.
   ConsumeAnyToken();
@@ -548,12 +547,9 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
 
   // We need an actual supported target.
   const llvm::Triple &TheTriple = Actions.Context.getTargetInfo().getTriple();
-  llvm::Triple::ArchType ArchTy = TheTriple.getArch();
   const std::string &TT = TheTriple.getTriple();
   const llvm::Target *TheTarget = nullptr;
-  bool UnsupportedArch =
-      (ArchTy != llvm::Triple::x86 && ArchTy != llvm::Triple::x86_64);
-  if (UnsupportedArch) {
+  if (!TheTriple.isX86()) {
     Diag(AsmLoc, diag::err_msasm_unsupported_arch) << TheTriple.getArchName();
   } else {
     std::string Error;
@@ -564,16 +560,19 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
 
   assert(!LBraceLocs.empty() && "Should have at least one location here");
 
+  SmallString<512> AsmString;
+  auto EmptyStmt = [&] {
+    return Actions.ActOnMSAsmStmt(AsmLoc, LBraceLocs[0], AsmToks, AsmString,
+                                  /*NumOutputs*/ 0, /*NumInputs*/ 0,
+                                  ConstraintRefs, ClobberRefs, Exprs, EndLoc);
+  };
   // If we don't support assembly, or the assembly is empty, we don't
   // need to instantiate the AsmParser, etc.
   if (!TheTarget || AsmToks.empty()) {
-    return Actions.ActOnMSAsmStmt(AsmLoc, LBraceLocs[0], AsmToks, StringRef(),
-                                  /*NumOutputs*/ 0, /*NumInputs*/ 0,
-                                  ConstraintRefs, ClobberRefs, Exprs, EndLoc);
+    return EmptyStmt();
   }
 
   // Expand the tokens into a string buffer.
-  SmallString<512> AsmString;
   SmallVector<unsigned, 8> TokOffsets;
   if (buildMSAsmString(PP, AsmLoc, AsmToks, TokOffsets, AsmString))
     return StmtError();
@@ -583,12 +582,26 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
       llvm::join(TO.Features.begin(), TO.Features.end(), ",");
 
   std::unique_ptr<llvm::MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TT));
-  std::unique_ptr<llvm::MCAsmInfo> MAI(TheTarget->createMCAsmInfo(*MRI, TT));
+  if (!MRI) {
+    Diag(AsmLoc, diag::err_msasm_unable_to_create_target)
+        << "target MC unavailable";
+    return EmptyStmt();
+  }
+  // FIXME: init MCOptions from sanitizer flags here.
+  llvm::MCTargetOptions MCOptions;
+  std::unique_ptr<llvm::MCAsmInfo> MAI(
+      TheTarget->createMCAsmInfo(*MRI, TT, MCOptions));
   // Get the instruction descriptor.
   std::unique_ptr<llvm::MCInstrInfo> MII(TheTarget->createMCInstrInfo());
   std::unique_ptr<llvm::MCObjectFileInfo> MOFI(new llvm::MCObjectFileInfo());
   std::unique_ptr<llvm::MCSubtargetInfo> STI(
       TheTarget->createMCSubtargetInfo(TT, TO.CPU, FeaturesStr));
+  // Target MCTargetDesc may not be linked in clang-based tools.
+  if (!MAI || !MII | !MOFI || !STI) {
+    Diag(AsmLoc, diag::err_msasm_unable_to_create_target)
+        << "target MC unavailable";
+    return EmptyStmt();
+  }
 
   llvm::SourceMgr TempSrcMgr;
   llvm::MCContext Ctx(MAI.get(), MRI.get(), MOFI.get(), &TempSrcMgr);
@@ -603,10 +616,14 @@ StmtResult Parser::ParseMicrosoftAsmStatement(SourceLocation AsmLoc) {
   std::unique_ptr<llvm::MCAsmParser> Parser(
       createMCAsmParser(TempSrcMgr, Ctx, *Str.get(), *MAI));
 
-  // FIXME: init MCOptions from sanitizer flags here.
-  llvm::MCTargetOptions MCOptions;
   std::unique_ptr<llvm::MCTargetAsmParser> TargetParser(
       TheTarget->createMCAsmParser(*STI, *Parser, *MII, MCOptions));
+  // Target AsmParser may not be linked in clang-based tools.
+  if (!TargetParser) {
+    Diag(AsmLoc, diag::err_msasm_unable_to_create_target)
+        << "target ASM parser unavailable";
+    return EmptyStmt();
+  }
 
   std::unique_ptr<llvm::MCInstPrinter> IP(
       TheTarget->createMCInstPrinter(llvm::Triple(TT), 1, *MAI, *MII, *MRI));
@@ -710,12 +727,12 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
 
   // Remember if this was a volatile asm.
   bool isVolatile = DS.getTypeQualifiers() & DeclSpec::TQ_volatile;
+  // Remember if this was a goto asm.
+  bool isGotoAsm = false;
 
-  // TODO: support "asm goto" constructs (PR#9295).
   if (Tok.is(tok::kw_goto)) {
-    Diag(Tok, diag::err_asm_goto_not_supported_yet);
-    SkipUntil(tok::r_paren, StopAtSemi);
-    return StmtError();
+    isGotoAsm = true;
+    ConsumeToken();
   }
 
   if (Tok.isNot(tok::l_paren)) {
@@ -726,7 +743,7 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
   BalancedDelimiterTracker T(*this, tok::l_paren);
   T.consumeOpen();
 
-  ExprResult AsmString(ParseAsmStringLiteral());
+  ExprResult AsmString(ParseAsmStringLiteral(/*ForAsmLabel*/ false));
 
   // Check if GNU-style InlineAsm is disabled.
   // Error on anything other than empty string.
@@ -753,7 +770,8 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
     return Actions.ActOnGCCAsmStmt(AsmLoc, /*isSimple*/ true, isVolatile,
                                    /*NumOutputs*/ 0, /*NumInputs*/ 0, nullptr,
                                    Constraints, Exprs, AsmString.get(),
-                                   Clobbers, T.getCloseLocation());
+                                   Clobbers, /*NumLabels*/ 0,
+                                   T.getCloseLocation());
   }
 
   // Parse Outputs, if present.
@@ -762,6 +780,12 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
     // In C++ mode, parse "::" like ": :".
     AteExtraColon = Tok.is(tok::coloncolon);
     ConsumeToken();
+
+    if (!AteExtraColon && isGotoAsm && Tok.isNot(tok::colon)) {
+      Diag(Tok, diag::err_asm_goto_cannot_have_output);
+      SkipUntil(tok::r_paren, StopAtSemi);
+      return StmtError();
+    }
 
     if (!AteExtraColon && ParseAsmOperandsOpt(Names, Constraints, Exprs))
       return StmtError();
@@ -789,14 +813,17 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
   unsigned NumInputs = Names.size() - NumOutputs;
 
   // Parse the clobbers, if present.
-  if (AteExtraColon || Tok.is(tok::colon)) {
-    if (!AteExtraColon)
+  if (AteExtraColon || Tok.is(tok::colon) || Tok.is(tok::coloncolon)) {
+    if (AteExtraColon)
+      AteExtraColon = false;
+    else {
+      AteExtraColon = Tok.is(tok::coloncolon);
       ConsumeToken();
-
+    }
     // Parse the asm-string list for clobbers if present.
-    if (Tok.isNot(tok::r_paren)) {
+    if (!AteExtraColon && isTokenStringLiteral()) {
       while (1) {
-        ExprResult Clobber(ParseAsmStringLiteral());
+        ExprResult Clobber(ParseAsmStringLiteral(/*ForAsmLabel*/ false));
 
         if (Clobber.isInvalid())
           break;
@@ -808,11 +835,49 @@ StmtResult Parser::ParseAsmStatement(bool &msAsm) {
       }
     }
   }
+  if (!isGotoAsm && (Tok.isNot(tok::r_paren) || AteExtraColon)) {
+    Diag(Tok, diag::err_expected) << tok::r_paren;
+    SkipUntil(tok::r_paren, StopAtSemi);
+    return StmtError();
+  }
 
+  // Parse the goto label, if present.
+  unsigned NumLabels = 0;
+  if (AteExtraColon || Tok.is(tok::colon)) {
+    if (!AteExtraColon)
+      ConsumeToken();
+
+    while (true) {
+      if (Tok.isNot(tok::identifier)) {
+        Diag(Tok, diag::err_expected) << tok::identifier;
+        SkipUntil(tok::r_paren, StopAtSemi);
+        return StmtError();
+      }
+      LabelDecl *LD = Actions.LookupOrCreateLabel(Tok.getIdentifierInfo(),
+                                                  Tok.getLocation());
+      Names.push_back(Tok.getIdentifierInfo());
+      if (!LD) {
+        SkipUntil(tok::r_paren, StopAtSemi);
+        return StmtError();
+      }
+      ExprResult Res =
+          Actions.ActOnAddrLabel(Tok.getLocation(), Tok.getLocation(), LD);
+      Exprs.push_back(Res.get());
+      NumLabels++;
+      ConsumeToken();
+      if (!TryConsumeToken(tok::comma))
+        break;
+    }
+  } else if (isGotoAsm) {
+    Diag(Tok, diag::err_expected) << tok::colon;
+    SkipUntil(tok::r_paren, StopAtSemi);
+    return StmtError();
+  }
   T.consumeClose();
   return Actions.ActOnGCCAsmStmt(
       AsmLoc, false, isVolatile, NumOutputs, NumInputs, Names.data(),
-      Constraints, Exprs, AsmString.get(), Clobbers, T.getCloseLocation());
+      Constraints, Exprs, AsmString.get(), Clobbers, NumLabels,
+      T.getCloseLocation());
 }
 
 /// ParseAsmOperands - Parse the asm-operands production as used by
@@ -855,7 +920,7 @@ bool Parser::ParseAsmOperandsOpt(SmallVectorImpl<IdentifierInfo *> &Names,
     } else
       Names.push_back(nullptr);
 
-    ExprResult Constraint(ParseAsmStringLiteral());
+    ExprResult Constraint(ParseAsmStringLiteral(/*ForAsmLabel*/ false));
     if (Constraint.isInvalid()) {
       SkipUntil(tok::r_paren, StopAtSemi);
       return true;

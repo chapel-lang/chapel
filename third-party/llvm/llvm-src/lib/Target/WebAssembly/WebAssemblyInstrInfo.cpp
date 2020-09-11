@@ -1,9 +1,8 @@
 //===-- WebAssemblyInstrInfo.cpp - WebAssembly Instruction Information ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -15,6 +14,7 @@
 
 #include "WebAssemblyInstrInfo.h"
 #include "MCTargetDesc/WebAssemblyMCTargetDesc.h"
+#include "WebAssembly.h"
 #include "WebAssemblyMachineFunctionInfo.h"
 #include "WebAssemblySubtarget.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -28,6 +28,10 @@ using namespace llvm;
 #define GET_INSTRINFO_CTOR_DTOR
 #include "WebAssemblyGenInstrInfo.inc"
 
+// defines WebAssembly::getNamedOperandIdx
+#define GET_INSTRINFO_NAMED_OPS
+#include "WebAssemblyGenInstrInfo.inc"
+
 WebAssemblyInstrInfo::WebAssemblyInstrInfo(const WebAssemblySubtarget &STI)
     : WebAssemblyGenInstrInfo(WebAssembly::ADJCALLSTACKDOWN,
                               WebAssembly::ADJCALLSTACKUP,
@@ -35,7 +39,7 @@ WebAssemblyInstrInfo::WebAssemblyInstrInfo(const WebAssemblySubtarget &STI)
       RI(STI.getTargetTriple()) {}
 
 bool WebAssemblyInstrInfo::isReallyTriviallyReMaterializable(
-    const MachineInstr &MI, AliasAnalysis *AA) const {
+    const MachineInstr &MI, AAResults *AA) const {
   switch (MI.getOpcode()) {
   case WebAssembly::CONST_I32:
   case WebAssembly::CONST_I64:
@@ -51,13 +55,13 @@ bool WebAssemblyInstrInfo::isReallyTriviallyReMaterializable(
 
 void WebAssemblyInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
                                        MachineBasicBlock::iterator I,
-                                       const DebugLoc &DL, unsigned DestReg,
-                                       unsigned SrcReg, bool KillSrc) const {
+                                       const DebugLoc &DL, MCRegister DestReg,
+                                       MCRegister SrcReg, bool KillSrc) const {
   // This method is called by post-RA expansion, which expects only pregs to
   // exist. However we need to handle both here.
   auto &MRI = MBB.getParent()->getRegInfo();
   const TargetRegisterClass *RC =
-      TargetRegisterInfo::isVirtualRegister(DestReg)
+      Register::isVirtualRegister(DestReg)
           ? MRI.getRegClass(DestReg)
           : MRI.getTargetRegisterInfo()->getMinimalPhysRegClass(DestReg);
 
@@ -72,6 +76,8 @@ void WebAssemblyInstrInfo::copyPhysReg(MachineBasicBlock &MBB,
     CopyOpcode = WebAssembly::COPY_F64;
   else if (RC == &WebAssembly::V128RegClass)
     CopyOpcode = WebAssembly::COPY_V128;
+  else if (RC == &WebAssembly::EXNREFRegClass)
+    CopyOpcode = WebAssembly::COPY_EXNREF;
   else
     llvm_unreachable("Unexpected register class");
 
@@ -98,6 +104,13 @@ bool WebAssemblyInstrInfo::analyzeBranch(MachineBasicBlock &MBB,
                                          MachineBasicBlock *&FBB,
                                          SmallVectorImpl<MachineOperand> &Cond,
                                          bool /*AllowModify*/) const {
+  const auto &MFI = *MBB.getParent()->getInfo<WebAssemblyFunctionInfo>();
+  // WebAssembly has control flow that doesn't have explicit branches or direct
+  // fallthrough (e.g. try/catch), which can't be modeled by analyzeBranch. It
+  // is created after CFGStackify.
+  if (MFI.isCFGStackified())
+    return true;
+
   bool HaveCond = false;
   for (MachineInstr &MI : MBB.terminators()) {
     switch (MI.getOpcode()) {
@@ -107,9 +120,6 @@ bool WebAssemblyInstrInfo::analyzeBranch(MachineBasicBlock &MBB,
     case WebAssembly::BR_IF:
       if (HaveCond)
         return true;
-      // If we're running after CFGStackify, we can't optimize further.
-      if (!MI.getOperand(0).isMBB())
-        return true;
       Cond.push_back(MachineOperand::CreateImm(true));
       Cond.push_back(MI.getOperand(1));
       TBB = MI.getOperand(0).getMBB();
@@ -118,22 +128,24 @@ bool WebAssemblyInstrInfo::analyzeBranch(MachineBasicBlock &MBB,
     case WebAssembly::BR_UNLESS:
       if (HaveCond)
         return true;
-      // If we're running after CFGStackify, we can't optimize further.
-      if (!MI.getOperand(0).isMBB())
-        return true;
       Cond.push_back(MachineOperand::CreateImm(false));
       Cond.push_back(MI.getOperand(1));
       TBB = MI.getOperand(0).getMBB();
       HaveCond = true;
       break;
     case WebAssembly::BR:
-      // If we're running after CFGStackify, we can't optimize further.
-      if (!MI.getOperand(0).isMBB())
-        return true;
       if (!HaveCond)
         TBB = MI.getOperand(0).getMBB();
       else
         FBB = MI.getOperand(0).getMBB();
+      break;
+    case WebAssembly::BR_ON_EXN:
+      if (HaveCond)
+        return true;
+      Cond.push_back(MachineOperand::CreateImm(true));
+      Cond.push_back(MI.getOperand(2));
+      TBB = MI.getOperand(0).getMBB();
+      HaveCond = true;
       break;
     }
     if (MI.isBarrier())
@@ -180,9 +192,22 @@ unsigned WebAssemblyInstrInfo::insertBranch(
 
   assert(Cond.size() == 2 && "Expected a flag and a successor block");
 
+  MachineFunction &MF = *MBB.getParent();
+  auto &MRI = MF.getRegInfo();
+  bool IsBrOnExn = Cond[1].isReg() && MRI.getRegClass(Cond[1].getReg()) ==
+                                          &WebAssembly::EXNREFRegClass;
+
   if (Cond[0].getImm()) {
-    BuildMI(&MBB, DL, get(WebAssembly::BR_IF)).addMBB(TBB).add(Cond[1]);
+    if (IsBrOnExn) {
+      const char *CPPExnSymbol = MF.createExternalSymbolName("__cpp_exception");
+      BuildMI(&MBB, DL, get(WebAssembly::BR_ON_EXN))
+          .addMBB(TBB)
+          .addExternalSymbol(CPPExnSymbol)
+          .add(Cond[1]);
+    } else
+      BuildMI(&MBB, DL, get(WebAssembly::BR_IF)).addMBB(TBB).add(Cond[1]);
   } else {
+    assert(!IsBrOnExn && "br_on_exn does not have a reversed condition");
     BuildMI(&MBB, DL, get(WebAssembly::BR_UNLESS)).addMBB(TBB).add(Cond[1]);
   }
   if (!FBB)
@@ -194,7 +219,24 @@ unsigned WebAssemblyInstrInfo::insertBranch(
 
 bool WebAssemblyInstrInfo::reverseBranchCondition(
     SmallVectorImpl<MachineOperand> &Cond) const {
-  assert(Cond.size() == 2 && "Expected a flag and a successor block");
+  assert(Cond.size() == 2 && "Expected a flag and a condition expression");
+
+  // br_on_exn's condition cannot be reversed
+  MachineFunction &MF = *Cond[1].getParent()->getParent()->getParent();
+  auto &MRI = MF.getRegInfo();
+  if (Cond[1].isReg() &&
+      MRI.getRegClass(Cond[1].getReg()) == &WebAssembly::EXNREFRegClass)
+    return true;
+
   Cond.front() = MachineOperand::CreateImm(!Cond.front().getImm());
   return false;
+}
+
+ArrayRef<std::pair<int, const char *>>
+WebAssemblyInstrInfo::getSerializableTargetIndices() const {
+  static const std::pair<int, const char *> TargetIndices[] = {
+      {WebAssembly::TI_LOCAL_START, "wasm-local-start"},
+      {WebAssembly::TI_GLOBAL_START, "wasm-global-start"},
+      {WebAssembly::TI_OPERAND_STACK_START, "wasm-operator-stack-start"}};
+  return makeArrayRef(TargetIndices);
 }

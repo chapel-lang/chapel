@@ -1,0 +1,15 @@
+test1
+key = 1 val = 10
+test2
+adding (x = 1, ptr = {xx = 1})
+init= 1 1
+init= 10 10
+iterating
+key = (x = 1, ptr = {xx = 1}) val = (x = 10, ptr = {xx = 10})
+finding
+requestCapacity
+finding
+clearing
+deinit 10 10
+deinit 1 1
+test3

@@ -1,0 +1,3 @@
+<The desired output should indicate an ambiguous error
+between MyRecord.field definitions on Lines 4 and 17.
+Maybe even an Overloading Sets error.>

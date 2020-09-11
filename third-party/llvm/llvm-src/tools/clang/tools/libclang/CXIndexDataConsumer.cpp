@@ -1,9 +1,8 @@
 //===- CXIndexDataConsumer.cpp - Index data consumer for libclang----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -155,7 +154,7 @@ CXSymbolRole getSymbolRole(SymbolRoleSet Role) {
 }
 }
 
-bool CXIndexDataConsumer::handleDeclOccurence(
+bool CXIndexDataConsumer::handleDeclOccurrence(
     const Decl *D, SymbolRoleSet Roles, ArrayRef<SymbolRelation> Relations,
     SourceLocation Loc, ASTNodeInfo ASTNode) {
   Loc = getASTContext().getSourceManager().getFileLoc(Loc);
@@ -221,10 +220,10 @@ bool CXIndexDataConsumer::handleDeclOccurence(
   return !shouldAbort();
 }
 
-bool CXIndexDataConsumer::handleModuleOccurence(const ImportDecl *ImportD,
-                                                const Module *Mod,
-                                                SymbolRoleSet Roles,
-                                                SourceLocation Loc) {
+bool CXIndexDataConsumer::handleModuleOccurrence(const ImportDecl *ImportD,
+                                                 const Module *Mod,
+                                                 SymbolRoleSet Roles,
+                                                 SourceLocation Loc) {
   if (Roles & (SymbolRoleSet)SymbolRole::Declaration)
     IndexingDeclVisitor(*this, SourceLocation(), nullptr).Visit(ImportD);
   return !shouldAbort();
@@ -634,12 +633,6 @@ bool CXIndexDataConsumer::handleField(const FieldDecl *D) {
   return handleDecl(D, D->getLocation(), getCursor(D), DInfo);
 }
 
-bool CXIndexDataConsumer::handleMSProperty(const MSPropertyDecl *D) {
-  DeclInfo DInfo(/*isRedeclaration=*/false, /*isDefinition=*/true,
-                 /*isContainer=*/false);
-  return handleDecl(D, D->getLocation(), getCursor(D), DInfo);
-}
-
 bool CXIndexDataConsumer::handleEnumerator(const EnumConstantDecl *D) {
   DeclInfo DInfo(/*isRedeclaration=*/false, /*isDefinition=*/true,
                  /*isContainer=*/false);
@@ -887,20 +880,6 @@ bool CXIndexDataConsumer::handleTypeAliasTemplate(const TypeAliasTemplateDecl *D
   DeclInfo DInfo(/*isRedeclaration=*/!D->isCanonicalDecl(),
                  /*isDefinition=*/true, /*isContainer=*/false);
   return handleDecl(D, D->getLocation(), getCursor(D), DInfo);
-}
-
-bool CXIndexDataConsumer::handleReference(const NamedDecl *D, SourceLocation Loc,
-                                      const NamedDecl *Parent,
-                                      const DeclContext *DC,
-                                      const Expr *E,
-                                      CXIdxEntityRefKind Kind,
-                                      CXSymbolRole Role) {
-  if (!D || !DC)
-    return false;
-
-  CXCursor Cursor = E ? MakeCXCursor(E, cast<Decl>(DC), CXTU)
-                      : getRefCursor(D, Loc);
-  return handleReference(D, Loc, Cursor, Parent, DC, E, Kind, Role);
 }
 
 bool CXIndexDataConsumer::handleReference(const NamedDecl *D, SourceLocation Loc,

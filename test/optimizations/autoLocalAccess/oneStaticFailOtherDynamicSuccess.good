@@ -10,13 +10,13 @@ Loop is suitable for further analysis
 Potential access
 	oneStaticFailOtherDynamicSuccess.chpl:24
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	oneStaticFailOtherDynamicSuccess.chpl:18
 
 Potential access
 	oneStaticFailOtherDynamicSuccess.chpl:24
 
-Regular domain symbol was not found for array
+	regular domain symbol was not found for array
 	oneStaticFailOtherDynamicSuccess.chpl:19
 
 	Marking dynamic candidate

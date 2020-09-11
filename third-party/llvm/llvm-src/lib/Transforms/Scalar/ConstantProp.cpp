@@ -1,9 +1,8 @@
 //===- ConstantProp.cpp - Code to perform Simple Constant Propagation -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,6 +25,7 @@
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/DebugCounter.h"
 #include "llvm/Transforms/Scalar.h"
@@ -83,7 +83,7 @@ bool ConstantPropagation::runOnFunction(Function &F) {
   bool Changed = false;
   const DataLayout &DL = F.getParent()->getDataLayout();
   TargetLibraryInfo *TLI =
-      &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+      &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
 
   while (!WorkList.empty()) {
     SmallVector<Instruction*, 16> NewWorkListVec;

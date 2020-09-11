@@ -431,8 +431,9 @@ module IO {
       (ie, they can open up channels that are not shared).
 */
 
-private use SysBasic, SysCTypes;
-use SysError;
+public use SysBasic;
+use SysCTypes;
+public use SysError;
 
 /*
 
@@ -1951,18 +1952,24 @@ record channel {
 }
 
 pragma "no doc"
-proc =(ref ret:channel, x:channel) {
+proc =(ref lhs:channel, rhs:channel) {
+  if lhs.writing==true && rhs.writing==false {
+    compilerError("cannot assign writing channel to reading channel");
+  } else if lhs.writing==false && rhs.writing == true {
+    compilerError("cannot assign reading channel to writing channel");
+  }
+
   // retain -- release
-  on x.home {
-    qio_channel_retain(x._channel_internal);
+  on rhs.home {
+    qio_channel_retain(rhs._channel_internal);
   }
 
-  on ret.home {
-    qio_channel_release(ret._channel_internal);
+  on lhs.home {
+    qio_channel_release(lhs._channel_internal);
   }
 
-  ret.home = x.home;
-  ret._channel_internal = x._channel_internal;
+  lhs.home = rhs.home;
+  lhs._channel_internal = rhs._channel_internal;
 }
 
 pragma "no doc"
@@ -1974,6 +1981,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
 
 pragma "no doc"
 proc channel.init(x: channel) {
+  compilerWarning("new channel(otherChannel) is deprecated");
   this.writing = x.writing;
   this.kind = x.kind;
   this.locking = x.locking;
@@ -1986,8 +1994,29 @@ proc channel.init(x: channel) {
   }
 }
 
-proc channel.init=(x: this.type) {
-  this.init(x);
+proc channel.init=(x: channel) {
+  if this.type.writing != ? {
+    if this.type.writing==true && x.writing==false {
+      compilerError("cannot init writing channel from reading channel");
+    } else if this.type.writing==false && x.writing==true {
+      compilerError("cannot init reading channel from writing channel");
+    }
+  }
+  this.writing = x.writing;
+
+  // allow the kind and locking fields to be modified in initialization
+  this.kind = if this.type.kind != ? then this.type.kind else x.kind;
+  this.locking = if this.type.locking != ?
+                 then this.type.locking
+                 else x.locking;
+
+  this.home = x.home;
+  this._channel_internal = x._channel_internal;
+  _readWriteThisFromLocale = x._readWriteThisFromLocale;
+  this.complete();
+  on x.home {
+    qio_channel_retain(x._channel_internal);
+  }
 }
 
 //
@@ -3249,7 +3278,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
-  inline proc <~>(const ref ch: channel, x) const ref throws
+  inline proc <~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
     try ch.readwrite(x);
     return ch;
@@ -4203,6 +4232,7 @@ record ItemReader {
   }
 
   /* iterate through all items of that type read from the channel */
+  pragma "not order independent yielding loops"
   iter these() { // TODO: this should be throws
     while true {
       var x:ItemType;
@@ -5200,7 +5230,8 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use SysCTypes;
-//use SysError;
+  use SysBasic;
+  use SysError;
 //use IO;
 
 // ---------------------------------------------------------------
@@ -5777,8 +5808,19 @@ proc channel._conv_helper(
     ref error:syserr,
     ref conv:qio_conv_t, ref gotConv:bool,
     ref j:int,
-    ref argType)
+    argType: c_ptr(c_int),
+    argTypeLen: int)
 {
+  proc boundsCheckHelp() {
+    if boundsChecking {
+      if j >= argTypeLen {
+        halt("Index ", j, " is accessed on argType of length ", argTypeLen);
+      }
+    }
+  }
+
+  boundsCheckHelp();
+
   if error then return;
   if gotConv {
     // Perhaps we need to handle pre/post args
@@ -5787,14 +5829,17 @@ proc channel._conv_helper(
       argType(j) = conv.preArg1;
       j += 1;
     }
+    boundsCheckHelp();
     if conv.preArg2 != QIO_CONV_UNK {
       argType(j) = conv.preArg2;
       j += 1;
     }
+    boundsCheckHelp();
     if conv.preArg3 != QIO_CONV_UNK {
       argType(j) = conv.preArg3;
       j += 1;
     }
+    boundsCheckHelp();
     if conv.argType != QIO_CONV_UNK {
       if argType(j) == QIO_CONV_UNK {
         // Some regexp paths set it earlier..
@@ -6092,6 +6137,120 @@ proc channel._read_complex(width:uint(32), out t:complex, i:int)
 }
 
 
+// This is called from within a param for loop in writef. It is important to
+// note here that the main benefit of this helper is that we don't pass all the
+// arguments from writef. This way, we can use the same code for an `arg` type
+// for which we have already created and instantiation of this.
+proc channel._writefOne(fmtStr, ref arg, i: int,
+                        ref cur: size_t, ref j: int,
+                        ref r: unmanaged _channel_regexp_info?,
+                        argType: c_ptr(c_int), argTypeLen: int,
+                        ref conv: qio_conv_t, ref gotConv: bool,
+                        ref style: iostyle, ref err: syserr, origLocale: locale,
+                        len: size_t) throws {
+  if boundsChecking {
+    if i >= argTypeLen {
+      halt("Index ", i, " is accessed on argType of length ", argTypeLen);
+    }
+  }
+  gotConv = false;
+
+  if j <= i {
+    _format_reader(fmtStr, cur, len, err,
+                   conv, gotConv, style, r,
+                   false);
+  }
+
+  _conv_helper(err, conv, gotConv, j, argType, argTypeLen);
+
+  var domore = _conv_sethandler(err, argType(i), style, i,arg,false);
+
+  if domore {
+    this._set_style(style);
+    // otherwise we will consume at least one argument.
+    select argType(i) {
+      when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
+        var (t,ok) = _toSigned(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else {
+          if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
+            err = _write_signed(style.max_width_bytes, t, i);
+          else
+            try _writeOne(iokind.dynamic, t, origLocale);
+        }
+      } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
+        var (t,ok) = _toUnsigned(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else {
+          if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
+            err = _write_unsigned(style.max_width_bytes, t, i);
+          else
+            try _writeOne(iokind.dynamic, t, origLocale);
+        }
+      } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
+        var (t,ok) = _toReal(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else {
+          if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
+            err = _write_real(style.max_width_bytes, t, i);
+          else
+            try _writeOne(iokind.dynamic, t, origLocale);
+        }
+      } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
+        var (t,ok) = _toImag(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else {
+          if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
+            err = _write_real(style.max_width_bytes, t:real, i);
+          else
+            try _writeOne(iokind.dynamic, t, origLocale);
+        }
+      } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
+        var (t,ok) = _toComplex(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else {
+          if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
+            err = _write_complex(style.max_width_bytes, t, i);
+          else try _writeOne(iokind.dynamic, t, origLocale);
+        }
+      } when QIO_CONV_ARG_TYPE_NUMERIC {
+        var (t,ok) = _toNumeric(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else try _writeOne(iokind.dynamic, t, origLocale);
+      } when QIO_CONV_ARG_TYPE_CHAR {
+        var (t,ok) = _toChar(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else try _writeOne(iokind.dynamic, new ioChar(t), origLocale);
+      } when QIO_CONV_ARG_TYPE_BINARY_STRING {
+        var (t,ok) = _toBytes(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else try _writeOne(iokind.dynamic, t, origLocale);
+      } when QIO_CONV_ARG_TYPE_STRING { // can only happen with string
+        var (t,ok) = _toString(arg);
+        if ! ok {
+          err = qio_format_error_arg_mismatch(i);
+        } else try _writeOne(iokind.dynamic, t, origLocale);
+      } when QIO_CONV_ARG_TYPE_REGEXP { // It's not so clear what to do when printing
+        // a regexp. So we just don't handle it.
+        err = qio_format_error_write_regexp();
+      } when QIO_CONV_ARG_TYPE_REPR {
+        try _writeOne(iokind.dynamic, arg, origLocale);
+      } otherwise {
+        // Unhandled argument type!
+        throw new owned IllegalArgumentError("args(" + i:string + ")",
+                                       "writef internal error " + argType(i):string);
+      }
+    }
+  }
+}
 
 /*
 
@@ -6120,8 +6279,11 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyle;
-    var end:size_t;
-    var argType:(k+5)*c_int;
+
+    param argTypeLen = k+5;
+    // we don't use a tuple here so that we can pass this to writefOne as a
+    // c_ptr. This should reduce number of instantiations of writefOne
+    var argType: c_array(c_int, argTypeLen);
 
     var r:unmanaged _channel_regexp_info?;
     defer {
@@ -6135,107 +6297,8 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var j = 0;
 
     for param i in 0..k-1 {
-      // The inside of this loop is a bit crazy because
-      // we're writing it all in a param for in order to
-      // get generic argument handling.
-
-      gotConv = false;
-
-      if j <= i {
-        _format_reader(fmtStr, cur, len, err,
-                       conv, gotConv, style, r,
-                       false);
-      }
-
-      _conv_helper(err, conv, gotConv, j, argType);
-
-      var domore = _conv_sethandler(err, argType(i), style, i,args(i),false);
-
-      if domore {
-        this._set_style(style);
-        // otherwise we will consume at least one argument.
-        select argType(i) {
-          when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
-            var (t,ok) = _toSigned(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else {
-              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_SIGNED then
-                err = _write_signed(style.max_width_bytes, t, i);
-              else
-                try _writeOne(iokind.dynamic, t, origLocale);
-            }
-          } when QIO_CONV_ARG_TYPE_UNSIGNED, QIO_CONV_ARG_TYPE_BINARY_UNSIGNED {
-            var (t,ok) = _toUnsigned(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else {
-              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_UNSIGNED then
-                err = _write_unsigned(style.max_width_bytes, t, i);
-              else
-                try _writeOne(iokind.dynamic, t, origLocale);
-            }
-          } when QIO_CONV_ARG_TYPE_REAL, QIO_CONV_ARG_TYPE_BINARY_REAL {
-            var (t,ok) = _toReal(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else {
-              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_REAL then
-                err = _write_real(style.max_width_bytes, t, i);
-              else
-                try _writeOne(iokind.dynamic, t, origLocale);
-            }
-          } when QIO_CONV_ARG_TYPE_IMAG, QIO_CONV_ARG_TYPE_BINARY_IMAG {
-            var (t,ok) = _toImag(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else {
-              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_IMAG then
-                err = _write_real(style.max_width_bytes, t:real, i);
-              else
-                try _writeOne(iokind.dynamic, t, origLocale);
-            }
-          } when QIO_CONV_ARG_TYPE_COMPLEX, QIO_CONV_ARG_TYPE_BINARY_COMPLEX {
-            var (t,ok) = _toComplex(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else {
-              if argType(i) == QIO_CONV_ARG_TYPE_BINARY_COMPLEX then
-                err = _write_complex(style.max_width_bytes, t, i);
-              else try _writeOne(iokind.dynamic, t, origLocale);
-            }
-          } when QIO_CONV_ARG_TYPE_NUMERIC {
-            var (t,ok) = _toNumeric(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else try _writeOne(iokind.dynamic, t, origLocale);
-          } when QIO_CONV_ARG_TYPE_CHAR {
-            var (t,ok) = _toChar(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else try _writeOne(iokind.dynamic, new ioChar(t), origLocale);
-          } when QIO_CONV_ARG_TYPE_BINARY_STRING {
-            var (t,ok) = _toBytes(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else try _writeOne(iokind.dynamic, t, origLocale);
-          } when QIO_CONV_ARG_TYPE_STRING { // can only happen with string
-            var (t,ok) = _toString(args(i));
-            if ! ok {
-              err = qio_format_error_arg_mismatch(i);
-            } else try _writeOne(iokind.dynamic, t, origLocale);
-          } when QIO_CONV_ARG_TYPE_REGEXP { // It's not so clear what to do when printing
-            // a regexp. So we just don't handle it.
-            err = qio_format_error_write_regexp();
-          } when QIO_CONV_ARG_TYPE_REPR {
-            try _writeOne(iokind.dynamic, args(i), origLocale);
-          } otherwise {
-            // Unhandled argument type!
-            throw new owned IllegalArgumentError("args(" + i:string + ")",
-                                           "writef internal error " + argType(i):string);
-          }
-        }
-      }
+      _writefOne(fmtStr, args(i), i, cur, j, r, c_ptrTo(argType[0]), argTypeLen,
+                 conv, gotConv, style, err, origLocale, len);
     }
 
     if ! err {
@@ -6341,7 +6404,12 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     var gotConv:bool;
     var style:iostyle;
     var end:size_t;
-    var argType:(k+5)*c_int;
+
+    param argTypeLen = k+5;
+    // we don't use a tuple here for being able to use conv_helper. This will be
+    // more meaningful when we refactor the param loop's body out into a separate
+    // helper. See writef
+    var argType: c_array(c_int, argTypeLen);
 
     var r:unmanaged _channel_regexp_info?;
     defer {
@@ -6382,7 +6450,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
           }
         }
 
-        _conv_helper(err, conv, gotConv, j, argType);
+        _conv_helper(err, conv, gotConv, j, argType, argTypeLen=k+5);
 
         var domore = _conv_sethandler(err, argType(i),style,i,args(i),false);
 
@@ -7185,6 +7253,7 @@ proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
    :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
+pragma "not order independent yielding loops"
 iter channel.matches(re:regexp(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {

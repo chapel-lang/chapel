@@ -1,9 +1,8 @@
 //===- VPRecipeBuilder.h - Helper class to build recipes --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -30,9 +29,6 @@ class VPRecipeBuilder {
   /// Target Library Info.
   const TargetLibraryInfo *TLI;
 
-  /// Target Transform Info.
-  const TargetTransformInfo *TTI;
-
   /// The legality analysis.
   LoopVectorizationLegality *Legal;
 
@@ -51,6 +47,24 @@ class VPRecipeBuilder {
   EdgeMaskCacheTy EdgeMaskCache;
   BlockMaskCacheTy BlockMaskCache;
 
+  // VPlan-VPlan transformations support: Hold a mapping from ingredients to
+  // their recipe. To save on memory, only do so for selected ingredients,
+  // marked by having a nullptr entry in this map. If those ingredients get a
+  // VPWidenRecipe, also avoid compressing other ingredients into it to avoid
+  // having to split such recipes later.
+  DenseMap<Instruction *, VPRecipeBase *> Ingredient2Recipe;
+  VPWidenRecipe *LastExtensibleRecipe = nullptr;
+
+  /// Set the recipe created for given ingredient. This operation is a no-op for
+  /// ingredients that were not marked using a nullptr entry in the map.
+  void setRecipe(Instruction *I, VPRecipeBase *R) {
+    if (!Ingredient2Recipe.count(I))
+      return;
+    assert(Ingredient2Recipe[I] == nullptr &&
+           "Recipe already set for ingredient");
+    Ingredient2Recipe[I] = R;
+  }
+
 public:
   /// A helper function that computes the predicate of the block BB, assuming
   /// that the header block of the loop is set to True. It returns the *entry*
@@ -61,16 +75,22 @@ public:
   /// and DST.
   VPValue *createEdgeMask(BasicBlock *Src, BasicBlock *Dst, VPlanPtr &Plan);
 
-  /// Check if \I belongs to an Interleave Group within the given VF \p Range,
-  /// \return true in the first returned value if so and false otherwise.
-  /// Build a new VPInterleaveGroup Recipe if \I is the primary member of an IG
-  /// for \p Range.Start, and provide it as the second returned value.
-  /// Note that if \I is an adjunct member of an IG for \p Range.Start, the
-  /// \return value is <true, nullptr>, as it is handled by another recipe.
-  /// \p Range.End may be decreased to ensure same decision from \p Range.Start
-  /// to \p Range.End.
-  VPInterleaveRecipe *tryToInterleaveMemory(Instruction *I, VFRange &Range,
-                                            VPlanPtr &Plan);
+  /// Mark given ingredient for recording its recipe once one is created for
+  /// it.
+  void recordRecipeOf(Instruction *I) {
+    assert((!Ingredient2Recipe.count(I) || Ingredient2Recipe[I] == nullptr) &&
+           "Recipe already set for ingredient");
+    Ingredient2Recipe[I] = nullptr;
+  }
+
+  /// Return the recipe created for given ingredient.
+  VPRecipeBase *getRecipe(Instruction *I) {
+    assert(Ingredient2Recipe.count(I) &&
+           "Recording this ingredients recipe was not requested");
+    assert(Ingredient2Recipe[I] != nullptr &&
+           "Ingredient doesn't have a recipe");
+    return Ingredient2Recipe[I];
+  }
 
   /// Check if \I is a memory instruction to be widened for \p Range.Start and
   /// potentially masked. Such instructions are handled by a recipe that takes
@@ -105,11 +125,9 @@ public:
 
 public:
   VPRecipeBuilder(Loop *OrigLoop, const TargetLibraryInfo *TLI,
-                  const TargetTransformInfo *TTI,
                   LoopVectorizationLegality *Legal,
                   LoopVectorizationCostModel &CM, VPBuilder &Builder)
-      : OrigLoop(OrigLoop), TLI(TLI), TTI(TTI), Legal(Legal), CM(CM),
-        Builder(Builder) {}
+      : OrigLoop(OrigLoop), TLI(TLI), Legal(Legal), CM(CM), Builder(Builder) {}
 
   /// Check if a recipe can be create for \p I withing the given VF \p Range.
   /// If a recipe can be created, it adds it to \p VPBB.

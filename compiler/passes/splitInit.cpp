@@ -408,7 +408,21 @@ static found_init_t doFindInitPoints(Symbol* sym,
       }
 
     } else if (isFunctionOrTypeDeclaration(cur)) {
-      // OK: mentions like `proc f() { ... x ... }` don't count
+      // OK: mentions like `proc f() { ... x ... }` don't change
+      // split init behavior.
+
+      // but do check for uses within outlined task functions
+      if (DefExpr* def = toDefExpr(cur)) {
+        if (FnSymbol* fn = toFnSymbol(def->sym)) {
+          if (isTaskFun(fn)) {
+            // check for uses within the task function
+            if (SymExpr* se = findSymExprFor(cur, sym)) {
+              usePreventingSplitInit = se;
+              return FOUND_USE;
+            }
+          }
+        }
+      }
     } else {
       // Look for uses of 'x' before the first assignment
       if (SymExpr* se = findSymExprFor(cur, sym)) {
@@ -419,10 +433,11 @@ static found_init_t doFindInitPoints(Symbol* sym,
     }
 
     if (fVerify) {
-      // Redundantly check for uses
+      // Redundantly check for uses, but ignore inner functions
       if (!isEndOfStatementMarker(cur) && !isFunctionOrTypeDeclaration(cur))
-        if (findSymExprFor(cur, sym) != NULL)
-          INT_FATAL("use not found above");
+        if (SymExpr* se = findSymExprFor(cur, sym))
+          if (se->parentSymbol == cur->parentSymbol)
+            INT_FATAL("use not found above");
     }
   }
 
@@ -481,8 +496,11 @@ static bool findCopyElisionCandidate(CallExpr* call,
             rhsCall->isNamedAstr(astr_autoCopy) ||
             rhsCall->isNamedAstr(astr_coerceCopy)) {
           int nActuals = rhsCall->numActuals();
-          if (nActuals >= 1) {
-            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(nActuals))) {
+          if (nActuals >= 2) {  // definedConst argument is the second arg
+            // note that errorLowering can add an argument
+            int rhsIdx = rhsCall->isNamedAstr(astr_coerceCopy) ? 2 : 1;
+            sanityCheckDefinedConstArg(rhsCall->get(rhsIdx+1));
+            if (SymExpr* rhsSe = toSymExpr(rhsCall->get(rhsIdx))) {
               if (lhsSe->getValType() == rhsSe->getValType()) {
                 lhs = lhsSe->symbol();
                 rhs = rhsSe->symbol();
@@ -501,8 +519,11 @@ static bool findCopyElisionCandidate(CallExpr* call,
       call->isNamedAstr(astr_coerceCopy)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       int nActuals = call->numActuals();
-      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 2) {
-        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-1))) {
+      // as this is function that returns via RVV, we have something like:
+      // initCopy(rhs, definedConst, retArg)
+      if (calledFn->hasFlag(FLAG_FN_RETARG) && nActuals >= 3) {
+        if (SymExpr* rhsSe = toSymExpr(call->get(nActuals-2))) {
+          sanityCheckDefinedConstArg(call->get(nActuals-1));
           if (SymExpr* lhsSe = toSymExpr(call->get(nActuals))) {
             if (lhsSe->getValType() == rhsSe->getValType()) {
               lhs = lhsSe->symbol();
@@ -629,7 +650,8 @@ static bool canCopyElideVar(Symbol* rhs) {
 static bool canCopyElideCall(CallExpr* call, Symbol* lhs, Symbol* rhs) {
   return canCopyElideVar(rhs) &&
          rhs->getValType() == lhs->getValType() &&
-         rhs->defPoint->parentSymbol == call->parentSymbol;
+         rhs->defPoint->parentSymbol == call->parentSymbol &&
+         !(isCallExprTemporary(rhs) && isTemporaryFromNoCopyReturn(rhs));
 }
 
 // returns true if there was an unconditional return

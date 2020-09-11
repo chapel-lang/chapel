@@ -1,9 +1,9 @@
 /*===----------- llvm-c/OrcBindings.h - Orc Lib C Iface ---------*- C++ -*-===*\
 |*                                                                            *|
-|*                     The LLVM Compiler Infrastructure                       *|
-|*                                                                            *|
-|* This file is distributed under the University of Illinois Open Source      *|
-|* License. See LICENSE.TXT for details.                                      *|
+|* Part of the LLVM Project, under the Apache License v2.0 with LLVM          *|
+|* Exceptions.                                                                *|
+|* See https://llvm.org/LICENSE.txt for license information.                  *|
+|* SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception                    *|
 |*                                                                            *|
 |*===----------------------------------------------------------------------===*|
 |*                                                                            *|
@@ -23,12 +23,11 @@
 #define LLVM_C_ORCBINDINGS_H
 
 #include "llvm-c/Error.h"
+#include "llvm-c/ExternC.h"
 #include "llvm-c/Object.h"
 #include "llvm-c/TargetMachine.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+LLVM_C_EXTERN_C_BEGIN
 
 typedef struct LLVMOrcOpaqueJITStack *LLVMOrcJITStackRef;
 typedef uint64_t LLVMOrcModuleHandle;
@@ -165,8 +164,6 @@ void LLVMOrcRegisterJITEventListener(LLVMOrcJITStackRef JITStack, LLVMJITEventLi
  */
 void LLVMOrcUnregisterJITEventListener(LLVMOrcJITStackRef JITStack, LLVMJITEventListenerRef L);
 
-#ifdef __cplusplus
-}
-#endif /* extern "C" */
+LLVM_C_EXTERN_C_END
 
 #endif /* LLVM_C_ORCBINDINGS_H */

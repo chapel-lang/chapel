@@ -153,7 +153,7 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 class PrivateArr: BaseRectangularArr {
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
 
-  pragma "no init" pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "no init" pragma "unsafe" pragma "no auto destroy"
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
   var data: eltType;
@@ -209,7 +209,11 @@ override proc PrivateArr.dsiElementInitializationComplete() {
   // no action necessary
 }
 
-override proc PrivateArr.dsiDestroyArr(param deinitElts:bool) {
+override proc PrivateArr.dsiElementDeinitializationComplete() {
+  // no action necessary
+}
+
+override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
   if deinitElts {
     param needsDestroy = __primitive("needs auto destroy", eltType);
 
@@ -261,6 +265,7 @@ proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
   return 0 <= idx && idx < numLocales;
 }
 
+pragma "order independent yielding loops"
 iter PrivateArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -274,6 +279,7 @@ iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   }
 }
 
+pragma "order independent yielding loops"
 iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   for i in followThis(0) do
     yield dsiAccess(i);

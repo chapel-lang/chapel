@@ -1,9 +1,8 @@
 //===- GVNHoist.cpp - Hoist scalar and load expressions -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -48,7 +47,6 @@
 #include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/MemorySSAUpdater.h"
 #include "llvm/Analysis/PostDominators.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/Argument.h"
 #include "llvm/IR/BasicBlock.h"
@@ -66,6 +64,7 @@
 #include "llvm/IR/Use.h"
 #include "llvm/IR/User.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -73,6 +72,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Utils/Local.h"
 #include <algorithm>
 #include <cassert>
 #include <iterator>
@@ -258,7 +258,7 @@ public:
   GVNHoist(DominatorTree *DT, PostDominatorTree *PDT, AliasAnalysis *AA,
            MemoryDependenceResults *MD, MemorySSA *MSSA)
       : DT(DT), PDT(PDT), AA(AA), MD(MD), MSSA(MSSA),
-        MSSAUpdater(llvm::make_unique<MemorySSAUpdater>(MSSA)) {}
+        MSSAUpdater(std::make_unique<MemorySSAUpdater>(MSSA)) {}
 
   bool run(Function &F) {
     NumFuncArgs = F.arg_size();
@@ -540,7 +540,7 @@ private:
 
     // Check for unsafe hoistings due to side effects.
     if (K == InsKind::Store) {
-      if (hasEHOrLoadsOnPath(NewPt, dyn_cast<MemoryDef>(U), NBBsOnAllPaths))
+      if (hasEHOrLoadsOnPath(NewPt, cast<MemoryDef>(U), NBBsOnAllPaths))
         return false;
     } else if (hasEHOnPath(NewBB, OldBB, NBBsOnAllPaths))
       return false;
@@ -703,7 +703,7 @@ private:
       // Vector of PHIs contains PHIs for different instructions.
       // Sort the args according to their VNs, such that identical
       // instructions are together.
-      std::stable_sort(CHIs.begin(), CHIs.end(), cmpVN);
+      llvm::stable_sort(CHIs, cmpVN);
       auto TI = BB->getTerminator();
       auto B = CHIs.begin();
       // [PreIt, PHIIt) form a range of CHIs which have identical VNs.
@@ -890,19 +890,18 @@ private:
 
   void updateAlignment(Instruction *I, Instruction *Repl) {
     if (auto *ReplacementLoad = dyn_cast<LoadInst>(Repl)) {
-      ReplacementLoad->setAlignment(
-          std::min(ReplacementLoad->getAlignment(),
-                   cast<LoadInst>(I)->getAlignment()));
+      ReplacementLoad->setAlignment(MaybeAlign(std::min(
+          ReplacementLoad->getAlignment(), cast<LoadInst>(I)->getAlignment())));
       ++NumLoadsRemoved;
     } else if (auto *ReplacementStore = dyn_cast<StoreInst>(Repl)) {
       ReplacementStore->setAlignment(
-          std::min(ReplacementStore->getAlignment(),
-                   cast<StoreInst>(I)->getAlignment()));
+          MaybeAlign(std::min(ReplacementStore->getAlignment(),
+                              cast<StoreInst>(I)->getAlignment())));
       ++NumStoresRemoved;
     } else if (auto *ReplacementAlloca = dyn_cast<AllocaInst>(Repl)) {
       ReplacementAlloca->setAlignment(
-          std::max(ReplacementAlloca->getAlignment(),
-                   cast<AllocaInst>(I)->getAlignment()));
+          MaybeAlign(std::max(ReplacementAlloca->getAlignment(),
+                              cast<AllocaInst>(I)->getAlignment())));
     } else if (isa<CallInst>(Repl)) {
       ++NumCallsRemoved;
     }
@@ -958,7 +957,8 @@ private:
     if (MoveAccess && NewMemAcc) {
         // The definition of this ld/st will not change: ld/st hoisting is
         // legal when the ld/st is not moved past its current definition.
-        MSSAUpdater->moveToPlace(NewMemAcc, DestBB, MemorySSA::End);
+        MSSAUpdater->moveToPlace(NewMemAcc, DestBB,
+                                 MemorySSA::BeforeTerminator);
     }
 
     // Replace all other instructions with Repl with memory access NewMemAcc.
@@ -1069,6 +1069,9 @@ private:
         ++NI;
     }
 
+    if (MSSA && VerifyMemorySSA)
+      MSSA->verifyMemorySSA();
+
     NumHoisted += NL + NS + NC + NI;
     NumRemoved += NR;
     NumLoadsHoisted += NL;
@@ -1170,6 +1173,7 @@ public:
     AU.addPreserved<DominatorTreeWrapperPass>();
     AU.addPreserved<MemorySSAWrapperPass>();
     AU.addPreserved<GlobalsAAWrapperPass>();
+    AU.addPreserved<AAResultsWrapperPass>();
   }
 };
 

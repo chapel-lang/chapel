@@ -1,9 +1,8 @@
 //===-- SIModeRegister.cpp - Mode Register --------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -45,7 +44,7 @@ struct Status {
 
   Status() : Mask(0), Mode(0){};
 
-  Status(unsigned Mask, unsigned Mode) : Mask(Mask), Mode(Mode) {
+  Status(unsigned NewMask, unsigned NewMode) : Mask(NewMask), Mode(NewMode) {
     Mode &= Mask;
   };
 
@@ -227,7 +226,7 @@ void SIModeRegister::insertSetreg(MachineBasicBlock &MBB, MachineInstr *MI,
 // - on exit we have set the Require, Change, and initial Exit modes.
 void SIModeRegister::processBlockPhase1(MachineBasicBlock &MBB,
                                         const SIInstrInfo *TII) {
-  auto NewInfo = llvm::make_unique<BlockData>();
+  auto NewInfo = std::make_unique<BlockData>();
   MachineInstr *InsertionPoint = nullptr;
   // RequirePending is used to indicate whether we are collecting the initial
   // requirements for the block, and need to defer the first InsertionPoint to

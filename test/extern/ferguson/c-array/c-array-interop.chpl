@@ -4,7 +4,7 @@ extern type mytriple = c_array(c_int, 3);
 
 extern var myglobal: mytriple;
 
-extern proc setpair(arg: mytriple);
+extern proc setpair(ref arg: mytriple);
 
 proc test1() {
   writeln("test1");

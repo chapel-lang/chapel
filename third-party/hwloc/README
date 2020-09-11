@@ -23,7 +23,7 @@ follows, assuming the CWD is $CHPL_HOME/third-party/hwloc/:
 3. `mv hwloc-1.11.13 hwloc-src`
 4. `git add --force hwloc-src` (--force to ignore our .gitignore)
 5. update the version number mentioned above
-6. update the okversions whitelist in chpl_3p_hwloc_configs.py
+6. update the okversions whitelist in chpl_hwloc.py
 7. make sure these instructions are up to date :)
 8. test (std config, and that stream gets expected performance)
 9. commit, PR, merge, etc

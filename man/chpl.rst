@@ -280,11 +280,6 @@ OPTIONS
     Limit on the size of tuples considered for the tuple copy optimization.
     The default value is 8.
 
-**--[no-]use-noinit**
-
-    Enable [disable] ability to skip default initialization through the
-    keyword noinit
-
 **--[no-]infer-local-fields**
 
     Enable [disable] analysis to infer local fields in classes and records

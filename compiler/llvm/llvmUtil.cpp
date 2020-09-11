@@ -2,15 +2,15 @@
  * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -166,7 +166,7 @@ PromotedPair convertValuesToLarger(
 
   llvm::Type *type1 = value1->getType();
   llvm::Type *type2 = value2->getType();
-  
+
   if(type1 == type2 && isSigned1 == isSigned2) {
     return PromotedPair(value1, value2, isSigned1);
   }
@@ -284,7 +284,7 @@ PromotedPair convertValuesToLarger(
       }
     }
   }
-  
+
   //Pointers
   if(type1->isPointerTy() && type2->isPointerTy()) {
     llvm::Type *castTy;
@@ -306,8 +306,221 @@ PromotedPair convertValuesToLarger(
                         irBuilder->CreatePointerCast(value2, castTy),
                         false);
   }
-  
+
   return PromotedPair(NULL, NULL, false);
+}
+
+
+void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
+                       const llvm::DataLayout& layout,
+                       llvm::LLVMContext &ctx,
+                       llvm::Type *valType, llvm::Value *addr)
+{
+  int64_t sizeInBytes = -1;
+  if (valType->isSized())
+    sizeInBytes = layout.getTypeStoreSize(valType);
+
+  llvm::ConstantInt *size = llvm::ConstantInt::getSigned(
+    llvm::Type::getInt64Ty(ctx), sizeInBytes);
+
+  irBuilder->CreateLifetimeStart(addr, size);
+}
+
+llvm::Value* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
+                                        const llvm::DataLayout& layout,
+                                        llvm::LLVMContext &ctx,
+                                        llvm::Type* type, const char* name) {
+
+  llvm::Value* val = createLLVMAlloca(irBuilder, type, name);
+  makeLifetimeStart(irBuilder, layout, ctx, type, val);
+
+  return val;
+}
+
+// Returns n elements in a vector/array or -1
+static
+int64_t arrayVecN(llvm::Type *t)
+{
+  if( t->isArrayTy() ) {
+    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
+    unsigned n = at->getNumElements();
+    return n;
+  } else if( t->isVectorTy() ) {
+    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
+    unsigned n = vt->getNumElements();
+    return n;
+  } else {
+    return -1;
+  }
+}
+
+
+static
+llvm::Type* arrayVecEltType(llvm::Type *t)
+{
+  if( t->isArrayTy() ) {
+    llvm::ArrayType *at = llvm::dyn_cast<llvm::ArrayType>(t);
+    return at->getElementType();
+  } else if( t->isVectorTy() ) {
+    llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
+    return vt->getElementType();
+  } else {
+    return NULL;
+  }
+}
+
+static
+bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type* b, bool force)
+{
+  int64_t aN = arrayVecN(a);
+  int64_t bN = arrayVecN(a);
+  int alignA, alignB;
+  int64_t sizeA, sizeB;
+
+  if( a == b ) {
+    return true;
+  } else if( a->isStructTy() && b->isStructTy() ) {
+    llvm::StructType *aTy = llvm::dyn_cast<llvm::StructType>(a);
+    llvm::StructType *bTy = llvm::dyn_cast<llvm::StructType>(b);
+    if( aTy->isLayoutIdentical(bTy) ) return true;
+    // handle case like
+    // {float, float, float, float} <=> { <2xfloat>, <2xfloat> }
+    // fall through...
+  } else if( aN >= 0 && aN == bN &&
+             arrayVecEltType(a) && arrayVecEltType(a) == arrayVecEltType(b) ) {
+    return true;
+  }
+
+
+  alignA = layout.getPrefTypeAlignment(a);
+  alignB = layout.getPrefTypeAlignment(b);
+  sizeA = layout.getTypeStoreSize(a);
+  sizeB = layout.getTypeStoreSize(b);
+
+  // Are they the same size?
+  if( sizeA == sizeB ) return true;
+
+  if( !force ) return false;
+
+  // Are they the same size, within alignment?
+  if( sizeA < sizeB ) {
+    // Try making size A bigger...
+    if( sizeA + alignA >= sizeB ) return true;
+  } else {
+    // A >= B
+    // Try making size B bigger...
+    if( sizeB + alignB >= sizeA ) return true;
+  }
+
+  return false;
+}
+
+// in the event a temporary is made,
+// *alloca will store the alloca instruction for it
+// and this function will emit a lifetime start intrinsic.
+llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
+                                const llvm::DataLayout& layout,
+                                llvm::LLVMContext &ctx,
+                                llvm::Value *value, llvm::Type *newType,
+                                llvm::Value **alloca,
+                                bool isSigned, bool force) {
+
+  llvm::Type *curType = value->getType();
+
+  if(curType == newType) {
+    return value;
+  }
+
+  //Integer values
+  if(newType->isIntegerTy() && curType->isIntegerTy()) {
+    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
+      // Sign extend if isSigned, but never sign extend single bits.
+      if(isSigned && ! curType->isIntegerTy(1)) {
+        return irBuilder->CreateSExtOrBitCast(value, newType);
+      }
+      else {
+        return irBuilder->CreateZExtOrBitCast(value, newType);
+      }
+    }
+    else {
+      return irBuilder->CreateTruncOrBitCast(value, newType);
+    }
+  }
+
+  //Floating point values
+  if(newType->isFloatingPointTy() && curType->isFloatingPointTy()) {
+    if(newType->getPrimitiveSizeInBits() > curType->getPrimitiveSizeInBits()) {
+      return irBuilder->CreateFPExt(value, newType);
+    }
+    else {
+      return irBuilder->CreateFPTrunc(value, newType);
+    }
+  }
+
+  //Integer value to floating point value
+  if(newType->isFloatingPointTy() && curType->isIntegerTy()) {
+    if(isSigned) {
+      return irBuilder->CreateSIToFP(value, newType);
+    }
+    else {
+      return irBuilder->CreateUIToFP(value, newType);
+    }
+  }
+
+  //Floating point value to integer value
+  if(newType->isIntegerTy() && curType->isFloatingPointTy()) {
+    return irBuilder->CreateFPToSI(value, newType);
+  }
+
+  //Integer to pointer
+  if(newType->isPointerTy() && curType->isIntegerTy()) {
+    return irBuilder->CreateIntToPtr(value, newType);
+  }
+
+  //Pointer to integer
+  if(newType->isIntegerTy() && curType->isPointerTy()) {
+    return irBuilder->CreatePtrToInt(value, newType);
+  }
+
+  //Pointers
+  if(newType->isPointerTy() && curType->isPointerTy()) {
+    if( newType->getPointerAddressSpace() !=
+        curType->getPointerAddressSpace() ) {
+      assert( 0 && "Can't convert pointer to different address space");
+    }
+    return irBuilder->CreatePointerCast(value, newType);
+  }
+
+  // Structure types.
+  // This is important in order to handle clang structure expansion
+  // (e.g. calling a function that returns {int64,int64})
+  if( isArrayVecOrStruct(curType) || isArrayVecOrStruct(newType) ) {
+    if( isTypeEquivalent(layout, curType, newType, force) ) {
+      // We turn it into a store/load to convert the type
+      // since LLVM does not allow bit casts on structure types.
+      llvm::Value* tmp_alloc;
+      llvm::Type* useTy = NULL;
+
+      if( layout.getTypeStoreSize(newType) >=
+          layout.getTypeStoreSize(curType) )
+        useTy = newType;
+      else
+        useTy = curType;
+
+      tmp_alloc = makeAllocaAndLifetimeStart(irBuilder, layout, ctx, useTy, "");
+      *alloca = tmp_alloc;
+      // Now cast the allocation to both fromType and toType.
+      llvm::Type* curPtrType = curType->getPointerTo();
+      llvm::Type* newPtrType = newType->getPointerTo();
+      // Now get cast pointers
+      llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
+      llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
+      irBuilder->CreateStore(value, tmp_cur);
+      return irBuilder->CreateLoad(tmp_new);
+    }
+  }
+
+  return NULL;
 }
 
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty)
@@ -329,101 +542,6 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
   return false;
 }
 
-
-/* This function gets the next byte offset to a structure in memory with
-   type ty that represents a different value field. Padding is skipped.
-   offset is the offset we are starting with
-   parent_this_offset is the start offset of ty according to the parent type
-   parent_next is the end offset of ty according to the parent type
-     (so that it includes padding)
-     */
-static
-uint64_t doGetTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset, uint64_t parent_this_offset, uint64_t parent_next_offset)
-{
-  llvm::StructType* struct_type = NULL;
-  const llvm::StructLayout* struct_layout = NULL;
-  llvm::Type* eltType = NULL;
-  unsigned i, n;
-  uint64_t local_offset, next_offset_here, offset_here;
-
-  //ty->print(dbgs(), true);
-  //printf("offset %i parent %i,%i\n", (int) offset, (int) parent_this_offset, (int) parent_next_offset);
-
-  assert(parent_this_offset <= offset && offset <= parent_next_offset);
-
-  if( ! isArrayVecOrStruct(ty) ) {
-    return parent_next_offset;
-  }
-
-  local_offset = offset - parent_this_offset;
-
-  if( ty->isArrayTy() || ty->isVectorTy() ) {
-    if (auto* AT = llvm::dyn_cast<llvm::ArrayType>(ty)) {
-      eltType = AT->getElementType();
-    } else if (auto* VT = llvm::dyn_cast<llvm::VectorType>(ty)) {
-      eltType = VT->getElementType();
-    }
-    // Not using getTypeSizeInBytes so that:
-    // 1) we get an assertion error if the type is not sized
-    // 2) we use uint64s for the type instead of int64s
-    uint64_t sz = layout.getTypeSizeInBits(eltType);
-    sz = (sz + 7)/8; // now in bytes.
-    uint64_t this_offset = local_offset / sz;
-    this_offset = parent_this_offset + this_offset*sz;
- 
-    // All types the same.. so we can pretend we're working with the first one.
-    return doGetTypeFieldNext(layout, eltType,
-                              offset, this_offset, this_offset+sz);
-  }
-
-  // structure type.
-  struct_type = llvm::cast<llvm::StructType>(ty);
-  n = struct_type->getNumElements();
-  struct_layout = layout.getStructLayout(struct_type);
-
-  // Scroll forward in the structure until we find the last element
-  // starting at offset.
-  for( i=0; i<n; i++ ) {
-    next_offset_here = struct_layout->getElementOffset(i);
-    //printf("struct offset(%i) is %i\n", (int) i, (int) next_offset_here);
-    if( next_offset_here > local_offset ) break;
-  }
-
-  if( i != n ) {
-    // it's before the last element, so we can use the next element
-    // as the next start position.
-    parent_next_offset = parent_this_offset + next_offset_here;
-  }
-
-  i--;
-  // now i is the element n-1 or
-  // the last element with element offset <= offset
-
-  offset_here = struct_layout->getElementOffset(i);
-
-  parent_this_offset = parent_this_offset + offset_here;
-  //printf("offset_here is %i\n", (int) offset_here);
-
-  eltType = struct_type->getElementType(i);
-
-  return doGetTypeFieldNext(layout, eltType, offset, parent_this_offset, parent_next_offset);
-}
-
-
-uint64_t getTypeFieldNext(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t offset)
-{
-  uint64_t sz;
-
-  // Not using getTypeSizeInBytes so that:
-  // 1) we get an assertion error if the type is not sized
-  // 2) we use uint64s for the type instead of int64s
-  assert(ty->isSized());
-  sz = layout.getTypeSizeInBits(ty);
-  sz = (sz + 7)/8; // now in bytes.
-
-
-  return doGetTypeFieldNext(layout, ty, offset, 0, sz);
-}
 
 void print_llvm(llvm::Type* t)
 {

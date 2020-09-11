@@ -27,7 +27,7 @@
 // * Ensure that reallocation works with block-cyclic 1-d distribution
 //  when the domain's stride changes.
 
-//use DSIUtil;
+use DSIUtil;
 //use WrapperDist;
 
 // debugging/trace certain DSI methods as they are being invoked
@@ -372,9 +372,8 @@ class DimensionalArr : BaseRectangularArr {
 class LocDimensionalArr {
   type eltType;
   const locDom;  // a LocDimensionalDom
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myStorageArr: [locDom.myStorageDom] eltType;
 
   proc init(type eltType,
@@ -388,8 +387,13 @@ class LocDimensionalArr {
 
   proc deinit() {
     // Elements in myStorageArr are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myStorageArr, deinitElts=false);
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocDimensionalArr.writeThis() is not implemented / should not be needed");
   }
 }
 
@@ -1024,6 +1028,7 @@ proc DimensionalArr.dsiSerialWrite(f): void {
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
+  pragma "order independent yielding loops"
   iter iHelp(param d) {
     if this.isAlias {
        // Go to the original array and invoke the follower iterator on it,
@@ -1102,11 +1107,20 @@ override proc DimensionalArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc DimensionalArr.dsiDestroyArr(param deinitElts:bool) {
+override proc DimensionalArr.dsiElementDeinitializationComplete() {
+  coforall desc in localAdescs {
+    on desc {
+      desc.myStorageArr.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc DimensionalArr.dsiDestroyArr(deinitElts:bool) {
   coforall desc in localAdescs {
     on desc {
       if deinitElts then
         _deinitElements(desc.myStorageArr);
+      desc.myStorageArr.dsiElementDeinitializationComplete();
       delete desc;
     }
   }
@@ -1233,6 +1247,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           // produce, collectively, all the indices in this dimension.
           // For 'parDim' - only the 'taskid'-th share of all indices.
           //
+          pragma "order independent yielding loops"
           iter iter1d(param dd, dom1d, loc1d) {
             const dummy: followT;
             type resultT = dummy(dd).type;
@@ -1248,6 +1263,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
           // Bug note: computing 'myDims(dd)' instead of passing 'myDim'
           // would trip an assertion in the compiler.
+          pragma "order independent yielding loops"
           iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
             for myPiece in iter1d(dd, dom1d, loc1d) {
 
@@ -1300,6 +1316,7 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
+pragma "order independent yielding loops"
 iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");
@@ -1375,6 +1392,7 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
 }
 
 // factor our some common code
+pragma "not order independent yielding loops"
 iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;

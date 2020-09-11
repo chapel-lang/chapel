@@ -1,0 +1,1 @@
+printvisibleExtraArg.chpl:2: error: get visible symbols may only have 0 or 1 arguments

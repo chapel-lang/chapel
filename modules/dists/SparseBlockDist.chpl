@@ -435,17 +435,27 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
-  override proc dsiDestroyArr(param deinitElts:bool) {
+  override proc dsiElementDeinitializationComplete() {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on locArr(localeIdx) {
+        locArr(localeIdx)!.myElems.dsiElementDeinitializationComplete();
+      }
+    }
+  }
+
+  override proc dsiDestroyArr(deinitElts:bool) {
     coforall localeIdx in dom.dist.targetLocDom {
       on locArr(localeIdx) {
         var arr = locArr(localeIdx);
         if deinitElts then
           _deinitElements(arr!.myElems);
+        arr!.myElems.dsiElementDeinitializationComplete();
         delete arr;
       }
     }
   }
 
+  pragma "order independent yielding loops"
   iter these() ref {
     for locI in dom.dist.targetLocDom {
       // TODO Would want to do something like:
@@ -465,6 +475,7 @@ class SparseBlockArr: BaseSparseArr {
       yield followThis;
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
     var (locFollowThis, localeIndex) = followThis;
     for i in locFollowThis(0).these(tag, locFollowThis) {
@@ -472,6 +483,7 @@ class SparseBlockArr: BaseSparseArr {
     }
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
@@ -550,9 +562,8 @@ class LocSparseBlockArr {
   param stridable: bool;
   type sparseLayoutType;
   const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.mySparseBlock] eltType;
 
   proc init(type eltType,
@@ -574,8 +585,6 @@ class LocSparseBlockArr {
 
   proc deinit() {
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
   }
 
   proc dsiAccess(i) ref {
@@ -588,6 +597,13 @@ class LocSparseBlockArr {
   proc dsiAccess(i) const ref
   where shouldReturnRvalueByConstRef(eltType) {
     return myElems[i];
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocSparseBlockArr.writeThis() is not implemented / should not be needed");
   }
 }
 

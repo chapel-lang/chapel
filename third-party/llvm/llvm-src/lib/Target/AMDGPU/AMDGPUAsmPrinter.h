@@ -1,9 +1,8 @@
 //===-- AMDGPUAsmPrinter.h - Print AMDGPU assembly code ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -33,6 +32,7 @@ namespace llvm {
 
 class AMDGPUMachineFunction;
 class AMDGPUTargetStreamer;
+class MCCodeEmitter;
 class MCOperand;
 class GCNSubtarget;
 
@@ -43,6 +43,7 @@ private:
     // Track the number of explicitly used VGPRs. Special registers reserved at
     // the end are tracked separately.
     int32_t NumVGPR = 0;
+    int32_t NumAGPR = 0;
     int32_t NumExplicitSGPR = 0;
     uint64_t PrivateSegmentSize = 0;
     bool UsesVCC = false;
@@ -51,18 +52,19 @@ private:
     bool HasRecursion = false;
 
     int32_t getTotalNumSGPRs(const GCNSubtarget &ST) const;
+    int32_t getTotalNumVGPRs(const GCNSubtarget &ST) const;
   };
 
   SIProgramInfo CurrentProgramInfo;
   DenseMap<const Function *, SIFunctionResourceInfo> CallGraphResourceInfo;
 
   std::unique_ptr<AMDGPU::HSAMD::MetadataStreamer> HSAMetadataStream;
-  std::map<uint32_t, uint32_t> PALMetadataMap;
+
+  MCCodeEmitter *DumpCodeInstEmitter = nullptr;
 
   uint64_t getFunctionCodeSize(const MachineFunction &MF) const;
   SIFunctionResourceInfo analyzeResourceUsage(const MachineFunction &MF) const;
 
-  void readPALMetadata(Module &M);
   void getSIProgramInfo(SIProgramInfo &Out, const MachineFunction &MF);
   void getAmdKernelCode(amd_kernel_code_t &Out, const SIProgramInfo &KernelInfo,
                         const MachineFunction &MF) const;
@@ -77,6 +79,8 @@ private:
   void EmitPALMetadata(const MachineFunction &MF,
                        const SIProgramInfo &KernelInfo);
   void emitCommonFunctionComments(uint32_t NumVGPR,
+                                  Optional<uint32_t> NumAGPR,
+                                  uint32_t TotalNumVGPR,
                                   uint32_t NumSGPR,
                                   uint64_t ScratchSize,
                                   uint64_t CodeSize,
@@ -95,7 +99,7 @@ public:
 
   StringRef getPassName() const override;
 
-  const MCSubtargetInfo* getSTI() const;
+  const MCSubtargetInfo* getGlobalSTI() const;
 
   AMDGPUTargetStreamer* getTargetStreamer() const;
 
@@ -125,7 +129,7 @@ public:
 
   void EmitFunctionEntryLabel() override;
 
-  void EmitBasicBlockStart(const MachineBasicBlock &MBB) const override;
+  void EmitBasicBlockStart(const MachineBasicBlock &MBB) override;
 
   void EmitGlobalVariable(const GlobalVariable *GV) override;
 
@@ -137,12 +141,11 @@ public:
     const MachineBasicBlock *MBB) const override;
 
   bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
-                       unsigned AsmVariant, const char *ExtraCode,
-                       raw_ostream &O) override;
+                       const char *ExtraCode, raw_ostream &O) override;
 
 protected:
-  mutable std::vector<std::string> DisasmLines, HexLines;
-  mutable size_t DisasmLineMaxLen;
+  std::vector<std::string> DisasmLines, HexLines;
+  size_t DisasmLineMaxLen;
 };
 
 } // end namespace llvm

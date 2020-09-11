@@ -1,9 +1,8 @@
 //===-- TargetTest.cpp ---------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,10 +33,10 @@ constexpr const char kTriple[] = "powerpc64le-unknown-linux";
 class PowerPCTargetTest : public ::testing::Test {
 protected:
   PowerPCTargetTest()
-      : ExegesisTarget_(ExegesisTarget::lookup(llvm::Triple(kTriple))) {
+      : ExegesisTarget_(ExegesisTarget::lookup(Triple(kTriple))) {
     EXPECT_THAT(ExegesisTarget_, NotNull());
     std::string error;
-    Target_ = llvm::TargetRegistry::lookupTarget(kTriple, error);
+    Target_ = TargetRegistry::lookupTarget(kTriple, error);
     EXPECT_THAT(Target_, NotNull());
   }
   static void SetUpTestCase() {
@@ -47,15 +46,14 @@ protected:
     InitializePowerPCExegesisTarget();
   }
 
-  const llvm::Target *Target_;
+  const Target *Target_;
   const ExegesisTarget *const ExegesisTarget_;
 };
 
 TEST_F(PowerPCTargetTest, SetRegToConstant) {
-  const std::unique_ptr<llvm::MCSubtargetInfo> STI(
+  const std::unique_ptr<MCSubtargetInfo> STI(
       Target_->createMCSubtargetInfo(kTriple, "generic", ""));
-  const auto Insts =
-      ExegesisTarget_->setRegTo(*STI, llvm::PPC::X0, llvm::APInt());
+  const auto Insts = ExegesisTarget_->setRegTo(*STI, PPC::X0, APInt());
   EXPECT_THAT(Insts, Not(IsEmpty()));
 }
 

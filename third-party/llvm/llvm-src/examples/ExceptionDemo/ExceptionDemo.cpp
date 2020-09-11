@@ -1,9 +1,8 @@
 //===-- ExceptionDemo.cpp - An example using llvm Exceptions --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -1905,7 +1904,7 @@ int main(int argc, char *argv[]) {
 
   // Make the module, which holds all the code.
   std::unique_ptr<llvm::Module> Owner =
-      llvm::make_unique<llvm::Module>("my cool jit", Context);
+      std::make_unique<llvm::Module>("my cool jit", Context);
   llvm::Module *module = Owner.get();
 
   std::unique_ptr<llvm::RTDyldMemoryManager> MemMgr(new llvm::SectionMemoryManager());

@@ -1,5 +1,0 @@
-bug: writeln() called with a generic function as an argument leads to unexpected output.
-
-This test currently fails with an internal error in callInfo.cpp
-(during function resolution).  It should probably be illegal and give
-the same compile-time error as the other funcPtr*.chpl programs.

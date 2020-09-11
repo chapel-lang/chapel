@@ -1,9 +1,8 @@
 //===- unittest/ProfileData/CoverageMappingTest.cpp -------------------------=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -235,12 +234,12 @@ struct CoverageMappingTest : ::testing::TestWithParam<std::pair<bool, bool>> {
       for (const auto &OF : OutputFunctions) {
         ArrayRef<OutputFunctionCoverageData> Funcs(OF);
         CoverageReaders.push_back(
-            make_unique<CoverageMappingReaderMock>(Funcs));
+            std::make_unique<CoverageMappingReaderMock>(Funcs));
       }
     } else {
       ArrayRef<OutputFunctionCoverageData> Funcs(OutputFunctions);
       CoverageReaders.push_back(
-          make_unique<CoverageMappingReaderMock>(Funcs));
+          std::make_unique<CoverageMappingReaderMock>(Funcs));
     }
     return CoverageMapping::load(CoverageReaders, *ProfileReader);
   }

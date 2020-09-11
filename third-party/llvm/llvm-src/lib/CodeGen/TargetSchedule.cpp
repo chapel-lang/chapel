@@ -1,9 +1,8 @@
 //===- llvm/Target/TargetSchedule.cpp - Sched Machine Model ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -301,7 +300,7 @@ computeOutputLatency(const MachineInstr *DefMI, unsigned DefOperIdx,
   // TODO: The following hack exists because predication passes do not
   // correctly append imp-use operands, and readsReg() strangely returns false
   // for predicated defs.
-  unsigned Reg = DefMI->getOperand(DefOperIdx).getReg();
+  Register Reg = DefMI->getOperand(DefOperIdx).getReg();
   const MachineFunction &MF = *DefMI->getMF();
   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
   if (!DepMI->readsRegister(Reg, TRI) && TII->isPredicated(*DepMI))

@@ -1,9 +1,8 @@
 //=== PointerSubChecker.cpp - Pointer subtraction checker ------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -64,7 +63,8 @@ void PointerSubChecker::checkPreStmt(const BinaryOperator *B,
           new BuiltinBug(this, "Pointer subtraction",
                          "Subtraction of two pointers that do not point to "
                          "the same memory chunk may cause incorrect result."));
-    auto R = llvm::make_unique<BugReport>(*BT, BT->getDescription(), N);
+    auto R =
+        std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);
     R->addRange(B->getSourceRange());
     C.emitReport(std::move(R));
   }
@@ -72,4 +72,8 @@ void PointerSubChecker::checkPreStmt(const BinaryOperator *B,
 
 void ento::registerPointerSubChecker(CheckerManager &mgr) {
   mgr.registerChecker<PointerSubChecker>();
+}
+
+bool ento::shouldRegisterPointerSubChecker(const LangOptions &LO) {
+  return true;
 }

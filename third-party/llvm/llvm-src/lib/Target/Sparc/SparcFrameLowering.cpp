@@ -1,9 +1,8 @@
 //===-- SparcFrameLowering.cpp - Sparc Frame Information ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -35,7 +34,8 @@ DisableLeafProc("disable-sparc-leaf-proc",
 
 SparcFrameLowering::SparcFrameLowering(const SparcSubtarget &ST)
     : TargetFrameLowering(TargetFrameLowering::StackGrowsDown,
-                          ST.is64Bit() ? 16 : 8, 0, ST.is64Bit() ? 16 : 8) {}
+                          ST.is64Bit() ? Align(16) : Align(8), 0,
+                          ST.is64Bit() ? Align(16) : Align(8)) {}
 
 void SparcFrameLowering::emitSPAdjustment(MachineFunction &MF,
                                           MachineBasicBlock &MBB,

@@ -1,9 +1,8 @@
 //=- ARMScheduleA9.td - ARM Cortex-A9 Scheduling Definitions -*- tablegen -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -2240,9 +2239,9 @@ def A9WriteLMfpPostRA : SchedWriteVariant<[
 // Distinguish between our multiple MI-level forms of the same
 // VLDM/VSTM instructions.
 def A9PreRA : SchedPredicate<
-  "TargetRegisterInfo::isVirtualRegister(MI->getOperand(0).getReg())">;
+  "Register::isVirtualRegister(MI->getOperand(0).getReg())">;
 def A9PostRA : SchedPredicate<
-  "TargetRegisterInfo::isPhysicalRegister(MI->getOperand(0).getReg())">;
+  "Register::isPhysicalRegister(MI->getOperand(0).getReg())">;
 
 // VLDM represents all destination registers as a single register
 // tuple, unlike LDM. So the number of write operands is not variadic.

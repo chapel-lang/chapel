@@ -1,9 +1,8 @@
 //===- tools/dsymutil/LinkUtils.h - Dwarf linker utilities ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,6 +12,7 @@
 #include "SymbolMap.h"
 
 #include "llvm/ADT/Twine.h"
+#include "llvm/Remarks/RemarkFormat.h"
 #include "llvm/Support/WithColor.h"
 
 #include <string>
@@ -63,8 +63,26 @@ struct LinkOptions {
   /// -oso-prepend-path
   std::string PrependPath;
 
+  /// The Resources directory in the .dSYM bundle.
+  Optional<std::string> ResourceDir;
+
   /// Symbol map translator.
   SymbolMapTranslator Translator;
+
+  /// Fields used for linking and placing remarks into the .dSYM bundle.
+  /// @{
+
+  /// Number of debug maps processed in total.
+  unsigned NumDebugMaps = 0;
+
+  /// -remarks-prepend-path: prepend a path to all the external remark file
+  /// paths found in remark metadata.
+  std::string RemarksPrependPath;
+
+  /// The output format of the remarks.
+  remarks::Format RemarksFormat = remarks::Format::Bitstream;
+
+  /// @}
 
   LinkOptions() = default;
 };

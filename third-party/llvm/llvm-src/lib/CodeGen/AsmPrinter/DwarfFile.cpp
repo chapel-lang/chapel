@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/DwarfFile.cpp - Dwarf Debug Framework -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -44,6 +43,11 @@ void DwarfFile::emitUnit(DwarfUnit *TheU, bool UseOffsets) {
   if (!S)
     return;
 
+  // Skip CUs that ended up not being needed (split CUs that were abandoned
+  // because they added no information beyond the non-split CU)
+  if (llvm::empty(TheU->getUnitDie().values()))
+    return;
+
   Asm->OutStreamer->SwitchSection(S);
   TheU->emitHeader(UseOffsets);
   Asm->emitDwarfDIE(TheU->getUnitDie());
@@ -62,6 +66,11 @@ void DwarfFile::computeSizeAndOffsets() {
   for (const auto &TheU : CUs) {
     if (TheU->getCUNode()->isDebugDirectivesOnly())
       continue;
+
+    // Skip CUs that ended up not being needed (split CUs that were abandoned
+    // because they added no information beyond the non-split CU)
+    if (llvm::empty(TheU->getUnitDie().values()))
+      return;
 
     TheU->setDebugSectionOffset(SecOffset);
     SecOffset += computeSizeAndOffsetsForUnit(TheU.get());
@@ -117,6 +126,6 @@ void DwarfFile::addScopeLabel(LexicalScope *LS, DbgLabel *Label) {
 std::pair<uint32_t, RangeSpanList *>
 DwarfFile::addRange(const DwarfCompileUnit &CU, SmallVector<RangeSpan, 2> R) {
   CURangeLists.push_back(
-      RangeSpanList(Asm->createTempSymbol("debug_ranges"), CU, std::move(R)));
+      RangeSpanList{Asm->createTempSymbol("debug_ranges"), &CU, std::move(R)});
   return std::make_pair(CURangeLists.size() - 1, &CURangeLists.back());
 }

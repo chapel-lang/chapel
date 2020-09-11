@@ -1,9 +1,8 @@
 //===-- llvm-mca.cpp - Machine Code Analyzer -------------------*- C++ -* -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,6 +23,7 @@
 #include "CodeRegion.h"
 #include "CodeRegionGenerator.h"
 #include "PipelinePrinter.h"
+#include "Views/BottleneckAnalysis.h"
 #include "Views/DispatchStatistics.h"
 #include "Views/InstructionInfoView.h"
 #include "Views/RegisterFileStatistics.h"
@@ -32,11 +32,17 @@
 #include "Views/SchedulerStatistics.h"
 #include "Views/SummaryView.h"
 #include "Views/TimelineView.h"
+#include "llvm/MC/MCAsmBackend.h"
 #include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/MCTargetOptionsCommandFlags.inc"
+#include "llvm/MCA/CodeEmitter.h"
 #include "llvm/MCA/Context.h"
+#include "llvm/MCA/InstrBuilder.h"
 #include "llvm/MCA/Pipeline.h"
 #include "llvm/MCA/Stages/EntryStage.h"
 #include "llvm/MCA/Stages/InstructionTables.h"
@@ -68,8 +74,9 @@ static cl::opt<std::string> OutputFilename("o", cl::desc("Output filename"),
                                            cl::value_desc("filename"));
 
 static cl::opt<std::string>
-    ArchName("march", cl::desc("Target architecture. "
-                               "See -version for available targets"),
+    ArchName("march",
+             cl::desc("Target architecture. "
+                      "See -version for available targets"),
              cl::cat(ToolOptions));
 
 static cl::opt<std::string>
@@ -82,10 +89,19 @@ static cl::opt<std::string>
          cl::desc("Target a specific cpu type (-mcpu=help for details)"),
          cl::value_desc("cpu-name"), cl::cat(ToolOptions), cl::init("native"));
 
+static cl::opt<std::string>
+    MATTR("mattr",
+          cl::desc("Additional target features."),
+          cl::cat(ToolOptions));
+
 static cl::opt<int>
     OutputAsmVariant("output-asm-variant",
                      cl::desc("Syntax variant to use for output printing"),
                      cl::cat(ToolOptions), cl::init(-1));
+
+static cl::opt<bool>
+    PrintImmHex("print-imm-hex", cl::cat(ToolOptions), cl::init(false),
+                cl::desc("Prefer hex format when printing immediate values"));
 
 static cl::opt<unsigned> Iterations("iterations",
                                     cl::desc("Number of iterations to run"),
@@ -100,6 +116,17 @@ static cl::opt<unsigned>
                      cl::desc("Maximum number of physical registers which can "
                               "be used for register mappings"),
                      cl::cat(ToolOptions), cl::init(0));
+
+static cl::opt<unsigned>
+    MicroOpQueue("micro-op-queue-size", cl::Hidden,
+                 cl::desc("Number of entries in the micro-op queue"),
+                 cl::cat(ToolOptions), cl::init(0));
+
+static cl::opt<unsigned>
+    DecoderThroughput("decoder-throughput", cl::Hidden,
+                      cl::desc("Maximum throughput from the decoders "
+                               "(instructions per cycle)"),
+                      cl::cat(ToolOptions), cl::init(0));
 
 static cl::opt<bool>
     PrintRegisterFileStats("register-file-stats",
@@ -176,6 +203,16 @@ static cl::opt<bool>
                    cl::desc("Print all views including hardware statistics"),
                    cl::cat(ViewOptions), cl::init(false));
 
+static cl::opt<bool> EnableBottleneckAnalysis(
+    "bottleneck-analysis",
+    cl::desc("Enable bottleneck analysis (disabled by default)"),
+    cl::cat(ViewOptions), cl::init(false));
+
+static cl::opt<bool> ShowEncoding(
+    "show-encoding",
+    cl::desc("Print encoding information in the instruction info view"),
+    cl::cat(ViewOptions), cl::init(false));
+
 namespace {
 
 const Target *getTarget(const char *ProgName) {
@@ -201,7 +238,7 @@ ErrorOr<std::unique_ptr<ToolOutputFile>> getOutputStream() {
     OutputFilename = "-";
   std::error_code EC;
   auto Out =
-      llvm::make_unique<ToolOutputFile>(OutputFilename, EC, sys::fs::F_None);
+      std::make_unique<ToolOutputFile>(OutputFilename, EC, sys::fs::OF_Text);
   if (!EC)
     return std::move(Out);
   return EC;
@@ -220,6 +257,7 @@ static void processViewOptions() {
 
   if (EnableAllViews.getNumOccurrences()) {
     processOptionImpl(PrintSummaryView, EnableAllViews);
+    processOptionImpl(EnableBottleneckAnalysis, EnableAllViews);
     processOptionImpl(PrintResourcePressureView, EnableAllViews);
     processOptionImpl(PrintTimelineView, EnableAllViews);
     processOptionImpl(PrintInstructionInfoView, EnableAllViews);
@@ -285,33 +323,11 @@ int main(int argc, char **argv) {
   // Apply overrides to llvm-mca specific options.
   processViewOptions();
 
-  SourceMgr SrcMgr;
-
-  // Tell SrcMgr about this buffer, which is what the parser will pick up.
-  SrcMgr.AddNewSourceBuffer(std::move(*BufferPtr), SMLoc());
-
-  std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TripleName));
-  assert(MRI && "Unable to create target register info!");
-
-  std::unique_ptr<MCAsmInfo> MAI(TheTarget->createMCAsmInfo(*MRI, TripleName));
-  assert(MAI && "Unable to create target asm info!");
-
-  MCObjectFileInfo MOFI;
-  MCContext Ctx(MAI.get(), MRI.get(), &MOFI, &SrcMgr);
-  MOFI.InitMCObjectFileInfo(TheTriple, /* PIC= */ false, Ctx);
-
-  std::unique_ptr<buffer_ostream> BOS;
-
-  std::unique_ptr<MCInstrInfo> MCII(TheTarget->createMCInstrInfo());
-
-  std::unique_ptr<MCInstrAnalysis> MCIA(
-      TheTarget->createMCInstrAnalysis(MCII.get()));
-
   if (!MCPU.compare("native"))
     MCPU = llvm::sys::getHostCPUName();
 
   std::unique_ptr<MCSubtargetInfo> STI(
-      TheTarget->createMCSubtargetInfo(TripleName, MCPU, /* FeaturesStr */ ""));
+      TheTarget->createMCSubtargetInfo(TripleName, MCPU, MATTR));
   if (!STI->isCPUStringValid(MCPU))
     return 1;
 
@@ -334,6 +350,31 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  std::unique_ptr<MCRegisterInfo> MRI(TheTarget->createMCRegInfo(TripleName));
+  assert(MRI && "Unable to create target register info!");
+
+  MCTargetOptions MCOptions = InitMCTargetOptionsFromFlags();
+  std::unique_ptr<MCAsmInfo> MAI(
+      TheTarget->createMCAsmInfo(*MRI, TripleName, MCOptions));
+  assert(MAI && "Unable to create target asm info!");
+
+  MCObjectFileInfo MOFI;
+  SourceMgr SrcMgr;
+
+  // Tell SrcMgr about this buffer, which is what the parser will pick up.
+  SrcMgr.AddNewSourceBuffer(std::move(*BufferPtr), SMLoc());
+
+  MCContext Ctx(MAI.get(), MRI.get(), &MOFI, &SrcMgr);
+
+  MOFI.InitMCObjectFileInfo(TheTriple, /* PIC= */ false, Ctx);
+
+  std::unique_ptr<buffer_ostream> BOS;
+
+  std::unique_ptr<MCInstrInfo> MCII(TheTarget->createMCInstrInfo());
+
+  std::unique_ptr<MCInstrAnalysis> MCIA(
+      TheTarget->createMCInstrAnalysis(MCII.get()));
+
   // Parse the input and create CodeRegions that llvm-mca can analyze.
   mca::AsmCodeRegionGenerator CRG(*TheTarget, SrcMgr, Ctx, *MAI, *STI, *MCII);
   Expected<const mca::CodeRegions &> RegionsOrErr = CRG.parseCodeRegions();
@@ -348,6 +389,11 @@ int main(int argc, char **argv) {
     return 1;
   }
   const mca::CodeRegions &Regions = *RegionsOrErr;
+
+  // Early exit if errors were found by the code region parsing logic.
+  if (!Regions.isValid())
+    return 1;
+
   if (Regions.empty()) {
     WithColor::error() << "no assembly instructions found.\n";
     return 1;
@@ -373,13 +419,12 @@ int main(int argc, char **argv) {
     return 1;
   }
 
+  // Set the display preference for hex vs. decimal immediates.
+  IP->setPrintImmHex(PrintImmHex);
+
   std::unique_ptr<ToolOutputFile> TOF = std::move(*OF);
 
   const MCSchedModel &SM = STI->getSchedModel();
-
-  unsigned Width = SM.IssueWidth;
-  if (DispatchWidth)
-    Width = DispatchWidth;
 
   // Create an instruction builder.
   mca::InstrBuilder IB(*STI, *MCII, *MRI, MCIA.get());
@@ -387,11 +432,18 @@ int main(int argc, char **argv) {
   // Create a context to control ownership of the pipeline hardware.
   mca::Context MCA(*MRI, *STI);
 
-  mca::PipelineOptions PO(Width, RegisterFileSize, LoadQueueSize,
-                          StoreQueueSize, AssumeNoAlias);
+  mca::PipelineOptions PO(MicroOpQueue, DecoderThroughput, DispatchWidth,
+                          RegisterFileSize, LoadQueueSize, StoreQueueSize,
+                          AssumeNoAlias, EnableBottleneckAnalysis);
 
   // Number each region in the sequence.
   unsigned RegionIdx = 0;
+
+  std::unique_ptr<MCCodeEmitter> MCE(
+      TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx));
+
+  std::unique_ptr<MCAsmBackend> MAB(TheTarget->createMCAsmBackend(
+      *STI, *MRI, InitMCTargetOptionsFromFlags()));
 
   for (const std::unique_ptr<mca::CodeRegion> &Region : Regions) {
     // Skip empty code regions.
@@ -410,6 +462,7 @@ int main(int argc, char **argv) {
 
     // Lower the MCInst sequence into an mca::Instruction sequence.
     ArrayRef<MCInst> Insts = Region->getInstructions();
+    mca::CodeEmitter CE(*STI, *MAB, *MCE, Insts);
     std::vector<std::unique_ptr<mca::Instruction>> LoweredSequence;
     for (const MCInst &MCI : Insts) {
       Expected<std::unique_ptr<mca::Instruction>> Inst =
@@ -421,10 +474,10 @@ int main(int argc, char **argv) {
                   std::string InstructionStr;
                   raw_string_ostream SS(InstructionStr);
                   WithColor::error() << IE.Message << '\n';
-                  IP->printInst(&IE.Inst, SS, "", *STI);
+                  IP->printInst(&IE.Inst, 0, "", *STI, SS);
                   SS.flush();
-                  WithColor::note() << "instruction: " << InstructionStr
-                                    << '\n';
+                  WithColor::note()
+                      << "instruction: " << InstructionStr << '\n';
                 })) {
           // Default case.
           WithColor::error() << toString(std::move(NewE));
@@ -439,18 +492,18 @@ int main(int argc, char **argv) {
 
     if (PrintInstructionTables) {
       //  Create a pipeline, stages, and a printer.
-      auto P = llvm::make_unique<mca::Pipeline>();
-      P->appendStage(llvm::make_unique<mca::EntryStage>(S));
-      P->appendStage(llvm::make_unique<mca::InstructionTables>(SM));
+      auto P = std::make_unique<mca::Pipeline>();
+      P->appendStage(std::make_unique<mca::EntryStage>(S));
+      P->appendStage(std::make_unique<mca::InstructionTables>(SM));
       mca::PipelinePrinter Printer(*P);
 
       // Create the views for this pipeline, execute, and emit a report.
       if (PrintInstructionInfoView) {
-        Printer.addView(llvm::make_unique<mca::InstructionInfoView>(
-            *STI, *MCII, Insts, *IP));
+        Printer.addView(std::make_unique<mca::InstructionInfoView>(
+            *STI, *MCII, CE, ShowEncoding, Insts, *IP));
       }
       Printer.addView(
-          llvm::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
+          std::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
 
       if (!runPipeline(*P))
         return 1;
@@ -460,36 +513,42 @@ int main(int argc, char **argv) {
     }
 
     // Create a basic pipeline simulating an out-of-order backend.
-    auto P = MCA.createDefaultPipeline(PO, IB, S);
+    auto P = MCA.createDefaultPipeline(PO, S);
     mca::PipelinePrinter Printer(*P);
 
     if (PrintSummaryView)
-      Printer.addView(llvm::make_unique<mca::SummaryView>(SM, Insts, Width));
+      Printer.addView(
+          std::make_unique<mca::SummaryView>(SM, Insts, DispatchWidth));
+
+    if (EnableBottleneckAnalysis) {
+      Printer.addView(std::make_unique<mca::BottleneckAnalysis>(
+          *STI, *IP, Insts, S.getNumIterations()));
+    }
 
     if (PrintInstructionInfoView)
-      Printer.addView(
-          llvm::make_unique<mca::InstructionInfoView>(*STI, *MCII, Insts, *IP));
+      Printer.addView(std::make_unique<mca::InstructionInfoView>(
+          *STI, *MCII, CE, ShowEncoding, Insts, *IP));
 
     if (PrintDispatchStats)
-      Printer.addView(llvm::make_unique<mca::DispatchStatistics>());
+      Printer.addView(std::make_unique<mca::DispatchStatistics>());
 
     if (PrintSchedulerStats)
-      Printer.addView(llvm::make_unique<mca::SchedulerStatistics>(*STI));
+      Printer.addView(std::make_unique<mca::SchedulerStatistics>(*STI));
 
     if (PrintRetireStats)
-      Printer.addView(llvm::make_unique<mca::RetireControlUnitStatistics>(SM));
+      Printer.addView(std::make_unique<mca::RetireControlUnitStatistics>(SM));
 
     if (PrintRegisterFileStats)
-      Printer.addView(llvm::make_unique<mca::RegisterFileStatistics>(*STI));
+      Printer.addView(std::make_unique<mca::RegisterFileStatistics>(*STI));
 
     if (PrintResourcePressureView)
       Printer.addView(
-          llvm::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
+          std::make_unique<mca::ResourcePressureView>(*STI, *IP, Insts));
 
     if (PrintTimelineView) {
       unsigned TimelineIterations =
           TimelineMaxIterations ? TimelineMaxIterations : 10;
-      Printer.addView(llvm::make_unique<mca::TimelineView>(
+      Printer.addView(std::make_unique<mca::TimelineView>(
           *STI, *IP, Insts, std::min(TimelineIterations, S.getNumIterations()),
           TimelineMaxCycles));
     }

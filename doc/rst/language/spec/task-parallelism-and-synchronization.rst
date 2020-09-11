@@ -554,6 +554,10 @@ values are:
 
 -  memoryOrder.seqCst
 
+See also :ref:`Chapter-Memory_Consistency_Model` and in particular
+:ref:`non_sc_atomics` for more information on the meaning of these memory
+orders.
+
 Unless specified, the default for the memoryOrder parameter is
 memoryOrder.seqCst.
 

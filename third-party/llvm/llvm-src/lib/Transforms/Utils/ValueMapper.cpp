@@ -1,9 +1,8 @@
 //===- ValueMapper.cpp - Interface shared by lib/Transforms/Utils ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -28,8 +27,8 @@
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
-#include "llvm/IR/GlobalAlias.h"
 #include "llvm/IR/GlobalObject.h"
+#include "llvm/IR/GlobalIndirectSymbol.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instruction.h"
@@ -67,7 +66,7 @@ struct WorklistEntry {
   enum EntryKind {
     MapGlobalInit,
     MapAppendingVar,
-    MapGlobalAliasee,
+    MapGlobalIndirectSymbol,
     RemapFunction
   };
   struct GVInitTy {
@@ -78,9 +77,9 @@ struct WorklistEntry {
     GlobalVariable *GV;
     Constant *InitPrefix;
   };
-  struct GlobalAliaseeTy {
-    GlobalAlias *GA;
-    Constant *Aliasee;
+  struct GlobalIndirectSymbolTy {
+    GlobalIndirectSymbol *GIS;
+    Constant *Target;
   };
 
   unsigned Kind : 2;
@@ -90,7 +89,7 @@ struct WorklistEntry {
   union {
     GVInitTy GVInit;
     AppendingGVTy AppendingGV;
-    GlobalAliaseeTy GlobalAliasee;
+    GlobalIndirectSymbolTy GlobalIndirectSymbol;
     Function *RemapF;
   } Data;
 };
@@ -162,8 +161,8 @@ public:
                                     bool IsOldCtorDtor,
                                     ArrayRef<Constant *> NewMembers,
                                     unsigned MCID);
-  void scheduleMapGlobalAliasee(GlobalAlias &GA, Constant &Aliasee,
-                                unsigned MCID);
+  void scheduleMapGlobalIndirectSymbol(GlobalIndirectSymbol &GIS, Constant &Target,
+                                       unsigned MCID);
   void scheduleRemapFunction(Function &F, unsigned MCID);
 
   void flush();
@@ -173,7 +172,7 @@ private:
   void mapAppendingVariable(GlobalVariable &GV, Constant *InitPrefix,
                             bool IsOldCtorDtor,
                             ArrayRef<Constant *> NewMembers);
-  void mapGlobalAliasee(GlobalAlias &GA, Constant &Aliasee);
+  void mapGlobalIndirectSymbol(GlobalIndirectSymbol &GIS, Constant &Target);
   void remapFunction(Function &F, ValueToValueMapTy &VM);
 
   ValueToValueMapTy &getVM() { return *MCs[CurrentMCID].VM; }
@@ -370,7 +369,8 @@ Value *Mapper::mapValue(const Value *V) {
 
       if (NewTy != IA->getFunctionType())
         V = InlineAsm::get(NewTy, IA->getAsmString(), IA->getConstraintString(),
-                           IA->hasSideEffects(), IA->isAlignStack());
+                           IA->hasSideEffects(), IA->isAlignStack(),
+                           IA->getDialect());
     }
 
     return getVM()[V] = const_cast<Value *>(V);
@@ -775,20 +775,6 @@ Metadata *MDNodeMapper::mapTopLevelUniquedNode(const MDNode &FirstN) {
   return *getMappedOp(&FirstN);
 }
 
-namespace {
-
-struct MapMetadataDisabler {
-  ValueToValueMapTy &VM;
-
-  MapMetadataDisabler(ValueToValueMapTy &VM) : VM(VM) {
-    VM.disableMapMetadata();
-  }
-
-  ~MapMetadataDisabler() { VM.enableMapMetadata(); }
-};
-
-} // end anonymous namespace
-
 Optional<Metadata *> Mapper::mapSimpleMetadata(const Metadata *MD) {
   // If the value already exists in the map, use it.
   if (Optional<Metadata *> NewMD = getVM().getMappedMD(MD))
@@ -803,9 +789,6 @@ Optional<Metadata *> Mapper::mapSimpleMetadata(const Metadata *MD) {
     return const_cast<Metadata *>(MD);
 
   if (auto *CMD = dyn_cast<ConstantAsMetadata>(MD)) {
-    // Disallow recursion into metadata mapping through mapValue.
-    MapMetadataDisabler MMD(getVM());
-
     // Don't memoize ConstantAsMetadata.  Instead of lasting until the
     // LLVMContext is destroyed, they can be deleted when the GlobalValue they
     // reference is destructed.  These aren't super common, so the extra
@@ -847,9 +830,9 @@ void Mapper::flush() {
       AppendingInits.resize(PrefixSize);
       break;
     }
-    case WorklistEntry::MapGlobalAliasee:
-      E.Data.GlobalAliasee.GA->setAliasee(
-          mapConstant(E.Data.GlobalAliasee.Aliasee));
+    case WorklistEntry::MapGlobalIndirectSymbol:
+      E.Data.GlobalIndirectSymbol.GIS->setIndirectSymbol(
+          mapConstant(E.Data.GlobalIndirectSymbol.Target));
       break;
     case WorklistEntry::RemapFunction:
       remapFunction(*E.Data.RemapF);
@@ -914,6 +897,21 @@ void Mapper::remapInstruction(Instruction *I) {
       Tys.push_back(TypeMapper->remapType(Ty));
     CS.mutateFunctionType(FunctionType::get(
         TypeMapper->remapType(I->getType()), Tys, FTy->isVarArg()));
+
+    LLVMContext &C = CS->getContext();
+    AttributeList Attrs = CS.getAttributes();
+    for (unsigned i = 0; i < Attrs.getNumAttrSets(); ++i) {
+      if (Attrs.hasAttribute(i, Attribute::ByVal)) {
+        Type *Ty = Attrs.getAttribute(i, Attribute::ByVal).getValueAsType();
+        if (!Ty)
+          continue;
+
+        Attrs = Attrs.removeAttribute(C, i, Attribute::ByVal);
+        Attrs = Attrs.addAttribute(
+            C, i, Attribute::getWithByValType(C, TypeMapper->remapType(Ty)));
+      }
+    }
+    CS.setAttributes(Attrs);
     return;
   }
   if (auto *AI = dyn_cast<AllocaInst>(I))
@@ -1027,16 +1025,16 @@ void Mapper::scheduleMapAppendingVariable(GlobalVariable &GV,
   AppendingInits.append(NewMembers.begin(), NewMembers.end());
 }
 
-void Mapper::scheduleMapGlobalAliasee(GlobalAlias &GA, Constant &Aliasee,
-                                      unsigned MCID) {
-  assert(AlreadyScheduled.insert(&GA).second && "Should not reschedule");
+void Mapper::scheduleMapGlobalIndirectSymbol(GlobalIndirectSymbol &GIS,
+                                             Constant &Target, unsigned MCID) {
+  assert(AlreadyScheduled.insert(&GIS).second && "Should not reschedule");
   assert(MCID < MCs.size() && "Invalid mapping context");
 
   WorklistEntry WE;
-  WE.Kind = WorklistEntry::MapGlobalAliasee;
+  WE.Kind = WorklistEntry::MapGlobalIndirectSymbol;
   WE.MCID = MCID;
-  WE.Data.GlobalAliasee.GA = &GA;
-  WE.Data.GlobalAliasee.Aliasee = &Aliasee;
+  WE.Data.GlobalIndirectSymbol.GIS = &GIS;
+  WE.Data.GlobalIndirectSymbol.Target = &Target;
   Worklist.push_back(WE);
 }
 
@@ -1133,9 +1131,10 @@ void ValueMapper::scheduleMapAppendingVariable(GlobalVariable &GV,
       GV, InitPrefix, IsOldCtorDtor, NewMembers, MCID);
 }
 
-void ValueMapper::scheduleMapGlobalAliasee(GlobalAlias &GA, Constant &Aliasee,
-                                           unsigned MCID) {
-  getAsMapper(pImpl)->scheduleMapGlobalAliasee(GA, Aliasee, MCID);
+void ValueMapper::scheduleMapGlobalIndirectSymbol(GlobalIndirectSymbol &GIS,
+                                                  Constant &Target,
+                                                  unsigned MCID) {
+  getAsMapper(pImpl)->scheduleMapGlobalIndirectSymbol(GIS, Target, MCID);
 }
 
 void ValueMapper::scheduleRemapFunction(Function &F, unsigned MCID) {

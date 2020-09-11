@@ -1,9 +1,8 @@
 //===-- PPCInstrInfo.h - PowerPC Instruction Information --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,7 +13,6 @@
 #ifndef LLVM_LIB_TARGET_POWERPC_PPCINSTRINFO_H
 #define LLVM_LIB_TARGET_POWERPC_PPCINSTRINFO_H
 
-#include "PPC.h"
 #include "PPCRegisterInfo.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 
@@ -66,9 +64,6 @@ enum {
   /// Shift count to bypass PPC970 flags
   NewDef_Shift = 6,
 
-  /// The VSX instruction that uses VSX register (vs0-vs63), instead of VMX
-  /// register (v0-v31).
-  UseVSXReg = 0x1 << NewDef_Shift,
   /// This instruction is an X-Form memory operation.
   XFormMemOp = 0x1 << (NewDef_Shift+1)
 };
@@ -129,12 +124,12 @@ class PPCInstrInfo : public PPCGenInstrInfo {
   // If the inst has imm-form and one of its operand is produced by a LI,
   // put the imm into the inst directly and remove the LI if possible.
   bool transformToImmFormFedByLI(MachineInstr &MI, const ImmInstrInfo &III,
-                                 unsigned ConstantOpNo, int64_t Imm) const;
+                                 unsigned ConstantOpNo, MachineInstr &DefMI,
+                                 int64_t Imm) const;
   // If the inst has imm-form and one of its operand is produced by an
   // add-immediate, try to transform it when possible.
   bool transformToImmFormFedByAdd(MachineInstr &MI, const ImmInstrInfo &III,
-                                  unsigned ConstantOpNo,
-                                  MachineInstr &DefMI,
+                                  unsigned ConstantOpNo, MachineInstr &DefMI,
                                   bool KillDefMI) const;
   // Try to find that, if the instruction 'MI' contains any operand that
   // could be forwarded from some inst that feeds it. If yes, return the
@@ -159,8 +154,8 @@ class PPCInstrInfo : public PPCGenInstrInfo {
                                  int64_t &Imm) const;
   bool isRegElgibleForForwarding(const MachineOperand &RegMO,
                                  const MachineInstr &DefMI,
-                                 const MachineInstr &MI,
-                                 bool KillDefMI) const;
+                                 const MachineInstr &MI, bool KillDefMI,
+                                 bool &IsFwdFeederRegKilled) const;
   const unsigned *getStoreOpcodesForSpillArray() const;
   const unsigned *getLoadOpcodesForSpillArray() const;
   virtual void anchor();
@@ -253,11 +248,11 @@ public:
   unsigned isLoadFromStackSlot(const MachineInstr &MI,
                                int &FrameIndex) const override;
   bool isReallyTriviallyReMaterializable(const MachineInstr &MI,
-                                         AliasAnalysis *AA) const override;
+                                         AAResults *AA) const override;
   unsigned isStoreToStackSlot(const MachineInstr &MI,
                               int &FrameIndex) const override;
 
-  bool findCommutedOpIndices(MachineInstr &MI, unsigned &SrcOpIdx1,
+  bool findCommutedOpIndices(const MachineInstr &MI, unsigned &SrcOpIdx1,
                              unsigned &SrcOpIdx2) const override;
 
   void insertNoop(MachineBasicBlock &MBB,
@@ -285,7 +280,7 @@ public:
                     unsigned FalseReg) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                   const DebugLoc &DL, unsigned DestReg, unsigned SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc) const override;
 
   void storeRegToStackSlot(MachineBasicBlock &MBB,
@@ -351,8 +346,6 @@ public:
   bool DefinesPredicate(MachineInstr &MI,
                         std::vector<MachineOperand> &Pred) const override;
 
-  bool isPredicable(const MachineInstr &MI) const override;
-
   // Comparison optimization.
 
   bool analyzeCompare(const MachineInstr &MI, unsigned &SrcReg,
@@ -361,6 +354,21 @@ public:
   bool optimizeCompareInstr(MachineInstr &CmpInstr, unsigned SrcReg,
                             unsigned SrcReg2, int Mask, int Value,
                             const MachineRegisterInfo *MRI) const override;
+
+
+  /// Return true if get the base operand, byte offset of an instruction and
+  /// the memory width. Width is the size of memory that is being
+  /// loaded/stored (e.g. 1, 2, 4, 8).
+  bool getMemOperandWithOffsetWidth(const MachineInstr &LdSt,
+                                    const MachineOperand *&BaseOp,
+                                    int64_t &Offset, unsigned &Width,
+                                    const TargetRegisterInfo *TRI) const;
+
+  /// Return true if two MIs access different memory addresses and false
+  /// otherwise
+  bool
+  areMemAccessesTriviallyDisjoint(const MachineInstr &MIa,
+                                  const MachineInstr &MIb) const override;
 
   /// GetInstSize - Return the number of bytes of code the specified
   /// instruction may be.  This returns the maximum number of bytes.
@@ -412,12 +420,39 @@ public:
 
   bool convertToImmediateForm(MachineInstr &MI,
                               MachineInstr **KilledDef = nullptr) const;
+  bool foldFrameOffset(MachineInstr &MI) const;
+  bool isADDIInstrEligibleForFolding(MachineInstr &ADDIMI, int64_t &Imm) const;
+  bool isADDInstrEligibleForFolding(MachineInstr &ADDMI) const;
+  bool isImmInstrEligibleForFolding(MachineInstr &MI, unsigned &BaseReg,
+                                    unsigned &XFormOpcode,
+                                    int64_t &OffsetOfImmInstr,
+                                    ImmInstrInfo &III) const;
+  bool isValidToBeChangedReg(MachineInstr *ADDMI, unsigned Index,
+                             MachineInstr *&ADDIMI, int64_t &OffsetAddi,
+                             int64_t OffsetImm) const;
+
+  /// Fixup killed/dead flag for register \p RegNo between instructions [\p
+  /// StartMI, \p EndMI]. Some PostRA transformations may violate register
+  /// killed/dead flags semantics, this function can be called to fix up. Before
+  /// calling this function,
+  /// 1. Ensure that \p RegNo liveness is killed after instruction \p EndMI.
+  /// 2. Ensure that there is no new definition between (\p StartMI, \p EndMI)
+  ///    and possible definition for \p RegNo is \p StartMI or \p EndMI.
+  /// 3. Ensure that all instructions between [\p StartMI, \p EndMI] are in same
+  ///    basic block.
+  void fixupIsDeadOrKill(MachineInstr &StartMI, MachineInstr &EndMI,
+                         unsigned RegNo) const;
   void replaceInstrWithLI(MachineInstr &MI, const LoadImmediateInfo &LII) const;
   void replaceInstrOperandWithImm(MachineInstr &MI, unsigned OpNo,
                                   int64_t Imm) const;
 
-  bool instrHasImmForm(const MachineInstr &MI, ImmInstrInfo &III,
+  bool instrHasImmForm(unsigned Opc, bool IsVFReg, ImmInstrInfo &III,
                        bool PostRA) const;
+
+  // In PostRA phase, try to find instruction defines \p Reg before \p MI.
+  // \p SeenIntermediate is set to true if uses between DefMI and \p MI exist.
+  MachineInstr *getDefMIPostRA(unsigned Reg, MachineInstr &MI,
+                               bool &SeenIntermediateUse) const;
 
   /// getRegNumForOperand - some operands use different numbering schemes
   /// for the same registers. For example, a VSX instruction may have any of
@@ -429,14 +464,43 @@ public:
   /// operands).
   static unsigned getRegNumForOperand(const MCInstrDesc &Desc, unsigned Reg,
                                       unsigned OpNo) {
-    if (Desc.TSFlags & PPCII::UseVSXReg) {
-      if (isVRRegister(Reg))
-        Reg = PPC::VSX32 + (Reg - PPC::V0);
-      else if (isVFRegister(Reg))
-        Reg = PPC::VSX32 + (Reg - PPC::VF0);
+    int16_t regClass = Desc.OpInfo[OpNo].RegClass;
+    switch (regClass) {
+      // We store F0-F31, VF0-VF31 in MCOperand and it should be F0-F31,
+      // VSX32-VSX63 during encoding/disassembling
+      case PPC::VSSRCRegClassID:
+      case PPC::VSFRCRegClassID:
+        if (isVFRegister(Reg))
+          return PPC::VSX32 + (Reg - PPC::VF0);
+        break;
+      // We store VSL0-VSL31, V0-V31 in MCOperand and it should be VSL0-VSL31,
+      // VSX32-VSX63 during encoding/disassembling
+      case PPC::VSRCRegClassID:
+        if (isVRRegister(Reg))
+          return PPC::VSX32 + (Reg - PPC::V0);
+        break;
+      // Other RegClass doesn't need mapping
+      default:
+        break;
     }
     return Reg;
   }
+
+  /// Check \p Opcode is BDNZ (Decrement CTR and branch if it is still nonzero).
+  bool isBDNZ(unsigned Opcode) const;
+
+  /// Find the hardware loop instruction used to set-up the specified loop.
+  /// On PPC, we have two instructions used to set-up the hardware loop
+  /// (MTCTRloop, MTCTR8loop) with corresponding endloop (BDNZ, BDNZ8)
+  /// instructions to indicate the end of a loop.
+  MachineInstr *
+  findLoopInstr(MachineBasicBlock &PreHeader,
+                SmallPtrSet<MachineBasicBlock *, 8> &Visited) const;
+
+  /// Analyze loop L, which must be a single-basic-block loop, and if the
+  /// conditions can be understood enough produce a PipelinerLoopInfo object.
+  std::unique_ptr<TargetInstrInfo::PipelinerLoopInfo>
+  analyzeLoopForPipelining(MachineBasicBlock *LoopBB) const override;
 };
 
 }

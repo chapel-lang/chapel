@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Test that launcher can find its _real binary when
+# both are buried somewhere in $PATH.
+
+mkdir hidefiles 
+export PATH="`pwd`/hidefiles:$PATH"
+
+basefile=testHiddenLauncher
+if [[ -e $basefile ]] ; then
+  mv $basefile hidefiles
+fi
+
+if [[ -e ${basefile}_real ]] ; then
+  mv ${basefile}_real hidefiles
+fi
+
+$basefile -nl1 >> ${basefile}.comp.out.tmp 2>&1
+
+rm -r hidefiles

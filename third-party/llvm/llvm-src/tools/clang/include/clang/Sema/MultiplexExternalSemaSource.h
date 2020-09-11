@@ -1,9 +1,8 @@
 //===--- MultiplexExternalSemaSource.h - External Sema Interface-*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -37,6 +36,8 @@ namespace clang {
 /// external AST sources that also provide information for semantic
 /// analysis.
 class MultiplexExternalSemaSource : public ExternalSemaSource {
+  /// LLVM-style RTTI.
+  static char ID;
 
 private:
   SmallVector<ExternalSemaSource *, 2> Sources; // doesn't own them.
@@ -353,9 +354,13 @@ public:
   bool MaybeDiagnoseMissingCompleteType(SourceLocation Loc,
                                         QualType T) override;
 
-  // isa/cast/dyn_cast support
-  static bool classof(const MultiplexExternalSemaSource*) { return true; }
-  //static bool classof(const ExternalSemaSource*) { return true; }
+  /// LLVM-style RTTI.
+  /// \{
+  bool isA(const void *ClassID) const override {
+    return ClassID == &ID || ExternalSemaSource::isA(ClassID);
+  }
+  static bool classof(const ExternalASTSource *S) { return S->isA(&ID); }
+  /// \}
 };
 
 } // end namespace clang

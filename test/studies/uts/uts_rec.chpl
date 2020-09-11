@@ -275,7 +275,7 @@ proc create_tree(parent: unmanaged TreeNode, wasParallel: bool = false): int {
     var count: int = parent.genChildren();
 
     for i in parent.childDom do
-      count += create_tree(parent.children[i], false);
+      count += create_tree(parent.children[i]!, false);
     return count;
   }
 } 

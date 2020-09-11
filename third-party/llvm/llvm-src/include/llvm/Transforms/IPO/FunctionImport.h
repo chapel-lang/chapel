@@ -1,9 +1,8 @@
 //===- llvm/Transforms/IPO/FunctionImport.h - ThinLTO importing -*- C++ -*-===//
 //
-//                      The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -99,7 +98,7 @@ public:
   using ImportMapTy = StringMap<FunctionsToImportTy>;
 
   /// The set contains an entry for every global value the module exports.
-  using ExportSetTy = std::unordered_set<GlobalValue::GUID>;
+  using ExportSetTy = DenseSet<ValueInfo>;
 
   /// A function of this type is used to load modules referenced by the index.
   using ModuleLoaderTy =

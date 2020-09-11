@@ -14,5 +14,3 @@ export CHPL_MEM=cstdlib
 
 # re2 has opt-in support for valgrind, so enable it
 export CHPL_RE2_VALGRIND_SUPPORT=true
-
-nightly_args="${nightly_args} -valgrind"

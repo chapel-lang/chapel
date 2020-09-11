@@ -1,9 +1,8 @@
 //===- ShrinkWrap.cpp - Compute safe point for prolog/epilog insertion ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -74,6 +73,7 @@
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/Function.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
@@ -259,6 +259,15 @@ INITIALIZE_PASS_END(ShrinkWrap, DEBUG_TYPE, "Shrink Wrap Pass", false, false)
 
 bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI,
                                  RegScavenger *RS) const {
+  // This prevents premature stack popping when occurs a indirect stack
+  // access. It is overly aggressive for the moment.
+  // TODO: - Obvious non-stack loads and store, such as global values,
+  //         are known to not access the stack.
+  //       - Further, data dependency and alias analysis can validate
+  //         that load and stores never derive from the stack pointer.
+  if (MI.mayLoadOrStore())
+    return true;
+
   if (MI.getOpcode() == FrameSetupOpcode ||
       MI.getOpcode() == FrameDestroyOpcode) {
     LLVM_DEBUG(dbgs() << "Frame instruction: " << MI << '\n');
@@ -270,11 +279,10 @@ bool ShrinkWrap::useOrDefCSROrFI(const MachineInstr &MI,
       // Ignore instructions like DBG_VALUE which don't read/def the register.
       if (!MO.isDef() && !MO.readsReg())
         continue;
-      unsigned PhysReg = MO.getReg();
+      Register PhysReg = MO.getReg();
       if (!PhysReg)
         continue;
-      assert(TargetRegisterInfo::isPhysicalRegister(PhysReg) &&
-             "Unallocated register?!");
+      assert(Register::isPhysicalRegister(PhysReg) && "Unallocated register?!");
       // The stack pointer is not normally described as a callee-saved register
       // in calling convention definitions, so we need to watch for it
       // separately. An SP mentioned by a call instruction, we can ignore,

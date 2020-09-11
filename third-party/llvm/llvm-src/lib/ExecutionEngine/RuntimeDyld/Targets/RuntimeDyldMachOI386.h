@@ -1,9 +1,8 @@
 //===---- RuntimeDyldMachOI386.h ---- MachO/I386 specific code. ---*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,7 +26,7 @@ public:
                        JITSymbolResolver &Resolver)
       : RuntimeDyldMachOCRTPBase(MM, Resolver) {}
 
-  unsigned getMaxStubSize() override { return 0; }
+  unsigned getMaxStubSize() const override { return 0; }
 
   unsigned getStubAlignment() override { return 1; }
 
@@ -129,7 +128,10 @@ public:
   Error finalizeSection(const ObjectFile &Obj, unsigned SectionID,
                        const SectionRef &Section) {
     StringRef Name;
-    Section.getName(Name);
+    if (Expected<StringRef> NameOrErr = Section.getName())
+      Name = *NameOrErr;
+    else
+      consumeError(NameOrErr.takeError());
 
     if (Name == "__jump_table")
       return populateJumpTable(cast<MachOObjectFile>(Obj), Section, SectionID);

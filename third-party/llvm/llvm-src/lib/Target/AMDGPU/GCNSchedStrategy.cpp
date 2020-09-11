@@ -1,9 +1,8 @@
 //===-- GCNSchedStrategy.cpp - GCN Scheduler Strategy ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "SIInstrInfo.h"
 #include "SIMachineFunctionInfo.h"
 #include "SIRegisterInfo.h"
+#include "Utils/AMDGPUBaseInfo.h"
 #include "llvm/CodeGen/RegisterClassInfo.h"
 #include "llvm/Support/MathExtras.h"
 
@@ -72,8 +72,8 @@ void GCNMaxOccupancySchedStrategy::initCandidate(SchedCandidate &Cand, SUnit *SU
   // the tracker, so we need to pass those function a non-const copy.
   RegPressureTracker &TempTracker = const_cast<RegPressureTracker&>(RPTracker);
 
-  std::vector<unsigned> Pressure;
-  std::vector<unsigned> MaxPressure;
+  Pressure.clear();
+  MaxPressure.clear();
 
   if (AtTop)
     TempTracker.getDownwardPressure(SU->getInstr(), Pressure, MaxPressure);
@@ -104,10 +104,10 @@ void GCNMaxOccupancySchedStrategy::initCandidate(SchedCandidate &Cand, SUnit *SU
   // the analysis to look through dependencies to find the path with the least
   // register pressure.
 
-  // We only need to update the RPDelata for instructions that increase
-  // register pressure.  Instructions that decrease or keep reg pressure
-  // the same will be marked as RegExcess in tryCandidate() when they
-  // are compared with instructions that increase the register pressure.
+  // We only need to update the RPDelta for instructions that increase register
+  // pressure. Instructions that decrease or keep reg pressure the same will be
+  // marked as RegExcess in tryCandidate() when they are compared with
+  // instructions that increase the register pressure.
   if (ShouldTrackVGPRs && NewVGPRPressure >= VGPRExcessLimit) {
     Cand.RPDelta.Excess = PressureChange(SRI->getVGPRPressureSet());
     Cand.RPDelta.Excess.setUnitInc(NewVGPRPressure - VGPRExcessLimit);
@@ -161,6 +161,7 @@ void GCNMaxOccupancySchedStrategy::pickNodeFromQueue(SchedBoundary &Zone,
       if (TryCand.ResDelta == SchedResourceDelta())
         TryCand.initResourceDelta(Zone.DAG, SchedModel);
       Cand.setBest(TryCand);
+      LLVM_DEBUG(traceCandidate(Cand));
     }
   }
 }
@@ -196,6 +197,15 @@ SUnit *GCNMaxOccupancySchedStrategy::pickNodeBidirectional(bool &IsTopNode) {
     assert(BotCand.Reason != NoCand && "failed to find the first candidate");
   } else {
     LLVM_DEBUG(traceCandidate(BotCand));
+#ifndef NDEBUG
+    if (VerifyScheduling) {
+      SchedCandidate TCand;
+      TCand.reset(CandPolicy());
+      pickNodeFromQueue(Bot, BotPolicy, DAG->getBotRPTracker(), TCand);
+      assert(TCand.SU == BotCand.SU &&
+             "Last pick result should correspond to re-picking right now");
+    }
+#endif
   }
 
   // Check if the top Q has a better candidate.
@@ -207,6 +217,15 @@ SUnit *GCNMaxOccupancySchedStrategy::pickNodeBidirectional(bool &IsTopNode) {
     assert(TopCand.Reason != NoCand && "failed to find the first candidate");
   } else {
     LLVM_DEBUG(traceCandidate(TopCand));
+#ifndef NDEBUG
+    if (VerifyScheduling) {
+      SchedCandidate TCand;
+      TCand.reset(CandPolicy());
+      pickNodeFromQueue(Top, TopPolicy, DAG->getTopRPTracker(), TCand);
+      assert(TCand.SU == TopCand.SU &&
+           "Last pick result should correspond to re-picking right now");
+    }
+#endif
   }
 
   // Pick best from BotCand and TopCand.
@@ -371,8 +390,16 @@ void GCNScheduleDAGMILive::schedule() {
   }
 
   if (WavesAfter >= MinOccupancy) {
-    Pressure[RegionIdx] = PressureAfter;
-    return;
+    unsigned TotalVGPRs = AMDGPU::IsaInfo::getAddressableNumVGPRs(&ST);
+    unsigned TotalSGPRs = AMDGPU::IsaInfo::getAddressableNumSGPRs(&ST);
+    if (WavesAfter > MFI.getMinWavesPerEU() ||
+        PressureAfter.less(ST, PressureBefore) ||
+        (TotalVGPRs >= PressureAfter.getVGPRNum() &&
+         TotalSGPRs >= PressureAfter.getSGPRNum())) {
+      Pressure[RegionIdx] = PressureAfter;
+      return;
+    }
+    LLVM_DEBUG(dbgs() << "New pressure will result in more spilling.\n");
   }
 
   LLVM_DEBUG(dbgs() << "Attempting to revert scheduling.\n");
@@ -446,8 +473,12 @@ void GCNScheduleDAGMILive::computeBlockPressure(const MachineBasicBlock *MBB) {
     RPTracker.reset(*MBB->begin(), &LiveIn);
     MBBLiveIns.erase(LiveInIt);
   } else {
-    I = Regions[CurRegion].first;
-    RPTracker.reset(*I);
+    auto &Rgn = Regions[CurRegion];
+    I = Rgn.first;
+    auto *NonDbgMI = &*skipDebugInstructionsForward(Rgn.first, Rgn.second);
+    auto LRS = BBLiveInMap.lookup(NonDbgMI);
+    assert(isEqual(getLiveRegsBefore(*NonDbgMI, *LIS), LRS));
+    RPTracker.reset(*I, &LRS);
   }
 
   for ( ; ; ) {
@@ -478,12 +509,32 @@ void GCNScheduleDAGMILive::computeBlockPressure(const MachineBasicBlock *MBB) {
   }
 }
 
+DenseMap<MachineInstr *, GCNRPTracker::LiveRegSet>
+GCNScheduleDAGMILive::getBBLiveInMap() const {
+  assert(!Regions.empty());
+  std::vector<MachineInstr *> BBStarters;
+  BBStarters.reserve(Regions.size());
+  auto I = Regions.rbegin(), E = Regions.rend();
+  auto *BB = I->first->getParent();
+  do {
+    auto *MI = &*skipDebugInstructionsForward(I->first, I->second);
+    BBStarters.push_back(MI);
+    do {
+      ++I;
+    } while (I != E && I->first->getParent() == BB);
+  } while (I != E);
+  return getLiveRegMap(BBStarters, false /*After*/, *LIS);
+}
+
 void GCNScheduleDAGMILive::finalizeSchedule() {
   GCNMaxOccupancySchedStrategy &S = (GCNMaxOccupancySchedStrategy&)*SchedImpl;
   LLVM_DEBUG(dbgs() << "All regions recorded, starting actual scheduling.\n");
 
   LiveIns.resize(Regions.size());
   Pressure.resize(Regions.size());
+
+  if (!Regions.empty())
+    BBLiveInMap = getBBLiveInMap();
 
   do {
     Stage++;

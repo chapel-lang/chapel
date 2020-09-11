@@ -1,9 +1,8 @@
 //===--- CodeGenPGO.cpp - PGO Instrumentation for LLVM CodeGen --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,6 +17,7 @@
 #include "clang/AST/StmtVisitor.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Endian.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/MD5.h"
@@ -167,7 +167,7 @@ struct MapRegionCounters : public RecursiveASTVisitor<MapRegionCounters> {
   bool TraverseBlockExpr(BlockExpr *BE) { return true; }
   bool TraverseLambdaExpr(LambdaExpr *LE) {
     // Traverse the captures, but not the body.
-    for (const auto &C : zip(LE->captures(), LE->capture_inits()))
+    for (auto C : zip(LE->captures(), LE->capture_inits()))
       TraverseLambdaCapture(LE, &std::get<0>(C), std::get<1>(C));
     return true;
   }
@@ -772,14 +772,14 @@ void CodeGenPGO::assignRegionCounters(GlobalDecl GD, llvm::Function *Fn) {
   // If so, instrument only base variant, others are implemented by delegation
   // to the base one, it would be counted twice otherwise.
   if (CGM.getTarget().getCXXABI().hasConstructorVariants()) {
-    if (isa<CXXDestructorDecl>(D) && GD.getDtorType() != Dtor_Base)
-      return;
-
     if (const auto *CCD = dyn_cast<CXXConstructorDecl>(D))
       if (GD.getCtorType() != Ctor_Base &&
           CodeGenFunction::IsConstructorDelegationValid(CCD))
         return;
   }
+  if (isa<CXXDestructorDecl>(D) && GD.getDtorType() != Dtor_Base)
+    return;
+
   CGM.ClearUnusedCoverageMapping(D);
   setFuncName(Fn);
 
@@ -981,7 +981,7 @@ void CodeGenPGO::loadRegionCounts(llvm::IndexedInstrProfReader *PGOReader,
     return;
   }
   ProfRecord =
-      llvm::make_unique<llvm::InstrProfRecord>(std::move(RecordExpected.get()));
+      std::make_unique<llvm::InstrProfRecord>(std::move(RecordExpected.get()));
   RegionCounts = ProfRecord->Counts;
 }
 

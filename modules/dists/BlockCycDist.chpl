@@ -882,7 +882,16 @@ override proc BlockCyclicArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
+override proc BlockCyclicArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc BlockCyclicArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
       var arr = locArr(localeIdx);
@@ -900,10 +909,13 @@ override proc BlockCyclicArr.dsiDestroyArr(param deinitElts:bool) {
           }
         }
       }
+      arr.myElems.dsiElementDeinitializationComplete();
       delete arr;
     }
   }
 }
+
+override proc BlockCyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
 proc BlockCyclicArr.chpl__serialize() {
   return pid;
@@ -934,6 +946,10 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
+inline proc BlockCyclicArr.dsiLocalAccess(i: idxType) ref {
+  return _to_nonnil(myLocArr).this(i);
+}
+
 //
 // the global accessor for the array
 //
@@ -949,6 +965,13 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
   return locArr(dom.dist.idxToLocaleInd(i))(i);
+}
+
+inline proc BlockCyclicArr.dsiLocalAccess(i: rank*idxType) ref {
+  if rank == 1 then
+    return _to_nonnil(myLocArr).this(i[0]);
+  else
+    return _to_nonnil(myLocArr).this(i);
 }
 
 proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
@@ -968,6 +991,7 @@ proc BlockCyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -978,6 +1002,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield yieldThis;
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
 
@@ -1036,6 +1061,7 @@ proc BlockCyclicDom.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
+pragma "order independent yielding loops"
 private
 iter do_dsiLocalSubdomains(indexDom) {
   param rank = indexDom.rank;
@@ -1098,9 +1124,8 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
@@ -1174,8 +1199,13 @@ class LocBlockCyclicArr {
     }
 
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocBlockCyclicArr.writeThis() is not implemented / should not be needed");
   }
 }
 

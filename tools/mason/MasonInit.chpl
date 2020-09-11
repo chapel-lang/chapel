@@ -36,12 +36,13 @@ Initialises a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
 */
-proc masonInit(args) throws {
+proc masonInit(args: [] string) throws {
   try! {
     var dirName = '';
     var show = false;
     var packageName = '';
     var countArgs = args.domain.low + 2;
+    var defaultBehavior = false;
     for arg in args[args.domain.low+2..] {
       countArgs += 1;
       select (arg) {
@@ -55,6 +56,12 @@ proc masonInit(args) throws {
         }
         when '--show' {
           show = true;
+        }
+        when '-d' {
+          defaultBehavior = true;
+        }
+        when '--default' {
+          defaultBehavior = true;
         }
         when '--name' {
           packageName = args[countArgs];
@@ -72,16 +79,49 @@ proc masonInit(args) throws {
     }
 
     if dirName == '' {
-      const cwd = getEnv("PWD");
-      var name = basename(cwd);
-      const path = '.';
-      if packageName.size > 0 then name = packageName;
-      var resName = validatePackageNameChecks(path, name);
-      name = resName;
-      validateMasonFile(path, name, show);
-      var isInitialized = validateInit(path, name, true, show);
-      if isInitialized > 0 then
-      writeln("Initialized new library project: " + basename(cwd));
+      if defaultBehavior {
+        const cwd = getEnv("PWD");
+        var name = basename(cwd);
+        const path = '.';
+        if packageName.size > 0 then name = packageName;
+        var resName = validatePackageNameChecks(path, name);
+        name = resName;
+        validateMasonFile(path, name, show);
+        var isInitialized = validateInit(path, name, true, show, false);
+        if isInitialized > 0 then
+        writeln("Initialized new library project: " + name);
+      } else {
+        // check if Mason.toml file and src/moduleFile is present
+        var isMasonTomlPresent = false;
+        var isSrcPresent = false;
+        if isFile('./Mason.toml') then isMasonTomlPresent = true;
+        if isDir('./src') then isSrcPresent = true;
+        // parse values from TOML File && module file
+        var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense, moduleName: string;
+        if isMasonTomlPresent then
+          (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense) = readPartialManifest();
+        if isSrcPresent then 
+          moduleName = readPartialSrc();
+       // begin interactive session and get values input by user
+        var result = beginInteractiveSession(defaultPackageName, defaultVersion, 
+                                              defaultChplVersion, defaultLicense);
+        const newPackageName = result[0],
+              newVersion = result[1],
+              newChplVersion = result[2],
+              newLicense = result[3];
+        // validate Mason.toml file 
+        validateMasonFile('.', newPackageName, show);
+        isMasonTomlPresent = true;
+        // overwrite to update existing values in Mason.toml
+        overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
+          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+          defaultChplVersion, defaultLicense);
+        if newPackageName + '.chpl' != moduleName {
+          if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
+        }
+        var isInitialized = validateInit('.', newPackageName, true, show, true);
+        writeln("Initialised new library project: " + newPackageName);
+      }
     }
     else {
       // if the target directory in path doesnt exist, throw error
@@ -95,9 +135,9 @@ proc masonInit(args) throws {
         var resName = validatePackageNameChecks(path, name);
         name = resName;
         validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, name, true, show);
+        var isInitialized = validateInit(path, name, true, show, false);
         if isInitialized > 0 then
-        writeln("Initialized new library project in " + path + ": " + basename(path));
+        writeln("Initialized new library project in " + path + ": " + name);
       }
       else {
         throw new owned MasonError("Directory does not exist: " + path +
@@ -111,10 +151,52 @@ proc masonInit(args) throws {
   }
 }
 
+// Overwrites values of existing Mason.toml file
+proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion, 
+    newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+    defaultChplVersion, defaultLicense) {
+  const tomlPath = "./Mason.toml";
+  const toParse = open(tomlPath, iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  if isMasonTomlPresent {
+    if newPackageName != defaultPackageName then
+      tomlFile["brick"]!.set("name", newPackageName);
+    if newVersion != defaultVersion then
+      tomlFile["brick"]!.set("version", newVersion);
+    if newChplVersion != defaultChplVersion then
+      tomlFile["brick"]!.set("chplVersion", newChplVersion); 
+    if newLicense != defaultLicense then
+      tomlFile["brick"]!.set("license", newLicense);
+  }
+  generateToml(tomlFile, tomlPath);
+}
+
+// Returns the name of the moduleFile in src/
+proc readPartialSrc(){
+  const file: string = listdir("./src");
+  return file;
+}
+
+// Returns default values from existing Mason.toml file
+proc readPartialManifest() {
+  var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense: string;
+  const toParse = open("./Mason.toml", iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  if tomlFile.pathExists("brick.name") then
+    defaultPackageName = tomlFile["brick"]!["name"]!.s;
+  if tomlFile.pathExists("brick.version") then
+    defaultVersion = tomlFile["brick"]!["version"]!.s;
+  if tomlFile.pathExists("brick.chplVersion") then
+    defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
+  if tomlFile.pathExists("brick.license") then 
+    defaultLicense = tomlFile["brick"]!["license"]!.s;
+  return (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense);
+}
+
 /*
 Validates directories and files in project directory to avoid overwriting
 */
-proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) throws {
+proc validateInit(path: string, name: string, isNameDiff: bool, show: bool, interactive: bool) throws {
   var fileName = "";
   if path != '.' {
     fileName = basename(path);
@@ -148,7 +230,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
     }
   }
 
-  if toBeCreated.size == 0 {
+  if toBeCreated.size == 0 && !interactive {
       writeln("Library project has already been initialised.");
       return 0;
   }
@@ -204,13 +286,15 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     var projectName = "";
     var version = "";
     var chplVersion = "";
+    var license = "None";
     const toParse = open(path + "/Mason.toml", iomode.r);
     const tomlFile = owned.create(parseToml(toParse));
 
     if !tomlFile.pathExists("brick") {
       if tomlFile.pathExists("name") ||
          tomlFile.pathExists("version") ||
-         tomlFile.pathExists("chplVersion") {
+         tomlFile.pathExists("chplVersion") ||
+         tomlFile.pathExists("license") {
         throw new owned MasonError("The [brick] header is missing in Mason.toml");
       }
       else {
@@ -226,6 +310,15 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
       throw new owned MasonError("Mason could not find valid version in Mason.toml file");
     } else {
       version = tomlFile["brick"]!["version"]!.s;
+    }
+
+    if !tomlFile.pathExists("brick.license") {
+      tomlFile["brick"]!.set("license", license);
+      var tomlPath = path + "/Mason.toml";
+      generateToml(tomlFile, tomlPath);
+      if show then writeln("Added license to Mason.toml");
+    } else {
+      license = tomlFile["brick"]!["license"]!.s;
     }
 
     if tomlFile.pathExists("brick.name") {
@@ -245,7 +338,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     checkVersion(version);
   }
   else {
-    makeBasicToml(name, path, "0.1.0", getChapelVersionStr());
+    makeBasicToml(name, path, "0.1.0", getChapelVersionStr(), "None");
     if show then writeln("Created Mason.toml file.");
   }
 }

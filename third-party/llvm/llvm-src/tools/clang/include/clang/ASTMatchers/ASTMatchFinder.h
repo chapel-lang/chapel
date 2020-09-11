@@ -1,9 +1,8 @@
 //===--- ASTMatchFinder.h - Structural query framework ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -306,6 +305,33 @@ match(MatcherT Matcher, ASTContext &Context) {
   internal::CollectMatchesCallback Callback;
   MatchFinder Finder;
   Finder.addMatcher(Matcher, &Callback);
+  Finder.matchAST(Context);
+  return std::move(Callback.Nodes);
+}
+
+inline SmallVector<BoundNodes, 1>
+matchDynamic(internal::DynTypedMatcher Matcher,
+             const ast_type_traits::DynTypedNode &Node, ASTContext &Context) {
+  internal::CollectMatchesCallback Callback;
+  MatchFinder Finder;
+  Finder.addDynamicMatcher(Matcher, &Callback);
+  Finder.match(Node, Context);
+  return std::move(Callback.Nodes);
+}
+
+template <typename NodeT>
+SmallVector<BoundNodes, 1> matchDynamic(internal::DynTypedMatcher Matcher,
+                                        const NodeT &Node,
+                                        ASTContext &Context) {
+  return matchDynamic(Matcher, ast_type_traits::DynTypedNode::create(Node),
+                      Context);
+}
+
+inline SmallVector<BoundNodes, 1>
+matchDynamic(internal::DynTypedMatcher Matcher, ASTContext &Context) {
+  internal::CollectMatchesCallback Callback;
+  MatchFinder Finder;
+  Finder.addDynamicMatcher(Matcher, &Callback);
   Finder.matchAST(Context);
   return std::move(Callback.Nodes);
 }

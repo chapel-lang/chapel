@@ -1,9 +1,8 @@
 //===-- X86WinCOFFTargetStreamer.cpp ----------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -171,7 +170,7 @@ bool X86WinCOFFTargetStreamer::emitFPOProc(const MCSymbol *ProcSym,
         L, "opening new .cv_fpo_proc before closing previous frame");
     return true;
   }
-  CurFPOData = llvm::make_unique<FPOData>();
+  CurFPOData = std::make_unique<FPOData>();
   CurFPOData->Function = ProcSym;
   CurFPOData->Begin = emitFPOLabel();
   CurFPOData->ParamsSize = ParamsSize;

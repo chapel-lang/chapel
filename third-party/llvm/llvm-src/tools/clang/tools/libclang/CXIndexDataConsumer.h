@@ -1,9 +1,8 @@
 //===- CXIndexDataConsumer.h - Index data consumer for libclang--*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -373,25 +372,6 @@ public:
 
   void startedTranslationUnit();
 
-  void indexDecl(const Decl *D);
-
-  void indexTagDecl(const TagDecl *D);
-
-  void indexTypeSourceInfo(TypeSourceInfo *TInfo, const NamedDecl *Parent,
-                           const DeclContext *DC = nullptr);
-
-  void indexTypeLoc(TypeLoc TL, const NamedDecl *Parent,
-                    const DeclContext *DC = nullptr);
-
-  void indexNestedNameSpecifierLoc(NestedNameSpecifierLoc NNS,
-                                   const NamedDecl *Parent,
-                                   const DeclContext *DC = nullptr);
-
-  void indexDeclContext(const DeclContext *DC);
-  
-  void indexBody(const Stmt *S, const NamedDecl *Parent,
-                 const DeclContext *DC = nullptr);
-
   void indexDiagnostics();
 
   void handleDiagnosticSet(CXDiagnosticSet CXDiagSet);
@@ -401,8 +381,6 @@ public:
   bool handleVar(const VarDecl *D);
 
   bool handleField(const FieldDecl *D);
-
-  bool handleMSProperty(const MSPropertyDecl *D);
 
   bool handleEnumerator(const EnumConstantDecl *D);
 
@@ -439,17 +417,7 @@ public:
                        CXIdxEntityRefKind Kind = CXIdxEntityRef_Direct,
                        CXSymbolRole Role = CXSymbolRole_None);
 
-  bool handleReference(const NamedDecl *D, SourceLocation Loc,
-                       const NamedDecl *Parent,
-                       const DeclContext *DC,
-                       const Expr *E = nullptr,
-                       CXIdxEntityRefKind Kind = CXIdxEntityRef_Direct,
-                       CXSymbolRole Role = CXSymbolRole_None);
-
   bool isNotFromSourceFile(SourceLocation Loc) const;
-
-  void indexTopLevelDecl(const Decl *D);
-  void indexDeclGroupRef(DeclGroupRef DG);
 
   void translateLoc(SourceLocation Loc, CXIdxClientFile *indexFile, CXFile *file,
                     unsigned *line, unsigned *column, unsigned *offset);
@@ -463,13 +431,13 @@ public:
   static bool isTemplateImplicitInstantiation(const Decl *D);
 
 private:
-  bool handleDeclOccurence(const Decl *D, index::SymbolRoleSet Roles,
-                           ArrayRef<index::SymbolRelation> Relations,
-                           SourceLocation Loc, ASTNodeInfo ASTNode) override;
+  bool handleDeclOccurrence(const Decl *D, index::SymbolRoleSet Roles,
+                            ArrayRef<index::SymbolRelation> Relations,
+                            SourceLocation Loc, ASTNodeInfo ASTNode) override;
 
-  bool handleModuleOccurence(const ImportDecl *ImportD, const Module *Mod,
-                             index::SymbolRoleSet Roles,
-                             SourceLocation Loc) override;
+  bool handleModuleOccurrence(const ImportDecl *ImportD, const Module *Mod,
+                              index::SymbolRoleSet Roles,
+                              SourceLocation Loc) override;
 
   void finish() override;
 

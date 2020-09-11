@@ -5,7 +5,7 @@ module weirdEnumHiding {
   }
 
   module B {
-    public use A;
+    public use super.A;
 
     proc checkFoo() {
       writeln(foo.b);
@@ -13,7 +13,7 @@ module weirdEnumHiding {
   }
 
   module C {
-    private use A;
+    private use super.A;
 
     proc checkFoo() {
       writeln(foo.b);
@@ -21,8 +21,8 @@ module weirdEnumHiding {
   }
 
   module D {
-    public use C;
-    public use B;
+    public use super.C;
+    public use super.B;
 
     proc checkFoo() {
       writeln(foo.b);

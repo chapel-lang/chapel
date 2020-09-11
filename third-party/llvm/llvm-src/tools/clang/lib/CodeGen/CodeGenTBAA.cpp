@@ -1,9 +1,8 @@
-//===--- CodeGenTypes.cpp - TBAA information for LLVM CodeGen -------------===//
+//===-- CodeGenTBAA.cpp - TBAA information for LLVM CodeGen ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -79,17 +78,18 @@ llvm::MDNode *CodeGenTBAA::getChar() {
 
 static bool TypeHasMayAlias(QualType QTy) {
   // Tagged types have declarations, and therefore may have attributes.
-  if (const TagType *TTy = dyn_cast<TagType>(QTy))
-    return TTy->getDecl()->hasAttr<MayAliasAttr>();
-
-  // Typedef types have declarations, and therefore may have attributes.
-  if (const TypedefType *TTy = dyn_cast<TypedefType>(QTy)) {
-    if (TTy->getDecl()->hasAttr<MayAliasAttr>())
+  if (auto *TD = QTy->getAsTagDecl())
+    if (TD->hasAttr<MayAliasAttr>())
       return true;
-    // Also, their underlying types may have relevant attributes.
-    return TypeHasMayAlias(TTy->desugar());
-  }
 
+  // Also look for may_alias as a declaration attribute on a typedef.
+  // FIXME: We should follow GCC and model may_alias as a type attribute
+  // rather than as a declaration attribute.
+  while (auto *TT = QTy->getAs<TypedefType>()) {
+    if (TT->getDecl()->hasAttr<MayAliasAttr>())
+      return true;
+    QTy = TT->desugar();
+  }
   return false;
 }
 
@@ -258,6 +258,8 @@ CodeGenTBAA::CollectFields(uint64_t BaseOffset,
     unsigned idx = 0;
     for (RecordDecl::field_iterator i = RD->field_begin(),
          e = RD->field_end(); i != e; ++i, ++idx) {
+      if ((*i)->isZeroSize(Context) || (*i)->isUnnamedBitfield())
+        continue;
       uint64_t Offset = BaseOffset +
                         Layout.getFieldOffset(idx) / Context.getCharWidth();
       QualType FieldQTy = i->getType();
@@ -298,6 +300,8 @@ llvm::MDNode *CodeGenTBAA::getBaseTypeInfoHelper(const Type *Ty) {
     const ASTRecordLayout &Layout = Context.getASTRecordLayout(RD);
     SmallVector<llvm::MDBuilder::TBAAStructField, 4> Fields;
     for (FieldDecl *Field : RD->fields()) {
+      if (Field->isZeroSize(Context) || Field->isUnnamedBitfield())
+        continue;
       QualType FieldQTy = Field->getType();
       llvm::MDNode *TypeNode = isValidBaseType(FieldQTy) ?
           getBaseTypeInfo(FieldQTy) : getTypeInfo(FieldQTy);

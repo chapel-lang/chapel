@@ -689,12 +689,14 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       } else {
         Type* defType = tail->typeInfo();
 
+        bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
         if (defType == dtTypeDefaultToken)
           val = dtTypeDefaultToken->symbol;
         else if (Type* type = getInstantiationType(defType, NULL,
                                                    newFormal->type, NULL,
                                                    call,
-                                                   true, false)) {
+                                                   true, false,
+                                                   inOutCopy)) {
           val = type->symbol;
         }
       }

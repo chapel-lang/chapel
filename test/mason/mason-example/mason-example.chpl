@@ -9,7 +9,6 @@ proc main() {
 
   // run each example
   // over 3 arguments runs all examples
-  var runArgs: [0..3] string = ["mason", "run", "--example", "--force"];
-  masonRun(runArgs);
+  masonRun(["mason", "run", "--example", "--force", "--no-update"]);
 
 }

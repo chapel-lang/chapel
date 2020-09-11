@@ -1,13 +1,13 @@
 //===--- ASTSelectionRequirements.cpp - Clang refactoring library ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "clang/Tooling/Refactoring/RefactoringActionRuleRequirements.h"
+#include "clang/AST/Attr.h"
 
 using namespace clang;
 using namespace tooling;
@@ -36,7 +36,7 @@ Expected<CodeRangeASTSelection> CodeRangeASTSelectionRequirement::evaluate(
   if (!ASTSelection)
     return ASTSelection.takeError();
   std::unique_ptr<SelectedASTNode> StoredSelection =
-      llvm::make_unique<SelectedASTNode>(std::move(*ASTSelection));
+      std::make_unique<SelectedASTNode>(std::move(*ASTSelection));
   Optional<CodeRangeASTSelection> CodeRange = CodeRangeASTSelection::create(
       Context.getSelectionRange(), *StoredSelection);
   if (!CodeRange)

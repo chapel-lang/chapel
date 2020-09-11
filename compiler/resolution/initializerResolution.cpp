@@ -134,6 +134,7 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
   fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_INSERT_LINE_FILE_INFO);
   fn->addFlag(FLAG_ALWAYS_PROPAGATE_LINE_FILE_INFO);
+  fn->addFlag(FLAG_LLVM_RETURN_NOALIAS);
 
   if (initFn->hasFlag(FLAG_SUPPRESS_LVALUE_ERRORS)) {
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
@@ -370,7 +371,8 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
 
     // If the default value for a formal is a new-expression, the final
     // statement in the BlockStmt will be a PRIM_NEW.
-    bool inArgSymbol = stmt == newExpr && isArgSymbol(stmt->parentSymbol);
+    ArgSymbol *argSym = toArgSymbol(stmt->parentSymbol);
+    bool inArgSymbol = stmt == newExpr && argSym != NULL;
 
     VarSymbol* new_temp = newTemp("new_temp");
     block->insertAtTail(new DefExpr(new_temp));
@@ -441,7 +443,11 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
       Expr* tail = block->body.tail;
       if (tail->typeInfo()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
         VarSymbol* ir_temp = newTemp("ir_temp");
-        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp, new CallExpr(astr_initCopy, tail->copy()));
+        Symbol *definedConst = argSym->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+        CallExpr* tempMove = new CallExpr(PRIM_MOVE, ir_temp,
+                                          new CallExpr(astr_initCopy,
+                                                       tail->copy(),
+                                                       definedConst));
         tail->insertBefore(tempMove);
         normalize(tempMove);
         tail->replace(new SymExpr(ir_temp));

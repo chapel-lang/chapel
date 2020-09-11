@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# The goal here is to just end up with the OUTPUT lines
+# as well as the function signatures but to have the
+# lines sorted by function (so it is easy to compare the C and
+# Chapel prototypes).
+
+cat $2 | grep '^[ ]*define\|^OUTPUT' | sed 's/#[0-9]*//g' | sed 's/) *{ */)/g' | sed 's/ %[0-9]//g' | sort > $2.tmp
+mv $2.tmp $2

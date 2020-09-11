@@ -145,6 +145,8 @@ static int txCQLen;
 //
 // Memory registration support.
 //
+static chpl_bool scalableMemReg;
+
 #define MAX_MEM_REGIONS 10
 static int numMemRegions = 0;
 
@@ -181,9 +183,13 @@ struct amRequest_execOnLrg_t {
 
 static int numAmHandlers = 1;
 
-static void* amLZs;
-static struct iovec ofi_iov_reqs;
-static struct fi_msg ofi_msg_reqs;
+//
+// AM request landing zones.
+//
+static void* amLZs[2];
+static struct iovec ofi_iov_reqs[2];
+static struct fi_msg ofi_msg_reqs[2];
+static int ofi_msg_i;
 
 
 ////////////////////////////////////////
@@ -364,7 +370,11 @@ const char* getProviderName(void) {
 //
 
 static inline
-chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
+chpl_bool isInProvName(const char* s, const char* prov_name) {
+  if (prov_name == NULL) {
+    return false;
+  }
+
   char pn[strlen(prov_name) + 1];
   strcpy(pn, prov_name);
 
@@ -377,6 +387,7 @@ chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
       return true;
     }
   }
+
   return false;
 }
 
@@ -385,6 +396,7 @@ chpl_bool isInThisProviderName(const char* s, const char* prov_name) {
 // provider type
 //
 typedef enum {
+  provType_efa,
   provType_gni,
   provType_verbs,
   provType_rxd,
@@ -413,49 +425,6 @@ int providerSetTest(providerSet_t* s, provider_t p) {
 
 
 //
-// providers available
-//
-
-static pthread_once_t providerAvailOnce = PTHREAD_ONCE_INIT;
-static providerSet_t providerAvailSet;
-
-static
-void init_providerAvail(void) {
-  struct fi_info* hints;
-  CHK_TRUE((hints = fi_allocinfo()) != NULL);
-  hints->ep_attr->type = FI_EP_RDM;
-  struct fi_info* info = NULL;
-  OFI_CHK(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &info));
-  if (chpl_nodeID == 0) {
-    DBG_PRINTF(DBG_CFGFABSALL,
-               "==================== fabrics available with %s %s:",
-               ofi_provNameEnv,
-               (getProviderName() == NULL) ? "<unset>" : getProviderName());
-  }
-  for ( ; info != NULL; info = info->next) {
-    if (chpl_nodeID == 0) {
-      DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(info, FI_TYPE_INFO));
-      DBG_PRINTF(DBG_CFGFABSALL, "----------");
-    }
-    const char* pn = info->fabric_attr->prov_name;
-    if (isInThisProviderName("gni", pn)) {
-      providerSetSet(&providerAvailSet, provType_gni);
-    } else if (isInThisProviderName("verbs", pn)) {
-      providerSetSet(&providerAvailSet, provType_verbs);
-    }
-  }
-  fi_freeinfo(info);
-  fi_freeinfo(hints);
-}
-
-static
-chpl_bool providerAvail(provider_t p) {
-  PTHREAD_CHK(pthread_once(&providerAvailOnce, init_providerAvail));
-  return providerSetTest(&providerAvailSet, p);
-}
-
-
-//
 // providers in use
 //
 
@@ -472,25 +441,31 @@ void init_providerInUse(void) {
   // We can be using only one primary provider.
   //
   const char* pn = ofi_info->fabric_attr->prov_name;
-  if (isInThisProviderName("gni", pn)) {
+  if (isInProvName("efa", pn)) {
+    providerSetSet(&providerInUseSet, provType_efa);
+  } else if (isInProvName("gni", pn)) {
     providerSetSet(&providerInUseSet, provType_gni);
-  } else if (isInThisProviderName("verbs", pn)) {
+  } else if (isInProvName("verbs", pn)) {
     providerSetSet(&providerInUseSet, provType_verbs);
   }
   //
   // We can be using any number of utility providers.
   //
-  if (isInThisProviderName("ofi_rxd", pn)) {
+  if (isInProvName("ofi_rxd", pn)) {
     providerSetSet(&providerInUseSet, provType_rxd);
   }
-  if (isInThisProviderName("ofi_rxm", pn)) {
+  if (isInProvName("ofi_rxm", pn)) {
     providerSetSet(&providerInUseSet, provType_rxm);
   }
 }
 
 static
 chpl_bool providerInUse(provider_t p) {
-  PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  if (ofi_info != NULL) {
+    // Early exit hedge: don't init "in use" info until we have one.
+    PTHREAD_CHK(pthread_once(&providerInUseOnce, init_providerInUse));
+  }
+
   return providerSetTest(&providerInUseSet, p);
 }
 
@@ -930,7 +905,7 @@ void init_ofi(void) {
 
   DBG_PRINTF(DBG_CFG,
              "AM config: recv buf size %zd MiB, %s, responses use %s",
-             ofi_iov_reqs.iov_len / (1L << 20),
+             ofi_iov_reqs[ofi_msg_i].iov_len / (1L << 20),
              (ofi_amhPollSet == NULL) ? "explicit polling" : "poll+wait sets",
              (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
   if (useScalableTxEp) {
@@ -951,162 +926,470 @@ void init_ofi(void) {
 }
 
 
+#ifdef CHPL_COMM_DEBUG
+struct cfgHint {
+  const char* str;
+  unsigned long int val;
+};
+
+
+static
+chpl_bool getCfgHint(const char* evName, struct cfgHint hintVals[],
+                     chpl_bool justOne, uint64_t* pVal) {
+  const char* ev = chpl_env_rt_get(evName, "");
+  if (strcmp(ev, "") == 0) {
+    return false;
+  }
+
+  *pVal = 0;
+
+  char evCopy[strlen(ev) + 1];
+  strcpy(evCopy, ev);
+  char* p = strtok(evCopy, "|");
+  while (p != NULL) {
+    int i;
+    for (i = 0; hintVals[i].str != NULL; i++) {
+      if (strcmp(p, hintVals[i].str) == 0) {
+        *pVal |= hintVals[i].val;
+        break;
+      }
+    }
+    if (hintVals[i].str == NULL) {
+      INTERNAL_ERROR_V("unknown config hint val in CHPL_RT_%s: \"%s\"",
+                       evName, p);
+    }
+    p = strtok(NULL, "|");
+    if (justOne && p != NULL) {
+      INTERNAL_ERROR_V("too many config hint vals in CHPL_RT_%s=\"%s\"",
+                       evName, ev);
+    }
+  }
+
+  return true;
+}
+
+
+static
+void debugOverrideHints(struct fi_info* hints) {
+  #define CFG_HINT(s)    { #s, (uint64_t) (s) }
+  #define CFG_HINT_NULL  { NULL, 0ULL }
+
+  uint64_t val;
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
+                                  CFG_HINT(FI_COMPLETION),
+                                  CFG_HINT(FI_DELIVERY_COMPLETE),
+                                  CFG_HINT(FI_INJECT),
+                                  CFG_HINT(FI_INJECT_COMPLETE),
+                                  CFG_HINT(FI_TRANSMIT_COMPLETE),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_TX_OP_FLAGS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->tx_attr->op_flags = val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_ORDER_ATOMIC_RAR),
+                                  CFG_HINT(FI_ORDER_ATOMIC_RAW),
+                                  CFG_HINT(FI_ORDER_ATOMIC_WAR),
+                                  CFG_HINT(FI_ORDER_ATOMIC_WAW),
+                                  CFG_HINT(FI_ORDER_NONE),
+                                  CFG_HINT(FI_ORDER_RAR),
+                                  CFG_HINT(FI_ORDER_RAS),
+                                  CFG_HINT(FI_ORDER_RAW),
+                                  CFG_HINT(FI_ORDER_RMA_RAR),
+                                  CFG_HINT(FI_ORDER_RMA_RAW),
+                                  CFG_HINT(FI_ORDER_RMA_WAR),
+                                  CFG_HINT(FI_ORDER_RMA_WAW),
+                                  CFG_HINT(FI_ORDER_SAR),
+                                  CFG_HINT(FI_ORDER_SAS),
+                                  CFG_HINT(FI_ORDER_SAW),
+                                  CFG_HINT(FI_ORDER_WAR),
+                                  CFG_HINT(FI_ORDER_WAS),
+                                  CFG_HINT(FI_ORDER_WAW),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_MSG_ORDER",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->tx_attr->msg_order = hints->rx_attr->msg_order = val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
+                                  CFG_HINT(FI_COMPLETION),
+                                  CFG_HINT(FI_DELIVERY_COMPLETE),
+                                  CFG_HINT(FI_MULTI_RECV),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_RX_OP_FLAGS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->rx_attr->op_flags = val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_PROGRESS_UNSPEC),
+                                  CFG_HINT(FI_PROGRESS_AUTO),
+                                  CFG_HINT(FI_PROGRESS_MANUAL),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_CONTROL_PROGRESS",
+                   hintVals, true /*justOne*/, &val)) {
+      hints->domain_attr->control_progress = (enum fi_progress) val;
+    }
+    if (getCfgHint("COMM_OFI_HINTS_DATA_PROGRESS",
+                   hintVals, true /*justOne*/, &val)) {
+      hints->domain_attr->data_progress = (enum fi_progress) val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_THREAD_UNSPEC),
+                                  CFG_HINT(FI_THREAD_SAFE),
+                                  CFG_HINT(FI_THREAD_FID),
+                                  CFG_HINT(FI_THREAD_DOMAIN),
+                                  CFG_HINT(FI_THREAD_COMPLETION),
+                                  CFG_HINT(FI_THREAD_ENDPOINT),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_THREADING",
+                   hintVals, true /*justOne*/, &val)) {
+      hints->domain_attr->threading = (enum fi_threading) val;
+    }
+  }
+
+  {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_MR_UNSPEC),
+                                  CFG_HINT(FI_MR_BASIC),
+                                  CFG_HINT(FI_MR_SCALABLE),
+                                  CFG_HINT(FI_MR_LOCAL),
+                                  CFG_HINT(FI_MR_RAW),
+                                  CFG_HINT(FI_MR_VIRT_ADDR),
+                                  CFG_HINT(FI_MR_ALLOCATED),
+                                  CFG_HINT(FI_MR_PROV_KEY),
+                                  CFG_HINT(FI_MR_MMU_NOTIFY),
+                                  CFG_HINT(FI_MR_RMA_EVENT),
+                                  CFG_HINT(FI_MR_ENDPOINT),
+                                  CFG_HINT(FI_MR_HMEM),
+                                  CFG_HINT_NULL, };
+    if (getCfgHint("COMM_OFI_HINTS_MR_MODE",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->domain_attr->mr_mode = (int) val;
+    }
+  }
+
+  #undef CFG_HINT
+  #undef CFG_HINT_NULL
+}
+#endif
+
+
+static inline
+chpl_bool isInProvider(const char* s, struct fi_info* info) {
+  return isInProvName(s, info->fabric_attr->prov_name);
+}
+
+
+static inline
+chpl_bool isGoodCoreProvider(struct fi_info* info) {
+  return (!isInProvName("sockets", info->fabric_attr->prov_name)
+          && !isInProvName("tcp", info->fabric_attr->prov_name));
+}
+
+
+static inline
+struct fi_info* findProvInList(struct fi_info* info,
+                               chpl_bool skip_ungood_provs,
+                               chpl_bool skip_RxD_provs,
+                               chpl_bool skip_RxM_provs) {
+  while (info != NULL
+         && (   (skip_ungood_provs && !isGoodCoreProvider(info))
+             || (skip_RxD_provs && isInProvider("ofi_rxd", info))
+             || (skip_RxM_provs && isInProvider("ofi_rxm", info)))) {
+    info = info->next;
+  }
+  return (info == NULL) ? NULL : fi_dupinfo(info);
+}
+
+
 static
 void init_ofiFabricDomain(void) {
   //
-  // Build hints describing what we want from the provider.
+  // Just within this function, it's useful during setup to be able to
+  // produce error messages only from node 0, for problems we expect
+  // all nodes to encounter identically.
   //
+#  define INTERNAL_ERROR_V_NODE0(fmt, ...)                              \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        INTERNAL_ERROR_V(fmt, ## __VA_ARGS__);                          \
+      } else {                                                          \
+        chpl_comm_ofi_oob_fini();                                       \
+        chpl_exit_any(0);                                               \
+      }                                                                 \
+    } while (0)
+
+  //
+  // It's also useful to be able to print debug info only from node 0.
+  //
+#  define DBG_PRINTF_NODE0(mask, fmt, ...)                              \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        DBG_PRINTF(mask, fmt, ## __VA_ARGS__);                          \
+      }                                                                 \
+    } while (0)
+
+  //
+  // Build hints describing our fundamental requirements and get a list
+  // of the providers that can satisfy those:
+  // - capabilities:
+  //   - messaging (send/receive), including multi-receive
+  //   - RMA
+  //   - transactions directed at both self and remote nodes
+  //   - on Cray XC, atomics (gni provider doesn't volunteer this)
+  // - tx endpoints:
+  //   - default completion level
+  //   - send-after-send ordering
+  // - rx endpoints same as tx
+  // - RDM endpoints
+  // - table-style address vectors
+  // - resource management, to improve the odds we hear about exhaustion
+  // - in addition, include the memory registration modes we can support
+  //
+  const char* prov_name = getProviderName();
+  const chpl_bool forced_RxD = isInProvName("ofi_rxd", prov_name);
+  const chpl_bool forced_RxM = isInProvName("ofi_rxm", prov_name);
+
   struct fi_info* hints;
   CHK_TRUE((hints = fi_allocinfo()) != NULL);
 
-  hints->caps = FI_MSG | FI_SEND | FI_RECV | FI_MULTI_RECV
-                | FI_RMA | FI_READ | FI_WRITE
-                | FI_REMOTE_READ | FI_REMOTE_WRITE;
-  if (providerAvail(provType_gni)) {
-    hints->caps |= FI_ATOMICS; // we don't get this without asking
+  hints->caps = (FI_MSG | FI_MULTI_RECV
+                 | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
+  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
+      && (prov_name == NULL || isInProvName("gni", prov_name))) {
+    hints->caps |= FI_ATOMIC;
   }
-
-  hints->addr_format = FI_FORMAT_UNSPEC;
-
-  //
-  // We don't specify a default completion level.  The fi_cq(3) man page
-  // says "For operations that return data to the initiator, such as RMA
-  // read or atomic-fetch, the source endpoint is also considered a
-  // destination endpoint. [FI_DELIVERY_COMPLETE] is the default
-  // completion mode for such operations."  So for such operations,
-  // we'll get a completion event after the result memory is updated,
-  // which is what we want.  For RMA write and non-fetching atomics we
-  // use the provider's default completion level and apply other methods
-  // such as forcing operation orderings with FI_ORDER_x flags to ensure
-  // that target memory is updated as the Chapel MCM requires.  AM sends
-  // use the default completion level as well, because either they are
-  // nonblocking or we'll wait for a 'done' indicator.
-  //
-  // We require the following transaction orderings:
-  // RMA_RAW:    RMA reads are ordered after RMA writes.
-  //             This achieves the same-address clause of the Chapel
-  //             MCM: a regular read after a regular write to the same
-  //             address must read the value that was written.  But it
-  //             also orders reads after writes to differing addresses,
-  //             which isn't needed and adds overhead.  This will be
-  //             fixed in the future.  (TODO)
-  // SAS:        Message sends are ordered after message sends.
-  //             This orders AMOs done using AMs.  It also orders all
-  //             other AMs as well, which is wasteful because those are
-  //             already as ordered we need them to be by various other
-  //             means.  But the alternative is for nonfetching AMO AM
-  //             initiators to wait for 'amDone' indicators back from
-  //             their targets, and performance testing indicates that
-  //             is more costly overall.
-  // SAW:        Message sends are ordered after RMA writes.
-  //             This ensures that any PUT (write) that precedes an
-  //             executeOn to the same node will be seen as having
-  //             completed when the body of that executeOn runs.  We
-  //             need this because on-stmts are serial events within a
-  //             single task and the MCM says that a task sees its own
-  //             regular reads and writes occur in program order.  Some
-  //             of the "internal" (not on-stmt) AM types need the same
-  //             assurance as well.
-  //
   hints->tx_attr->op_flags = FI_COMPLETION;
-  hints->tx_attr->msg_order = (  FI_ORDER_RMA_RAW
-                               | FI_ORDER_SAS
-                               | FI_ORDER_SAW);
-
-  hints->rx_attr->op_flags = FI_COMPLETION;
-  hints->rx_attr->msg_order = (  FI_ORDER_RMA_RAW
-                               | FI_ORDER_SAS
-                               | FI_ORDER_SAW);
-
+  hints->tx_attr->msg_order = FI_ORDER_SAS;
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
   hints->ep_attr->type = FI_EP_RDM;
-
-  hints->domain_attr->threading = FI_THREAD_UNSPEC;
-
-  enum fi_progress prg = FI_PROGRESS_UNSPEC;
-  if (DBG_TEST_MASK(DBG_CFG)) {
-    const char* ev = chpl_env_rt_get("COMM_OFI_PROGRESS", "");
-    if (strcmp(ev, "") != 0) {
-      if (strcasecmp(ev, "auto") == 0)
-        prg = FI_PROGRESS_AUTO;
-      else if (strcasecmp(ev, "manual") == 0)
-        prg = FI_PROGRESS_MANUAL;
-      else
-        CHK_TRUE((strcasecmp(ev, "unspec") == 0));
-    }
-  }
-  hints->domain_attr->control_progress = FI_PROGRESS_UNSPEC; // don't need
-  hints->domain_attr->data_progress = prg;
-
   hints->domain_attr->av_type = FI_AV_TABLE;
-
-  //
-  // We can support all of the MR modes shown here, but we should only
-  // throw ALLOCATED if indeed the pages are known to exist, and that's
-  // only true with a fixed heap.
-  //
-  // PROV_KEY is marked TODO only because if the provider doesn't assert
-  // that mode we may be able to avoid broadcasting keys around the job.
-  //
-  int mr_mode;
-  if ((mr_mode = chpl_env_rt_get_int("COMM_MR_MODE", -1)) == -1) {
-    mr_mode = FI_MR_LOCAL
-              | FI_MR_VIRT_ADDR
-              | FI_MR_PROV_KEY /*TODO*/
-              | FI_MR_ENDPOINT;
-    if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
-      mr_mode |= FI_MR_ALLOCATED;
-    }
-  }
-  hints->domain_attr->mr_mode = mr_mode;
-
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
 
-  //
-  // Try to find a provider that can do what we want.  If more than one
-  // is found, presume that ones earlier in the list perform better (as
-  // documented in 'man fi_getinfo').  We just do error reporting on
-  // node 0; the other nodes should all have the same result and there's
-  // no point in repeating everything numNodes times.
-  //
-  if (DBG_TEST_MASK(DBG_CFGFAB) && chpl_nodeID == 0) {
-    DBG_PRINTF(DBG_CFGFAB, "==================== hints:");
-    DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(hints, FI_TYPE_INFO));
+  hints->domain_attr->mr_mode = (  FI_MR_LOCAL
+                                 | FI_MR_VIRT_ADDR
+                                 | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
+                                 | FI_MR_ENDPOINT);
+  if (chpl_numNodes > 1 && chpl_comm_getenvMaxHeapSize() > 0) {
+    hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
+  chpl_bool ord_cmplt_forced = false;
+#ifdef CHPL_COMM_DEBUG
+  struct fi_info* hintsOrig = fi_dupinfo(hints);
+  debugOverrideHints(hints);
+  ord_cmplt_forced =
+    hints->tx_attr->op_flags != hintsOrig->tx_attr->op_flags
+    || hints->tx_attr->msg_order != hintsOrig->tx_attr->msg_order;
+  fi_freeinfo(hintsOrig);
+#endif
+
+  DBG_PRINTF_NODE0(DBG_CFGFABHINTS,
+                   "====================\n"
+                   "initial hints");
+  DBG_PRINTF_NODE0(DBG_CFGFABHINTS,
+                   "%s", fi_tostr(hints, FI_TYPE_INFO));
+  DBG_PRINTF_NODE0(DBG_CFGFABHINTS,
+                   "====================");
+
+  //
+  // To enable adhering to the Chapel MCM we need the following (within
+  // each task, not across tasks):
+  // - A PUT followed by a GET from the same address must return the
+  //   PUT data.  For this we need read-after-write ordering or else
+  //   delivery-complete.  Note that the RxM provider advertises
+  //   delivery-complete but doesn't actually do it.
+  // - When a PUT is following by an on-stmt, the on-stmt body must see
+  //   the PUT data.  For this we need either send-after-write ordering
+  //   or delivery-complete.
+  // - Atomics have to be ordered if either is a write, whether they're
+  //   done directly or via internal AMs.
+  //
+  // What we're hunting for is either a provider that can do all of the
+  // above transaction orderings, or one that can do delivery-complete.
+  // But we can't just get all the providers that match our fundamental
+  // needs and then look through the list to find the first one that can
+  // do either our transaction orderings or delivery-complete, because
+  // if those weren't in our original hints they might not be expressed
+  // by any of the returned providers.  Providers will not typically
+  // "volunteer" capabilities that aren't asked for, especially if those
+  // capabilities have performance costs.  So here, first see if we get
+  // a "good" core provider when we hint the transaction orderings, and
+  // iff that fails see if we get a "good" core provider when we hint
+  // delivery-complete.  "Good" here means "not tcp or sockets".  There
+  // are some wrinkles:
+  // - Setting either the transaction orderings or the delivery types in
+  //   manually overridden hints causes those hints to be used as-is,
+  //   turning off both the good-provider check and any attempt to find
+  //   something sufficient for the MCM.
+  // - Setting the FI_PROVIDER environment variable to manually specify
+  //   a provider turns off the good-provider checks.
+  // - We can't accept the RxM utility provider with any core provider
+  //   for delivery-complete, because although RxM will match that it
+  //   cannot actually do it, and programs will fail.  This is a known
+  //   bug that can't be fixed without breaking other things:
+  //     https://github.com/ofiwg/libfabric/issues/5601
+  //   Explicitly including ofi_rxm in FI_PROVIDER overrides this.
+  //
+
   int ret;
-  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
+
+  //
+  // Take manually overridden hints as forcing provider selection if
+  // they adjust either the transaction orderings or completion type.
+  // Otherwise, just flow those overrides into the selection process
+  // below.
+  //
+  if (ord_cmplt_forced) {
+    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
+              ret, -FI_ENODATA);
+    if (ret != FI_SUCCESS) {
+      INTERNAL_ERROR_V_NODE0("No (forced) provider for prov_name \"%s\"",
+                             (prov_name == NULL) ? "<any>" : prov_name);
+    }
+    goto haveProvider;
+  }
+
+  //
+  // Try to get a good provider that can do the transaction orderings
+  // we want.
+  //
+  uint64_t msg_order_more = (((hints->caps & FI_ATOMIC) == 0)
+                             ? (FI_ORDER_RMA_RAW | FI_ORDER_SAW)
+                             : (FI_ORDER_RAW
+                                | FI_ORDER_ATOMIC_WAR
+                                | FI_ORDER_ATOMIC_WAW
+                                | FI_ORDER_SAW));
+  hints->tx_attr->msg_order |= msg_order_more;
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
+
+  struct fi_info* infoTxOrd;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoTxOrd),
             ret, -FI_ENODATA);
 
-  if (chpl_nodeID == 0) {
-    if (ret == -FI_ENODATA) {
-      const char* provider = getProviderName();
-      INTERNAL_ERROR_V("No provider matched for prov_name \"%s\"",
-                       (provider == NULL) ? "<any>" : provider);
-    }
+  if (ret == FI_SUCCESS
+      && ((ofi_info = findProvInList(infoTxOrd,
+                                     prov_name == NULL /*skip_ungood_provs*/,
+                                     !forced_RxD /*skip_RxD_provs*/,
+                                     false /*skip_RxM_provs*/))
+          != NULL)) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "** found desirable provider with transaction orderings");
+    fi_freeinfo(infoTxOrd);
+    goto haveProvider;
+  }
 
-    if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
-      DBG_PRINTF(DBG_CFGFABSALL, "====================\n"
-                 "fi_getinfo() matched fabric(s):");
+  DBG_PRINTF_NODE0(DBG_CFGFAB,
+                   "** no desirable provider with transaction orderings");
+
+  hints->tx_attr->msg_order &= ~msg_order_more;
+  hints->rx_attr->msg_order = hints->tx_attr->msg_order;
+
+  //
+  // We couldn't get the desired transaction orderings, so instead try
+  // to get FI_DELIVERY_COMPLETE.  Unless an environment setting forces
+  // use of the RxM utility provider, only accept providers that don't
+  // include RxM, because though it advertises delivery-complete it
+  // doesn't actually do it.
+  //
+  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+
+  struct fi_info* infoCmplt;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
+            ret, -FI_ENODATA);
+
+  if (ret == FI_SUCCESS
+      && ((ofi_info = findProvInList(infoCmplt,
+                                     prov_name == NULL /*skip_ungood_provs*/,
+                                     !forced_RxD /*skip_RxD_provs*/,
+                                     !forced_RxM /*skip_RxM_provs*/))
+          != NULL)) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "** found desirable provider with delivery-complete");
+    fi_freeinfo(infoCmplt);
+    goto haveProvider;
+  }
+
+  DBG_PRINTF_NODE0(DBG_CFGFAB,
+                   "** no desirable provider with delivery-complete");
+
+  hints->tx_attr->op_flags = FI_COMPLETION;
+
+  //
+  // We couldn't get FI_DELIVERY_COMPLETE in a desirable provider
+  // either.  Just use anything that matched and that we know how
+  // to work with.
+  //
+  if (infoTxOrd != NULL) {
+    ofi_info = findProvInList(infoTxOrd,
+                              false /*skip_ungood_provs*/,
+                              !forced_RxD /*skip_RxD_provs*/,
+                              false /*skip_RxM_provs*/);
+    fi_freeinfo(infoTxOrd);
+    if (ofi_info != NULL) {
+      DBG_PRINTF_NODE0(DBG_CFGFAB,
+                       "** found less-desirable provider with transaction "
+                       "orderings");
+      if (infoCmplt != NULL) {
+        fi_freeinfo(infoCmplt);
+      }
+      goto haveProvider;
+    }
+  }
+
+  if (infoCmplt != NULL) {
+    ofi_info = findProvInList(infoCmplt,
+                              false /*skip_ungood_provs*/,
+                              !forced_RxD /*skip_RxD_provs*/,
+                              !forced_RxM /*skip_RxM_provs*/);
+    fi_freeinfo(infoCmplt);
+    if (ofi_info != NULL) {
+      DBG_PRINTF_NODE0(DBG_CFGFAB,
+                       "** found less-desirable provider with "
+                       "delivery-complete");
+      goto haveProvider;
+    }
+  }
+
+  //
+  // We didn't find any provider at all.
+  // NOTE: execution ends here.
+  //
+  INTERNAL_ERROR_V_NODE0("No libfabric provider for prov_name \"%s\"",
+                         (prov_name == NULL) ? "<any>" : prov_name);
+
+haveProvider:
+  //
+  // If we get here, we have a provider in ofi_info.
+  //
+  if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
+    if (chpl_nodeID == 0) {
+      DBG_PRINTF(DBG_CFGFABSALL,
+                 "====================\n"
+                 "matched fabric(s):");
       struct fi_info* info;
       for (info = ofi_info; info != NULL; info = info->next) {
         DBG_PRINTF(DBG_CFGFABSALL, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-        DBG_PRINTF(DBG_CFGFABSALL, "----------");
       }
-    } else {
-      DBG_PRINTF(DBG_CFGFAB, "====================\n"
-                 "fi_getinfo() matched fabric:");
-      DBG_PRINTF(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
-      DBG_PRINTF(DBG_CFGFAB, "----------");
     }
   } else {
-    //
-    // Node 0 will take care of producing the error message.
-    //
-    if (ret == -FI_ENODATA) {
-      chpl_comm_ofi_oob_fini();
-      chpl_exit_any(0);
-    }
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "====================\n"
+                     "matched fabric:");
+    DBG_PRINTF_NODE0(DBG_CFGFAB, "%s", fi_tostr(ofi_info, FI_TYPE_INFO));
   }
+
+  DBG_PRINTF_NODE0(DBG_CFGFAB | DBG_CFGFABSALL,
+                   "====================");
 
   fi_freeinfo(hints);
 
@@ -1122,6 +1405,9 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
+
+#  undef DBG_PRINTF_NODE0
+#  undef INTERNAL_ERROR_V_NODE0
 }
 
 
@@ -1169,12 +1455,19 @@ void init_ofiEp(void) {
   // is needed.  It uses poll and wait sets to manage this, if it can.
   // Note: we'll either have both a poll and a wait set, or neither.
   //
+  // We don't use poll and waits sets with the efa provider because that
+  // doesn't support wait objects.  I tried just setting the cq_attr
+  // wait object to FI_WAIT_UNSPEC for all providers, since we don't
+  // reference the wait object explicitly anyway, but then saw hangs
+  // with (at least) the tcp;ofi_rxm provider.
+  //
   // We don't use poll and wait sets with the gni provider because (1)
   // it returns -ENOSYS for fi_poll_open() and (2) although a wait set
   // seems to work properly during execution, we haven't found a way to
   // avoid getting -FI_EBUSY when we try to close it.
   //
-  if (!providerInUse(provType_gni)) {
+  if (!providerInUse(provType_efa)
+      && !providerInUse(provType_gni)) {
     int ret;
     struct fi_poll_attr pollSetAttr = (struct fi_poll_attr)
                                       { .flags = 0, };
@@ -1269,15 +1562,7 @@ void init_ofiEp(void) {
   const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
                                    ? FI_WAIT_NONE
                                    : FI_WAIT_SET;
-  if (ofi_info->domain_attr->cntr_cnt > 0) {
-    cntrAttr = (struct fi_cntr_attr)
-               { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = waitObj,
-                 .wait_set = ofi_amhWaitSet, };
-    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
-    }
-  } else {
+  if (true /*ofi_info->domain_attr->cntr_cnt == 0*/) { // disable tx counters
     cqAttr = (struct fi_cq_attr)
              { .format = FI_CQ_FORMAT_MSG,
                .size = 100,
@@ -1286,6 +1571,14 @@ void init_ofiEp(void) {
                .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
       init_ofiEpTxCtx(i, true /*isAMHandler*/, &cqAttr, NULL);
+    }
+  } else {
+    cntrAttr = (struct fi_cntr_attr)
+               { .events = FI_CNTR_EVENTS_COMP,
+                 .wait_obj = waitObj,
+                 .wait_set = ofi_amhWaitSet, };
+    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+      init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
     }
   }
 
@@ -1314,7 +1607,7 @@ void init_ofiEp(void) {
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
-  if (ofi_info->domain_attr->cntr_cnt == 0) {
+  if (true /*ofi_info->domain_attr->cntr_cnt == 0*/) { // disable tx counters
     OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma,
                        &checkRxRmaCmplsFn));
     ofi_rxCmplFidRma = &ofi_rxCQRma->fid;
@@ -1450,8 +1743,7 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
                          &tcip->checkTxCmplsFn));
     tcip->txCmplFid = &tcip->txCntr->fid;
     OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid,
-                       (isAMHandler ? FI_WRITE
-                                    : FI_SEND | FI_READ | FI_WRITE)));
+                       FI_SEND | FI_READ | FI_WRITE));
     tcip->checkTxCmplsFn = checkTxCmplsCntr;
   }
 
@@ -1542,34 +1834,55 @@ void init_ofiExchangeAvInfo(void) {
 
 static
 void init_ofiForMem(void) {
-  //
-  // With scalable memory registration we just register the whole
-  // address space here; with non-scalable we register each region
-  // individually.
-  //
   void* fixedHeapStart;
   size_t fixedHeapSize;
   chpl_comm_impl_regMemHeapInfo(&fixedHeapStart, &fixedHeapSize);
 
   //
-  // At present the user can specify a fixed heap in which case we will
-  // register that and only that, or they'd better be using a provider
-  // which supports scalable registration of the entire address space.
+  // We default to scalable registration if none of the settings that
+  // force basic registration are present, but the user can override
+  // that by specifying use of a fixed heap.  Note that this is to
+  // some extent just a backstop, because if the user does specify a
+  // fixed heap we will have earlier included FI_MR_ALLOCATED in our
+  // hints, which might well have caused the selection of a provider
+  // which requires basic registration.
   //
-  if (fixedHeapStart != NULL && fixedHeapSize != 0) {
+  const uint64_t basicMemRegBits = (FI_MR_BASIC
+                                    | FI_MR_LOCAL
+                                    | FI_MR_VIRT_ADDR
+                                    | FI_MR_ALLOCATED
+                                    | FI_MR_PROV_KEY);
+  scalableMemReg = ((ofi_info->domain_attr->mr_mode & basicMemRegBits) == 0
+                    && fixedHeapSize == 0);
+
+  //
+  // With scalable memory registration we just register the whole
+  // address space here; with non-scalable we register each region
+  // individually.  Currently with non-scalable we actually only
+  // register a fixed heap.  We may do something more complicated
+  // in the future, though.
+  //
+  if (scalableMemReg) {
+    numMemRegions = 1;
+    memTab[0].addr = (void*) 0;
+    memTab[0].base = 0;
+    memTab[0].size = SIZE_MAX;
+  } else {
+    if (fixedHeapSize == 0) {
+      INTERNAL_ERROR_V("must specify fixed heap with %s provider",
+                       ofi_info->fabric_attr->prov_name);
+    }
+
     numMemRegions = 1;
     memTab[0].addr = fixedHeapStart;
     memTab[0].base = ((ofi_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR) == 0)
                      ? (size_t) fixedHeapStart
                      : (size_t) 0;
     memTab[0].size = fixedHeapSize;
-  } else {
-    CHK_TRUE((ofi_info->domain_attr->mr_mode & FI_MR_BASIC) == 0);
-    numMemRegions = 1;
-    memTab[0].addr = (void*) 0;
-    memTab[0].base = 0;
-    memTab[0].size = SIZE_MAX;
   }
+
+  const chpl_bool prov_key =
+    ((ofi_info->domain_attr->mr_mode & FI_MR_PROV_KEY) != 0);
 
   uint64_t bufAcc = FI_RECV | FI_REMOTE_READ | FI_REMOTE_WRITE;
   if ((ofi_info->domain_attr->mr_mode & FI_MR_LOCAL) != 0) {
@@ -1581,9 +1894,10 @@ void init_ofiForMem(void) {
                i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
-                      bufAcc, 0, 0, 0, &ofiMrTab[i], NULL));
+                      bufAcc, (prov_key ? 0 : i), 0, 0, &ofiMrTab[i], NULL));
     memTab[i].desc = fi_mr_desc(ofiMrTab[i]);
     memTab[i].key  = fi_mr_key(ofiMrTab[i]);
+    CHK_TRUE(prov_key || memTab[i].key == i);
     DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64, i, memTab[i].key);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEpRma->fid, 0));
@@ -1592,10 +1906,13 @@ void init_ofiForMem(void) {
   }
 
   //
-  // Share the memory regions around the job.
+  // Unless we're doing scalable registration of the entire address
+  // space, share the memory regions around the job.
   //
-  CHPL_CALLOC(memTabMap, chpl_numNodes);
-  chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
+  if (!scalableMemReg) {
+    CHPL_CALLOC(memTabMap, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&memTab, memTabMap, sizeof(memTabMap[0]));
+  }
 }
 
 
@@ -1623,18 +1940,24 @@ void init_ofiForAms(void) {
   // comm=ugni AM handler can handle just over 150k "fast" AM requests
   // in 0.1 sec.  Assuming an average AM request size of 256 bytes, a 40
   // MiB buffer is enough to give us the desired 0.1 sec lifetime before
-  // it needs renewing.
+  // it needs renewing.  We actually then split this in half and create
+  // 2 half-sized buffers (see below), so reflect that here also.
   //
-  const size_t amLZSize = (size_t) 40 << 20;
+  const size_t amLZSize = ((size_t) 40 << 20) / 2;
 
   //
-  // Set the minimum multi-receive buffer space.  Some providers don't
-  // have fi_setopt() for some ep types, so allow this to fail in that
-  // case.  Note, however, that if it does fail and we get overruns,
-  // we'll die.
+  // Set the minimum multi-receive buffer space.  Make it big enough to
+  // hold a max-sized request from every potential sender, but no more
+  // than 10% of the buffer size.  Some providers don't have fi_setopt()
+  // for some ep types, so allow this to fail in that case.  But note
+  // that if it does fail and we get overruns we'll die or, worse yet,
+  // silently compute wrong results.
   //
   {
-    const size_t sz = chpl_numNodes * sizeof(struct amRequest_execOn_t);
+    size_t sz = chpl_numNodes * tciTabLen * sizeof(struct amRequest_execOn_t);
+    if (sz > amLZSize / 10) {
+        sz = amLZSize / 10;
+    }
     int ret;
     OFI_CHK_2(fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                         FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz)),
@@ -1642,22 +1965,36 @@ void init_ofiForAms(void) {
   }
 
   //
-  // Pre-post multi-receive buffer for inbound AM requests.
+  // Pre-post multi-receive buffer for inbound AM requests.  In reality
+  // set up two of these and swap back and forth between them, to hedge
+  // against receiving "buffer filled and released" events out of order
+  // with respect to the messages stored within them.
   //
-  CHPL_CALLOC_SZ(amLZs, 1, amLZSize);
+  CHPL_CALLOC_SZ(amLZs[0], 1, amLZSize);
+  CHPL_CALLOC_SZ(amLZs[1], 1, amLZSize);
 
-  ofi_iov_reqs.iov_base = amLZs;
-  ofi_iov_reqs.iov_len = amLZSize;
-  ofi_msg_reqs.msg_iov = &ofi_iov_reqs;
-  ofi_msg_reqs.desc = NULL;
-  ofi_msg_reqs.iov_count = 1;
-  ofi_msg_reqs.addr = FI_ADDR_UNSPEC;
-  ofi_msg_reqs.context = NULL;
-  ofi_msg_reqs.data = 0x0;
-  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+  ofi_iov_reqs[0] = (struct iovec) { .iov_base = amLZs[0],
+                                     .iov_len = amLZSize, };
+  ofi_iov_reqs[1] = (struct iovec) { .iov_base = amLZs[1],
+                                     .iov_len = amLZSize, };
+  ofi_msg_reqs[0] = (struct fi_msg) { .msg_iov = &ofi_iov_reqs[0],
+                                      .desc = NULL,
+                                      .iov_count = 1,
+                                      .addr = FI_ADDR_UNSPEC,
+                                      .context = NULL,
+                                      .data = 0x0, };
+  ofi_msg_reqs[1] = (struct fi_msg) { .msg_iov = &ofi_iov_reqs[1],
+                                      .desc = NULL,
+                                      .iov_count = 1,
+                                      .addr = FI_ADDR_UNSPEC,
+                                      .context = NULL,
+                                      .data = 0x0, };
+  ofi_msg_i = 0;
+  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
   DBG_PRINTF(DBG_AMBUFFERS,
-             "pre-post fi_recvmsg(AMLZs, len %#zx)",
-             ofi_msg_reqs.msg_iov->iov_len);
+             "pre-post fi_recvmsg(AMLZs %p, len %#zx)",
+             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base,
+             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
 
   init_amHandling();
 }
@@ -1814,11 +2151,12 @@ void fini_ofi(void) {
     OFI_CHK(fi_close(&ofiMrTab[i]->fid));
   }
 
-  CHPL_FREE(memTabMap);
+  if (memTabMap != NULL) {
+    CHPL_FREE(memTabMap);
+  }
 
-  CHPL_FREE(memTabMap);
-
-  CHPL_FREE(amLZs);
+  CHPL_FREE(amLZs[1]);
+  CHPL_FREE(amLZs[0]);
 
   CHPL_FREE(ofi_rxAddrs);
 
@@ -1892,7 +2230,7 @@ void init_fixedHeap(void) {
   //
   size_t size = chpl_comm_getenvMaxHeapSize();
   if ( ! (chpl_numNodes > 1
-          && (providerAvail(provType_gni) || size != 0))) {
+          && (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0 || size > 0))) {
     return;
   }
 
@@ -2062,14 +2400,23 @@ struct memEntry* getMemEntry(memTab_t* tab, void* addr, size_t size) {
 
 static inline
 int mrGetDesc(void** pDesc, void* addr, size_t size) {
-  struct memEntry* mr;
-  if ((mr = getMemEntry(&memTab, addr, size)) == NULL) {
-    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): no entry", addr, size);
-    return -1;
+  void* desc;
+
+  if (scalableMemReg) {
+    desc = NULL;
+  } else {
+    struct memEntry* mr;
+    if ((mr = getMemEntry(&memTab, addr, size)) == NULL) {
+      DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): no entry", addr, size);
+      return -1;
+    }
+    desc = mr->desc;
+    DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): desc %p", addr, size, desc);
   }
-  DBG_PRINTF(DBG_MRDESC, "mrGetDesc(%p, %zd): desc %p", addr, size, mr->desc);
-  if (pDesc != NULL)
-    *pDesc = mr->desc;
+
+  if (pDesc != NULL) {
+    *pDesc = desc;
+  }
   return 0;
 }
 
@@ -2077,17 +2424,26 @@ int mrGetDesc(void** pDesc, void* addr, size_t size) {
 static inline
 int mrGetKey(uint64_t* pKey, uint64_t* pOff,
              int iNode, void* addr, size_t size) {
-  struct memEntry* mr;
-  if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
-    DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
-               iNode, addr, size);
-    return -1;
+  uint64_t key;
+  uint64_t off;
+
+  if (scalableMemReg) {
+    key = 0;
+    off = (uint64_t) addr;
+  } else {
+    struct memEntry* mr;
+    if ((mr = getMemEntry(&memTabMap[iNode], addr, size)) == NULL) {
+      DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): no entry",
+                 iNode, addr, size);
+      return -1;
+    }
+
+    key = mr->key;
+    off = (uint64_t) addr - mr->base;
+    DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64 ", off %" PRIx64,
+               iNode, addr, size, key, off);
   }
 
-  const uint64_t key = mr->key;
-  const uint64_t off = (uint64_t) addr - mr->base;
-  DBG_PRINTF(DBG_MRKEY, "mrGetKey(%d:%p, %zd): key %" PRIx64 ", off %" PRIx64,
-             iNode, addr, size, key, off);
   if (pKey != NULL) {
     *pKey = key;
     *pOff = off;
@@ -2897,7 +3253,7 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       amRequest_t* req = (amRequest_t*) cqes[i].buf;
       DBG_PRINTF(DBG_AMBUFFERS,
                  "CQ rx AM req @ buffer offset %zd, sz %zd, seqId %s",
-                 (char*) req - (char*) ofi_msg_reqs.msg_iov->iov_base,
+                 (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
                  cqes[i].len, am_seqIdStr(req));
 
 #if defined(CHPL_COMM_DEBUG) && defined(DEBUG_CRC_MSGS)
@@ -2989,14 +3345,14 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
 
     if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
       //
-      // Multi-receive buffer filled; post another one.  This should
-      // not be seen except on the last received event!
+      // Multi-receive buffer filled; post the other one.
       //
-      CHK_TRUE(i == numEvents - 1);
-      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs, FI_MULTI_RECV));
+      ofi_msg_i = 1 - ofi_msg_i;
+      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
       DBG_PRINTF(DBG_AMBUFFERS,
-                 "re-post fi_recvmsg(AMLZs, len %#zx)",
-                 ofi_msg_reqs.msg_iov->iov_len);
+                 "re-post fi_recvmsg(AMLZs %p, len %#zx)",
+                 ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base,
+                 ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
     }
 
     CHK_TRUE((cqes[i].flags & ~(FI_MSG | FI_RECV | FI_MULTI_RECV)) == 0);

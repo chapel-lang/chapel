@@ -1,0 +1,1 @@
+assign-var-from-imported-module.chpl:4: error: modules (like 'M' here) cannot be mentioned like variables

@@ -1,9 +1,8 @@
 //===- Transforms/Instrumentation/InstrProfiling.h --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -35,17 +34,19 @@ using LoadStorePair = std::pair<Instruction *, Instruction *>;
 /// instrumentation pass.
 class InstrProfiling : public PassInfoMixin<InstrProfiling> {
 public:
-  InstrProfiling() = default;
-  InstrProfiling(const InstrProfOptions &Options) : Options(Options) {}
+  InstrProfiling() : IsCS(false) {}
+  InstrProfiling(const InstrProfOptions &Options, bool IsCS = false)
+      : Options(Options), IsCS(IsCS) {}
 
   PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
-  bool run(Module &M, const TargetLibraryInfo &TLI);
+  bool run(Module &M,
+           std::function<const TargetLibraryInfo &(Function &F)> GetTLI);
 
 private:
   InstrProfOptions Options;
   Module *M;
   Triple TT;
-  const TargetLibraryInfo *TLI;
+  std::function<const TargetLibraryInfo &(Function &F)> GetTLI;
   struct PerFunctionProfileData {
     uint32_t NumValueSites[IPVK_Last + 1];
     GlobalVariable *RegionCounters = nullptr;
@@ -60,6 +61,9 @@ private:
   std::vector<GlobalVariable *> ReferencedNames;
   GlobalVariable *NamesVar;
   size_t NamesSize;
+
+  // Is this lowering for the context-sensitive instrumentation.
+  bool IsCS;
 
   // vector of counter load/store pairs to be register promoted.
   std::vector<LoadStorePair> PromotionCandidates;

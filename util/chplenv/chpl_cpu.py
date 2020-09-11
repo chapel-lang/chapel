@@ -493,13 +493,13 @@ def get_module_lcd_cpu(platform_val, cpu):
             return "arm-thunderx2"
         else:
             return "sandybridge"
-    elif platform_val == "cray-shasta":
+    elif platform_val == "hpe-cray-ex":
         if is_known_arm(cpu):
             return "none"    # we don't know what we need here yet
         else:
             cray_network = os.environ.get('CRAYPE_NETWORK_TARGET', 'none')
-            if cray_network.startswith("slingshot"):
-                return "x86-rome"       # We're building on a Shasta system!
+            if cray_network.startswith("slingshot") or cray_network == "ofi":
+                return "x86-rome"       # We're building on an HPE Cray EX system!
             else:
                 return "sandybridge"    # We're still building on an XC.
     elif platform_val == "aarch64":

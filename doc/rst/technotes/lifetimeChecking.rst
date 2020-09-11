@@ -50,10 +50,10 @@ access the variable. For example:
   }
 
 A scope can be contained in another scope. For example, the scope of ``x``
-contained is within the scope of ``f`` in the above example. In other
+is contained within the scope of ``f`` in the above example. In other
 words, anywhere that ``x`` can be accessed, ``f`` can also be accessed.
 In such a case we say that the scope of ``x`` is smaller than the scope of
-``g``.
+``f``.
 
 Lifetime
 ++++++++
@@ -180,7 +180,7 @@ Assigning a Borrow to something with Longer Scope
   {
     var bor: borrowed SomeClass;
     {
-      var obj = new owned SomeClass;
+      var obj = new owned SomeClass();
       bor = obj.borrow(); // borrow of `obj` escapes
       // but `obj` goes out of scope (and `delete`s the instance) here
     }

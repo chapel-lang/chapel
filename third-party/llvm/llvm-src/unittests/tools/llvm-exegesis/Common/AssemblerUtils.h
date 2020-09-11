@@ -1,9 +1,8 @@
 //===-- AssemblerUtils.h ----------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,24 +31,26 @@ protected:
   MachineFunctionGeneratorBaseTest(const std::string &TT,
                                    const std::string &CpuName)
       : TT(TT), CpuName(CpuName),
-        CanExecute(llvm::Triple(TT).getArch() ==
-                   llvm::Triple(llvm::sys::getProcessTriple()).getArch()),
-        ET(ExegesisTarget::lookup(llvm::Triple(TT))) {
+        CanExecute(Triple(TT).getArch() ==
+                   Triple(sys::getProcessTriple()).getArch()),
+        ET(ExegesisTarget::lookup(Triple(TT))) {
     assert(ET);
     if (!CanExecute) {
-      llvm::outs() << "Skipping execution, host:"
-                   << llvm::sys::getProcessTriple() << ", target:" << TT
-                   << "\n";
+      outs() << "Skipping execution, host:" << sys::getProcessTriple()
+             << ", target:" << TT << "\n";
     }
   }
 
   template <class... Bs>
-  inline void Check(llvm::ArrayRef<RegisterValue> RegisterInitialValues,
-                    llvm::MCInst MCInst, Bs... Bytes) {
+  inline void Check(ArrayRef<RegisterValue> RegisterInitialValues, MCInst Inst,
+                    Bs... Bytes) {
     ExecutableFunction Function =
-        (MCInst.getOpcode() == 0)
-            ? assembleToFunction(RegisterInitialValues, {})
-            : assembleToFunction(RegisterInitialValues, {MCInst});
+        (Inst.getOpcode() == 0)
+            ? assembleToFunction(RegisterInitialValues, [](FunctionFiller &) {})
+            : assembleToFunction(RegisterInitialValues,
+                                 [Inst](FunctionFiller &Filler) {
+                                   Filler.getEntry().addInstruction(Inst);
+                                 });
     ASSERT_THAT(Function.getFunctionBytes().str(),
                 testing::ElementsAre(Bytes...));
     if (CanExecute) {
@@ -59,26 +60,25 @@ protected:
   }
 
 private:
-  std::unique_ptr<llvm::LLVMTargetMachine> createTargetMachine() {
+  std::unique_ptr<LLVMTargetMachine> createTargetMachine() {
     std::string Error;
-    const llvm::Target *TheTarget =
-        llvm::TargetRegistry::lookupTarget(TT, Error);
+    const Target *TheTarget = TargetRegistry::lookupTarget(TT, Error);
     EXPECT_TRUE(TheTarget) << Error << " " << TT;
-    const llvm::TargetOptions Options;
-    llvm::TargetMachine *TM = TheTarget->createTargetMachine(
-        TT, CpuName, "", Options, llvm::Reloc::Model::Static);
+    const TargetOptions Options;
+    TargetMachine *TM = TheTarget->createTargetMachine(TT, CpuName, "", Options,
+                                                       Reloc::Model::Static);
     EXPECT_TRUE(TM) << TT << " " << CpuName;
-    return std::unique_ptr<llvm::LLVMTargetMachine>(
-        static_cast<llvm::LLVMTargetMachine *>(TM));
+    return std::unique_ptr<LLVMTargetMachine>(
+        static_cast<LLVMTargetMachine *>(TM));
   }
 
   ExecutableFunction
-  assembleToFunction(llvm::ArrayRef<RegisterValue> RegisterInitialValues,
-                     llvm::ArrayRef<llvm::MCInst> Instructions) {
-    llvm::SmallString<256> Buffer;
-    llvm::raw_svector_ostream AsmStream(Buffer);
+  assembleToFunction(ArrayRef<RegisterValue> RegisterInitialValues,
+                     FillFunction Fill) {
+    SmallString<256> Buffer;
+    raw_svector_ostream AsmStream(Buffer);
     assembleToStream(*ET, createTargetMachine(), /*LiveIns=*/{},
-                     RegisterInitialValues, Instructions, AsmStream);
+                     RegisterInitialValues, Fill, AsmStream);
     return ExecutableFunction(createTargetMachine(),
                               getObjectFromBuffer(AsmStream.str()));
   }

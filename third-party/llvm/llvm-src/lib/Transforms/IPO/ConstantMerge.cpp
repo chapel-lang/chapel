@@ -1,9 +1,8 @@
 //===- ConstantMerge.cpp - Merge duplicate global constants ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -29,6 +28,7 @@
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Transforms/IPO.h"
@@ -49,7 +49,7 @@ static void FindUsedValues(GlobalVariable *LLVMUsed,
   ConstantArray *Inits = cast<ConstantArray>(LLVMUsed->getInitializer());
 
   for (unsigned i = 0, e = Inits->getNumOperands(); i != e; ++i) {
-    Value *Operand = Inits->getOperand(i)->stripPointerCastsNoFollowAliases();
+    Value *Operand = Inits->getOperand(i)->stripPointerCasts();
     GlobalValue *GV = cast<GlobalValue>(Operand);
     UsedValues.insert(GV);
   }
@@ -91,6 +91,16 @@ static unsigned getAlignment(GlobalVariable *GV) {
   return GV->getParent()->getDataLayout().getPreferredAlignment(GV);
 }
 
+static bool
+isUnmergeableGlobal(GlobalVariable *GV,
+                    const SmallPtrSetImpl<const GlobalValue *> &UsedGlobals) {
+  // Only process constants with initializers in the default address space.
+  return !GV->isConstant() || !GV->hasDefinitiveInitializer() ||
+         GV->getType()->getAddressSpace() != 0 || GV->hasSection() ||
+         // Don't touch values marked with attribute(used).
+         UsedGlobals.count(GV);
+}
+
 enum class CanMerge { No, Yes };
 static CanMerge makeMergeable(GlobalVariable *Old, GlobalVariable *New) {
   if (!Old->hasGlobalUnnamedAddr() && !New->hasGlobalUnnamedAddr())
@@ -111,7 +121,7 @@ static void replace(Module &M, GlobalVariable *Old, GlobalVariable *New) {
 
   // Bump the alignment if necessary.
   if (Old->getAlignment() || New->getAlignment())
-    New->setAlignment(std::max(getAlignment(Old), getAlignment(New)));
+    New->setAlignment(Align(std::max(getAlignment(Old), getAlignment(New))));
 
   copyDebugLocMetadata(Old, New);
   Old->replaceAllUsesWith(NewConstant);
@@ -155,11 +165,7 @@ static bool mergeConstants(Module &M) {
         continue;
       }
 
-      // Only process constants with initializers in the default address space.
-      if (!GV->isConstant() || !GV->hasDefinitiveInitializer() ||
-          GV->getType()->getAddressSpace() != 0 || GV->hasSection() ||
-          // Don't touch values marked with attribute(used).
-          UsedGlobals.count(GV))
+      if (isUnmergeableGlobal(GV, UsedGlobals))
         continue;
 
       // This transformation is legal for weak ODR globals in the sense it
@@ -197,11 +203,7 @@ static bool mergeConstants(Module &M) {
          GVI != E; ) {
       GlobalVariable *GV = &*GVI++;
 
-      // Only process constants with initializers in the default address space.
-      if (!GV->isConstant() || !GV->hasDefinitiveInitializer() ||
-          GV->getType()->getAddressSpace() != 0 || GV->hasSection() ||
-          // Don't touch values marked with attribute(used).
-          UsedGlobals.count(GV))
+      if (isUnmergeableGlobal(GV, UsedGlobals))
         continue;
 
       // We can only replace constant with local linkage.

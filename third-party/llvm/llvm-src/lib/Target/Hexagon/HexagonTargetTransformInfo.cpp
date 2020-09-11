@@ -1,9 +1,8 @@
 //===- HexagonTargetTransformInfo.cpp - Hexagon specific TTI pass ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 /// \file
 /// This file implements a TargetTransformInfo analysis pass specific to the
@@ -46,6 +45,8 @@ bool HexagonTTIImpl::useHVX() const {
 
 bool HexagonTTIImpl::isTypeForHVX(Type *VecTy) const {
   assert(VecTy->isVectorTy());
+  if (cast<VectorType>(VecTy)->isScalable())
+    return false;
   // Avoid types like <2 x i32*>.
   if (!cast<VectorType>(VecTy)->getElementType()->isIntegerTy())
     return false;
@@ -151,7 +152,9 @@ unsigned HexagonTTIImpl::getAddressComputationCost(Type *Tp,
 }
 
 unsigned HexagonTTIImpl::getMemoryOpCost(unsigned Opcode, Type *Src,
-      unsigned Alignment, unsigned AddressSpace, const Instruction *I) {
+                                         MaybeAlign Alignment,
+                                         unsigned AddressSpace,
+                                         const Instruction *I) {
   assert(Opcode == Instruction::Load || Opcode == Instruction::Store);
   if (Opcode == Instruction::Store)
     return BaseT::getMemoryOpCost(Opcode, Src, Alignment, AddressSpace, I);
@@ -161,27 +164,34 @@ unsigned HexagonTTIImpl::getMemoryOpCost(unsigned Opcode, Type *Src,
     unsigned VecWidth = VecTy->getBitWidth();
     if (useHVX() && isTypeForHVX(VecTy)) {
       unsigned RegWidth = getRegisterBitWidth(true);
-      Alignment = std::min(Alignment, RegWidth/8);
+      assert(RegWidth && "Non-zero vector register width expected");
       // Cost of HVX loads.
       if (VecWidth % RegWidth == 0)
         return VecWidth / RegWidth;
-      // Cost of constructing HVX vector from scalar loads.
-      unsigned AlignWidth = 8 * std::max(1u, Alignment);
+      // Cost of constructing HVX vector from scalar loads
+      const Align RegAlign(RegWidth / 8);
+      if (!Alignment || *Alignment > RegAlign)
+        Alignment = RegAlign;
+      assert(Alignment);
+      unsigned AlignWidth = 8 * Alignment->value();
       unsigned NumLoads = alignTo(VecWidth, AlignWidth) / AlignWidth;
-      return 3*NumLoads;
+      return 3 * NumLoads;
     }
 
     // Non-HVX vectors.
     // Add extra cost for floating point types.
-    unsigned Cost = VecTy->getElementType()->isFloatingPointTy() ? FloatFactor
-                                                                 : 1;
-    Alignment = std::min(Alignment, 8u);
-    unsigned AlignWidth = 8 * std::max(1u, Alignment);
+    unsigned Cost =
+        VecTy->getElementType()->isFloatingPointTy() ? FloatFactor : 1;
+
+    // At this point unspecified alignment is considered as Align::None().
+    const Align BoundAlignment = std::min(Alignment.valueOrOne(), Align(8));
+    unsigned AlignWidth = 8 * BoundAlignment.value();
     unsigned NumLoads = alignTo(VecWidth, AlignWidth) / AlignWidth;
-    if (Alignment == 4 || Alignment == 8)
+    if (Alignment == Align(4) || Alignment == Align(8))
       return Cost * NumLoads;
     // Loads of less than 32 bits will need extra inserts to compose a vector.
-    unsigned LogA = Log2_32(Alignment);
+    assert(BoundAlignment <= Align(8));
+    unsigned LogA = Log2(BoundAlignment);
     return (3 - LogA) * Cost * NumLoads;
   }
 
@@ -212,7 +222,8 @@ unsigned HexagonTTIImpl::getInterleavedMemoryOpCost(unsigned Opcode,
     return BaseT::getInterleavedMemoryOpCost(Opcode, VecTy, Factor, Indices,
                                              Alignment, AddressSpace,
                                              UseMaskForCond, UseMaskForGaps);
-  return getMemoryOpCost(Opcode, VecTy, Alignment, AddressSpace, nullptr);
+  return getMemoryOpCost(Opcode, VecTy, MaybeAlign(Alignment), AddressSpace,
+                         nullptr);
 }
 
 unsigned HexagonTTIImpl::getCmpSelInstrCost(unsigned Opcode, Type *ValTy,
@@ -225,17 +236,18 @@ unsigned HexagonTTIImpl::getCmpSelInstrCost(unsigned Opcode, Type *ValTy,
   return BaseT::getCmpSelInstrCost(Opcode, ValTy, CondTy, I);
 }
 
-unsigned HexagonTTIImpl::getArithmeticInstrCost(unsigned Opcode, Type *Ty,
-      TTI::OperandValueKind Opd1Info, TTI::OperandValueKind Opd2Info,
-      TTI::OperandValueProperties Opd1PropInfo,
-      TTI::OperandValueProperties Opd2PropInfo, ArrayRef<const Value*> Args) {
+unsigned HexagonTTIImpl::getArithmeticInstrCost(
+    unsigned Opcode, Type *Ty, TTI::OperandValueKind Opd1Info,
+    TTI::OperandValueKind Opd2Info, TTI::OperandValueProperties Opd1PropInfo,
+    TTI::OperandValueProperties Opd2PropInfo, ArrayRef<const Value *> Args,
+    const Instruction *CxtI) {
   if (Ty->isVectorTy()) {
     std::pair<int, MVT> LT = TLI.getTypeLegalizationCost(DL, Ty);
     if (LT.second.isFloatingPoint())
       return LT.first + FloatFactor * getTypeNumElements(Ty);
   }
   return BaseT::getArithmeticInstrCost(Opcode, Ty, Opd1Info, Opd2Info,
-                                       Opd1PropInfo, Opd2PropInfo, Args);
+                                       Opd1PropInfo, Opd2PropInfo, Args, CxtI);
 }
 
 unsigned HexagonTTIImpl::getCastInstrCost(unsigned Opcode, Type *DstTy,

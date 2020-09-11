@@ -414,9 +414,8 @@ class LocBlockArr {
   param stridable: bool;
   const locDom: unmanaged LocBlockDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -434,10 +433,16 @@ class LocBlockArr {
     this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
   }
 
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocBlockArr.writeThis() is not implemented / should not be needed");
+  }
+
   proc deinit() {
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
     // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
     if locRAD != nil then
       delete locRAD;
   }
@@ -670,6 +675,7 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
+pragma "order independent yielding loops"
 iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -1027,12 +1033,21 @@ override proc BlockArr.dsiElementInitializationComplete() {
   }
 }
 
-override proc BlockArr.dsiDestroyArr(param deinitElts:bool) {
+override proc BlockArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       var arr = locArr(localeIdx);
       if deinitElts then
         _deinitElements(arr.myElems);
+      arr.myElems.dsiElementDeinitializationComplete();
       delete arr;
     }
   }
@@ -1102,6 +1117,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
 proc BlockArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
+pragma "order independent yielding loops"
 iter BlockArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -1138,6 +1154,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1519,6 +1536,21 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
       !disableBlockDistBulkTransfer {
   _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
   return true;
+}
+
+// Block1 <=> Block2 
+proc BlockArr.doiOptimizedSwap(other) {
+  if(this.dom.dist.dsiEqualDMaps(other.dom.dist)) {
+    coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
+      on locarr1 {
+        locarr1.myElems <=> locarr2.myElems;
+        locarr1.locRAD <=> locarr2.locRAD;
+      }
+    }
+    return true;
+  } else {
+    return false;
+  }
 }
 
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {

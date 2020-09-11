@@ -74,6 +74,7 @@ notcompiler: FORCE
 
 compiler: FORCE
 	@echo "Making the compiler..."
+	@cd third-party && $(MAKE) llvm
 	@cd compiler && $(MAKE)
 
 parser: FORCE
@@ -83,7 +84,7 @@ parser: FORCE
 modules: FORCE
 	@echo "Making the modules..."
 	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	echo "Making the modules for LLVM..."; \
 	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
@@ -91,7 +92,7 @@ modules: FORCE
 runtime: FORCE
 	@echo "Making the runtime..."
 	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	-@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
+	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
 	echo "Making the runtime for LLVM..."; \
 	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
 	fi
@@ -151,6 +152,9 @@ chplvis: compiler third-party-fltk FORCE
 mason: chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
+protoc-gen-chpl: chpldoc notcompiler FORCE
+	cd tools/protoc-gen-chpl && $(MAKE) && $(MAKE) install
+
 c2chapel: FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
@@ -188,6 +192,7 @@ clobber: FORCE
 	cd tools/chplvis && $(MAKE) clobber
 	cd tools/c2chapel && $(MAKE) clobber
 	cd tools/mason && $(MAKE) clobber
+	cd tools/protoc-gen-chpl && $(MAKE) clobber
 	if [ -e doc/Makefile ]; then cd doc && $(MAKE) clobber; fi
 	rm -rf bin
 	rm -rf lib

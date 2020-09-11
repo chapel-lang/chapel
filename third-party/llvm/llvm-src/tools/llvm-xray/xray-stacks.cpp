@@ -1,9 +1,8 @@
 //===- xray-stacks.cpp: XRay Function Call Stack Accounting ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,8 +42,7 @@ static cl::opt<bool>
     StackKeepGoing("keep-going", cl::desc("Keep going on errors encountered"),
                    cl::sub(Stack), cl::init(false));
 static cl::alias StackKeepGoing2("k", cl::aliasopt(StackKeepGoing),
-                                 cl::desc("Alias for -keep-going"),
-                                 cl::sub(Stack));
+                                 cl::desc("Alias for -keep-going"));
 
 // TODO: Does there need to be an option to deduce tail or sibling calls?
 
@@ -54,8 +52,7 @@ static cl::opt<std::string> StacksInstrMap(
              "Currently supports elf file instrumentation maps."),
     cl::sub(Stack), cl::init(""));
 static cl::alias StacksInstrMap2("m", cl::aliasopt(StacksInstrMap),
-                                 cl::desc("Alias for -instr_map"),
-                                 cl::sub(Stack));
+                                 cl::desc("Alias for -instr_map"));
 
 static cl::opt<bool>
     SeparateThreadStacks("per-thread-stacks",
@@ -73,8 +70,7 @@ static cl::opt<bool>
                            "By default separates stacks per-thread."),
                   cl::sub(Stack), cl::init(false));
 static cl::alias DumpAllStacksShort("all", cl::aliasopt(DumpAllStacks),
-                                    cl::desc("Alias for -all-stacks"),
-                                    cl::sub(Stack));
+                                    cl::desc("Alias for -all-stacks"));
 
 // TODO(kpw): Add other interesting formats. Perhaps chrome trace viewer format
 // possibly with aggregations or just a linear trace of timings.
@@ -634,10 +630,8 @@ public:
                               Top->ExtraData.TerminalDurations.end(), 0uLL);
           {
             auto E = std::make_pair(Top, TopSum);
-            TopStacksBySum.insert(std::lower_bound(TopStacksBySum.begin(),
-                                                   TopStacksBySum.end(), E,
-                                                   greater_second),
-                                  E);
+            TopStacksBySum.insert(
+                llvm::lower_bound(TopStacksBySum, E, greater_second), E);
             if (TopStacksBySum.size() == 11)
               TopStacksBySum.pop_back();
           }
@@ -721,9 +715,7 @@ static CommandRegistration Unused(&Stack, []() -> Error {
               "-all-stacks."),
         std::make_error_code(std::errc::invalid_argument));
 
-  symbolize::LLVMSymbolizer::Options Opts(
-      symbolize::FunctionNameKind::LinkageName, true, true, false, "");
-  symbolize::LLVMSymbolizer Symbolizer(Opts);
+  symbolize::LLVMSymbolizer Symbolizer;
   FuncIdConversionHelper FuncIdHelper(StacksInstrMap, Symbolizer,
                                       Map.getFunctionAddresses());
   // TODO: Someday, support output to files instead of just directly to

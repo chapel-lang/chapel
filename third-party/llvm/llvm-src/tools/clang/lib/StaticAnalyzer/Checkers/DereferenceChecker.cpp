@@ -1,9 +1,8 @@
-//== NullDerefChecker.cpp - Null dereference checker ------------*- C++ -*--==//
+//===-- DereferenceChecker.cpp - Null dereference checker -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -108,7 +107,7 @@ static const Expr *getDereferenceExpr(const Stmt *S, bool IsBind=false){
 
 static bool suppressReport(const Expr *E) {
   // Do not report dereferences on memory in non-default address spaces.
-  return E->getType().getQualifiers().hasAddressSpace();
+  return E->getType().hasAddressSpace();
 }
 
 static bool isDeclRefExprToReference(const Expr *E) {
@@ -180,7 +179,7 @@ void DereferenceChecker::reportBug(ProgramStateRef State, const Stmt *S,
     break;
   }
 
-  auto report = llvm::make_unique<BugReport>(
+  auto report = std::make_unique<PathSensitiveBugReport>(
       *BT_null, buf.empty() ? BT_null->getDescription() : StringRef(buf), N);
 
   bugreporter::trackExpressionValue(N, bugreporter::getDerefExpr(S), *report);
@@ -201,8 +200,8 @@ void DereferenceChecker::checkLocation(SVal l, bool isLoad, const Stmt* S,
         BT_undef.reset(
             new BuiltinBug(this, "Dereference of undefined pointer value"));
 
-      auto report =
-          llvm::make_unique<BugReport>(*BT_undef, BT_undef->getDescription(), N);
+      auto report = std::make_unique<PathSensitiveBugReport>(
+          *BT_undef, BT_undef->getDescription(), N);
       bugreporter::trackExpressionValue(N, bugreporter::getDerefExpr(S), *report);
       C.emitReport(std::move(report));
     }
@@ -303,4 +302,8 @@ void DereferenceChecker::checkBind(SVal L, SVal V, const Stmt *S,
 
 void ento::registerDereferenceChecker(CheckerManager &mgr) {
   mgr.registerChecker<DereferenceChecker>();
+}
+
+bool ento::shouldRegisterDereferenceChecker(const LangOptions &LO) {
+  return true;
 }

@@ -1,9 +1,8 @@
 //===-- AnalysisTest.cpp ---------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,10 +28,9 @@ protected:
   AnalysisTest() {
     const std::string TT = "powerpc64le-unknown-linux";
     std::string error;
-    const llvm::Target *const TheTarget =
-        llvm::TargetRegistry::lookupTarget(TT, error);
+    const Target *const TheTarget = TargetRegistry::lookupTarget(TT, error);
     if (!TheTarget) {
-      llvm::errs() << error << "\n";
+      errs() << error << "\n";
       return;
     }
     STI.reset(TheTarget->createMCSubtargetInfo(TT, "pwr9", ""));
@@ -64,7 +62,7 @@ protected:
   }
 
 protected:
-  std::unique_ptr<const llvm::MCSubtargetInfo> STI;
+  std::unique_ptr<const MCSubtargetInfo> STI;
   uint16_t ALUIdx = 0;
   uint16_t ALUEIdx = 0;
   uint16_t ALUOIdx = 0;

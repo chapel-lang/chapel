@@ -1,9 +1,8 @@
 //===-- BuildVariables.inc.in - llvm-config build variables -*- C++ -*-----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,7 +30,7 @@
 #define LLVM_ENABLE_DYLIB @LLVM_BUILD_LLVM_DYLIB@
 #define LLVM_LINK_DYLIB @LLVM_LINK_LLVM_DYLIB@
 #define LLVM_ENABLE_SHARED @BUILD_SHARED_LIBS@
-#define LLVM_DYLIB_COMPONENTS "@LLVM_DYLIB_COMPONENTS@"
+#define LLVM_DYLIB_COMPONENTS "@LLVM_DYLIB_COMPONENTS_expanded@"
 #define LLVM_DYLIB_VERSION "@LLVM_DYLIB_VERSION@"
 #define LLVM_HAS_GLOBAL_ISEL @LLVM_HAS_GLOBAL_ISEL@
 #define LLVM_TOOLS_INSTALL_DIR "@LLVM_TOOLS_INSTALL_DIR@"

@@ -1,9 +1,8 @@
 //===- llvm/ADT/IntervalMap.h - A sorted interval map -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -964,8 +963,8 @@ public:
 
 private:
   // The root data is either a RootLeaf or a RootBranchData instance.
-  LLVM_ALIGNAS(RootLeaf) LLVM_ALIGNAS(RootBranchData)
-  AlignedCharArrayUnion<RootLeaf, RootBranchData> data;
+  alignas(RootLeaf) alignas(RootBranchData)
+      AlignedCharArrayUnion<RootLeaf, RootBranchData> data;
 
   // Tree height.
   // 0: Leaves in root.

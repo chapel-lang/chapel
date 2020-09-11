@@ -1,9 +1,8 @@
 //===- llvm/Pass.h - Base class for Passes ----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -58,13 +57,11 @@ enum PassManagerType {
   PMT_FunctionPassManager,   ///< FPPassManager
   PMT_LoopPassManager,       ///< LPPassManager
   PMT_RegionPassManager,     ///< RGPassManager
-  PMT_BasicBlockPassManager, ///< BBPassManager
   PMT_Last
 };
 
 // Different types of passes.
 enum PassKind {
-  PT_BasicBlock,
   PT_Region,
   PT_Loop,
   PT_Function,
@@ -306,51 +303,6 @@ protected:
   bool skipFunction(const Function &F) const;
 };
 
-//===----------------------------------------------------------------------===//
-/// BasicBlockPass class - This class is used to implement most local
-/// optimizations.  Optimizations should subclass this class if they
-/// meet the following constraints:
-///   1. Optimizations are local, operating on either a basic block or
-///      instruction at a time.
-///   2. Optimizations do not modify the CFG of the contained function, or any
-///      other basic block in the function.
-///   3. Optimizations conform to all of the constraints of FunctionPasses.
-///
-class BasicBlockPass : public Pass {
-public:
-  explicit BasicBlockPass(char &pid) : Pass(PT_BasicBlock, pid) {}
-
-  /// createPrinterPass - Get a basic block printer pass.
-  Pass *createPrinterPass(raw_ostream &OS,
-                          const std::string &Banner) const override;
-
-  using llvm::Pass::doInitialization;
-  using llvm::Pass::doFinalization;
-
-  /// doInitialization - Virtual method overridden by BasicBlockPass subclasses
-  /// to do any necessary per-function initialization.
-  virtual bool doInitialization(Function &);
-
-  /// runOnBasicBlock - Virtual method overriden by subclasses to do the
-  /// per-basicblock processing of the pass.
-  virtual bool runOnBasicBlock(BasicBlock &BB) = 0;
-
-  /// doFinalization - Virtual method overriden by BasicBlockPass subclasses to
-  /// do any post processing needed after all passes have run.
-  virtual bool doFinalization(Function &);
-
-  void assignPassManager(PMStack &PMS, PassManagerType T) override;
-
-  ///  Return what kind of Pass Manager can manage this pass.
-  PassManagerType getPotentialPassManagerType() const override;
-
-protected:
-  /// Optional passes call this function to check whether the pass should be
-  /// skipped. This is the case when Attribute::OptimizeNone is set or when
-  /// optimization bisect is over the limit.
-  bool skipBasicBlock(const BasicBlock &BB) const;
-};
-
 /// If the user specifies the -time-passes argument on an LLVM tool command line
 /// then the value of this boolean will be true, otherwise false.
 /// This is the storage for the -time-passes option.
@@ -360,7 +312,6 @@ extern bool TimePassesIsEnabled;
 
 // Include support files that contain important APIs commonly used by Passes,
 // but that we want to separate out to make it easier to read the header files.
-#include "llvm/InitializePasses.h"
 #include "llvm/PassAnalysisSupport.h"
 #include "llvm/PassSupport.h"
 

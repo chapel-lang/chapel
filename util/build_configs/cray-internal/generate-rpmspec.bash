@@ -21,12 +21,12 @@ source $cwd/common.bash
 
 # Generate the first part of the spec file with shell expansion
 
-if [ "$chpl_platform" = cray-shasta ]; then
-    # Shasta rpm may be relocatable, since all %files start with %prefix.
+if [ "$chpl_platform" = hpe-cray-ex ]; then
+    # HPE Cray EX rpm may be relocatable, since all %files start with %prefix.
     platform_prefix=/opt/cray
     set_def_subdir=admin-pe/set_default_files
 else
-    # Before Shasta, rpm is not relocatable.
+    # Before HPE Cray EX, rpm is not relocatable.
     platform_prefix=/opt
     set_def_subdir=cray/admin-pe/set_default_files
 fi

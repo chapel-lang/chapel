@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/ReverseIterationTest.cpp ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===---------------------------------------------------------------------===//
 //
@@ -46,7 +45,7 @@ TEST(ReverseIterationTest, DenseMapTest1) {
   int IterKeys[] = { 2, 4, 1, 3 };
 
   // Check that the DenseMap is iterated in the expected order.
-  for (const auto &Tuple : zip(Map, IterKeys))
+  for (auto Tuple : zip(Map, IterKeys))
     ASSERT_EQ(std::get<0>(Tuple).first, std::get<1>(Tuple));
 
   // Check operator++ (post-increment).
@@ -100,7 +99,7 @@ TEST(ReverseIterationTest, DenseMapTest2) {
     std::reverse(&Keys[0], &Keys[4]);
 
   // Check that the DenseMap is iterated in the expected order.
-  for (const auto &Tuple : zip(Map, Keys))
+  for (auto Tuple : zip(Map, Keys))
     ASSERT_EQ(std::get<0>(Tuple).second, std::get<1>(Tuple)->value);
 
   // Check operator++ (post-increment).

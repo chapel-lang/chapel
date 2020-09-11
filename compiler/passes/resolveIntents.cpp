@@ -25,7 +25,7 @@
 
 bool intentsResolved = false;
 
-static IntentTag constIntentForType(Type* t) {
+IntentTag constIntentForType(Type* t) {
   if (is_bool_type(t) ||
       is_int_type(t) ||
       is_uint_type(t) ||
@@ -85,6 +85,31 @@ bool isTupleContainingRefMaybeConst(Type* t)
   return false;
 }
 
+static bool isTupleContainingTypeWithFlag(Type* t, Flag f) {
+  AggregateType* at = toAggregateType(t->getValType());
+
+  if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE)) {
+    for_fields(field, at) {
+      Type* ft = field->type->getValType();
+      if (ft->symbol->hasFlag(f))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isTupleContainingSyncType(Type* t) {
+  return isTupleContainingTypeWithFlag(t, FLAG_SYNC);
+}
+
+static bool isTupleContainingSingleType(Type* t) {
+  return isTupleContainingTypeWithFlag(t, FLAG_SINGLE);
+}
+
+static bool isTupleContainingAtomicType(Type* t) {
+  return isTupleContainingTypeWithFlag(t, FLAG_ATOMIC_TYPE);
+}
 
 IntentTag blankIntentForType(Type* t) {
   IntentTag retval = INTENT_BLANK;
@@ -93,8 +118,14 @@ IntentTag blankIntentForType(Type* t) {
       t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF)) {
     retval = INTENT_REF;
 
+    // Blank intent for sync/single/atomic types is ref, but we can't mark
+    // the entire tuple as INTENT_REF because that has a special meaning.
+    // So go ahead and mark the tuple as INTENT_REF_MAYBE_CONST instead.
   } else if (t->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST)
-            || isTupleContainingRefMaybeConst(t)) {
+            || isTupleContainingRefMaybeConst(t)
+            || isTupleContainingSyncType(t)
+            || isTupleContainingSingleType(t)
+            || isTupleContainingAtomicType(t)) {
     retval = INTENT_REF_MAYBE_CONST;
 
   } else if (isManagedPtrType(t)) {
@@ -209,7 +240,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
 
 static
 IntentTag blankIntentForExternFnArg(Type* type) {
-  if (llvmCodegen && type->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
+  if (fLlvmCodegen && type->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
     // Pass c_array by ref by default for --llvm
     // (for C, an argument like int arg[2] is actually just int* arg).
     // This needs to be here because otherwise the following rule overrides it.

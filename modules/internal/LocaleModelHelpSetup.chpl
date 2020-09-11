@@ -31,17 +31,13 @@
 module LocaleModelHelpSetup {
 
   use ChapelLocale;
-  use DefaultRectangular;
-  use ChapelNumLocales;
+  public use DefaultRectangular;
+  public use ChapelNumLocales;
   use ChapelEnv;
   use Sys;
-  private use SysCTypes;
+  use SysCTypes;
 
   config param debugLocaleModel = false;
-
-  pragma "no doc"
-  pragma "locale private"
-  var rootLocaleInitialized: bool = false;
 
   extern var chpl_nodeID: chpl_nodeID_t;
 

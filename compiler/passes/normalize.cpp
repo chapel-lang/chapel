@@ -26,7 +26,6 @@
 #include "passes.h"
 
 #include "astutil.h"
-#include "autoLocalAccess.h"
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
@@ -36,6 +35,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
+#include "preNormalizeOptimizations.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
@@ -124,7 +124,7 @@ static bool        firstConstructorWarning = true;
 
 void normalize() {
 
-  autoLocalAccess();
+  doPreNormalizeArrayOptimizations();
 
   insertModuleInit();
 
@@ -241,6 +241,11 @@ void normalize() {
         if (!notDeinit && fn->hasFlag(FLAG_NO_PARENS)) {
           USR_FATAL_CONT(fn, "deinitializers must have parentheses");
         }
+
+        if (ct == NULL)
+          USR_FATAL_CONT(fn, "deinit may not be defined for types other than record, union, or class");
+        else if (ct->symbol->hasFlag(FLAG_EXTERN))
+          USR_FATAL_CONT(fn, "deinit may not be currently defined for extern types");
 
         fn->name = astrDeinit;
       }
@@ -735,6 +740,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
           call->isPrimitive(PRIM_INIT_VAR)  ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
           call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
+          call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         if (call->get(1) == se) {
           retval = se->symbol();
@@ -2567,7 +2573,7 @@ static Symbol* varModuleName(VarSymbol* var) {
 ************************************** | *************************************/
 
 static void           normVarTypeInference(DefExpr* expr);
-static void           normVarTypeWoutInit(DefExpr* expr);
+static void           normVarTypeWoutInit(DefExpr* expr, bool noinit);
 static void           normVarTypeWithInit(DefExpr* expr);
 static void           normVarNoinit(DefExpr* defExpr);
 
@@ -2610,7 +2616,7 @@ static void normalizeVariableDefinition(DefExpr* defExpr) {
       normVarTypeInference(defExpr);
 
     } else if (type != NULL && init == NULL) {
-      normVarTypeWoutInit(defExpr);
+      normVarTypeWoutInit(defExpr, false);
 
     } else if (type != NULL && init != NULL) {
       if (init->isNoInitExpr() == true) {
@@ -2906,11 +2912,12 @@ static void normVarTypeInference(DefExpr* defExpr) {
 // The type is explicit and the initial value is implied by the type
 //
 
-static void normVarTypeWoutInit(DefExpr* defExpr) {
+static void normVarTypeWoutInit(DefExpr* defExpr, bool noinit) {
   Symbol* var      = defExpr->sym;
   Expr*   typeExpr = defExpr->exprType->remove();
 
-  CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, var, typeExpr);
+  PrimitiveTag prim = noinit?PRIM_NOINIT_INIT_VAR:PRIM_DEFAULT_INIT_VAR;
+  CallExpr* init = new CallExpr(prim, var, typeExpr);
 
   if (var->hasFlag(FLAG_EXTERN)) {
     // Put initialization for extern vars in a type block since
@@ -2941,10 +2948,7 @@ static void normVarTypeWithInit(DefExpr* defExpr) {
 }
 
 static void normVarNoinit(DefExpr* defExpr) {
-  if (fUseNoinit)
-    USR_WARN(defExpr, "noinit is currently ignored");
-  defExpr->init->remove();
-  normVarTypeWoutInit(defExpr);
+  normVarTypeWoutInit(defExpr, true);
 }
 
 //
@@ -3006,8 +3010,7 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
       var->hasFlag(FLAG_PARAM)           == false && // Note 1.
       var->hasFlag(FLAG_REF_VAR)         == false &&
 
-      fn->_this                          != var   && // Note 2.
-      fn->hasFlag(FLAG_INIT_COPY_FN)     == false) { // Note 3.
+      fn->_this                          != var) {   // Note 2.
 
     // Note that if the DefExpr is at module scope, the auto-destroy
     // for it will end up in the module deinit function.
@@ -3022,19 +3025,6 @@ static void updateVariableAutoDestroy(DefExpr* defExpr) {
 
 // Note 2: "this" should be passed by reference.  Then, no constructor call
 // is made, and therefore no autodestroy call is needed.
-
-// Note 3: If a record arg to an init copy function is passed by value,
-// infinite recursion would ensue.  This is an unreachable case (assuming that
-// magic conversions from R -> ref R are removed and all existing
-// implementations of chpl__initCopy are rewritten using "ref" or "const ref"
-// intent on the record argument).
-
-
-// Note 4: These two cases should be regularized.  Either the copy constructor
-// should *always* be called (and the corresponding destructor always called),
-// or we should ensure that the destructor is called only if a constructor is
-// called on the same variable.  The latter case is an optimization, so the
-// simplest implementation calls the copy-constructor in both cases.
 
 /************************************* | **************************************
 *                                                                             *
@@ -3293,6 +3283,13 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
                   " must specify its type", formal->name, fn->name);
         continue;
       }
+      if (formal->intent == INTENT_OUT) {
+        USR_FATAL(formal, "array argument '%s' in exported function '%s'"
+                  " uses out intent - out intent not yet supported"
+                  " for arrays in export procs",
+                  formal->name, fn->name);
+        continue;
+      }
 
       // Save the element type we shuffle away, so that it can be referenced at
       // codegen.  We may want to move these operations after type resolution to
@@ -3323,6 +3320,7 @@ static void fixupExportedArrayFormals(FnSymbol* fn) {
           formal->typeExpr->replace(
             new BlockStmt(new SymExpr(dtCFI_cdesc_t->symbol)));
           formal->intent = INTENT_REF;
+          formal->originalIntent = INTENT_REF;
         }
       } else {
         // Create a representation of the array argument that is accessible
@@ -3538,6 +3536,7 @@ static void fixupArrayElementExpr(FnSymbol*                    fn,
     newWhere->insertAtTail(new CallExpr("==", eltExpr->remove(), getEltType));
   }
 }
+
 
 /************************************* | **************************************
 *                                                                             *
@@ -4231,14 +4230,24 @@ static bool isConstructor(FnSymbol* fn) {
 }
 
 static void updateInitMethod(FnSymbol* fn) {
-  if (isAggregateType(fn->_this->type) == true) {
+  Type* thisType = fn->_this->type;
+
+  if (isAggregateType(thisType) == true) {
+
+    if (fn->name == astrInitEquals) {
+      if (isClass(thisType))
+        USR_FATAL_CONT(fn, "init= may not be defined on class types");
+      if (thisType->symbol->hasFlag(FLAG_EXTERN))
+        USR_FATAL_CONT(fn, "init= may not currently be defined on extern types");
+    }
+
     preNormalizeInitMethod(fn);
 
-  } else if (fn->_this->type == dtUnknown) {
+  } else if (thisType == dtUnknown) {
     INT_FATAL(fn, "'this' argument has unknown type");
 
   } else {
-    INT_FATAL(fn, "initializer on non-class type");
+    USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
   }
 }
 

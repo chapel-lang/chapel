@@ -4,7 +4,7 @@ module OuterModule {
   }
 
   module M {
-    use N;
+    use super.N;
     var y = 2;
   }
 

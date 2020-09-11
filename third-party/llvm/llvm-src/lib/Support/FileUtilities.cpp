@@ -1,9 +1,8 @@
 //===- Support/FileUtilities.cpp - File System Utilities ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,9 +12,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/FileUtilities.h"
+#include "llvm/ADT/ScopeExit.h"
 #include "llvm/ADT/SmallString.h"
+#include "llvm/Support/Error.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/Path.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cctype>
 #include <cmath>
@@ -265,3 +267,66 @@ int llvm::DiffFilesWithTolerance(StringRef NameA,
 
   return CompareFailed;
 }
+
+void llvm::AtomicFileWriteError::log(raw_ostream &OS) const {
+  OS << "atomic_write_error: ";
+  switch (Error) {
+  case atomic_write_error::failed_to_create_uniq_file:
+    OS << "failed_to_create_uniq_file";
+    return;
+  case atomic_write_error::output_stream_error:
+    OS << "output_stream_error";
+    return;
+  case atomic_write_error::failed_to_rename_temp_file:
+    OS << "failed_to_rename_temp_file";
+    return;
+  }
+  llvm_unreachable("unknown atomic_write_error value in "
+                   "failed_to_rename_temp_file::log()");
+}
+
+llvm::Error llvm::writeFileAtomically(StringRef TempPathModel,
+                                      StringRef FinalPath, StringRef Buffer) {
+  return writeFileAtomically(TempPathModel, FinalPath,
+                             [&Buffer](llvm::raw_ostream &OS) {
+                               OS.write(Buffer.data(), Buffer.size());
+                               return llvm::Error::success();
+                             });
+}
+
+llvm::Error llvm::writeFileAtomically(
+    StringRef TempPathModel, StringRef FinalPath,
+    std::function<llvm::Error(llvm::raw_ostream &)> Writer) {
+  SmallString<128> GeneratedUniqPath;
+  int TempFD;
+  if (sys::fs::createUniqueFile(TempPathModel.str(), TempFD,
+                                GeneratedUniqPath)) {
+    return llvm::make_error<AtomicFileWriteError>(
+        atomic_write_error::failed_to_create_uniq_file);
+  }
+  llvm::FileRemover RemoveTmpFileOnFail(GeneratedUniqPath);
+
+  raw_fd_ostream OS(TempFD, /*shouldClose=*/true);
+  if (llvm::Error Err = Writer(OS)) {
+    return Err;
+  }
+
+  OS.close();
+  if (OS.has_error()) {
+    OS.clear_error();
+    return llvm::make_error<AtomicFileWriteError>(
+        atomic_write_error::output_stream_error);
+  }
+
+  if (const std::error_code Error =
+          sys::fs::rename(/*from=*/GeneratedUniqPath.c_str(),
+                          /*to=*/FinalPath.str().c_str())) {
+    return llvm::make_error<AtomicFileWriteError>(
+        atomic_write_error::failed_to_rename_temp_file);
+  }
+
+  RemoveTmpFileOnFail.releaseFile();
+  return Error::success();
+}
+
+char llvm::AtomicFileWriteError::ID;

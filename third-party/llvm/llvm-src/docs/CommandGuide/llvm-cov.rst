@@ -1,6 +1,8 @@
 llvm-cov - emit coverage information
 ====================================
 
+.. program:: llvm-cov
+
 SYNOPSIS
 --------
 
@@ -150,12 +152,16 @@ OPTIONS
 
  Display the version of llvm-cov.
 
+.. option:: -x, --hash-filenames
+
+ Use md5 hash of file name when naming the coverage output files. The source
+ file name will be suffixed by ``##`` followed by MD5 hash calculated for it.
+
 EXIT STATUS
 ^^^^^^^^^^^
 
 :program:`llvm-cov gcov` returns 1 if it cannot read input files.  Otherwise,
 it exits with zero.
-
 
 .. program:: llvm-cov show
 
@@ -175,6 +181,9 @@ DESCRIPTION
 The :program:`llvm-cov show` command shows line by line coverage of the
 binaries *BIN*,...  using the profile data *PROFILE*. It can optionally be
 filtered to only show the coverage for the files listed in *SOURCES*.
+
+*BIN* may be an executable, object file, dynamic library, or archive (thin or
+otherwise).
 
 To use :program:`llvm-cov show`, you need a program that is compiled with
 instrumentation to emit profile and coverage data. To build such a program with
@@ -326,6 +335,9 @@ The :program:`llvm-cov report` command displays a summary of the coverage of
 the binaries *BIN*,... using the profile data *PROFILE*. It can optionally be
 filtered to only show the coverage for the files listed in *SOURCES*.
 
+*BIN* may be an executable, object file, dynamic library, or archive (thin or
+otherwise).
+
 If no source files are provided, a summary line is printed for each file in the
 coverage data. If any files are provided, summaries can be shown for each
 function in the listed files if the ``-show-functions`` option is enabled.
@@ -414,3 +426,16 @@ OPTIONS
 .. option:: -ignore-filename-regex=<PATTERN>
 
  Skip source code files with file paths that match the given regular expression.
+
+ .. option:: -skip-expansions
+
+ Skip exporting macro expansion coverage data.
+
+ .. option:: -skip-functions
+
+ Skip exporting per-function coverage data.
+
+ .. option:: -num-threads=N, -j=N
+
+ Use N threads to export coverage data. When N=0, llvm-cov auto-detects an
+ appropriate number of threads to use. This is the default.

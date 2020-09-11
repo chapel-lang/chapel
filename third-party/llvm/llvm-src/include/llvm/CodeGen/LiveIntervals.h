@@ -1,9 +1,8 @@
 //===- LiveIntervals.h - Live Interval Analysis -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -112,30 +111,31 @@ class VirtRegMap;
                                 const MachineBlockFrequencyInfo *MBFI,
                                 const MachineBasicBlock *MBB);
 
-    LiveInterval &getInterval(unsigned Reg) {
+    LiveInterval &getInterval(Register Reg) {
       if (hasInterval(Reg))
-        return *VirtRegIntervals[Reg];
+        return *VirtRegIntervals[Reg.id()];
       else
         return createAndComputeVirtRegInterval(Reg);
     }
 
-    const LiveInterval &getInterval(unsigned Reg) const {
+    const LiveInterval &getInterval(Register Reg) const {
       return const_cast<LiveIntervals*>(this)->getInterval(Reg);
     }
 
-    bool hasInterval(unsigned Reg) const {
-      return VirtRegIntervals.inBounds(Reg) && VirtRegIntervals[Reg];
+    bool hasInterval(Register Reg) const {
+      return VirtRegIntervals.inBounds(Reg.id()) &&
+             VirtRegIntervals[Reg.id()];
     }
 
     /// Interval creation.
-    LiveInterval &createEmptyInterval(unsigned Reg) {
+    LiveInterval &createEmptyInterval(Register Reg) {
       assert(!hasInterval(Reg) && "Interval already exists!");
-      VirtRegIntervals.grow(Reg);
-      VirtRegIntervals[Reg] = createInterval(Reg);
-      return *VirtRegIntervals[Reg];
+      VirtRegIntervals.grow(Reg.id());
+      VirtRegIntervals[Reg.id()] = createInterval(Reg);
+      return *VirtRegIntervals[Reg.id()];
     }
 
-    LiveInterval &createAndComputeVirtRegInterval(unsigned Reg) {
+    LiveInterval &createAndComputeVirtRegInterval(Register Reg) {
       LiveInterval &LI = createEmptyInterval(Reg);
       computeVirtRegInterval(LI);
       return LI;
@@ -418,6 +418,15 @@ class VirtRegMap;
       RegUnitRanges[Unit] = nullptr;
     }
 
+    /// Remove associated live ranges for the register units associated with \p
+    /// Reg. Subsequent uses should rely on on-demand recomputation.  \note This
+    /// method can result in inconsistent liveness tracking if multiple phyical
+    /// registers share a regunit, and should be used cautiously.
+    void removeAllRegUnitsForPhysReg(unsigned Reg) {
+      for (MCRegUnitIterator Units(Reg, TRI); Units.isValid(); ++Units)
+        removeRegUnit(*Units);
+    }
+
     /// Remove value numbers and related live segments starting at position
     /// \p Pos that are part of any liverange of physical register \p Reg or one
     /// of its subregisters.
@@ -460,7 +469,7 @@ class VirtRegMap;
 
     void computeLiveInRegUnits();
     void computeRegUnitRange(LiveRange&, unsigned Unit);
-    void computeVirtRegInterval(LiveInterval&);
+    bool computeVirtRegInterval(LiveInterval&);
 
     using ShrinkToUsesWorkList = SmallVector<std::pair<SlotIndex, VNInfo*>, 16>;
     void extendSegmentsToUses(LiveRange &Segments,

@@ -472,6 +472,7 @@ class LocReplicatedArr {
   var myDom: unmanaged LocReplicatedDom(rank, idxType, stridable);
   pragma "local field" pragma "unsafe" pragma "no auto destroy"
   // may be re-initialized separately
+  // always destroyed explicitly (to control deiniting elts)
   var arrLocalRep: [myDom.domLocalRep] eltType;
 
   proc init(type eltType,
@@ -499,6 +500,13 @@ class LocReplicatedArr {
 
   proc deinit() {
     _do_destroy_array(arrLocalRep, deinitElts=true);
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocReplicatedArr.writeThis() is not implemented / should not be needed");
   }
 }
 
@@ -599,7 +607,10 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
 override proc ReplicatedArr.dsiElementInitializationComplete() {
 }
 
-override proc ReplicatedArr.dsiDestroyArr(param deinitElts:bool) {
+override proc ReplicatedArr.dsiElementDeinitializationComplete() {
+}
+
+override proc ReplicatedArr.dsiDestroyArr(deinitElts:bool) {
   coforall (loc, locArr) in zip(dom.dist.targetLocales, localArrs) {
     on loc {
       delete locArr;

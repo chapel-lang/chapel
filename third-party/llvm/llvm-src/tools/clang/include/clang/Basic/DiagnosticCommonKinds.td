@@ -1,9 +1,8 @@
 //==--- DiagnosticCommonKinds.td - common diagnostics ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,10 +12,20 @@
 
 let Component = "Common" in {
 
+// Substitutions.
+
+def select_constexpr_spec_kind : TextSubstitution<
+  "%select{<ERROR>|constexpr|consteval|constinit}0">;
+
 // Basic.
 
 def fatal_too_many_errors
   : Error<"too many errors emitted, stopping now">, DefaultFatal;
+
+def warn_stack_exhausted : Warning<
+  "stack nearly exhausted; compilation time may suffer, and "
+  "crashes due to stack overflow are likely">,
+  InGroup<DiagGroup<"stack-exhausted">>, NoSFINAE;
 
 def note_declared_at : Note<"declared here">;
 def note_previous_definition : Note<"previous definition is here">;
@@ -78,7 +87,8 @@ def warn_cxx98_compat_variadic_templates :
   Warning<"variadic templates are incompatible with C++98">,
   InGroup<CXX98Compat>, DefaultIgnore;
 def err_default_special_members : Error<
-  "only special member functions may be defaulted">;
+  "only special member functions %select{|and comparison operators }0"
+  "may be defaulted">;
 def err_deleted_non_function : Error<
   "only functions can have deleted definitions">;
 def err_module_not_found : Error<"module '%0' not found">, DefaultFatal;
@@ -108,6 +118,10 @@ def err_attribute_not_type_attr : Error<
   "%0 attribute cannot be applied to types">;
 def err_enum_template : Error<"enumeration cannot be a template">;
 
+def warn_cxx20_compat_consteval : Warning<
+  "'consteval' specifier is incompatible with C++ standards before C++20">,
+  InGroup<CXX20Compat>, DefaultIgnore;
+
 }
 
 let CategoryName = "Nullability Issue" in {
@@ -133,8 +147,8 @@ def err_nullability_conflicting : Error<
 
 // OpenCL Section 6.8.g
 def err_opencl_unknown_type_specifier : Error<
-  "OpenCL %select{C|C++}0 version %1 does not support the '%2' "
-  "%select{type qualifier|storage class specifier}3">;
+  "%select{OpenCL C|C++ for OpenCL}0 version %1 does not support the "
+  "'%2' %select{type qualifier|storage class specifier}3">;
 
 def warn_unknown_attribute_ignored : Warning<
   "unknown attribute %0 ignored">, InGroup<UnknownAttributes>;
@@ -150,6 +164,8 @@ def ext_warn_duplicate_declspec : ExtWarn<"%sub{duplicate_declspec}0">,
   InGroup<DuplicateDeclSpecifier>;
 def warn_duplicate_declspec : Warning<"%sub{duplicate_declspec}0">,
   InGroup<DuplicateDeclSpecifier>;
+
+def err_duplicate_declspec : Error<"%sub{duplicate_declspec}0">;
 
 def err_friend_decl_spec : Error<"'%0' is invalid in friend declarations">;
 
@@ -251,6 +267,8 @@ def err_target_unsupported_unaligned : Error<
   "the %0 sub-architecture does not support unaligned accesses">;
 def err_target_unsupported_execute_only : Error<
   "execute only is not supported for the %0 sub-architecture">;
+def err_target_unsupported_mcmse : Error<
+  "-mcmse is not supported for %0">;
 def err_opt_not_valid_with_opt : Error<
   "option '%0' cannot be specified with '%1'">;
 def err_opt_not_valid_without_opt : Error<
@@ -262,6 +280,8 @@ def err_opt_not_valid_on_target : Error<
 def err_cannot_open_file : Error<"cannot open file '%0': %1">, DefaultFatal;
 def err_file_modified : Error<
   "file '%0' modified since it was first processed">, DefaultFatal;
+def err_file_too_large : Error<
+  "sorry, unsupported: file '%0' is too large for Clang to process">;
 def err_unsupported_bom : Error<"%0 byte order mark detected in '%1', but "
   "encoding is not supported">, DefaultFatal;
 def err_unable_to_rename_temp : Error<
@@ -283,17 +303,27 @@ def note_mt_message : Note<"[rewriter] %0">;
 def warn_arcmt_nsalloc_realloc : Warning<"[rewriter] call returns pointer to GC managed memory; it will become unmanaged in ARC">;
 def err_arcmt_nsinvocation_ownership : Error<"NSInvocation's %0 is not safe to be used with an object with ownership other than __unsafe_unretained">;
 
-// OpenCL C++.
+// C++ for OpenCL.
 def err_openclcxx_not_supported : Error<
-  "'%0' is not supported in OpenCL C++">;
+  "'%0' is not supported in C++ for OpenCL">;
+
+// HIP
+def warn_ignored_hip_only_option : Warning<
+  "'%0' is ignored since it is only supported for HIP">,
+  InGroup<HIPOnly>;
 
 // OpenMP
 def err_omp_more_one_clause : Error<
   "directive '#pragma omp %0' cannot contain more than one '%1' clause%select{| with '%3' name modifier| with 'source' dependence}2">;
 
 // Static Analyzer Core
-def err_unknown_analyzer_checker : Error<
-    "no analyzer checkers are associated with '%0'">;
+def err_unknown_analyzer_checker_or_package : Error<
+    "no analyzer checkers or packages are associated with '%0'">;
 def note_suggest_disabling_all_checkers : Note<
     "use -analyzer-disable-all-checks to disable all static analyzer checkers">;
+
+// Poison system directories.
+def warn_poison_system_directories : Warning <
+  "include location '%0' is unsafe for cross-compilation">,
+  InGroup<DiagGroup<"poison-system-directories">>, DefaultIgnore;
 }

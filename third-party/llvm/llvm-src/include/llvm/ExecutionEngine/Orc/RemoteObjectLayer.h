@@ -1,9 +1,8 @@
 //===------ RemoteObjectLayer.h - Forwards objs to a remote -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,9 +13,10 @@
 #ifndef LLVM_EXECUTIONENGINE_ORC_REMOTEOBJECTLAYER_H
 #define LLVM_EXECUTIONENGINE_ORC_REMOTEOBJECTLAYER_H
 
+#include "llvm/ExecutionEngine/Orc/Core.h"
+#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
 #include "llvm/ExecutionEngine/Orc/OrcRemoteTargetRPCAPI.h"
 #include "llvm/Object/ObjectFile.h"
-#include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
 #include <map>
 
 namespace llvm {
@@ -137,17 +137,12 @@ protected:
                              RemoteSymbolId Id)
       : C(C), Id(Id) {}
 
-    RemoteSymbolMaterializer(const RemoteSymbolMaterializer &Other)
-      : C(Other.C), Id(Other.Id) {
-      // FIXME: This is a horrible, auto_ptr-style, copy-as-move operation.
-      //        It should be removed as soon as LLVM has C++14's generalized
-      //        lambda capture (at which point the materializer can be moved
-      //        into the lambda in remoteToJITSymbol below).
-      const_cast<RemoteSymbolMaterializer&>(Other).Id = 0;
+    RemoteSymbolMaterializer(RemoteSymbolMaterializer &&Other)
+        : C(Other.C), Id(Other.Id) {
+      Other.Id = 0;
     }
 
-    RemoteSymbolMaterializer&
-    operator=(const RemoteSymbolMaterializer&) = delete;
+    RemoteSymbolMaterializer &operator=(RemoteSymbolMaterializer &&) = delete;
 
     /// Release the remote symbol.
     ~RemoteSymbolMaterializer() {
@@ -218,9 +213,9 @@ protected:
         return nullptr;
       // else...
       RemoteSymbolMaterializer RSM(*this, RemoteSym.first);
-      auto Sym =
-        JITSymbol([RSM]() mutable { return RSM.materialize(); },
-                  RemoteSym.second);
+      auto Sym = JITSymbol(
+          [RSM = std::move(RSM)]() mutable { return RSM.materialize(); },
+          RemoteSym.second);
       return Sym;
     } else
       return RemoteSymOrErr.takeError();
@@ -313,7 +308,14 @@ public:
   ///
   /// The ReportError functor can be used locally log errors that are intended
   /// to be sent  sent
-  RemoteObjectClientLayer(RPCEndpoint &Remote,
+  LLVM_ATTRIBUTE_DEPRECATED(
+      RemoteObjectClientLayer(RPCEndpoint &Remote,
+                              std::function<void(Error)> ReportError),
+      "ORCv1 layers (including RemoteObjectClientLayer) are deprecated. Please "
+      "use "
+      "ORCv2 (see docs/ORCv2.rst)");
+
+  RemoteObjectClientLayer(ORCv1DeprecationAcknowledgement, RPCEndpoint &Remote,
                           std::function<void(Error)> ReportError)
       : RemoteObjectLayer<RPCEndpoint>(Remote, std::move(ReportError)) {
     using ThisT = RemoteObjectClientLayer<RPCEndpoint>;
@@ -418,11 +420,18 @@ public:
 
   /// Create a RemoteObjectServerLayer with the given base layer (which must be
   /// an object layer), RPC endpoint, and error reporter function.
-  RemoteObjectServerLayer(BaseLayerT &BaseLayer,
-                          RPCEndpoint &Remote,
+  LLVM_ATTRIBUTE_DEPRECATED(
+      RemoteObjectServerLayer(BaseLayerT &BaseLayer, RPCEndpoint &Remote,
+                              std::function<void(Error)> ReportError),
+      "ORCv1 layers (including RemoteObjectServerLayer) are deprecated. Please "
+      "use "
+      "ORCv2 (see docs/ORCv2.rst)");
+
+  RemoteObjectServerLayer(ORCv1DeprecationAcknowledgement,
+                          BaseLayerT &BaseLayer, RPCEndpoint &Remote,
                           std::function<void(Error)> ReportError)
-    : RemoteObjectLayer<RPCEndpoint>(Remote, std::move(ReportError)),
-      BaseLayer(BaseLayer), HandleIdMgr(1) {
+      : RemoteObjectLayer<RPCEndpoint>(Remote, std::move(ReportError)),
+        BaseLayer(BaseLayer), HandleIdMgr(1) {
     using ThisT = RemoteObjectServerLayer<BaseLayerT, RPCEndpoint>;
 
     Remote.template addHandler<AddObject>(*this, &ThisT::addObject);
@@ -458,11 +467,12 @@ private:
   }
 
   Expected<ObjHandleT> addObject(std::string ObjBuffer) {
-    auto Buffer = llvm::make_unique<StringMemoryBuffer>(std::move(ObjBuffer));
+    auto Buffer = std::make_unique<StringMemoryBuffer>(std::move(ObjBuffer));
     auto Id = HandleIdMgr.getNext();
     assert(!BaseLayerHandles.count(Id) && "Id already in use?");
 
     auto Resolver = createLambdaResolver(
+        AcknowledgeORCv1Deprecation,
         [this, Id](const std::string &Name) { return lookup(Id, Name); },
         [this, Id](const std::string &Name) {
           return lookupInLogicalDylib(Id, Name);
@@ -522,6 +532,31 @@ private:
   remote::ResourceIdMgr HandleIdMgr;
   std::map<ObjHandleT, typename BaseLayerT::ObjHandleT> BaseLayerHandles;
 };
+
+template <typename RPCEndpoint>
+RemoteObjectClientLayer<RPCEndpoint>::RemoteObjectClientLayer(
+    RPCEndpoint &Remote, std::function<void(Error)> ReportError)
+    : RemoteObjectLayer<RPCEndpoint>(Remote, std::move(ReportError)) {
+  using ThisT = RemoteObjectClientLayer<RPCEndpoint>;
+  Remote.template addHandler<Lookup>(*this, &ThisT::lookup);
+  Remote.template addHandler<LookupInLogicalDylib>(
+      *this, &ThisT::lookupInLogicalDylib);
+}
+
+template <typename BaseLayerT, typename RPCEndpoint>
+RemoteObjectServerLayer<BaseLayerT, RPCEndpoint>::RemoteObjectServerLayer(
+    BaseLayerT &BaseLayer, RPCEndpoint &Remote,
+    std::function<void(Error)> ReportError)
+    : RemoteObjectLayer<RPCEndpoint>(Remote, std::move(ReportError)),
+      BaseLayer(BaseLayer), HandleIdMgr(1) {
+  using ThisT = RemoteObjectServerLayer<BaseLayerT, RPCEndpoint>;
+
+  Remote.template addHandler<AddObject>(*this, &ThisT::addObject);
+  Remote.template addHandler<RemoveObject>(*this, &ThisT::removeObject);
+  Remote.template addHandler<FindSymbol>(*this, &ThisT::findSymbol);
+  Remote.template addHandler<FindSymbolIn>(*this, &ThisT::findSymbolIn);
+  Remote.template addHandler<EmitAndFinalize>(*this, &ThisT::emitAndFinalize);
+}
 
 } // end namespace orc
 } // end namespace llvm

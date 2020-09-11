@@ -3,6 +3,7 @@ ref-escapes.chpl:8: error: Reference to scoped variable cannot be returned
 ref-escapes.chpl:7: note: consider scope of x
 ref-escapes.chpl:11: In function 'badder':
 ref-escapes.chpl:12: error: Reference to scoped variable cannot be returned
+ref-escapes.chpl:11: note: consider scope of x
 ref-escapes.chpl:20: In function 'baddest':
 ref-escapes.chpl:22: error: Reference to scoped variable cannot be returned
 ref-escapes.chpl:21: note: consider scope of r

@@ -188,6 +188,7 @@ module ArrayViewSlice {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
@@ -387,7 +388,7 @@ module ArrayViewSlice {
       // no elements allocated here, so no action necessary
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       // no elements allocated here, so no action necessary
     }
 

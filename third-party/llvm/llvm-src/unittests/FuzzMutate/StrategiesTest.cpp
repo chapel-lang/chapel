@@ -1,9 +1,8 @@
 //===- InjectorIRStrategyTest.cpp - Tests for injector strategy -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,10 +32,10 @@ std::unique_ptr<IRMutator> createInjectorMutator() {
 
   std::vector<std::unique_ptr<IRMutationStrategy>> Strategies;
   Strategies.push_back(
-      llvm::make_unique<InjectorIRStrategy>(
+      std::make_unique<InjectorIRStrategy>(
           InjectorIRStrategy::getDefaultOps()));
 
-  return llvm::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
+  return std::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
 }
 
 std::unique_ptr<IRMutator> createDeleterMutator() {
@@ -45,9 +44,9 @@ std::unique_ptr<IRMutator> createDeleterMutator() {
       Type::getInt64Ty, Type::getFloatTy, Type::getDoubleTy};
 
   std::vector<std::unique_ptr<IRMutationStrategy>> Strategies;
-  Strategies.push_back(llvm::make_unique<InstDeleterIRStrategy>());
+  Strategies.push_back(std::make_unique<InstDeleterIRStrategy>());
 
-  return llvm::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
+  return std::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
 }
 
 std::unique_ptr<Module> parseAssembly(
@@ -80,7 +79,7 @@ TEST(InjectorIRStrategyTest, EmptyModule) {
   // Test that we can inject into empty module
 
   LLVMContext Ctx;
-  auto M = llvm::make_unique<Module>("M", Ctx);
+  auto M = std::make_unique<Module>("M", Ctx);
   ASSERT_TRUE(M && !verifyModule(*M, &errs()));
 
   auto Mutator = createInjectorMutator();

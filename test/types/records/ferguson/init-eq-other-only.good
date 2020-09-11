@@ -1,5 +1,5 @@
 init-eq-other-only.chpl:11: In function 'main':
-init-eq-other-only.chpl:13: error: unresolved call 'InitEqOtherOnly.init=(InitEqOtherOnly)'
+init-eq-other-only.chpl:13: error: could not find a copy initializer ('init=') for type 'InitEqOtherOnly' from type 'InitEqOtherOnly'
 init-eq-other-only.chpl:4: note: this candidate did not match: InitEqOtherOnly.init=(other: int)
 init-eq-other-only.chpl:13: note: because call actual argument #1 with type InitEqOtherOnly
 init-eq-other-only.chpl:4: note: is passed to formal 'other: int(64)'

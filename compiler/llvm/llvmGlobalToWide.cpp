@@ -1229,10 +1229,6 @@ namespace {
 
         Type* nodeTy = info->nodeIdType;
 
-        // TODO -- update these
-        // gdb /home/mppf/w/llvm-debug/third-party/llvm/install/linux64-gnu/bin/opt
-        // run --load /home/mppf/w/llvm-debug/compiler/llvm/llvm-global-to-wide/build/lib/llvm-pgas.so  -global-to-wide -S < /home/mppf/w/llvm-debug/compiler/llvm/llvm-global-to-wide/test/e.ll
-
         auto getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                            voidPtrTy, nodeTy, voidPtrTy,
                                            sizeTy, i64Ty);
@@ -1366,6 +1362,17 @@ namespace {
           }
         }
       }
+
+      assert(info->getFn);
+      assert(info->putFn);
+      assert(info->getPutFn);
+      assert(info->memsetFn);
+#if HAVE_LLVM_VER >= 90
+      assert(info->getFnType);
+      assert(info->putFnType);
+      assert(info->getPutFnType);
+      assert(info->memsetFnType);
+#endif
 
       assert(info->globalSpace > 0);
       assert(info->localeIdType);
@@ -2300,7 +2307,11 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     assert(t != eltType); // detect simple recursion
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
 
+#if HAVE_LLVM_VER >= 110
+    return VectorType::get(wideEltType, vecTy);
+#else
     return VectorType::get(wideEltType, vecTy->getNumElements());
+#endif
   }
 
   assert(0);

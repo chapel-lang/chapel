@@ -1,9 +1,8 @@
-//== llvm/CodeGen/GlobalISel/LegalizePass.h ------------- -*- C++ -*-==//
+//== llvm/CodeGen/GlobalISel/Legalizer.h ---------------- -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,8 +31,12 @@ class Legalizer : public MachineFunctionPass {
 public:
   static char ID;
 
-private:
+  struct MFResult {
+    bool Changed;
+    const MachineInstr *FailedOn;
+  };
 
+private:
   /// Initialize the field members using \p MF.
   void init(MachineFunction &MF);
 
@@ -55,10 +58,20 @@ public:
         MachineFunctionProperties::Property::Legalized);
   }
 
+  MachineFunctionProperties getClearedProperties() const override {
+    return MachineFunctionProperties().set(
+        MachineFunctionProperties::Property::NoPHIs);
+  }
+
   bool combineExtracts(MachineInstr &MI, MachineRegisterInfo &MRI,
                        const TargetInstrInfo &TII);
 
   bool runOnMachineFunction(MachineFunction &MF) override;
+
+  static MFResult
+  legalizeMachineFunction(MachineFunction &MF, const LegalizerInfo &LI,
+                          ArrayRef<GISelChangeObserver *> AuxObservers,
+                          MachineIRBuilder &MIRBuilder);
 };
 } // End namespace llvm.
 

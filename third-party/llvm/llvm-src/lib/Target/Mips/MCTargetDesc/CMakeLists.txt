@@ -1,9 +1,10 @@
-add_llvm_library(LLVMMipsDesc
+add_llvm_component_library(LLVMMipsDesc
   MipsABIInfo.cpp
   MipsABIFlagsSection.cpp
   MipsAsmBackend.cpp
   MipsELFObjectWriter.cpp
   MipsELFStreamer.cpp
+  MipsInstPrinter.cpp
   MipsMCAsmInfo.cpp
   MipsMCCodeEmitter.cpp
   MipsMCExpr.cpp

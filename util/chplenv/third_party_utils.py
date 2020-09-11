@@ -62,7 +62,7 @@ def handle_la(la_path):
 # pkgconfig. The pkg can be a path to a .pc file or the name of a
 # system-installed package or the name of a third-party package.
 #
-# if system=True, searches for a system-instaled package.
+# if system=True, searches for a system-installed package.
 @memoize
 def pkgconfig_get_compile_args(pkg, ucp='', system=True):
   havePcFile = pkg.endswith('.pc')
@@ -93,10 +93,10 @@ def pkgconfig_get_compile_args(pkg, ucp='', system=True):
 # the name of a system-installed package or the name of
 # a third-party package.
 #
-# if system=True, searches for a system-instaled package.
+# if system=True, searches for a system-installed package.
 # if static=True, uses --static (suitable for static linking)
 @memoize
-def pkgconfig_get_link_args(pkg, ucp='', system=True, static=True):
+def pkgconfig_get_link_args(pkg, ucp='', system=True, static=(chpl_platform.get('target')!='hpe-cray-ex')):
   havePcFile = pkg.endswith('.pc')
   pcArg = pkg
   if not havePcFile:

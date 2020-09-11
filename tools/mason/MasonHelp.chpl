@@ -124,6 +124,7 @@ proc masonInitHelp(){
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('    --name <legalName>           Specify package name different from directory name');
+  writeln('    -d, --default                Override interactive session and initialise project');
 }
 
 proc masonSearchHelp() {
@@ -165,6 +166,16 @@ proc masonModifyHelp() {
   writeln("Versions are necessary for adding dependencies, but not for removing dependencies");
   writeln("Manually edit the Mason.toml if multiple versions of the same package are listed");
   writeln("Package names and versions are not validated upon adding");
+}
+
+proc masonUpdateHelp() {
+  writeln("Update registries and generate Mason.lock");
+  writeln("Usage:");
+  writeln("    mason update [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
 }
 
 proc masonEnvHelp() {
@@ -422,6 +433,7 @@ proc masonPublishHelp(){
   writeln("Options:");
   writeln('    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry');
   writeln("    -h, --help                   Display this message");
+  writeln("    -c, --create-registry        Creates a local registry at path");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
   writeln('    --ci-check                   Same as --check, except omits git origin checks');

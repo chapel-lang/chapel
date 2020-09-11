@@ -1,9 +1,8 @@
 //===- llvm/ADT/SmallPtrSet.h - 'Normally small' pointer set ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -409,6 +408,32 @@ private:
     return iterator(P, EndPointer(), *this);
   }
 };
+
+/// Equality comparison for SmallPtrSet.
+///
+/// Iterates over elements of LHS confirming that each value from LHS is also in
+/// RHS, and that no additional values are in RHS.
+template <typename PtrType>
+bool operator==(const SmallPtrSetImpl<PtrType> &LHS,
+                const SmallPtrSetImpl<PtrType> &RHS) {
+  if (LHS.size() != RHS.size())
+    return false;
+
+  for (const auto *KV : LHS)
+    if (!RHS.count(KV))
+      return false;
+
+  return true;
+}
+
+/// Inequality comparison for SmallPtrSet.
+///
+/// Equivalent to !(LHS == RHS).
+template <typename PtrType>
+bool operator!=(const SmallPtrSetImpl<PtrType> &LHS,
+                const SmallPtrSetImpl<PtrType> &RHS) {
+  return !(LHS == RHS);
+}
 
 /// SmallPtrSet - This class implements a set which is optimized for holding
 /// SmallSize or less elements.  This internally rounds up SmallSize to the next

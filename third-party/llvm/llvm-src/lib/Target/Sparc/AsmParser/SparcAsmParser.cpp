@@ -1,14 +1,14 @@
 //===-- SparcAsmParser.cpp - Parse Sparc assembly to MCInst instructions --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/SparcMCExpr.h"
 #include "MCTargetDesc/SparcMCTargetDesc.h"
+#include "TargetInfo/SparcTargetInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -376,7 +376,7 @@ public:
   }
 
   static std::unique_ptr<SparcOperand> CreateToken(StringRef Str, SMLoc S) {
-    auto Op = make_unique<SparcOperand>(k_Token);
+    auto Op = std::make_unique<SparcOperand>(k_Token);
     Op->Tok.Data = Str.data();
     Op->Tok.Length = Str.size();
     Op->StartLoc = S;
@@ -386,7 +386,7 @@ public:
 
   static std::unique_ptr<SparcOperand> CreateReg(unsigned RegNum, unsigned Kind,
                                                  SMLoc S, SMLoc E) {
-    auto Op = make_unique<SparcOperand>(k_Register);
+    auto Op = std::make_unique<SparcOperand>(k_Register);
     Op->Reg.RegNum = RegNum;
     Op->Reg.Kind   = (SparcOperand::RegisterKind)Kind;
     Op->StartLoc = S;
@@ -396,7 +396,7 @@ public:
 
   static std::unique_ptr<SparcOperand> CreateImm(const MCExpr *Val, SMLoc S,
                                                  SMLoc E) {
-    auto Op = make_unique<SparcOperand>(k_Immediate);
+    auto Op = std::make_unique<SparcOperand>(k_Immediate);
     Op->Imm.Val = Val;
     Op->StartLoc = S;
     Op->EndLoc = E;
@@ -481,7 +481,7 @@ public:
 
   static std::unique_ptr<SparcOperand>
   CreateMEMr(unsigned Base, SMLoc S, SMLoc E) {
-    auto Op = make_unique<SparcOperand>(k_MemoryReg);
+    auto Op = std::make_unique<SparcOperand>(k_MemoryReg);
     Op->Mem.Base = Base;
     Op->Mem.OffsetReg = Sparc::G0;  // always 0
     Op->Mem.Off = nullptr;
@@ -646,7 +646,8 @@ bool SparcAsmParser::ParseRegister(unsigned &RegNo, SMLoc &StartLoc,
   return Error(StartLoc, "invalid register name");
 }
 
-static void applyMnemonicAliases(StringRef &Mnemonic, uint64_t Features,
+static void applyMnemonicAliases(StringRef &Mnemonic,
+                                 const FeatureBitset &Features,
                                  unsigned VariantID);
 
 bool SparcAsmParser::ParseInstruction(ParseInstructionInfo &Info,
@@ -1307,7 +1308,7 @@ bool SparcAsmParser::matchSparcAsmModifiers(const MCExpr *&EVal,
   return true;
 }
 
-extern "C" void LLVMInitializeSparcAsmParser() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeSparcAsmParser() {
   RegisterMCAsmParser<SparcAsmParser> A(getTheSparcTarget());
   RegisterMCAsmParser<SparcAsmParser> B(getTheSparcV9Target());
   RegisterMCAsmParser<SparcAsmParser> C(getTheSparcelTarget());

@@ -3,6 +3,8 @@ use BlockDist;
 use StencilDist;
 use CyclicDist;
 
+config param zipRange = true;
+
 proc test(Orig : domain) {
   var Copy = Orig;
   test(Orig, Copy);
@@ -31,14 +33,25 @@ proc test(A : [?DA], B : [?DB]) {
   DB.dist.displayRepresentation();
   writeln();
 
-  forall (a,b) in zip(A,B) do
-    a += b;
+  if !zipRange {
+    forall (a,b) in zip(A,B) do
+      a += b;
+  }
+  else {
+    forall (a,b,i) in zip(A,B, 0..) do
+      a += b+i;
+  }
   writeln("----------");
   writeln();
 
   var cur = 0;
   for i in DA {
-    assert(A[i] == cur * 2);
+    if !zipRange {
+      assert(A[i] == cur * 2);
+    }
+    else {
+      assert(A[i] == cur * 3);
+    }
     cur += 1;
   }
 }

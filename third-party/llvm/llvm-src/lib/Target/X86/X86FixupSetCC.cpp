@@ -1,9 +1,8 @@
 //===---- X86FixupSetCC.cpp - optimize usage of LEA instructions ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -44,19 +43,8 @@ public:
   bool runOnMachineFunction(MachineFunction &MF) override;
 
 private:
-  // Find the preceding instruction that imp-defs eflags.
-  MachineInstr *findFlagsImpDef(MachineBasicBlock *MBB,
-                                MachineBasicBlock::reverse_iterator MI);
-
-  // Return true if MI imp-uses eflags.
-  bool impUsesFlags(MachineInstr *MI);
-
-  // Return true if this is the opcode of a SetCC instruction with a register
-  // output.
-  bool isSetCCr(unsigned Opode);
-
-  MachineRegisterInfo *MRI;
-  const X86InstrInfo *TII;
+  MachineRegisterInfo *MRI = nullptr;
+  const X86InstrInfo *TII = nullptr;
 
   enum { SearchBound = 16 };
 
@@ -68,55 +56,6 @@ char X86FixupSetCCPass::ID = 0;
 
 FunctionPass *llvm::createX86FixupSetCC() { return new X86FixupSetCCPass(); }
 
-bool X86FixupSetCCPass::isSetCCr(unsigned Opcode) {
-  switch (Opcode) {
-  default:
-    return false;
-  case X86::SETOr:
-  case X86::SETNOr:
-  case X86::SETBr:
-  case X86::SETAEr:
-  case X86::SETEr:
-  case X86::SETNEr:
-  case X86::SETBEr:
-  case X86::SETAr:
-  case X86::SETSr:
-  case X86::SETNSr:
-  case X86::SETPr:
-  case X86::SETNPr:
-  case X86::SETLr:
-  case X86::SETGEr:
-  case X86::SETLEr:
-  case X86::SETGr:
-    return true;
-  }
-}
-
-// We expect the instruction *immediately* before the setcc to imp-def
-// EFLAGS (because of scheduling glue). To make this less brittle w.r.t
-// scheduling, look backwards until we hit the beginning of the
-// basic-block, or a small bound (to avoid quadratic behavior).
-MachineInstr *
-X86FixupSetCCPass::findFlagsImpDef(MachineBasicBlock *MBB,
-                                   MachineBasicBlock::reverse_iterator MI) {
-  // FIXME: Should this be instr_rend(), and MI be reverse_instr_iterator?
-  auto MBBStart = MBB->rend();
-  for (int i = 0; (i < SearchBound) && (MI != MBBStart); ++i, ++MI)
-    for (auto &Op : MI->implicit_operands())
-      if ((Op.getReg() == X86::EFLAGS) && (Op.isDef()))
-        return &*MI;
-
-  return nullptr;
-}
-
-bool X86FixupSetCCPass::impUsesFlags(MachineInstr *MI) {
-  for (auto &Op : MI->implicit_operands())
-    if ((Op.getReg() == X86::EFLAGS) && (Op.isUse()))
-      return true;
-
-  return false;
-}
-
 bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
   bool Changed = false;
   MRI = &MF.getRegInfo();
@@ -125,11 +64,16 @@ bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
   SmallVector<MachineInstr*, 4> ToErase;
 
   for (auto &MBB : MF) {
+    MachineInstr *FlagsDefMI = nullptr;
     for (auto &MI : MBB) {
+      // Remember the most recent preceding eflags defining instruction.
+      if (MI.definesRegister(X86::EFLAGS))
+        FlagsDefMI = &MI;
+
       // Find a setcc that is used by a zext.
       // This doesn't have to be the only use, the transformation is safe
       // regardless.
-      if (!isSetCCr(MI.getOpcode()))
+      if (MI.getOpcode() != X86::SETCCr)
         continue;
 
       MachineInstr *ZExt = nullptr;
@@ -140,9 +84,6 @@ bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
       if (!ZExt)
         continue;
 
-      // Find the preceding instruction that imp-defs eflags.
-      MachineInstr *FlagsDefMI = findFlagsImpDef(
-          MI.getParent(), MachineBasicBlock::reverse_iterator(&MI));
       if (!FlagsDefMI)
         continue;
 
@@ -151,7 +92,7 @@ bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
       // it, itself, by definition, clobbers eflags. But it may happen that
       // FlagsDefMI also *uses* eflags, in which case the transformation is
       // invalid.
-      if (impUsesFlags(FlagsDefMI))
+      if (FlagsDefMI->readsRegister(X86::EFLAGS))
         continue;
 
       ++NumSubstZexts;
@@ -161,8 +102,8 @@ bool X86FixupSetCCPass::runOnMachineFunction(MachineFunction &MF) {
       const TargetRegisterClass *RC = MF.getSubtarget<X86Subtarget>().is64Bit()
                                           ? &X86::GR32RegClass
                                           : &X86::GR32_ABCDRegClass;
-      unsigned ZeroReg = MRI->createVirtualRegister(RC);
-      unsigned InsertReg = MRI->createVirtualRegister(RC);
+      Register ZeroReg = MRI->createVirtualRegister(RC);
+      Register InsertReg = MRI->createVirtualRegister(RC);
 
       // Initialize a register with 0. This must go before the eflags def
       BuildMI(MBB, FlagsDefMI, MI.getDebugLoc(), TII->get(X86::MOV32r0),

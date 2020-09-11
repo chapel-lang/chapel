@@ -47,6 +47,7 @@
 #include <algorithm>
 #include <map>
 #include <set>
+#include <stack>
 
 /************************************* | **************************************
 *                                                                             *
@@ -86,12 +87,14 @@ static astlocT*      resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                               Symbol* sym);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols,
-                                   std::map<Symbol*, astlocT*>& renameLocs,
-                                   bool storeRenames);
+static
+bool lookupThisScopeAndUses(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -125,9 +128,6 @@ static void handleReceiverFormals() {
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
-
-        } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -540,18 +540,52 @@ static void processImportExprs() {
       // Collect *all* asts within this top-level module in text order
       collect_asts(topLevelModule, asts);
 
+      std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {
-        if (UseStmt* useStmt = toUseStmt(item)) {
-          BaseAST*      astScope = getScope(useStmt);
+        Expr* exprItem = toExpr(item);
+        if (exprItem != NULL && exprItem->parentExpr != NULL) {
+          BaseAST*      astScope = getScope(item);
           ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
-          useStmt->scopeResolve(scope);
-        } else if (ImportStmt* importStmt = toImportStmt(item)) {
-          BaseAST*      astScope = getScope(importStmt);
-          ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
+          // Resolve any uses or imports we find
+          if (UseStmt* useStmt = toUseStmt(item)) {
+            useStmt->scopeResolve(scope);
+          } else if (ImportStmt* importStmt = toImportStmt(item)) {
+            importStmt->scopeResolve(scope);
+          }
 
-          importStmt->scopeResolve(scope);
+          // As we finish with this statement, check to see if we've exited one
+          // or more scopes and update its/their statuses to reflect that we
+          // have finished resolving all the use or import statements within
+          // them.
+          if (scope != NULL) {
+            if (scopes.empty()) {
+              scopes.push(scope);
+            }
+            if (scope != scopes.top()) {
+              ResolveScope* last = scopes.top();
+              BlockStmt* lastAst = last->asBlockStmt();
+              BlockStmt* curBlock = scope->asBlockStmt();
+              if (curBlock != NULL) {
+                if (lastAst->contains(curBlock)) {
+                  scopes.push(scope);
+                } else {
+                  while (!lastAst->contains(curBlock) && !scopes.empty()) {
+                    scopes.pop();
+                    last->progress = IUP_COMPLETED;
+                  }
+                }
+              }
+            }
+          }
         }
+      }
+
+      // Once we've finished traversing, close any remaining unclosed scopes.
+      while (!scopes.empty()) {
+        ResolveScope* last = scopes.top();
+        scopes.pop();
+        last->progress = IUP_COMPLETED;
       }
     }
   }
@@ -657,6 +691,8 @@ static bool isMethodNameLocal(const char* name, Type* type);
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE);
 
+static void checkModuleSymExpr(SymExpr* se);
+
 static void resolveUnresolvedSymExprs() {
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -708,6 +744,20 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   if (name == astrSdot || !usymExpr->inTree())
     return NULL;
+
+  if (CallExpr* parentCall = toCallExpr(usymExpr->parentExpr)) {
+    if (parentCall->baseExpr && parentCall->baseExpr == usymExpr &&
+        parentCall->numActuals() > 0) {
+      if (SymExpr* firstArg = toSymExpr(parentCall->get(1))) {
+        if (firstArg->symbol() == gModuleToken) {
+          // Don't resolve the name of transformed module calls - doing so will
+          // accidentally find closer symbols with the same name instead of
+          // going into the intended module.
+          return NULL;
+        }
+      }
+    }
+  }
 
   // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that we've
   // already encountered an error when trying to resolve.
@@ -770,6 +820,11 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     usymExpr->replace(symExpr);
 
     updateMethod(usymExpr, sym, symExpr);
+
+    // Check for invalid uses of module symbols
+    if (isModuleSymbol(sym)) {
+      checkModuleSymExpr(symExpr);
+    }
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
@@ -1065,6 +1120,47 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+// se refers to a ModuleSymbol. Check it is a valid mention of a module.
+static void checkModuleSymExpr(SymExpr* se) {
+  bool validModuleMention = false;
+
+  ModuleSymbol* mod = toModuleSymbol(se->symbol());
+  INT_ASSERT(mod != NULL); // caller should ensure this
+
+  CallExpr* call = toCallExpr(se->parentExpr);
+  if (call != NULL) {
+    // check for (Call gModuleToken, ModuleName, Args)
+    if (SymExpr* prevSe = toSymExpr(se->prev))
+      if (prevSe->symbol() == gModuleToken)
+        validModuleMention = true;
+    // check for (Call (Call . ModuleName FnName) Args)
+    if (call->isNamedAstr(astrSdot))
+      validModuleMention = true;
+    // check for PRIM_REFERENCED_MODULES_LIST
+    if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST))
+      validModuleMention = true;
+  }
+  if (Expr* stmt = se->getStmtExpr())
+    if (isUseStmt(stmt) || isImportStmt(stmt))
+      validModuleMention = true;
+
+  if (validModuleMention == false) {
+    bool callOfModule = false;
+    if (call != NULL)
+      if (SymExpr* baseSe = toSymExpr(call->baseExpr))
+        if (baseSe->symbol() == mod)
+          callOfModule = true;
+
+    const char* reason = NULL;
+    if (callOfModule)
+      reason = "cannot be called like procedures";
+    else
+      reason = "cannot be mentioned like variables";
+
+    USR_FATAL_CONT(se, "modules (like '%s' here) %s", mod->name, reason);
+  }
+}
+
 static bool hasOuterVariable(ShadowVarSymbol* svar) {
   switch (svar->intent) {
     case TFI_DEFAULT:
@@ -1240,12 +1336,21 @@ static void resolveModuleCall(CallExpr* call) {
                 call->replace(new CallExpr(fn));
 
               } else {
-                CallExpr* parent = toCallExpr(call->parentExpr);
+                if (CallExpr* parent = toCallExpr(call->parentExpr)) {
 
-                call->replace(new UnresolvedSymExpr(mbrName));
+                  call->replace(new UnresolvedSymExpr(mbrName));
 
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                } else {
+                  USR_FATAL_CONT(call, "This appears to be a first class "
+                                 "function reference created using qualified "
+                                 "access");
+                  USR_PRINT("First class functions created using "
+                            "qualified access are not supported");
+                  USR_PRINT("If this is not intended as a first class "
+                           "function, please report it to the Chapel team");
+                }
               }
 
             } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
@@ -1439,13 +1544,15 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
-                   bool storeRenames);
+                   bool storeRenames,
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
-static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
-                                    const char* nameUsed,
-                                    bool storeRenames,
-                                    std::map<Symbol*, astlocT*> renameLocs)
+static void
+printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
+                        const char* nameUsed, bool storeRenames,
+                        std::map<Symbol*, astlocT*> renameLocs,
+                        std::map<Symbol*, VisibilityStmt*>& reexportPts)
 {
   Symbol* sampleFunction = NULL;
   for_vector(Symbol, another, symbols) if (another != sym)
@@ -1453,6 +1560,12 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
     if (isFnSymbol(another))
       sampleFunction = another;
     else {
+      if (VisibilityStmt* reexport = reexportPts[another]) {
+        USR_PRINT(another,
+                  "symbol '%s', defined here, was reexported at %s:%d",
+                  another->name, reexport->astloc.filename,
+                  reexport->astloc.lineno);
+      }
       astlocT* renameLoc = renameLocs[another];
       if (storeRenames && renameLoc != NULL) {
         USR_PRINT(another,
@@ -1474,7 +1587,8 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs) {
+                             std::map<Symbol*, astlocT*>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
   // If they're all functions
   //   then      assume function resolution will be applied
@@ -1485,13 +1599,19 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                      failedUSymExprs.end(),
                      context) == 0) {
         failedUSymExprs.push_back(context);
-        astlocT* symRenameLoc = renameLocs[sym];
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+
+        if (VisibilityStmt* reexport = reexportPts[sym]) {
+          USR_PRINT("'%s' was reexported at %s:%d", name,
+                    reexport->astloc.filename, reexport->astloc.lineno);
+        }
+        astlocT* symRenameLoc = renameLocs[sym];
         if (storeRenames && symRenameLoc != NULL) {
           USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
                     name, symRenameLoc->filename, symRenameLoc->lineno);
         }
-        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
+        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs,
+                                reexportPts);
         break;
       }
     }
@@ -1504,13 +1624,15 @@ Symbol* lookupAndCount(const char*           name,
                        BaseAST*              context,
                        int&                  nSymbolsFound,
                        bool storeRenames,
-                       astlocT** renameLoc) {
+                       astlocT** renameLoc,
+                       bool issueErrors) {
 
   std::vector<Symbol*> symbols;
   std::map<Symbol*, astlocT*> renameLocs;
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
   Symbol*              retval = NULL;
 
-  lookup(name, context, symbols, renameLocs, storeRenames);
+  lookup(name, context, symbols, renameLocs, reexportPts, storeRenames);
 
   nSymbolsFound = symbols.size();
 
@@ -1527,15 +1649,21 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    if (renameLocs.size() > 0) {
-      // this can be the case when we resolved an urse through a public import
-      // that renames the symbol
-      checkConflictingSymbols(symbols, name, context, true, renameLocs);
+    if (issueErrors) {
+      if (renameLocs.size() > 0) {
+        // this can be the case when we resolved an urse through a public import
+        // that renames the symbol
+        checkConflictingSymbols(symbols, name, context, true, renameLocs,
+                                reexportPts);
+      }
+      else {
+        checkConflictingSymbols(symbols, name, context, storeRenames,
+                                renameLocs, reexportPts);
+      }
+      retval = NULL;
+    } else {
+      retval = symbols[0];
     }
-    else {
-      checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs);
-    }
-    retval = NULL;
   }
 
   return retval;
@@ -1550,10 +1678,12 @@ void lookup(const char*           name,
             BaseAST*              context,
             std::vector<Symbol*>& symbols,
             std::map<Symbol*, astlocT*>& renameLocs,
+            std::map<Symbol*, VisibilityStmt*>& reexportPts,
             bool storeRenames) {
   Vec<BaseAST*> visited;
 
-  lookup(name, context, context, visited, symbols, renameLocs, storeRenames);
+  lookup(name, context, context, visited, symbols, renameLocs, storeRenames,
+         reexportPts);
 }
 
 static void lookup(const char*           name,
@@ -1564,13 +1694,14 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
-                   bool storeRenames) {
+                   bool storeRenames,
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
 
     if (lookupThisScopeAndUses(name, context, scope, symbols, renameLocs,
-                               storeRenames) == true) {
+                               storeRenames, reexportPts) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1592,18 +1723,18 @@ static void lookup(const char*           name,
         if (outerScope->getModule() == rootModule ||
             outerScope->getModule() == theProgram) {
           lookup(name, context, outerScope, visited, symbols, renameLocs,
-                 storeRenames);
+                 storeRenames, reexportPts);
         } else {
           // if it's a nested module, don't look into the parent
           // module (a 'use' or 'import' is required to do that), but
           // do see if ChapelStandard or theProgram resolve things for
           // us that are not yet resolved.
           lookup(name, context, standardModule->block, visited, symbols,
-                 renameLocs, storeRenames);
+                 renameLocs, storeRenames, reexportPts);
           if (symbols.size() == 0) {
             
             lookup(name, context, theProgram->block, visited, symbols,
-                   renameLocs, storeRenames);
+                   renameLocs, storeRenames, reexportPts);
           }
         }
         // As a last ditch effort, see if this module's name happens to match.
@@ -1627,7 +1758,7 @@ static void lookup(const char*           name,
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols, renameLocs,
-                 storeRenames);
+                 storeRenames, reexportPts);
         }
       }
 
@@ -1636,7 +1767,7 @@ static void lookup(const char*           name,
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
         lookup(name, context, getScope(scope), visited, symbols, renameLocs,
-               storeRenames);
+               storeRenames, reexportPts);
       }
     }
   }
@@ -1670,12 +1801,14 @@ static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
 static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
                          ImportStmt* current);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols,
-                                   std::map<Symbol*, astlocT*>& renameLocs,
-                                   bool storeRenames) {
+static
+bool lookupThisScopeAndUses(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts) {
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
@@ -1740,7 +1873,8 @@ static bool lookupThisScopeAndUses(const char*           name,
               if (!sym && use->canReexport) {
                 if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
                   sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
-                                                         renameLocs);
+                                                         renameLocs,
+                                                         reexportPts, false);
                   // propagate this information to the UseStmt
                   if (!rs->canReexport) {
                     use->canReexport = false;
@@ -2584,6 +2718,18 @@ static void removeUnusedModules() {
     if (usedModules.count(mod) == 0) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
+
+      // Check that any mentions of the dead module are in
+      // dead modules
+      if (fVerify) {
+        for_SymbolSymExprs(se, mod) {
+          if (ModuleSymbol* inMod = se->getModule()) {
+            if (usedModules.count(inMod) != 0) {
+              INT_FATAL(se, "Invalid reference to unused module");
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -2599,6 +2745,114 @@ static void detectUserDefinedBorrowMethods() {
     }
   }
 }
+
+
+/* Look up the symbol named 'name' and add it to the map and set of visible
+   symbols in a given file. The map maps from a filename to a set of visible
+   symbols.
+ */
+static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
+  std::map<std::string, std::set<Symbol*>*>& visibleMap,
+  std::set<Symbol*>& alreadyFound) {
+
+  int numSymbolsFound;
+  Symbol* found = lookupAndCount(name, call, numSymbolsFound,
+                                 false, NULL, false);
+  if (found != NULL && alreadyFound.count(found) == 0 &&
+      !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
+      !found->hasFlag(FLAG_COMPILER_GENERATED) &&
+      !found->hasFlag(FLAG_TEMP) &&
+      strcmp(found->defPoint->fname(), "<internal>") != 0) {
+    const char* fname = found->defPoint->fname();
+    alreadyFound.insert(found);
+    if (visibleMap.count(fname) == 0) {
+      visibleMap.insert(make_pair(fname, new std::set<Symbol*>()));
+    }
+    visibleMap[(std::string)fname]->insert(found);
+  }
+}
+
+
+/* Find any "get visible symbols" primitive calls and print out all
+   symbols that are visible from that point.
+ */
+static void processGetVisibleSymbols() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
+      bool ignoreInternalModules = true;
+      // look for a single NamedExpr argument ignoreInternals=true|false
+      if (call->numActuals() == 1) {
+        NamedExpr* ne = toNamedExpr(call->get(1));
+        if (ne && !strcmp(ne->name, "ignoreInternalModules")) {
+          SymExpr* se = toSymExpr(ne->actual);
+          if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
+            ignoreInternalModules = se->symbol() == gTrue;
+          } else {
+            USR_FATAL(se, "the argument to get visible symbols must be a literal 'true' or 'false'");
+          }
+        } else {
+          USR_FATAL(call, "the argument to get visible symbols must be a named expression named ignoreInternalModules");
+        }
+      } else {
+        if (call->numActuals() != 0)
+          USR_FATAL(call, "get visible symbols may only have 0 or 1 arguments");
+      }
+      std::set<Symbol*> alreadyFound;
+      // build a map from filename to set of visible symbols in that file
+      std::map<std::string, std::set<Symbol*>*> visibleMap;
+      forv_Vec(VarSymbol, sym, gVarSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(FnSymbol, sym, gFnSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+
+      // create and sort a vector of all the filenames in the map
+      std::vector<std::string> sortedFilenames;
+      std::map<std::string, std::set<Symbol*>*>::iterator mapIdx;
+
+      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
+        sortedFilenames.push_back((std::string)(mapIdx->first));
+      }
+      std::sort(sortedFilenames.begin(), sortedFilenames.end());
+
+      printf("%s:%d: Printing symbols visible from here:\n",
+             call->fname(), call->linenum());
+      // now walk the sorted vector printing visible symbols from each file
+      for (std::vector<std::string>::iterator it = sortedFilenames.begin();
+           it != sortedFilenames.end(); it++) {
+        // create and sort a vector of <lineNumber, Symbol*> pairs
+        // for the current file by line number
+        std::set<Symbol*>::iterator setIdx;
+        std::vector<std::pair<int, Symbol*> > sortedSymbols;
+        for (setIdx = visibleMap[it->c_str()]->begin();
+             setIdx != visibleMap[it->c_str()]->end(); setIdx++) {
+          Symbol* sym = *setIdx;
+          sortedSymbols.push_back(std::make_pair(sym->defPoint->linenum(),
+                                                 sym));
+        }
+        std::sort(sortedSymbols.begin(), sortedSymbols.end());
+
+        // walk the sorted vector of symbols to print information on each
+        for (std::vector<std::pair<int, Symbol*> >::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
+          Symbol* sym = symPair->second;
+          if (ignoreInternalModules &&
+              sym->getModule()->modTag == MOD_INTERNAL)
+            continue;
+          printf("  %s:%d: %s\n", sym->defPoint->fname(),
+                 sym->defPoint->linenum(), sym->name); 
+        }
+
+        delete visibleMap[it->c_str()];
+      }
+      call->remove();
+    }
+  }
+}
+
 
 void scopeResolve() {
   addToSymbolTable();
@@ -2624,6 +2878,8 @@ void scopeResolve() {
   markGenerics();
 
   processGenericFields();
+
+  processGetVisibleSymbols();
 
   ResolveScope::destroyAstMap();
 

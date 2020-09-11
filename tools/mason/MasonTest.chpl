@@ -44,50 +44,57 @@ var files: list(string);
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
 */
-proc masonTest(args) throws {
+proc masonTest(args: [] string) throws {
 
   var show = false;
   var run = true;
   var parallel = false;
-  var update = true;
-  if MASON_OFFLINE then update = false;
+  var skipUpdate = MASON_OFFLINE;
   var compopts: list(string);
-  var countArgs = 0;
-  for arg in args {
+  var searchSubStrings: list(string);
+  var countArgs = args.indices.low+2;
+  for arg in args[args.indices.low+2..args.indices.high] {
     countArgs += 1;
-    if countArgs > 2 {
-      if arg == '-h' || arg == '--help' {
+    select (arg) {
+      when '-h'{
         masonTestHelp();
         exit(0);
       }
-      else if arg == '--show' {
+      when '--help'{
+        masonTestHelp();
+        exit(0);
+      }
+      when '--show'{
         show = true;
       }
-      else if arg == '--no-run' {
+      when '--no-run'{
         run = false;
       }
-      else if arg == '--parallel' {
+      when '--parallel' {
         parallel = true;
       }
-      else if arg == '--' {
+      when '--' {
         throw new owned MasonError("Testing does not support -- syntax");
       }
-      else if arg == '--no-update' {
-        update = false;
-      }
-      else if arg == '--keep-binary' {
+      when '--keep-binary' {
         keepExec = true;
       }
-      else if arg == '--recursive' {
+      when '--recursive' {
         subdir = true;
       }
-      else if arg == '--update' {
-        update = true;
+      when '--update' {
+        skipUpdate = false;
       }
-      else if arg.startsWith('--setComm=') {
-        setComm = arg['--setComm='.size+1..];
+      when '--no-update' {
+        skipUpdate = true;
       }
-      else {
+      when '--setComm' {
+        setComm = args[countArgs];
+      }
+      otherwise {
+        if arg.startsWith('--setComm='){
+          setComm = arg['--setComm='.size..];
+        }
         try! {
           if isFile(arg) && arg.endsWith(".chpl") {
             files.append(arg);
@@ -95,24 +102,100 @@ proc masonTest(args) throws {
           else if isDir(arg) {
             dirs.append(arg);
           }
-          else {
+          else if arg.startsWith('-') {
             compopts.append(arg);
+          }
+          else {
+            searchSubStrings.append(arg);
           }
         }
       }
     }
   }
+
   getRuntimeComm();
-  var uargs: list(string);
-  if !update then uargs.append('--no-update');
   try! {
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd);
-    UpdateLock(uargs);
+
+    if(!searchSubStrings.isEmpty())
+    {
+      var testNames: list(string);
+      const testPath = joinPath(projectHome, "test");
+      var subTestPath = testPath: string;
+
+      var inProjectDir = cwd==projectHome;
+      if !inProjectDir{
+        subTestPath = cwd;
+      }
+
+      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      for test in tests{
+        if test.endsWith(".chpl"){
+          if(inProjectDir){
+            testNames.append(getTestPath(test));
+          }
+          else{
+            var testLoc = "";
+            while(test!=subTestPath){
+              var split = splitPath(test);
+              testLoc = if !testLoc.isEmpty() then joinPath(split[1], testLoc) else split[1];
+              test = split[0];
+            }
+            testNames.append(testLoc);
+          }
+        }
+      }
+
+      var isSubString: bool;
+
+      for subString in searchSubStrings {
+        isSubString = false;
+        for testName in testNames {
+          if testName.find(subString) != -1 {
+            isSubString = true;
+            if(inProjectDir){
+              files.append("".join('test/', testName));
+            }
+            else{
+              files.append(testName);
+            }
+          }
+        }
+
+        if !isSubString {
+          compopts.append(subString);
+        }
+      }
+    }
+
+    updateLock(skipUpdate);
     compopts.append("".join("--comm=",comm));
     runTests(show, run, parallel, compopts);
   }
   catch e: MasonError {
+    try! {
+      if !searchSubStrings.isEmpty(){
+        var testNames: list(string);
+
+        if isDir('.'){
+          var tests = findfiles(startdir='.', recursive=subdir);
+          for test in tests {
+            if test.endsWith(".chpl") {
+              testNames.append(test);
+            }
+          }
+        }
+
+        for subString in searchSubStrings {
+          for testName in testNames {
+            if testName.find(subString) != -1 {
+              files.append(testName);
+            }
+          }
+        }
+      }
+    }
     runUnitTest(compopts, show);
   }
 }

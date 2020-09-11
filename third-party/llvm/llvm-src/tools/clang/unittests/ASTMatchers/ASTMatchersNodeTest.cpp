@@ -1,9 +1,8 @@
 //== unittests/ASTMatchers/ASTMatchersNodeTest.cpp - AST matcher unit tests ==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -755,6 +754,11 @@ TEST(Matcher, NullPtrLiteral) {
   EXPECT_TRUE(matches("int* i = nullptr;", cxxNullPtrLiteralExpr()));
 }
 
+TEST(Matcher, ChooseExpr) {
+  EXPECT_TRUE(matchesC("void f() { (void)__builtin_choose_expr(1, 2, 3); }",
+                       chooseExpr()));
+}
+
 TEST(Matcher, GNUNullExpr) {
   EXPECT_TRUE(matches("int* i = __null;", gnuNullExpr()));
 }
@@ -1309,11 +1313,11 @@ TEST(TypeMatching, PointerTypes) {
   //EXPECT_TRUE(matchAndVerifyResultTrue(
   //    "int* a;",
   //    pointerTypeLoc(pointeeLoc(typeLoc().bind("loc"))),
-  //    llvm::make_unique<VerifyIdIsBoundTo<TypeLoc>>("loc", 1)));
+  //    std::make_unique<VerifyIdIsBoundTo<TypeLoc>>("loc", 1)));
   //EXPECT_TRUE(matchAndVerifyResultTrue(
   //    "int* a;",
   //    pointerTypeLoc().bind("loc"),
-  //    llvm::make_unique<VerifyIdIsBoundTo<TypeLoc>>("loc", 1)));
+  //    std::make_unique<VerifyIdIsBoundTo<TypeLoc>>("loc", 1)));
   EXPECT_TRUE(matches(
     "int** a;",
     loc(pointerType(pointee(qualType())))));
@@ -1572,14 +1576,14 @@ public:
 TEST(IsEqualTo, MatchesNodesByIdentity) {
   EXPECT_TRUE(matchAndVerifyResultTrue(
     "class X { class Y {}; };", recordDecl(hasName("::X::Y")).bind(""),
-    llvm::make_unique<VerifyAncestorHasChildIsEqual<CXXRecordDecl>>()));
+    std::make_unique<VerifyAncestorHasChildIsEqual<CXXRecordDecl>>()));
   EXPECT_TRUE(matchAndVerifyResultTrue(
     "void f() { if (true) if(true) {} }", ifStmt().bind(""),
-    llvm::make_unique<VerifyAncestorHasChildIsEqual<IfStmt>>()));
+    std::make_unique<VerifyAncestorHasChildIsEqual<IfStmt>>()));
   EXPECT_TRUE(matchAndVerifyResultTrue(
     "class X { class Y {} y; };",
     fieldDecl(hasName("y"), hasType(type().bind(""))).bind("decl"),
-    llvm::make_unique<VerifyAncestorHasChildIsEqual<Type>>()));
+    std::make_unique<VerifyAncestorHasChildIsEqual<Type>>()));
 }
 
 TEST(TypedefDeclMatcher, Match) {
@@ -1759,6 +1763,92 @@ TEST(ObjCAutoreleaseMatcher, AutoreleasePool) {
   EXPECT_TRUE(matchesObjC(ObjCString, autoreleasePoolStmt()));
   std::string ObjCStringNoPool = "void f() { int x = 1; }";
   EXPECT_FALSE(matchesObjC(ObjCStringNoPool, autoreleasePoolStmt()));
+}
+
+TEST(OMPExecutableDirective, Matches) {
+  auto Matcher = stmt(ompExecutableDirective());
+
+  const std::string Source0 = R"(
+void x() {
+#pragma omp parallel
+;
+})";
+  EXPECT_TRUE(matchesWithOpenMP(Source0, Matcher));
+
+  const std::string Source1 = R"(
+void x() {
+#pragma omp taskyield
+;
+})";
+  EXPECT_TRUE(matchesWithOpenMP(Source1, Matcher));
+
+  const std::string Source2 = R"(
+void x() {
+;
+})";
+  EXPECT_TRUE(notMatchesWithOpenMP(Source2, Matcher));
+}
+
+TEST(OMPDefaultClause, Matches) {
+  auto Matcher = ompExecutableDirective(hasAnyClause(ompDefaultClause()));
+
+  const std::string Source0 = R"(
+void x() {
+;
+})";
+  EXPECT_TRUE(notMatchesWithOpenMP(Source0, Matcher));
+
+  const std::string Source1 = R"(
+void x() {
+#pragma omp parallel
+;
+})";
+  EXPECT_TRUE(notMatchesWithOpenMP(Source1, Matcher));
+
+  const std::string Source2 = R"(
+void x() {
+#pragma omp parallel default(none)
+;
+})";
+  EXPECT_TRUE(matchesWithOpenMP(Source2, Matcher));
+
+  const std::string Source3 = R"(
+void x() {
+#pragma omp parallel default(shared)
+;
+})";
+  EXPECT_TRUE(matchesWithOpenMP(Source3, Matcher));
+
+  const std::string Source4 = R"(
+void x(int x) {
+#pragma omp parallel num_threads(x)
+;
+})";
+  EXPECT_TRUE(notMatchesWithOpenMP(Source4, Matcher));
+}
+
+TEST(MatchFinderAPI, matchesDynamic) {
+
+  std::string SourceCode = "struct A { void f() {} };";
+  auto Matcher = functionDecl(isDefinition()).bind("method");
+
+  auto astUnit = tooling::buildASTFromCode(SourceCode);
+
+  auto GlobalBoundNodes = matchDynamic(Matcher, astUnit->getASTContext());
+
+  EXPECT_EQ(GlobalBoundNodes.size(), 1u);
+  EXPECT_EQ(GlobalBoundNodes[0].getMap().size(), 1u);
+
+  auto GlobalMethodNode = GlobalBoundNodes[0].getNodeAs<FunctionDecl>("method");
+  EXPECT_TRUE(GlobalMethodNode != nullptr);
+
+  auto MethodBoundNodes =
+      matchDynamic(Matcher, *GlobalMethodNode, astUnit->getASTContext());
+  EXPECT_EQ(MethodBoundNodes.size(), 1u);
+  EXPECT_EQ(MethodBoundNodes[0].getMap().size(), 1u);
+
+  auto MethodNode = MethodBoundNodes[0].getNodeAs<FunctionDecl>("method");
+  EXPECT_EQ(MethodNode, GlobalMethodNode);
 }
 
 } // namespace ast_matchers

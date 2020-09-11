@@ -1,9 +1,8 @@
 //===- X86VZeroUpper.cpp - AVX vzeroupper instruction inserter ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -280,7 +279,7 @@ void VZeroUpperInserter::processBasicBlock(MachineBasicBlock &MBB) {
 /// function calls.
 bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
   const X86Subtarget &ST = MF.getSubtarget<X86Subtarget>();
-  if (!ST.hasAVX() || ST.hasFastPartialYMMorZMMWrite())
+  if (!ST.hasAVX() || !ST.insertVZEROUPPER())
     return false;
   TII = ST.getInstrInfo();
   MachineRegisterInfo &MRI = MF.getRegInfo();
@@ -293,8 +292,7 @@ bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
   // need to insert any VZEROUPPER instructions.  This is constant-time, so it
   // is cheap in the common case of no ymm/zmm use.
   bool YmmOrZmmUsed = FnHasLiveInYmmOrZmm;
-  const TargetRegisterClass *RCs[2] = {&X86::VR256RegClass, &X86::VR512RegClass};
-  for (auto *RC : RCs) {
+  for (auto *RC : {&X86::VR256RegClass, &X86::VR512_0_15RegClass}) {
     if (!YmmOrZmmUsed) {
       for (TargetRegisterClass::iterator i = RC->begin(), e = RC->end(); i != e;
            i++) {
@@ -305,9 +303,8 @@ bool VZeroUpperInserter::runOnMachineFunction(MachineFunction &MF) {
       }
     }
   }
-  if (!YmmOrZmmUsed) {
+  if (!YmmOrZmmUsed)
     return false;
-  }
 
   assert(BlockStates.empty() && DirtySuccessors.empty() &&
          "X86VZeroUpper state should be clear");

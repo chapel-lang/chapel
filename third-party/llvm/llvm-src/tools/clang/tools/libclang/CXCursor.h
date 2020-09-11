@@ -1,9 +1,8 @@
 //===- CXCursor.h - Routines for manipulating CXCursors -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -229,9 +228,9 @@ CXCursor MakeCursorOverloadedDeclRef(TemplateName Template,
                                      CXTranslationUnit TU);
 
 /// Internal storage for an overloaded declaration reference cursor;
-typedef llvm::PointerUnion3<const OverloadExpr *, const Decl *,
-                            OverloadedTemplateStorage *>
-  OverloadedDeclRefStorage;
+typedef llvm::PointerUnion<const OverloadExpr *, const Decl *,
+                           OverloadedTemplateStorage *>
+    OverloadedDeclRefStorage;
 
 /// Unpack an overloaded declaration reference into an expression,
 /// declaration, or template name along with the source location.

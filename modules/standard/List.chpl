@@ -325,14 +325,10 @@ module List {
     }
 
     pragma "no doc"
-    proc _commonInitFromIterable(iterable) {
+    proc _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
-
-      for x in iterable do {
-        pragma "no auto destroy"
-        var cpy = x;
-        _appendByRef(cpy);
-      }
+      for x in iterable do
+        append(x);
     }
 
     pragma "no doc"
@@ -1363,6 +1359,7 @@ module List {
 
       :yields: A reference to one of the elements contained in this list.
     */
+    pragma "order independent yielding loops"
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
       for i in 0..#_size {
@@ -1372,6 +1369,7 @@ module List {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
@@ -1419,6 +1417,7 @@ module List {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //

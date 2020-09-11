@@ -495,33 +495,33 @@ module DataFrames {
     }
 
     iter items_fast() {
-      for t in zip(ords, data) do
-        yield t;
+      for (o,d) in zip(ords, data) do
+        yield (o,d);
     }
 
     iter items_fast(type idxType) {
       if idx {
-        for t in zip(idx!.these(idxType), data) do
-          yield t;
+        for (i,d) in zip(idx!.these(idxType), data) do
+          yield (i,d);
       }
     }
 
     // yields tuples where the first value is the valid bit
     pragma "no doc" iter _these() {
-      for t in zip(valid_bits, data) do
-        yield t;
+      for (v,d) in zip(valid_bits, data) do
+        yield (v,d);
     }
 
     pragma "no doc"
     iter _items() {
-      for t in zip(valid_bits, this.items_fast()) do
-        yield t;
+      for (v,d) in zip(valid_bits, this.items_fast()) do
+        yield (v,d);
     }
 
     pragma "no doc"
     iter _items(type idxType) {
-      for t in zip(valid_bits, this.items_fast(idxType)) do
-        yield t;
+      for (v,d) in zip(valid_bits, this.items_fast(idxType)) do
+        yield (v,d);
     }
 
     /*

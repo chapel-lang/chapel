@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:   llvm
 " Maintainer: The LLVM team, http://llvm.org/
-" Version:      $Revision: 346785 $
+" Version:      $Revision$
 
 if version < 600
   syntax clear
@@ -23,7 +23,7 @@ syn match   llvmType /\<i\d\+\>/
 " The true and false tokens can be used for comparison opcodes, but it's
 " much more common for these tokens to be used for boolean constants.
 syn keyword llvmStatement add addrspacecast alloca and arcp ashr atomicrmw
-syn keyword llvmStatement bitcast br catchpad catchswitch catchret call
+syn keyword llvmStatement bitcast br catchpad catchswitch catchret call callbr
 syn keyword llvmStatement cleanuppad cleanupret cmpxchg eq exact extractelement
 syn keyword llvmStatement extractvalue fadd fast fcmp fdiv fence fmul fpext
 syn keyword llvmStatement fptosi fptoui fptrunc free frem fsub fneg getelementptr
@@ -82,6 +82,7 @@ syn keyword llvmKeyword
       \ externally_initialized
       \ extern_weak
       \ fastcc
+      \ tailcc
       \ filter
       \ from
       \ gc
@@ -89,6 +90,7 @@ syn keyword llvmKeyword
       \ hhvmcc
       \ hhvm_ccc
       \ hidden
+      \ immarg
       \ initialexec
       \ inlinehint
       \ inreg
@@ -148,6 +150,7 @@ syn keyword llvmKeyword
       \ sspstrong
       \ strictfp
       \ swiftcc
+      \ swiftself
       \ tail
       \ target
       \ thread_local

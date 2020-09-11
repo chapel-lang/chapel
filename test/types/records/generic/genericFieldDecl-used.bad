@@ -1,0 +1,4 @@
+$CHPL_HOME/modules/internal/ChapelIO.chpl:217: In function 'isIoField':
+$CHPL_HOME/modules/internal/ChapelIO.chpl:218: error: the type of the actual argument 'call_tmp' is generic
+note: generic actual arguments are not currently supported
+$CHPL_HOME/modules/internal/ChapelIO.chpl:273: Function 'isIoField' instantiated as: isIoField(x: One, param i = 1)

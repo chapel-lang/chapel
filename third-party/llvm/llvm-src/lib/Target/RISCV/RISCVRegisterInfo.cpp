@@ -1,9 +1,8 @@
 //===-- RISCVRegisterInfo.cpp - RISCV Register Information ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,34 +26,73 @@
 
 using namespace llvm;
 
+static_assert(RISCV::X1 == RISCV::X0 + 1, "Register list not consecutive");
+static_assert(RISCV::X31 == RISCV::X0 + 31, "Register list not consecutive");
+static_assert(RISCV::F1_F == RISCV::F0_F + 1, "Register list not consecutive");
+static_assert(RISCV::F31_F == RISCV::F0_F + 31,
+              "Register list not consecutive");
+static_assert(RISCV::F1_D == RISCV::F0_D + 1, "Register list not consecutive");
+static_assert(RISCV::F31_D == RISCV::F0_D + 31,
+              "Register list not consecutive");
+
 RISCVRegisterInfo::RISCVRegisterInfo(unsigned HwMode)
     : RISCVGenRegisterInfo(RISCV::X1, /*DwarfFlavour*/0, /*EHFlavor*/0,
                            /*PC*/0, HwMode) {}
 
 const MCPhysReg *
 RISCVRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
+  auto &Subtarget = MF->getSubtarget<RISCVSubtarget>();
   if (MF->getFunction().hasFnAttribute("interrupt")) {
-    if (MF->getSubtarget<RISCVSubtarget>().hasStdExtD())
+    if (Subtarget.hasStdExtD())
       return CSR_XLEN_F64_Interrupt_SaveList;
-    if (MF->getSubtarget<RISCVSubtarget>().hasStdExtF())
+    if (Subtarget.hasStdExtF())
       return CSR_XLEN_F32_Interrupt_SaveList;
     return CSR_Interrupt_SaveList;
   }
-  return CSR_SaveList;
+
+  switch (Subtarget.getTargetABI()) {
+  default:
+    llvm_unreachable("Unrecognized ABI");
+  case RISCVABI::ABI_ILP32:
+  case RISCVABI::ABI_LP64:
+    return CSR_ILP32_LP64_SaveList;
+  case RISCVABI::ABI_ILP32F:
+  case RISCVABI::ABI_LP64F:
+    return CSR_ILP32F_LP64F_SaveList;
+  case RISCVABI::ABI_ILP32D:
+  case RISCVABI::ABI_LP64D:
+    return CSR_ILP32D_LP64D_SaveList;
+  }
 }
 
 BitVector RISCVRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
+  const RISCVFrameLowering *TFI = getFrameLowering(MF);
   BitVector Reserved(getNumRegs());
+
+  // Mark any registers requested to be reserved as such
+  for (size_t Reg = 0; Reg < getNumRegs(); Reg++) {
+    if (MF.getSubtarget<RISCVSubtarget>().isRegisterReservedByUser(Reg))
+      markSuperRegs(Reserved, Reg);
+  }
 
   // Use markSuperRegs to ensure any register aliases are also reserved
   markSuperRegs(Reserved, RISCV::X0); // zero
-  markSuperRegs(Reserved, RISCV::X1); // ra
   markSuperRegs(Reserved, RISCV::X2); // sp
   markSuperRegs(Reserved, RISCV::X3); // gp
   markSuperRegs(Reserved, RISCV::X4); // tp
-  markSuperRegs(Reserved, RISCV::X8); // fp
+  if (TFI->hasFP(MF))
+    markSuperRegs(Reserved, RISCV::X8); // fp
+  // Reserve the base register if we need to realign the stack and allocate
+  // variable-sized objects at runtime.
+  if (TFI->hasBP(MF))
+    markSuperRegs(Reserved, RISCVABI::getBPReg()); // bp
   assert(checkAllSuperRegsMarked(Reserved));
   return Reserved;
+}
+
+bool RISCVRegisterInfo::isAsmClobberable(const MachineFunction &MF,
+                                         unsigned PhysReg) const {
+  return !MF.getSubtarget<RISCVSubtarget>().isRegisterReservedByUser(PhysReg);
 }
 
 bool RISCVRegisterInfo::isConstantPhysReg(unsigned PhysReg) const {
@@ -94,8 +132,8 @@ void RISCVRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     assert(isInt<32>(Offset) && "Int32 expected");
     // The offset won't fit in an immediate, so use a scratch register instead
     // Modify Offset and FrameReg appropriately
-    unsigned ScratchReg = MRI.createVirtualRegister(&RISCV::GPRRegClass);
-    TII->movImm32(MBB, II, DL, ScratchReg, Offset);
+    Register ScratchReg = MRI.createVirtualRegister(&RISCV::GPRRegClass);
+    TII->movImm(MBB, II, DL, ScratchReg, Offset);
     BuildMI(MBB, II, DL, TII->get(RISCV::ADD), ScratchReg)
         .addReg(FrameReg)
         .addReg(ScratchReg, RegState::Kill);
@@ -109,7 +147,7 @@ void RISCVRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
 }
 
-unsigned RISCVRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+Register RISCVRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   const TargetFrameLowering *TFI = getFrameLowering(MF);
   return TFI->hasFP(MF) ? RISCV::X8 : RISCV::X2;
 }
@@ -117,12 +155,19 @@ unsigned RISCVRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
 const uint32_t *
 RISCVRegisterInfo::getCallPreservedMask(const MachineFunction & MF,
                                         CallingConv::ID /*CC*/) const {
-  if (MF.getFunction().hasFnAttribute("interrupt")) {
-    if (MF.getSubtarget<RISCVSubtarget>().hasStdExtD())
-      return CSR_XLEN_F64_Interrupt_RegMask;
-    if (MF.getSubtarget<RISCVSubtarget>().hasStdExtF())
-      return CSR_XLEN_F32_Interrupt_RegMask;
-    return CSR_Interrupt_RegMask;
+  auto &Subtarget = MF.getSubtarget<RISCVSubtarget>();
+
+  switch (Subtarget.getTargetABI()) {
+  default:
+    llvm_unreachable("Unrecognized ABI");
+  case RISCVABI::ABI_ILP32:
+  case RISCVABI::ABI_LP64:
+    return CSR_ILP32_LP64_RegMask;
+  case RISCVABI::ABI_ILP32F:
+  case RISCVABI::ABI_LP64F:
+    return CSR_ILP32F_LP64F_RegMask;
+  case RISCVABI::ABI_ILP32D:
+  case RISCVABI::ABI_LP64D:
+    return CSR_ILP32D_LP64D_RegMask;
   }
-  return CSR_RegMask;
 }

@@ -599,6 +599,7 @@ module DistributedDeque {
     /*
       Iterate over all elements in the deque in the order specified.
     */
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.NONE {
       for slot in slots {
         slot.lock$ = true;
@@ -621,6 +622,7 @@ module DistributedDeque {
       }
     }
 
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.FIFO {
       // Fill our slots to visit in FIFO order.
       var head = globalHead!.read();
@@ -684,6 +686,7 @@ module DistributedDeque {
       for slot in slots do slot.lock$;
     }
 
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.LIFO {
       // Fill our slots to visit in FIFO order.
       var head = globalHead!.read();
@@ -753,6 +756,7 @@ module DistributedDeque {
       coforall slot in slots do on slot do yield slot;
     }
 
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE, param tag : iterKind, followThis) where tag == iterKind.follower {
       if order != Ordering.NONE {
         compilerWarning("Parallel iteration only supports ordering of type: ", Ordering.NONE);

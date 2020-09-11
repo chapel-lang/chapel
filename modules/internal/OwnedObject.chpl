@@ -137,7 +137,7 @@ The default intent for :record:`owned` is ``const ref``.
 
  */
 module OwnedObject {
-  private use ChapelStandard;
+  use ChapelStandard;
 
   /*
      :record:`owned` manages the deletion of a class instance assuming
@@ -405,7 +405,8 @@ module OwnedObject {
   pragma "init copy fn"
   pragma "no doc"
   proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
-                      ref src: _owned) {
+                      ref src: _owned,
+                      definedConst: bool) {
     var ret = new _owned(src);
     return ret;
   }
@@ -415,7 +416,8 @@ module OwnedObject {
   pragma "no doc"
   pragma "auto copy fn"
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
-                      ref src: _owned) {
+                      ref src: _owned,
+                      definedConst: bool) {
     var ret = new _owned(src);
     return ret;
   }

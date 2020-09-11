@@ -1,9 +1,8 @@
 //===--- USRFindingAction.cpp - Clang refactoring library -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -40,6 +39,8 @@ namespace clang {
 namespace tooling {
 
 const NamedDecl *getCanonicalSymbolDeclaration(const NamedDecl *FoundDecl) {
+  if (!FoundDecl)
+    return nullptr;
   // If FoundDecl is a constructor or destructor, we want to instead take
   // the Decl of the corresponding class.
   if (const auto *CtorDecl = dyn_cast<CXXConstructorDecl>(FoundDecl))
@@ -66,7 +67,7 @@ public:
 
   std::vector<std::string> Find() {
     // Fill OverriddenMethods and PartialSpecs storages.
-    TraverseDecl(Context.getTranslationUnitDecl());
+    TraverseAST(Context);
     if (const auto *MethodDecl = dyn_cast<CXXMethodDecl>(FoundDecl)) {
       addUSRsOfOverridenFunctions(MethodDecl);
       for (const auto &OverriddenMethod : OverriddenMethods) {
@@ -103,6 +104,10 @@ public:
 
 private:
   void handleCXXRecordDecl(const CXXRecordDecl *RecordDecl) {
+    if (!RecordDecl->getDefinition()) {
+      USRSet.insert(getUSRForDecl(RecordDecl));
+      return;
+    }
     RecordDecl = RecordDecl->getDefinition();
     if (const auto *ClassTemplateSpecDecl =
             dyn_cast<ClassTemplateSpecializationDecl>(RecordDecl))
@@ -265,7 +270,7 @@ private:
 };
 
 std::unique_ptr<ASTConsumer> USRFindingAction::newASTConsumer() {
-  return llvm::make_unique<NamedDeclFindingConsumer>(
+  return std::make_unique<NamedDeclFindingConsumer>(
       SymbolOffsets, QualifiedNames, SpellingNames, USRList, Force,
       ErrorOccurred);
 }

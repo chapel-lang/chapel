@@ -1,5 +1,5 @@
-perfkeys: substring:, count:, replace:
-repeat-files: substring.dat
-graphkeys: substring, counting, replacing
+perfkeys: substring:, count:, replace:, substring:, count:, replace:, substring:, count:, replace:
+repeat-files: substring.dat, substring-utf8.dat, substring-bytes.dat
+graphkeys: substring (ASCII), counting (ASCII), replacing (ASCII) , substring (UTF8), counting (UTF8), replacing (UTF8) , substring (bytes), counting (bytes), replacing (bytes)
 ylabel: Time (seconds)
 graphtitle: Search within a string

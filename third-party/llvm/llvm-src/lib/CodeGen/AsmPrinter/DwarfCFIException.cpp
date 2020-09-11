@@ -1,9 +1,8 @@
 //===-- CodeGen/AsmPrinter/DwarfException.cpp - Dwarf Exception Impl ------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -30,6 +29,7 @@
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
+#include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 using namespace llvm;
 
@@ -134,6 +134,8 @@ void DwarfCFIException::beginFragment(const MachineBasicBlock *MBB,
   if (!hasEmittedCFISections) {
     if (Asm->needsOnlyDebugCFIMoves())
       Asm->OutStreamer->EmitCFISections(false, true);
+    else if (Asm->TM.Options.ForceDwarfFrameSection)
+      Asm->OutStreamer->EmitCFISections(true, true);
     hasEmittedCFISections = true;
   }
 

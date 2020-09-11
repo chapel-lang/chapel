@@ -1,9 +1,8 @@
 //===-- PPCMCExpr.h - PPC specific MC expression classes --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -46,21 +45,21 @@ public:
   /// @{
 
   static const PPCMCExpr *create(VariantKind Kind, const MCExpr *Expr,
-                                 bool isDarwin, MCContext &Ctx);
+                                 bool IsDarwin, MCContext &Ctx);
 
   static const PPCMCExpr *createLo(const MCExpr *Expr,
-                                   bool isDarwin, MCContext &Ctx) {
-    return create(VK_PPC_LO, Expr, isDarwin, Ctx);
+                                   bool IsDarwin, MCContext &Ctx) {
+    return create(VK_PPC_LO, Expr, IsDarwin, Ctx);
   }
 
   static const PPCMCExpr *createHi(const MCExpr *Expr,
-                                   bool isDarwin, MCContext &Ctx) {
-    return create(VK_PPC_HI, Expr, isDarwin, Ctx);
+                                   bool IsDarwin, MCContext &Ctx) {
+    return create(VK_PPC_HI, Expr, IsDarwin, Ctx);
   }
 
   static const PPCMCExpr *createHa(const MCExpr *Expr,
-                                   bool isDarwin, MCContext &Ctx) {
-    return create(VK_PPC_HA, Expr, isDarwin, Ctx);
+                                   bool IsDarwin, MCContext &Ctx) {
+    return create(VK_PPC_HA, Expr, IsDarwin, Ctx);
   }
 
   /// @}

@@ -355,9 +355,8 @@ class LocStencilArr {
   param stridable: bool;
   const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" pragma "no auto destroy"
+  pragma "local field" pragma "unsafe"
   // may be initialized separately
-  // always destroyed explicitly (to control deiniting elts)
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -408,11 +407,16 @@ class LocStencilArr {
     }
 
     // Elements in myElems are deinited in dsiDestroyArr if necessary.
-    // Here we need to clean up the rest of the array.
-    _do_destroy_array(myElems, deinitElts=false);
 
     if locRAD != nil then
       delete locRAD;
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocStencilArr.writeThis() is not implemented / should not be needed");
   }
 }
 
@@ -637,6 +641,7 @@ proc Stencil.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
+pragma "order independent yielding loops"
 iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -1133,8 +1138,15 @@ override proc StencilArr.dsiElementInitializationComplete() {
   }
 }
 
+override proc StencilArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
 
-override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
+override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
       var arr = locArr(localeIdx);
@@ -1155,6 +1167,7 @@ override proc StencilArr.dsiDestroyArr(param deinitElts:bool) {
             }
           }
         }
+        arr.myElems.dsiElementDeinitializationComplete();
         delete arr;
       }
     }
@@ -1261,6 +1274,7 @@ inline proc StencilArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.wholeFluff.contains(i);
 }
 
+pragma "order independent yielding loops"
 iter StencilArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -1292,6 +1306,7 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1442,6 +1457,7 @@ iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "order independent yielding loops"
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     var LSA = locArr[i];
@@ -1473,6 +1489,7 @@ iter StencilArr.dsiBoundaries() {
 // Yields any 'fluff' boundary chunks in the StencilArr along with a global coordinate of
 // where the chunk lives relative to the core.
 //
+pragma "order independent yielding loops"
 iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
@@ -1732,6 +1749,8 @@ proc StencilArr.setRADOpt(val=true) {
 inline proc LocStencilArr.this(i) ref {
   return myElems(i);
 }
+
+override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
 
 //
 // Privatization

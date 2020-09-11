@@ -1,0 +1,2 @@
+bug: TOML containing only comments produces memory errors (caught in valgrind)
+
