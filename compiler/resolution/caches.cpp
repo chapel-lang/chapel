@@ -397,10 +397,10 @@ void updateCacheInfosForACall(VisibilityInfo& visInfo,
 // 'remainingCFIs' correspondingly. If we encounter a scope that might make
 // this cached instantiation not applicable, return false.
 //
-static bool reportVisitedScopes(std::vector<CalledFunInfo*>& toProcess,
-                                             VisibilityInfo& visInfo,
-                                                        int& remainingCFIs,
-                                                        int  startVS)
+static bool analyzeVisitedScopes(std::vector<CalledFunInfo*>& toProcess,
+                                              VisibilityInfo& visInfo,
+                                                         int& remainingCFIs,
+                                                         int  startVS)
 {
   int sizeCI = (int)toProcess.size(); // usu. at most a couple of elements
   int sizeVS = (int)visInfo.visitedScopes.size();
@@ -479,7 +479,7 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
     getVisibleFunctions(dummyName, visInfoOrig.call,
                         &visInfo, &visited, visibleFns);
 
-    if (reportVisitedScopes(toProcess, visInfo, remainingCFIs, numVisitedVis))
+    if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, numVisitedVis))
       return;
 
     numVisitedVis = (int)visInfo.visitedScopes.size();
@@ -509,7 +509,7 @@ static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
   std::vector<CalledFunInfo*> toProcess(sizeCI); // working copy
   for (int i = 0; i < sizeCI; i++) toProcess[i] = &(cacheInfo->infos[i]);
 
-  if (reportVisitedScopes(toProcess, visInfo, remainingCFIs, 0))
+  if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, 0))
       return false;
 
   if (remainingCFIs > 0 && visInfo.nextPOI != NULL)
