@@ -3960,6 +3960,13 @@ module ChapelArray {
         // move it into the array
         __primitive("=", aa, copy);
       }
+    } else if isSingleType(a.eltType) {
+      forall aa in a {
+        pragma "no auto destroy"
+        var copy: a.eltType = aa.readFF(); // run copy initializer
+        // move it into the array
+        __primitive("=", aa, copy);
+      }
     } else {
       forall aa in a {
         pragma "no auto destroy"
@@ -4243,6 +4250,13 @@ module ChapelArray {
           [ (aa,bb) in zip(a,b) ] {
             pragma "no auto destroy"
             var copy: a.eltType = bb.readFE(); // init copy
+            // move it into the array
+            __primitive("=", aa, copy);
+          }
+        } else if isSingleType(a.eltType) {
+          [ (aa,bb) in zip(a,b) ] {
+            pragma "no auto destroy"
+            var copy: a.eltType = bb.readFF(); // init copy
             // move it into the array
             __primitive("=", aa, copy);
           }

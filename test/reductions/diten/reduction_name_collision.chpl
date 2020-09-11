@@ -13,7 +13,7 @@ delete s;
 delete r;
 
 class R {
-  var count: sync int = 0;
+  var count: sync int = 0;  // TODO: initializer
 
   proc next() {
     var c = count + 1;

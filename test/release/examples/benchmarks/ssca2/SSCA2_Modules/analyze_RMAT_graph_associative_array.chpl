@@ -71,7 +71,7 @@ module analyze_RMAT_graph_associative_array {
           }
 
             // release the lock
-            firstAvail$ = edgePos + 1;
+            firstAvail$.writeEF(edgePos + 1);
         } // on
       }
 

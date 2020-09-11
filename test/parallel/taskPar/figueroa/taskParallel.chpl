@@ -19,11 +19,11 @@ notThereYet.write(true);
 // yet?" until someone else gets fed up with the incessant questions.
 
 begin
-  while notThereYet.read() {
-    writeln ("Are we there yet?");
-    var delay = RandomNumber() * 4.0;
-    sleep (delay : uint);  // wait between 0 and 3 seconds before asking again
-  }
+while notThereYet.read() {
+  writeln ("Are we there yet?");
+  var delay = RandomNumber() * 4.0;
+  sleep (delay : uint);  // wait between 0 and 3 seconds before asking again
+}
 
 // Here's another independent thread of execution.
 // When someone (perhaps the father) gets fed up after some period of time,
@@ -104,13 +104,13 @@ proc player(num) {
       var delay = RandomNumber() * 10.0 + 3.0;
       sleep (delay : uint);
       // If this is the first person to get tired, he announces he's tired.
-      if notTired {
-        notTired = false;
+      if notTired.readFE() {
+        notTired.writeEF(false);
         writeln ("Player ", num, ": I'm tired of playing!");
       }
       // Otherwise, he agrees with the person who got tired first.
       else {
-        notTired = false;
+        notTired.writeEF(false);
         writeln ("Player ", num, ": Me too!");
       }
     }
@@ -118,9 +118,9 @@ proc player(num) {
     // This while statement makes a choice for each round of the game.
     do {
       var rockPaperScissors = chooseBetweenRockPaperScissors();
-      if refereeReady(num) then
+      if refereeReady(num).readFE() then
         writeln ("Player ", num, ": ", rockPaperScissors);
-      choice(num) = rockPaperScissors;
+      choice(num).writeEF(rockPaperScissors);
     } while notTired.readFF();
   }
 
@@ -154,13 +154,13 @@ proc referee () {
       var delay = RandomNumber() * 10.0 + 3.0;
       sleep (delay : uint);
       // If the referee is the first person to get tired, she so announces.
-      if notTired {
-        notTired = false;
+      if notTired.readFE() {
+        notTired.writeEF(false);
         writeln ("Referee: I'm tired of playing!");
       }
       // Otherwise, she agrees with the person who got tired first.
       else {
-        notTired = false;
+        notTired.writeEF(false);
         writeln ("Referee: Me too!");
       }
     }
@@ -180,11 +180,11 @@ proc referee () {
         // This tells each player the referee is ready for the next round
         // of the game.  Note that the order in which the players are notified
         // is not guaranteed.
-        refereeReady(i) = true;
+        refereeReady(i).writeEF(true);
 
       // This reads the choice each player made.
-      var player1 = choice(1),
-          player2 = choice(2);
+      var player1 = choice(1).readFE(),
+          player2 = choice(2).readFE();
       determineWinner (player1, player2);
     } while notTired.readFF();
   }
@@ -208,8 +208,8 @@ proc RandomNumber() {
   const multiplier: int(64) = 16807,
         modulus: int(64) = 2147483647;
   // The following calculation must be done in at least 46-bit arithmetic!
-  var newSeed = (seed * multiplier % modulus) : uint(32);
-  seed = newSeed;
+  var newSeed = (seed.readFE() * multiplier % modulus) : uint(32);
+  seed.writeEF(newSeed);
   return (newSeed-1) / (modulus-1) : real;
 }
 
@@ -225,15 +225,15 @@ proc determineWinner (player1, player2) {
   else if player1 == choices.rock then
     if player2 == choices.paper then
       declareWinner("Player 2 wins!");
-    else declareWinner("Player 1 wins!");
+  else declareWinner("Player 1 wins!");
   else if player1 == choices.paper then
     if player2 == choices.scissors then
       declareWinner("Player 2 wins!");
-    else declareWinner("Player 1 wins!");
+  else declareWinner("Player 1 wins!");
   else if player1 == choices.scissors then
     if player2 == choices.rock then
       declareWinner("Player 2 wins!");
-    else declareWinner("Player 1 wins!");
+  else declareWinner("Player 1 wins!");
 }
 
 proc declareWinner (w) {

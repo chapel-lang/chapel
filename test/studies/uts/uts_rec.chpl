@@ -198,11 +198,11 @@ proc requestThreads(n:int): int {
         var threads_avail   = MAX_THREADS-thread_cnt_l;
         var threads_granted = if (n <= threads_avail) then n else threads_avail;
         
-        thread_cnt = thread_cnt_l + threads_granted;
+        thread_cnt.writeEF(thread_cnt_l + threads_granted);
         threads_spawned += threads_granted;
         return threads_granted;
       } else {
-        thread_cnt = thread_cnt_l;
+        thread_cnt.writeEF(thread_cnt_l);
       }
     }
   }
@@ -221,15 +221,15 @@ proc dfs_count(n: unmanaged TreeNode, wasParallel: bool = false):int {
       var count: sync int = 0;
 
       coforall i in 1..threads_granted {
-        count += dfs_count(n.children[i]!, true);
+        count.writeEF(count.readFE() + dfs_count(n.children[i]!, true));
       }
 
       for i in threads_granted+1..n.nChildren {
-        count += dfs_count(n.children[i]!, false);
+        count.writeEF(count.readFE() + dfs_count(n.children[i]!, false));
       }
 
-      if (wasParallel) then thread_cnt -= 1;
-      return count+1;
+      if (wasParallel) then thread_cnt.writeEF(thread_cnt.readFE() - 1);
+      return count.readFE()+1;
 
     } else {
       var count: int;
@@ -260,16 +260,16 @@ proc create_tree(parent: unmanaged TreeNode, wasParallel: bool = false): int {
 
     // Spawn threads
     coforall i in 1..threads_granted {
-      count += create_tree(parent.children[i]!, true);
+      count.writeEF(count.readFE() + create_tree(parent.children[i]!, true));
     }
     
     // Run the rest sequentially
     for i in threads_granted+1..parent.nChildren {
-      count += create_tree(parent.children[i]!, false);
+      count.writeEF(count.readFE() + create_tree(parent.children[i]!, false));
     }
 
-    if (wasParallel) then thread_cnt -= 1;
-    return count;
+    if (wasParallel) then thread_cnt.writeEF(thread_cnt.readFE() - 1);
+    return count.readFE();
 
   } else {
     var count: int = parent.genChildren();

@@ -24,10 +24,10 @@ class localePrivateData {
   type myStuff;
   // assumes maxTaskPar is the same across all locales
   const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-    else dataParTasksPerLocale;
+  else dataParTasksPerLocale;
   var slot: sync bool;
   var r = {0..#numTasks};
-  var temps: [r] myStuff;
+  var temps: [r] myStuff;  // TODO: initializer
   proc gettid() {
     extern proc chpl_task_getId(): chpl_taskID_t;
     var mytid = chpl_task_getId();
@@ -69,7 +69,7 @@ forall d in D {
 if printTemps then writeln(localePrivate!.temps);
 
 const numTasks = if dataParTasksPerLocale==0 then here.maxTaskPar
-  else dataParTasksPerLocale;
+else dataParTasksPerLocale;
 
 for l in 0..#numLocales {
   var lp = localePrivate[l]!;

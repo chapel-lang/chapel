@@ -63,23 +63,23 @@ class MeetingPlace {
     var otherColor : color;
 
     if (spotsLeft == 0) {
-      spotsLeft$ = 0;
+      spotsLeft$.writeEF(0);
       return (true, chameneos.myColor);
     }
     if (spotsLeft % 2 == 0) {
       color1 = chameneos.myColor;
       id1 = chameneos.id;
-      spotsLeft$ = spotsLeft - 1;
-      otherColor = color2$;
+      spotsLeft$.writeEF(spotsLeft - 1);
+      otherColor = color2$.readFE();
       if (id1 == id2) {
         halt("halt: meetingsWithSelf count is nonzero");
         chameneos.meetingsWithSelf += 1;
       }
-      spotsLeft$ = spotsLeft - 2;
+      spotsLeft$.writeEF(spotsLeft - 2);
     } else if (spotsLeft % 2 == 1) {
       otherColor = color1;
       id2 = chameneos.id;
-      color2$ = chameneos.myColor;
+      color2$.writeEF(chameneos.myColor);
     }
     chameneos.meetings += 1;
     //sleep(10);

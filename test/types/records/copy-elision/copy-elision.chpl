@@ -164,9 +164,9 @@ proc test3c() {
     writeln(y.toString());
     assert(y.locale == here);
     assert(y.ptr.xx.locale == here);
-    s = 1;
+    s.writeEF(1);
   }
-  s;
+  s.readFE();
 }
 sync { test3c(); }
 
@@ -390,10 +390,10 @@ proc test20() {
       var x = new R(1);
       var y = x;
     }
-    done$ = 1;
+    done$.writeEF(1);
   }
 
-  done$; // wait
+  done$.readFE(); // wait
 }
 test20();
 

@@ -29,7 +29,7 @@ sync {
   var k: int;
   k = 0;
   while (k < ITERATIONS) {
-    c.s = k;
+    c.s.writeEF(k);
     k += 1;
   }
 }

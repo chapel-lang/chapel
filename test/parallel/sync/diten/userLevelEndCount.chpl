@@ -1,6 +1,7 @@
 class EC {
   var i: sync int(64) = 0;
   var b: sync bool = true;
+  // TODO: compiler-generated initializer
 }
 
 proc up(e: borrowed EC) {

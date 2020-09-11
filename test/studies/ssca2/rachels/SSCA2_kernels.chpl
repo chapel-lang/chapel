@@ -368,7 +368,8 @@ module SSCA2_kernels
 	      if useAtomicReal then
                 BCaux[v].path_count$.add(BCaux[u].path_count$.read());
               else
-                BCaux[v].path_count$ += BCaux[u].path_count$.readFF();
+                BCaux[v].path_count$.writeEF(BCaux[v].path_count$.readFE() +
+                                             BCaux[u].path_count$.readFF());
             }
 
             forall u in ALhere.Members do {
@@ -435,7 +436,7 @@ module SSCA2_kernels
 
           if here.id==0 {
             if VALIDATE_BC then
-              Sum_Min_Dist$ += Lcl_Sum_Min_Dist;
+              Sum_Min_Dist$.writeEF(Sum_Min_Dist$.readFE() + Lcl_Sum_Min_Dist);
           }
 
           // -------------------------------------------------------------

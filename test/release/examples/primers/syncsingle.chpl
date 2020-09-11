@@ -5,7 +5,7 @@
 //
 
 // ``Sync`` and ``single`` are type qualifiers that can be applied to all
-// Chapel primitive types except ``strings``, ``complex``, and ``record``.
+// Chapel primitive types except ``strings`` and ``complex``.
 //
 
 // Sync and single variables have an associated state that is either
@@ -21,76 +21,19 @@ config const n = 7;
 var sy$: sync int=1;  // state = full, value = 1
 var si$: single bool; // state = empty, value = false
 
-// By convention, sync and single variable names end in a ``$`` to
-// add a visual cue indicating that reads and writes are possibly
-// expensive operations and can potentially block the task.
+// As a convention, sync and single variable names sometimes end in a
+// ``$`` to add a visual cue indicating that reads and writes are possibly
+// expensive operations that can potentially block the task.
 //
 
-// For both sync and single variables, the state must be ``empty`` before
-// the value can be written.  When the write has completed, the state
-// is set to ``full``.
-//
-si$ = true; // state = full, value = true
-
-// For both sync and single variables, the state must be ``full`` before the
-// value can be read.  When the read has completed, the state of a
-// sync variable is set to ``empty``, and the state of a single variable
-// remains ``full``.
-//
-var sy = sy$; // sy$: state = empty
-var si = si$; // si$: state = full
-
-// If a sync or single variable is not in the correct state for reading
-// (``full``) or writing (``empty``), the current task blocks.
-//
-// The following creates a new task via a :ref:`begin
-// <primers-taskparallel-begin>` statement and declares a variable ``sy``
-// that is initialized to ``sy$``.  The initialization statement will block
-// until ``sy$`` is ``full``.  The last statement in the ``begin`` block sets
-// ``done$`` to ``full``.
-//
-var done$: sync bool;
-writeln("Launching new task");
-begin {
-  var sy = sy$; // This statement will block until sy$ is full
-  writeln("New task unblocked, sy=", sy);
-  done$ = true;
-}
-
-// Recall that execution proceeds immediately following the ``begin``
-// statement after task creation.
-//
-writeln("After launching new task");
-// When ``sy$`` is written, its state will be set to ``full`` and the blocked
-// task above will continue.
-//
-sy$ = n;
-// This next statement blocks until the last statement in the above ``begin``
-// completes.
-//
-done$;
+// Because of their full/empty state, reads and writes to sync and single
+// variables must be done with methods to make it clear how the full/empty
+// state is treated in the operation.
+// If a sync or single variable is not in the correct state for a given
+// operation, the current task blocks until it is.
 
 //
-// Example: simple split-phase barrier for tasks
-//
-var count$: sync int = n;  // counter which also serves as a lock
-var release$: single bool; // barrier release
-
-coforall t in 1..n {
-  var myc = count$;   // read the count, grab the lock (state = empty)
-  if myc!=1 {         // still waiting for others
-    write(".");
-    count$ = myc-1;   // update the count, release the lock (state = full)
-                      // we could do some work while waiting
-    release$;         // wait for everyone
-  } else {            // last one here
-    release$ = true;  // release everyone first (state = full)
-    writeln("done");
-  }
-}
-
-//
-// There are a number of methods defined for sync and single variables.
+// Here are the methods defined on sync / single variables:
 //
 
 // The ``reset()`` method, defined for sync variables, sets the value of
@@ -149,6 +92,53 @@ writeln(si3);
 //
 sy$.writeFF(4*n);
 
+//
+// The following creates a new task via a :ref:`begin
+// <primers-taskparallel-begin>` statement and declares a variable ``sy``
+// that is initialized to ``sy$``.  The initialization statement will block
+// until ``sy$`` is ``full``.  The last statement in the ``begin`` block sets
+// ``done$`` to ``full``.
+//
+var done$: sync bool;
+writeln("Launching new task");
+begin {
+  var sy = sy$; // This statement will block until sy$ is full
+  writeln("New task unblocked, sy=", sy);
+  done$.writeEF(true);
+}
+
+// Recall that execution proceeds immediately following the ``begin``
+// statement after task creation.
+//
+writeln("After launching new task");
+// When ``sy$`` is written, its state will be set to ``full`` and the blocked
+// task above will continue.
+//
+sy$.writeEF(n);
+// This next statement blocks until the last statement in the above ``begin``
+// completes.
+//
+done$.readFE();
+
+//
+// Example: simple split-phase barrier for tasks
+//
+var count$: sync int = n;  // counter which also serves as a lock
+var release$: single bool; // barrier release
+
+coforall t in 1..n {
+  var myc = count$;         // read the count, grab the lock (state = empty)
+  if myc!=1 {               // still waiting for others
+    write(".");
+    count$.writeEF(myc-1);  // update the count, release the lock (state = full)
+                            // we could do some work while waiting
+    release$.readFF();      // wait for everyone
+  } else {                  // last one here
+    release$.writeEF(true); // release everyone first (state = full)
+    writeln("done");
+  }
+}
+
 sy$.reset();
 
 // Sync and single arguments are passed by reference.  As a result,
@@ -159,15 +149,7 @@ f_withSyncIntFormal(sy$);
 writeln(si$.isFull);
 f_withSingleBoolFormal(si$);
 
-sy$ = 4*n;
-
-// When a sync or single variable is passed as an argument to a
-// function that expects the base type of the variable, the value is
-// read before being passed to the function.  Therefore, the task will
-// block until the state of the variable is ``full``.
-//
-f_withIntFormal(sy$);
-f_withBoolFormal(si$);
+sy$.writeEF(4*n);
 
 // When passing a sync or single variable to a generic formal,
 // whether with a ``ref`` intent or a default intent, the variable
@@ -179,7 +161,7 @@ f_withGenericDefaultIntentFormal(si$);
 f_withGenericRefFormal(sy$);
 f_withGenericRefFormal(si$);
 
-sy$ = 5*n;
+sy$.writeEF(5*n);
 
 // Currently, sync and single variables cannot be written out directly.
 // We need to extract the value, for example using ``readFE()`` or ``readFF()``.
