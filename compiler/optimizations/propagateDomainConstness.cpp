@@ -78,9 +78,11 @@ void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {
   INT_ASSERT(fieldSym);
   INT_ASSERT(fieldType);
 
-  if (fieldType->symbol->hasFlag(FLAG_DOMAIN)) {
-    Symbol *isConst = fieldSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
-    setDefinedConstForDomainField(thisSym, fieldSym, nextExpr, isConst);
+  if (!fieldSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+    if (fieldType->symbol->hasFlag(FLAG_DOMAIN)) {
+      Symbol *isConst = fieldSym->hasFlag(FLAG_CONST) ? gTrue : gFalse;
+      setDefinedConstForDomainField(thisSym, fieldSym, nextExpr, isConst);
+    }
   }
 }
 
@@ -102,6 +104,14 @@ void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
 void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
   Expr *nextExpr = parentExpr->next;
+  bool nextExprExists = true;
+
+  if (nextExpr == NULL) {
+    CallExpr *noop = new CallExpr(PRIM_NOOP);
+    parentExpr->insertAfter(noop);
+    nextExpr = noop;
+    nextExprExists = false;
+  }
 
   Symbol *argSym = NULL;
   Type *argType = NULL;
@@ -133,9 +143,14 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
     }
     INT_ASSERT(lhs);
 
-    Expr *anchor = nextExpr;
+    if (!isShadowVarSymbol(lhs)) {
+      Expr *anchor = nextExpr;
+      setDefinedConstForDomainSymbol(lhs, nextExpr, anchor, isConst);
 
-    setDefinedConstForDomainSymbol(lhs, nextExpr, anchor, isConst);
+      if (!nextExprExists) {
+        nextExpr->remove();
+      }
+    }
   }
 }
                 
