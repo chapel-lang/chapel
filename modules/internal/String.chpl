@@ -1881,6 +1881,12 @@ module String {
       var margin = '';
 
       for line in lines {
+
+        // Skip empty lines
+        if isWhitespaceOnly(line) {
+          continue;
+        }
+
         // Determine leading whitespace (spaces and tabs) in line
         var indent = '';
         for char in line {
@@ -1888,10 +1894,7 @@ module String {
           else indent += char;
         }
 
-        if isWhitespaceOnly(line) {
-          // Skip empty lines
-          continue;
-        } else if indent.size == 0 {
+        if indent == '' {
           // An unindented non-empty line means no margin exists, return early
           margin = '';
           break;
