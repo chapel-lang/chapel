@@ -2772,6 +2772,61 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
   }
 }
 
+static bool readNamedArgument(CallExpr* call, const char* name,
+                              bool defaultValue,
+                              std::vector<std::string>& expectedNames) {
+  bool ret = defaultValue;
+  expectedNames.push_back((std::string)name);
+
+  for (int i = 1; i<= call->numActuals(); i++) { 
+    NamedExpr* ne = toNamedExpr(call->get(i));
+    if (ne && !strcmp(ne->name, name)) {
+      SymExpr* se = toSymExpr(ne->actual);
+      if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
+        ret = se->symbol() == gTrue;
+      } else {
+        USR_FATAL(se, "the arguments to 'get visible symbols' must be literals 'true' or 'false'");
+      }
+      break;
+    }
+  }
+  return ret;
+}
+
+static bool symbolInBuiltinModule(Symbol* sym) {
+  ModuleSymbol* mod = sym->getModule();
+  if (mod->modTag == MOD_STANDARD &&
+      (!strcmp(mod->name, "Builtins") ||
+       !strcmp(mod->name, "Types") ||
+       !strcmp(mod->name, "Math"))) {
+    return true;
+  }
+  return false;
+}
+
+
+static void errorForUnexpectedArgName(std::vector<std::string> argNames,
+                                      CallExpr* call) {
+  if (call->numActuals() > argNames.size()) {
+    USR_FATAL(call, "too many arguments to 'get visible symbols'");
+  }
+
+  for (int i = 1; i <= call->numActuals(); i++) {
+    NamedExpr* actual = toNamedExpr(call->get(i));
+    if (!actual) {
+      USR_FATAL(call, "'get visible symbols' requires named arguments");
+    }
+    if (std::find(argNames.begin(), argNames.end(), (std::string)actual->name) == argNames.end()) {
+      USR_FATAL_CONT(actual, "unrecognized argument to 'get visible symbols': %s", actual->name);
+      USR_FATAL_CONT(call, "recognized names are:");
+      for (int i = 0; i < argNames.size(); i++) {
+        USR_FATAL_CONT(call, "  %s", argNames[i].c_str());
+      }
+      USR_STOP();
+    }
+  }
+}
+
 
 /* Find any "get visible symbols" primitive calls and print out all
    symbols that are visible from that point.
@@ -2779,24 +2834,12 @@ static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
 static void processGetVisibleSymbols() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
-      bool ignoreInternalModules = true;
-      // look for a single NamedExpr argument ignoreInternals=true|false
-      if (call->numActuals() == 1) {
-        NamedExpr* ne = toNamedExpr(call->get(1));
-        if (ne && !strcmp(ne->name, "ignoreInternalModules")) {
-          SymExpr* se = toSymExpr(ne->actual);
-          if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
-            ignoreInternalModules = se->symbol() == gTrue;
-          } else {
-            USR_FATAL(se, "the argument to get visible symbols must be a literal 'true' or 'false'");
-          }
-        } else {
-          USR_FATAL(call, "the argument to get visible symbols must be a named expression named ignoreInternalModules");
-        }
-      } else {
-        if (call->numActuals() != 0)
-          USR_FATAL(call, "get visible symbols may only have 0 or 1 arguments");
-      }
+      std::vector<std::string> argNames;
+      bool ignoreInternalModules = readNamedArgument(call, "ignoreInternalModules", true, argNames);
+      bool ignoreBuiltinModules = readNamedArgument(call, "ignoreBuiltinModules", false, argNames);
+
+      errorForUnexpectedArgName(argNames, call);
+
       std::set<Symbol*> alreadyFound;
       // build a map from filename to set of visible symbols in that file
       std::map<std::string, std::set<Symbol*>*> visibleMap;
@@ -2842,6 +2885,9 @@ static void processGetVisibleSymbols() {
           if (ignoreInternalModules &&
               sym->getModule()->modTag == MOD_INTERNAL)
             continue;
+          if (ignoreBuiltinModules && symbolInBuiltinModule(sym))
+            continue;
+
           printf("  %s:%d: %s\n", sym->defPoint->fname(),
                  sym->defPoint->linenum(), sym->name); 
         }
