@@ -3,9 +3,8 @@
 from __future__ import print_function
 import os
 
-# This .future needs valgrind or potentially something ASAN provides other
-# than address sanitization (it passes at least somewhat with address
-# sanitization)
+# This .future has uninitialized reads, which are not caught by asan so only
+# test under valgrind
 
 vgrnd = os.getenv('CHPL_TEST_VGRND_EXE', 'none')
 
