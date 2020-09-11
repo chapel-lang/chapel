@@ -3,12 +3,12 @@
 from __future__ import print_function
 import os
 
-# This .future needs valgrind or an address sanitizer run on it
+# This .future has uninitialized reads, which are not caught by asan so only
+# test under valgrind
 
-sanitize = os.getenv('CHPL_SANITIZE_EXE', 'none')
 vgrnd = os.getenv('CHPL_TEST_VGRND_EXE', 'none')
 
-if 'address' in sanitize or 'on' == vgrnd:
-	  print(False)
+if 'on' == vgrnd:
+    print(False)
 else:
     print(True)
