@@ -5,7 +5,7 @@ module M1 {
 module M2 {
   use M1;
   proc main() {
-    __primitive(c"get visible symbols");
+    __primitive(c"get visible symbols", ignoreBuiltinModules=true);
     // Ensures that the private module level variable foo is not visible
     // via explicit naming.
   }

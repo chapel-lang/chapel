@@ -9,6 +9,6 @@ module MainMod {
   proc main {
     use M1, M2;
     var xyzSymbol = 1;
-    __primitive(c"get visible symbols");
+    __primitive(c"get visible symbols", ignoreBuiltinModules=true);
   }
 }
