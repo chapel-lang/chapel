@@ -1,0 +1,2 @@
+initFromSingle.chpl:2: error: invalid copy-initialization
+initFromSingle.chpl:2: error: Can't initialize a type-inferred variable from a single

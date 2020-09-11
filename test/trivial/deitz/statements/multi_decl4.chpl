@@ -1,4 +1,7 @@
-var x, y: sync int;
+//var x, y: sync int;
+
+var x: sync int;
+var y: x.type;
 
 /* Works:
      var x: sync int;

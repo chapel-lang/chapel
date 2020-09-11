@@ -19,24 +19,24 @@
  */
 
 /*
-Synchronization variables have a logical state associated with the value. The
-state of the variable is either full or empty. Normal reads of a
-synchronization variable cannot proceed until the variable's state is full.
-Normal writes of a synchronization variable cannot proceed until the variable's
-state is empty.
+  Synchronization variables have a logical state associated with the value. The
+  state of the variable is either full or empty. Normal reads of a
+  synchronization variable cannot proceed until the variable's state is full.
+  Normal writes of a synchronization variable cannot proceed until the variable's
+  state is empty.
 
-Chapel supports two types of synchronization variables: sync and single. Both
-types behave similarly, except that a single variable may only be written once.
-Consequently, when a sync variable is read, its state transitions to empty,
-whereas when a single variable is read, its state does not change. When either
-type of synchronization variable is written, its state transitions to full.
+  Chapel supports two types of synchronization variables: sync and single. Both
+  types behave similarly, except that a single variable may only be written once.
+  Consequently, when a sync variable is read, its state transitions to empty,
+  whereas when a single variable is read, its state does not change. When either
+  type of synchronization variable is written, its state transitions to full.
 
-If a task attempts to read or write a synchronization variable that is not in
-the correct state, the task is suspended. When the variable transitions to the
-correct state, the task is resumed. If there are multiple tasks blocked waiting
-for the state transition, one is non-deterministically selected to proceed and
-the others continue to wait if it is a sync variable; all tasks are selected to
-proceed if it is a single variable.
+  If a task attempts to read or write a synchronization variable that is not in
+  the correct state, the task is suspended. When the variable transitions to the
+  correct state, the task is resumed. If there are multiple tasks blocked waiting
+  for the state transition, one is non-deterministically selected to proceed and
+  the others continue to wait if it is a sync variable; all tasks are selected to
+  proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
@@ -49,15 +49,15 @@ module ChapelSyncvar {
   use CPtr;
 
   /************************************ | *************************************
-  *                                                                           *
-  * The implementation of the user-facing sync/single types are exposed to    *
-  * the compiler as a pair of record-wrapped classes.                         *
-  *                                                                           *
-  * The record implements the compiler facing API and manages the memory      *
-  * associated with the underlying class while the class provides the         *
-  * identity behavior required for the semantics of sync/single.              *
-  *                                                                           *
-  ************************************* | ************************************/
+   *                                                                           *
+   * The implementation of the user-facing sync/single types are exposed to    *
+   * the compiler as a pair of record-wrapped classes.                         *
+   *                                                                           *
+   * The record implements the compiler facing API and manages the memory      *
+   * associated with the underlying class while the class provides the         *
+   * identity behavior required for the semantics of sync/single.              *
+   *                                                                           *
+   ************************************* | ************************************/
 
   //
   // The following types are OK for full empty types (sync/single)
@@ -70,14 +70,14 @@ module ChapelSyncvar {
 
   private proc isSupported(type t) param
     return isNothingType(t)       ||
-           isBoolType(t)          ||
-           isIntegralType(t)      ||
-           isRealType(t)          ||
-           isImagType(t)          ||
-           isEnumType(t)          ||
-           isClassType(t)         ||
-           isStringType(t)        ||    // Should this be allowed?
-           t == chpl_taskID_t;
+    isBoolType(t)          ||
+    isIntegralType(t)      ||
+    isRealType(t)          ||
+    isImagType(t)          ||
+    isEnumType(t)          ||
+    isClassType(t)         ||
+    isStringType(t)        ||    // Should this be allowed?
+    t == chpl_taskID_t;
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
@@ -106,10 +106,10 @@ module ChapelSyncvar {
   proc chpl__readXX(x) return x;
 
   /************************************ | *************************************
-  *                                                                           *
-  * The record wrapper to implement sync                                      *
-  *                                                                           *
-  ************************************* | ************************************/
+   *                                                                           *
+   * The record wrapper to implement sync                                      *
+   *                                                                           *
+   ************************************* | ************************************/
 
   pragma "sync"
   pragma "default intent is ref"
@@ -151,9 +151,9 @@ module ChapelSyncvar {
       //   var x : sync int = 5;
       //   var y : sync real = x;
       if isCoercible(other.valType, this.type.valType) == false {
-        param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
-        param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
-        compilerError("cannot initialize ", theseTypes, " ",  because);
+      param theseTypes = "'" + this.type:string + "' from '" + other.type:string + "'";
+      param because = "because '" + other.valType:string + "' is not coercible to '" + this.type.valType:string + "'";
+      compilerError("cannot initialize ", theseTypes, " ",  because);
       }
       this.init(this.type.valType);
       this.writeEF(other.readFE());
@@ -180,14 +180,14 @@ module ChapelSyncvar {
     // Do not allow implicit writes of sync vars.
     proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
-     }
+    }
   }
 
   /*
-     Noakes 2016/08/10
+    Noakes 2016/08/10
 
-     These are defined as secondary methods so that chpldoc can render the
-     documentation
+    These are defined as secondary methods so that chpldoc can render the
+    documentation
   */
 
   pragma "no doc"
@@ -271,10 +271,10 @@ module ChapelSyncvar {
   }
 
   /*
-     Determine if the sync variable is full without blocking.
-     Does not alter the state of the sync variable
+    Determine if the sync variable is full without blocking.
+    Does not alter the state of the sync variable
 
-     :returns: true if the state of the sync variable is full.
+    :returns: true if the state of the sync variable is full.
   */
   proc _syncvar.isFull {
     return wrapped.isFull;
@@ -284,10 +284,10 @@ module ChapelSyncvar {
     compilerError("Cannot assign directly to a sync var; apply a method like .writeEF() or .writeFF() to modify it");
   }
 
-/*
+  /*
   proc =(ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(rhs);
-  }
+    }
 
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
@@ -300,51 +300,52 @@ module ChapelSyncvar {
 
   proc  += (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
-  }
+    }
 
-  proc  -= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  -= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
-  }
+    }
 
-  proc  *= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  *= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
-  }
+    }
 
-  proc  /= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  /= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
-  }
+    }
 
-  proc  %= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  %= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
-  }
+    }
 
-  proc **= (ref lhs : _syncvar(?t), rhs : t) {
+    proc **= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
-  }
+    }
 
-  proc  &= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  &= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
-  }
+    }
 
-  proc  |= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  |= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
-  }
+    }
 
-  proc  ^= (ref lhs : _syncvar(?t), rhs : t) {
+    proc  ^= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
-  }
+    }
 
-  proc >>= (ref lhs : _syncvar(?t), rhs : t) {
+    proc >>= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
-  }
+    }
 
-  proc <<= (ref lhs : _syncvar(?t), rhs : t) {
+    proc <<= (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
-  }
-*/
+    }
+  */
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
+    compilerError("Can't initialize a type-inferred variable from a sync");
     return sv.readFE();
   }
 
@@ -389,19 +390,19 @@ module ChapelSyncvar {
   proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
 
   /*
-  proc <=>(lhs : _syncvar, ref rhs) {
+    proc <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
-  }
+    }
 
-  proc <=>(ref lhs, rhs : _syncvar) {
+    proc <=>(ref lhs, rhs : _syncvar) {
     const tmp = lhs;
 
     lhs = rhs;
     rhs = tmp;
-  }
+    }
   */
 
   proc <=>(lhs : _syncvar, rhs : _syncvar) {
@@ -684,10 +685,10 @@ module ChapelSyncvar {
 
 
   /************************************ | *************************************
-  *                                                                           *
-  * The record wrapper to implement single                                    *
-  *                                                                           *
-  ************************************* | ************************************/
+   *                                                                           *
+   * The record wrapper to implement single                                    *
+   *                                                                           *
+   ************************************* | ************************************/
 
   pragma "single"
   pragma "default intent is ref"
@@ -756,14 +757,14 @@ module ChapelSyncvar {
     // Do not allow implicit writes of single vars.
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
-     }
+    }
   }
 
   /*
-     Noakes 2016/08/12
+    Noakes 2016/08/12
 
-     These are defined as secondary methods so that chpldoc can render the
-     documentation
+    These are defined as secondary methods so that chpldoc can render the
+    documentation
   */
 
   pragma "no doc"
@@ -809,16 +810,16 @@ module ChapelSyncvar {
   }
 
   /*
-     Determine if the single variable is full without blocking.
-     Does not alter the state of the single variable
+    Determine if the single variable is full without blocking.
+    Does not alter the state of the single variable
 
-     :returns: true if the state of the single variable is full.
+    :returns: true if the state of the single variable is full.
   */
   proc _singlevar.isFull {
     return wrapped.isFull;
   }
 
-  proc =(ref lhs : _singlevar(?t), rhs : t) {
+  proc =(ref lhs : _singlevar(?t), rhs) {
     compilerError("Cannot assign directly to a single var; apply .writeEF() to modify it");
     lhs.wrapped.writeEF(rhs);
   }
@@ -834,6 +835,7 @@ module ChapelSyncvar {
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
+    compilerError("Can't initialize a type-inferred variable from a single");
     return sv.readFF();
   }
 
@@ -1024,9 +1026,9 @@ private module SyncVarRuntimeSupport {
   // and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
     return CHPL_TASKS == "qthreads" &&
-           CHPL_TARGET_ARCH != "aarch64" &&
-           castableToAlignedT(t) &&
-           numBits(c_uintptr) == 64;
+      CHPL_TARGET_ARCH != "aarch64" &&
+      castableToAlignedT(t) &&
+      numBits(c_uintptr) == 64;
   }
 
   extern proc qthread_readFE     (ref dest : aligned_t, const ref src: aligned_t) : c_int;
