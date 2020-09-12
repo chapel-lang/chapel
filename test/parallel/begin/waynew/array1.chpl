@@ -19,5 +19,5 @@ begin {
   done.writeEF(true);
 }
 
-var bogus = done;
+var bogus = done.readFF();
 writeln( a);

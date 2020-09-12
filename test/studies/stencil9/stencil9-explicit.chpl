@@ -284,7 +284,7 @@ coforall (lr,lc) in LocaleGridDom {
       // sync here...
       //
       while (takeTurns$.readXX() != here.id) { }
-      const prevDelta = delta$;
+      const prevDelta = delta$.readFE();
       if (locDelta > prevDelta) then
         delta$.writeEF(locDelta);
       else

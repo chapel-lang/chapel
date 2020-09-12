@@ -5,7 +5,7 @@ var sx: single myType;
 var x: myType;
 
 proc readme(sx: single myType) {
-  var x = sx;
+  var x = sx.readFF();
 }
 
 proc writeme(sx: single myType) {

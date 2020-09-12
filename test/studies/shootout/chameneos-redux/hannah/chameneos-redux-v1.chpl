@@ -59,7 +59,7 @@ class MeetingPlace {
       }
     }
 
-    var spotsLeft = spotsLeft$;
+    var spotsLeft = spotsLeft$.readFE();
     var otherColor : color;
 
     if (spotsLeft == 0) {

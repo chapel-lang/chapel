@@ -95,14 +95,14 @@ sy$.writeFF(4*n);
 //
 // The following creates a new task via a :ref:`begin
 // <primers-taskparallel-begin>` statement and declares a variable ``sy``
-// that is initialized to ``sy$``.  The initialization statement will block
+// that is initialized using ``sy$``.  The initialization statement will block
 // until ``sy$`` is ``full``.  The last statement in the ``begin`` block sets
 // ``done$`` to ``full``.
 //
 var done$: sync bool;
 writeln("Launching new task");
 begin {
-  var sy = sy$; // This statement will block until sy$ is full
+  var sy = sy$.readFE(); // This statement will block until sy$ is full
   writeln("New task unblocked, sy=", sy);
   done$.writeEF(true);
 }
@@ -127,14 +127,14 @@ var count$: sync int = n;  // counter which also serves as a lock
 var release$: single bool; // barrier release
 
 coforall t in 1..n {
-  var myc = count$;         // read the count, grab the lock (state = empty)
-  if myc!=1 {               // still waiting for others
+  var myc = count$.readFE(); // read the count, grab the lock (state = empty)
+  if myc!=1 {                // still waiting for others
     write(".");
-    count$.writeEF(myc-1);  // update the count, release the lock (state = full)
-                            // we could do some work while waiting
-    release$.readFF();      // wait for everyone
-  } else {                  // last one here
-    release$.writeEF(true); // release everyone first (state = full)
+    count$.writeEF(myc-1); // update the count, release the lock (state = full)
+                             // we could do some work while waiting
+    release$.readFF();       // wait for everyone
+  } else {                   // last one here
+    release$.writeEF(true);  // release everyone first (state = full)
     writeln("done");
   }
 }

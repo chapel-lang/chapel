@@ -5,7 +5,7 @@ use Time;
 var s: single int;
 
 begin {
-  var t = s;
+  var t = s.readFF();
   writeln( "B.");
 }
 

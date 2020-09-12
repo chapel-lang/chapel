@@ -51,7 +51,7 @@ proc blocking_sync_write() {
 blocking_sync_write();
 
 proc blocking_sync_read() {
-  var x = globalSync;
+  var x = globalSync.readFE();
   return x;
 }
 blocking_sync_read();
@@ -62,7 +62,7 @@ proc blocking_single_write() {
 blocking_single_write();
 
 proc blocking_single_read() {
-  var x = globalSingle;
+  var x = globalSingle.readFF();
   return x;
 }
 blocking_single_read();
