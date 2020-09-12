@@ -33,7 +33,7 @@ Testing changes to these scripts
 
 export CHPL_NIGHTLY_LOGDIR=$PWD/chapel-test-logs
 export CHPL_NIGHTLY_CRON_LOGDIR=$PWD/chapel-test-logs
-export CHPL_NIGHTLY_CRON_RECIPIENT=$USER@hpe.com
+export CHPL_NIGHTLY_CRON_RECIPIENT=[your email address]
 export CHPL_NIGHTLY_TEST_CONFIG_NAME=$USER.test
 
 # Run the script, if appropriate
