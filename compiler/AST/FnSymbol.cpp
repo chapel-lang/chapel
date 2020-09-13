@@ -55,6 +55,7 @@ FnSymbol::FnSymbol(const char* initName)
   retTag             = RET_VALUE;
   iteratorInfo       = NULL;
   iteratorGroup      = NULL;
+  cacheInfo          = NULL;
   _this              = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
@@ -82,14 +83,9 @@ FnSymbol::FnSymbol(const char* initName)
 FnSymbol::~FnSymbol() {
   cleanupIteratorInfo(this);
   cleanupIteratorGroup(this);
-
+  cleanupCacheInfo(this);
   BasicBlock::clear(this);
-  delete basicBlocks;
-
-  if (calledBy) {
-    delete calledBy;
-    calledBy = NULL;
-  }
+  delete calledBy;
 }
 
 void FnSymbol::verify() {

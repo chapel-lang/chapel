@@ -22,6 +22,7 @@
 
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
+#include "caches.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
 #include "DecoratedClassType.h"
@@ -473,6 +474,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
     fn->tagIfGeneric();
 
+    createCacheInfoIfNeeded(fn);
+
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
       if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
@@ -522,6 +525,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       markTypesWithDefaultInitEqOrAssign(fn);
     }
     popInstantiationLimit(fn);
+    clearCacheInfoIfEmpty(fn);
   }
 }
 

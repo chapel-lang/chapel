@@ -59,7 +59,8 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::isApplicable(CallInfo& info) {
+bool ResolutionCandidate::isApplicable(CallInfo& info,
+                                       VisibilityInfo* visInfo) {
   bool retval = false;
 
   TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
@@ -67,9 +68,9 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
     return false;
 
   if (! fn->isGeneric()) {
-    retval = isApplicableConcrete(info);
+    retval = isApplicableConcrete(info, visInfo);
   } else {
-    retval = isApplicableGeneric (info);
+    retval = isApplicableGeneric(info, visInfo);
   }
 
   // Note: for generic instantiations, this code will be executed twice.
@@ -84,7 +85,8 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
   return retval;
 }
 
-bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
+bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
+                                               VisibilityInfo* visInfo) {
 
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
@@ -97,10 +99,11 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
   if (computeAlignment(info) == false)
     return false;
 
-  return checkResolveFormalsWhereClauses(info);
+  return checkResolveFormalsWhereClauses(info, visInfo);
 }
 
-bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
+bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
+                                              VisibilityInfo* visInfo) {
 
   FnSymbol* oldFn = fn;
 
@@ -126,7 +129,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
    * Instantiate enough of the generic to get through the rest of the
    * filtering and disambiguation processes.
    */
-  fn = instantiateSignature(fn, substitutions, info.call);
+  fn = instantiateSignature(fn, substitutions, visInfo);
 
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -138,7 +141,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
   if (fn == oldFn)
     return true;
 
-  return isApplicable(info);
+  return isApplicable(info, visInfo);
 }
 
 /************************************* | **************************************
@@ -738,7 +741,8 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
+bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
+                                                    VisibilityInfo* visInfo) {
   int coindex = -1;
 
   /*
@@ -954,7 +958,7 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
 void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   ResolutionCandidate c(fn);
 
-  c.isApplicable(info);
+  c.isApplicable(info, NULL);
 
   USR_PRINT(fn, "this candidate did not match: %s", toString(fn));
 

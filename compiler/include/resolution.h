@@ -29,6 +29,7 @@
 #include <vector>
 
 class CallInfo;
+class VisibilityInfo;
 class ResolutionCandidate;
 
 struct Serializers {
@@ -170,8 +171,9 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
-FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
+FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
+                               VisibilityInfo* info);
 void      instantiateBody(FnSymbol* fn);
 
 // generics support

@@ -1,0 +1,14 @@
+check-gc-reuse-warns.chpl:9: In function 'libfn':
+check-gc-reuse-warns.chpl:10: warning: User.worker
+check-gc-reuse-warns.chpl:19: Function 'libfn' instantiated as: libfn(param p = 0)
+check-gc-reuse-warns.chpl:9: In function 'libfn':
+check-gc-reuse-warns.chpl:10: warning: User.u3.worker
+check-gc-reuse-warns.chpl:30: Function 'libfn' instantiated as: libfn(param p = 0)
+check-gc-reuse-warns.chpl:9: In function 'libfn':
+check-gc-reuse-warns.chpl:10: warning: More1.worker
+check-gc-reuse-warns.chpl:64: Function 'libfn' instantiated as: libfn(param p = 0)
+check-gc-reuse-warns.chpl:9: In function 'libfn':
+check-gc-reuse-warns.chpl:10: warning: Combo1.worker
+check-gc-reuse-warns.chpl:99: Function 'libfn' instantiated as: libfn(param p = 0)
+check-gc-reuse-warns.chpl:33: In function 'main':
+check-gc-reuse-warns.chpl:55: error: done

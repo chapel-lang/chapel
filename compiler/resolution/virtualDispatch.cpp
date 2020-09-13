@@ -219,7 +219,7 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
     return cfn;
 
   } else {
-    FnSymbol* fn = instantiate(cfn, subs);
+    FnSymbol* fn = instantiateWithoutCall(cfn, subs);
 
     //
     // BHARSH 2018-04-06:
