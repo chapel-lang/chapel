@@ -234,16 +234,28 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        var (hasFoundSlot, _) = _htb.findFullSlot(x);
-        result = hasFoundSlot;
+        result = _contains(x);
       }
 
       return result;
     }
 
     /*
+     As above, but parSafe lock must be held and must be called "on this".
+    */
+    pragma "no doc"
+    proc const _contains(const ref x: eltType): bool {
+      var (hasFoundSlot, _) = _htb.findFullSlot(x);
+      return hasFoundSlot;
+    }
+
+    /*
       Returns `true` if this set shares no elements in common with the set
       `other`, and `false` otherwise.
+
+      .. warning::
+
+        `other` must not be modified during this call.
 
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` are disjoint.
@@ -255,11 +267,10 @@ module Set {
       on this {
         _enter(); defer _leave();
 
-        if !(size == 0 || other.size == 0) {
-
+        if _size != 0 {
           // TODO: Take locks on other?
           for x in other do
-            if this.contains(x) {
+            if this._contains(x) {
               result = false;
               break;
             }
@@ -433,10 +444,19 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        result = _htb.tableNumFullSlots;
+        result = _size;
       }
 
       return result;
+    }
+
+    /*
+      As above, but the parSafe lock must be held, and must be called
+      "on this".
+    */
+    pragma "no doc"
+    inline proc const _size {
+      return _htb.tableNumFullSlots;
     }
 
     /*
