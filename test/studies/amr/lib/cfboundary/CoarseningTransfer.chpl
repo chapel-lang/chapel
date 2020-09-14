@@ -20,8 +20,8 @@ class GridInvalidRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const fine_neighbors: domain(unmanaged Grid);
-  const domains:        [fine_neighbors] domain(dimension,stridable=true);
+  var fine_neighbors: domain(unmanaged Grid);
+  var domains:        [fine_neighbors] domain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
