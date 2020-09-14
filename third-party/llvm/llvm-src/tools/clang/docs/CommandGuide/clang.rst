@@ -278,9 +278,18 @@ Language Selection and Mode Options
  Make all string literals default to writable.  This disables uniquing of
  strings and other optimizations.
 
-.. option:: -flax-vector-conversions
+.. option:: -flax-vector-conversions, -flax-vector-conversions=<kind>, -fno-lax-vector-conversions
 
  Allow loose type checking rules for implicit vector conversions.
+ Possible values of <kind>:
+
+ - ``none``: allow no implicit conversions between vectors
+ - ``integer``: allow implicit bitcasts between integer vectors of the same
+   overall bit-width
+ - ``all``: allow implicit bitcasts between any vectors of the same
+   overall bit-width
+
+ <kind> defaults to ``integer`` if unspecified.
 
 .. option:: -fblocks
 
@@ -316,13 +325,23 @@ number of cross compilers, or may only support a native target.
 
 .. option:: -mmacosx-version-min=<version>
 
-  When building for Mac OS X, specify the minimum version supported by your
+  When building for macOS, specify the minimum version supported by your
   application.
 
 .. option:: -miphoneos-version-min
 
   When building for iPhone OS, specify the minimum version supported by your
   application.
+
+.. option:: --print-supported-cpus
+
+  Print out a list of supported processors for the given target (specified
+  through --target=<architecture> or -arch <architecture>). If no target is
+  specified, the system default target will be used.
+
+.. option:: -mcpu=?, -mtune=?
+
+  Aliases of --print-supported-cpus
 
 .. option:: -march=<cpu>
 

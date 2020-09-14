@@ -1,1 +1,1 @@
-SIGBUS-array-alloc.chpl:15: error: Out of memory allocating "array elements"
+SIGBUS-array-alloc.chpl:16: error: Out of memory allocating "array elements"

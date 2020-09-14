@@ -1,9 +1,8 @@
 //===-- AMDGPUMachineFunctionInfo.h -------------------------------*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +11,7 @@
 
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/CodeGen/MachineFunction.h"
+#include "Utils/AMDGPUBaseInfo.h"
 
 namespace llvm {
 
@@ -24,10 +24,13 @@ class AMDGPUMachineFunction : public MachineFunctionInfo {
 
 protected:
   uint64_t ExplicitKernArgSize; // Cache for this.
-  unsigned MaxKernArgAlign; // Cache for this.
+  Align MaxKernArgAlign;        // Cache for this.
 
   /// Number of bytes in the LDS that are being used.
   unsigned LDSSize;
+
+  // State of MODE register, assumed FP mode.
+  AMDGPU::SIModeRegisterDefaults Mode;
 
   // Kernels + shaders. i.e. functions called by the driver and not called
   // by other functions.
@@ -48,12 +51,14 @@ public:
     return ExplicitKernArgSize;
   }
 
-  unsigned getMaxKernArgAlign() const {
-    return MaxKernArgAlign;
-  }
+  unsigned getMaxKernArgAlign() const { return MaxKernArgAlign.value(); }
 
   unsigned getLDSSize() const {
     return LDSSize;
+  }
+
+  AMDGPU::SIModeRegisterDefaults getMode() const {
+    return Mode;
   }
 
   bool isEntryFunction() const {

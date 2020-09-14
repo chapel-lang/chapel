@@ -1,9 +1,8 @@
 //===- ModuleSymbolTable.cpp - symbol table for in-memory IR --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -84,7 +83,8 @@ initializeRecordStreamer(const Module &M,
   if (!MRI)
     return;
 
-  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT.str()));
+  MCTargetOptions MCOptions;
+  std::unique_ptr<MCAsmInfo> MAI(T->createMCAsmInfo(*MRI, TT.str(), MCOptions));
   if (!MAI)
     return;
 
@@ -110,7 +110,6 @@ initializeRecordStreamer(const Module &M,
   std::unique_ptr<MCAsmParser> Parser(
       createMCAsmParser(SrcMgr, MCCtx, Streamer, *MAI));
 
-  MCTargetOptions MCOptions;
   std::unique_ptr<MCTargetAsmParser> TAP(
       T->createMCAsmParser(*STI, *Parser, *MCII, MCOptions));
   if (!TAP)

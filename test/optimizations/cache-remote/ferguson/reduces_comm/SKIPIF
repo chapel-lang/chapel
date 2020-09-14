@@ -1,3 +1,2 @@
-# currently --cache-remote only supported for gasnet,fifo
-CHPL_COMM!=gasnet
-CHPL_TASKS!=fifo
+CHPL_COMM == none
+CHPL_SANITIZE_EXE != none

@@ -6,6 +6,7 @@ Initializing Modules:
     NetworkAtomics
     ChapelThreads
     ChapelTuple
+      DSIUtil
     ChapelRange
     ChapelTaskDataHelp
     LocaleModel
@@ -13,16 +14,15 @@ Initializing Modules:
       LocaleModelHelpSetup
        ChapelLocale
        DefaultRectangular
-        DSIUtil
         ChapelArray
          ChapelDebugPrint
+          IO
+           SysError
+           FormattedIO
+            Regexp
          Sort
           List
            ChapelLocks
-           IO
-            SysError
-            FormattedIO
-             Regexp
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -30,10 +30,10 @@ Initializing Modules:
            ShallowCopy
            InsertionSort
         ChapelDistribution
-         LinkedLists
-        DefaultAssociative
+         ChapelHashtable
         ExternalArray
         RangeChunk
+        ChapelHashing
        ChapelNumLocales
        Sys
       LocaleModelHelpRuntime
@@ -46,7 +46,7 @@ Initializing Modules:
     ChapelUtil
     ChapelError
     ChapelTaskData
-    Assert
+    Builtins
     AlignedTSupport
     CPtr
    printModuleInitOrder

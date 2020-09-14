@@ -1,1 +1,1 @@
-assign-nonnil-unmanaged-from-oknil-nil.chpl:8: error: cannot assign to unmanaged MyClass from nil
+assign-nonnil-unmanaged-from-oknil-nil.chpl:8: error: Cannot assign to unmanaged MyClass from nil

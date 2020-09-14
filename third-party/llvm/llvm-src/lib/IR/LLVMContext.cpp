@@ -1,9 +1,8 @@
 //===-- LLVMContext.cpp - Implement LLVMContext ---------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,6 +21,7 @@
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/RemarkStreamer.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
@@ -36,32 +36,9 @@ LLVMContext::LLVMContext() : pImpl(new LLVMContextImpl(*this)) {
   // Create the fixed metadata kinds. This is done in the same order as the
   // MD_* enum values so that they correspond.
   std::pair<unsigned, StringRef> MDKinds[] = {
-    {MD_dbg, "dbg"},
-    {MD_tbaa, "tbaa"},
-    {MD_prof, "prof"},
-    {MD_fpmath, "fpmath"},
-    {MD_range, "range"},
-    {MD_tbaa_struct, "tbaa.struct"},
-    {MD_invariant_load, "invariant.load"},
-    {MD_alias_scope, "alias.scope"},
-    {MD_noalias, "noalias"},
-    {MD_nontemporal, "nontemporal"},
-    {MD_mem_parallel_loop_access, "llvm.mem.parallel_loop_access"},
-    {MD_nonnull, "nonnull"},
-    {MD_dereferenceable, "dereferenceable"},
-    {MD_dereferenceable_or_null, "dereferenceable_or_null"},
-    {MD_make_implicit, "make.implicit"},
-    {MD_unpredictable, "unpredictable"},
-    {MD_invariant_group, "invariant.group"},
-    {MD_align, "align"},
-    {MD_loop, "llvm.loop"},
-    {MD_type, "type"},
-    {MD_section_prefix, "section_prefix"},
-    {MD_absolute_symbol, "absolute_symbol"},
-    {MD_associated, "associated"},
-    {MD_callees, "callees"},
-    {MD_irr_loop, "irr_loop"},
-    {MD_access_group, "llvm.access.group"},
+#define LLVM_FIXED_MD_KIND(EnumID, Name, Value) {EnumID, Name},
+#include "llvm/IR/FixedMetadataKinds.def"
+#undef LLVM_FIXED_MD_KIND
   };
 
   for (auto &MDKind : MDKinds) {
@@ -84,6 +61,11 @@ LLVMContext::LLVMContext() : pImpl(new LLVMContextImpl(*this)) {
   assert(GCTransitionEntry->second == LLVMContext::OB_gc_transition &&
          "gc-transition operand bundle id drifted!");
   (void)GCTransitionEntry;
+
+  auto *CFGuardTargetEntry = pImpl->getOrInsertBundleTag("cfguardtarget");
+  assert(CFGuardTargetEntry->second == LLVMContext::OB_cfguardtarget &&
+         "cfguardtarget operand bundle id drifted!");
+  (void)CFGuardTargetEntry;
 
   SyncScope::ID SingleThreadSSID =
       pImpl->getOrInsertSyncScopeID("singlethread");
@@ -160,12 +142,15 @@ uint64_t LLVMContext::getDiagnosticsHotnessThreshold() const {
   return pImpl->DiagnosticsHotnessThreshold;
 }
 
-yaml::Output *LLVMContext::getDiagnosticsOutputFile() {
-  return pImpl->DiagnosticsOutputFile.get();
+RemarkStreamer *LLVMContext::getRemarkStreamer() {
+  return pImpl->RemarkDiagStreamer.get();
 }
-
-void LLVMContext::setDiagnosticsOutputFile(std::unique_ptr<yaml::Output> F) {
-  pImpl->DiagnosticsOutputFile = std::move(F);
+const RemarkStreamer *LLVMContext::getRemarkStreamer() const {
+  return const_cast<LLVMContext *>(this)->getRemarkStreamer();
+}
+void LLVMContext::setRemarkStreamer(
+    std::unique_ptr<RemarkStreamer> RemarkStreamer) {
+  pImpl->RemarkDiagStreamer = std::move(RemarkStreamer);
 }
 
 DiagnosticHandler::DiagnosticHandlerTy
@@ -228,14 +213,10 @@ LLVMContext::getDiagnosticMessagePrefix(DiagnosticSeverity Severity) {
 }
 
 void LLVMContext::diagnose(const DiagnosticInfo &DI) {
-  if (auto *OptDiagBase = dyn_cast<DiagnosticInfoOptimizationBase>(&DI)) {
-    yaml::Output *Out = getDiagnosticsOutputFile();
-    if (Out) {
-      // For remarks the << operator takes a reference to a pointer.
-      auto *P = const_cast<DiagnosticInfoOptimizationBase *>(OptDiagBase);
-      *Out << P;
-    }
-  }
+  if (auto *OptDiagBase = dyn_cast<DiagnosticInfoOptimizationBase>(&DI))
+    if (RemarkStreamer *RS = getRemarkStreamer())
+      RS->emit(*OptDiagBase);
+
   // If there is a report handler, use it.
   if (pImpl->DiagHandler &&
       (!pImpl->RespectDiagnosticFilters || isDiagnosticEnabled(DI)) &&

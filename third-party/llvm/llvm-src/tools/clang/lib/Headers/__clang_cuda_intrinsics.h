@@ -1,22 +1,8 @@
 /*===--- __clang_cuda_intrinsics.h - Device-side CUDA intrinsic wrappers ---===
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ * See https://llvm.org/LICENSE.txt for license information.
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  *
  *===-----------------------------------------------------------------------===
  */
@@ -59,7 +45,7 @@
     _Static_assert(sizeof(__val) == sizeof(__Bits));                           \
     _Static_assert(sizeof(__Bits) == 2 * sizeof(int));                         \
     __Bits __tmp;                                                              \
-    memcpy(&__val, &__tmp, sizeof(__val));                                     \
+    memcpy(&__tmp, &__val, sizeof(__val));                                \
     __tmp.__a = ::__FnName(__tmp.__a, __offset, __width);                      \
     __tmp.__b = ::__FnName(__tmp.__b, __offset, __width);                      \
     long long __ret;                                                           \
@@ -143,7 +129,7 @@ __MAKE_SHUFFLES(__shfl_xor, __nvvm_shfl_bfly_i32, __nvvm_shfl_bfly_f32, 0x1f,
     _Static_assert(sizeof(__val) == sizeof(__Bits));                           \
     _Static_assert(sizeof(__Bits) == 2 * sizeof(int));                         \
     __Bits __tmp;                                                              \
-    memcpy(&__val, &__tmp, sizeof(__val));                                     \
+    memcpy(&__tmp, &__val, sizeof(__val));                                     \
     __tmp.__a = ::__FnName(__mask, __tmp.__a, __offset, __width);              \
     __tmp.__b = ::__FnName(__mask, __tmp.__b, __offset, __width);              \
     long long __ret;                                                           \
@@ -225,7 +211,15 @@ inline __device__ unsigned int __ballot_sync(unsigned int mask, int pred) {
   return __nvvm_vote_ballot_sync(mask, pred);
 }
 
-inline __device__ unsigned int __activemask() { return __nvvm_vote_ballot(1); }
+inline __device__ unsigned int __activemask() {
+#if CUDA_VERSION < 9020
+  return __nvvm_vote_ballot(1);
+#else
+  unsigned int mask;
+  asm volatile("activemask.b32 %0;" : "=r"(mask));
+  return mask;
+#endif
+}
 
 inline __device__ unsigned int __fns(unsigned mask, unsigned base, int offset) {
   return __nvvm_fns(mask, base, offset);

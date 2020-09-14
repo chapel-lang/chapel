@@ -37,13 +37,4 @@ module ChapelBase {
   class _ref {
     var _val;
   }
-
-  pragma "compiler generated"
-  pragma "last resort"
-  pragma "unalias fn"
-  inline proc chpl__unalias(x) {
-    pragma "no copy" var ret = x;
-    return x;
-  }
-
 }

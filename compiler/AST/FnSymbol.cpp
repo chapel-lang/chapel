@@ -55,6 +55,7 @@ FnSymbol::FnSymbol(const char* initName)
   retTag             = RET_VALUE;
   iteratorInfo       = NULL;
   iteratorGroup      = NULL;
+  cacheInfo          = NULL;
   _this              = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
@@ -82,14 +83,9 @@ FnSymbol::FnSymbol(const char* initName)
 FnSymbol::~FnSymbol() {
   cleanupIteratorInfo(this);
   cleanupIteratorGroup(this);
-
+  cleanupCacheInfo(this);
   BasicBlock::clear(this);
-  delete basicBlocks;
-
-  if (calledBy) {
-    delete calledBy;
-    calledBy = NULL;
-  }
+  delete calledBy;
 }
 
 void FnSymbol::verify() {
@@ -907,11 +903,11 @@ bool FnSymbol::isCompilerGenerated() const {
 }
 
 bool FnSymbol::isInitializer() const {
-  return isMethod() == true && strcmp(name, "init")     == 0;
+  return isMethod() == true && name == astrInit;
 }
 
 bool FnSymbol::isPostInitializer() const {
-  return isMethod() == true && strcmp(name, "postinit") == 0;
+  return isMethod() == true && name == astrPostinit;
 }
 
 bool FnSymbol::isDefaultInit() const {

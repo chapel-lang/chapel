@@ -1,3 +1,3 @@
-constParam.chpl:8: error: illegal lvalue in assignment
+constParam.chpl:8: error: cannot assign to const variable
 constParam.chpl:39: error: Initializing parameter 'n' to value not known at compile time
 constParam.chpl:40: error: Initializing parameter 'piOverN' to value not known at compile time

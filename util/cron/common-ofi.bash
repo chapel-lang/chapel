@@ -37,13 +37,10 @@ if [ -z "$lchOK" ] ; then
   module load gnu-openmpi
 
   set -x
-  module list -l 2>&1 | grep -E -q '\bgnu-openmpi\b' || return $?
+  module list 2>&1 | grep -E -q '\bgnu-openmpi\b' || return $?
 
   export MPI_DIR=$(which mpicc | sed 's,/bin/mpicc$,,')
 fi
-
-# Make sure we have a libfabric to use, with the required API version.
-source /cray/css/users/chapelu/setup_libfabric.bash || return 1
 
 if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
   # Bump the timeout slightly if we might be oversubscribed.

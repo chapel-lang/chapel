@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 8.0.0 is being released with Chapel for
+This copy of LLVM 10.0.1 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -54,18 +54,18 @@ un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
 1.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-8.0.0.src
+    for example llvm-10.0.1.src
 2.  un-tarball the new Clang version into the directory it specifies,
-    for example cfe-8.0.0.src
-3.  mv cfe-8.0.0.src llvm-8.0.0.src/tools/clang
+    for example cfe-10.0.1.src
+3.  mv cfe-10.0.1.src llvm-10.0.1.src/tools/clang
 4.  git rm -r llvm-src
-5.  mv llvm-8.0.0.src llvm-src
+5.  mv llvm-10.0.1.src llvm-src
 6.  rm -r llvm-src/test llvm-src/tools/clang/test
 7.  Remove the line that says "tools/clang" from llvm-src/.gitignore
 8.  git add --force llvm-src
     ('--force' is needed to ensure git adds all files in the subdirectory)
 9.  update the LLVM_VERSION file to contain the first two components
-    of the new LLVM version number, e.g. 8.0
+    of the new LLVM version number, e.g. 10.0
 10. update $CHPL_HOME/doc/rst/usingchapel/chplenv.rst for the new LLVM version
 11. commit
 12. update the new sources by re-applying any needed patches (see above)

@@ -1,9 +1,8 @@
 //== CheckerContext.h - Context info for path-sensitive checkers--*- C++ -*--=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -104,7 +103,7 @@ public:
     return Eng.getBugReporter();
   }
 
-  SourceManager &getSourceManager() {
+  const SourceManager &getSourceManager() {
     return getBugReporter().getSourceManager();
   }
 
@@ -214,10 +213,78 @@ public:
     return addTransition(State, (Tag ? Tag : Location.getTag()));
   }
 
+  /// Generate a transition to a node that will be used to report
+  /// an error. This node will not be a sink. That is, exploration will
+  /// continue along this path.
+  ///
+  /// @param State The state of the generated node.
+  /// @param Pred The transition will be generated from the specified Pred node
+  ///             to the newly generated node.
+  /// @param Tag The tag to uniquely identify the creation site. If null,
+  ///        the default tag for the checker will be used.
+  ExplodedNode *
+  generateNonFatalErrorNode(ProgramStateRef State,
+                            ExplodedNode *Pred,
+                            const ProgramPointTag *Tag = nullptr) {
+    return addTransition(State, Pred, (Tag ? Tag : Location.getTag()));
+  }
+
   /// Emit the diagnostics report.
   void emitReport(std::unique_ptr<BugReport> R) {
     Changed = true;
     Eng.getBugReporter().emitReport(std::move(R));
+  }
+
+  /// Produce a program point tag that displays an additional path note
+  /// to the user. This is a lightweight alternative to the
+  /// BugReporterVisitor mechanism: instead of visiting the bug report
+  /// node-by-node to restore the sequence of events that led to discovering
+  /// a bug, you can add notes as you add your transitions.
+  ///
+  /// @param Cb Callback with 'BugReporterContext &, BugReport &' parameters.
+  /// @param IsPrunable Whether the note is prunable. It allows BugReporter
+  ///        to omit the note from the report if it would make the displayed
+  ///        bug path significantly shorter.
+  const NoteTag *getNoteTag(NoteTag::Callback &&Cb, bool IsPrunable = false) {
+    return Eng.getNoteTags().makeNoteTag(std::move(Cb), IsPrunable);
+  }
+
+  /// A shorthand version of getNoteTag that doesn't require you to accept
+  /// the 'BugReporterContext' argument when you don't need it.
+  ///
+  /// @param Cb Callback only with 'BugReport &' parameter.
+  /// @param IsPrunable Whether the note is prunable. It allows BugReporter
+  ///        to omit the note from the report if it would make the displayed
+  ///        bug path significantly shorter.
+  const NoteTag *getNoteTag(std::function<std::string(BugReport &)> &&Cb,
+                            bool IsPrunable = false) {
+    return getNoteTag(
+        [Cb](BugReporterContext &, BugReport &BR) { return Cb(BR); },
+        IsPrunable);
+  }
+
+  /// A shorthand version of getNoteTag that doesn't require you to accept
+  /// the arguments when you don't need it.
+  ///
+  /// @param Cb Callback without parameters.
+  /// @param IsPrunable Whether the note is prunable. It allows BugReporter
+  ///        to omit the note from the report if it would make the displayed
+  ///        bug path significantly shorter.
+  const NoteTag *getNoteTag(std::function<std::string()> &&Cb,
+                            bool IsPrunable = false) {
+    return getNoteTag([Cb](BugReporterContext &, BugReport &) { return Cb(); },
+                      IsPrunable);
+  }
+
+  /// A shorthand version of getNoteTag that accepts a plain note.
+  ///
+  /// @param Note The note.
+  /// @param IsPrunable Whether the note is prunable. It allows BugReporter
+  ///        to omit the note from the report if it would make the displayed
+  ///        bug path significantly shorter.
+  const NoteTag *getNoteTag(StringRef Note, bool IsPrunable = false) {
+    return getNoteTag(
+        [Note](BugReporterContext &, BugReport &) { return Note; }, IsPrunable);
   }
 
   /// Returns the word that should be used to refer to the declaration

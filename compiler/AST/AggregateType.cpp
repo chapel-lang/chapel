@@ -272,6 +272,21 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
       return true;
   }
 
+  // Partial generic expressions with '?'
+  if (CallExpr* call = toCallExpr(typeExpr)) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (se->symbol()->type->symbol->hasFlag(FLAG_GENERIC)) {
+        for_actuals(actual, call) {
+          if (SymExpr* act = toSymExpr(actual)) {
+            if (act->symbol() == gUninstantiated) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
     sym = lookup(urse->unresolved, urse);
   } else if (SymExpr* se = toSymExpr(typeExpr)) {
@@ -653,22 +668,7 @@ bool AggregateType::hasInitializers() const {
 }
 
 bool AggregateType::hasPostInitializer() const {
-  bool retval = false;
-
-  // If there is postinit() it is defined on the defining type
-  if (instantiatedFrom == NULL) {
-    int size = methods.n;
-
-    for (int i = 0; i < size && retval == false; i++) {
-      if (methods.v[i] != NULL)
-        retval = methods.v[i]->isPostInitializer();
-    }
-
-  } else {
-    retval = instantiatedFrom->hasPostInitializer();
-  }
-
-  return retval;
+  return symbol->hasFlag(FLAG_HAS_POSTINIT);
 }
 
 bool AggregateType::hasUserDefinedInitEquals() const {
@@ -1763,14 +1763,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
     }
 
   } else {
-    Type* fieldType = field->defPoint->exprType->typeInfo();
-    if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      field->type = symType;
-    } else if (fieldType == symType) {
-      field->type = symType;
-    } else {
-      INT_FATAL("unexpected type for field instantiation");
-    }
+    field->type = symType;
   }
 
   forv_Vec(AggregateType, at, dispatchParents) {
@@ -2312,9 +2305,15 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
-            CallExpr* copy = new CallExpr("chpl__initCopy");
-            defPoint->init->replace(copy);
-            copy->insertAtTail(fe);
+            if (defPoint->exprType == NULL) {
+              CallExpr* copy = new CallExpr(astr_initCopy);
+              defPoint->init->replace(copy);
+
+              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ? 
+                                     gTrue : gFalse;
+              copy->insertAtTail(fe);
+              copy->insertAtTail(definedConst);
+            }
           }
         }
 
@@ -2366,19 +2365,13 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
 
           } else {
             fieldToArgType(defPoint, arg);
 
-            CallExpr* def    = new CallExpr(PRIM_DEFAULT_INIT_FIELD,
-                    // It would be easiest to just put 'field' here, however
-                    // it is replaced with 'arg' in buildDefaultInitializer().
-                    new_StringSymbol(field->defPoint->parentSymbol->name),
-                                            new_StringSymbol(field->name),
-                                            defPoint->exprType->copy(),
-                                            defPoint->init->copy());
-
-            arg->defaultExpr = new BlockStmt(def);
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
           }
         }
 
@@ -2804,7 +2797,8 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
-      INT_FATAL(fn, "initializer on non-class type");
+      USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
+      return;
     }
 
     if (fn->hasFlag(FLAG_NO_PARENS)) {

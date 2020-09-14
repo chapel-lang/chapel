@@ -1,9 +1,8 @@
 //===--- SerializedDiagnosticPrinter.cpp - Serializer for diagnostics -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,6 +20,8 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/Bitstream/BitCodes.h"
+#include "llvm/Bitstream/BitstreamReader.h"
 #include "llvm/Support/raw_ostream.h"
 #include <utility>
 
@@ -295,7 +296,7 @@ namespace clang {
 namespace serialized_diags {
 std::unique_ptr<DiagnosticConsumer>
 create(StringRef OutputFile, DiagnosticOptions *Diags, bool MergeChildRecords) {
-  return llvm::make_unique<SDiagsWriter>(OutputFile, Diags, MergeChildRecords);
+  return std::make_unique<SDiagsWriter>(OutputFile, Diags, MergeChildRecords);
 }
 
 } // end namespace serialized_diags
@@ -742,7 +743,7 @@ DiagnosticsEngine *SDiagsWriter::getMetaDiags() {
     IntrusiveRefCntPtr<DiagnosticIDs> IDs(new DiagnosticIDs());
     auto Client =
         new TextDiagnosticPrinter(llvm::errs(), State->DiagOpts.get());
-    State->MetaDiagnostics = llvm::make_unique<DiagnosticsEngine>(
+    State->MetaDiagnostics = std::make_unique<DiagnosticsEngine>(
         IDs, State->DiagOpts.get(), Client);
   }
   return State->MetaDiagnostics.get();
@@ -779,8 +780,8 @@ void SDiagsWriter::finish() {
   }
 
   std::error_code EC;
-  auto OS = llvm::make_unique<llvm::raw_fd_ostream>(State->OutputFile.c_str(),
-                                                    EC, llvm::sys::fs::F_None);
+  auto OS = std::make_unique<llvm::raw_fd_ostream>(State->OutputFile.c_str(),
+                                                    EC, llvm::sys::fs::OF_None);
   if (EC) {
     getMetaDiags()->Report(diag::warn_fe_serialized_diag_failure)
         << State->OutputFile << EC.message();

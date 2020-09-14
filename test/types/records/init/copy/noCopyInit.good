@@ -1,3 +1,3 @@
-noCopyInit.chpl:8: error: unresolved call 'R.init=(R)'
+noCopyInit.chpl:8: error: could not find a copy initializer ('init=') for type 'R' from type 'R'
 noCopyInit.chpl:2: note: this candidate did not match: R.init=(const ref other: R)
 noCopyInit.chpl:2: note: because where clause evaluated to false

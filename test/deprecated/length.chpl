@@ -1,4 +1,4 @@
-use IO, Collection;
+use IO, Collection, LinkedLists;
 
 param bp = b"brad";
 var b = b"brad";

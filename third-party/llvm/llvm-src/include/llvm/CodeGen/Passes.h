@@ -1,9 +1,8 @@
 //===-- Passes.h - Target independent code generation passes ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -227,6 +226,10 @@ namespace llvm {
   /// inserting cmov instructions.
   extern char &EarlyIfConverterID;
 
+  /// EarlyIfPredicator - This pass performs if-conversion on SSA form by
+  /// predicating if/else block and insert select at the join point.
+  extern char &EarlyIfPredicatorID;
+
   /// This pass performs instruction combining using trace metrics to estimate
   /// critical-path and resource depth.
   extern char &MachineCombinerID;
@@ -271,6 +274,11 @@ namespace llvm {
 
   /// MachineCSE - This pass performs global CSE on machine instructions.
   extern char &MachineCSEID;
+
+  /// MIRCanonicalizer - This pass canonicalizes MIR by renaming vregs
+  /// according to the semantics of the instruction as well as hoists
+  /// code.
+  extern char &MIRCanonicalizerID;
 
   /// ImplicitNullChecks - This pass folds null pointer checks into nearby
   /// memory operations.
@@ -346,8 +354,9 @@ namespace llvm {
   /// pointer or stack pointer index addressing.
   extern char &LocalStackSlotAllocationID;
 
-  /// ExpandISelPseudos - This pass expands pseudo-instructions.
-  extern char &ExpandISelPseudosID;
+  /// This pass expands pseudo-instructions, reserves registers and adjusts
+  /// machine frame information.
+  extern char &FinalizeISelID;
 
   /// UnpackMachineBundles - This pass unpack machine instruction bundles.
   extern char &UnpackMachineBundlesID;
@@ -446,6 +455,16 @@ namespace llvm {
 
   /// Creates CFI Instruction Inserter pass. \see CFIInstrInserter.cpp
   FunctionPass *createCFIInstrInserter();
+
+  /// Creates CFGuard longjmp target identification pass.
+  /// \see CFGuardLongjmp.cpp
+  FunctionPass *createCFGuardLongjmpPass();
+
+  /// Create Hardware Loop pass. \see HardwareLoops.cpp
+  FunctionPass *createHardwareLoopsPass();
+
+  /// Create IR Type Promotion pass. \see TypePromotion.cpp
+  FunctionPass *createTypePromotionPass();
 
 } // End llvm namespace
 

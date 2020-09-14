@@ -24,7 +24,9 @@
 #include "library.h"
 #include "symbol.h"
 
-class IteratorGroup;
+class IteratorGroup;     // see iterator.h
+class GenericsCacheInfo; // see caches.h
+void cleanupCacheInfo(FnSymbol* fn);
 
 enum RetTag {
   RET_VALUE,
@@ -61,6 +63,8 @@ public:
   IteratorInfo*              iteratorInfo;
   // Pointers to other iterator variants - serial, standalone, etc.
   IteratorGroup*             iteratorGroup;
+  // Support for genericsCache.
+  GenericsCacheInfo*         cacheInfo;
 
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;

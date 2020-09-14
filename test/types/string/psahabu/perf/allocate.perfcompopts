@@ -1,0 +1,3 @@
+-stestType=types.asciiString  # allocate
+-stestType=types.utf8String  # allocate-utf8
+-stestType=types.byteString  # allocate-bytes

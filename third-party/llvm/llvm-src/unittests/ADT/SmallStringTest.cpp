@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/SmallStringTest.cpp ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -170,7 +169,7 @@ TEST_F(SmallStringTest, Realloc) {
   EXPECT_EQ("abcdyyy", theString.slice(0, 7));
 }
 
-TEST(StringRefTest, Comparisons) {
+TEST_F(SmallStringTest, Comparisons) {
   EXPECT_EQ(-1, SmallString<10>("aab").compare("aad"));
   EXPECT_EQ( 0, SmallString<10>("aab").compare("aab"));
   EXPECT_EQ( 1, SmallString<10>("aab").compare("aaa"));
@@ -204,4 +203,12 @@ TEST(StringRefTest, Comparisons) {
   EXPECT_EQ( 1, SmallString<10>("V8_q0").compare_numeric("V1_q0"));
 }
 
+// Check gtest prints SmallString as a string instead of a container of chars.
+// The code is in utils/unittest/googletest/internal/custom/gtest-printers.h
+TEST_F(SmallStringTest, GTestPrinter) {
+  EXPECT_EQ(R"("foo")", ::testing::PrintToString(SmallString<1>("foo")));
+  const SmallVectorImpl<char> &ErasedSmallString = SmallString<1>("foo");
+  EXPECT_EQ(R"("foo")", ::testing::PrintToString(ErasedSmallString));
 }
+
+} // namespace

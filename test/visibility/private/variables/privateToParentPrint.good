@@ -1,0 +1,3 @@
+privateToParentPrint.chpl:7: Printing symbols visible from here:
+  privateToParentPrint.chpl:2: foo
+  privateToParentPrint.chpl:5: main

@@ -1,9 +1,8 @@
 //===-------- LoopDataPrefetch.cpp - Loop Data Prefetching Pass -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Scalar/LoopDataPrefetch.h"
+#include "llvm/InitializePasses.h"
 
 #define DEBUG_TYPE "loop-data-prefetch"
 #include "llvm/ADT/DepthFirstIterator.h"
@@ -313,7 +313,8 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
       IRBuilder<> Builder(MemI);
       Module *M = BB->getParent()->getParent();
       Type *I32 = Type::getInt32Ty(BB->getContext());
-      Value *PrefetchFunc = Intrinsic::getDeclaration(M, Intrinsic::prefetch);
+      Function *PrefetchFunc = Intrinsic::getDeclaration(
+          M, Intrinsic::prefetch, PrefPtrValue->getType());
       Builder.CreateCall(
           PrefetchFunc,
           {PrefPtrValue,
@@ -333,4 +334,3 @@ bool LoopDataPrefetch::runOnLoop(Loop *L) {
 
   return MadeChange;
 }
-

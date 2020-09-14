@@ -263,6 +263,7 @@ module ChapelError {
        yielded errors might be re-thrown. Only yields values
        that are not storing ``nil`` at the time of the call.
      */
+    pragma "order independent yielding loops"
     iter these() ref : owned Error? {
       for i in 0..#nErrors {
         if errorsArray[i] != nil {
@@ -345,6 +346,7 @@ module ChapelError {
        Note that this iterator yields values of type ``owned Error?``
        but only those that are non-nil and have dynamic type ``t``.
      */
+    pragma "order independent yielding loops"
     iter filter(type t) ref : owned Error?
       where isSubtype(t:borrowed class, borrowed Error) {
 
@@ -415,6 +417,7 @@ module ChapelError {
   pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  pragma "ignore in global analysis"
   proc chpl_fix_thrown_error(in err: owned Error?): unmanaged Error {
     return chpl_do_fix_thrown_error(err.release());
   }
@@ -423,6 +426,7 @@ module ChapelError {
   pragma "insert line file info"
   pragma "always propagate line file info"
   pragma "ignore transfer errors"
+  pragma "ignore in global analysis"
   proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
     return chpl_do_fix_thrown_error(err.release());
   }

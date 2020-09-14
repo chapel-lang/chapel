@@ -1,2 +1,0 @@
-# This produces a reliable .bad only under valgrind.
-CHPL_TEST_VGRND_EXE != on

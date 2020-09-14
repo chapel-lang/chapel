@@ -1,9 +1,8 @@
 //===- MicroMipsDSPInstrInfo.td - Micromips DSP instructions -*- tablegen *-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -361,7 +360,7 @@ class RDDSP_MM_DESC {
   dag OutOperandList = (outs GPR32Opnd:$rt);
   dag InOperandList = (ins uimm7:$mask);
   string AsmString = !strconcat("rddsp", "\t$rt, $mask");
-  list<dag> Pattern = [(set GPR32Opnd:$rt, (int_mips_rddsp immZExt7:$mask))];
+  list<dag> Pattern = [(set GPR32Opnd:$rt, (int_mips_rddsp timmZExt7:$mask))];
   InstrItinClass Itinerary = NoItinerary;
 }
 
@@ -384,7 +383,7 @@ class WRDSP_MM_DESC {
   dag OutOperandList = (outs);
   dag InOperandList = (ins GPR32Opnd:$rt, uimm7:$mask);
   string AsmString = !strconcat("wrdsp", "\t$rt, $mask");
-  list<dag> Pattern = [(int_mips_wrdsp GPR32Opnd:$rt, immZExt7:$mask)];
+  list<dag> Pattern = [(int_mips_wrdsp GPR32Opnd:$rt, timmZExt7:$mask)];
   InstrItinClass Itinerary = NoItinerary;
   bit isMoveReg = 1;
 }

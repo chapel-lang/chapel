@@ -1,9 +1,8 @@
 //===-- TargetLibraryInfo.cpp - Runtime library information ----------------==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,6 +13,7 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/CommandLine.h"
 using namespace llvm;
 
@@ -24,10 +24,13 @@ static cl::opt<TargetLibraryInfoImpl::VectorLibrary> ClVectorLibrary(
                           "No vector functions library"),
                clEnumValN(TargetLibraryInfoImpl::Accelerate, "Accelerate",
                           "Accelerate framework"),
+               clEnumValN(TargetLibraryInfoImpl::MASSV, "MASSV",
+                          "IBM MASS vector library"),
                clEnumValN(TargetLibraryInfoImpl::SVML, "SVML",
                           "Intel SVML library")));
 
-StringRef const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] = {
+StringLiteral const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] =
+    {
 #define TLI_DEFINE_STRING
 #include "llvm/Analysis/TargetLibraryInfo.def"
 };
@@ -50,11 +53,21 @@ static bool hasSinCosPiStret(const Triple &T) {
   return true;
 }
 
+static bool hasBcmp(const Triple &TT) {
+  // Posix removed support from bcmp() in 2001, but the glibc and several
+  // implementations of the libc still have it.
+  if (TT.isOSLinux())
+    return TT.isGNUEnvironment() || TT.isMusl();
+  // Both NetBSD and OpenBSD are planning to remove the function. Windows does
+  // not have it.
+  return TT.isOSFreeBSD() || TT.isOSSolaris();
+}
+
 /// Initialize the set of available library functions based on the specified
 /// target triple. This should be carefully written so that a missing target
 /// triple gets a sane set of defaults.
 static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
-                       ArrayRef<StringRef> StandardNames) {
+                       ArrayRef<StringLiteral> StandardNames) {
   // Verify that the StandardNames array is in alphabetical order.
   assert(std::is_sorted(StandardNames.begin(), StandardNames.end(),
                         [](StringRef LHS, StringRef RHS) {
@@ -78,8 +91,8 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
        ShouldSignExtI32Param = false;
   // PowerPC64, Sparc64, SystemZ need signext/zeroext on i32 parameters and
   // returns corresponding to C-level ints and unsigned ints.
-  if (T.getArch() == Triple::ppc64 || T.getArch() == Triple::ppc64le ||
-      T.getArch() == Triple::sparcv9 || T.getArch() == Triple::systemz) {
+  if (T.isPPC64() || T.getArch() == Triple::sparcv9 ||
+      T.getArch() == Triple::systemz) {
     ShouldExtI32Param = true;
     ShouldExtI32Return = true;
   }
@@ -93,19 +106,10 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
   TLI.setShouldSignExtI32Param(ShouldSignExtI32Param);
 
   if (T.getArch() == Triple::r600 ||
-      T.getArch() == Triple::amdgcn) {
-    TLI.setUnavailable(LibFunc_ldexp);
-    TLI.setUnavailable(LibFunc_ldexpf);
-    TLI.setUnavailable(LibFunc_ldexpl);
-    TLI.setUnavailable(LibFunc_exp10);
-    TLI.setUnavailable(LibFunc_exp10f);
-    TLI.setUnavailable(LibFunc_exp10l);
-    TLI.setUnavailable(LibFunc_log10);
-    TLI.setUnavailable(LibFunc_log10f);
-    TLI.setUnavailable(LibFunc_log10l);
-  }
+      T.getArch() == Triple::amdgcn)
+    TLI.disableAllFunctions();
 
-  // There are no library implementations of mempcy and memset for AMD gpus and
+  // There are no library implementations of memcpy and memset for AMD gpus and
   // these can be difficult to lower in the backend.
   if (T.getArch() == Triple::r600 ||
       T.getArch() == Triple::amdgcn) {
@@ -142,6 +146,9 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
     TLI.setUnavailable(LibFunc_sincospif_stret);
   }
 
+  if (!hasBcmp(T))
+    TLI.setUnavailable(LibFunc_bcmp);
+
   if (T.isMacOSX() && T.getArch() == Triple::x86 &&
       !T.isMacOSXVersionLT(10, 7)) {
     // x86-32 OSX has a scheme where fwrite and fputs (and some other functions
@@ -153,11 +160,19 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
     TLI.setAvailableWithName(LibFunc_fputs, "fputs$UNIX2003");
   }
 
-  // iprintf and friends are only available on XCore and TCE.
-  if (T.getArch() != Triple::xcore && T.getArch() != Triple::tce) {
+  // iprintf and friends are only available on XCore, TCE, and Emscripten.
+  if (T.getArch() != Triple::xcore && T.getArch() != Triple::tce &&
+      T.getOS() != Triple::Emscripten) {
     TLI.setUnavailable(LibFunc_iprintf);
     TLI.setUnavailable(LibFunc_siprintf);
     TLI.setUnavailable(LibFunc_fiprintf);
+  }
+
+  // __small_printf and friends are only available on Emscripten.
+  if (T.getOS() != Triple::Emscripten) {
+    TLI.setUnavailable(LibFunc_small_printf);
+    TLI.setUnavailable(LibFunc_small_sprintf);
+    TLI.setUnavailable(LibFunc_small_fprintf);
   }
 
   if (T.isOSWindows() && !T.isOSCygMing()) {
@@ -364,10 +379,8 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
   case Triple::TvOS:
   case Triple::WatchOS:
     TLI.setUnavailable(LibFunc_exp10l);
-    if (!T.isWatchOS() && (T.isOSVersionLT(7, 0) ||
-                           (T.isOSVersionLT(9, 0) &&
-                            (T.getArch() == Triple::x86 ||
-                             T.getArch() == Triple::x86_64)))) {
+    if (!T.isWatchOS() &&
+        (T.isOSVersionLT(7, 0) || (T.isOSVersionLT(9, 0) && T.isX86()))) {
       TLI.setUnavailable(LibFunc_exp10);
       TLI.setUnavailable(LibFunc_exp10f);
     } else {
@@ -457,6 +470,9 @@ static void initialize(TargetLibraryInfoImpl &TLI, const Triple &T,
     TLI.setUnavailable(LibFunc_tmpfile64);
 
     // Relaxed math functions are included in math-finite.h on Linux (GLIBC).
+    // Note that math-finite.h is no longer supported by top-of-tree GLIBC,
+    // so we keep these functions around just so that they're recognized by
+    // the ConstantFolder.
     TLI.setUnavailable(LibFunc_acos_finite);
     TLI.setUnavailable(LibFunc_acosf_finite);
     TLI.setUnavailable(LibFunc_acosl_finite);
@@ -601,19 +617,14 @@ static StringRef sanitizeFunctionName(StringRef funcName) {
   return GlobalValue::dropLLVMManglingEscape(funcName);
 }
 
-bool TargetLibraryInfoImpl::getLibFunc(StringRef funcName,
-                                       LibFunc &F) const {
-  StringRef const *Start = &StandardNames[0];
-  StringRef const *End = &StandardNames[NumLibFuncs];
-
+bool TargetLibraryInfoImpl::getLibFunc(StringRef funcName, LibFunc &F) const {
   funcName = sanitizeFunctionName(funcName);
   if (funcName.empty())
     return false;
 
-  StringRef const *I = std::lower_bound(
-      Start, End, funcName, [](StringRef LHS, StringRef RHS) {
-        return LHS < RHS;
-      });
+  const auto *Start = std::begin(StandardNames);
+  const auto *End = std::end(StandardNames);
+  const auto *I = std::lower_bound(Start, End, funcName);
   if (I != End && *I == funcName) {
     F = (LibFunc)(I - Start);
     return true;
@@ -671,11 +682,21 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
     return ((NumParams == 2 || NumParams == 3) &&
             FTy.getParamType(0)->isPointerTy() &&
             FTy.getParamType(1)->isPointerTy());
+  case LibFunc_strcat_chk:
+    --NumParams;
+    if (!IsSizeTTy(FTy.getParamType(NumParams)))
+      return false;
+    LLVM_FALLTHROUGH;
   case LibFunc_strcat:
     return (NumParams == 2 && FTy.getReturnType()->isPointerTy() &&
             FTy.getParamType(0) == FTy.getReturnType() &&
             FTy.getParamType(1) == FTy.getReturnType());
 
+  case LibFunc_strncat_chk:
+    --NumParams;
+    if (!IsSizeTTy(FTy.getParamType(NumParams)))
+      return false;
+    LLVM_FALLTHROUGH;
   case LibFunc_strncat:
     return (NumParams == 3 && FTy.getReturnType()->isPointerTy() &&
             FTy.getParamType(0) == FTy.getReturnType() &&
@@ -693,6 +714,19 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
     return (NumParams == 2 && FTy.getReturnType() == FTy.getParamType(0) &&
             FTy.getParamType(0) == FTy.getParamType(1) &&
             FTy.getParamType(0) == PCharTy);
+
+  case LibFunc_strlcat_chk:
+  case LibFunc_strlcpy_chk:
+    --NumParams;
+    if (!IsSizeTTy(FTy.getParamType(NumParams)))
+      return false;
+    LLVM_FALLTHROUGH;
+  case LibFunc_strlcat:
+  case LibFunc_strlcpy:
+    return NumParams == 3 && IsSizeTTy(FTy.getReturnType()) &&
+           FTy.getParamType(0)->isPointerTy() &&
+           FTy.getParamType(1)->isPointerTy() &&
+           IsSizeTTy(FTy.getParamType(2));
 
   case LibFunc_strncpy_chk:
   case LibFunc_stpncpy_chk:
@@ -759,14 +793,32 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
   case LibFunc_stat:
   case LibFunc_statvfs:
   case LibFunc_siprintf:
+  case LibFunc_small_sprintf:
   case LibFunc_sprintf:
     return (NumParams >= 2 && FTy.getParamType(0)->isPointerTy() &&
             FTy.getParamType(1)->isPointerTy() &&
             FTy.getReturnType()->isIntegerTy(32));
+
+  case LibFunc_sprintf_chk:
+    return NumParams == 4 && FTy.getParamType(0)->isPointerTy() &&
+           FTy.getParamType(1)->isIntegerTy(32) &&
+           IsSizeTTy(FTy.getParamType(2)) &&
+           FTy.getParamType(3)->isPointerTy() &&
+           FTy.getReturnType()->isIntegerTy(32);
+
   case LibFunc_snprintf:
     return (NumParams == 3 && FTy.getParamType(0)->isPointerTy() &&
             FTy.getParamType(2)->isPointerTy() &&
             FTy.getReturnType()->isIntegerTy(32));
+
+  case LibFunc_snprintf_chk:
+    return NumParams == 5 && FTy.getParamType(0)->isPointerTy() &&
+           IsSizeTTy(FTy.getParamType(1)) &&
+           FTy.getParamType(2)->isIntegerTy(32) &&
+           IsSizeTTy(FTy.getParamType(3)) &&
+           FTy.getParamType(4)->isPointerTy() &&
+           FTy.getReturnType()->isIntegerTy(32);
+
   case LibFunc_setitimer:
     return (NumParams == 3 && FTy.getParamType(1)->isPointerTy() &&
             FTy.getParamType(2)->isPointerTy());
@@ -815,6 +867,11 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
             FTy.getParamType(1)->isIntegerTy() &&
             IsSizeTTy(FTy.getParamType(2)));
 
+  case LibFunc_memccpy_chk:
+      --NumParams;
+    if (!IsSizeTTy(FTy.getParamType(NumParams)))
+      return false;
+    LLVM_FALLTHROUGH;
   case LibFunc_memccpy:
     return (NumParams >= 2 && FTy.getParamType(1)->isPointerTy());
   case LibFunc_memalign:
@@ -856,6 +913,7 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
   case LibFunc_getenv:
   case LibFunc_getpwnam:
   case LibFunc_iprintf:
+  case LibFunc_small_printf:
   case LibFunc_pclose:
   case LibFunc_perror:
   case LibFunc_printf:
@@ -935,6 +993,7 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
             FTy.getParamType(1)->isPointerTy());
   case LibFunc_fscanf:
   case LibFunc_fiprintf:
+  case LibFunc_small_fprintf:
   case LibFunc_fprintf:
     return (NumParams >= 2 && FTy.getReturnType()->isIntegerTy() &&
             FTy.getParamType(0)->isPointerTy() &&
@@ -981,9 +1040,17 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
   case LibFunc_vsprintf:
     return (NumParams == 3 && FTy.getParamType(0)->isPointerTy() &&
             FTy.getParamType(1)->isPointerTy());
+  case LibFunc_vsprintf_chk:
+    return NumParams == 5 && FTy.getParamType(0)->isPointerTy() &&
+           FTy.getParamType(1)->isIntegerTy(32) &&
+           IsSizeTTy(FTy.getParamType(2)) && FTy.getParamType(3)->isPointerTy();
   case LibFunc_vsnprintf:
     return (NumParams == 4 && FTy.getParamType(0)->isPointerTy() &&
             FTy.getParamType(2)->isPointerTy());
+  case LibFunc_vsnprintf_chk:
+    return NumParams == 6 && FTy.getParamType(0)->isPointerTy() &&
+           FTy.getParamType(2)->isIntegerTy(32) &&
+           IsSizeTTy(FTy.getParamType(3)) && FTy.getParamType(4)->isPointerTy();
   case LibFunc_open:
     return (NumParams >= 2 && FTy.getParamType(0)->isPointerTy());
   case LibFunc_opendir:
@@ -1403,6 +1470,7 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
       return false;
   }
   case LibFunc::NumLibFuncs:
+  case LibFunc::NotLibFunc:
     break;
   }
 
@@ -1411,6 +1479,11 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,
 
 bool TargetLibraryInfoImpl::getLibFunc(const Function &FDecl,
                                        LibFunc &F) const {
+  // Intrinsics don't overlap w/libcalls; if our module has a large number of
+  // intrinsics, this ends up being an interesting compile time win since we
+  // avoid string normalization and comparison. 
+  if (FDecl.isIntrinsic()) return false;
+  
   const DataLayout *DL =
       FDecl.getParent() ? &FDecl.getParent()->getDataLayout() : nullptr;
   return getLibFunc(FDecl.getName(), F) &&
@@ -1450,151 +1523,24 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
   switch (VecLib) {
   case Accelerate: {
     const VecDesc VecFuncs[] = {
-        // Floating-Point Arithmetic and Auxiliary Functions
-        {"ceilf", "vceilf", 4},
-        {"fabsf", "vfabsf", 4},
-        {"llvm.fabs.f32", "vfabsf", 4},
-        {"floorf", "vfloorf", 4},
-        {"sqrtf", "vsqrtf", 4},
-        {"llvm.sqrt.f32", "vsqrtf", 4},
-
-        // Exponential and Logarithmic Functions
-        {"expf", "vexpf", 4},
-        {"llvm.exp.f32", "vexpf", 4},
-        {"expm1f", "vexpm1f", 4},
-        {"logf", "vlogf", 4},
-        {"llvm.log.f32", "vlogf", 4},
-        {"log1pf", "vlog1pf", 4},
-        {"log10f", "vlog10f", 4},
-        {"llvm.log10.f32", "vlog10f", 4},
-        {"logbf", "vlogbf", 4},
-
-        // Trigonometric Functions
-        {"sinf", "vsinf", 4},
-        {"llvm.sin.f32", "vsinf", 4},
-        {"cosf", "vcosf", 4},
-        {"llvm.cos.f32", "vcosf", 4},
-        {"tanf", "vtanf", 4},
-        {"asinf", "vasinf", 4},
-        {"acosf", "vacosf", 4},
-        {"atanf", "vatanf", 4},
-
-        // Hyperbolic Functions
-        {"sinhf", "vsinhf", 4},
-        {"coshf", "vcoshf", 4},
-        {"tanhf", "vtanhf", 4},
-        {"asinhf", "vasinhf", 4},
-        {"acoshf", "vacoshf", 4},
-        {"atanhf", "vatanhf", 4},
+    #define TLI_DEFINE_ACCELERATE_VECFUNCS
+    #include "llvm/Analysis/VecFuncs.def"
+    };
+    addVectorizableFunctions(VecFuncs);
+    break;
+  }
+  case MASSV: {
+    const VecDesc VecFuncs[] = {
+    #define TLI_DEFINE_MASSV_VECFUNCS
+    #include "llvm/Analysis/VecFuncs.def"
     };
     addVectorizableFunctions(VecFuncs);
     break;
   }
   case SVML: {
     const VecDesc VecFuncs[] = {
-        {"sin", "__svml_sin2", 2},
-        {"sin", "__svml_sin4", 4},
-        {"sin", "__svml_sin8", 8},
-
-        {"sinf", "__svml_sinf4", 4},
-        {"sinf", "__svml_sinf8", 8},
-        {"sinf", "__svml_sinf16", 16},
-
-        {"llvm.sin.f64", "__svml_sin2", 2},
-        {"llvm.sin.f64", "__svml_sin4", 4},
-        {"llvm.sin.f64", "__svml_sin8", 8},
-
-        {"llvm.sin.f32", "__svml_sinf4", 4},
-        {"llvm.sin.f32", "__svml_sinf8", 8},
-        {"llvm.sin.f32", "__svml_sinf16", 16},
-
-        {"cos", "__svml_cos2", 2},
-        {"cos", "__svml_cos4", 4},
-        {"cos", "__svml_cos8", 8},
-
-        {"cosf", "__svml_cosf4", 4},
-        {"cosf", "__svml_cosf8", 8},
-        {"cosf", "__svml_cosf16", 16},
-
-        {"llvm.cos.f64", "__svml_cos2", 2},
-        {"llvm.cos.f64", "__svml_cos4", 4},
-        {"llvm.cos.f64", "__svml_cos8", 8},
-
-        {"llvm.cos.f32", "__svml_cosf4", 4},
-        {"llvm.cos.f32", "__svml_cosf8", 8},
-        {"llvm.cos.f32", "__svml_cosf16", 16},
-
-        {"pow", "__svml_pow2", 2},
-        {"pow", "__svml_pow4", 4},
-        {"pow", "__svml_pow8", 8},
-
-        {"powf", "__svml_powf4", 4},
-        {"powf", "__svml_powf8", 8},
-        {"powf", "__svml_powf16", 16},
-
-        { "__pow_finite", "__svml_pow2", 2 },
-        { "__pow_finite", "__svml_pow4", 4 },
-        { "__pow_finite", "__svml_pow8", 8 },
-
-        { "__powf_finite", "__svml_powf4", 4 },
-        { "__powf_finite", "__svml_powf8", 8 },
-        { "__powf_finite", "__svml_powf16", 16 },
-
-        {"llvm.pow.f64", "__svml_pow2", 2},
-        {"llvm.pow.f64", "__svml_pow4", 4},
-        {"llvm.pow.f64", "__svml_pow8", 8},
-
-        {"llvm.pow.f32", "__svml_powf4", 4},
-        {"llvm.pow.f32", "__svml_powf8", 8},
-        {"llvm.pow.f32", "__svml_powf16", 16},
-
-        {"exp", "__svml_exp2", 2},
-        {"exp", "__svml_exp4", 4},
-        {"exp", "__svml_exp8", 8},
-
-        {"expf", "__svml_expf4", 4},
-        {"expf", "__svml_expf8", 8},
-        {"expf", "__svml_expf16", 16},
-
-        { "__exp_finite", "__svml_exp2", 2 },
-        { "__exp_finite", "__svml_exp4", 4 },
-        { "__exp_finite", "__svml_exp8", 8 },
-
-        { "__expf_finite", "__svml_expf4", 4 },
-        { "__expf_finite", "__svml_expf8", 8 },
-        { "__expf_finite", "__svml_expf16", 16 },
-
-        {"llvm.exp.f64", "__svml_exp2", 2},
-        {"llvm.exp.f64", "__svml_exp4", 4},
-        {"llvm.exp.f64", "__svml_exp8", 8},
-
-        {"llvm.exp.f32", "__svml_expf4", 4},
-        {"llvm.exp.f32", "__svml_expf8", 8},
-        {"llvm.exp.f32", "__svml_expf16", 16},
-
-        {"log", "__svml_log2", 2},
-        {"log", "__svml_log4", 4},
-        {"log", "__svml_log8", 8},
-
-        {"logf", "__svml_logf4", 4},
-        {"logf", "__svml_logf8", 8},
-        {"logf", "__svml_logf16", 16},
-
-        { "__log_finite", "__svml_log2", 2 },
-        { "__log_finite", "__svml_log4", 4 },
-        { "__log_finite", "__svml_log8", 8 },
-
-        { "__logf_finite", "__svml_logf4", 4 },
-        { "__logf_finite", "__svml_logf8", 8 },
-        { "__logf_finite", "__svml_logf16", 16 },
-
-        {"llvm.log.f64", "__svml_log2", 2},
-        {"llvm.log.f64", "__svml_log4", 4},
-        {"llvm.log.f64", "__svml_log8", 8},
-
-        {"llvm.log.f32", "__svml_logf4", 4},
-        {"llvm.log.f32", "__svml_logf8", 8},
-        {"llvm.log.f32", "__svml_logf16", 16},
+    #define TLI_DEFINE_SVML_VECFUNCS
+    #include "llvm/Analysis/VecFuncs.def"
     };
     addVectorizableFunctions(VecFuncs);
     break;
@@ -1609,9 +1555,8 @@ bool TargetLibraryInfoImpl::isFunctionVectorizable(StringRef funcName) const {
   if (funcName.empty())
     return false;
 
-  std::vector<VecDesc>::const_iterator I = std::lower_bound(
-      VectorDescs.begin(), VectorDescs.end(), funcName,
-      compareWithScalarFnName);
+  std::vector<VecDesc>::const_iterator I =
+      llvm::lower_bound(VectorDescs, funcName, compareWithScalarFnName);
   return I != VectorDescs.end() && StringRef(I->ScalarFnName) == funcName;
 }
 
@@ -1620,8 +1565,8 @@ StringRef TargetLibraryInfoImpl::getVectorizedFunction(StringRef F,
   F = sanitizeFunctionName(F);
   if (F.empty())
     return F;
-  std::vector<VecDesc>::const_iterator I = std::lower_bound(
-      VectorDescs.begin(), VectorDescs.end(), F, compareWithScalarFnName);
+  std::vector<VecDesc>::const_iterator I =
+      llvm::lower_bound(VectorDescs, F, compareWithScalarFnName);
   while (I != VectorDescs.end() && StringRef(I->ScalarFnName) == F) {
     if (I->VectorizationFactor == VF)
       return I->VectorFnName;
@@ -1636,38 +1581,20 @@ StringRef TargetLibraryInfoImpl::getScalarizedFunction(StringRef F,
   if (F.empty())
     return F;
 
-  std::vector<VecDesc>::const_iterator I = std::lower_bound(
-      ScalarDescs.begin(), ScalarDescs.end(), F, compareWithVectorFnName);
+  std::vector<VecDesc>::const_iterator I =
+      llvm::lower_bound(ScalarDescs, F, compareWithVectorFnName);
   if (I == VectorDescs.end() || StringRef(I->VectorFnName) != F)
     return StringRef();
   VF = I->VectorizationFactor;
   return I->ScalarFnName;
 }
 
-TargetLibraryInfo TargetLibraryAnalysis::run(Module &M,
-                                             ModuleAnalysisManager &) {
-  if (PresetInfoImpl)
-    return TargetLibraryInfo(*PresetInfoImpl);
-
-  return TargetLibraryInfo(lookupInfoImpl(Triple(M.getTargetTriple())));
-}
-
-TargetLibraryInfo TargetLibraryAnalysis::run(Function &F,
+TargetLibraryInfo TargetLibraryAnalysis::run(const Function &F,
                                              FunctionAnalysisManager &) {
-  if (PresetInfoImpl)
-    return TargetLibraryInfo(*PresetInfoImpl);
-
-  return TargetLibraryInfo(
-      lookupInfoImpl(Triple(F.getParent()->getTargetTriple())));
-}
-
-TargetLibraryInfoImpl &TargetLibraryAnalysis::lookupInfoImpl(const Triple &T) {
-  std::unique_ptr<TargetLibraryInfoImpl> &Impl =
-      Impls[T.normalize()];
-  if (!Impl)
-    Impl.reset(new TargetLibraryInfoImpl(T));
-
-  return *Impl;
+  if (!BaselineInfoImpl)
+    BaselineInfoImpl =
+        TargetLibraryInfoImpl(Triple(F.getParent()->getTargetTriple()));
+  return TargetLibraryInfo(*BaselineInfoImpl, &F);
 }
 
 unsigned TargetLibraryInfoImpl::getWCharSize(const Module &M) const {
@@ -1678,18 +1605,18 @@ unsigned TargetLibraryInfoImpl::getWCharSize(const Module &M) const {
 }
 
 TargetLibraryInfoWrapperPass::TargetLibraryInfoWrapperPass()
-    : ImmutablePass(ID), TLIImpl(), TLI(TLIImpl) {
+    : ImmutablePass(ID), TLA(TargetLibraryInfoImpl()) {
   initializeTargetLibraryInfoWrapperPassPass(*PassRegistry::getPassRegistry());
 }
 
 TargetLibraryInfoWrapperPass::TargetLibraryInfoWrapperPass(const Triple &T)
-    : ImmutablePass(ID), TLIImpl(T), TLI(TLIImpl) {
+    : ImmutablePass(ID), TLA(TargetLibraryInfoImpl(T)) {
   initializeTargetLibraryInfoWrapperPassPass(*PassRegistry::getPassRegistry());
 }
 
 TargetLibraryInfoWrapperPass::TargetLibraryInfoWrapperPass(
     const TargetLibraryInfoImpl &TLIImpl)
-    : ImmutablePass(ID), TLIImpl(TLIImpl), TLI(this->TLIImpl) {
+    : ImmutablePass(ID), TLA(TLIImpl) {
   initializeTargetLibraryInfoWrapperPassPass(*PassRegistry::getPassRegistry());
 }
 
@@ -1701,3 +1628,19 @@ INITIALIZE_PASS(TargetLibraryInfoWrapperPass, "targetlibinfo",
 char TargetLibraryInfoWrapperPass::ID = 0;
 
 void TargetLibraryInfoWrapperPass::anchor() {}
+
+unsigned TargetLibraryInfoImpl::getWidestVF(StringRef ScalarF) const {
+  ScalarF = sanitizeFunctionName(ScalarF);
+  if (ScalarF.empty())
+    return 1;
+
+  unsigned VF = 1;
+  std::vector<VecDesc>::const_iterator I =
+      llvm::lower_bound(VectorDescs, ScalarF, compareWithScalarFnName);
+  while (I != VectorDescs.end() && StringRef(I->ScalarFnName) == ScalarF) {
+    if (I->VectorizationFactor > VF)
+      VF = I->VectorizationFactor;
+    ++I;
+  }
+  return VF;
+}

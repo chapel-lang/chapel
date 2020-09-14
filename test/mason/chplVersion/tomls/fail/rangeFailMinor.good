@@ -1,2 +1,3 @@
+Skipping registry update since no dependency found in manifest file.
 The following package is incompatible with your version of Chapel (CHPL_CUR_FULL)
   rangeFailMinor-0.1.0 :  expecting 1.0.0..1.15.0

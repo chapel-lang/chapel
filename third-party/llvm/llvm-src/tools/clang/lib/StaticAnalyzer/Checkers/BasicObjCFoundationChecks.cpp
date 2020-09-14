@@ -1,9 +1,8 @@
 //== BasicObjCFoundationChecks.cpp - Simple Apple-Foundation checks -*- C++ -*--
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -212,7 +211,7 @@ void NilArgChecker::generateBugReport(ExplodedNode *N,
   if (!BT)
     BT.reset(new APIMisuse(this, "nil argument"));
 
-  auto R = llvm::make_unique<BugReport>(*BT, Msg, N);
+  auto R = std::make_unique<PathSensitiveBugReport>(*BT, Msg, N);
   R->addRange(Range);
   bugreporter::trackExpressionValue(N, E, *R);
   C.emitReport(std::move(R));
@@ -521,7 +520,7 @@ void CFNumberChecker::checkPreStmt(const CallExpr *CE,
     if (!BT)
       BT.reset(new APIMisuse(this, "Bad use of CFNumber APIs"));
 
-    auto report = llvm::make_unique<BugReport>(*BT, os.str(), N);
+    auto report = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
     report->addRange(CE->getArg(2)->getSourceRange());
     C.emitReport(std::move(report));
   }
@@ -576,7 +575,7 @@ void CFRetainReleaseChecker::checkPreCall(const CallEvent &Call,
     OS << "Null pointer argument in call to "
        << cast<FunctionDecl>(Call.getDecl())->getName();
 
-    auto report = llvm::make_unique<BugReport>(BT, OS.str(), N);
+    auto report = std::make_unique<PathSensitiveBugReport>(BT, OS.str(), N);
     report->addRange(Call.getArgSourceRange(0));
     bugreporter::trackExpressionValue(N, Call.getArgExpr(0), *report);
     C.emitReport(std::move(report));
@@ -636,7 +635,7 @@ void ClassReleaseChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
           "of class '" << Class->getName()
        << "' and not the class directly";
 
-    auto report = llvm::make_unique<BugReport>(*BT, os.str(), N);
+    auto report = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
     report->addRange(msg.getSourceRange());
     C.emitReport(std::move(report));
   }
@@ -789,7 +788,8 @@ void VariadicMethodTypeChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
     ArgTy.print(os, C.getLangOpts());
     os << "'";
 
-    auto R = llvm::make_unique<BugReport>(*BT, os.str(), errorNode.getValue());
+    auto R = std::make_unique<PathSensitiveBugReport>(*BT, os.str(),
+                                                      errorNode.getValue());
     R->addRange(msg.getArgSourceRange(I));
     C.emitReport(std::move(R));
   }
@@ -1243,27 +1243,54 @@ void ento::registerNilArgChecker(CheckerManager &mgr) {
   mgr.registerChecker<NilArgChecker>();
 }
 
+bool ento::shouldRegisterNilArgChecker(const LangOptions &LO) {
+  return true;
+}
+
 void ento::registerCFNumberChecker(CheckerManager &mgr) {
   mgr.registerChecker<CFNumberChecker>();
+}
+
+bool ento::shouldRegisterCFNumberChecker(const LangOptions &LO) {
+  return true;
 }
 
 void ento::registerCFRetainReleaseChecker(CheckerManager &mgr) {
   mgr.registerChecker<CFRetainReleaseChecker>();
 }
 
+bool ento::shouldRegisterCFRetainReleaseChecker(const LangOptions &LO) {
+  return true;
+}
+
 void ento::registerClassReleaseChecker(CheckerManager &mgr) {
   mgr.registerChecker<ClassReleaseChecker>();
+}
+
+bool ento::shouldRegisterClassReleaseChecker(const LangOptions &LO) {
+  return true;
 }
 
 void ento::registerVariadicMethodTypeChecker(CheckerManager &mgr) {
   mgr.registerChecker<VariadicMethodTypeChecker>();
 }
 
+bool ento::shouldRegisterVariadicMethodTypeChecker(const LangOptions &LO) {
+  return true;
+}
+
 void ento::registerObjCLoopChecker(CheckerManager &mgr) {
   mgr.registerChecker<ObjCLoopChecker>();
 }
 
-void
-ento::registerObjCNonNilReturnValueChecker(CheckerManager &mgr) {
+bool ento::shouldRegisterObjCLoopChecker(const LangOptions &LO) {
+  return true;
+}
+
+void ento::registerObjCNonNilReturnValueChecker(CheckerManager &mgr) {
   mgr.registerChecker<ObjCNonNilReturnValueChecker>();
+}
+
+bool ento::shouldRegisterObjCNonNilReturnValueChecker(const LangOptions &LO) {
+  return true;
 }

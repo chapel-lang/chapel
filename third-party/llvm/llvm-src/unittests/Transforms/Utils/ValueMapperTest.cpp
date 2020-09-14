@@ -1,9 +1,8 @@
 //===- ValueMapper.cpp - Unit tests for ValueMapper -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -67,9 +66,9 @@ TEST(ValueMapperTest, mapMDNodeCycle) {
 TEST(ValueMapperTest, mapMDNodeDuplicatedCycle) {
   LLVMContext Context;
   auto *PtrTy = Type::getInt8Ty(Context)->getPointerTo();
-  std::unique_ptr<GlobalVariable> G0 = llvm::make_unique<GlobalVariable>(
+  std::unique_ptr<GlobalVariable> G0 = std::make_unique<GlobalVariable>(
       PtrTy, false, GlobalValue::ExternalLinkage, nullptr, "G0");
-  std::unique_ptr<GlobalVariable> G1 = llvm::make_unique<GlobalVariable>(
+  std::unique_ptr<GlobalVariable> G1 = std::make_unique<GlobalVariable>(
       PtrTy, false, GlobalValue::ExternalLinkage, nullptr, "G1");
 
   // Create a cycle that references G0.

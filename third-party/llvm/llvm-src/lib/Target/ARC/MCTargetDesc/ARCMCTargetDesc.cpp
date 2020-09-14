@@ -1,9 +1,8 @@
 //===- ARCMCTargetDesc.cpp - ARC Target Descriptions ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,9 +11,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "ARCMCTargetDesc.h"
+#include "ARCInstPrinter.h"
 #include "ARCMCAsmInfo.h"
 #include "ARCTargetStreamer.h"
-#include "InstPrinter/ARCInstPrinter.h"
+#include "TargetInfo/ARCTargetInfo.h"
+#include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -51,7 +52,8 @@ static MCSubtargetInfo *createARCMCSubtargetInfo(const Triple &TT,
 }
 
 static MCAsmInfo *createARCMCAsmInfo(const MCRegisterInfo &MRI,
-                                     const Triple &TT) {
+                                     const Triple &TT,
+                                     const MCTargetOptions &Options) {
   MCAsmInfo *MAI = new ARCMCAsmInfo(TT);
 
   // Initial state of the frame pointer is SP.
@@ -80,7 +82,7 @@ static MCTargetStreamer *createTargetAsmStreamer(MCStreamer &S,
 }
 
 // Force static initialization.
-extern "C" void LLVMInitializeARCTargetMC() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeARCTargetMC() {
   // Register the MC asm info.
   Target &TheARCTarget = getTheARCTarget();
   RegisterMCAsmInfoFn X(TheARCTarget, createARCMCAsmInfo);

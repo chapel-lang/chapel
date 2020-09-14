@@ -27,7 +27,7 @@
 
 #define HAVE_LLVM_VER (LLVM_VERSION_MAJOR*10 + LLVM_VERSION_MINOR)
 
-#if HAVE_LLVM_VER < 40
+#if HAVE_LLVM_VER < 60
 #error LLVM version is too old for this version of Chapel
 #endif
 

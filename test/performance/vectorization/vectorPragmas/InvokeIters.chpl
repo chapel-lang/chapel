@@ -1,7 +1,7 @@
 // A wrapper module that contains the config vars and modules that invoke the
 // various iters. Having the iterator uses in separate modules, places their
 // generated code in separate files. This makes it easier to ensure the
-// CHPL_PRAGMA_IVDEP is placed on the correct loops
+// vectorization hint is placed on the correct loops
 
 module ItersConfig {
   config const n: int = 10;

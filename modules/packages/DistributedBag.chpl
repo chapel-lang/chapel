@@ -332,6 +332,7 @@ module DistributedBag {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter targetLocalesNotHere() {
       for loc in targetLocales {
         if loc != here {
@@ -544,6 +545,7 @@ module DistributedBag {
         parallel iteration, for both performance and memory benefit.
 
     */
+    pragma "order independent yielding loops"
     override iter these() : eltType {
       for loc in targetLocales {
         for segmentIdx in 0..#here.maxTaskPar {
@@ -608,6 +610,7 @@ module DistributedBag {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag : iterKind, followThis) where tag == iterKind.follower {
       var (bufferSz, buffer) = followThis;
       for i in 0 .. #bufferSz {

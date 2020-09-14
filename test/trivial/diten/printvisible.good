@@ -1,0 +1,2 @@
+printvisible.chpl:2: Printing symbols visible from here:
+  printvisible.chpl:1: xyzSymbol

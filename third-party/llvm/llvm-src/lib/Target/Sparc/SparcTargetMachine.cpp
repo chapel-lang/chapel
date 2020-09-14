@@ -1,9 +1,8 @@
 //===-- SparcTargetMachine.cpp - Define TargetMachine for Sparc -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,13 +13,14 @@
 #include "LeonPasses.h"
 #include "Sparc.h"
 #include "SparcTargetObjectFile.h"
+#include "TargetInfo/SparcTargetInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Support/TargetRegistry.h"
 using namespace llvm;
 
-extern "C" void LLVMInitializeSparcTarget() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeSparcTarget() {
   // Register the target.
   RegisterTargetMachine<SparcV8TargetMachine> X(getTheSparcTarget());
   RegisterTargetMachine<SparcV9TargetMachine> Y(getTheSparcV9Target());
@@ -75,9 +75,9 @@ getEffectiveSparcCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM,
                            bool Is64Bit, bool JIT) {
   if (CM) {
     if (*CM == CodeModel::Tiny)
-      report_fatal_error("Target does not support the tiny CodeModel");
+      report_fatal_error("Target does not support the tiny CodeModel", false);
     if (*CM == CodeModel::Kernel)
-      report_fatal_error("Target does not support the kernel CodeModel");
+      report_fatal_error("Target does not support the kernel CodeModel", false);
     return *CM;
   }
   if (Is64Bit) {
@@ -98,7 +98,7 @@ SparcTargetMachine::SparcTargetMachine(
                         getEffectiveSparcCodeModel(
                             CM, getEffectiveRelocModel(RM), is64bit, JIT),
                         OL),
-      TLOF(make_unique<SparcELFTargetObjectFile>()),
+      TLOF(std::make_unique<SparcELFTargetObjectFile>()),
       Subtarget(TT, CPU, FS, *this, is64bit), is64Bit(is64bit) {
   initAsmInfo();
 }
@@ -133,7 +133,7 @@ SparcTargetMachine::getSubtargetImpl(const Function &F) const {
     // creation will depend on the TM and the code generation flags on the
     // function that reside in TargetOptions.
     resetTargetOptions(F);
-    I = llvm::make_unique<SparcSubtarget>(TargetTriple, CPU, FS, *this,
+    I = std::make_unique<SparcSubtarget>(TargetTriple, CPU, FS, *this,
                                           this->is64Bit);
   }
   return I.get();

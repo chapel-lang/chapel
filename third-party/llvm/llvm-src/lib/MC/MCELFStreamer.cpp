@@ -1,9 +1,8 @@
 //===- lib/MC/MCELFStreamer.cpp - ELF Object Output -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -107,9 +106,10 @@ void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc) {
     Symbol->setType(ELF::STT_TLS);
 }
 
-void MCELFStreamer::EmitLabel(MCSymbol *S, SMLoc Loc, MCFragment *F) {
+void MCELFStreamer::EmitLabelAtPos(MCSymbol *S, SMLoc Loc, MCFragment *F,
+                                   uint64_t Offset) {
   auto *Symbol = cast<MCSymbolELF>(S);
-  MCObjectStreamer::EmitLabel(Symbol, Loc, F);
+  MCObjectStreamer::EmitLabelAtPos(Symbol, Loc, F, Offset);
 
   const MCSectionELF &Section =
       static_cast<const MCSectionELF &>(*getCurrentSectionOnly());
@@ -140,7 +140,7 @@ static void setSectionAlignmentForBundling(const MCAssembler &Assembler,
                                            MCSection *Section) {
   if (Section && Assembler.isBundlingEnabled() && Section->hasInstructions() &&
       Section->getAlignment() < Assembler.getBundleAlignSize())
-    Section->setAlignment(Assembler.getBundleAlignSize());
+    Section->setAlignment(Align(Assembler.getBundleAlignSize()));
 }
 
 void MCELFStreamer::ChangeSection(MCSection *Section,
@@ -202,6 +202,7 @@ bool MCELFStreamer::EmitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
   // In the future it might be worth trying to make these operations more well
   // defined.
   switch (Attribute) {
+  case MCSA_Cold:
   case MCSA_LazyReference:
   case MCSA_Reference:
   case MCSA_SymbolResolver:
@@ -277,6 +278,9 @@ bool MCELFStreamer::EmitSymbolAttribute(MCSymbol *S, MCSymbolAttr Attribute) {
 
   case MCSA_AltEntry:
     llvm_unreachable("ELF doesn't support the .alt_entry attribute");
+
+  case MCSA_LGlobal:
+    llvm_unreachable("ELF doesn't support the .lglobl attribute");
   }
 
   return true;
@@ -303,10 +307,6 @@ void MCELFStreamer::EmitCommonSymbol(MCSymbol *S, uint64_t Size,
     EmitValueToAlignment(ByteAlignment, 0, 1, 0);
     EmitLabel(Symbol);
     EmitZeros(Size);
-
-    // Update the maximum alignment of the section if necessary.
-    if (ByteAlignment > Section.getAlignment())
-      Section.setAlignment(ByteAlignment);
 
     SwitchSection(P.first, P.second);
   } else {
@@ -400,6 +400,8 @@ void MCELFStreamer::fixSymbolsInTLSFixups(const MCExpr *expr) {
     case MCSymbolRefExpr::VK_INDNTPOFF:
     case MCSymbolRefExpr::VK_NTPOFF:
     case MCSymbolRefExpr::VK_GOTNTPOFF:
+    case MCSymbolRefExpr::VK_TLSCALL:
+    case MCSymbolRefExpr::VK_TLSDESC:
     case MCSymbolRefExpr::VK_TLSGD:
     case MCSymbolRefExpr::VK_TLSLD:
     case MCSymbolRefExpr::VK_TLSLDM:

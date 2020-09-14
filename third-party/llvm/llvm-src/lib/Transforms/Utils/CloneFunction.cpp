@@ -1,9 +1,8 @@
 //===- CloneFunction.cpp - Clone a function into another function ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,13 +15,13 @@
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/Analysis/InstructionSimplify.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instructions.h"
@@ -211,6 +210,21 @@ void llvm::CloneFunctionInto(Function *NewFunc, const Function *OldFunc,
       RemapInstruction(&II, VMap,
                        ModuleLevelChanges ? RF_None : RF_NoModuleLevelChanges,
                        TypeMapper, Materializer);
+
+  // Register all DICompileUnits of the old parent module in the new parent module
+  auto* OldModule = OldFunc->getParent();
+  auto* NewModule = NewFunc->getParent();
+  if (OldModule && NewModule && OldModule != NewModule && DIFinder.compile_unit_count()) {
+    auto* NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
+    // Avoid multiple insertions of the same DICompileUnit to NMD.
+    SmallPtrSet<const void*, 8> Visited;
+    for (auto* Operand : NMD->operands())
+      Visited.insert(Operand);
+    for (auto* Unit : DIFinder.compile_units())
+      // VMap.MD()[Unit] == Unit
+      if (Visited.insert(Unit).second)
+        NMD->addOperand(Unit);
+  }
 }
 
 /// Return a copy of the specified function and add it to that function's
@@ -740,12 +754,12 @@ Loop *llvm::cloneLoopWithPreheader(BasicBlock *Before, BasicBlock *LoopDomBB,
                                    const Twine &NameSuffix, LoopInfo *LI,
                                    DominatorTree *DT,
                                    SmallVectorImpl<BasicBlock *> &Blocks) {
-  assert(OrigLoop->getSubLoops().empty() &&
-         "Loop to be cloned cannot have inner loop");
   Function *F = OrigLoop->getHeader()->getParent();
   Loop *ParentLoop = OrigLoop->getParentLoop();
+  DenseMap<Loop *, Loop *> LMap;
 
   Loop *NewLoop = LI->AllocateLoop();
+  LMap[OrigLoop] = NewLoop;
   if (ParentLoop)
     ParentLoop->addChildLoop(NewLoop);
   else
@@ -765,14 +779,36 @@ Loop *llvm::cloneLoopWithPreheader(BasicBlock *Before, BasicBlock *LoopDomBB,
   // Update DominatorTree.
   DT->addNewBlock(NewPH, LoopDomBB);
 
+  for (Loop *CurLoop : OrigLoop->getLoopsInPreorder()) {
+    Loop *&NewLoop = LMap[CurLoop];
+    if (!NewLoop) {
+      NewLoop = LI->AllocateLoop();
+
+      // Establish the parent/child relationship.
+      Loop *OrigParent = CurLoop->getParentLoop();
+      assert(OrigParent && "Could not find the original parent loop");
+      Loop *NewParentLoop = LMap[OrigParent];
+      assert(NewParentLoop && "Could not find the new parent loop");
+
+      NewParentLoop->addChildLoop(NewLoop);
+    }
+  }
+
   for (BasicBlock *BB : OrigLoop->getBlocks()) {
+    Loop *CurLoop = LI->getLoopFor(BB);
+    Loop *&NewLoop = LMap[CurLoop];
+    assert(NewLoop && "Expecting new loop to be allocated");
+
     BasicBlock *NewBB = CloneBasicBlock(BB, VMap, NameSuffix, F);
     VMap[BB] = NewBB;
 
     // Update LoopInfo.
     NewLoop->addBasicBlockToLoop(NewBB, *LI);
+    if (BB == CurLoop->getHeader())
+      NewLoop->moveToHeader(NewBB);
 
-    // Add DominatorTree node. After seeing all blocks, update to correct IDom.
+    // Add DominatorTree node. After seeing all blocks, update to correct
+    // IDom.
     DT->addNewBlock(NewBB, NewPH);
 
     Blocks.push_back(NewBB);

@@ -1,9 +1,8 @@
 //===-- MCTargetOptionsCommandFlags.h --------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,15 +18,6 @@
 #include "llvm/Support/CommandLine.h"
 using namespace llvm;
 
-static cl::opt<MCTargetOptions::AsmInstrumentation> AsmInstrumentation(
-    "asm-instrumentation", cl::desc("Instrumentation of inline assembly and "
-                                    "assembly source files"),
-    cl::init(MCTargetOptions::AsmInstrumentationNone),
-    cl::values(clEnumValN(MCTargetOptions::AsmInstrumentationNone, "none",
-                          "no instrumentation at all"),
-               clEnumValN(MCTargetOptions::AsmInstrumentationAddress, "address",
-                          "instrument instructions with memory arguments")));
-
 static cl::opt<bool> RelaxAll("mc-relax-all",
                        cl::desc("When used with filetype=obj, "
                                 "relax all fixups in the emitted object file"));
@@ -37,8 +27,6 @@ static cl::opt<bool> IncrementalLinkerCompatible(
     cl::desc(
         "When used with filetype=obj, "
         "emit an object file which can be used with an incremental linker"));
-
-static cl::opt<bool> PIECopyRelocations("pie-copy-relocations", cl::desc("PIE Copy Relocations"));
 
 static cl::opt<int> DwarfVersion("dwarf-version", cl::desc("Dwarf version"),
                           cl::init(0));
@@ -63,11 +51,8 @@ ABIName("target-abi", cl::Hidden,
 
 static MCTargetOptions InitMCTargetOptionsFromFlags() {
   MCTargetOptions Options;
-  Options.SanitizeAddress =
-      (AsmInstrumentation == MCTargetOptions::AsmInstrumentationAddress);
   Options.MCRelaxAll = RelaxAll;
   Options.MCIncrementalLinkerCompatible = IncrementalLinkerCompatible;
-  Options.MCPIECopyRelocations = PIECopyRelocations;
   Options.DwarfVersion = DwarfVersion;
   Options.ShowMCInst = ShowMCInst;
   Options.ABIName = ABIName;

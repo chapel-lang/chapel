@@ -188,6 +188,7 @@ module ArrayViewSlice {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
@@ -381,6 +382,14 @@ module ArrayViewSlice {
     proc _getRCREView() {
       compilerAssert(this._containsRCRE());
       return arr._getRCREView();
+    }
+
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
+      // no elements allocated here, so no action necessary
     }
 
     override proc doiCanBulkTransferRankChange() param {

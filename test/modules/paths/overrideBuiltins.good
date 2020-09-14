@@ -1,0 +1,3 @@
+warning: Ambiguous module source file -- using std/Builtins.chpl over $CHPL_HOME/modules/standard/Builtins.chpl
+In my personal copy of Builtins
+In overrideBuiltins

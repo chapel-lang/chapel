@@ -1,9 +1,8 @@
 //===-- llc.cpp - Implement the LLVM Native Code Generator ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,8 +31,10 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
+#include "llvm/IR/RemarkStreamer.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IRReader/IRReader.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
@@ -133,20 +134,32 @@ static cl::opt<bool> DiscardValueNames(
 
 static cl::list<std::string> IncludeDirs("I", cl::desc("include search path"));
 
-static cl::opt<bool> PassRemarksWithHotness(
+static cl::opt<bool> RemarksWithHotness(
     "pass-remarks-with-hotness",
     cl::desc("With PGO, include profile count in optimization remarks"),
     cl::Hidden);
 
-static cl::opt<unsigned> PassRemarksHotnessThreshold(
-    "pass-remarks-hotness-threshold",
-    cl::desc("Minimum profile count required for an optimization remark to be output"),
-    cl::Hidden);
+static cl::opt<unsigned>
+    RemarksHotnessThreshold("pass-remarks-hotness-threshold",
+                            cl::desc("Minimum profile count required for "
+                                     "an optimization remark to be output"),
+                            cl::Hidden);
 
 static cl::opt<std::string>
     RemarksFilename("pass-remarks-output",
-                    cl::desc("YAML output filename for pass remarks"),
+                    cl::desc("Output filename for pass remarks"),
                     cl::value_desc("filename"));
+
+static cl::opt<std::string>
+    RemarksPasses("pass-remarks-filter",
+                  cl::desc("Only record optimization remarks from passes whose "
+                           "names match the given regular expression"),
+                  cl::value_desc("regex"));
+
+static cl::opt<std::string> RemarksFormat(
+    "pass-remarks-format",
+    cl::desc("The format used for serializing remarks (default: YAML)"),
+    cl::value_desc("format"), cl::init("yaml"));
 
 namespace {
 static ManagedStatic<std::vector<std::string>> RunPassNames;
@@ -190,7 +203,7 @@ static std::unique_ptr<ToolOutputFile> GetOutputStream(const char *TargetName,
         OutputFilename = IFN;
 
       switch (FileType) {
-      case TargetMachine::CGFT_AssemblyFile:
+      case CGFT_AssemblyFile:
         if (TargetName[0] == 'c') {
           if (TargetName[1] == 0)
             OutputFilename += ".cbe.c";
@@ -201,13 +214,13 @@ static std::unique_ptr<ToolOutputFile> GetOutputStream(const char *TargetName,
         } else
           OutputFilename += ".s";
         break;
-      case TargetMachine::CGFT_ObjectFile:
+      case CGFT_ObjectFile:
         if (OS == Triple::Win32)
           OutputFilename += ".obj";
         else
           OutputFilename += ".o";
         break;
-      case TargetMachine::CGFT_Null:
+      case CGFT_Null:
         OutputFilename += ".null";
         break;
       }
@@ -217,20 +230,20 @@ static std::unique_ptr<ToolOutputFile> GetOutputStream(const char *TargetName,
   // Decide if we need "binary" output.
   bool Binary = false;
   switch (FileType) {
-  case TargetMachine::CGFT_AssemblyFile:
+  case CGFT_AssemblyFile:
     break;
-  case TargetMachine::CGFT_ObjectFile:
-  case TargetMachine::CGFT_Null:
+  case CGFT_ObjectFile:
+  case CGFT_Null:
     Binary = true;
     break;
   }
 
   // Open the file.
   std::error_code EC;
-  sys::fs::OpenFlags OpenFlags = sys::fs::F_None;
+  sys::fs::OpenFlags OpenFlags = sys::fs::OF_None;
   if (!Binary)
-    OpenFlags |= sys::fs::F_Text;
-  auto FDOut = llvm::make_unique<ToolOutputFile>(OutputFilename, EC, OpenFlags);
+    OpenFlags |= sys::fs::OF_Text;
+  auto FDOut = std::make_unique<ToolOutputFile>(OutputFilename, EC, OpenFlags);
   if (EC) {
     WithColor::error() << EC.message() << '\n';
     return nullptr;
@@ -302,6 +315,7 @@ int main(int argc, char **argv) {
   initializeVectorization(*Registry);
   initializeScalarizeMaskedMemIntrinPass(*Registry);
   initializeExpandReductionsPass(*Registry);
+  initializeHardwareLoopsPass(*Registry);
 
   // Initialize debugging passes.
   initializeScavengerTestPass(*Registry);
@@ -316,27 +330,18 @@ int main(int argc, char **argv) {
   // Set a diagnostic handler that doesn't exit on the first error
   bool HasError = false;
   Context.setDiagnosticHandler(
-      llvm::make_unique<LLCDiagnosticHandler>(&HasError));
+      std::make_unique<LLCDiagnosticHandler>(&HasError));
   Context.setInlineAsmDiagnosticHandler(InlineAsmDiagHandler, &HasError);
 
-  if (PassRemarksWithHotness)
-    Context.setDiagnosticsHotnessRequested(true);
-
-  if (PassRemarksHotnessThreshold)
-    Context.setDiagnosticsHotnessThreshold(PassRemarksHotnessThreshold);
-
-  std::unique_ptr<ToolOutputFile> YamlFile;
-  if (RemarksFilename != "") {
-    std::error_code EC;
-    YamlFile =
-        llvm::make_unique<ToolOutputFile>(RemarksFilename, EC, sys::fs::F_None);
-    if (EC) {
-      WithColor::error(errs(), argv[0]) << EC.message() << '\n';
-      return 1;
-    }
-    Context.setDiagnosticsOutputFile(
-        llvm::make_unique<yaml::Output>(YamlFile->os()));
+  Expected<std::unique_ptr<ToolOutputFile>> RemarksFileOrErr =
+      setupOptimizationRemarks(Context, RemarksFilename, RemarksPasses,
+                               RemarksFormat, RemarksWithHotness,
+                               RemarksHotnessThreshold);
+  if (Error E = RemarksFileOrErr.takeError()) {
+    WithColor::error(errs(), argv[0]) << toString(std::move(E)) << '\n';
+    return 1;
   }
+  std::unique_ptr<ToolOutputFile> RemarksFile = std::move(*RemarksFileOrErr);
 
   if (InputLanguage != "" && InputLanguage != "ir" &&
       InputLanguage != "mir") {
@@ -351,8 +356,8 @@ int main(int argc, char **argv) {
     if (int RetVal = compileModule(argv, Context))
       return RetVal;
 
-  if (YamlFile)
-    YamlFile->keep();
+  if (RemarksFile)
+    RemarksFile->keep();
   return 0;
 }
 
@@ -390,6 +395,12 @@ static int compileModule(char **argv, LLVMContext &Context) {
   std::unique_ptr<Module> M;
   std::unique_ptr<MIRParser> MIR;
   Triple TheTriple;
+  std::string CPUStr = getCPUStr(), FeaturesStr = getFeaturesStr();
+
+  // Set attributes on functions as loaded from MIR from command line arguments.
+  auto setMIRFunctionAttributes = [&CPUStr, &FeaturesStr](Function &F) {
+    setFunctionAttributes(CPUStr, FeaturesStr, F);
+  };
 
   bool SkipModule = MCPU == "help" ||
                     (!MAttrs.empty() && MAttrs.front() == "help");
@@ -398,7 +409,8 @@ static int compileModule(char **argv, LLVMContext &Context) {
   if (!SkipModule) {
     if (InputLanguage == "mir" ||
         (InputLanguage == "" && StringRef(InputFilename).endswith(".mir"))) {
-      MIR = createMIRParserFromFile(InputFilename, Err, Context);
+      MIR = createMIRParserFromFile(InputFilename, Err, Context,
+                                    setMIRFunctionAttributes);
       if (MIR)
         M = MIR->parseIRModule();
     } else
@@ -427,8 +439,6 @@ static int compileModule(char **argv, LLVMContext &Context) {
     WithColor::error(errs(), argv[0]) << Error;
     return 1;
   }
-
-  std::string CPUStr = getCPUStr(), FeaturesStr = getFeaturesStr();
 
   CodeGenOpt::Level OLvl = CodeGenOpt::Default;
   switch (OptLevel) {
@@ -475,8 +485,8 @@ static int compileModule(char **argv, LLVMContext &Context) {
   std::unique_ptr<ToolOutputFile> DwoOut;
   if (!SplitDwarfOutputFile.empty()) {
     std::error_code EC;
-    DwoOut = llvm::make_unique<ToolOutputFile>(SplitDwarfOutputFile, EC,
-                                               sys::fs::F_None);
+    DwoOut = std::make_unique<ToolOutputFile>(SplitDwarfOutputFile, EC,
+                                               sys::fs::OF_None);
     if (EC) {
       WithColor::error(errs(), argv[0]) << EC.message() << '\n';
       return 1;
@@ -515,7 +525,7 @@ static int compileModule(char **argv, LLVMContext &Context) {
   setFunctionAttributes(CPUStr, FeaturesStr, *M);
 
   if (RelaxAll.getNumOccurrences() > 0 &&
-      FileType != TargetMachine::CGFT_ObjectFile)
+      FileType != CGFT_ObjectFile)
     WithColor::warning(errs(), argv[0])
         << ": warning: ignoring -mc-relax-all because filetype != obj";
 
@@ -526,16 +536,17 @@ static int compileModule(char **argv, LLVMContext &Context) {
     // so we can memcmp the contents in CompileTwice mode
     SmallVector<char, 0> Buffer;
     std::unique_ptr<raw_svector_ostream> BOS;
-    if ((FileType != TargetMachine::CGFT_AssemblyFile &&
+    if ((FileType != CGFT_AssemblyFile &&
          !Out->os().supportsSeeking()) ||
         CompileTwice) {
-      BOS = make_unique<raw_svector_ostream>(Buffer);
+      BOS = std::make_unique<raw_svector_ostream>(Buffer);
       OS = BOS.get();
     }
 
     const char *argv0 = argv[0];
-    LLVMTargetMachine &LLVMTM = static_cast<LLVMTargetMachine&>(*Target);
-    MachineModuleInfo *MMI = new MachineModuleInfo(&LLVMTM);
+    LLVMTargetMachine &LLVMTM = static_cast<LLVMTargetMachine &>(*Target);
+    MachineModuleInfoWrapperPass *MMIWP =
+        new MachineModuleInfoWrapperPass(&LLVMTM);
 
     // Construct a custom pass pipeline that starts after instruction
     // selection.
@@ -555,7 +566,7 @@ static int compileModule(char **argv, LLVMContext &Context) {
 
       TPC.setDisableVerify(NoVerify);
       PM.add(&TPC);
-      PM.add(MMI);
+      PM.add(MMIWP);
       TPC.printAndVerify("");
       for (const std::string &RunPassName : *RunPassNames) {
         if (addPass(PM, argv0, RunPassName, TPC))
@@ -566,7 +577,7 @@ static int compileModule(char **argv, LLVMContext &Context) {
       PM.add(createFreeMachineFunctionPass());
     } else if (Target->addPassesToEmitFile(PM, *OS,
                                            DwoOut ? &DwoOut->os() : nullptr,
-                                           FileType, NoVerify, MMI)) {
+                                           FileType, NoVerify, MMIWP)) {
       WithColor::warning(errs(), argv[0])
           << "target does not support generation of this"
           << " file type!\n";
@@ -574,8 +585,8 @@ static int compileModule(char **argv, LLVMContext &Context) {
     }
 
     if (MIR) {
-      assert(MMI && "Forgot to create MMI?");
-      if (MIR->parseMachineFunctions(*M, *MMI))
+      assert(MMIWP && "Forgot to create MMIWP?");
+      if (MIR->parseMachineFunctions(*M, MMIWP->getMMI()))
         return 1;
     }
 

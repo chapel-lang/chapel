@@ -1,9 +1,8 @@
 //===- ARCDisassembler.cpp - Disassembler for ARC ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -15,6 +14,7 @@
 #include "ARC.h"
 #include "ARCRegisterInfo.h"
 #include "MCTargetDesc/ARCMCTargetDesc.h"
+#include "TargetInfo/ARCTargetInfo.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCFixedLenDisassembler.h"
@@ -42,7 +42,6 @@ public:
 
   DecodeStatus getInstruction(MCInst &Instr, uint64_t &Size,
                               ArrayRef<uint8_t> Bytes, uint64_t Address,
-                              raw_ostream &VStream,
                               raw_ostream &CStream) const override;
 };
 
@@ -297,7 +296,6 @@ static DecodeStatus DecodeMoveHRegInstruction(MCInst &Inst, uint64_t Insn,
 DecodeStatus ARCDisassembler::getInstruction(MCInst &Instr, uint64_t &Size,
                                              ArrayRef<uint8_t> Bytes,
                                              uint64_t Address,
-                                             raw_ostream &vStream,
                                              raw_ostream &cStream) const {
   MCDisassembler::DecodeStatus Result;
   if (Bytes.size() < 2) {
@@ -365,7 +363,7 @@ static MCDisassembler *createARCDisassembler(const Target &T,
   return new ARCDisassembler(STI, Ctx, T.createMCInstrInfo());
 }
 
-extern "C" void LLVMInitializeARCDisassembler() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeARCDisassembler() {
   // Register the disassembler.
   TargetRegistry::RegisterMCDisassembler(getTheARCTarget(),
                                          createARCDisassembler);

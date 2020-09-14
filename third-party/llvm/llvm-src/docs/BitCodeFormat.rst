@@ -794,6 +794,7 @@ function. The operand fields are:
   * ``preserve_allcc``: code 15
   * ``swiftcc`` : code 16
   * ``cxx_fast_tlscc``: code 17
+  * ``tailcc`` : code 18
   * ``x86_stdcallcc``: code 64
   * ``x86_fastcallcc``: code 65
   * ``arm_apcscc``: code 66
@@ -1057,6 +1058,7 @@ The integer codes are mapped to well-known attributes as follows.
 * code 56: ``nocf_check``
 * code 57: ``optforfuzzing``
 * code 58: ``shadowcallstack``
+* code 64: ``sanitize_memtag``
 
 .. note::
   The ``allocsize`` attribute has a special encoding for its arguments. Its two

@@ -1,9 +1,8 @@
 //===- FunctionImportUtils.h - Importing support utilities -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -50,7 +49,7 @@ class FunctionImportGlobalProcessing {
   DenseMap<const Comdat *, Comdat *> RenamedComdats;
 
   /// Check if we should promote the given local value to global scope.
-  bool shouldPromoteLocalToGlobal(const GlobalValue *SGV);
+  bool shouldPromoteLocalToGlobal(const GlobalValue *SGV, ValueInfo VI);
 
 #ifndef NDEBUG
   /// Check if the given value is a local that can't be renamed (promoted).
@@ -68,11 +67,9 @@ class FunctionImportGlobalProcessing {
   /// import SGV as a definition, otherwise import as a declaration.
   bool doImportAsDefinition(const GlobalValue *SGV);
 
-  /// Get the name for SGV that should be used in the linked destination
-  /// module. Specifically, this handles the case where we need to rename
-  /// a local that is being promoted to global scope, which it will always
-  /// do when \p DoPromote is true (or when importing a local).
-  std::string getName(const GlobalValue *SGV, bool DoPromote);
+  /// Get the name for a local SGV that should be promoted and renamed to global
+  /// scope in the linked destination module.
+  std::string getPromotedName(const GlobalValue *SGV);
 
   /// Process globals so that they can be used in ThinLTO. This includes
   /// promoting local variables so that they can be reference externally by
@@ -108,9 +105,6 @@ public:
   }
 
   bool run();
-
-  static bool doImportAsDefinition(const GlobalValue *SGV,
-                                   SetVector<GlobalValue *> *GlobalsToImport);
 };
 
 /// Perform in-place global value handling on the given Module for

@@ -22,7 +22,10 @@ _chpl ()
     -*)
       # developer options
       local devel_opts="\
+--allow-noinit-array-not-pod \
 --atomics \
+--auto-local-access \
+--auto-local-access-dynamic \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -137,6 +140,9 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-allow-noinit-array-not-pod \
+--no-auto-local-access \
+--no-auto-local-access-dynamic \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -226,7 +232,6 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
 --no-vectorize \
 --no-verify \
 --no-warn-const-loops \
@@ -278,6 +283,7 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-auto-local-access \
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
@@ -307,7 +313,6 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
 --vectorize \
 --verify \
 --version \
@@ -330,6 +335,8 @@ _chpl ()
       # non-developer options
       local nodevel_opts="\
 --atomics \
+--auto-local-access \
+--auto-local-access-dynamic \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -391,6 +398,8 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-auto-local-access \
+--no-auto-local-access-dynamic \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -442,7 +451,6 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
 --no-vectorize \
 --no-warn-unstable \
 --no-warnings \
@@ -485,7 +493,6 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
 --vectorize \
 --version \
 --warn-unstable \

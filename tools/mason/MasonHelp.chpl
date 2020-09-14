@@ -73,7 +73,7 @@ proc masonRunHelp() {
   writeln('   - If no target directory, build and run is Mason.toml is present');
   writeln();
   writeln('Runtime arguments can be included after mason arguments.');
-  writeln('To ensure that runtime arguments and mason arguments to not conflict, separate them');
+  writeln('To ensure that runtime arguments and mason arguments do not conflict, separate them');
   writeln('with a single dash(`-`). For example');
   writeln('   e.g. mason run --build - --runtimeArg=true');
 }
@@ -105,6 +105,7 @@ proc masonBuildHelp() {
 proc masonNewHelp() {
   writeln('Usage:');
   writeln('    mason new [options] <project name>');
+  writeln('    mason new                    Starts an interactive session');
   writeln();
   writeln('Options:');
   writeln('    -h, --help                   Display this message');
@@ -123,6 +124,7 @@ proc masonInitHelp(){
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('    --name <legalName>           Specify package name different from directory name');
+  writeln('    -d, --default                Override interactive session and initialise project');
 }
 
 proc masonSearchHelp() {
@@ -166,6 +168,16 @@ proc masonModifyHelp() {
   writeln("Package names and versions are not validated upon adding");
 }
 
+proc masonUpdateHelp() {
+  writeln("Update registries and generate Mason.lock");
+  writeln("Usage:");
+  writeln("    mason update [options]");
+  writeln();
+  writeln("Options:");
+  writeln("    -h, --help                  Display this message");
+  writeln("    --[no-]update               [Do not] update the mason registry before generating the lock file");
+}
+
 proc masonEnvHelp() {
   writeln("Print environment variables recognized by mason");
   writeln();
@@ -193,6 +205,7 @@ proc masonExternalHelp() {
   writeln("    uninstall                   Uninstall an external package");
   writeln("    info                        Show information about an external package");
   writeln("    find                        Find information about installed external packages");
+  writeln("    -V, --version               Display Spack version");
   writeln("    -h, --help                  Display this message");
   writeln("        --setup                 Download and install Spack backend");
   writeln("        --spec                  Display Spack specification help");
@@ -420,6 +433,7 @@ proc masonPublishHelp(){
   writeln("Options:");
   writeln('    <registry>                   Positional argument indicates the target registry. Defaults to chapel-lang/mason-registry');
   writeln("    -h, --help                   Display this message");
+  writeln("    -c, --create-registry        Creates a local registry at path");
   writeln('    --dry-run                    Check to see if package is ready to be published');
   writeln('    --check                      Runs check to see if package can be published successfully to <registry>');
   writeln('    --ci-check                   Same as --check, except omits git origin checks');

@@ -153,9 +153,9 @@
  */
 module ChapelRange {
 
-  private use ChapelBase, SysBasic, HaltWrappers;
+  use ChapelBase, SysBasic, HaltWrappers;
 
-  use Math;
+  use Math, DSIUtil;
 
   // Turns on range iterator debugging.
   pragma "no doc"
@@ -879,7 +879,7 @@ module ChapelRange {
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
 pragma "no doc"
-proc range.safeCast(type t) where isRangeType(t) {
+proc range.safeCast(type t: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != this.boundedType {
@@ -905,7 +905,7 @@ proc range.safeCast(type t) where isRangeType(t) {
    new type is not stridable, then force the new stride to be 1.
  */
 pragma "no doc"
-proc _cast(type t, r: range(?)) where isRangeType(t) {
+proc _cast(type t: range(?), r: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != r.boundedType {
@@ -2022,6 +2022,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // An unbounded range iterator (for all strides)
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these() where boundedType != BoundedRangeType.bounded {
 
     if boundedType == BoundedRangeType.boundedNone then
@@ -2052,6 +2053,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // A bounded and strided range iterator
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == true {
     if (useOptimizedRangeIterators) {
@@ -2080,6 +2082,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // A bounded and non-strided (stride = 1) range iterator
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == false {
     if (useOptimizedRangeIterators) {
@@ -2120,6 +2123,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // int(64) and uint(64) but it's hard to see a case where those could ever be
   // desired.
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.generalIterator() {
     if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
@@ -2142,6 +2146,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //#
 
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
                                               !localeModelHasSublocales
   {
@@ -2411,7 +2416,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //# Utilities
   //#
 
-  proc _cast(type t, x: range(?)) where t == string {
+  proc _cast(type t: string, x: range(?)) {
     var ret: string;
 
     if x.hasLowBound() then

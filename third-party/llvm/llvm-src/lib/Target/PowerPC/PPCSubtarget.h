@@ -1,9 +1,8 @@
 //===-- PPCSubtarget.h - Define Subtarget for the PPC ----------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -58,6 +57,7 @@ namespace PPC {
     DIR_PWR7,
     DIR_PWR8,
     DIR_PWR9,
+    DIR_PWR_FUTURE,
     DIR_64
   };
 }
@@ -79,13 +79,13 @@ protected:
 
   /// stackAlignment - The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
-  unsigned StackAlignment;
+  Align StackAlignment;
 
   /// Selected instruction itineraries (one entry per itinerary class.)
   InstrItineraryData InstrItins;
 
   /// Which cpu directive was used.
-  unsigned DarwinDirective;
+  unsigned CPUDirective;
 
   /// Used by the ISel to turn in optimizations for POWER4-derived architectures
   bool HasMFOCRF;
@@ -99,6 +99,7 @@ protected:
   bool HasSPE;
   bool HasQPX;
   bool HasVSX;
+  bool NeedsTwoConstNR;
   bool HasP8Vector;
   bool HasP8Altivec;
   bool HasP8Crypto;
@@ -123,6 +124,7 @@ protected:
   bool IsPPC4xx;
   bool IsPPC6xx;
   bool FeatureMFTB;
+  bool AllowsUnalignedFPAccess;
   bool DeprecatedDST;
   bool HasLazyResolverStubs;
   bool IsLittleEndian;
@@ -131,11 +133,13 @@ protected:
   bool HasPartwordAtomics;
   bool HasDirectMove;
   bool HasHTM;
-  bool HasFusion;
   bool HasFloat128;
   bool IsISA3_0;
   bool UseLongCalls;
   bool SecurePlt;
+  bool VectorsUseTwoUnits;
+  bool UsePPCPreRASchedStrategy;
+  bool UsePPCPostRASchedStrategy;
 
   POPCNTDKind HasPOPCNTD;
 
@@ -164,11 +168,14 @@ public:
   /// getStackAlignment - Returns the minimum alignment known to hold of the
   /// stack frame on entry to the function and which must be maintained by every
   /// function for this subtarget.
-  unsigned getStackAlignment() const { return StackAlignment; }
+  Align getStackAlignment() const { return StackAlignment; }
 
   /// getDarwinDirective - Returns the -m directive specified for the cpu.
+  unsigned getDarwinDirective() const { return CPUDirective; }
+
+  /// getCPUDirective - Returns the -m directive specified for the cpu.
   ///
-  unsigned getDarwinDirective() const { return DarwinDirective; }
+  unsigned getCPUDirective() const { return CPUDirective; }
 
   /// getInstrItins - Return the instruction itineraries based on subtarget
   /// selection.
@@ -208,7 +215,11 @@ public:
   /// instructions, regardless of whether we are in 32-bit or 64-bit mode.
   bool has64BitSupport() const { return Has64BitSupport; }
   // useSoftFloat - Return true if soft-float option is turned on.
-  bool useSoftFloat() const { return !HasHardFloat; }
+  bool useSoftFloat() const {
+    if (isAIXABI() && !HasHardFloat)
+      report_fatal_error("soft-float is not yet supported on AIX.");
+    return !HasHardFloat;
+  }
 
   /// use64BitRegs - Return true if in 64-bit mode or if we should use 64-bit
   /// registers in 32-bit mode when possible.  This can only true if
@@ -244,6 +255,7 @@ public:
   bool hasFPU() const { return HasFPU; }
   bool hasQPX() const { return HasQPX; }
   bool hasVSX() const { return HasVSX; }
+  bool needsTwoConstNR() const { return NeedsTwoConstNR; }
   bool hasP8Vector() const { return HasP8Vector; }
   bool hasP8Altivec() const { return HasP8Altivec; }
   bool hasP8Crypto() const { return HasP8Crypto; }
@@ -260,22 +272,26 @@ public:
   bool isPPC4xx() const { return IsPPC4xx; }
   bool isPPC6xx() const { return IsPPC6xx; }
   bool isSecurePlt() const {return SecurePlt; }
+  bool vectorsUseTwoUnits() const {return VectorsUseTwoUnits; }
   bool isE500() const { return IsE500; }
   bool isFeatureMFTB() const { return FeatureMFTB; }
+  bool allowsUnalignedFPAccess() const { return AllowsUnalignedFPAccess; }
   bool isDeprecatedDST() const { return DeprecatedDST; }
   bool hasICBT() const { return HasICBT; }
   bool hasInvariantFunctionDescriptors() const {
     return HasInvariantFunctionDescriptors;
   }
+  bool usePPCPreRASchedStrategy() const { return UsePPCPreRASchedStrategy; }
+  bool usePPCPostRASchedStrategy() const { return UsePPCPostRASchedStrategy; }
   bool hasPartwordAtomics() const { return HasPartwordAtomics; }
   bool hasDirectMove() const { return HasDirectMove; }
 
   bool isQPXStackUnaligned() const { return IsQPXStackUnaligned; }
-  unsigned getPlatformStackAlignment() const {
+  Align getPlatformStackAlignment() const {
     if ((hasQPX() || isBGQ()) && !isQPXStackUnaligned())
-      return 32;
+      return Align(32);
 
-    return 16;
+    return Align(16);
   }
 
   // DarwinABI has a 224-byte red zone. PPC32 SVR4ABI(Non-DarwinABI) has no
@@ -285,7 +301,6 @@ public:
   }
 
   bool hasHTM() const { return HasHTM; }
-  bool hasFusion() const { return HasFusion; }
   bool hasFloat128() const { return HasFloat128; }
   bool isISA3_0() const { return IsISA3_0; }
   bool useLongCalls() const { return UseLongCalls; }
@@ -307,16 +322,24 @@ public:
   bool isTargetLinux() const { return TargetTriple.isOSLinux(); }
 
   bool isDarwinABI() const { return isTargetMachO() || isDarwin(); }
-  bool isSVR4ABI() const { return !isDarwinABI(); }
+  bool isAIXABI() const { return TargetTriple.isOSAIX(); }
+  bool isSVR4ABI() const { return !isDarwinABI() && !isAIXABI(); }
   bool isELFv2ABI() const;
+
+  bool is64BitELFABI() const { return  isSVR4ABI() && isPPC64(); }
+  bool is32BitELFABI() const { return  isSVR4ABI() && !isPPC64(); }
 
   /// Originally, this function return hasISEL(). Now we always enable it,
   /// but may expand the ISEL instruction later.
   bool enableEarlyIfConversion() const override { return true; }
 
-  // Scheduling customization.
+  /// Scheduling customization.
   bool enableMachineScheduler() const override;
-  // This overrides the PostRAScheduler bit in the SchedModel for each CPU.
+  /// Pipeliner customization.
+  bool enableMachinePipeliner() const override;
+  /// Machine Pipeliner customization
+  bool useDFAforSMS() const override;
+  /// This overrides the PostRAScheduler bit in the SchedModel for each CPU.
   bool enablePostRAScheduler() const override;
   AntiDepBreakMode getAntiDepBreakMode() const override;
   void getCriticalPathRCs(RegClassVector &CriticalPathRCs) const override;
@@ -327,9 +350,43 @@ public:
 
   bool enableSubRegLiveness() const override;
 
-  /// classifyGlobalReference - Classify a global variable reference for the
-  /// current subtarget accourding to how we should reference it.
-  unsigned char classifyGlobalReference(const GlobalValue *GV) const;
+  /// True if the GV will be accessed via an indirect symbol.
+  bool isGVIndirectSymbol(const GlobalValue *GV) const;
+
+  /// True if the ABI is descriptor based.
+  bool usesFunctionDescriptors() const {
+    // Both 32-bit and 64-bit AIX are descriptor based. For ELF only the 64-bit
+    // v1 ABI uses descriptors.
+    return isAIXABI() || (is64BitELFABI() && !isELFv2ABI());
+  }
+
+  unsigned descriptorTOCAnchorOffset() const {
+    assert(usesFunctionDescriptors() &&
+           "Should only be called when the target uses descriptors.");
+    return IsPPC64 ? 8 : 4;
+  }
+
+  unsigned descriptorEnvironmentPointerOffset() const {
+    assert(usesFunctionDescriptors() &&
+           "Should only be called when the target uses descriptors.");
+    return IsPPC64 ? 16 : 8;
+  }
+
+  MCRegister getEnvironmentPointerRegister() const {
+    assert(usesFunctionDescriptors() &&
+           "Should only be called when the target uses descriptors.");
+     return IsPPC64 ? PPC::X11 : PPC::R11;
+  }
+
+  MCRegister getTOCPointerRegister() const {
+    assert((is64BitELFABI() || isAIXABI()) &&
+           "Should only be called when the target is a TOC based ABI.");
+    return IsPPC64 ? PPC::X2 : PPC::R2;
+  }
+
+  MCRegister getStackPointerRegister() const {
+    return IsPPC64 ? PPC::X1 : PPC::R1;
+  }
 
   bool isXRaySupported() const override { return IsPPC64 && IsLittleEndian; }
 };

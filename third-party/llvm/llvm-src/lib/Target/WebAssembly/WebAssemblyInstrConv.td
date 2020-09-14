@@ -1,9 +1,8 @@
 //===-- WebAssemblyInstrConv.td-WebAssembly Conversion support -*- tablegen -*-=
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -171,6 +170,23 @@ defm I64_TRUNC_U_F64 : I<(outs I64:$dst), (ins F64:$src), (outs), (ins),
                          [], "i64.trunc_f64_u\t$dst, $src", "i64.trunc_f64_u",
                          0xb1>;
 } // hasSideEffects = 1
+
+def : Pat<(int_wasm_trunc_signed F32:$src),
+          (I32_TRUNC_S_F32 F32:$src)>;
+def : Pat<(int_wasm_trunc_unsigned F32:$src),
+          (I32_TRUNC_U_F32 F32:$src)>;
+def : Pat<(int_wasm_trunc_signed F64:$src),
+          (I32_TRUNC_S_F64 F64:$src)>;
+def : Pat<(int_wasm_trunc_unsigned F64:$src),
+          (I32_TRUNC_U_F64 F64:$src)>;
+def : Pat<(int_wasm_trunc_signed F32:$src),
+          (I64_TRUNC_S_F32 F32:$src)>;
+def : Pat<(int_wasm_trunc_unsigned F32:$src),
+          (I64_TRUNC_U_F32 F32:$src)>;
+def : Pat<(int_wasm_trunc_signed F64:$src),
+          (I64_TRUNC_S_F64 F64:$src)>;
+def : Pat<(int_wasm_trunc_unsigned F64:$src),
+          (I64_TRUNC_U_F64 F64:$src)>;
 
 defm F32_CONVERT_S_I32 : I<(outs F32:$dst), (ins I32:$src), (outs), (ins),
                            [(set F32:$dst, (sint_to_fp I32:$src))],

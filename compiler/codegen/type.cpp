@@ -346,11 +346,7 @@ void AggregateType::codegenDef() {
         llvm::StructType * st;
         // handle an empty union.
         if( largestType ) {
-          st = llvm::StructType::get(largestType
-#if HAVE_LLVM_VER < 50
-                                     , NULL
-#endif
-                                     );
+          st = llvm::StructType::get(largestType);
         } else {
           st = llvm::StructType::get(info->module->getContext());
         }

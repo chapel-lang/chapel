@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/LiveInterval.h - Interval representation ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -190,6 +189,10 @@ namespace llvm {
         return start == Other.start && end == Other.end;
       }
 
+      bool operator!=(const Segment &Other) const {
+        return !(*this == Other);
+      }
+
       void dump() const;
     };
 
@@ -225,7 +228,7 @@ namespace llvm {
 
     /// Constructs a new LiveRange object.
     LiveRange(bool UseSegmentSet = false)
-        : segmentSet(UseSegmentSet ? llvm::make_unique<SegmentSet>()
+        : segmentSet(UseSegmentSet ? std::make_unique<SegmentSet>()
                                    : nullptr) {}
 
     /// Constructs a new LiveRange object by copying segments and valnos from
@@ -606,6 +609,44 @@ namespace llvm {
     /// activated in the constructor of the live range.
     void flushSegmentSet();
 
+    /// Stores indexes from the input index sequence R at which this LiveRange
+    /// is live to the output O iterator.
+    /// R is a range of _ascending sorted_ _random_ access iterators
+    /// to the input indexes. Indexes stored at O are ascending sorted so it
+    /// can be used directly in the subsequent search (for example for
+    /// subranges). Returns true if found at least one index.
+    template <typename Range, typename OutputIt>
+    bool findIndexesLiveAt(Range &&R, OutputIt O) const {
+      assert(std::is_sorted(R.begin(), R.end()));
+      auto Idx = R.begin(), EndIdx = R.end();
+      auto Seg = segments.begin(), EndSeg = segments.end();
+      bool Found = false;
+      while (Idx != EndIdx && Seg != EndSeg) {
+        // if the Seg is lower find first segment that is above Idx using binary
+        // search
+        if (Seg->end <= *Idx) {
+          Seg = std::upper_bound(++Seg, EndSeg, *Idx,
+            [=](typename std::remove_reference<decltype(*Idx)>::type V,
+                const typename std::remove_reference<decltype(*Seg)>::type &S) {
+              return V < S.end;
+            });
+          if (Seg == EndSeg)
+            break;
+        }
+        auto NotLessStart = std::lower_bound(Idx, EndIdx, Seg->start);
+        if (NotLessStart == EndIdx)
+          break;
+        auto NotLessEnd = std::lower_bound(NotLessStart, EndIdx, Seg->end);
+        if (NotLessEnd != NotLessStart) {
+          Found = true;
+          O = std::copy(NotLessStart, NotLessEnd, O);
+        }
+        Idx = NotLessEnd;
+        ++Seg;
+      }
+      return Found;
+    }
+
     void print(raw_ostream &OS) const;
     void dump() const;
 
@@ -790,8 +831,40 @@ namespace llvm {
     ///    L000F, refining for mask L0018. Will split the L00F0 lane into
     ///    L00E0 and L0010 and the L000F lane into L0007 and L0008. The Mod
     ///    function will be applied to the L0010 and L0008 subranges.
+    ///
+    /// \p Indexes and \p TRI are required to clean up the VNIs that
+    /// don't defne the related lane masks after they get shrunk. E.g.,
+    /// when L000F gets split into L0007 and L0008 maybe only a subset
+    /// of the VNIs that defined L000F defines L0007.
+    ///
+    /// The clean up of the VNIs need to look at the actual instructions
+    /// to decide what is or is not live at a definition point. If the
+    /// update of the subranges occurs while the IR does not reflect these
+    /// changes, \p ComposeSubRegIdx can be used to specify how the
+    /// definition are going to be rewritten.
+    /// E.g., let say we want to merge:
+    ///     V1.sub1:<2 x s32> = COPY V2.sub3:<4 x s32>
+    /// We do that by choosing a class where sub1:<2 x s32> and sub3:<4 x s32>
+    /// overlap, i.e., by choosing a class where we can find "offset + 1 == 3".
+    /// Put differently we align V2's sub3 with V1's sub1:
+    /// V2: sub0 sub1 sub2 sub3
+    /// V1: <offset>  sub0 sub1
+    ///
+    /// This offset will look like a composed subregidx in the the class:
+    ///     V1.(composed sub2 with sub1):<4 x s32> = COPY V2.sub3:<4 x s32>
+    /// =>  V1.(composed sub2 with sub1):<4 x s32> = COPY V2.sub3:<4 x s32>
+    ///
+    /// Now if we didn't rewrite the uses and def of V1, all the checks for V1
+    /// need to account for this offset.
+    /// This happens during coalescing where we update the live-ranges while
+    /// still having the old IR around because updating the IR on-the-fly
+    /// would actually clobber some information on how the live-ranges that
+    /// are being updated look like.
     void refineSubRanges(BumpPtrAllocator &Allocator, LaneBitmask LaneMask,
-                         std::function<void(LiveInterval::SubRange&)> Apply);
+                         std::function<void(LiveInterval::SubRange &)> Apply,
+                         const SlotIndexes &Indexes,
+                         const TargetRegisterInfo &TRI,
+                         unsigned ComposeSubRegIdx = 0);
 
     bool operator<(const LiveInterval& other) const {
       const SlotIndex &thisIndex = beginIndex();

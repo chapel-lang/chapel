@@ -18,6 +18,7 @@ start();
 
 on Locales[1] {
   var B: [D] int;
+  B; // avoiding split init as this is a test of =
   B = A;
   saveB1 = B[1];
   saveBn = B[n];

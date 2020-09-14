@@ -1,1 +1,2 @@
-Conditional jump or move depends on uninitialised value(s)
+start reduce
+kmeansonepassreduction-norecord2.chpl:63: error: default initialization of tuple containing array or domain type not yet implemented

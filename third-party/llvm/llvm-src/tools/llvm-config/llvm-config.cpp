@@ -1,9 +1,8 @@
 //===-- llvm-config.cpp - LLVM project configuration utility --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -46,6 +45,10 @@ using namespace llvm;
 // Not all components define a library, we also use "library groups" as a way to
 // create entries for pseudo groups like x86 or all-targets.
 #include "LibraryDependencies.inc"
+
+// Built-in extensions also register their dependencies, but in a separate file,
+// later in the process.
+#include "ExtensionDependencies.inc"
 
 // LinkMode determines what libraries and flags are returned by llvm-config.
 enum LinkMode {
@@ -109,6 +112,25 @@ static void VisitComponent(const std::string &Name,
     VisitComponent(AC->RequiredLibraries[i], ComponentMap, VisitedComponents,
                    RequiredLibs, IncludeNonInstalled, GetComponentNames,
                    GetComponentLibraryPath, Missing, DirSep);
+  }
+
+  // Special handling for the special 'extensions' component. Its content is
+  // not populated by llvm-build, but later in the process and loaded from
+  // ExtensionDependencies.inc.
+  if (Name == "extensions") {
+    for (auto const &AvailableExtension : AvailableExtensions) {
+      for (const char *const *Iter = &AvailableExtension.RequiredLibraries[0];
+           *Iter; ++Iter) {
+        AvailableComponent *AC = ComponentMap.lookup(*Iter);
+        if (!AC) {
+          RequiredLibs.push_back(*Iter);
+        } else {
+          VisitComponent(*Iter, ComponentMap, VisitedComponents, RequiredLibs,
+                         IncludeNonInstalled, GetComponentNames,
+                         GetComponentLibraryPath, Missing, DirSep);
+        }
+      }
+    }
   }
 
   if (GetComponentNames) {
@@ -292,8 +314,8 @@ int main(int argc, char **argv) {
     IsInDevelopmentTree = true;
     DevelopmentTreeLayout = CMakeStyle;
     ActiveObjRoot = LLVM_OBJ_ROOT;
-  } else if (sys::fs::equivalent(CurrentExecPrefix,
-                                 Twine(LLVM_OBJ_ROOT) + "/bin")) {
+  } else if (sys::fs::equivalent(sys::path::parent_path(CurrentExecPrefix),
+                                 LLVM_OBJ_ROOT)) {
     IsInDevelopmentTree = true;
     DevelopmentTreeLayout = CMakeBuildModeStyle;
     ActiveObjRoot = LLVM_OBJ_ROOT;
@@ -320,11 +342,14 @@ int main(int argc, char **argv) {
       ActiveCMakeDir = ActiveLibDir + "/cmake/llvm";
       break;
     case CMakeBuildModeStyle:
+      // FIXME: Should we consider the build-mode-specific path as the prefix?
       ActivePrefix = ActiveObjRoot;
-      ActiveBinDir = ActiveObjRoot + "/bin/" + build_mode;
+      ActiveBinDir = ActiveObjRoot + "/" + build_mode + "/bin";
       ActiveLibDir =
-          ActiveObjRoot + "/lib" + LLVM_LIBDIR_SUFFIX + "/" + build_mode;
-      ActiveCMakeDir = ActiveLibDir + "/cmake/llvm";
+          ActiveObjRoot + "/" + build_mode + "/lib" + LLVM_LIBDIR_SUFFIX;
+      // The CMake directory isn't separated by build mode.
+      ActiveCMakeDir =
+          ActivePrefix + "/lib" + LLVM_LIBDIR_SUFFIX + "/cmake/llvm";
       break;
     }
 

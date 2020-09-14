@@ -1,0 +1,21 @@
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/commaDecl]
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/copyInitDeclaration]
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/dotDomDeclaration]
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/dynamicChecks]
+[Error matching compiler output for
+optimizations/autoLocalAccess/zipper/interveningForallOrOn]
+[Error matching compiler output for
+optimizations/autoLocalAccess/zipper/nonDomainIter]
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/oneStaticFailOtherDynamicSuccess]
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/regularCommaDeclaration]
+[Error matching program output for
+optimizations/autoLocalAccess/zipper/regularDeclaration]
+[Error matching compiler output for
+optimizations/autoLocalAccess/zipper/regularDeclaration2D]
+

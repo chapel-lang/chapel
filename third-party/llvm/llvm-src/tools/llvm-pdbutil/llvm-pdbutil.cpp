@@ -1,9 +1,8 @@
 //===- llvm-pdbutil.cpp - Dump debug info from a PDB file -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -463,7 +462,10 @@ cl::opt<bool> DumpSymbolStats(
     "sym-stats",
     cl::desc("Dump a detailed breakdown of symbol usage/size for each module"),
     cl::cat(MsfOptions), cl::sub(DumpSubcommand));
-
+cl::opt<bool> DumpTypeStats(
+    "type-stats",
+    cl::desc("Dump a detailed breakdown of type usage/size"),
+    cl::cat(MsfOptions), cl::sub(DumpSubcommand));
 cl::opt<bool> DumpUdtStats(
     "udt-stats",
     cl::desc("Dump a detailed breakdown of S_UDT record usage / stats"),
@@ -477,6 +479,11 @@ cl::opt<bool> DumpTypeData(
     "type-data",
     cl::desc("dump CodeView type record raw bytes from TPI stream"),
     cl::cat(TypeOptions), cl::sub(DumpSubcommand));
+cl::opt<bool>
+    DumpTypeRefStats("type-ref-stats",
+                     cl::desc("dump statistics on the number and size of types "
+                              "transitively referenced by symbol records"),
+                     cl::cat(TypeOptions), cl::sub(DumpSubcommand));
 
 cl::opt<bool> DumpTypeExtras("type-extras",
                              cl::desc("dump type hashes and index offsets"),
@@ -856,8 +863,8 @@ static void pdb2Yaml(StringRef Path) {
   std::unique_ptr<IPDBSession> Session;
   auto &File = loadPDB(Path, Session);
 
-  auto O = llvm::make_unique<YAMLOutputStyle>(File);
-  O = llvm::make_unique<YAMLOutputStyle>(File);
+  auto O = std::make_unique<YAMLOutputStyle>(File);
+  O = std::make_unique<YAMLOutputStyle>(File);
 
   ExitOnErr(O->dump());
 }
@@ -865,7 +872,7 @@ static void pdb2Yaml(StringRef Path) {
 static void dumpRaw(StringRef Path) {
   InputFile IF = ExitOnErr(InputFile::open(Path));
 
-  auto O = llvm::make_unique<DumpOutputStyle>(IF);
+  auto O = std::make_unique<DumpOutputStyle>(IF);
   ExitOnErr(O->dump());
 }
 
@@ -873,7 +880,7 @@ static void dumpBytes(StringRef Path) {
   std::unique_ptr<IPDBSession> Session;
   auto &File = loadPDB(Path, Session);
 
-  auto O = llvm::make_unique<BytesOutputStyle>(File);
+  auto O = std::make_unique<BytesOutputStyle>(File);
 
   ExitOnErr(O->dump());
 }
@@ -927,7 +934,7 @@ static std::string stringOr(std::string Str, std::string IfEmpty) {
 
 static void dumpInjectedSources(LinePrinter &Printer, IPDBSession &Session) {
   auto Sources = Session.getInjectedSources();
-  if (0 == Sources->getChildCount()) {
+  if (!Sources || !Sources->getChildCount()) {
     Printer.printLine("There are no injected sources.");
     return;
   }
@@ -940,9 +947,6 @@ static void dumpInjectedSources(LinePrinter &Printer, IPDBSession &Session) {
     std::string VFName = stringOr(IS->getVirtualFileName(), "<null>");
     uint32_t CRC = IS->getCrc32();
 
-    std::string CompressionStr;
-    llvm::raw_string_ostream Stream(CompressionStr);
-    Stream << IS->getCompression();
     WithColor(Printer, PDB_ColorItem::Path).get() << File;
     Printer << " (";
     WithColor(Printer, PDB_ColorItem::LiteralValue).get() << Size;
@@ -961,7 +965,9 @@ static void dumpInjectedSources(LinePrinter &Printer, IPDBSession &Session) {
     Printer << ", ";
     WithColor(Printer, PDB_ColorItem::Keyword).get() << "compression";
     Printer << "=";
-    WithColor(Printer, PDB_ColorItem::LiteralValue).get() << Stream.str();
+    dumpPDBSourceCompression(
+        WithColor(Printer, PDB_ColorItem::LiteralValue).get(),
+        IS->getCompression());
 
     if (!opts::pretty::ShowInjectedSourceContent)
       continue;
@@ -970,7 +976,12 @@ static void dumpInjectedSources(LinePrinter &Printer, IPDBSession &Session) {
     int Indent = Printer.getIndentLevel();
     Printer.Unindent(Indent);
 
-    Printer.printLine(IS->getCode());
+    if (IS->getCompression() == PDB_SourceCompression::None)
+      Printer.printLine(IS->getCode());
+    else
+      Printer.formatBinary("Compressed data",
+                           arrayRefFromStringRef(IS->getCode()),
+                           /*StartOffset=*/0);
 
     // Re-indent back to the original level.
     Printer.Indent(Indent);
@@ -1272,12 +1283,7 @@ static void dumpPretty(StringRef Path) {
     WithColor(Printer, PDB_ColorItem::SectionHeader).get()
         << "---INJECTED SOURCES---";
     AutoIndent Indent1(Printer);
-
-    if (ReaderType == PDB_ReaderType::Native)
-      Printer.printLine(
-          "Injected sources are not supported with the native reader.");
-    else
-      dumpInjectedSources(Printer, *Session);
+    dumpInjectedSources(Printer, *Session);
   }
 
   Printer.NewLine();
@@ -1341,7 +1347,7 @@ static void explain() {
       ExitOnErr(InputFile::open(opts::explain::InputFilename.front(), true));
 
   for (uint64_t Off : opts::explain::Offsets) {
-    auto O = llvm::make_unique<ExplainOutputStyle>(IF, Off);
+    auto O = std::make_unique<ExplainOutputStyle>(IF, Off);
 
     ExitOnErr(O->dump());
   }
@@ -1377,8 +1383,7 @@ static void exportStream() {
            << "' (index " << Index << ") to file " << OutFileName << ".\n";
   }
 
-  SourceStream = MappedBlockStream::createIndexedStream(
-      File.getMsfLayout(), File.getMsfBuffer(), Index, File.getAllocator());
+  SourceStream = File.createIndexedStream(Index);
   auto OutFile = ExitOnErr(
       FileOutputBuffer::create(OutFileName, SourceStream->getLength()));
   FileBufferByteStream DestStream(std::move(OutFile), llvm::support::little);

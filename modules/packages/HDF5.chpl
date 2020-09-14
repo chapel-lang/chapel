@@ -55,7 +55,7 @@ The native HDF5 functions can be called directly by calling into the
 :mod:`C_HDF5` submodule.
 */
 module HDF5 {
-  use SysCTypes;
+  use SysCTypes, BlockDist;
 
   // This interface was generated with HDF5 1.10.1. Due to a change of the
   // `hid_t` type from 32-bit to 64-bit in this version, versions prior
@@ -75,7 +75,7 @@ module HDF5 {
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
-    public use SysCTypes;
+    public use SysCTypes, SysBasic;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";
@@ -3467,7 +3467,7 @@ module HDF5 {
     pragma "no doc"
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
-      use C_HDF5;
+      use HDF5.C_HDF5;
 
       extern proc H5LTget_dataset_info_WAR(loc_id: hid_t,
                                            dset_name: c_string,
@@ -3913,7 +3913,7 @@ module HDF5 {
        can use arrays distributed over different numbers of locales.
      */
     proc hdf5WriteDistributedArray(A: [], filename: string, dsetName: string) {
-      use MPI, C_HDF5, BlockDist;
+      use MPI, super.C_HDF5, BlockDist;
 
       // Declare some extern symbols this function uses
       extern type MPI_Info;
@@ -4047,7 +4047,7 @@ module HDF5 {
       // instead of:
       // A11, A12, B11, B12
       // A21, A22, B21, B22
-      use BlockDist, CyclicDist, C_HDF5;
+      use BlockDist, CyclicDist, super.C_HDF5;
       proc isBlock(D: Block) param return true;
       proc isBlock(D) param return false;
       proc isCyclic(D: Cyclic) param return true;

@@ -1,9 +1,8 @@
 //===- X86LegalizerInfo.cpp --------------------------------------*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -14,6 +13,7 @@
 #include "X86LegalizerInfo.h"
 #include "X86Subtarget.h"
 #include "X86TargetMachine.h"
+#include "llvm/CodeGen/GlobalISel/LegalizerHelper.h"
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/ValueTypes.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -77,12 +77,30 @@ X86LegalizerInfo::X86LegalizerInfo(const X86Subtarget &STI,
     setLegalizeScalarToDifferentSizeStrategy(MemOp, 0,
        narrowToSmallerAndWidenToSmallest);
   setLegalizeScalarToDifferentSizeStrategy(
-      G_GEP, 1, widenToLargerTypesUnsupportedOtherwise);
+      G_PTR_ADD, 1, widenToLargerTypesUnsupportedOtherwise);
   setLegalizeScalarToDifferentSizeStrategy(
       G_CONSTANT, 0, widenToLargerTypesAndNarrowToLargest);
 
   computeTables();
   verify(*STI.getInstrInfo());
+}
+
+bool X86LegalizerInfo::legalizeIntrinsic(MachineInstr &MI,
+                                         MachineRegisterInfo &MRI,
+                                         MachineIRBuilder &MIRBuilder) const {
+  switch (MI.getIntrinsicID()) {
+  case Intrinsic::memcpy:
+  case Intrinsic::memset:
+  case Intrinsic::memmove:
+    if (createMemLibcall(MIRBuilder, MRI, MI) ==
+        LegalizerHelper::UnableToLegalize)
+      return false;
+    MI.eraseFromParent();
+    return true;
+  default:
+    break;
+  }
+  return true;
 }
 
 void X86LegalizerInfo::setLegalizerInfo32bit() {
@@ -122,8 +140,8 @@ void X86LegalizerInfo::setLegalizerInfo32bit() {
   setAction({G_FRAME_INDEX, p0}, Legal);
   setAction({G_GLOBAL_VALUE, p0}, Legal);
 
-  setAction({G_GEP, p0}, Legal);
-  setAction({G_GEP, 1, s32}, Legal);
+  setAction({G_PTR_ADD, p0}, Legal);
+  setAction({G_PTR_ADD, 1, s32}, Legal);
 
   if (!Subtarget.is64Bit()) {
     getActionDefinitionsBuilder(G_PTRTOINT)
@@ -134,9 +152,15 @@ void X86LegalizerInfo::setLegalizerInfo32bit() {
 
     // Shifts and SDIV
     getActionDefinitionsBuilder(
-        {G_SHL, G_LSHR, G_ASHR, G_SDIV, G_SREM, G_UDIV, G_UREM})
-        .legalFor({s8, s16, s32})
-        .clampScalar(0, s8, s32);
+        {G_SDIV, G_SREM, G_UDIV, G_UREM})
+      .legalFor({s8, s16, s32})
+      .clampScalar(0, s8, s32);
+
+    getActionDefinitionsBuilder(
+        {G_SHL, G_LSHR, G_ASHR})
+      .legalFor({{s8, s8}, {s16, s8}, {s32, s8}})
+      .clampScalar(0, s8, s32)
+      .clampScalar(1, s8, s8);
   }
 
   // Control-flow
@@ -153,6 +177,7 @@ void X86LegalizerInfo::setLegalizerInfo32bit() {
     setAction({G_ANYEXT, Ty}, Legal);
   }
   setAction({G_ANYEXT, s128}, Legal);
+  getActionDefinitionsBuilder(G_SEXT_INREG).lower();
 
   // Comparison
   setAction({G_ICMP, s1}, Legal);
@@ -198,7 +223,7 @@ void X86LegalizerInfo::setLegalizerInfo64bit() {
     setAction({MemOp, s64}, Legal);
 
   // Pointer-handling
-  setAction({G_GEP, 1, s64}, Legal);
+  setAction({G_PTR_ADD, 1, s64}, Legal);
   getActionDefinitionsBuilder(G_PTRTOINT)
       .legalForCartesianProduct({s1, s8, s16, s32, s64}, {p0})
       .maxScalar(0, s64)
@@ -236,11 +261,18 @@ void X86LegalizerInfo::setLegalizerInfo64bit() {
       .clampScalar(1, s32, s64)
       .widenScalarToNextPow2(1);
 
-  // Shifts and SDIV
+  // Divisions
   getActionDefinitionsBuilder(
-      {G_SHL, G_LSHR, G_ASHR, G_SDIV, G_SREM, G_UDIV, G_UREM})
+      {G_SDIV, G_SREM, G_UDIV, G_UREM})
       .legalFor({s8, s16, s32, s64})
       .clampScalar(0, s8, s64);
+
+  // Shifts
+  getActionDefinitionsBuilder(
+    {G_SHL, G_LSHR, G_ASHR})
+    .legalFor({{s8, s8}, {s16, s8}, {s32, s8}, {s64, s8}})
+    .clampScalar(0, s8, s64)
+    .clampScalar(1, s8, s8);
 
   // Merge/Unmerge
   setAction({G_MERGE_VALUES, s128}, Legal);

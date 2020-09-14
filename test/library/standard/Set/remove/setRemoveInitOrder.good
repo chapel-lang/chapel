@@ -1,0 +1,4 @@
+init r: 0
+init r: 1 from r: 0
+deinit r: 0
+deinit r: 1

@@ -1,9 +1,8 @@
 //===-- ARMMCInstLower.cpp - Convert ARM MachineInstr to an MCInst --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -75,8 +74,8 @@ bool ARMAsmPrinter::lowerOperand(const MachineOperand &MO,
   switch (MO.getType()) {
   default: llvm_unreachable("unknown operand type");
   case MachineOperand::MO_Register:
-    // Ignore all non-CPSR implicit register operands.
-    if (MO.isImplicit() && MO.getReg() != ARM::CPSR)
+    // Ignore all implicit register operands.
+    if (MO.isImplicit())
       return false;
     assert(!MO.getSubReg() && "Subregs should be eliminated!");
     MCOp = MCOperand::createReg(MO.getReg());
@@ -208,10 +207,7 @@ void ARMAsmPrinter::EmitSled(const MachineInstr &MI, SledKind Kind)
   EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::Bcc).addImm(20)
     .addImm(ARMCC::AL).addReg(0));
 
-  MCInst Noop;
-  Subtarget->getInstrInfo()->getNoop(Noop);
-  for (int8_t I = 0; I < NoopsInSledCount; I++)
-    OutStreamer->EmitInstruction(Noop, getSubtargetInfo());
+  emitNops(NoopsInSledCount);
 
   OutStreamer->EmitLabel(Target);
   recordSled(CurSled, MI, Kind);

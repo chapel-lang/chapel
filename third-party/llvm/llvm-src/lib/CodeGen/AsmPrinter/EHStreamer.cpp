@@ -1,9 +1,8 @@
 //===- CodeGen/AsmPrinter/EHStreamer.cpp - Exception Directive Streamer ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -379,7 +378,8 @@ MCSymbol *EHStreamer::emitExceptionTable() {
   bool IsSJLJ = Asm->MAI->getExceptionHandlingType() == ExceptionHandling::SjLj;
   bool IsWasm = Asm->MAI->getExceptionHandlingType() == ExceptionHandling::Wasm;
   unsigned CallSiteEncoding =
-      IsSJLJ ? dwarf::DW_EH_PE_udata4 : dwarf::DW_EH_PE_uleb128;
+      IsSJLJ ? static_cast<unsigned>(dwarf::DW_EH_PE_udata4) :
+               Asm->getObjFileLowering().getCallSiteEncoding();
   bool HaveTTData = !TypeInfos.empty() || !FilterIds.empty();
 
   // Type infos.
@@ -426,7 +426,7 @@ MCSymbol *EHStreamer::emitExceptionTable() {
   // EHABI). In this case LSDASection will be NULL.
   if (LSDASection)
     Asm->OutStreamer->SwitchSection(LSDASection);
-  Asm->EmitAlignment(2);
+  Asm->EmitAlignment(Align(4));
 
   // Emit the LSDA.
   MCSymbol *GCCETSym =
@@ -524,24 +524,24 @@ MCSymbol *EHStreamer::emitExceptionTable() {
       // Offset of the call site relative to the start of the procedure.
       if (VerboseAsm)
         Asm->OutStreamer->AddComment(">> Call Site " + Twine(++Entry) + " <<");
-      Asm->EmitLabelDifferenceAsULEB128(BeginLabel, EHFuncBeginSym);
+      Asm->EmitCallSiteOffset(BeginLabel, EHFuncBeginSym, CallSiteEncoding);
       if (VerboseAsm)
         Asm->OutStreamer->AddComment(Twine("  Call between ") +
                                      BeginLabel->getName() + " and " +
                                      EndLabel->getName());
-      Asm->EmitLabelDifferenceAsULEB128(EndLabel, BeginLabel);
+      Asm->EmitCallSiteOffset(EndLabel, BeginLabel, CallSiteEncoding);
 
       // Offset of the landing pad relative to the start of the procedure.
       if (!S.LPad) {
         if (VerboseAsm)
           Asm->OutStreamer->AddComment("    has no landing pad");
-        Asm->EmitULEB128(0);
+        Asm->EmitCallSiteValue(0, CallSiteEncoding);
       } else {
         if (VerboseAsm)
           Asm->OutStreamer->AddComment(Twine("    jumps to ") +
                                        S.LPad->LandingPadLabel->getName());
-        Asm->EmitLabelDifferenceAsULEB128(S.LPad->LandingPadLabel,
-                                          EHFuncBeginSym);
+        Asm->EmitCallSiteOffset(S.LPad->LandingPadLabel, EHFuncBeginSym,
+                                CallSiteEncoding);
       }
 
       // Offset of the first associated action record, relative to the start of
@@ -602,11 +602,11 @@ MCSymbol *EHStreamer::emitExceptionTable() {
   }
 
   if (HaveTTData) {
-    Asm->EmitAlignment(2);
+    Asm->EmitAlignment(Align(4));
     emitTypeInfos(TTypeEncoding, TTBaseLabel);
   }
 
-  Asm->EmitAlignment(2);
+  Asm->EmitAlignment(Align(4));
   return GCCETSym;
 }
 

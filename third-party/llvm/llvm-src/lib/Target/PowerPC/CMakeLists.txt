@@ -19,6 +19,7 @@ add_llvm_target(PowerPCCodeGen
   PPCAsmPrinter.cpp
   PPCBranchSelector.cpp
   PPCBranchCoalescing.cpp
+  PPCCallingConv.cpp
   PPCCCState.cpp
   PPCCTRLoops.cpp
   PPCHazardRecognizers.cpp
@@ -28,9 +29,10 @@ add_llvm_target(PowerPCCodeGen
   PPCEarlyReturn.cpp
   PPCFastISel.cpp
   PPCFrameLowering.cpp
-  PPCLoopPreIncPrep.cpp
+  PPCLoopInstrFormPrep.cpp
   PPCMCInstLower.cpp
   PPCMachineFunctionInfo.cpp
+  PPCMachineScheduler.cpp
   PPCMIPeephole.cpp
   PPCRegisterInfo.cpp
   PPCQPXLoadSplat.cpp
@@ -46,10 +48,10 @@ add_llvm_target(PowerPCCodeGen
   PPCVSXSwapRemoval.cpp
   PPCExpandISEL.cpp
   PPCPreEmitPeephole.cpp
+  PPCLowerMASSVEntries.cpp
   )
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)
-add_subdirectory(InstPrinter)
 add_subdirectory(MCTargetDesc)
 add_subdirectory(TargetInfo)

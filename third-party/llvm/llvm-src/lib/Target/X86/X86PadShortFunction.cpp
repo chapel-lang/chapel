@@ -1,9 +1,8 @@
 //===-------- X86PadShortFunction.cpp - pad short functions -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,8 +17,11 @@
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Analysis/ProfileSummaryInfo.h"
+#include "llvm/CodeGen/LazyMachineBlockFrequencyInfo.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineSizeOpts.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetSchedule.h"
 #include "llvm/IR/Function.h"
@@ -52,6 +54,12 @@ namespace {
                    , Threshold(4) {}
 
     bool runOnMachineFunction(MachineFunction &MF) override;
+
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+      AU.addRequired<ProfileSummaryInfoWrapperPass>();
+      AU.addRequired<LazyMachineBlockFrequencyInfoPass>();
+      MachineFunctionPass::getAnalysisUsage(AU);
+    }
 
     MachineFunctionProperties getRequiredProperties() const override {
       return MachineFunctionProperties().set(
@@ -98,13 +106,19 @@ bool PadShortFunc::runOnMachineFunction(MachineFunction &MF) {
   if (skipFunction(MF.getFunction()))
     return false;
 
-  if (MF.getFunction().optForSize())
+  if (MF.getFunction().hasOptSize())
     return false;
 
   if (!MF.getSubtarget<X86Subtarget>().padShortFunctions())
     return false;
 
   TSM.init(&MF.getSubtarget());
+
+  auto *PSI =
+      &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
+  auto *MBFI = (PSI && PSI->hasProfileSummary()) ?
+               &getAnalysis<LazyMachineBlockFrequencyInfoPass>().getBFI() :
+               nullptr;
 
   // Search through basic blocks and mark the ones that have early returns
   ReturnBBs.clear();
@@ -113,14 +127,16 @@ bool PadShortFunc::runOnMachineFunction(MachineFunction &MF) {
 
   bool MadeChange = false;
 
-  MachineBasicBlock *MBB;
-  unsigned int Cycles = 0;
-
   // Pad the identified basic blocks with NOOPs
   for (DenseMap<MachineBasicBlock*, unsigned int>::iterator I = ReturnBBs.begin();
        I != ReturnBBs.end(); ++I) {
-    MBB = I->first;
-    Cycles = I->second;
+    MachineBasicBlock *MBB = I->first;
+    unsigned Cycles = I->second;
+
+    // Function::hasOptSize is already checked above.
+    bool OptForSize = llvm::shouldOptimizeForSize(MBB, PSI, MBFI);
+    if (OptForSize)
+      continue;
 
     if (Cycles < Threshold) {
       // BB ends in a return. Skip over any DBG_VALUE instructions

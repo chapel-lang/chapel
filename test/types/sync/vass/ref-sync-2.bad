@@ -1,0 +1,5 @@
+ref-sync-2.chpl:22: warning: fun1 sync
+ref-sync-2.chpl:23: warning: fun1 single
+ref-sync-2.chpl:24: error: ambiguous call 'fun2(sync int(64), int(64))'
+ref-sync-2.chpl:12: note: candidates are: fun2(ref x: int, y: int)
+ref-sync-2.chpl:13: note:                 fun2(x: _syncvar, y)

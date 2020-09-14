@@ -11,7 +11,9 @@ set(LLVM_LINK_COMPONENTS
   MC
   MCJIT
   Object
+  OrcError
   OrcJIT
+  Passes
   RuntimeDyld
   SelectionDAG
   Support

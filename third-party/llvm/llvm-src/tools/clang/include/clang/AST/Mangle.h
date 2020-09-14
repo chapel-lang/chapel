@@ -1,9 +1,8 @@
 //===--- Mangle.h - Mangle C++ Names ----------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -57,7 +56,7 @@ private:
 
   llvm::DenseMap<const BlockDecl*, unsigned> GlobalBlockIds;
   llvm::DenseMap<const BlockDecl*, unsigned> LocalBlockIds;
-  llvm::DenseMap<const TagDecl*, uint64_t> AnonStructIds;
+  llvm::DenseMap<const NamedDecl*, uint64_t> AnonStructIds;
 
 public:
   ManglerKind getKind() const { return Kind; }
@@ -83,9 +82,9 @@ public:
     return Result.first->second;
   }
 
-  uint64_t getAnonymousStructId(const TagDecl *TD) {
-    std::pair<llvm::DenseMap<const TagDecl *, uint64_t>::iterator, bool>
-        Result = AnonStructIds.insert(std::make_pair(TD, AnonStructIds.size()));
+  uint64_t getAnonymousStructId(const NamedDecl *D) {
+    std::pair<llvm::DenseMap<const NamedDecl *, uint64_t>::iterator, bool>
+        Result = AnonStructIds.insert(std::make_pair(D, AnonStructIds.size()));
     return Result.first->second;
   }
 
@@ -171,6 +170,8 @@ public:
   virtual void mangleCXXDtorComdat(const CXXDestructorDecl *D,
                                    raw_ostream &) = 0;
 
+  virtual void mangleLambdaSig(const CXXRecordDecl *Lambda, raw_ostream &) = 0;
+
   static bool classof(const MangleContext *C) {
     return C->getKind() == MK_Itanium;
   }
@@ -243,6 +244,27 @@ public:
 
   static MicrosoftMangleContext *create(ASTContext &Context,
                                         DiagnosticsEngine &Diags);
+};
+
+class ASTNameGenerator {
+public:
+  explicit ASTNameGenerator(ASTContext &Ctx);
+  ~ASTNameGenerator();
+
+  /// Writes name for \p D to \p OS.
+  /// \returns true on failure, false on success.
+  bool writeName(const Decl *D, raw_ostream &OS);
+
+  /// \returns name for \p D
+  std::string getName(const Decl *D);
+
+  /// \returns all applicable mangled names.
+  /// For example C++ constructors/destructors can have multiple.
+  std::vector<std::string> getAllManglings(const Decl *D);
+
+private:
+  class Implementation;
+  std::unique_ptr<Implementation> Impl;
 };
 }
 

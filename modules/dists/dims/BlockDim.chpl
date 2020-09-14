@@ -270,6 +270,7 @@ proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:in
 proc Block1locdom.dsiMyDensifiedRangeType1d(globDD) type
   return range(globDD.idxType);
 
+pragma "order independent yielding loops"
 iter Block1dom.dsiSerialArrayIterator1d() {
   // The Block distribution assigns indices to locales contiguously and
   // so that (i1<i2) => (locId1<=locId2). This is defined by the domain map.
@@ -288,6 +289,7 @@ iter Block1dom.dsiSerialArrayIterator1d() {
   }
 }
 
+pragma "order independent yielding loops"
 iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
 //writeln("Block1dom.dsiFollowerArrayIterator1d  undensRange ", undensRange);
 

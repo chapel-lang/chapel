@@ -1,9 +1,8 @@
 //===-- BPFRegisterInfo.cpp - BPF Register Information ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -78,7 +77,7 @@ void BPFRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     assert(i < MI.getNumOperands() && "Instr doesn't have FrameIndex operand!");
   }
 
-  unsigned FrameReg = getFrameRegister(MF);
+  Register FrameReg = getFrameRegister(MF);
   int FrameIndex = MI.getOperand(i).getIndex();
   const TargetInstrInfo &TII = *MF.getSubtarget().getInstrInfo();
 
@@ -87,7 +86,7 @@ void BPFRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
     WarnSize(Offset, MF, DL);
     MI.getOperand(i).ChangeToRegister(FrameReg, false);
-    unsigned reg = MI.getOperand(i - 1).getReg();
+    Register reg = MI.getOperand(i - 1).getReg();
     BuildMI(MBB, ++II, DL, TII.get(BPF::ADD_ri), reg)
         .addReg(reg)
         .addImm(Offset);
@@ -106,7 +105,7 @@ void BPFRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     // architecture does not really support FI_ri, replace it with
     //    MOV_rr <target_reg>, frame_reg
     //    ADD_ri <target_reg>, imm
-    unsigned reg = MI.getOperand(i - 1).getReg();
+    Register reg = MI.getOperand(i - 1).getReg();
 
     BuildMI(MBB, ++II, DL, TII.get(BPF::MOV_rr), reg)
         .addReg(FrameReg);
@@ -122,6 +121,6 @@ void BPFRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   }
 }
 
-unsigned BPFRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+Register BPFRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   return BPF::R10;
 }

@@ -1,9 +1,8 @@
-//===--- ToolChains.cpp - ToolChain Implementations -----------------------===//
+//===-- MSVC.cpp - MSVC ToolChain Implementations -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -332,6 +331,11 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
         TC.getSubDirectoryPath(
             toolchains::MSVCToolChain::SubDirectoryType::Lib)));
 
+    CmdArgs.push_back(Args.MakeArgString(
+        Twine("-libpath:") +
+        TC.getSubDirectoryPath(toolchains::MSVCToolChain::SubDirectoryType::Lib,
+                               "atlmfc")));
+
     if (TC.useUniversalCRT()) {
       std::string UniversalCRTLibPath;
       if (TC.getUniversalCRTLibraryPath(UniversalCRTLibPath))
@@ -378,7 +382,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     if (!Args.hasArg(options::OPT_shared))
       CmdArgs.push_back(
           Args.MakeArgString(std::string("-wholearchive:") +
-                             TC.getCompilerRTArgString(Args, "fuzzer", false)));
+                             TC.getCompilerRTArgString(Args, "fuzzer")));
     CmdArgs.push_back(Args.MakeArgString("-debug"));
     // Prevent the linker from padding sections we use for instrumentation
     // arrays.
@@ -417,6 +421,17 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   Args.AddAllArgValues(CmdArgs, options::OPT__SLASH_link);
+
+  // Control Flow Guard checks
+  if (Arg *A = Args.getLastArg(options::OPT__SLASH_guard)) {
+    StringRef GuardArgs = A->getValue();
+    if (GuardArgs.equals_lower("cf") || GuardArgs.equals_lower("cf,nochecks")) {
+      // MSVC doesn't yet support the "nochecks" modifier.
+      CmdArgs.push_back("-guard:cf");
+    } else if (GuardArgs.equals_lower("cf-")) {
+      CmdArgs.push_back("-guard:cf-");
+    }
+  }
 
   if (Args.hasFlag(options::OPT_fopenmp, options::OPT_fopenmp_EQ,
                    options::OPT_fno_openmp, false)) {
@@ -489,15 +504,25 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     // their own link.exe which may come first.
     linkPath = FindVisualStudioExecutable(TC, "link.exe");
 
-    if (!TC.FoundMSVCInstall() && !llvm::sys::fs::can_execute(linkPath))
-      C.getDriver().Diag(clang::diag::warn_drv_msvc_not_found);
+    if (!TC.FoundMSVCInstall() && !llvm::sys::fs::can_execute(linkPath)) {
+      llvm::SmallString<128> ClPath;
+      ClPath = TC.GetProgramPath("cl.exe");
+      if (llvm::sys::fs::can_execute(ClPath)) {
+        linkPath = llvm::sys::path::parent_path(ClPath);
+        llvm::sys::path::append(linkPath, "link.exe");
+        if (!llvm::sys::fs::can_execute(linkPath))
+          C.getDriver().Diag(clang::diag::warn_drv_msvc_not_found);
+      } else {
+        C.getDriver().Diag(clang::diag::warn_drv_msvc_not_found);
+      }
+    }
 
 #ifdef _WIN32
     // When cross-compiling with VS2017 or newer, link.exe expects to have
     // its containing bin directory at the top of PATH, followed by the
     // native target bin directory.
     // e.g. when compiling for x86 on an x64 host, PATH should start with:
-    // /bin/HostX64/x86;/bin/HostX64/x64
+    // /bin/Hostx64/x86;/bin/Hostx64/x64
     // This doesn't attempt to handle ToolsetLayout::DevDivInternal.
     if (TC.getIsVS2017OrNewer() &&
         llvm::Triple(llvm::sys::getProcessTriple()).getArch() != TC.getArch()) {
@@ -539,7 +564,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
               EnvVar.substr(0, PrefixLen) +
               TC.getSubDirectoryPath(SubDirectoryType::Bin) +
               llvm::Twine(llvm::sys::EnvPathSeparator) +
-              TC.getSubDirectoryPath(SubDirectoryType::Bin, HostArch) +
+              TC.getSubDirectoryPath(SubDirectoryType::Bin, "", HostArch) +
               (EnvVar.size() > PrefixLen
                    ? llvm::Twine(llvm::sys::EnvPathSeparator) +
                          EnvVar.substr(PrefixLen)
@@ -556,7 +581,7 @@ void visualstudio::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     linkPath = TC.GetProgramPath(Linker.str().c_str());
   }
 
-  auto LinkCmd = llvm::make_unique<Command>(
+  auto LinkCmd = std::make_unique<Command>(
       JA, *this, Args.MakeArgString(linkPath), CmdArgs, Inputs);
   if (!Environment.empty())
     LinkCmd->setEnvironment(Environment);
@@ -617,11 +642,11 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
   // FIXME: How can we ensure this stays in sync with relevant clang-cl options?
 
   if (Args.hasFlag(options::OPT__SLASH_GR_, options::OPT__SLASH_GR,
-                   /*default=*/false))
+                   /*Default=*/false))
     CmdArgs.push_back("/GR-");
 
   if (Args.hasFlag(options::OPT__SLASH_GS_, options::OPT__SLASH_GS,
-                   /*default=*/false))
+                   /*Default=*/false))
     CmdArgs.push_back("/GS-");
 
   if (Arg *A = Args.getLastArg(options::OPT_ffunction_sections,
@@ -665,6 +690,17 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
                           : "/Zc:threadSafeInit-");
   }
 
+  // Control Flow Guard checks
+  if (Arg *A = Args.getLastArg(options::OPT__SLASH_guard)) {
+    StringRef GuardArgs = A->getValue();
+    if (GuardArgs.equals_lower("cf") || GuardArgs.equals_lower("cf,nochecks")) {
+      // MSVC doesn't yet support the "nochecks" modifier.
+      CmdArgs.push_back("/guard:cf");
+    } else if (GuardArgs.equals_lower("cf-")) {
+      CmdArgs.push_back("/guard:cf-");
+    }
+  }
+
   // Pass through all unknown arguments so that the fallback command can see
   // them too.
   Args.AddAllArgs(CmdArgs, options::OPT_UNKNOWN);
@@ -686,7 +722,7 @@ std::unique_ptr<Command> visualstudio::Compiler::GetCommand(
   CmdArgs.push_back(Fo);
 
   std::string Exec = FindVisualStudioExecutable(getToolChain(), "cl.exe");
-  return llvm::make_unique<Command>(JA, *this, Args.MakeArgString(Exec),
+  return std::make_unique<Command>(JA, *this, Args.MakeArgString(Exec),
                                     CmdArgs, Inputs);
 }
 
@@ -815,6 +851,7 @@ static const char *llvmArchToDevDivInternalArch(llvm::Triple::ArchType Arch) {
 // of hardcoding paths.
 std::string
 MSVCToolChain::getSubDirectoryPath(SubDirectoryType Type,
+                                   llvm::StringRef SubdirParent,
                                    llvm::Triple::ArchType TargetArch) const {
   const char *SubdirName;
   const char *IncludeName;
@@ -834,12 +871,15 @@ MSVCToolChain::getSubDirectoryPath(SubDirectoryType Type,
   }
 
   llvm::SmallString<256> Path(VCToolChainPath);
+  if (!SubdirParent.empty())
+    llvm::sys::path::append(Path, SubdirParent);
+
   switch (Type) {
   case SubDirectoryType::Bin:
     if (VSLayout == ToolsetLayout::VS2017OrNewer) {
       const bool HostIsX64 =
           llvm::Triple(llvm::sys::getProcessTriple()).isArch64Bit();
-      const char *const HostName = HostIsX64 ? "HostX64" : "HostX86";
+      const char *const HostName = HostIsX64 ? "Hostx64" : "Hostx86";
       llvm::sys::path::append(Path, "bin", HostName, SubdirName);
     } else { // OlderVS or DevDivInternal
       llvm::sys::path::append(Path, "bin", SubdirName);
@@ -1219,6 +1259,8 @@ void MSVCToolChain::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
   if (!VCToolChainPath.empty()) {
     addSystemInclude(DriverArgs, CC1Args,
                      getSubDirectoryPath(SubDirectoryType::Include));
+    addSystemInclude(DriverArgs, CC1Args,
+                     getSubDirectoryPath(SubDirectoryType::Include, "atlmfc"));
 
     if (useUniversalCRT()) {
       std::string UniversalCRTSdkPath;
@@ -1318,6 +1360,8 @@ MSVCToolChain::ComputeEffectiveClangTriple(const ArgList &Args,
 SanitizerMask MSVCToolChain::getSupportedSanitizers() const {
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
+  Res |= SanitizerKind::PointerCompare;
+  Res |= SanitizerKind::PointerSubtract;
   Res |= SanitizerKind::Fuzzer;
   Res |= SanitizerKind::FuzzerNoLink;
   Res &= ~SanitizerKind::CFIMFCall;

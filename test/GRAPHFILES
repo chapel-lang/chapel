@@ -70,6 +70,7 @@ arrays/diten/time_array_vs_ddata.graph
 arrays/ferguson/return-array-40000000.graph
 arrays/lydia/time_access.graph
 domains/ferguson/build-associative.graph
+domains/elliot/primes.graph
 types/atomic/ferguson/atomictest.graph
 performance/bradc/parOpEquals.graph
 performance/sungeun/assign.1024.graph
@@ -266,10 +267,12 @@ types/string/psahabu/split-whitespace-perf.graph
 types/string/psahabu/perf/allocate.graph
 types/string/psahabu/perf/arguments.graph
 types/string/psahabu/perf/search.graph
+types/string/psahabu/perf/search-throughput.graph
 types/string/psahabu/perf/substring.graph
 # suite: Standard Library
 library/packages/Sort/performance/sorts-linearithmic.graph
 library/packages/Sort/performance/sorts-quadratic.graph
+library/packages/LinearAlgebra/performance/dot-perf.graph
 library/packages/LinearAlgebra/performance/linearalgebra-perf.graph
 sparse/CS/multiplication/cs-multiplication.graph
 sparse/CS/resize/cs-resize.graph
@@ -312,6 +315,7 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+library/standard/Map/timeMapMinusEqual.graph
 # suite: - Chapel versus C Comparisons
 patterns/primality/prime.graph
 statements/lydia/forCompare.graph

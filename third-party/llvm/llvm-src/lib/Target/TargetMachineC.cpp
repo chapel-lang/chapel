@@ -1,9 +1,8 @@
 //===-- TargetMachine.cpp -------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -196,13 +195,13 @@ static LLVMBool LLVMTargetMachineEmit(LLVMTargetMachineRef T, LLVMModuleRef M,
 
   Mod->setDataLayout(TM->createDataLayout());
 
-  TargetMachine::CodeGenFileType ft;
+  CodeGenFileType ft;
   switch (codegen) {
     case LLVMAssemblyFile:
-      ft = TargetMachine::CGFT_AssemblyFile;
+      ft = CGFT_AssemblyFile;
       break;
     default:
-      ft = TargetMachine::CGFT_ObjectFile;
+      ft = CGFT_ObjectFile;
       break;
   }
   if (TM->addPassesToEmitFile(pass, OS, nullptr, ft)) {
@@ -220,7 +219,7 @@ static LLVMBool LLVMTargetMachineEmit(LLVMTargetMachineRef T, LLVMModuleRef M,
 LLVMBool LLVMTargetMachineEmitToFile(LLVMTargetMachineRef T, LLVMModuleRef M,
   char* Filename, LLVMCodeGenFileType codegen, char** ErrorMessage) {
   std::error_code EC;
-  raw_fd_ostream dest(Filename, EC, sys::fs::F_None);
+  raw_fd_ostream dest(Filename, EC, sys::fs::OF_None);
   if (EC) {
     *ErrorMessage = strdup(EC.message().c_str());
     return true;

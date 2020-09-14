@@ -1,9 +1,8 @@
 //===-- X86AsmParserCommon.h - Common functions for X86AsmParser ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +33,10 @@ inline bool isImmSExti64i32Value(uint64_t Value) {
 
 inline bool isImmUnsignedi8Value(uint64_t Value) {
   return isUInt<8>(Value) || isInt<8>(Value);
+}
+
+inline bool isImmUnsignedi4Value(uint64_t Value) {
+  return isUInt<4>(Value);
 }
 
 } // End of namespace llvm

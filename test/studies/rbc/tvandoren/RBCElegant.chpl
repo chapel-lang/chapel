@@ -4,7 +4,6 @@
  * Seattle, July 7, 2014
  */
 
-use Assert;
 use Math;
 use Time;
 

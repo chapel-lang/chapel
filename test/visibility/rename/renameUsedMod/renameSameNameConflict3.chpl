@@ -5,11 +5,14 @@ module L {
   var y: bool;
 }
 module User {
-  use LongName as L; // Either fail on this line
+  use LongName as L;
+  // L is not ambiguous in this scenario, as the rename from the previous use is
+  // closer than the module definition
   use L;
 
   proc main() {
-    writeln(L.x); // Or fail on this line, L is ambiguous
+    writeln(L.x);
     writeln(x);
+    // writeln(y); // This will fail, as we have not imported its module
   }
 }

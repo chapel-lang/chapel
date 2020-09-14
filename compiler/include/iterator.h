@@ -60,7 +60,7 @@ public:
   FnSymbol* follower;
 
   // Search for a standalone/leader gave a non-iterator/forwarder.
-  bool noniterSA, noniterL;
+  FnSymbol *noniterSA, *noniterL;
 
   IteratorGroup();
 };

@@ -1,9 +1,8 @@
 //===-- X86InstrSystem.td - System Instructions ------------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,10 +14,10 @@
 
 let SchedRW = [WriteSystem] in {
 let Defs = [RAX, RDX] in
-  def RDTSC : I<0x31, RawFrm, (outs), (ins), "rdtsc", [(X86rdtsc)]>, TB;
+def RDTSC : I<0x31, RawFrm, (outs), (ins), "rdtsc", []>, TB;
 
 let Defs = [RAX, RCX, RDX] in
-  def RDTSCP : I<0x01, MRM_F9, (outs), (ins), "rdtscp", [(X86rdtscp)]>, TB;
+def RDTSCP : I<0x01, MRM_F9, (outs), (ins), "rdtscp", []>, TB;
 
 // CPU flow control instructions
 
@@ -44,7 +43,7 @@ def INT3 : I<0xcc, RawFrm, (outs), (ins), "int3", [(int_x86_int (i8 3))]>;
 let SchedRW = [WriteSystem] in {
 
 def INT : Ii8<0xcd, RawFrm, (outs), (ins u8imm:$trap), "int\t$trap",
-              [(int_x86_int imm:$trap)]>;
+              [(int_x86_int timm:$trap)]>;
 
 
 def SYSCALL  : I<0x05, RawFrm, (outs), (ins), "syscall", []>, TB;
@@ -411,7 +410,7 @@ let Defs = [EAX, EDX], Uses = [ECX] in
 def RDMSR : I<0x32, RawFrm, (outs), (ins), "rdmsr", []>, TB;
 
 let Defs = [RAX, RDX], Uses = [ECX] in
-  def RDPMC : I<0x33, RawFrm, (outs), (ins), "rdpmc", [(X86rdpmc)]>, TB;
+def RDPMC : I<0x33, RawFrm, (outs), (ins), "rdpmc", []>, TB;
 
 def SMSW16r : I<0x01, MRM4r, (outs GR16:$dst), (ins),
                 "smsw{w}\t$dst", []>, OpSize16, TB;
@@ -588,18 +587,13 @@ let Defs = [RAX, RDX, RSI], Uses = [RAX, RSI] in
 
 //==-----------------------------------------------------------------------===//
 // PKU  - enable protection key
-let usesCustomInserter = 1, hasNoSchedulingInfo = 1 in {
-  def WRPKRU : PseudoI<(outs), (ins GR32:$src),
-                [(int_x86_wrpkru GR32:$src)]>;
-  def RDPKRU : PseudoI<(outs GR32:$dst), (ins),
-                [(set GR32:$dst, (int_x86_rdpkru))]>;
-}
-
 let SchedRW = [WriteSystem] in {
 let Defs = [EAX, EDX], Uses = [ECX] in
-  def RDPKRUr : I<0x01, MRM_EE, (outs), (ins), "rdpkru", []>, TB;
+  def RDPKRUr : I<0x01, MRM_EE, (outs), (ins), "rdpkru",
+                  [(set EAX, (X86rdpkru ECX)), (implicit EDX)]>, TB;
 let Uses = [EAX, ECX, EDX] in
-  def WRPKRUr : I<0x01, MRM_EF, (outs), (ins), "wrpkru", []>, TB;
+  def WRPKRUr : I<0x01, MRM_EF, (outs), (ins), "wrpkru",
+                  [(X86wrpkru EAX, EDX, ECX)]>, TB;
 } // SchedRW
 
 //===----------------------------------------------------------------------===//

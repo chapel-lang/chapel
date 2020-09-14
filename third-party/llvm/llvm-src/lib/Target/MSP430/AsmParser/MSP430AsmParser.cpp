@@ -1,15 +1,15 @@
 //===- MSP430AsmParser.cpp - Parse MSP430 assembly to MCInst instructions -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "MSP430.h"
 #include "MSP430RegisterInfo.h"
 #include "MCTargetDesc/MSP430MCTargetDesc.h"
+#include "TargetInfo/MSP430TargetInfo.h"
 
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/StringSwitch.h"
@@ -191,33 +191,33 @@ public:
   }
 
   static std::unique_ptr<MSP430Operand> CreateToken(StringRef Str, SMLoc S) {
-    return make_unique<MSP430Operand>(Str, S);
+    return std::make_unique<MSP430Operand>(Str, S);
   }
 
   static std::unique_ptr<MSP430Operand> CreateReg(unsigned RegNum, SMLoc S,
                                                   SMLoc E) {
-    return make_unique<MSP430Operand>(k_Reg, RegNum, S, E);
+    return std::make_unique<MSP430Operand>(k_Reg, RegNum, S, E);
   }
 
   static std::unique_ptr<MSP430Operand> CreateImm(const MCExpr *Val, SMLoc S,
                                                   SMLoc E) {
-    return make_unique<MSP430Operand>(Val, S, E);
+    return std::make_unique<MSP430Operand>(Val, S, E);
   }
 
   static std::unique_ptr<MSP430Operand> CreateMem(unsigned RegNum,
                                                   const MCExpr *Val,
                                                   SMLoc S, SMLoc E) {
-    return make_unique<MSP430Operand>(RegNum, Val, S, E);
+    return std::make_unique<MSP430Operand>(RegNum, Val, S, E);
   }
 
   static std::unique_ptr<MSP430Operand> CreateIndReg(unsigned RegNum, SMLoc S,
                                                   SMLoc E) {
-    return make_unique<MSP430Operand>(k_IndReg, RegNum, S, E);
+    return std::make_unique<MSP430Operand>(k_IndReg, RegNum, S, E);
   }
 
   static std::unique_ptr<MSP430Operand> CreatePostIndReg(unsigned RegNum, SMLoc S,
                                                   SMLoc E) {
-    return make_unique<MSP430Operand>(k_PostIndReg, RegNum, S, E);
+    return std::make_unique<MSP430Operand>(k_PostIndReg, RegNum, S, E);
   }
 
   SMLoc getStartLoc() const { return Start; }
@@ -529,7 +529,7 @@ bool MSP430AsmParser::ParseLiteralValues(unsigned Size, SMLoc L) {
   return (parseMany(parseOne));
 }
 
-extern "C" void LLVMInitializeMSP430AsmParser() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeMSP430AsmParser() {
   RegisterMCAsmParser<MSP430AsmParser> X(getTheMSP430Target());
 }
 

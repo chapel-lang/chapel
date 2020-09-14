@@ -1,14 +1,12 @@
 //===- llvm/unittest/ADT/StringMapMap.cpp - StringMap unit tests ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ADT/StringMap.h"
-#include "llvm/ADT/StringSet.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/DataTypes.h"
 #include "gtest/gtest.h"
@@ -76,6 +74,16 @@ const uint32_t StringMapTest::testValue = 1u;
 const char* StringMapTest::testKeyFirst = testKey;
 size_t StringMapTest::testKeyLength = sizeof(testKey) - 1;
 const std::string StringMapTest::testKeyStr(testKey);
+
+struct CountCopyAndMove {
+  CountCopyAndMove() = default;
+  CountCopyAndMove(const CountCopyAndMove &) { copy = 1; }
+  CountCopyAndMove(CountCopyAndMove &&) { move = 1; }
+  void operator=(const CountCopyAndMove &) { ++copy; }
+  void operator=(CountCopyAndMove &&) { ++move; }
+  int copy = 0;
+  int move = 0;
+};
 
 // Empty map tests.
 TEST_F(StringMapTest, EmptyMapTest) {
@@ -271,6 +279,27 @@ TEST_F(StringMapTest, InsertRehashingPairTest) {
   EXPECT_EQ(42u, It->second);
 }
 
+TEST_F(StringMapTest, InsertOrAssignTest) {
+  struct A : CountCopyAndMove {
+    A(int v) : v(v) {}
+    int v;
+  };
+  StringMap<A> t(0);
+
+  auto try1 = t.insert_or_assign("A", A(1));
+  EXPECT_TRUE(try1.second);
+  EXPECT_EQ(1, try1.first->second.v);
+  EXPECT_EQ(1, try1.first->second.move);
+
+  auto try2 = t.insert_or_assign("A", A(2));
+  EXPECT_FALSE(try2.second);
+  EXPECT_EQ(2, try2.first->second.v);
+  EXPECT_EQ(2, try1.first->second.move);
+
+  EXPECT_EQ(try1.first, try2.first);
+  EXPECT_EQ(0, try1.first->second.copy);
+}
+
 TEST_F(StringMapTest, IterMapKeys) {
   StringMap<int> Map;
   Map["A"] = 1;
@@ -279,20 +308,6 @@ TEST_F(StringMapTest, IterMapKeys) {
   Map["D"] = 3;
 
   auto Keys = to_vector<4>(Map.keys());
-  llvm::sort(Keys);
-
-  SmallVector<StringRef, 4> Expected = {"A", "B", "C", "D"};
-  EXPECT_EQ(Expected, Keys);
-}
-
-TEST_F(StringMapTest, IterSetKeys) {
-  StringSet<> Set;
-  Set.insert("A");
-  Set.insert("B");
-  Set.insert("C");
-  Set.insert("D");
-
-  auto Keys = to_vector<4>(Set.keys());
   llvm::sort(Keys);
 
   SmallVector<StringRef, 4> Expected = {"A", "B", "C", "D"};

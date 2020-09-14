@@ -120,9 +120,9 @@ module MainModule {
     /* Access From Outside a Module
        ----------------------------
        In multi-module programs, it is common for modules to access the contents
-       of other modules.  The starting point for doing so is the "``use``
-       statement" or the "``import`` statement" in Chapel.  These statements can
-       be inserted at any lexical scope that contains executable code.
+       of other modules.  The starting point for doing so is the
+       `use statement` or the `import statement` in Chapel.  These statements
+       can be inserted at any lexical scope that contains executable code.
 
        By default, a ``use`` statement makes all of a specific
        module's visible symbols available to the scope that contains
@@ -185,7 +185,7 @@ module MainModule {
 
     /* ``use`` statements apply to the entire scope in which they are defined.
        Even if the ``use`` statement occurs after code which would directly
-       refer to its symbols, these references are still valid.  This is
+       refer to its symbols, these accesses are still valid.  This is
        similar to other Chapel forms of introducing symbols - for instance,
        function declaration order does not prevent a function declared earlier
        in a scope from calling one declared later.
@@ -205,7 +205,7 @@ module MainModule {
 
     /* Similarly, ``import`` statements also apply to the entire scope in which
        they are defined.  Even if the ``import`` statement occurs after code
-       which would directly refer to its symbols, these references are still
+       which would directly refer to its symbols, these accesses are still
        valid.
 
        Thus, the output of this block is the same as that of its ``use``
@@ -243,10 +243,22 @@ module MainModule {
       // writeln(modToUse.bar); // would be an error, modToUse not visible
     }
 
+    /* With this syntax, a ``use`` statement can enable just unqualified access
+       to a symbol, similar to how the unqualified list syntax for ``import``
+       statements doesn't enable qualified access.
+    */
+    {
+      use modToUse as _;
+
+      writeln(bar);
+      // writeln(modToUse.bar); // would be an error, modToUse not visible
+      // writeln(_.bar); // also an error, _ is not an identifier otherwise
+    }
+
     /* The symbols provided by a ``use`` statement are only considered when
        the name in question cannot be resolved directly within the local
        scope. Thus, because another ``bar`` is defined within this scope, the
-       reference to ``bar`` within the ``writeln`` will refer to the local
+       access to ``bar`` within the ``writeln`` will refer to the local
        variable ``bar`` rather than to ``modToUse.bar``.
     */
     {
@@ -307,7 +319,7 @@ module MainModule {
       }
     }
 
-    /* Multiple modules may be named in a single ``use`` statement  */
+    /* Multiple modules may be named in a single ``use`` statement */
     {
       use modToUse, AnotherModule, ThirdModule;
 
@@ -320,8 +332,33 @@ module MainModule {
       } // Will output modToUse.foo (which is '12')
     }
 
-    /* The only way to ``import`` multiple modules in a single statement is to
-       name a shared parent module.  We will talk about this more in
+    /* Multiple modules may also be named in a single ``import`` statement */
+    {
+      import modToUse, AnotherModule, ThirdModule;
+
+      if (AnotherModule.a || ThirdModule.b < 0) {
+        writeln(modToUse.foo);
+      } else {
+        writeln(modToUse.bar);
+      } // Will output modToUse.foo (which is '12')
+    }
+
+    /* And such ``import`` statements can mix and match between importing
+       modules and the symbols within them.
+    */
+    {
+      import modToUse.{foo, bar}, AnotherModule, ThirdModule.b;
+
+      if (AnotherModule.a || b < 0) {
+        // Refers to ThirdModule.b (which is '-13.0')
+        writeln(foo); // Refers to modToUse.foo
+      } else {
+        writeln(bar); // Refers to modToUse.bar
+      } // Will output modToUse.foo (which is '12')
+    }
+
+    /* You can also ``import`` multiple modules in a single statement by naming
+       a shared parent module.  We will talk about this more in
        :ref:`Primer_Nested_Modules`.
     */
 
@@ -357,7 +394,7 @@ module MainModule {
     }
 
 
-    /* In any case, the modules referenced in this way are considered in concert
+    /* In any case, the modules accessed in this way are considered in concert
        (after symbols defined at this scope but before symbols defined outside
        of it) - the ordering within a ``use`` statement or across multiple
        ``use`` or ``import`` statements does not affect the precedence of
@@ -407,7 +444,9 @@ module MainModule {
 
     /* Remember: this is in contrast to ``import`` statements, where only the
        module name or specific symbols within the module are brought in, rather
-       than both.
+       than both.  Also remember that you can write a ``use`` statement that
+       doesn't enable accesses to the module's name, by renaming the module
+       to '_'.
     */
 
     /* Limiting a Use
@@ -500,7 +539,7 @@ module MainModule {
 
     /* ...or equivalently, an empty identifier list after ``only``.
        These forms are typically used by programmers who prefer to
-       always fully qualify references to their modules' symbols. */
+       always fully qualify accesses to their modules' symbols. */
     {
       use modToUse only;
       use Conflict only;
@@ -630,7 +669,7 @@ module OuterNested {
      parent module can only access the contents of the nested module using
      a ``use`` or ``import`` statement or a fully qualified name.
 
-     The variable ``foobar`` references OuterNested's ``foo`` and ``bar``
+     The variable ``foobar`` accesses OuterNested's ``foo`` and ``bar``
      variables.
    */
   module Inner1 {
@@ -778,19 +817,46 @@ module UsesTheUser2 {
   writeln("Start of UsesTheUser2's module-level code");
   func2();
   {
-    use UsesTheImporter;
+    use UsesTheUser3;
   }
   writeln("End of UsesTheUser2's module-level code");
+}
+
+/* In addition, ``public use`` statements `re-export` the symbols in the used
+   module.  This means that the used symbols can also be treated as though they
+   are defined in the scope with the ``use`` for the purpose of accesses from
+   outside that module.  For example, here it will also appear as though the
+   module ``ModuleThatIsUsed`` is a submodule of ``UserModule2``, so other
+   scopes can also access it in that manner.
+*/
+module UsesTheUser3 {
+  proc func3() {
+    use UserModule2;
+    UserModule2.ModuleThatIsUsed.publiclyAvailableProc();
+    // The above is available due to the ``public use`` of ``ModuleThatIsUsed``
+    // in ``UserModule2``.
+  }
+
+  // These lines are to ensure everything gets tested regularly
+  writeln("Start of UsesTheUser3's module-level code");
+  func3();
+  {
+    use UsesTheImporter;
+  }
+  writeln("End of UsesTheUser3's module-level code");
+
 }
 
 /* Import statements can also be labeled as being either ``public`` or
    ``private``.  By default ``import`` statements are also ``private``.
    However, ``public import`` statements have a different meaning than ``public
-   use`` statements do - ``public import`` statements `re-export` the symbols in
-   the imported module.
+   use`` statements do - while ``public import`` statements still `re-export`
+   the symbols in the imported module, the impact into the scope is more
+   limited.  This is because ``import`` statements do not enable both qualified
+   and unqualified access to the same module in the same statement.
 
-   This means that the imported symbols will be treated as though they are
-   defined in the scope with the ``import`` for the purposes of accesses from
+   Again, this means that the imported symbols will be treated as though they
+   are defined in the scope with the ``import`` for the purpose of accesses from
    outside that module.  For example:
 */
 module ImporterModule {

@@ -1,9 +1,8 @@
 //===- OrcRemoteTargetRPCAPI.h - Orc Remote-target RPC API ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,8 +16,8 @@
 #define LLVM_EXECUTIONENGINE_ORC_ORCREMOTETARGETRPCAPI_H
 
 #include "llvm/ExecutionEngine/JITSymbol.h"
-#include "llvm/ExecutionEngine/Orc/RPCUtils.h"
-#include "llvm/ExecutionEngine/Orc/RawByteChannel.h"
+#include "llvm/ExecutionEngine/Orc/RPC/RPCUtils.h"
+#include "llvm/ExecutionEngine/Orc/RPC/RawByteChannel.h"
 
 namespace llvm {
 namespace orc {

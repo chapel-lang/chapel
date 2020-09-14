@@ -163,7 +163,11 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
   if (isValid(src) == true) {
     // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
     if (SymExpr* se = toSymExpr(src)) {
-      INT_ASSERT(se->symbol() == rootModule);
+      // Alternatively, we could have needed to resolve the use and import
+      // statements in this scope sooner than it would have been reached by
+      // processImportExprs
+      INT_ASSERT(se->symbol() == rootModule ||
+                 scope->progress != IUP_NOT_STARTED);
 
     } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true)) {
       SET_LINENO(this);
@@ -709,8 +713,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // list (could be all of the outer unqualified list)
           SET_LINENO(this);
 
-          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
-                                &newRenamed);
+          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
+                                isPrivate);
         } else {
           // all the unqualified identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -765,8 +769,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // There were symbols that were in both our 'only' list and the outer
           // unqualified list, so this module use is still interesting.
           SET_LINENO(this);
-          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
-                                &newRenamed);
+          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
+                                isPrivate);
 
         } else {
           // all of the unqualified and renamed identifiers in the outer import

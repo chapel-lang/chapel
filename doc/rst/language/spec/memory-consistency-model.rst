@@ -245,16 +245,23 @@ operations must be done with care and should generally not be used to
 synchronize tasks.
 
 Non-SC atomic operations are specified by providing a *memory order*
-argument to the atomic operations. See
-Section \ `26.4.1 <#Functions_on_Atomic_Variables>`__ for more
-information on the memory order types.
+argument to the atomic operations. See the
+:ref:`Functions_on_Atomic_Variables` section for more information on the
+memory order types.
+
+   *Open issue*.
+
+   This section describes ``memoryOrder.relaxed`` but does not yet
+   describe ``memoryOrder.acquire``, ``memoryOrder.release``, or
+   ``memoryOrder.acqRel`` orderings. The intention is that the behavior
+   of these orderings match the C and C++ definitions.
 
 .. _relaxed_atomics:
 
 Relaxed Atomic Operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Although Chapel’s relaxed atomic operations (``memory_order_relaxed``)
+Although Chapel’s relaxed atomic operations (``memoryOrder.relaxed``)
 do not complete in a total order by themselves and might contribute to
 non-deterministic programs, relaxed atomic operations cannot contribute
 to a data race that would prevent sequential consistency.
@@ -521,8 +528,10 @@ Examples
         x.write(1);
       }
 
-   *Future*.
+   .. note::
 
-   Upon completion, Chapel’s atomic
-   statement (:ref:`Atomic_Statement`) will serve as an
-   additional means of correctly synchronizing between tasks.
+      *Future:*
+
+      Upon completion, Chapel’s atomic
+      statement (:ref:`Atomic_Statement`) will serve as an
+      additional means of correctly synchronizing between tasks.

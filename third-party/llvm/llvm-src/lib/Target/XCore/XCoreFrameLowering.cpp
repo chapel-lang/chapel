@@ -1,9 +1,8 @@
 //===-- XCoreFrameLowering.cpp - Frame info for XCore Target --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -212,7 +211,7 @@ static void RestoreSpillList(MachineBasicBlock &MBB,
 //===----------------------------------------------------------------------===//
 
 XCoreFrameLowering::XCoreFrameLowering(const XCoreSubtarget &sti)
-  : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, 4, 0) {
+    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(4), 0) {
   // Do nothing
 }
 
@@ -368,8 +367,8 @@ void XCoreFrameLowering::emitEpilogue(MachineFunction &MF,
     RestoreSpillList(MBB, MBBI, dl, TII, RemainingAdj, SpillList);
 
     // Return to the landing pad.
-    unsigned EhStackReg = MBBI->getOperand(0).getReg();
-    unsigned EhHandlerReg = MBBI->getOperand(1).getReg();
+    Register EhStackReg = MBBI->getOperand(0).getReg();
+    Register EhHandlerReg = MBBI->getOperand(1).getReg();
     BuildMI(MBB, MBBI, dl, TII.get(XCore::SETSP_1r)).addReg(EhStackReg);
     BuildMI(MBB, MBBI, dl, TII.get(XCore::BAU_1r)).addReg(EhHandlerReg);
     MBB.erase(MBBI);  // Erase the previous return instruction.

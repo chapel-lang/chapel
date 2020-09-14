@@ -62,7 +62,7 @@ def handle_la(la_path):
 # pkgconfig. The pkg can be a path to a .pc file or the name of a
 # system-installed package or the name of a third-party package.
 #
-# if system=True, searches for a system-instaled package.
+# if system=True, searches for a system-installed package.
 @memoize
 def pkgconfig_get_compile_args(pkg, ucp='', system=True):
   havePcFile = pkg.endswith('.pc')
@@ -93,10 +93,10 @@ def pkgconfig_get_compile_args(pkg, ucp='', system=True):
 # the name of a system-installed package or the name of
 # a third-party package.
 #
-# if system=True, searches for a system-instaled package.
+# if system=True, searches for a system-installed package.
 # if static=True, uses --static (suitable for static linking)
 @memoize
-def pkgconfig_get_link_args(pkg, ucp='', system=True, static=True):
+def pkgconfig_get_link_args(pkg, ucp='', system=True, static=(chpl_platform.get('target')!='hpe-cray-ex')):
   havePcFile = pkg.endswith('.pc')
   pcArg = pkg
   if not havePcFile:
@@ -137,15 +137,29 @@ def pkgconfig_get_system_version(pkg):
 #
 # This returns the default link args for the given third-party package.
 #
-def default_get_link_args(pkg, ucp='', libs=[]):
+def default_get_compile_args(pkg, ucp=''):
+    if ucp == '':
+        ucp = default_uniq_cfg_path()
+    inc_dir = os.path.join(get_cfg_install_path(pkg, ucp), 'include')
+    return ['-I' + inc_dir]
+
+
+#
+# This returns the default link args for the given third-party package.
+#
+def default_get_link_args(pkg, ucp='', libs=[], add_L_opt=False):
     if ucp == '':
         ucp = default_uniq_cfg_path()
     if libs == []:
         libs = [ 'lib' + pkg + '.la' ]
     all_args = []
+    lib_dir = os.path.join(get_cfg_install_path(pkg, ucp), 'lib')
+    if add_L_opt:
+        all_args.append('-L' + lib_dir)
+        all_args.append('-Wl,-rpath,' + lib_dir)
     for lib_arg in libs:
         if lib_arg.endswith('.la'):
-            la = os.path.join(get_cfg_install_path(pkg, ucp), 'lib', lib_arg)
+            la = os.path.join(lib_dir, lib_arg)
             all_args.extend(handle_la(la))
         else:
             all_args.append(lib_arg)

@@ -204,6 +204,17 @@ CMake manual, or execute ``cmake --help-variable VARIABLE_NAME``.
 **CMAKE_CXX_FLAGS**:STRING
   Extra flags to use when compiling C++ source files.
 
+Rarely-used CMake variables
+---------------------------
+
+Here are some of the CMake variables that are rarely used, along with a brief
+explanation and LLVM-specific notes.  For full documentation, consult the CMake
+manual, or execute ``cmake --help-variable VARIABLE_NAME``.
+
+**CMAKE_CXX_STANDARD**:STRING
+  Sets the C++ standard to conform to when building LLVM.  Possible values are
+  14, 17, 20.  LLVM Requires C++ 14 or higher.  This defaults to 14.
+
 .. _LLVM-specific variables:
 
 LLVM-specific variables
@@ -227,6 +238,10 @@ LLVM-specific variables
 **LLVM_INSTALL_BINUTILS_SYMLINKS**:BOOL
   Install symlinks from the binutils tool names to the corresponding LLVM tools.
   For example, ar will be symlinked to llvm-ar.
+
+**LLVM_INSTALL_CCTOOLS_SYMLINKS**:BOOL
+  Install symliks from the cctools tool names to the corresponding LLVM tools.
+  For example, lipo will be symlinked to llvm-lipo.
 
 **LLVM_BUILD_EXAMPLES**:BOOL
   Build LLVM examples. Defaults to OFF. Targets for building each example are
@@ -257,7 +272,7 @@ LLVM-specific variables
   Generate build targets for the LLVM benchmarks. Defaults to ON.
 
 **LLVM_APPEND_VC_REV**:BOOL
-  Embed version control revision info (svn revision number or Git revision id).
+  Embed version control revision info (Git revision id).
   The version info is provided by the ``LLVM_REVISION`` macro in
   ``llvm/include/llvm/Support/VCSRevision.h``. Developers using git who don't
   need revision info can disable this option to avoid re-linking most binaries
@@ -266,8 +281,9 @@ LLVM-specific variables
 **LLVM_ENABLE_THREADS**:BOOL
   Build with threads support, if available. Defaults to ON.
 
-**LLVM_ENABLE_CXX1Y**:BOOL
-  Build in C++1y mode, if available. Defaults to OFF.
+**LLVM_ENABLE_UNWIND_TABLES**:BOOL
+  Enable unwind tables in the binary.  Disabling unwind tables can reduce the
+  size of the libraries.  Defaults to ON.
 
 **LLVM_ENABLE_ASSERTIONS**:BOOL
   Enables code assertions. Defaults to ON if and only if ``CMAKE_BUILD_TYPE``
@@ -280,6 +296,15 @@ LLVM-specific variables
 
 **LLVM_ENABLE_EXPENSIVE_CHECKS**:BOOL
   Enable additional time/memory expensive checking. Defaults to OFF.
+
+**LLVM_ENABLE_IDE**:BOOL
+  Tell the build system that an IDE is being used. This in turn disables the
+  creation of certain convenience build system targets, such as the various
+  ``install-*`` and ``check-*`` targets, since IDEs don't always deal well with
+  a large number of targets. This is usually autodetected, but it can be
+  configured manually to explicitly control the generation of those targets. One
+  scenario where a manual override may be desirable is when using Visual Studio
+  2017's CMake integration, which would not be detected as an IDE otherwise.
 
 **LLVM_ENABLE_PIC**:BOOL
   Add the ``-fPIC`` flag to the compiler command-line, if the compiler supports
@@ -352,11 +377,13 @@ LLVM-specific variables
 
 **LLVM_ENABLE_PROJECTS**:STRING
   Semicolon-separated list of projects to build, or *all* for building all
-  (clang, libcxx, libcxxabi, lldb, compiler-rt, lld, polly) projects.
+  (clang, libcxx, libcxxabi, lldb, compiler-rt, lld, polly, etc) projects.
   This flag assumes that projects are checked out side-by-side and not nested,
   i.e. clang needs to be in parallel of llvm instead of nested in `llvm/tools`.
   This feature allows to have one build for only LLVM and another for clang+llvm
   using the same source checkout.
+  The full list is:
+  ``clang;clang-tools-extra;compiler-rt;debuginfo-tests;libc;libclc;libcxx;libcxxabi;libunwind;lld;lldb;llgo;openmp;parallel-libs;polly;pstl``
 
 **LLVM_EXTERNAL_PROJECTS**:STRING
   Semicolon-separated list of additional external projects to build as part of
@@ -381,7 +408,7 @@ LLVM-specific variables
   tools.
   Defaults to ON.
 
-  **LLVM_USE_PERF**:BOOL
+**LLVM_USE_PERF**:BOOL
   Enable building support for Perf (linux profiling tool) JIT support. Defaults to OFF.
 
 **LLVM_ENABLE_ZLIB**:BOOL
@@ -408,6 +435,16 @@ LLVM-specific variables
   linker, otherwise clang will prefix the name with ``ld.`` and apply its usual
   search. For example to link LLVM with the Gold linker, cmake can be invoked
   with ``-DLLVM_USE_LINKER=gold``.
+
+**LLVM_ENABLE_LIBCXX**:BOOL
+  If the host compiler and linker supports the stdlib flag, -stdlib=libc++ is
+  passed to invocations of both so that the project is built using libc++
+  instead of stdlibc++. Defaults to OFF.
+
+**LLVM_STATIC_LINK_CXX_STDLIB**:BOOL
+  Statically link to the C++ standard library if possible. This uses the flag
+  "-static-libstdc++", but a Clang host compiler will statically link to libc++
+  if used in conjuction with the **LLVM_ENABLE_LIBCXX** flag. Defaults to OFF.
 
 **LLVM_ENABLE_LLD**:BOOL
   This option is equivalent to `-DLLVM_USE_LINKER=lld`, except during a 2-stage
@@ -490,7 +527,7 @@ LLVM-specific variables
 **SPHINX_EXECUTABLE**:STRING
   The path to the ``sphinx-build`` executable detected by CMake.
   For installation instructions, see
-  http://www.sphinx-doc.org/en/latest/install.html
+  http://www.sphinx-doc.org/en/latest/usage/installation.html
 
 **SPHINX_OUTPUT_HTML**:BOOL
   If enabled (and ``LLVM_ENABLE_SPHINX`` is enabled) then the targets for
@@ -520,7 +557,7 @@ LLVM-specific variables
   `share/doc/llvm/ocaml-html`.
 
 **LLVM_CREATE_XCODE_TOOLCHAIN**:BOOL
-  OS X Only: If enabled CMake will generate a target named
+  macOS Only: If enabled CMake will generate a target named
   'install-xcode-toolchain'. This target will create a directory at
   $CMAKE_INSTALL_PREFIX/Toolchains containing an xctoolchain directory which can
   be used to override the default system tools.
@@ -533,11 +570,13 @@ LLVM-specific variables
   is also ON.
   The components in the library can be customised by setting LLVM_DYLIB_COMPONENTS
   to a list of the desired components.
+  This option is not available on Windows.
 
 **LLVM_LINK_LLVM_DYLIB**:BOOL
   If enabled, tools will be linked with the libLLVM shared library. Defaults
   to OFF. Setting LLVM_LINK_LLVM_DYLIB to ON also sets LLVM_BUILD_LLVM_DYLIB
   to ON.
+  This option is not available on Windows.
 
 **BUILD_SHARED_LIBS**:BOOL
   Flag indicating if each LLVM component (e.g. Support) is built as a shared
@@ -581,6 +620,16 @@ LLVM-specific variables
 **LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN**:BOOL
   If enabled, the compiler version check will only warn when using a toolchain
   which is about to be deprecated, instead of emitting an error.
+
+**LLVM_USE_NEWPM**:BOOL
+  If enabled, use the experimental new pass manager.
+
+**LLVM_ENABLE_BINDINGS**:BOOL
+  If disabled, do not try to build the OCaml and go bindings.
+
+**LLVM_ENABLE_Z3_SOLVER**:BOOL
+  If enabled, the Z3 constraint solver is activated for the Clang static analyzer.
+  A recent version of the z3 library needs to be available on the system.
 
 CMake Caches
 ============
@@ -646,10 +695,10 @@ cross-compiling.
 Embedding LLVM in your project
 ==============================
 
-From LLVM 3.5 onwards both the CMake and autoconf/Makefile build systems export
-LLVM libraries as importable CMake targets. This means that clients of LLVM can
-now reliably use CMake to develop their own LLVM-based projects against an
-installed version of LLVM regardless of how it was built.
+From LLVM 3.5 onwards the CMake build system exports LLVM libraries as
+importable CMake targets. This means that clients of LLVM can now reliably use
+CMake to develop their own LLVM-based projects against an installed version of
+LLVM regardless of how it was built.
 
 Here is a simple example of a CMakeLists.txt file that imports the LLVM libraries
 and uses them to build a simple application ``simple-tool``.

@@ -24,7 +24,7 @@ use MasonUtils;
 private use Map;
 
 /* Modify manifest file */
-proc masonModify(args) throws {
+proc masonModify(args: [] string) throws {
   try! {
 
     // Check for help flags
@@ -295,7 +295,8 @@ proc generateToml(toml: borrowed Toml, tomlPath: string) {
 
 proc checkVersion(version: string) throws {
 
-  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
+//  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
+  const pattern = compile("""^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$""");
   if !pattern.match(version) {
     throw new owned MasonError("Version formatting incorrect. ex. 1.2.3");
   }

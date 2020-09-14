@@ -1,9 +1,8 @@
 //===- CodeGenDAGPatterns.h - Read DAG patterns from .td file ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -191,9 +190,11 @@ private:
 
 struct TypeSetByHwMode : public InfoByHwMode<MachineValueTypeSet> {
   using SetType = MachineValueTypeSet;
+  std::vector<unsigned> AddrSpaces;
 
   TypeSetByHwMode() = default;
   TypeSetByHwMode(const TypeSetByHwMode &VTS) = default;
+  TypeSetByHwMode &operator=(const TypeSetByHwMode &) = default;
   TypeSetByHwMode(MVT::SimpleValueType VT)
     : TypeSetByHwMode(ValueTypeByHwMode(VT)) {}
   TypeSetByHwMode(ValueTypeByHwMode VT)
@@ -227,6 +228,15 @@ struct TypeSetByHwMode : public InfoByHwMode<MachineValueTypeSet> {
     return Map.size() == 1 && Map.begin()->first == DefaultMode;
   }
 
+  bool isPointer() const {
+    return getValueTypeByHwMode().isPointer();
+  }
+
+  unsigned getPtrAddrSpace() const {
+    assert(isPointer());
+    return getValueTypeByHwMode().PtrAddrSpace;
+  }
+
   bool insert(const ValueTypeByHwMode &VVT);
   bool constrain(const TypeSetByHwMode &VTS);
   template <typename Predicate> bool constrain(Predicate P);
@@ -243,6 +253,7 @@ struct TypeSetByHwMode : public InfoByHwMode<MachineValueTypeSet> {
   bool validate() const;
 
 private:
+  unsigned PtrAddrSpace = std::numeric_limits<unsigned>::max();
   /// Intersect two sets. Return true if anything has changed.
   bool intersect(SetType &Out, const SetType &In);
 };
@@ -582,6 +593,9 @@ public:
   /// predicate (checking only the scalar type) for load/store and returns the
   /// ValueType record for the memory VT.
   Record *getScalarMemoryVT() const;
+
+  ListInit *getAddressSpaces() const;
+  int64_t getMinAlignment() const;
 
   // If true, indicates that GlobalISel-based C++ code was supplied.
   bool hasGISelPredicateCode() const;
@@ -1063,8 +1077,11 @@ public:
     std::string C = IsHwMode
         ? std::string("MF->getSubtarget().checkFeatures(\"" + Features + "\")")
         : std::string(Def->getValueAsString("CondString"));
+    if (C.empty())
+      return "";
     return IfCond ? C : "!("+C+')';
   }
+
   bool operator==(const Predicate &P) const {
     return IfCond == P.IfCond && IsHwMode == P.IsHwMode && Def == P.Def;
   }
@@ -1128,7 +1145,6 @@ class CodeGenDAGPatterns {
   RecordKeeper &Records;
   CodeGenTarget Target;
   CodeGenIntrinsicTable Intrinsics;
-  CodeGenIntrinsicTable TgtIntrinsics;
 
   std::map<Record*, SDNodeInfo, LessRecordByID> SDNodes;
   std::map<Record*, std::pair<Record*, std::string>, LessRecordByID>
@@ -1179,12 +1195,6 @@ public:
     return F->second;
   }
 
-  typedef std::map<Record*, NodeXForm, LessRecordByID>::const_iterator
-          nx_iterator;
-  nx_iterator nx_begin() const { return SDNodeXForms.begin(); }
-  nx_iterator nx_end() const { return SDNodeXForms.end(); }
-
-
   const ComplexPattern &getComplexPattern(Record *R) const {
     auto F = ComplexPatterns.find(R);
     assert(F != ComplexPatterns.end() && "Unknown addressing mode!");
@@ -1194,24 +1204,18 @@ public:
   const CodeGenIntrinsic &getIntrinsic(Record *R) const {
     for (unsigned i = 0, e = Intrinsics.size(); i != e; ++i)
       if (Intrinsics[i].TheDef == R) return Intrinsics[i];
-    for (unsigned i = 0, e = TgtIntrinsics.size(); i != e; ++i)
-      if (TgtIntrinsics[i].TheDef == R) return TgtIntrinsics[i];
     llvm_unreachable("Unknown intrinsic!");
   }
 
   const CodeGenIntrinsic &getIntrinsicInfo(unsigned IID) const {
     if (IID-1 < Intrinsics.size())
       return Intrinsics[IID-1];
-    if (IID-Intrinsics.size()-1 < TgtIntrinsics.size())
-      return TgtIntrinsics[IID-Intrinsics.size()-1];
     llvm_unreachable("Bad intrinsic ID!");
   }
 
   unsigned getIntrinsicID(Record *R) const {
     for (unsigned i = 0, e = Intrinsics.size(); i != e; ++i)
       if (Intrinsics[i].TheDef == R) return i;
-    for (unsigned i = 0, e = TgtIntrinsics.size(); i != e; ++i)
-      if (TgtIntrinsics[i].TheDef == R) return i + Intrinsics.size();
     llvm_unreachable("Unknown intrinsic!");
   }
 
@@ -1268,9 +1272,12 @@ public:
     return intrinsic_wo_chain_sdnode;
   }
 
-  bool hasTargetIntrinsics() { return !TgtIntrinsics.empty(); }
-
   unsigned allocateScope() { return ++NumScopes; }
+
+  bool operandHasDefault(Record *Op) const {
+    return Op->isSubClassOf("OperandWithDefaultOps") &&
+      !getDefaultOperand(Op).DefaultOps.empty();
+  }
 
 private:
   void ParseNodeInfo();

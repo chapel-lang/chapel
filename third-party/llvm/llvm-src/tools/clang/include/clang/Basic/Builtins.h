@@ -1,9 +1,8 @@
 //===--- Builtins.h - Builtin function header -------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -26,8 +25,6 @@
 namespace clang {
 class TargetInfo;
 class IdentifierTable;
-class ASTContext;
-class QualType;
 class LangOptions;
 
 enum LanguageID {
@@ -194,6 +191,12 @@ public:
   /// argument and whether this function as a va_list argument.
   bool isScanfLike(unsigned ID, unsigned &FormatIdx, bool &HasVAListArg);
 
+  /// Determine whether this builtin has callback behavior (see
+  /// llvm::AbstractCallSites for details). If so, add the index to the
+  /// callback callee argument and the callback payload arguments.
+  bool performsCallback(unsigned ID,
+                        llvm::SmallVectorImpl<int> &Encoding) const;
+
   /// Return true if this function has no side effects and doesn't
   /// read memory, except for possibly errno.
   ///
@@ -219,7 +222,7 @@ public:
 
   /// Returns true if this is a libc/libm function without the '__builtin_'
   /// prefix.
-  static bool isBuiltinFunc(const char *Name);
+  static bool isBuiltinFunc(llvm::StringRef Name);
 
   /// Returns true if this is a builtin that can be redeclared.  Returns true
   /// for non-builtins.

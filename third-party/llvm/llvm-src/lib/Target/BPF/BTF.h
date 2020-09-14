@@ -1,9 +1,8 @@
 //===-- BTF.h --------------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -18,7 +17,7 @@
 ///
 /// The binary layout for .BTF.ext section:
 ///   struct ExtHeader
-///   FuncInfo and LineInfo subsections
+///   FuncInfo, LineInfo, FieldReloc and ExternReloc subsections
 /// The FuncInfo subsection is defined as below:
 ///   BTFFuncInfo Size
 ///   struct SecFuncInfo for ELF section #1
@@ -32,6 +31,13 @@
 ///   A number of struct BPFLineInfo for ELF section #1
 ///   struct SecLineInfo for ELF section #2
 ///   A number of struct BPFLineInfo for ELF section #2
+///   ...
+/// The FieldReloc subsection is defined as below:
+///   BPFFieldReloc Size
+///   struct SecFieldReloc for ELF section #1
+///   A number of struct BPFFieldReloc for ELF section #1
+///   struct SecFieldReloc for ELF section #2
+///   A number of struct BPFFieldReloc for ELF section #2
 ///   ...
 ///
 /// The section formats are also defined at
@@ -50,16 +56,19 @@ enum : uint32_t { MAGIC = 0xeB9F, VERSION = 1 };
 /// Sizes in bytes of various things in the BTF format.
 enum {
   HeaderSize = 24,
-  ExtHeaderSize = 24,
+  ExtHeaderSize = 32,
   CommonTypeSize = 12,
   BTFArraySize = 12,
   BTFEnumSize = 8,
   BTFMemberSize = 12,
   BTFParamSize = 8,
+  BTFDataSecVarSize = 12,
   SecFuncInfoSize = 8,
   SecLineInfoSize = 8,
+  SecFieldRelocSize = 8,
   BPFFuncInfoSize = 8,
-  BPFLineInfoSize = 16
+  BPFLineInfoSize = 16,
+  BPFFieldRelocSize = 16,
 };
 
 /// The .BTF section header definition.
@@ -77,7 +86,7 @@ struct Header {
 };
 
 enum : uint32_t {
-  MAX_VLEN = 0xffff         ///< Max # of struct/union/enum members or func args
+  MAX_VLEN = 0xffff ///< Max # of struct/union/enum members or func args
 };
 
 enum TypeKinds : uint8_t {
@@ -104,7 +113,7 @@ struct CommonType {
   /// "Size" tells the size of the type it is describing.
   ///
   /// "Type" is used by PTR, TYPEDEF, VOLATILE, CONST, RESTRICT,
-  /// FUNC and FUNC_PROTO.
+  /// FUNC, FUNC_PROTO and VAR.
   /// "Type" is a type_id referring to another type.
   union {
     uint32_t Size;
@@ -122,7 +131,11 @@ struct CommonType {
 // BTF_INT_BITS(VAL) : ((VAL) & 0x000000ff)
 
 /// Attributes stored in the INT_ENCODING.
-enum : uint8_t { INT_SIGNED = (1 << 0), INT_CHAR = (1 << 1), INT_BOOL = (1 << 2) };
+enum : uint8_t {
+  INT_SIGNED = (1 << 0),
+  INT_CHAR = (1 << 1),
+  INT_BOOL = (1 << 2)
+};
 
 /// BTF_KIND_ENUM is followed by multiple "struct BTFEnum".
 /// The exact number of btf_enum is stored in the vlen (of the
@@ -163,6 +176,29 @@ struct BTFParam {
   uint32_t Type;
 };
 
+/// BTF_KIND_FUNC can be global, static or extern.
+enum : uint8_t {
+  FUNC_STATIC = 0,
+  FUNC_GLOBAL = 1,
+  FUNC_EXTERN = 2,
+};
+
+/// Variable scoping information.
+enum : uint8_t {
+  VAR_STATIC = 0,           ///< Linkage: InternalLinkage
+  VAR_GLOBAL_ALLOCATED = 1, ///< Linkage: ExternalLinkage
+  VAR_GLOBAL_EXTERNAL = 2,  ///< Linkage: ExternalLinkage
+};
+
+/// BTF_KIND_DATASEC are followed by multiple "struct BTFDataSecVar".
+/// The exist number of BTFDataSec is stored in the vlen (of the info
+/// in "struct CommonType").
+struct BTFDataSec {
+  uint32_t Type;   ///< A BTF_KIND_VAR type
+  uint32_t Offset; ///< In-section offset
+  uint32_t Size;   ///< Occupied memory size
+};
+
 /// The .BTF.ext section header definition.
 struct ExtHeader {
   uint16_t Magic;
@@ -170,10 +206,12 @@ struct ExtHeader {
   uint8_t Flags;
   uint32_t HdrLen;
 
-  uint32_t FuncInfoOff; ///< Offset of func info section
-  uint32_t FuncInfoLen; ///< Length of func info section
-  uint32_t LineInfoOff; ///< Offset of line info section
-  uint32_t LineInfoLen; ///< Length of line info section
+  uint32_t FuncInfoOff;    ///< Offset of func info section
+  uint32_t FuncInfoLen;    ///< Length of func info section
+  uint32_t LineInfoOff;    ///< Offset of line info section
+  uint32_t LineInfoLen;    ///< Length of line info section
+  uint32_t FieldRelocOff; ///< Offset of offset reloc section
+  uint32_t FieldRelocLen; ///< Length of offset reloc section
 };
 
 /// Specifying one function info.
@@ -199,8 +237,22 @@ struct BPFLineInfo {
 
 /// Specifying line info's in one section.
 struct SecLineInfo {
-  uint32_t SecNameOff;  ///< Section name index in the .BTF string tble
+  uint32_t SecNameOff;  ///< Section name index in the .BTF string table
   uint32_t NumLineInfo; ///< Number of line info's in this section
+};
+
+/// Specifying one offset relocation.
+struct BPFFieldReloc {
+  uint32_t InsnOffset;    ///< Byte offset in this section
+  uint32_t TypeID;        ///< TypeID for the relocation
+  uint32_t OffsetNameOff; ///< The string to traverse types
+  uint32_t RelocKind;     ///< What to patch the instruction
+};
+
+/// Specifying offset relocation's in one section.
+struct SecFieldReloc {
+  uint32_t SecNameOff;     ///< Section name index in the .BTF string table
+  uint32_t NumFieldReloc; ///< Number of offset reloc's in this section
 };
 
 } // End namespace BTF.

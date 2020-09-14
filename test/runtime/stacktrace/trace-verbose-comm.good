@@ -1,0 +1,3 @@
+0: trace-verbose-comm.chpl:5: remote executeOn, node 1 <Stacktrace  chpl__init_trace-verbose-comm() at trace-verbose-comm.chpl:1 >
+1: trace-verbose-comm.chpl:15: remote put, node 0, 8 bytes, commid 5 <Stacktrace  setA() at trace-verbose-comm.chpl:14 callSetA() at trace-verbose-comm.chpl:11 on_fn() at trace-verbose-comm.chpl:5 wrapon_fn() at trace-verbose-comm.chpl:5 >
+1

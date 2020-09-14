@@ -1,9 +1,8 @@
 //===- CloneModule.cpp - Clone an entire module ---------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -49,7 +48,7 @@ std::unique_ptr<Module> llvm::CloneModule(
     function_ref<bool(const GlobalValue *)> ShouldCloneDefinition) {
   // First off, we need to create the new module.
   std::unique_ptr<Module> New =
-      llvm::make_unique<Module>(M.getModuleIdentifier(), M.getContext());
+      std::make_unique<Module>(M.getModuleIdentifier(), M.getContext());
   New->setSourceFileName(M.getSourceFileName());
   New->setDataLayout(M.getDataLayout());
   New->setTargetTriple(M.getTargetTriple());
@@ -182,13 +181,25 @@ std::unique_ptr<Module> llvm::CloneModule(
   }
 
   // And named metadata....
+  const auto* LLVM_DBG_CU = M.getNamedMetadata("llvm.dbg.cu");
   for (Module::const_named_metadata_iterator I = M.named_metadata_begin(),
                                              E = M.named_metadata_end();
        I != E; ++I) {
     const NamedMDNode &NMD = *I;
     NamedMDNode *NewNMD = New->getOrInsertNamedMetadata(NMD.getName());
-    for (unsigned i = 0, e = NMD.getNumOperands(); i != e; ++i)
-      NewNMD->addOperand(MapMetadata(NMD.getOperand(i), VMap));
+    if (&NMD == LLVM_DBG_CU) {
+      // Do not insert duplicate operands.
+      SmallPtrSet<const void*, 8> Visited;
+      for (const auto* Operand : NewNMD->operands())
+        Visited.insert(Operand);
+      for (const auto* Operand : NMD.operands()) {
+        auto* MappedOperand = MapMetadata(Operand, VMap);
+        if (Visited.insert(MappedOperand).second)
+          NewNMD->addOperand(MappedOperand);
+      }
+    } else
+      for (unsigned i = 0, e = NMD.getNumOperands(); i != e; ++i)
+        NewNMD->addOperand(MapMetadata(NMD.getOperand(i), VMap));
   }
 
   return New;

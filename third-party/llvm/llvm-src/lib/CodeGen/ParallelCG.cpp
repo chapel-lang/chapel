@@ -1,9 +1,8 @@
 //===-- ParallelCG.cpp ----------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,7 +26,7 @@ using namespace llvm;
 
 static void codegen(Module *M, llvm::raw_pwrite_stream &OS,
                     function_ref<std::unique_ptr<TargetMachine>()> TMFactory,
-                    TargetMachine::CodeGenFileType FileType) {
+                    CodeGenFileType FileType) {
   std::unique_ptr<TargetMachine> TM = TMFactory();
   legacy::PassManager CodeGenPasses;
   if (TM->addPassesToEmitFile(CodeGenPasses, OS, nullptr, FileType))
@@ -39,7 +38,7 @@ std::unique_ptr<Module> llvm::splitCodeGen(
     std::unique_ptr<Module> M, ArrayRef<llvm::raw_pwrite_stream *> OSs,
     ArrayRef<llvm::raw_pwrite_stream *> BCOSs,
     const std::function<std::unique_ptr<TargetMachine>()> &TMFactory,
-    TargetMachine::CodeGenFileType FileType, bool PreserveLocals) {
+    CodeGenFileType FileType, bool PreserveLocals) {
   assert(BCOSs.empty() || BCOSs.size() == OSs.size());
 
   if (OSs.size() == 1) {

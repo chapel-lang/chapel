@@ -28,6 +28,7 @@ OPTIMIZATIONS_SRCS = \
 	noAliasSets.cpp \
         optimizeForallUnorderedOps.cpp \
 	optimizeOnClauses.cpp \
+	preNormalizeOptimizations.cpp \
 	refPropagation.cpp \
 	remoteValueForwarding.cpp \
 	removeEmptyRecords.cpp \

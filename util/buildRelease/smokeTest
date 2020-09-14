@@ -88,7 +88,16 @@ source $CHPL_HOME/util/cron/common.bash
 
 # Disable GMP and re2 to speed up build.
 export CHPL_GMP=none
-export CHPL_REGEXP=none
+
+# mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
+COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
+if [ "$COMM" != "none" ]; then
+  CHPL_SMOKE_SKIP_MAKE_MASON=${CHPL_SMOKE_SKIP_MAKE_MASON:-true}
+fi
+
+if [ "${CHPL_SMOKE_SKIP_MAKE_MASON}" == "true" ] ; then
+  export CHPL_REGEXP=none
+fi
 
 echo ""
 
@@ -128,3 +137,10 @@ if [ "${CHPL_SMOKE_SKIP_DOC}" != "true" ] ; then
         make $chpl_make_args check-chpldoc && \
         make docs || exit 2
 fi
+
+if [ "${CHPL_SMOKE_SKIP_MAKE_MASON}" != "true" ] ; then
+    # Build Mason 
+    make -j${num_procs} $chpl_make_args && \
+        make $chpl_make_args mason || exit 2 
+fi
+

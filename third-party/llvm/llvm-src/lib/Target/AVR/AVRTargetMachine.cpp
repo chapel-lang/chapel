@@ -1,9 +1,8 @@
 //===-- AVRTargetMachine.cpp - Define TargetMachine for AVR ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,6 +21,7 @@
 #include "AVR.h"
 #include "AVRTargetObjectFile.h"
 #include "MCTargetDesc/AVRMCTargetDesc.h"
+#include "TargetInfo/AVRTargetInfo.h"
 
 namespace llvm {
 
@@ -50,7 +50,7 @@ AVRTargetMachine::AVRTargetMachine(const Target &T, const Triple &TT,
                         getEffectiveRelocModel(RM),
                         getEffectiveCodeModel(CM, CodeModel::Small), OL),
       SubTarget(TT, getCPU(CPU), FS, *this) {
-  this->TLOF = make_unique<AVRTargetObjectFile>();
+  this->TLOF = std::make_unique<AVRTargetObjectFile>();
   initAsmInfo();
 }
 
@@ -76,7 +76,7 @@ TargetPassConfig *AVRTargetMachine::createPassConfig(PassManagerBase &PM) {
   return new AVRPassConfig(*this, PM);
 }
 
-extern "C" void LLVMInitializeAVRTarget() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAVRTarget() {
   // Register the target.
   RegisterTargetMachine<AVRTargetMachine> X(getTheAVRTarget());
 

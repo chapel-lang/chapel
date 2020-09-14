@@ -1,9 +1,8 @@
 //===- ExprEngine.h - Path-Sensitive Expression-Level Dataflow --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,6 +22,7 @@
 #include "clang/Analysis/ProgramPoint.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/StaticAnalyzer/Core/BugReporter/BugReporter.h"
+#include "clang/StaticAnalyzer/Core/BugReporter/BugReporterVisitors.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/AnalysisManager.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CoreEngine.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/FunctionSummary.h"
@@ -131,6 +131,9 @@ private:
   /// SymMgr - Object that manages the symbol information.
   SymbolManager &SymMgr;
 
+  /// MRMgr - MemRegionManager object that creates memory regions.
+  MemRegionManager &MRMgr;
+
   /// svalBuilder - SValBuilder object that creates SVals from expressions.
   SValBuilder &svalBuilder;
 
@@ -142,9 +145,9 @@ private:
   ObjCNoReturn ObjCNoRet;
 
   /// The BugReporter associated with this engine.  It is important that
-  ///  this object be placed at the very end of member variables so that its
-  ///  destructor is called before the rest of the ExprEngine is destroyed.
-  GRBugReporter BR;
+  /// this object be placed at the very end of member variables so that its
+  /// destructor is called before the rest of the ExprEngine is destroyed.
+  PathSensitiveBugReporter BR;
 
   /// The functions which have been analyzed through inlining. This is owned by
   /// AnalysisConsumer. It can be null.
@@ -158,7 +161,7 @@ public:
              SetOfConstDecls *VisitedCalleesIn,
              FunctionSummariesTy *FS, InliningModes HowToInlineIn);
 
-  ~ExprEngine() override;
+  ~ExprEngine() override = default;
 
   /// Returns true if there is still simulation state on the worklist.
   bool ExecuteWorkList(const LocationContext *L, unsigned Steps = 150000) {
@@ -179,6 +182,10 @@ public:
   ASTContext &getContext() const { return AMgr.getASTContext(); }
 
   AnalysisManager &getAnalysisManager() override { return AMgr; }
+
+  AnalysisDeclContextManager &getAnalysisDeclContextManager() {
+    return AMgr.getAnalysisDeclContextManager();
+  }
 
   CheckerManager &getCheckerManager() const {
     return *AMgr.getCheckerManager();
@@ -369,10 +376,10 @@ public:
                        const LocationContext *LCtx,
                        const CallEvent *Call) override;
 
-  /// printState - Called by ProgramStateManager to print checker-specific data.
-  void printState(raw_ostream &Out, ProgramStateRef State, const char *NL,
-                  const char *Sep,
-                  const LocationContext *LCtx = nullptr) override;
+  /// printJson - Called by ProgramStateManager to print checker-specific data.
+  void printJson(raw_ostream &Out, ProgramStateRef State,
+                 const LocationContext *LCtx, const char *NL,
+                 unsigned int Space, bool IsDot) const override;
 
   ProgramStateManager &getStateManager() override { return StateMgr; }
 
@@ -387,9 +394,11 @@ public:
     return StateMgr.getBasicVals();
   }
 
-  // FIXME: Remove when we migrate over to just using ValueManager.
   SymbolManager &getSymbolManager() { return SymMgr; }
-  const SymbolManager &getSymbolManager() const { return SymMgr; }
+  MemRegionManager &getRegionManager() { return MRMgr; }
+
+  NoteTag::Factory &getNoteTags() { return Engine.getNoteTags(); }
+
 
   // Functions for external checking of whether we have unfinished work
   bool wasBlocksExhausted() const { return Engine.wasBlocksExhausted(); }
@@ -521,7 +530,7 @@ public:
   void VisitCXXDestructor(QualType ObjectType, const MemRegion *Dest,
                           const Stmt *S, bool IsBaseDtor,
                           ExplodedNode *Pred, ExplodedNodeSet &Dst,
-                          const EvalCallOptions &Options);
+                          EvalCallOptions &Options);
 
   void VisitCXXNewAllocatorCall(const CXXNewExpr *CNE,
                                 ExplodedNode *Pred,
@@ -604,10 +613,16 @@ protected:
                 const ProgramPoint *PP = nullptr);
 
   /// Call PointerEscape callback when a value escapes as a result of bind.
-  ProgramStateRef processPointerEscapedOnBind(ProgramStateRef State,
-                                              SVal Loc,
-                                              SVal Val,
-                                              const LocationContext *LCtx) override;
+  ProgramStateRef processPointerEscapedOnBind(
+      ProgramStateRef State, ArrayRef<std::pair<SVal, SVal>> LocAndVals,
+      const LocationContext *LCtx, PointerEscapeKind Kind,
+      const CallEvent *Call) override;
+
+  ProgramStateRef
+  processPointerEscapedOnBind(ProgramStateRef State,
+                              SVal Loc, SVal Val,
+                              const LocationContext *LCtx);
+
   /// Call PointerEscape callback when a value escapes as a result of
   /// region invalidation.
   /// \param[in] ITraits Specifies invalidation traits for regions/symbols.
@@ -619,9 +634,10 @@ protected:
                            RegionAndSymbolInvalidationTraits &ITraits) override;
 
   /// A simple wrapper when you only need to notify checkers of pointer-escape
-  /// of a single value.
-  ProgramStateRef escapeValue(ProgramStateRef State, SVal V,
-                              PointerEscapeKind K) const;
+  /// of some values.
+  ProgramStateRef escapeValues(ProgramStateRef State, ArrayRef<SVal> Vs,
+                               PointerEscapeKind K,
+                               const CallEvent *Call = nullptr) const;
 
 public:
   // FIXME: 'tag' should be removed, and a LocationContext should be used
@@ -657,7 +673,7 @@ public:
                                   const LocationContext *LCtx,
                                   ProgramStateRef State);
 
-  /// Evaluate a call, running pre- and post-call checks and allowing checkers
+  /// Evaluate a call, running pre- and post-call checkers and allowing checkers
   /// to be responsible for handling the evaluation of the call itself.
   void evalCall(ExplodedNodeSet &Dst, ExplodedNode *Pred,
                 const CallEvent &Call);
@@ -706,6 +722,25 @@ private:
                                      const ExplodedNode *Pred,
                                      AnalyzerOptions &Opts,
                                      const EvalCallOptions &CallOpts);
+
+  /// See if the given AnalysisDeclContext is built for a function that we
+  /// should always inline simply because it's small enough.
+  /// Apart from "small" functions, we also have "large" functions
+  /// (cf. isLarge()), some of which are huge (cf. isHuge()), and we classify
+  /// the remaining functions as "medium".
+  bool isSmall(AnalysisDeclContext *ADC) const;
+
+  /// See if the given AnalysisDeclContext is built for a function that we
+  /// should inline carefully because it looks pretty large.
+  bool isLarge(AnalysisDeclContext *ADC) const;
+
+  /// See if the given AnalysisDeclContext is built for a function that we
+  /// should never inline because it's legit gigantic.
+  bool isHuge(AnalysisDeclContext *ADC) const;
+
+  /// See if the given AnalysisDeclContext is built for a function that we
+  /// should inline, just by looking at the declaration of the function.
+  bool mayInlineDecl(AnalysisDeclContext *ADC) const;
 
   /// Checks our policies and decides weither the given call should be inlined.
   bool shouldInlineCall(const CallEvent &Call, const Decl *D,

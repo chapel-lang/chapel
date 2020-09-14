@@ -1,9 +1,8 @@
 //===- Windows/Threading.inc - Win32 Threading Implementation - -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,7 +13,7 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/Twine.h"
 
-#include "WindowsSupport.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
 #include <process.h>
 
 // Windows will at times define MemoryFence.
@@ -22,36 +21,36 @@
 #undef MemoryFence
 #endif
 
-namespace {
-  struct ThreadInfo {
-    void(*func)(void*);
-    void *param;
-  };
-}
-
-static unsigned __stdcall ThreadCallback(void *param) {
-  struct ThreadInfo *info = reinterpret_cast<struct ThreadInfo *>(param);
-  info->func(info->param);
-
+static unsigned __stdcall threadFuncSync(void *Arg) {
+  SyncThreadInfo *TI = static_cast<SyncThreadInfo *>(Arg);
+  TI->UserFn(TI->UserData);
   return 0;
 }
 
-void llvm::llvm_execute_on_thread(void(*Fn)(void*), void *UserData,
-  unsigned RequestedStackSize) {
-  struct ThreadInfo param = { Fn, UserData };
+static unsigned __stdcall threadFuncAsync(void *Arg) {
+  std::unique_ptr<AsyncThreadInfo> Info(static_cast<AsyncThreadInfo *>(Arg));
+  (*Info)();
+  return 0;
+}
 
-  HANDLE hThread = (HANDLE)::_beginthreadex(NULL,
-    RequestedStackSize, ThreadCallback,
-    &param, 0, NULL);
+static void
+llvm_execute_on_thread_impl(unsigned (__stdcall *ThreadFunc)(void *), void *Arg,
+                            llvm::Optional<unsigned> StackSizeInBytes,
+                            JoiningPolicy JP) {
+  HANDLE hThread = (HANDLE)::_beginthreadex(
+      NULL, StackSizeInBytes.getValueOr(0), ThreadFunc, Arg, 0, NULL);
 
-  if (hThread) {
-    // We actually don't care whether the wait succeeds or fails, in
-    // the same way we don't care whether the pthread_join call succeeds
-    // or fails.  There's not much we could do if this were to fail. But
-    // on success, this call will wait until the thread finishes executing
-    // before returning.
-    (void)::WaitForSingleObject(hThread, INFINITE);
-    ::CloseHandle(hThread);
+  if (!hThread) {
+    ReportLastErrorFatal("_beginthreadex failed");
+  }
+
+  if (JP == JoiningPolicy::Join) {
+    if (::WaitForSingleObject(hThread, INFINITE) == WAIT_FAILED) {
+      ReportLastErrorFatal("WaitForSingleObject failed");
+    }
+  }
+  if (::CloseHandle(hThread) == FALSE) {
+    ReportLastErrorFatal("CloseHandle failed");
   }
 }
 
@@ -106,4 +105,20 @@ void llvm::get_thread_name(SmallVectorImpl<char> &Name) {
   // set_thread_name so that subsequent calls to get_thread_name return this
   // value.
   Name.clear();
+}
+
+SetThreadPriorityResult llvm::set_thread_priority(ThreadPriority Priority) {
+  // https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-setthreadpriority
+  // Begin background processing mode. The system lowers the resource scheduling
+  // priorities of the thread so that it can perform background work without
+  // significantly affecting activity in the foreground.
+  // End background processing mode. The system restores the resource scheduling
+  // priorities of the thread as they were before the thread entered background
+  // processing mode.
+  return SetThreadPriority(GetCurrentThread(),
+                           Priority == ThreadPriority::Background
+                               ? THREAD_MODE_BACKGROUND_BEGIN
+                               : THREAD_MODE_BACKGROUND_END)
+             ? SetThreadPriorityResult::SUCCESS
+             : SetThreadPriorityResult::FAILURE;
 }

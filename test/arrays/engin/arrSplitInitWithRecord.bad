@@ -1,0 +1,1 @@
+arrSplitInitWithRecord.chpl:16: error: cannot iterate over values of type Point

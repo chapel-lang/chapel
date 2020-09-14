@@ -1,9 +1,8 @@
 //===- MILexer.h - Lexer for machine instructions ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -74,6 +73,7 @@ struct MIToken {
     kw_nuw,
     kw_nsw,
     kw_exact,
+    kw_nofpexcept,
     kw_debug_location,
     kw_cfi_same_value,
     kw_cfi_offset,
@@ -110,6 +110,7 @@ struct MIToken {
     kw_jump_table,
     kw_constant_pool,
     kw_call_entry,
+    kw_custom,
     kw_liveout,
     kw_address_taken,
     kw_landing_pad,
@@ -117,8 +118,10 @@ struct MIToken {
     kw_successors,
     kw_floatpred,
     kw_intpred,
+    kw_shufflemask,
     kw_pre_instr_symbol,
     kw_post_instr_symbol,
+    kw_heap_alloc_marker,
     kw_unknown_size,
 
     // Named metadata keywords
@@ -146,6 +149,7 @@ struct MIToken {
     IntegerLiteral,
     FloatingPointLiteral,
     HexLiteral,
+    VectorLiteral,
     VirtualRegister,
     ConstantPoolItem,
     JumpTableIndex,

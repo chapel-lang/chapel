@@ -1,9 +1,8 @@
 //===-- PPC.td - Describe the PowerPC Target Machine -------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,35 +22,37 @@ include "llvm/Target/Target.td"
 // CPU Directives                                                             //
 //===----------------------------------------------------------------------===//
 
-def Directive440 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_440", "">;
-def Directive601 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_601", "">;
-def Directive602 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_602", "">;
-def Directive603 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_603", "">;
-def Directive604 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_603", "">;
-def Directive620 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_603", "">;
-def Directive7400: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_7400", "">;
-def Directive750 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_750", "">;
-def Directive970 : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_970", "">;
-def Directive32  : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_32", "">;
-def Directive64  : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_64", "">;
-def DirectiveA2  : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_A2", "">;
-def DirectiveE500   : SubtargetFeature<"", "DarwinDirective",
+def Directive440 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_440", "">;
+def Directive601 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_601", "">;
+def Directive602 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_602", "">;
+def Directive603 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_603", "">;
+def Directive604 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_603", "">;
+def Directive620 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_603", "">;
+def Directive7400: SubtargetFeature<"", "CPUDirective", "PPC::DIR_7400", "">;
+def Directive750 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_750", "">;
+def Directive970 : SubtargetFeature<"", "CPUDirective", "PPC::DIR_970", "">;
+def Directive32  : SubtargetFeature<"", "CPUDirective", "PPC::DIR_32", "">;
+def Directive64  : SubtargetFeature<"", "CPUDirective", "PPC::DIR_64", "">;
+def DirectiveA2  : SubtargetFeature<"", "CPUDirective", "PPC::DIR_A2", "">;
+def DirectiveE500   : SubtargetFeature<"", "CPUDirective",
                                        "PPC::DIR_E500", "">;
-def DirectiveE500mc : SubtargetFeature<"", "DarwinDirective",
+def DirectiveE500mc : SubtargetFeature<"", "CPUDirective",
                                        "PPC::DIR_E500mc", "">;
-def DirectiveE5500  : SubtargetFeature<"", "DarwinDirective",
+def DirectiveE5500  : SubtargetFeature<"", "CPUDirective",
                                        "PPC::DIR_E5500", "">;
-def DirectivePwr3: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR3", "">;
-def DirectivePwr4: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR4", "">;
-def DirectivePwr5: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR5", "">;
+def DirectivePwr3: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR3", "">;
+def DirectivePwr4: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR4", "">;
+def DirectivePwr5: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR5", "">;
 def DirectivePwr5x
-    : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR5X", "">;
-def DirectivePwr6: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR6", "">;
+    : SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR5X", "">;
+def DirectivePwr6: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR6", "">;
 def DirectivePwr6x
-    : SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR6X", "">;
-def DirectivePwr7: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR7", "">;
-def DirectivePwr8: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR8", "">;
-def DirectivePwr9: SubtargetFeature<"", "DarwinDirective", "PPC::DIR_PWR9", "">;
+    : SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR6X", "">;
+def DirectivePwr7: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR7", "">;
+def DirectivePwr8: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR8", "">;
+def DirectivePwr9: SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR9", "">;
+def DirectivePwrFuture
+    : SubtargetFeature<"", "CPUDirective", "PPC::DIR_PWR_FUTURE", "">;
 
 def Feature64Bit     : SubtargetFeature<"64bit","Has64BitSupport", "true",
                                         "Enable 64-bit instructions">;
@@ -136,6 +137,9 @@ def FeatureQPX       : SubtargetFeature<"qpx","HasQPX", "true",
 def FeatureVSX       : SubtargetFeature<"vsx","HasVSX", "true",
                                         "Enable VSX instructions",
                                         [FeatureAltivec]>;
+def FeatureTwoConstNR :
+  SubtargetFeature<"two-const-nr", "NeedsTwoConstNR", "true",
+                   "Requires two constant Newton-Raphson computation">;
 def FeatureP8Altivec : SubtargetFeature<"power8-altivec", "HasP8Altivec", "true",
                                         "Enable POWER8 Altivec instructions",
                                         [FeatureAltivec]>;
@@ -162,8 +166,15 @@ def FeatureHTM : SubtargetFeature<"htm", "HasHTM", "true",
                                   "Enable Hardware Transactional Memory instructions">;
 def FeatureMFTB   : SubtargetFeature<"", "FeatureMFTB", "true",
                                         "Implement mftb using the mfspr instruction">;
-def FeatureFusion : SubtargetFeature<"fusion", "HasFusion", "true",
-                                     "Target supports add/load integer fusion.">;
+def FeatureUnalignedFloats :
+  SubtargetFeature<"allow-unaligned-fp-access", "AllowsUnalignedFPAccess",
+                   "true", "CPU does not trap on unaligned FP access">;
+def FeaturePPCPreRASched:
+  SubtargetFeature<"ppc-prera-sched", "UsePPCPreRASchedStrategy", "true",
+                   "Use PowerPC pre-RA scheduling strategy">;
+def FeaturePPCPostRASched:
+  SubtargetFeature<"ppc-postra-sched", "UsePPCPostRASchedStrategy", "true",
+                   "Use PowerPC post-RA scheduling strategy">;
 def FeatureFloat128 :
   SubtargetFeature<"float128", "HasFloat128", "true",
                    "Enable the __float128 data type for IEEE-754R Binary128.",
@@ -191,41 +202,107 @@ def FeatureP9Vector  : SubtargetFeature<"power9-vector", "HasP9Vector", "true",
                                         "Enable POWER9 vector instructions",
                                         [FeatureISA3_0, FeatureP8Vector,
                                          FeatureP9Altivec]>;
+// A separate feature for this even though it is equivalent to P9Vector
+// because this is a feature of the implementation rather than the architecture
+// and may go away with future CPU's.
+def FeatureVectorsUseTwoUnits : SubtargetFeature<"vectors-use-two-units",
+                                                 "VectorsUseTwoUnits",
+                                                 "true",
+                                                 "Vectors use two units">;
 
 // Since new processors generally contain a superset of features of those that
 // came before them, the idea is to make implementations of new processors
 // less error prone and easier to read.
 // Namely:
-//     list<SubtargetFeature> Power8FeatureList = ...
-//     list<SubtargetFeature> FutureProcessorSpecificFeatureList =
-//         [ features that Power8 does not support ]
-//     list<SubtargetFeature> FutureProcessorFeatureList =
-//         !listconcat(Power8FeatureList, FutureProcessorSpecificFeatureList)
+//     list<SubtargetFeature> P8InheritableFeatures = ...
+//     list<SubtargetFeature> FutureProcessorAddtionalFeatures =
+//         [ features that Power8 does not support but inheritable ]
+//     list<SubtargetFeature> FutureProcessorSpecificFeatures =
+//         [ features that Power8 does not support and not inheritable ]
+//     list<SubtargetFeature> FutureProcessorInheritableFeatures =
+//         !listconcat(P8InheritableFeatures, FutureProcessorAddtionalFeatures)
+//     list<SubtargetFeature> FutureProcessorFeatures =
+//         !listconcat(FutureProcessorInheritableFeatures,
+//                     FutureProcessorSpecificFeatures)
 
 // Makes it explicit and obvious what is new in FutureProcesor vs. Power8 as
 // well as providing a single point of definition if the feature set will be
 // used elsewhere.
 def ProcessorFeatures {
-  list<SubtargetFeature> Power7FeatureList =
-      [DirectivePwr7, FeatureAltivec, FeatureVSX,
-       FeatureMFOCRF, FeatureFCPSGN, FeatureFSqrt, FeatureFRE,
-       FeatureFRES, FeatureFRSQRTE, FeatureFRSQRTES,
-       FeatureRecipPrec, FeatureSTFIWX, FeatureLFIWAX,
-       FeatureFPRND, FeatureFPCVT, FeatureISEL,
-       FeaturePOPCNTD, FeatureCMPB, FeatureLDBRX,
-       Feature64Bit /*, Feature64BitRegs */,
-       FeatureBPERMD, FeatureExtDiv,
-       FeatureMFTB, DeprecatedDST];
-  list<SubtargetFeature> Power8SpecificFeatures =
-      [DirectivePwr8, FeatureP8Altivec, FeatureP8Vector, FeatureP8Crypto,
-       FeatureHTM, FeatureDirectMove, FeatureICBT, FeaturePartwordAtomic,
-       FeatureFusion];
-  list<SubtargetFeature> Power8FeatureList =
-      !listconcat(Power7FeatureList, Power8SpecificFeatures);
-  list<SubtargetFeature> Power9SpecificFeatures =
-      [DirectivePwr9, FeatureP9Altivec, FeatureP9Vector, FeatureISA3_0];
-  list<SubtargetFeature> Power9FeatureList =
-      !listconcat(Power8FeatureList, Power9SpecificFeatures);
+  // Power7
+  list<SubtargetFeature> P7InheritableFeatures = [DirectivePwr7,
+                                                  FeatureAltivec,
+                                                  FeatureVSX,
+                                                  FeatureMFOCRF,
+                                                  FeatureFCPSGN,
+                                                  FeatureFSqrt,
+                                                  FeatureFRE,
+                                                  FeatureFRES,
+                                                  FeatureFRSQRTE,
+                                                  FeatureFRSQRTES,
+                                                  FeatureRecipPrec,
+                                                  FeatureSTFIWX,
+                                                  FeatureLFIWAX,
+                                                  FeatureFPRND,
+                                                  FeatureFPCVT,
+                                                  FeatureISEL,
+                                                  FeaturePOPCNTD,
+                                                  FeatureCMPB,
+                                                  FeatureLDBRX,
+                                                  Feature64Bit,
+                                                  /* Feature64BitRegs, */
+                                                  FeatureBPERMD,
+                                                  FeatureExtDiv,
+                                                  FeatureMFTB,
+                                                  DeprecatedDST,
+                                                  FeatureTwoConstNR,
+                                                  FeatureUnalignedFloats];
+  list<SubtargetFeature> P7SpecificFeatures = [];
+  list<SubtargetFeature> P7Features =
+    !listconcat(P7InheritableFeatures, P7SpecificFeatures);
+
+  // Power8
+  list<SubtargetFeature> P8AdditionalFeatures = [DirectivePwr8,
+                                                 FeatureP8Altivec,
+                                                 FeatureP8Vector,
+                                                 FeatureP8Crypto,
+                                                 FeatureHTM,
+                                                 FeatureDirectMove,
+                                                 FeatureICBT,
+                                                 FeaturePartwordAtomic];
+  list<SubtargetFeature> P8SpecificFeatures = [];
+  list<SubtargetFeature> P8InheritableFeatures =
+    !listconcat(P7InheritableFeatures, P8AdditionalFeatures);
+  list<SubtargetFeature> P8Features =
+    !listconcat(P8InheritableFeatures, P8SpecificFeatures);
+
+  // Power9
+  list<SubtargetFeature> P9AdditionalFeatures = [DirectivePwr9,
+                                                 FeatureP9Altivec,
+                                                 FeatureP9Vector,
+                                                 FeatureISA3_0];
+  // Some features are unique to Power9 and there is no reason to assume
+  // they will be part of any future CPUs. One example is the narrower
+  // dispatch for vector operations than scalar ones. For the time being,
+  // this list also includes scheduling-related features since we do not have
+  // enough info to create custom scheduling strategies for future CPUs.
+  list<SubtargetFeature> P9SpecificFeatures = [FeatureVectorsUseTwoUnits,
+                                               FeaturePPCPreRASched,
+                                               FeaturePPCPostRASched];
+  list<SubtargetFeature> P9InheritableFeatures =
+    !listconcat(P8InheritableFeatures, P9AdditionalFeatures);
+  list<SubtargetFeature> P9Features =
+    !listconcat(P9InheritableFeatures, P9SpecificFeatures);
+
+  // Future
+  // For future CPU we assume that all of the existing features from Power 9
+  // still exist with the exception of those we know are Power 9 specific.
+  list<SubtargetFeature> FutureAdditionalFeatures = [];
+  list<SubtargetFeature> FutureSpecificFeatures = [];
+  list<SubtargetFeature> FutureInheritableFeatures =
+    !listconcat(P9InheritableFeatures, FutureAdditionalFeatures);
+  list<SubtargetFeature> FutureFeatures =
+    !listconcat(FutureInheritableFeatures, FutureSpecificFeatures);
 }
 
 // Note: Future features to add when support is extended to more
@@ -279,10 +356,9 @@ def getNonRecordFormOpcode : InstrMapping {
 
 def getAltVSXFMAOpcode : InstrMapping {
   let FilterClass = "AltVSXFMARel";
-  // Instructions with the same BaseName and Interpretation64Bit values
-  // form a row.
+  // Instructions with the same BaseName value form a row.
   let RowFields = ["BaseName"];
-  // Instructions with the same RC value form a column.
+  // Instructions with the same IsVSXFMAAlt value form a column.
   let ColFields = ["IsVSXFMAAlt"];
   // The key column are the (default) addend-killing instructions.
   let KeyCol = ["0"];
@@ -366,7 +442,7 @@ def : ProcessorModel<"g5", G5Model,
 def : ProcessorModel<"e500", PPCE500Model,
                   [DirectiveE500,
                    FeatureICBT, FeatureBookE,
-                   FeatureISEL, FeatureMFTB]>;
+                   FeatureISEL, FeatureMFTB, FeatureSPE]>;
 def : ProcessorModel<"e500mc", PPCE500mcModel,
                   [DirectiveE500mc,
                    FeatureSTFIWX, FeatureICBT, FeatureBookE,
@@ -426,9 +502,12 @@ def : ProcessorModel<"pwr6x", G5Model,
                    FeatureSTFIWX, FeatureLFIWAX, FeatureCMPB,
                    FeatureFPRND, Feature64Bit,
                    FeatureMFTB, DeprecatedDST]>;
-def : ProcessorModel<"pwr7", P7Model, ProcessorFeatures.Power7FeatureList>;
-def : ProcessorModel<"pwr8", P8Model, ProcessorFeatures.Power8FeatureList>;
-def : ProcessorModel<"pwr9", P9Model, ProcessorFeatures.Power9FeatureList>;
+def : ProcessorModel<"pwr7", P7Model, ProcessorFeatures.P7Features>;
+def : ProcessorModel<"pwr8", P8Model, ProcessorFeatures.P8Features>;
+def : ProcessorModel<"pwr9", P9Model, ProcessorFeatures.P9Features>;
+// No scheduler model for future CPU.
+def : ProcessorModel<"future", NoSchedModel,
+                  ProcessorFeatures.FutureFeatures>;
 def : Processor<"ppc", G3Itineraries, [Directive32, FeatureHardFloat,
                                        FeatureMFTB]>;
 def : Processor<"ppc32", G3Itineraries, [Directive32, FeatureHardFloat,
@@ -439,7 +518,7 @@ def : ProcessorModel<"ppc64", G5Model,
                    FeatureFRSQRTE, FeatureSTFIWX,
                    Feature64Bit /*, Feature64BitRegs */,
                    FeatureMFTB]>;
-def : ProcessorModel<"ppc64le", P8Model, ProcessorFeatures.Power8FeatureList>;
+def : ProcessorModel<"ppc64le", P8Model, ProcessorFeatures.P8Features>;
 
 //===----------------------------------------------------------------------===//
 // Calling Conventions

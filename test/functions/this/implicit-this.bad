@@ -1,0 +1,2 @@
+implicit-this.chpl:9: In function 'z':
+implicit-this.chpl:10: error: 'x' undeclared (first use this function)

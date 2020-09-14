@@ -1,9 +1,8 @@
 //===- unittest/Format/FormatTestJava.cpp - Formatting tests for Java -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -336,6 +335,14 @@ TEST_F(FormatTestJava, Annotations) {
   verifyFormat("@Annotation(\"Some\"\n"
                "    + \" text\")\n"
                "List<Integer> list;");
+
+  verifyFormat(
+    "@Test\n"
+    "@Feature({\"Android-TabSwitcher\"})\n"
+    "@CommandLineFlags.Add({ChromeSwitches.DISABLE_FIRST_RUN_EXPERIENCE})\n"
+    "@Features.EnableFeatures({FEATURE})\n"
+    "public void test(@Foo.bar(\"baz\") @Quux.Qoob int theFirstParaaaaam,\n"
+    "    @Foo.bar(\"baz\") @Quux.Qoob int theSecondParaaaaaaaaaaaaaaaam) {}");
 }
 
 TEST_F(FormatTestJava, Generics) {

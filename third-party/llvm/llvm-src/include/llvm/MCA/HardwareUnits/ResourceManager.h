@@ -1,9 +1,8 @@
 //===--------------------- ResourceManager.h --------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -34,8 +33,7 @@ namespace mca {
 /// with a buffer size of -1 is always available if it is not reserved.
 ///
 /// Values of type ResourceStateEvent are returned by method
-/// ResourceState::isBufferAvailable(), which is used to query the internal
-/// state of a resource.
+/// ResourceManager::canBeDispatched()
 ///
 /// The naming convention for resource state events is:
 ///  * Event names start with prefix RS_
@@ -264,16 +262,26 @@ public:
   /// Returns RS_BUFFER_UNAVAILABLE if there are no available slots.
   ResourceStateEvent isBufferAvailable() const;
 
-  /// Reserve a slot in the buffer.
-  void reserveBuffer() {
-    if (AvailableSlots)
-      AvailableSlots--;
+  /// Reserve a buffer slot.
+  ///
+  /// Returns true if the buffer is not full.
+  /// It always returns true if BufferSize is set to zero.
+  bool reserveBuffer() {
+    if (BufferSize <= 0)
+      return true;
+
+    --AvailableSlots;
+    assert(AvailableSlots <= static_cast<unsigned>(BufferSize));
+    return AvailableSlots;
   }
 
-  /// Release a slot in the buffer.
+  /// Releases a slot in the buffer.
   void releaseBuffer() {
-    if (BufferSize > 0)
-      AvailableSlots++;
+    // Ignore dispatch hazards or invalid buffer sizes.
+    if (BufferSize <= 0)
+      return;
+
+    ++AvailableSlots;
     assert(AvailableSlots <= static_cast<unsigned>(BufferSize));
   }
 
@@ -335,12 +343,32 @@ class ResourceManager {
   // Used to quickly identify groups that own a particular resource unit.
   std::vector<uint64_t> Resource2Groups;
 
-  // A table to map processor resource IDs to processor resource masks.
+  // A table that maps processor resource IDs to processor resource masks.
   SmallVector<uint64_t, 8> ProcResID2Mask;
+
+  // A table that maps resource indices to actual processor resource IDs in the
+  // scheduling model.
+  SmallVector<unsigned, 8> ResIndex2ProcResID;
 
   // Keeps track of which resources are busy, and how many cycles are left
   // before those become usable again.
   SmallDenseMap<ResourceRef, unsigned> BusyResources;
+
+  // Set of processor resource units available on the target.
+  uint64_t ProcResUnitMask;
+
+  // Set of processor resource units that are available during this cycle.
+  uint64_t AvailableProcResUnits;
+
+  // Set of processor resources that are currently reserved.
+  uint64_t ReservedResourceGroups;
+
+  // Set of unavailable scheduler buffer resources. This is used internally to
+  // speedup `canBeDispatched()` queries.
+  uint64_t AvailableBuffers;
+
+  // Set of dispatch hazard buffer resources that are currently unavailable.
+  uint64_t ReservedBuffers;
 
   // Returns the actual resource unit that will be used.
   ResourceRef selectPipe(uint64_t ResourceID);
@@ -370,17 +398,20 @@ public:
 
   // Returns RS_BUFFER_AVAILABLE if buffered resources are not reserved, and if
   // there are enough available slots in the buffers.
-  ResourceStateEvent canBeDispatched(ArrayRef<uint64_t> Buffers) const;
+  ResourceStateEvent canBeDispatched(uint64_t ConsumedBuffers) const;
 
   // Return the processor resource identifier associated to this Mask.
   unsigned resolveResourceMask(uint64_t Mask) const;
 
-  // Consume a slot in every buffered resource from array 'Buffers'. Resource
-  // units that are dispatch hazards (i.e. BufferSize=0) are marked as reserved.
-  void reserveBuffers(ArrayRef<uint64_t> Buffers);
+  // Acquires a slot from every buffered resource in mask `ConsumedBuffers`.
+  // Units that are dispatch hazards (i.e. BufferSize=0) are marked as reserved.
+  void reserveBuffers(uint64_t ConsumedBuffers);
 
-  // Release buffer entries previously allocated by method reserveBuffers.
-  void releaseBuffers(ArrayRef<uint64_t> Buffers);
+  // Releases a slot from every buffered resource in mask `ConsumedBuffers`.
+  // ConsumedBuffers is a bitmask of previously acquired buffers (using method
+  // `reserveBuffers`). Units that are dispatch hazards (i.e. BufferSize=0) are
+  // not automatically unreserved by this method.
+  void releaseBuffers(uint64_t ConsumedBuffers);
 
   // Reserve a processor resource. A reserved resource is not available for
   // instruction issue until it is released.
@@ -389,7 +420,14 @@ public:
   // Release a previously reserved processor resource.
   void releaseResource(uint64_t ResourceID);
 
-  bool canBeIssued(const InstrDesc &Desc) const;
+  // Returns a zero mask if resources requested by Desc are all available during
+  // this cycle. It returns a non-zero mask value only if there are unavailable
+  // processor resources; each bit set in the mask represents a busy processor
+  // resource unit or a reserved processor resource group.
+  uint64_t checkAvailability(const InstrDesc &Desc) const;
+
+  uint64_t getProcResUnitMask() const { return ProcResUnitMask; }
+  uint64_t getAvailableProcResUnits() const { return AvailableProcResUnits; }
 
   void issueInstruction(
       const InstrDesc &Desc,

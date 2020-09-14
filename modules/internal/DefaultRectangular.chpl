@@ -28,11 +28,13 @@ module DefaultRectangular {
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
-  use DSIUtil, ChapelArray;
-  private use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
-  private use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
-  private use DefaultSparse, DefaultAssociative;
-  use ExternalArray;
+  use DSIUtil;
+  public use ChapelArray;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
+  use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
+  use DefaultSparse, DefaultAssociative;
+  public use ExternalArray; // OK: currently expected to be available by
+                            // default... though... why 'use' it here?
 
   config param debugDefaultDist = false;
   config param debugDefaultDistBulkTransfer = false;
@@ -45,6 +47,8 @@ module DefaultRectangular {
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
   config param usePollyArrayIndex = false;
+
+  config param defaultRectangularSupportsAutoLocalAccess = false;
 
   enum ArrayStorageOrder { RMO, CMO }
   config param defaultStorageOrder = ArrayStorageOrder.RMO;
@@ -134,7 +138,8 @@ module DefaultRectangular {
       //
       // The code below is copied from the contents of the "proc =".
       const nd = new dmap(new unmanaged DefaultDist());
-      __primitive("move", defaultDist, chpl__autoCopy(nd.clone()));
+      __primitive("move", defaultDist, chpl__autoCopy(nd.clone(),
+                                                      definedConst=false));
     }
   }
 
@@ -197,6 +202,7 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
+    pragma "order independent yielding loops"
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank-1 {
         for i in ranges(d) do
@@ -229,6 +235,7 @@ module DefaultRectangular {
     }
 */
 
+    pragma "order independent yielding loops"
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size-1 {
         for i in block(d) do
@@ -496,6 +503,7 @@ module DefaultRectangular {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -678,11 +686,12 @@ module DefaultRectangular {
       }
     }
 
-    proc dsiBuildArray(type eltType) {
+    proc dsiBuildArray(type eltType, param initElts:bool) {
       return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
                                                  idxType=idxType,
                                                  stridable=stridable,
-                                                 dom=_to_unmanaged(this));
+                                                 dom=_to_unmanaged(this),
+                                                 initElts=initElts);
     }
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
@@ -692,6 +701,9 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
+                                       /* this means consider elements
+                                          already initialized */
+                                       initElts=true,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
@@ -716,6 +728,7 @@ module DefaultRectangular {
       }
     }
 
+    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
@@ -727,7 +740,7 @@ module DefaultRectangular {
   }
 
   // helper routines for converting tuples of integers into tuple indices
-  
+
   inline proc chpl__intToIdx(type idxType, i: integral, j ...) {
     const first = chpl__intToIdx(idxType, i);
     const rest = chpl__intToIdx(idxType, (...j));
@@ -967,6 +980,7 @@ module DefaultRectangular {
     type idxType;
     param stridable: bool;
     var targetLocDom: domain(rank);
+    pragma "unsafe"
     var RAD: [targetLocDom] _remoteAccessData(eltType, rank, idxType,
                                               stridable);
     var RADLocks: [targetLocDom] chpl_LocalSpinlock;
@@ -1015,17 +1029,40 @@ module DefaultRectangular {
     pragma "local field"
     var shiftedData : _ddata(eltType);
 
-    // note: used by pychapel
-    var noinit_data: bool = false;
-
     // note: used for external array support
+    var externFreeFunc: c_void_ptr;
     var externArr: bool = false;
     var _borrowed: bool = true;
-    var externFreeFunc: c_void_ptr;
+    // should the comms post-alloc be called after initialization?
+    var callPostAlloc: bool = true;
 
+    var deinitElts: bool = true;
     //var numelm: int = -1; // for correctness checking
 
-    // end class definition here, then defined secondary methods below
+    // fields end here
+
+    proc init(type eltType, param rank, type idxType,
+              param stridable,
+              dom:unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
+                                                  stridable=stridable),
+              param initElts = true,
+              data:_ddata(eltType) = nil,
+              externArr = false,
+              _borrowed = false,
+              externFreeFunc: c_void_ptr = nil) {
+      super.init(eltType=eltType, rank=rank,
+                 idxType=idxType, stridable=stridable);
+      this.dom = dom;
+      this.data = data;
+      this.externFreeFunc = externFreeFunc;
+      this.externArr = externArr;
+      this._borrowed = _borrowed;
+      this.callPostAlloc = false;
+      this.deinitElts = initElts;
+
+      this.complete();
+      this.setupFieldsAndAllocate(initElts);
+    }
 
     proc intIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
@@ -1036,38 +1073,62 @@ module DefaultRectangular {
       writeln("blk=", blk);
       writeln("str=", str);
       writeln("factoredOffs=", factoredOffs);
-      writeln("noinit_data=", noinit_data);
     }
 
     // can the compiler create this automatically?
     override proc dsiGetBaseDom() return dom;
 
-    proc dsiDestroyDataHelper(dd, ddiNumIndices) {
-      compilerAssert(chpl_isDdata(dd.type));
-      // TODO: Would anything be hurt if this was a forall?
-      // one guess: arrays of arrays where all inner arrays share a domain?
-      for i in 0..ddiNumIndices-1 {
-        chpl__autoDestroy(dd[i]);
+    override proc dsiElementInitializationComplete() {
+      const size = if storageOrder == ArrayStorageOrder.RMO
+                   then blk(0) * dom.dsiDim(0).size
+                   else blk(rank-1) * dom.dsiDim(rank-1).size;
+
+      if debugDefaultDist {
+        chpl_debug_writeln("*** DR calling postalloc ", eltType:string, " ",
+                           size);
       }
+
+      if callPostAlloc {
+        _ddata_allocate_postalloc(data, size);
+        callPostAlloc = false;
+      }
+
+      deinitElts = true;
     }
 
-    override proc dsiDestroyArr() {
+    override proc dsiElementDeinitializationComplete() {
+      deinitElts = false;
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
+      if debugDefaultDist {
+        chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
+      }
+
       if (externArr) {
         if (!_borrowed) {
           chpl_call_free_func(externFreeFunc, c_ptrTo(data));
         }
       } else {
-        var numElts:intIdxType = 0;
-        if dom.dsiNumIndices > 0 {
+        var numInd = dom.dsiNumIndices;
+        var numElts:intIdxType = numInd;
+        if deinitElts && this.deinitElts && numInd > 0 {
           param needsDestroy = __primitive("needs auto destroy",
                                            __primitive("deref", data[0]));
-          numElts = dom.dsiNumIndices;
 
           if needsDestroy {
-            dsiDestroyDataHelper(data, numElts);
+            if _deinitElementsIsParallel(eltType) {
+              forall i in 0..#numElts {
+                chpl__autoDestroy(data[i]);
+              }
+            } else {
+              for i in 0..#numElts {
+                chpl__autoDestroy(data[i]);
+              }
+            }
           }
         }
-        _ddata_free(data, numElts);
+        _ddata_free(data, numInd);
       }
     }
 
@@ -1090,6 +1151,7 @@ module DefaultRectangular {
       for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1119,6 +1181,7 @@ module DefaultRectangular {
         yield followThis;
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1161,8 +1224,7 @@ module DefaultRectangular {
       }
     }
 
-    proc postinit() {
-      if noinit_data == true then return;
+    proc setupFieldsAndAllocate(param initElts) {
       for param dim in 0..rank-1 {
         off(dim) = dom.dsiDim(dim).alignedLow;
         str(dim) = dom.dsiDim(dim).stride;
@@ -1192,13 +1254,23 @@ module DefaultRectangular {
 
       // Allow DR array initialization to pass in existing data
       if data == nil {
+        if debugDefaultDist {
+          chpl_debug_writeln("*** DR alloc ", eltType:string, " ", size);
+        }
+
         if !localeModelHasSublocales {
-          data = _ddata_allocate(eltType, size);
+          data = _ddata_allocate_noinit(eltType, size, callPostAlloc);
         } else {
-          data = _ddata_allocate(eltType, size,
-                                 subloc = (if here.getChildCount() > 1
-                                           then c_sublocid_all
-                                           else c_sublocid_none));
+          data = _ddata_allocate_noinit(eltType, size,
+                                        callPostAlloc,
+                                        subloc = (if here.getChildCount() > 1
+                                                  then c_sublocid_all
+                                                  else c_sublocid_none));
+        }
+
+        if initElts {
+          init_elts(data, size, eltType);
+          dsiElementInitializationComplete();
         }
       }
 
@@ -1356,12 +1428,7 @@ module DefaultRectangular {
       if !actuallyResizing then
         return;
 
-      // This should really be isDefaultInitializable(eltType), but that
-      // doesn't always work / give correct answers yet.  The following
-      // check won't catch cases such as records with non-nilable class
-      // fields that don't have default initializers (that initialize
-      // them).
-      if (isNonNilableClass(eltType)) {
+      if (!isDefaultInitializable(eltType)) {
         halt("Can't resize domains whose arrays' elements don't have default values");
       }
       if (this.locale != here) {
@@ -1394,15 +1461,43 @@ module DefaultRectangular {
                                                          stridable=reallocD._value.stridable,
                                                          dom=reallocD._value);
 
-          forall i in reallocD((...dom.ranges)) do
-            copy.dsiAccess(i) = dsiAccess(i);
+          var keep = reallocD((...dom.ranges));
+          // Copy the preserved elements
+          forall i in keep {
+            // "move" from the old buffer to the new one
+            ref dst = copy.dsiAccess(i);
+            const ref src = dsiAccess(i);
+            __primitive("=", dst, src);
+          }
+
+          // Deinit the other elements if
+          //  * the type uses deinit
+          //  * the new array has fewer elements than the old
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if reallocD.size < dom.dsiNumIndices {
+              if _deinitElementsIsParallel(eltType) {
+                forall i in dom {
+                  if !keep.contains(i) {
+                    chpl__autoDestroy(dsiAccess(i));
+                  }
+                }
+              } else {
+                for i in dom {
+                  if !keep.contains(i) {
+                    chpl__autoDestroy(dsiAccess(i));
+                  }
+                }
+              }
+            }
+          }
 
           off = copy.off;
           blk = copy.blk;
           str = copy.str;
           factoredOffs = copy.factoredOffs;
 
-          dsiDestroyArr();
+          dsiDestroyArr(deinitElts=false);
           data = copy.data;
           // We can't call initShiftedData here because the new domain
           // has not yet been updated (this is called from within the
@@ -1457,11 +1552,13 @@ module DefaultRectangular {
       }
     }
 
+    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
   }
 
+  pragma "order independent yielding loops"
   iter chpl__serialViewIter(arr, viewDom) ref
     where chpl__isDROrDRView(arr) {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
@@ -1520,6 +1617,7 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
+  pragma "order independent yielding loops"
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
     for i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
@@ -1542,6 +1640,10 @@ module DefaultRectangular {
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     chpl_serialReadWriteRectangular(f, this);
+  }
+
+  override proc DefaultRectangularDom.dsiSupportsAutoLocalAccess() param {
+    return defaultRectangularSupportsAutoLocalAccess;
   }
 
   // Why can the following two functions not be collapsed into one
@@ -1692,7 +1794,7 @@ module DefaultRectangular {
             else if isjson || ischpl then f <~> new ioLiteral(",");
           } catch err: BadFormatError {
             break;
-          } 
+          }
         }
 
         if i >= dom.dsiDim(0).size {
@@ -1780,8 +1882,11 @@ module DefaultRectangular {
 
     if blk(rank-1) != 1 then return false;
 
-    for param dim in 0..(rank-2) by -1 do
-      if blk(dim) != blk(dim+1)*dom.dsiDim(dim+1).size then return false;
+    if rank >= 2 {
+      const domDims = dom.dsiDims();
+      for param dim in 0..(rank-2) by -1 do
+        if blk(dim) != blk(dim+1)*domDims(dim+1).size then return false;
+    }
 
     if debugDefaultDistBulkTransfer then
       chpl_debug_writeln("\tYES!");
@@ -2133,6 +2238,30 @@ module DefaultRectangular {
     return res;
   }
 
+  // A helper routine that will perform a pointer swap on an array
+  // instead of doing a deep copy of that array. Returns true
+  // if used the optimized swap, false otherwise
+  proc DefaultRectangularArr.doiOptimizedSwap(other) {
+   // Get shape of array
+    var size1: rank*(this.dom.ranges(0).intIdxType);
+    for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
+      size1(i) = r.size;
+
+    // Get shape of array
+    var size2: rank*(other.dom.ranges(0).intIdxType);
+    for (i, r) in zip(0..#other.dom.ranges.size, other.dom.ranges) do
+      size2(i) = r.size;
+    
+    if(this.locale == other.locale &&
+       size1 == size2) {
+      this.data <=> other.data;
+      this.initShiftedData();
+      other.initShiftedData();
+      return true;
+    }
+    return false;
+  }
+
   // A helper routine to take the first parallel scan over a vector
   // yielding the number of tasks used, the ranges computed by each
   // task, and the scanned results of each task's scan.  This is
@@ -2213,7 +2342,7 @@ module DefaultRectangular {
         op.accumulateOntoState(res[i], myadjust);
       }
     }
-    
+
     if debugDRScan then
       writeln("res = ", res);
   }

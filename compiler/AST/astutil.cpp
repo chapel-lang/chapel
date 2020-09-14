@@ -34,6 +34,7 @@
 #include "LoopExpr.h"
 #include "passes.h"
 #include "ParamForLoop.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -789,6 +790,11 @@ bool isTypeExpr(Expr* expr) {
           retval = field->hasFlag(FLAG_TYPE_VARIABLE);
         }
       }
+
+    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      bool isType = false;
+      getPrimGetRuntimeTypeFieldReturnType(call, isType);
+      retval = isType;
 
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&

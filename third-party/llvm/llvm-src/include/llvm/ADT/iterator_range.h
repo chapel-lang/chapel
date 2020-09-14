@@ -1,9 +1,8 @@
 //===- iterator_range.h - A range adaptor for iterators ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -45,6 +44,7 @@ public:
 
   IteratorT begin() const { return begin_iterator; }
   IteratorT end() const { return end_iterator; }
+  bool empty() const { return begin_iterator == end_iterator; }
 };
 
 /// Convenience function for iterating over sub-ranges.
@@ -59,11 +59,6 @@ template <typename T> iterator_range<T> make_range(std::pair<T, T> p) {
   return iterator_range<T>(std::move(p.first), std::move(p.second));
 }
 
-template <typename T>
-iterator_range<decltype(adl_begin(std::declval<T>()))> drop_begin(T &&t,
-                                                                  int n) {
-  return make_range(std::next(adl_begin(t), n), adl_end(t));
-}
 }
 
 #endif

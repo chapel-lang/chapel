@@ -162,6 +162,21 @@ static inline bool isEndOfStatementMarker(Expr* e) {
   return false;
 }
 
+inline FnSymbol* CallExpr::resolvedFunction() const {
+  if (SymExpr* base = toSymExpr(baseExpr))
+    return toFnSymbol(base->symbol());
+  else
+    return NULL;
+}
+
+inline FnSymbol* CallExpr::theFnSymbol() const {
+  return resolvedFunction();
+}
+
+inline bool CallExpr::isResolved() const {
+  return resolvedFunction() != NULL;
+}
+
 // TODO: rename these
 bool isInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);
 bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor);

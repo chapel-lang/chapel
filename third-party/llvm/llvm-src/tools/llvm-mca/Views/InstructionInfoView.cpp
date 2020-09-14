@@ -1,9 +1,8 @@
 //===--------------------- InstructionInfoView.cpp --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -13,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "Views/InstructionInfoView.h"
+#include "llvm/Support/FormattedStream.h"
 
 namespace llvm {
 namespace mca {
@@ -27,10 +27,17 @@ void InstructionInfoView::printView(raw_ostream &OS) const {
 
   TempStream << "\n\nInstruction Info:\n";
   TempStream << "[1]: #uOps\n[2]: Latency\n[3]: RThroughput\n"
-             << "[4]: MayLoad\n[5]: MayStore\n[6]: HasSideEffects (U)\n\n";
+             << "[4]: MayLoad\n[5]: MayStore\n[6]: HasSideEffects (U)\n";
+  if (PrintEncodings) {
+    TempStream << "[7]: Encoding Size\n";
+    TempStream << "\n[1]    [2]    [3]    [4]    [5]    [6]    [7]    "
+               << "Encodings:                    Instructions:\n";
+  } else {
+    TempStream << "\n[1]    [2]    [3]    [4]    [5]    [6]    Instructions:\n";
+  }
 
-  TempStream << "[1]    [2]    [3]    [4]    [5]    [6]    Instructions:\n";
-  for (const MCInst &Inst : Source) {
+  for (unsigned I = 0, E = Source.size(); I < E; ++I) {
+    const MCInst &Inst = Source[I];
     const MCInstrDesc &MCDesc = MCII.get(Inst.getOpcode());
 
     // Obtain the scheduling class information from the instruction.
@@ -44,6 +51,9 @@ void InstructionInfoView::printView(raw_ostream &OS) const {
     const MCSchedClassDesc &SCDesc = *SM.getSchedClassDesc(SchedClassID);
     unsigned NumMicroOpcodes = SCDesc.NumMicroOps;
     unsigned Latency = MCSchedModel::computeInstrLatency(STI, SCDesc);
+    // Add extra latency due to delays in the forwarding data paths.
+    Latency += MCSchedModel::getForwardingDelayCycles(
+        STI.getReadAdvanceEntries(SCDesc));
     Optional<double> RThroughput =
         MCSchedModel::getReciprocalThroughput(STI, SCDesc);
 
@@ -70,15 +80,28 @@ void InstructionInfoView::printView(raw_ostream &OS) const {
     }
     TempStream << (MCDesc.mayLoad() ? " *     " : "       ");
     TempStream << (MCDesc.mayStore() ? " *     " : "       ");
-    TempStream << (MCDesc.hasUnmodeledSideEffects() ? " U " : "   ");
+    TempStream << (MCDesc.hasUnmodeledSideEffects() ? " U     " : "       ");
 
-    MCIP.printInst(&Inst, InstrStream, "", STI);
+    if (PrintEncodings) {
+      StringRef Encoding(CE.getEncoding(I));
+      unsigned EncodingSize = Encoding.size();
+      TempStream << " " << EncodingSize
+                 << (EncodingSize < 10 ? "     " : "    ");
+      TempStream.flush();
+      formatted_raw_ostream FOS(TempStream);
+      for (unsigned i = 0, e = Encoding.size(); i != e; ++i)
+        FOS << format("%02x ", (uint8_t)Encoding[i]);
+      FOS.PadToColumn(30);
+      FOS.flush();
+    }
+
+    MCIP.printInst(&Inst, 0, "", STI, InstrStream);
     InstrStream.flush();
 
     // Consume any tabs or spaces at the beginning of the string.
     StringRef Str(Instruction);
     Str = Str.ltrim();
-    TempStream << "    " << Str << '\n';
+    TempStream << Str << '\n';
     Instruction = "";
   }
 

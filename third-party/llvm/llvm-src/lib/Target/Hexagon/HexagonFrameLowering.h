@@ -1,9 +1,8 @@
 //==- HexagonFrameLowering.h - Define frame lowering for Hexagon -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,7 +30,7 @@ class TargetRegisterClass;
 class HexagonFrameLowering : public TargetFrameLowering {
 public:
   explicit HexagonFrameLowering()
-      : TargetFrameLowering(StackGrowsDown, 8, 0, 1, true) {}
+      : TargetFrameLowering(StackGrowsDown, Align(8), 0, Align::None(), true) {}
 
   // All of the prolog/epilog functionality, including saving and restoring
   // callee-saved registers is handled in emitPrologue. This is to have the

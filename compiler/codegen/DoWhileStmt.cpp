@@ -43,12 +43,10 @@ GenRet DoWhileStmt::codegen()
 
   codegenStmt(this);
 
-  fixVectorizable();
+  reportVectorizable();
 
   if (outfile)
   {
-    codegenVectorHint();
-
     info->cStatements.push_back("do ");
 
     if (this != getFunction()->body)

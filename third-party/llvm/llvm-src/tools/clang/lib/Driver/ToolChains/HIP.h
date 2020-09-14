@@ -1,9 +1,8 @@
 //===--- HIP.h - HIP ToolChain Implementations ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -59,7 +58,8 @@ private:
                                   const llvm::opt::ArgList &Args,
                                   llvm::StringRef SubArchName,
                                   llvm::StringRef OutputFilePrefix,
-                                  const char *InputFileName) const;
+                                  const char *InputFileName,
+                                  bool OutputIsAsm = false) const;
 
   void constructLldCommand(Compilation &C, const JobAction &JA,
                            const InputInfoList &Inputs, const InputInfo &Output,
@@ -113,7 +113,7 @@ public:
   computeMSVCVersion(const Driver *D,
                      const llvm::opt::ArgList &Args) const override;
 
-  unsigned GetDefaultDwarfVersion() const override { return 2; }
+  unsigned GetDefaultDwarfVersion() const override { return 4; }
 
   const ToolChain &HostTC;
 

@@ -1,9 +1,8 @@
 //===- RegionInfoImpl.h - SESE region detection analysis --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // Detects single entry single exit regions in the control flow graph.
@@ -366,7 +365,7 @@ typename Tr::RegionNodeT *RegionBase<Tr>::getBBNode(BlockT *BB) const {
     auto Deconst = const_cast<RegionBase<Tr> *>(this);
     typename BBNodeMapT::value_type V = {
         BB,
-        llvm::make_unique<RegionNodeT>(static_cast<RegionT *>(Deconst), BB)};
+        std::make_unique<RegionNodeT>(static_cast<RegionT *>(Deconst), BB)};
     at = BBNodeMap.insert(std::move(V)).first;
   }
   return at->second.get();

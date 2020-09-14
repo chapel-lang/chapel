@@ -1,0 +1,3 @@
+random-choice.chpl:22: In function 'choice':
+random-choice.chpl:24: error: success
+random-choice.chpl:10: Function 'choice' instantiated as: choice(stream: int(64))

@@ -22,11 +22,16 @@
 #define _version_num_H_
 
 #define MAJOR_VERSION 1
-#define MINOR_VERSION "23"
-#define UPDATE_VERSION "0"
+#define MINOR_VERSION 23
+#define UPDATE_VERSION 0
 
 static const char* BUILD_VERSION =
 #include "BUILD_VERSION"
 ;
+
+// Flip this to 'true' when we're ready to roll out a release; then
+// back after branching
+//
+static bool officialRelease = false;
 
 #endif

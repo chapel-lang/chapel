@@ -160,6 +160,7 @@ module LockFreeStack {
       return (true, retval);
     }
 
+    pragma "not order independent yielding loops"
     iter drain() : objTypeOpt {
       var tok = getToken();
       var (hasElt, elt) = pop(tok);
@@ -170,6 +171,7 @@ module LockFreeStack {
       tryReclaim();
     }
 
+    pragma "not order independent yielding loops"
     iter drain(param tag : iterKind) : objTypeOpt where tag == iterKind.standalone {
       coforall tid in 1..here.maxTaskPar {
         var tok = getToken();

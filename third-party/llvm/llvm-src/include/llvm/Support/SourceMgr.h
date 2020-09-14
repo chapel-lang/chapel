@@ -1,9 +1,8 @@
 //===- SourceMgr.h - Manager for Source Buffers & Diagnostics ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,10 +61,10 @@ private:
     /// into relatively small files (often smaller than 2^8 or 2^16 bytes),
     /// we select the offset vector element type dynamically based on the
     /// size of Buffer.
-    using VariableSizeOffsets = PointerUnion4<std::vector<uint8_t> *,
-                                              std::vector<uint16_t> *,
-                                              std::vector<uint32_t> *,
-                                              std::vector<uint64_t> *>;
+    using VariableSizeOffsets = PointerUnion<std::vector<uint8_t> *,
+                                             std::vector<uint16_t> *,
+                                             std::vector<uint32_t> *,
+                                             std::vector<uint64_t> *>;
 
     /// Vector of offsets into Buffer at which there are line-endings
     /// (lazily populated). Once populated, the '\n' that marks the end of
@@ -107,6 +106,8 @@ public:
   SourceMgr() = default;
   SourceMgr(const SourceMgr &) = delete;
   SourceMgr &operator=(const SourceMgr &) = delete;
+  SourceMgr(SourceMgr &&) = default;
+  SourceMgr &operator=(SourceMgr &&) = default;
   ~SourceMgr() = default;
 
   void setIncludeDirs(const std::vector<std::string> &Dirs) {

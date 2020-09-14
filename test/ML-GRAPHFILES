@@ -111,6 +111,7 @@ release/examples/benchmarks/isx/isx-release.ml-time.graph
 # suite: - PRK (time)
 studies/prk/Stencil/optimized/prk-stencil-opt.ml-time.graph
 studies/prk/Stencil/prk-stencil.ml-time.graph
+studies/prk/DGEMM/SUMMA/summa.ml-time.graph
 # suite: - Bale (time)
 studies/bale/histogram/histo-atomics.ml-time.graph
 studies/bale/indexgather/ig.ml-time.graph
@@ -131,6 +132,7 @@ performance/comm/low-level/remote-amos.ml-perf.graph
 performance/comm/low-level/remote-unordered-amos.ml-perf.graph
 performance/comm/low-level/remote-ons.ml-perf.graph
 performance/comm/low-level/remote-fastOns.ml-perf.graph
+performance/comm/low-level/remote-warmup.ml-perf.graph
 performance/comm/low-level/array-gets.ml-perf.graph
 performance/comm/low-level/array-puts.ml-perf.graph
 runtime/configMatters/comm/unordered/many-to-many-gets.ml-perf.graph

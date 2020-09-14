@@ -1,9 +1,8 @@
 //===-- PPCRegisterInfo.td - The PowerPC Register File -----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -254,15 +253,14 @@ def RM: PPCReg<"**ROUNDING MODE**">;
 /// Register classes
 // Allocate volatiles first
 // then nonvolatiles in reverse order since stmw/lmw save from rN to r31
-def GPRC : RegisterClass<"PPC", [i32], 32, (add (sequence "R%u", 2, 12),
-                                                (sequence "R%u", 30, 13),
-                                                R31, R0, R1, FP, BP)> {
+def GPRC : RegisterClass<"PPC", [i32,f32], 32, (add (sequence "R%u", 2, 12),
+                                                    (sequence "R%u", 30, 13),
+                                                    R31, R0, R1, FP, BP)> {
   // On non-Darwin PPC64 systems, R2 can be allocated, but must be restored, so
   // put it at the end of the list.
   let AltOrders = [(add (sub GPRC, R2), R2)];
   let AltOrderSelect = [{
-    const PPCSubtarget &S = MF.getSubtarget<PPCSubtarget>();
-    return S.isPPC64() && S.isSVR4ABI();
+    return MF.getSubtarget<PPCSubtarget>().is64BitELFABI();
   }];
 }
 
@@ -273,21 +271,19 @@ def G8RC : RegisterClass<"PPC", [i64], 64, (add (sequence "X%u", 2, 12),
   // put it at the end of the list.
   let AltOrders = [(add (sub G8RC, X2), X2)];
   let AltOrderSelect = [{
-    const PPCSubtarget &S = MF.getSubtarget<PPCSubtarget>();
-    return S.isPPC64() && S.isSVR4ABI();
+    return MF.getSubtarget<PPCSubtarget>().is64BitELFABI();
   }];
 }
 
 // For some instructions r0 is special (representing the value 0 instead of
 // the value in the r0 register), and we use these register subclasses to
 // prevent r0 from being allocated for use by those instructions.
-def GPRC_NOR0 : RegisterClass<"PPC", [i32], 32, (add (sub GPRC, R0), ZERO)> {
+def GPRC_NOR0 : RegisterClass<"PPC", [i32,f32], 32, (add (sub GPRC, R0), ZERO)> {
   // On non-Darwin PPC64 systems, R2 can be allocated, but must be restored, so
   // put it at the end of the list.
   let AltOrders = [(add (sub GPRC_NOR0, R2), R2)];
   let AltOrderSelect = [{
-    const PPCSubtarget &S = MF.getSubtarget<PPCSubtarget>();
-    return S.isPPC64() && S.isSVR4ABI();
+    return MF.getSubtarget<PPCSubtarget>().is64BitELFABI();
   }];
 }
 
@@ -296,16 +292,13 @@ def G8RC_NOX0 : RegisterClass<"PPC", [i64], 64, (add (sub G8RC, X0), ZERO8)> {
   // put it at the end of the list.
   let AltOrders = [(add (sub G8RC_NOX0, X2), X2)];
   let AltOrderSelect = [{
-    const PPCSubtarget &S = MF.getSubtarget<PPCSubtarget>();
-    return S.isPPC64() && S.isSVR4ABI();
+    return MF.getSubtarget<PPCSubtarget>().is64BitELFABI();
   }];
 }
 
 def SPERC : RegisterClass<"PPC", [f64], 64, (add (sequence "S%u", 2, 12),
                                                 (sequence "S%u", 30, 13),
                                                 S31, S0, S1)>;
-
-def SPE4RC : RegisterClass<"PPC", [f32], 32, (add GPRC)>;
 
 // Allocate volatiles first, then non-volatiles in reverse order. With the SVR4
 // ABI the size of the Floating-point register save area is determined by the
@@ -374,8 +367,6 @@ def CRBITRC : RegisterClass<"PPC", [i1], 32,
 
 def CRRC : RegisterClass<"PPC", [i32], 32, (add CR0, CR1, CR5, CR6,
                                                 CR7, CR2, CR3, CR4)>;
-
-def CRRC0 : RegisterClass<"PPC", [i32], 32, (add CR0)>;
 
 // The CTR registers are not allocatable because they're used by the
 // decrement-and-branch instructions, and thus need to stay live across

@@ -115,6 +115,7 @@ CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
 CHPL_MAKE_ARCH = $(CHPL_MAKE_TARGET_ARCH)
 CHPL_MAKE_MEM = $(CHPL_MAKE_TARGET_MEM)
+CHPL_MAKE_SANITIZE = $(CHPL_MAKE_SANITIZE_EXE)
 else
 CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
@@ -179,6 +180,7 @@ include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
 include $(THIRD_PARTY_DIR)/fltk/Makefile.include
 include $(THIRD_PARTY_DIR)/libunwind/Makefile.include
+include $(THIRD_PARTY_DIR)/libfabric/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 

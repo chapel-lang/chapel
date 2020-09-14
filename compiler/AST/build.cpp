@@ -32,6 +32,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "ImportStmt.h"
+#include "IfExpr.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
 #include "parser.h"
@@ -549,30 +550,46 @@ BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse) {
 }
 
 //
-// Build an 'import' statement
+// Takes a BlockStmt* containing one or more import statements and updates all
+// the import statements to have the specified privacy setting
 //
-BlockStmt* buildImportStmt(Expr* mod, bool privateImport) {
-  ImportStmt* newImport = new ImportStmt(mod, privateImport);
-  addModuleToSearchList(newImport, mod);
-
-  return buildChapelStmt(newImport);
+void setImportPrivacy(BlockStmt* list, bool isPrivate) {
+  INT_ASSERT(list->isRealBlockStmt());
+  for_alist(stmt, list->body) {
+    ImportStmt* import = toImportStmt(stmt);
+    INT_ASSERT(import);
+    import->isPrivate = isPrivate;
+  }
 }
 
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport) {
-  ImportStmt* newImport = new ImportStmt(mod, rename, privateImport);
+ImportStmt* buildImportStmt(Expr* mod) {
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod);
   addModuleToSearchList(newImport, mod);
 
-  return buildChapelStmt(newImport);
+  return newImport;
 }
 
 //
 // Build an 'import' statement
 //
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                           bool privateImport) {
+ImportStmt* buildImportStmt(Expr* mod, const char* rename) {
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod, rename);
+  addModuleToSearchList(newImport, mod);
+
+  return newImport;
+}
+
+//
+// Build an 'import' statement
+//
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
@@ -610,13 +627,14 @@ BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
     }
   }
 
-  ImportStmt* newImport = new ImportStmt(mod, privateImport, &namesList,
-                                         &renameMap);
+  // Leave the privacy a dummy value until we know what it should be (which
+  // happens when we are done determining how many subexpressions there are)
+  ImportStmt* newImport = new ImportStmt(mod, &namesList, &renameMap);
   addModuleToSearchList(newImport, mod);
 
   delete names;
 
-  return buildChapelStmt(newImport);
+  return newImport;
 }
 
 //
@@ -757,10 +775,17 @@ buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
 
 BlockStmt*
 buildExternBlockStmt(const char* c_code) {
-  BlockStmt* useSysCTypes = buildUseList(new UnresolvedSymExpr("SysCTypes"),
-                                         "", NULL, /* private = */ false);
-  useSysCTypes->insertAtTail(new ExternBlockStmt(c_code));
-  BlockStmt* ret = buildChapelStmt(useSysCTypes);
+  bool privateUse = true;
+
+  // use CPtr, SysBasic, SysCTypes to get c_ptr, c_int, c_double etc.
+  // (System error codes do not need to be part of this).
+  BlockStmt* useBlock = buildUseList(new UnresolvedSymExpr("CPtr"), "",
+                                     NULL, privateUse);
+  buildUseList(new UnresolvedSymExpr("SysCTypes"), "", useBlock, privateUse);
+  buildUseList(new UnresolvedSymExpr("SysBasic"), "", useBlock, privateUse);
+
+  useBlock->insertAtTail(new ExternBlockStmt(c_code));
+  BlockStmt* ret = buildChapelStmt(useBlock);
 
   // Check that the compiler supports extern blocks
   // but skip these checks for chpldoc.
@@ -768,7 +793,7 @@ buildExternBlockStmt(const char* c_code) {
 #ifdef HAVE_LLVM
     // Chapel was built with LLVM
     // Just bring up an error if extern blocks are disabled
-    if (externC == false)
+    if (fAllowExternC == false)
       USR_FATAL(ret, "extern block syntax is turned off. Use "
                      "--extern-c flag to turn on.");
 #else
@@ -1356,9 +1381,9 @@ buildReduceScanPreface1(FnSymbol* fn, Symbol* data, Symbol* eltType,
   fn->insertAtTail(new DefExpr(eltType));
 
   if( !zippered ) {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)))))}", eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIterator(%S)), %S)))}", eltType, data, gFalse);
   } else {
-    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)))))}", eltType, data);
+    fn->insertAtTail("{TYPE 'move'(%S, 'typeof'(chpl__initCopy(iteratorIndex(_getIteratorZip(%S)), %S)))}", eltType, data, gFalse);
   }
 }
 
@@ -1539,6 +1564,55 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
+static void establishDefinedConstWithIfExprs(Expr* e) {
+  if (CallExpr *initCall = toCallExpr(e)) {
+    if (initCall->isNamed("chpl__buildDomainExpr")) {
+      initCall->argList.last()->replace(new SymExpr(gTrue));
+      return;
+    }
+    else if (initCall->isNamed("chpl__distributed")) {
+      initCall->get(3)->replace(new SymExpr(gTrue));
+      return;
+    }
+  }
+  else if (IfExpr *initIf = toIfExpr(e)) {
+    establishDefinedConstWithIfExprs(initIf->getThenStmt()->body.head);
+    establishDefinedConstWithIfExprs(initIf->getElseStmt()->body.head);
+  }
+}
+
+static void establishDefinedConstIfApplicable(DefExpr* defExpr,
+                                              std::set<Flag>* flags) {
+
+  if (defExpr->init != NULL) {
+    if (flags->size() == 1 && flags->count(FLAG_CONST)) {
+      establishDefinedConstWithIfExprs(defExpr->init);
+    }
+  }
+
+  if (defExpr->exprType != NULL) {
+    if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
+      if (initType->isNamed("chpl__distributed")) {
+        initType->get(3)->replace(new SymExpr(gTrue));
+        return;
+      }
+      else if (initType->isNamed("chpl__buildArrayRuntimeType")) {
+        if (CallExpr *typeCall = toCallExpr(initType->get(1))) {
+          if (typeCall->isNamed("chpl__ensureDomainExpr")) {
+            if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
+              if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
+                buildDomExpr->argList.last()->replace(new SymExpr(gTrue));
+                return;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+                
+
 BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
@@ -1565,6 +1639,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
 
           if (cnameExpr != NULL && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
+
+          establishDefinedConstIfApplicable(defExpr, flags);
 
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);

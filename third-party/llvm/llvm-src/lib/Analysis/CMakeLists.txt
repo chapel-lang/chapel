@@ -1,4 +1,4 @@
-add_llvm_library(LLVMAnalysis
+add_llvm_component_library(LLVMAnalysis
   AliasAnalysis.cpp
   AliasAnalysisEvaluator.cpp
   AliasAnalysisSummary.cpp
@@ -22,11 +22,14 @@ add_llvm_library(LLVMAnalysis
   CostModel.cpp
   CodeMetrics.cpp
   ConstantFolding.cpp
+  DDG.cpp
   Delinearization.cpp
   DemandedBits.cpp
   DependenceAnalysis.cpp
+  DependenceGraphBuilder.cpp
   DivergenceAnalysis.cpp
   DomPrinter.cpp
+  DomTreeUpdater.cpp
   DominanceFrontier.cpp
   EHPersonalities.cpp
   GlobalsModRef.cpp
@@ -40,7 +43,6 @@ add_llvm_library(LLVMAnalysis
   InstructionSimplify.cpp
   Interval.cpp
   IntervalPartition.cpp
-  IteratedDominanceFrontier.cpp
   LazyBranchProbabilityInfo.cpp
   LazyBlockFrequencyInfo.cpp
   LazyCallGraph.cpp
@@ -50,6 +52,7 @@ add_llvm_library(LLVMAnalysis
   Loads.cpp
   LoopAccessAnalysis.cpp
   LoopAnalysisManager.cpp
+  LoopCacheAnalysis.cpp
   LoopUnrollAnalyzer.cpp
   LoopInfo.cpp
   LoopPass.cpp
@@ -94,6 +97,7 @@ add_llvm_library(LLVMAnalysis
   ValueLatticeUtils.cpp
   ValueTracking.cpp
   VectorUtils.cpp
+  VFABIDemangling.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Analysis

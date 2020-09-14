@@ -1,9 +1,8 @@
 //===- unittests/AST/DeclPrinterTest.cpp --- Declaration printer tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -1068,8 +1067,7 @@ TEST(DeclPrinter, TestClassTemplatePartialSpecializationDecl2) {
     "template<typename T>"
     "struct A<T *> { T a; };",
     classTemplateSpecializationDecl().bind("id"),
-    "template <typename T> struct A<type-parameter-0-0 *> {}"));
-    // WRONG; Should be: "template<typename T> struct A<T *> { ... }"
+    "template <typename T> struct A<T *> {}"));
 }
 
 TEST(DeclPrinter, TestClassTemplateSpecializationDecl1) {

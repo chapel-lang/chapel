@@ -1,9 +1,8 @@
 //===- CXCursor.cpp - Routines for manipulating CXCursors -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -79,6 +78,10 @@ static CXCursorKind GetCursorKind(const Attr *A) {
     case attr::ObjCRuntimeVisible: return CXCursor_ObjCRuntimeVisible;
     case attr::ObjCBoxable: return CXCursor_ObjCBoxable;
     case attr::FlagEnum: return CXCursor_FlagEnum;
+    case attr::Convergent: return CXCursor_ConvergentAttr;
+    case attr::WarnUnused: return CXCursor_WarnUnusedAttr;
+    case attr::WarnUnusedResult: return CXCursor_WarnUnusedResultAttr;
+    case attr::Aligned: return CXCursor_AlignedAttr;
   }
 
   return CXCursor_UnexposedAttr;
@@ -106,8 +109,8 @@ CXCursor cxcursor::MakeCXCursor(const Decl *D, CXTranslationUnit TU,
         RegionOfInterest.getBegin() == RegionOfInterest.getEnd()) {
       SmallVector<SourceLocation, 16> SelLocs;
       cast<ObjCMethodDecl>(D)->getSelectorLocs(SelLocs);
-      SmallVectorImpl<SourceLocation>::iterator
-        I=std::find(SelLocs.begin(), SelLocs.end(),RegionOfInterest.getBegin());
+      SmallVectorImpl<SourceLocation>::iterator I =
+          llvm::find(SelLocs, RegionOfInterest.getBegin());
       if (I != SelLocs.end())
         SelectorIdIndex = I - SelLocs.begin();
     }
@@ -253,12 +256,15 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::BinaryConditionalOperatorClass:
   case Stmt::TypeTraitExprClass:
   case Stmt::CoawaitExprClass:
+  case Stmt::ConceptSpecializationExprClass:
+  case Stmt::RequiresExprClass:
   case Stmt::DependentCoawaitExprClass:
   case Stmt::CoyieldExprClass:
   case Stmt::CXXBindTemporaryExprClass:
   case Stmt::CXXDefaultArgExprClass:
   case Stmt::CXXDefaultInitExprClass:
   case Stmt::CXXFoldExprClass:
+  case Stmt::CXXRewrittenBinaryOperatorClass:
   case Stmt::CXXStdInitializerListExprClass:
   case Stmt::CXXScalarValueInitExprClass:
   case Stmt::CXXUuidofExprClass:
@@ -279,6 +285,7 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::ParenListExprClass:
   case Stmt::PredefinedExprClass:
   case Stmt::ShuffleVectorExprClass:
+  case Stmt::SourceLocExprClass:
   case Stmt::ConvertVectorExprClass:
   case Stmt::VAArgExprClass:
   case Stmt::ObjCArrayLiteralClass:
@@ -559,8 +566,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
         RegionOfInterest.getBegin() == RegionOfInterest.getEnd()) {
       SmallVector<SourceLocation, 16> SelLocs;
       cast<ObjCMessageExpr>(S)->getSelectorLocs(SelLocs);
-      SmallVectorImpl<SourceLocation>::iterator
-        I=std::find(SelLocs.begin(), SelLocs.end(),RegionOfInterest.getBegin());
+      SmallVectorImpl<SourceLocation>::iterator I =
+          llvm::find(SelLocs, RegionOfInterest.getBegin());
       if (I != SelLocs.end())
         SelectorIdIndex = I - SelLocs.begin();
     }
@@ -603,6 +610,9 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
     break;
   case Stmt::OMPParallelForSimdDirectiveClass:
     K = CXCursor_OMPParallelForSimdDirective;
+    break;
+  case Stmt::OMPParallelMasterDirectiveClass:
+    K = CXCursor_OMPParallelMasterDirective;
     break;
   case Stmt::OMPParallelSectionsDirectiveClass:
     K = CXCursor_OMPParallelSectionsDirective;
@@ -667,6 +677,18 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::OMPTaskLoopSimdDirectiveClass:
     K = CXCursor_OMPTaskLoopSimdDirective;
     break;
+  case Stmt::OMPMasterTaskLoopDirectiveClass:
+    K = CXCursor_OMPMasterTaskLoopDirective;
+    break;
+  case Stmt::OMPMasterTaskLoopSimdDirectiveClass:
+    K = CXCursor_OMPMasterTaskLoopSimdDirective;
+    break;
+  case Stmt::OMPParallelMasterTaskLoopDirectiveClass:
+    K = CXCursor_OMPParallelMasterTaskLoopDirective;
+    break;
+  case Stmt::OMPParallelMasterTaskLoopSimdDirectiveClass:
+    K = CXCursor_OMPParallelMasterTaskLoopSimdDirective;
+    break;
   case Stmt::OMPDistributeDirectiveClass:
     K = CXCursor_OMPDistributeDirective;
     break;
@@ -712,6 +734,8 @@ CXCursor cxcursor::MakeCXCursor(const Stmt *S, const Decl *Parent,
   case Stmt::OMPTargetTeamsDistributeSimdDirectiveClass:
     K = CXCursor_OMPTargetTeamsDistributeSimdDirective;
     break;
+  case Stmt::BuiltinBitCastExprClass:
+    K = CXCursor_BuiltinBitCastExpr;
   }
 
   CXCursor C = { K, 0, { Parent, S, TU } };

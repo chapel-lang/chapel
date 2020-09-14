@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+enum color {
+  red = 0;
+  green = 1;
+}
+
+message Foo {
+  oneof testOneof1 {
+     bytes name = 1;
+     color co = 2;
+  }
+
+  oneof testOneof2 {
+    Foo2 mfield = 3;
+    int32 ifield = 4;
+  }
+}
+
+message Foo2 {
+  int64 a = 1;
+}

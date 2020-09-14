@@ -1,9 +1,9 @@
 tuple-args2.chpl:20: In function 'writesComputed':
-tuple-args2.chpl:22: error: illegal lvalue in assignment
+tuple-args2.chpl:22: error: cannot assign to const variable
 tuple-args2.chpl:32: Function 'writesComputed' instantiated as: writesComputed(tup: 2*[domain(1,int(64),false)] int(64))
 tuple-args2.chpl:15: In function 'writesAll':
-tuple-args2.chpl:17: error: illegal lvalue in assignment
+tuple-args2.chpl:17: error: cannot assign to const variable
 tuple-args2.chpl:34: Function 'writesAll' instantiated as: writesAll(tup: 2*[domain(1,int(64),false)] int(64))
 tuple-args2.chpl:25: In function 'writesComputedNested':
-tuple-args2.chpl:27: error: illegal lvalue in assignment
+tuple-args2.chpl:27: error: cannot assign to const variable
 tuple-args2.chpl:37: Function 'writesComputedNested' instantiated as: writesComputedNested(tup: 2*2*[domain(1,int(64),false)] int(64))

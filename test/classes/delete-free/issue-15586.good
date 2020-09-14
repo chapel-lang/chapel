@@ -1,0 +1,20 @@
+borrowed C
+new made borrowed C
+borrowed C?
+new made borrowed C?
+unmanaged C
+new made unmanaged C
+unmanaged C?
+new made unmanaged C?
+owned C
+new made owned C
+owned C?
+new made owned C?
+shared C
+new made shared C
+shared C?
+new made shared C?
+C
+new made owned C
+C?
+new made owned C?

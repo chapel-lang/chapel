@@ -62,7 +62,7 @@ def get(flag='host', llvm_mode='default'):
     # The cray platforms are a special case in that we want to "cross-compile"
     # by default. (the compiler is different between host and target, but the
     # platform is the same)
-    if platform_val.startswith('cray-x') or platform_val == 'cray-shasta':
+    if platform_val.startswith('cray-x') or platform_val == 'hpe-cray-ex':
         if flag == 'host':
             compiler_val = 'gnu'
         else:
@@ -70,11 +70,6 @@ def get(flag='host', llvm_mode='default'):
             if subcompiler == 'none':
                 sys.stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
             compiler_val = "cray-prgenv-{0}".format(subcompiler.lower())
-    elif chpl_platform.is_cross_compiling():
-        if flag == 'host':
-            compiler_val = 'gnu'
-        else:
-            compiler_val = platform_val + '-gnu'
     else:
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and

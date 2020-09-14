@@ -1,9 +1,8 @@
 //===---- X86IndirectBranchTracking.cpp - Enables CET IBT mechanism -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "X86.h"
 #include "X86InstrInfo.h"
 #include "X86Subtarget.h"
+#include "X86TargetMachine.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
@@ -49,16 +49,16 @@ private:
   static char ID;
 
   /// Machine instruction info used throughout the class.
-  const X86InstrInfo *TII;
+  const X86InstrInfo *TII = nullptr;
 
   /// Endbr opcode for the current machine function.
-  unsigned int EndbrOpcode;
+  unsigned int EndbrOpcode = 0;
 
-  /// Adds a new ENDBR instruction to the begining of the MBB.
+  /// Adds a new ENDBR instruction to the beginning of the MBB.
   /// The function will not add it if already exists.
   /// It will add ENDBR32 or ENDBR64 opcode, depending on the target.
   /// \returns true if the ENDBR was added and false otherwise.
-  bool addENDBR(MachineBasicBlock &MBB) const;
+  bool addENDBR(MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const;
 };
 
 } // end anonymous namespace
@@ -69,20 +69,31 @@ FunctionPass *llvm::createX86IndirectBranchTrackingPass() {
   return new X86IndirectBranchTrackingPass();
 }
 
-bool X86IndirectBranchTrackingPass::addENDBR(MachineBasicBlock &MBB) const {
+bool X86IndirectBranchTrackingPass::addENDBR(
+    MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const {
   assert(TII && "Target instruction info was not initialized");
   assert((X86::ENDBR64 == EndbrOpcode || X86::ENDBR32 == EndbrOpcode) &&
          "Unexpected Endbr opcode");
 
-  auto MI = MBB.begin();
-  // If the MBB is empty or the first instruction is not ENDBR,
-  // add the ENDBR instruction to the beginning of the MBB.
-  if (MI == MBB.end() || EndbrOpcode != MI->getOpcode()) {
-    BuildMI(MBB, MI, MBB.findDebugLoc(MI), TII->get(EndbrOpcode));
-    NumEndBranchAdded++;
+  // If the MBB/I is empty or the current instruction is not ENDBR,
+  // insert ENDBR instruction to the location of I.
+  if (I == MBB.end() || I->getOpcode() != EndbrOpcode) {
+    BuildMI(MBB, I, MBB.findDebugLoc(I), TII->get(EndbrOpcode));
+    ++NumEndBranchAdded;
     return true;
   }
+  return false;
+}
 
+static bool IsCallReturnTwice(llvm::MachineOperand &MOp) {
+  if (!MOp.isGlobal())
+    return false;
+  auto *CalleeFn = dyn_cast<Function>(MOp.getGlobal());
+  if (!CalleeFn)
+    return false;
+  AttributeList Attrs = CalleeFn->getAttributes();
+  if (Attrs.hasAttribute(AttributeList::FunctionIndex, Attribute::ReturnsTwice))
+    return true;
   return false;
 }
 
@@ -92,7 +103,16 @@ bool X86IndirectBranchTrackingPass::runOnMachineFunction(MachineFunction &MF) {
   // Check that the cf-protection-branch is enabled.
   Metadata *isCFProtectionSupported =
       MF.getMMI().getModule()->getModuleFlag("cf-protection-branch");
-  if (!isCFProtectionSupported && !IndirectBranchTracking)
+  // NB: We need to enable IBT in jitted code if JIT compiler is CET
+  // enabled.
+  const X86TargetMachine *TM =
+      static_cast<const X86TargetMachine *>(&MF.getTarget());
+#ifdef __CET__
+  bool isJITwithCET = TM->isJIT();
+#else
+  bool isJITwithCET = false;
+#endif
+  if (!isCFProtectionSupported && !IndirectBranchTracking && !isJITwithCET)
     return false;
 
   // True if the current MF was changed and false otherwise.
@@ -101,21 +121,36 @@ bool X86IndirectBranchTrackingPass::runOnMachineFunction(MachineFunction &MF) {
   TII = SubTarget.getInstrInfo();
   EndbrOpcode = SubTarget.is64Bit() ? X86::ENDBR64 : X86::ENDBR32;
 
-  // Non-internal function or function whose address was taken, can be
-  // accessed through indirect calls. Mark the first BB with ENDBR instruction
-  // unless nocf_check attribute is used.
-  if ((MF.getFunction().hasAddressTaken() ||
+  // Large code model, non-internal function or function whose address
+  // was taken, can be accessed through indirect calls. Mark the first
+  // BB with ENDBR instruction unless nocf_check attribute is used.
+  if ((TM->getCodeModel() == CodeModel::Large ||
+       MF.getFunction().hasAddressTaken() ||
        !MF.getFunction().hasLocalLinkage()) &&
       !MF.getFunction().doesNoCfCheck()) {
     auto MBB = MF.begin();
-    Changed |= addENDBR(*MBB);
+    Changed |= addENDBR(*MBB, MBB->begin());
   }
 
-  for (auto &MBB : MF)
+  for (auto &MBB : MF) {
     // Find all basic blocks that their address was taken (for example
     // in the case of indirect jump) and add ENDBR instruction.
     if (MBB.hasAddressTaken())
-      Changed |= addENDBR(MBB);
+      Changed |= addENDBR(MBB, MBB.begin());
 
+    // Exception handle may indirectly jump to catch pad, So we should add
+    // ENDBR before catch pad instructions.
+    bool EHPadIBTNeeded = MBB.isEHPad();
+
+    for (MachineBasicBlock::iterator I = MBB.begin(); I != MBB.end(); ++I) {
+      if (I->isCall() && IsCallReturnTwice(I->getOperand(0)))
+        Changed |= addENDBR(MBB, std::next(I));
+
+      if (EHPadIBTNeeded && I->isEHLabel()) {
+        Changed |= addENDBR(MBB, std::next(I));
+        EHPadIBTNeeded = false;
+      }
+    }
+  }
   return Changed;
 }

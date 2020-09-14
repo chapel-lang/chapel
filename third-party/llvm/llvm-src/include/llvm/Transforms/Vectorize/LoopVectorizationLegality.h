@@ -1,9 +1,8 @@
 //===- llvm/Transforms/Vectorize/LoopVectorizationLegality.h ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -34,18 +33,6 @@
 
 namespace llvm {
 
-/// Create an analysis remark that explains why vectorization failed
-///
-/// \p PassName is the name of the pass (e.g. can be AlwaysPrint).  \p
-/// RemarkName is the identifier for the remark.  If \p I is passed it is an
-/// instruction that prevents vectorization.  Otherwise \p TheLoop is used for
-/// the location of the remark.  \return the remark object that can be
-/// streamed to.
-OptimizationRemarkAnalysis createLVMissedAnalysis(const char *PassName,
-                                                  StringRef RemarkName,
-                                                  Loop *TheLoop,
-                                                  Instruction *I = nullptr);
-
 /// Utility class for getting and setting loop vectorizer hints in the form
 /// of loop metadata.
 /// This class keeps a number of loop annotations locally (as member variables)
@@ -56,7 +43,8 @@ OptimizationRemarkAnalysis createLVMissedAnalysis(const char *PassName,
 /// for example 'force', means a decision has been made. So, we need to be
 /// careful NOT to add them if the user hasn't specifically asked so.
 class LoopVectorizeHints {
-  enum HintKind { HK_WIDTH, HK_UNROLL, HK_FORCE, HK_ISVECTORIZED };
+  enum HintKind { HK_WIDTH, HK_UNROLL, HK_FORCE, HK_ISVECTORIZED,
+                  HK_PREDICATE };
 
   /// Hint - associates name and validation with the hint value.
   struct Hint {
@@ -82,6 +70,9 @@ class LoopVectorizeHints {
   /// Already Vectorized
   Hint IsVectorized;
 
+  /// Vector Predicate
+  Hint Predicate;
+
   /// Return the loop metadata prefix.
   static StringRef Prefix() { return "llvm.loop."; }
 
@@ -99,11 +90,7 @@ public:
                      OptimizationRemarkEmitter &ORE);
 
   /// Mark the loop L as already vectorized by setting the width to 1.
-  void setAlreadyVectorized() {
-    IsVectorized.Value = 1;
-    Hint Hints[] = {IsVectorized};
-    writeHintsToMetadata(Hints);
-  }
+  void setAlreadyVectorized();
 
   bool allowVectorization(Function *F, Loop *L,
                           bool VectorizeOnlyWhenForced) const;
@@ -114,6 +101,7 @@ public:
   unsigned getWidth() const { return Width.Value; }
   unsigned getInterleave() const { return Interleave.Value; }
   unsigned getIsVectorized() const { return IsVectorized.Value; }
+  unsigned getPredicate() const { return Predicate.Value; }
   enum ForceKind getForce() const {
     if ((ForceKind)Force.Value == FK_Undefined &&
         hasDisableAllTransformsHint(TheLoop))
@@ -151,15 +139,6 @@ private:
 
   /// Checks string hint with one operand and set value if valid.
   void setHint(StringRef Name, Metadata *Arg);
-
-  /// Create a new hint from name / value pair.
-  MDNode *createHintMetadata(StringRef Name, unsigned V) const;
-
-  /// Matches metadata with hint name.
-  bool matchesHintMetadataName(MDNode *Node, ArrayRef<Hint> HintTypes);
-
-  /// Sets current hints into loop metadata, keeping other values intact.
-  void writeHintsToMetadata(ArrayRef<Hint> HintTypes);
 
   /// The loop these hints belong to.
   const Loop *TheLoop;
@@ -219,12 +198,13 @@ class LoopVectorizationLegality {
 public:
   LoopVectorizationLegality(
       Loop *L, PredicatedScalarEvolution &PSE, DominatorTree *DT,
-      TargetLibraryInfo *TLI, AliasAnalysis *AA, Function *F,
-      std::function<const LoopAccessInfo &(Loop &)> *GetLAA, LoopInfo *LI,
-      OptimizationRemarkEmitter *ORE, LoopVectorizationRequirements *R,
-      LoopVectorizeHints *H, DemandedBits *DB, AssumptionCache *AC)
-      : TheLoop(L), LI(LI), PSE(PSE), TLI(TLI), DT(DT), GetLAA(GetLAA),
-        ORE(ORE), Requirements(R), Hints(H), DB(DB), AC(AC) {}
+      TargetTransformInfo *TTI, TargetLibraryInfo *TLI, AliasAnalysis *AA,
+      Function *F, std::function<const LoopAccessInfo &(Loop &)> *GetLAA,
+      LoopInfo *LI, OptimizationRemarkEmitter *ORE,
+      LoopVectorizationRequirements *R, LoopVectorizeHints *H, DemandedBits *DB,
+      AssumptionCache *AC)
+      : TheLoop(L), LI(LI), PSE(PSE), TTI(TTI), TLI(TLI), DT(DT),
+        GetLAA(GetLAA), ORE(ORE), Requirements(R), Hints(H), DB(DB), AC(AC) {}
 
   /// ReductionList contains the reduction descriptors for all
   /// of the reductions that were found in the loop.
@@ -248,8 +228,8 @@ public:
   bool canVectorize(bool UseVPlanNativePath);
 
   /// Return true if we can vectorize this loop while folding its tail by
-  /// masking.
-  bool canFoldTailByMasking();
+  /// masking, and mark all respective loads/stores for masking.
+  bool prepareToFoldTailByMasking();
 
   /// Returns the primary induction variable.
   PHINode *getPrimaryInduction() { return PrimaryInduction; }
@@ -375,27 +355,22 @@ private:
   bool canVectorizeOuterLoop();
 
   /// Return true if all of the instructions in the block can be speculatively
-  /// executed. \p SafePtrs is a list of addresses that are known to be legal
-  /// and we know that we can read from them without segfault.
-  bool blockCanBePredicated(BasicBlock *BB, SmallPtrSetImpl<Value *> &SafePtrs);
+  /// executed, and record the loads/stores that require masking. If's that
+  /// guard loads can be ignored under "assume safety" unless \p PreserveGuards
+  /// is true. This can happen when we introduces guards for which the original
+  /// "unguarded-loads are safe" assumption does not hold. For example, the
+  /// vectorizer's fold-tail transformation changes the loop to execute beyond
+  /// its original trip-count, under a proper guard, which should be preserved.
+  /// \p SafePtrs is a list of addresses that are known to be legal and we know
+  /// that we can read from them without segfault.
+  bool blockCanBePredicated(BasicBlock *BB, SmallPtrSetImpl<Value *> &SafePtrs,
+                            bool PreserveGuards = false);
 
   /// Updates the vectorization state by adding \p Phi to the inductions list.
   /// This can set \p Phi as the main induction of the loop if \p Phi is a
   /// better choice for the main induction than the existing one.
   void addInductionPhi(PHINode *Phi, const InductionDescriptor &ID,
                        SmallPtrSetImpl<Value *> &AllowedExit);
-
-  /// Create an analysis remark that explains why vectorization failed
-  ///
-  /// \p RemarkName is the identifier for the remark.  If \p I is passed it is
-  /// an instruction that prevents vectorization.  Otherwise the loop is used
-  /// for the location of the remark.  \return the remark object that can be
-  /// streamed to.
-  OptimizationRemarkAnalysis
-  createMissedAnalysis(StringRef RemarkName, Instruction *I = nullptr) const {
-    return createLVMissedAnalysis(Hints->vectorizeAnalysisPassName(),
-                                  RemarkName, TheLoop, I);
-  }
 
   /// If an access has a symbolic strides, this maps the pointer value to
   /// the stride symbol.
@@ -419,6 +394,9 @@ private:
   /// of new predicates if this is required to enable vectorization and
   /// unrolling.
   PredicatedScalarEvolution &PSE;
+
+  /// Target Transform Info.
+  TargetTransformInfo *TTI;
 
   /// Target Library Info.
   TargetLibraryInfo *TLI;
@@ -466,8 +444,8 @@ private:
   /// Holds the widest induction type encountered.
   Type *WidestIndTy = nullptr;
 
-  /// Allowed outside users. This holds the induction and reduction
-  /// vars which can be accessed from outside the loop.
+  /// Allowed outside users. This holds the variables that can be accessed from
+  /// outside the loop.
   SmallPtrSet<Value *, 4> AllowedExit;
 
   /// Can we assume the absence of NaNs.
@@ -479,7 +457,7 @@ private:
   /// Used to emit an analysis of any legality issues.
   LoopVectorizeHints *Hints;
 
-  /// The demanded bits analsyis is used to compute the minimum type size in
+  /// The demanded bits analysis is used to compute the minimum type size in
   /// which a reduction can be computed.
   DemandedBits *DB;
 

@@ -1,0 +1,3 @@
+split-init-const-error.chpl:4: In function 'main':
+split-init-const-error.chpl:6: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type int(64)

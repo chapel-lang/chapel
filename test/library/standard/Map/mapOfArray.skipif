@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+import os
+
+# This .future has uninitialized reads, which are not caught by asan so only
+# test under valgrind
+
+vgrnd = os.getenv('CHPL_TEST_VGRND_EXE', 'none')
+
+if 'on' == vgrnd:
+    print(False)
+else:
+    print(True)

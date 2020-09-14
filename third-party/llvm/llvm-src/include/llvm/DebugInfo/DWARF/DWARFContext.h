@@ -1,9 +1,8 @@
 //===- DWARFContext.h -------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===/
 
@@ -76,7 +75,7 @@ class DWARFContext : public DIContext {
 
   DWARFUnitVector DWOUnits;
   std::unique_ptr<DWARFDebugAbbrev> AbbrevDWO;
-  std::unique_ptr<DWARFDebugLoclists> LocDWO;
+  std::unique_ptr<DWARFDebugMacro> MacroDWO;
 
   /// The maximum DWARF version of all units.
   unsigned MaxVersion = 0;
@@ -226,10 +225,10 @@ public:
   DWARFCompileUnit *getDWOCompileUnitForHash(uint64_t Hash);
 
   /// Return the compile unit that includes an offset (relative to .debug_info).
-  DWARFCompileUnit *getCompileUnitForOffset(uint32_t Offset);
+  DWARFCompileUnit *getCompileUnitForOffset(uint64_t Offset);
 
   /// Get a DIE given an exact offset.
-  DWARFDie getDIEForOffset(uint32_t Offset);
+  DWARFDie getDIEForOffset(uint64_t Offset);
 
   unsigned getMaxVersion() {
     // Ensure info units have been parsed to discover MaxVersion
@@ -261,9 +260,6 @@ public:
   /// Get a pointer to the parsed dwo abbreviations object.
   const DWARFDebugAbbrev *getDebugAbbrevDWO();
 
-  /// Get a pointer to the parsed DebugLoc object.
-  const DWARFDebugLoclists *getDebugLocDWO();
-
   /// Get a pointer to the parsed DebugAranges object.
   const DWARFDebugAranges *getDebugAranges();
 
@@ -275,6 +271,9 @@ public:
 
   /// Get a pointer to the parsed DebugMacro object.
   const DWARFDebugMacro *getDebugMacro();
+
+  /// Get a pointer to the parsed DebugMacroDWO object.
+  const DWARFDebugMacro *getDebugMacroDWO();
 
   /// Get a reference to the parsed accelerator table object.
   const DWARFDebugNames &getDebugNames();
@@ -299,13 +298,13 @@ public:
   /// Report any recoverable parsing problems using the callback.
   Expected<const DWARFDebugLine::LineTable *>
   getLineTableForUnit(DWARFUnit *U,
-                      std::function<void(Error)> RecoverableErrorCallback);
+                      function_ref<void(Error)> RecoverableErrorCallback);
 
   DataExtractor getStringExtractor() const {
-    return DataExtractor(DObj->getStringSection(), false, 0);
+    return DataExtractor(DObj->getStrSection(), false, 0);
   }
   DataExtractor getLineStringExtractor() const {
-    return DataExtractor(DObj->getLineStringSection(), false, 0);
+    return DataExtractor(DObj->getLineStrSection(), false, 0);
   }
 
   /// Wraps the returned DIEs for a given address.
@@ -318,14 +317,22 @@ public:
 
   /// Get the compilation unit, the function DIE and lexical block DIE for the
   /// given address where applicable.
+  /// TODO: change input parameter from "uint64_t Address"
+  ///       into "SectionedAddress Address"
   DIEsForAddress getDIEsForAddress(uint64_t Address);
 
-  DILineInfo getLineInfoForAddress(uint64_t Address,
+  DILineInfo getLineInfoForAddress(
+      object::SectionedAddress Address,
       DILineInfoSpecifier Specifier = DILineInfoSpecifier()) override;
-  DILineInfoTable getLineInfoForAddressRange(uint64_t Address, uint64_t Size,
+  DILineInfoTable getLineInfoForAddressRange(
+      object::SectionedAddress Address, uint64_t Size,
       DILineInfoSpecifier Specifier = DILineInfoSpecifier()) override;
-  DIInliningInfo getInliningInfoForAddress(uint64_t Address,
+  DIInliningInfo getInliningInfoForAddress(
+      object::SectionedAddress Address,
       DILineInfoSpecifier Specifier = DILineInfoSpecifier()) override;
+
+  std::vector<DILocal>
+  getLocalsForAddress(object::SectionedAddress Address) override;
 
   bool isLittleEndian() const { return DObj->isLittleEndian(); }
   static bool isSupportedVersion(unsigned version) {
@@ -367,7 +374,11 @@ public:
 private:
   /// Return the compile unit which contains instruction with provided
   /// address.
+  /// TODO: change input parameter from "uint64_t Address"
+  ///       into "SectionedAddress Address"
   DWARFCompileUnit *getCompileUnitForAddress(uint64_t Address);
+  void addLocalsForDie(DWARFCompileUnit *CU, DWARFDie Subprogram, DWARFDie Die,
+                       std::vector<DILocal> &Result);
 };
 
 } // end namespace llvm

@@ -1,1 +1,1 @@
-modifyIndicesSerial.chpl:5: error: illegal lvalue in assignment
+modifyIndicesSerial.chpl:5: error: cannot assign to const variable

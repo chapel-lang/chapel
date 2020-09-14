@@ -1,9 +1,8 @@
 //===- llvm/GlobalIndirectSymbol.h - GlobalIndirectSymbol class -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,6 +42,10 @@ public:
   /// Provide fast operand accessors
   DECLARE_TRANSPARENT_OPERAND_ACCESSORS(Constant);
 
+  void copyAttributesFrom(const GlobalValue *Src) {
+    GlobalValue::copyAttributesFrom(Src);
+  }
+
   /// These methods set and retrieve indirect symbol.
   void setIndirectSymbol(Constant *Symbol) {
     setOperand(0, Symbol);
@@ -55,9 +58,7 @@ public:
           static_cast<const GlobalIndirectSymbol *>(this)->getIndirectSymbol());
   }
 
-  const GlobalObject *getBaseObject() const {
-    return dyn_cast<GlobalObject>(getIndirectSymbol()->stripInBoundsOffsets());
-  }
+  const GlobalObject *getBaseObject() const;
   GlobalObject *getBaseObject() {
     return const_cast<GlobalObject *>(
               static_cast<const GlobalIndirectSymbol *>(this)->getBaseObject());

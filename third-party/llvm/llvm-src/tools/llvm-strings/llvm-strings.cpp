@@ -1,9 +1,8 @@
 //===-- llvm-strings.cpp - Printable String dumping utility ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -54,6 +53,9 @@ static cl::opt<radix>
                      clEnumValN(decimal, "d", "decimal")),
           cl::init(none));
 static cl::alias RadixShort("t", cl::desc(""), cl::aliasopt(Radix));
+
+static cl::extrahelp
+    HelpResponse("\nPass @FILE as argument to read options from FILE.\n");
 
 static void strings(raw_ostream &OS, StringRef FileName, StringRef Contents) {
   auto print = [&OS, FileName](unsigned Offset, StringRef L) {

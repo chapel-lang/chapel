@@ -23,6 +23,9 @@
 /* Default runtime library to use. */
 #define CLANG_DEFAULT_RTLIB "${CLANG_DEFAULT_RTLIB}"
 
+/* Default unwind library to use. */
+#define CLANG_DEFAULT_UNWINDLIB "${CLANG_DEFAULT_UNWINDLIB}"
+
 /* Default objcopy to use */
 #define CLANG_DEFAULT_OBJCOPY "${CLANG_DEFAULT_OBJCOPY}"
 
@@ -54,9 +57,6 @@
 /* Define if we have libxml2 */
 #cmakedefine CLANG_HAVE_LIBXML ${CLANG_HAVE_LIBXML}
 
-/* Define if we have z3 and want to build it */
-#cmakedefine CLANG_ANALYZER_WITH_Z3 ${CLANG_ANALYZER_WITH_Z3}
-
 /* Define if we have sys/resource.h (rlimits) */
 #cmakedefine CLANG_HAVE_RLIMITS ${CLANG_HAVE_RLIMITS}
 
@@ -79,5 +79,8 @@
 #cmakedefine01 CLANG_ENABLE_ARCMT
 #cmakedefine01 CLANG_ENABLE_OBJC_REWRITER
 #cmakedefine01 CLANG_ENABLE_STATIC_ANALYZER
+
+/* Spawn a new process clang.exe for the CC1 tool invocation, when necessary */
+#cmakedefine01 CLANG_SPAWN_CC1
 
 #endif

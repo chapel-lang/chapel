@@ -1,9 +1,8 @@
 //===---- BDCE.cpp - Bit-tracking dead code elimination -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,13 +19,14 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/DemandedBits.h"
 #include "llvm/Analysis/GlobalsModRef.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Utils/Local.h"
 using namespace llvm;
 
 #define DEBUG_TYPE "bdce"
@@ -42,14 +42,17 @@ static void clearAssumptionsOfUsers(Instruction *I, DemandedBits &DB) {
          "Trivializing a non-integer value?");
 
   // Initialize the worklist with eligible direct users.
+  SmallPtrSet<Instruction *, 16> Visited;
   SmallVector<Instruction *, 16> WorkList;
   for (User *JU : I->users()) {
     // If all bits of a user are demanded, then we know that nothing below that
     // in the def-use chain needs to be changed.
     auto *J = dyn_cast<Instruction>(JU);
     if (J && J->getType()->isIntOrIntVectorTy() &&
-        !DB.getDemandedBits(J).isAllOnesValue())
+        !DB.getDemandedBits(J).isAllOnesValue()) {
+      Visited.insert(J);
       WorkList.push_back(J);
+    }
 
     // Note that we need to check for non-int types above before asking for
     // demanded bits. Normally, the only way to reach an instruction with an
@@ -62,7 +65,6 @@ static void clearAssumptionsOfUsers(Instruction *I, DemandedBits &DB) {
   }
 
   // DFS through subsequent users while tracking visits to avoid cycles.
-  SmallPtrSet<Instruction *, 16> Visited;
   while (!WorkList.empty()) {
     Instruction *J = WorkList.pop_back_val();
 
@@ -73,13 +75,11 @@ static void clearAssumptionsOfUsers(Instruction *I, DemandedBits &DB) {
     // 1. llvm.assume demands its operand, so trivializing can't change it.
     // 2. range metadata only applies to memory accesses which demand all bits.
 
-    Visited.insert(J);
-
     for (User *KU : J->users()) {
       // If all bits of a user are demanded, then we know that nothing below
       // that in the def-use chain needs to be changed.
       auto *K = dyn_cast<Instruction>(KU);
-      if (K && !Visited.count(K) && K->getType()->isIntOrIntVectorTy() &&
+      if (K && Visited.insert(K).second && K->getType()->isIntOrIntVectorTy() &&
           !DB.getDemandedBits(K).isAllOnesValue())
         WorkList.push_back(K);
     }
@@ -102,7 +102,7 @@ static bool bitTrackingDCE(Function &F, DemandedBits &DB) {
         (I.getType()->isIntOrIntVectorTy() &&
          DB.getDemandedBits(&I).isNullValue() &&
          wouldInstructionBeTriviallyDead(&I))) {
-      salvageDebugInfo(I);
+      salvageDebugInfoOrMarkUndef(I);
       Worklist.push_back(&I);
       I.dropAllReferences();
       Changed = true;

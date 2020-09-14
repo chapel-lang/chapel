@@ -30,11 +30,11 @@ class ResolveScope;
 
 class ImportStmt: public VisibilityStmt {
  public:
-  ImportStmt(BaseAST* source, bool isPrivate);
-  ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
-  ImportStmt(BaseAST* source, bool isPrivate,
-             std::vector<const char*>* namesList,
-             std::map<const char*, const char*>* renamesList);
+  ImportStmt(BaseAST* source, bool isPrivate = true);
+  ImportStmt(BaseAST* source, const char* rename, bool isPrivate = true);
+  ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+             std::map<const char*, const char*>* renamesList,
+             bool isPrivate = true);
 
   DECLARE_COPY(ImportStmt);
 
@@ -52,7 +52,7 @@ class ImportStmt: public VisibilityStmt {
 
   virtual BaseAST* getSearchScope() const;
 
-  bool skipSymbolSearch(const char* name);
+  bool skipSymbolSearch(const char* name) const;
 
   bool providesQualifiedAccess() const;
   bool providesUnqualifiedAccess() const;

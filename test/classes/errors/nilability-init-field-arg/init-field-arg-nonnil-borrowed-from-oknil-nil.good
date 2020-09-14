@@ -1,3 +1,3 @@
 init-field-arg-nonnil-borrowed-from-oknil-nil.chpl:9: In initializer:
-init-field-arg-nonnil-borrowed-from-oknil-nil.chpl:10: error: cannot assign to borrowed MyClass from nil
+init-field-arg-nonnil-borrowed-from-oknil-nil.chpl:10: error: Cannot assign to borrowed MyClass from nil
 init-field-arg-nonnil-borrowed-from-oknil-nil.chpl:14: Initializer instantiated as: init(rhs: nil)

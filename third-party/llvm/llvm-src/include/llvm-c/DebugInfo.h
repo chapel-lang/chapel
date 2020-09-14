@@ -1,9 +1,8 @@
 //===------------ DebugInfo.h - LLVM C API Debug Info API -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -18,10 +17,9 @@
 #define LLVM_C_DEBUGINFO_H
 
 #include "llvm-c/Core.h"
+#include "llvm-c/ExternC.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+LLVM_C_EXTERN_C_BEGIN
 
 /**
  * Debug info flags.
@@ -33,7 +31,7 @@ typedef enum {
   LLVMDIFlagPublic = 3,
   LLVMDIFlagFwdDecl = 1 << 2,
   LLVMDIFlagAppleBlock = 1 << 3,
-  LLVMDIFlagBlockByrefStruct = 1 << 4,
+  LLVMDIFlagReservedBit4 = 1 << 4,
   LLVMDIFlagVirtual = 1 << 5,
   LLVMDIFlagArtificial = 1 << 6,
   LLVMDIFlagExplicit = 1 << 7,
@@ -51,13 +49,12 @@ typedef enum {
   LLVMDIFlagIntroducedVirtual = 1 << 18,
   LLVMDIFlagBitField = 1 << 19,
   LLVMDIFlagNoReturn = 1 << 20,
-  LLVMDIFlagMainSubprogram = 1 << 21,
   LLVMDIFlagTypePassByValue = 1 << 22,
   LLVMDIFlagTypePassByReference = 1 << 23,
   LLVMDIFlagEnumClass = 1 << 24,
   LLVMDIFlagFixedEnum = LLVMDIFlagEnumClass, // Deprecated.
   LLVMDIFlagThunk = 1 << 25,
-  LLVMDIFlagTrivial = 1 << 26,
+  LLVMDIFlagNonTrivial = 1 << 26,
   LLVMDIFlagBigEndian = 1 << 27,
   LLVMDIFlagLittleEndian = 1 << 28,
   LLVMDIFlagIndirectVirtualBase = (1 << 2) | (1 << 5),
@@ -161,7 +158,8 @@ enum {
   LLVMDIObjCPropertyMetadataKind,
   LLVMDIImportedEntityMetadataKind,
   LLVMDIMacroMetadataKind,
-  LLVMDIMacroFileMetadataKind
+  LLVMDIMacroFileMetadataKind,
+  LLVMDICommonBlockMetadataKind
 };
 typedef unsigned LLVMMetadataKind;
 
@@ -169,6 +167,19 @@ typedef unsigned LLVMMetadataKind;
  * An LLVM DWARF type encoding.
  */
 typedef unsigned LLVMDWARFTypeEncoding;
+
+/**
+ * Describes the kind of macro declaration used for LLVMDIBuilderCreateMacro.
+ * @see llvm::dwarf::MacinfoRecordType
+ * @note Values are from DW_MACINFO_* constants in the DWARF specification.
+ */
+typedef enum {
+  LLVMDWARFMacinfoRecordTypeDefine = 0x01,
+  LLVMDWARFMacinfoRecordTypeMacro = 0x02,
+  LLVMDWARFMacinfoRecordTypeStartFile = 0x03,
+  LLVMDWARFMacinfoRecordTypeEndFile = 0x04,
+  LLVMDWARFMacinfoRecordTypeVendorExt = 0xff
+} LLVMDWARFMacinfoRecordType;
 
 /**
  * The current debug metadata version number.
@@ -272,15 +283,15 @@ LLVMDIBuilderCreateFile(LLVMDIBuilderRef Builder, const char *Filename,
  * \param ConfigMacrosLen The length of the C string passed to \c ConfigMacros.
  * \param IncludePath     The path to the module map file.
  * \param IncludePathLen  The length of the C string passed to \c IncludePath.
- * \param ISysRoot        The Clang system root (value of -isysroot).
- * \param ISysRootLen     The length of the C string passed to \c ISysRoot.
+ * \param SysRoot         The Clang system root (value of -isysroot).
+ * \param SysRootLen      The length of the C string passed to \c SysRoot.
  */
 LLVMMetadataRef
 LLVMDIBuilderCreateModule(LLVMDIBuilderRef Builder, LLVMMetadataRef ParentScope,
                           const char *Name, size_t NameLen,
                           const char *ConfigMacros, size_t ConfigMacrosLen,
                           const char *IncludePath, size_t IncludePathLen,
-                          const char *ISysRoot, size_t ISysRootLen);
+                          const char *SysRoot, size_t SysRootLen);
 
 /**
  * Creates a new descriptor for a namespace with the specified parent scope.
@@ -453,6 +464,49 @@ unsigned LLVMDILocationGetColumn(LLVMMetadataRef Location);
 LLVMMetadataRef LLVMDILocationGetScope(LLVMMetadataRef Location);
 
 /**
+ * Get the "inline at" location associated with this debug location.
+ * \param Location     The debug location.
+ *
+ * @see DILocation::getInlinedAt()
+ */
+LLVMMetadataRef LLVMDILocationGetInlinedAt(LLVMMetadataRef Location);
+
+/**
+ * Get the metadata of the file associated with a given scope.
+ * \param Scope     The scope object.
+ *
+ * @see DIScope::getFile()
+ */
+LLVMMetadataRef LLVMDIScopeGetFile(LLVMMetadataRef Scope);
+
+/**
+ * Get the directory of a given file.
+ * \param File     The file object.
+ * \param Len      The length of the returned string.
+ *
+ * @see DIFile::getDirectory()
+ */
+const char *LLVMDIFileGetDirectory(LLVMMetadataRef File, unsigned *Len);
+
+/**
+ * Get the name of a given file.
+ * \param File     The file object.
+ * \param Len      The length of the returned string.
+ *
+ * @see DIFile::getFilename()
+ */
+const char *LLVMDIFileGetFilename(LLVMMetadataRef File, unsigned *Len);
+
+/**
+ * Get the source of a given file.
+ * \param File     The file object.
+ * \param Len      The length of the returned string.
+ *
+ * @see DIFile::getSource()
+ */
+const char *LLVMDIFileGetSource(LLVMMetadataRef File, unsigned *Len);
+
+/**
  * Create a type array.
  * \param Builder        The DIBuilder.
  * \param Data           The type elements.
@@ -478,6 +532,51 @@ LLVMDIBuilderCreateSubroutineType(LLVMDIBuilderRef Builder,
                                   LLVMMetadataRef *ParameterTypes,
                                   unsigned NumParameterTypes,
                                   LLVMDIFlags Flags);
+
+/**
+ * Create debugging information entry for a macro.
+ * @param Builder         The DIBuilder.
+ * @param ParentMacroFile Macro parent (could be NULL).
+ * @param Line            Source line number where the macro is defined.
+ * @param RecordType      DW_MACINFO_define or DW_MACINFO_undef.
+ * @param Name            Macro name.
+ * @param NameLen         Macro name length.
+ * @param Value           Macro value.
+ * @param ValueLen        Macro value length.
+ */
+LLVMMetadataRef LLVMDIBuilderCreateMacro(LLVMDIBuilderRef Builder,
+                                         LLVMMetadataRef ParentMacroFile,
+                                         unsigned Line,
+                                         LLVMDWARFMacinfoRecordType RecordType,
+                                         const char *Name, size_t NameLen,
+                                         const char *Value, size_t ValueLen);
+
+/**
+ * Create debugging information temporary entry for a macro file.
+ * List of macro node direct children will be calculated by DIBuilder,
+ * using the \p ParentMacroFile relationship.
+ * @param Builder         The DIBuilder.
+ * @param ParentMacroFile Macro parent (could be NULL).
+ * @param Line            Source line number where the macro file is included.
+ * @param File            File descriptor containing the name of the macro file.
+ */
+LLVMMetadataRef
+LLVMDIBuilderCreateTempMacroFile(LLVMDIBuilderRef Builder,
+                                 LLVMMetadataRef ParentMacroFile, unsigned Line,
+                                 LLVMMetadataRef File);
+
+/**
+ * Create debugging information entry for an enumerator.
+ * @param Builder        The DIBuilder.
+ * @param Name           Enumerator name.
+ * @param NameLen        Length of enumerator name.
+ * @param Value          Enumerator value.
+ * @param IsUnsigned     True if the value is unsigned.
+ */
+LLVMMetadataRef LLVMDIBuilderCreateEnumerator(LLVMDIBuilderRef Builder,
+                                              const char *Name, size_t NameLen,
+                                              int64_t Value,
+                                              LLVMBool IsUnsigned);
 
 /**
  * Create debugging information entry for an enumeration.
@@ -775,7 +874,7 @@ LLVMMetadataRef
 LLVMDIBuilderCreateTypedef(LLVMDIBuilderRef Builder, LLVMMetadataRef Type,
                            const char *Name, size_t NameLen,
                            LLVMMetadataRef File, unsigned LineNo,
-                           LLVMMetadataRef Scope);
+                           LLVMMetadataRef Scope, uint32_t AlignInBits);
 
 /**
  * Create debugging information entry to establish inheritance relationship
@@ -1017,6 +1116,48 @@ LLVMMetadataRef LLVMDIBuilderCreateGlobalVariableExpression(
     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
     LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits);
+
+/**
+ * Retrieves the \c DIVariable associated with this global variable expression.
+ * \param GVE    The global variable expression.
+ *
+ * @see llvm::DIGlobalVariableExpression::getVariable()
+ */
+LLVMMetadataRef LLVMDIGlobalVariableExpressionGetVariable(LLVMMetadataRef GVE);
+
+/**
+ * Retrieves the \c DIExpression associated with this global variable expression.
+ * \param GVE    The global variable expression.
+ *
+ * @see llvm::DIGlobalVariableExpression::getExpression()
+ */
+LLVMMetadataRef LLVMDIGlobalVariableExpressionGetExpression(
+    LLVMMetadataRef GVE);
+
+/**
+ * Get the metadata of the file associated with a given variable.
+ * \param Var     The variable object.
+ *
+ * @see DIVariable::getFile()
+ */
+LLVMMetadataRef LLVMDIVariableGetFile(LLVMMetadataRef Var);
+
+/**
+ * Get the metadata of the scope associated with a given variable.
+ * \param Var     The variable object.
+ *
+ * @see DIVariable::getScope()
+ */
+LLVMMetadataRef LLVMDIVariableGetScope(LLVMMetadataRef Var);
+
+/**
+ * Get the source line where this \c DIVariable is declared.
+ * \param Var     The DIVariable.
+ *
+ * @see DIVariable::getLine()
+ */
+unsigned LLVMDIVariableGetLine(LLVMMetadataRef Var);
+
 /**
  * Create a new temporary \c MDNode.  Suitable for use in constructing cyclic
  * \c MDNode structures. A temporary \c MDNode is not uniqued, may be RAUW'd,
@@ -1181,14 +1322,36 @@ LLVMMetadataRef LLVMGetSubprogram(LLVMValueRef Func);
 void LLVMSetSubprogram(LLVMValueRef Func, LLVMMetadataRef SP);
 
 /**
+ * Get the line associated with a given subprogram.
+ * \param Subprogram     The subprogram object.
+ *
+ * @see DISubprogram::getLine()
+ */
+unsigned LLVMDISubprogramGetLine(LLVMMetadataRef Subprogram);
+
+/**
+ * Get the debug location for the given instruction.
+ *
+ * @see llvm::Instruction::getDebugLoc()
+ */
+LLVMMetadataRef LLVMInstructionGetDebugLoc(LLVMValueRef Inst);
+
+/**
+ * Set the debug location for the given instruction.
+ *
+ * To clear the location metadata of the given instruction, pass NULL to \p Loc.
+ *
+ * @see llvm::Instruction::setDebugLoc()
+ */
+void LLVMInstructionSetDebugLoc(LLVMValueRef Inst, LLVMMetadataRef Loc);
+
+/**
  * Obtain the enumerated type of a Metadata instance.
  *
  * @see llvm::Metadata::getMetadataID()
  */
 LLVMMetadataKind LLVMGetMetadataKind(LLVMMetadataRef Metadata);
 
-#ifdef __cplusplus
-} /* end extern "C" */
-#endif
+LLVM_C_EXTERN_C_END
 
 #endif

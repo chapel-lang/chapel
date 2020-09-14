@@ -4,6 +4,7 @@ use CyclicDist;
 use BlockCycDist;
 use Search;
 use LayoutCS;
+use DSIUtil;
 
 //
 // DefaultRectangular support

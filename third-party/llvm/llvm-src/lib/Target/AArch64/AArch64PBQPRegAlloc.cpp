@@ -1,9 +1,8 @@
 //===-- AArch64PBQPRegAlloc.cpp - AArch64 specific PBQP constraints -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // This file contains the AArch64 / Cortex-A57 specific register allocation
@@ -163,11 +162,11 @@ bool A57ChainingConstraint::addIntraChainConstraint(PBQPRAGraph &G, unsigned Rd,
 
   LiveIntervals &LIs = G.getMetadata().LIS;
 
-  if (TRI->isPhysicalRegister(Rd) || TRI->isPhysicalRegister(Ra)) {
-    LLVM_DEBUG(dbgs() << "Rd is a physical reg:" << TRI->isPhysicalRegister(Rd)
-                      << '\n');
-    LLVM_DEBUG(dbgs() << "Ra is a physical reg:" << TRI->isPhysicalRegister(Ra)
-                      << '\n');
+  if (Register::isPhysicalRegister(Rd) || Register::isPhysicalRegister(Ra)) {
+    LLVM_DEBUG(dbgs() << "Rd is a physical reg:"
+                      << Register::isPhysicalRegister(Rd) << '\n');
+    LLVM_DEBUG(dbgs() << "Ra is a physical reg:"
+                      << Register::isPhysicalRegister(Ra) << '\n');
     return false;
   }
 
@@ -360,8 +359,8 @@ void A57ChainingConstraint::apply(PBQPRAGraph &G) {
       case AArch64::FMADDDrrr:
       case AArch64::FNMSUBDrrr:
       case AArch64::FNMADDDrrr: {
-        unsigned Rd = MI.getOperand(0).getReg();
-        unsigned Ra = MI.getOperand(3).getReg();
+        Register Rd = MI.getOperand(0).getReg();
+        Register Ra = MI.getOperand(3).getReg();
 
         if (addIntraChainConstraint(G, Rd, Ra))
           addInterChainConstraint(G, Rd, Ra);
@@ -370,7 +369,7 @@ void A57ChainingConstraint::apply(PBQPRAGraph &G) {
 
       case AArch64::FMLAv2f32:
       case AArch64::FMLSv2f32: {
-        unsigned Rd = MI.getOperand(0).getReg();
+        Register Rd = MI.getOperand(0).getReg();
         addInterChainConstraint(G, Rd, Rd);
         break;
       }

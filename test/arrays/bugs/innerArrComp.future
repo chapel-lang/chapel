@@ -1,0 +1,5 @@
+bug: comparison of arrays within an array causes an internal error
+
+     issue: #15833
+
+Doing an array comparison within square brackets causes an internal error listed as an assertion error. Shouldn't result in an error, but should create an array with the result of the operation.

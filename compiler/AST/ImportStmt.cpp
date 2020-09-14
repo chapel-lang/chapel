@@ -67,9 +67,9 @@ ImportStmt::ImportStmt(BaseAST* source, const char* rename,
   gImportStmts.add(this);
 }
 
-ImportStmt::ImportStmt(BaseAST* source, bool isPrivate,
-                       std::vector<const char*>* namesList,
-                       std::map<const char*, const char*>* renamesMap):
+ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+                       std::map<const char*, const char*>* renamesMap,
+                       bool isPrivate):
   VisibilityStmt(E_ImportStmt) {
 
   this->isPrivate = isPrivate;
@@ -108,7 +108,7 @@ ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   if (modRename != astr("")) {
     _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
   } else {
-    _this = new ImportStmt(COPY_INT(src), isPrivate, &unqualified, &renamed);
+    _this = new ImportStmt(COPY_INT(src), &unqualified, &renamed, isPrivate);
   }
 
   return _this;
@@ -152,9 +152,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // 2020/03/02: checkValid() does not currently return on failure, to generate
   // good error messages
   if (checkValid(src) == true) {
-    // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
     if (isSymExpr(src)) {
-      INT_FATAL("This should only happen for a UseStmt");
+      // We should at least be in the process of resolving the use and import
+      // statements for this scope if src is a SymExpr at this point.
+      INT_ASSERT(scope->progress != IUP_NOT_STARTED);
 
     } else if (Symbol* sym = scope->lookupForImport(src, false)) {
       SET_LINENO(this);
@@ -402,7 +403,7 @@ void ImportStmt::validateUnqualified() {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ImportStmt::skipSymbolSearch(const char* name) {
+bool ImportStmt::skipSymbolSearch(const char* name) const {
   // We don't define any symbols for unqualified access, so we should skip this
   // import
   if (!providesUnqualifiedAccess()) {
@@ -647,7 +648,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // The list will be shorter, create a new ImportStmt with it.
       SET_LINENO(this);
 
-      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+      return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
     }
 
   } else {
@@ -703,7 +704,7 @@ ImportStmt* ImportStmt::applyOuterUse(const UseStmt* outer) {
       // There were symbols that were in both lists, so this module use is still
       // interesting.
       SET_LINENO(this);
-      return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+      return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
 
     } else {
       // all of the 'only' identifiers in the outer use
@@ -790,7 +791,7 @@ ImportStmt* ImportStmt::applyOuterImport(const ImportStmt* outer) {
         // There were symbols that were in both lists, so this module use is
         // still interesting.
         SET_LINENO(this);
-        return new ImportStmt(src, isPrivate, &newUnqualifiedList, &newRenamed);
+        return new ImportStmt(src, &newUnqualifiedList, &newRenamed, isPrivate);
 
       } else {
         // all of the identifiers in the outer import were missing from the

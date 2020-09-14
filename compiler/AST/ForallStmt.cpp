@@ -54,6 +54,10 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fShadowVars.parent = this;
   INT_ASSERT(fLoopBody != NULL);
 
+
+  optInfo.autoLocalAccessChecked = false;
+  optInfo.confirmedFastFollower = false;
+
   gForallStmts.add(this);
 }
 
@@ -154,7 +158,6 @@ void ForallStmt::verify() {
   INT_ASSERT(fLoopBody->blockTag == BLOCK_NORMAL);
   INT_ASSERT(!fLoopBody->blockInfoGet());
   INT_ASSERT(!fLoopBody->isLoopStmt());
-  INT_ASSERT(!fLoopBody->useList);
   INT_ASSERT(!fLoopBody->userLabel);
   INT_ASSERT(!fLoopBody->byrefVars);
 

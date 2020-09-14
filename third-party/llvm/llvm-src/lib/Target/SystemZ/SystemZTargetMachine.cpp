@@ -1,9 +1,8 @@
 //===-- SystemZTargetMachine.cpp - Define TargetMachine for SystemZ -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +11,7 @@
 #include "SystemZ.h"
 #include "SystemZMachineScheduler.h"
 #include "SystemZTargetTransformInfo.h"
+#include "TargetInfo/SystemZTargetInfo.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
@@ -29,7 +29,7 @@
 
 using namespace llvm;
 
-extern "C" void LLVMInitializeSystemZTarget() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeSystemZTarget() {
   // Register the target.
   RegisterTargetMachine<SystemZTargetMachine> X(getTheSystemZTarget());
 }
@@ -133,9 +133,9 @@ getEffectiveSystemZCodeModel(Optional<CodeModel::Model> CM, Reloc::Model RM,
                              bool JIT) {
   if (CM) {
     if (*CM == CodeModel::Tiny)
-      report_fatal_error("Target does not support the tiny CodeModel");
+      report_fatal_error("Target does not support the tiny CodeModel", false);
     if (*CM == CodeModel::Kernel)
-      report_fatal_error("Target does not support the kernel CodeModel");
+      report_fatal_error("Target does not support the kernel CodeModel", false);
     return *CM;
   }
   if (JIT)
@@ -154,7 +154,7 @@ SystemZTargetMachine::SystemZTargetMachine(const Target &T, const Triple &TT,
           getEffectiveRelocModel(RM),
           getEffectiveSystemZCodeModel(CM, getEffectiveRelocModel(RM), JIT),
           OL),
-      TLOF(llvm::make_unique<TargetLoweringObjectFileELF>()),
+      TLOF(std::make_unique<TargetLoweringObjectFileELF>()),
       Subtarget(TT, CPU, FS, *this) {
   initAsmInfo();
 }
@@ -176,13 +176,15 @@ public:
   ScheduleDAGInstrs *
   createPostMachineScheduler(MachineSchedContext *C) const override {
     return new ScheduleDAGMI(C,
-                             llvm::make_unique<SystemZPostRASchedStrategy>(C),
+                             std::make_unique<SystemZPostRASchedStrategy>(C),
                              /*RemoveKillFlags=*/true);
   }
 
   void addIRPasses() override;
   bool addInstSelector() override;
   bool addILPOpts() override;
+  void addPostRewrite() override;
+  void addPostRegAlloc() override;
   void addPreSched2() override;
   void addPreEmitPass() override;
 };
@@ -212,9 +214,18 @@ bool SystemZPassConfig::addILPOpts() {
   return true;
 }
 
-void SystemZPassConfig::addPreSched2() {
-  addPass(createSystemZExpandPseudoPass(getSystemZTargetMachine()));
+void SystemZPassConfig::addPostRewrite() {
+  addPass(createSystemZPostRewritePass(getSystemZTargetMachine()));
+}
 
+void SystemZPassConfig::addPostRegAlloc() {
+  // PostRewrite needs to be run at -O0 also (in which case addPostRewrite()
+  // is not called).
+  if (getOptLevel() == CodeGenOpt::None)
+    addPass(createSystemZPostRewritePass(getSystemZTargetMachine()));
+}
+
+void SystemZPassConfig::addPreSched2() {
   if (getOptLevel() != CodeGenOpt::None)
     addPass(&IfConverterID);
 }

@@ -1,9 +1,8 @@
 //===--- ObjectFilePCHContainerOperations.cpp -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,7 +21,7 @@
 #include "clang/Lex/HeaderSearch.h"
 #include "clang/Lex/Preprocessor.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/Bitcode/BitstreamReader.h"
+#include "llvm/Bitstream/BitstreamReader.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
@@ -280,7 +279,7 @@ public:
         *M, Ty, /*constant*/ true, llvm::GlobalVariable::InternalLinkage, Data,
         "__clang_ast");
     // The on-disk hashtable needs to be aligned.
-    ASTSym->setAlignment(8);
+    ASTSym->setAlignment(llvm::Align(8));
 
     // Mach-O also needs a segment name.
     if (Triple.isOSBinFormatMachO())
@@ -298,7 +297,7 @@ public:
           Diags, HeaderSearchOpts, CodeGenOpts, TargetOpts, LangOpts,
           Ctx.getTargetInfo().getDataLayout(), M.get(),
           BackendAction::Backend_EmitLL,
-          llvm::make_unique<llvm::raw_svector_ostream>(Buffer));
+          std::make_unique<llvm::raw_svector_ostream>(Buffer));
       llvm::dbgs() << Buffer;
     });
 
@@ -322,7 +321,7 @@ ObjectFilePCHContainerWriter::CreatePCHContainerGenerator(
     const std::string &OutputFileName,
     std::unique_ptr<llvm::raw_pwrite_stream> OS,
     std::shared_ptr<PCHBuffer> Buffer) const {
-  return llvm::make_unique<PCHContainerGenerator>(
+  return std::make_unique<PCHContainerGenerator>(
       CI, MainFileName, OutputFileName, std::move(OS), Buffer);
 }
 
@@ -336,10 +335,20 @@ ObjectFilePCHContainerReader::ExtractPCH(llvm::MemoryBufferRef Buffer) const {
     // Find the clang AST section in the container.
     for (auto &Section : OF->sections()) {
       StringRef Name;
-      Section.getName(Name);
+      if (Expected<StringRef> NameOrErr = Section.getName())
+        Name = *NameOrErr;
+      else
+        consumeError(NameOrErr.takeError());
+
       if ((!IsCOFF && Name == "__clangast") || (IsCOFF && Name == "clangast")) {
-        Section.getContents(PCH);
-        return PCH;
+        if (Expected<StringRef> E = Section.getContents())
+          return *E;
+        else {
+          handleAllErrors(E.takeError(), [&](const llvm::ErrorInfoBase &EIB) {
+            EIB.log(llvm::errs());
+          });
+          return "";
+        }
       }
     }
   }

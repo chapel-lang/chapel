@@ -1,4 +1,4 @@
-mismatch.chpl:16: error: unresolved call 'A(int(64)).init=(A(real(64)))'
+mismatch.chpl:16: error: could not find a copy initializer ('init=') for type 'A(int(64))' from type 'A(real(64))'
 mismatch.chpl:1: note: this candidate did not match: A.init=(other: this.type)
 mismatch.chpl:16: note: because call actual argument #1 with type A(real(64))
 mismatch.chpl:1: note: is passed to formal 'other: A(int(64))'

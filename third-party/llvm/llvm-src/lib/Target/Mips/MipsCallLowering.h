@@ -1,9 +1,8 @@
 //===- MipsCallLowering.h ---------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -35,41 +34,42 @@ public:
                 ArrayRef<CallLowering::ArgInfo> Args);
 
   protected:
-    bool assignVRegs(ArrayRef<unsigned> VRegs, ArrayRef<CCValAssign> ArgLocs,
-                     unsigned Index);
+    bool assignVRegs(ArrayRef<Register> VRegs, ArrayRef<CCValAssign> ArgLocs,
+                     unsigned ArgLocsStartIndex, const EVT &VT);
 
-    void setLeastSignificantFirst(SmallVectorImpl<unsigned> &VRegs);
+    void setLeastSignificantFirst(SmallVectorImpl<Register> &VRegs);
 
     MachineIRBuilder &MIRBuilder;
     MachineRegisterInfo &MRI;
 
   private:
-    bool assign(unsigned VReg, const CCValAssign &VA);
+    bool assign(Register VReg, const CCValAssign &VA, const EVT &VT);
 
-    virtual unsigned getStackAddress(const CCValAssign &VA,
+    virtual Register getStackAddress(const CCValAssign &VA,
                                      MachineMemOperand *&MMO) = 0;
 
-    virtual void assignValueToReg(unsigned ValVReg, const CCValAssign &VA) = 0;
+    virtual void assignValueToReg(Register ValVReg, const CCValAssign &VA,
+                                  const EVT &VT) = 0;
 
-    virtual void assignValueToAddress(unsigned ValVReg,
+    virtual void assignValueToAddress(Register ValVReg,
                                       const CCValAssign &VA) = 0;
 
-    virtual bool handleSplit(SmallVectorImpl<unsigned> &VRegs,
+    virtual bool handleSplit(SmallVectorImpl<Register> &VRegs,
                              ArrayRef<CCValAssign> ArgLocs,
-                             unsigned ArgLocsStartIndex, unsigned ArgsReg) = 0;
+                             unsigned ArgLocsStartIndex, Register ArgsReg,
+                             const EVT &VT) = 0;
   };
 
   MipsCallLowering(const MipsTargetLowering &TLI);
 
   bool lowerReturn(MachineIRBuilder &MIRBuilder, const Value *Val,
-                   ArrayRef<unsigned> VRegs) const override;
+                   ArrayRef<Register> VRegs) const override;
 
   bool lowerFormalArguments(MachineIRBuilder &MIRBuilder, const Function &F,
-                            ArrayRef<unsigned> VRegs) const override;
+                            ArrayRef<ArrayRef<Register>> VRegs) const override;
 
-  bool lowerCall(MachineIRBuilder &MIRBuilder, CallingConv::ID CallConv,
-                 const MachineOperand &Callee, const ArgInfo &OrigRet,
-                 ArrayRef<ArgInfo> OrigArgs) const override;
+  bool lowerCall(MachineIRBuilder &MIRBuilder,
+                 CallLoweringInfo &Info) const override;
 
 private:
   /// Based on registers available on target machine split or extend
@@ -82,7 +82,8 @@ private:
 
   /// Split structures and arrays, save original argument indices since
   /// Mips calling convention needs info about original argument type.
-  void splitToValueTypes(const ArgInfo &OrigArg, unsigned OriginalIndex,
+  void splitToValueTypes(const DataLayout &DL, const ArgInfo &OrigArg,
+                         unsigned OriginalIndex,
                          SmallVectorImpl<ArgInfo> &SplitArgs,
                          SmallVectorImpl<unsigned> &SplitArgsOrigIndices) const;
 };

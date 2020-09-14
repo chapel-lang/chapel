@@ -1,9 +1,8 @@
 //===- llvm/Analysis/ValueTracking.h - Walk computations --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,8 +16,10 @@
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/Optional.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Intrinsics.h"
 #include <cassert>
@@ -29,10 +30,10 @@ namespace llvm {
 class AddOperator;
 class APInt;
 class AssumptionCache;
-class DataLayout;
 class DominatorTree;
 class GEPOperator;
 class IntrinsicInst;
+class WithOverflowInst;
 struct KnownBits;
 class Loop;
 class LoopInfo;
@@ -202,6 +203,12 @@ class Value;
   ///   x < -0 --> false
   bool CannotBeOrderedLessThanZero(const Value *V, const TargetLibraryInfo *TLI);
 
+  /// Return true if the floating-point scalar value is not an infinity or if
+  /// the floating-point vector value has no infinities. Return false if a value
+  /// could ever be infinity.
+  bool isKnownNeverInfinity(const Value *V, const TargetLibraryInfo *TLI,
+                            unsigned Depth = 0);
+
   /// Return true if the floating-point scalar value is not a NaN or if the
   /// floating-point vector value has no NaN elements. Return false if a value
   /// could ever be NaN.
@@ -223,11 +230,11 @@ class Value;
   /// 0.0 etc. If the value can't be handled with a repeated byte store (e.g.
   /// i16 0x1234), return null. If the value is entirely undef and padding,
   /// return undef.
-  Value *isBytewiseValue(Value *V);
+  Value *isBytewiseValue(Value *V, const DataLayout &DL);
 
-  /// Given an aggregrate and an sequence of indices, see if the scalar value
+  /// Given an aggregate and an sequence of indices, see if the scalar value
   /// indexed is already around as a register, for example if it were inserted
-  /// directly into the aggregrate.
+  /// directly into the aggregate.
   ///
   /// If InsertBefore is not null, this function will duplicate (modified)
   /// insertvalues when a part of a nested struct is extracted.
@@ -237,13 +244,25 @@ class Value;
 
   /// Analyze the specified pointer to see if it can be expressed as a base
   /// pointer plus a constant offset. Return the base and offset to the caller.
-  Value *GetPointerBaseWithConstantOffset(Value *Ptr, int64_t &Offset,
-                                          const DataLayout &DL);
-  inline const Value *GetPointerBaseWithConstantOffset(const Value *Ptr,
-                                                       int64_t &Offset,
-                                                       const DataLayout &DL) {
-    return GetPointerBaseWithConstantOffset(const_cast<Value *>(Ptr), Offset,
-                                            DL);
+  ///
+  /// This is a wrapper around Value::stripAndAccumulateConstantOffsets that
+  /// creates and later unpacks the required APInt.
+  inline Value *GetPointerBaseWithConstantOffset(Value *Ptr, int64_t &Offset,
+                                                 const DataLayout &DL,
+                                                 bool AllowNonInbounds = true) {
+    APInt OffsetAPInt(DL.getIndexTypeSizeInBits(Ptr->getType()), 0);
+    Value *Base =
+        Ptr->stripAndAccumulateConstantOffsets(DL, OffsetAPInt, AllowNonInbounds);
+
+    Offset = OffsetAPInt.getSExtValue();
+    return Base;
+  }
+  inline const Value *
+  GetPointerBaseWithConstantOffset(const Value *Ptr, int64_t &Offset,
+                                   const DataLayout &DL,
+                                   bool AllowNonInbounds = true) {
+    return GetPointerBaseWithConstantOffset(const_cast<Value *>(Ptr), Offset, DL,
+                                            AllowNonInbounds);
   }
 
   /// Returns true if the GEP is based on a pointer to a string (array of
@@ -296,20 +315,26 @@ class Value;
   uint64_t GetStringLength(const Value *V, unsigned CharSize = 8);
 
   /// This function returns call pointer argument that is considered the same by
-  /// aliasing rules. You CAN'T use it to replace one value with another.
-  const Value *getArgumentAliasingToReturnedPointer(const CallBase *Call);
-  inline Value *getArgumentAliasingToReturnedPointer(CallBase *Call) {
+  /// aliasing rules. You CAN'T use it to replace one value with another. If
+  /// \p MustPreserveNullness is true, the call must preserve the nullness of
+  /// the pointer.
+  const Value *getArgumentAliasingToReturnedPointer(const CallBase *Call,
+                                                    bool MustPreserveNullness);
+  inline Value *
+  getArgumentAliasingToReturnedPointer(CallBase *Call,
+                                       bool MustPreserveNullness) {
     return const_cast<Value *>(getArgumentAliasingToReturnedPointer(
-        const_cast<const CallBase *>(Call)));
+        const_cast<const CallBase *>(Call), MustPreserveNullness));
   }
 
-  // {launder,strip}.invariant.group returns pointer that aliases its argument,
-  // and it only captures pointer by returning it.
-  // These intrinsics are not marked as nocapture, because returning is
-  // considered as capture. The arguments are not marked as returned neither,
-  // because it would make it useless.
+  /// {launder,strip}.invariant.group returns pointer that aliases its argument,
+  /// and it only captures pointer by returning it.
+  /// These intrinsics are not marked as nocapture, because returning is
+  /// considered as capture. The arguments are not marked as returned neither,
+  /// because it would make it useless. If \p MustPreserveNullness is true,
+  /// the intrinsic must preserve the nullness of the pointer.
   bool isIntrinsicReturningPointerAliasingArgumentWithoutCapturing(
-      const CallBase *Call);
+      const CallBase *Call, bool MustPreserveNullness);
 
   /// This method strips off any GEP address adjustments and pointer casts from
   /// the specified value, returning the original object being addressed. Note
@@ -351,7 +376,8 @@ class Value;
   /// Since A[i] and A[i-1] are independent pointers, getUnderlyingObjects
   /// should not assume that Curr and Prev share the same underlying object thus
   /// it shouldn't look through the phi above.
-  void GetUnderlyingObjects(Value *V, SmallVectorImpl<Value *> &Objects,
+  void GetUnderlyingObjects(const Value *V,
+                            SmallVectorImpl<const Value *> &Objects,
                             const DataLayout &DL, LoopInfo *LI = nullptr,
                             unsigned MaxLookup = 6);
 
@@ -363,6 +389,13 @@ class Value;
 
   /// Return true if the only users of this pointer are lifetime markers.
   bool onlyUsedByLifetimeMarkers(const Value *V);
+
+  /// Return true if speculation of the given load must be suppressed to avoid
+  /// ordering or interfering with an active sanitizer.  If not suppressed,
+  /// dereferenceability and alignment must be proven separately.  Note: This
+  /// is only needed for raw reasoning; if you use the interface below
+  /// (isSafeToSpeculativelyExecute), this is handled internally.
+  bool mustSuppressSpeculation(const LoadInst &LI);
 
   /// Return true if the instruction does not have any effects besides
   /// calculating the result and does not have undefined behavior.
@@ -411,7 +444,16 @@ class Value;
   bool isValidAssumeForContext(const Instruction *I, const Instruction *CxtI,
                                const DominatorTree *DT = nullptr);
 
-  enum class OverflowResult { AlwaysOverflows, MayOverflow, NeverOverflows };
+  enum class OverflowResult {
+    /// Always overflows in the direction of signed/unsigned min value.
+    AlwaysOverflowsLow,
+    /// Always overflows in the direction of signed/unsigned max value.
+    AlwaysOverflowsHigh,
+    /// May or may not overflow.
+    MayOverflow,
+    /// Never overflows.
+    NeverOverflows,
+  };
 
   OverflowResult computeOverflowForUnsignedMul(const Value *LHS,
                                                const Value *RHS,
@@ -455,11 +497,16 @@ class Value;
                                              const Instruction *CxtI,
                                              const DominatorTree *DT);
 
-  /// Returns true if the arithmetic part of the \p II 's result is
+  /// Returns true if the arithmetic part of the \p WO 's result is
   /// used only along the paths control dependent on the computation
-  /// not overflowing, \p II being an <op>.with.overflow intrinsic.
-  bool isOverflowIntrinsicNoWrap(const IntrinsicInst *II,
+  /// not overflowing, \p WO being an <op>.with.overflow intrinsic.
+  bool isOverflowIntrinsicNoWrap(const WithOverflowInst *WO,
                                  const DominatorTree &DT);
+
+
+  /// Determine the possible constant range of an integer or vector of integer
+  /// value. This is intended as a cheap, non-recursive check.
+  ConstantRange computeConstantRange(const Value *V, bool UseInstrInfo = true);
 
   /// Return true if this function can prove that the instruction I will
   /// always transfer execution to one of its successors (including the next
@@ -506,6 +553,12 @@ class Value;
   /// value (all bits poison).
   const Value *getGuaranteedNonFullPoisonOp(const Instruction *I);
 
+  /// Return true if the given instruction must trigger undefined behavior.
+  /// when I is executed with any operands which appear in KnownPoison holding
+  /// a full-poison value at the point of execution.
+  bool mustTriggerUB(const Instruction *I,
+                     const SmallSet<const Value *, 16>& KnownPoison);
+
   /// Return true if this function can prove that if PoisonI is executed
   /// and yields a full-poison value (all bits poison), then that will
   /// trigger undefined behavior.
@@ -513,6 +566,10 @@ class Value;
   /// Note that this currently only considers the basic block that is
   /// the parent of I.
   bool programUndefinedIfFullPoison(const Instruction *PoisonI);
+
+  /// Return true if this function can prove that V is never undef value
+  /// or poison value.
+  bool isGuaranteedNotToBeUndefOrPoison(const Value *V);
 
   /// Specific patterns of select instructions we can match.
   enum SelectPatternFlavor {
@@ -573,16 +630,22 @@ class Value;
   SelectPatternResult matchSelectPattern(Value *V, Value *&LHS, Value *&RHS,
                                          Instruction::CastOps *CastOp = nullptr,
                                          unsigned Depth = 0);
+
   inline SelectPatternResult
-  matchSelectPattern(const Value *V, const Value *&LHS, const Value *&RHS,
-                     Instruction::CastOps *CastOp = nullptr) {
-    Value *L = const_cast<Value*>(LHS);
-    Value *R = const_cast<Value*>(RHS);
-    auto Result = matchSelectPattern(const_cast<Value*>(V), L, R);
+  matchSelectPattern(const Value *V, const Value *&LHS, const Value *&RHS) {
+    Value *L = const_cast<Value *>(LHS);
+    Value *R = const_cast<Value *>(RHS);
+    auto Result = matchSelectPattern(const_cast<Value *>(V), L, R);
     LHS = L;
     RHS = R;
     return Result;
   }
+
+  /// Determine the pattern that a select with the given compare as its
+  /// predicate and given values as its true/false operands would match.
+  SelectPatternResult matchDecomposedSelectPattern(
+      CmpInst *CmpI, Value *TrueVal, Value *FalseVal, Value *&LHS, Value *&RHS,
+      Instruction::CastOps *CastOp = nullptr, unsigned Depth = 0);
 
   /// Return the canonical comparison predicate for the specified
   /// minimum/maximum flavor.
@@ -616,6 +679,12 @@ class Value;
   Optional<bool> isImpliedByDomCondition(const Value *Cond,
                                          const Instruction *ContextI,
                                          const DataLayout &DL);
+
+  /// If Ptr1 is provably equal to Ptr2 plus a constant offset, return that
+  /// offset. For example, Ptr1 might be &A[42], and Ptr2 might be &A[40]. In
+  /// this case offset would be -8.
+  Optional<int64_t> isPointerOffset(const Value *Ptr1, const Value *Ptr2,
+                                    const DataLayout &DL);
 } // end namespace llvm
 
 #endif // LLVM_ANALYSIS_VALUETRACKING_H

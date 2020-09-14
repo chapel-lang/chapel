@@ -1,9 +1,8 @@
 //===--- Cuda.cpp - Cuda Tool and ToolChain Implementations -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,35 +32,28 @@ using namespace llvm::opt;
 
 // Parses the contents of version.txt in an CUDA installation.  It should
 // contain one line of the from e.g. "CUDA Version 7.5.2".
-static CudaVersion ParseCudaVersionFile(llvm::StringRef V) {
+void CudaInstallationDetector::ParseCudaVersionFile(llvm::StringRef V) {
+  Version = CudaVersion::UNKNOWN;
   if (!V.startswith("CUDA Version "))
-    return CudaVersion::UNKNOWN;
+    return;
   V = V.substr(strlen("CUDA Version "));
-  int Major = -1, Minor = -1;
-  auto First = V.split('.');
-  auto Second = First.second.split('.');
-  if (First.first.getAsInteger(10, Major) ||
-      Second.first.getAsInteger(10, Minor))
-    return CudaVersion::UNKNOWN;
+  SmallVector<StringRef,4> VersionParts;
+  V.split(VersionParts, '.');
+  if (VersionParts.size() < 2)
+    return;
+  DetectedVersion = join_items(".", VersionParts[0], VersionParts[1]);
+  Version = CudaStringToVersion(DetectedVersion);
+  if (Version != CudaVersion::UNKNOWN)
+    return;
 
-  if (Major == 7 && Minor == 0) {
-    // This doesn't appear to ever happen -- version.txt doesn't exist in the
-    // CUDA 7 installs I've seen.  But no harm in checking.
-    return CudaVersion::CUDA_70;
-  }
-  if (Major == 7 && Minor == 5)
-    return CudaVersion::CUDA_75;
-  if (Major == 8 && Minor == 0)
-    return CudaVersion::CUDA_80;
-  if (Major == 9 && Minor == 0)
-    return CudaVersion::CUDA_90;
-  if (Major == 9 && Minor == 1)
-    return CudaVersion::CUDA_91;
-  if (Major == 9 && Minor == 2)
-    return CudaVersion::CUDA_92;
-  if (Major == 10 && Minor == 0)
-    return CudaVersion::CUDA_100;
-  return CudaVersion::UNKNOWN;
+  Version = CudaVersion::LATEST;
+  DetectedVersionIsNotSupported = true;
+}
+
+void CudaInstallationDetector::WarnIfUnsupportedVersion() {
+  if (DetectedVersionIsNotSupported)
+    D.Diag(diag::warn_drv_unknown_cuda_version)
+        << DetectedVersion << CudaVersionToString(Version);
 }
 
 CudaInstallationDetector::CudaInstallationDetector(
@@ -114,13 +106,14 @@ CudaInstallationDetector::CudaInstallationDetector(
     for (const char *Ver : Versions)
       Candidates.emplace_back(D.SysRoot + "/usr/local/cuda-" + Ver);
 
-    if (Distro(D.getVFS()).IsDebian() || Distro(D.getVFS()).IsUbuntu())
+    Distro Dist(D.getVFS(), llvm::Triple(llvm::sys::getProcessTriple()));
+    if (Dist.IsDebian() || Dist.IsUbuntu())
       // Special case for Debian to have nvidia-cuda-toolkit work
       // out of the box. More info on http://bugs.debian.org/882505
       Candidates.emplace_back(D.SysRoot + "/usr/lib/cuda");
   }
 
-  bool NoCudaLib = Args.hasArg(options::OPT_nocudalib);
+  bool NoCudaLib = Args.hasArg(options::OPT_nogpulib);
 
   for (const auto &Candidate : Candidates) {
     InstallPath = Candidate.Path;
@@ -158,7 +151,7 @@ CudaInstallationDetector::CudaInstallationDetector(
       // version.txt isn't present.
       Version = CudaVersion::CUDA_70;
     } else {
-      Version = ParseCudaVersionFile((*VersionFile)->getBuffer());
+      ParseCudaVersionFile((*VersionFile)->getBuffer());
     }
 
     if (Version >= CudaVersion::CUDA_90) {
@@ -421,7 +414,7 @@ void NVPTX::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
     Exec = A->getValue();
   else
     Exec = Args.MakeArgString(TC.GetProgramPath("ptxas"));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 static bool shouldIncludePTX(const ArgList &Args, const char *gpu_arch) {
@@ -453,7 +446,8 @@ void NVPTX::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   assert(TC.getTriple().isNVPTX() && "Wrong platform");
 
   ArgStringList CmdArgs;
-  CmdArgs.push_back("--cuda");
+  if (TC.CudaInstallation.version() <= CudaVersion::CUDA_100)
+    CmdArgs.push_back("--cuda");
   CmdArgs.push_back(TC.getTriple().isArch64Bit() ? "-64" : "-32");
   CmdArgs.push_back(Args.MakeArgString("--create"));
   CmdArgs.push_back(Args.MakeArgString(Output.getFilename()));
@@ -486,7 +480,7 @@ void NVPTX::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(Args.MakeArgString(A));
 
   const char *Exec = Args.MakeArgString(TC.GetProgramPath("fatbinary"));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 void NVPTX::OpenMPLinker::ConstructJob(Compilation &C, const JobAction &JA,
@@ -561,11 +555,9 @@ void NVPTX::OpenMPLinker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(CubinF);
   }
 
-  AddOpenMPLinkerScript(getToolChain(), C, Output, Inputs, Args, CmdArgs, JA);
-
   const char *Exec =
       Args.MakeArgString(getToolChain().GetProgramPath("nvlink"));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 /// CUDA toolchain.  Our assembler is ptxas, and our "linker" is fatbinary,
@@ -577,8 +569,10 @@ CudaToolChain::CudaToolChain(const Driver &D, const llvm::Triple &Triple,
                              const Action::OffloadKind OK)
     : ToolChain(D, Triple, Args), HostTC(HostTC),
       CudaInstallation(D, HostTC.getTriple(), Args), OK(OK) {
-  if (CudaInstallation.isValid())
+  if (CudaInstallation.isValid()) {
+    CudaInstallation.WarnIfUnsupportedVersion();
     getProgramPaths().push_back(CudaInstallation.getBinPath());
+  }
   // Lookup binaries into the driver directory, this is used to
   // discover the clang-offload-bundler executable.
   getProgramPaths().push_back(getDriver().Dir);
@@ -626,7 +620,7 @@ void CudaToolChain::addClangTargetOptions(
       CC1Args.push_back("-fgpu-rdc");
   }
 
-  if (DriverArgs.hasArg(options::OPT_nocudalib))
+  if (DriverArgs.hasArg(options::OPT_nogpulib))
     return;
 
   std::string LibDeviceFile = CudaInstallation.getLibDeviceFile(GpuArch);
@@ -643,28 +637,41 @@ void CudaToolChain::addClangTargetOptions(
   CC1Args.push_back("-mlink-builtin-bitcode");
   CC1Args.push_back(DriverArgs.MakeArgString(LibDeviceFile));
 
-  // Libdevice in CUDA-7.0 requires PTX version that's more recent than LLVM
-  // defaults to. Use PTX4.2 by default, which is the PTX version that came with
-  // CUDA-7.0.
-  const char *PtxFeature = "+ptx42";
-  // TODO(tra): CUDA-10+ needs PTX 6.3 to support new features. However that
-  // requires fair amount of work on LLVM side. We'll keep using PTX 6.1 until
-  // all prerequisites are in place.
-  if (CudaInstallation.version() >= CudaVersion::CUDA_91) {
-    // CUDA-9.1 uses new instructions that are only available in PTX6.1+
-    PtxFeature = "+ptx61";
-  } else if (CudaInstallation.version() >= CudaVersion::CUDA_90) {
-    // CUDA-9.0 uses new instructions that are only available in PTX6.0+
-    PtxFeature = "+ptx60";
+  // New CUDA versions often introduce new instructions that are only supported
+  // by new PTX version, so we need to raise PTX level to enable them in NVPTX
+  // back-end.
+  const char *PtxFeature = nullptr;
+  switch(CudaInstallation.version()) {
+    case CudaVersion::CUDA_101:
+      PtxFeature = "+ptx64";
+      break;
+    case CudaVersion::CUDA_100:
+      PtxFeature = "+ptx63";
+      break;
+    case CudaVersion::CUDA_92:
+      PtxFeature = "+ptx61";
+      break;
+    case CudaVersion::CUDA_91:
+      PtxFeature = "+ptx61";
+      break;
+    case CudaVersion::CUDA_90:
+      PtxFeature = "+ptx60";
+      break;
+    default:
+      PtxFeature = "+ptx42";
   }
   CC1Args.append({"-target-feature", PtxFeature});
   if (DriverArgs.hasFlag(options::OPT_fcuda_short_ptr,
                          options::OPT_fno_cuda_short_ptr, false))
     CC1Args.append({"-mllvm", "--nvptx-short-ptr"});
 
+  if (CudaInstallation.version() >= CudaVersion::UNKNOWN)
+    CC1Args.push_back(DriverArgs.MakeArgString(
+        Twine("-target-sdk-version=") +
+        CudaVersionToString(CudaInstallation.version())));
+
   if (DeviceOffloadingKind == Action::OFK_OpenMP) {
     SmallVector<StringRef, 8> LibraryPaths;
-
     if (const Arg *A = DriverArgs.getLastArg(options::OPT_libomptarget_nvptx_path_EQ))
       LibraryPaths.push_back(A->getValue());
 

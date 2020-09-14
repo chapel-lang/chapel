@@ -1,9 +1,8 @@
 //===- StringSet.h - The LLVM Compiler Driver -------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open
-// Source License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,8 +24,8 @@ namespace llvm {
 
   /// StringSet - A wrapper for StringMap that provides set-like functionality.
   template <class AllocatorTy = MallocAllocator>
-  class StringSet : public StringMap<char, AllocatorTy> {
-    using base = StringMap<char, AllocatorTy>;
+  class StringSet : public StringMap<NoneType, AllocatorTy> {
+    using base = StringMap<NoneType, AllocatorTy>;
 
   public:
     StringSet() = default;
@@ -34,16 +33,23 @@ namespace llvm {
       for (StringRef X : S)
         insert(X);
     }
+    explicit StringSet(AllocatorTy A) : base(A) {}
 
     std::pair<typename base::iterator, bool> insert(StringRef Key) {
       assert(!Key.empty());
-      return base::insert(std::make_pair(Key, '\0'));
+      return base::insert(std::make_pair(Key, None));
     }
 
     template <typename InputIt>
     void insert(const InputIt &Begin, const InputIt &End) {
       for (auto It = Begin; It != End; ++It)
-        base::insert(std::make_pair(*It, '\0'));
+        base::insert(std::make_pair(*It, None));
+    }
+
+    template <typename ValueTy>
+    std::pair<typename base::iterator, bool>
+    insert(const StringMapEntry<ValueTy> &MapEntry) {
+      return insert(MapEntry.getKey());
     }
   };
 

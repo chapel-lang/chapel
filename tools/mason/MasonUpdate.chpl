@@ -27,6 +27,7 @@ use MasonUtils;
 use MasonEnv;
 use MasonSystem;
 use MasonExternal;
+use MasonHelp;
 
 
 /*
@@ -46,32 +47,55 @@ The current resolution strategy for Mason 0.1.0 is the IVRS as described below:
 
 private var failedChapelVersion: list(string);
 
-//
-// Temporary passthrough transforming array to list to appease the compiler.
-//
-proc UpdateLock(args: [?d] string, tf="Mason.toml", lf="Mason.lock") {
+proc masonUpdate(args: [?d] string) {
+  var tf = "Mason.toml";
+  var lf = "Mason.lock";
+  var skipUpdate = MASON_OFFLINE;
+
   var listArgs: list(string);
-  for x in args do listArgs.append(x);
-  return UpdateLock(listArgs, tf, lf);
+  for arg in args {
+    listArgs.append(arg);
+    select (arg) {
+      when '-h' {
+        masonUpdateHelp();
+        exit(0);
+      }
+      when '--help' {
+        masonUpdateHelp();
+        exit(0);
+      }
+      when '--no-update' {
+        skipUpdate = true;
+      }
+      when '--update' {
+        skipUpdate = false;
+      }
+    }
+  }
+  return updateLock(skipUpdate, tf, lf);
 }
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
-
     const cwd = getEnv("PWD");
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
-
-
-    updateRegistry(tf, args);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
+    if isFile(tomlPath) {
+      if TomlFile['dependencies']!.A.size > 0 then updateRegistry(skipUpdate);
+      else writeln("Skipping registry update since no dependency found in manifest file.");
+    }
+    if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
+      if getSpackVersion != spackVersion then
+      throw new owned MasonError("Mason has been updated. " +
+                  "To install Spack, call: mason external --setup.");
+    }
     const lockFile = createDepTree(TomlFile);
-
     if failedChapelVersion.size > 0 {
       const prefix = if failedChapelVersion.size == 1
         then "The following package is"
@@ -81,10 +105,8 @@ proc UpdateLock(args: list(string), tf="Mason.toml", lf="Mason.lock") {
         stderr.writeln("  ", msg);
       exit(1);
     }
-
     // Generate Lock File
     genLock(lockFile, lockPath);
-
     // Close Memory
     openFile.close();
     delete TomlFile;
@@ -137,27 +159,16 @@ proc checkRegistryChanged() {
 }
 
 /* Pulls the mason-registry. Cloning if !exist */
-proc updateRegistry(tf: string, args: list(string)) {
-  var skipOffline = false;
-  if args.count('update') == 1 {
-    skipOffline = true;
-  }
+proc updateRegistry(skipUpdate: bool) {
 
-  if args.count("--no-update") != 0 then
-    return;
-
-  if MASON_OFFLINE && (args.count('--update') == 0) && !skipOffline {
-    writeln('Skipping update due to MASON_OFFLINE=true');
-    return;
-  }
+  if skipUpdate then return;
 
   checkRegistryChanged();
   for ((name, registry), registryHome) in zip(MASON_REGISTRY, MASON_CACHED_REGISTRY) {
 
     if isDir(registryHome) {
       var pullRegistry = 'git pull -q origin master';
-      if tf == "Mason.toml" then
-        writeln("Updating ", name);
+      writeln("Updating ", name);
       gitC(registryHome, pullRegistry);
     }
     // Registry has moved or does not exist
@@ -193,10 +204,26 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   }
 
   const chplVersion = brick!["chplVersion"]!.s;
-  var low, hi : VersionInfo;
+  var low, high : VersionInfo;
 
   try {
-    const formatMessage = "\n\n" +
+    var res = checkChplVersion(chplVersion, low, high);
+    low = res[0];
+    high = res[1];
+  } catch e : Error {
+    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
+    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Details: ", e.message());
+    exit(1);
+  }
+
+  return (low, high);
+}
+
+proc checkChplVersion(chplVersion, low, high) throws {
+  use Regexp;
+  var lo, hi : VersionInfo;
+  const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +
     "A <version> must be in one of the following formats:\n" +
     "  x.x.x\n" +
@@ -230,24 +257,17 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
       return ret;
     }
 
-    low = parseString(versions[0]);
+    lo = parseString(versions[0]);
 
     if (versions.size == 1) {
       hi = new VersionInfo(max(int), max(int), max(int));
     } else {
       hi = parseString(versions[1]);
     }
+     if (lo <= hi) == false then
+      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + lo.str() + " > " + hi.str());
 
-    if (low <= hi) == false then
-      throw new owned MasonError("Lower bound of chplVersion must be <= upper bound: " + low.str() + " > " + hi.str());
-  } catch e : Error {
-    const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    stderr.writeln("Details: ", e.message());
-    exit(1);
-  }
-
-  return (low, hi);
+      return (lo, hi);
 }
 
 proc verifyChapelVersion(brick:borrowed Toml) {

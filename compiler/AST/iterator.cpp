@@ -165,7 +165,7 @@ LOGISTICS
 
 IteratorGroup::IteratorGroup() :
   serial(NULL), standalone(NULL), leader(NULL), follower(NULL),
-  noniterSA(false), noniterL(false)
+  noniterSA(NULL), noniterL(NULL)
 {}
 
 static bool isIteratorOrForwarder(FnSymbol* it) {
@@ -182,7 +182,7 @@ static bool isIteratorOrForwarder(FnSymbol* it) {
 // Look for the iterator for 'iterKindTag' and update the iterator group.
 static void checkParallelIterator(FnSymbol* serial, Expr* call,
                                   Symbol* iterKindTag, IteratorGroup* igroup,
-                                  FnSymbol*& outParIter, bool& noniterFlag)
+                                  FnSymbol*& outParIter, FnSymbol*& noniterFn)
 {
   // Build a "representative call".
   CallExpr* repCall = new CallExpr(new UnresolvedSymExpr(serial->name));
@@ -210,7 +210,7 @@ static void checkParallelIterator(FnSymbol* serial, Expr* call,
     } else {
       // If this is not an iterator, do not record it.
       // We may need to raise an error later.
-      noniterFlag = true;
+      noniterFn = parIter;
     }
   }
 

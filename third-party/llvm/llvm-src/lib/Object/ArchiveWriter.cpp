@@ -1,9 +1,8 @@
 //===- ArchiveWriter.cpp - ar File Format implementation --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,8 +16,10 @@
 #include "llvm/BinaryFormat/Magic.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/Object/Archive.h"
+#include "llvm/Object/Error.h"
 #include "llvm/Object/ObjectFile.h"
 #include "llvm/Object/SymbolicFile.h"
+#include "llvm/Support/Alignment.h"
 #include "llvm/Support/EndianStream.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -49,7 +50,6 @@ NewArchiveMember::getOldMember(const object::Archive::Child &OldMember,
     return BufOrErr.takeError();
 
   NewArchiveMember M;
-  assert(M.IsNew == false);
   M.Buf = MemoryBuffer::getMemBuffer(*BufOrErr, false);
   M.MemberName = M.Buf->getBufferIdentifier();
   if (!Deterministic) {
@@ -76,10 +76,11 @@ NewArchiveMember::getOldMember(const object::Archive::Child &OldMember,
 Expected<NewArchiveMember> NewArchiveMember::getFile(StringRef FileName,
                                                      bool Deterministic) {
   sys::fs::file_status Status;
-  int FD;
-  if (auto EC = sys::fs::openFileForRead(FileName, FD))
-    return errorCodeToError(EC);
-  assert(FD != -1);
+  auto FDOrErr = sys::fs::openNativeFileForRead(FileName);
+  if (!FDOrErr)
+    return FDOrErr.takeError();
+  sys::fs::file_t FD = *FDOrErr;
+  assert(FD != sys::fs::kInvalidFile);
 
   if (auto EC = sys::fs::status(FD, Status))
     return errorCodeToError(EC);
@@ -95,11 +96,10 @@ Expected<NewArchiveMember> NewArchiveMember::getFile(StringRef FileName,
   if (!MemberBufferOrErr)
     return errorCodeToError(MemberBufferOrErr.getError());
 
-  if (close(FD) != 0)
-    return errorCodeToError(std::error_code(errno, std::generic_category()));
+  if (auto EC = sys::fs::closeFile(FD))
+    return errorCodeToError(EC);
 
   NewArchiveMember M;
-  M.IsNew = true;
   M.Buf = std::move(*MemberBufferOrErr);
   M.MemberName = M.Buf->getBufferIdentifier();
   if (!Deterministic) {
@@ -149,7 +149,7 @@ static void print(raw_ostream &Out, object::Archive::Kind Kind, T Val) {
 
 static void printRestOfMemberHeader(
     raw_ostream &Out, const sys::TimePoint<std::chrono::seconds> &ModTime,
-    unsigned UID, unsigned GID, unsigned Perms, unsigned Size) {
+    unsigned UID, unsigned GID, unsigned Perms, uint64_t Size) {
   printWithSpacePadding(Out, sys::toTimeT(ModTime), 12);
 
   // The format has only 6 chars for uid and gid. Truncate if the provided
@@ -166,7 +166,7 @@ static void
 printGNUSmallMemberHeader(raw_ostream &Out, StringRef Name,
                           const sys::TimePoint<std::chrono::seconds> &ModTime,
                           unsigned UID, unsigned GID, unsigned Perms,
-                          unsigned Size) {
+                          uint64_t Size) {
   printWithSpacePadding(Out, Twine(Name) + "/", 16);
   printRestOfMemberHeader(Out, ModTime, UID, GID, Perms, Size);
 }
@@ -174,11 +174,10 @@ printGNUSmallMemberHeader(raw_ostream &Out, StringRef Name,
 static void
 printBSDMemberHeader(raw_ostream &Out, uint64_t Pos, StringRef Name,
                      const sys::TimePoint<std::chrono::seconds> &ModTime,
-                     unsigned UID, unsigned GID, unsigned Perms,
-                     unsigned Size) {
+                     unsigned UID, unsigned GID, unsigned Perms, uint64_t Size) {
   uint64_t PosAfterHeader = Pos + 60 + Name.size();
   // Pad so that even 64 bit object files are aligned.
-  unsigned Pad = OffsetToAlignment(PosAfterHeader, 8);
+  unsigned Pad = offsetToAlignment(PosAfterHeader, Align(8));
   unsigned NameWithPadding = Name.size() + Pad;
   printWithSpacePadding(Out, Twine("#1/") + Twine(NameWithPadding), 16);
   printRestOfMemberHeader(Out, ModTime, UID, GID, Perms,
@@ -190,35 +189,6 @@ printBSDMemberHeader(raw_ostream &Out, uint64_t Pos, StringRef Name,
 
 static bool useStringTable(bool Thin, StringRef Name) {
   return Thin || Name.size() >= 16 || Name.contains('/');
-}
-
-// Compute the relative path from From to To.
-static std::string computeRelativePath(StringRef From, StringRef To) {
-  if (sys::path::is_absolute(From) || sys::path::is_absolute(To))
-    return To;
-
-  StringRef DirFrom = sys::path::parent_path(From);
-  auto FromI = sys::path::begin(DirFrom);
-  auto ToI = sys::path::begin(To);
-  while (*FromI == *ToI) {
-    ++FromI;
-    ++ToI;
-  }
-
-  SmallString<128> Relative;
-  for (auto FromE = sys::path::end(DirFrom); FromI != FromE; ++FromI)
-    sys::path::append(Relative, "..");
-
-  for (auto ToE = sys::path::end(To); ToI != ToE; ++ToI)
-    sys::path::append(Relative, *ToI);
-
-#ifdef _WIN32
-  // Replace backslashes with slashes so that the path is portable between *nix
-  // and Windows.
-  std::replace(Relative.begin(), Relative.end(), '\\', '/');
-#endif
-
-  return Relative.str();
 }
 
 static bool is64BitKind(object::Archive::Kind Kind) {
@@ -235,27 +205,11 @@ static bool is64BitKind(object::Archive::Kind Kind) {
   llvm_unreachable("not supported for writting");
 }
 
-static void addToStringTable(raw_ostream &Out, StringRef ArcName,
-                             const NewArchiveMember &M, bool Thin) {
-  StringRef ID = M.Buf->getBufferIdentifier();
-  if (Thin) {
-    if (M.IsNew)
-      Out << computeRelativePath(ArcName, ID);
-    else
-      Out << ID;
-  } else
-    Out << M.MemberName;
-  Out << "/\n";
-}
-
-static void printMemberHeader(raw_ostream &Out, uint64_t Pos,
-                              raw_ostream &StringTable,
-                              StringMap<uint64_t> &MemberNames,
-                              object::Archive::Kind Kind, bool Thin,
-                              StringRef ArcName, const NewArchiveMember &M,
-                              sys::TimePoint<std::chrono::seconds> ModTime,
-                              unsigned Size) {
-
+static void
+printMemberHeader(raw_ostream &Out, uint64_t Pos, raw_ostream &StringTable,
+                  StringMap<uint64_t> &MemberNames, object::Archive::Kind Kind,
+                  bool Thin, const NewArchiveMember &M,
+                  sys::TimePoint<std::chrono::seconds> ModTime, uint64_t Size) {
   if (isBSDLike(Kind))
     return printBSDMemberHeader(Out, Pos, M.MemberName, ModTime, M.UID, M.GID,
                                 M.Perms, Size);
@@ -266,12 +220,12 @@ static void printMemberHeader(raw_ostream &Out, uint64_t Pos,
   uint64_t NamePos;
   if (Thin) {
     NamePos = StringTable.tell();
-    addToStringTable(StringTable, ArcName, M, Thin);
+    StringTable << M.MemberName << "/\n";
   } else {
     auto Insertion = MemberNames.insert({M.MemberName, uint64_t(0)});
     if (Insertion.second) {
       Insertion.first->second = StringTable.tell();
-      addToStringTable(StringTable, ArcName, M, Thin);
+      StringTable << M.MemberName << "/\n";
     }
     NamePos = Insertion.first->second;
   }
@@ -290,7 +244,7 @@ struct MemberData {
 
 static MemberData computeStringTable(StringRef Names) {
   unsigned Size = Names.size();
-  unsigned Pad = OffsetToAlignment(Size, 2);
+  unsigned Pad = offsetToAlignment(Size, Align(2));
   std::string Header;
   raw_string_ostream Out(Header);
   printWithSpacePadding(Out, "//", 48);
@@ -354,8 +308,8 @@ static void writeSymbolTable(raw_ostream &Out, object::Archive::Kind Kind,
   // least 4-byte aligned for 32-bit content.  Opt for the larger encoding
   // uniformly.
   // We do this for all bsd formats because it simplifies aligning members.
-  unsigned Alignment = isBSDLike(Kind) ? 8 : 2;
-  unsigned Pad = OffsetToAlignment(Size, Alignment);
+  const Align Alignment(isBSDLike(Kind) ? 8 : 2);
+  unsigned Pad = offsetToAlignment(Size, Alignment);
   Size += Pad;
 
   if (isBSDLike(Kind)) {
@@ -424,8 +378,8 @@ getSymbols(MemoryBufferRef Buf, raw_ostream &SymNames, bool &HasObject) {
     if (!isArchiveSymbol(S))
       continue;
     Ret.push_back(SymNames.tell());
-    if (auto EC = S.printName(SymNames))
-      return errorCodeToError(EC);
+    if (Error E = S.printName(SymNames))
+      return std::move(E);
     SymNames << '\0';
   }
   return Ret;
@@ -433,8 +387,8 @@ getSymbols(MemoryBufferRef Buf, raw_ostream &SymNames, bool &HasObject) {
 
 static Expected<std::vector<MemberData>>
 computeMemberData(raw_ostream &StringTable, raw_ostream &SymNames,
-                  object::Archive::Kind Kind, bool Thin, StringRef ArcName,
-                  bool Deterministic, ArrayRef<NewArchiveMember> NewMembers) {
+                  object::Archive::Kind Kind, bool Thin, bool Deterministic,
+                  ArrayRef<NewArchiveMember> NewMembers) {
   static char PaddingData[8] = {'\n', '\n', '\n', '\n', '\n', '\n', '\n', '\n'};
 
   // This ignores the symbol table, but we only need the value mod 8 and the
@@ -511,8 +465,9 @@ computeMemberData(raw_ostream &StringTable, raw_ostream &SymNames,
     // uniformly.  This matches the behaviour with cctools and ensures that ld64
     // is happy with archives that we generate.
     unsigned MemberPadding =
-        isDarwin(Kind) ? OffsetToAlignment(Data.size(), 8) : 0;
-    unsigned TailPadding = OffsetToAlignment(Data.size() + MemberPadding, 2);
+        isDarwin(Kind) ? offsetToAlignment(Data.size(), Align(8)) : 0;
+    unsigned TailPadding =
+        offsetToAlignment(Data.size() + MemberPadding, Align(2));
     StringRef Padding = StringRef(PaddingData, MemberPadding + TailPadding);
 
     sys::TimePoint<std::chrono::seconds> ModTime;
@@ -521,8 +476,17 @@ computeMemberData(raw_ostream &StringTable, raw_ostream &SymNames,
       ModTime = sys::toTimePoint(FilenameCount[M.MemberName]++);
     else
       ModTime = M.ModTime;
-    printMemberHeader(Out, Pos, StringTable, MemberNames, Kind, Thin, ArcName,
-                      M, ModTime, Buf.getBufferSize() + MemberPadding);
+
+    uint64_t Size = Buf.getBufferSize() + MemberPadding;
+    if (Size > object::Archive::MaxMemberSize) {
+      std::string StringMsg =
+          "File " + M.MemberName.str() + " exceeds size limit";
+      return make_error<object::GenericBinaryError>(
+          std::move(StringMsg), object::object_error::parse_failed);
+    }
+
+    printMemberHeader(Out, Pos, StringTable, MemberNames, Kind, Thin, M,
+                      ModTime, Size);
     Out.flush();
 
     Expected<std::vector<unsigned>> Symbols =
@@ -541,11 +505,53 @@ computeMemberData(raw_ostream &StringTable, raw_ostream &SymNames,
   return Ret;
 }
 
-Error llvm::writeArchive(StringRef ArcName,
-                         ArrayRef<NewArchiveMember> NewMembers,
-                         bool WriteSymtab, object::Archive::Kind Kind,
-                         bool Deterministic, bool Thin,
-                         std::unique_ptr<MemoryBuffer> OldArchiveBuf) {
+namespace llvm {
+
+static ErrorOr<SmallString<128>> canonicalizePath(StringRef P) {
+  SmallString<128> Ret = P;
+  std::error_code Err = sys::fs::make_absolute(Ret);
+  if (Err)
+    return Err;
+  sys::path::remove_dots(Ret, /*removedotdot*/ true);
+  return Ret;
+}
+
+// Compute the relative path from From to To.
+Expected<std::string> computeArchiveRelativePath(StringRef From, StringRef To) {
+  ErrorOr<SmallString<128>> PathToOrErr = canonicalizePath(To);
+  ErrorOr<SmallString<128>> DirFromOrErr = canonicalizePath(From);
+  if (!PathToOrErr || !DirFromOrErr)
+    return errorCodeToError(std::error_code(errno, std::generic_category()));
+
+  const SmallString<128> &PathTo = *PathToOrErr;
+  const SmallString<128> &DirFrom = sys::path::parent_path(*DirFromOrErr);
+
+  // Can't construct a relative path between different roots
+  if (sys::path::root_name(PathTo) != sys::path::root_name(DirFrom))
+    return sys::path::convert_to_slash(PathTo);
+
+  // Skip common prefixes
+  auto FromTo =
+      std::mismatch(sys::path::begin(DirFrom), sys::path::end(DirFrom),
+                    sys::path::begin(PathTo));
+  auto FromI = FromTo.first;
+  auto ToI = FromTo.second;
+
+  // Construct relative path
+  SmallString<128> Relative;
+  for (auto FromE = sys::path::end(DirFrom); FromI != FromE; ++FromI)
+    sys::path::append(Relative, sys::path::Style::posix, "..");
+
+  for (auto ToE = sys::path::end(PathTo); ToI != ToE; ++ToI)
+    sys::path::append(Relative, sys::path::Style::posix, *ToI);
+
+  return Relative.str();
+}
+
+Error writeArchive(StringRef ArcName, ArrayRef<NewArchiveMember> NewMembers,
+                   bool WriteSymtab, object::Archive::Kind Kind,
+                   bool Deterministic, bool Thin,
+                   std::unique_ptr<MemoryBuffer> OldArchiveBuf) {
   assert((!Thin || !isBSDLike(Kind)) && "Only the gnu format has a thin mode");
 
   SmallString<0> SymNamesBuf;
@@ -554,7 +560,7 @@ Error llvm::writeArchive(StringRef ArcName,
   raw_svector_ostream StringTable(StringTableBuf);
 
   Expected<std::vector<MemberData>> DataOrErr = computeMemberData(
-      StringTable, SymNames, Kind, Thin, ArcName, Deterministic, NewMembers);
+      StringTable, SymNames, Kind, Thin, Deterministic, NewMembers);
   if (Error E = DataOrErr.takeError())
     return E;
   std::vector<MemberData> &Data = *DataOrErr;
@@ -631,3 +637,5 @@ Error llvm::writeArchive(StringRef ArcName,
 
   return Temp->keep(ArcName);
 }
+
+} // namespace llvm

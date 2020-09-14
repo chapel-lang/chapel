@@ -1,9 +1,8 @@
 //===- TypePrinter.cpp - Pretty-Print Clang Types -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -126,7 +125,7 @@ namespace {
 #define TYPE(CLASS, PARENT) \
     void print##CLASS##Before(const CLASS##Type *T, raw_ostream &OS); \
     void print##CLASS##After(const CLASS##Type *T, raw_ostream &OS);
-#include "clang/AST/TypeNodes.def"
+#include "clang/AST/TypeNodes.inc"
 
   private:
     void printBefore(const Type *ty, Qualifiers qs, raw_ostream &OS);
@@ -258,11 +257,18 @@ bool TypePrinter::canPrefixQualifiers(const Type *T,
     case Type::FunctionProto:
     case Type::FunctionNoProto:
     case Type::Paren:
-    case Type::Attributed:
     case Type::PackExpansion:
     case Type::SubstTemplateTypeParm:
+    case Type::MacroQualified:
       CanPrefixQualifiers = false;
       break;
+
+    case Type::Attributed: {
+      // We still want to print the address_space before the type if it is an
+      // address_space attribute.
+      const auto *AttrTy = cast<AttributedType>(T);
+      CanPrefixQualifiers = AttrTy->getAttrKind() == attr::AddressSpace;
+    }
   }
 
   return CanPrefixQualifiers;
@@ -315,7 +321,7 @@ void TypePrinter::printBefore(const Type *T,Qualifiers Quals, raw_ostream &OS) {
 #define TYPE(CLASS, PARENT) case Type::CLASS: \
     print##CLASS##Before(cast<CLASS##Type>(T), OS); \
     break;
-#include "clang/AST/TypeNodes.def"
+#include "clang/AST/TypeNodes.inc"
   }
 
   if (hasAfterQuals) {
@@ -341,7 +347,7 @@ void TypePrinter::printAfter(const Type *T, Qualifiers Quals, raw_ostream &OS) {
 #define TYPE(CLASS, PARENT) case Type::CLASS: \
     print##CLASS##After(cast<CLASS##Type>(T), OS); \
     break;
-#include "clang/AST/TypeNodes.def"
+#include "clang/AST/TypeNodes.inc"
   }
 }
 
@@ -728,6 +734,8 @@ FunctionProtoType::printExceptionSpecification(raw_ostream &OS,
         OS << getExceptionType(I).stream(Policy);
       }
     OS << ')';
+  } else if (EST_NoThrow == getExceptionSpecType()) {
+    OS << " __attribute__((nothrow))";
   } else if (isNoexceptExceptionSpec(getExceptionSpecType())) {
     OS << " noexcept";
     // FIXME:Is it useful to print out the expression for a non-dependent
@@ -810,8 +818,8 @@ void TypePrinter::printFunctionProtoAfter(const FunctionProtoType *T,
 
   printFunctionAfter(Info, OS);
 
-  if (!T->getTypeQuals().empty())
-    OS << " " << T->getTypeQuals().getAsString();
+  if (!T->getMethodQuals().empty())
+    OS << " " << T->getMethodQuals().getAsString();
 
   switch (T->getRefQualifier()) {
   case RQ_None:
@@ -958,6 +966,21 @@ void TypePrinter::printTypedefBefore(const TypedefType *T, raw_ostream &OS) {
   printTypeSpec(T->getDecl(), OS);
 }
 
+void TypePrinter::printMacroQualifiedBefore(const MacroQualifiedType *T,
+                                            raw_ostream &OS) {
+  StringRef MacroName = T->getMacroIdentifier()->getName();
+  OS << MacroName << " ";
+
+  // Since this type is meant to print the macro instead of the whole attribute,
+  // we trim any attributes and go directly to the original modified type.
+  printBefore(T->getModifiedType(), OS);
+}
+
+void TypePrinter::printMacroQualifiedAfter(const MacroQualifiedType *T,
+                                           raw_ostream &OS) {
+  printAfter(T->getModifiedType(), OS);
+}
+
 void TypePrinter::printTypedefAfter(const TypedefType *T, raw_ostream &OS) {}
 
 void TypePrinter::printTypeOfExprBefore(const TypeOfExprType *T,
@@ -1023,6 +1046,13 @@ void TypePrinter::printAutoBefore(const AutoType *T, raw_ostream &OS) {
   if (!T->getDeducedType().isNull()) {
     printBefore(T->getDeducedType(), OS);
   } else {
+    if (T->isConstrained()) {
+      OS << T->getTypeConstraintConcept()->getName();
+      auto Args = T->getTypeConstraintArguments();
+      if (!Args.empty())
+        printTemplateArgumentList(OS, Args, Policy);
+      OS << ' ';
+    }
     switch (T->getKeyword()) {
     case AutoTypeKeyword::Auto: OS << "auto"; break;
     case AutoTypeKeyword::DecltypeAuto: OS << "decltype(auto)"; break;
@@ -1166,8 +1196,8 @@ void TypePrinter::printTag(TagDecl *D, raw_ostream &OS) {
       if (PLoc.isValid()) {
         OS << " at ";
         StringRef File = PLoc.getFilename();
-        if (Policy.RemapFilePaths)
-          OS << Policy.remapPath(File);
+        if (auto *Callbacks = Policy.Callbacks)
+          OS << Callbacks->remapPath(File);
         else
           OS << File;
         OS << ':' << PLoc.getLine() << ':' << PLoc.getColumn();
@@ -1181,7 +1211,8 @@ void TypePrinter::printTag(TagDecl *D, raw_ostream &OS) {
   // arguments.
   if (const auto *Spec = dyn_cast<ClassTemplateSpecializationDecl>(D)) {
     ArrayRef<TemplateArgument> Args;
-    if (TypeSourceInfo *TAW = Spec->getTypeAsWritten()) {
+    TypeSourceInfo *TAW = Spec->getTypeAsWritten();
+    if (!Policy.PrintCanonicalTypes && TAW) {
       const TemplateSpecializationType *TST =
         cast<TemplateSpecializationType>(TAW->getType());
       Args = TST->template_arguments();
@@ -1210,10 +1241,18 @@ void TypePrinter::printEnumAfter(const EnumType *T, raw_ostream &OS) {}
 
 void TypePrinter::printTemplateTypeParmBefore(const TemplateTypeParmType *T,
                                               raw_ostream &OS) {
-  if (IdentifierInfo *Id = T->getIdentifier())
+  TemplateTypeParmDecl *D = T->getDecl();
+  if (D && D->isImplicit()) {
+    if (auto *TC = D->getTypeConstraint()) {
+      TC->print(OS, Policy);
+      OS << ' ';
+    }
+    OS << "auto";
+  } else if (IdentifierInfo *Id = T->getIdentifier())
     OS << Id->getName();
   else
     OS << "type-parameter-" << T->getDepth() << '-' << T->getIndex();
+
   spaceBeforePlaceHolder(OS);
 }
 
@@ -1378,7 +1417,10 @@ void TypePrinter::printAttributedBefore(const AttributedType *T,
   if (T->getAttrKind() == attr::ObjCKindOf)
     OS << "__kindof ";
 
-  printBefore(T->getModifiedType(), OS);
+  if (T->getAttrKind() == attr::AddressSpace)
+    printBefore(T->getEquivalentType(), OS);
+  else
+    printBefore(T->getModifiedType(), OS);
 
   if (T->isMSTypeSpec()) {
     switch (T->getAttrKind()) {
@@ -1501,7 +1543,7 @@ void TypePrinter::printAttributedAfter(const AttributedType *T,
    QualType t = T->getEquivalentType();
    while (!t->isFunctionType())
      t = t->getPointeeType();
-   OS << (t->getAs<FunctionType>()->getCallConv() == CC_AAPCS ?
+   OS << (t->castAs<FunctionType>()->getCallConv() == CC_AAPCS ?
          "\"aapcs\"" : "\"aapcs-vfp\"");
    OS << ')';
    break;
@@ -1517,6 +1559,9 @@ void TypePrinter::printAttributedAfter(const AttributedType *T,
     break;
   case attr::NoDeref:
     OS << "noderef";
+    break;
+  case attr::AcquireHandle:
+    OS << "acquire_handle";
     break;
   }
   OS << "))";
@@ -1624,6 +1669,19 @@ static const TemplateArgument &getArgument(const TemplateArgumentLoc &A) {
   return A.getArgument();
 }
 
+static void printArgument(const TemplateArgument &A, const PrintingPolicy &PP,
+                          llvm::raw_ostream &OS) {
+  A.print(PP, OS);
+}
+
+static void printArgument(const TemplateArgumentLoc &A,
+                          const PrintingPolicy &PP, llvm::raw_ostream &OS) {
+  const TemplateArgument::ArgKind &Kind = A.getArgument().getKind();
+  if (Kind == TemplateArgument::ArgKind::Type)
+    return A.getTypeSourceInfo()->getType().print(OS, PP);
+  return A.getArgument().print(PP, OS);
+}
+
 template<typename TA>
 static void printTo(raw_ostream &OS, ArrayRef<TA> Args,
                     const PrintingPolicy &Policy, bool SkipBrackets) {
@@ -1645,7 +1703,8 @@ static void printTo(raw_ostream &OS, ArrayRef<TA> Args,
     } else {
       if (!FirstArg)
         OS << Comma;
-      Argument.print(Policy, ArgOS);
+      // Tries to print the argument with location info if exists.
+      printArgument(Arg, Policy, ArgOS);
     }
     StringRef ArgString = ArgOS.str();
 
@@ -1721,6 +1780,37 @@ bool Qualifiers::isEmptyWhenPrinted(const PrintingPolicy &Policy) const {
   return true;
 }
 
+std::string Qualifiers::getAddrSpaceAsString(LangAS AS) {
+  switch (AS) {
+  case LangAS::Default:
+    return "";
+  case LangAS::opencl_global:
+    return "__global";
+  case LangAS::opencl_local:
+    return "__local";
+  case LangAS::opencl_private:
+    return "__private";
+  case LangAS::opencl_constant:
+    return "__constant";
+  case LangAS::opencl_generic:
+    return "__generic";
+  case LangAS::cuda_device:
+    return "__device__";
+  case LangAS::cuda_constant:
+    return "__constant__";
+  case LangAS::cuda_shared:
+    return "__shared__";
+  case LangAS::ptr32_sptr:
+    return "__sptr __ptr32";
+  case LangAS::ptr32_uptr:
+    return "__uptr __ptr32";
+  case LangAS::ptr64:
+    return "__ptr64";
+  default:
+    return std::to_string(toTargetAddressSpace(AS));
+  }
+}
+
 // Appends qualifiers to the given string, separated by spaces.  Will
 // prefix a space if the string is non-empty.  Will not append a final
 // space.
@@ -1739,41 +1829,18 @@ void Qualifiers::print(raw_ostream &OS, const PrintingPolicy& Policy,
     OS << "__unaligned";
     addSpace = true;
   }
-  LangAS addrspace = getAddressSpace();
-  if (addrspace != LangAS::Default) {
-    if (addrspace != LangAS::opencl_private) {
-      if (addSpace)
-        OS << ' ';
-      addSpace = true;
-      switch (addrspace) {
-      case LangAS::opencl_global:
-        OS << "__global";
-        break;
-      case LangAS::opencl_local:
-        OS << "__local";
-        break;
-      case LangAS::opencl_private:
-        break;
-      case LangAS::opencl_constant:
-      case LangAS::cuda_constant:
-        OS << "__constant";
-        break;
-      case LangAS::opencl_generic:
-        OS << "__generic";
-        break;
-      case LangAS::cuda_device:
-        OS << "__device";
-        break;
-      case LangAS::cuda_shared:
-        OS << "__shared";
-        break;
-      default:
-        OS << "__attribute__((address_space(";
-        OS << toTargetAddressSpace(addrspace);
-        OS << ")))";
-      }
-    }
+  auto ASStr = getAddrSpaceAsString(getAddressSpace());
+  if (!ASStr.empty()) {
+    if (addSpace)
+      OS << ' ';
+    addSpace = true;
+    // Wrap target address space into an attribute syntax
+    if (isTargetAddressSpace(getAddressSpace()))
+      OS << "__attribute__((address_space(" << ASStr << ")))";
+    else
+      OS << ASStr;
   }
+
   if (Qualifiers::GC gc = getObjCGCAttr()) {
     if (addSpace)
       OS << ' ';

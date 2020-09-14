@@ -183,11 +183,43 @@ supported include:
     Example: !dag(op, [a1, a2, ?], ["name1", "name2", "name3"]) results in
     (op a1:$name1, a2:$name2, ?:$name3).
 
+``!setop(dag, op)``
+    Return a DAG node with the same arguments as ``dag``, but with its
+    operator replaced with ``op``.
+
+    Example: ``!setop((foo 1, 2), bar)`` results in ``(bar 1, 2)``.
+
+``!getop(dag)``
+
+``!getop<type>(dag)``
+    Return the operator of the given DAG node.
+    Example: ``!getop((foo 1, 2))`` results in ``foo``.
+
+    The result of ``!getop`` can be used directly in a context where
+    any record value at all is acceptable (typically placing it into
+    another dag value). But in other contexts, it must be explicitly
+    cast to a particular class type. The ``!getop<type>`` syntax is
+    provided to make this easy.
+
+    For example, to assign the result to a class-typed value, you
+    could write either of these:
+    ``BaseClass b = !getop<BaseClass>(someDag);``
+
+    ``BaseClass b = !cast<BaseClass>(!getop(someDag));``
+
+    But to build a new dag node reusing the operator from another, no
+    cast is necessary:
+    ``dag d = !dag(!getop(someDag), args, names);``
+
 ``!listconcat(a, b, ...)``
     A list value that is the result of concatenating the 'a' and 'b' lists.
     The lists must have the same element type.
     More than two arguments are accepted with the result being the concatenation
     of all the lists given.
+
+``!listsplat(a, size)``
+    A list value that contains the value ``a`` ``size`` times.
+    Example: ``!listsplat(0, 2)`` results in ``[0, 0]``.
 
 ``!strconcat(a, b, ...)``
     A string value that is the result of concatenating the 'a' and 'b' strings.
@@ -258,6 +290,16 @@ supported include:
 ``!if(a,b,c)``
   'b' if the result of 'int' or 'bit' operator 'a' is nonzero, 'c' otherwise.
 
+``!cond(condition_1 : val1, condition_2 : val2, ..., condition_n : valn)``
+    Instead of embedding !if inside !if which can get cumbersome,
+    one can use !cond. !cond returns 'val1' if the result of 'int' or 'bit'
+    operator 'condition1' is nonzero. Otherwise, it checks 'condition2'.
+    If 'condition2' is nonzero, returns 'val2', and so on.
+    If all conditions are zero, it reports an error.  
+
+    For example, to convert an integer 'x' into a string:
+      !cond(!lt(x,0) : "negative", !eq(x,0) : "zero", 1 : "positive")
+
 ``!eq(a,b)``
     'bit 1' if string a is equal to string b, 0 otherwise.  This only operates
     on string, int and bit objects.  Use !cast<string> to compare other types of
@@ -274,7 +316,7 @@ supported include:
     The usual shift operators. Operations are on 64-bit integers, the result
     is undefined for shift counts outside [0, 63].
 
-``!add(a,b,...)`` ``!and(a,b,...)`` ``!or(a,b,...)``
+``!add(a,b,...)`` ``!mul(a,b,...)`` ``!and(a,b,...)`` ``!or(a,b,...)``
     The usual arithmetic and binary operators.
 
 Note that all of the values have rules specifying how they convert to values

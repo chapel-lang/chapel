@@ -12,7 +12,7 @@ add_clang_executable(diagtool
   TreeView.cpp
 )
 
-target_link_libraries(diagtool
+clang_target_link_libraries(diagtool
   PRIVATE
   clangBasic
   clangFrontend
@@ -23,7 +23,7 @@ if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY)
     COMPONENT diagtool
     RUNTIME DESTINATION bin)
 
-  if (NOT CMAKE_CONFIGURATION_TYPES)
+  if (NOT LLVM_ENABLE_IDE)
     add_llvm_install_targets(install-diagtool
       DEPENDS diagtool
       COMPONENT diagtool)

@@ -1,0 +1,63 @@
+tupleModifyConstArgElem.chpl:7: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:8: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type bool
+tupleModifyConstArgElem.chpl:35: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:36: error: const actual is passed to 'ref' formal 'a' of =
+tupleModifyConstArgElem.chpl:3: note: to formal of type borrowed C?
+tupleModifyConstArgElem.chpl:39: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:40: error: const actual is passed to 'ref' formal 'a' of =
+tupleModifyConstArgElem.chpl:3: note: to formal of type unmanaged C?
+tupleModifyConstArgElem.chpl:11: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:12: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type int(64)
+tupleModifyConstArgElem.chpl:11: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:12: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type uint(64)
+tupleModifyConstArgElem.chpl:15: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:16: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type real(64)
+tupleModifyConstArgElem.chpl:15: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:16: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type imag(64)
+tupleModifyConstArgElem.chpl:19: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:20: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type complex(128)
+tupleModifyConstArgElem.chpl:23: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:24: error: const actual is passed to 'ref' formal 'r1' of =
+note: to formal of type range(int(64),bounded,false)
+tupleModifyConstArgElem.chpl:27: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:27: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type owned C?
+tupleModifyConstArgElem.chpl:28: note: possibly set here
+tupleModifyConstArgElem.chpl:31: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:31: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type shared C?
+tupleModifyConstArgElem.chpl:32: note: possibly set here
+tupleModifyConstArgElem.chpl:43: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:43: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type AtomicT(int(64))
+tupleModifyConstArgElem.chpl:44: note: possibly set here
+tupleModifyConstArgElem.chpl:55: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:55: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type string
+tupleModifyConstArgElem.chpl:57: note: possibly set here
+tupleModifyConstArgElem.chpl:55: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:55: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type bytes
+tupleModifyConstArgElem.chpl:57: note: possibly set here
+tupleModifyConstArgElem.chpl:60: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:60: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type r
+tupleModifyConstArgElem.chpl:61: note: possibly set here
+tupleModifyConstArgElem.chpl:64: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:64: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type u
+tupleModifyConstArgElem.chpl:65: note: possibly set here
+tupleModifyConstArgElem.chpl:72: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:72: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type domain(1,int(64),false)
+tupleModifyConstArgElem.chpl:73: note: possibly set here
+tupleModifyConstArgElem.chpl:76: In function 'modifyConstArgElement':
+tupleModifyConstArgElem.chpl:76: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
+note: tuple element #0 of type [domain(1,int(64),false)] int(64)
+tupleModifyConstArgElem.chpl:77: note: possibly set here

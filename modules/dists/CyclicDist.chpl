@@ -310,6 +310,8 @@ override proc Cyclic.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
+override proc CyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
+
 proc Cyclic.init(other: Cyclic, privateData,
                  param rank = other.rank,
                  type idxType = other.idxType) {
@@ -509,11 +511,12 @@ override proc CyclicDom.dsiDestroyDom() {
     }
 }
 
-proc CyclicDom.dsiBuildArray(type eltType) {
+proc CyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLCD = new unmanaged LocCyclicDom(rank, idxType);
-  const dummyLCA = new unmanaged LocCyclicArr(eltType, rank, idxType, dummyLCD);
+  const dummyLCA = new unmanaged LocCyclicArr(eltType, rank, idxType,
+                                              dummyLCD, false);
   var locArrTemp: [dom.dist.targetLocDom]
                     unmanaged LocCyclicArr(eltType, rank, idxType) = dummyLCA;
   var myLocArrTemp: unmanaged LocCyclicArr(eltType, rank, idxType)?;
@@ -522,7 +525,8 @@ proc CyclicDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocs(localeIdx) {
       const LCA = new unmanaged LocCyclicArr(eltType, rank, idxType,
-                                             dom.locDoms(localeIdx));
+                                             dom.locDoms(localeIdx),
+                                             initElts=initElts);
       locArrTemp(localeIdx) = LCA;
       if here.id == creationLocale then
         myLocArrTemp = LCA;
@@ -794,10 +798,32 @@ proc CyclicArr.setupRADOpt() {
   }
 }
 
-override proc CyclicArr.dsiDestroyArr() {
+override proc CyclicArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocs(localeIdx) {
-      delete locArr(localeIdx);
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc CyclicArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc CyclicArr.dsiDestroyArr(deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocs(localeIdx) {
+      var arr = locArr(localeIdx);
+      if deinitElts then
+        _deinitElements(arr.myElems);
+      arr.myElems.dsiElementDeinitializationComplete();
+      delete arr;
     }
   }
 }
@@ -845,6 +871,10 @@ inline proc _remoteAccessData.getDataIndex(
     }
   }
   return sum;
+}
+
+inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref {
+  return _to_nonnil(myLocArr).this(i);
 }
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
@@ -908,7 +938,7 @@ proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
-
+pragma "order independent yielding loops"
 iter CyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -935,6 +965,7 @@ proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
@@ -951,9 +982,9 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
            stride = (followThis(i).stride*wholestride):strType;
     t(i) = (lo..hi by stride) + dom.whole.dim(i).alignedLow;
   }
-  const myFollowThis = {(...t)};
+  const myFollowThisDom = {(...t)};
   if fast {
-    const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThis.low));
+    const arrSection = locArr(dom.dist.targetLocsIdx(myFollowThisDom.low));
 
     //
     // Slicing arrSection.myElems will require reference counts to be updated.
@@ -963,9 +994,13 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     //
     // TODO: Can myLocArr be used here to simplify things?
     //
-    ref chunk = arrSection.myElems(myFollowThis);
-    if arrSection.locale.id == here.id then local {
-      for i in chunk do yield i;
+    // MPF: Why doesn't this just slice the *domain* ?
+    ref chunk = arrSection.myElems(myFollowThisDom);
+
+    if arrSection.locale.id == here.id {
+      local {
+        for i in chunk do yield i;
+      }
     } else {
       for i in chunk do yield i;
     }
@@ -978,7 +1013,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
       return dsiAccess(i);
     }
 
-    for i in myFollowThis {
+    for i in myFollowThisDom {
       yield accessHelper(i);
     }
   }
@@ -1016,15 +1051,36 @@ class LocCyclicArr {
 
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true)?; // non-nil if doRADOpt=true
   var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType)?; // see below for why
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe"
+  // may be initialized separately
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            const locDom: unmanaged LocCyclicDom(rank, idxType),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
+  }
+
   proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
     if locRAD != nil then
       delete locRAD;
     if locCyclicRAD != nil then
       delete locCyclicRAD;
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocCyclicArr.writeThis() is not implemented / should not be needed");
   }
 }
 

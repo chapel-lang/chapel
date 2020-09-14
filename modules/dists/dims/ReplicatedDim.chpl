@@ -334,6 +334,7 @@ iter Replicated1dom.dsiSerialArrayIterator1d() {
 // The latter is chosen to simplify dsiFollowerArrayIterator1d implementations.
 // It also eliminates one loop nest per dimension in DimensionalArr follower.
 //
+pragma "order independent yielding loops"
 iter Replicated1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   assert(localLocIDlegit);
   for i in undensRange do

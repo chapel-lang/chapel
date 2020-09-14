@@ -1,6 +1,6 @@
 
 
-add_llvm_library(LLVMExecutionEngine
+add_llvm_component_library(LLVMExecutionEngine
   ExecutionEngine.cpp
   ExecutionEngineBindings.cpp
   GDBRegistrationListener.cpp
@@ -19,7 +19,9 @@ if(BUILD_SHARED_LIBS)
 endif()
 
 add_subdirectory(Interpreter)
+add_subdirectory(JITLink)
 add_subdirectory(MCJIT)
+add_subdirectory(OrcError)
 add_subdirectory(Orc)
 add_subdirectory(RuntimeDyld)
 

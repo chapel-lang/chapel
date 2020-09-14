@@ -1,9 +1,8 @@
 //=- llvm/Analysis/PostDominators.h - Post Dominator Calculation --*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -35,6 +34,13 @@ public:
   /// Handle invalidation explicitly.
   bool invalidate(Function &F, const PreservedAnalyses &PA,
                   FunctionAnalysisManager::Invalidator &);
+
+  // Ensure base-class overloads are visible.
+  using Base::dominates;
+
+  /// Return true if \p I1 dominates \p I2. This checks if \p I2 comes before
+  /// \p I1 if they belongs to the same basic block.
+  bool dominates(const Instruction *I1, const Instruction *I2) const;
 };
 
 /// Analysis pass which computes a \c PostDominatorTree.
@@ -69,9 +75,7 @@ struct PostDominatorTreeWrapperPass : public FunctionPass {
 
   PostDominatorTree DT;
 
-  PostDominatorTreeWrapperPass() : FunctionPass(ID) {
-    initializePostDominatorTreeWrapperPassPass(*PassRegistry::getPassRegistry());
-  }
+  PostDominatorTreeWrapperPass();
 
   PostDominatorTree &getPostDomTree() { return DT; }
   const PostDominatorTree &getPostDomTree() const { return DT; }

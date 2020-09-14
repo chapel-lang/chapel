@@ -1,0 +1,64 @@
+tupleModifyBlankArgElem.chpl:7: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:8: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type bool
+tupleModifyBlankArgElem.chpl:35: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:36: error: const actual is passed to 'ref' formal 'a' of =
+tupleModifyBlankArgElem.chpl:3: note: to formal of type borrowed C?
+tupleModifyBlankArgElem.chpl:39: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:40: error: const actual is passed to 'ref' formal 'a' of =
+tupleModifyBlankArgElem.chpl:3: note: to formal of type unmanaged C?
+tupleModifyBlankArgElem.chpl:11: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:12: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type int(64)
+tupleModifyBlankArgElem.chpl:11: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:12: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type uint(64)
+tupleModifyBlankArgElem.chpl:15: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:16: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type real(64)
+tupleModifyBlankArgElem.chpl:15: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:16: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type imag(64)
+tupleModifyBlankArgElem.chpl:19: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:20: error: const actual is passed to 'ref' formal 'a' of =
+note: to formal of type complex(128)
+tupleModifyBlankArgElem.chpl:23: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:24: error: const actual is passed to 'ref' formal 'r1' of =
+note: to formal of type range(int(64),bounded,false)
+tupleModifyBlankArgElem.chpl:27: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:27: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type owned C?
+tupleModifyBlankArgElem.chpl:28: note: possibly set here
+tupleModifyBlankArgElem.chpl:31: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:31: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type shared C?
+tupleModifyBlankArgElem.chpl:32: note: possibly set here
+tupleModifyBlankArgElem.chpl:84: In function 'run':
+tupleModifyBlankArgElem.chpl:92: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyBlankArgElement'
+note: tuple element #0 of type 'AtomicT(int(64))'
+tupleModifyBlankArgElem.chpl:90: note: const tuple declared here
+tupleModifyBlankArgElem.chpl:55: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:55: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type string
+tupleModifyBlankArgElem.chpl:57: note: possibly set here
+tupleModifyBlankArgElem.chpl:55: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:55: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type bytes
+tupleModifyBlankArgElem.chpl:57: note: possibly set here
+tupleModifyBlankArgElem.chpl:60: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:60: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type r
+tupleModifyBlankArgElem.chpl:61: note: possibly set here
+tupleModifyBlankArgElem.chpl:64: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:64: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type u
+tupleModifyBlankArgElem.chpl:65: note: possibly set here
+tupleModifyBlankArgElem.chpl:72: In function 'modifyBlankArgElement':
+tupleModifyBlankArgElem.chpl:72: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
+note: tuple element #0 of type domain(1,int(64),false)
+tupleModifyBlankArgElem.chpl:73: note: possibly set here
+tupleModifyBlankArgElem.chpl:96: In function 'runArrayRefFormal':
+tupleModifyBlankArgElem.chpl:104: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyBlankArgArrInferRef'
+note: tuple element #0 of type '[domain(1,int(64),false)] int(64)'
+tupleModifyBlankArgElem.chpl:102: note: const tuple declared here
+tupleModifyBlankArgElem.chpl:77: note: formal element has 'ref' intent due to modification, possibly here

@@ -1,6 +1,6 @@
-========================
-LLVM 8.0.0 Release Notes
-========================
+=========================
+LLVM 10.0.0 Release Notes
+=========================
 
 .. contents::
     :local:
@@ -9,10 +9,10 @@ Introduction
 ============
 
 This document contains the release notes for the LLVM Compiler Infrastructure,
-release 8.0.0.  Here we describe the status of LLVM, including major improvements
+release 10.0.0.  Here we describe the status of LLVM, including major improvements
 from the previous release, improvements in various subprojects of LLVM, and
 some of the current users of the code.  All LLVM releases may be downloaded
-from the `LLVM releases web site <https://releases.llvm.org/>`_.
+from the `LLVM releases web site <https://llvm.org/releases/>`_.
 
 For more information about LLVM, including information about the latest
 release, please check out the `main LLVM web site <https://llvm.org/>`_.  If you
@@ -20,275 +20,367 @@ have questions or comments, the `LLVM Developer's Mailing List
 <https://lists.llvm.org/mailman/listinfo/llvm-dev>`_ is a good place to send
 them.
 
-Minimum Required Compiler Version
-=================================
-As `discussed on the mailing list
-<https://lists.llvm.org/pipermail/llvm-dev/2019-January/129452.html>`_,
-building LLVM will soon require more recent toolchains as follows:
-
-============= ====
-Clang         3.5
-Apple Clang   6.0
-GCC           5.1
-Visual Studio 2017
-============= ====
-
-A new CMake check when configuring LLVM provides a soft-error if your
-toolchain will become unsupported soon. You can opt out of the soft-error by
-setting the ``LLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN`` CMake variable to
-``ON``.
-
-
-Known Issues
-============
-
-These are issues that couldn't be fixed before the release. See the bug reports
-for the latest status.
-
-* `PR40547 <https://llvm.org/pr40547>`_ Clang gets miscompiled by trunk GCC.
-
-* `PR40761 <https://llvm.org/pr40761>`_ "asan-dynamic" doesn't work on FreeBSD.
-
-
 Non-comprehensive list of changes in this release
 =================================================
 
-* The **llvm-cov** tool can now export lcov trace files using the
-  `-format=lcov` option of the `export` command.
+* The ISD::FP_ROUND_INREG opcode and related code was removed from SelectionDAG.
 
-* The ``add_llvm_loadable_module`` CMake macro has been removed.  The
-  ``add_llvm_library`` macro with the ``MODULE`` argument now provides the same
-  functionality.  See `Writing an LLVM Pass
-  <WritingAnLLVMPass.html#setting-up-the-build-environment>`_.
+* Enabled MemorySSA as a loop dependency. Since
+  `r370957 <https://reviews.llvm.org/rL370957>`_
+  (`D58311 <https://reviews.llvm.org/D58311>`_ ``[MemorySSA & LoopPassManager]
+  Enable MemorySSA as loop dependency. Update tests.``), the MemorySSA analysis
+  is being preserved and used by a series of loop passes. The most significant
+  use is in LICM, where the instruction hoisting and sinking relies on aliasing
+  information provided by MemorySSA vs previously creating an AliasSetTracker.
+  The LICM step of promoting variables to scalars still relies on the creation
+  of an AliasSetTracker, but its use is reduced to only be enabled for loops
+  with a small number of overall memory instructions. This choice was motivated
+  by experimental results showing compile and run time benefits or replacing the
+  AliasSetTracker usage with MemorySSA without any performance penalties.
+  The fact that MemorySSA is now preserved by and available in a series of loop
+  passes, also opens up opportunities for its use in those respective passes.
 
-* For MinGW, references to data variables that might need to be imported
-  from a dll are accessed via a stub, to allow the linker to convert it to
-  a dllimport if needed.
+* The BasicBlockPass, BBPassManager and all their uses were deleted in
+  `this revision <https://reviews.llvm.org/rG9f0ff0b2634bab6a5be8dace005c9eb24d386dd1>`_.
 
-* Added support for labels as offsets in ``.reloc`` directive.
+* The LLVM_BUILD_LLVM_DYLIB and LLVM_LINK_LLVM_DYLIB CMake options are no longer
+  available on Windows.
 
-* Support for precise identification of X86 instructions with memory operands,
-  by using debug information. This supports profile-driven cache prefetching.
-  It is enabled with the ``-x86-discriminate-memops`` LLVM Flag.
+* As per :ref:`LLVM Language Reference Manual <i_getelementptr>`,
+  ``getelementptr inbounds`` can not change the null status of a pointer,
+  meaning it can not produce non-null pointer given null base pointer, and
+  likewise given non-null base pointer it can not produce null pointer; if it
+  does, the result is a :ref:`poison value <poisonvalues>`.
+  Since `r369789 <https://reviews.llvm.org/rL369789>`_
+  (`D66608 <https://reviews.llvm.org/D66608>`_ ``[InstCombine] icmp eq/ne (gep
+  inbounds P, Idx..), null -> icmp eq/ne P, null``) LLVM uses that for
+  transformations. If the original source violates these requirements this
+  may result in code being miscompiled. If you are using Clang front-end,
+  Undefined Behaviour Sanitizer ``-fsanitize=pointer-overflow`` check
+  will now catch such cases.
 
-* Support for profile-driven software cache prefetching on X86. This is part of
-  a larger system, consisting of: an offline cache prefetches recommender,
-  AutoFDO tooling, and LLVM. In this system, a binary compiled with
-  ``-x86-discriminate-memops`` is run under the observation of the recommender.
-  The recommender identifies certain memory access instructions by their binary
-  file address, and recommends a prefetch of a specific type (NTA, T0, etc) be
-  performed at a specified fixed offset from such an instruction's memory
-  operand. Next, this information needs to be converted to the AutoFDO syntax
-  and the resulting profile may be passed back to the compiler with the LLVM
-  flag ``-prefetch-hints-file``, together with the exact same set of
-  compilation parameters used for the original binary. More information is
-  available in the `RFC
-  <https://lists.llvm.org/pipermail/llvm-dev/2018-November/127461.html>`_.
+* Windows Control Flow Guard: the ``-cfguard`` option now emits CFG checks on
+  indirect function calls. The previous behavior is still available with the
+  ``-cfguard-nochecks`` option. Note that this feature should always be used
+  with optimizations enabled.
 
-* Windows support for libFuzzer (x86_64).
+* ``Callbacks`` have been added to ``CommandLine Options``.  These can
+  be used to validate or selectively enable other options.
+
+* The function attributes ``no-frame-pointer-elim`` and
+  ``no-frame-pointer-elim-non-leaf`` have been replaced by ``frame-pointer``,
+  which has 3 values: ``none``, ``non-leaf``, and ``all``. The values mean what
+  functions should retain frame pointers.
+
+* The inter-procedural analysis and optimization capabilities in the Attributor
+  framework and pass have been substantially advanced (initial commit
+  `D59918 <https://reviews.llvm.org/D59918>`_, `LLVM-Dev talk <https://youtu.be/CzWkc_JcfS0>`_).
+  In this release, 19 different attributes are inferred, including 12 LLVM IR
+  attributes and 7 "abstract" attributes, such as liveness. The Attributor is
+  still under heavy development and disabled by default; to enable an early run
+  pass ``-mllvm -attributor-disable=false`` to an invocation of clang.
+
+* New matrix math intrinsics have been added to LLVM
+  (see :ref:`LLVM Language Reference Manual <i_matrixintrinsics>`), together
+  with the LowerMatrixIntrinsics pass. The pass lowers matrix intrinsics
+  to a set of efficient vector instructions. The lowering pass is off
+  by default and can be enabled by passing ``-mllvm -enable-matrix`` to an
+  invocation of clang.
+
 
 Changes to the LLVM IR
 ----------------------
 
-* Function attribute ``speculative_load_hardening`` has been introduced to
-  allow indicating that `Speculative Load Hardening
-  <SpeculativeLoadHardening.html>`_ must be enabled for the function body.
+* Unnamed function arguments now get printed with their automatically
+  generated name (e.g. "i32 %0") in definitions. This may require front-ends
+  to update their tests; if so there is a script utils/add_argument_names.py
+  that correctly converted 80-90% of Clang tests. Some manual work will almost
+  certainly still be needed.
+
+* A new ``freeze`` instruction is added. The ``freeze`` instruction is used to stop
+  IR-level propagation of undef and poison values. Currently its support is
+  preliminary; a freeze-equivalent operation for SelDag/MIR needs to be added.
 
 
-Changes to the JIT APIs
------------------------
 
-The ORC (On Request Compilation) JIT APIs have been updated to support
-concurrent compilation. The existing (non-concurrent) ORC layer classes and
-related APIs are deprecated, have been renamed with a "Legacy" prefix (e.g.
-LegacyIRCompileLayer). The deprecated clasess will be removed in LLVM 9.
+Changes to the AArch64 Backend
+------------------------------
 
-An example JIT stack using the concurrent ORC APIs, called LLJIT, has been
-added (see include/llvm/ExecutionEngine/Orc/LLJIT.h). The lli tool has been
-updated to use LLJIT.
+* Added support for Cortex-A65, Cortex-A65AE, Neoverse E1 and Neoverse N1 cores.
 
-MCJIT and ExecutionEngine continue to be supported, though ORC should be
-preferred for new projects.
+* With a few more bugs fixed in the LLVM 10 release, clang-cl can now target
+  Windows-on-ARM well, demonstrated by building complex pieces of software such
+  as Chromium and the Electron framework.
 
+* Support for ``-fpatchable-function-entry`` was added.
 
-Changes to the AArch64 Target
------------------------------
+Changes to the ARM Backend
+--------------------------
 
-* Support for Speculative Load Hardening has been added.
+* Optimized ARMv8.1-M code generation, including generating Low Overhead Loops.
 
-* Initial support for the Tiny code model, where code and its statically
-  defined symbols must live within 1MB of each other.
+* Added auto-vectorization for the ARMv8.1-M MVE vector extension.
 
-* Added support for the ``.arch_extension`` assembler directive, just like
-  on ARM.
-
-
-Changes to the Hexagon Target
------------------------------
-
-* Added support for Hexagon/HVX V66 ISA.
+* Support was added for inline asm constraints s,j,x,N,O.
 
 
 Changes to the MIPS Target
 --------------------------
 
-* Improved support of GlobalISel instruction selection framework.
+* Improved support for ``octeon`` and added support for ``octeon+``
+  MIPS-family CPU.
 
-* Implemented emission of ``R_MIPS_JALR`` and ``R_MICROMIPS_JALR``
-  relocations. These relocations provide hints to a linker for optimization
-  of jumps to protected symbols.
+* ``min``, ``max``, ``umin``, ``umax`` atomics now supported on MIPS targets.
 
-* ORC JIT has been supported for MIPS and MIPS64 architectures.
+* Now PC-relative relocations are generated for ``.eh_frame`` sections when
+  possible. That allows to link MIPS binaries without having to pass the
+  ``-Wl,-z,notext`` option.
 
-* Assembler now suggests alternative MIPS instruction mnemonics when
-  an invalid one is specified.
+* Fix evaluating J-format branch (``j``, ``jal``, ...) targets when the
+  instruction is not in the first 256 MB region.
 
-* Improved support for MIPS N32 ABI.
+* Fixed ``jal``, ``sc``, ``scs``, ``ll``, ``lld``, ``la``, ``lw``, ``sw``
+  instructions expanding. Now they accept more types of expression as arguments,
+  correctly handle load/store for ``XGOT`` model, expand using less instructions
+  or registers.
 
-* Added new instructions (``pll.ps``, ``plu.ps``, ``cvt.s.pu``,
-  ``cvt.s.pl``, ``cvt.ps``, ``sigrie``).
+* Initial MIPS support has been added to ``llvm-exegesis``.
 
-* Numerous bug fixes and code cleanups.
+* Generates ``_mcount`` calls using proper MIPS ABI.
 
+* Improved support of GlobalISel instruction selection framework. This feature
+  is still in experimental state for MIPS targets though.
 
 Changes to the PowerPC Target
 -----------------------------
 
-* Switched to non-PIC default
+Optimization:
 
-* Deprecated Darwin support
+* Improved register pressure estimates in the loop vectorizer based on type
 
-* Enabled Out-of-Order scheduling for P9
+* Improved the PowerPC cost model for the vectorizer
 
-* Better overload rules for compatible vector type parameter
+* Enabled vectorization of math routines on PowerPC using MASSV (Mathematical Acceleration SubSystem) library
 
-* Support constraint 'wi', modifier 'x' and VSX registers in inline asm
+compiler-rt:
 
-* More ``__float128`` support
+* Added/improved conversion functions from IBM long double to 128-bit integers
 
-* Added new builtins like vector int128 ``pack``/``unpack`` and
-  ``stxvw4x.be``/``stxvd2x.be``
+Codegen:
 
-* Provided significant improvements to the automatic vectorizer
+* Optimized memory access instructions in loops (pertaining to update-form instructions and address computation)
 
-* Code-gen improvements (especially for Power9)
+* Added options to disable hoisting instructions to hotter blocks based on statically or profile-based block hotness estimates
 
-* Fixed some long-standing bugs in the back end
+* Code generation improvements (particularly with floating point and vector code as well as handling condition registers)
 
-* Added experimental prologue/epilogue improvements
+* Various infrastructural improvements, code refactoring, and bug fixes
 
-* Enabled builtins tests in compiler-rt
+* Optimized handling of control flow based on multiple comparison of same values
 
-* Add ``___fixunstfti``/``floattitf`` in compiler-rt to support conversion
-  between IBM double-double and unsigned int128
+Tools:
 
-* Disable randomized address space when running the sanitizers on Linux ppc64le
+* llvm-readobj supports displaying file header, section headers, symbol table and relocation entries for XCOFF object files
 
-* Completed support in LLD for ELFv2
-
-* Enabled llvm-exegesis latency mode for PPC
+* llvm-objdump supports disassembling physical sections for XCOFF object files
 
 
 Changes to the SystemZ Target
 -----------------------------
 
-* A number of bugs related to C/C++ language vector extension support were
-  fixed: the ``-mzvector`` option now actually enables the ``__vector`` and
-  ``__bool`` keywords, the ``vec_step`` intrinsic now works, and the
-  ``vec_insert_and_zero`` and ``vec_orc`` intrinsics now generate correct code.
+* Added support for the ``-march=z15`` and ``-mtune=z15`` command line options
+  (as aliases to the existing ``-march=arch13`` and ``-mtune=arch13`` options).
 
-* The ``__float128`` keyword, which had been accidentally enabled in some
-  earlier releases, is now no longer supported.  On SystemZ, the ``long double``
-  data type itself already uses the IEEE 128-bit floating-point format.
+* Added support for the ``-march=native`` command line option.
 
-* When the compiler inlines ``strcmp`` or ``memcmp``, the generated code no
-  longer returns ``INT_MIN`` as the negative result value under any
-  circumstances.
+* Added support for the ``-mfentry``, ``-mnop-mcount``, and ``-mrecord-mcount``
+  command line options.
 
-* Various code-gen improvements, in particular related to improved
-  auto-vectorization, inlining, and instruction scheduling.
+* Added support for the GHC calling convention.
 
+* Miscellaneous codegen enhancements, in particular to enable better
+  reuse of condition code values and improved use of conditional
+  move instructions.
 
 Changes to the X86 Target
 -------------------------
 
-* Machine model for AMD bdver2 (Piledriver) CPU was added. It is used to support
-  instruction scheduling and other instruction cost heuristics.
+* Less-than-128-bit vector types, v2i32, v4i16, v2i16, v8i8, v4i8, and v2i8, are
+  now stored in the lower bits of an xmm register and the upper bits are
+  undefined. Previously the elements were spread apart with undefined bits in
+  between them.
 
-* New AVX512F gather and scatter intrinsics were added that take a <X x i1> mask
-  instead of a scalar integer. This removes the need for a bitcast in IR. The
-  new intrinsics are named like the old intrinsics with ``llvm.avx512.``
-  replaced with ``llvm.avx512.mask.``. The old intrinsics will be removed in a
-  future release.
+* v32i8 and v64i8 vectors with AVX512F enabled, but AVX512BW disabled will now
+  be passed in ZMM registers for calls and returns. Previously they were passed
+  in two YMM registers. Old behavior can be enabled by passing
+  ``-x86-enable-old-knl-abi``.
 
-* Added ``cascadelake`` as a CPU name for -march. This is ``skylake-avx512``
-  with the addition of the ``avx512vnni`` instruction set.
+* ``-mprefer-vector-width=256`` is now the default behavior skylake-avx512 and
+  later Intel CPUs. This tries to limit the use of 512-bit registers which can
+  cause a decrease in CPU frequency on these CPUs. This can be re-enabled by
+  passing ``-mprefer-vector-width=512`` to clang or passing
+  ``-mattr=-prefer-256-bit`` to llc.
 
-* ADCX instruction will no longer be emitted. This instruction is rarely better
-  than the legacy ADC instruction and just increased code size.
+* Deprecated the mpx feature flag for the Intel MPX instructions. There were no
+  intrinsics for this feature. This change only this effects the results
+  returned by getHostCPUFeatures on CPUs that implement the MPX instructions.
+
+* The feature flag fast-partial-ymm-or-zmm-write which previously disabled
+  vzeroupper insertion has been removed. It has been replaced with a vzeroupper
+  feature flag which has the opposite polarity. So -vzeroupper has the same
+  effect as +fast-partial-ymm-or-zmm-write.
 
 
 Changes to the WebAssembly Target
 ---------------------------------
 
-The WebAssembly target is no longer "experimental"! It's now built by default,
-rather than needing to be enabled with LLVM_EXPERIMENTAL_TARGETS_TO_BUILD.
+* ``__attribute__((used))`` no longer implies that a symbol is exported, for
+  consistency with other targets.
 
-The object file format and core C ABI are now considered stable. That said,
-the object file format has an ABI versioning capability, and one anticipated
-use for it will be to add support for returning small structs as multiple
-return values, once the underlying WebAssembly platform itself supports it.
-Additionally, multithreading support is not yet included in the stable ABI.
+* Multivalue function signatures are now supported in WebAssembly object files
+
+* The new ``atomic.fence`` instruction is now supported
+
+* Thread-Local Storage (TLS) is now supported.
+
+* SIMD support is significantly expanded.
+
+Changes to the Windows Target
+-----------------------------
+
+* Fixed section relative relocations in .debug_frame in DWARF debug info
+
+Changes to the RISC-V Target
+----------------------------
+
+New Features:
+
+* The Machine Outliner is now supported, but not enabled by default.
+
+* Shrink-wrapping is now supported.
+
+* The Machine Scheduler has been enabled and scheduler descriptions for the
+  Rocket micro-architecture have been added, covering both 32- and 64-bit Rocket
+  cores.
+
+* This release lays the groundwork for enabling LTO in a future LLVM release.
+  In particular, LLVM now uses a new ``target-abi`` module metadata item to
+  represent the chosen RISC-V psABI variant. Frontends should add this module
+  flag to prevent ABI lowering problems when LTO is enabled in a future LLVM
+  release.
+
+* Support has been added for assembling RVC HINT instructions.
+
+* Added code lowering for half-precision floats.
+
+* The ``fscsr`` and ``frcsr`` (``fssr``, ``frsr``) obsolete aliases have been added to
+  the assembler for use in legacy code.
+
+* The stack can now be realigned even when there are variable-sized objects in
+  the same frame.
+
+* fastcc is now supported. This is a more efficient, unstandardised, calling
+  convention for calls to private leaf functions in the same IR module.
+
+* llvm-objdump now supports ``-M no-aliases`` and ``-M numeric`` for altering the
+  dumped assembly. These match the behaviour of GNU objdump, respectively
+  disabling instruction aliases and printing the numeric register names rather
+  than the ABI register names.
+
+Improvements:
+
+* Trap and Debugtrap now lower to RISC-V-specific trap instructions.
+
+* LLVM IR Inline assembly now supports using ABI register names and using
+  floating point registers in constraints.
+
+* Stack Pointer adjustments have been changed to better match RISC-V's immediates.
+
+* ``ra`` (``x1``) can now be used as a callee-saved register.
+
+* The assembler now suggests spelling corrections for unknown assembly
+  mnemonics.
+
+* Stack offsets of greater than 32-bits are now accepted on RV64.
+
+* Variadic functions can now be tail-call optimised, as long as they do not use
+  stack memory for passing arguments.
+
+* Code generation has been changed for 32-bit arithmetic operations on RV64 to
+  reduce sign-extensions.
+
+Bug Fixes:
+
+* There was an issue with register preservation after calls in interrupt
+  handlers, where some registers were marked as preserved even though they were
+  not being preserved by the call. This has been corrected, and now only
+  callee-saved registers are live over a function call in an interrupt handler
+  (just like calls in regular functions).
+
+* Atomic instructions now only accept GPRs (plus an offset) in memory operands.
+
+* Fixed some issues with evaluation of relocations and fixups.
+
+* The error messages around missing RISC-V extensions in the assembler have been
+  improved.
+
+* The error messages around unsupported relocations have been improved.
+
+* Non-PIC code no longer forces Local Exec TLS.
+
+* There have been some small changes to the code generation for atomic
+  operations.
+
+* RISC-V no longer emits incorrect CFI directives in function prologues and
+  epilogues.
+
+* RV64 no longer clears the upper bits when returning complex types from
+  libcalls using the LP64 psABI.
+
+Compiler-RT:
+
+* RISC-V (both 64-bit and 32-bit) is now supported by compiler-rt, allowing
+  crtbegin and crtend to be built.
+
+* The Sanitizers now support 64-bit RISC-V on Linux.
 
 
-Changes to the Nios2 Target
----------------------------
 
-* The Nios2 target was removed from this release.
+Changes to the C API
+--------------------
+* C DebugInfo API ``LLVMDIBuilderCreateTypedef`` is updated to include an extra
+  argument ``AlignInBits``, to facilitate / propagate specified Alignment information
+  present in a ``typedef`` to Debug information in LLVM IR.
+
+
+Changes to the Go bindings
+--------------------------
+* Go DebugInfo API ``CreateTypedef`` is updated to include an extra argument ``AlignInBits``,
+  to facilitate / propagate specified Alignment information present in a ``typedef``
+  to Debug information in LLVM IR.
+
 
 
 Changes to LLDB
 ===============
 
-* Printed source code is now syntax highlighted in the terminal (only for C
-  languages).
+* Improved support for building with MinGW
 
-* The expression command now supports tab completing expressions.
+* Initial support for debugging Windows ARM and ARM64 binaries
 
+* Improved error messages in the expression evaluator.
 
-External Open Source Projects Using LLVM 8
-==========================================
+* Tab completions for command options now also provide a description for each option.
 
-LDC - the LLVM-based D compiler
--------------------------------
+* Fixed that printing structs/classes with the ``expression`` command sometimes did not
+  print the members/contents of the class.
 
-`D <http://dlang.org>`_ is a language with C-like syntax and static typing. It
-pragmatically combines efficiency, control, and modeling power, with safety and
-programmer productivity. D supports powerful concepts like Compile-Time Function
-Execution (CTFE) and Template Meta-Programming, provides an innovative approach
-to concurrency and offers many classical paradigms.
+* Improved support for using classes with bit-field members in the expression evaluator.
 
-`LDC <http://wiki.dlang.org/LDC>`_ uses the frontend from the reference compiler
-combined with LLVM as backend to produce efficient native code. LDC targets
-x86/x86_64 systems like Linux, OS X, FreeBSD and Windows and also Linux on ARM
-and PowerPC (32/64 bit). Ports to other architectures like AArch64 and MIPS64
-are underway.
+* Greatly improved support for DWARF v5.
 
-Open Dylan Compiler
--------------------
-
-`Dylan <https://opendylan.org/>`_ is a multi-paradigm functional
-and object-oriented programming language.  It is dynamic while
-providing a programming model designed to support efficient machine
-code generation, including fine-grained control over dynamic and
-static behavior. Dylan also features a powerful macro facility for
-expressive metaprogramming.
-
-The Open Dylan compiler can use LLVM as one of its code-generating
-back-ends, including full support for debug info generation. (Open
-Dylan generates LLVM bitcode directly using a native Dylan IR and
-bitcode library.) Development of a Dylan debugger and interactive REPL
-making use of the LLDB libraries is in progress.
+External Open Source Projects Using LLVM 10
+===========================================
 
 Zig Programming Language
 ------------------------
@@ -300,6 +392,7 @@ IR features such as aliases and intrinsics. Zig uses Clang to provide automatic
 import of .h symbols, including inline functions and simple macros. Zig uses
 LLD combined with lazily building compiler-rt to provide out-of-the-box
 cross-compiling for all supported targets.
+
 
 
 Additional Information

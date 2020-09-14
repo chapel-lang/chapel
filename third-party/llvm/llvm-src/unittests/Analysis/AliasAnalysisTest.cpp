@@ -1,9 +1,8 @@
 //===--- AliasAnalysisTest.cpp - Mixed TBAA unit tests --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -19,6 +18,7 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/SourceMgr.h"
 #include "gtest/gtest.h"
 
@@ -86,7 +86,8 @@ struct TestCustomAAResult : AAResultBase<TestCustomAAResult> {
 
   bool invalidate(Function &, const PreservedAnalyses &) { return false; }
 
-  AliasResult alias(const MemoryLocation &LocA, const MemoryLocation &LocB) {
+  AliasResult alias(const MemoryLocation &LocA, const MemoryLocation &LocB,
+                    AAQueryInfo &AAQI) {
     CB();
     return MayAlias;
   }
@@ -167,7 +168,7 @@ TEST_F(AliasAnalysisTest, getModRefInfo) {
   // Setup function.
   FunctionType *FTy =
       FunctionType::get(Type::getVoidTy(C), std::vector<Type *>(), false);
-  auto *F = cast<Function>(M.getOrInsertFunction("f", FTy));
+  auto *F = Function::Create(FTy, Function::ExternalLinkage, "f", M);
   auto *BB = BasicBlock::Create(C, "entry", F);
   auto IntType = Type::getInt32Ty(C);
   auto PtrType = Type::getInt32PtrTy(C);
@@ -175,7 +176,7 @@ TEST_F(AliasAnalysisTest, getModRefInfo) {
   auto *Addr = ConstantPointerNull::get(PtrType);
 
   auto *Store1 = new StoreInst(Value, Addr, BB);
-  auto *Load1 = new LoadInst(Addr, "load", BB);
+  auto *Load1 = new LoadInst(IntType, Addr, "load", BB);
   auto *Add1 = BinaryOperator::CreateAdd(Value, Value, "add", BB);
   auto *VAArg1 = new VAArgInst(Addr, PtrType, "vaarg", BB);
   auto *CmpXChg1 = new AtomicCmpXchgInst(

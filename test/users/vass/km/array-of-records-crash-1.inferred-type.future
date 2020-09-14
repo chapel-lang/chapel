@@ -1,5 +1,0 @@
-bug: Initialization is not assignment, promoted version.
-#10374
-
-This is the same as users/vass/km/array-of-records-crash-1.explicit-type
-except omits the type in the array variable's declaration.

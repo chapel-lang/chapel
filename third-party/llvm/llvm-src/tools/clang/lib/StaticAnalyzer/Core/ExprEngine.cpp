@@ -1,9 +1,8 @@
 //===- ExprEngine.cpp - Path-Sensitive Expression-Level Dataflow ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -34,6 +33,7 @@
 #include "clang/Analysis/ConstructionContext.h"
 #include "clang/Analysis/ProgramPoint.h"
 #include "clang/Basic/IdentifierTable.h"
+#include "clang/Basic/JsonSupport.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/LangOptions.h"
 #include "clang/Basic/PrettyStackTrace.h"
@@ -142,21 +142,34 @@ public:
     return getLocationContext()->getDecl()->getASTContext();
   }
 
-  void print(llvm::raw_ostream &OS, PrinterHelper *Helper, PrintingPolicy &PP) {
-    OS << "(LC" << getLocationContext()->getID() << ',';
-    if (const Stmt *S = getItem().getStmtOrNull())
-      OS << 'S' << S->getID(getASTContext());
+  void printJson(llvm::raw_ostream &Out, PrinterHelper *Helper,
+                 PrintingPolicy &PP) const {
+    const Stmt *S = getItem().getStmtOrNull();
+    const CXXCtorInitializer *I = nullptr;
+    if (!S)
+      I = getItem().getCXXCtorInitializer();
+
+    if (S)
+      Out << "\"stmt_id\": " << S->getID(getASTContext());
     else
-      OS << 'I' << getItem().getCXXCtorInitializer()->getID(getASTContext());
-    OS << ',' << getItem().getKindAsString();
+      Out << "\"init_id\": " << I->getID(getASTContext());
+
+    // Kind
+    Out << ", \"kind\": \"" << getItem().getKindAsString()
+        << "\", \"argument_index\": ";
+
     if (getItem().getKind() == ConstructionContextItem::ArgumentKind)
-      OS << " #" << getItem().getIndex();
-    OS << ") ";
-    if (const Stmt *S = getItem().getStmtOrNull()) {
-      S->printPretty(OS, Helper, PP);
+      Out << getItem().getIndex();
+    else
+      Out << "null";
+
+    // Pretty-print
+    Out << ", \"pretty\": ";
+
+    if (S) {
+      S->printJson(Out, Helper, PP, /*AddQuotes=*/true);
     } else {
-      const CXXCtorInitializer *I = getItem().getCXXCtorInitializer();
-      OS << I->getAnyMember()->getNameAsString();
+      Out << '\"' << I->getAnyMember()->getNameAsString() << '\"';
     }
   }
 
@@ -198,18 +211,18 @@ ExprEngine::ExprEngine(cross_tu::CrossTranslationUnitContext &CTU,
                mgr.getConstraintManagerCreator(), G.getAllocator(),
                this),
       SymMgr(StateMgr.getSymbolManager()),
-      svalBuilder(StateMgr.getSValBuilder()), ObjCNoRet(mgr.getASTContext()),
+      MRMgr(StateMgr.getRegionManager()),
+      svalBuilder(StateMgr.getSValBuilder()),
+      ObjCNoRet(mgr.getASTContext()),
       BR(mgr, *this),
-      VisitedCallees(VisitedCalleesIn), HowToInline(HowToInlineIn) {
+      VisitedCallees(VisitedCalleesIn),
+      HowToInline(HowToInlineIn)
+  {
   unsigned TrimInterval = mgr.options.GraphTrimInterval;
   if (TrimInterval != 0) {
     // Enable eager node reclamation when constructing the ExplodedGraph.
     G.enableNodeReclamation(TrimInterval);
   }
-}
-
-ExprEngine::~ExprEngine() {
-  BR.FlushReports();
 }
 
 //===----------------------------------------------------------------------===//
@@ -538,36 +551,73 @@ ExprEngine::processRegionChanges(ProgramStateRef state,
                                                          LCtx, Call);
 }
 
-static void printObjectsUnderConstructionForContext(raw_ostream &Out,
-                                                    ProgramStateRef State,
-                                                    const char *NL,
-                                                    const LocationContext *LC) {
+static void
+printObjectsUnderConstructionJson(raw_ostream &Out, ProgramStateRef State,
+                                  const char *NL, const LocationContext *LCtx,
+                                  unsigned int Space = 0, bool IsDot = false) {
   PrintingPolicy PP =
-      LC->getAnalysisDeclContext()->getASTContext().getPrintingPolicy();
-  for (auto I : State->get<ObjectsUnderConstruction>()) {
-    ConstructedObjectKey Key = I.first;
-    SVal Value = I.second;
-    if (Key.getLocationContext() != LC)
+      LCtx->getAnalysisDeclContext()->getASTContext().getPrintingPolicy();
+
+  ++Space;
+  bool HasItem = false;
+
+  // Store the last key.
+  const ConstructedObjectKey *LastKey = nullptr;
+  for (const auto &I : State->get<ObjectsUnderConstruction>()) {
+    const ConstructedObjectKey &Key = I.first;
+    if (Key.getLocationContext() != LCtx)
       continue;
-    Key.print(Out, nullptr, PP);
-    Out << " : " << Value << NL;
+
+    if (!HasItem) {
+      Out << "[" << NL;
+      HasItem = true;
+    }
+
+    LastKey = &Key;
+  }
+
+  for (const auto &I : State->get<ObjectsUnderConstruction>()) {
+    const ConstructedObjectKey &Key = I.first;
+    SVal Value = I.second;
+    if (Key.getLocationContext() != LCtx)
+      continue;
+
+    Indent(Out, Space, IsDot) << "{ ";
+    Key.printJson(Out, nullptr, PP);
+    Out << ", \"value\": \"" << Value << "\" }";
+
+    if (&Key != LastKey)
+      Out << ',';
+    Out << NL;
+  }
+
+  if (HasItem)
+    Indent(Out, --Space, IsDot) << ']'; // End of "location_context".
+  else {
+    Out << "null ";
   }
 }
 
-void ExprEngine::printState(raw_ostream &Out, ProgramStateRef State,
-                            const char *NL, const char *Sep,
-                            const LocationContext *LCtx) {
-  if (LCtx) {
-    if (!State->get<ObjectsUnderConstruction>().isEmpty()) {
-      Out << Sep << "Objects under construction:" << NL;
+void ExprEngine::printJson(raw_ostream &Out, ProgramStateRef State,
+                           const LocationContext *LCtx, const char *NL,
+                           unsigned int Space, bool IsDot) const {
+  Indent(Out, Space, IsDot) << "\"constructing_objects\": ";
 
-      LCtx->dumpStack(Out, "", NL, Sep, [&](const LocationContext *LC) {
-        printObjectsUnderConstructionForContext(Out, State, NL, LC);
-      });
-    }
+  if (LCtx && !State->get<ObjectsUnderConstruction>().isEmpty()) {
+    ++Space;
+    Out << '[' << NL;
+    LCtx->printJson(Out, NL, Space, IsDot, [&](const LocationContext *LC) {
+      printObjectsUnderConstructionJson(Out, State, NL, LC, Space, IsDot);
+    });
+
+    --Space;
+    Indent(Out, Space, IsDot) << "]," << NL; // End of "constructing_objects".
+  } else {
+    Out << "null," << NL;
   }
 
-  getCheckerManager().runCheckersForPrintState(Out, State, NL, Sep);
+  getCheckerManager().runCheckersForPrintStateJson(Out, State, NL, Space,
+                                                   IsDot);
 }
 
 void ExprEngine::processEndWorklist() {
@@ -678,7 +728,8 @@ void ExprEngine::removeDead(ExplodedNode *Pred, ExplodedNodeSet &Out,
   // Create a state in which dead bindings are removed from the environment
   // and the store. TODO: The function should just return new env and store,
   // not a new state.
-  CleanedState = StateMgr.removeDeadBindings(CleanedState, SFC, SymReaper);
+  CleanedState = StateMgr.removeDeadBindingsFromEnvironmentAndStore(
+      CleanedState, SFC, SymReaper);
 
   // Process any special transfer function for dead symbols.
   // A tag to track convenience transitions, which can be removed at cleanup.
@@ -927,8 +978,8 @@ void ExprEngine::ProcessAutomaticObjDtor(const CFGAutomaticObjDtor Dtor,
   Region = makeZeroElementRegion(state, loc::MemRegionVal(Region), varType,
                                  CallOpts.IsArrayCtorOrDtor).getAsRegion();
 
-  VisitCXXDestructor(varType, Region, Dtor.getTriggerStmt(), /*IsBase=*/ false,
-                     Pred, Dst, CallOpts);
+  VisitCXXDestructor(varType, Region, Dtor.getTriggerStmt(),
+                     /*IsBase=*/false, Pred, Dst, CallOpts);
 }
 
 void ExprEngine::ProcessDeleteDtor(const CFGDeleteDtor Dtor,
@@ -986,8 +1037,9 @@ void ExprEngine::ProcessBaseDtor(const CFGBaseDtor D,
   SVal BaseVal = getStoreManager().evalDerivedToBase(ThisVal, BaseTy,
                                                      Base->isVirtual());
 
-  VisitCXXDestructor(BaseTy, BaseVal.castAs<loc::MemRegionVal>().getRegion(),
-                     CurDtor->getBody(), /*IsBase=*/ true, Pred, Dst, {});
+  EvalCallOptions CallOpts;
+  VisitCXXDestructor(BaseTy, BaseVal.getAsRegion(), CurDtor->getBody(),
+                     /*IsBase=*/true, Pred, Dst, CallOpts);
 }
 
 void ExprEngine::ProcessMemberDtor(const CFGMemberDtor D,
@@ -998,10 +1050,10 @@ void ExprEngine::ProcessMemberDtor(const CFGMemberDtor D,
   const LocationContext *LCtx = Pred->getLocationContext();
 
   const auto *CurDtor = cast<CXXDestructorDecl>(LCtx->getDecl());
-  Loc ThisVal = getSValBuilder().getCXXThis(CurDtor,
-                                            LCtx->getStackFrame());
-  SVal FieldVal =
-      State->getLValue(Member, State->getSVal(ThisVal).castAs<Loc>());
+  Loc ThisStorageLoc =
+      getSValBuilder().getCXXThis(CurDtor, LCtx->getStackFrame());
+  Loc ThisLoc = State->getSVal(ThisStorageLoc).castAs<Loc>();
+  SVal FieldVal = State->getLValue(Member, ThisLoc);
 
   // FIXME: We need to run the same destructor on every element of the array.
   // This workaround will just run the first destructor (which will still
@@ -1010,8 +1062,8 @@ void ExprEngine::ProcessMemberDtor(const CFGMemberDtor D,
   FieldVal = makeZeroElementRegion(State, FieldVal, T,
                                    CallOpts.IsArrayCtorOrDtor);
 
-  VisitCXXDestructor(T, FieldVal.castAs<loc::MemRegionVal>().getRegion(),
-                     CurDtor->getBody(), /*IsBase=*/false, Pred, Dst, CallOpts);
+  VisitCXXDestructor(T, FieldVal.getAsRegion(), CurDtor->getBody(),
+                     /*IsBase=*/false, Pred, Dst, CallOpts);
 }
 
 void ExprEngine::ProcessTemporaryDtor(const CFGTemporaryDtor D,
@@ -1059,8 +1111,6 @@ void ExprEngine::ProcessTemporaryDtor(const CFGTemporaryDtor D,
   EvalCallOptions CallOpts;
   CallOpts.IsTemporaryCtorOrDtor = true;
   if (!MR) {
-    CallOpts.IsCtorOrDtorWithImproperlyModeledTargetRegion = true;
-
     // If we have no MR, we still need to unwrap the array to avoid destroying
     // the whole array at once. Regardless, we'd eventually need to model array
     // destructors properly, element-by-element.
@@ -1122,13 +1172,16 @@ void ExprEngine::VisitCXXBindTemporaryExpr(const CXXBindTemporaryExpr *BTE,
   }
 }
 
-ProgramStateRef ExprEngine::escapeValue(ProgramStateRef State, SVal V,
-                                        PointerEscapeKind K) const {
+ProgramStateRef ExprEngine::escapeValues(ProgramStateRef State,
+                                         ArrayRef<SVal> Vs,
+                                         PointerEscapeKind K,
+                                         const CallEvent *Call) const {
   class CollectReachableSymbolsCallback final : public SymbolVisitor {
-    InvalidatedSymbols Symbols;
+    InvalidatedSymbols &Symbols;
 
   public:
-    explicit CollectReachableSymbolsCallback(ProgramStateRef) {}
+    explicit CollectReachableSymbolsCallback(InvalidatedSymbols &Symbols)
+        : Symbols(Symbols) {}
 
     const InvalidatedSymbols &getSymbols() const { return Symbols; }
 
@@ -1137,11 +1190,13 @@ ProgramStateRef ExprEngine::escapeValue(ProgramStateRef State, SVal V,
       return true;
     }
   };
+  InvalidatedSymbols Symbols;
+  CollectReachableSymbolsCallback CallBack(Symbols);
+  for (SVal V : Vs)
+    State->scanReachableSymbols(V, CallBack);
 
-  const CollectReachableSymbolsCallback &Scanner =
-      State->scanReachableSymbols<CollectReachableSymbolsCallback>(V);
   return getCheckerManager().runCheckersForPointerEscape(
-      State, Scanner.getSymbols(), /*CallEvent*/ nullptr, K, nullptr);
+      State, CallBack.getSymbols(), Call, K, nullptr);
 }
 
 void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
@@ -1196,6 +1251,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::OMPParallelForDirectiveClass:
     case Stmt::OMPParallelForSimdDirectiveClass:
     case Stmt::OMPParallelSectionsDirectiveClass:
+    case Stmt::OMPParallelMasterDirectiveClass:
     case Stmt::OMPTaskDirectiveClass:
     case Stmt::OMPTaskyieldDirectiveClass:
     case Stmt::OMPBarrierDirectiveClass:
@@ -1216,6 +1272,10 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::OMPCancelDirectiveClass:
     case Stmt::OMPTaskLoopDirectiveClass:
     case Stmt::OMPTaskLoopSimdDirectiveClass:
+    case Stmt::OMPMasterTaskLoopDirectiveClass:
+    case Stmt::OMPMasterTaskLoopSimdDirectiveClass:
+    case Stmt::OMPParallelMasterTaskLoopDirectiveClass:
+    case Stmt::OMPParallelMasterTaskLoopSimdDirectiveClass:
     case Stmt::OMPDistributeDirectiveClass:
     case Stmt::OMPDistributeParallelForDirectiveClass:
     case Stmt::OMPDistributeParallelForSimdDirectiveClass:
@@ -1261,6 +1321,11 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::WhileStmtClass:
     case Expr::MSDependentExistsStmtClass:
       llvm_unreachable("Stmt should not be in analyzer evaluation loop");
+    case Stmt::ImplicitValueInitExprClass:
+      // These nodes are shared in the CFG and would case caching out.
+      // Moreover, no additional evaluation required for them, the
+      // analyzer can reconstruct these values from the AST.
+      llvm_unreachable("Should be pruned from CFG");
 
     case Stmt::ObjCSubscriptRefExprClass:
     case Stmt::ObjCPropertyRefExprClass:
@@ -1319,6 +1384,9 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::CUDAKernelCallExprClass:
     case Stmt::OpaqueValueExprClass:
     case Stmt::AsTypeExprClass:
+    case Stmt::ConceptSpecializationExprClass:
+    case Stmt::CXXRewrittenBinaryOperatorClass:
+    case Stmt::RequiresExprClass:
       // Fall through.
 
     // Cases we intentionally don't evaluate, since they don't need
@@ -1329,7 +1397,6 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::IntegerLiteralClass:
     case Stmt::FixedPointLiteralClass:
     case Stmt::CharacterLiteralClass:
-    case Stmt::ImplicitValueInitExprClass:
     case Stmt::CXXScalarValueInitExprClass:
     case Stmt::CXXBoolLiteralExprClass:
     case Stmt::ObjCBoolLiteralExprClass:
@@ -1338,6 +1405,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::NoInitExprClass:
     case Stmt::SizeOfPackExprClass:
     case Stmt::StringLiteralClass:
+    case Stmt::SourceLocExprClass:
     case Stmt::ObjCStringLiteralClass:
     case Stmt::CXXPseudoDestructorExprClass:
     case Stmt::SubstNonTypeTemplateParmExprClass:
@@ -1371,7 +1439,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
 
       bool IsTemporary = false;
       if (const auto *MTE = dyn_cast<MaterializeTemporaryExpr>(ArgE)) {
-        ArgE = MTE->GetTemporaryExpr();
+        ArgE = MTE->getSubExpr();
         IsTemporary = true;
       }
 
@@ -1426,7 +1494,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
           for (auto Child : Ex->children()) {
             assert(Child);
             SVal Val = State->getSVal(Child, LCtx);
-            State = escapeValue(State, Val, PSK_EscapeOther);
+            State = escapeValues(State, Val, PSK_EscapeOther);
           }
 
         Bldr2.generateNode(S, N, State);
@@ -1517,7 +1585,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
           ProgramStateRef NewState =
             createTemporaryRegionIfNeeded(State, LCtx, OCE->getArg(0));
           if (NewState != State) {
-            Pred = Bldr.generateNode(OCE, Pred, NewState, /*Tag=*/nullptr,
+            Pred = Bldr.generateNode(OCE, Pred, NewState, /*tag=*/nullptr,
                                      ProgramPoint::PreStmtKind);
             // Did we cache out?
             if (!Pred)
@@ -1636,6 +1704,7 @@ void ExprEngine::Visit(const Stmt *S, ExplodedNode *Pred,
     case Stmt::CXXReinterpretCastExprClass:
     case Stmt::CXXConstCastExprClass:
     case Stmt::CXXFunctionalCastExprClass:
+    case Stmt::BuiltinBitCastExprClass:
     case Stmt::ObjCBridgedCastExprClass: {
       Bldr.takeNodes(Pred);
       const auto *C = cast<CastExpr>(S);
@@ -1858,7 +1927,7 @@ void ExprEngine::processCFGBlockEntrance(const BlockEdge &L,
   // other constraints) then consider completely unrolling it.
   if(AMgr.options.ShouldUnrollLoops) {
     unsigned maxBlockVisitOnPath = AMgr.options.maxBlockVisitOnPath;
-    const Stmt *Term = nodeBuilder.getContext().getBlock()->getTerminator();
+    const Stmt *Term = nodeBuilder.getContext().getBlock()->getTerminatorStmt();
     if (Term) {
       ProgramStateRef NewState = updateLoopStack(Term, AMgr.getASTContext(),
                                                  Pred, maxBlockVisitOnPath);
@@ -1879,7 +1948,7 @@ void ExprEngine::processCFGBlockEntrance(const BlockEdge &L,
   unsigned int BlockCount = nodeBuilder.getContext().blockCount();
   if (BlockCount == AMgr.options.maxBlockVisitOnPath - 1 &&
       AMgr.options.ShouldWidenLoops) {
-    const Stmt *Term = nodeBuilder.getContext().getBlock()->getTerminator();
+    const Stmt *Term = nodeBuilder.getContext().getBlock()->getTerminatorStmt();
     if (!(Term &&
           (isa<ForStmt>(Term) || isa<WhileStmt>(Term) || isa<DoStmt>(Term))))
       return;
@@ -2004,8 +2073,8 @@ static const Stmt *ResolveCondition(const Stmt *Condition,
   if (!BO || !BO->isLogicalOp())
     return Condition;
 
-  assert(!B->getTerminator().isTemporaryDtorsBranch() &&
-         "Temporary destructor branches handled by processBindTemporary.");
+  assert(B->getTerminator().isStmtBranch() &&
+         "Other kinds of branches are handled separately!");
 
   // For logical operations, we still have the case where some branches
   // use the traditional "merge" approach and others sink the branch
@@ -2258,7 +2327,6 @@ void ExprEngine::processEndOfFunction(NodeBuilderContext& BC,
                                        Pred->getStackFrame()->getParent()));
 
   PrettyStackTraceLocationContext CrashInfo(Pred->getLocationContext());
-  StateMgr.EndPath(Pred->getState());
 
   ExplodedNodeSet Dst;
   if (Pred->getLocationContext()->inTopFrame()) {
@@ -2620,44 +2688,59 @@ void ExprEngine::VisitAtomicExpr(const AtomicExpr *AE, ExplodedNode *Pred,
   getCheckerManager().runCheckersForPostStmt(Dst, AfterInvalidateSet, AE, *this);
 }
 
-// A value escapes in three possible cases:
+// A value escapes in four possible cases:
 // (1) We are binding to something that is not a memory region.
-// (2) We are binding to a MemrRegion that does not have stack storage.
-// (3) We are binding to a MemRegion with stack storage that the store
+// (2) We are binding to a MemRegion that does not have stack storage.
+// (3) We are binding to a top-level parameter region with a non-trivial
+//     destructor. We won't see the destructor during analysis, but it's there.
+// (4) We are binding to a MemRegion with stack storage that the store
 //     does not understand.
-ProgramStateRef ExprEngine::processPointerEscapedOnBind(ProgramStateRef State,
-                                                        SVal Loc,
-                                                        SVal Val,
-                                                        const LocationContext *LCtx) {
-  // Are we storing to something that causes the value to "escape"?
-  bool escapes = true;
-
-  // TODO: Move to StoreManager.
-  if (Optional<loc::MemRegionVal> regionLoc = Loc.getAs<loc::MemRegionVal>()) {
-    escapes = !regionLoc->getRegion()->hasStackStorage();
-
-    if (!escapes) {
-      // To test (3), generate a new state with the binding added.  If it is
-      // the same state, then it escapes (since the store cannot represent
-      // the binding).
-      // Do this only if we know that the store is not supposed to generate the
-      // same state.
-      SVal StoredVal = State->getSVal(regionLoc->getRegion());
-      if (StoredVal != Val)
-        escapes = (State == (State->bindLoc(*regionLoc, Val, LCtx)));
+ProgramStateRef ExprEngine::processPointerEscapedOnBind(
+    ProgramStateRef State, ArrayRef<std::pair<SVal, SVal>> LocAndVals,
+    const LocationContext *LCtx, PointerEscapeKind Kind,
+    const CallEvent *Call) {
+  SmallVector<SVal, 8> Escaped;
+  for (const std::pair<SVal, SVal> &LocAndVal : LocAndVals) {
+    // Cases (1) and (2).
+    const MemRegion *MR = LocAndVal.first.getAsRegion();
+    if (!MR || !MR->hasStackStorage()) {
+      Escaped.push_back(LocAndVal.second);
+      continue;
     }
+
+    // Case (3).
+    if (const auto *VR = dyn_cast<VarRegion>(MR->getBaseRegion()))
+      if (VR->hasStackParametersStorage() && VR->getStackFrame()->inTopFrame())
+        if (const auto *RD = VR->getValueType()->getAsCXXRecordDecl())
+          if (!RD->hasTrivialDestructor()) {
+            Escaped.push_back(LocAndVal.second);
+            continue;
+          }
+
+    // Case (4): in order to test that, generate a new state with the binding
+    // added. If it is the same state, then it escapes (since the store cannot
+    // represent the binding).
+    // Do this only if we know that the store is not supposed to generate the
+    // same state.
+    SVal StoredVal = State->getSVal(MR);
+    if (StoredVal != LocAndVal.second)
+      if (State ==
+          (State->bindLoc(loc::MemRegionVal(MR), LocAndVal.second, LCtx)))
+        Escaped.push_back(LocAndVal.second);
   }
 
-  // If our store can represent the binding and we aren't storing to something
-  // that doesn't have local storage then just return and have the simulation
-  // state continue as is.
-  if (!escapes)
+  if (Escaped.empty())
     return State;
 
-  // Otherwise, find all symbols referenced by 'val' that we are tracking
-  // and stop tracking them.
-  State = escapeValue(State, Val, PSK_EscapeOnBind);
-  return State;
+  return escapeValues(State, Escaped, Kind, Call);
+}
+
+ProgramStateRef
+ExprEngine::processPointerEscapedOnBind(ProgramStateRef State, SVal Loc,
+                                        SVal Val, const LocationContext *LCtx) {
+  std::pair<SVal, SVal> LocAndVal(Loc, Val);
+  return processPointerEscapedOnBind(State, LocAndVal, LCtx, PSK_EscapeOnBind,
+                                     nullptr);
 }
 
 ProgramStateRef
@@ -2958,8 +3041,13 @@ struct DOTGraphTraits<ExplodedGraph*> : public DefaultDOTGraphTraits {
         llvm::make_range(BR.EQClasses_begin(), BR.EQClasses_end());
 
     for (const auto &EQ : EQClasses) {
-      for (const BugReport &Report : EQ) {
-        if (Report.getErrorNode() == N)
+      for (const auto &I : EQ.getReports()) {
+        const auto *PR = dyn_cast<PathSensitiveBugReport>(I.get());
+        if (!PR)
+          continue;
+        const ExplodedNode *EN = PR->getErrorNode();
+        if (EN->getState() == N->getState() &&
+            EN->getLocation() == N->getLocation())
           return true;
       }
     }
@@ -2975,39 +3063,18 @@ struct DOTGraphTraits<ExplodedGraph*> : public DefaultDOTGraphTraits {
       llvm::function_ref<void(const ExplodedNode *)> PreCallback,
       llvm::function_ref<void(const ExplodedNode *)> PostCallback,
       llvm::function_ref<bool(const ExplodedNode *)> Stop) {
-    const ExplodedNode *FirstHiddenNode = N;
-    while (FirstHiddenNode->pred_size() == 1 &&
-           isNodeHidden(*FirstHiddenNode->pred_begin())) {
-      FirstHiddenNode = *FirstHiddenNode->pred_begin();
-    }
-    const ExplodedNode *OtherNode = FirstHiddenNode;
     while (true) {
-      PreCallback(OtherNode);
-      if (Stop(OtherNode))
+      PreCallback(N);
+      if (Stop(N))
         return true;
 
-      if (OtherNode == N)
+      if (N->succ_size() != 1 || !isNodeHidden(N->getFirstSucc()))
         break;
-      PostCallback(OtherNode);
+      PostCallback(N);
 
-      OtherNode = *OtherNode->succ_begin();
+      N = N->getFirstSucc();
     }
     return false;
-  }
-
-  static std::string getNodeAttributes(const ExplodedNode *N,
-                                       ExplodedGraph *) {
-    SmallVector<StringRef, 10> Out;
-    auto Noop = [](const ExplodedNode*){};
-    if (traverseHiddenNodes(N, Noop, Noop, &nodeHasBugReport)) {
-      Out.push_back("style=filled");
-      Out.push_back("fillcolor=red");
-    }
-
-    if (traverseHiddenNodes(N, Noop, Noop,
-                            [](const ExplodedNode *C) { return C->isSink(); }))
-      Out.push_back("color=blue");
-    return llvm::join(Out, ",");
   }
 
   static bool isNodeHidden(const ExplodedNode *N) {
@@ -3015,37 +3082,43 @@ struct DOTGraphTraits<ExplodedGraph*> : public DefaultDOTGraphTraits {
   }
 
   static std::string getNodeLabel(const ExplodedNode *N, ExplodedGraph *G){
-    std::string sbuf;
-    llvm::raw_string_ostream Out(sbuf);
+    std::string Buf;
+    llvm::raw_string_ostream Out(Buf);
 
+    const bool IsDot = true;
+    const unsigned int Space = 1;
     ProgramStateRef State = N->getState();
+
+    Out << "{ \"state_id\": " << State->getID()
+        << ",\\l";
+
+    Indent(Out, Space, IsDot) << "\"program_points\": [\\l";
 
     // Dump program point for all the previously skipped nodes.
     traverseHiddenNodes(
         N,
         [&](const ExplodedNode *OtherNode) {
-          OtherNode->getLocation().print(/*CR=*/"\\l", Out);
+          Indent(Out, Space + 1, IsDot) << "{ ";
+          OtherNode->getLocation().printJson(Out, /*NL=*/"\\l");
+          Out << ", \"tag\": ";
           if (const ProgramPointTag *Tag = OtherNode->getLocation().getTag())
-            Out << "\\lTag:" << Tag->getTagDescription();
-          if (N->isSink())
-            Out << "\\lNode is sink\\l";
-          if (nodeHasBugReport(N))
-            Out << "\\lBug report attached\\l";
+            Out << '\"' << Tag->getTagDescription() << "\"";
+          else
+            Out << "null";
+          Out << ", \"node_id\": " << OtherNode->getID() <<
+                 ", \"is_sink\": " << OtherNode->isSink() <<
+                 ", \"has_report\": " << nodeHasBugReport(OtherNode) << " }";
         },
-        [&](const ExplodedNode *) { Out << "\\l--------\\l"; },
+        // Adds a comma and a new-line between each program point.
+        [&](const ExplodedNode *) { Out << ",\\l"; },
         [&](const ExplodedNode *) { return false; });
 
-    Out << "\\l\\|";
+    Out << "\\l"; // Adds a new-line to the last program point.
+    Indent(Out, Space, IsDot) << "],\\l";
 
-    Out << "StateID: ST" << State->getID() << ", NodeID: N" << N->getID(G)
-        << " <" << (const void *)N << ">\\|";
+    State->printDOT(Out, N->getLocationContext(), Space);
 
-    bool SameAsAllPredecessors =
-        std::all_of(N->pred_begin(), N->pred_end(), [&](const ExplodedNode *P) {
-          return P->getState() == State;
-        });
-    if (!SameAsAllPredecessors)
-      State->printDOT(Out, N->getLocationContext());
+    Out << "\\l}\\l";
     return Out.str();
   }
 };
@@ -3078,8 +3151,12 @@ std::string ExprEngine::DumpGraph(bool trim, StringRef Filename) {
     // Iterate through the reports and get their nodes.
     for (BugReporter::EQClasses_iterator
            EI = BR.EQClasses_begin(), EE = BR.EQClasses_end(); EI != EE; ++EI) {
-      const auto *N = const_cast<ExplodedNode *>(EI->begin()->getErrorNode());
-      if (N) Src.push_back(N);
+      const auto *R =
+          dyn_cast<PathSensitiveBugReport>(EI->getReports()[0].get());
+      if (!R)
+        continue;
+      const auto *N = const_cast<ExplodedNode *>(R->getErrorNode());
+      Src.push_back(N);
     }
     return DumpGraph(Src, Filename);
   } else {

@@ -1,14 +1,14 @@
 //===--- Solaris.cpp - Solaris ToolChain Implementations --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "Solaris.h"
 #include "CommonArgs.h"
+#include "clang/Basic/LangStandard.h"
 #include "clang/Config/config.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
@@ -41,7 +41,7 @@ void solaris::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back(II.getFilename());
 
   const char *Exec = Args.MakeArgString(getToolChain().GetProgramPath("as"));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
@@ -66,10 +66,6 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-Bdynamic");
     if (Args.hasArg(options::OPT_shared)) {
       CmdArgs.push_back("-shared");
-    } else {
-      CmdArgs.push_back("--dynamic-linker");
-      CmdArgs.push_back(
-          Args.MakeArgString(getToolChain().GetFilePath("ld.so.1")));
     }
 
     // libpthread has been folded into libc since Solaris 10, no need to do
@@ -91,18 +87,31 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
           Args.MakeArgString(getToolChain().GetFilePath("crt1.o")));
 
     CmdArgs.push_back(Args.MakeArgString(getToolChain().GetFilePath("crti.o")));
+
+    const Arg *Std = Args.getLastArg(options::OPT_std_EQ, options::OPT_ansi);
+    bool HaveAnsi = false;
+    const LangStandard *LangStd = nullptr;
+    if (Std) {
+      HaveAnsi = Std->getOption().matches(options::OPT_ansi);
+      if (!HaveAnsi)
+        LangStd = LangStandard::getLangStandardForName(Std->getValue());
+    }
+
+    const char *values_X = "values-Xa.o";
+    // Use values-Xc.o for -ansi, -std=c*, -std=iso9899:199409.
+    if (HaveAnsi || (LangStd && !LangStd->isGNUMode()))
+      values_X = "values-Xc.o";
+    CmdArgs.push_back(Args.MakeArgString(getToolChain().GetFilePath(values_X)));
+
+    const char *values_xpg = "values-xpg6.o";
+    // Use values-xpg4.o for -std=c90, -std=gnu90, -std=iso9899:199409.
+    if (LangStd && LangStd->getLanguage() == Language::C && !LangStd->isC99())
+      values_xpg = "values-xpg4.o";
     CmdArgs.push_back(
-        Args.MakeArgString(getToolChain().GetFilePath("values-Xa.o")));
+        Args.MakeArgString(getToolChain().GetFilePath(values_xpg)));
     CmdArgs.push_back(
         Args.MakeArgString(getToolChain().GetFilePath("crtbegin.o")));
   }
-
-  // Provide __start___sancov_guards.  Solaris ld doesn't automatically create
-  // __start_SECNAME labels.
-  CmdArgs.push_back("--whole-archive");
-  CmdArgs.push_back(
-      getToolChain().getCompilerRTArgString(Args, "sancov_begin", false));
-  CmdArgs.push_back("--no-whole-archive");
 
   getToolChain().AddFilePathLibArgs(Args, CmdArgs);
 
@@ -132,13 +141,6 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
       linkSanitizerRuntimeDeps(getToolChain(), CmdArgs);
   }
 
-  // Provide __stop___sancov_guards.  Solaris ld doesn't automatically create
-  // __stop_SECNAME labels.
-  CmdArgs.push_back("--whole-archive");
-  CmdArgs.push_back(
-      getToolChain().getCompilerRTArgString(Args, "sancov_end", false));
-  CmdArgs.push_back("--no-whole-archive");
-
   if (!Args.hasArg(options::OPT_nostdlib, options::OPT_nostartfiles)) {
     CmdArgs.push_back(
         Args.MakeArgString(getToolChain().GetFilePath("crtend.o")));
@@ -148,7 +150,7 @@ void solaris::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   getToolChain().addProfileRTLibs(Args, CmdArgs);
 
   const char *Exec = Args.MakeArgString(getToolChain().GetLinkerPath());
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 static StringRef getSolarisLibSuffix(const llvm::Triple &Triple) {
@@ -196,11 +198,16 @@ Solaris::Solaris(const Driver &D, const llvm::Triple &Triple,
 
 SanitizerMask Solaris::getSupportedSanitizers() const {
   const bool IsX86 = getTriple().getArch() == llvm::Triple::x86;
+  const bool IsX86_64 = getTriple().getArch() == llvm::Triple::x86_64;
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   // FIXME: Omit X86_64 until 64-bit support is figured out.
   if (IsX86) {
     Res |= SanitizerKind::Address;
+    Res |= SanitizerKind::PointerCompare;
+    Res |= SanitizerKind::PointerSubtract;
   }
+  if (IsX86 || IsX86_64)
+    Res |= SanitizerKind::Function;
   Res |= SanitizerKind::Vptr;
   return Res;
 }

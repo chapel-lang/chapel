@@ -1,30 +1,30 @@
 varargs-2.chpl:14: In function 'show_default':
-varargs-2.chpl:16: error: illegal lvalue in assignment
+varargs-2.chpl:16: error: cannot assign to const variable
 varargs-2.chpl:64: Function 'show_default' instantiated as: show_default(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:20: In function 'show_const':
-varargs-2.chpl:21: error: illegal lvalue in assignment
-varargs-2.chpl:22: error: illegal lvalue in assignment
+varargs-2.chpl:21: error: cannot assign to const variable
+varargs-2.chpl:22: error: cannot assign to const variable
 varargs-2.chpl:65: Function 'show_const' instantiated as: show_const(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:26: In function 'show_const_in':
-varargs-2.chpl:27: error: illegal lvalue in assignment
-varargs-2.chpl:28: error: illegal lvalue in assignment
+varargs-2.chpl:27: error: cannot assign to const variable
+varargs-2.chpl:28: error: cannot assign to const variable
 varargs-2.chpl:66: Function 'show_const_in' instantiated as: show_const_in(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:32: In function 'show_const_ref':
-varargs-2.chpl:33: error: illegal lvalue in assignment
-varargs-2.chpl:34: error: illegal lvalue in assignment
+varargs-2.chpl:33: error: cannot assign to const variable
+varargs-2.chpl:34: error: cannot assign to const variable
 varargs-2.chpl:67: Function 'show_const_ref' instantiated as: show_const_ref(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:41: In function 'test_default':
-varargs-2.chpl:43: error: illegal lvalue in assignment
+varargs-2.chpl:43: error: cannot assign to const variable
 varargs-2.chpl:69: Function 'test_default' instantiated as: test_default(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:46: In function 'test_const':
-varargs-2.chpl:47: error: illegal lvalue in assignment
-varargs-2.chpl:48: error: illegal lvalue in assignment
+varargs-2.chpl:47: error: cannot assign to const variable
+varargs-2.chpl:48: error: cannot assign to const variable
 varargs-2.chpl:70: Function 'test_const' instantiated as: test_const(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:51: In function 'test_const_in':
-varargs-2.chpl:52: error: illegal lvalue in assignment
-varargs-2.chpl:53: error: illegal lvalue in assignment
+varargs-2.chpl:52: error: cannot assign to const variable
+varargs-2.chpl:53: error: cannot assign to const variable
 varargs-2.chpl:71: Function 'test_const_in' instantiated as: test_const_in(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))
 varargs-2.chpl:56: In function 'test_const_ref':
-varargs-2.chpl:57: error: illegal lvalue in assignment
-varargs-2.chpl:58: error: illegal lvalue in assignment
+varargs-2.chpl:57: error: cannot assign to const variable
+varargs-2.chpl:58: error: cannot assign to const variable
 varargs-2.chpl:72: Function 'test_const_ref' instantiated as: test_const_ref(xxx(0): [domain(1,int(64),false)] int(64), xxx(1): int(64))

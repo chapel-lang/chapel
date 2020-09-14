@@ -1,3 +1,3 @@
 intents-int.chpl:34: In function 'goo':
-intents-int.chpl:37: error: illegal lvalue in assignment
+intents-int.chpl:37: error: cannot assign to const variable
 intents-int.chpl:74: Function 'goo' instantiated as: goo(x: int(64))

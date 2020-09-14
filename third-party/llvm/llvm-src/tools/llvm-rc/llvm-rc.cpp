@@ -1,9 +1,8 @@
 //===-- llvm-rc.cpp - Compile .rc scripts into .res -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -177,12 +176,12 @@ int main(int Argc, const char **Argv) {
           "No more than one output file should be provided (using /FO flag).");
 
     std::error_code EC;
-    auto FOut = llvm::make_unique<raw_fd_ostream>(
+    auto FOut = std::make_unique<raw_fd_ostream>(
         OutArgsInfo[0], EC, sys::fs::FA_Read | sys::fs::FA_Write);
     if (EC)
       fatalError("Error opening output file '" + OutArgsInfo[0] +
                  "': " + EC.message());
-    Visitor = llvm::make_unique<ResourceFileWriter>(Params, std::move(FOut));
+    Visitor = std::make_unique<ResourceFileWriter>(Params, std::move(FOut));
     Visitor->AppendNull = InputArgs.hasArg(OPT_ADD_NULL);
 
     ExitOnErr(NullResource().visit(Visitor.get()));

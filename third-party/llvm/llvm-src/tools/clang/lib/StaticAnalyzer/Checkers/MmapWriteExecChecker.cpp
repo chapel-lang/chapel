@@ -1,9 +1,8 @@
 // MmapWriteExecChecker.cpp - Check for the prot argument -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -68,7 +67,7 @@ void MmapWriteExecChecker::checkPreCall(const CallEvent &Call,
       if (!N)
         return;
 
-      auto Report = llvm::make_unique<BugReport>(
+      auto Report = std::make_unique<PathSensitiveBugReport>(
           *BT, "Both PROT_WRITE and PROT_EXEC flags are set. This can "
                "lead to exploitable memory regions, which could be overwritten "
                "with malicious code", N);
@@ -83,8 +82,12 @@ void ento::registerMmapWriteExecChecker(CheckerManager &mgr) {
       mgr.registerChecker<MmapWriteExecChecker>();
   Mwec->ProtExecOv =
     mgr.getAnalyzerOptions()
-      .getCheckerIntegerOption("MmapProtExec", 0x04, Mwec);
+      .getCheckerIntegerOption(Mwec, "MmapProtExec");
   Mwec->ProtReadOv =
     mgr.getAnalyzerOptions()
-      .getCheckerIntegerOption("MmapProtRead", 0x01, Mwec);
+      .getCheckerIntegerOption(Mwec, "MmapProtRead");
+}
+
+bool ento::shouldRegisterMmapWriteExecChecker(const LangOptions &LO) {
+  return true;
 }

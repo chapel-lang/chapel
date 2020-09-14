@@ -1,9 +1,8 @@
 //===-- GCRootLowering.cpp - Garbage collection infrastructure ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,6 +24,7 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
@@ -214,7 +214,7 @@ bool LowerIntrinsics::DoLowering(Function &F, GCStrategy &S) {
       }
       case Intrinsic::gcread: {
         // Replace a read barrier with a simple load.
-        Value *Ld = new LoadInst(CI->getArgOperand(1), "", CI);
+        Value *Ld = new LoadInst(CI->getType(), CI->getArgOperand(1), "", CI);
         Ld->takeName(CI);
         CI->replaceAllUsesWith(Ld);
         CI->eraseFromParent();
@@ -250,7 +250,7 @@ GCMachineCodeAnalysis::GCMachineCodeAnalysis() : MachineFunctionPass(ID) {}
 void GCMachineCodeAnalysis::getAnalysisUsage(AnalysisUsage &AU) const {
   MachineFunctionPass::getAnalysisUsage(AU);
   AU.setPreservesAll();
-  AU.addRequired<MachineModuleInfo>();
+  AU.addRequired<MachineModuleInfoWrapperPass>();
   AU.addRequired<GCModuleInfo>();
 }
 
@@ -311,7 +311,7 @@ bool GCMachineCodeAnalysis::runOnMachineFunction(MachineFunction &MF) {
     return false;
 
   FI = &getAnalysis<GCModuleInfo>().getFunctionInfo(MF.getFunction());
-  MMI = &getAnalysis<MachineModuleInfo>();
+  MMI = &getAnalysis<MachineModuleInfoWrapperPass>().getMMI();
   TII = MF.getSubtarget().getInstrInfo();
 
   // Find the size of the stack frame.  There may be no correct static frame

@@ -13,7 +13,7 @@
 #
 # CRAY_PLATFORM_FROM_JENKINS
 #
-# The default is cray-xc. cray-xe is the other valid option.
+# The default is cray-xc
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
@@ -110,7 +110,7 @@ case $COMPILER in
     cray|intel|gnu)
         # swap out network modules to get "host-only" environment
         log_info "Swap network module for host-only environment."
-        module unload $(module list -t 2>&1 | grep craype-network)
+        module unload $(module -t list 2>&1 | grep craype-network)
         module load craype-network-none
         ;;
     pgi)
@@ -160,7 +160,7 @@ fi
 
 # no cpu targeting module supports the esxbld CPUs, so force x86-64
 if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
-    module unload $(module list -t 2>&1| grep craype-| grep -v craype-network |grep -v craype-target)
+    module unload $(module -t list 2>&1| grep craype-| grep -v craype-network |grep -v craype-target)
     log_info "Setting CRAY_CPU_TARGET to x86-64 to stifle chpl_cpu.py warnings."
     export CRAY_CPU_TARGET=x86-64
 fi

@@ -1,9 +1,8 @@
 //===--- DeclSpec.h - Parsed declaration specifiers -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -23,6 +22,7 @@
 #ifndef LLVM_CLANG_SEMA_DECLSPEC_H
 #define LLVM_CLANG_SEMA_DECLSPEC_H
 
+#include "clang/AST/DeclCXX.h"
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/Basic/ExceptionSpecificationType.h"
 #include "clang/Basic/Lambda.h"
@@ -349,6 +349,7 @@ private:
   unsigned TypeSpecOwned : 1;
   unsigned TypeSpecPipe : 1;
   unsigned TypeSpecSat : 1;
+  unsigned ConstrainedAuto : 1;
 
   // type-qualifiers
   unsigned TypeQualifiers : 5;  // Bitwise OR of TQ.
@@ -357,20 +358,23 @@ private:
   unsigned FS_inline_specified : 1;
   unsigned FS_forceinline_specified: 1;
   unsigned FS_virtual_specified : 1;
-  unsigned FS_explicit_specified : 1;
   unsigned FS_noreturn_specified : 1;
 
   // friend-specifier
   unsigned Friend_specified : 1;
 
   // constexpr-specifier
-  unsigned Constexpr_specified : 1;
+  unsigned ConstexprSpecifier : 2;
 
   union {
     UnionParsedType TypeRep;
     Decl *DeclRep;
     Expr *ExprRep;
+    TemplateIdAnnotation *TemplateIdRep;
   };
+
+  /// ExplicitSpecifier - Store information about explicit spicifer.
+  ExplicitSpecifier FS_explicit_specifier;
 
   // attributes.
   ParsedAttributes Attrs;
@@ -394,6 +398,7 @@ private:
   SourceLocation TQ_constLoc, TQ_restrictLoc, TQ_volatileLoc, TQ_atomicLoc,
       TQ_unalignedLoc;
   SourceLocation FS_inlineLoc, FS_virtualLoc, FS_explicitLoc, FS_noreturnLoc;
+  SourceLocation FS_explicitCloseParenLoc;
   SourceLocation FS_forceinlineLoc;
   SourceLocation FriendLoc, ModulePrivateLoc, ConstexprLoc;
   SourceLocation TQ_pipeLoc;
@@ -410,6 +415,9 @@ private:
   static bool isExprRep(TST T) {
     return (T == TST_typeofExpr || T == TST_decltype);
   }
+  static bool isTemplateIdRep(TST T) {
+    return (T == TST_auto || T == TST_decltype_auto);
+  }
 
   DeclSpec(const DeclSpec &) = delete;
   void operator=(const DeclSpec &) = delete;
@@ -421,31 +429,19 @@ public:
   }
 
   DeclSpec(AttributeFactory &attrFactory)
-    : StorageClassSpec(SCS_unspecified),
-      ThreadStorageClassSpec(TSCS_unspecified),
-      SCS_extern_in_linkage_spec(false),
-      TypeSpecWidth(TSW_unspecified),
-      TypeSpecComplex(TSC_unspecified),
-      TypeSpecSign(TSS_unspecified),
-      TypeSpecType(TST_unspecified),
-      TypeAltiVecVector(false),
-      TypeAltiVecPixel(false),
-      TypeAltiVecBool(false),
-      TypeSpecOwned(false),
-      TypeSpecPipe(false),
-      TypeSpecSat(false),
-      TypeQualifiers(TQ_unspecified),
-      FS_inline_specified(false),
-      FS_forceinline_specified(false),
-      FS_virtual_specified(false),
-      FS_explicit_specified(false),
-      FS_noreturn_specified(false),
-      Friend_specified(false),
-      Constexpr_specified(false),
-      Attrs(attrFactory),
-      writtenBS(),
-      ObjCQualifiers(nullptr) {
-  }
+      : StorageClassSpec(SCS_unspecified),
+        ThreadStorageClassSpec(TSCS_unspecified),
+        SCS_extern_in_linkage_spec(false), TypeSpecWidth(TSW_unspecified),
+        TypeSpecComplex(TSC_unspecified), TypeSpecSign(TSS_unspecified),
+        TypeSpecType(TST_unspecified), TypeAltiVecVector(false),
+        TypeAltiVecPixel(false), TypeAltiVecBool(false), TypeSpecOwned(false),
+        TypeSpecPipe(false), TypeSpecSat(false), ConstrainedAuto(false),
+        TypeQualifiers(TQ_unspecified),
+        FS_inline_specified(false), FS_forceinline_specified(false),
+        FS_virtual_specified(false), FS_noreturn_specified(false),
+        Friend_specified(false), ConstexprSpecifier(CSK_unspecified),
+        FS_explicit_specifier(), Attrs(attrFactory), writtenBS(),
+        ObjCQualifiers(nullptr) {}
 
   // storage-class-specifier
   SCS getStorageClassSpec() const { return (SCS)StorageClassSpec; }
@@ -488,6 +484,7 @@ public:
   bool isTypeRep() const { return isTypeRep((TST) TypeSpecType); }
   bool isTypeSpecPipe() const { return TypeSpecPipe; }
   bool isTypeSpecSat() const { return TypeSpecSat; }
+  bool isConstrainedAuto() const { return ConstrainedAuto; }
 
   ParsedType getRepAsType() const {
     assert(isTypeRep((TST) TypeSpecType) && "DeclSpec does not store a type");
@@ -500,6 +497,11 @@ public:
   Expr *getRepAsExpr() const {
     assert(isExprRep((TST) TypeSpecType) && "DeclSpec does not store an expr");
     return ExprRep;
+  }
+  TemplateIdAnnotation *getRepAsTemplateId() const {
+    assert(isTemplateIdRep((TST) TypeSpecType) &&
+           "DeclSpec does not store a template id");
+    return TemplateIdRep;
   }
   CXXScopeSpec &getTypeSpecScope() { return TypeScope; }
   const CXXScopeSpec &getTypeSpecScope() const { return TypeScope; }
@@ -540,6 +542,7 @@ public:
   static const char *getSpecifierName(DeclSpec::TSW W);
   static const char *getSpecifierName(DeclSpec::SCS S);
   static const char *getSpecifierName(DeclSpec::TSCS S);
+  static const char *getSpecifierName(ConstexprSpecKind C);
 
   // type-qualifiers
 
@@ -571,11 +574,22 @@ public:
     return FS_inline_specified ? FS_inlineLoc : FS_forceinlineLoc;
   }
 
+  ExplicitSpecifier getExplicitSpecifier() const {
+    return FS_explicit_specifier;
+  }
+
   bool isVirtualSpecified() const { return FS_virtual_specified; }
   SourceLocation getVirtualSpecLoc() const { return FS_virtualLoc; }
 
-  bool isExplicitSpecified() const { return FS_explicit_specified; }
+  bool hasExplicitSpecifier() const {
+    return FS_explicit_specifier.isSpecified();
+  }
   SourceLocation getExplicitSpecLoc() const { return FS_explicitLoc; }
+  SourceRange getExplicitSpecRange() const {
+    return FS_explicit_specifier.getExpr()
+               ? SourceRange(FS_explicitLoc, FS_explicitCloseParenLoc)
+               : SourceRange(FS_explicitLoc);
+  }
 
   bool isNoreturnSpecified() const { return FS_noreturn_specified; }
   SourceLocation getNoreturnSpecLoc() const { return FS_noreturnLoc; }
@@ -587,8 +601,9 @@ public:
     FS_forceinlineLoc = SourceLocation();
     FS_virtual_specified = false;
     FS_virtualLoc = SourceLocation();
-    FS_explicit_specified = false;
+    FS_explicit_specifier = ExplicitSpecifier();
     FS_explicitLoc = SourceLocation();
+    FS_explicitCloseParenLoc = SourceLocation();
     FS_noreturn_specified = false;
     FS_noreturnLoc = SourceLocation();
   }
@@ -663,6 +678,9 @@ public:
                        SourceLocation TagNameLoc, const char *&PrevSpec,
                        unsigned &DiagID, Decl *Rep, bool Owned,
                        const PrintingPolicy &Policy);
+  bool SetTypeSpecType(TST T, SourceLocation Loc, const char *&PrevSpec,
+                       unsigned &DiagID, TemplateIdAnnotation *Rep,
+                       const PrintingPolicy &Policy);
 
   bool SetTypeSpecType(TST T, SourceLocation Loc, const char *&PrevSpec,
                        unsigned &DiagID, Expr *Rep,
@@ -707,7 +725,8 @@ public:
   bool setFunctionSpecVirtual(SourceLocation Loc, const char *&PrevSpec,
                               unsigned &DiagID);
   bool setFunctionSpecExplicit(SourceLocation Loc, const char *&PrevSpec,
-                               unsigned &DiagID);
+                               unsigned &DiagID, ExplicitSpecifier ExplicitSpec,
+                               SourceLocation CloseParenLoc);
   bool setFunctionSpecNoreturn(SourceLocation Loc, const char *&PrevSpec,
                                unsigned &DiagID);
 
@@ -715,8 +734,8 @@ public:
                      unsigned &DiagID);
   bool setModulePrivateSpec(SourceLocation Loc, const char *&PrevSpec,
                             unsigned &DiagID);
-  bool SetConstexprSpec(SourceLocation Loc, const char *&PrevSpec,
-                        unsigned &DiagID);
+  bool SetConstexprSpec(ConstexprSpecKind ConstexprKind, SourceLocation Loc,
+                        const char *&PrevSpec, unsigned &DiagID);
 
   bool isFriendSpecified() const { return Friend_specified; }
   SourceLocation getFriendSpecLoc() const { return FriendLoc; }
@@ -724,11 +743,17 @@ public:
   bool isModulePrivateSpecified() const { return ModulePrivateLoc.isValid(); }
   SourceLocation getModulePrivateSpecLoc() const { return ModulePrivateLoc; }
 
-  bool isConstexprSpecified() const { return Constexpr_specified; }
+  ConstexprSpecKind getConstexprSpecifier() const {
+    return ConstexprSpecKind(ConstexprSpecifier);
+  }
+
   SourceLocation getConstexprSpecLoc() const { return ConstexprLoc; }
+  bool hasConstexprSpecifier() const {
+    return ConstexprSpecifier != CSK_unspecified;
+  }
 
   void ClearConstexprSpec() {
-    Constexpr_specified = false;
+    ConstexprSpecifier = CSK_unspecified;
     ConstexprLoc = SourceLocation();
   }
 
@@ -823,7 +848,8 @@ public:
     DQ_PR_unsafe_unretained = 0x800,
     DQ_PR_nullability = 0x1000,
     DQ_PR_null_resettable = 0x2000,
-    DQ_PR_class = 0x4000
+    DQ_PR_class = 0x4000,
+    DQ_PR_direct = 0x8000,
   };
 
   ObjCDeclSpec()
@@ -893,7 +919,7 @@ private:
   unsigned objcDeclQualifier : 7;
 
   // NOTE: VC++ treats enums as signed, avoid using ObjCPropertyAttributeKind
-  unsigned PropertyAttributes : 15;
+  unsigned PropertyAttributes : 16;
 
   unsigned Nullability : 2;
 
@@ -1746,7 +1772,8 @@ enum class DeclaratorContext {
     TemplateArgContext,  // Any template argument (in template argument list).
     TemplateTypeArgContext, // Template type argument (in default argument).
     AliasDeclContext,    // C++11 alias-declaration.
-    AliasTemplateContext // C++11 alias-declaration template.
+    AliasTemplateContext, // C++11 alias-declaration template.
+    RequiresExprContext   // C++2a requires-expression.
 };
 
 
@@ -1815,6 +1842,18 @@ private:
   /// The asm label, if specified.
   Expr *AsmLabel;
 
+  /// \brief The constraint-expression specified by the trailing
+  /// requires-clause, or null if no such clause was specified.
+  Expr *TrailingRequiresClause;
+
+  /// If this declarator declares a template, its template parameter lists.
+  ArrayRef<TemplateParameterList *> TemplateParameterLists;
+
+  /// If the declarator declares an abbreviated function template, the innermost
+  /// template parameter list containing the invented and explicit template
+  /// parameters (if any).
+  TemplateParameterList *InventedTemplateParameterList;
+
 #ifndef _MSC_VER
   union {
 #endif
@@ -1844,7 +1883,9 @@ public:
         GroupingParens(false), FunctionDefinition(FDK_Declaration),
         Redeclaration(false), Extension(false), ObjCIvar(false),
         ObjCWeakProperty(false), InlineStorageUsed(false),
-        Attrs(ds.getAttributePool().getFactory()), AsmLabel(nullptr) {}
+        Attrs(ds.getAttributePool().getFactory()), AsmLabel(nullptr),
+        TrailingRequiresClause(nullptr),
+        InventedTemplateParameterList(nullptr) {}
 
   ~Declarator() {
     clear();
@@ -1965,6 +2006,7 @@ public:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
     case DeclaratorContext::TrailingReturnVarContext:
+    case DeclaratorContext::RequiresExprContext:
       return true;
     }
     llvm_unreachable("unknown context kind!");
@@ -1987,6 +2029,7 @@ public:
     case DeclaratorContext::TemplateParamContext:
     case DeclaratorContext::CXXCatchContext:
     case DeclaratorContext::ObjCCatchContext:
+    case DeclaratorContext::RequiresExprContext:
       return true;
 
     case DeclaratorContext::TypeNameContext:
@@ -2023,6 +2066,7 @@ public:
     case DeclaratorContext::MemberContext:
     case DeclaratorContext::PrototypeContext:
     case DeclaratorContext::TemplateParamContext:
+    case DeclaratorContext::RequiresExprContext:
       // Maybe one day...
       return false;
 
@@ -2100,6 +2144,7 @@ public:
     case DeclaratorContext::TemplateArgContext:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
+    case DeclaratorContext::RequiresExprContext:
       return false;
     }
     llvm_unreachable("unknown context kind!");
@@ -2321,6 +2366,7 @@ public:
     case DeclaratorContext::TemplateTypeArgContext:
     case DeclaratorContext::TrailingReturnContext:
     case DeclaratorContext::TrailingReturnVarContext:
+    case DeclaratorContext::RequiresExprContext:
       return false;
     }
     llvm_unreachable("unknown context kind!");
@@ -2354,6 +2400,7 @@ public:
     case DeclaratorContext::TrailingReturnContext:
     case DeclaratorContext::TrailingReturnVarContext:
     case DeclaratorContext::TemplateTypeArgContext:
+    case DeclaratorContext::RequiresExprContext:
       return false;
 
     case DeclaratorContext::BlockContext:
@@ -2388,6 +2435,46 @@ public:
           Chunk.Fun.hasTrailingReturnType())
         return true;
     return false;
+  }
+
+  /// \brief Sets a trailing requires clause for this declarator.
+  void setTrailingRequiresClause(Expr *TRC) {
+    TrailingRequiresClause = TRC;
+  }
+
+  /// \brief Sets a trailing requires clause for this declarator.
+  Expr *getTrailingRequiresClause() {
+    return TrailingRequiresClause;
+  }
+
+  /// \brief Determine whether a trailing requires clause was written in this
+  /// declarator.
+  bool hasTrailingRequiresClause() const {
+    return TrailingRequiresClause != nullptr;
+  }
+
+  /// Sets the template parameter lists that preceded the declarator.
+  void setTemplateParameterLists(ArrayRef<TemplateParameterList *> TPLs) {
+    TemplateParameterLists = TPLs;
+  }
+
+  /// The template parameter lists that preceded the declarator.
+  ArrayRef<TemplateParameterList *> getTemplateParameterLists() const {
+    return TemplateParameterLists;
+  }
+
+  /// Sets the template parameter list generated from the explicit template
+  /// parameters along with any invented template parameters from
+  /// placeholder-typed parameters.
+  void setInventedTemplateParameterList(TemplateParameterList *Invented) {
+    InventedTemplateParameterList = Invented;
+  }
+
+  /// The template parameter list generated from the explicit template
+  /// parameters along with any invented template parameters from
+  /// placeholder-typed parameters, if there were any such parameters.
+  TemplateParameterList * getInventedTemplateParameterList() const {
+    return InventedTemplateParameterList;
   }
 
   /// takeAttributes - Takes attributes from the given parsed-attributes
@@ -2588,6 +2675,26 @@ struct LambdaIntroducer {
     Captures.push_back(LambdaCapture(Kind, Loc, Id, EllipsisLoc, InitKind, Init,
                                      InitCaptureType, ExplicitRange));
   }
+};
+
+struct InventedTemplateParameterInfo {
+  /// The number of parameters in the template parameter list that were
+  /// explicitly specified by the user, as opposed to being invented by use
+  /// of an auto parameter.
+  unsigned NumExplicitTemplateParams = 0;
+
+  /// If this is a generic lambda or abbreviated function template, use this
+  /// as the depth of each 'auto' parameter, during initial AST construction.
+  unsigned AutoTemplateParameterDepth = 0;
+
+  /// Store the list of the template parameters for a generic lambda or an
+  /// abbreviated function template.
+  /// If this is a generic lambda or abbreviated function template, this holds
+  /// the explicit template parameters followed by the auto parameters
+  /// converted into TemplateTypeParmDecls.
+  /// It can be used to construct the generic lambda or abbreviated template's
+  /// template parameter list during initial AST construction.
+  SmallVector<NamedDecl*, 4> TemplateParams;
 };
 
 } // end namespace clang

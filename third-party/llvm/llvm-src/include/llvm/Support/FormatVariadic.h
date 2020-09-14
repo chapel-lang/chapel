@@ -1,9 +1,8 @@
 //===- FormatVariadic.h - Efficient type-safe string formatting --*- C++-*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -58,7 +57,7 @@ struct ReplacementItem {
   size_t Index = 0;
   size_t Align = 0;
   AlignStyle Where = AlignStyle::Right;
-  char Pad;
+  char Pad = 0;
   StringRef Options;
 };
 

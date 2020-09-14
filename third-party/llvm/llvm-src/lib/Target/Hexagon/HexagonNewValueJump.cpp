@@ -1,9 +1,8 @@
 //===- HexagonNewValueJump.cpp - Hexagon Backend New Value Jump -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,6 +20,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/InitializePasses.h"
 #include "Hexagon.h"
 #include "HexagonInstrInfo.h"
 #include "HexagonRegisterInfo.h"
@@ -178,7 +178,7 @@ static bool canBeFeederToNewValueJump(const HexagonInstrInfo *QII,
         (II->getOperand(i).isUse() || II->getOperand(i).isDef())) {
       MachineBasicBlock::iterator localII = II;
       ++localII;
-      unsigned Reg = II->getOperand(i).getReg();
+      Register Reg = II->getOperand(i).getReg();
       for (MachineBasicBlock::iterator localBegin = localII; localBegin != end;
            ++localBegin) {
         if (localBegin == skip)
@@ -291,7 +291,7 @@ static bool canCompareBeNewValueJump(const HexagonInstrInfo *QII,
     // at machine code level, we don't need this, but if we decide
     // to move new value jump prior to RA, we would be needing this.
     MachineRegisterInfo &MRI = MF.getRegInfo();
-    if (secondReg && !TargetRegisterInfo::isPhysicalRegister(cmpOp2)) {
+    if (secondReg && !Register::isPhysicalRegister(cmpOp2)) {
       MachineInstr *def = MRI.getVRegDef(cmpOp2);
       if (def->getOpcode() == TargetOpcode::COPY)
         return false;
@@ -517,7 +517,7 @@ bool HexagonNewValueJump::runOnMachineFunction(MachineFunction &MF) {
         jmpPos = MII;
         jmpInstr = &MI;
         predReg = MI.getOperand(0).getReg();
-        afterRA = TargetRegisterInfo::isPhysicalRegister(predReg);
+        afterRA = Register::isPhysicalRegister(predReg);
 
         // If ifconverter had not messed up with the kill flags of the
         // operands, the following check on the kill flag would suffice.
@@ -604,7 +604,7 @@ bool HexagonNewValueJump::runOnMachineFunction(MachineFunction &MF) {
              (isSecondOpReg &&
               MI.getOperand(0).getReg() == (unsigned)cmpOp2))) {
 
-          unsigned feederReg = MI.getOperand(0).getReg();
+          Register feederReg = MI.getOperand(0).getReg();
 
           // First try to see if we can get the feeder from the first operand
           // of the compare. If we can not, and if secondOpReg is true
@@ -652,7 +652,7 @@ bool HexagonNewValueJump::runOnMachineFunction(MachineFunction &MF) {
             for (MachineOperand &MO : MI.operands()) {
               if (!MO.isReg() || !MO.isUse())
                 continue;
-              unsigned UseR = MO.getReg();
+              Register UseR = MO.getReg();
               for (auto I = std::next(MI.getIterator()); I != jmpPos; ++I) {
                 if (I == cmpPos)
                   continue;

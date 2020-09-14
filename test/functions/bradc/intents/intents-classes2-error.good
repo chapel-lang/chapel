@@ -1,2 +1,2 @@
 intents-classes2-error.chpl:34: In function 'callblank':
-intents-classes2-error.chpl:36: error: illegal lvalue in assignment
+intents-classes2-error.chpl:36: error: cannot assign to const variable

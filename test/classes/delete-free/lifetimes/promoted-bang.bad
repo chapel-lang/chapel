@@ -1,1 +1,2 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:4172: error: Scoped variable aa would outlive the value it is set to
+promoted-bang.chpl:23: In function 'main':
+promoted-bang.chpl:30: error: Scoped variable aa would outlive the value it is set to

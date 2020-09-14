@@ -1,9 +1,8 @@
 //===--- BreakableToken.h - Format C++ code ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -147,9 +146,7 @@ public:
   //  * @param loooooooooooooong line
   //  *     continuation
   //  */
-  virtual unsigned getContentIndent(unsigned LineIndex) const {
-    return 0;
-  }
+  virtual unsigned getContentIndent(unsigned LineIndex) const { return 0; }
 
   /// Returns a range (offset, length) at which to break the line at
   /// \p LineIndex, if previously broken at \p TailOffset. If possible, do not
@@ -158,7 +155,7 @@ public:
   /// file.
   virtual Split getSplit(unsigned LineIndex, unsigned TailOffset,
                          unsigned ColumnLimit, unsigned ContentStartColumn,
-                         llvm::Regex &CommentPragmasRegex) const = 0;
+                         const llvm::Regex &CommentPragmasRegex) const = 0;
 
   /// Emits the previously retrieved \p Split via \p Whitespaces.
   virtual void insertBreak(unsigned LineIndex, unsigned TailOffset, Split Split,
@@ -193,7 +190,7 @@ public:
   /// If the split is not contained within one token, for example when reflowing
   /// line comments, returns (0, <length>).
   virtual Split getReflowSplit(unsigned LineIndex,
-                               llvm::Regex &CommentPragmasRegex) const {
+                               const llvm::Regex &CommentPragmasRegex) const {
     return Split(StringRef::npos, 0);
   }
 
@@ -203,9 +200,7 @@ public:
 
   /// Returns whether there will be a line break at the start of the
   /// token.
-  virtual bool introducesBreakBeforeToken() const {
-    return false;
-  }
+  virtual bool introducesBreakBeforeToken() const { return false; }
 
   /// Replaces the whitespace between \p LineIndex-1 and \p LineIndex.
   virtual void adaptStartOfLine(unsigned LineIndex,
@@ -260,7 +255,7 @@ public:
 
   Split getSplit(unsigned LineIndex, unsigned TailOffset, unsigned ColumnLimit,
                  unsigned ContentStartColumn,
-                 llvm::Regex &CommentPragmasRegex) const override;
+                 const llvm::Regex &CommentPragmasRegex) const override;
   void insertBreak(unsigned LineIndex, unsigned TailOffset, Split Split,
                    unsigned ContentIndent,
                    WhitespaceManager &Whitespaces) const override;
@@ -303,7 +298,7 @@ public:
   unsigned getLineCount() const override;
   Split getSplit(unsigned LineIndex, unsigned TailOffset, unsigned ColumnLimit,
                  unsigned ContentStartColumn,
-                 llvm::Regex &CommentPragmasRegex) const override;
+                 const llvm::Regex &CommentPragmasRegex) const override;
   void compressWhitespace(unsigned LineIndex, unsigned TailOffset, Split Split,
                           WhitespaceManager &Whitespaces) const override;
 
@@ -314,7 +309,7 @@ protected:
   // Checks if the content of line LineIndex may be reflown with the previous
   // line.
   virtual bool mayReflow(unsigned LineIndex,
-                         llvm::Regex &CommentPragmasRegex) const = 0;
+                         const llvm::Regex &CommentPragmasRegex) const = 0;
 
   // Contains the original text of the lines of the block comment.
   //
@@ -364,8 +359,11 @@ public:
   BreakableBlockComment(const FormatToken &Token, unsigned StartColumn,
                         unsigned OriginalStartColumn, bool FirstInLine,
                         bool InPPDirective, encoding::Encoding Encoding,
-                        const FormatStyle &Style);
+                        const FormatStyle &Style, bool UseCRLF);
 
+  Split getSplit(unsigned LineIndex, unsigned TailOffset, unsigned ColumnLimit,
+                 unsigned ContentStartColumn,
+                 const llvm::Regex &CommentPragmasRegex) const override;
   unsigned getRangeLength(unsigned LineIndex, unsigned Offset,
                           StringRef::size_type Length,
                           unsigned StartColumn) const override;
@@ -377,7 +375,7 @@ public:
                    unsigned ContentIndent,
                    WhitespaceManager &Whitespaces) const override;
   Split getReflowSplit(unsigned LineIndex,
-                       llvm::Regex &CommentPragmasRegex) const override;
+                       const llvm::Regex &CommentPragmasRegex) const override;
   void reflow(unsigned LineIndex,
               WhitespaceManager &Whitespaces) const override;
   bool introducesBreakBeforeToken() const override;
@@ -386,7 +384,7 @@ public:
   Split getSplitAfterLastLine(unsigned TailOffset) const override;
 
   bool mayReflow(unsigned LineIndex,
-                 llvm::Regex &CommentPragmasRegex) const override;
+                 const llvm::Regex &CommentPragmasRegex) const override;
 
   // Contains Javadoc annotations that require additional indent when continued
   // on multiple lines.
@@ -450,14 +448,14 @@ public:
                    unsigned ContentIndent,
                    WhitespaceManager &Whitespaces) const override;
   Split getReflowSplit(unsigned LineIndex,
-                       llvm::Regex &CommentPragmasRegex) const override;
+                       const llvm::Regex &CommentPragmasRegex) const override;
   void reflow(unsigned LineIndex,
               WhitespaceManager &Whitespaces) const override;
   void adaptStartOfLine(unsigned LineIndex,
                         WhitespaceManager &Whitespaces) const override;
   void updateNextToken(LineState &State) const override;
   bool mayReflow(unsigned LineIndex,
-                 llvm::Regex &CommentPragmasRegex) const override;
+                 const llvm::Regex &CommentPragmasRegex) const override;
 
 private:
   // OriginalPrefix[i] contains the original prefix of line i, including
