@@ -7753,6 +7753,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         } else if (DecoratedClassType* dt = toDecoratedClassType(type)) {
           if (dt->isUnmanaged()) {
             manager = dtUnmanaged;
+          } else if (dt->isBorrowed()) {
+            manager = dtBorrowed;
           } else {
             manager = dtOwned;
           }
