@@ -22,6 +22,8 @@ ChapelEnv
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv
 HaltWrappers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.HaltWrappers
+ChapelTaskData
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
 ChapelBase
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase
 Reflection
@@ -154,8 +156,6 @@ MemTracking
   from print-module-resolution.ChapelStandard.MemTracking
 ChapelUtil
   from print-module-resolution.ChapelStandard.ChapelUtil
-ChapelTaskData
-  from print-module-resolution.ChapelStandard.ChapelTaskData
 CPtr
   from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast.CPtr
 ChapelSerializedBroadcast
