@@ -1,0 +1,3 @@
+{2 3 4}
+{2 3 4}
+sparseDomAssignOOB.chpl:19: error: halt reached - array index out of bounds: (2)
