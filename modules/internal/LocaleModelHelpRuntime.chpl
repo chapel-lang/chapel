@@ -165,6 +165,10 @@ module LocaleModelHelpRuntime {
                              ) {
     var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
+    if chpl_task_data_getNextCoStmtSerial(tls) {
+      isSerial = true;
+      chpl_task_data_setNextCoStmtSerial(tls, false);
+    }
     if isSerial {
       chpl_ftable_call(fn, args);
     } else {

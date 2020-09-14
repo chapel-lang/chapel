@@ -45,7 +45,6 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
-    ChapelTaskData
     Builtins
     AlignedTSupport
     CPtr
