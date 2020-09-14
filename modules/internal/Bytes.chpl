@@ -862,7 +862,7 @@ module Bytes {
     */
     proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
       if chpl_warnUnstable then
-        compilerWarning("string.dedent is subject to change in the future.");
+        compilerWarning("bytes.dedent is subject to change in the future.");
       return doDedent(this, columns, ignoreFirst);
     }
 
