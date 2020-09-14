@@ -151,6 +151,9 @@ var testStrings = [
 	 
    23c
   	23d""".dedent(),
+
+  // 24 no-op with ignoreFirst=true
+  "24a 24b".dedent(ignoreFirst=true),
   ];
 
 proc main() {

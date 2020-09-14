@@ -1807,8 +1807,8 @@ module String {
        When ``columns == 0``, determine the level of indentation to remove from
        all lines by finding the common leading whitespace across all non-empty
        lines. Empty lines are lines containing only whitespace. Tabs and spaces
-       are considered whitespace, but are not treated as the same characters
-       when determining common whitespace.
+       are the only whitespaces that are considered, but are not treated as
+       the same characters when determining common whitespace.
 
        When ``columns > 0``, remove ``columns`` leading whitespace characters
        from each line. Tabs are not considered whitespace when ``columns > 0``,
@@ -1816,12 +1816,10 @@ module String {
 
        :arg columns: The number of columns of indentation to remove. Infer
                      common leading whitespace if ``columns == 0``.
-       :type columns: `int`
 
        :arg ignoreFirst: When ``true``, ignore first line when determining the
                          common leading whitespace, and make no changes to the
                          first line.
-       :type ignoreFirst: `bool`
 
        :returns: A new `string` with indentation removed.
 
@@ -1847,7 +1845,7 @@ module String {
           for line in lines[low..] {
             // Compute offset
             var offset = 0;
-            if !isWhitespaceOnly(line) {
+            if !isDedentWhitespaceOnly(line) {
               offset = margin.size;
             } else {
               // Remove margin as long as it matches for empty lines
@@ -1883,34 +1881,34 @@ module String {
       for line in lines {
 
         // Skip empty lines
-        if isWhitespaceOnly(line) {
+        if isDedentWhitespaceOnly(line) {
           continue;
         }
 
         // Determine leading whitespace (spaces and tabs) in line
-        var indent = '';
+        var curMargin = '';
         for char in line {
           if char != ' ' && char != '\t' then break;
-          else indent += char;
+          else curMargin += char;
         }
 
-        if indent == '' {
+        if curMargin == '' {
           // An unindented non-empty line means no margin exists, return early
           margin = '';
           break;
         } else if margin == '' {
           // Initialize margin
-          margin = indent;
-        } else if indent.startsWith(margin) {
+          margin = curMargin;
+        } else if curMargin.startsWith(margin) {
           // Current indent is deeper than margin, continue
           continue;
-        } else if margin.startsWith(indent) {
+        } else if margin.startsWith(curMargin) {
           // Current indent is shallower than margin, update margin
-          margin = indent;
+          margin = curMargin;
         } else {
           // Find largest common whitespace between current and previous margin
           for i in margin.indices {
-            if margin[i] != indent[i] {
+            if margin[i] != curMargin[i] {
               margin = margin[..<i];
               break;
             }
@@ -1921,7 +1919,7 @@ module String {
     }
 
     /* Return true if string only contains spaces and tabs */
-    private proc isWhitespaceOnly(s: string): bool {
+    private proc isDedentWhitespaceOnly(s: string): bool {
       for char in s {
         if char != ' ' && char != '\t' then
           return false;
