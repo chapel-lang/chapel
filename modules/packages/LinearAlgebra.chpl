@@ -1356,12 +1356,20 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
      This procedure depends on the :mod:`LAPACK` module, and will generate a
      compiler error if ``lapackImpl`` is ``none``.
 */
-proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
-  where A.rank == 2 && b.rank == 1 && usingLAPACK && isLAPACKType(t)
+proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws 
+  where usingLAPACK && isLAPACKType(t)
 {
   use SysCTypes;
   import LAPACK;
   require LAPACK.header;
+
+  if A.rank != 2 then
+    compilerError('leastSquares requires A.rank == 2');
+  // TODO: Support b.rank == 2  -- (m,k)
+  //       update this error message and documentation
+  if b.rank != 1 then
+    compilerError('leastSquares requires b.rank == 1');
+
 
 
   if A.shape[0] != b.shape[0] {
@@ -1371,7 +1379,6 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
     throw new LinearAlgebraError('leastSquares(): A and b cannot be empty');
   }
 
-  // TODO: Support b.rank == 2  -- (m,k)
   const (m, n) = A.shape;
 
   // TODO: Support overwrite=true/false
@@ -1706,11 +1713,11 @@ proc svd(A: [?Adom] ?t) throws
 proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
-    halt("Wrong shape of input matrix or vector");
+    compilerError("Wrong shape of input matrix or vector");
   if !isSquare(A) then
-    halt("Matrix A is not a square");
+    compilerError("Matrix A is not a square");
   if Adom.shape(0) != Xdom.shape(0) then
-    halt("Mismatch shape between matrix side length and vector length");
+    compilerError("Mismatch shape between matrix side length and vector length");
 
   var itern = 0, err: eltType = 1;
 
@@ -2076,19 +2083,19 @@ module Sparse {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
       if !isCSArr(A) then
-        halt("Only CSR format is supported for sparse multiplication");
+        compilerError("Only CSR format is supported for sparse multiplication");
       return _csrmatvecMult(A, B);
     }
     // vector-matrix
     else if Adom.rank == 1 && Bdom.rank == 2 {
       if !isCSArr(B) then
-        halt("Only CSR format is supported for sparse multiplication");
+        compilerError("Only CSR format is supported for sparse multiplication");
       return _csrmatvecMult(B, A, trans=true);
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
       if !isCSArr(A) || !isCSArr(B) then
-        halt("Only CSR format is supported for sparse multiplication");
+        compilerError("Only CSR format is supported for sparse multiplication");
       return _csrmatmatMult(A, B);
     }
     else {
@@ -2123,7 +2130,7 @@ module Sparse {
 
     if !trans {
       if Adom.shape(1) != Xdom.shape(0) then
-        halt("Mismatched shape in matrix-vector multiplication");
+        compilerError("Mismatched shape in matrix-vector multiplication");
         // TODO: Loop over non-zero rows only
         forall i in Adom.dim(0) {
           for j in Adom.dimIter(1, i) {
@@ -2132,7 +2139,7 @@ module Sparse {
         }
     } else {
       if Adom.shape(0) != Xdom.shape(0) then
-        halt("Mismatched shape in matrix-vector multiplication");
+        compilerError("Mismatched shape in matrix-vector multiplication");
 
       // Ensure same domain indices
       ref X2 = X.reindex(Adom.dim(0));
@@ -2352,7 +2359,7 @@ module Sparse {
   /* Element-wise addition, supports CSR and COO. */
   proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    if this.domain.shape != Adom.shape then compilerError("Unmatched shapes");
     var sps = CSRDomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
@@ -2367,7 +2374,7 @@ module Sparse {
   proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                               && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    if this.domain.shape != Adom.shape then compilerError("Unmatched shapes");
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
@@ -2381,7 +2388,7 @@ module Sparse {
   /* Element-wise subtraction, supports CSR and COO.  */
   proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
+    if this.domain.shape != Adom.shape then compilerError("Unmatched shapes");
     var sps = CSRDomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
