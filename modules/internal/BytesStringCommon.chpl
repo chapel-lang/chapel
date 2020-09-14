@@ -843,6 +843,109 @@ module BytesStringCommon {
     }
   }
 
+  proc doDedent(const ref x: ?t, columns=0, ignoreFirst=true): t {
+      const low = if ignoreFirst then 1 else 0;
+      const newline = '\n':t;
+      var lines = x.split(newline);
+      var ret = '': t;
+
+      if columns <= 0 {
+        // Find common leading whitespace across all non-empty lines
+        const margin = computeMargin(lines[low..]);
+
+        // Remove margins from all lines if it's not empty
+        if margin.size > 0 {
+          for line in lines[low..] {
+            // Compute offset
+            var offset = 0;
+            if !isDedentWhitespaceOnly(line) {
+              offset = margin.size;
+            } else {
+              // Remove margin as long as it matches for empty lines
+              for i in 0..<min(margin.size, line.size) {
+                if line[i] != margin[i] then break;
+                offset += 1;
+              }
+            }
+            // Remove margin from line
+            line = line[offset..];
+          }
+        }
+      } else {
+        // Remove up to `columns` number of spaces from each line
+        for line in lines[low..] {
+          // Note: We only consider spaces (not tabs) for columns > 0
+          const indent = line.size - line.strip(' ':t, trailing=false).size;
+          const offset = min(indent, columns);
+          line = line[offset..];
+        }
+      }
+
+      ret = ('\n':t).join(lines);
+      return ret;
+    }
+
+    /* Compute margin of common leading white space across lines in a string.
+       Spaces and tabs are respected.
+     */
+    private proc computeMargin(lines: [] ?t): t{
+      var margin = '': t;
+
+      for line in lines {
+
+        // Skip empty lines
+        if isDedentWhitespaceOnly(line) {
+          continue;
+        }
+
+        // Determine leading whitespace (spaces and tabs) in line
+        var curMargin = '':t;
+        const space = ' ':t;
+        const tab = '\t':t;
+        for char in line.items() {
+          if char != space && char != tab then break;
+          else curMargin += char:t;
+        }
+
+        if curMargin == '':t {
+          // An unindented non-empty line means no margin exists, return early
+          margin = '';
+          break;
+        } else if margin == '':t {
+          // Initialize margin
+          margin = curMargin;
+        } else if curMargin.startsWith(margin) {
+          // Current indent is deeper than margin, continue
+          continue;
+        } else if margin.startsWith(curMargin) {
+          // Current indent is shallower than margin, update margin
+          margin = curMargin;
+        } else {
+          // Find largest common whitespace between current and previous margin
+          for i in margin.indices {
+            if margin[i] != curMargin[i] {
+              margin = margin[..<i];
+              break;
+            }
+          }
+        }
+      }
+      return margin;
+    }
+
+    /* Return true if string only contains spaces and tabs */
+    private proc isDedentWhitespaceOnly(s: ?t): bool {
+      const space = ' ':t;
+      const tab = '\t':t;
+      for char in s.items() {
+        if char != space && char != tab then
+          return false;
+      }
+      return true;
+    }
+
+
+
   proc doAppend(ref lhs: ?t, const ref rhs: t) {
     assertArgType(t, "doAppend");
 

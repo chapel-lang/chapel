@@ -831,6 +831,41 @@ module Bytes {
       return doPartition(this, sep);
     }
 
+    /* Remove indentation from each line of string.
+
+       This can be useful when applied to multi-line strings that are indented
+       in the source code, but should not be indented in the output.
+
+       When ``columns == 0``, determine the level of indentation to remove from
+       all lines by finding the common leading whitespace across all non-empty
+       lines. Empty lines are lines containing only whitespace. Tabs and spaces
+       are the only whitespaces that are considered, but are not treated as
+       the same characters when determining common whitespace.
+
+       When ``columns > 0``, remove ``columns`` leading whitespace characters
+       from each line. Tabs are not considered whitespace when ``columns > 0``,
+       so only leading spaces are removed.
+
+       :arg columns: The number of columns of indentation to remove. Infer
+                     common leading whitespace if ``columns == 0``.
+
+       :arg ignoreFirst: When ``true``, ignore first line when determining the
+                         common leading whitespace, and make no changes to the
+                         first line.
+
+       :returns: A new `string` with indentation removed.
+
+       .. warning::
+
+          ``string.dedent`` is not considered stable and is subject to change in
+          future Chapel releases.
+    */
+    proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
+      if chpl_warnUnstable then
+        compilerWarning("string.dedent is subject to change in the future.");
+      return doDedent(this, columns, ignoreFirst);
+    }
+
     /*
       Returns a UTF-8 string from the given :mod:`bytes <Bytes>`. If the data is
       malformed for UTF-8, `policy` argument determines the action.
