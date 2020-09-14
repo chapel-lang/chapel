@@ -1986,9 +1986,9 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
     compilerError("Wrong shape of input matrix or vector");
   if !isSquare(A) then
-    compilerError("Matrix A is not a square");
+    halt("Matrix A is not a square");
   if Adom.shape(0) != Xdom.shape(0) then
-    compilerError("Mismatch shape between matrix side length and vector length");
+    halt("Mismatch shape between matrix side length and vector length");
 
   var itern = 0, err: eltType = 1;
 
@@ -2402,7 +2402,7 @@ module Sparse {
 
     if !trans {
       if Adom.shape(1) != Xdom.shape(0) then
-        compilerError("Mismatched shape in matrix-vector multiplication");
+        halt("Mismatched shape in matrix-vector multiplication");
         // TODO: Loop over non-zero rows only
         forall i in Adom.dim(0) {
           for j in Adom.dimIter(1, i) {
@@ -2411,7 +2411,7 @@ module Sparse {
         }
     } else {
       if Adom.shape(0) != Xdom.shape(0) then
-        compilerError("Mismatched shape in matrix-vector multiplication");
+        halt("Mismatched shape in matrix-vector multiplication");
 
       // Ensure same domain indices
       ref X2 = X.reindex(Adom.dim(0));
@@ -2631,7 +2631,7 @@ module Sparse {
   /* Element-wise addition, supports CSR and COO. */
   proc _array.plus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-    if this.domain.shape != Adom.shape then compilerError("Unmatched shapes");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps = CSRDomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
@@ -2646,7 +2646,7 @@ module Sparse {
   proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
                                               && isSparseArr(A) && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-    if this.domain.shape != Adom.shape then compilerError("Unmatched shapes");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps: sparse subdomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
@@ -2660,7 +2660,7 @@ module Sparse {
   /* Element-wise subtraction, supports CSR and COO.  */
   proc _array.minus(A: [?Adom] ?eltType) where isCSArr(this) && isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
-    if this.domain.shape != Adom.shape then compilerError("Unmatched shapes");
+    if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps = CSRDomain(Adom.parentDom);
     sps += this.domain;
     sps += Adom;
