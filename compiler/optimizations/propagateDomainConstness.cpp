@@ -197,8 +197,6 @@ static void setDefinedConstForDefExprWithIfExprs(Expr* e) {
   }
 }
 
-
-
 static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
                                  Expr *insBefore, Expr *&insAfter,
                                  bool asRef) {
@@ -213,28 +211,6 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   Symbol *fieldSym = aggType->getValType()->getField(fieldName);
   Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
   
-
-  //Symbol *fieldSym = NULL;
-  //if (aggType->symbol->hasFlag(FLAG_REF)) {
-    //fieldSym = aggType->getValType()->getField(fieldName);
-  //}
-  //else {
-    //fieldSym = aggType->getField(fieldName);
-  //}
-  //Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
-  //if (asRef) {
-    //fieldType = wideRefMap.get(fieldType);
-  //}
-  //Type *fieldType = fieldSym->type;
-  //if (asRef) {
-    //if (fieldType->symbol->hasFlag(FLAG_REF) ||
-        //fieldType->symbol->hasFlag(FLAG_WIDE_REF)) { 
-
-    //}
-    //else {
-      //fieldType = fieldType->getRefType();
-    //}
-  //}
   VarSymbol *fieldRef = newTemp(fieldName, fieldType);
   insBefore->insertBefore(new DefExpr(fieldRef));
 
@@ -248,24 +224,6 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   return fieldRef;
 }
 
-//static void addFieldSet(Symbol *receiver, const char *fieldName,
-                              //Expr *&insAfter, Symbol *setTo) {
-  //Type *receiverType = receiver->type;
-
-  //AggregateType *aggType = toAggregateType(receiverType);
-  //if (aggType == NULL) {
-    //aggType = toDecoratedClassType(receiverType)->getCanonicalClass();
-  //}
-  //INT_ASSERT(aggType);
-
-  //Symbol *fieldSym = aggType->getField(fieldName);
-  ////Type *fieldType = fieldSym->type;
-  //CallExpr *setField = new CallExpr(PRIM_SET_MEMBER, receiver, fieldSym, setTo);
-
-  //insAfter->insertAfter(setField);
-  //insAfter = setField;
-//}
-
 static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
                                            Expr *anchor, Symbol *isConst) {
   VarSymbol *domInstance = addFieldAccess(domainSym, "_instance",
@@ -274,8 +232,6 @@ static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
   VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
                                                 nextExpr, anchor,
                                                 true);
-
-  //addFieldSet(domInstance, "definedConst", anchor, isConst);
 
   CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
                                            isConst);
