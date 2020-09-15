@@ -1984,11 +1984,11 @@ proc svd(A: [?Adom] ?t) throws
 proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
-    compilerError("Wrong shape of input matrix or vector");
+    compilerError("jacobi: Wrong shape of input matrix or vector");
   if !isSquare(A) then
-    halt("Matrix A is not a square");
+    halt("jacobi: Matrix A is not a square");
   if Adom.shape(0) != Xdom.shape(0) then
-    halt("Mismatch shape between matrix side length and vector length");
+    halt("jacobi: Mismatch shape between matrix side length and vector length");
 
   var itern = 0, err: eltType = 1;
 
@@ -2787,11 +2787,11 @@ module Sparse {
   proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
-      halt("Wrong shape of input matrix or vector");
+      compilerError("jacobi: Wrong shape of input matrix or vector");
     if Adom.shape(0) != Adom.shape(1) then
-      halt("Matrix A is not a square");
+      halt("jacobi: Matrix A is not a square");
     if Adom.shape(0) != Xdom.shape(0) then
-      halt("Mismatch shape between matrix side length and vector length");
+      halt("jacobi: Mismatch shape between matrix side length and vector length");
 
     var itern = 0, err: eltType = 1;
 
