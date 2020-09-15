@@ -167,6 +167,8 @@ BlockStmt* buildPragmaStmt(Vec<const char*>* pragmas,
       addPragmaFlags(def->sym, pragmas);
     } else if (isEndOfStatementMarker(expr)) {
       // ignore it
+    } else if (isForwardingStmt(expr)) {
+      // ignore it
     } else {
       error = true;
       break;
