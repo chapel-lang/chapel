@@ -210,18 +210,18 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   }
   INT_ASSERT(aggType);
 
-  //Symbol *fieldSym = aggType->getValType()->getField(fieldName);
-  //Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
-  //
-
-  Symbol *fieldSym = NULL;
-  if (aggType->symbol->hasFlag(FLAG_REF)) {
-    fieldSym = aggType->getValType()->getField(fieldName);
-  }
-  else {
-    fieldSym = aggType->getField(fieldName);
-  }
+  Symbol *fieldSym = aggType->getValType()->getField(fieldName);
   Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
+  
+
+  //Symbol *fieldSym = NULL;
+  //if (aggType->symbol->hasFlag(FLAG_REF)) {
+    //fieldSym = aggType->getValType()->getField(fieldName);
+  //}
+  //else {
+    //fieldSym = aggType->getField(fieldName);
+  //}
+  //Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
   //if (asRef) {
     //fieldType = wideRefMap.get(fieldType);
   //}
