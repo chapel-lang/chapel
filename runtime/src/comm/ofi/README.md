@@ -32,7 +32,8 @@ interface for native atomic operations on networks that support those.
 And, it uses the message (SEND/RECV) interface for Active Messages (AMs)
 for executeOn transactions for on-statement bodies, memory transfers
 between unregistered memory, atomic operations which cannot be done
-natively, and several other things.
+natively, and certain internal operations that don't have MCM
+implications.
 
 The comm layer has two libfabric tools it can use to determine when
 operations are in some sense "done" and to impose order on them with
@@ -58,34 +59,36 @@ transactions, but the comm layer does not currently make use of that.)
 
 Libfabric's completion level specifies what state an operation has to
 reach before an event is placed in the transmit endpoint's associated
-completion queue to indicate that the operation is "done".  The comm
-layer can currently work with either the *transmit-complete* or the
-*delivery-complete* completion levels.
+completion queue to indicate that it has done so.  The comm layer
+supports either an explicit setting of *delivery-complete* or the
+provider's default completion level.
 
-Transmit-complete, for the reliable endpoints used by comm=ofi, means
-that the operation has arrived at the target node and is no longer
-dependent on the network fabric or local (initiator-side) resources.  It
-does not say anything about the state of the operation at the target
-node.  In particular, it does not say that any of the intended effects
-of the operation, such as memory updates, are visible.
-
-Delivery-complete extends this to say that the operation's effects are
-visible.  For messages this means that the message data has been placed
-in the user buffer at the target node, although it does not say whether
-code outside of libfabric running on the target node has attended to the
-message.  For RMA it means that the receiving data location, on the
-target node for PUTs and native non-fetching atomics, or on the local
-node for GETs and native fetching atomics, has been updated.
+Delivery-complete says that the operation has arrived at the target
+node, is no longer dependent on initiator-side resources or the network
+fabric, and its effects such as memory updates are visible.  For
+messages this means that the message data has been placed in the user
+buffer at the target node, although it does not say whether code outside
+of libfabric running on the target node has attended to the message.
+For RMA it means that the receiving data location, on the target node
+for PUTs and native non-fetching atomics, or on the local node for GETs
+and native fetching atomics, has been updated.
 
 For operations that return data to the initiator, such as RMA GETs and
-native atomic-fetch, the source endpoint is also considered a
-destination endpoint and the default completion level is
-delivery-complete.  The default for other operations is determined by
-the provider.
+native atomic-fetch, the source endpoint is considered a destination as
+well and the required default completion level is delivery-complete.
+The provider determines the default for other operations.  That may be
+*transmit-complete*, which says that the operation has reached the
+target and is no longer dependent on the fabric but does not say
+anything about the visibility of its effects.  Or, it may even be
+*inject-complete*, which says only that the originating buffer can be
+modified by the initiator without affecting the operation.
 
-**_Note (Bug):_** The comm layer assumes that the default completion
-  level for all providers is transmit-complete.  This is a bug.  A
-  provider could certainly choose some other default.
+When the comm layer uses the delivery-complete level, that is nearly
+sufficient all by itself to achieve Chapel MCM conformance.  (There is
+one exception, discussed later.)  But when the provider doesn't support
+that and the comm layer has to use the provider's default, then MCM
+conformance requires being more specific about message orderings and
+taking other actions to ensure the visibility of effects.
 
 #### Message Ordering
 
@@ -376,7 +379,7 @@ of loads and stores relative to SC atomic operations:
   These clauses are similar to the previous ones, but in terms of the
   implementation they have to do with visibility at the boundaries
   between regular memory references and atomic ones or vice-versa.  As
-  int the others, it is dangling stores that we have to be concerned
+  with the others, it is dangling stores that we have to be concerned
   with.
 
   If a regular stores can dangle they must be forced into visibility
