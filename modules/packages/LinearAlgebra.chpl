@@ -1317,7 +1317,6 @@ proc lu (A: [?Adom] ?eltType) {
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(0);
-
   var B: [Adom] eltType;
 
   if Adom.rank == 1 {
@@ -1507,6 +1506,110 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
   var z = solve_tril(LU, b);
   var x = solve_triu(LU, z);
   return x;
+}
+
+/* Compute least-squares solution to ``A * x = b``.
+   Compute a vector ``x`` such that the 2-norm ``|b - A x|`` is minimized.
+
+   ``cond`` is the cut-off threshold such that singular values will be
+   considered 0.0. If ``cond < 0.0`` (defaults to ``-1.0``), the treshold will
+   be set to ``max((...A.shape)) * epsilon``, where ``epsilon`` is the machine
+   precision for ``A.eltType``.
+
+   Returns a tuple of ``(x, residues, rank, s)``, where:
+
+    - ``x`` is the the least-squares solution with shape of ``b``
+
+    - ``residues`` is:
+
+        + the square of the 2-norm for each column in ``b - a x`` if ``M > N`` and ``A.rank == n``.
+        + a scalar if ``b`` is 1-D
+
+    - ``rank`` is the effective rank of ``A``
+
+    - ``s`` is the singular values of ``a``
+
+   .. note::
+
+     This procedure depends on the :mod:`LAPACK` module, and will generate a
+     compiler error if ``lapackImpl`` is ``none``.
+*/
+proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws 
+  where usingLAPACK && isLAPACKType(t)
+{
+  use SysCTypes;
+  import LAPACK;
+  require LAPACK.header;
+
+  if A.rank != 2 then
+    compilerError('leastSquares requires A.rank == 2');
+  // TODO: Support b.rank == 2  -- (m,k)
+  //       update this error message and documentation
+  if b.rank != 1 then
+    compilerError('leastSquares requires b.rank == 1');
+
+
+
+  if A.shape[0] != b.shape[0] {
+    throw new LinearAlgebraError('leastSquares(): A.shape[0] != b.shape[0]: %i != %i'.format(A.shape[0], b.shape[0]));
+  }
+  if A.size == 0 || b.size == 0 {
+    throw new LinearAlgebraError('leastSquares(): A and b cannot be empty');
+  }
+
+  const (m, n) = A.shape;
+
+  // TODO: Support overwrite=true/false
+  var workA = A;
+  const bdim1 = b.domain.dim(0);
+  const bdim2 = if b.rank == 1 then 0..0
+                else b.domain.dim(1);
+
+  var workB: [0..<b.size, 0..<bdim2.size] real;
+  if b.rank == 1 then
+    workB[.., 0] = b;
+  else
+    workB = b;
+
+  const rcond = if cond == -1.0 then max((...A.shape))*epsilon(t) else cond;
+
+  var matrix_order = lapack_memory_order.row_major;
+
+  var s: [0..<min((...A.shape))] real(64);
+  var rank: c_int;
+
+  var info = LAPACK.gelsd(matrix_order, workA, workB, s, rcond, rank);
+
+  // Check for errors
+  if info < 0 then
+    throw new owned IllegalArgumentError('gelsd(): Argument %i is incorrect'.format(-info));
+  else if info > 0 then
+    throw new owned LinearAlgebraError('gelsd(): SVD failed to converge with %i off-diagonal elements not converged to 0'.format(info));
+
+  var x1 = workB[0..<n, 0];
+
+  var residue: t;
+  if rank == n {
+    residue = + reduce (abs(workB[n.., 0]**2));
+  }
+
+  return (x1, residue, rank, s);
+}
+
+pragma "no doc" // TODO: To be publicly documented in the future
+/* Generate Vandermonde matrix */
+proc vander(x: [?d], in N=0) where d.rank == 1 {
+
+  if N == 0 then N = d.size;
+
+  var resultDom = {d.dim(0), 0..<N};
+  var result: [resultDom] x.eltType;
+
+  forall (i,j) in resultDom {
+    result[i, j] = x[i]**(N-1-j);
+  }
+
+  return result;
 }
 
 
@@ -1829,7 +1932,6 @@ proc svd(A: [?Adom] ?t) throws
     compilerError("svd does not support distributed vectors/matrices");
 
   const (m, n) = A.shape;
-  var minDim = min(m, n);
 
   /* real(32) or real(64) for singular values and superb */
   type realType = if t == complex(128) || t == real(64) then real(64)
@@ -1842,7 +1944,7 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [1..minDim] realType;
+  var s: [1..min((...A.shape))] realType;
   // Unitary matrix, U
   var u: [1..m, 1..m] t;
   // Unitary matrix V^T (or V^H)
@@ -1850,7 +1952,7 @@ proc svd(A: [?Adom] ?t) throws
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
-  var superb: [1..minDim-1] realType;
+  var superb: [1..min((...A.shape))-1] realType;
 
   // TODO: Support option for gesdd (trading memory usage for speed)
   const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
@@ -1882,11 +1984,11 @@ proc svd(A: [?Adom] ?t) throws
 proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
             b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) {
   if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
-    halt("Wrong shape of input matrix or vector");
+    compilerError("jacobi: Wrong shape of input matrix or vector");
   if !isSquare(A) then
-    halt("Matrix A is not a square");
+    halt("jacobi: Matrix A is not a square");
   if Adom.shape(0) != Xdom.shape(0) then
-    halt("Mismatch shape between matrix side length and vector length");
+    halt("jacobi: Mismatch shape between matrix side length and vector length");
 
   var itern = 0, err: eltType = 1;
 
@@ -1993,6 +2095,10 @@ proc type _array.rank param {
   return x.rank;
 }
 
+//
+// Type helpers
+//
+
 pragma "no doc"
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
@@ -2005,6 +2111,26 @@ private proc isDefaultSparseArr(A: []) param {
   return isDefaultSparseDom(A.domain);
 }
 
+//
+// Utility functions
+//
+
+/* Machine epsilon for real(64) */
+private proc epsilon(type t: real(64)) : real {
+  extern const DBL_EPSILON: real;
+  return DBL_EPSILON;
+}
+
+/* Machine epsilon for real(32) */
+private proc epsilon(type t: real(32)) : real {
+  extern const FLT_EPSILON: real;
+  return FLT_EPSILON;
+}
+
+/* Machine epsilon for non-real */
+private proc epsilon(type t) param : real {
+  return 0.0;
+}
 
 
 /* Linear Algebra Sparse Submodule
@@ -2229,19 +2355,19 @@ module Sparse {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
       if !isCSArr(A) then
-        halt("Only CSR format is supported for sparse multiplication");
+        compilerError("Only CSR format is supported for sparse multiplication");
       return _csrmatvecMult(A, B);
     }
     // vector-matrix
     else if Adom.rank == 1 && Bdom.rank == 2 {
       if !isCSArr(B) then
-        halt("Only CSR format is supported for sparse multiplication");
+        compilerError("Only CSR format is supported for sparse multiplication");
       return _csrmatvecMult(B, A, trans=true);
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
       if !isCSArr(A) || !isCSArr(B) then
-        halt("Only CSR format is supported for sparse multiplication");
+        compilerError("Only CSR format is supported for sparse multiplication");
       return _csrmatmatMult(A, B);
     }
     else {
@@ -2661,11 +2787,11 @@ module Sparse {
   proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
-      halt("Wrong shape of input matrix or vector");
+      compilerError("jacobi: Wrong shape of input matrix or vector");
     if Adom.shape(0) != Adom.shape(1) then
-      halt("Matrix A is not a square");
+      halt("jacobi: Matrix A is not a square");
     if Adom.shape(0) != Xdom.shape(0) then
-      halt("Mismatch shape between matrix side length and vector length");
+      halt("jacobi: Mismatch shape between matrix side length and vector length");
 
     var itern = 0, err: eltType = 1;
 
@@ -2764,6 +2890,7 @@ module Sparse {
   pragma "no doc"
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
   proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
+
 
 } // submodule LinearAlgebra.Sparse
 
