@@ -64,10 +64,3 @@ SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
 	doc/util/extract-rst-tests.py  doc/rst/language/spec/ --output $(SPECTEST_DIR)
-
-FUTURES:
-	cd test && find . -wholename ".svn" -prune -o \( -name \*.future \) -exec head -n 1 {} + > FUTURES
-
-
-future_stats: FUTURES
-	./util/devel/test/future_stats STATUS.devel test/FUTURES

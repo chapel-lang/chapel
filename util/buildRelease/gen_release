@@ -115,7 +115,6 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "CHANGES.md",
        "CONTRIBUTORS.md",
        "COPYRIGHT",
-       "GOALS.md",
        "LICENSE",
        "LICENSE.chapel",
        "Makefile",

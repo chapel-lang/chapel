@@ -12,7 +12,6 @@ further information about the files and directories that they contain.
   CHANGES.md           : a list of changes in each release
   CONTRIBUTORS.md      : a list of contributors to the Chapel project
   COPYRIGHT            : copyright information
-  GOALS.md             : the goals of this release
   LICENSE              : license information for the Chapel release as a whole
   LICENSE.chapel       : license statement for the Chapel implementation itself
   README.files         : this file
