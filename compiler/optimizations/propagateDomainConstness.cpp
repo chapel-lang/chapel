@@ -214,12 +214,13 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   VarSymbol *fieldRef = newTemp(fieldName, fieldType);
   insBefore->insertBefore(new DefExpr(fieldRef));
 
-  CallExpr *getFieldRef = new CallExpr(PRIM_MOVE, fieldRef,
-                                       new CallExpr(PRIM_GET_MEMBER,
-                                                    receiver,
-                                                    fieldSym));
-  insAfter->insertAfter(getFieldRef);
-  insAfter = getFieldRef;
+  PrimitiveTag primTag = asRef ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE;
+  CallExpr *getField= new CallExpr(PRIM_MOVE, fieldRef,
+                                   new CallExpr(primTag,
+                                                receiver,
+                                                fieldSym));
+  insAfter->insertAfter(getField);
+  insAfter = getField;
 
   return fieldRef;
 }
