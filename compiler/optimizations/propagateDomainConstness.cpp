@@ -204,15 +204,11 @@ static void setDefinedConstForDefExprWithIfExprs(Expr* e) {
 static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
                                  Expr *insBefore, Expr *&insAfter,
                                  bool asRef) {
-  Type *receiverType = receiver->getValType();
 
-  AggregateType *aggType = toAggregateType(receiverType);
-  if (aggType == NULL) {
-    aggType = toDecoratedClassType(receiverType)->getCanonicalClass();
-  }
+  AggregateType *aggType = toAggregateType(canonicalClassType(receiver->getValType()));
   INT_ASSERT(aggType);
 
-  Symbol *fieldSym = aggType->getValType()->getField(fieldName);
+  Symbol *fieldSym = aggType->getField(fieldName);
   Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
   
   VarSymbol *fieldRef = newTemp(fieldName, fieldType);
