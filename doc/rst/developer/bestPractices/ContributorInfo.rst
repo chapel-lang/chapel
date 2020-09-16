@@ -454,6 +454,30 @@ Configure your local git
     # Optionally add remotes for commonly viewed branches
     git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
 
+.. _Commit messages setup
+
+Set up commit messages with a .gitmessage Template
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Chapel enforces the Developer Certificate of Origin (DCO) on pull requests.
+It requires all commit message to contain the Signed-off-by line with an email
+address that matches the commit author and the name on your GitHub account.
+
+To tell Git to use the default message with the ``Signed-off-by`` line that appears in your 
+editor when you run ``git commit``, set the commit.template configuration value:
+
+... code-block:: bash
+
+     git config --global commit.template ~/.gitmessage
+
+Then create ~/.gitmessage template with the ``Signed-off-by`` line:
+
+... code-block:: bash
+
+     ---
+     Signed-off-by: Random J Developer <random@developer.example.org>
+
+
 .. _New branch command:
 
 New branch command
@@ -535,8 +559,8 @@ Committing staged changes:
 
 .. code-block:: bash
 
-    # Accept the `Developer Certificate of Origin`_ (DCO) by adding a
-      `Signed-off-by` line to commit messages:
+    # Accept the Developer Certificate of Origin by adding a
+      Signed-off-by line to commit messages:
 
     git commit -s [-m <message>]
 
