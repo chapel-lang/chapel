@@ -429,6 +429,7 @@ symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TUPLE_CAST_FN , ypr, "tuple cast fn" , ncm )
 symbolFlag( FLAG_TUPLE_WITH_REF , npr, "tuple contains ref" , ncm )
+symbolFlag( FLAG_TUPLE_ALL_REF, npr, "tuple is all ref", ncm )
 
 symbolFlag( FLAG_TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs" )
 symbolFlag( FLAG_TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs" )

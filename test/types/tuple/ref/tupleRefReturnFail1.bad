@@ -1,0 +1,4 @@
+tupleRefReturnFail1.chpl:7: In function 'inferReturnType':
+tupleRefReturnFail1.chpl:8: error: const actual is passed to a 'ref' formal of chpl_buildTupleAllRef()
+tupleRefReturnFail1.chpl:11: In function 'specifyReturnType':
+tupleRefReturnFail1.chpl:12: error: const actual is passed to a 'ref' formal of chpl_buildTupleAllRef()

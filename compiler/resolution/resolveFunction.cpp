@@ -111,6 +111,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal);
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
 
 static void resolveFormals(FnSymbol* fn) {
+
   for_formals(formal, fn) {
     if (formal->type == dtUnknown) {
       if (formal->typeExpr == NULL) {
@@ -262,7 +263,7 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
         intent = INTENT_BLANK;
       }
 
-      formal->type = computeTupleWithIntentForArg(intent, tupleType, formal);
+      formal->type = computeTupleWithIntent(intent, tupleType);
     }
   }
 }
@@ -275,7 +276,11 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
       formal->intent == INTENT_OUT       ||
       formal->intent == INTENT_REF       ||
       formal->intent == INTENT_CONST_REF) {
-    retval = true;
+
+    // Expanded ref tuple formals should be passed by value.
+    if (!formal->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+      retval = true;
+    }
 
   } else if (shouldUpdateAtomicFormalToRef(fn, formal) == true) {
     retval = true;
@@ -429,9 +434,17 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
     } else if (fn->returnsRefOrConstRef() == true) {
       makeRefType(retType);
 
-      retType     = retType->refType;
-      fn->retType = retType;
-
+      // TODO: It would be more elegant if we merged this path and above.
+      if (retType->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+        if (!doNotChangeTupleTypeRefLevel(fn, true) ||
+            fn->hasFlag(FLAG_ITERATOR_FN)) {
+          AggregateType* at = toAggregateType(retType->getValType());
+          retType = computeAllRefTuple(at);
+        }
+      } else {
+        retType     = retType->refType;
+        fn->retType = retType;
+      }
     } else {
       fn->retType = retType;
     }
@@ -503,8 +516,14 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       insertUnrefForArrayOrTupleReturn(fn);
 
       Type* yieldedType = NULL;
+
+      bool isInferredRet = isUnresolvedOrGenericReturnType(fn->retType);
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
+      if (isInferredRet) {
+        fixRefTupleRvvForInferredReturnType(fn);
+      }
+      
       fixPrimInitsAndAddCasts(fn);
 
       if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
@@ -857,6 +876,8 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
                                     //    when not indicated return by ref.
      ) {
     return true;
+  } else if (forRet && fn->returnsRefOrConstRef()) {
+    return fn->retType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
   } else {
     return false;
   }
@@ -1781,6 +1802,30 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
   }
 
+  if (fn->id == 209923) gdbShouldBreakHere();
+
+  // Adjust function return type when returning a tuple by ref.
+  if (retType->isRef() &&
+      retType->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+
+    // We shouldn't skip adjusting iterator functions in this case.
+    if (!doNotChangeTupleTypeRefLevel(fn, true) ||
+        fn->hasFlag(FLAG_ITERATOR_FN)) {
+
+      // TODO (dlongnecke): It might be possible to adjust these as well but
+      // for right now just skip field accessors.
+      if (!fn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+
+        // Have to compute directly instead of using `getReturnedTupleType`
+        // due to the weirdness of iterator functions.
+        // TODO: Could we adjust `getReturnedTupleType` to deal with
+        // iterator functions?
+        AggregateType* tupleType = toAggregateType(retType->getValType());
+        retType = computeAllRefTuple(tupleType);
+      }
+    }
+  }
+
   if (isIterator == false) {
     ret->type = retType;
 
@@ -1804,6 +1849,8 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
       }
     }
   }
+
+
 }
 
 void resolveReturnType(FnSymbol* fn) {
@@ -1865,10 +1912,8 @@ Type* getReturnedTupleType(FnSymbol* fn, AggregateType* retType) {
   INT_ASSERT(retType->symbol->hasFlag(FLAG_TUPLE));
 
   if (fn->returnsRefOrConstRef() == true) {
-    retval = computeTupleWithIntent(INTENT_REF, retType);
-
+    retval = computeAllRefTuple(retType);
   } else {
-    // Compute the tuple type without any refs
     retval = computeNonRefTuple(retType);
   }
 

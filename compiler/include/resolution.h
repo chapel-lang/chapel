@@ -282,12 +282,16 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
 // returns true if the function was handled
 bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn, CallExpr* call);
 
+AggregateType* computeAllRefTuple(AggregateType* at);
+
 AggregateType* computeNonRefTuple(AggregateType* t);
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
-AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg);
 
 void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
+
+void fixRefTupleRvvForInferredReturnType(FnSymbol* fn);
+void fixMoveIntoRefTuple(CallExpr* call);
 
 // other resolution functions
 bool evaluateWhereClause(FnSymbol* fn);

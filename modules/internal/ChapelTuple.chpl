@@ -67,7 +67,19 @@ module ChapelTuple {
   // tuple value (refs)
   pragma "build tuple"
   inline proc _build_tuple(x...) {
-      return x;
+    return x;
+  }
+
+  // Returning all ref tuples or building a ref tuple variable.
+  pragma "build tuple"
+  inline proc chpl_buildTupleAllRef(ref x...) {
+    return x;
+  }
+
+  pragma "build tuple"
+  inline proc chpl_refTupleRepack(ref tup) {
+    // Body is replaced during generic instantiation.
+    return chpl_buildTupleAllRef((...tup));
   }
 
   // tuple type (no refs)

@@ -1836,6 +1836,9 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
   ret->insertBefore(new CallExpr(PRIM_MOVE, retval, retExpr));
 }
 
+// TODO: dlongnecke, we need to undo this at some point when adjusting tuple
+// ref return intent, either A) it's an upscope so we repack it, or it's
+// a temp from a build_tuple call so we remove the PRIM_ADDR_OF.
 static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
                           bool genericArrayRet) {
   Expr* retExpr = ret->get(1)->remove();

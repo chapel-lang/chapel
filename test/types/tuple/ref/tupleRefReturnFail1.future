@@ -1,0 +1,6 @@
+Return tuple of references to literals.
+
+TODO:
+
+  - Need to verify that it works for all types
+  - Error messages need to be more clean

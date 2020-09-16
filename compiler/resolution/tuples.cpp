@@ -29,6 +29,7 @@
 #include "chpl.h"
 #include "driver.h"
 #include "expr.h"
+#include "iterator.h"
 #include "passes.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -51,11 +52,22 @@ struct TupleInfo {
   FnSymbol*   init;
 };
 
+namespace {
+  namespace TupleRefLevel {
+    enum K {
+      Mixed,
+      None,
+      All
+    };
+  }
+}
 
 static std::map< std::vector<TypeSymbol*>, TupleInfo > tupleMap;
 
 static
-AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock);
+AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly,
+                                const char* copyName,
+                                BlockStmt* testBlock);
 
 static
 void makeTupleName(std::vector<TypeSymbol*>& args,
@@ -100,15 +112,24 @@ FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
                              TypeSymbol* newTypeSymbol,
                              ModuleSymbol* tupleModule,
                              BlockStmt* instantiationPoint,
-                             bool noref)
-{
+                             TupleRefLevel::K level) {
+
   Type *newType = newTypeSymbol->type;
-  const char* fnName = noref?"_build_tuple_noref":"_build_tuple";
+
+  // Get the appropriate name based on the tuple reference level.
+  const char* fnName = NULL;
+  switch (level) {
+    case TupleRefLevel::Mixed: fnName = "_build_tuple"; break;
+    case TupleRefLevel::None: fnName = "_build_tuple_noref"; break;
+    case TupleRefLevel::All: fnName = "chpl_buildTupleAllRef"; break;
+  }
+
   FnSymbol *buildTupleType = new FnSymbol(fnName);
-  // starts at 1 to skip the size argument
-  for(size_t i = 1; i < typeCtorArgs.size(); i++ ) {
+
+  for (size_t i = 1; i < typeCtorArgs.size(); i++) {
     buildTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
   }
+
   buildTupleType->addFlag(FLAG_ALLOW_REF);
   buildTupleType->addFlag(FLAG_COMPILER_GENERATED);
   buildTupleType->addFlag(FLAG_LAST_RESORT);
@@ -136,15 +157,24 @@ FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*> typeCtorArgs,
                                  TypeSymbol* newTypeSymbol,
                                  ModuleSymbol* tupleModule,
                                  BlockStmt* instantiationPoint,
-                                 bool noref)
-{
+                                 TupleRefLevel::K level) {
+
   Type *newType = newTypeSymbol->type;
-  const char* fnName = noref?"_build_star_tuple_noref":"*";
+
+  const char* fnName = NULL;
+  switch (level) {
+    case TupleRefLevel::Mixed: fnName = "*"; break;
+    case TupleRefLevel::None: fnName = "_build_start_tuple_noref"; break;
+    case TupleRefLevel::All: fnName = "chpl_buildTupleAllRef"; break;
+  }
+
   FnSymbol *buildStarTupleType = new FnSymbol(fnName);
+
   // just to arguments 0 and 1 to get size and element type
   for(int i = 0; i < 2; i++ ) {
     buildStarTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
   }
+
   buildStarTupleType->addFlag(FLAG_ALLOW_REF);
   buildStarTupleType->addFlag(FLAG_COMPILER_GENERATED);
   buildStarTupleType->addFlag(FLAG_LAST_RESORT);
@@ -173,13 +203,13 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
                              TypeSymbol* newTypeSymbol,
                              ModuleSymbol* tupleModule,
                              BlockStmt* instantiationPoint,
-                             bool noref,
-                             Type* sizeType)
-{
+                             TupleRefLevel::K level,
+                             Type* sizeType) {
   int size = args.size();
   Type *newType = newTypeSymbol->type;
   FnSymbol *ctor = new FnSymbol(tupleInitName);
 
+  // TODO: Switch to a more typical initCopy format for this initializer?
   // Does "_this" even make sense in this situation?
   VarSymbol* _this = new VarSymbol("this", newType);
   _this->addFlag(FLAG_ARG_THIS);
@@ -192,11 +222,15 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
 
   for(int i = 0; i < size; i++ ) {
     const char* name = typeCtorArgs[i+1]->name;
-    ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, name, args[i]->type);
+
+    // Use INTENT_REF for all ref tuples, INTENT_BLANK otherwise.
+    IntentTag intent = INTENT_BLANK;
+    if (level == TupleRefLevel::All) {
+      intent = INTENT_REF;
+    }
+
+    ArgSymbol* arg = new ArgSymbol(intent, name, args[i]->type);
     ctor->insertFormalAtTail(arg);
-    // TODO : one would think that the tuple constructor body
-    // should call initCopy vs autoCopy, but these are more
-    // or less the same now.
 
     Symbol* element = NULL;
     if (isReferenceType(args[i]->type) ||
@@ -225,15 +259,15 @@ FnSymbol* makeConstructTuple(std::vector<TypeSymbol*>& args,
   ctor->addFlag(FLAG_INVISIBLE_FN);
   ctor->addFlag(FLAG_INIT_TUPLE);
   ctor->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
-
   ctor->addFlag(FLAG_PARTIAL_TUPLE);
 
   ctor->retTag = RET_VALUE;
   ctor->retType = newType;
+
   CallExpr* ret = new CallExpr(PRIM_RETURN, _this);
+
   ctor->insertAtTail(ret);
   ctor->substitutions.copy(newType->substitutions);
-
   ctor->setInstantiationPoint(instantiationPoint);
 
   tupleModule->block->insertAtTail(new DefExpr(ctor));
@@ -287,15 +321,15 @@ FnSymbol* makeDestructTuple(TypeSymbol* newTypeSymbol,
 static
 TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
                        BlockStmt* instantiationPoint,
-                       bool noref)
-{
+                       TupleRefLevel::K level) {
+
   TupleInfo& info = tupleMap[args];
   if (!info.typeSymbol) {
     SET_LINENO(dtTuple);
 
     int size = args.size();
 
-    if (size == 0)
+    if (size <= 0)
       USR_FATAL(instantiationPoint, "tuple must have positive size");
 
     ModuleSymbol* tupleModule =
@@ -384,8 +418,14 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     newTypeSymbol->addFlag(FLAG_TUPLE);
     newTypeSymbol->addFlag(FLAG_PARTIAL_TUPLE);
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
-    if (markStar)
+
+    if (markStar) {
       newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
+    }
+
+    if (level == TupleRefLevel::All) {
+      newTypeSymbol->addFlag(FLAG_TUPLE_ALL_REF);
+    }
 
     tupleModule->block->insertAtTail(new DefExpr(newTypeSymbol));
 
@@ -394,7 +434,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     // Build the _build_tuple type function
     info.buildTupleType = makeBuildTupleType(typeCtorArgs, newTypeSymbol,
                                              tupleModule, instantiationPoint,
-                                             noref);
+                                             level);
 
     // Build the * type function for star tuples
     if (markStar) {
@@ -402,7 +442,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
                                                        newTypeSymbol,
                                                        tupleModule,
                                                        instantiationPoint,
-                                                       noref);
+                                                       level);
     } else {
       info.buildStarTupleType = NULL;
     }
@@ -413,7 +453,7 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
                                    newTypeSymbol,
                                    tupleModule,
                                    instantiationPoint,
-                                   noref,
+                                   level,
                                    sizeType);
 
 
@@ -918,21 +958,62 @@ instantiate_tuple_unref(FnSymbol* fn)
   normalize(fn);
 }
 
-static bool
-shouldChangeTupleType(Type* elementType)
-{
-  // MPF -- I believe that both of these workarounds are
-  // no longer necessary (2018-05).
+// TODO: Need to provide a `const ref` overload of this as well?
+static void instantiateRefTupleRepack(FnSymbol *fn) {
+  INT_ASSERT(fn->numFormals() == 1);
+
+  ArgSymbol* formal = fn->getFormal(1);
+
+  bool isFormalRef = formal->intent & INTENT_REF;
+  bool isFormalConst = formal->intent & INTENT_CONST;
+  (void) isFormalConst;
+
+  INT_ASSERT(isFormalRef);
+
+  AggregateType* originalType = toAggregateType(formal->getValType());
+  INT_ASSERT(originalType->symbol->hasFlag(FLAG_TUPLE));
+
+  AggregateType* newType = computeAllRefTuple(originalType);
+
   //
-  // Hint: unless iterator records are reworked,
-  // this function should return false for iterator records...
-  return !elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-    // this is a temporary bandaid workaround.
-    // a better solution would be for ranges not to
-    // have blank intent being 'const ref' but 'const in' instead.
-         !elementType->symbol->hasFlag(FLAG_RANGE);
+  // TODO: It doesn't seem "illegal" to repack a reference to a mixed
+  // tuple, so for now try leaving this assertion out.
+  // INT_ASSERT(!isTupleContainingAnyReferences(originalType));
+  //
+  INT_ASSERT(isTupleContainingOnlyReferences(newType));
+
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+
+  VarSymbol* retSym = new VarSymbol("ret", newType);
+  block->insertAtTail(new DefExpr(retSym));
+
+  int i = 0;
+  for_fields(field, newType) {
+    if (++i == 1) {
+      continue;
+    }
+
+    Symbol* from = toDefExpr(originalType->fields.get(i))->sym;
+    Symbol* to = toDefExpr(newType->fields.get(i))->sym;
+    Symbol* toName = new_CStringSymbol(to->name);
+    
+    VarSymbol* read = generateReadTupleField(formal, from, NULL, block);
+    CallExpr* set = new CallExpr(PRIM_SET_MEMBER, new SymExpr(retSym),
+                                 toName, read);
+    block->insertAtTail(set);
+  }
+
+  block->insertAtTail(new CallExpr(PRIM_RETURN, new SymExpr(retSym)));
+
+  fn->replaceBodyStmtsWithStmts(block);
+  normalize(fn);
+
+  return;
 }
 
+static bool shouldChangeTupleType(Type* elementType) {
+  return !elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+}
 
 static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
                                                 IntentTag      intent,
@@ -986,6 +1067,9 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
               makeRefType(useType);
               useType = useType->getRefType();
             }
+          } else if (intent == INTENT_REF) {
+            makeRefType(useType);
+            useType = useType->getRefType();
           }
         }
 
@@ -1003,6 +1087,9 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
               makeRefType(useType);
               useType = useType->getRefType();
             }
+          } else if (intent == INTENT_REF) {
+            makeRefType(useType);
+            useType = useType->getRefType();
           }
         }
       }
@@ -1022,45 +1109,45 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
     retval = at;
 
   } else {
-    TupleInfo info = getTupleInfo(args, instantiationPoint, false);
 
+    // TODO (dlongnecke): Adjust this path for each tuple ref level.
+    TupleRefLevel::K level = TupleRefLevel::Mixed;
+    if (intent == INTENT_REF) {
+      level = TupleRefLevel::All;
+    }
+
+    TupleInfo info = getTupleInfo(args, instantiationPoint, level);
     retval = toAggregateType(info.typeSymbol->type);
   }
 
   return retval;
 }
 
-
-AggregateType* computeTupleWithIntentForArg(IntentTag intent, AggregateType* t, ArgSymbol* arg)
-{
+AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t) {
   return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
 }
 
-AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t)
-{
-  return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
+AggregateType* computeAllRefTuple(AggregateType* t) {
+  AggregateType* result = computeTupleWithIntent(INTENT_REF, t);
+  return result;
 }
 
-AggregateType* computeNonRefTuple(AggregateType* t)
-{
+AggregateType* computeNonRefTuple(AggregateType* t) {
   return do_computeTupleWithIntent(true, INTENT_BLANK, t, NULL, NULL, false);
 }
 
-AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly, const char* copyName, BlockStmt* testBlock)
-{
-  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName, testBlock, true);
+AggregateType* computeCopyTuple(AggregateType* t, bool valueOnly,
+                                const char* copyName,
+                                BlockStmt* testBlock) {
+  return do_computeTupleWithIntent(valueOnly, INTENT_BLANK, t, copyName,
+                                   testBlock, false);
 }
 
+bool fixupTupleFunctions(FnSymbol* fn, FnSymbol* newFn,
+                         CallExpr* instantiatedForCall) {
 
-
-bool
-fixupTupleFunctions(FnSymbol* fn,
-                    FnSymbol* newFn,
-                    CallExpr* instantiatedForCall)
-{
   // Note: scopeResolve sets FLAG_TUPLE for the type constructor
   // and the constructor for the tuple record.
-
   if (strcmp(fn->name, "_defaultOf")        == 0 &&
       fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_init(newFn);
@@ -1098,6 +1185,12 @@ fixupTupleFunctions(FnSymbol* fn,
     return true;
   }
 
+  if (!strcmp(fn->name, "chpl_refTupleRepack") &&
+      newFn->getFormal(1)->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+    instantiateRefTupleRepack(newFn);
+    return true;
+  }
+
   return false;
 }
 
@@ -1119,8 +1212,7 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
                              fn->hasFlag(FLAG_INIT_TUPLE)       == true ||
                              isStarTuple;
 
-
-  bool      noRef          = fn && fn->hasFlag(FLAG_DONT_ALLOW_REF);
+  TupleRefLevel::K level   = TupleRefLevel::Mixed;
 
   size_t    actualN        = 0;
 
@@ -1132,6 +1224,16 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   if (FnSymbol* inFn = call->getFunction()) {
     if (inFn->hasFlag(FLAG_ALLOW_REF) == true) {
       noChangeTypes = true;
+    }
+  }
+
+  // Detect the appropriate reference level.
+  if (fn != NULL) {
+    if (fn->hasFlag(FLAG_DONT_ALLOW_REF)) {
+      level = TupleRefLevel::None;
+      // TODO: We could make a flag for this as well, if we wanted...
+    } else if (!strcmp(fn->name, "chpl_buildTupleAllRef")) {
+      level = TupleRefLevel::All;
     }
   }
 
@@ -1161,14 +1263,12 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
       // Subsequent arguments are tuple types.
       Type* t = actual->typeInfo();
 
-      // Args that have blank intent -> ref intent
-      // should be captured as ref, but not in the type function.
-      if (shouldChangeTupleType(t->getValType()) ==  true &&
-          noChangeTypes                          == false) {
+      // If the concrete intent for an arg is ref, then capture it by ref,
+      // but only if we're not in a type function.
+      if (shouldChangeTupleType(t->getValType()) && !noChangeTypes) {
         if (SymExpr* se = toSymExpr(actual)) {
           if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
             IntentTag intent = concreteIntentForArg(arg);
-
             if ((intent & INTENT_FLAG_REF) != 0) {
               t = t->getRefType();
             }
@@ -1195,14 +1295,27 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
     args.resize(actualN);
   }
 
-  if (noRef == true) {
+  // If the ref level is mixed, then leave things as is. If the ref level
+  // is all ref, then adjust any value types to be references. If the ref
+  // level is none, then convert every type to a value type.
+  if (level == TupleRefLevel::All) {
+    for (size_t i = 1; i < args.size(); i++) {
+      if (args[i]->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+        AggregateType* at = toAggregateType(args[i]->getValType());
+        INT_ASSERT(at != NULL);
+        args[i] = computeAllRefTuple(at)->symbol;
+      } else {
+        args[i] = args[i]->getRefType()->symbol;
+      }
+    }
+  } else if (level == TupleRefLevel::None) {
     for (size_t i = 0; i < args.size(); i++) {
       args[i] = args[i]->getValType()->symbol;
     }
   }
 
   BlockStmt* point = getInstantiationPoint(call);
-  TupleInfo info   = getTupleInfo(args, point, noRef);
+  TupleInfo info   = getTupleInfo(args, point, level);
 
   if (fn == NULL) {
     retval = info.init;
@@ -1223,5 +1336,676 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   }
 
   return retval;
+}
+
+static void fixSimpleMoveForRefTuple(CallExpr* call);
+static void fixPrimAddrOfForRefTuple(CallExpr* call);
+static void fixPrimGetMemberForRefTuple(CallExpr* call);
+static void fixPrimGetMemberValueForRefTuple(CallExpr* call);
+static void fixFieldAccessForRefTuple(CallExpr* call);
+
+// TODO: This doesn't fire for iterators with inferred yield types, why?
+// (It also doesn't seem necessary.)
+void fixRefTupleRvvForInferredReturnType(FnSymbol* fn) {
+  if (!fn->returnsRefOrConstRef() || !fn->isResolved()) {
+    return;
+  }
+
+  Type* ft = fn->retType->getValType();
+  if (!ft->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+    return;
+  }
+
+  Symbol* rvv = fn->getReturnSymbol();
+
+  // The RVV might still be ref if the return type is inferred.
+  // TODO: This doesn't appear necessary anymore, why?
+  if (rvv->type->isRef()) {
+    gdbShouldBreakHere();
+    INT_ASSERT(rvv->type->getValType()->symbol->hasFlag(FLAG_TUPLE));
+    rvv->type = fn->retType;
+  }
+
+  // Apply our transformation to all moves into the RVV.
+  for_SymbolSymExprs(se, rvv) {
+    CallExpr* call = toCallExpr(se->parentExpr);
+    if (call != NULL && call->isPrimitive(PRIM_MOVE)) {
+      CallExpr* addrOf = toCallExpr(call->get(2));
+      if (addrOf != NULL && addrOf->isPrimitive(PRIM_ADDR_OF)) {
+        fixPrimAddrOfForRefTuple(call);
+      }
+    }
+  }
+
+  return;
+}
+
+static bool hasValueTupleType(Symbol* sym) {
+  return !isTupleContainingAnyReferences(sym->type);
+}
+
+static bool hasAllRefTupleType(Symbol* sym) {
+  return isTupleContainingOnlyReferences(sym->type);
+}
+
+static bool hasMixedTupleType(Symbol* sym) {
+  return !hasValueTupleType(sym) && !hasAllRefTupleType(sym);
+}
+
+static CallExpr* getBuildTupleCall(Symbol* sym) {
+
+  // If the symbol is a reference or is not a tuple, leave.
+  if (!sym->type->symbol->hasFlag(FLAG_TUPLE)) {
+    return NULL;
+  }
+
+  // Loop through uses and look for a build tuple call.
+  for_SymbolSymExprs(se, sym) {
+    CallExpr* move = toCallExpr(se->parentExpr);
+    if (move == NULL || !move->isPrimitive(PRIM_MOVE)) {
+      continue;
+    }
+
+    CallExpr* rhs = toCallExpr(move->get(2));
+    SymExpr* lhs = toSymExpr(move->get(1));
+    if (rhs == NULL || lhs == NULL) {
+      continue;
+    }
+
+    if (lhs->symbol() == se->symbol()) {
+      FnSymbol* calledFn = rhs->resolvedFunction();
+      if (calledFn != NULL && calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
+        return rhs;
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static Symbol* getFieldAccessTmpFromCoerceTmp(Symbol* coerce) {
+  if (!coerce->hasFlag(FLAG_COERCE_TEMP)) {
+    return NULL;
+  }
+
+  Symbol* result = NULL;
+
+  // Look for a deref from a field access tmp, e.g.
+  //    (move coerce, (deref call_tmp)) 
+  for_SymbolSymExprs(se, coerce) {
+    CallExpr* move = toCallExpr(se->parentExpr);
+    if (move != NULL && move->isPrimitive(PRIM_MOVE)) {
+      SymExpr* lhsExpr = toSymExpr(move->get(1));
+      if (lhsExpr == NULL || lhsExpr->symbol() != coerce) {
+        continue;
+      }
+
+      CallExpr* deref = toCallExpr(move->get(2));
+      if (deref != NULL && deref->isPrimitive(PRIM_DEREF)) {
+        SymExpr* accessTmp = toSymExpr(deref->get(1));
+        INT_ASSERT(accessTmp != NULL);
+
+        // OK, found it.
+        result = accessTmp->symbol();
+
+        // Remove the coerce tmp and the code initializing it.
+        // TODO: Is this always safe?
+        coerce->defPoint->remove();
+        move->convertToNoop();
+      }
+    }
+  }
+
+ return result;
+}
+
+static bool isSymAllRefTuple(Symbol* sym) {
+  return sym->getValType()->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+}
+
+static bool isMoveToSkip(CallExpr* call) {
+  INT_ASSERT(call != NULL && call->isPrimitive(PRIM_MOVE));
+
+  // Don't skip this move if we can't see its parent, it might uninserted.
+  FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+  if (inFn == NULL) {
+    return false;
+  }
+
+  // TODO (dlongnecke): Fixup field accessors instead of wrapping them.
+  if (inFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+    return true;
+  }
+
+  // Don't touch the body of tuple building block functions.
+  if (inFn->hasFlag(FLAG_BUILD_TUPLE) ||
+      inFn->hasFlag(FLAG_BUILD_TUPLE_TYPE)) {
+    return true;
+  }
+
+  // TODO (dlongnecke): Fixup unref functions as well.
+  if (inFn->hasFlag(FLAG_UNREF_FN)) {
+    return true;
+  }
+
+  // TODO (dlongnecke): Fixup init/auto copy functions as well.
+  if (inFn->hasFlag(FLAG_INIT_COPY_FN) ||
+      inFn->hasFlag(FLAG_AUTO_COPY_FN)) {
+    return true;
+  }
+
+  return false;
+}
+
+static bool isRefTupleRepackFunction(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_BUILD_TUPLE) &&
+         !strcmp(fn->name, "chpl_refTupleRepack");
+}
+
+void fixMoveIntoRefTuple(CallExpr* call) {
+  if (call == NULL || !call->isPrimitive(PRIM_MOVE)) {
+    return;
+  }
+
+  SymExpr* lhs = toSymExpr(call->get(1));
+  Expr* rhs = call->get(2);
+  if (lhs == NULL || rhs == NULL) {
+    return;
+  }
+
+  // Moves within certain functions should be skipped.
+  if (isMoveToSkip(call)) {
+    return;
+  }
+
+  // LHS is either invalid or its definition needs touchups.
+  if (!isSymAllRefTuple(lhs->symbol())) {
+
+    // Not a valid candidate for fixups.
+    if (!lhs->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
+        !lhs->isRef()) {
+      return;
+    }
+
+    // OK, it is, but we need to change its type. We can assume that if
+    // this code fires, it's the first time we're touching a particular
+    // symbol on the LHS.
+    // TODO (dlongnecke): Should the qualified type still say QUAL_REF?
+    // Do we want it to? I'm not sure, that could imply some things that
+    // we don't want...
+    Symbol* sym = lhs->symbol();
+    AggregateType* at = toAggregateType(sym->getValType());
+    sym->type = computeAllRefTuple(at);
+    sym->qual = QUAL_VAL;
+  }
+
+  // Do the actual fixups, now.
+  if (CallExpr* rhsCall = toCallExpr(rhs)) {
+
+    // Many different cases to handle for a PRIM_ADDR_OF.
+    if (rhsCall->isPrimitive(PRIM_ADDR_OF)) {
+      fixPrimAddrOfForRefTuple(call);
+
+    // The PRIM_GET_MEMBER argument should be a value tuple, so repack it.
+    } else if (rhsCall->isPrimitive(PRIM_GET_MEMBER)) {
+      fixPrimGetMemberForRefTuple(call);
+
+    // Calls to PRIM_GET_MEMBER_VALUE could return refs to mixed tuples...
+    } else if (rhsCall->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+      fixPrimGetMemberValueForRefTuple(call);
+
+    // It's a field accessor function or an already adjusted move.
+    } else if (FnSymbol* calledFn = rhsCall->resolvedFunction()) {
+      if (calledFn->hasFlag(FLAG_FIELD_ACCESSOR)) {
+        fixFieldAccessForRefTuple(call);
+      } else if (isRefTupleRepackFunction(calledFn)) {
+        return;
+      } else {
+        // The move should already be adjusted, so just let it happen.
+        if (!lhs->symbol()->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+          INT_FATAL("Move where dst is not adjusted: %d", call->id);
+        }
+
+        // Just in case... 
+        if (lhs->qualType().type() != rhsCall->qualType().type()) {
+          INT_FATAL(call, "Unadjusted move with non-matching types: %d",
+                          call->id);
+        }
+      }
+    } else {
+      INT_FATAL(call, "Unhandled call: %d", rhsCall->id);
+    }
+
+  // If it's a simple move, check to see if the RHS is OK...
+  } else if (SymExpr* rhsSymExpr = toSymExpr(rhs)) {
+    fixSimpleMoveForRefTuple(call);
+  } else {
+    INT_FATAL(call, "Unhandled call: %d", rhsCall->id);
+  }
+
+  return;
+}
+
+// Convert a move to a simple move with the given symbol as the source.
+static void convertRhsToSimpleMove(CallExpr* call, Symbol* sym) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSymExpr != NULL);
+  Symbol* lhs = lhsSymExpr->symbol();
+
+  SymExpr* se = new SymExpr(sym);
+  CallExpr* replace = new CallExpr(PRIM_MOVE, lhs, se);
+  call->insertBefore(replace);
+  call->convertToNoop();
+  resolveCall(replace);
+
+  return;
+}
+
+// Convert move into a repack call with the given symbol as an argument.
+// TODO: Take an EXPR instead of a symbol.
+static void convertRhsToRepackCall(CallExpr* call, Symbol* sym) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSymExpr != NULL);
+  Symbol* lhs = lhsSymExpr->symbol();
+
+  // TODO: Should we verify that "sym" is safe to repack _here_?
+  const char* name = "chpl_refTupleRepack";
+  UnresolvedSymExpr* usym = new UnresolvedSymExpr(name);
+  CallExpr* repack = new CallExpr(usym, sym);
+
+  // TODO: There might be a better place/way to do this?
+  chpl_gen_main->insertAtTail(repack);
+  resolveCallAndCallee(repack);
+  INT_ASSERT(repack->resolvedFunction() != NULL);
+  repack->remove();
+
+  CallExpr* replace = new CallExpr(PRIM_MOVE, lhs, repack);
+  call->insertBefore(replace);
+  call->convertToNoop();
+  resolveCall(replace);
+
+  // Can't use resolveExpr to remove FLAG_EXPR_TEMP as some calls at
+  // this point may not be in the tree (e.g. code generated for
+  // `chpl__unref`).
+  INT_ASSERT(!lhs->isRef());
+  INT_ASSERT(lhs->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
+  if (lhs->hasFlag(FLAG_EXPR_TEMP)) {
+    lhs->removeFlag(FLAG_EXPR_TEMP);
+  }
+
+  return;
+}
+
+// Convert a build tuple call to "chpl_buildTupleAllRef".
+static void convertRhsToBuildAllRef(CallExpr* call, CallExpr* buildCall) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+  FnSymbol* buildFn = buildCall->resolvedFunction();
+  INT_ASSERT(buildFn != NULL && buildFn->hasFlag(FLAG_BUILD_TUPLE));
+
+  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSymExpr != NULL);
+  Symbol* lhs = lhsSymExpr->symbol();
+
+  // Adjust the build tuple call to capture all elements by ref.
+  const char* name = "chpl_buildTupleAllRef";
+  UnresolvedSymExpr* buildAllRef = new UnresolvedSymExpr(name);
+  buildCall->baseExpr->replace(buildAllRef);
+
+  // Tweak the actuals list for the call.
+  for_actuals(actual, buildCall) {
+    SymExpr* actualSymExpr = toSymExpr(actual);
+    if (actual == NULL) {
+      continue;
+    }
+
+    Symbol* actualSym = actualSymExpr->symbol();
+
+    // The compiler will coerce e.g. field accessors.
+    if (actualSym->hasFlag(FLAG_COERCE_TEMP)) {
+
+      // Case: Coercion introduced by field accessor. This call will
+      // remove the coercion.
+      Symbol* uncoerce = getFieldAccessTmpFromCoerceTmp(actualSym);
+      if (uncoerce != NULL) {
+        actualSymExpr->setSymbol(uncoerce);
+      }
+    }
+  }
+
+  // Second loop to check the validity of actuals.
+  int actualIdx = 0;
+  for_actuals(actual, buildCall) {
+    if (SymExpr* actualSymExpr = toSymExpr(actual)) {
+      Symbol* actualSym = actualSymExpr->symbol();
+      if (actualSym->defPoint->getFunction()) {
+
+        // Choose the appropriate verb for warnings based on the LHS.
+        const char* warningVerb = "capture";
+        if (lhs->hasFlag(FLAG_RVV)) {
+          warningVerb = "return";
+        } else if (lhs->hasFlag(FLAG_YVV)) {
+          warningVerb = "yield";
+        }
+
+        // TODO: Warn about temporaries?
+        if (lhs->hasFlag(FLAG_RVV) || lhs->hasFlag(FLAG_YVV)) {
+          USR_FATAL_CONT(buildCall, "cannot %s tuple element %d by ref",
+                                    warningVerb,
+                                    actualIdx);
+          USR_PRINT(actualSym, "declared here");
+        }
+      }
+    } else {
+      USR_FATAL(actual, "illegal element for ref tuple");
+    }
+
+    actualIdx += 1;
+
+    // TODO: Additional/more advanced const checking.
+    continue;
+  }
+
+  // Re-resolve it.
+  resolveExpr(buildCall);
+
+  // Get the resulting tuple type.
+  FnSymbol* newBuildFn = buildCall->resolvedFunction();
+  INT_ASSERT(newBuildFn != NULL);
+  Type* tupType = toType(newBuildFn->retType);
+
+  //
+  // TODO: Shorten the below sequence up by using replace, maybe?
+  //
+
+  // Get the LHS storing the result of the build call.
+  CallExpr* oldMove = toCallExpr(buildCall->parentExpr);
+  SymExpr* useOldLhs = toSymExpr(oldMove->get(1));
+  Symbol* oldLhs = useOldLhs->symbol();
+
+  // Insert a new temp before it.
+  VarSymbol* newTmp = newTemp("call_tmp", tupType);
+  oldLhs->defPoint->insertBefore(new DefExpr(newTmp));
+
+  // Move the adjusted build call into the new temp.
+  buildCall->remove();
+  CallExpr* newMove = new CallExpr(PRIM_MOVE, newTmp, buildCall);
+
+  // Replace the old move AST with the new move AST.
+  oldMove->insertBefore(newMove);
+  oldMove->convertToNoop();
+  oldLhs->defPoint->remove();
+
+  // Replace original call with one using our building blocks.
+  SymExpr* useNewTmp = new SymExpr(newTmp);
+  CallExpr* newCall = new CallExpr(PRIM_MOVE, lhs, useNewTmp);
+  call->insertBefore(newCall);
+  call->convertToNoop();
+
+  // Resolve the new call.
+  resolveCall(newCall);
+
+  return;
+}
+
+// TODO: If the LHS and RHS are not already expanded ref tuples, something
+// went wrong, and we can handle it here later.
+static void fixSimpleMoveForRefTuple(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSymExpr != NULL);
+  Symbol* lhs = lhsSymExpr->symbol();
+
+  SymExpr* rhsSymExpr = toSymExpr(call->get(2));
+  INT_ASSERT(rhsSymExpr != NULL);
+  Symbol* rhs = rhsSymExpr->symbol();
+
+  Type* lhsType = lhs->type;
+  Type* rhsType = rhs->type;
+
+  INT_ASSERT(!lhsType->isRef() && !rhsType->isRef());
+
+  bool isLhsTypeNormalized = lhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+  bool isRhsTypeNormalized = rhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+
+  INT_ASSERT(isLhsTypeNormalized && isRhsTypeNormalized);
+
+  return;
+}
+
+// TODO: Used to implement the guts of the different field reads.
+static void passFieldReadToRepackCall(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSymExpr != NULL);
+  Symbol* lhs = lhsSymExpr->symbol();
+
+  CallExpr* fieldRead = toCallExpr(call->get(2));
+  INT_ASSERT(fieldRead != NULL);
+
+  Type* lhsValType = lhs->getValType();
+  Type* rhsValType = fieldRead->getValType();
+
+  bool isLhsNormalized = lhsValType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+  bool isRhsNormalized = rhsValType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+
+  INT_ASSERT(isLhsNormalized && !isRhsNormalized);
+  INT_ASSERT(rhsValType->symbol->hasFlag(FLAG_TUPLE));
+
+  // Insert a temporary to hold the results of the PRIM_GET_MEMBER.
+  VarSymbol* fieldTmp = newTemp("field", fieldRead->typeInfo());
+  call->insertBefore(new DefExpr(fieldTmp));
+
+  // Move the getMember call into the temporary.
+  fieldRead->remove();
+  CallExpr* newMove = new CallExpr(PRIM_MOVE, new SymExpr(fieldTmp),
+                                   fieldRead);
+  call->insertBefore(newMove);
+
+  // Now we can convert the original move to a repack call.
+  convertRhsToRepackCall(call, fieldTmp);
+ 
+  return;
+}
+
+// At this point the LHS type of the move will be normalized, but the RHS
+// type cannot be (it's a reference to an object field). So we need to
+// wrap the RHS in a repack call as appropriate.
+static void fixPrimGetMemberForRefTuple(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+  CallExpr* rhs = toCallExpr(call->get(2));
+  INT_ASSERT(rhs != NULL);
+  INT_ASSERT(rhs->isPrimitive(PRIM_GET_MEMBER));
+  passFieldReadToRepackCall(call);
+  return;
+}
+
+// TODO: Merge this and the function for PRIM_GET_MEMBER?
+static void fixPrimGetMemberValueForRefTuple(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+  CallExpr* rhs = toCallExpr(call->get(2));
+  INT_ASSERT(rhs != NULL);
+  INT_ASSERT(rhs->isPrimitive(PRIM_GET_MEMBER_VALUE));
+  passFieldReadToRepackCall(call);
+  return;
+}
+
+// TODO: Merge this and the function for PRIM_GET_MEMBER?
+static void fixFieldAccessForRefTuple(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+  CallExpr* rhs = toCallExpr(call->get(2));
+  INT_ASSERT(rhs != NULL);
+  FnSymbol* calledFn = rhs->resolvedFunction();
+  INT_ASSERT(calledFn != NULL);
+  INT_ASSERT(calledFn->hasFlag(FLAG_FIELD_ACCESSOR));
+  passFieldReadToRepackCall(call);
+  return;
+}
+
+//
+// Handle PRIM_ADDR_OF for ref tuples. There are four places from where the
+// argument tuple can originate:
+//
+//    - The result of building a tuple expression (used to be illegal)
+//    - A tuple formal (used to require the `ref` intent)
+//    - The result of a call (has to return by `ref`)
+//    - A value tuple (context required)
+//
+// This function needs to handle all of these cases and emit errors when
+// necessary (e.g. const checking). Calls to this function are made when
+// resolving moves during resolution.
+//
+static void fixPrimAddrOfForRefTuple(CallExpr* call) {
+  CallExpr* rhs = toCallExpr(call->get(2));
+  if (!rhs->isPrimitive(PRIM_ADDR_OF)) {
+    return;
+  }
+
+  FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+  if (inFn == NULL) {
+    return;
+  }
+
+  // Iterator return types _may_ have been adjusted at this point.
+  bool isIteratorReturningRef = false;
+  if (inFn->hasFlag(FLAG_ITERATOR_FN) && inFn->iteratorInfo != NULL) {
+    if (inFn->iteratorInfo->iteratorRetTag == RET_REF) {
+      isIteratorReturningRef = true;
+    }
+  }
+
+  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+  Symbol* lhs = lhsSymExpr->symbol();
+
+  // The LHS should have been converted before this call.
+  INT_ASSERT(isSymAllRefTuple(lhs));
+
+  SymExpr* addrSymExpr = toSymExpr(rhs->get(1));
+  INT_ASSERT(addrSymExpr != NULL);
+
+  Symbol* addrSym = addrSymExpr->symbol();
+
+  // This should be handled by "fixSimpleMoveForRefTuple".
+  INT_ASSERT(!addrSym->isRef());
+
+  // Choose the appropriate verb for warnings based on the LHS.
+  const char* warningVerb = "capture";
+  if (lhs->hasFlag(FLAG_RVV)) {
+    warningVerb = "return";
+  } else if (lhs->hasFlag(FLAG_YVV)) {
+    warningVerb = "yield";
+  }
+
+  // TODO (dlongnecke): Four cases to cover here...
+  //    - A tuple expression
+  //    - A formal
+  //    - A temp storing the result of a call
+  //    - A named/lvalue tuple
+
+  // Try to fetch a build call for the local tuple.
+  CallExpr* buildCall = getBuildTupleCall(addrSym);
+
+  // Case: A tuple expression.
+  if (buildCall != NULL) {
+    convertRhsToBuildAllRef(call, buildCall);
+
+  // Case: A formal argument.
+  } else if (ArgSymbol* formal = toArgSymbol(addrSym)) {
+
+    // Make sure the formal has the appropriate constness.
+    // TODO: Use qualtype instead?
+    if ((formal->intent & INTENT_CONST) && !lhs->isConstant()) {
+      USR_FATAL_CONT(addrSym, "Cannot %s %s formal by ref",
+                              warningVerb,
+                              intentDescrString(formal->intent));
+    }
+
+    // TODO: Ref tuple arguments may already be converted, wait and see.
+    if (formal->intent & INTENT_REF) {
+      INT_FATAL(formal, "Not implemented yet!");
+      convertRhsToRepackCall(call, formal);
+
+    // It's a "mixed tuple" but canonically already in the correct form.
+    } else if (isTupleContainingOnlyReferences(formal->type)) {
+
+      // It should be an equivalent type if it's all REF.
+      Type* t = formal->getValType();
+      INT_ASSERT(t->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
+      INT_ASSERT(t == lhs->type);
+
+      // OK, move it into place.
+      convertRhsToSimpleMove(call, addrSym);
+
+    // Formals with `in` intent are local value tuples, so error.
+    // TODO: Return type could be `const ref`.
+    } else if (formal->intent & INTENT_IN) {
+      USR_FATAL_CONT(formal, "Cannot %s %s tuple formal by ref",
+                             warningVerb,
+                             intentDescrString(formal->intent));
+    } else {
+      // TODO: Some unhandled case...
+      INT_FATAL(formal, "Cannot %s tuple formal", warningVerb);
+    }
+
+  // Case: The result of a call?
+  } else if (addrSym->defPoint->getFunction() == inFn &&
+             addrSym->hasFlag(FLAG_TEMP)) {
+
+    if (hasValueTupleType(addrSym)) {
+
+      // TODO: We should warn at the callsite rather than the temporary.
+      USR_FATAL_CONT(addrSym, "cannot %s temp value tuple by ref",
+                              warningVerb);
+
+    // OK, it's already an all ref tuple.
+    } else if (hasAllRefTupleType(addrSym)) {
+
+      // Check to make sure its type is normalized.
+      if (!addrSym->getValType()->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+        INT_FATAL(addrSym, "All ref tuple that is not normalized: %d",
+                           addrSym->id);
+      }
+
+      // OK, move it into place.
+      convertRhsToSimpleMove(call, addrSym);
+
+    } else {
+      // TODO: This _might_ be possible in iterators.
+      INT_ASSERT(hasMixedTupleType(addrSym));
+      INT_FATAL(addrSym, "Tuple call temp with mixed ref level: %d",
+                         addrSym->id);
+    }
+
+  // Case: A ref to a tuple lvalue.
+  } else {
+    if (addrSym->hasFlag(FLAG_TEMP)) {
+      INT_FATAL(addrSym, "Unhandled temporary: %d", addrSym->id);
+    }
+
+    // TODO: Relax this when cullOverReferences can catch bad cases?
+    if (addrSym->defPoint->getFunction() ==inFn) {
+      if (lhs->hasFlag(FLAG_RVV) || lhs->hasFlag(FLAG_YVV)) {
+        USR_FATAL_CONT("Cannot %s local tuple by reference",
+                       warningVerb);
+      }
+    }
+
+    if (hasValueTupleType(addrSym)) {
+      convertRhsToRepackCall(call, addrSym);
+    } else if (hasAllRefTupleType(addrSym)) {
+      convertRhsToSimpleMove(call, addrSym);
+    } else {
+      INT_ASSERT(hasMixedTupleType(addrSym));
+      INT_FATAL(addrSym, "Non-local tuple with mixed ref level: %d",
+                         addrSym->id);
+    }
+  }
+
+  return;
 }
 

@@ -7064,6 +7064,10 @@ static void resolveMove(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
+  if (call->parentSymbol && call->parentSymbol->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
 
   if (moveIsAcceptable(call) == false) {
     // NB: This call will not return
@@ -7088,6 +7092,14 @@ static void resolveMove(CallExpr* call) {
       // NB: This call will not return
       moveHaltForUnacceptableTypes(call);
 
+    // Move into ref tuple that has not had its type adjusted yet.
+    } else if (lhsType->isRef() &&
+               lhsType->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+      fixMoveIntoRefTuple(call);
+
+    // Move into ref tuple with type adjusted.
+    } else if (lhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+      fixMoveIntoRefTuple(call);
     } else if (SymExpr* rhsSymExpr = toSymExpr(rhs)) {
       resolveMoveForRhsSymExpr(call, rhsSymExpr);
 
@@ -7466,21 +7478,24 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
         }
       }
     } else if (rhs->isPrimitive(PRIM_ADDR_OF)) {
-      // Check that the types match
       SymExpr* lhsSe = toSymExpr(call->get(1));
       Symbol* lhs = lhsSe->symbol();
-      INT_ASSERT(lhs->isRef());
 
+      INT_ASSERT(lhs->isRef());
       if (lhs->getValType() != rhsType->getValType()) {
         USR_FATAL_CONT(call, "Initializing a reference with another type");
-        USR_PRINT(lhs, "Reference has type %s", toString(lhs->getValType()));
+        USR_PRINT(lhs, "Reference has type %s",
+                       toString(lhs->getValType()));
         USR_PRINT(call, "Initializing with type %s",
                         toString(rhsType->getValType()));
         USR_STOP();
       }
     }
 
-    moveFinalize(call);
+    // The call might have been removed, so check to make sure.
+    if (call->isPrimitive(PRIM_MOVE)) {
+      moveFinalize(call);
+    }
   }
 }
 

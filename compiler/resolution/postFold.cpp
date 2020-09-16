@@ -814,6 +814,11 @@ static void postFoldMoveTail(CallExpr* call, Symbol* lhsSym) {
       lhsSym->removeFlag(FLAG_EXPR_TEMP);
     }
 
+    // TODO (dlongnecke): May need to touch this later?
+    if (lhsSym->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+      lhsSym->removeFlag(FLAG_EXPR_TEMP);
+    }
+
   } else {
     INT_ASSERT(false);
   }
