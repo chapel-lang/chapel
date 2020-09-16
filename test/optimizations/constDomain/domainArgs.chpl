@@ -6,12 +6,12 @@ proc defIntent(d) {
   writef(fmt, "(const ref)", d.definedConst);
 }
 
-// TODO: Something's wrong with generic in intents. File a bug report, and
-// make this generic once it is resolved
-//
-// It causes the copy to be dropped for a domain literal argument (maybe
+// I wanted to make `d` a generic argument like the others below. However, it
+// causes the copy to be dropped for a domain literal argument (maybe
 // correctly?), so this reports 'true' for a domain literal. For concrete
 // argument, the copy remains there and we get 'false' (correctly).
+//
+// See: https://github.com/chapel-lang/chapel/issues/16398
 proc inIntent(in d: domain(1, int, false)) {
   writef(fmt, "in", d.definedConst);
 }
