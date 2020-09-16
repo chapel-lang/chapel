@@ -466,13 +466,13 @@ address that matches the commit author and the name on your GitHub account.
 To tell Git to use the default message with the ``Signed-off-by`` line that appears in your 
 editor when you run ``git commit``, set the commit.template configuration value:
 
-... code-block:: bash
+.. code-block:: bash
 
      git config --global commit.template ~/.gitmessage
 
 Then create ~/.gitmessage template with the ``Signed-off-by`` line:
 
-... code-block:: bash
+.. code-block:: bash
 
      ---
      Signed-off-by: Random J Developer <random@developer.example.org>
