@@ -205,7 +205,8 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
                                  Expr *insBefore, Expr *&insAfter,
                                  bool asRef) {
 
-  AggregateType *aggType = toAggregateType(canonicalClassType(receiver->getValType()));
+  AggregateType *aggType =
+      toAggregateType(canonicalClassType(receiver->getValType()));
   INT_ASSERT(aggType);
 
   Symbol *fieldSym = aggType->getField(fieldName);
