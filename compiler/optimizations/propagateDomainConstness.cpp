@@ -37,8 +37,7 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
 static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
                                  Expr *insBefore, Expr *&insAfter,
                                  bool asRef);
-static Expr *getNextExprOrCreateNoop(Expr *baseExpr, Expr *nextExpr,
-                                     bool &createdNoop);
+static Expr *getNextExprOrCreateNoop(Expr *baseExpr, bool &createdNoop);
 static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
                                            Expr *anchor, Symbol *isConst);
 static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
@@ -61,7 +60,7 @@ void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {
   INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
 
   bool createdNoop;
-  Expr *nextExpr = getNextExprOrCreateNoop(call, call->next, createdNoop);
+  Expr *nextExpr = getNextExprOrCreateNoop(call->next, createdNoop);
 
   // PRIM_SET_MEMBER args:
   // 1: this
@@ -113,7 +112,7 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
 
   bool createdNoop;
-  Expr *nextExpr = getNextExprOrCreateNoop(call, parentExpr->next, createdNoop);
+  Expr *nextExpr = getNextExprOrCreateNoop(parentExpr, createdNoop);
 
   Symbol *argSym = NULL;
   Type *argType = NULL;
@@ -156,10 +155,9 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   }
 }
 
-static Expr* getNextExprOrCreateNoop(Expr *baseExpr, Expr *nextExpr,
-                                     bool &createdNoop) {
+static Expr* getNextExprOrCreateNoop(Expr *baseExpr, bool &createdNoop) {
   createdNoop = false;
-  Expr *newNextExpr = nextExpr;
+  Expr *nextExpr = baseExpr->next;
 
   if (nextExpr == NULL) {
     createdNoop = true;
@@ -178,10 +176,10 @@ static Expr* getNextExprOrCreateNoop(Expr *baseExpr, Expr *nextExpr,
   if (createdNoop) {
     CallExpr *noop = new CallExpr(PRIM_NOOP);
     baseExpr->insertAfter(noop);
-    newNextExpr = noop;
+    return noop;
   }
 
-  return newNextExpr;
+  return nextExpr;
 }
                 
 static void setDefinedConstForDefExprWithIfExprs(Expr* e) {
