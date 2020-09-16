@@ -211,6 +211,7 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   Type *fieldType = asRef ? fieldSym->type->getRefType() : fieldSym->type;
   
   VarSymbol *fieldRef = newTemp(fieldName, fieldType);
+  fieldRef->addFlag(FLAG_UNSAFE);  // this is a short-lived temp
   insBefore->insertBefore(new DefExpr(fieldRef));
 
   PrimitiveTag primTag = asRef ? PRIM_GET_MEMBER : PRIM_GET_MEMBER_VALUE;
