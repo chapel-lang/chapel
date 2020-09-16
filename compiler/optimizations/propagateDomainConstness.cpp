@@ -60,7 +60,7 @@ void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {
   INT_ASSERT(call->isPrimitive(PRIM_SET_MEMBER));
 
   bool createdNoop;
-  Expr *nextExpr = getNextExprOrCreateNoop(call->next, createdNoop);
+  Expr *nextExpr = getNextExprOrCreateNoop(call, createdNoop);
 
   // PRIM_SET_MEMBER args:
   // 1: this
