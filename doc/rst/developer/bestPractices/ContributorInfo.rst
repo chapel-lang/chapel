@@ -559,8 +559,7 @@ Committing staged changes:
 
 .. code-block:: bash
 
-    # Accept the Developer Certificate of Origin by adding a
-      Signed-off-by line to commit messages:
+    # Accept the Developer Certificate of Origin by adding a Signed-off-by line to commit messages:
 
     git commit -s [-m <message>]
 
