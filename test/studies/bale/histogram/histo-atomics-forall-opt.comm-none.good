@@ -1,9 +1,5 @@
 histo-atomics-forall-opt.chpl:46: note: Optimized atomic call to be unordered
 histo-atomics-forall-opt.chpl:46: note: Optimized atomic call to be unordered
-histo-atomics-forall-opt.chpl:46: note: Optimized atomic call to be unordered
-histo-atomics-forall-opt.chpl:46: note: Optimized atomic call to be unordered
-histo-atomics-forall-opt.chpl:49: note: Optimized atomic call to be unordered
-histo-atomics-forall-opt.chpl:49: note: Optimized atomic call to be unordered
 histo-atomics-forall-opt.chpl:49: note: Optimized atomic call to be unordered
 histo-atomics-forall-opt.chpl:49: note: Optimized atomic call to be unordered
 217 200 194 209 209 201 177 177 173 207 198 224 208 198 183 209 205 187 229 195
