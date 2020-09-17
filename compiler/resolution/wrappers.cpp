@@ -1369,7 +1369,11 @@ static void addArgCoercion(FnSymbol*  fn,
     if (typeNeedsCopyInitDeinit(at) && propagateNotPOD(at) &&
         !fn->hasFlag(FLAG_AUTO_COPY_FN) &&
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
-      Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+
+      bool isConstCopy = formal->intent == INTENT_CONST_IN ||
+                         formal->intent == INTENT_CONST_IN ||
+                         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
       castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
     } else {
       castCall   = new CallExpr(PRIM_DEREF, prevActual);
@@ -1673,9 +1677,13 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       if (formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
         tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       }
-
+      
       CallExpr* copy = NULL;
-      Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+
+      bool isConstCopy = formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_CONST_IN ||
+                         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
       if (coerceRuntimeTypes)
         copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
                             definedConst);
@@ -1707,7 +1715,10 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
           tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
-        Symbol *definedConst = formal->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+        bool isConstCopy = formal->intent == INTENT_CONST_IN ||
+                           formal->originalIntent == INTENT_CONST_IN ||
+                           formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+        Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
         CallExpr* copy = new CallExpr(astr_coerceMove,
                                       runtimeTypeTemp, actualSym, definedConst);
 

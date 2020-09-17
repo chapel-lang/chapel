@@ -183,7 +183,11 @@ static void removeRandomPrimitive(CallExpr* call) {
       } else {
         // Confirm that this is already a correct field Symbol.
         sym = memberSE->symbol();
-        INT_ASSERT(sym->defPoint->parentSymbol == baseType->symbol);
+        // This used to check for type equality, is this wrong?
+        INT_ASSERT(isSubtypeOrInstantiation(baseType, 
+                                            sym->defPoint->parentSymbol->type,
+                                            call));
+
       }
 
       if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||

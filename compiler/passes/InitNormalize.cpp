@@ -401,6 +401,7 @@ Expr* InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
                                                    DefExpr* field,
                                                    Expr*    initExpr) const {
+  bool isConst   = field->sym->hasFlag(FLAG_CONST);
   bool isParam   = field->sym->hasFlag(FLAG_PARAM);
   bool isTypeVar = field->sym->hasFlag(FLAG_TYPE_VARIABLE);
 
@@ -427,7 +428,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       Symbol*    name     = new_CStringSymbol(field->sym->name);
       CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
-      if (isParam) {
+      if (isConst) {
+        tmp->addFlag(FLAG_CONST);
+      } else if (isParam) {
         tmp->addFlag(FLAG_PARAM);
       } else if (isTypeVar) {
         tmp->addFlag(FLAG_TYPE_VARIABLE);
@@ -469,7 +472,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
-    if (isParam) {
+    if (isConst) {
+      tmp->addFlag(FLAG_CONST);
+    } else if (isParam) {
       tmp->addFlag(FLAG_PARAM);
     } else if (isTypeVar) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);

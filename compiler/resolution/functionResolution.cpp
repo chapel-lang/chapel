@@ -46,6 +46,7 @@
 #include "iterator.h"
 #include "lifetime.h"
 #include "ModuleSymbol.h"
+#include "optimizations.h"
 #include "ParamForLoop.h"
 #include "PartialCopyData.h"
 #include "passes.h"
@@ -6459,6 +6460,8 @@ static void resolveInitField(CallExpr* call) {
   }
 
   call->primitive = primitives[PRIM_SET_MEMBER];
+
+  setDefinedConstForPrimSetMemberIfApplicable(call);
 
   resolveSetMember(call); // Can we remove some of the above with this?
 }

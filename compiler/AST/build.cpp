@@ -34,6 +34,7 @@
 #include "ImportStmt.h"
 #include "IfExpr.h"
 #include "LoopExpr.h"
+#include "optimizations.h"
 #include "ParamForLoop.h"
 #include "parser.h"
 #include "stringutil.h"
@@ -1566,55 +1567,6 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-static void establishDefinedConstWithIfExprs(Expr* e) {
-  if (CallExpr *initCall = toCallExpr(e)) {
-    if (initCall->isNamed("chpl__buildDomainExpr")) {
-      initCall->argList.last()->replace(new SymExpr(gTrue));
-      return;
-    }
-    else if (initCall->isNamed("chpl__distributed")) {
-      initCall->get(3)->replace(new SymExpr(gTrue));
-      return;
-    }
-  }
-  else if (IfExpr *initIf = toIfExpr(e)) {
-    establishDefinedConstWithIfExprs(initIf->getThenStmt()->body.head);
-    establishDefinedConstWithIfExprs(initIf->getElseStmt()->body.head);
-  }
-}
-
-static void establishDefinedConstIfApplicable(DefExpr* defExpr,
-                                              std::set<Flag>* flags) {
-
-  if (defExpr->init != NULL) {
-    if (flags->size() == 1 && flags->count(FLAG_CONST)) {
-      establishDefinedConstWithIfExprs(defExpr->init);
-    }
-  }
-
-  if (defExpr->exprType != NULL) {
-    if (CallExpr *initType = toCallExpr(defExpr->exprType)) {
-      if (initType->isNamed("chpl__distributed")) {
-        initType->get(3)->replace(new SymExpr(gTrue));
-        return;
-      }
-      else if (initType->isNamed("chpl__buildArrayRuntimeType")) {
-        if (CallExpr *typeCall = toCallExpr(initType->get(1))) {
-          if (typeCall->isNamed("chpl__ensureDomainExpr")) {
-            if (CallExpr *buildDomExpr = toCallExpr(typeCall->get(1))) {
-              if (buildDomExpr->isNamed("chpl__buildDomainExpr")) {
-                buildDomExpr->argList.last()->replace(new SymExpr(gTrue));
-                return;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-                
-
 BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
@@ -1642,7 +1594,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           if (cnameExpr != NULL && !firstvar)
             USR_FATAL_CONT(var, "external symbol renaming can only be applied to one symbol at a time");
 
-          establishDefinedConstIfApplicable(defExpr, flags);
+          setDefinedConstForDefExprIfApplicable(defExpr, flags);
 
           for (std::set<Flag>::iterator it = flags->begin(); it != flags->end(); ++it) {
             var->addFlag(*it);

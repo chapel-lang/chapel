@@ -2213,9 +2213,9 @@ literal_expr:
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
-                                            new SymExpr(gFalse)); }
+                                            new SymExpr(gTrue)); }
 | TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
-                                                   new SymExpr(gFalse)); }
+                                                   new SymExpr(gTrue)); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR expr_ls TCOMMA TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
@@ -2258,7 +2258,7 @@ binary_op_expr:
 | expr TALIGN expr         { $$ = new CallExpr("chpl_align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1,
-                                               new SymExpr(gFalse)); }
+                                               new SymExpr(gTrue)); }
 ;
 
 unary_op_expr:

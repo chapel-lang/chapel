@@ -29,6 +29,7 @@ OPTIMIZATIONS_SRCS = \
         optimizeForallUnorderedOps.cpp \
 	optimizeOnClauses.cpp \
 	preNormalizeOptimizations.cpp \
+	propagateDomainConstness.cpp \
 	refPropagation.cpp \
 	remoteValueForwarding.cpp \
 	removeEmptyRecords.cpp \

@@ -9817,14 +9817,14 @@ yyreduce:
   case 593:
 #line 2215 "chapel.ypp" /* yacc.c:1663  */
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-1].pcallexpr),
-                                            new SymExpr(gFalse)); }
+                                            new SymExpr(gTrue)); }
 #line 9822 "bison-chapel.cpp" /* yacc.c:1663  */
     break;
 
   case 594:
 #line 2217 "chapel.ypp" /* yacc.c:1663  */
     { (yyval.pexpr) = new CallExpr("chpl__buildDomainExpr", (yyvsp[-2].pcallexpr),
-                                                   new SymExpr(gFalse)); }
+                                                   new SymExpr(gTrue)); }
 #line 9829 "bison-chapel.cpp" /* yacc.c:1663  */
     break;
 
@@ -10003,7 +10003,7 @@ yyreduce:
   case 623:
 #line 2260 "chapel.ypp" /* yacc.c:1663  */
     { (yyval.pexpr) = new CallExpr("chpl__distributed", (yyvsp[0].pexpr), (yyvsp[-2].pexpr),
-                                               new SymExpr(gFalse)); }
+                                               new SymExpr(gTrue)); }
 #line 10008 "bison-chapel.cpp" /* yacc.c:1663  */
     break;
 

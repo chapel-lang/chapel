@@ -29,6 +29,7 @@
 #include "iterator.h"
 #include "lateConstCheck.h"
 #include "lifetime.h"
+#include "optimizations.h"
 #include "postFold.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -637,6 +638,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   Symbol*   tmpVar    = newTemp("ret_tmp", useLhs->getValType());
 
   bool copiesToNoDestroy = false;
+  bool isRhsInitOrAutoCopy = false;
 
   // Determine if
   //   a) current call is not a PRIMOP
@@ -658,6 +660,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
               (rhsFn->hasFlag(FLAG_AUTO_COPY_FN) == true ||
                rhsFn->hasFlag(FLAG_INIT_COPY_FN) == true))
           {
+            isRhsInitOrAutoCopy = true;
             SymExpr* copiedSe = toSymExpr(rhsCall->get(1));
             INT_ASSERT(copiedSe);
             SymExpr* dstSe = toSymExpr(callNext->get(1));
@@ -710,7 +713,12 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // the copyExpr might be a copy added when normalizing initialization
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
-    copyExpr->replace(copyExpr->get(1)->remove());
+    if (isRhsInitOrAutoCopy) {
+      removeInitOrAutoCopyPostResolution(copyExpr);
+    }
+    else {
+      copyExpr->replace(copyExpr->get(1)->remove());
+    }
 
     if (copiesToNoDestroy) {
       useLhs->addFlag(FLAG_NO_AUTO_DESTROY);
