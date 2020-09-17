@@ -2526,7 +2526,12 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 }
 
 
-void chpl_comm_task_end(void) {
+void chpl_comm_impl_unordered_consist_fence(void) {
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
+}
+
+
+void chpl_comm_impl_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 
   //
