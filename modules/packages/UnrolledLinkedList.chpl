@@ -311,39 +311,36 @@ module UnrolledLinkedList {
       if p.next == nil then return result;
 
       var next = p.next!;
-      // It's possible to merge
-      if p.next!.size + p.size <= nodeCapacity {
-        for i in 0..#next.size {
+
+      if p.size < nodeCapacity/2 {
+        // Fill p to half
+        var toFill = nodeCapacity/2 - p.size;
+        if next.size - toFill < nodeCapacity/2 {
+          toFill = next.size;
+          result = true;
+        }
+
+        for i in 0..#toFill {
           p.data[p.size] = next.data[i];
           p.size += 1;
         }
-        p.next = next.next;
 
-        if next == _tail then _tail = p;
-
-        next.next = nil;
-        delete next;
-
-        result = true;
-      }
-      else {
-        // Not possible to merge
-        // So p.size + p.next.size > nodeCapacity
-        if p.size < nodeCapacity/2 {
-          // Fill p to half
-          var toFill = nodeCapacity/2 - p.size;
-          for i in 0..#toFill {
-            p.data[p.size] = next.data[i];
-            p.size += 1;
+        // Shift or delete the next node
+        next.size -= toFill;
+        if next.size == 0 {
+          p.next = next.next;
+          if _tail == next {
+            _tail = p;
           }
-
-          // Shift the next node
-          next.size -= toFill;
+          delete next;
+        }
+        else {
           for i in 0..#next.size {
             next.data[i] = next.data[i + toFill];
           }
         }
       }
+
       return result;
     }
 
