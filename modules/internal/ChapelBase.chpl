@@ -1264,17 +1264,18 @@ module ChapelBase {
     }
   }
 
-  pragma "task complete impl fn"
-  extern proc chpl_comm_task_end(): void;
+  extern proc chpl_comm_unordered_consist_fence(): void;
 
-  pragma "task complete impl fn"
   proc chpl_after_forall_fence() {
-    chpl_comm_task_end(); // TODO: change to chpl_comm_unordered_task_fence()
+    chpl_comm_unordered_consist_fence();
   }
 
   // This function is called once by each newly initiated task.  No on
   // statement is needed because the call to sub() will do a remote
   // fork (on) if needed.
+  pragma "task complete impl fn"
+  extern proc chpl_comm_task_end(): void;
+
   pragma "dont disable remote value forwarding"
   pragma "task complete impl fn"
   pragma "down end count fn"
