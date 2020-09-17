@@ -29,7 +29,7 @@ use IO;
   /* Range */
   {
     var v = Vector(0..<10);
-    assertEqual(v.domain, Dom, "Vector(1..10)");
+    assertEqual(v.domain, Dom, "Vector(0..<10)");
   }
   {
     // 0-based
@@ -473,15 +473,15 @@ use IO;
 
   // Now let's try with offsets
 
-  ref rM = M.reindex(1..3, 1..3);
-  ref rv = v.reindex(1..3);
-  ref rvMat = vMat.reindex(1..3, 1..3);
-  ref rM1 = M1.reindex(1..3, 1..4);
-  ref rM2 = M2.reindex(1..9 by 4, 1..11 by 2);
-  ref rM3 = M3.reindex(1..21 by 5, 1..9 by 4);
-  ref rv11 = v11.reindex(1..3);
-  ref rv12 = v12.reindex(1..2);
-  ref rv13 = v13.reindex(1..1);
+  ref rM = M.reindex(0..<3, 0..<3);
+  ref rv = v.reindex(0..<3);
+  ref rvMat = vMat.reindex(0..<3, 0..<3);
+  ref rM1 = M1.reindex(0..<3, 0..<4);
+  ref rM2 = M2.reindex(0..<9 by 4, 0..<11 by 2);
+  ref rM3 = M3.reindex(0..<21 by 5, 0..<9 by 4);
+  ref rv11 = v11.reindex(0..<3);
+  ref rv12 = v12.reindex(0..<2);
+  ref rv13 = v13.reindex(0..<1);
 
   assertEqual(rv,   diag(rM),       "diag(M)");
   assertEqual(rvMat,diag(rv),       "diag(v)");
@@ -624,10 +624,10 @@ use IO;
 {
   use LinearAlgebra.Sparse;
 
-  const parentDom = {1..3, 1..3},
-        parentDom2 = {1..4, 1..6},
-        tParentDom = {1..3, 1..5},
-        tParentDomT = {1..5, 1..3};
+  const parentDom = {0..<3, 0..<3},
+        parentDom2 = {0..<4, 0..<6},
+        tParentDom = {0..<3, 0..<5},
+        tParentDomT = {0..<5, 0..<3};
 
   var   Dom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false),
         Dom2: sparse subdomain(parentDom2) dmapped CS(sortedIndices=false),
@@ -637,9 +637,9 @@ use IO;
 
 
   // Identity sparse domain
-  IDom += [(1,1), (2,2), (3,3)];
-  tDom += [(1,1), (2,1), (3,1), (3,4), (3,5)];
-  tDomT += [(1,1), (1,2), (1,3), (4,3), (5,3)];
+  IDom += [(0,0), (1,1), (2,2)];
+  tDom += [(0,0), (1,0), (2,0), (2,3), (2,4)];
+  tDomT += [(0,0), (0,1), (0,2), (3,2), (4,2)];
 
   /* Rows */
   {
@@ -655,14 +655,14 @@ use IO;
 
   /* Range */
   {
-    var D = CSRDomain(1..3);
+    var D = CSRDomain(0..<3);
     assertEqual(D, Dom, "CSRDomain(0..#3)");
   }
 
   /* Ranges */
   {
-    var D = CSRDomain(1..4, 1..6);
-    assertEqual(D, Dom2, "CSRDomain(1..4, 1..6)");
+    var D = CSRDomain(0..<4, 0..<6);
+    assertEqual(D, Dom2, "CSRDomain(0..<4, 0..<6)");
   }
 
   /* Domain - CSR */
@@ -787,16 +787,16 @@ use IO;
   /* dot - matrix-vector (identity) */
   {
     var Asps: [IDom] real = 1;
-    var v: [1..3] real = 2;
-    var Av: [1..3] real = 2;
+    var v: [0..<3] real = 2;
+    var Av: [0..<3] real = 2;
     assertEqual(dot(Asps, v), Av, 'Asps.dot(v)');
   }
 
   /* dot - vector-matrix (identity) */
   {
     var Asps: [IDom] real = 1;
-    var v: [1..3] real = 2;
-    var Av: [1..3] real = 2;
+    var v: [0..<3] real = 2;
+    var Av: [0..<3] real = 2;
     assertEqual(dot(v, Asps), Av, 'v.dot(Asps)');
   }
 
@@ -901,24 +901,24 @@ use IO;
   {
     // Real domains
     var D = CSRDomain(3,3);
-    for ii in 1..#3 do D += (ii,ii);
+    for ii in 0..#3 do D += (ii,ii);
 
     var A = CSRMatrix(D, real);
-    for ii in 1..#3 do A[ii,ii] = ii;
+    for ii in 0..#3 do A[ii,ii] = ii;
     var B = matPow(A, 3);
-    for ii in 1..#3 do assertEqual(B[ii,ii],(ii**3),
+    for ii in 0..#3 do assertEqual(B[ii,ii],(ii**3),
                                    "Error in matPow with sparse matrices : real");
   }
 
   {
     // Int domains
     var D = CSRDomain(3,3);
-    for ii in 1..#3 do D += (ii,ii);
+    for ii in 0..#3 do D += (ii,ii);
 
     var A = CSRMatrix(D, int);
-    for ii in 1..#3 do A[ii,ii] = ii;
+    for ii in 0..#3 do A[ii,ii] = ii;
     var B = matPow(A, 3);
-    for ii in 1..#3 do assertEqual(B[ii,ii],ii**3,
+    for ii in 0..#3 do assertEqual(B[ii,ii],ii**3,
                                    "Error in matPow with sparse matrices : int");
   }
 
@@ -944,7 +944,7 @@ use IO;
   // Matrix Properties
   {
     // Create dense, COO, and CSR domains
-    var domDense: domain(2) = {1..3, 1..3},
+    var domDense: domain(2) = {0..<3, 0..<3},
         domCOO: sparse subdomain(domDense),
         domCSR: sparse subdomain(domDense) dmapped CS();
 

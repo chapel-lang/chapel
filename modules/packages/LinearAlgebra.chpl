@@ -655,8 +655,8 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 }
 
 pragma "no doc"
-/* 
-   Returns ``true`` if the domain is distributed 
+/*
+   Returns ``true`` if the domain is distributed
 
    This is currently public only for unit testing purposes.
 */
@@ -785,16 +785,16 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   var C: [Adom.dim(0), Bdom.dim(1)] eltType;
 
   if hasNonStridedIndices(Adom) {
-    if hasNonStridedIndices(Bdom) then 
+    if hasNonStridedIndices(Bdom) then
       _matmatMultHelper(A, B, C);
     else
       _matmatMultHelper(A,
                         B.reindex(0..#Bdom.shape(0), 0..#Bdom.shape(1)),
                         C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
   } else {
-    if hasNonStridedIndices(Bdom) then 
-      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)), 
-                        B, 
+    if hasNonStridedIndices(Bdom) then
+      _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)),
+                        B,
                         C.reindex(0..#Adom.shape(0), 0..#Bdom.shape(1)));
     else
       _matmatMultHelper(A.reindex(0..#Adom.shape(0), 0..#Adom.shape(1)),
@@ -808,9 +808,9 @@ pragma "no doc"
 /* Helper for Generic matrix-matrix multiplication */
 proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
                        ref BMat : [?Bdom] eltType,
-                       ref CMat : [] eltType) 
+                       ref CMat : [] eltType)
 {
-  // TODO - Add logic to calculate blockSize 
+  // TODO - Add logic to calculate blockSize
   // based on eltType and L1 cache size
   const blockSize = 32;
   const bVecRange = 0..#blockSize;
@@ -861,7 +861,7 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
 pragma "no doc"
 private inline proc hasNonStridedIndices(Adom : domain(2)) {
   return (if Adom.stridable
-          then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1 
+          then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1
           else true);
 }
 
@@ -993,10 +993,10 @@ private proc _diag_vec(A:[?Adom] ?eltType) {
   const diagSize = min(m, n);
 
   var diagonal : [0..#diagSize] eltType;
-  forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize, 
-                                 Adom.dim(1)#diagSize, 
+  forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize,
+                                 Adom.dim(1)#diagSize,
                                  0..) do
-    diagonal[diagInd] = A[i,j]; 
+    diagonal[diagInd] = A[i,j];
 
   return diagonal;
 }
@@ -1012,7 +1012,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
     var diagonal = Vector(0..#length, eltType);
     const offset = Adom.dim(1).stride * k;
 
-    forall (i, j, diagInd) in zip(Adom.dim(0)#length, 
+    forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
                                   0..) do
       diagonal[diagInd] = A[i, j+offset];
@@ -2206,14 +2206,14 @@ module Sparse {
    */
   proc CSRDomain(rows) where isIntegral(rows) {
     if rows <= 0 then halt("Matrix dimensions must be > 0");
-    return CSRDomain(1..rows, 1..rows);
+    return CSRDomain(0..<rows, 0..<rows);
   }
 
 
   /* Return an empty CSR domain  over parent domain: ``{1..rows, 1..cols}``*/
   proc CSRDomain(rows, cols) where isIntegral(rows) && isIntegral(cols) {
     if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
-    return CSRDomain(1..rows, 1..cols);
+    return CSRDomain(0..<rows, 0..<cols);
   }
 
 
@@ -2484,19 +2484,19 @@ module Sparse {
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
     type idxType = ADom.idxType;
-    var mask: [1..N] idxType;
-    indPtr[1] = 1;
+    var mask: [0..<N] idxType;
+    indPtr[1] = 0;
     var nnz = 1: idxType;
 
     // Rows of C
-    for i in 1..M {
+    for i in 0..<M {
       var row_nnz = 0;
-      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      const Arange = A.indPtr[i]..A.indPtr[i+1];
       // Row pointers of A
       for jj in Arange {
         // Column index of A
         const j = A.indices[jj];
-        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        const Brange = B.indPtr[j]..B.indPtr[j+1];
         // Row pointers of B
         for kk in Brange {
           // Column index of B
@@ -2527,26 +2527,26 @@ module Sparse {
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
 
-    const cols = {1..N};
+    const cols = {0..<N};
 
     var next: [cols] idxType = -1,
         sums: [cols] eltType;
 
     var nnz = 1;
 
-    for i in 1..M {
+    for i in 0..<M {
       var head = 0:idxType,
           length = 0:idxType;
 
       // Maps row index (i) -> nnz index of A
-      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
+      const Arange = A.indPtr[i]..A.indPtr[i+1];
       for jj in Arange {
         // Non-zero column index of A for row i
         const j = A.indices[jj];
         const v = A.data[jj];
 
         // Maps row index (j) -> nnz index of B
-        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
+        const Brange = B.indPtr[j]..B.indPtr[j+1];
         for kk in Brange {
           // Non-zero column index of B for row j
           const k = B.indices[kk];
