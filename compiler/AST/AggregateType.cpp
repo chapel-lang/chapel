@@ -2414,42 +2414,49 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
         fn->insertFormalAtTail(arg);
 
-	if (strcmp(name, "xxx") == 0) {
-	if (defPoint->exprType) {
-	  VarSymbol* call_tmp = newTemp("call_tmp");
-	  call_tmp->addFlag(FLAG_MAYBE_PARAM);
-	  call_tmp->addFlag(FLAG_MAYBE_TYPE);
-	  fn->insertAtTail(new DefExpr(call_tmp));
-	  fn->insertAtTail(new CallExpr(PRIM_MOVE, call_tmp, defPoint->exprType->copy()));
-					  
-	  VarSymbol* tmp = newTemp();
-	  fn->insertAtTail(new DefExpr(tmp));
-	  fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg, call_tmp));
-	  
-	  fn->insertAtTail(new CallExpr("=",
-					new CallExpr(".",
-						     fn->_this,
-						     new_CStringSymbol(name)),
-					tmp));
-	} else {
-	  VarSymbol* tmp = newTemp();
-	  fn->insertAtTail(new DefExpr(tmp));
-	  fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg));
-	  
-	  fn->insertAtTail(new CallExpr("=",
-					new CallExpr(".",
-						     fn->_this,
-						     new_CStringSymbol(name)),
-					tmp));
-	  
-	}
-	} else {
-	fn->insertAtTail(new CallExpr("=",
-        			      new CallExpr(".",
-						   fn->_this,
-						   new_CStringSymbol(name)),
-				      arg));
-	}
+        /*
+        printf("Processing field %s\n", name);
+        printf("------------------------------------\n");
+        viewFlags(field);
+        printf("\n\n");
+        */
+        if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
+            !field->hasFlag(FLAG_PARAM)) {
+          if (defPoint->exprType) {
+            VarSymbol* call_tmp = newTemp("call_tmp");
+            call_tmp->addFlag(FLAG_MAYBE_PARAM);
+            call_tmp->addFlag(FLAG_MAYBE_TYPE);
+            fn->insertAtTail(new DefExpr(call_tmp));
+            fn->insertAtTail(new CallExpr(PRIM_MOVE, call_tmp, defPoint->exprType->copy()));
+                                          
+            VarSymbol* tmp = newTemp();
+            fn->insertAtTail(new DefExpr(tmp));
+            fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg, call_tmp));
+          
+            fn->insertAtTail(new CallExpr("=",
+                                          new CallExpr(".",
+                                                       fn->_this,
+                                                       new_CStringSymbol(name)),
+                                          tmp));
+          } else {
+            VarSymbol* tmp = newTemp();
+            fn->insertAtTail(new DefExpr(tmp));
+            fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg));
+          
+            fn->insertAtTail(new CallExpr("=",
+                                          new CallExpr(".",
+                                                       fn->_this,
+                                                       new_CStringSymbol(name)),
+                                          tmp));
+          
+          }
+        } else {
+          fn->insertAtTail(new CallExpr("=",
+                                        new CallExpr(".",
+                                                     fn->_this,
+                                                     new_CStringSymbol(name)),
+                                        arg));
+        }
       }
     }
   }
