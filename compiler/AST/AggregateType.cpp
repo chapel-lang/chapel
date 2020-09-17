@@ -2408,23 +2408,55 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
             arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
+            //            arg->typeExpr = new BlockStmt(new CallExpr("_desync", defPoint->exprType->copy()));
           }
         }
 
         fn->insertFormalAtTail(arg);
 
-        fn->insertAtTail(new CallExpr("=",
-                                      new CallExpr(".",
-                                                   fn->_this,
-                                                   new_CStringSymbol(name)),
-                                      arg));
+	if (strcmp(name, "xxx") == 0) {
+	if (defPoint->exprType) {
+	  VarSymbol* call_tmp = newTemp("call_tmp");
+	  call_tmp->addFlag(FLAG_MAYBE_PARAM);
+	  call_tmp->addFlag(FLAG_MAYBE_TYPE);
+	  fn->insertAtTail(new DefExpr(call_tmp));
+	  fn->insertAtTail(new CallExpr(PRIM_MOVE, call_tmp, defPoint->exprType->copy()));
+					  
+	  VarSymbol* tmp = newTemp();
+	  fn->insertAtTail(new DefExpr(tmp));
+	  fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg, call_tmp));
+	  
+	  fn->insertAtTail(new CallExpr("=",
+					new CallExpr(".",
+						     fn->_this,
+						     new_CStringSymbol(name)),
+					tmp));
+	} else {
+	  VarSymbol* tmp = newTemp();
+	  fn->insertAtTail(new DefExpr(tmp));
+	  fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg));
+	  
+	  fn->insertAtTail(new CallExpr("=",
+					new CallExpr(".",
+						     fn->_this,
+						     new_CStringSymbol(name)),
+					tmp));
+	  
+	}
+	} else {
+	fn->insertAtTail(new CallExpr("=",
+        			      new CallExpr(".",
+						   fn->_this,
+						   new_CStringSymbol(name)),
+				      arg));
+	}
       }
     }
   }
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
-  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
+  BlockStmt* exprType = new BlockStmt(new CallExpr("_desync", fieldDef->exprType->copy()), BLOCK_TYPE);
 
   // If the type is simple, just set the argument's type directly.
   // Otherwise, give it the block we just created.
