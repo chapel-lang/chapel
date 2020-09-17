@@ -1932,7 +1932,7 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status)
   return 0;
 }
 
-void chpl_comm_impl_unordered_consist_fence(void) {
+void chpl_comm_impl_unordered_task_fence(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
 }
 

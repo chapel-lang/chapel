@@ -502,13 +502,13 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
 //
 // Hook to ensure remote memory consistency after unordered operations.
 //
-#ifndef CHPL_COMM_IMPL_UNORDERED_CONSIST_FENCE
-#define CHPL_COMM_IMPL_UNORDERED_CONSIST_FENCE() \
+#ifndef CHPL_COMM_IMPL_UNORDERED_TASK_FENCE
+#define CHPL_COMM_IMPL_UNORDERED_TASK_FENCE() \
         return
 #endif
 static inline
-void chpl_comm_unordered_consist_fence(void) {
-  CHPL_COMM_IMPL_UNORDERED_CONSIST_FENCE();
+void chpl_comm_unordered_task_fence(void) {
+  CHPL_COMM_IMPL_UNORDERED_TASK_FENCE();
 }
 
 

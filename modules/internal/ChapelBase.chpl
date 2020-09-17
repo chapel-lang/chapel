@@ -1264,13 +1264,13 @@ module ChapelBase {
     }
   }
 
-  extern proc chpl_comm_unordered_consist_fence(): void;
+  extern proc chpl_comm_unordered_task_fence(): void;
 
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
 
   proc chpl_after_forall_fence() {
-    chpl_comm_unordered_consist_fence();
+    chpl_comm_unordered_task_fence();
   }
 
   // This function is called once by each newly initiated task.  No on
