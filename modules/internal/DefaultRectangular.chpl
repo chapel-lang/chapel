@@ -43,6 +43,9 @@ module DefaultRectangular {
   config param disableArrRealloc = false;
   config param reportInPlaceRealloc = false;
 
+  //TODO make this a param,  it is const only for testing
+  config const parallelAssignThreshold = 2*1024*1024;
+
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
   config param earlyShiftData = true;
@@ -1940,10 +1943,41 @@ module DefaultRectangular {
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
-    _simpleTransferHelper(A, B, Adata, Bdata, len);
+
+    type t = A.eltType;
+    const elemsizeInBytes = if isNumericType(t) then numBytes(t)
+                            else c_sizeof(t).safeCast(int);
+    const doParallelAssign = len:int*elemsizeInBytes >= parallelAssignThreshold;
+
+    if doParallelAssign {
+      _simpleParallelTransferHelper(A, B, Adata, Bdata, len);
+    }
+    else{
+      _simpleTransferHelper(A, B, Adata, Bdata, len);
+    }
   }
 
-  private proc _simpleTransferHelper(A, B, Adata, Bdata, len) {
+  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, len) {
+    const numTasks = if __primitive("task_get_serial") then
+                      1 else _computeNumChunks(len);
+    const lenPerTask = len:int/numTasks;
+
+    if debugDefaultDistBulkTransfer && numTasks > 1 then
+      chpl_debug_writeln("\tWill do parallel transfer with ", numTasks, " tasks");
+
+    coforall tid in 0..#numTasks {
+      const myOffset = tid*lenPerTask;
+
+      if tid == numTasks-1 {
+        _simpleTransferHelper(A, B, Adata, Bdata, len:int-myOffset, offset=myOffset);
+      }
+      else {
+        _simpleTransferHelper(A, B, Adata, Bdata, lenPerTask, offset=myOffset);
+      }
+    }
+  }
+
+  private proc _simpleTransferHelper(A, B, Adata, Bdata, len, offset=0) {
     if Adata == Bdata then return;
 
     // NOTE: This does not work with --heterogeneous, but heterogeneous
@@ -1952,15 +1986,18 @@ module DefaultRectangular {
     if Adata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", B.locale.id);
-      __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
+      __primitive("chpl_comm_array_get", Adata[offset], Bdata.locale.id,
+                  Bdata[offset], len);
     } else if Bdata.locale.id==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", A.locale.id);
-      __primitive("chpl_comm_array_put", Bdata[0], Adata.locale.id, Adata[0], len);
+      __primitive("chpl_comm_array_put", Bdata[offset], Adata.locale.id,
+                  Adata[0], len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tremote get() on ", here.id, " from ", B.locale.id);
-      __primitive("chpl_comm_array_get", Adata[0], Bdata.locale.id, Bdata[0], len);
+      __primitive("chpl_comm_array_get", Adata[offset], Bdata.locale.id,
+                  Bdata[0], len);
     }
   }
 
