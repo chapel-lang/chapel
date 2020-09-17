@@ -53,5 +53,5 @@ t.stop();
 
 
 if !correctness {
-  writef("Throughput (MB/s): %.5dr\n", n*eltSize/MB/nIter/t.elapsed());
+  writef("Throughput (MB/s): %.5dr\n", n*eltSize*nIter/MB/t.elapsed());
 }
