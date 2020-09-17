@@ -259,7 +259,7 @@ bool MarkOptimizableForallLastStmts::enterForallStmt(ForallStmt* forall) {
     markLoopsInForall(forall);
   }
 
-  // Either way, add chpl_comm_unordered_consist_fence at the end of
+  // Either way, add chpl_after_forall_fence() at the end of
   // the forall.
   // TODO: move this to a better place in the compiler.
   SET_LINENO(forall);
@@ -358,7 +358,7 @@ void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
 
   // This runs even for fNoOptimizeForallUnordered
   // because even if the optimization is disabled, we want
-  // to mark the ends of foralls with chpl_comm_unordered_consist_fence.
+  // to mark the ends of foralls with chpl_after_forall_fence().
 
   MarkOptimizableForallLastStmts mark;
   mark.lifetimeInfo = lifetimeInfo;
