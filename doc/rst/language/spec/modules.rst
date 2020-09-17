@@ -454,6 +454,11 @@ they were defined in the scope with the use.  This strategy is called
 `re-exporting`.  More information about re-exporting can be found in the
 relevant section (:ref:`Reexporting`).
 
+.. _Limitation_Clauses:
+
+Except and Only Lists
++++++++++++++++++++++
+
 An optional ``limitation-clause`` may be provided to limit the symbols made
 available by a given use statement. If an ``except`` list is provided, then all
 the visible but unlisted symbols in the module or enumerated type will be made
@@ -530,6 +535,44 @@ mix of these symbols, only the last module or enumerated type can have a
 well - in the first example, if module A’s use of module B contains an
 ``except`` or ``only`` list, that list will also limit which of C’s
 symbols are visible to A.
+
+.. _Using_Enums:
+
+Using Enums
++++++++++++
+
+Aside from modules, only enums can be listed as the last portion of a ``use``
+statement's ``module-or-enum-name``.  Doing so enables its constants to be
+accessible without the enum's name as a prefix (see :ref:`Explicit_Naming` for
+how to access its constants normally).
+
+All of the rules stated above apply when using an enum instead of a module.
+Because enums cannot contain use statements, the transitivity description only
+applies when a module uses a module with a public use of an enum.  For example:
+
+   *Example (use-enum.chpl)*.
+
+   .. code-block:: chapel
+
+      module B {
+        public use bEnum;
+
+        enum bEnum {one, two, three};
+      }
+
+      module A {
+        proc main() {
+          use B;
+          writeln(one);
+        }
+      }
+
+   In this case, one will be visible to A without requiring qualified naming to
+   access it, because of B's use of bEnum.
+
+   .. BLOCK-test-chapeloutput
+
+      one
 
 For more information on enumerated types, please see :ref:`Enumerated_Types`.
 
@@ -729,8 +772,8 @@ Qualified Naming of Module Symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a module’s symbol is visible—via a use or import statement, or lexically
-for nested modules—its public symbols can be referred to via qualified naming
-with the following syntax:
+for nested modules—its public symbols can be accessed via qualified naming with
+the following syntax:
 
 .. code-block:: syntax
 
@@ -746,9 +789,9 @@ based on the name of their module. Using qualified naming in a function
 call restricts the set of candidate functions to those in the specified
 module.
 
-If code refers to symbols that are defined by multiple modules, the
-compiler will issue an error. Qualified naming can be used to
-disambiguate the symbols in this case.
+If code tries to access a symbol that conflicts with one or more other symbols
+defined in other modules, the compiler will issue an error. Qualified naming can
+be used to disambiguate the symbols in this case.
 
    *Example (ambiguity.chpl)*.
 
