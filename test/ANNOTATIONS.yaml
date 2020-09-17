@@ -671,6 +671,8 @@ create-views:
     - Close a leak with creating iterator records with domain shapes (#15512)
   04/29/20:
     - Put param conditionals before others in domain record initialization (#15591)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
 
 cs-resize:
   03/05/19:
@@ -1933,6 +1935,12 @@ compilerAndTestingStats: &compiler-perf-base
   07/27/20:
     - Replace some where-clauses with formals types (#16130)
     - Handle bool tests in the compiler (#16062)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -1961,3 +1969,17 @@ arkouda: &arkouda-base
 
 arkouda-comp:
   <<: *arkouda-base
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+  09/01/20:
+    - Stop inlining chpl__delete (#16314)
+  09/04/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+  09/09/20:
+    - Adjust inout to be implemented with a single argument (#16180)
+  09/10/20:
+    - Stop inlining many string casts (#16355)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
