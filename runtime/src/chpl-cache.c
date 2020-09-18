@@ -2667,9 +2667,10 @@ void cache_get(struct rdcache_s* cache,
 
 // This is intended to match cache_get but
 //  * it will never prefetch
-//  * it doesn't actually GET; just memsets to 0 instead  
+//  * it doesn't actually GET; just memsets to 0 instead.
+// Returns 1 if the data was in the cache.
 static
-void mock_get(struct rdcache_s* cache,
+int mock_get(struct rdcache_s* cache,
               c_nodeid_t node, raddr_t raddr, size_t size,
               cache_seqn_t last_acquire,
               int sequential_readahead_length,
@@ -2693,17 +2694,20 @@ void mock_get(struct rdcache_s* cache,
 #ifdef TIME
   struct timespec start_get1, start_get2, wait1, wait2;
 #endif
+  int all_in_cache;
 
   INFO_PRINT(("%i mock_get addr %p from %i:%p len %i ra_len %i\n",
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
   if (chpl_nodeID == node)
-    return;
+    return 1;
 
   // And don't do anything if it's a zero-length 
   if( size == 0 ) {
-    return;
+    return 1;
   }
+
+  all_in_cache = 1;
 
   // first_page = raddr of start of first needed page
   ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
@@ -2806,7 +2810,8 @@ void mock_get(struct rdcache_s* cache,
                   ra_line, ra_line_end-ra_line);
     }
 
-    // Otherwise -- start a get !
+    // Otherwise -- pretend to start a "get" !
+    all_in_cache = 0;
 
     if( ! page ) {
       // get a page from the free list.
@@ -2866,6 +2871,8 @@ void mock_get(struct rdcache_s* cache,
   printf("After mock_get cache is:\n");
   rdcache_print(cache);
 #endif
+
+  return all_in_cache;
 }
 
 
@@ -3320,9 +3327,15 @@ void chpl_cache_print_stats(void) {
          n_bottom_entries, cache->max_entries);
 }
 
-void chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
+// Returns 1 if the data was already cached
+int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
+  int ret;
+
+  if (!chpl_cache_enabled())
+    chpl_internal_error("chpl_cache_mock_get called without --cache-remote");
+
   cache_lock(cache);
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p to %p\n",
@@ -3332,13 +3345,12 @@ void chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
   chpl_cache_print();
 #endif
 
-  //saturating_increment(&info->get_since_acquire);
-  mock_get(cache, node, (raddr_t)raddr, size,
-           task_local->last_acquire,
-           0, 0, 0, 0);
+  ret = mock_get(cache, node, (raddr_t)raddr, size,
+                 task_local->last_acquire,
+                 0, 0, 0, 0);
 
   cache_unlock(cache);
-  return;
+  return ret;
 }
 
 
