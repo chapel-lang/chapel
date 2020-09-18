@@ -1,0 +1,3 @@
+These tests check data structure manipulations in the --cache-remote
+implementation. When updating --cache-remote, these tests should be run
+with `#define VERIFY 1` in chpl-cache.c.  

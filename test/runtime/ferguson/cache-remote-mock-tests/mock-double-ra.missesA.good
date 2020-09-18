@@ -1,0 +1,13 @@
+streamOneLocales = 512
+streamOneSpacePerLocale = 4294967296
+streamTwoLocales = 1
+streamTwoSpacePerLocale = 1
+streamTwoUpdateRate = 500
+Number of updates = 50000
+streamOneUpdates = 50000
+streamOneMisses = 50000
+streamTwoUpdates = 100
+streamTwoMisses = 2
+
+stream one miss rate = 1.00
+stream two miss rate = 0.02
