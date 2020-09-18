@@ -1,0 +1,71 @@
+**** Start forall ****
+	preventMultiCall.chpl:29
+
+Loop iterand is a call. Will attempt dynamic optimization.
+	preventMultiCall.chpl:29
+
+Loop is suitable for further analysis
+	preventMultiCall.chpl:29
+
+Potential access
+	preventMultiCall.chpl:30
+
+Potential access
+	preventMultiCall.chpl:31
+
+Potential access
+	preventMultiCall.chpl:32
+
+	Marking dynamic candidate
+	preventMultiCall.chpl:30
+
+	Marking dynamic candidate
+	preventMultiCall.chpl:31
+
+	Marking dynamic candidate
+	preventMultiCall.chpl:32
+
+**** End forall ****
+	preventMultiCall.chpl:29
+
+Static check successful. Using localAccess with dynamic check
+	preventMultiCall.chpl:30
+
+Static check successful. Using localAccess with dynamic check
+	preventMultiCall.chpl:31
+
+Static check successful. Using localAccess with dynamic check
+	preventMultiCall.chpl:32
+
+returnDom is called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+103 104 105 106 107 108 109 110 111 112
