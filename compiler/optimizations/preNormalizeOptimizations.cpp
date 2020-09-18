@@ -398,10 +398,15 @@ static void gatherForallInfo(ForallStmt *forall) {
     }
   }
   else if (CallExpr *iterCall = toCallExpr(iterExprs.head)) {
-    // TODO: should we put this call in a temporary to avoid making that call
-    // repeatedly?
-    forall->optInfo.iterCall = iterCall;
-    LOG("Loop iterand is a call. Will attempt dynamic optimization.", iterCall);
+    if(Symbol *iterCallTmp = earlyNormalizeForallIterand(iterCall, forall)) {
+      // was able to early-normalize
+      forall->optInfo.iterCall = iterCall;
+      forall->optInfo.iterCallTmp = iterCallTmp;
+      LOG("Loop iterand is a call. Will attempt dynamic optimization.", iterCall);
+    }
+    else {
+      LOG("Loop iterand is a call. But it cannot be normalized early.", iterCall);
+    }
   }
 
   if (forall->optInfo.iterSym != NULL ||
@@ -522,8 +527,8 @@ static void generateDynamicCheckForAccess(CallExpr *access,
   else if (optInfo.dotDomIterExpr != NULL) {
     currentCheck->insertAtTail(optInfo.dotDomIterExpr->copy());
   }
-  else if (optInfo.iterCall != NULL) {
-    currentCheck->insertAtTail(optInfo.iterCall->copy());
+  else if (optInfo.iterCallTmp != NULL) {
+    currentCheck->insertAtTail(new SymExpr(optInfo.iterCallTmp));
   }
   else {
     INT_FATAL("optInfo didn't have enough information");
@@ -571,8 +576,8 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
     else if (optInfo.dotDomIterExpr != NULL) {
       checkCall->insertAtTail(optInfo.dotDomIterExpr->copy());
     }
-    else if (optInfo.iterCall != NULL) {
-      checkCall->insertAtTail(optInfo.iterCall->copy());
+    else if (optInfo.iterCallTmp != NULL) {
+      checkCall->insertAtTail(new SymExpr(optInfo.iterCallTmp));
     }
     else {
       INT_FATAL("optInfo didn't have enough information");

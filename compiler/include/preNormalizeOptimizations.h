@@ -26,6 +26,7 @@
 
 // interface for normalize
 void doPreNormalizeArrayOptimizations();
+Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);
 
 // interface for resolution
 Expr *preFoldMaybeLocalThis(CallExpr *call);
