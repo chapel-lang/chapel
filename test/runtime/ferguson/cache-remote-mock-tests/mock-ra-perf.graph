@@ -1,0 +1,5 @@
+perfkeys: tiny-microseconds/update, smallA-microseconds/update, smallB-microseconds/update, mediumA-microseconds/update, mediumB-microseconds/update, largeA-microseconds/update, largeB-microseconds/update, massive-microseconds/update
+files: mock-ra-perf.dat, mock-ra-perf.dat, mock-ra-perf.dat, mock-ra-perf.dat, mock-ra-perf.dat, mock-ra-perf.dat, mock-ra-perf.dat
+graphkeys: tiny, smallA, smallB, mediumA, mediumB, largeA, largeB, massive
+ylabel: Data Structure Overhead (microseconds)
+graphtitle: cache-remote data structure overhead
