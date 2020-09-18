@@ -279,13 +279,7 @@ prototype module DistributedFFT {
       // Use temp work array to avoid overwriting the Src array
       var myplane : [{0..0, ySrc, zSrc}] T;
 
-      if usePrimitiveComm {
-        forall iy in ySrc {
-          copy(myplane[0, iy, zSrc.first], Src[xSrc.first, iy, zSrc.first], myLineSize);
-        }
-      } else {
-        myplane = Src[{xSrc.first..xSrc.first, ySrc, zSrc}];
-      }
+      myplane = Src[{xSrc.first..xSrc.first, ySrc, zSrc}];
 
       for ix in xSrc {
         // Y-transform
