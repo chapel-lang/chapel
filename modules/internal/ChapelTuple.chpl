@@ -272,14 +272,10 @@ module ChapelTuple {
                                             minIndicesPerTask,
                                             myRange);
 
-    if numChunks == 1 {
-      yield myRange;
-    } else {
-      coforall chunk in 0..#numChunks {
-        // _computeBlock assumes 0-based ranges
-        const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
-        yield (lo..hi,);
-      }
+    coforall chunk in 0..#numChunks {
+      // _computeBlock assumes 0-based ranges
+      const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
+      yield (lo..hi,);
     }
   }
 
