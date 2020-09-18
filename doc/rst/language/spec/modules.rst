@@ -292,17 +292,47 @@ it contains are accessible via the use statement (:ref:`Using_Modules`), import
 statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. _Using_And_Importing:
+
+Using and Importing
++++++++++++++++++++
+
+The ``use`` statement and the ``import`` statement are the two primary ways to
+access a module's symbols from outside of the module.  For top-level modules, a
+``use`` or ``import`` statement is required before referring to the module’s
+name or the symbols it contains within a given lexical scope.
+
+The names that are made visible by a ``use`` or ``import`` statement are
+inserted in to a new scope that immediately encloses the scope within which the
+statement appears.  This implies that the position of the ``use`` or ``import``
+statement within a scope has no effect on its behavior.  If a scope includes
+multiple ``use`` statements, multiple ``import`` statements, or a combination of
+``import`` and ``use`` statements, then the newly-visible names are inserted
+into a common enclosing scope.
+
+.. _Use_And_Import_Conflicts:
+
+Conflicts
++++++++++
+
+The scope inserted by the presence of ``use`` and ``import`` statements follows
+the same rules about conflicting symbols as symbols defined in the same scope
+(see :ref:`Variable_Conflicts`).  Thus an error will be signaled if multiple
+conflicting public module-level symbols would be inserted into this enclosing
+scope with the same name, and that name is accessed by other statements in the
+same scope as the ``use`` or ``import``.  Remember that this does not apply to
+functions unless they are also indistinguishable in other ways, see
+:ref:`Function_Overloading`.
+
+Symbols defined by <TODO link for transitive uses/reexporting?>
+
 .. _Using_Modules:
 
 Using Modules
 ~~~~~~~~~~~~~
 
-The ``use`` statement provides one of the two primary ways to access a module’s
-symbols from outside of the module, the other being the ``import`` statement.
-By default, use statements make both the module’s name and its public symbols
-available for access within a given scope. For top-level modules, a ``use``
-or ``import`` statement is required before referring to the module’s name or the
-symbols it contains within a given lexical scope.
+By default, use statements make both a module’s name and its public symbols
+available for access within a given scope.
 
 The syntax of the use statement is given by:
 
@@ -409,18 +439,9 @@ the following:
  * ``this`` to indicate the requested module is a submodule of the
    current module
 
-The names that are made visible by a ``use`` statement are inserted in to a new
-scope that immediately encloses the scope within which the statement
-appears. This implies that the position of the ``use`` statement within a scope
-has no effect on its behavior. If a scope includes multiple ``use`` statements
-or a combination of ``use`` and ``import`` statements, then the newly-visible
-names are inserted in to a common enclosing scope.
-
-An error is signaled if multiple conflicting enumeration constants or public
-module-level symbols would be inserted into this enclosing scope with the same
-name, and that name is accessed by other statements in the same scope as the
-use.  Remember that this does not apply to functions unless they are also
-indistinguishable in other ways, see :ref:`Function_Overloading`.
+An error is signaled if symbols brought in by this ``use`` are accessed and
+would conflict with other symbols, see :ref:`Use_And_Import_Conflicts` for more
+information.
 
 A module or enum being used may optionally be given a new name using the ``as``
 keyword.  This new name will be usable from the scope of the use in place of the
@@ -708,18 +729,9 @@ statement must begin with one of the following:
 A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
 
-The names that are made visible by an ``import`` statement are inserted in to a
-new scope that immediately encloses the scope within which the statement
-appears.  This implies that the position of the ``import`` statement within a
-scope has no effect on its behavior.  If a scope includes multiple ``import``
-statements, or a combination of ``import`` and ``use`` statements, then the
-newly-visible names are inserted into a common enclosing scope.
-
-An error is signaled if multiple public module-level symbols would be inserted
-into this enclosing scope with the same name, and that name is mentioned by
-other statements in the same scope as the import.  Remember that this does not
-apply to functions unless they are also indistinguishable in other ways, see
-:ref:`Function_Overloading`.
+An error is signaled if symbols brought in by this ``import`` are accessed and
+would conflict with other symbols, see :ref:`Use_And_Import_Conflicts` for more
+information.
 
 A module or a public module-level symbol being imported may optionally be given
 a new name using the ``as`` keyword.  This new name will be usable from the
