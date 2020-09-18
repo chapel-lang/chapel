@@ -1956,8 +1956,8 @@ module DefaultRectangular {
   }
 
   private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, len) {
-    const numTasks = if __primitive("task_get_serial") then
-                      1 else _computeNumChunks(len);
+    const numTasks = if __primitive("task_get_serial") then 1
+                        else _computeNumChunks(len);
     const lenPerTask = len:int/numTasks;
 
     if debugDefaultDistBulkTransfer && numTasks > 1 then
@@ -1965,13 +1965,9 @@ module DefaultRectangular {
 
     coforall tid in 0..#numTasks {
       const myOffset = tid*lenPerTask;
+      const myLen = if tid == numTasks-1 then len:int-myOffset else lenPerTask;
 
-      if tid == numTasks-1 {
-        _simpleTransferHelper(A, B, Adata, Bdata, len:int-myOffset, offset=myOffset);
-      }
-      else {
-        _simpleTransferHelper(A, B, Adata, Bdata, lenPerTask, offset=myOffset);
-      }
+      _simpleTransferHelper(A, B, Adata, Bdata, myLen, myOffset);
     }
   }
 
