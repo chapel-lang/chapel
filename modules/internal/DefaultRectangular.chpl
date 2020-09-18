@@ -42,9 +42,7 @@ module DefaultRectangular {
   config param debugDataParNuma = false;
   config param disableArrRealloc = false;
   config param reportInPlaceRealloc = false;
-
-  //TODO make this a param,  it is const only for testing
-  config const parallelAssignThreshold = 2*1024*1024;
+  config param parallelAssignThreshold = 2*1024*1024;
 
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
