@@ -1592,11 +1592,40 @@ module Random {
           var cursor = randlc_skipto(resultType, seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
+
         } else {
-          myStart -= innerRange.low.safeCast(int(64));
-          for i in innerRange {
-            var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
-            yield randlc(resultType, cursor);
+          var stride = innerRange.stride;
+          if stride == 1 {
+            var cursor = randlc_skipto(resultType, seed, myStart);
+            for i in innerRange do
+              yield randlc(resultType, cursor);
+
+          } else if stride > 1 {
+
+            var cursor = randlc_skipto(resultType, seed, myStart);
+            // Figure out how to advance by stride-1 all at once
+            var s = stride-1;
+            var strides: cursor.size*pcg_64_stride;
+            for param i in 0..<cursor.size {
+              param inc = pcg_getvalid_inc(i+1);
+              strides[i] = cursor[i].compute_stride(s, inc);
+            }
+            for i in innerRange {
+              // generate the value (stepping once)
+              yield randlc(resultType, cursor);
+              // step each rng by stride-1 steps
+              // TODO: could just do one combined step.
+              for param i in 0..<cursor.size {
+                cursor[i].stride_step(strides[i]);
+              }
+            }
+          } else {
+
+            myStart -= innerRange.low.safeCast(int(64));
+            for i in innerRange {
+              var cursor = randlc_skipto(resultType, seed, myStart + i.safeCast(int(64)) * multiplier);
+              yield randlc(resultType, cursor);
+            }
           }
         }
       }
@@ -1688,7 +1717,6 @@ module Random {
       state = state * PCG_DEFAULT_MULTIPLIER_16 + inc;
     }
 
-
     private inline
     proc pcg_setseq_32_step_r(ref state:uint(32), inc:uint(32))
     {
@@ -1700,6 +1728,38 @@ module Random {
     {
       state = state * PCG_DEFAULT_MULTIPLIER_64 + inc;
     }
+
+
+    // these versions accept a multiplier and inc
+    // (which can be useful for strided random number generation)
+    private inline
+    proc pcg_setseq_8_step_m_r(ref state:uint(8),
+                               mul:uint(8), inc:uint(8))
+    {
+      state = state * mul + inc;
+    }
+
+    private inline
+    proc pcg_setseq_16_step_m_r(ref state:uint(16),
+                                mul:uint(16), inc:uint(16))
+    {
+      state = state * mul + inc;
+    }
+
+    private inline
+    proc pcg_setseq_32_step_m_r(ref state:uint(32),
+                                mul:uint(32), inc:uint(32))
+    {
+      state = state * mul + inc;
+    }
+
+    private inline
+    proc pcg_setseq_64_step_m_r(ref state:uint(64),
+                                mul:uint(64), inc:uint(64))
+    {
+      state = state * mul + inc;
+    }
+
 
     private inline
     proc pcg_rotr_32(value:uint(32), rot:uint(32)):uint(32)
@@ -1750,6 +1810,39 @@ module Random {
       const word:uint(64) = ((state >> ((state >> 59) + 5)) ^ state)
                               * 12605985483714917081;
       return (word >> 43) ^ word;
+    }
+
+    /* A record to help with advancing the RNG by a stride */
+    record pcg_64_stride {
+      /* the multiplier */
+      var mul:uint(64);
+      /* the increment */
+      var inc:uint(64);
+    }
+
+    /* compute a pcg_64_stride for the supplied stride, mul, and inc. */
+    proc compute_stride_64(stride:int,
+                           mul:uint(64),
+                           inc:uint(64)): pcg_64_stride
+    {
+      var cur_mul: uint(64);
+      var cur_inc: uint(64);
+
+      cur_mul = mul;
+      cur_inc = inc;
+
+      for i in 1..<stride {
+        // The LCG function is   f(x) = mx + b
+        //   where m is the multiplier and b is the increment.
+        // Applying it twice: f(f(x)) = m(mx + b) + b
+        //                            = mmx + mb + b
+        //         thrice: f(f(f(x))) = m(m(mx + b) + b) + b
+        //                            = mmmx + mmb + mb + b
+        cur_inc += cur_mul*inc;
+        cur_mul *= mul;
+      }
+
+      return new pcg_64_stride(cur_mul, cur_inc);
     }
 
 
@@ -1803,6 +1896,25 @@ module Random {
         pcg_setseq_64_step_r(state, inc);
         return pcg_output_xsh_rr_64_32(oldstate);
       }
+
+      /* Returns a stride that can be used to advance the RNG
+         a specific number of steps. */
+      proc compute_stride(stride:int, inc:uint(64)): pcg_64_stride
+      {
+        return compute_stride_64(stride, PCG_DEFAULT_MULTIPLIER_64, inc);
+      }
+
+      /*
+         Step the RNG a specific number of times using
+         a precomputed stride.
+
+         :arg stride: a stride computed from compute_stride
+       */
+      inline proc stride_step(stride: pcg_64_stride):void
+      {
+        pcg_setseq_64_step_m_r(state, stride.mul, stride.inc);
+      }
+
 
       /* Generate a random number in [0,bound).
 
