@@ -1024,7 +1024,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   checkWhenOverTupleExpand(pfs);
 
   FnSymbol* origTarget = NULL;
-  CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);
+  CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);//x
 
   // So we know where iterCall is.
   INT_ASSERT(iterCall         == pfs->firstIteratedExpr());
@@ -1033,7 +1033,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   bool useOriginal = acceptUnmodifiedIterCall(pfs, iterCall);
   ParIterFlavor flavor =
     useOriginal ? PIF_SERIAL
-                : findParIter(pfs, iterCall, origSE, origTarget);
+                : findParIter(pfs, iterCall, origSE, origTarget);  // x
 
   resolveCallAndCallee(iterCall, false);
 

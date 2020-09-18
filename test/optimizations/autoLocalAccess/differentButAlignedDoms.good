@@ -1,5 +1,3 @@
-HERE
-HERE
 **** Start forall ****
 	differentButAlignedDoms.chpl:21
 
@@ -33,7 +31,6 @@ Loop is suitable for further analysis
 Potential access
 	differentButAlignedDoms.chpl:32
 
-HERE
 	Marking dynamic candidate
 	differentButAlignedDoms.chpl:32
 
@@ -145,7 +142,6 @@ Potential access
 **** End forall ****
 	differentButAlignedDoms.chpl:64
 
-HERE
 Static check successful. Using localAccess with dynamic check
 	differentButAlignedDoms.chpl:22
 
