@@ -21,7 +21,10 @@
 module ChapelAutoLocalAccess {
   use ChapelLocale;
 
-  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain) param {
+  // note that the compiler can pass an iterator to `loopDomain` argument. Make
+  // sure that we don't do anything with iterators as we cannot optimize such
+  // forall's and we don't want to mess up the iterator
+  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain) param {
     if chpl__isArrayView(accessBase) then return false;
 
     if accessBase.domain.type == loopDomain.type {
