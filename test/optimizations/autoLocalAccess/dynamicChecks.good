@@ -53,6 +53,9 @@ Potential access
 	dynamicChecks.chpl:30
 
 	Marking dynamic candidate
+	dynamicChecks.chpl:31
+
+	Marking dynamic candidate
 	dynamicChecks.chpl:32
 
 **** End forall ****
@@ -66,6 +69,9 @@ Static check successful. Using localAccess
 
 Static check successful. Using localAccess with dynamic check
 	dynamicChecks.chpl:30
+
+Static check failed. Reverting optimization
+	dynamicChecks.chpl:31
 
 Static check failed. Reverting optimization
 	dynamicChecks.chpl:32
