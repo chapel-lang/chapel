@@ -1,0 +1,62 @@
+**** Start forall ****
+	preventMultiCallIter.chpl:46
+
+Loop iterand is a call. Will attempt dynamic optimization.
+	preventMultiCallIter.chpl:46
+
+Loop is suitable for further analysis
+	preventMultiCallIter.chpl:46
+
+Potential access
+	preventMultiCallIter.chpl:47
+
+Potential access
+	preventMultiCallIter.chpl:48
+
+Potential access
+	preventMultiCallIter.chpl:49
+
+	Marking dynamic candidate
+	preventMultiCallIter.chpl:47
+
+	Marking dynamic candidate
+	preventMultiCallIter.chpl:48
+
+	Marking dynamic candidate
+	preventMultiCallIter.chpl:49
+
+**** End forall ****
+	preventMultiCallIter.chpl:46
+
+standalone iterator invoked
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+3 3 3 3 3 3 3 3 3 3
