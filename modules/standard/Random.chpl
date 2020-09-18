@@ -158,22 +158,23 @@ module Random {
   }
 
 
-  /* Produce a random permutation, storing it in a 1-D array.
-     The resulting array will include each value from low..high
-     exactly once, where low and high refer to the array's domain.
+  /* 
+    Randomly permute the elements of the source domain.
+    The resulting permutation will be stored in the destination array.
 
-     :arg arr: a 1-D non-strided array
+     :arg src_domain: a 1-D source domain to permute elements from
+     :arg arr: a 1-D destination array where the result of the permutation is stored
      :arg seed: the seed to use when creating the permutation. Defaults to
       `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc permutation(src_domain:domain, arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) throws {
     var randNums = createRandomStream(seed=seed,
                                       eltType=arr.eltType,
                                       parSafe=false,
                                       algorithm=algorithm);
-    randNums.permutation(arr);
+    randNums.permutation(src_domain, arr);
   }
 
   pragma "no doc"
@@ -1166,7 +1167,6 @@ module Random {
 
         const low = D.alignedLow,
               stride = abs(D.stride);
-
         _lock();
 
         // Fisher-Yates shuffle
@@ -1187,7 +1187,6 @@ module Random {
           // Alignment offsets
           k += low;
           j += low;
-
           arr[k] <=> arr[j];
         }
 
@@ -1200,31 +1199,33 @@ module Random {
          The resulting array will include each value from low..high
          exactly once, where low and high refer to the array's domain.
          */
-      proc permutation(arr: [] eltType) {
-        var low = arr.domain.dim(0).low;
-        var high = arr.domain.dim(0).high;
+      proc permutation(src_domain: domain, arr:[]) throws{
+        //Destination Array should be of numeric type
+        if arr.domain.rank!=1 then
+          compilerError("Permutation requires destination array to be 1-D");
+        if src_domain.rank!=1 then
+          compilerError("Permutation requires source domain to be of rank 1");
+        if(arr.domain.size< src_domain.size) then
+          throw new IllegalArgumentError("Destination array's domain size is smaller than source domain size");
+        
+        //Clear contents of destination array
+        arr = 0;
 
-        if arr.domain.rank != 1 then
-          compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(0).stridable then
-        //  compilerError("Permutation requires non-stridable 1-D array");
+        // Create a new array with elements from source domain, as shuffle takes an array as argument
+        var domainArr: [src_domain] int;
+        forall i in src_domain do
+          domainArr[i] = i;
+        
+        shuffle(domainArr);
 
-        _lock();
+        const lo = arr.domain.low;
+        const stride = abs(arr.domain.stride);
+        const hi = lo+(src_domain.size*stride);
 
-        for i in low..high {
-          var j = randlc_bounded(arr.domain.idxType,
-                                 PCGRandomStreamPrivate_rngs,
-                                 seed, PCGRandomStreamPrivate_count,
-                                 low, i);
-          arr[i] = arr[j];
-          arr[j] = i;
-        }
-
-        PCGRandomStreamPrivate_count += high-low;
-
-        _unlock();
+        //Copy permuted elements into the destination array
+        forall (i,j) in zip(src_domain,lo..hi by stride) do
+          arr[j] = domainArr[i];
       }
-
 
       pragma "no doc"
       proc fillRandom(arr: []) {
