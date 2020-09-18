@@ -1173,9 +1173,10 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
     // our entry was pointed to by another entry
     if (prev_table &&
         prev_list->base.raddr == prev_table->raddr &&
-        prev_list->base.node == prev_table->node) {
+        prev_list->base.node == prev_table->node &&
+        next == NULL) {
       // e.g., when removing X
-      //      table -> entry -> X
+      //      table -> entry -> X (at end of list)
       // ->   table -> entry  and clear table entry's list bit
       prev_table->offset &= clear_offset_stolen_bits(prev_table->offset);
     }
