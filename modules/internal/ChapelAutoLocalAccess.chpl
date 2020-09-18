@@ -31,15 +31,11 @@ module ChapelAutoLocalAccess {
     if !defaultRectangularSupportsAutoLocalAccess {
       if !accessBase.domain._value.type.isDefaultRectangular() && 
         loopDomain._value.type.isDefaultRectangular() {
+          // there might be something we can do dynamically
           return true;
         }
     }
 
-proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
-  if chpl__staticAutoLocalCheck(accessBase, loopDomain) then
-    return accessBase.domain == loopDomain &&
-           accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist);
-  else
     return false;
   }
 
@@ -62,7 +58,9 @@ proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
   proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
     if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
       // if they're the same domain...
-      if accessBase.domain == loopDomain then return true;
+      if accessBase.domain == loopDomain &&
+         accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then 
+        return true;
 
       // or at least if they were distributed the same way
       if accessBase.domain.dist == loopDomain.dist then return true;
@@ -96,5 +94,4 @@ proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
   proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain) {
     return false;
   }
-
 }
