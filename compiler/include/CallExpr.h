@@ -121,6 +121,9 @@ public:
 
   static void     registerPrimitivesForCodegen();
 
+  bool            isUnresolvedDomainExpr();
+  bool            isUnresolvedArrayExpr();
+
 private:
   GenRet          codegenPrimitive();
   GenRet          codegenPrimMove();

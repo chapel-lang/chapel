@@ -2308,6 +2308,30 @@ void AggregateType::buildDefaultInitializer() {
   }
 }
 
+
+// This is a helper function that tells whether we should use an old
+// style '=' assignment to set up the field in the initializer or
+// whether we should use the new-style 'PRIM_INIT_VAR' approach.
+//
+static bool fieldNeedsSimpleInit(VarSymbol* field) {
+  // type and param fields need the old-style initializer
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
+      field->hasFlag(FLAG_PARAM)) {
+    return true;
+  }
+  // so do domains and arrays to avoid breaking their linkage
+  if (DefExpr* defPoint = field->defPoint) {
+    if (CallExpr* ce = toCallExpr(defPoint->exprType)) {
+      if (ce->isUnresolvedDomainExpr() ||
+	  ce->isUnresolvedArrayExpr()) {
+	return true;
+      }
+    }
+  }
+  return false;
+}
+
+
 void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
                                SymbolMap&             fieldArgMap) {
@@ -2420,8 +2444,22 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         viewFlags(field);
         printf("\n\n");
         */
-        if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
-            !field->hasFlag(FLAG_PARAM)) {
+        if (strcmp(name, "AAA") == 0 ||
+            strcmp(name, "DDD") == 0 ||
+            strcmp(name, "xxx") == 0) {
+          printf("Found one of our friends\n");
+          if (CallExpr* ce = toCallExpr(defPoint->exprType)) {
+            ce->isUnresolvedDomainExpr();
+          }
+        }
+
+        if (fieldNeedsSimpleInit(field)) {
+          fn->insertAtTail(new CallExpr("=",
+                                        new CallExpr(".",
+                                                     fn->_this,
+                                                     new_CStringSymbol(name)),
+                                        arg));
+        } else {
           if (defPoint->exprType) {
             VarSymbol* call_tmp = newTemp("call_tmp");
             call_tmp->addFlag(FLAG_MAYBE_PARAM);
@@ -2450,12 +2488,6 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                           tmp));
           
           }
-        } else {
-          fn->insertAtTail(new CallExpr("=",
-                                        new CallExpr(".",
-                                                     fn->_this,
-                                                     new_CStringSymbol(name)),
-                                        arg));
         }
       }
     }
