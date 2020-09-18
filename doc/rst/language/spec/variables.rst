@@ -629,6 +629,17 @@ Parameter constants and expressions cannot be aliased.
       myArr[3] = 73
       myConstRef = 52
 
+.. _Variable_Conflicts:
+
+Variable Conflicts
+------------------
+
+If multiple variables defined in the same scope share a name, then an error will
+occur when the name is used.
+
+An error will not occur if the would-be conflicting symbols are defined within
+different scopes contained by the same outer scope.
+
 .. _Variable_Lifetimes:
 
 Variable Lifetimes
