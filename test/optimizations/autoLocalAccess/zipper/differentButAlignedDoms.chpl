@@ -18,8 +18,8 @@ inline proc _array.localAccess(i: int) ref {
 {
   writeln("Iterand is a different symbol");
   const DInner = D.expand(-1);
-  forall i in DInner {
-    A[i] = i;
+  forall (i, j) in zip(DInner, 100..) {
+    A[i] = j;
   }
 
   writeln(A);
@@ -28,8 +28,8 @@ inline proc _array.localAccess(i: int) ref {
 
 {
   writeln("Iterand is a call");
-  forall i in D.expand(-1) {
-    A[i] = i;
+  forall (i,j) in zip(D.expand(-1), 100..) {
+    A[i] = j;
   }
 
   writeln(A);
@@ -41,19 +41,19 @@ inline proc _array.localAccess(i: int) ref {
 
   coforall l in Locales do on l {
 
-    forall i in D.localSubdomain() {
-      A[i] = i;
+    forall (i,j) in zip(D.localSubdomain(), 100..) {
+      A[i] = j;
     }
 
     const localD = D.localSubdomain();
 
-    forall i in localD {
-      A[i] = i;
+    forall (i,j) in zip(localD, 100..) {
+      A[i] = j;
     }
 
     const innerLocalD = localD.expand(-1);
-    forall i in innerLocalD {
-      A[i] += i;
+    forall (i,j) in zip(innerLocalD, 100..) {
+      A[i] += j;
     }
   }
 
@@ -64,14 +64,14 @@ inline proc _array.localAccess(i: int) ref {
 {
   writeln("Count based domain slices");
 
-  forall i in D#D.size-1 {
-    A[i] = i;
+  forall (i,j) in zip(D#D.size-1, 100..) {
+    A[i] = j;
   }
 
   var DExceptLast = D#D.size-1;
 
-  forall i in DExceptLast {
-    A[i] = i;
+  forall (i,j) in zip(DExceptLast, 100..) {
+    A[i] = j;
   }
 
   writeln(A);
