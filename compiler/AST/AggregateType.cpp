@@ -2314,6 +2314,13 @@ void AggregateType::buildDefaultInitializer() {
 // whether we should use the new-style 'PRIM_INIT_VAR' approach.
 //
 static bool fieldNeedsSimpleInit(VarSymbol* field) {
+  // type and param fields need the old-style initializer
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
+      field->hasFlag(FLAG_PARAM)) {
+    return true;
+  }
+  return false;
+  //  return true;
   static const char* syncvar = astr("_syncvar");
   if (DefExpr* defPoint = field->defPoint) {
     if (CallExpr* ce = toCallExpr(defPoint->exprType)) {
@@ -2327,11 +2334,6 @@ static bool fieldNeedsSimpleInit(VarSymbol* field) {
   }
   return true;
 
-  // type and param fields need the old-style initializer
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-      field->hasFlag(FLAG_PARAM)) {
-    return true;
-  }
   // so do domains and arrays to avoid breaking their linkage
   if (DefExpr* defPoint = field->defPoint) {
     if (CallExpr* ce = toCallExpr(defPoint->exprType)) {

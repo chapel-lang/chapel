@@ -4369,6 +4369,23 @@ module ChapelArray {
     return x.valType;
   }
 
+  proc _desync(type t) type where isAtomicType(t) {
+    var x: t;
+    return x.read().type;
+  }
+
+  /* Or, we could explicitly overload for each atomic type since there
+     are a fixed number
+  proc _desync(type t: atomic int) type {
+    return int;
+  }
+*/
+
+  proc _desync(type t:_array) type {
+    type eltType = chpl__eltTypeFromArrayRuntimeType(t);
+    const ref dom = chpl__domainFromArrayRuntimeType(t);
+    return [dom] _desync(eltType);
+  }
 
   proc _desync(type t) type {
     return t;
