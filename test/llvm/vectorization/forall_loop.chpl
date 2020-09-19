@@ -3,8 +3,6 @@ proc loop (A, B) {
   forall i in 0..511 {
       A[i] = B[i]*3;
   }
-  // CHECK: @loop
-  // CHECK: <4 x i32>
   // CHECK: @coforall
   // CHECK: <4 x i32>
 }
