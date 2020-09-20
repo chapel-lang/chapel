@@ -45,22 +45,22 @@ var A: [1..fac.size] (int, FacInt);
 for key in fac {
   A[key] = (key, fac[key]);
 }
-writeln(A.sorted());
+writeln(A);
 
 var B: [1..fac.size] (int, FacInt);
 for item in fac.items() {
   B[item(0)] = item;
 }
-writeln(B.sorted());
+writeln(B);
 
 var C: [1..fac.size] FacInt;
 for (val, i) in zip(fac.values(), 1..) {
   C[i] = val;
 }
-writeln(C.sorted());
+writeln(C);
 
 var D: [1..fac.size] (int, FacInt);
 for key in fac.keys() {
   D[key] = (key, fac[key]);
 }
-writeln(D.sorted());
+writeln(D);
