@@ -205,6 +205,11 @@ module OrderedMap {
     */
     inline proc const size {
       _enter(); defer _leave();
+      return _size;
+    }
+
+    // Return size without acquiring the lock
+    inline proc const _size {
       return _set.size;
     }
 
@@ -526,7 +531,7 @@ module OrderedMap {
       if !isCopyableType(keyType) || !isCopyableType(valType) then
         compilerError("toArray requires copyable key and value types");
 
-      var A: [0..#size] (keyType, valType);
+      var A: [0..#_size] (keyType, valType);
 
       for (a, item) in zip(A, items()) {
         a = item;
@@ -548,7 +553,7 @@ module OrderedMap {
       if !isCopyableType(keyType) then
         compilerError("keysToArray requires a copyable key type");
 
-      var A: [0..#size] keyType;
+      var A: [0..#_size] keyType;
       for (a, k) in zip(A, keys()) {
         a = k;
       }
@@ -568,7 +573,7 @@ module OrderedMap {
       if !isCopyableType(valType) then
         compilerError("valuesToArray requires a copyable value type");
 
-      var A: [0..#size] valType;
+      var A: [0..#_size] valType;
       for (a, v) in zip(A, values()) {
         a = v;
       }
