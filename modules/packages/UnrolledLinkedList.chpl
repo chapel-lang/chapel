@@ -906,9 +906,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Remove the element at the index `idx` from this unrolledLinkedList and return it. The
-      elements at indices after `idx` are shifted one to the left in memory,
-      making this operation O(n).
+      Remove the element at the index `idx` from this unrolledLinkedList and return it.
 
       .. warning::
 
