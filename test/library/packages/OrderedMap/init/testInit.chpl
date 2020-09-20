@@ -20,7 +20,7 @@ use OrderedMap;
 }
 
 {
-  var m= new orderedMap(int, string);
+  var m = new orderedMap(int, string);
   m[1] = "hello";
   m[4] = "world";
 
