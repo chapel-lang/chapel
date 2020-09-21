@@ -1986,12 +1986,12 @@ module DefaultRectangular {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", A.locale.id);
       __primitive("chpl_comm_array_put", Bdata[offset], Adata.locale.id,
-                  Adata[0], len);
+                  Adata[offset], len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tremote get() on ", here.id, " from ", B.locale.id);
       __primitive("chpl_comm_array_get", Adata[offset], Bdata.locale.id,
-                  Bdata[0], len);
+                  Bdata[offset], len);
     }
   }
 
