@@ -1,0 +1,3 @@
+split-init-globals-reorder-cond-error.chpl:13: error: Initialization order in conditional does not match
+split-init-globals-reorder-cond-error.chpl:14: note: then initializes: b a
+split-init-globals-reorder-cond-error.chpl:17: note: else initializes: a b
