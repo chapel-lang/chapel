@@ -365,7 +365,7 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
                 CallExpr* autoCopy = NULL;
 
                 rhs->remove();
-                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type), 
+                autoCopy = new CallExpr(getAutoCopyForType(symRhs->type),
                                         rhs,
                                         new SymExpr(gFalse));
                 move->insertAtTail(autoCopy);
@@ -983,24 +983,97 @@ static void cleanupModuleDeinitAnchor(Expr*& anchor) {
   }
 }
 
+static void noteGlobalInitialization(ModuleSymbol* mod,
+                                     VarSymbol* var,
+                                     std::vector<VarSymbol*>& inited,
+                                     std::set<VarSymbol*>& initedSet) {
+  // Only consider module-scope variables needing destruction
+  if (isAutoDestroyedVariable(var) && var->defPoint->parentSymbol == mod) {
+    // Try to insert into the initedSet
+    if (initedSet.insert(var).second) {
+      // An insertion occurred, meaning this was the first
+      // thing that looked like initialization for this variable.
+      inited.push_back(var);
+    }
+  }
+}
+
+// Collects global variables in initialization order.
+// Does not do any checking of that order (that should already
+// be handled in addAutoDestroyCalls on the module init fn).
+// This is similar to walkBlock in addAutoDestroyCalls but very trimmed down.
+static void collectGlobals(ModuleSymbol* mod,
+                           BlockStmt* block,
+                           std::vector<VarSymbol*>& inited,
+                           std::set<VarSymbol*>& initedSet) {
+
+  for (Expr* stmt = block->body.first(); stmt != NULL; stmt = stmt->next) {
+
+    // Look for a variable initialization.
+    if (isCallExpr(stmt)) {
+      // note that these cases will run also when setting the variable
+      // after the 1st initialization. That should be OK though because
+      // once a variable is initialized, it stays initialized, until
+      // it is destroyed.
+
+      CallExpr* fCall = NULL;
+      // Check for returned variable
+      if (VarSymbol* v = initsVariable(stmt, fCall))
+        noteGlobalInitialization(mod, v, inited, initedSet);
+
+      if (fCall != NULL) {
+        // Check also for out intent in a called function
+        for_formals_actuals(formal, actual, fCall) {
+          if (VarSymbol* v = initsVariableOut(formal, actual))
+            noteGlobalInitialization(mod, v, inited, initedSet);
+        }
+      }
+
+    // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
+    } else if (BlockStmt* subBlock = toBlockStmt(stmt)) {
+      collectGlobals(mod, subBlock, inited, initedSet);
+
+    // Recurse in to the BlockStmt(s) of a CondStmt
+    } else if (CondStmt*  cond     = toCondStmt(stmt))  {
+      collectGlobals(mod, cond->thenStmt, inited, initedSet);
+    }
+  }
+}
+
 static void insertGlobalAutoDestroyCalls() {
+  std::vector<VarSymbol*> inited;
+  std::set<VarSymbol*> initedSet;
+
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     if (isAlive(mod)) {
       Expr* anchor = NULL;
 
-      for_alist(expr, mod->block->body) {
-        if (DefExpr* def = toDefExpr(expr)) {
-          if (VarSymbol* var = toVarSymbol(def->sym)) {
-            if (isAutoDestroyedVariable(var)) {
-              FnSymbol* autoDestroy = autoDestroyMap.get(var->type);
-              SET_LINENO(var);
+      inited.clear();
+      initedSet.clear();
+      if (mod->initFn != NULL) {
+        collectGlobals(mod, mod->initFn->body, inited, initedSet);
+      } else {
+        // Collect variables from modules without initFn
+        // (e.g. the rootModule)
+        // TODO: can we remove this case?
+        for_alist(expr, mod->block->body) {
+          if (DefExpr* def = toDefExpr(expr))
+            if (VarSymbol* var = toVarSymbol(def->sym))
+              if (isAutoDestroyedVariable(var))
+                inited.push_back(var);
+        }
+      }
 
-              ensureModuleDeinitFnAnchor(mod, anchor);
+      // Now go through inited in reverse order.
+      for_vector(VarSymbol, var, inited) {
+        if (isAutoDestroyedVariable(var)) {
+          FnSymbol* autoDestroy = autoDestroyMap.get(var->type);
+          SET_LINENO(var);
 
-              // destroys go after anchor in reverse order of decls
-              anchor->insertAfter(new CallExpr(autoDestroy, var));
-            }
-          }
+          ensureModuleDeinitFnAnchor(mod, anchor);
+
+          // destroys go after anchor in reverse order of decls
+          anchor->insertAfter(new CallExpr(autoDestroy, var));
         }
       }
       cleanupModuleDeinitAnchor(anchor);
