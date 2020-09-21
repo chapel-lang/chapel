@@ -31,14 +31,11 @@ module ChapelAutoLocalAccess {
       return loopDomain.supportsAutoLocalAccess();
     }
 
-    if !defaultRectangularSupportsAutoLocalAccess {
-      if !accessBase.domain._value.type.isDefaultRectangular() && 
-        loopDomain._value.type.isDefaultRectangular() {
-          // there might be something we can do dynamically
-          return true;
-        }
+    // support forall i in a.domain.localSubdomain() do .... a[i] ....
+    if loopDomain._value.type.isDefaultRectangular() {
+      return accessBase.domain.supportsAutoLocalAccess();
     }
-
+    
     return false;
   }
 
