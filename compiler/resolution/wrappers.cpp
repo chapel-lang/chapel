@@ -1316,23 +1316,27 @@ static void addArgCoercion(FnSymbol*  fn,
 
     castCall   = new CallExpr("borrow", gMethodToken, prevActual);
 
+  // Handle coercion of tuple actuals.
   } else if (ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
              formal->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
              ats->getValType() != formal->getValType()) {
 
-    // Handle tuple cast
     checkAgain = false;
     addedCast = true;
 
     castTemp->type = formal->getValType();
 
-    castTemp->addFlag(FLAG_EXPR_TEMP); // for lvalue checking
-
-    addTupleCoercion(toAggregateType(ats->getValType()),
-                     toAggregateType(formal->getValType()),
-                     prevActual,
-                     castTemp,
-                     call->getStmtExpr());
+    if ((formal->intent & INTENT_REF)) {
+      coerceActualForRefTupleFormal(prevActual, formal, call, castTemp,
+                                    call->getStmtExpr());
+    } else {
+      castTemp->addFlag(FLAG_EXPR_TEMP);
+      addTupleCoercion(toAggregateType(ats->getValType()),
+                       toAggregateType(formal->getValType()),
+                       prevActual,
+                       castTemp,
+                       call->getStmtExpr());
+    }
 
   } else if (ats->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
              formal->getValType()->symbol->hasFlag(FLAG_TUPLE) &&

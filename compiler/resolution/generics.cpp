@@ -657,6 +657,10 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
   for_formals(formal, fn) {
     ArgSymbol* newFormal = toArgSymbol(map.get(formal));
 
+    if (newFormal->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
+
     //
     // Handle default expressions: set the type of the formal
     // based upon the default expression value.

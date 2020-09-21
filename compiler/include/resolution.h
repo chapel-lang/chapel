@@ -288,10 +288,16 @@ AggregateType* computeNonRefTuple(AggregateType* t);
 
 AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t);
 
-void addTupleCoercion(AggregateType* fromT, AggregateType* toT, Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
+void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
+                      Symbol* fromSym, Symbol* toSym, Expr* insertBefore);
+
+void coerceActualForRefTupleFormal(Symbol* actual, ArgSymbol* formal,
+                                   CallExpr* call, VarSymbol* castTmp,
+                                   Expr* insertBefore);
 
 void fixRefTupleRvvForInferredReturnType(FnSymbol* fn);
 void fixMoveIntoRefTuple(CallExpr* call);
+bool isRefTupleRepackFunction(FnSymbol* fn);
 
 // other resolution functions
 bool evaluateWhereClause(FnSymbol* fn);

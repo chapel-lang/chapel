@@ -5913,7 +5913,8 @@ static CallExpr* findOutIntentCallFromAssign(CallExpr* call,
   return NULL;
 }
 
-static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, ArgSymbol* formal) {
+static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent,
+                              ArgSymbol* formal) {
   bool constnessError = false;
   bool exprTmpError = false;
   bool errorMsg = false;

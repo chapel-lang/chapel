@@ -85,6 +85,7 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 void resolveSignature(FnSymbol* fn) {
     // Don't resolve formals for concrete functions
     // more often than necessary.
+
     static std::set<FnSymbol*> done;
 
     if (done.find(fn) == done.end()) {
@@ -113,6 +114,10 @@ static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal);
 static void resolveFormals(FnSymbol* fn) {
 
   for_formals(formal, fn) {
+    if (formal->id == breakOnResolveID) {
+      gdbShouldBreakHere();
+    }
+
     if (formal->type == dtUnknown) {
       if (formal->typeExpr == NULL) {
         formal->type = dtObject;
@@ -229,17 +234,36 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   bool needRefIntent = false;
   if (needRefFormal(fn, formal, &needRefIntent) == true) {
-    makeRefType(formal->type);
 
-    if (formal->type->refType) {
-      formal->type = formal->type->refType;
+    bool isTupleFormal = formal->getValType()->symbol->hasFlag(FLAG_TUPLE);
+    bool isRefIntentFormal = (formal->intent & INTENT_REF);
 
+    // If the formal is a ref tuple, properly adjust its type, but NOT if
+    // it's the formal of a repack function (which creates a new ref tuple
+    // from an existing tuple lvalue).
+    if (isRefIntentFormal && isTupleFormal &&
+        !isRefTupleRepackFunction(fn)) {
+      if (formal->getValType()->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+        formal->type = formal->type->getValType();
+        INT_ASSERT(formal->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
+      } else {
+        AggregateType* at = toAggregateType(formal->type);
+        formal->type = computeAllRefTuple(at);
+      }
+
+    // Otherwise compute a reference type in the normal fashion.
     } else {
-      formal->qual = QUAL_REF;
+      makeRefType(formal->type);
+      if (formal->type->refType) {
+        formal->type = formal->type->refType;
+      } else {
+        formal->qual = QUAL_REF;
+      }
     }
 
-    if (needRefIntent)
+    if (needRefIntent) {
       formal->intent = INTENT_REF;
+    }
 
   // Adjust tuples for intent.
   } else if (formal->type->symbol->hasFlag(FLAG_TUPLE) == true      &&
@@ -276,12 +300,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
       formal->intent == INTENT_OUT       ||
       formal->intent == INTENT_REF       ||
       formal->intent == INTENT_CONST_REF) {
-
-    // Expanded ref tuple formals should be passed by value.
-    if (!formal->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
-      retval = true;
-    }
-
+    retval = true;
   } else if (shouldUpdateAtomicFormalToRef(fn, formal) == true) {
     retval = true;
 
