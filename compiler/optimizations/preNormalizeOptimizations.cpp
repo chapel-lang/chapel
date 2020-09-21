@@ -56,7 +56,8 @@ static bool isSubIndexAssignment(Expr *expr,
 static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
                                                  Symbol *baseSym);
 static void gatherForallInfo(ForallStmt *forall);
-static bool checkLoopSuitableForStaticOpt(ForallStmt *forall);
+static bool loopHasValidInductionVariables(ForallStmt *forall);
+static bool canDetermineLoopDomainStatically(ForallStmt *forall);
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall);
 static Symbol *getCallBase(CallExpr *call);
 static void generateDynamicCheckForAccess(CallExpr *access,
@@ -433,19 +434,17 @@ static void gatherForallInfo(ForallStmt *forall) {
   }
 }
 
-static bool checkLoopSuitableForStaticOpt(ForallStmt *forall) {
+static bool loopHasValidInductionVariables(ForallStmt *forall) {
+  // if we understand the induction variables, then we can still take a look at
+  // the loop body for some calls that we can optimize dynamically
+  return forall->optInfo.multiDIndices.size() > 0;
+}
+
+static bool canDetermineLoopDomainStatically(ForallStmt *forall) {
   // a forall is suitable for static optimization only if it iterates over a
   // symbol (with the hopes that that symbol is a domain), or a foo.domain
-  if (forall->optInfo.iterSym != NULL ||
-      forall->optInfo.dotDomIterSym != NULL) {
-    INT_ASSERT(forall->optInfo.multiDIndices.size() > 0);
-    return true;
-  }
-
-  // if a forall is iterating over some random call, that call maybe returing a
-  // domain that we can still leverage, but we cannot determine that statically
-  // yet (maybe ever)
-  return false;
+  return (forall->optInfo.iterSym != NULL ||
+          forall->optInfo.dotDomIterSym != NULL);
 }
 
 // Bunch of checks to see if `call` is a candidate for optimization within
@@ -810,7 +809,14 @@ static void autoLocalAccess(ForallStmt *forall) {
   LOG("**** Start forall ****", forall);
   gatherForallInfo(forall);
 
-  bool staticOpt = checkLoopSuitableForStaticOpt(forall);
+  bool validInd = loopHasValidInductionVariables(forall);
+
+  if (!validInd) {
+    // there isn't much we can do
+    return;
+  }
+
+  bool staticLoopDomain = canDetermineLoopDomainStatically(forall);
 
   //if (checkLoopSuitableForOpt(forall)) {
     LOG("Loop is suitable for further analysis", forall);
@@ -823,20 +829,20 @@ static void autoLocalAccess(ForallStmt *forall) {
 
         LOG("Potential access", call);
 
-        bool canOptimize = false;
+        bool canOptimizeStatically = false;
 
-        if (staticOpt) {
+        if (staticLoopDomain) {
           // check for different patterns
           // forall i in A.domain do ... A[i] ...
           if (forall->optInfo.dotDomIterSym != NULL &&
               forall->optInfo.dotDomIterSym == accBaseSym) {
-            canOptimize = true;
+            canOptimizeStatically = true;
             LOG("\tCan optimize: Access base is the iterator's base",
                 call);
           }
 
           // if that didn't work...
-          if (!canOptimize) {
+          if (!canOptimizeStatically) {
             Symbol *domSym = getDomSym(accBaseSym);
             if (domSym != NULL) {
               LOG("\twith domain defined at", domSym);
@@ -849,7 +855,7 @@ static void autoLocalAccess(ForallStmt *forall) {
               // forall i in A.domain do ... B[i] ... where B and A share domain
               if (forall->optInfo.dotDomIterSymDom != NULL &&
                   forall->optInfo.dotDomIterSymDom == domSym) {
-                canOptimize = true;
+                canOptimizeStatically = true;
                 LOG("\tCan optimize: Access base has the same domain as iterator's base",
                     call);
               }
@@ -857,28 +863,28 @@ static void autoLocalAccess(ForallStmt *forall) {
               else {
                 if (forall->optInfo.iterSym != NULL &&
                     forall->optInfo.iterSym == domSym) {
-                  canOptimize = true;
+                  canOptimizeStatically = true;
                   LOG("Access base's domain is the iterator", call);
                 }
               }
             }
           }
 
-          if (canOptimize) {
+          if (canOptimizeStatically) {
             forall->optInfo.staticCandidates.push_back(call);
           }
-          else {
-            // I couldn't find a domain symbol for this array, but it can
-            // still be a candidate for optimization based on analysis at
-            // runtime
-            forall->optInfo.dynamicCandidates.push_back(call);
-          }
         }
-        // the loop wasn't suitable for static optimization (i.e. I can't
-        // determine the symbol of the loop domain. But this call that I am
-        // looking at still has potential because it is `A(i)` where `i` is the
-        // loop index. So, add this call to dynamic candidates
-        else {
+        if (!canOptimizeStatically) {
+          // two things might have happened:
+          //
+          // (1) I couldn't find a domain symbol for this array, but it can
+          // still be a candidate for optimization based on analysis at
+          // runtime
+          //
+          // (2) the loop wasn't suitable for static optimization (i.e. I can't
+          // determine the symbol of the loop domain. But this call that I am
+          // looking at still has potential because it is `A(i)` where `i` is
+          // the loop index. So, add this call to dynamic candidates
           forall->optInfo.dynamicCandidates.push_back(call);
         }
       }
