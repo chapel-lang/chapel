@@ -1,10 +1,1 @@
-isDataContiguous(): off=(1) blk=(1)
-	YES!
-isDataContiguous(): off=(1) blk=(1)
-	YES!
-Performing simple DefaultRectangular transfer
-	Will do parallel transfer with 4 tasks
-	local get() from 0
-	local get() from 0
-	local get() from 0
-	local get() from 0
+Will do parallel transfer
