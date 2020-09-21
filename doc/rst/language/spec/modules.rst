@@ -324,7 +324,62 @@ same scope as the ``use`` or ``import``.  Remember that this does not apply to
 functions unless they are also indistinguishable in other ways, see
 :ref:`Function_Overloading`.
 
-Symbols defined by <TODO link for transitive uses/reexporting?>
+Because symbols brought into scope by a ``use`` or ``import`` statement are
+placed at a scope enclosing where the statement appears, such symbols will be
+shadowed by other symbols with the same name defined in the scope with the
+statement.  Thus the symbols that are shadowed will only be accessible via
+:ref:`Explicit_Naming`.
+
+Symbols defined by public ``use`` or ``import`` statements can impact the scope
+they are inserted into in different ways (see :ref:`Public_Use` and
+:ref:`Reexporting` for more information on the ``public`` keyword).  Symbols
+that are brought in by a ``public use`` for unqualified access are treated as
+at successive distances relative to how many ``public use`` statements were
+necessary to obtain.  For instance,
+
+   *Example (conflict1.chpl)*.
+
+   .. code-block:: chapel
+
+      module A {
+        var x: int;
+      }
+
+      module B {
+        public use A;
+      }
+
+      module C {
+        var x: bool;
+      }
+
+      module MainMod {
+        use B, C;
+
+        proc main() {
+          writeln(x);
+        }
+      }
+
+   This will not conflict and will print out the value of ``C.x``, which is
+   ``false``, because A's x is considered further away (it is made available to
+   MainMod through `two` use statements instead of just one).
+
+   .. code-block:: printoutput
+
+      false
+
+   If, however, C had been publicly used by another module D and that was used
+   by MainMod instead, then the language cannot determine which of ``C.x`` and
+   ``A.x`` was intended for ``writeln(x);``.  Chapel must be explicitly told
+   which x to access, via qualified access as mentioned earlier.
+
+Symbols brought in directly by a ``public import`` are treated as though defined
+`at` the scope with the ``public import`` for the purpose of determining
+conflicts (see :ref:`Reexporting`).  This means that if the ``public use`` in
+module B of the previous example was instead replaced with a ``public import
+A.x``, A's x would conflict with ``C.x`` when resolving the main function's
+body.
 
 .. _Using_Modules:
 
@@ -451,6 +506,11 @@ other contexts.
 The ``as`` keyword can also be used to disable accesses to the module name while
 still allowing accesses to the symbols within the module.  See the
 :ref:`Disabling_Qualified` section for more information.
+
+.. _Public_Use:
+
+Public and Private Use Statements
++++++++++++++++++++++++++++++++++
 
 Use statements may be explicitly declared ``public`` or ``private``.
 By default, uses are ``private``.  Making a use ``public`` causes its
