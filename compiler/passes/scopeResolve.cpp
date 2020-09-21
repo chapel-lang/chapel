@@ -2807,7 +2807,7 @@ static bool symbolInBuiltinModule(Symbol* sym) {
 
 static void errorForUnexpectedArgName(std::vector<std::string> argNames,
                                       CallExpr* call) {
-  if (call->numActuals() > argNames.size()) {
+  if (((unsigned)call->numActuals()) > argNames.size()) {
     USR_FATAL(call, "too many arguments to 'get visible symbols'");
   }
 
@@ -2819,7 +2819,7 @@ static void errorForUnexpectedArgName(std::vector<std::string> argNames,
     if (std::find(argNames.begin(), argNames.end(), (std::string)actual->name) == argNames.end()) {
       USR_FATAL_CONT(actual, "unrecognized argument to 'get visible symbols': %s", actual->name);
       USR_FATAL_CONT(call, "recognized names are:");
-      for (int i = 0; i < argNames.size(); i++) {
+      for (int i = 0; ((unsigned)i) < argNames.size(); i++) {
         USR_FATAL_CONT(call, "  %s", argNames[i].c_str());
       }
       USR_STOP();
