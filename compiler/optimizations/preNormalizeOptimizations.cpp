@@ -777,7 +777,7 @@ static void generateOptimizedLoops(ForallStmt *forall) {
     optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ true);
   }
 
-  if (fAutoLocalAccessDynamic && dOptCandidates.size() > 0) {
+  if (dOptCandidates.size() > 0) {
     // copy the forall to have: `noDyn` == loop1, `forall` == loop2
     noDyn = cloneLoop(forall);
     
@@ -874,7 +874,7 @@ static void autoLocalAccess(ForallStmt *forall) {
             forall->optInfo.staticCandidates.push_back(call);
           }
         }
-        if (!canOptimizeStatically) {
+        if (fAutoLocalAccessDynamic && !canOptimizeStatically) {
           // two things might have happened:
           //
           // (1) I couldn't find a domain symbol for this array, but it can
