@@ -621,8 +621,7 @@ optimizeOnClauses(void) {
         if (fastFork) {
           printf("Optimized on clause (%s) in module %s (%s:%d)\n",
                fn->cname, mod->name, fn->fname(), fn->linenum());
-        }
-        if (removeRmemFences) {
+        } else if (removeRmemFences) {
           printf("Optimized rmem fence (%s) in module %s (%s:%d)\n",
                fn->cname, mod->name, fn->fname(), fn->linenum());
         }
