@@ -283,7 +283,7 @@ module CommDiagnostics
 
   private extern proc chpl_comm_resetDiagnosticsHere();
 
-  private extern proc chpl_comm_getDiagnosticsHere(out cd: commDiagnostics);
+  private extern proc chpl_comm_getDiagnosticsHere(ref cd: commDiagnostics);
 
   /*
     Start on-the-fly reporting of communication initiated on any locale.
