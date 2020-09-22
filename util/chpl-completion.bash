@@ -25,7 +25,6 @@ _chpl ()
 --allow-noinit-array-not-pod \
 --atomics \
 --auto-local-access \
---auto-local-access-dynamic \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -56,6 +55,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--dynamic-auto-local-access \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -142,7 +142,6 @@ _chpl ()
 --nil-checks \
 --no-allow-noinit-array-not-pod \
 --no-auto-local-access \
---no-auto-local-access-dynamic \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -160,6 +159,7 @@ _chpl ()
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
+--no-dynamic-auto-local-access \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -225,6 +225,7 @@ _chpl ()
 --no-remove-unreachable-blocks \
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
+--no-report-auto-local-access \
 --no-report-blocking \
 --no-scalar-replacement \
 --no-specialize \
@@ -336,7 +337,6 @@ _chpl ()
       local nodevel_opts="\
 --atomics \
 --auto-local-access \
---auto-local-access-dynamic \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -356,6 +356,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--dynamic-auto-local-access \
 --explain-call \
 --explain-instantiation \
 --explain-verbose \
@@ -399,7 +400,6 @@ _chpl ()
 --network-atomics \
 --nil-checks \
 --no-auto-local-access \
---no-auto-local-access-dynamic \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -412,6 +412,7 @@ _chpl ()
 --no-debug \
 --no-devel \
 --no-div-by-zero-checks \
+--no-dynamic-auto-local-access \
 --no-explain-verbose \
 --no-fast-followers \
 --no-formal-domain-checks \
