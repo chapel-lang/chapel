@@ -874,7 +874,7 @@ static void autoLocalAccess(ForallStmt *forall) {
       }
     }
 
-    if (fAutoLocalAccessDynamic && !canOptimizeStatically) {
+    if (fDynamicAutoLocalAccess && !canOptimizeStatically) {
       // two things might have happened:
       //
       // (1) I couldn't find a domain symbol for this array, but it can
