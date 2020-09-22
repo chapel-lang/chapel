@@ -97,8 +97,6 @@ module CPtr {
     }
   }
 
-  private use IO;
-
   /*
   This class represents a C array with fixed size.  A variable of type c_array
   can coerce to a c_ptr with the same element type.  In that event, the
@@ -188,16 +186,16 @@ module CPtr {
 
     /* Print the elements */
     proc writeThis(ch) throws {
-      ch <~> new ioLiteral("[");
+      ch.readWriteLiteral("[");
       var first = true;
       for i in 0..#size {
 
         ch <~> this(i);
 
         if i != size-1 then
-          ch <~> new ioLiteral(", ");
+          ch.readWriteLiteral(", ");
       }
-      ch <~> new ioLiteral("]");
+      ch.readWriteLiteral("]");
     }
 
     proc init=(other: c_array) {
