@@ -533,12 +533,12 @@ module String {
   }
 
   /*
-     Creates a new string which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the string returned from
-     this function, accessing it is undefined behavior.
+     Creates a new string which borrows the memory allocated for a `c_ptr`. If
+     the buffer is freed before the string returned from this function,
+     accessing it is undefined behavior.
 
      :arg x: Object to borrow the buffer from
-     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr` to `uint(8)` or `c_char`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -551,11 +551,14 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(x: bufferType,
+  inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
                                              length: int, size: int) throws {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a string with a buffer of ", t:string);
+    }
     var ret: string;
-    ret.cachedNumCodepoints = validateEncoding(x, length);
-    initWithBorrowedBuffer(ret, x, length,size);
+    ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
+    initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
   }
 
@@ -610,10 +613,10 @@ module String {
 
   /*
      Creates a new string which takes ownership of the memory allocated for a
-     `c_ptr(uint(8))`. The buffer will be freed when the string is deinitialized.
+     `c_ptr`. The buffer will be freed when the string is deinitialized.
 
      :arg x: Object to take ownership of the buffer from
-     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr` to `uint(8)` or `c_char`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -626,11 +629,14 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(x: bufferType,
+  inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
                                           length: int, size: int) throws {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a string with a buffer of ", t:string);
+    }
     var ret: string;
-    ret.cachedNumCodepoints = validateEncoding(x, length);
-    initWithOwnedBuffer(ret, x, length, size);
+    ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
+    initWithOwnedBuffer(ret, x:bufferType, length, size);
     return ret;
   }
 
@@ -705,7 +711,7 @@ module String {
      Creates a new string by creating a copy of a buffer.
 
      :arg x: The buffer to copy
-     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr` to `uint(8)` or `c_char`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -725,13 +731,16 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(x: bufferType,
+  inline proc createStringWithNewBuffer(x: c_ptr(?t),
                                         length: int, size=length+1,
                                         policy=decodePolicy.strict) throws {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a string with a buffer of ", t:string);
+    }
     // size argument is not used, because we're allocating our own buffer
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
-    return decodeByteBuffer(x, length, policy);
+    return decodeByteBuffer(x:bufferType, length, policy);
   }
 
   pragma "last resort"
