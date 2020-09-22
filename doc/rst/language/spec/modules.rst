@@ -273,9 +273,26 @@ Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
 A top-level module is available for use (:ref:`Using_Modules`) or
-import (:ref:`Importing_Modules`) anywhere. The visibility of a nested module is
-subject to the rules of :ref:`Visibility_Of_Symbols`, where the nested module is
-considered a "module-scope symbol" of its outer module.
+import (:ref:`Importing_Modules`) anywhere.
+
+For the purpose of ``use``, the visibility of a nested module is subject to the
+rules of :ref:`Visibility_Of_Symbols`, where the nested module is considered a
+"module-scope symbol" of its outer module.  If the module is currently in scope,
+then it may be used with just its name.  The module may alternatively be
+accessed explicitly with all the outer modules surrounding it to the top level,
+or relatively from the current scope with ``this`` or ``super`` components.
+Which of ``this`` or ``super`` is appropriate depends on its placement relative
+to the current scope - if the submodule is within the current scope, then
+``this`` is used; if the submodule is within a parent module's scope, then one
+or more ``super`` components can be used.
+
+For the purpose of ``import``, the module is known to be defined at the same
+location as for ``use`` statements.  However, in order to ``import`` it, either
+all the outer modules surrounding it to the top level must be provided as part
+of the path to the module, or a ``super`` or ``this`` prefix may be provided.
+The module may not be imported with just its name, even from the scope in which
+the module is defined, unless it has already been brought into scope by another
+``use`` or ``import`` statement.
 
 .. _Visibility_Of_Symbols:
 
@@ -335,7 +352,7 @@ they are inserted into in different ways (see :ref:`Public_Use` and
 :ref:`Reexporting` for more information on the ``public`` keyword).  Symbols
 that are brought in by a ``public use`` for unqualified access are treated as
 at successive distances relative to how many ``public use`` statements were
-necessary to obtain.  For instance,
+necessary to obtain them.  For instance,
 
    *Example (conflict1.chpl)*.
 
@@ -361,9 +378,13 @@ necessary to obtain.  For instance,
         }
       }
 
-   This will not conflict and will print out the value of ``C.x``, which is
-   ``false``, because A's x is considered further away (it is made available to
-   MainMod through `two` use statements instead of just one).
+   This code demonstrates a module (MainMod) using two modules, B and C.  Module
+   C defines a symbol named x, while module B publicly uses another module, A,
+   which also defines a symbol named x.  The program as written will not
+   conflict and will print out the value of ``C.x``, which is ``false``, because
+   A's x is considered further away (it is made available to MainMod through
+   `two` use statements instead of just one).  Thus, it will generate the
+   following output:
 
    .. code-block:: printoutput
 
