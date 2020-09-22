@@ -174,11 +174,11 @@ module Bytes {
 
   /*
      Creates a new :mod:`bytes <Bytes>` which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the :mod:`bytes <Bytes>`
-     returned from this function, accessing it is undefined behavior.
+     `c_ptr`. If the buffer is freed before the :mod:`bytes <Bytes>` returned
+     from this function, accessing it is undefined behavior.
 
      :arg s: Buffer to borrow
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr` to `uint(8)` or `c_char`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -186,9 +186,12 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithBorrowedBuffer(x: bufferType, length: int, size: int) {
+  inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int, size: int) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
-    initWithBorrowedBuffer(ret, x, length,size);
+    initWithBorrowedBuffer(ret, x:bufferType, length,size);
     return ret;
   }
 
@@ -238,11 +241,11 @@ module Bytes {
 
   /*
      Creates a new :mod:`bytes <Bytes>` which takes ownership of the memory
-     allocated for a `c_ptr(uint(8))`. The buffer will be freed when the
+     allocated for a `c_ptr`. The buffer will be freed when the
      :mod:`bytes <Bytes>` is deinitialized.
 
      :arg s: The buffer to take ownership of
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr` to `uint(8)` or `c_char`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -250,7 +253,10 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithOwnedBuffer(x: bufferType, length: int, size: int) {
+  inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int, size: int) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
@@ -311,7 +317,7 @@ module Bytes {
      Creates a new :mod:`bytes <Bytes>` by creating a copy of a buffer.
 
      :arg s: The buffer to copy
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr` to `uint(8)` or `c_char`
 
      :arg length: Length of buffer `s`, excluding the terminating null byte.
 
@@ -319,8 +325,11 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithNewBuffer(x: bufferType, length: int,
+  inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
                                        size=length+1) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
     initWithNewBuffer(ret, x, length, size);
     return ret;
