@@ -57,7 +57,7 @@ extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
-extern bool fAutoLocalAccessDynamic;
+extern bool fDynamicAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
 extern bool fNoRemoteValueForwarding;

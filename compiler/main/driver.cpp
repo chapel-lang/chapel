@@ -162,7 +162,7 @@ bool fMungeUserIdents = true;
 bool fEnableTaskTracking = false;
 
 bool fAutoLocalAccess = true;
-bool fAutoLocalAccessDynamic = true;
+bool fDynamicAutoLocalAccess = true;
 bool fReportAutoLocalAccess= false;
 
 bool  printPasses     = false;
@@ -955,7 +955,7 @@ static ArgumentDescription arg_desc[] = {
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
  {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
- {"auto-local-access-dynamic", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fAutoLocalAccessDynamic, "CHPL_DISABLE_AUTO_LOCAL_ACCESS_DYNAMIC", NULL},
+ {"dynamic-auto-local-access", ' ', NULL, "Enable [disable] using local access automatically (dynamic only)", "N", &fDynamicAutoLocalAccess, "CHPL_DISABLE_DYNAMIC_AUTO_LOCAL_ACCESS", NULL},
 
  {"", ' ', NULL, "Run-time Semantic Check Options", NULL, NULL, NULL, NULL},
  {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},
