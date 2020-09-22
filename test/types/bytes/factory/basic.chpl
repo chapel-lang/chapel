@@ -43,7 +43,7 @@ cPtr[2] = 67:uint(8);
 cPtr[3] = 0:uint(8);
 {
   // there should be 1 allocate, 2 frees
-  writeln("Initialize from c_ptr");
+  writeln("Initialize from c_ptr(uint(8))");
 
   var sNew = createBytesWithNewBuffer(cPtr, length=3, size=4);
   var sBorrowed = createBytesWithBorrowedBuffer(cPtr, length=3, size=4);
@@ -54,6 +54,32 @@ cPtr[3] = 0:uint(8);
   writeln(sOwned);
 
   cPtr[1] = 32:uint(8);
+
+  writeln(sNew);
+  writeln(sBorrowed);
+  writeln(sOwned);
+}
+
+writeln();
+
+var cCharPtr = c_malloc(uint(8), 4);
+cCharPtr[0] = 65:uint(8);
+cCharPtr[1] = 66:uint(8);
+cCharPtr[2] = 67:uint(8);
+cCharPtr[3] = 0:uint(8);
+{
+  // there should be 1 allocate, 2 frees
+  writeln("Initialize from c_ptr(c_char)");
+
+  var sNew = createBytesWithNewBuffer(cCharPtr, length=3, size=4);
+  var sBorrowed = createBytesWithBorrowedBuffer(cCharPtr, length=3, size=4);
+  var sOwned = createBytesWithOwnedBuffer(cCharPtr, length=3, size=4);
+
+  writeln(sNew);
+  writeln(sBorrowed);
+  writeln(sOwned);
+
+  cCharPtr[1] = 32:uint(8);
 
   writeln(sNew);
   writeln(sBorrowed);
