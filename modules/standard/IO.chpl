@@ -435,6 +435,8 @@ public use SysBasic;
 use SysCTypes;
 public use SysError;
 
+private use CPtr;
+
 /*
 
 The :type:`iomode` type is an enum.

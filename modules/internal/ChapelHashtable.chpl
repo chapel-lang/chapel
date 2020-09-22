@@ -31,6 +31,8 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
+  private use CPtr;
+
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
 

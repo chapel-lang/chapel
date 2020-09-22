@@ -96,7 +96,7 @@ module Bytes {
   private use ChapelStandard;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
-  private use SysCTypes;
+  private use SysCTypes, CPtr;
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
