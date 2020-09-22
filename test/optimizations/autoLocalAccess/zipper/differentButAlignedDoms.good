@@ -4,7 +4,7 @@
 Iterated symbol
 	differentButAlignedDoms.chpl:20
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	differentButAlignedDoms.chpl:21
 
 Potential access
@@ -25,7 +25,7 @@ Potential access
 Loop iterand is a call. Will attempt dynamic optimization.
 	differentButAlignedDoms.chpl:31
 
-Loop is suitable for further analysis
+Loop is suitable for dynamic analysis only
 	differentButAlignedDoms.chpl:31
 
 Potential access
@@ -43,7 +43,7 @@ Potential access
 Loop iterand is a call. Will attempt dynamic optimization.
 	differentButAlignedDoms.chpl:44
 
-Loop is suitable for further analysis
+Loop is suitable for dynamic analysis only
 	differentButAlignedDoms.chpl:44
 
 Potential access
@@ -61,7 +61,7 @@ Potential access
 Iterated symbol
 	differentButAlignedDoms.chpl:48
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	differentButAlignedDoms.chpl:50
 
 Potential access
@@ -82,7 +82,7 @@ Potential access
 Iterated symbol
 	differentButAlignedDoms.chpl:54
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	differentButAlignedDoms.chpl:55
 
 Potential access
@@ -103,7 +103,7 @@ Potential access
 Loop iterand is a call. Will attempt dynamic optimization.
 	differentButAlignedDoms.chpl:44
 
-Loop is suitable for further analysis
+Loop is suitable for dynamic analysis only
 	differentButAlignedDoms.chpl:44
 
 Potential access
@@ -121,7 +121,7 @@ Potential access
 Iterated symbol
 	differentButAlignedDoms.chpl:48
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	differentButAlignedDoms.chpl:50
 
 Potential access
@@ -142,7 +142,7 @@ Potential access
 Iterated symbol
 	differentButAlignedDoms.chpl:54
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	differentButAlignedDoms.chpl:55
 
 Potential access
@@ -163,7 +163,7 @@ Potential access
 Loop iterand is a call. Will attempt dynamic optimization.
 	differentButAlignedDoms.chpl:67
 
-Loop is suitable for further analysis
+Loop is suitable for dynamic analysis only
 	differentButAlignedDoms.chpl:67
 
 Potential access
@@ -181,7 +181,7 @@ Potential access
 Iterated symbol
 	differentButAlignedDoms.chpl:71
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	differentButAlignedDoms.chpl:73
 
 Potential access

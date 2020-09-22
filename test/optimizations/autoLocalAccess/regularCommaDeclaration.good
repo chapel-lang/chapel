@@ -4,7 +4,7 @@
 Iterated symbol
 	regularCommaDeclaration.chpl:4
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	regularCommaDeclaration.chpl:12
 
 Potential access
@@ -13,7 +13,7 @@ Potential access
 	with domain defined at
 	regularCommaDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularCommaDeclaration.chpl:13
 
 Potential access
@@ -22,7 +22,7 @@ Potential access
 	with domain defined at
 	regularCommaDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularCommaDeclaration.chpl:13
 
 Potential access
@@ -31,7 +31,7 @@ Potential access
 	with domain defined at
 	regularCommaDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularCommaDeclaration.chpl:13
 
 	Marking static candidate
@@ -55,7 +55,7 @@ Iterated over the domain of
 , which is
 	regularCommaDeclaration.chpl:19
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	regularCommaDeclaration.chpl:27
 
 Potential access

@@ -4,7 +4,7 @@
 Iterated symbol
 	dynamicChecks.chpl:16
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	dynamicChecks.chpl:28
 
 Potential access
@@ -13,7 +13,7 @@ Potential access
 	with domain defined at
 	dynamicChecks.chpl:16
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	dynamicChecks.chpl:29
 
 Potential access
@@ -22,7 +22,7 @@ Potential access
 	with domain defined at
 	dynamicChecks.chpl:16
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	dynamicChecks.chpl:29
 
 Potential access

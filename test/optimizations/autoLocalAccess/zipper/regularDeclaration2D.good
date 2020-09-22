@@ -4,7 +4,7 @@
 Iterated symbol
 	regularDeclaration2D.chpl:4
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	regularDeclaration2D.chpl:14
 
 Potential access
@@ -13,7 +13,7 @@ Potential access
 	with domain defined at
 	regularDeclaration2D.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularDeclaration2D.chpl:15
 
 Potential access
@@ -22,7 +22,7 @@ Potential access
 	with domain defined at
 	regularDeclaration2D.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularDeclaration2D.chpl:15
 
 Potential access
@@ -31,7 +31,7 @@ Potential access
 	with domain defined at
 	regularDeclaration2D.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularDeclaration2D.chpl:15
 
 	Marking static candidate
@@ -52,7 +52,7 @@ Access base's domain is the iterator
 Iterated symbol
 	regularDeclaration2D.chpl:21
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	regularDeclaration2D.chpl:31
 
 Potential access
@@ -61,7 +61,7 @@ Potential access
 	with domain defined at
 	regularDeclaration2D.chpl:21
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularDeclaration2D.chpl:32
 
 Potential access
@@ -70,7 +70,7 @@ Potential access
 	with domain defined at
 	regularDeclaration2D.chpl:21
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularDeclaration2D.chpl:32
 
 Potential access
@@ -79,7 +79,7 @@ Potential access
 	with domain defined at
 	regularDeclaration2D.chpl:21
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	regularDeclaration2D.chpl:32
 
 	Marking static candidate

@@ -4,7 +4,7 @@
 Loop iterand is a call. Will attempt dynamic optimization.
 	preventMultiCallIter.chpl:47
 
-Loop is suitable for further analysis
+Loop is suitable for dynamic analysis only
 	preventMultiCallIter.chpl:47
 
 Potential access

@@ -7,7 +7,7 @@ Iterated over the domain of
 , which is
 	functionArgs.chpl:10
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:11
 
 Potential access
@@ -43,7 +43,7 @@ Iterated over the domain of
 , which is
 	functionArgs.chpl:10
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:17
 
 Potential access
@@ -76,7 +76,7 @@ Potential access
 Iterated symbol
 	functionArgs.chpl:10
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:23
 
 Potential access
@@ -85,7 +85,7 @@ Potential access
 	with domain defined at
 	functionArgs.chpl:10
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	functionArgs.chpl:24
 
 Potential access
@@ -94,7 +94,7 @@ Potential access
 	with domain defined at
 	functionArgs.chpl:10
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	functionArgs.chpl:25
 
 	Marking static candidate
@@ -115,7 +115,7 @@ Iterated over the domain of
 , which is
 	functionArgs.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:31
 
 Potential access
@@ -154,7 +154,7 @@ Iterated over the domain of
 , which is
 	functionArgs.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:37
 
 Potential access
@@ -190,7 +190,7 @@ Potential access
 Iterated symbol
 	functionArgs.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:43
 
 Potential access
@@ -199,7 +199,7 @@ Potential access
 	with domain defined at
 	functionArgs.chpl:3
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	functionArgs.chpl:44
 
 Potential access
@@ -208,7 +208,7 @@ Potential access
 	with domain defined at
 	functionArgs.chpl:3
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	functionArgs.chpl:45
 
 	Marking static candidate
@@ -229,7 +229,7 @@ Iterated over the domain of
 , which is
 	functionArgs.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:51
 
 Potential access
@@ -268,7 +268,7 @@ Iterated over the domain of
 , which is
 	functionArgs.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:57
 
 Potential access
@@ -304,7 +304,7 @@ Potential access
 Iterated symbol
 	functionArgs.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	functionArgs.chpl:63
 
 Potential access
@@ -313,7 +313,7 @@ Potential access
 	with domain defined at
 	functionArgs.chpl:3
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	functionArgs.chpl:64
 
 Potential access
@@ -322,7 +322,7 @@ Potential access
 	with domain defined at
 	functionArgs.chpl:3
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	functionArgs.chpl:65
 
 	Marking static candidate

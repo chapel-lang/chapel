@@ -4,7 +4,7 @@
 Iterated symbol
 	copyInitDeclaration.chpl:4
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	copyInitDeclaration.chpl:14
 
 Potential access
@@ -13,7 +13,7 @@ Potential access
 	with domain defined at
 	copyInitDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	copyInitDeclaration.chpl:15
 
 Potential access
@@ -22,7 +22,7 @@ Potential access
 	with domain defined at
 	copyInitDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	copyInitDeclaration.chpl:15
 
 Potential access

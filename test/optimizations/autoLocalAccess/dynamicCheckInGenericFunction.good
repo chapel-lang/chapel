@@ -7,7 +7,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	dynamicCheckInGenericFunction.chpl:13
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	dynamicCheckInGenericFunction.chpl:16
 
 Potential access

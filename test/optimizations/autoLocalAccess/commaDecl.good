@@ -4,7 +4,7 @@
 Iterated symbol
 	commaDecl.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	commaDecl.chpl:9
 
 Potential access
@@ -13,7 +13,7 @@ Potential access
 	with domain defined at
 	commaDecl.chpl:3
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	commaDecl.chpl:10
 
 Potential access
@@ -22,7 +22,7 @@ Potential access
 	with domain defined at
 	commaDecl.chpl:3
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	commaDecl.chpl:10
 
 	Marking static candidate

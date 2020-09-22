@@ -4,7 +4,7 @@
 Iterated symbol
 	nonDomainIter.chpl:17
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	nonDomainIter.chpl:19
 
 Potential access

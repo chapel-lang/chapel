@@ -7,7 +7,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	withInitializerCall.chpl:12
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	withInitializerCall.chpl:13
 
 Potential access
@@ -31,7 +31,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	withInitializerCall.chpl:19
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	withInitializerCall.chpl:20
 
 Potential access
@@ -55,7 +55,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	withInitializerCall.chpl:28
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	withInitializerCall.chpl:29
 
 Potential access
@@ -79,7 +79,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	withInitializerCall.chpl:35
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	withInitializerCall.chpl:36
 
 Potential access
