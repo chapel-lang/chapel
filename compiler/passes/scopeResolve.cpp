@@ -2785,7 +2785,7 @@ static bool readNamedArgument(CallExpr* call, const char* name,
       if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
         ret = se->symbol() == gTrue;
       } else {
-        USR_FATAL(se, "the arguments to 'get visible symbols' must be literals 'true' or 'false'");
+        USR_FATAL(se, "the arguments to 'get visible symbols' must be either 'true' or 'false'");
       }
       break;
     }
