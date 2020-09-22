@@ -7,7 +7,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	staticSuccessDynamicFail.chpl:4
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	staticSuccessDynamicFail.chpl:6
 
 Potential access

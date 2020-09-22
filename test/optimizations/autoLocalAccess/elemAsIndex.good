@@ -4,7 +4,7 @@
 Iterated symbol
 	elemAsIndex.chpl:15
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	elemAsIndex.chpl:19
 
 Potential access

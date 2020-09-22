@@ -7,7 +7,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	unalignedSameDist.chpl:19
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	unalignedSameDist.chpl:24
 
 Potential access
