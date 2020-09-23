@@ -313,10 +313,18 @@ static const char* fnKindAndName(FnSymbol* fn) {
   return astr("function ", "'", fn->name, "'");
 }
 
+static bool isInternalFunction(FnSymbol* fn) {
+  ModuleSymbol* module = fn->getModule();
+  return (fn->hasFlag(FLAG_COMPILER_GENERATED) ||
+          strncmp(fn->name, "chpl_", 5) == 0 ||
+          module->modTag == MOD_INTERNAL);
+}
+
 // Note - this function is recursive.
 static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
                                    std::set<FnSymbol*>& currentFns,
-                                   bool& printedUnderline) {
+                                   bool& printedUnderline,
+                                   bool& lastHidden) {
 
   // Stop now if it's a module init function
   if (isModuleInitFunction(errFn))
@@ -348,35 +356,60 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
   }
 
   if (bestPoint != NULL) {
-    std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
-                                                         printedUnderline);
-
     FnSymbol* inFn = bestPoint->getFunction();
 
     // Don't print "called from chpl_gen_main"
     bool calledFromGenMain = inFn->hasFlag(FLAG_GEN_MAIN_FUNC);
-
     if (calledFromGenMain == false) {
-      if (nameAndArgs.empty()) {
-        print_error("  %s:%d: %s called ",
-                    cleanFilename(bestPoint),
-                    bestPoint->linenum(),
-                    fnKindAndName(errFn));
-      } else {
-        print_error("  %s:%d: called as %s",
-                    cleanFilename(bestPoint),
-                    bestPoint->linenum(),
-                    nameAndArgs.c_str());
+      bool hideErrFn = false;
+      bool hideInFn = false;
+      if (developer == false && fPrintCallStackOnError == false) {
+        if (isInternalFunction(errFn))
+          hideErrFn = true;
+        if (isInternalFunction(inFn))
+          hideInFn = true;
       }
 
-      if (inFn->instantiatedFrom != NULL || fPrintCallStackOnError) {
-        // finish the current line
-        print_error(" from %s\n", fnKindAndName(inFn));
-        // continue to print call sites
-        printInstantiationNote(inFn, errFn, currentFns, printedUnderline);
+      // Continue printing stack frames until not generic;
+      // or, with --print-callstack-on-error, module/main is reached
+      bool recurse = (inFn->instantiatedFrom != NULL || fPrintCallStackOnError);
+
+      if (hideErrFn == false) {
+        std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
+                                                             printedUnderline);
+
+        if (nameAndArgs.empty()) {
+          print_error("  %s:%d: %s called ",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      fnKindAndName(errFn));
+        } else {
+          print_error("  %s:%d: called as %s",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      nameAndArgs.c_str());
+        }
+
+        if (recurse && hideInFn == false) {
+          // finish the current line
+          print_error(" from %s\n", fnKindAndName(inFn));
+          // continue to print call sites
+        } else {
+          // finish the current line
+          print_error("\n");
+        }
+        lastHidden = false;
       } else {
-        // finish the current line
-        print_error("\n");
+        if (lastHidden == false) {
+          print_error("  within internal functions "
+                      "(use --print-callstack-on-error to see)\n");
+        }
+        lastHidden = true;
+      }
+
+      if (recurse) {
+        printInstantiationNote(inFn, errFn, currentFns,
+                               printedUnderline, lastHidden);
       }
     }
   }
@@ -396,7 +429,9 @@ static void printInstantiationNoteForLastError() {
     if (printStack) {
       std::set<FnSymbol*> currentFns;
       bool printedUnderline = false;
-      printInstantiationNote(err_fn, NULL, currentFns, printedUnderline);
+      bool lastHidden = false;
+      printInstantiationNote(err_fn, NULL, currentFns,
+                             printedUnderline, lastHidden);
       if (printedUnderline)
         USR_PRINT("generic instantiations are underlined in the above callstack");
     }
