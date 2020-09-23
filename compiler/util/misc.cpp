@@ -797,37 +797,49 @@ static void setupErrorFormatEscapes() {
   if (gErrorFormatsSetup == false) {
     gErrorFormatsSetup = true;
 
-    // Check the TERM variable. This approach and these
-    // terminals are taken from googletest; see
-    // https://github.com/google/googletest/blob/master/googletest/src/gtest.cc#L3216
-    const char* term = getenv("TERM");
-    const char* colorTerms[] = {"xterm",
-                                "xterm-color",
-                                "xterm-256color",
-                                "screen",
-                                "screen-256color",
-                                "tmux",
-                                "tmux-256color",
-                                "rxvt-unicode",
-                                "rxvt-unicode-256color",
-                                "linux",
-                                "cygwin",
-                                NULL};
-    bool isColorTerm = false;
-    if (term == NULL) term = "";
-    for (int i = 0; colorTerms[i] != NULL; i++) {
-      if (0 == strcmp(term, colorTerms[i]))
-        isColorTerm = true;
+    // The normal configuration is
+    //   fUseColorTerminal=false
+    //   fDetectColorTerminal=true
+    // Other settings of these variables are for testing the formatting itself.
+    bool isColorTerm = fUseColorTerminal;
+    if (fDetectColorTerminal) {
+      // Check the TERM variable. This approach and these
+      // terminals are taken from googletest; see
+      // https://github.com/google/googletest/blob/master/googletest/src/gtest.cc#L3216
+      const char* term = getenv("TERM");
+      const char* colorTerms[] = {"xterm",
+                                  "xterm-color",
+                                  "xterm-256color",
+                                  "screen",
+                                  "screen-256color",
+                                  "tmux",
+                                  "tmux-256color",
+                                  "rxvt-unicode",
+                                  "rxvt-unicode-256color",
+                                  "linux",
+                                  "cygwin",
+                                  NULL};
+      if (term == NULL) term = "";
+      for (int i = 0; colorTerms[i] != NULL; i++) {
+        if (0 == strcmp(term, colorTerms[i]))
+          isColorTerm = true;
+      }
+
+      // Check if errors will be output to a tty. If not,
+      // the format codes will just store "" and have no effect.
+      if (isatty(fileno(stderr)) == 0) {
+        isColorTerm = false;
+      }
     }
 
     if (isColorTerm) {
-      // Check if errors will be output to a tty. If not,
-      // the format codes will just store "" and have no effect.
-      if (isatty(fileno(stderr))) {
-        gErrorFormatBold = "\x1B[1m";
-        gErrorFormatUnderline = "\x1B[4m";
-        gErrorFormatClearAll = "\x1B[0m";
-      }
+      gErrorFormatBold = "\x1B[1m";
+      gErrorFormatUnderline = "\x1B[4m";
+      gErrorFormatClearAll = "\x1B[0m";
+    } else {
+      gErrorFormatBold = "";
+      gErrorFormatUnderline = "";
+      gErrorFormatClearAll = "";
     }
   }
 }
