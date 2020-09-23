@@ -211,7 +211,9 @@ public:
 
   bool                       retExprDefinesNonVoid()                     const;
 
-  const char*                argsToString(const char* sep, bool forError) const;
+  std::string                nameAndArgsToString(const char* sep,
+                                                 bool forError,
+                                                 bool& printedUnderline) const;
 
 private:
   virtual std::string        docsDirective();
