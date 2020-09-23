@@ -128,6 +128,7 @@ module LAPACK {
   enum LapackImpl {lapack, mkl, off};
   use LapackImpl;
   use SysBasic;
+  use CPtr;
 
   /*
     Specifies which header filename to include, based on the lapack

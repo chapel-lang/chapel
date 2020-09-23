@@ -32,6 +32,7 @@ module ProtobufProtocolSupport {
   public use WireEncoding;
   public use Fields;
   public use RepeatedFields;
+  private use CPtr;
 
   pragma "no doc"
   module WireEncoding {

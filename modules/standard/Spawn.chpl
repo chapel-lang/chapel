@@ -133,6 +133,7 @@ module Spawn {
   use SysError;
   use SysCTypes;
   use SysBasic;
+  use CPtr;
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
