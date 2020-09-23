@@ -1086,9 +1086,17 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
-const char* FnSymbol::argsToString(const char* sep) const {
+const char* FnSymbol::argsToString(const char* sep, bool forError) const {
   if (sep == NULL || sep[0] == '\0')
     sep = " ";
+
+  // Printing out generics substitutions as underlined
+  const char* startG = "";
+  const char* endG = "";
+  if (forError) {
+    startG = underlineErrorFormat();
+    endG = clearErrorFormat();
+  }
 
   const char* ret = astr("");
 
@@ -1105,6 +1113,8 @@ const char* FnSymbol::argsToString(const char* sep) const {
       // add a separator if this isn't the first one
       if (ret[0] != '\0')
         ret = astr(ret, sep);
+
+      bool isGeneric = sym != genericArg;
 
       // Get the concrete formal, too
       ArgSymbol* concreteArg = NULL;
@@ -1154,12 +1164,15 @@ const char* FnSymbol::argsToString(const char* sep) const {
           const size_t bufSize = 128;
           char buf[bufSize];
           snprint_imm(buf, bufSize, *imm);
-          ret = astr(ret, " = ", buf);
+          ret = astr(ret, " = ", startG, buf, endG);
         }
       } else if (isType) {
-        ret = astr(ret, "type ", name, " = ", toString(t));
+        ret = astr(ret, "type ", name, " = ", startG, toString(t), endG);
       } else {
-        ret = astr(ret, name, ": ", toString(t));
+        if (isGeneric)
+          ret = astr(ret, name, ": ", startG, toString(t), endG);
+        else
+          ret = astr(ret, name, ": ", toString(t));
       }
     }
   } else {

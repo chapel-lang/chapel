@@ -126,4 +126,11 @@ bool        printsUserLocation(const BaseAST* ast);
 // must be exported to avoid dead-code elimination by C++ compiler
 void        gdbShouldBreakHere();
 
+// Supporting bold / colorful output to terminals
+// These are "" if stderr is not a tty we think supports them
+// Otherwise they are format codes that can be print in error messages.
+const char* boldErrorFormat();
+const char* underlineErrorFormat();
+const char* clearErrorFormat();
+
 #endif
