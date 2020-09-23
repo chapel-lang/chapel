@@ -76,21 +76,18 @@ bool isTypeHelperName(const char* fnName) {
   return typeHelperNames.count(fnName);
 }
 
-// For now, a cached generic instantiation is always applicable
-// if it is method-like, i.e. a method or a "type helper".
+// Make type helpers always applicable for now.
+// To relax this, see how many false positives occur
+// when checking applicability of respective cache entries.
 bool cachedInstantiationIsAlwaysApplicable(FnSymbol* fn) {
-  return (isTypeHelperName(fn->name) ||
-          (fn->numFormals() >= 2 &&
-           fn->getFormal(1)->typeInfo() == dtMethodToken));
+  return isTypeHelperName(fn->name);
 }
 bool cachedInstantiationIsAlwaysApplicable(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedFunction())
     return cachedInstantiationIsAlwaysApplicable(fn);
 
   const char* name = toUnresolvedSymExpr(call->baseExpr)->unresolved;
-  return (isTypeHelperName(name) ||
-          (call->numActuals() >= 2 &&
-           call->get(1)->typeInfo() == dtMethodToken));
+  return isTypeHelperName(name);
 }
 
 // Might the 'scope' define a fn that might change resolution outcome?
