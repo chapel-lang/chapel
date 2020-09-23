@@ -1499,12 +1499,7 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_def { 
-      DefExpr * de = new DefExpr(new VarSymbol($2));
-      USR_WARN(de, "support for space in query expressions is deprecated");
-      $$ = de;
-  }
-| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
+  TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:
