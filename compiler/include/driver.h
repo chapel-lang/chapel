@@ -145,6 +145,7 @@ extern bool fParseOnly;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
+extern bool fAutoPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
 extern bool fPrintEmittedCodeSize;

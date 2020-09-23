@@ -221,6 +221,7 @@ bool fExplainVerbose = false;
 bool fParseOnly = false;
 bool fPrintCallGraph = false;
 bool fPrintAllCandidates = false;
+bool fAutoPrintCallStackOnError = true;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -824,6 +825,12 @@ static void setUseColorTerminalFlag(const ArgumentDescription* desc, const char*
   // fUseColorTerminal is set by the flag
 }
 
+static void setPrintCallstackOnErrorFlag(const ArgumentDescription* desc, const char* unused) {
+  // fPrintCallStackOnError is set by the flag
+  fAutoPrintCallStackOnError = false;
+}
+
+
 static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
@@ -1012,7 +1019,7 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-all-candidates", ' ', NULL, "[Don't] print all candidates for a resolution failure", "N", &fPrintAllCandidates, "CHPL_PRINT_ALL_CANDIDATES", NULL},
  {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
- {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
+ {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", setPrintCallstackOnErrorFlag},
  {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
  {"set", 's', "<name>[=<value>]", "Set config value", "S", NULL, NULL, readConfig},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
