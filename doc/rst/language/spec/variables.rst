@@ -634,8 +634,8 @@ Parameter constants and expressions cannot be aliased.
 Variable Conflicts
 ------------------
 
-If multiple variables defined in the same scope share a name, then an error will
-occur when that name is used.
+If multiple variables defined in the same scope share a name, then a compilation
+error will occur when that name is used.
 
 An error will not occur if the would-be conflicting symbols are defined within
 different scopes contained by the same outer scope.  For example, the following
@@ -658,9 +658,9 @@ code will not encounter a conflict when writing the symbol x:
       3
 
 A variable will also conflict with other symbols defined in the same scope that
-share a name with it.  While two or more functions may share the same name if
-they have different argument lists (see :ref:`Function_Overloading`), a function
-cannot share a name with a variable in the same scope, for instance.
+share a name with it.  While functions may share the same name (see
+:ref:`Function_Overloading`), a function sharing a name with a variable in the
+same scope will lead to conflicts.
 
 .. _Variable_Lifetimes:
 
