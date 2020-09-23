@@ -321,10 +321,10 @@ static bool isInternalFunction(FnSymbol* fn) {
 }
 
 // Note - this function is recursive.
-static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
-                                   std::set<FnSymbol*>& currentFns,
-                                   bool& printedUnderline,
-                                   bool& lastHidden) {
+static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
+                           std::set<FnSymbol*>& currentFns,
+                           bool& printedUnderline,
+                           bool& lastHidden) {
 
   // Stop now if it's a module init function
   if (isModuleInitFunction(errFn))
@@ -408,8 +408,8 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
       }
 
       if (recurse) {
-        printInstantiationNote(inFn, errFn, currentFns,
-                               printedUnderline, lastHidden);
+        printCallstack(inFn, errFn, currentFns,
+                       printedUnderline, lastHidden);
       }
     }
   }
@@ -418,7 +418,7 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
 // Print instantiation information for err_fn.
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
-static void printInstantiationNoteForLastError() {
+static void printCallstackForLastError() {
   if (err_fn_header_printed && err_fn) {
     bool printStack = false;
     if (fAutoPrintCallStackOnError)
@@ -430,7 +430,7 @@ static void printInstantiationNoteForLastError() {
       std::set<FnSymbol*> currentFns;
       bool printedUnderline = false;
       bool lastHidden = false;
-      printInstantiationNote(err_fn, NULL, currentFns,
+      printCallstack(err_fn, NULL, currentFns,
                              printedUnderline, lastHidden);
       if (printedUnderline)
         USR_PRINT("generic instantiations are underlined in the above callstack");
@@ -461,7 +461,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
           fn = NULL;
 
       if (fn && fn->id != err_fn_id) {
-        printInstantiationNoteForLastError();
+        printCallstackForLastError();
         err_fn_header_printed = false;
         err_fn = fn;
 
@@ -597,64 +597,10 @@ static void printErrorFooter(bool guess) {
     // and exit if it's fatal (isn't it always?)
     //
     if (err_fatal && !(err_user && ignore_user_errors)) {
-      printInstantiationNoteForLastError();
+      printCallstackForLastError();
       clean_exit(1);
     }
   }
-}
-
-
-//
-// Print the module name, line number, and function signature of each function
-// on the call stack. This can be called from a debugger to to see what the
-// call chain looks like e.g. after a resolution error.
-//
-static void printCallStack(bool force, bool shortModule, FILE* out) {
-  /*
-  if (!force) {
-    if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
-      return;
-  }
-
-  if (!developer) {
-    if (out == NULL)
-      print_error("while processing the following Chapel call chain:\n");
-    else
-      fprintf(out, "while processing the following Chapel call chain:\n");
-  }
-
-  for (int i = callStack.n-1; i >= 0; i--) {
-    CallExpr*     call   = callStack.v[i];
-    FnSymbol*     fn     = call->getFunction();
-    ModuleSymbol* module = call->getModule();
-
-    if (out == NULL)
-      print_error(
-              "  %s:%d: %s%s%s\n",
-              (shortModule ? module->name : cleanFilename(fn->fname())),
-              call->linenum(), toString(fn),
-              (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-              (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
-    else
-      fprintf(out,
-              "  %s:%d: %s%s%s\n",
-              (shortModule ? module->name : cleanFilename(fn->fname())),
-              call->linenum(), toString(fn),
-              (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-              (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
-
-  }*/
-}
-
-static void printCallStackOnError() {
-  printCallStack(false, false, stderr);
-}
-
-//
-// debugging convenience
-//
-void printCallStack() {
-  printCallStack(true, true, stdout);
 }
 
 // another one
@@ -748,8 +694,6 @@ static void vhandleError(const BaseAST* ast,
 
   print_error("\n");
 
-  printCallStackOnError();
-
   if (!err_user && !developer) {
     return;
   }
@@ -758,7 +702,7 @@ static void vhandleError(const BaseAST* ast,
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
     } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
-      printInstantiationNoteForLastError();
+      printCallstackForLastError();
       clean_exit(1);
     }
   }
@@ -766,7 +710,7 @@ static void vhandleError(const BaseAST* ast,
 
 
 void exitIfFatalErrorsEncountered() {
-  printInstantiationNoteForLastError();
+  printCallstackForLastError();
 
   if (exit_eventually) {
     if (ignore_errors_for_pass) {
