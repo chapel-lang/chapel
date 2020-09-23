@@ -3420,7 +3420,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   ResolutionCandidate*      bestCref   = NULL;
   ResolutionCandidate*      bestVal    = NULL;
 
-  VisibilityInfo            visInfo(info.call);
+  VisibilityInfo            visInfo(info);
   int                       numMatches = 0;
 
   FnSymbol*                 retval     = NULL;
@@ -3430,7 +3430,7 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   numMatches = disambiguateByMatch(info, candidates,
                                    bestRef, bestCref, bestVal);
 
-  if (checkState == CHECK_NORMAL_CALL && visInfo.inPOI())
+  if (checkState == CHECK_NORMAL_CALL && numMatches > 0 && visInfo.inPOI())
     updateCacheInfosForACall(visInfo,
                              bestRef, bestCref, bestVal);
 

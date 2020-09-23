@@ -374,7 +374,8 @@ void updateCacheInfosForACall(VisibilityInfo& visInfo,
   parentInfos.reserve(visInfo.poiDepth);
 
   if (!addOneParentInfo(parentInfos, visInfo.call))
-    // We hit a method-like function. Currently these are always applicable.
+    // We hit a special method or a method-like function.
+    // Currently these are always applicable.
     // Do not impose CFI constraint on it or its callers.
     return;
 
@@ -468,15 +469,16 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
 
   int numVisitedVis = 0;
   const char* dummyName = astr("");
-  VisibilityInfo visInfo(visInfoOrig.call);
-  visInfo.currStart = visInfoOrig.nextPOI;
+  VisibilityInfo visInfo(visInfoOrig);
+  advanceCurrStart(visInfo);
+
   Vec<FnSymbol*> visibleFns;
   std::set<BlockStmt*> visited(visInfoOrig.visitedScopes.begin(),
                                visInfoOrig.visitedScopes.end());
   do {
     visInfo.poiDepth++;
 
-    getVisibleFunctions(dummyName, visInfoOrig.call,
+    getMoreVisibleFunctionsOrMethods(dummyName, visInfoOrig.call,
                         &visInfo, &visited, visibleFns);
 
     if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, numVisitedVis))
