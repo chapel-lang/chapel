@@ -104,15 +104,6 @@ module Bytes {
   pragma "no doc"
   type idxType = int; 
 
-  private proc bytesFactoryArgDepr() {
-    compilerWarning("createBytesWith* with formal argument `s` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
-  private proc joinArgDepr() {
-    compilerWarning("bytes.join with formal argument `S` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
   //
   // createBytes* functions
   //
@@ -130,13 +121,6 @@ module Bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithBorrowedBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s);
   }
 
   /*
@@ -165,13 +149,6 @@ module Bytes {
     return createBytesWithBorrowedBuffer(x, length);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s, length);
-  }
-
   /*
      Creates a new :mod:`bytes <Bytes>` which borrows the memory allocated for a
      `c_ptr`. If the buffer is freed before the :mod:`bytes <Bytes>` returned
@@ -195,24 +172,10 @@ module Bytes {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s, length, size);
-  }
-
   pragma "no doc"
   inline proc createBytesWithOwnedBuffer(s: bytes) {
     // should we allow stealing ownership?
     compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s);
   }
 
   /*
@@ -230,13 +193,6 @@ module Bytes {
   inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) {
     return createBytesWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s, length);
   }
 
   /*
@@ -262,13 +218,6 @@ module Bytes {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s, length, size);
-  }
-
   /*
     Creates a new :mod:`bytes <Bytes>` by creating a copy of the buffer of
     another :mod:`bytes <Bytes>`.
@@ -281,13 +230,6 @@ module Bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s);
   }
 
   /*
@@ -304,13 +246,6 @@ module Bytes {
   inline proc createBytesWithNewBuffer(x: c_string, length=x.size) {
     return createBytesWithNewBuffer(x: bufferType, length=length,
                                                     size=length+1);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s, length);
   }
 
   /*
@@ -333,14 +268,6 @@ module Bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x, length, size);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
-                                       size=length+1) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s, length, size);
   }
 
   pragma "no doc"
@@ -422,20 +349,8 @@ module Bytes {
       return __primitive("ascii", this, i);
     }
 
-    pragma "last resort"
-    inline proc join(const ref S) : bytes where isTuple(S) {
-      joinArgDepr();
-      return join(x=S);
-    }
-
     inline proc join(const ref x: [] bytes) : bytes {
       return _join(x);
-    }
-
-    pragma "last resort"
-    inline proc join(const ref S: [] bytes) : bytes {
-      joinArgDepr();
-      return join(x=S);
     }
 
     inline proc join(ir: _iteratorRecord): bytes {
