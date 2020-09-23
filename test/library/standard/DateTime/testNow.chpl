@@ -4,8 +4,7 @@ use DateTime;
 // different if the time passes midnight betwen the two calls.
 
 var now = datetime.now();
-//var today = date.today();
-var today = new date(2020, 9, 24);
+var today = date.today();
 var diff = now - new datetime(today.year, today.month, today.day);
 
 assert(diff.days == 0 || diff.days == -1);
