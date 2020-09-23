@@ -1,6 +1,18 @@
 **** Start forall ****
 	interveningForallOrOn.chpl:12
 
+Loop iterand is a call. Will attempt dynamic optimization.
+	interveningForallOrOn.chpl:12
+
+Loop is suitable for dynamic analysis only
+	interveningForallOrOn.chpl:12
+
+Potential access
+	interveningForallOrOn.chpl:13
+
+	Marking dynamic candidate
+	interveningForallOrOn.chpl:13
+
 **** End forall ****
 	interveningForallOrOn.chpl:12
 
@@ -10,7 +22,7 @@
 Iterated symbol
 	interveningForallOrOn.chpl:5
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	interveningForallOrOn.chpl:11
 
 **** End forall ****
@@ -22,7 +34,7 @@ Loop is suitable for further analysis
 Iterated symbol
 	interveningForallOrOn.chpl:19
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	interveningForallOrOn.chpl:25
 
 **** End forall ****

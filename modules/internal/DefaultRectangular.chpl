@@ -151,7 +151,7 @@ module DefaultRectangular {
     override proc linksDistribution() param return false;
     override proc dsiLinksDistribution()     return false;
 
-    proc type isDefaultRectangular() param return true;
+    override proc type isDefaultRectangular() param return true;
     override proc isDefaultRectangular() param return true;
 
     proc init(param rank, type idxType, param stridable, dist) {

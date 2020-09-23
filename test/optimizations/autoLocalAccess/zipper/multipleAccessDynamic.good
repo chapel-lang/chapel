@@ -7,7 +7,7 @@ Iterated over the domain of
 , whose domain cannot be determined statically
 	multipleAccessDynamic.chpl:3
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	multipleAccessDynamic.chpl:7
 
 Potential access

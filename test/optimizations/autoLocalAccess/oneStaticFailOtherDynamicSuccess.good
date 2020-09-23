@@ -4,7 +4,7 @@
 Iterated symbol
 	oneStaticFailOtherDynamicSuccess.chpl:16
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	oneStaticFailOtherDynamicSuccess.chpl:23
 
 Potential access

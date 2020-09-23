@@ -4,7 +4,7 @@
 Iterated symbol
 	dotDomDeclaration.chpl:4
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	dotDomDeclaration.chpl:14
 
 Potential access
@@ -13,7 +13,7 @@ Potential access
 	with domain defined at
 	dotDomDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
 Potential access
@@ -22,7 +22,7 @@ Potential access
 	with domain defined at
 	dotDomDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
 Potential access
@@ -31,7 +31,7 @@ Potential access
 	with domain defined at
 	dotDomDeclaration.chpl:4
 
-Access base's domain is the iterator
+	Can optimize: Access base's domain is the iterator
 	dotDomDeclaration.chpl:15
 
 	Marking static candidate
@@ -55,7 +55,7 @@ Iterated over the domain of
 , which is
 	dotDomDeclaration.chpl:21
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	dotDomDeclaration.chpl:31
 
 Potential access
@@ -103,7 +103,7 @@ Iterated over the domain of
 , which is
 	dotDomDeclaration.chpl:38
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	dotDomDeclaration.chpl:48
 
 Potential access
@@ -151,7 +151,7 @@ Iterated over the domain of
 , which is
 	dotDomDeclaration.chpl:55
 
-Loop is suitable for further analysis
+Loop is suitable for static and dynamic analysis
 	dotDomDeclaration.chpl:65
 
 Potential access
