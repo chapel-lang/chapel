@@ -1,3 +1,3 @@
 badwhere.chpl:4: In function 'foo':
 badwhere.chpl:4: error: invalid where clause
-badwhere.chpl:1: Function 'foo' instantiated as: foo(x: string, y: string, z: bool)
+  badwhere.chpl:1: called as foo(x: string, y: string, z: bool)

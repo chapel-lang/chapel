@@ -1,53 +1,24 @@
 print-callstack-on-warning-1.chpl:15: In function 'test3':
 print-callstack-on-warning-1.chpl:16: warning: warning from test3, depth=0
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:16: test3(z)
-  print-callstack-on-warning-1.chpl:12: test2(y)
-  print-callstack-on-warning-1.chpl:8: test1(x)
-  print-callstack-on-warning-1.chpl:3: top-level module statements for print-callstack-on-warning-1
 print-callstack-on-warning-1.chpl:17: warning: warning from test3, default depth
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:17: test3(z)
-  print-callstack-on-warning-1.chpl:12: test2(y)
-  print-callstack-on-warning-1.chpl:8: test1(x)
-  print-callstack-on-warning-1.chpl:3: top-level module statements for print-callstack-on-warning-1
-print-callstack-on-warning-1.chpl:12: Function 'test3' instantiated as: test3(z: string)
+  print-callstack-on-warning-1.chpl:12: called as test3(z: string) from function 'test2'
+  print-callstack-on-warning-1.chpl:8: called as test2(y: string) from function 'test1'
+  print-callstack-on-warning-1.chpl:3: called as test1(x: string) from module 'print-callstack-on-warning-1'
 print-callstack-on-warning-1.chpl:33: In function 'ptest3':
 print-callstack-on-warning-1.chpl:34: warning: warning from ptest3, depth=0, z=6
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:34: ptest3(param z)
-  print-callstack-on-warning-1.chpl:30: ptest2(param y)
-  print-callstack-on-warning-1.chpl:26: ptest1(param x)
-  print-callstack-on-warning-1.chpl:21: top-level module statements for print-callstack-on-warning-1
 print-callstack-on-warning-1.chpl:35: warning: warning from ptest3, default depth, z=6
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:35: ptest3(param z)
-  print-callstack-on-warning-1.chpl:30: ptest2(param y)
-  print-callstack-on-warning-1.chpl:26: ptest1(param x)
-  print-callstack-on-warning-1.chpl:21: top-level module statements for print-callstack-on-warning-1
-print-callstack-on-warning-1.chpl:30: Function 'ptest3' instantiated as: ptest3(param z = 6)
+  print-callstack-on-warning-1.chpl:30: called as ptest3(param z = 6) from function 'ptest2'
+  print-callstack-on-warning-1.chpl:26: called as ptest2(param y = 3) from function 'ptest1'
+  print-callstack-on-warning-1.chpl:21: called as ptest1(param x = 1) from module 'print-callstack-on-warning-1'
 print-callstack-on-warning-1.chpl:33: In function 'ptest3':
 print-callstack-on-warning-1.chpl:34: warning: warning from ptest3, depth=0, z=13
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:34: ptest3(param z)
-  print-callstack-on-warning-1.chpl:30: ptest2(param y)
-  print-callstack-on-warning-1.chpl:22: top-level module statements for print-callstack-on-warning-1
 print-callstack-on-warning-1.chpl:35: warning: warning from ptest3, default depth, z=13
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:35: ptest3(param z)
-  print-callstack-on-warning-1.chpl:30: ptest2(param y)
-  print-callstack-on-warning-1.chpl:22: top-level module statements for print-callstack-on-warning-1
-print-callstack-on-warning-1.chpl:30: Function 'ptest3' instantiated as: ptest3(param z = 13)
+  print-callstack-on-warning-1.chpl:30: called as ptest3(param z = 13) from function 'ptest2'
+  print-callstack-on-warning-1.chpl:22: called as ptest2(param y = 10) from module 'print-callstack-on-warning-1'
 print-callstack-on-warning-1.chpl:33: In function 'ptest3':
 print-callstack-on-warning-1.chpl:34: warning: warning from ptest3, depth=0, z=100
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:34: ptest3(param z)
-  print-callstack-on-warning-1.chpl:23: top-level module statements for print-callstack-on-warning-1
 print-callstack-on-warning-1.chpl:35: warning: warning from ptest3, default depth, z=100
-while processing the following Chapel call chain:
-  print-callstack-on-warning-1.chpl:35: ptest3(param z)
-  print-callstack-on-warning-1.chpl:23: top-level module statements for print-callstack-on-warning-1
-print-callstack-on-warning-1.chpl:23: Function 'ptest3' instantiated as: ptest3(param z = 100)
+  print-callstack-on-warning-1.chpl:23: called as ptest3(param z = 100) from module 'print-callstack-on-warning-1'
 test3(z=test1)
 test3(z=test2)
 test3(z=test3)

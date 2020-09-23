@@ -3,4 +3,4 @@ generic-default-nil.chpl:3: note: when calling foo with a default value for x
 generic-default-nil.chpl:3: In function 'foo':
 generic-default-nil.chpl:4: error: the type of the actual argument 'x' is generic
 note: generic actual arguments are not currently supported
-generic-default-nil.chpl:7: Function 'foo' instantiated here
+  generic-default-nil.chpl:7: called as foo(x: borrowed C)

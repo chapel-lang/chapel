@@ -1,4 +1,4 @@
 whereClauseNoFn2.chpl:1: In function 'foo':
 whereClauseNoFn2.chpl:1: error: unresolved call 'bar()'
 whereClauseNoFn2.chpl:1: note: because no functions named bar found in scope
-whereClauseNoFn2.chpl:1: Function 'foo' instantiated as: foo(x: int(64))
+  whereClauseNoFn2.chpl:1: called as foo(x: int(64))

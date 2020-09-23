@@ -1,3 +1,3 @@
 passBadFnsToCChapel.chpl:11: In function 'baz':
 passBadFnsToCChapel.chpl:12: error: Can't call a C function pointer within Chapel
-passBadFnsToCChapel.chpl:16: Function 'baz' instantiated as: baz(f: c_fn_ptr)
+  passBadFnsToCChapel.chpl:16: called as baz(f: c_fn_ptr)

@@ -3,13 +3,15 @@ compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only 
 compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
 compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
 compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:21: Function 'compareVersions' instantiated as: compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
+  compareChplVersionErrors.chpl:21: called as compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
 compareChplVersionErrors.chpl:25: In function 'compareVersions':
 compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
 compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
 compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
 compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:22: Function 'compareVersions' instantiated as: compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"bbb\"), v2: sourceVersion(semanticVersion(2,1,0),\"aaa\"))
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"bbb\"), v2: sourceVersion(semanticVersion(2,1,0),\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
 Comparing versions:
 version 2.1.0
 version 2.1.0 (aaa)
