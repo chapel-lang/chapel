@@ -356,17 +356,16 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
                   bestPoint->linenum(),
                   fnKindAndName(errFn));
     } else {
-      print_error("  %s:%d: %s called as %s(%s)",
+      print_error("  %s:%d: called as %s(%s)",
                   cleanFilename(bestPoint),
                   bestPoint->linenum(),
-                  fnKindAndName(errFn),
                   errFn->name,
                   subsDesc);
     }
 
     if (inFn->instantiatedFrom != NULL || fPrintCallStackOnError) {
       // finish the current line
-      print_error(" within %s\n", fnKindAndName(inFn));
+      print_error(" from %s\n", fnKindAndName(inFn));
       // continue to print call sites
       printInstantiationNote(inFn, errFn, currentFns);
     } else {
