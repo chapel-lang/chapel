@@ -646,34 +646,6 @@ statement's ``module-or-enum-name``.  Doing so enables its constants to be
 accessible without the enum's name as a prefix (see :ref:`Explicit_Naming` for
 how to access its constants normally).
 
-All of the rules stated above apply when using an enum instead of a module.
-Because enums cannot contain use statements, the transitivity description only
-applies when a module uses a module with a public use of an enum.  For example:
-
-   *Example (use-enum.chpl)*.
-
-   .. code-block:: chapel
-
-      module B {
-        public use bEnum;
-
-        enum bEnum {one, two, three};
-      }
-
-      module A {
-        proc main() {
-          use B;
-          writeln(one);
-        }
-      }
-
-   In this case, one will be visible to A without requiring qualified naming to
-   access it, because of B's use of bEnum.
-
-   .. BLOCK-test-chapeloutput
-
-      one
-
 For more information on enumerated types, please see :ref:`Enumerated_Types`.
 
 .. _Importing_Modules:
