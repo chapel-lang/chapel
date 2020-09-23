@@ -697,7 +697,7 @@ module FFTW {
 
      Please refer to the FFTW documentation for more details. */
   module C_FFTW {
-    public use SysCTypes, SysBasic;
+    public use SysCTypes, SysBasic, CPtr;
     extern proc fftw_execute(p : fftw_plan) : void;
     import FFTW.fftw_plan;
 

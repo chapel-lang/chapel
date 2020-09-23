@@ -4,7 +4,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
-private use IO, SysCTypes;
+private use IO, SysCTypes, CPtr;
 
 /*
    This is very ugly because we don't have good IO support for

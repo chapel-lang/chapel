@@ -1,5 +1,6 @@
 use IO;
 use Sort;
+use CPtr;
 
 extern proc memcpy(x : [], b:c_string, len:int);
 

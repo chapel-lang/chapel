@@ -46,6 +46,8 @@ module ChapelSyncvar {
   use MemConsistency;
   use SyncVarRuntimeSupport;
 
+  use CPtr;
+
   /************************************ | *************************************
   *                                                                           *
   * The implementation of the user-facing sync/single types are exposed to    *

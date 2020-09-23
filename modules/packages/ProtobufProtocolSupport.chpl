@@ -43,6 +43,7 @@ module ProtobufProtocolSupport {
     */
 
     use IO;
+    use CPtr;
 
     type writingChannel = channel(true,iokind.little,false);
     type readingChannel = channel(false,iokind.little,false);
