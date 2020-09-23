@@ -2308,45 +2308,6 @@ void AggregateType::buildDefaultInitializer() {
   }
 }
 
-
-// This is a helper function that tells whether we should use an old
-// style '=' assignment to set up the field in the initializer or
-// whether we should use the new-style 'PRIM_INIT_VAR' approach.
-//
-static bool fieldNeedsSimpleInit(VarSymbol* field) {
-  // type and param fields need the old-style initializer
-  if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-      field->hasFlag(FLAG_PARAM)) {
-    return true;
-  }
-  return false;
-  //  return true;
-  static const char* syncvar = astr("_syncvar");
-  if (DefExpr* defPoint = field->defPoint) {
-    if (CallExpr* ce = toCallExpr(defPoint->exprType)) {
-      if (SymExpr* se = toSymExpr(ce->baseExpr))
-	if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-	  if (ts->name == syncvar) {
-	    return false;
-	  }
-	}
-    }
-  }
-  return true;
-
-  // so do domains and arrays to avoid breaking their linkage
-  if (DefExpr* defPoint = field->defPoint) {
-    if (CallExpr* ce = toCallExpr(defPoint->exprType)) {
-      if (ce->isUnresolvedDomainExpr() ||
-	  ce->isUnresolvedArrayExpr()) {
-	return true;
-      }
-    }
-  }
-  return false;
-}
-
-
 void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
                                SymbolMap&             fieldArgMap) {
@@ -2440,80 +2401,30 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
-            arg->typeExpr = new BlockStmt(new CallExpr("_desync", defPoint->exprType->copy()));
+            arg->typeExpr = new BlockStmt(new CallExpr("_desync_warn", defPoint->exprType->copy()));
 
           } else {
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
-	    //            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
-	    arg->typeExpr = new BlockStmt(new CallExpr("_desync", defPoint->exprType->copy()));
+	    arg->typeExpr = new BlockStmt(new CallExpr("_desync_warn", defPoint->exprType->copy()));
           }
         }
 
         fn->insertFormalAtTail(arg);
 
-        /*
-        printf("Processing field %s\n", name);
-        printf("------------------------------------\n");
-        viewFlags(field);
-        printf("\n\n");
-        */
-	/*
-        if (strcmp(name, "AAA") == 0 ||
-            strcmp(name, "DDD") == 0 ||
-            strcmp(name, "xxx") == 0) {
-          printf("Found one of our friends\n");
-          if (CallExpr* ce = toCallExpr(defPoint->exprType)) {
-            ce->isUnresolvedDomainExpr();
-          }
-        }
-	*/
-
-        if (fieldNeedsSimpleInit(field)) {
-          fn->insertAtTail(new CallExpr("=",
-                                        new CallExpr(".",
-                                                     fn->_this,
-                                                     new_CStringSymbol(name)),
-                                        arg));
-        } else {
-	  //	  printf("Using complex init for field %s\n", name);
-          if (defPoint->exprType) {
-            VarSymbol* call_tmp = newTemp("call_tmp");
-            call_tmp->addFlag(FLAG_MAYBE_PARAM);
-            call_tmp->addFlag(FLAG_MAYBE_TYPE);
-            fn->insertAtTail(new DefExpr(call_tmp));
-            fn->insertAtTail(new CallExpr(PRIM_MOVE, call_tmp, defPoint->exprType->copy()));
-                                          
-            VarSymbol* tmp = newTemp();
-            fn->insertAtTail(new DefExpr(tmp));
-            fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg, call_tmp));
-          
-            fn->insertAtTail(new CallExpr("=",
-                                          new CallExpr(".",
-                                                       fn->_this,
-                                                       new_CStringSymbol(name)),
-                                          tmp));
-          } else {
-            VarSymbol* tmp = newTemp();
-            fn->insertAtTail(new DefExpr(tmp));
-            fn->insertAtTail(new CallExpr(PRIM_INIT_VAR, tmp, arg));
-          
-            fn->insertAtTail(new CallExpr("=",
-                                          new CallExpr(".",
-                                                       fn->_this,
-                                                       new_CStringSymbol(name)),
-                                          tmp));
-          
-          }
-        }
+        fn->insertAtTail(new CallExpr("=",
+                                      new CallExpr(".",
+                                                   fn->_this,
+                                                   new_CStringSymbol(name)),
+                                      arg));
       }
     }
   }
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
-  BlockStmt* exprType = new BlockStmt(new CallExpr("_desync", fieldDef->exprType->copy()), BLOCK_TYPE);
+  BlockStmt* exprType = new BlockStmt(new CallExpr("_desync_warn", fieldDef->exprType->copy()), BLOCK_TYPE);
 
   // If the type is simple, just set the argument's type directly.
   // Otherwise, give it the block we just created.

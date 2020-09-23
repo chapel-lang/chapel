@@ -5600,11 +5600,13 @@ static void testArgMapping(FnSymbol*                    fn1,
     actualScalarType = actualType->scalarPromotionType->getValType();
   }
 
-  /*
   if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
     actualScalarType = actualScalarType->getField("valType")->getValType();
+    // TODO: Is this in too speculative a code path?
+    if (fWarnUnstable) {
+      printf("Automatic coercions from 'sync/single t' to 't' will go away in a future release; consider applying an explicit '.read' method to stabilize your code");
+    }
   }
-  */
 
   const char* reason = "";
   typedef enum {

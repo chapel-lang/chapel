@@ -869,24 +869,3 @@ bool isRecordInitOrReturn(CallExpr* call, SymExpr*& lhsSe, CallExpr*& initOrCtor
   initOrCtor = NULL;
   return false;
 }
-
-
-bool CallExpr::isUnresolvedDomainExpr() {
-  static const char* name = astr("chpl__buildDomainRuntimeType");
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(baseExpr)) {
-    if (urse->unresolved == name) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool CallExpr::isUnresolvedArrayExpr() {
-  static const char* name = astr("chpl__buildArrayRuntimeType");
-  if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(baseExpr)) {
-    if (urse->unresolved == name) {
-      return true;
-    }
-  }
-  return false;
-}

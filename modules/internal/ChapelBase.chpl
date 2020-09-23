@@ -698,8 +698,8 @@ module ChapelBase {
   // explicitly captured.
   //
   inline proc chpl_statementLevelSymbol(a) { }
-  inline proc chpl_statementLevelSymbol(a: sync)  { compilerError("syncs can't be used without a modifier"); }
-  inline proc chpl_statementLevelSymbol(a: single) { compilerError("singles can't be used without a modifier"); }
+  inline proc chpl_statementLevelSymbol(a: sync)  { compilerWarning("undecorated 'sync' accesses are deprecated; apply a 'read??()' method"); a.readFE(); }
+  inline proc chpl_statementLevelSymbol(a: single) { compilerWarning("undecorated 'sync' accesses are deprecated; apply a 'readFF()' method"); a.readFF(); }
   // param and type args are handled in the compiler
 
   //
