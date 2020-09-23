@@ -33,9 +33,8 @@ module BytesStringCommon {
        - **drop**: silently drop data
        - **escape**: escape invalid data by replacing each byte 0xXX with
                      codepoint 0xDCXX
-       - **ignore**: silently drop data (Deprecated)
   */
-  enum decodePolicy { strict, replace, drop, escape, ignore }
+  enum decodePolicy { strict, replace, drop, escape }
 
   /*
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8

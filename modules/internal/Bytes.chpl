@@ -446,41 +446,6 @@ module Bytes {
     inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
       return doJoin(this, S);
     }
-
-    // to capture the deprecated formal name "errors"
-    pragma "last resort"
-    proc decode(errors=decodePolicy.strict): string throws {
-      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
-                      "Use 'policy' instead.");
-      return this.decode(policy=errors);
-    }
-
-    // just to capture the deprecated decodePolicy.ignore and give a compiler
-    // warning
-    pragma "last resort"
-    proc decode(param errors: decodePolicy): string throws {
-      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
-                      "Use 'policy' instead.");
-      if errors == decodePolicy.ignore then
-        compilerWarning("decodePolicy.ignore is deprecated. ",
-                        "Use decodePolicy.drop instead");
-
-      // have to repeat this as above to avoid recursion. That's the cleanest
-      // way I could think of.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.buffLen, errors);
-    }
-
-     proc decode(param policy: decodePolicy): string throws {
-      if policy == decodePolicy.ignore then
-        compilerWarning("decodePolicy.ignore is deprecated. ",
-                        "Use decodePolicy.drop instead");
-
-      // have to repeat this as above to avoid recursion. That's the cleanest
-      // way I could think of.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
-    }
   } // end of record bytes
 
   /*
