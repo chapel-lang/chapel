@@ -2396,9 +2396,4 @@ module ChapelBase {
   inline proc _removed_cast(in x) {
     return x;
   }
-
-  proc enumerated type {
-    compilerWarning("'enumerated' is deprecated - please use 'enum' instead");
-    return enum;
-  }
 }

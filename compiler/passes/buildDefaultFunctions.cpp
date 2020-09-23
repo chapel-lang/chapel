@@ -1306,7 +1306,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
 //
 // Create a function that converts an enum symbol to an integer 0, 1, 2, ...:
 //
-//   'proc chpl_enumToOrder([param] e: enumerated) [param] : int'
+//   'proc chpl_enumToOrder([param] e: enum) [param] : int'
 //
 static void buildEnumToOrderFunction(EnumType* et, bool paramVersion) {
   FnSymbol* fn = new FnSymbol(astr("chpl__enumToOrder"));
