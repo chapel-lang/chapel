@@ -102,7 +102,7 @@ CHPL_OBJS = \
 EXECS = $(CHPL) $(CHPLDOC)
 
 PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) $(CLANG_SETTINGS_FILE)
-TARGETS = $(CHPL) $(CHPL_OLD)
+TARGETS = $(CHPL)
 
 LIBS = -lm
 
@@ -163,9 +163,6 @@ $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
-$(CHPL_OLD): $(CHPL) $(CHPL_OLD_BIN_DIR)
-	cp "$(CHPL_MAKE_HOME)/util/config/old-chpl.sh" "$(CHPL_OLD_BIN_DIR)/chpl"
-
 $(CHPLDOC): $(CHPL)
 	rm -f $(CHPLDOC)
 	ln -s $(notdir $(CHPL)) $(CHPLDOC)
@@ -179,9 +176,6 @@ $(COMPILER_BUILD):
 	mkdir -p $@
 
 $(CHPL_BIN_DIR):
-	mkdir -p $@
-
-$(CHPL_OLD_BIN_DIR):
 	mkdir -p $@
 
 
