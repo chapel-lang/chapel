@@ -1615,15 +1615,6 @@ proc file.size:int(64) throws {
   return len;
 }
 
-/*
-  Deprecated - please use :proc:`file.size`.
-*/
-proc file.length():int(64) throws {
-  compilerWarning("'file.length()' is deprecated - " +
-                  "please use 'file.size' instead");
-  return this.size;
-}
-
 // these strings are here (vs in _modestring)
 // in an attempt to avoid string copies, leaks,
 // and unnecessary allocations.

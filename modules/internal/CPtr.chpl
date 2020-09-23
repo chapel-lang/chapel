@@ -200,15 +200,6 @@ module CPtr {
       ch <~> new ioLiteral("]");
     }
 
-    /*
-      Deprecated - please use :var:`c_array.size`.
-    */
-    inline proc length {
-      compilerWarning("'c_array.length' is deprecated - " +
-                      "please use 'c_array.size' instead");
-      return size;
-    }
-
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;

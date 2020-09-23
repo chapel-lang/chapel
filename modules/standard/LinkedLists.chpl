@@ -85,15 +85,6 @@ record LinkedList {
   }
 
   /*
-    Deprecated - please use :proc:`LinkedList.size`.
-   */
-  proc length ref {
-    compilerWarning("'LinkedList.length' is deprecated - " +
-                    "please use 'LinkedList.size' instead");
-    return size;
-  }
-
-  /*
     Iterate over the list, yielding each element.
 
     :ytype: eltType
