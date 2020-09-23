@@ -454,16 +454,6 @@ module String {
     return numCodepoints;
   }
 
-  private proc stringFactoryArgDepr() {
-    compilerWarning("createStringWith* with formal argument `s` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
-  private proc joinArgDepr() {
-    compilerWarning("string.join with formal argument `S` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
   //
   // createString* functions
   //
@@ -486,13 +476,6 @@ module String {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: string) {
-    stringFactoryArgDepr();
-    return createStringWithBorrowedBuffer(x=s);
-  }
-
   /*
     Creates a new string which borrows the internal buffer of a `c_string`. If
     the buffer is freed before the string returned from this function, accessing
@@ -512,13 +495,6 @@ module String {
   inline proc createStringWithBorrowedBuffer(x: c_string, length=x.size) throws {
     return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                             size=length+1);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.size) throws {
-    stringFactoryArgDepr();
-    return createStringWithBorrowedBuffer(x=s, length);
   }
 
   pragma "no doc"
@@ -559,26 +535,10 @@ module String {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: bufferType,
-                                             length: int, size: int) throws {
-    stringFactoryArgDepr();
-    return createStringWithBorrowedBuffer(x=s, length, size);
-  }
-
-
   pragma "no doc"
   inline proc createStringWithOwnedBuffer(x: string) {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: string) {
-    stringFactoryArgDepr();
-    return createStringWithOwnedBuffer(x=s);
   }
 
   /*
@@ -599,13 +559,6 @@ module String {
   inline proc createStringWithOwnedBuffer(x: c_string, length=x.size) throws {
     return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.size) throws {
-    stringFactoryArgDepr();
-    return createStringWithOwnedBuffer(x=s, length);
   }
 
   /*
@@ -634,14 +587,6 @@ module String {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: bufferType,
-                                          length: int, size: int) throws {
-    stringFactoryArgDepr();
-    return createStringWithOwnedBuffer(x=s, length, size);
-  }
-
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
@@ -656,13 +601,6 @@ module String {
     ret.cachedNumCodepoints = x.numCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithNewBuffer(s: string) {
-    stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s);
   }
 
   /*
@@ -691,14 +629,6 @@ module String {
                                         policy=decodePolicy.strict) throws {
     return createStringWithNewBuffer(x: bufferType, length=length,
                                      size=length+1, policy);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithNewBuffer(s: c_string, length=s.size,
-                                        policy=decodePolicy.strict) throws {
-    stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, policy);
   }
 
   /*
@@ -732,15 +662,6 @@ module String {
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
     return decodeByteBuffer(x, length, policy);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size=length+1,
-                                        policy=decodePolicy.strict) throws {
-    stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, size, policy);
   }
 
   // non-validating string factory functions are in this submodule. This
@@ -1134,18 +1055,6 @@ module String {
         ret = localRet;
       }
       return ret;
-    }
-
-    pragma "last resort"
-    inline proc join(const ref S) : string where isTuple(S) {
-      joinArgDepr();
-      return join(S);
-    }
-
-    pragma "last resort"
-    inline proc join(const ref S: [] string) : string {
-      joinArgDepr();
-      return join(S);
     }
 
     inline proc join(ir: _iteratorRecord): string {
