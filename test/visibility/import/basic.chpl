@@ -1,4 +1,3 @@
-use CPtr;
 module A {
   var x = 13;
 

@@ -218,6 +218,7 @@ pragma "no doc"
 module ClassicLAPACK {
 
 use SysCTypes;
+use CPtr;
 use LAPACK;
 use SysBasic;
 
