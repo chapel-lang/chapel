@@ -1,4 +1,3 @@
-use CPtr;
 use Endian;
 
 // tests for 32-bit unsigned integer.
