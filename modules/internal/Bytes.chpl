@@ -191,7 +191,7 @@ module Bytes {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
     var ret: bytes;
-    initWithBorrowedBuffer(ret, x:bufferType, length,size);
+    initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
   }
 
