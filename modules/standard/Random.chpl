@@ -149,7 +149,10 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG){
+    if(algorithm==RNG.NPB) then
+      compilerError("Cannot use NPB Random number generator for array shuffling");
+
     var randNums = createRandomStream(seed=seed,
                                       eltType=arr.domain.idxType,
                                       parSafe=false,
@@ -169,6 +172,9 @@ module Random {
      :type algorithm: :type:`RNG`
    */
   proc permutation(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+    if(algorithm==RNG.NPB) then
+      compilerError("Cannot use NPB Random number generator for array permutation");
+
     var randNums = createRandomStream(seed=seed,
                                       eltType=arr.eltType,
                                       parSafe=false,
@@ -1041,7 +1047,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(arr: [] eltType) where isRectangularArr(arr){
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
@@ -1159,7 +1165,7 @@ module Random {
       }
 
       /* Randomly shuffle a 1-D array. */
-      proc shuffle(arr: [?D] ?eltType ) {
+      proc shuffle(arr: [?D] ?eltType ) where isRectangularArr(arr){
 
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
@@ -1200,7 +1206,7 @@ module Random {
          The resulting array will include each value from low..high
          exactly once, where low and high refer to the array's domain.
          */
-      proc permutation(arr: [] eltType) {
+      proc permutation(arr: [] eltType) where isRectangularArr(arr){
         var low = arr.domain.dim(0).low;
         var high = arr.domain.dim(0).high;
 
@@ -2627,7 +2633,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(arr: [] eltType) where isRectangularArr(arr){
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
