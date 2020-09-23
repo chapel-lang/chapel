@@ -4247,7 +4247,6 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-          /*
        } else if isSyncType(a.eltType) {
          [ (aa,bb) in zip(a,b) ] {
            pragma "no auto destroy"
@@ -4262,11 +4261,7 @@ module ChapelArray {
            // move it into the array
            __primitive("=", aa, copy);
          }
-*/
         } else {
-          if (isSyncType(a.eltType) || isSingleType(a.eltType)) {
-            compilerWarning("Direct assignment to arrays of 'sync'/'single' type is deprecated; apply '.read??'/'.write??' methods instead");
-          }
           [ (aa,bb) in zip(a,b) ] {
             pragma "no auto destroy"
             var copy: a.eltType = bb; // init copy
