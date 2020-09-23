@@ -386,13 +386,19 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
 static void printInstantiationNoteForLastError() {
-  if (err_fn_header_printed && err_fn &&
-      (err_fn->instantiatedFrom || fPrintCallStackOnError)) {
-    std::set<FnSymbol*> currentFns;
-    bool printedUnderline = false;
-    printInstantiationNote(err_fn, NULL, currentFns, printedUnderline);
-    if (printedUnderline) {
-      USR_PRINT("generic instantiations are underlined in the above callstack");
+  if (err_fn_header_printed && err_fn) {
+    bool printStack = false;
+    if (fAutoPrintCallStackOnError)
+      printStack = err_fn->instantiatedFrom != NULL;
+    else
+      printStack = fPrintCallStackOnError;
+
+    if (printStack) {
+      std::set<FnSymbol*> currentFns;
+      bool printedUnderline = false;
+      printInstantiationNote(err_fn, NULL, currentFns, printedUnderline);
+      if (printedUnderline)
+        USR_PRINT("generic instantiations are underlined in the above callstack");
     }
   }
 
