@@ -307,14 +307,16 @@ static const char* fnKindAndName(FnSymbol* fn) {
 
   if (fn->isIterator())
     return astr("iterator ", "'", fn->name, "'");
-
+  else if (fn->isMethod())
+    return astr("method ", "'", fn->name, "'");
 
   return astr("function ", "'", fn->name, "'");
 }
 
 // Note - this function is recursive.
 static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
-                                  std::set<FnSymbol*>& currentFns) {
+                                   std::set<FnSymbol*>& currentFns,
+                                   bool& printedUnderline) {
 
   // Stop now if it's a module init function
   if (isModuleInitFunction(errFn))
@@ -346,31 +348,36 @@ static void printInstantiationNote(FnSymbol* errFn, FnSymbol* prevFn,
   }
 
   if (bestPoint != NULL) {
-    const char* subsDesc = errFn->argsToString(", ", true);
+    std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
+                                                         printedUnderline);
 
     FnSymbol* inFn = bestPoint->getFunction();
 
-    if (subsDesc == NULL || subsDesc[0] == '\0') {
-      print_error("  %s:%d: %s called ",
-                  cleanFilename(bestPoint),
-                  bestPoint->linenum(),
-                  fnKindAndName(errFn));
-    } else {
-      print_error("  %s:%d: called as %s(%s)",
-                  cleanFilename(bestPoint),
-                  bestPoint->linenum(),
-                  errFn->name,
-                  subsDesc);
-    }
+    // Don't print "called from chpl_gen_main"
+    bool calledFromGenMain = inFn->hasFlag(FLAG_GEN_MAIN_FUNC);
 
-    if (inFn->instantiatedFrom != NULL || fPrintCallStackOnError) {
-      // finish the current line
-      print_error(" from %s\n", fnKindAndName(inFn));
-      // continue to print call sites
-      printInstantiationNote(inFn, errFn, currentFns);
-    } else {
-      // finish the current line
-      print_error("\n");
+    if (calledFromGenMain == false) {
+      if (nameAndArgs.empty()) {
+        print_error("  %s:%d: %s called ",
+                    cleanFilename(bestPoint),
+                    bestPoint->linenum(),
+                    fnKindAndName(errFn));
+      } else {
+        print_error("  %s:%d: called as %s",
+                    cleanFilename(bestPoint),
+                    bestPoint->linenum(),
+                    nameAndArgs.c_str());
+      }
+
+      if (inFn->instantiatedFrom != NULL || fPrintCallStackOnError) {
+        // finish the current line
+        print_error(" from %s\n", fnKindAndName(inFn));
+        // continue to print call sites
+        printInstantiationNote(inFn, errFn, currentFns, printedUnderline);
+      } else {
+        // finish the current line
+        print_error("\n");
+      }
     }
   }
 }
@@ -382,7 +389,11 @@ static void printInstantiationNoteForLastError() {
   if (err_fn_header_printed && err_fn &&
       (err_fn->instantiatedFrom || fPrintCallStackOnError)) {
     std::set<FnSymbol*> currentFns;
-    printInstantiationNote(err_fn, NULL, currentFns);
+    bool printedUnderline = false;
+    printInstantiationNote(err_fn, NULL, currentFns, printedUnderline);
+    if (printedUnderline) {
+      USR_PRINT("generic instantiations are underlined in the above callstack");
+    }
   }
 
   // Clear this variable in case e.g. err_fn is deleted in a future pass
@@ -488,19 +499,21 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
     print_error("%s:%d: ", filename, linenum);
   }
 
-  print_error("%s", boldErrorFormat());
   if (err_print) {
     print_error("note: ");
   } else if (err_fatal) {
+    print_error("%s", boldErrorFormat());
     if (err_user) {
       print_error("error: ");
     } else {
       print_error("internal error: ");
     }
+    print_error("%s", clearErrorFormat());
   } else {
+    print_error("%s", boldErrorFormat());
     print_error("warning: ");
+    print_error("%s", clearErrorFormat());
   }
-  print_error("%s", clearErrorFormat());
 
   if (!err_user) {
     if (!developer) {
