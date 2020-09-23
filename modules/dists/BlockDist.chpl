@@ -45,7 +45,6 @@ private use CommDiagnostics;
 private use ChapelLocks;
 private use ChapelDebugPrint;
 private use LayoutCS;
-private use ChapelPrivatization;
 
 public use SparseBlockDist;
 //
