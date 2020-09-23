@@ -281,7 +281,8 @@ module ChapelSyncvar {
   }
 
   proc   = (ref lhs : _syncvar(?t), rhs : t) {
-    compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
+    if chpl_warnUnstable then
+      compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
@@ -830,7 +831,8 @@ module ChapelSyncvar {
   }
 
   proc =(ref lhs : _singlevar(?t), rhs : t) {
-    compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
+    if chpl_warnUnstable then
+      compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
