@@ -538,7 +538,7 @@ module String {
      accessing it is undefined behavior.
 
      :arg x: Object to borrow the buffer from
-     :type x: `c_ptr` to `uint(8)` or `c_char`
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -616,7 +616,7 @@ module String {
      `c_ptr`. The buffer will be freed when the string is deinitialized.
 
      :arg x: Object to take ownership of the buffer from
-     :type x: `c_ptr` to `uint(8)` or `c_char`
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -711,7 +711,7 @@ module String {
      Creates a new string by creating a copy of a buffer.
 
      :arg x: The buffer to copy
-     :type x: `c_ptr` to `uint(8)` or `c_char`
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
