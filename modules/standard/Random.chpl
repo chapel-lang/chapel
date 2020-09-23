@@ -149,7 +149,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG){
+  proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
     if(algorithm==RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array shuffling");
 
