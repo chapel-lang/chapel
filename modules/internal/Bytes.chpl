@@ -178,7 +178,7 @@ module Bytes {
      from this function, accessing it is undefined behavior.
 
      :arg s: Buffer to borrow
-     :type x: `c_ptr` to `uint(8)` or `c_char`
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -245,7 +245,7 @@ module Bytes {
      :mod:`bytes <Bytes>` is deinitialized.
 
      :arg s: The buffer to take ownership of
-     :type x: `c_ptr` to `uint(8)` or `c_char`
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -317,7 +317,7 @@ module Bytes {
      Creates a new :mod:`bytes <Bytes>` by creating a copy of a buffer.
 
      :arg s: The buffer to copy
-     :type x: `c_ptr` to `uint(8)` or `c_char`
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of buffer `s`, excluding the terminating null byte.
 
