@@ -1372,7 +1372,6 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_fn_def    { $$ = $1; }
-| TBNOT ident_def { $$ = astr("~", $2); }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
 | TBXOR          { $$ = "^"; }
