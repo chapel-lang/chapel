@@ -8,6 +8,7 @@ config const numSwaps = 10;
 config const stride = 7;
 config const numSwapPasses = 3;
 
+use CPtr;
 use Random;
 var elems: [1..numAdds] real;
 fillRandom(elems, seed);

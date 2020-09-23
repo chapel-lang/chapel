@@ -1,3 +1,4 @@
+use CPtr;
 var outersync: sync int = 1;
 var foo1: sync int = outersync;
 writeln(foo1.type:string);

@@ -1,3 +1,4 @@
+use CPtr;
 use Time;
 // Test single field in a class
 

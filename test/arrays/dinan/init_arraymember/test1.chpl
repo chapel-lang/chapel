@@ -1,3 +1,4 @@
+use CPtr;
 proc f() {
   var x: [1..10] real = 5.0;
   return x;

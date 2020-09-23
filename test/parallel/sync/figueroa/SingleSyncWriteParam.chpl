@@ -1,3 +1,4 @@
+use CPtr;
 use Time;
 
 var x: sync int = 1;

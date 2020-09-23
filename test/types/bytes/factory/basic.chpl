@@ -1,3 +1,4 @@
+use CPtr;
 const targetLocale = Locales[numLocales-1];
 
 var myBytes = b"A Chapel bytes";

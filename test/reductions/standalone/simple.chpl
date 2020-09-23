@@ -1,3 +1,4 @@
+use CPtr;
 // This program used to produce the incorrect result (count == 0 instead of 5)
 iter myIter() {
   halt("Dummy serial iterator");

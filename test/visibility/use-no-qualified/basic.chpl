@@ -5,7 +5,8 @@ module A {
   }
 }
 module User {
-  use A as _;
+  use CPtr;
+use A as _;
 
   proc main() {
     writeln(x);

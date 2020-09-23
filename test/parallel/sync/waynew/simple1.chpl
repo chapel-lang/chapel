@@ -1,3 +1,4 @@
+use CPtr;
 // Main thread slowly writes to s.  Child thread reads from s and
 // outputs what was read.
 

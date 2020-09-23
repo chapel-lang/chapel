@@ -1,3 +1,4 @@
+use CPtr;
 var myDom: domain(1);
 var myArray: [myDom][1..2] uint(8);
 

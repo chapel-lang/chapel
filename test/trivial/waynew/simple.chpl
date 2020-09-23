@@ -1,3 +1,4 @@
+use CPtr;
 var a:complex;
 var b:complex;
 

@@ -1,3 +1,4 @@
+use CPtr;
 config const sourceText = "<a><ii>end</ii><none /></a>";
 const AllIndices: domain(1) = {0..<sourceText.size};
 const AllPairs: domain(2) = {0..<sourceText.size, 0..<sourceText.size};

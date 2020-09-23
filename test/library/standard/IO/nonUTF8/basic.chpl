@@ -1,3 +1,4 @@
+use CPtr;
 use IO;
 
 config param useNonUTF8 = true;

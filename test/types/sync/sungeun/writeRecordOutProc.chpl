@@ -1,3 +1,4 @@
+use CPtr;
 config type myType = int;
 config const initval: myType = 71:myType;
 

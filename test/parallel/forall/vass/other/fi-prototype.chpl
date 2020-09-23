@@ -1,3 +1,4 @@
+use CPtr;
 /*
 This test prototypes "forall intents", at the Chapel source level.
 

@@ -1,3 +1,4 @@
+use CPtr;
 use LinkedLists;
 
 var s: LinkedList(int) = makeList( 1, 2, 3 );

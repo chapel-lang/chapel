@@ -1,3 +1,4 @@
+use CPtr;
 config const lo = min(int)+1;
 config const hi = max(int);
 config const noisy = false;

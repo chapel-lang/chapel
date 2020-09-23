@@ -1,3 +1,4 @@
+use CPtr;
 module OuterModule {
   // Tests basic external variables and inline functions
   // defined both within the extern "C" module and in an

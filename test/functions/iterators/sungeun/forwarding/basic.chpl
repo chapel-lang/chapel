@@ -1,3 +1,4 @@
+use CPtr;
 config const n = 5;
 config const noisy = false;
 const n2 = n/2;

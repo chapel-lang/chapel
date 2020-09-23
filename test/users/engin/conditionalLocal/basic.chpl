@@ -1,3 +1,4 @@
+use CPtr;
 var a = 10;
 
 config var val = true;

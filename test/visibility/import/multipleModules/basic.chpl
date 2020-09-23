@@ -1,3 +1,4 @@
+use CPtr;
 // Verifies that more than one module in the import statement works for both
 // with qualified access
 module A {

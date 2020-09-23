@@ -1,3 +1,4 @@
+use CPtr;
 // Ensure sync variables are passable by reference.
 
 var aaa: sync int; // -> empty

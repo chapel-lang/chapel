@@ -1,3 +1,4 @@
+use CPtr;
 var global: c_array(int, 3);
 
 var count = 0;

@@ -1,3 +1,4 @@
+use CPtr;
 use Time;
 
 // Test single read on initialization.

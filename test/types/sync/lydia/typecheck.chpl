@@ -1,3 +1,4 @@
+use CPtr;
 var a = 0;
 var b: sync int;
 b.writeEF(1);

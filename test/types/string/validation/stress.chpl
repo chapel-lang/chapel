@@ -9,6 +9,7 @@
 */
 
 
+use CPtr;
 use IO;
 
 var f = open("UTF8-test.txt", mode=iomode.rw);
