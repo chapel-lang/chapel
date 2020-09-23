@@ -332,19 +332,17 @@ into a common enclosing scope.
 Conflicts
 +++++++++
 
-The scope inserted by the presence of ``use`` and ``import`` statements follows
-the same rules about conflicting symbols as symbols defined in the same scope
-(see :ref:`Variable_Conflicts`).  Thus an error will be signaled if multiple
-conflicting public module-level symbols would be inserted into this enclosing
-scope with the same name, and that name is accessed by other statements in the
-same scope as the ``use`` or ``import``.  Remember that this does not apply to
-functions unless they are also indistinguishable in other ways, see
-:ref:`Function_Overloading`.
+The implicit scope added by ``use`` and ``import`` described in the previous
+section follows the same rules about conflicting variables as other scopes (see
+:ref:`Variable_Conflicts`).  Thus an error will be signaled if multiple
+variables with the same name would be inserted into this enclosing scope, and
+that name is accessed.  Remember that this does not apply to functions unless
+they are also indistinguishable in other ways, see :ref:`Function_Overloading`.
 
 Because symbols brought into scope by a ``use`` or ``import`` statement are
 placed at a scope enclosing where the statement appears, such symbols will be
 shadowed by other symbols with the same name defined in the scope with the
-statement.  Thus the symbols that are shadowed will only be accessible via
+statement.  The symbols that are shadowed will only be accessible via
 :ref:`Explicit_Naming`.
 
 Symbols defined by public ``use`` or ``import`` statements can impact the scope
@@ -380,23 +378,23 @@ necessary to obtain them.  For instance,
 
    This code demonstrates a module (MainMod) using two modules, B and C.  Module
    C defines a symbol named x, while module B publicly uses another module, A,
-   which also defines a symbol named x.  The program as written will not
-   conflict and will print out the value of ``C.x``, which is ``false``, because
-   A's x is considered further away (it is made available to MainMod through
-   `two` use statements instead of just one).  Thus, it will generate the
-   following output:
+   which also defines a symbol named x.  The program as written will compile and
+   will print out the value of ``C.x``, which is ``false``, because A's x is
+   considered further away (it is made available to MainMod through `two` use
+   statements instead of just one).  Thus, it will generate the following
+   output:
 
    .. code-block:: printoutput
 
       false
 
    If, however, C had been publicly used by another module D and that was used
-   by MainMod instead, then the language cannot determine which of ``C.x`` and
-   ``A.x`` was intended for ``writeln(x);``.  Chapel must be explicitly told
-   which x to access, via qualified access as mentioned earlier.
+   by MainMod instead, then the compiler cannot determine which of ``C.x`` and
+   ``A.x`` was intended for ``writeln(x);``.  The program must use qualified
+   access to indicate which x to access.
 
 Symbols brought in directly by a ``public import`` are treated as though defined
-`at` the scope with the ``public import`` for the purpose of determining
+*at* the scope with the ``public import`` for the purpose of determining
 conflicts (see :ref:`Reexporting`).  This means that if the ``public use`` in
 module B of the previous example was instead replaced with a ``public import
 A.x``, A's x would conflict with ``C.x`` when resolving the main function's
