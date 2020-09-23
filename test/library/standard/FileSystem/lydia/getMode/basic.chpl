@@ -1,4 +1,3 @@
-use CPtr;
 use FileSystem;
 
 writeln(getMode("blah"));

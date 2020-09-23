@@ -1,4 +1,3 @@
-use CPtr;
 class C {
   const irng: range;
 

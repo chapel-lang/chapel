@@ -1,4 +1,3 @@
-use CPtr;
 var go: sync bool;
 proc ensureDefaultInit(arg) { }
 ensureDefaultInit(go); // make sure go is default-initialized

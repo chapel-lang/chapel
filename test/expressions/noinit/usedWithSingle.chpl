@@ -1,4 +1,3 @@
-use CPtr;
 var sing$: single int = noinit;
 var sing2$: single bool = noinit;
 

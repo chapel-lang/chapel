@@ -1,4 +1,3 @@
-use CPtr;
 use BlockDist;
 
 proc test(d) {

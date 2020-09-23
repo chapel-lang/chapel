@@ -1,4 +1,3 @@
-use CPtr;
 use Time;
 // Test single var using the read/write methods
 

@@ -1,6 +1,5 @@
 // Test single field in a class with multiple readers.
 
-use CPtr;
 use Time;
 
 class D {

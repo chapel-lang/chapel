@@ -1,4 +1,3 @@
-use CPtr;
 use iters;
 config const myVerbose = false;
 

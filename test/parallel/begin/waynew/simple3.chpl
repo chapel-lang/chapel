@@ -1,4 +1,3 @@
-use CPtr;
 var a = 1;
 
 begin {

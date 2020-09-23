@@ -2,7 +2,6 @@ config const seed: int(64) = 23;
 config const numAdds = 1000;
 config const numRemoves = numAdds;
 
-use CPtr;
 use Random;
 var elems: [1..numAdds] int = 1..numAdds;
 Random.shuffle(elems, seed);

@@ -1,4 +1,3 @@
-use CPtr;
 // Test sync var using mostly read, reset, and isFull methods
 
 var done: sync bool = true;

@@ -1,7 +1,6 @@
 use Sort;
 use SampleSortHelp;
 use Random;
-use CPtr;
 
 config const debug = false;
 

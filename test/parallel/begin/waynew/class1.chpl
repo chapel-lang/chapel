@@ -1,4 +1,3 @@
-use CPtr;
 // Test a begin block with a reference to a class variable
 
 class C {

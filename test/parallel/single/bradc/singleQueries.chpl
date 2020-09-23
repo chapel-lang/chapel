@@ -1,4 +1,3 @@
-use CPtr;
 var x$: single bool;
 
 writeln("x$.isFull? = ", x$.isFull);

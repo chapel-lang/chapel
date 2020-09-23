@@ -1,4 +1,3 @@
-use CPtr;
 use Time;
 
 var s: single int(64);

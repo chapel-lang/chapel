@@ -1,4 +1,3 @@
-use CPtr;
 // Same as simple1.chpl, but instead fast writer, slow reader.
 // Outputs what was read.
 

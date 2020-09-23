@@ -2,7 +2,6 @@
 // when it is the receiver calling a method on the underlying type?
 // This test requires "yes". The compiler has a special case that says "no".
 
-use CPtr;
 use Time;
 
 proc int.showme() { writeln("showme ", this); }

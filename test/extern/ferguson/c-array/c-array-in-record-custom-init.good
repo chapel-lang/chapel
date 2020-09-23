@@ -1,2 +1,2 @@
-c-array-in-record-custom-init.chpl:3: In initializer:
-c-array-in-record-custom-init.chpl:4: error: Attempt to 'new' a function or undefined symbol
+(dat = [0, 0, 0])
+(dat = [100, 200, 300])

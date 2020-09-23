@@ -1,4 +1,3 @@
-use CPtr;
 // Test sync field in a class
 
 class D {

@@ -1,4 +1,3 @@
-use CPtr;
 config type myType = int;
 config const initval: myType = 71:myType;
 config const iters = 250; // < GASNet limit on number of threads

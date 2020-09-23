@@ -1,4 +1,3 @@
-use CPtr;
 // Test class with a sync var field.
 
 // Part 1. Main thread slowly writes to s.  Child thread reads from s and

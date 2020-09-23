@@ -1,4 +1,3 @@
-use CPtr;
 
 record R {
   var x : int;

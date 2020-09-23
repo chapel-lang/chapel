@@ -4,7 +4,6 @@
 // This is a contrived example to have tasks live
 // across a tagVdebug() call.
 
-use CPtr;
 use VisualDebug;
 use BlockDist;
 

@@ -1,4 +1,3 @@
-use CPtr;
 use Time;
 
 // Test multiple threads waiting at the same time.

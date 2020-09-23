@@ -1,7 +1,6 @@
 // Base case: use of enum allows unqualified access to its components
 enum foo {a, b, c};
 
-use CPtr;
 use foo;
 
 var first = a;

@@ -1,4 +1,3 @@
-use CPtr;
 use multiArray;
 
 proc main() {

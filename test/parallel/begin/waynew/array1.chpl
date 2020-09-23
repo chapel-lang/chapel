@@ -1,4 +1,3 @@
-use CPtr;
 // Test a begin block with a reference to a global array and whether
 // arrays are thread safe.  A sort of weak test on the latter.
 

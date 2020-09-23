@@ -1,4 +1,3 @@
-use CPtr;
 class C {
   type t;
   var x : t;
