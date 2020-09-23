@@ -196,6 +196,8 @@ int scalar_replace_limit = 8;
 int inline_iter_yield_limit = 10;
 int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
+bool fDetectColorTerminal = true;
+bool fUseColorTerminal = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
@@ -817,6 +819,11 @@ static void setCacheEnable(const ArgumentDescription* desc, const char* unused) 
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
+static void setUseColorTerminalFlag(const ArgumentDescription* desc, const char* unused) {
+  fDetectColorTerminal = false;
+  // fUseColorTerminal is set by the flag
+}
+
 static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
@@ -1044,6 +1051,7 @@ static ArgumentDescription arg_desc[] = {
  //       (so that they are available for user flags)
  {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
  {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
+ {"use-color-terminal", ' ', NULL, "[Don't] emit control codes for color and bold in error messages", "N", &fUseColorTerminal, "CHPL_USE_COLOR_TERMINAL", setUseColorTerminalFlag},
  {"gen-ids", ' ', NULL, "[Don't] pepper generated code with BaseAST::ids", "N", &fGenIDS, "CHPL_GEN_IDS", NULL},
  {"html", ' ', NULL, "Dump IR in HTML format (toggle)", "T", &fdump_html, "CHPL_HTML", NULL},
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, "CHPL_HTML_USER", setHtmlUser},

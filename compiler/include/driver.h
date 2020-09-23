@@ -153,6 +153,8 @@ extern bool fPrintDispatch;
 extern bool fPrintUnusedFns;
 extern bool fPrintUnusedInternalFns;
 extern bool fRegionVectorizer;
+extern bool fDetectColorTerminal;
+extern bool fUseColorTerminal;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;
