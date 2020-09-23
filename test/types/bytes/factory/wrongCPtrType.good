@@ -1,0 +1,1 @@
+wrongCPtrType.chpl:x: Cannot create a bytes with a buffer of int(64)
