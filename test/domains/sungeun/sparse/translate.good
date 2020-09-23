@@ -1,3 +1,4 @@
 translate.chpl:6: In function 'my_translate':
 translate.chpl:7: error: translate not supported on sparse domains
-translate.chpl:13: Function 'my_translate' instantiated as: my_translate(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), off: int(64))
+  translate.chpl:13: called as my_translate(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), off: int(64)) from function 'dit'
+  translate.chpl:25: called as dit(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), lo: int(64), hi: int(64))

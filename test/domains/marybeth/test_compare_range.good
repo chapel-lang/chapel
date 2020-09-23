@@ -1,3 +1,3 @@
 test_compare_range.chpl:14: In function 'initMatrix':
 test_compare_range.chpl:20: error: iterator or promoted expression iterator used in if or while condition
-test_compare_range.chpl:6: Function 'initMatrix' instantiated as: initMatrix(A: [domain(2,int(64),false)] real(64))
+  test_compare_range.chpl:6: called as initMatrix(A: [domain(2,int(64),false)] real(64))

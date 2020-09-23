@@ -1,3 +1,4 @@
-$CHPL_HOME/modules/standard/Math.chpl:545: In function 'divceil':
-$CHPL_HOME/modules/standard/Math.chpl:547: error: illegal use of '+' on operands of type uint(64) and signed integer
-div-ceil-on-more-int-types.chpl:3: Function 'divceil' instantiated as: divceil(m: int(32), n: uint(64))
+$CHPL_HOME/modules/standard/Math.chpl:548: In function 'divceil':
+$CHPL_HOME/modules/standard/Math.chpl:550: error: illegal use of '+' on operands of type uint(64) and signed integer
+  div-ceil-on-more-int-types.chpl:3: called as divceil(m: int(32), n: uint(64)) from function 'launch'
+  div-ceil-on-more-int-types.chpl:8: called as launch(a: int(32), b: uint(64))

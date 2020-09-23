@@ -1,7 +1,7 @@
 const-in-intent-arrays-domains.chpl:6: In function 'testFormal':
 const-in-intent-arrays-domains.chpl:7: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:8: error: cannot assign to const variable
-const-in-intent-arrays-domains.chpl:12: Function 'testFormal' instantiated as: testFormal(domArg: domain(1,int(64),false), arrArg: [domain(1,int(64),false)] int(64))
+  const-in-intent-arrays-domains.chpl:12: called as testFormal(domArg: domain(1,int(64),false), arrArg: [domain(1,int(64),false)] int(64))
 const-in-intent-arrays-domains.chpl:11: In function 'main':
 const-in-intent-arrays-domains.chpl:15: error: cannot assign to const variable
 const-in-intent-arrays-domains.chpl:14: note: The shadow variable 'DOM' is constant due to task intents in this begin statement

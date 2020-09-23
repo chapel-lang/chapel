@@ -5,4 +5,4 @@ generic-default-nil2.chpl:4: error: the type of the actual argument 'x' is gener
 note: generic actual arguments are not currently supported
 generic-default-nil2.chpl:4: note: 'C' now means non-nilable class with any management
 generic-default-nil2.chpl:4: note: to migrate old code, change it to 'borrowed C'
-generic-default-nil2.chpl:7: Function 'foo' instantiated here
+  generic-default-nil2.chpl:7: called as foo(x: C)

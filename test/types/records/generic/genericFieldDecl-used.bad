@@ -1,4 +1,9 @@
 $CHPL_HOME/modules/internal/ChapelIO.chpl:217: In function 'isIoField':
 $CHPL_HOME/modules/internal/ChapelIO.chpl:218: error: the type of the actual argument 'call_tmp' is generic
 note: generic actual arguments are not currently supported
-$CHPL_HOME/modules/internal/ChapelIO.chpl:273: Function 'isIoField' instantiated as: isIoField(x: One, param i = 1)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/standard/IO.chpl:3086: called as _write_one_internal(_channel_internal: qio_channel_ptr_t, param kind = 0: iokind, x: One, loc: locale) from method '_writeOne'
+  $CHPL_HOME/modules/standard/IO.chpl:4034: called as channel(true,dynamic,true)._writeOne(param kind = 0: iokind, x: One, loc: locale) from method 'write'
+  $CHPL_HOME/modules/standard/IO.chpl:4083: called as channel(true,dynamic,true).write(args(0): One, args(1): ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/internal/ChapelIO.chpl:841: called as channel.writeln(args(0): _any)
+  within internal functions (use --print-callstack-on-error to see)

@@ -1,4 +1,4 @@
 rec_fun-1.chpl:2: error: unable to resolve return type of function 'f'
 rec_fun-1.chpl:2: In function 'f':
 rec_fun-1.chpl:5: error: called recursively at this point
-rec_fun-1.chpl:8: Function 'f' instantiated as: f(x: int(64))
+  rec_fun-1.chpl:8: called as f(x: int(64))
