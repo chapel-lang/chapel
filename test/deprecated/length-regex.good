@@ -1,2 +1,0 @@
-length-regex.chpl:5: warning: 'reMatch.length' is deprecated - please use 'reMatch.size' instead
-6

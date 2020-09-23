@@ -527,15 +527,6 @@ record reMatch {
   var offset:byteIndex; // 0-based, -1 if matched==false
   /* the length of the match. 0 if matched==false */
   var size:int; // 0 if matched==false
-
-  /*
-    Deprecated - please use :proc:`reMatch.size`.
-   */
-  proc length ref {
-    compilerWarning("'reMatch.length' is deprecated - " +
-                    "please use 'reMatch.size' instead");
-    return size;
-  }
 }
 
 pragma "no doc"

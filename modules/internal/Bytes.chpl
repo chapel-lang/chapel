@@ -376,12 +376,6 @@ module Bytes {
 
     inline proc byteIndices return 0..<size;
 
-    inline proc param length param {
-      compilerWarning("'bytes.length' is deprecated - " +
-                      "please use 'bytes.size' instead");
-      return size;
-    }
-
     inline proc param size param
       return __primitive("string_length_bytes", this);
 
@@ -479,13 +473,6 @@ module Bytes {
       return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
     }
   } // end of record bytes
-
-  /* Deprecated - please use :proc:`bytes.size`. */
-  inline proc bytes.length {
-    compilerWarning("'bytes.length' is deprecated - " +
-                    "please use 'bytes.size' instead");
-    return buffLen;
-  }
 
   /*
     :returns: The number of bytes in the :mod:`bytes <Bytes>`.
