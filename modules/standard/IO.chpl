@@ -5232,6 +5232,7 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use SysCTypes;
+  use CPtr;
   use SysBasic;
   use SysError;
 //use IO;

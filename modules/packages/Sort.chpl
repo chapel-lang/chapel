@@ -254,6 +254,7 @@ module Sort {
 
   private use List;
   private use Reflection;
+  private use CPtr;
 
 /* Module-defined comparators */
 
