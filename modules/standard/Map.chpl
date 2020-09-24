@@ -250,6 +250,17 @@ module Map {
       }
     }
 
+    proc computeKey(const ref k: keyType, worker) throws {
+      
+    }
+
+    pragma "no doc"
+    inline proc _errorForParSafeIndexing() {
+      if parSafe then
+        compilerError('Cannot index a map initialized ' +
+                      'with `parSafe=true`', 2);
+    }
+
     /*
       Get the value mapped to the given key, or add the mapping if key does not
       exist.
@@ -260,6 +271,8 @@ module Map {
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
+      _errorForParSafeIndexing();
+
       _enter(); defer _leave();
 
       var (_, slot) = table.findAvailableSlot(k);
@@ -273,6 +286,8 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
+      _errorForParSafeIndexing();
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -284,6 +299,8 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const ref
     where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+      _errorForParSafeIndexing();
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -295,6 +312,7 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
+      _errorForParSafeIndexing();
       compilerError("Cannot access nilable class directly. Use an",
                     " appropriate accessor method instead.");
     }
@@ -317,10 +335,14 @@ module Map {
     }
 
     /* Get a reference to the element at position `k`. This method is not
-       available for non-nilable types.
+       available for maps initialized with `parSafe=true`.
      */
     proc getReference(k: keyType) ref
     where !isNonNilableClass(valType) {
+      if parSafe then
+        compilerError('cannot call `getReference()` on maps ' +
+                      'initialized with `parSafe=true`');
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -329,17 +351,12 @@ module Map {
       return result;
     }
 
-    /* Get a copy of the element stored at position `k`. This method is only
-       available when a map's `valType` is a non-nilable class.
+    /* Get a copy of the element stored at position `k`.
      */
     proc getValue(k: keyType) const {
-      if !isNonNilableClass(valType) then
-        compilerError('getValue can only be called when a map value type ',
-                      'is a non-nilable class');
-
-      if isOwnedClass(valType) then
-        compilerError('getValue cannot be called when a map value type ',
-                      'is an owned class, use getBorrowed instead');
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
