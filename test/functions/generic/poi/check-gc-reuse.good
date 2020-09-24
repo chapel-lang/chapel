@@ -1,0 +1,95 @@
+check-gc-reuse.chpl:30: In function 'u1':
+check-gc-reuse.chpl:31: warning: User.u1
+check-gc-reuse.chpl:15: In function 'libFun':
+check-gc-reuse.chpl:16: warning: User.workFun
+check-gc-reuse.chpl:17: warning: User.workMet
+check-gc-reuse.chpl:32: Function 'libFun' instantiated as: libFun(myArg: owned MyClass)
+check-gc-reuse.chpl:19: In function 'libMet':
+check-gc-reuse.chpl:20: warning: User.workFun
+check-gc-reuse.chpl:21: warning: User.workMet
+check-gc-reuse.chpl:33: Function 'libMet' instantiated as: libMet(myArg: owned MyClass)
+check-gc-reuse.chpl:35: In function 'u2':
+check-gc-reuse.chpl:37: warning: User.u2
+check-gc-reuse.chpl:42: In function 'u3':
+check-gc-reuse.chpl:45: warning: User.u3
+check-gc-reuse.chpl:15: In function 'libFun':
+check-gc-reuse.chpl:16: warning: User.u3.workFun
+check-gc-reuse.chpl:17: warning: User.u3.workMet
+check-gc-reuse.chpl:46: Function 'libFun' instantiated as: libFun(myArg: owned MyClass)
+check-gc-reuse.chpl:19: In function 'libMet':
+check-gc-reuse.chpl:20: warning: User.u3.workFun
+check-gc-reuse.chpl:21: warning: User.u3.workMet
+check-gc-reuse.chpl:47: Function 'libMet' instantiated as: libMet(myArg: owned MyClass)
+check-gc-reuse.chpl:80: In function 'm1con':
+check-gc-reuse.chpl:81: warning: More1.m1con
+check-gc-reuse.chpl:15: In function 'libFun':
+check-gc-reuse.chpl:16: warning: More1.workFun
+check-gc-reuse.chpl:17: warning: More1.workMet
+check-gc-reuse.chpl:82: Function 'libFun' instantiated as: libFun(myArg: owned MyClass)
+check-gc-reuse.chpl:19: In function 'libMet':
+check-gc-reuse.chpl:20: warning: More1.workFun
+check-gc-reuse.chpl:21: warning: More1.workMet
+check-gc-reuse.chpl:83: Function 'libMet' instantiated as: libMet(myArg: owned MyClass)
+check-gc-reuse.chpl:85: In function 'm1gen':
+check-gc-reuse.chpl:86: warning: More1.m1gen
+check-gc-reuse.chpl:57: Function 'm1gen' instantiated as: m1gen(param p = 0)
+check-gc-reuse.chpl:95: In function 'm2con':
+check-gc-reuse.chpl:96: warning: More2.m2con
+check-gc-reuse.chpl:100: In function 'm2gen':
+check-gc-reuse.chpl:101: warning: More2.m2gen
+check-gc-reuse.chpl:62: Function 'm2gen' instantiated as: m2gen(param p = 0)
+check-gc-reuse.chpl:126: In function 'combo2a':
+check-gc-reuse.chpl:127: warning: Combo2.combo2a
+check-gc-reuse.chpl:114: Function 'combo2a' instantiated as: combo2a(param p = 0)
+check-gc-reuse.chpl:15: In function 'libFun':
+check-gc-reuse.chpl:16: warning: Combo1.workFun
+check-gc-reuse.chpl:17: warning: Combo1.workMet
+check-gc-reuse.chpl:128: Function 'libFun' instantiated as: libFun(myArg: owned MyClass)
+check-gc-reuse.chpl:19: In function 'libMet':
+check-gc-reuse.chpl:20: warning: Combo1.workFun
+check-gc-reuse.chpl:21: warning: Combo1.workMet
+check-gc-reuse.chpl:129: Function 'libMet' instantiated as: libMet(myArg: owned MyClass)
+check-gc-reuse.chpl:116: In function 'combo1b':
+check-gc-reuse.chpl:117: warning: Combo1.combo1b
+check-gc-reuse.chpl:133: Function 'combo1b' instantiated as: combo1b(param p = 0)
+User.u1
+User.workFun
+User.workMet
+User.workFun
+User.workMet
+User.u2
+User.workFun
+User.workMet
+User.workFun
+User.workMet
+User.u3
+User.u3.workFun
+User.u3.workMet
+User.u3.workFun
+User.u3.workMet
+More1.m1con
+More1.workFun
+More1.workMet
+More1.workFun
+More1.workMet
+More1.m1gen
+More1.workFun
+More1.workMet
+More1.workFun
+More1.workMet
+More2.m2con
+More2.m2gen
+User.workFun
+User.workMet
+User.workFun
+User.workMet
+Combo2.combo2a
+Combo1.workFun
+Combo1.workMet
+Combo1.workFun
+Combo1.workMet
+Combo1.combo1b
+Combo1.workFun
+Combo1.workMet
+Combo1.workFun
+Combo1.workMet
