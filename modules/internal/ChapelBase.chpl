@@ -670,15 +670,6 @@ module ChapelBase {
     }
   }
 
-  inline proc postfix!(type t: class) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-  inline proc postfix!(type t: class?) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-
   inline proc postfix!(x:unmanaged class) {
     return _to_nonnil(x);
   }
