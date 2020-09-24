@@ -2401,13 +2401,15 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            //            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
             arg->typeExpr = new BlockStmt(new CallExpr("_desync_warn", defPoint->exprType->copy()));
 
           } else {
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
-	    arg->typeExpr = new BlockStmt(new CallExpr("_desync_warn", defPoint->exprType->copy()));
+           arg->typeExpr = new BlockStmt(new CallExpr("_desync_warn", defPoint->exprType->copy()));
+           //arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
           }
         }
 
@@ -2424,6 +2426,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
+  //  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
   BlockStmt* exprType = new BlockStmt(new CallExpr("_desync_warn", fieldDef->exprType->copy()), BLOCK_TYPE);
 
   // If the type is simple, just set the argument's type directly.

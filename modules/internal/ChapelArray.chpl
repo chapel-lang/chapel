@@ -3859,6 +3859,8 @@ module ChapelArray {
       return isPODType(t);
     } else if (isUnionType(t)) {
       return false;
+    } else if (isSyncType(t) || isSingleType(t) || isAtomicType(t)) {
+      return false;
     } else {
       pragma "unsafe" var x:t;
       return chpl__supportedDataTypeForBulkTransfer(x);
@@ -3867,8 +3869,6 @@ module ChapelArray {
 
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
@@ -4247,14 +4247,23 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-       } else if isSyncType(a.eltType) {
-         [ (aa,bb) in zip(a,b) ] {
-           pragma "no auto destroy"
-           var copy: a.eltType = bb.readFE(); // init copy
-           // move it into the array
-           __primitive("=", aa, copy);
-         }
-       } else if isSingleType(a.eltType) {
+        } else if isSyncType(a.eltType) {
+          use Reflection;
+          [ (aa,bb) in zip(a,b) ] {
+            if (isSyncType(b.type)) {
+              compilerWarning("direct reads of 'sync' vars are deprecated; use '.read??' to access");
+              pragma "no auto destroy"
+              var copy: a.eltType = bb.readFE(); // init copy
+              // move it into the array
+              __primitive("=", aa, copy);
+            } else {
+              pragma "no auto destroy"
+              var copy: a.eltType = bb; // init copy
+              // move it into the array
+              __primitive("=", aa, copy);
+            }              
+          }
+        } else if isSingleType(a.eltType) {
          [ (aa,bb) in zip(a,b) ] {
            pragma "no auto destroy"
            var copy: a.eltType = bb.readFF(); // init copy
@@ -4378,7 +4387,7 @@ module ChapelArray {
 
   proc _desync_warn(type t:_singlevar) type {
     if chpl_warnUnstable then
-      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'single' fields will change from taking a formal of type 'single t' to simply 't'.  You can stabilize your code from such changes by adding an explicit default initializer now.");
+      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'single' fields will change from taking a formal of type 'single t' to simply 't'.  You can insultate your code from this change by adding an explicit default initializer now.");
     return t;
   }
 
@@ -4389,7 +4398,7 @@ module ChapelArray {
 
   proc _desync_warn(type t) type where isAtomicType(t) {
     if chpl_warnUnstable then
-      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'atomic' fields will change from taking a formal of type 'atomic t' to simply 't'.  You can stabilize your code from such changes by adding an explicit default initializer now.");
+      compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'atomic' fields will change from taking a formal of type 'atomic t' to simply 't'.  You can insulate your code from this change by adding an explicit default initializer now.");
     return t;
   }
 
