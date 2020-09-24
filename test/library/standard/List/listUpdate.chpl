@@ -23,7 +23,7 @@ proc test1() {
 
   writeln(lst);
   var worker = new myWorker1();
-  lst.computeIndex(0, worker);
+  lst.update(0, worker);
   writeln(lst);
 }
 test1();
@@ -35,7 +35,7 @@ proc test2() {
   for i in 0..7 do lst.append(new r(0));
   writeln(lst);
   var worker = new myWorker2();
-  coforall i in 0..7 do lst.computeIndex(i, worker);
+  coforall i in 0..7 do lst.update(i, worker);
   writeln(lst);
 }
 test2();
@@ -49,7 +49,7 @@ proc test3() {
 
   // TODO: FCFs cannot take variables by ref right now.
   for i in 0..7 do
-    lst.computeIndex(i, lambda(i: int, val: int) {
+    lst.update(i, lambda(i: int, val: int) {
       writeln(val);
       return none;
     });
@@ -75,7 +75,7 @@ proc test4() {
 
   for i in 0..7 do
     try {
-      lst.computeIndex(i, new myWorker3());
+      lst.update(i, new myWorker3());
     } catch e: IllegalArgumentError {
       writeln(lst);
     } catch {

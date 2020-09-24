@@ -673,6 +673,9 @@ module List {
       :rtype: `ref eltType`
     */
     proc ref first() ref {
+      if parSafe then
+        compilerError('Cannot call `first()` on a list initialized ' +
+                      'with `parSafe=true`');
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -700,6 +703,9 @@ module List {
       :rtype: `ref eltType`
     */
     proc ref last() ref {
+      if parSafe then
+        compilerError('Cannot call `last()` on a list initialized ' +
+                      'with `parSafe=true`');
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1374,7 +1380,7 @@ module List {
 
       :arg x: The value to set at index `i`
 
-      :return: `true` if `i` is a valid index that has been set by `x`,
+      :return: `true` if `i` is a valid index that has been set to `x`,
                and `false` otherwise.
       :rtype: bool
     */
@@ -1394,16 +1400,17 @@ module List {
     }
 
     /*
-      Update a value in this list in a guarded manner via a worker object.
+      Update a value in this list in a parallel safe manner via a worker
+      object.
 
-      The worker object passed to the `computeIndex()` method must
+      The worker object passed to the `update()` method must
       define a `this()` method that takes two arguments: an integer index,
       and a second argument of this list's `valType`. The worker object's
       `this()` method must return some sort of value. Workers that do not
       need to return anything may return `none`.
 
       If the worker's `this()` method throws, the thrown error will be
-      propagated out of `computeIndex()`.
+      propagated out of `update()`.
 
       :arg i: The index to update
       :type i: `int`
@@ -1411,7 +1418,7 @@ module List {
       :arg worker: A class or record used to update the value at `i`
       :return: What the worker returns
     */
-    proc computeIndex(i: int, worker) throws {
+    proc update(i: int, worker) throws {
       _enter(); defer _leave();
 
       if boundsChecking && !_withinBounds(i) {
@@ -1421,6 +1428,14 @@ module List {
 
       ref slot = _getRef(i);
 
+      // Print a prettier error message if arguments fail resolve, to avoid
+      // pointing into module code.
+      import Reflection;
+      if !Reflection.canResolveMethod(worker, "this", i, slot) then
+        compilerError('`map.update()` failed to resolve method ' +
+                      worker.type:string + '.this() for arguments (' +
+                      i.type:string + ', ' + slot.type:string + ')');
+
       return worker(i, slot);
     }
 
@@ -1428,7 +1443,7 @@ module List {
     inline proc _errorForParSafeIndexing() {
       if parSafe then
         compilerError('Cannot index a list initialized with ' +
-                      '`parSafe=true`');
+                      '`parSafe=true`', 2);
       return;
     }
 
