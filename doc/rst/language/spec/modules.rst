@@ -519,10 +519,6 @@ the following:
  * ``this`` to indicate the requested module is a submodule of the
    current module
 
-An error is signaled if symbols brought in by this ``use`` are accessed and
-would conflict with other symbols, see :ref:`Use_And_Import_Conflicts` for more
-information.
-
 A module or enum being used may optionally be given a new name using the ``as``
 keyword.  This new name will be usable from the scope of the use in place of the
 old name.  This new name does not affect uses or imports of that module from
@@ -785,10 +781,6 @@ statement must begin with one of the following:
 
 A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
-
-An error is signaled if symbols brought in by this ``import`` are accessed and
-would conflict with other symbols, see :ref:`Use_And_Import_Conflicts` for more
-information.
 
 A module or a public module-level symbol being imported may optionally be given
 a new name using the ``as`` keyword.  This new name will be usable from the
