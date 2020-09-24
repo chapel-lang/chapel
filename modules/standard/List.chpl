@@ -107,7 +107,7 @@ module List {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(eltType) {
+      if isClassType(eltType) && !isGenericType(borrowed eltType) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("list element type cannot currently be generic");
@@ -1308,7 +1308,7 @@ module List {
           // Copy current list contents into an array.
           var arr: [0..#_size] eltType;
           for i in 0..#_size do
-            arr[i] = this[i];
+            arr[i] = _getRef(i);
 
           Sort.sort(arr, comparator);
 
@@ -1504,10 +1504,8 @@ module List {
     pragma "order independent yielding loops"
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
-      for i in 0..#_size {
-        ref result = _getRef(i);
-        yield result;
-      }
+      for i in 0..#_size do
+        yield _getRef(i);
     }
 
     pragma "no doc"
@@ -1522,8 +1520,10 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(0) do
-          yield this[i];
+        for i in chunk(0) {
+          ref result = _getRef(i);
+          yield result;
+        }
       }
     }
 
@@ -1567,7 +1567,7 @@ module List {
       // the penalty of logarithmic indexing over and over again.
       //
       for i in followThis(0) do
-        yield this[i];
+        yield _getRef(i);
     }
 
     /*
@@ -1703,9 +1703,10 @@ module List {
     //
     // TODO: Make this a forall loop eventually.
     //
-    for i in 0..#(a.size) do
-      if a[i] != b[i] then
+    for i in 0..#(a.size) {
+      if a._getRef(i) != b._getRef(i) then
         return false;
+    }
 
     return true;
   }
