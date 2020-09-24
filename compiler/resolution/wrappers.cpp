@@ -1467,61 +1467,6 @@ static void copyFormalTypeExprWrapper(FnSymbol* fn,
   body->flattenAndRemove();
 }
 
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual);
-
-static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
-                                            ArgSymbol* formal,
-                                            CallExpr* call,
-                                            SymExpr* curActual,
-                                            SymbolMap& copyMap) {
-
-  BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
-  call->getStmtExpr()->insertBefore(body);
-
-  Symbol* newSym = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, curActual->symbol());
-  copyMap.put(formal, newSym);
-
-  update_symbols(body, &copyMap);
-  normalize(body);
-  resolveBlockStmt(body);
-  reset_ast_loc(body, call);
-  body->flattenAndRemove();
-
-  curActual->setSymbol(newSym);
-}
-
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual) {
-  // Create the defaultExpr if not present
-  // TODO: can't we just use a flag?
-  bool removeDefault = false;
-  if (formal->defaultExpr == NULL) {
-    removeDefault = true;
-    BlockStmt* stmt = new BlockStmt();
-    stmt->insertAtTail(new SymExpr(gTypeDefaultToken));
-    formal->defaultExpr = stmt;
-    insert_help(formal->defaultExpr, NULL, formal);
-  }
-
-  Symbol* ret = createDefaultedActual(fn, formal, call, body, copyMap);
-  body->insertAtTail(new CallExpr("=", ret, curActual));
-
-  if (removeDefault) {
-    formal->defaultExpr->remove();
-  }
-
-  return ret;
-}
-
 // BHARSH 2018-05-02: For a case like 'in D = {1..4}' normalization
 // currently turns the AST into something like:
 //   in D : {1..4} = {1..4}
@@ -1546,21 +1491,6 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
         return true;
       }
     }
-  }
-
-  return false;
-}
-
-// We have to use the array default if
-// *  There is not a valid type expr and there is a
-//    defaultExpr that is not just gTypeDefaultToken
-//
-// We do not want to generate defaults for fully or partially generic cases:
-//   in A : [] real;
-//   in A : []
-static bool mustUseRuntimeTypeDefault(ArgSymbol* formal) {
-  if (formal->defaultExpr != NULL && defaultedFormalUsesDefaultForType(formal) == false) {
-    return true;
   }
 
   return false;
@@ -1633,10 +1563,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
     bool rtt = actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
     bool coerceRuntimeTypes = rtt && typeExprReturnsType(formal);
 
-    // see issue #15628 for explanation and discussion
-    bool defaultInitAssign = rtt && mustUseRuntimeTypeDefault(formal) &&
-                             !coerceRuntimeTypes;
-
     VarSymbol* runtimeTypeTemp = NULL;
     if (coerceRuntimeTypes) {
       runtimeTypeTemp = newTemp("_formal_type_tmp");
@@ -1647,12 +1573,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                 call, anchor, copyMap);
     }
 
-    if (defaultInitAssign) {
-
-     insertRuntimeTypeDefaultWrapper(fn, formal, call, actual, copyMap);
-
     // A copy might be necessary here but might not.
-    } else if (doesCopyInitializationRequireCopy(actual) || inout) {
+    if (doesCopyInitializationRequireCopy(actual) || inout) {
       // Add a new formal temp at the call site that mimics variable
       // initialization from the actual.
       VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
