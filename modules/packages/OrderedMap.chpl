@@ -366,7 +366,7 @@ module OrderedMap {
       var result: _eltType;
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
-      if !found || result[0] != k then
+      if !found || comparator.compare(result[0], k) != 0 then
         boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
 
       _set.remove((k, nil));
