@@ -438,6 +438,10 @@ all:
     - Switch the domain's list of arrays to a hashtable (#15895)
   06/25/20:
     - Avoid allocating memory for empty hashtables (#15918)
+  09/18/20:
+    - Remove the single task specialization from parallel iterators (#16401)
+  09/22/20:
+    - Parallelize large DefaultRectangular assignments (#16418)
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -1114,6 +1118,10 @@ memleaks:
     - Use runtime type field in chpl__distributed for sparse domains (#11140)
   10/09/18:
     - Resolve some global array-of-array leaks (#11307)
+  09/15/20:
+    - Fix problem with new applied to a borrowed nilable type argument (#16380)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
 
 memleaksfull:
   07/08/14:
