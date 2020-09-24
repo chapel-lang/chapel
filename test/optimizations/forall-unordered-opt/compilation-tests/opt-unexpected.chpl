@@ -1,4 +1,3 @@
-use CPtr;
 config const N=1000;
 config const M=10000;
 config const choice=true;

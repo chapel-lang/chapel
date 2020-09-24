@@ -1,4 +1,3 @@
-use CPtr;
 config const N = 100;
 var globalSync: sync int;
 var globalSingle: single int;
