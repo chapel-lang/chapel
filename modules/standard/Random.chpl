@@ -2642,7 +2642,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) {
+      proc fillRandom(arr: [] eltType) throws {
         if(!isRectangularArr(arr)) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
