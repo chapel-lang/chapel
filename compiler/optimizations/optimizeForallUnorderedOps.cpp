@@ -978,7 +978,7 @@ void optimizeForallUnorderedOps() {
     if (block->isLoopStmt()) {
       LoopStmt* loop = toLoopStmt(block);
 
-      if (loop->isOrderIndependent()) {
+      {
         std::vector<Expr*> lastStmts;
         getLastStmts(loop, lastStmts);
         for_vector(Expr, lastStmt, lastStmts) {
