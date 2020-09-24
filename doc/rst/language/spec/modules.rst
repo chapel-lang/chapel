@@ -291,13 +291,12 @@ accessed explicitly with all the outer modules surrounding it to the top level,
 or relatively from the current scope with ``this`` or ``super`` components as
 has already been mentioned.
 
-For the purpose of ``import``, the nested module is known to be defined at the
-same location as for ``use`` statements.  However, in order to ``import`` it,
-either all the outer modules surrounding it to the top level must be provided as
-part of the path to the module, or a ``super`` or ``this`` prefix may be
-provided as has already been mentioned.  The nested module may not be imported
-with just its name, even from the scope in which the module is defined, unless
-it has already been brought into scope by another ``use`` or ``import``
+Now, let's consider how ``import`` interacts with a nested module.  In order to
+``import`` it, either all the outer modules surrounding it to the top level must
+be provided as part of the path to the module, or a ``super`` or ``this`` prefix
+may be provided as has already been mentioned.  The nested module cannot be
+imported with just its name, even from the scope in which the module is defined,
+unless it has already been brought into scope by another ``use`` or ``import``
 statement.
 
 .. _Visibility_Of_Symbols:
@@ -341,7 +340,7 @@ Conflicts
 The implicit scope added by ``use`` and ``import`` described in the previous
 section follows the same rules about conflicting variables as other scopes (see
 :ref:`Variable_Conflicts`).  Thus an error will be signaled if multiple
-variables with the same name would be inserted into this enclosing scope, and
+variables with the same name would be inserted into this enclosing scope and
 that name is accessed.  Remember that this does not apply to functions unless
 they are also indistinguishable in other ways, see :ref:`Function_Overloading`.
 
