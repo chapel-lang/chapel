@@ -104,18 +104,18 @@ module Random {
 
   /*
 
-    Fill an array of numeric elements with pseudorandom values in parallel using
+    Fills a rectangular array of numeric elements with pseudorandom values in parallel using
     a new stream implementing :class:`RandomStreamInterface` created
     specifically for this call.  The first `arr.size` values from the stream
     will be assigned to the array's elements in row-major order. The
     parallelization strategy is determined by the array.
 
     .. note::
-
       :mod:`NPBRandom` only supports `real(64)`, `imag(64)`, and `complex(128)`
       numeric types. :mod:`PCGRandom` supports all primitive numeric types.
 
-    :arg arr: The array to be filled, where T is a primitive numeric type
+    :arg arr: The array to be filled, where T is a primitive numeric type. Only
+      rectangular arrays are supported currently.
     :type arr: `[] T`
 
     :arg seed: The seed to use for the PRNG.  Defaults to
@@ -141,9 +141,9 @@ module Random {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
 
-  /* Shuffle the elements of an array into a random order.
+  /* Shuffle the elements of the array into a random order.
 
-     :arg arr: a 1-D non-strided array
+     :arg arr: a rectangular 1-D non-strided array
      :arg seed: the seed to use when shuffling. Defaults to
       `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
@@ -165,7 +165,7 @@ module Random {
      The resulting array will include each value from low..high
      exactly once, where low and high refer to the array's domain.
 
-     :arg arr: a 1-D non-strided array
+     :arg arr: a rectangular 1-D non-strided array
      :arg seed: the seed to use when creating the permutation. Defaults to
       `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
@@ -239,7 +239,6 @@ module Random {
   proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
     throws
   {
-
     if X.rank != 1 {
       compilerError('choice() argument x must be 1 dimensional');
     }
@@ -1047,7 +1046,10 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) where isRectangularArr(arr){
+      proc fillRandom(arr: [] eltType) throws {
+        if(!isRectangularArr(arr)) then
+          compilerError("fillRandom does not support non-rectangular arrays");
+
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
@@ -1164,8 +1166,11 @@ module Random {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
-      /* Randomly shuffle a 1-D array. */
-      proc shuffle(arr: [?D] ?eltType ) where isRectangularArr(arr){
+      /* Shuffle the elements of the array in random order. */
+      proc shuffle(arr: [?D] ?eltType ) {
+
+        if(!isRectangularArr(arr)) then
+          compilerError("shuffle does not support non-rectangular arrays");
 
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
@@ -1206,7 +1211,11 @@ module Random {
          The resulting array will include each value from low..high
          exactly once, where low and high refer to the array's domain.
          */
-      proc permutation(arr: [] eltType) where isRectangularArr(arr){
+      proc permutation(arr: [] eltType) {
+
+        if(!isRectangularArr(arr)) then
+          compilerError("permutation does not support non-rectangular arrays");
+
         var low = arr.domain.dim(0).low;
         var high = arr.domain.dim(0).high;
 
@@ -2633,7 +2642,10 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) where isRectangularArr(arr){
+      proc fillRandom(arr: [] eltType) {
+        if(!isRectangularArr(arr)) then
+          compilerError("fillRandom does not support non-rectangular arrays");
+
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
           x = r;
       }
