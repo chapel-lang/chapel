@@ -106,6 +106,8 @@ QuickSort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort
 Sort
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort
+CPtr
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.CPtr
 ChapelArray
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray
 ChapelHashtable
@@ -156,8 +158,6 @@ MemTracking
   from print-module-resolution.ChapelStandard.MemTracking
 ChapelUtil
   from print-module-resolution.ChapelStandard.ChapelUtil
-CPtr
-  from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast.CPtr
 ChapelSerializedBroadcast
   from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast
 ExportWrappers
