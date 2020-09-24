@@ -6445,6 +6445,39 @@ static void resolveInitField(CallExpr* call) {
     }
   }
 
+  if (fs->type->getValType() != srcType->getValType()) {
+    USR_FATAL_CONT(call, "Cannot replace an instantiated field "
+                         "with another type");
+    USR_PRINT(call, "field %s has type %s but is set to %s",
+                     fs->name,
+                     toString(fs->getValType()),
+                     toString(srcType->getValType()));
+    USR_STOP();
+  }
+  if (fs->isParameter() && srcSym->isParameter()) {
+    Symbol* dstParam = fs;
+    Symbol* srcParam = srcSym;
+    if (Symbol* s = paramMap.get(dstParam))
+      dstParam = s;
+    if (Symbol* s = paramMap.get(srcParam))
+      srcParam = s;
+
+    if (Immediate* srcImm = getSymbolImmediate(srcParam)) {
+      if (Immediate* dstImm = getSymbolImmediate(dstParam)) {
+        if (srcImm != dstImm) {
+          USR_FATAL_CONT(call, "Cannot replace an instantiated param field "
+                               "with another value");
+          VarSymbol* dstVar = toVarSymbol(dstParam);
+          VarSymbol* srcVar = toVarSymbol(srcParam);
+          if (dstVar != NULL && srcVar != NULL)
+            USR_PRINT(call, "field %s has value %s but is set to %s",
+                            fs->name, toString(dstVar), toString(srcVar));
+          USR_STOP();
+        }
+      }
+    }
+  }
+
   // Type was just fully instantiated, let's try to find its promotion type.
   if (wasGeneric                        == true &&
       ct->symbol->hasFlag(FLAG_GENERIC) == false) {
