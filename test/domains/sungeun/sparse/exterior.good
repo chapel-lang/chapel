@@ -1,3 +1,4 @@
 exterior.chpl:3: In function 'my_exterior':
 exterior.chpl:4: error: exterior not supported on sparse domains
-exterior.chpl:10: Function 'my_exterior' instantiated as: my_exterior(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), off: int(64))
+  exterior.chpl:10: called as my_exterior(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), off: int(64)) from function 'dit'
+  exterior.chpl:22: called as dit(D: DefaultSparseDom(1,int(64),domain(1,int(64),false)), lo: int(64), hi: int(64))

@@ -1,0 +1,4 @@
+error-stack-trace-recursive1.chpl:1: In function 'h':
+error-stack-trace-recursive1.chpl:3: error: Cannot assign to string from int(64)
+  error-stack-trace-recursive1.chpl:8: called as h(arg: string) from function 'g'
+  error-stack-trace-recursive1.chpl:12: called as g(arg: string)

@@ -38,6 +38,8 @@ class Expr;
 
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
+// same as above but also allows for virtual function calls
+void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
 // specialized helper for IBBs
 void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<GotoStmt*>& GOTOs,

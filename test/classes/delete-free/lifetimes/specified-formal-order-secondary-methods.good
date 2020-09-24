@@ -1,4 +1,4 @@
-specified-formal-order-secondary-methods.chpl:28: In function 'setCbad':
+specified-formal-order-secondary-methods.chpl:28: In method 'setCbad':
 specified-formal-order-secondary-methods.chpl:29: error: Scoped variable this would outlive the value it is set to
 specified-formal-order-secondary-methods.chpl:28: note: consider scope of rhs
 specified-formal-order-secondary-methods.chpl:32: In function 'badlt':
