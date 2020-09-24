@@ -5255,4 +5255,22 @@ module ChapelArray {
       return A;
     }
   }
+
+  // used for passing arrays to extern procs, e.g.
+  //   extern proc foo(X: []);
+  //   var A: [1..3] real;
+  //   foo(A);
+  // 'castToVoidStar' says whether we should cast the result to c_void_ptr
+  pragma "no doc"
+  proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
+    if (!chpl__isDROrDRView(arr)) then
+      compilerError("Only local rectangular arrays can be passed to an external routine argument with array type", 2);
+
+    use CPtr;
+    const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
+    if castToVoidStar then
+      return ptr: c_void_ptr;
+    else
+      return ptr;
+  }
 }
