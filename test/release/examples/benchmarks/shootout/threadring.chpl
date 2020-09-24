@@ -39,7 +39,7 @@ proc passTokens(tid) {
     // until it's 'full' and leaving it 'empty'.  Write the
     // incremented value to the next task's mailbox, making it 'full'.
     //
-    const numPasses = mailbox$[tid];
+    const numPasses = mailbox$[tid].readFE();
     mailbox$[tid%ntasks+1] = numPasses+1;
 
     if numPasses == n then

@@ -5,17 +5,17 @@ class EC {
 }
 
 proc up(e: borrowed EC) {
-  var i = e.i;
+  var i = e.i.readFE();
   if i == 0 then
     e.b.reset();
-  e.i = i + 1;
+  e.i.writeEF(i + 1);
 }
 
 proc down(e: borrowed EC) {
-  var i = e.i;
+  var i = e.i.readFE();
   if i == 1 then
-    e.b = true;
-  e.i = i - 1;
+    e.b.writeEF(true);
+  e.i.writeEF(i - 1);
 }
 
 proc allocate() {
@@ -23,8 +23,8 @@ proc allocate() {
 }
 
 proc wait(e: unmanaged EC) {
-  e.b;
-  e.i; // wait until down is finished setting i
+  e.b.readFE();
+  e.i.readFE(); // wait until down is finished setting i
   delete e;
 }
 

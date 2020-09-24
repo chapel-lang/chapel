@@ -1,3 +1,60 @@
 refIntents-swapSyncs.chpl:1: In function 'swap':
-refIntents-swapSyncs.chpl:2: error: swapping sync variables is not supported
+refIntents-swapSyncs.chpl:2: warning: Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods
+refIntents-swapSyncs.chpl:2: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side
 refIntents-swapSyncs.chpl:112: Function 'swap' instantiated as: swap(l: sync int(64), r: sync int(64))
+Class fields
+{a = 1, b = 2}
+End of swap(int(64))
+{a = 2, b = 1}
+Tuple components
+(1, 2, 3)
+End of swap(int(64))
+(3, 2, 1)
+Array elements
+(3, 7)
+End of swap(int(64))
+(7, 3)
+Array sections
+1 2 3 4 5 6 7 8 9 10
+End of swap([domain(1,int(64),false)] int(64))
+4 5 6 1 2 3 7 8 9 10
+Whole tuples
+((1, 2, 3), (4, 5, 6))
+End of swap(3*int(64))
+((4, 5, 6), (1, 2, 3))
+Records
+(a = 1, b = 2)(a = 3, b = 4)
+End of swap(R)
+(a = 3, b = 4)(a = 1, b = 2)
+Classes
+{a = 1, b = 2}{a = 3, b = 4}
+End of swap(borrowed C)
+{a = 3, b = 4}{a = 1, b = 2}
+Domains
+({1..10}, {3..13})
+End of swap(domain(1,int(64),false))
+({3..13}, {1..10})
+Arrays
+(1 2 3 4 5 6 7 8 9 10, 10 9 8 7 6 5 4 3 2 1)
+End of swap([domain(1,int(64),false)] int(64))
+(10 9 8 7 6 5 4 3 2 1, 1 2 3 4 5 6 7 8 9 10)
+Ranges
+(1..20 by 2, 1..10 by -1)
+End of swap(range(int(64),bounded,true))
+(1..10 by -1, 1..20 by 2)
+Differently sized ranges
+(1..20, 1..10)
+End of swap(range(int(64),bounded,false))
+(1..10, 1..20)
+Enum values
+(a, d)
+End of swap(E)
+(d, a)
+Strings
+(string number one, differently sized string number two)
+End of swap(string)
+(differently sized string number two, string number one)
+sync ints
+(1, 2)
+End of swap(sync int(64))
+(2, 1)

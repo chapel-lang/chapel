@@ -237,7 +237,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
             proc swapTwo(p1$: sync int, p2$: sync int): void {
               on p1$ {
-                const label1 = p1$;
+                const label1 = p1$.readFE();
                 var label2: int;
                 on p2$ {
                   label2 = p2$.readFE();

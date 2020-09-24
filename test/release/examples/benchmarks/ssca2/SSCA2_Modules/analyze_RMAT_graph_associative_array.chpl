@@ -56,7 +56,7 @@ module analyze_RMAT_graph_associative_array {
             // Lock and unlock should be within 'local', but currently
             // need to pull them out due to implementation.
             // lock the vertex
-            const edgePos = firstAvail$;
+            const edgePos = firstAvail$.readFE();
 
           local {
             const prevNdomLen = ndom.high;
