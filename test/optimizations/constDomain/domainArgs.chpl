@@ -1,18 +1,13 @@
 const colWidth = 12;
 const fmt = "%-"+colWidth:string+"s|%-"+colWidth:string+"s\n";
 
-//// this is const ref -- `const` doesn't matter here
+// this is const ref -- note that if you pass a var domain, we don't set it
+//                      const
 proc defIntent(d) {
   writef(fmt, "(const ref)", d.definedConst);
 }
 
-// I wanted to make `d` a generic argument like the others below. However, it
-// causes the copy to be dropped for a domain literal argument (maybe
-// correctly?), so this reports 'true' for a domain literal. For concrete
-// argument, the copy remains there and we get 'false' (correctly).
-//
-// See: https://github.com/chapel-lang/chapel/issues/16398
-proc inIntent(in d: domain(1, int, false)) {
+proc inIntent(in d) {
   writef(fmt, "in", d.definedConst);
 }
 
@@ -28,7 +23,8 @@ proc refIntent(ref d) {
   writef(fmt, "ref", d.definedConst);
 }
 
-// this is const ref -- `const` doesn't matter here
+// this is const ref -- note that if you pass a var domain, we don't set it
+//                      const
 proc constIntent(const d) {
   writef(fmt, "const (ref)", d.definedConst);
 }
