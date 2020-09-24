@@ -115,16 +115,11 @@ void expandExternArrayCalls() {
         if(replaced_args.count(current_formal)) {
           UnresolvedSymExpr* eltType = NULL;
           checkIsArray(formal, eltType);
-          if (eltType) {
-            // typed array, replace with c_ptr(eltType)
-            externCall->argList.insertAtTail(new CallExpr("c_ptrTo", new SymExpr(formal)));
-          } else {
-            // Generic array, replace with (c_ptr(eltType)):c_void_ptr
-            externCall->argList.insertAtTail(
-                createCast(
-                  new CallExpr("c_ptrTo", new SymExpr(formal)),
-                  new UnresolvedSymExpr("c_void_ptr")));
-          }
+          externCall->argList.insertAtTail(new CallExpr("chpl_arrayToPtr",
+                                                        new SymExpr(formal),
+                                                        new SymExpr((eltType ?
+                                                                     gFalse :
+                                                                     gTrue))));
         } else {
           externCall->argList.insertAtTail(new SymExpr(formal));
         }
