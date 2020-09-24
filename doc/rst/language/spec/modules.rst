@@ -272,27 +272,33 @@ naming (:ref:`Explicit_Naming`).
 Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
-A top-level module is available for use (:ref:`Using_Modules`) or
-import (:ref:`Importing_Modules`) anywhere.
+A top-level module is available for use (:ref:`Using_Modules`) or import
+(:ref:`Importing_Modules`) anywhere.  A module name is not accessible in other
+statements or expressions unless an ``import`` or ``use`` statement has brought
+the name into scope.
+
+Additionally, ``use`` and ``import`` can both name a module with a relative
+path; for example, ``this.Submodule`` or ``super.Siblingmodule``.  ``use`` and
+``import`` differ in their behavior towards a named module when two conditions
+are both true: when the named module is not a top-level module and when a
+relative path is not provided.
 
 For the purpose of ``use``, the visibility of a nested module is subject to the
 rules of :ref:`Visibility_Of_Symbols`, where the nested module is considered a
 "module-scope symbol" of its outer module.  If the module is currently in scope,
 then it may be used with just its name.  The module may alternatively be
 accessed explicitly with all the outer modules surrounding it to the top level,
-or relatively from the current scope with ``this`` or ``super`` components.
-Which of ``this`` or ``super`` is appropriate depends on its placement relative
-to the current scope - if the submodule is within the current scope, then
-``this`` is used; if the submodule is within a parent module's scope, then one
-or more ``super`` components can be used.
+or relatively from the current scope with ``this`` or ``super`` components as
+has already been mentioned.
 
-For the purpose of ``import``, the module is known to be defined at the same
-location as for ``use`` statements.  However, in order to ``import`` it, either
-all the outer modules surrounding it to the top level must be provided as part
-of the path to the module, or a ``super`` or ``this`` prefix may be provided.
-The module may not be imported with just its name, even from the scope in which
-the module is defined, unless it has already been brought into scope by another
-``use`` or ``import`` statement.
+For the purpose of ``import``, the nested module is known to be defined at the
+same location as for ``use`` statements.  However, in order to ``import`` it,
+either all the outer modules surrounding it to the top level must be provided as
+part of the path to the module, or a ``super`` or ``this`` prefix may be
+provided as has already been mentioned.  The nested module may not be imported
+with just its name, even from the scope in which the module is defined, unless
+it has already been brought into scope by another ``use`` or ``import``
+statement.
 
 .. _Visibility_Of_Symbols:
 
