@@ -6354,8 +6354,9 @@ static void resolveInitField(CallExpr* call) {
   Symbol* fs = NULL;
   int index = 1;
   for_fields(field, ct) {
-    if (!strcmp(field->name, name)) {
-      fs = field; break;
+    if (field->name == name) {
+      fs = field;
+      break;
     }
     index++;
   }
