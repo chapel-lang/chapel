@@ -340,9 +340,7 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
         INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
-      } else if (def->init == NULL && def->exprType != NULL &&
-                 !mIsGenericWithDefaults) {
-
+      } else if (def->exprType != NULL) {
         // Temporarily mark the aggregate type as generic with defaults
         // in order to avoid infinite recursion.
         bool wasGenericWithDefaults = mIsGenericWithDefaults;

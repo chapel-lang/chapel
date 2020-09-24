@@ -6413,8 +6413,7 @@ static void resolveInitField(CallExpr* call) {
     if ((fs->hasFlag(FLAG_TYPE_VARIABLE) && isTypeExpr(srcExpr)) ||
         fs->hasFlag(FLAG_PARAM) ||
         (fs->defPoint->exprType == NULL && fs->defPoint->init == NULL) ||
-        (fs->defPoint->init == NULL && fs->defPoint->exprType != NULL &&
-         ct->fieldIsGeneric(fs, ignoredHasDefault))) {
+        ct->fieldIsGeneric(fs, ignoredHasDefault)) {
       Expr* insnPt = call->getFunction()->instantiationPoint();
       AggregateType* instantiate = ct->getInstantiation(srcSym, index, insnPt);
       if (instantiate != ct) {
