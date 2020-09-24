@@ -107,7 +107,7 @@ module List {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+      if isClassType(eltType) && !isGenericType(eltType) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("list element type cannot currently be generic");
@@ -1319,6 +1319,121 @@ module List {
     }
 
     /*
+      Return a copy of the element at a given index in this list.
+
+      :arg i: The index of the element to get.
+
+      .. warning::
+
+        Use of the `getValue` method with an out of bounds index (while
+        bounds checking is on) will cause the currently running program
+        to halt.
+
+      :return: A copy of an element from this list.
+    */
+    proc const getValue(i: int): eltType {
+      _enter(); defer _leave();
+
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        boundsCheckHalt(msg);
+      }
+
+      return _getRef(i);
+    }
+
+    /*
+      Return a borrow of the element at a given index in this list. This
+      method can only be called when this list's `eltType` is a class
+      type.
+
+      :arg i: The index of the element to borrow.
+      :type i: `int`
+
+      :return: A borrow of an element from this list.
+    */
+    proc const getBorrowed(i: int) where isClass(eltType) {
+      _enter(); defer _leave();
+
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        boundsCheckHalt(msg);
+      }
+
+      ref slot = _getRef(i);
+
+      return slot.borrow();
+    }
+
+    /*
+      Sets the element at a given index in this list. This method returns
+      `false` if the index is out of bounds.
+
+      :arg i: The index of the element to set
+      :type i: int
+
+      :arg x: The value to set at index ``i``
+      :type x: eltType
+
+      :return: `true` if `i` is a valid index that has been set by `x`,
+               and `false` otherwise.
+      :rtype: bool
+    */
+    proc ref set(i: int, pragma "no auto destroy" in x: eltType): bool {
+      _enter(); defer _leave();
+
+      if !_withinBounds(i) {
+        _destroy(x);
+        return false;
+      }
+
+      ref src = x;
+      ref dst = _getRef(i);
+      _move(src, dst);
+
+      return true;
+    }
+
+    /*
+      Update a value in this list in a guarded manner via a worker object.
+
+      The worker object passed to the `computeIndex()` method must define a
+      `this()` method that takes two arguments: an integer, and a second
+      argument of type `valType`. The worker object's `this()` method must
+      return some sort of value. Workers that do not need to return anything
+      may return `none`.
+
+      If the worker's `this()` method throws, the thrown error will be
+      propagated out of `computeIndex`.
+
+      :arg i: The index to update
+      :type i: `int`
+
+      :arg worker: A class or record used to update the value at `i`
+      :return: What the worker returns
+    */
+    proc computeIndex(i: int, worker) throws {
+      _enter(); defer _leave();
+
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        boundsCheckHalt(msg);
+      }
+
+      ref slot = _getRef(i);
+
+      return worker(i, slot);
+    }
+
+    pragma "no doc"
+    inline proc _errorForParSafeIndexing() {
+      if parSafe then
+        compilerError('Cannot index a list initialized with ' +
+                      '`parSafe=true`');
+      return;
+    }
+
+    /*
       Index this list via subscript. Returns a reference to the element at a
       given index in this list.
 
@@ -1332,6 +1447,8 @@ module List {
       :return: An element from this list.
     */
     proc ref this(i: int) ref {
+      _errorForParSafeIndexing();
+
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         boundsCheckHalt(msg);
@@ -1340,7 +1457,10 @@ module List {
       ref result = _getRef(i);
       return result;
     }
+
     proc const ref this(i: int) const ref {
+      _errorForParSafeIndexing();
+
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         halt(msg);
