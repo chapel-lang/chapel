@@ -209,6 +209,7 @@ module OrderedMap {
     }
 
     // Return size without acquiring the lock
+    pragma "no doc"
     inline proc const _size {
       return _set.size;
     }
