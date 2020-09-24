@@ -1,9 +1,0 @@
-#! /usr/bin/env bash
-
-unset CHPL_TARGET_ARCH
-unset CHPL_TARGET_CPU
-unset CHPL_HOST_ARCH
-unset CHPL_HOST_CPU
-
-export CHPL_TARGET_ARCH=none
-$CHPL_HOME/util/printchplenv --simple 2>&1 | grep -E 'Warning|CHPL_TARGET_ARCH|CHPL_TARGET_CPU' > arch-none.good
