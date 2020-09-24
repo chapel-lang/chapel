@@ -1573,6 +1573,10 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                 call, anchor, copyMap);
     }
 
+    bool isConstCopy = formal->intent == INTENT_CONST_IN ||
+                       formal->originalIntent == INTENT_CONST_IN ||
+                       formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+
     // A copy might be necessary here but might not.
     if (doesCopyInitializationRequireCopy(actual) || inout) {
       // Add a new formal temp at the call site that mimics variable
@@ -1602,9 +1606,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       
       CallExpr* copy = NULL;
 
-      bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                         formal->originalIntent == INTENT_CONST_IN ||
-                         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
       if (coerceRuntimeTypes)
         copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
@@ -1626,6 +1627,24 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       // Then "move" ownership to the called function
       // (don't destroy it here, it will be destroyed there).
       actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+      // domain literals are constant by definition. If we are moving a domain
+      // literal into an `in` formal, we don't have any initCopy etc to fix
+      // constness. So, adjust the call that set that domain to be constant
+      if (!isConstCopy) {
+        if (CallExpr *initCall = toCallExpr(actualSym->getInitialization())) {
+          if (initCall->isPrimitive(PRIM_MOVE)) {
+            if (CallExpr *rhsCall = toCallExpr(initCall->get(2))) {
+              if (rhsCall->isNamed("chpl__buildDomainExpr")) {
+                SymExpr *lastArg = toSymExpr(rhsCall->argList.last());
+                INT_ASSERT(lastArg);
+                INT_ASSERT(lastArg->symbol()->type == dtBool);
+                lastArg->replace(new SymExpr(gFalse));
+              }
+            }
+          }
+        }
+      }
 
       if (coerceRuntimeTypes) {
         VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
