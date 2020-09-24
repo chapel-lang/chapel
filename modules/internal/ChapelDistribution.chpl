@@ -171,6 +171,10 @@ module ChapelDistribution {
       return ret;
     }
 
+    proc trackArrays() {
+      return trackArraysForConstDomains || !this.definedConst;
+    }
+
     // Returns (dom, dist).
     // if this domain should be deleted, dom=this; otherwise it is nil.
     // dist is nil or a distribution that should be removed.
@@ -224,7 +228,7 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
-          if rmFromList && !this.definedConst then
+          if rmFromList && trackArrays() then
             _arrs.remove(x);
           else
             _arrs_containing_dom -=1;
@@ -249,7 +253,7 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
-        if addToList && !this.definedConst then
+        if addToList && trackArrays() then
           _arrs.add(x);
         else
           _arrs_containing_dom += 1;
