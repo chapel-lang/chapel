@@ -1344,7 +1344,7 @@ module List {
 
     /*
       Return a borrow of the element at a given index in this list. This
-      method can only be called when this list's `eltType` is a class
+      method can only be called when this list's element type is a class
       type.
 
       :arg i: The index of the element to borrow.
@@ -1372,8 +1372,7 @@ module List {
       :arg i: The index of the element to set
       :type i: int
 
-      :arg x: The value to set at index ``i``
-      :type x: eltType
+      :arg x: The value to set at index `i`
 
       :return: `true` if `i` is a valid index that has been set by `x`,
                and `false` otherwise.
@@ -1397,14 +1396,14 @@ module List {
     /*
       Update a value in this list in a guarded manner via a worker object.
 
-      The worker object passed to the `computeIndex()` method must define a
-      `this()` method that takes two arguments: an integer, and a second
-      argument of type `valType`. The worker object's `this()` method must
-      return some sort of value. Workers that do not need to return anything
-      may return `none`.
+      The worker object passed to the `computeIndex()` method must
+      define a `this()` method that takes two arguments: an integer index,
+      and a second argument of this list's `valType`. The worker object's
+      `this()` method must return some sort of value. Workers that do not
+      need to return anything may return `none`.
 
       If the worker's `this()` method throws, the thrown error will be
-      propagated out of `computeIndex`.
+      propagated out of `computeIndex()`.
 
       :arg i: The index to update
       :type i: `int`
@@ -1437,14 +1436,21 @@ module List {
       Index this list via subscript. Returns a reference to the element at a
       given index in this list.
 
-      :arg i: The index of the element to access.
+      :arg i: The index of the element to access
 
       .. warning::
 
-        Use of the `this` method with an out of bounds index (while bounds
-        checking is on) will cause the currently running program to halt.
+        Use of the `this()` method with an out of bounds index (while bounds
+        checking is on) will cause the currently running program to
+        halt.
 
-      :return: An element from this list.
+      .. note::
+
+        The `this()` method cannot be used with lists instantiated with a
+        `parSafe` value of `true`. Attempting to do so will trigger
+        a compiler error.
+
+      :return: A reference to an element in this list
     */
     proc ref this(i: int) ref {
       _errorForParSafeIndexing();
@@ -1458,6 +1464,7 @@ module List {
       return result;
     }
 
+    pragma "no doc"
     proc const ref this(i: int) const ref {
       _errorForParSafeIndexing();
 
