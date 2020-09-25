@@ -1,0 +1,1 @@
+blockToExtern.chpl:7: error: Only single-locale rectangular arrays can be passed to an external routine argument with array type
