@@ -1,2 +1,0 @@
-listLastParSafeError.chpl:3: In function 'test':
-listLastParSafeError.chpl:6: error: Cannot call `last()` on a list initialized with `parSafe=true`

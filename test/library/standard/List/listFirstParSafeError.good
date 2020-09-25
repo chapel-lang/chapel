@@ -1,2 +1,0 @@
-listFirstParSafeError.chpl:3: In function 'test':
-listFirstParSafeError.chpl:6: error: Cannot call `first()` on a list initialized with `parSafe=true`

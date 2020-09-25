@@ -1,2 +1,0 @@
-listThisParSafeError.chpl:3: In function 'test':
-listThisParSafeError.chpl:7: error: Cannot index a list initialized with `parSafe=true`

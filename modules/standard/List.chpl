@@ -674,8 +674,9 @@ module List {
     */
     proc ref first() ref {
       if parSafe then
-        compilerError('Cannot call `first()` on a list initialized ' +
-                      'with `parSafe=true`');
+        compilerWarning('Calling `first()` on a list initialized with ' +
+                        '`parSafe=true` has been deprecated, consider ' +
+                        'using `set()` or `update()` instead');
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -704,8 +705,9 @@ module List {
     */
     proc ref last() ref {
       if parSafe then
-        compilerError('Cannot call `last()` on a list initialized ' +
-                      'with `parSafe=true`');
+        compilerWarning('Calling `last()` on a list initialized with ' +
+                        '`parSafe=true` has been deprecated, consider ' +
+                        'using `set()` or `update()` instead');
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1394,31 +1396,32 @@ module List {
 
       ref src = x;
       ref dst = _getRef(i);
+      _destroy(dst);
       _move(src, dst);
 
       return true;
     }
 
     /*
-      Update a value in this list in a parallel safe manner via a worker
+      Update a value in this list in a parallel safe manner via an updater 
       object.
 
-      The worker object passed to the `update()` method must
+      The updater object passed to the `update()` method must
       define a `this()` method that takes two arguments: an integer index,
-      and a second argument of this list's `valType`. The worker object's
-      `this()` method must return some sort of value. Workers that do not
-      need to return anything may return `none`.
+      and a second argument of this list's `valType`. The updater object's
+      `this()` method must return some sort of value. Updater objects that
+      do not need to return anything may return `none`.
 
-      If the worker's `this()` method throws, the thrown error will be
-      propagated out of `update()`.
+      If the updater object's `this()` method throws, the thrown error will
+      be propagated out of `update()`.
 
       :arg i: The index to update
       :type i: `int`
 
-      :arg worker: A class or record used to update the value at `i`
-      :return: What the worker returns
+      :arg updater: A class or record used to update the value at `i`
+      :return: What the updater object returns
     */
-    proc update(i: int, worker) throws {
+    proc update(i: int, updater) throws {
       _enter(); defer _leave();
 
       if boundsChecking && !_withinBounds(i) {
@@ -1431,19 +1434,20 @@ module List {
       // Print a prettier error message if arguments fail resolve, to avoid
       // pointing into module code.
       import Reflection;
-      if !Reflection.canResolveMethod(worker, "this", i, slot) then
+      if !Reflection.canResolveMethod(updater, "this", i, slot) then
         compilerError('`list.update()` failed to resolve method ' +
-                      worker.type:string + '.this() for arguments (' +
+                      updater.type:string + '.this() for arguments (' +
                       i.type:string + ', ' + slot.type:string + ')');
 
-      return worker(i, slot);
+      return updater(i, slot);
     }
 
     pragma "no doc"
-    inline proc _errorForParSafeIndexing() {
+    inline proc _warnForParSafeIndexing() {
       if parSafe then
-        compilerError('Cannot index a list initialized with ' +
-                      '`parSafe=true`', 2);
+        compilerWarning('Indexing a list initialized with `parSafe=true` ' +
+                        'has been deprecated, consider using `set()` ' +
+                        'or `update()` instead', 2);
       return;
     }
 
@@ -1468,7 +1472,7 @@ module List {
       :return: A reference to an element in this list
     */
     proc ref this(i: int) ref {
-      _errorForParSafeIndexing();
+      _warnForParSafeIndexing();
 
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
@@ -1481,7 +1485,7 @@ module List {
 
     pragma "no doc"
     proc const ref this(i: int) const ref {
-      _errorForParSafeIndexing();
+      _warnForParSafeIndexing();
 
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
