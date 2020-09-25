@@ -28,6 +28,8 @@
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+
+#include <map>
 #include <set>
 
 /*
@@ -428,6 +430,27 @@ static void removeVoidReturn(BlockStmt* cloneBody) {
   retexpr->remove();
 }
 
+// Do not create top-level TPVs and such when there are no "top-level" yields
+// i.e. yields outside any parallel constructs.
+// A yield within an 'if' or a serial loop is considered "top-level".
+static std::map<FnSymbol*,bool> toplevelYieldsArePresent;
+typedef std::map<FnSymbol*,bool>::iterator TLVYIterator;
+
+static bool hasToplevelYields(FnSymbol* fn) {
+  std::pair<FnSymbol*,bool> val(fn, false);
+  std::pair<TLVYIterator,bool> result = toplevelYieldsArePresent.insert(val);
+  if (result.second) {
+    // Yes, we inserted a new element. Compute tlvy, store and return it.
+    bool hasTlvy = false;
+    computeHasToplevelYields(fn->body, hasTlvy);
+    result.first->second = hasTlvy;
+    return hasTlvy;
+  } else {
+    // This function is already in the map. Use the cached value.
+    return result.first->second;
+  }
+}
+
 /////////// standardized svar actions ///////////
 
 // When ForallStmt::loopBody() is inlined upon encountering a yield
@@ -786,9 +809,11 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
     }
 
     case TFI_TASK_PRIVATE:
+     if (hasToplevelYields(cloneTaskFn)) {
       addDefAndMap(aInit, map, svar, createCurrTPV(svar));
       addCloneOfInitBlock(aInit, map, svar);
       addCloneOfDeinitBlock(aFini, map, svar);
+     }
       break;
 
     case TFI_IN_PARENT:         // handled upon TFI_IN
@@ -928,7 +953,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 /////////// outermost visitor ///////////
 
 static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
-                                    ShadowVarSymbol* svar)
+                                    FnSymbol* parIterFn, ShadowVarSymbol* svar)
 {
   SET_LINENO(svar);
   switch (svar->intent)
@@ -966,9 +991,11 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
     }
 
     case TFI_TASK_PRIVATE:
+     if (hasToplevelYields(parIterFn)) {
       addDefAndMap(aInit, map, svar, createCurrTPV(svar));
       addCloneOfInitBlock(aInit, map, svar);
       addCloneOfDeinitBlock(aFini, map, svar);
+     }
       break;
 
     case TFI_IN_PARENT:         // handled upon TFI_IN
@@ -986,7 +1013,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
-static void expandTopLevel(ExpandVisitor* outerVis,
+static void expandTopLevel(ExpandVisitor* outerVis, FnSymbol* parIterFn,
                            BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
@@ -999,7 +1026,7 @@ static void expandTopLevel(ExpandVisitor* outerVis,
   SymbolMap& map = outerVis->svar2clonevar;
 
   for_shadow_vars(svar, temp, outerVis->forall)
-    expandShadowVarTopLevel(aInit, aFini, map, svar);
+    expandShadowVarTopLevel(aInit, aFini, map, parIterFn, svar);
 }
 
 
@@ -1461,7 +1488,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, map);
-  expandTopLevel(&outerVis, iwrap, ibody);
+  expandTopLevel(&outerVis, parIterFn, iwrap, ibody);
 
   // Traverse recursively.
   ibody->accept(&outerVis);
@@ -1502,6 +1529,7 @@ void lowerForallStmtsInline()
   USR_STOP();
 
   removeDeadIters();
+  toplevelYieldsArePresent.clear();
 
   // Ensure gDummyRef is no longer used.
   INT_ASSERT(gDummyRef->firstSymExpr() == NULL);

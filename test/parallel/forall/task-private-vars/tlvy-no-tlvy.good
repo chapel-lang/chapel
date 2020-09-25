@@ -1,0 +1,92 @@
+start  0
+innerN 0  1100
+end    0
+start  1
+innerN 1  1200
+end    1
+
+start  0
+start  1
+innerW 1  1300
+end    1
+innerW 0  1400
+end    0
+
+start  0
+outer1 0  1111
+end    0
+start  1
+outer1 1  1211
+end    1
+
+start  0
+start  1
+outer2 1  1322
+end    1
+outer2 0  1422
+end    0
+
+start  0
+start  1
+outer3 1  1131
+end    1
+start  2
+outer3 2  1231
+end    2
+outer3 0  1932
+end    0
+
+start  0
+start  1
+start  2
+outer4 2  1341
+end    2
+outer4 1  1441
+end    1
+outer4 0  1942
+end    0
+
+start  0
+outer5 0  1151
+end    0
+start  1
+outer5 1  1251
+end    1
+start  2
+start  3
+outer5 3  1352
+end    3
+outer5 2  1452
+end    2
+
+start  0
+start  1
+outer6 1  1161
+end    1
+start  2
+outer6 2  1261
+end    2
+start  3
+outer6 3  1162
+end    3
+start  4
+outer6 4  1262
+end    4
+outer6 0  1963
+end    0
+
+start  0
+start  1
+outer7 1  1171
+end    1
+start  2
+outer7 2  1271
+end    2
+start  3
+start  4
+outer7 4  1372
+end    4
+outer7 3  1472
+end    3
+outer7 0  1973
+end    0
