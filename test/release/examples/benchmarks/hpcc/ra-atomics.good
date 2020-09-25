@@ -1,5 +1,3 @@
-ra-atomics.chpl:155: note: Optimized atomic call to be unordered
-ra-atomics.chpl:121: note: Optimized atomic call to be unordered
 Problem size = 1024 (2**10)
 Bytes per array = 8192
 Total memory required (GB) = 7.62939e-06
