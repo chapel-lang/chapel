@@ -284,7 +284,13 @@ module Map {
       const ref key = table.table[slot].key;
       ref val = table.table[slot].val;
 
-      worker(key, val);
+      import Reflection;
+      if !Reflection.canResolveMethod(worker, "this", key, val) then
+        compilerError('`map.update()` failed to resolve method ' +
+                      worker.type:string + '.this() for arguments (' +
+                      key.type:string + ', ' + val.type:string + ')');
+
+      return worker(key, val);
     }
 
     pragma "no doc"
