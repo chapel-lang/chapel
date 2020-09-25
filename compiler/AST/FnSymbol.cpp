@@ -737,9 +737,9 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
   bool anyGeneric = false;
 
-  std::vector<char> formalIsGeneric;
-  formalIsGeneric.reserve(this->numFormals());
+  std::vector<unsigned char> formalIsGeneric;
 
+  int count = 0;
   for_formals(formal, this) {
     bool isGeneric = false;
 
@@ -749,13 +749,14 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
       // we can resolve it now, even if there was a previous generic formal.
 
       bool dependsOnPreviousGeneric = false;
-      size_t i = 0;
+      int i = 0;
       if (anyGeneric) {
         for_formals(prevFormal, this) {
-          if (i >= formalIsGeneric.size())
+          if (i >= count)
             break;
 
-          if (formalIsGeneric[i] == 1) {
+          int cursz = formalIsGeneric.size();
+          if (i < cursz && formalIsGeneric[i] == 1) {
             // check to see if prevFormal is used in the typeExpr
             // for the current formal.
             if (findSymExprFor(formal->typeExpr, prevFormal) != NULL) {
@@ -821,7 +822,13 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
       }
     }
     anyGeneric = anyGeneric || isGeneric;
-    formalIsGeneric.push_back(isGeneric?1:0);
+    if (isGeneric) {
+      while ((int)formalIsGeneric.size() < count) {
+        formalIsGeneric.push_back(0);
+      }
+      formalIsGeneric.push_back(isGeneric?1:0);
+    }
+    count++;
   }
 
   return anyGeneric;
