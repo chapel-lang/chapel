@@ -423,6 +423,9 @@
   "e8ed417a-624d-11e9-b712-843835579daa": [
     "doc/rst/technotes/lifetimeChecking.rst"
   ],
+  "2393b51a-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/protoGenCodeGuide.rst"
+  ],
   "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/technotes/reduceIntents.rst"
   ],
@@ -434,6 +437,9 @@
   ],
   "f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "doc/rst/tools/mason/mason.rst"
+  ],
+  "50034a8e-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/tools/protoc-gen-chpl/protoc-gen-chpl.rst"
   ],
   "7ada2798-4027-11e6-907f-843835579daa": [
     "doc/rst/users-guide/base/forloops.rst"
@@ -610,6 +616,9 @@
   "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MatrixMarket.chpl"
   ],
+  "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "modules/packages/ProtobufProtocolSupport.chpl"
+  ],
   "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
     "modules/packages/Sort.chpl"
   ],
@@ -726,6 +735,9 @@
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
   ],
+  "4d38d4da-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/README.md"
+  ],
   "f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-internal.h",
     "runtime/src/comm/ofi/comm-ofi.c"
@@ -741,6 +753,9 @@
   ],
   "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni.c"
+  ],
+  "31db04f6-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "runtime/src/error.c"
   ],
   "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/launch/amudprun/launch-amudprun.c"
