@@ -9,4 +9,5 @@ note: element 0 of type shared T has no default value
 note: because it is a non-nilable class - consider the type shared T? instead
 note: element 1 of type shared T has no default value
 note: because it is a non-nilable class - consider the type shared T? instead
-$CHPL_HOME/modules/internal/DefaultRectangular.chpl:nnnn: Function 'init_elts' instantiated as: init_elts(x: _ddata(2*shared T), s: int(64), type t = 2*shared T)
+  within internal functions (use --print-callstack-on-error to see)
+  testTuple.chpl:8: called as testArray(type t = 2*shared T)

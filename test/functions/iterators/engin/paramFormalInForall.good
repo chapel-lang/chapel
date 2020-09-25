@@ -1,10 +1,11 @@
 paramFormalInForall.chpl:8: In function 'fun1':
 paramFormalInForall.chpl:10: warning: 5
 paramFormalInForall.chpl:11: warning: 5
-paramFormalInForall.chpl:16: Function 'fun1' instantiated as: fun1(param arg1 = 5)
+  paramFormalInForall.chpl:16: called as fun1(param arg1 = 5)
 paramFormalInForall.chpl:3: In function 'fun2':
 paramFormalInForall.chpl:4: warning: 5
-paramFormalInForall.chpl:11: Function 'fun2' instantiated as: fun2(param arg2 = 5)
+  paramFormalInForall.chpl:11: called as fun2(param arg2 = 5) from function 'fun1'
+  paramFormalInForall.chpl:16: called as fun1(param arg1 = 5)
 fun2 5
 fun2 5
 fun2 5

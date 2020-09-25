@@ -1,0 +1,8 @@
+error-message-bolding.chpl:1: In function 'h':
+error-message-bolding.chpl:2: [1merror: [0mCannot assign to string from int(64)
+  error-message-bolding.chpl:6: called as h(arg: [4mstring[0m) from function 'g'
+  error-message-bolding.chpl:12: called as g(arg: [4mstring[0m, otherArg: int(64), param p = [4m2[0m, param pp = [4m3[0m: int(8), type t = [4mint(64)[0m) from method 'methodA'
+  error-message-bolding.chpl:20: called as ConcreteRecord.methodA(arg: [4mstring[0m) from method 'methodB'
+  error-message-bolding.chpl:26: called as [4mGenericRecord(real(64))[0m.methodB(arg: [4mstring[0m) from function 'f'
+  error-message-bolding.chpl:29: called as f(arg: [4mstring[0m)
+note: generic instantiations are underlined in the above callstack

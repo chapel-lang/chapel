@@ -46,6 +46,7 @@ module Sys {
   // get basic types from SysBasic
   use SysBasic;
   private use SysCTypes;
+  private use CPtr;
 
  
   // CONSTANTS

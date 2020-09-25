@@ -1,0 +1,4 @@
+error-stack-trace.chpl:1: In function 'h':
+error-stack-trace.chpl:2: error: Cannot assign to string from int(64)
+  error-stack-trace.chpl:6: called as h(arg: string, otherArg: int(64)) from function 'g'
+  error-stack-trace.chpl:10: called as g(arg: string, otherArg: int(64))

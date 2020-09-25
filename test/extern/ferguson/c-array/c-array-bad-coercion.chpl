@@ -1,3 +1,4 @@
+use CPtr;
 proc f(ptr:c_ptr(real)) {
   writeln(ptr.deref());
 }

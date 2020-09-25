@@ -1,3 +1,3 @@
 init-field-arg-oknil-shared-from-nonnil-borrowed.chpl:9: In initializer:
 init-field-arg-oknil-shared-from-nonnil-borrowed.chpl:10: error: cannot create a shared variable from a borrowed class instance
-init-field-arg-oknil-shared-from-nonnil-borrowed.chpl:14: Initializer instantiated as: init(rhs: borrowed MyClass)
+  init-field-arg-oknil-shared-from-nonnil-borrowed.chpl:14: called as MyRecord.init(rhs: borrowed MyClass)

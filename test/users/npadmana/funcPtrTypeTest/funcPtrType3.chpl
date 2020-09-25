@@ -1,3 +1,4 @@
+use CPtr;
 use SysCTypes;
 
 export proc f1(x : real) : real {

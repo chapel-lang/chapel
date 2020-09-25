@@ -1,3 +1,5 @@
+use CPtr;
+
 var cPtr = c_malloc(int, 4);
 
 config param case = 1;

@@ -1,3 +1,4 @@
+use CPtr;
 // Tests when record contains another record
 // Note: c_offsetof is intended for use in C interoperability only.
 record Outer {

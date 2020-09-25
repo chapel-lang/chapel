@@ -1,3 +1,4 @@
+use CPtr;
 require "testVoidExternFns.h";
 
 config const n = 2;

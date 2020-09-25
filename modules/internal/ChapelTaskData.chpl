@@ -22,7 +22,7 @@
 //
 module ChapelTaskData {
 
-  private use ChapelStandard, SysCTypes;
+  private use ChapelStandard, SysCTypes, CPtr;
 
   // Chapel task-local data format:
   // up to 16 bytes of wide pointer for _remoteEndCountType

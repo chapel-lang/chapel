@@ -16,9 +16,9 @@ Initializing Modules:
         ChapelArray
          ChapelDebugPrint
           IO
-           SysError
            FormattedIO
             Regexp
+         ChapelPrivatization
          Sort
           List
            ChapelLocks

@@ -1,0 +1,7 @@
+error-message-bolding.chpl:1: In function 'h':
+error-message-bolding.chpl:2: error: Cannot assign to string from int(64)
+  error-message-bolding.chpl:6: called as h(arg: string) from function 'g'
+  error-message-bolding.chpl:12: called as g(arg: string, otherArg: int(64), param p = 2, param pp = 3: int(8), type t = int(64)) from method 'methodA'
+  error-message-bolding.chpl:20: called as ConcreteRecord.methodA(arg: string) from method 'methodB'
+  error-message-bolding.chpl:26: called as GenericRecord(real(64)).methodB(arg: string) from function 'f'
+  error-message-bolding.chpl:29: called as f(arg: string)

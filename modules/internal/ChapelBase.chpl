@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes;
+  use ChapelEnv, SysCTypes, CPtr;
 
   config param enablePostfixBangChecks = false;
 
@@ -668,15 +668,6 @@ module ChapelBase {
         HaltWrappers.nilCheckHalt("argument to ! is nil");
       }
     }
-  }
-
-  inline proc postfix!(type t: class) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-  inline proc postfix!(type t: class?) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
   }
 
   inline proc postfix!(x:unmanaged class) {

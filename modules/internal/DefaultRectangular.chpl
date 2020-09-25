@@ -30,7 +30,7 @@ module DefaultRectangular {
 
   use DSIUtil;
   public use ChapelArray;
-  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes;
+  use ChapelDistribution, ChapelRange, SysBasic, SysError, SysCTypes, CPtr;
   use ChapelDebugPrint, ChapelLocks, OwnedObject, IO;
   use DefaultSparse, DefaultAssociative;
   public use ExternalArray; // OK: currently expected to be available by

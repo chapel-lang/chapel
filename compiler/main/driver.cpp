@@ -196,6 +196,8 @@ int scalar_replace_limit = 8;
 int inline_iter_yield_limit = 10;
 int tuple_copy_limit = scalar_replace_limit;
 bool fGenIDS = false;
+bool fDetectColorTerminal = true;
+bool fUseColorTerminal = false;
 int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
@@ -219,6 +221,7 @@ bool fExplainVerbose = false;
 bool fParseOnly = false;
 bool fPrintCallGraph = false;
 bool fPrintAllCandidates = false;
+bool fAutoPrintCallStackOnError = true;
 bool fPrintCallStackOnError = false;
 bool fPrintIDonError = false;
 bool fPrintModuleResolution = false;
@@ -817,6 +820,17 @@ static void setCacheEnable(const ArgumentDescription* desc, const char* unused) 
   parseCmdLineConfig("CHPL_CACHE_REMOTE", val);
 }
 
+static void setUseColorTerminalFlag(const ArgumentDescription* desc, const char* unused) {
+  fDetectColorTerminal = false;
+  // fUseColorTerminal is set by the flag
+}
+
+static void setPrintCallstackOnErrorFlag(const ArgumentDescription* desc, const char* unused) {
+  // fPrintCallStackOnError is set by the flag
+  fAutoPrintCallStackOnError = false;
+}
+
+
 static void setHtmlUser(const ArgumentDescription* desc, const char* unused) {
   fdump_html = true;
   fdump_html_include_system_modules = false;
@@ -1005,7 +1019,7 @@ static ArgumentDescription arg_desc[] = {
  {"instantiate-max", ' ', "<max>", "Limit number of instantiations", "I", &instantiation_limit, "CHPL_INSTANTIATION_LIMIT", NULL},
  {"print-all-candidates", ' ', NULL, "[Don't] print all candidates for a resolution failure", "N", &fPrintAllCandidates, "CHPL_PRINT_ALL_CANDIDATES", NULL},
  {"print-callgraph", ' ', NULL, "[Don't] print a representation of the callgraph for the program", "N", &fPrintCallGraph, "CHPL_PRINT_CALLGRAPH", NULL},
- {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", NULL},
+ {"print-callstack-on-error", ' ', NULL, "[Don't] print the Chapel call stack leading to each error or warning", "N", &fPrintCallStackOnError, "CHPL_PRINT_CALLSTACK_ON_ERROR", setPrintCallstackOnErrorFlag},
  {"print-unused-functions", ' ', NULL, "[Don't] print the name and location of unused functions", "N", &fPrintUnusedFns, NULL, NULL},
  {"set", 's', "<name>[=<value>]", "Set config value", "S", NULL, NULL, readConfig},
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
@@ -1044,6 +1058,7 @@ static ArgumentDescription arg_desc[] = {
  //       (so that they are available for user flags)
  {"", ' ', NULL, "Developer Flags -- Debug Output", NULL, NULL, NULL, NULL},
  {"cc-warnings", ' ', NULL, "[Don't] Give warnings for generated code", "N", &ccwarnings, "CHPL_CC_WARNINGS", NULL},
+ {"use-color-terminal", ' ', NULL, "[Don't] emit control codes for color and bold in error messages", "N", &fUseColorTerminal, "CHPL_USE_COLOR_TERMINAL", setUseColorTerminalFlag},
  {"gen-ids", ' ', NULL, "[Don't] pepper generated code with BaseAST::ids", "N", &fGenIDS, "CHPL_GEN_IDS", NULL},
  {"html", ' ', NULL, "Dump IR in HTML format (toggle)", "T", &fdump_html, "CHPL_HTML", NULL},
  {"html-user", ' ', NULL, "Dump IR in HTML for user module(s) only (toggle)", "T", &fdump_html, "CHPL_HTML_USER", setHtmlUser},
