@@ -3875,6 +3875,7 @@ srcwide
 xfloat
 
 FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
+allocas
 astrs
 cdesc
 disubprogram
@@ -4440,12 +4441,14 @@ gotit
 rview
 
 FILEID: 40d00fe6-1a82-11e7-980e-10ddb1d4c3d5
+adim
 adom
 arange
 aref
 athbf
 atype
 azero
+bdim
 bdom
 brange
 bulu
@@ -4460,6 +4463,7 @@ eigvals
 eigvalsh
 extbf
 geev
+gelsd
 gemm
 gemv
 gesdd
@@ -4486,6 +4490,7 @@ nznew
 pdet
 pinv
 potrf
+rcond
 smmp
 superdiagonal
 superdiagonals
@@ -4493,6 +4498,8 @@ swaprow
 syev
 udom
 unconverged
+vander
+vandermonde
 vlcplx
 vrcplx
 xdom
@@ -4891,6 +4898,7 @@ cpindex
 mblength
 mbsize
 nonunicode
+whitespaces
 
 FILEID: f5a43844-9c7b-11e8-b963-10ddb1d4c3d5
 timeunits
@@ -5076,6 +5084,7 @@ islower
 isprint
 tolower
 toupper
+whitespaces
 
 FILEID: 61f7efb8-bd82-11e9-8464-10ddb1d4c3d5
 nonblk
@@ -5189,6 +5198,7 @@ FILEID: b4bc8e62-253c-11ea-948f-10ddb1d4c3d5
 gsplitinit
 
 FILEID: 117a9e8c-253d-11ea-948f-10ddb1d4c3d5
+siblingmodule
 testmain
 
 FILEID: 1381859c-253d-11ea-948f-10ddb1d4c3d5
@@ -5228,6 +5238,7 @@ FILEID: 56f705f2-5f64-11ea-b972-843835579daa
 ctch
 
 FILEID: 61835ab6-5f64-11ea-b972-843835579daa
+gtest
 vprint
 
 FILEID: c10852de-5f64-11ea-b972-843835579daa
@@ -5272,6 +5283,30 @@ rallocx
 
 FILEID: 88143c78-d6dc-11ea-8acb-843835579daa
 dallocx
+
+FILEID: 2393b51a-feca-11ea-b2e8-10ddb1d4c3d5
+mapfield
+sfixed
+
+FILEID: 50034a8e-feca-11ea-b2e8-10ddb1d4c3d5
+addressbook
+phntype
+
+FILEID: 10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5
+sfixed
+tlen
+
+FILEID: 31db04f6-fecb-11ea-b2e8-10ddb1d4c3d5
+buffersz
+bufsz
+dladdr
+fbase
+sepstr
+strsz
+toadd
+
+FILEID: 4d38d4da-fecb-11ea-b2e8-10ddb1d4c3d5
+rmem
 
 NATURAL:
 aarch
@@ -5745,6 +5780,7 @@ decls
 declspecs
 decodable
 decrementer
+dedent
 deepak
 defexpr
 defn
@@ -5835,6 +5871,7 @@ divfloor
 divfloorpos
 dlang
 dlmalloc
+dlongnecke
 dmapped
 dmitry
 doctests
@@ -6215,6 +6252,8 @@ gnuplot
 godoc
 gokhberg
 google
+googleapis
+googletest
 gothic
 gotit
 gotostmt
@@ -6376,10 +6415,12 @@ inlined
 inliner
 inode
 inodes
+inorder
 inout
 inoutarg
 inputfile
 instantiable
+instn
 internet
 interoperate
 interoperating
@@ -7060,6 +7101,8 @@ oldsize
 olson
 omar
 omnipath
+oneof
+oneofs
 onetest
 onlinedocs
 onlinepubs
@@ -7236,6 +7279,7 @@ progressfunction
 prokhorenkov
 prokowich
 protobuf
+protobufs
 protocolbuffers
 proxyauth
 proxypassword
@@ -7273,6 +7317,7 @@ qiovec
 qsbr
 qsub
 qthreads
+qualtype
 queueing
 quickack
 quicksort
@@ -7434,6 +7479,7 @@ runtest
 rvalue
 rvalues
 rwlock
+rxvt
 sadayappan
 safecasts
 sagar
@@ -7831,6 +7877,7 @@ tmpdirname
 tmps
 tmpservername
 tmpvar
+tmux
 tochar
 toctou
 toctree
@@ -7861,6 +7908,7 @@ tradeoff
 tradeoffs
 transfertext
 travis
+treap
 treiber
 tridiagonal
 trigraphs
@@ -7903,6 +7951,7 @@ ulonglong
 umask
 umontreal
 unalias
+unaliasing
 unanchored
 unary
 unbundles
@@ -7922,6 +7971,7 @@ unfragmented
 ungreedy
 unhandled
 unicast
+unindented
 unindexed
 uninserted
 uninstall
@@ -7990,6 +8040,7 @@ valloc
 vals
 varargs
 variadic
+varint
 varname
 varsha
 varsymbol
