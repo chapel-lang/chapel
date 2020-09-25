@@ -251,27 +251,28 @@ module Map {
     }
 
     /*
-      Update a value in this map in a parallel safe manner via a worker
+      Update a value in this map in a parallel safe manner via an updater
       object.
 
-      The worker object passed to the `update()` method must define a
+      The updater object passed to the `update()` method must define a
       `this()` method that takes two arguments: the first has this map's
       `keyType`, and the second has this map's `valType`.
 
-      The worker object's `this()` method must return some sort of value.
-      Workers that do not need to return anything may return `none`.
+      The updater object's `this()` method must return some sort of value.
+      Updater objects that do not need to return anything may
+      return `none`.
 
-      If the worker object's `this()` method throws, the thrown error will
+      If the updater object's `this()` method throws, the thrown error will
       be propagated out of `update()`.
 
       :arg k: The key to update
       :type k: `keyType`
 
-      :arg worker: A class or record used to update the value at `i`
+      :arg updater: A class or record used to update the value at `i`
 
-      :return: What the worker returns
+      :return: What the updater returns
     */
-    proc update(const ref k: keyType, worker) throws {
+    proc update(const ref k: keyType, updater) throws {
       _enter(); defer _leave();
 
       var (isFull, slot) = table.findFullSlot(k);
@@ -285,12 +286,12 @@ module Map {
       ref val = table.table[slot].val;
 
       import Reflection;
-      if !Reflection.canResolveMethod(worker, "this", key, val) then
+      if !Reflection.canResolveMethod(updater, "this", key, val) then
         compilerError('`map.update()` failed to resolve method ' +
-                      worker.type:string + '.this() for arguments (' +
+                      updater.type:string + '.this() for arguments (' +
                       key.type:string + ', ' + val.type:string + ')');
 
-      return worker(key, val);
+      return updater(key, val);
     }
 
     pragma "no doc"
