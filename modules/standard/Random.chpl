@@ -141,7 +141,7 @@ module Random {
     compilerError("Random.fillRandom is only defined for numeric arrays");
   }
 
-  /* Shuffle the elements of the array into a random order.
+  /* Shuffle the elements of a rectangular array into a random order.
 
      :arg arr: a rectangular 1-D non-strided array
      :arg seed: the seed to use when shuffling. Defaults to
@@ -150,6 +150,7 @@ module Random {
      :type algorithm: :type:`RNG`
    */
   proc shuffle(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+
     if(algorithm==RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array shuffling");
 
@@ -1046,7 +1047,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) throws {
+      proc fillRandom(arr: [] eltType) {
         if(!isRectangularArr(arr)) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1166,7 +1167,7 @@ module Random {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
-      /* Shuffle the elements of the array in random order. */
+      /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
         if(!isRectangularArr(arr)) then
@@ -2642,7 +2643,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: [] :type:`eltType`
       */
-      proc fillRandom(arr: [] eltType) throws {
+      proc fillRandom(arr: [] eltType) {
         if(!isRectangularArr(arr)) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
