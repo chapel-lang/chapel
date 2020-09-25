@@ -370,7 +370,7 @@ symbolFlag( FLAG_POD , ypr, "plain old data" , "data can be bit copied")
 // These will be allocated outside of the loop in the IR (with an alloca
 // instruction). So, it should mark all variables other than those that
 // are loop-local stack variables inside of an order-independent loop.
-symbolFlag( FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP , npr, "points outside order independent loop" , "points to memory other than local variables inside order indpendent loop")
+symbolFlag( FLAG_POINTS_OUTSIDE_ORDER_INDEPENDENT_LOOP , npr, "points outside order independent loop" , "points to memory other than local variables inside order independent loop")
 
 symbolFlag( FLAG_PRIMITIVE_TYPE , ypr, "primitive type" , "attached to primitive types to keep them from being deleted" )
 symbolFlag( FLAG_PRINT_MODULE_INIT_FN , ypr, "print module init fn" , ncm )
