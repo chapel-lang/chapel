@@ -770,6 +770,8 @@ empty-chpl-barrier.ml-time:
 exchange:
   04/18/19:
     - Enable bulk-transfer for BlockDist by default (#12797)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
 
 fannkuch-redux:
   07/22/14:
