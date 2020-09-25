@@ -1432,7 +1432,7 @@ module List {
       // pointing into module code.
       import Reflection;
       if !Reflection.canResolveMethod(worker, "this", i, slot) then
-        compilerError('`map.update()` failed to resolve method ' +
+        compilerError('`list.update()` failed to resolve method ' +
                       worker.type:string + '.this() for arguments (' +
                       i.type:string + ', ' + slot.type:string + ')');
 
