@@ -1512,7 +1512,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
    Compute a vector ``x`` such that the 2-norm ``|b - A x|`` is minimized.
 
    ``cond`` is the cut-off threshold such that singular values will be
-   considered 0.0. If ``cond < 0.0`` (defaults to ``-1.0``), the treshold will
+   considered 0.0. If ``cond < 0.0`` (defaults to ``-1.0``), the threshold will
    be set to ``max((...A.shape)) * epsilon``, where ``epsilon`` is the machine
    precision for ``A.eltType``.
 
