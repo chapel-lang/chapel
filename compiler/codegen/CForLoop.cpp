@@ -47,7 +47,7 @@ static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
   auto &ctx = info->module->getContext();
 
   std::vector<llvm::Metadata*> args;
-  // Reselve operand 0 for the loop id self reference
+  // Resolve operand 0 for the loop id self reference
   auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
   args.push_back(tmpNode.get());
 
