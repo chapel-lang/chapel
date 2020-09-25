@@ -223,9 +223,20 @@ static void print_user_internal_error() {
   print_error("chpl version %s", version);
 }
 
-// find a caller (direct or not) that is not in a task function,
-// for line number reporting
-static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
+static bool isTaskFunWrapper(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_ON_BLOCK) ||
+         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+         fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+         fn->hasFlag(FLAG_LOCAL_ON);
+}
+
+static bool isTaskFnOrWrapper(FnSymbol* fn) {
+  return isTaskFunWrapper(fn) || isTaskFun(fn);
+}
+
+// If it's not a task function, return it;
+// otherwise, find a function calling it that is not a task function.
+static FnSymbol* findNonTaskFn(FnSymbol* fn) {
 
   FnSymbol* lastFn = fn;
   while (true) {
@@ -234,7 +245,7 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
       return lastFn;
 
     // If it's not a task function, we are done
-    if (isTaskFun(fn) == false)
+    if (isTaskFnOrWrapper(fn) == false)
       return fn;
 
     // Otherwise, find the call site, and continue the search.
@@ -269,8 +280,6 @@ static void gatherFunctionsCalledTransitively(FnSymbol* fn,
 }
 
 static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
-  fn = findNonTaskCaller(fn);
-
   for_SymbolSymExprs(se, fn) {
     CallExpr* call = toCallExpr(se->parentExpr);
     if (se == call->baseExpr) {
@@ -320,16 +329,8 @@ static bool isInternalFunction(FnSymbol* fn) {
           module->modTag == MOD_INTERNAL);
 }
 
-// Note - this function is recursive.
-static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
-                           std::set<FnSymbol*>& currentFns,
-                           bool& printedUnderline,
-                           bool& lastHidden) {
-
-  // Stop now if it's a module init function
-  if (isModuleInitFunction(errFn))
-    return;
-
+static Expr* findBestCallSite(FnSymbol* errFn,
+                              std::set<FnSymbol*>& currentFns) {
   // Gather functions called, transitively, so that we can rule out
   // recursive calls when showing a stack trace.
   gatherFunctionsCalledTransitively(errFn, currentFns);
@@ -355,8 +356,25 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
     bestPoint = findACallSite(errFn, currentFns);
   }
 
+  return bestPoint;
+}
+
+// Note - this function is recursive.
+static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
+                           std::set<FnSymbol*>& currentFns,
+                           bool& printedUnderline,
+                           bool& lastHidden) {
+
+  // Stop now if it's a module init function
+  if (isModuleInitFunction(errFn))
+    return;
+
+  Expr* bestPoint = findBestCallSite(errFn, currentFns);
+
   if (bestPoint != NULL) {
-    FnSymbol* inFn = bestPoint->getFunction();
+    FnSymbol* inFn = findNonTaskFn(bestPoint->getFunction());
+    if (inFn == NULL)
+      return;
 
     // Don't print "called from chpl_gen_main"
     bool calledFromGenMain = inFn->hasFlag(FLAG_GEN_MAIN_FUNC);
@@ -453,7 +471,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
     if (Expr* expr = toExpr(ast)) {
       FnSymbol* fn = NULL;
       if (expr && expr->parentSymbol != NULL)
-        fn = findNonTaskCaller(expr->getFunction());
+        fn = findNonTaskFn(expr->getFunction());
 
       // Don't consider functions that aren't in the tree
       if (fn != NULL)
