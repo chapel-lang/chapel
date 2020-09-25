@@ -1,2 +1,0 @@
-testThisParSafeError.chpl:5: In function 'test':
-testThisParSafeError.chpl:9: error: Cannot index a map initialized with `parSafe=true`

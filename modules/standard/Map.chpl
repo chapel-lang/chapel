@@ -294,10 +294,10 @@ module Map {
     }
 
     pragma "no doc"
-    inline proc _errorForParSafeIndexing() {
+    inline proc _warnForParSafeIndexing() {
       if parSafe then
-        compilerError('Cannot index a map initialized ' +
-                      'with `parSafe=true`', 2);
+        compilerWarning('indexing a map initialized with `parSafe=true` ' +
+                        'has been deprecated, use `update()` instead', 2);
     }
 
     /*
@@ -310,7 +310,7 @@ module Map {
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
-      _errorForParSafeIndexing();
+      _warnForParSafeIndexing();
 
       _enter(); defer _leave();
 
@@ -325,7 +325,7 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
-      _errorForParSafeIndexing();
+      _warnForParSafeIndexing();
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -338,7 +338,7 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const ref
     where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
-      _errorForParSafeIndexing();
+      _warnForParSafeIndexing();
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -351,7 +351,7 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
-      _errorForParSafeIndexing();
+      _warnForParSafeIndexing();
       compilerError("Cannot access nilable class directly. Use an",
                     " appropriate accessor method instead.");
     }
@@ -378,8 +378,9 @@ module Map {
      */
     proc getReference(k: keyType) ref {
       if parSafe then
-        compilerError('cannot call `getReference()` on maps ' +
-                      'initialized with `parSafe=true`');
+        compilerWarning('use of `getReference()` on maps initialized ' +
+                        'with `parSafe=true` has been deprecated, ' +
+                        'use `update()` instead');
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);

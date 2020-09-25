@@ -29,7 +29,7 @@ proc test1() {
 }
 test1();
 
-// Similar test but with a parSafe=true list.
+// Similar test but with a parSafe=true map.
 proc test2() {
   var m = new map(int, r, parSafe=true);
   for i in 0..7 do m.add(i, new r(0));
