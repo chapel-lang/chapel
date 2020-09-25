@@ -22,6 +22,7 @@
 
 #include "astutil.h"
 #include "baseAST.h"
+#include "build.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -60,6 +61,8 @@ static bool retExprTypeIsVoid(BlockStmt* retExprType);
 //    }
 
 void expandExternArrayCalls() {
+  std::set<Expr*> cptrScopes;
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->hasFlag(FLAG_EXTERN))
       continue;
@@ -97,6 +100,14 @@ void expandExternArrayCalls() {
 
     if (fcopy) {
       SET_LINENO(fn);
+      Expr* parentScope = fn->defPoint->parentExpr;
+      if (cptrScopes.count(parentScope) == 0) {
+        BlockStmt* useBlock = buildChapelStmt(new UseStmt(new UnresolvedSymExpr("CPtr"), "",
+                                                        true));
+        fn->defPoint->insertAfter(useBlock);
+        cptrScopes.insert(parentScope);
+      }
+
       fn->defPoint->insertAfter(new DefExpr(fcopy));
       fn->addFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG);
       fn->addFlag(FLAG_VOID_NO_RETURN_VALUE);
