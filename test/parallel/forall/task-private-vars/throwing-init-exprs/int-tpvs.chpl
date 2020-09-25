@@ -4,9 +4,9 @@
 //
 // This test can be executed with the various values of 'nt'
 // to force asdf() to throw at each of its calls.
-// Note that currently there is a set of TPVs created within the main task.
-// They would be accessible within the body of the forall if the parallel
-// iterator RR() contained a 'yield' outside of any task constructs.
+//
+// A set of TPVs is created within the main task. They are accessed
+// from the forall loop body for the iteration caused by 'yield 1000'.
 
 config const nt = 0;
 config const nt2 = 0;
@@ -20,9 +20,9 @@ iter SSS() {
   yield 2000;
   yield 3000;
 }
-
 iter RR() { yield 55; }
 iter RR(param tag) {
+  yield 1000;
   coforall sss in SSS() {
     writeln("starting task");
     yield sss;

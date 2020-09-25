@@ -9,5 +9,5 @@ var dom = {1..8};
 
 forall i in dom with (const taskID = getTaskID()) {
   writeln(i);
-  writeln(taskID * 100);
+  writeln(taskID * 100 + 200);
 }
