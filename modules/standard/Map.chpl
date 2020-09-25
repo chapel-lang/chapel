@@ -258,11 +258,11 @@ module Map {
       `this()` method that takes two arguments: the first has this map's
       `keyType`, and the second has this map's `valType`.
 
-      The worker's object `this()` method must return some sort of value.
+      The worker object's `this()` method must return some sort of value.
       Workers that do not need to return anything may return `none`.
 
-      If the worker's `this()` method throws, the thrown error will be
-      propagated out of `update()`.
+      If the worker object's `this()` method throws, the thrown error will
+      be propagated out of `update()`.
 
       :arg k: The key to update
       :type k: `keyType`
