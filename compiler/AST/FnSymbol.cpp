@@ -735,10 +735,42 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 // 'map' is expected to be non-NULL if this function has been instantiated.
 //
 bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
+  bool anyGeneric = false;
+
+  std::vector<char> formalIsGeneric;
+  formalIsGeneric.reserve(this->numFormals());
+
   for_formals(formal, this) {
     bool isGeneric = false;
 
     if (formal->type == dtUnknown && formal->typeExpr != NULL) {
+
+      // If the type expression does not depend on a previous generic formal,
+      // we can resolve it now, even if there was a previous generic formal.
+
+      bool dependsOnPreviousGeneric = false;
+      size_t i = 0;
+      for_formals(prevFormal, this) {
+        if (i >= formalIsGeneric.size())
+          break;
+
+        if (formalIsGeneric[i] == 1) {
+          // check to see if prevFormal is used in the typeExpr
+          // for the current formal.
+          if (findSymExprFor(formal->typeExpr, prevFormal) != NULL) {
+            dependsOnPreviousGeneric = true;
+            break;
+          }
+        }
+        i++;
+      }
+      if (dependsOnPreviousGeneric) {
+        // Stop resolving formals.
+        INT_ASSERT(anyGeneric == true);
+        break;
+      }
+
+
       resolveBlockStmt(formal->typeExpr);
       formal->type = formal->typeExpr->body.tail->getValType();
     }
@@ -786,11 +818,12 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
         USR_PRINT(this,
                   "   formal argument '%s' causes it to be", formal->name);
       }
-      return true; // no need to examine the remaining formals
     }
+    anyGeneric = anyGeneric || isGeneric;
+    formalIsGeneric.push_back(isGeneric?1:0);
   }
 
-  return false;
+  return anyGeneric;
 }
 
 bool FnSymbol::isNormalized() const {
