@@ -41,7 +41,7 @@
 //     - Replaces `PRIM_MAYBE_LOCAL_THIS` with a regular array access or
 //     localAccess during resolution
 
-
+static int curLogDepth = 0;
 static void LOG(int depth, const char *msg, BaseAST *node);
 static void LOGLN(BaseAST *node);
 
@@ -132,11 +132,14 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
 
 
 // logging support for --report-auto-local-access
-// depth is used roughly in the following way
+// during the first analysis phase depth is used roughly in the following way
 // 0: entering/exiting forall
 // 1: information about the forall
 // 2: entering/exiting call
 // 3: information about call
+//
+// during resolution, the output is much more straighforward, and depth 0 is
+// used always
 static void LOG(int depth, const char *msg, BaseAST *node) {
   if (fReportAutoLocalAccess) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
@@ -144,6 +147,11 @@ static void LOG(int depth, const char *msg, BaseAST *node) {
 
     const bool veryVerbose = false;
     if (verbose) {
+      curLogDepth = depth;
+      if (curLogDepth > 0) {
+        std::cout << "|";
+      }
+      
       for (int i = 0 ; i < depth; i++) {
         std::cout << " ";
       }
@@ -166,6 +174,9 @@ static void LOGLN(BaseAST *node) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
     if (verbose) {
+      if (curLogDepth > 0) {
+        std::cout << "|";
+      }
       std::cout << std::endl;
     }
   }
@@ -730,10 +741,10 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 //
 // if (staticCheck1 || staticCheck2 || ... || staticCheckN) {
 //   
-//   const dynamicCheck = (!staticCheck1 || dynamicCheck(arr1, loopDomain)) &&
-//                        (!staticCheck2 || dynamicCheck(arr2, loopDomain)) &&
+//   const dynamicCheck = (!staticCheckX || dynamicCheck(arrX, loopDomain)) &&
+//                        (!staticCheckY || dynamicCheck(arrY, loopDomain)) &&
 //                        ...
-//                        (!staticCheckN || dynamicCheck(arrN, loopDomain));
+//                        (!staticCheckZ || dynamicCheck(arrZ, loopDomain));
 //
 //   if (staticCheckX || .. || staticCheckZ) && dynamicCheck {
 //     loop2
@@ -754,7 +765,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 //        failure
 // loop2: Optional. This is only created if there are some dynamic candidates
 //        and dynamic optimizations are enabled with the
-//        `--auto-local-access-dynamic` flag.
+//        `--dynamic-auto-local-access` flag.
 //
 // staticCheckX and staticCheckZ are static checks added for dynamic
 // candidates. OR'ed static checks in two `if`s are added so that we can fold
@@ -918,7 +929,7 @@ static void autoLocalAccess(ForallStmt *forall) {
 // Resolution support for auto-local-access
 //
 static CallExpr *revertAccess(CallExpr *call) {
-  LOG(3, "Static check failed. Reverting optimization", call);
+  LOG(0, "Static check failed. Reverting optimization", call);
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
@@ -935,10 +946,10 @@ static CallExpr *revertAccess(CallExpr *call) {
 
 static CallExpr *confirmAccess(CallExpr *call) {
   if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
-    LOG(3, "Static check successful. Using localAccess", call);
+    LOG(0, "Static check successful. Using localAccess", call);
   }
   else {
-    LOG(3, "Static check successful. Using localAccess with dynamic check", call);
+    LOG(0, "Static check successful. Using localAccess with dynamic check", call);
   }
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
