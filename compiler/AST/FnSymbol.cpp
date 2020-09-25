@@ -750,26 +750,27 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
 
       bool dependsOnPreviousGeneric = false;
       size_t i = 0;
-      for_formals(prevFormal, this) {
-        if (i >= formalIsGeneric.size())
-          break;
-
-        if (formalIsGeneric[i] == 1) {
-          // check to see if prevFormal is used in the typeExpr
-          // for the current formal.
-          if (findSymExprFor(formal->typeExpr, prevFormal) != NULL) {
-            dependsOnPreviousGeneric = true;
+      if (anyGeneric) {
+        for_formals(prevFormal, this) {
+          if (i >= formalIsGeneric.size())
             break;
-          }
-        }
-        i++;
-      }
-      if (dependsOnPreviousGeneric) {
-        // Stop resolving formals.
-        INT_ASSERT(anyGeneric == true);
-        break;
-      }
 
+          if (formalIsGeneric[i] == 1) {
+            // check to see if prevFormal is used in the typeExpr
+            // for the current formal.
+            if (findSymExprFor(formal->typeExpr, prevFormal) != NULL) {
+              dependsOnPreviousGeneric = true;
+              break;
+            }
+          }
+          i++;
+        }
+        if (dependsOnPreviousGeneric) {
+          // Stop resolving formals.
+          INT_ASSERT(anyGeneric == true);
+          break;
+        }
+      }
 
       resolveBlockStmt(formal->typeExpr);
       formal->type = formal->typeExpr->body.tail->getValType();
