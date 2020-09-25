@@ -1,4 +1,5 @@
 use SysCTypes;
+use CPtr;
 
 const targetLocale = Locales[numLocales-1];
 

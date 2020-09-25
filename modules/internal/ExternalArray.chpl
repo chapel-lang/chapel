@@ -25,6 +25,7 @@
 //
 module ExternalArray {
   use ChapelStandard;
+  private use CPtr;
 
   extern record chpl_opaque_array {
     var _pid: int;

@@ -68,6 +68,7 @@ module Path {
 use List;
 use SysError, IO;
 use Sys, SysBasic;
+use CPtr;
 
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.

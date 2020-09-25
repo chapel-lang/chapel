@@ -1,3 +1,4 @@
+use CPtr;
 extern proc getExternArray(size: int): c_ptr(real);
 extern proc freeArr(arr: c_ptr(real));
 

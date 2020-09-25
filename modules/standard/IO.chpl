@@ -435,6 +435,8 @@ public use SysBasic;
 use SysCTypes;
 public use SysError;
 
+private use CPtr;
+
 /*
 
 The :type:`iomode` type is an enum.
@@ -5230,6 +5232,7 @@ FormattedIO Functions and Types
 module FormattedIO {
   use IO;
   use SysCTypes;
+  use CPtr;
   use SysBasic;
   use SysError;
 //use IO;
