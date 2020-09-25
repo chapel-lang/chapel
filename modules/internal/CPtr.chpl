@@ -411,17 +411,23 @@ module CPtr {
 
   /*
 
-    Returns a :type:`c_ptr` to a Chapel rectangular array.  Note that the
-    existence of this :type:`c_ptr` has no impact on the lifetime of the array.
-    The returned pointer will be invalid if the original array is freed or even
-    reallocated. Domain assignment could make this :type:`c_ptr` invalid. If
-    the array's data is stored in more than one chunk the procedure will halt
-    the program with an error message.
+    Returns a :type:`c_ptr` to the elements of a non-distributed
+    Chapel rectangular array.  Note that the existence of this
+    :type:`c_ptr` has no impact on the lifetime of the array.  The
+    returned pointer will be invalid if the original array is freed or
+    even reallocated. Domain assignment could make this :type:`c_ptr`
+    invalid.
 
-    :arg arr: the array for which we should retrieve a pointer
-    :returns: a pointer to the array data
+    :arg arr: the array for which a pointer should be returned
+    :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(arr: []) where isRectangularArr(arr) {
+  inline proc c_ptrTo(arr: []) {
+    if (!chpl__isDROrDRView(arr)) then
+      compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
+
+    if (arr._value.locale != here) then
+      halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+
     return c_pointer_return(arr[arr.domain.low]);
   }
 
@@ -438,8 +444,6 @@ module CPtr {
 
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
-    if isArrayType(t) then
-      compilerError("c_ptrTo unsupported array type", 2);
     if isDomainType(t) then
       compilerError("c_ptrTo domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars

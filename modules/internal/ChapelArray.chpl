@@ -5271,7 +5271,7 @@ module ChapelArray {
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
 
     if (arr._value.locale != here) then
-      halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call is made on locale " + here.id:string + ")");
+      halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
     
     use CPtr;
     const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
