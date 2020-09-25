@@ -72,6 +72,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/CPtr.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/FileSystem.chpl \
@@ -166,7 +167,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/ChapelEnv.chpl               \
-	internal/CPtr.chpl                    \
 	internal/OwnedObject.chpl             \
 	internal/SharedObject.chpl
 
