@@ -230,18 +230,18 @@ module Map {
     }
 
     /*
-      Updates this map with the contents of the other, overwriting the values
+      Extends this map with the contents of the other, overwriting the values
       for already-existing keys.
 
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc update(pragma "intent ref maybe const formal"
+    proc extend(pragma "intent ref maybe const formal"
                 m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
-        compilerError("updating map with non-copyable type");
+        compilerError("extending map with non-copyable type");
 
       for key in m.keys() {
         var (_, slot) = table.findAvailableSlot(key);
@@ -250,8 +250,41 @@ module Map {
       }
     }
 
-    proc computeKey(const ref k: keyType, worker) throws {
-      
+    /*
+      Update a value in this map in a parallel safe manner via a worker
+      object.
+
+      The worker object passed to the `update()` method must define a
+      `this()` method that takes two arguments: the first has this map's
+      `keyType`, and the second has this map's `valType`.
+
+      The worker's object `this()` method must return some sort of value.
+      Workers that do not need to return anything may return `none`.
+
+      If the worker's `this()` method throws, the thrown error will be
+      propagated out of `update()`.
+
+      :arg k: The key to update
+      :type k: `keyType`
+
+      :arg worker: A class or record used to update the value at `i`
+
+      :return: What the worker returns
+    */
+    proc update(const ref k: keyType, worker) throws {
+      _enter(); defer _leave();
+
+      var (isFull, slot) = table.findFullSlot(k);
+
+      // TODO: Allow `--fast` to bypass this check?
+      if !isFull then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+
+      // TODO: Use table key or argument key?
+      const ref key = table.table[slot].key;
+      ref val = table.table[slot].val;
+
+      worker(key, val);
     }
 
     pragma "no doc"
@@ -337,8 +370,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for maps initialized with `parSafe=true`.
      */
-    proc getReference(k: keyType) ref
-    where !isNonNilableClass(valType) {
+    proc getReference(k: keyType) ref {
       if parSafe then
         compilerError('cannot call `getReference()` on maps ' +
                       'initialized with `parSafe=true`');
