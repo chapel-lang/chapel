@@ -75,7 +75,7 @@ module HDF5 {
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
-    public use SysCTypes, SysBasic;
+    public use SysCTypes, SysBasic, CPtr;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";
@@ -3468,6 +3468,7 @@ module HDF5 {
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
       use HDF5.C_HDF5;
+      use CPtr;
 
       extern proc H5LTget_dataset_info_WAR(loc_id: hid_t,
                                            dset_name: c_string,
