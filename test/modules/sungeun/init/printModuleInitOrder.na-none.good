@@ -28,7 +28,6 @@ Initializing Modules:
           QuickSort
            ShallowCopy
            InsertionSort
-         CPtr
         ChapelDistribution
          ChapelHashtable
         ExternalArray
