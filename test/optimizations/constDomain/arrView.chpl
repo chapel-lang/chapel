@@ -34,6 +34,18 @@
 }
 
 {
+  writeln("Slice with const domain");
+  var d = {1..10, 1..10};
+  var a: [d] int;
+
+  const sliceDom = {2..3, 2..3};
+  var arrView = a[sliceDom];
+
+  writeln(arrView.domain._value.definedConst);
+  writeln(arrView.domain.definedConst);
+}
+
+{
   writeln("Reindex with tuple of ranges");
   var d = {1..10, 1..10};
   var a: [d] int;
