@@ -17,6 +17,7 @@ export proc chpl_library_init_ftn() {
    var val = A[i,j];
  */
 proc CFI_cdesc_t.this(idx:int...?rank) ref {
+  use CPtr;
   assert(this.rank == rank);
   var subscripts: [0..#rank] CFI_index_t;
   for param i in 0..<rank {
