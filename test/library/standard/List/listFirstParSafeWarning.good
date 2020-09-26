@@ -1,0 +1,3 @@
+listFirstParSafeWarning.chpl:3: In function 'test':
+listFirstParSafeWarning.chpl:6: warning: Calling `first()` on a list initialized with `parSafe=true` has been deprecated, consider using `set()` or `update()` instead
+0

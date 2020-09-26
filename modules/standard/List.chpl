@@ -673,6 +673,10 @@ module List {
       :rtype: `ref eltType`
     */
     proc ref first() ref {
+      if parSafe then
+        compilerWarning('Calling `first()` on a list initialized with ' +
+                        '`parSafe=true` has been deprecated, consider ' +
+                        'using `set()` or `update()` instead');
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -700,6 +704,10 @@ module List {
       :rtype: `ref eltType`
     */
     proc ref last() ref {
+      if parSafe then
+        compilerWarning('Calling `last()` on a list initialized with ' +
+                        '`parSafe=true` has been deprecated, consider ' +
+                        'using `set()` or `update()` instead');
       _enter();
 
       if boundsChecking && _size == 0 {
@@ -1302,7 +1310,7 @@ module List {
           // Copy current list contents into an array.
           var arr: [0..#_size] eltType;
           for i in 0..#_size do
-            arr[i] = this[i];
+            arr[i] = _getRef(i);
 
           Sort.sort(arr, comparator);
 
@@ -1319,19 +1327,153 @@ module List {
     }
 
     /*
-      Index this list via subscript. Returns a reference to the element at a
-      given index in this list.
+      Return a copy of the element at a given index in this list.
 
-      :arg i: The index of the element to access.
+      :arg i: The index of the element to get.
 
       .. warning::
 
-        Use of the `this` method with an out of bounds index (while bounds
-        checking is on) will cause the currently running program to halt.
+        Use of the `getValue` method with an out of bounds index (while
+        bounds checking is on) will cause the currently running program
+        to halt.
 
-      :return: An element from this list.
+      :return: A copy of an element from this list.
+    */
+    proc const getValue(i: int): eltType {
+      _enter(); defer _leave();
+
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        boundsCheckHalt(msg);
+      }
+
+      return _getRef(i);
+    }
+
+    /*
+      Return a borrow of the element at a given index in this list. This
+      method can only be called when this list's element type is a class
+      type.
+
+      :arg i: The index of the element to borrow.
+      :type i: `int`
+
+      :return: A borrow of an element from this list.
+    */
+    proc const getBorrowed(i: int) where isClass(eltType) {
+      _enter(); defer _leave();
+
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        boundsCheckHalt(msg);
+      }
+
+      ref slot = _getRef(i);
+
+      return slot.borrow();
+    }
+
+    /*
+      Sets the element at a given index in this list. This method returns
+      `false` if the index is out of bounds.
+
+      :arg i: The index of the element to set
+      :type i: int
+
+      :arg x: The value to set at index `i`
+
+      :return: `true` if `i` is a valid index that has been set to `x`,
+               and `false` otherwise.
+      :rtype: bool
+    */
+    proc ref set(i: int, pragma "no auto destroy" in x: eltType): bool {
+      _enter(); defer _leave();
+
+      if !_withinBounds(i) {
+        _destroy(x);
+        return false;
+      }
+
+      ref src = x;
+      ref dst = _getRef(i);
+      _destroy(dst);
+      _move(src, dst);
+
+      return true;
+    }
+
+    /*
+      Update a value in this list in a parallel safe manner via an updater 
+      object.
+
+      The updater object passed to the `update()` method must
+      define a `this()` method that takes two arguments: an integer index,
+      and a second argument of this list's `valType`. The updater object's
+      `this()` method must return some sort of value. Updater objects that
+      do not need to return anything may return `none`.
+
+      If the updater object's `this()` method throws, the thrown error will
+      be propagated out of `update()`.
+
+      :arg i: The index to update
+      :type i: `int`
+
+      :arg updater: A class or record used to update the value at `i`
+      :return: What the updater object returns
+    */
+    proc update(i: int, updater) throws {
+      _enter(); defer _leave();
+
+      if boundsChecking && !_withinBounds(i) {
+        const msg = "Invalid list index: " + i:string;
+        boundsCheckHalt(msg);
+      }
+
+      ref slot = _getRef(i);
+
+      // Print a prettier error message if arguments fail resolve, to avoid
+      // pointing into module code.
+      import Reflection;
+      if !Reflection.canResolveMethod(updater, "this", i, slot) then
+        compilerError('`list.update()` failed to resolve method ' +
+                      updater.type:string + '.this() for arguments (' +
+                      i.type:string + ', ' + slot.type:string + ')');
+
+      return updater(i, slot);
+    }
+
+    pragma "no doc"
+    inline proc _warnForParSafeIndexing() {
+      if parSafe then
+        compilerWarning('Indexing a list initialized with `parSafe=true` ' +
+                        'has been deprecated, consider using `set()` ' +
+                        'or `update()` instead', 2);
+      return;
+    }
+
+    /*
+      Index this list via subscript. Returns a reference to the element at a
+      given index in this list.
+
+      :arg i: The index of the element to access
+
+      .. warning::
+
+        Use of the `this()` method with an out of bounds index (while bounds
+        checking is on) will cause the currently running program to
+        halt.
+
+      .. note::
+
+        The `this()` method cannot be used with lists instantiated with a
+        `parSafe` value of `true`. Attempting to do so will trigger
+        a compiler error.
+
+      :return: A reference to an element in this list
     */
     proc ref this(i: int) ref {
+      _warnForParSafeIndexing();
+
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         boundsCheckHalt(msg);
@@ -1340,7 +1482,11 @@ module List {
       ref result = _getRef(i);
       return result;
     }
+
+    pragma "no doc"
     proc const ref this(i: int) const ref {
+      _warnForParSafeIndexing();
+
       if boundsChecking && !_withinBounds(i) {
         const msg = "Invalid list index: " + i:string;
         halt(msg);
@@ -1362,10 +1508,8 @@ module List {
     pragma "order independent yielding loops"
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
-      for i in 0..#_size {
-        ref result = _getRef(i);
-        yield result;
-      }
+      for i in 0..#_size do
+        yield _getRef(i);
     }
 
     pragma "no doc"
@@ -1380,8 +1524,10 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(0) do
-          yield this[i];
+        for i in chunk(0) {
+          ref result = _getRef(i);
+          yield result;
+        }
       }
     }
 
@@ -1425,7 +1571,7 @@ module List {
       // the penalty of logarithmic indexing over and over again.
       //
       for i in followThis(0) do
-        yield this[i];
+        yield _getRef(i);
     }
 
     /*
@@ -1561,9 +1707,10 @@ module List {
     //
     // TODO: Make this a forall loop eventually.
     //
-    for i in 0..#(a.size) do
-      if a[i] != b[i] then
+    for i in 0..#(a.size) {
+      if a._getRef(i) != b._getRef(i) then
         return false;
+    }
 
     return true;
   }
