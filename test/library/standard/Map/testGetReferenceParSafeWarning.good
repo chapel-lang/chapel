@@ -1,0 +1,2 @@
+testGetReferenceParSafeWarning.chpl:3: In function 'test':
+testGetReferenceParSafeWarning.chpl:6: warning: use of `getReference()` on maps initialized with `parSafe=true` has been deprecated, use `update()` instead

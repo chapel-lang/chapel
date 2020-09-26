@@ -235,24 +235,75 @@ module Map {
     }
 
     /*
-      Updates this map with the contents of the other, overwriting the values
+      Extends this map with the contents of the other, overwriting the values
       for already-existing keys.
 
       :arg m: The other map
       :type m: map(keyType, valType)
     */
-    proc update(pragma "intent ref maybe const formal"
+    proc extend(pragma "intent ref maybe const formal"
                 m: map(keyType, valType, parSafe)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
-        compilerError("updating map with non-copyable type");
+        compilerError("extending map with non-copyable type");
 
       for key in m.keys() {
         var (_, slot) = table.findAvailableSlot(key);
         var (_, slot2) = m.table.findAvailableSlot(key);
         table.fillSlot(slot, key, m.table.table[slot2].val);
       }
+    }
+
+    /*
+      Update a value in this map in a parallel safe manner via an updater
+      object.
+
+      The updater object passed to the `update()` method must define a
+      `this()` method that takes two arguments: the first has this map's
+      `keyType`, and the second has this map's `valType`.
+
+      The updater object's `this()` method must return some sort of value.
+      Updater objects that do not need to return anything may
+      return `none`.
+
+      If the updater object's `this()` method throws, the thrown error will
+      be propagated out of `update()`.
+
+      :arg k: The key to update
+      :type k: `keyType`
+
+      :arg updater: A class or record used to update the value at `i`
+
+      :return: What the updater returns
+    */
+    proc update(const ref k: keyType, updater) throws {
+      _enter(); defer _leave();
+
+      var (isFull, slot) = table.findFullSlot(k);
+
+      // TODO: Allow `--fast` to bypass this check?
+      if !isFull then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+
+      // TODO: Use table key or argument key?
+      const ref key = table.table[slot].key;
+      ref val = table.table[slot].val;
+
+      import Reflection;
+      if !Reflection.canResolveMethod(updater, "this", key, val) then
+        compilerError('`map.update()` failed to resolve method ' +
+                      updater.type:string + '.this() for arguments (' +
+                      key.type:string + ', ' + val.type:string + ')');
+
+      return updater(key, val);
+    }
+
+    pragma "no doc"
+    inline proc _warnForParSafeIndexing() {
+      if parSafe then
+        compilerWarning('indexing a map initialized with `parSafe=true` ' +
+                        'has been deprecated, use `update()` instead', 2);
     }
 
     /*
@@ -265,6 +316,8 @@ module Map {
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
+      _warnForParSafeIndexing();
+
       _enter(); defer _leave();
 
       var (_, slot) = table.findAvailableSlot(k);
@@ -278,6 +331,8 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
+      _warnForParSafeIndexing();
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -289,6 +344,8 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const ref
     where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+      _warnForParSafeIndexing();
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -300,6 +357,7 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
+      _warnForParSafeIndexing();
       compilerError("Cannot access nilable class directly. Use an",
                     " appropriate accessor method instead.");
     }
@@ -322,10 +380,14 @@ module Map {
     }
 
     /* Get a reference to the element at position `k`. This method is not
-       available for non-nilable types.
+       available for maps initialized with `parSafe=true`.
      */
-    proc getReference(k: keyType) ref
-    where !isNonNilableClass(valType) {
+    proc getReference(k: keyType) ref {
+      if parSafe then
+        compilerWarning('use of `getReference()` on maps initialized ' +
+                        'with `parSafe=true` has been deprecated, ' +
+                        'use `update()` instead');
+
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
@@ -334,17 +396,12 @@ module Map {
       return result;
     }
 
-    /* Get a copy of the element stored at position `k`. This method is only
-       available when a map's `valType` is a non-nilable class.
+    /* Get a copy of the element stored at position `k`.
      */
     proc getValue(k: keyType) const {
-      if !isNonNilableClass(valType) then
-        compilerError('getValue can only be called when a map value type ',
-                      'is a non-nilable class');
-
-      if isOwnedClass(valType) then
-        compilerError('getValue cannot be called when a map value type ',
-                      'is an owned class, use getBorrowed instead');
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
