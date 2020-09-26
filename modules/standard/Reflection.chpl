@@ -149,7 +149,7 @@ inline
 proc getField(const ref x:?t, param s:string) const ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
-    compilerError("field ", s, " not found in ", t:string);
+    compilerError("field ", s, " not found in ", t:string, errorDepth=2);
   return __primitive("field by num", x, i);
 }
 
@@ -216,7 +216,7 @@ pragma "unsafe"
 proc getFieldRef(ref x:?t, param s:string) ref {
   param i = __primitive("field name to num", t, s);
   if i == 0 then
-    compilerError("field ", s, " not found in ", t:string);
+    compilerError("field ", s, " not found in ", t:string, errorDepth=2);
   return __primitive("field by num", x, i);
 }
 
