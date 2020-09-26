@@ -1,0 +1,6 @@
+error-expected-param-missing.chpl:15: In function 'makeThing':
+error-expected-param-missing.chpl:16: error: unresolved call 'R.init(type int(64), bool)'
+error-expected-param-missing.chpl:8: note: this candidate did not match: R.init(type eltType, param parSafe = false)
+error-expected-param-missing.chpl:16: note: because non-param call actual argument #2
+error-expected-param-missing.chpl:8: note: is passed to param formal 'param parSafe: bool'
+  error-expected-param-missing.chpl:21: called as makeThing(x: list(int(64),false), parSafe: bool)
