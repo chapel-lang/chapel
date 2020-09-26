@@ -88,27 +88,50 @@ static void addType(BaseAST* ast){
 
     for_alist_backward(stmt, block->body){
       if (DefExpr* def = toDefExpr(stmt)) {
-        if (def->sym->id == 212189 || def->sym->name == astr("avar")){
-        //if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
+        //if (def->sym->id == 212189 || def->sym->name == astr("avar")){
+        if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
           //printf("in addType\n");
           gdbShouldBreakHere();
 	}
-	//check if in record
+	//check if not in record
         if(def->parentSymbol->astTag != E_TypeSymbol) {
-          if (def->init == NULL && def->exprType == NULL) {
-            def->init = init;
-            if(typeTmp){
-              def->exprType = new SymExpr(typeTmp);
+	  if (def->init || def->exprType) {
+
+            if(def->exprType){
+              typeTmp = NULL;
             } else {
-              def->exprType = type;
-              }
-          } else if(def->init && def->exprType == NULL && typeTmp){
-	      def->exprType = new SymExpr(typeTmp);
-          } else if(def->exprType) {
+              if(typeTmp){
+                def->exprType = new SymExpr(typeTmp);
+              } else {
+		def->exprType = type;
+	      }
+            }
+
+	    if(def->init){
+            //  init = def->init;
+            } else {
+	      if(init){
+                def->init = init->copy();
+	      }
+            }
+
+            init = def->init;
+            type = def->exprType;
+          }
+
+         // if (def->exprType == NULL) {
+         //  if(typeTmp){
+         //     def->exprType = new SymExpr(typeTmp);
+         //   } else {
+         //     def->exprType = type;
+         //     }
+         // }
+	  if (def->exprType && typeTmp == NULL) {
           typeTmp = newTemp("type_tmp");
 	  typeTmp->addFlag(FLAG_TYPE_VARIABLE);
 	  DefExpr* tmpDef = new DefExpr(typeTmp);
 	  Expr* move = new CallExpr(PRIM_MOVE, typeTmp, def->exprType->remove());
+	  type = def->exprType;
 	  def->exprType = new SymExpr(typeTmp);
 	  tmpBlock->insertAtTail(tmpDef);
 	  tmpBlock->insertAtTail(move);
@@ -116,12 +139,19 @@ static void addType(BaseAST* ast){
             //printf("in addType\n");
           //  gdbShouldBreakHere();
 	  //}
-	  } //else {
+	  }
+	  
+	if (def->init) {
+          init = def->init;
+        }
+
+       //else {
 	  //if(def->init && typeTmp){
           //  def->exprType = new SymExpr(typeTmp);
 	  //}
 	//}
        }
+ 
       }
     }
       
