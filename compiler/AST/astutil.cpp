@@ -118,6 +118,7 @@ void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
     gotoStmts.push_back(gotoStmt);
 }
 
+
 // This is a specialized helper for lowerIterators.
 // Collects the gotos whose target is inTree() into 'GOTOs' and
 // the iterator break blocks into 'IBBs'.
@@ -138,6 +139,29 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     if (SymExpr* labelSE = toSymExpr(gt->label))
       if (labelSE->symbol()->inTree())
         GOTOs.push_back(gt);
+}
+
+//
+// This is a specialized helper for lowerForalls.
+// Traverse the body of the iterator looking for "top-level" yields.
+// Do not descend into calls as they should not contain inner yields.
+// Do not descend into a forall loop because any yields in it will be
+// handled when lowering the forall and inlining **its** iterator.
+// Yields in a parallel construct will not come up upon this traversal
+// because parallel constructs are represented with calls to task functions.
+// While task functions have been outlined by now, lowerForalls places
+// a clone of a task function right next to a call to it, and this
+// traversal does not descend into symbols.
+//
+void computeHasToplevelYields(BaseAST* ast, bool& result) {
+  if (result)
+    return;
+  else if (CallExpr* call = toCallExpr(ast))
+    result = call->isPrimitive(PRIM_YIELD); // do not dig futher
+  else if (isSymbol(ast) || isForallStmt(ast))
+    ; // do not descend into these
+  else
+    AST_CHILDREN_CALL(ast, computeHasToplevelYields, result);
 }
 
 
