@@ -1,17 +1,37 @@
 compareChplVersionErrors.chpl:25: In function 'compareVersions':
-compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
-  compareChplVersionErrors.chpl:21: called as compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\")) from function 'compareBothVersions'
-  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
-compareChplVersionErrors.chpl:25: In function 'compareVersions':
-compareChplVersionErrors.chpl:32: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:33: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:34: error: can't compare sourceVersions that only differ by commit IDs
-compareChplVersionErrors.chpl:35: error: can't compare sourceVersions that only differ by commit IDs
-  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(semanticVersion(2,1,0),\"bbb\"), v2: sourceVersion(semanticVersion(2,1,0),\"aaa\")) from function 'compareBothVersions'
-  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(semanticVersion(2,1,0),\"aaa\"), v2: sourceVersion(semanticVersion(2,1,0),\"bbb\"))
+compareChplVersionErrors.chpl:30: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:21: called as compareVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
+$CHPL_HOME/modules/standard/Version.chpl:190: In function '==':
+$CHPL_HOME/modules/standard/Version.chpl:191: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:25: called as ==(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareVersions'
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
+$CHPL_HOME/modules/standard/Version.chpl:199: In function '!=':
+$CHPL_HOME/modules/standard/Version.chpl:200: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:25: called as !=(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareVersions'
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
+$CHPL_HOME/modules/standard/Version.chpl:203: In function '<':
+$CHPL_HOME/modules/standard/Version.chpl:204: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:25: called as <(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareVersions'
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
+$CHPL_HOME/modules/standard/Version.chpl:207: In function '<=':
+$CHPL_HOME/modules/standard/Version.chpl:208: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:25: called as <=(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareVersions'
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
+$CHPL_HOME/modules/standard/Version.chpl:211: In function '>':
+$CHPL_HOME/modules/standard/Version.chpl:212: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:25: called as >(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareVersions'
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
+$CHPL_HOME/modules/standard/Version.chpl:223: In function '>=':
+$CHPL_HOME/modules/standard/Version.chpl:224: error: can't compare sourceVersions that only differ by commit IDs
+  compareChplVersionErrors.chpl:25: called as >=(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareVersions'
+  compareChplVersionErrors.chpl:22: called as compareVersions(v1: sourceVersion(2,1,0,\"bbb\"), v2: sourceVersion(2,1,0,\"aaa\")) from function 'compareBothVersions'
+  compareChplVersionErrors.chpl:9: called as compareBothVersions(v1: sourceVersion(2,1,0,\"aaa\"), v2: sourceVersion(2,1,0,\"bbb\"))
 Comparing versions:
 version 2.1.0
 version 2.1.0 (aaa)
@@ -38,23 +58,23 @@ Comparing versions:
 version 2.1.0 (aaa)
 version 2.1.0 (bbb)
 ------------------
-== : false
-!= : true
+== : true
+!= : false
 <  : false
-<= : false
+<= : true
 >  : false
->= : false
+>= : true
 
 Comparing versions:
 version 2.1.0 (bbb)
 version 2.1.0 (aaa)
 ------------------
-== : false
-!= : true
+== : true
+!= : false
 <  : false
-<= : false
+<= : true
 >  : false
->= : false
+>= : true
 
 Comparing versions:
 version 2.0.0 (aaa)
