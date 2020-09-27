@@ -91,11 +91,14 @@ static void addType(BaseAST* ast){
         //if (def->sym->id == 212189 || def->sym->name == astr("avar")){
         if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
           //printf("in addType\n");
-          gdbShouldBreakHere();
+          //gdbShouldBreakHere();
 	}
 	//check if not in record
         if(def->parentSymbol->astTag != E_TypeSymbol) {
 	  if (def->init || def->exprType) {
+
+            //init = def->init;
+            //type = def->exprType;
 
             if(def->exprType){
               typeTmp = NULL;
@@ -111,13 +114,20 @@ static void addType(BaseAST* ast){
             //  init = def->init;
             } else {
 	      if(init){
-                def->init = init->copy();
+		if(init->isNoInitExpr()){
+                  def->init = init->copy();
+		}
+		else {
+	          init = new UnresolvedSymExpr(def->sym->name);
+	        }
 	      }
             }
 
             init = def->init;
             type = def->exprType;
-          }
+          }  else {
+	    //def->exprType = type;
+	  }
 
          // if (def->exprType == NULL) {
          //  if(typeTmp){
@@ -141,10 +151,6 @@ static void addType(BaseAST* ast){
 	  //}
 	  }
 	  
-	if (def->init) {
-          init = def->init;
-        }
-
        //else {
 	  //if(def->init && typeTmp){
           //  def->exprType = new SymExpr(typeTmp);
