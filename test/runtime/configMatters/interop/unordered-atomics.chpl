@@ -6,7 +6,7 @@ extern proc pthread_create(thread:c_ptr(pthread_t),
                            start_routine:c_fn_ptr, arg:c_void_ptr): c_int;
 extern proc pthread_join(thread:pthread_t, retval:c_ptr(c_void_ptr)): c_int;
 
-use UnorderedAtomics, SysCTypes;
+use UnorderedAtomics, SysCTypes, CPtr;
 
 config const numThreadsPerLocale = here.maxTaskPar;
 config const numTrials = 10;
