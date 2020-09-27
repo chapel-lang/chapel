@@ -5,6 +5,7 @@ require "sysCTypes.h";
 
 // Note: Generated with fake std headers
 
+use CPtr;
 extern proc test_int(a : c_int, ref b : c_int) : c_int;
 
 extern proc test_int(a : c_int, b : c_ptr(c_int)) : c_int;
