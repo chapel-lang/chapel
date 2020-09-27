@@ -422,7 +422,7 @@ module CPtr {
     :returns: a pointer to the array's elements
   */
   inline proc c_ptrTo(arr: []) {
-    if (!chpl__isDROrDRView(arr)) then
+    if (!isRectangularArr(arr) || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
     if (arr._value.locale != here) then

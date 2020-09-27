@@ -5267,7 +5267,7 @@ module ChapelArray {
   // 'castToVoidStar' says whether we should cast the result to c_void_ptr
   pragma "no doc"
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
-    if (!chpl__isDROrDRView(arr)) then
+    if (!isRectangularArr(arr) || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
 
     if (arr._value.locale != here) then
