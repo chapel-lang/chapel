@@ -146,10 +146,17 @@ static void backPropagateInFunction(BlockStmt* block){
 
 	    //if(def->init && !isgSplitInit(def->init)){
             if(isValidInit(def->init)){
-              def->init = NULL;
+               def->init = NULL;
               if(init){
+                //def->init = NULL;
                 def->init = init->copy();
                 //def->init = new UnresolvedSymExpr(prev->sym->name);
+              }
+              else {
+                //if does not have an def->init nor def->exprType nor previous initialization
+                if(def->exprType == NULL){
+                  def->init = new SymExpr(gSplitInit);
+                }
               }
             //  init = def->init;
             }
