@@ -1,30 +1,15 @@
-**** Start forall ****
-	nonDomainIter.chpl:19
 
-Iterated symbol
-	nonDomainIter.chpl:17
-
-Loop is suitable for static and dynamic analysis
-	nonDomainIter.chpl:19
-
-Potential access
-	nonDomainIter.chpl:20
-
-	regular domain symbol was not found for array
-	nonDomainIter.chpl:14
-
-Potential access
-	nonDomainIter.chpl:20
-
-	regular domain symbol was not found for array
-	nonDomainIter.chpl:15
-
-	Marking dynamic candidate
-	nonDomainIter.chpl:20
-
-	Marking dynamic candidate
-	nonDomainIter.chpl:20
-
-**** End forall ****
-	nonDomainIter.chpl:19
+Start analyzing forall (nonDomainIter.chpl:19)
+| Found loop domain (nonDomainIter.chpl:17)
+| Will attempt static and dynamic optimizations (nonDomainIter.chpl:19)
+|
+|  Start analyzing call (nonDomainIter.chpl:20)
+|   Can't determine the domain of access base (nonDomainIter.chpl:14)
+|  This call is a dynamic optimization candidate (nonDomainIter.chpl:20)
+|
+|  Start analyzing call (nonDomainIter.chpl:20)
+|   Can't determine the domain of access base (nonDomainIter.chpl:15)
+|  This call is a dynamic optimization candidate (nonDomainIter.chpl:20)
+|
+End analyzing forall (nonDomainIter.chpl:19)
 

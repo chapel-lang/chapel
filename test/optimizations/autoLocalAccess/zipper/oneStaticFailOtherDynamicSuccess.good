@@ -1,39 +1,20 @@
-**** Start forall ****
-	oneStaticFailOtherDynamicSuccess.chpl:23
 
-Iterated symbol
-	oneStaticFailOtherDynamicSuccess.chpl:16
+Start analyzing forall (oneStaticFailOtherDynamicSuccess.chpl:23)
+| Found loop domain (oneStaticFailOtherDynamicSuccess.chpl:16)
+| Will attempt static and dynamic optimizations (oneStaticFailOtherDynamicSuccess.chpl:23)
+|
+|  Start analyzing call (oneStaticFailOtherDynamicSuccess.chpl:24)
+|   Can't determine the domain of access base (oneStaticFailOtherDynamicSuccess.chpl:18)
+|  This call is a dynamic optimization candidate (oneStaticFailOtherDynamicSuccess.chpl:24)
+|
+|  Start analyzing call (oneStaticFailOtherDynamicSuccess.chpl:24)
+|   Can't determine the domain of access base (oneStaticFailOtherDynamicSuccess.chpl:19)
+|  This call is a dynamic optimization candidate (oneStaticFailOtherDynamicSuccess.chpl:24)
+|
+End analyzing forall (oneStaticFailOtherDynamicSuccess.chpl:23)
 
-Loop is suitable for static and dynamic analysis
-	oneStaticFailOtherDynamicSuccess.chpl:23
-
-Potential access
-	oneStaticFailOtherDynamicSuccess.chpl:24
-
-	regular domain symbol was not found for array
-	oneStaticFailOtherDynamicSuccess.chpl:18
-
-Potential access
-	oneStaticFailOtherDynamicSuccess.chpl:24
-
-	regular domain symbol was not found for array
-	oneStaticFailOtherDynamicSuccess.chpl:19
-
-	Marking dynamic candidate
-	oneStaticFailOtherDynamicSuccess.chpl:24
-
-	Marking dynamic candidate
-	oneStaticFailOtherDynamicSuccess.chpl:24
-
-**** End forall ****
-	oneStaticFailOtherDynamicSuccess.chpl:23
-
-Static check successful. Using localAccess with dynamic check
-	oneStaticFailOtherDynamicSuccess.chpl:24
-
-Static check failed. Reverting optimization
-	oneStaticFailOtherDynamicSuccess.chpl:24
-
+Static check successful. Using localAccess with dynamic check (oneStaticFailOtherDynamicSuccess.chpl:24)
+Static check failed. Reverting optimization (oneStaticFailOtherDynamicSuccess.chpl:24)
 Custom localAccess was called
 Custom localAccess was called
 Custom localAccess was called
