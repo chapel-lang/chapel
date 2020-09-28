@@ -79,7 +79,18 @@ static bool areMultiDefExprsInAList(AList& list){
     
     return numStmts > 1;
 }
-//isValidInit
+
+
+static bool isValidInit(Expr* initExpr){
+  if (SymExpr* se = toSymExpr(initExpr)) {
+    if (initExpr && se->symbol() == gSplitInit) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/*
 static bool isgSplitInit(Expr* initExpr){
   if (SymExpr* se = toSymExpr(initExpr)) {
     if (se->symbol() == gSplitInit) {
@@ -88,6 +99,7 @@ static bool isgSplitInit(Expr* initExpr){
   }
   return false;
 }
+*/
 static void backPropagateInFunction(BlockStmt* block){
 
     Expr* init = NULL;
@@ -117,6 +129,7 @@ static void backPropagateInFunction(BlockStmt* block){
           gdbShouldBreakHere();
 	}
         */
+        if(def->sym->name == astr("lo_var")) gdbShouldBreakHere();
 	//check if not in record
         if(def->parentSymbol->astTag != E_TypeSymbol) {
 	  if (def->init || def->exprType) {
@@ -131,21 +144,29 @@ static void backPropagateInFunction(BlockStmt* block){
 	      }
             }
 
-	    if(def->init && !isgSplitInit(def->init)){
+	    //if(def->init && !isgSplitInit(def->init)){
+            if(isValidInit(def->init)){
+              def->init = NULL;
+              if(init){
+                def->init = init->copy();
+                //def->init = new UnresolvedSymExpr(prev->sym->name);
+              }
             //  init = def->init;
-            } else {
+            }
+            /*
 	      if(init){
-		if(init->isNoInitExpr()){
+		if((def->init)->isNoInitExpr()){
                   def->init = init->copy();
 		}
 		else {
 	          init = new UnresolvedSymExpr(def->sym->name);
 	        }
 	      }
-            }
+            */
 
             init = def->init;
             type = def->exprType;
+            //prev = def;
           }  else {
 	    //def->exprType = type;
 	  }
