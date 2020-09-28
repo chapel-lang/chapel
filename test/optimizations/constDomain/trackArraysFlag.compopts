@@ -1,2 +1,2 @@
--strackArraysForConstDomains=false   #trackArraysFlag-false
--strackArraysForConstDomains=true   #trackArraysFlag-true
+-sdisableConstDomainOpt=false   #trackArraysFlag-false
+-sdisableConstDomainOpt=true   #trackArraysFlag-true
