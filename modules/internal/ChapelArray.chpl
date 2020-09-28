@@ -188,6 +188,9 @@ module ChapelArray {
   pragma "no doc"
   config param useBulkPtrTransfer = useBulkTransfer;
 
+  pragma "no doc"
+  config param disableConstDomainOpt = false;
+
   // Return POD values from arrays as values instead of const ref?
   pragma "no doc"
   config param PODValAccess = true;
