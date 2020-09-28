@@ -79,8 +79,15 @@ static bool areMultiDefExprsInAList(AList& list){
     
     return numStmts > 1;
 }
- 
-
+//isValidInit
+static bool isgSplitInit(Expr* initExpr){
+  if (SymExpr* se = toSymExpr(initExpr)) {
+    if (se->symbol() == gSplitInit) {
+      return true;
+    }
+  }
+  return false;
+}
 static void backPropagateInFunction(BlockStmt* block){
 
     Expr* init = NULL;
@@ -124,7 +131,7 @@ static void backPropagateInFunction(BlockStmt* block){
 	      }
             }
 
-	    if(def->init){
+	    if(def->init && !isgSplitInit(def->init)){
             //  init = def->init;
             } else {
 	      if(init){
