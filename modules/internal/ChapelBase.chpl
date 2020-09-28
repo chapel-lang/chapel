@@ -1255,6 +1255,7 @@ module ChapelBase {
     }
   }
 
+  pragma "compiler added remote fence"
   extern proc chpl_comm_unordered_task_fence(): void;
 
   pragma "task complete impl fn"
