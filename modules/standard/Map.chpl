@@ -450,8 +450,8 @@ module Map {
     /*
       Iterates over the key-value pairs of this map.
 
-      :yields: A tuple containing a copy of one of the key-value pairs
-               contained in this map.
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
     */
     pragma "order independent yielding loops"
     iter items() {
