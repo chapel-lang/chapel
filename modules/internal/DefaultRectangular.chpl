@@ -1939,23 +1939,35 @@ module DefaultRectangular {
 
     const Aidx = A.getDataIndex(Alo);
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
+    const Alocid = Adata.locale.id;
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
+    const Blocid = Bdata.locale.id;
 
     type t = A.eltType;
     const elemsizeInBytes = if isNumericType(t) then numBytes(t)
                             else c_sizeof(t).safeCast(int);
-    const doParallelAssign = len:int*elemsizeInBytes >= parallelAssignThreshold;
 
-    if doParallelAssign {
-      _simpleParallelTransferHelper(A, B, Adata, Bdata, len);
+    // we parallelize the assignment if
+    // 1. the size is above threshold
+    // 2. we are either not doing communication or doing a PUT
+    // See: https://github.com/Cray/chapel-private/issues/1365
+    const isSizeAboveThreshold = len:int*elemsizeInBytes >= parallelAssignThreshold;
+    const isFullyLocal = Alocid == Blocid;
+    const isSrcLocal = Blocid == here.id;
+
+    writeln(here, "ifl ", isFullyLocal, " size " , len);
+    writeln(here, "isl ", isSrcLocal, " size " , len);
+
+    if isSizeAboveThreshold && (isFullyLocal || isSrcLocal) {
+      _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
     }
     else{
-      _simpleTransferHelper(A, B, Adata, Bdata, len);
+      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
     }
   }
 
-  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, len) {
+  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len) {
     const numTasks = if __primitive("task_get_serial") then 1
                         else _computeNumChunks(len);
     const lenPerTask = len:int/numTasks;
@@ -1967,30 +1979,30 @@ module DefaultRectangular {
       const myOffset = tid*lenPerTask;
       const myLen = if tid == numTasks-1 then len:int-myOffset else lenPerTask;
 
-      _simpleTransferHelper(A, B, Adata, Bdata, myLen, myOffset);
+      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, myLen, myOffset);
     }
   }
 
-  private proc _simpleTransferHelper(A, B, Adata, Bdata, len, offset=0) {
+  private proc _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len, offset=0) {
     if Adata == Bdata then return;
 
     // NOTE: This does not work with --heterogeneous, but heterogeneous
     // compilation does not work right now.  The calls to chpl_comm_get
     // and chpl_comm_put should be changed once that is fixed.
-    if Adata.locale.id==here.id {
+    if Alocid==here.id {
       if debugDefaultDistBulkTransfer then
-        chpl_debug_writeln("\tlocal get() from ", B.locale.id);
-      __primitive("chpl_comm_array_get", Adata[offset], Bdata.locale.id,
+        chpl_debug_writeln("\tlocal get() from ", Blocid);
+      __primitive("chpl_comm_array_get", Adata[offset], Blocid,
                   Bdata[offset], len);
-    } else if Bdata.locale.id==here.id {
+    } else if Blocid==here.id {
       if debugDefaultDistBulkTransfer then
-        chpl_debug_writeln("\tlocal put() to ", A.locale.id);
-      __primitive("chpl_comm_array_put", Bdata[offset], Adata.locale.id,
+        chpl_debug_writeln("\tlocal put() to ", Alocid);
+      __primitive("chpl_comm_array_put", Bdata[offset], Alocid,
                   Adata[offset], len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
-        chpl_debug_writeln("\tremote get() on ", here.id, " from ", B.locale.id);
-      __primitive("chpl_comm_array_get", Adata[offset], Bdata.locale.id,
+        chpl_debug_writeln("\tremote get() on ", here.id, " from ", Blocid);
+      __primitive("chpl_comm_array_get", Adata[offset], Blocid,
                   Bdata[offset], len);
     }
   }
