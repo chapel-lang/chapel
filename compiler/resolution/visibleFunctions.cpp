@@ -79,15 +79,16 @@ static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
 ************************************** | *************************************/
 
 static std::set<const char*> typeHelperNames;
+static std::set<const char*> internalTypeHelperNames;
 
-bool isTypeHelperName(const char* fnName) {
-  return typeHelperNames.count(fnName);
+bool isInternalTypeHelperName(const char* fnName) {
+  return internalTypeHelperNames.count(fnName);
 }
 
 static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
           call->get(1)->typeInfo() == dtMethodToken)
-         || isTypeHelperName(name);
+         || typeHelperNames.count(name);
 }
 
 
@@ -108,18 +109,17 @@ VisibilityInfo::VisibilityInfo(const VisibilityInfo& src) :
 { }
 
 
-// Make type helpers always applicable for now.
-// To relax this, see how many false positives occur
-// when checking applicability of respective cache entries.
+// Make certain predefined functions always applicable,
+// saving the isApplicableInstantiation overhead.
 bool cachedInstantiationIsAlwaysApplicable(FnSymbol* fn) {
-  return isTypeHelperName(fn->name);
+  return isInternalTypeHelperName(fn->name);
 }
 bool cachedInstantiationIsAlwaysApplicable(CallExpr* call) {
   if (FnSymbol* fn = call->resolvedFunction())
     return cachedInstantiationIsAlwaysApplicable(fn);
 
   const char* name = toUnresolvedSymExpr(call->baseExpr)->unresolved;
-  return isTypeHelperName(name);
+  return isInternalTypeHelperName(name);
 }
 
 // Might the 'scope' define a fn that might change resolution outcome?
@@ -291,6 +291,13 @@ void initTypeHelperNames() {
   typeHelperNames.insert(astr_initCopy);
   typeHelperNames.insert(astr_autoCopy);
   typeHelperNames.insert(astr("chpl__autoDestroy"));
+
+  internalTypeHelperNames.insert(astr_cast);
+  internalTypeHelperNames.insert(astr_defaultOf);
+  internalTypeHelperNames.insert(astrNew);
+  internalTypeHelperNames.insert(astr_initCopy);
+  internalTypeHelperNames.insert(astr_autoCopy);
+  internalTypeHelperNames.insert(astr("chpl__autoDestroy"));
 }
 
 /************************************* | **************************************

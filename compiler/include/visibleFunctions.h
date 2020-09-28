@@ -50,7 +50,7 @@ public:
   bool inPOI() { return poiDepth > 0; }
 };
 
-bool isTypeHelperName(const char* fnName);
+bool isInternalTypeHelperName(const char* fnName);
 bool cachedInstantiationIsAlwaysApplicable(FnSymbol* fn);
 bool cachedInstantiationIsAlwaysApplicable(CallExpr* call);
 bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
