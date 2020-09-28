@@ -12,7 +12,7 @@ def get():
     mem_val = chpl_mem.get('target')
     if not jemalloc_val:
         if mem_val == 'jemalloc':
-            jemalloc_val = 'jemalloc'
+            jemalloc_val = 'bundled'
         else:
             jemalloc_val = 'none'
 
@@ -21,6 +21,11 @@ def get():
 
     if mem_val != 'jemalloc' and jemalloc_val != 'none':
       error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
+
+    if jemalloc_val == 'jemalloc':
+        sys.stderr.write("Warning: CHPL_JEMALLOC=jemalloc is deprecated. "
+                         "Use CHPL_JEMALLOC=bundled instead\n")
+        jemalloc_val = 'bundled'
 
     return jemalloc_val
 
