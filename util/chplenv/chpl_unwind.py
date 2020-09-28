@@ -12,14 +12,19 @@ def get():
     osx = platform_val.startswith('darwin')
     val = overrides.get('CHPL_UNWIND')
 
+    if val == 'libunwind':
+        sys.stderr.write("Warning: CHPL_UNWIND=libunwind is deprecated. "
+                         "Use CHPL_UNWIND=bundled instead\n")
+        val = 'bundled'
+
     if linux:
-        if val == 'libunwind':
-            return 'libunwind'
+        if val == 'bundled':
+            return 'bundled'
         elif val == 'system':
             return 'system'
     if osx:
-        if val == 'libunwind':
-            error("Using CHPL_UNWIND=libunwind is not supported on Mac OS X."
+        if val == 'bundled':
+            error("Using CHPL_UNWIND=bundled is not supported on Mac OS X."
                   "\nUse CHPL_UNWIND=system instead.", ValueError)
         elif val == 'system':
             return 'system'
